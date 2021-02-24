@@ -33,14 +33,16 @@
     "foo": "NODE_ENV=production node build/foo.js",
     "node": "node app.js",
     "py": "cd python && python manage.py runserver_plus --cert server.crt 0.0.0.0:3000",
-    "https-server": "http-server --ssl --key ./ssh/privkey.pem --cert ./ssh/fullchain.pem --p 8080",
+    "https-server": "badcert --no-reload web",
     "http-server": "http-server --p 8082"
   },
   "author": "zyy",
   "license": "ISC",
   "dependencies": {
+    "badcert": "^1.8.0",
     "bootstrap": "4.0.0-alpha.6",
     "date-fns": "^1.27.0",
+    "http-server": "^0.12.3",
     "lodash": "^4.17.4",
     "vue": "^2.1.10"
   },
