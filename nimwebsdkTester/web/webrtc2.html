@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>WebRTC(G2)测试页</title>
+  <link rel="stylesheet" href="./css/reset.css">
+  <link rel="stylesheet" href="./css/common.css">
+  <link rel="stylesheet" href="./css/nrtc-new.css">
+  <link rel="stylesheet" href="./css/main.css">
+</head>
+
+<body>
+  <div class="nrtc-container">
+    <div class="top">
+      <div class="block">
+        <p class="block-header">WebRtc G2 环境配置</p>
+        <div id="part-env" class="part">
+          <h1>环境配置</h1>
+          <div class="line">
+            <label>
+              <input type="radio" id="test-env" name="env" value="DEV" checked> 测试</label>
+            <label>
+              <input type="radio" id="online-env" name="env" value="PROD"> 线上</label>
+          </div>
+          <div class="line">
+            <label>
+              <input type="radio" id="rtc-mode" name="mode" value="rtc" checked> rtc</label>
+            <label>
+              <input type="radio" id="live-mode" name="mode" value="live"> live</label>
+          </div>
+          <div class="line">
+            appkey:
+            <input type="text" id="appkey">
+            <button type="button" id='setAppkey'>设置appkey</button>
+          </div>
+
+          <div class="line" style="display: none">
+            token:
+            <input type="text" id="token">
+          </div>
+          <div class="line">
+            网关地址:
+            <input type="text" id="getwayAddr" value='webrtcgwcn.netease.im/?ip=59.111.190.69:2060'>
+            是否使用：<input type="checkbox" id="isGetwayAddrConf"/>
+          </div>
+          <div class="line">
+            Forwarded地址:
+            <input type="text" id="forwardedAddr" value='10.219.25.82'>
+            是否使用：<input type="checkbox" id="isForwardedAddrConf"/>
+          </div>
+          <div class="line">
+            turn地址:
+            <input type="text" id="turnAddr" value='turn:223.252.198.177:3478?transport=tcp'>
+            是否使用：<input type="checkbox" id="isTurnAddrConf"/>
+          </div>
+          <div class="line">
+            CID: <span id="cid"></span>
+          </div>
+          <div class="line">
+            版本号: <span id="sdkVersion"></span><br>
+            提交号: <span id="sdkBuild"></span>
+          </div>
+        </div>
+        <button type="button" id='config'>参数配置</button>
+        <div class="line">
+        </div>
+
+        <div id='sessionConf' style="display: none">
+          <p class="block-header">录制参数</p>
+          <div class="part">
+            <div class="line">
+              <label><input type="checkbox" id="sessionConfigRecordAudio" checked> 音频录制 </label>
+              <label><input type="checkbox" id="sessionConfigRecordVideo" checked> 视频录制 </label>
+              <label><input type="checkbox" id="sessionConfigIsHostSpeaker"> 主讲人 </label>
+            </div>
+            <div class="line">
+              <label for='sessionConfigRecordType'>录制模式</label>
+              <select id='sessionConfigRecordType'>
+                  <option value='0'>混合录制并且录制单人文件</option>
+                  <option value='1'>混合录制</option>
+                  <option value='2'>单人录制</option>
+              </select>
+            </div>
+          </div>
+          <p class="block-header">互动直播参数</p>
+          <div class="part" id="part-live">
+            <div class="line">
+              <label>
+                <input type="checkbox" id="sessionConfigLiveEnable" checked> 互动直播开关
+              </label>
+            </div>
+          </div>
+        </div>
+        <p class="block-header">会话类型</p>
+        <div id="part-channel" class="part">
+          <div class="line">
+            房间名称：
+            <input type="text" id="channelName" value="">
+          </div>
+          <div class="line">
+            UID：
+            <input type="text" id="uid" value="">
+          </div>
+          <div class="line">
+            <button type="button" id="joinChannel-btn">加入房间</button>
+            <button type="button" id="leaveChannel-btn">离开房间</button>
+            <br/>
+            <button type="button" id="setRoleHost-btn">设为主播</button>
+            <button type="button" id="setRoleAudience-btn">设为观众</button>
+            <span id="currentRole"></span>
+          </div>
+        </div>
+        <p class="block-header">推流任务</p>
+        <div id="part-channel" class="part">
+          <div class="line">
+            <button type="button" id="tasks-btn">推流任务功能</button>
+          </div>
+        </div>
+      </div>
+      <div class="block">
+        <p class="block-header">发布配置相关</p>
+        <div class="part">
+          <div class="line">
+            启用音频
+            <input type="checkbox" id="enableAudio" checked>
+            启用视频
+            <input type="checkbox" id="enableVideo" checked>
+            启用屏幕共享
+            <input type="checkbox" id="enableScreen" >
+            自定义音频
+            <input type="checkbox" id="privateAudio">
+            自定义视频
+            <input type="checkbox" id="privateVideo">
+          </div>
+          <div class="line">
+            自动发布
+            <input type="checkbox" id="autoPub" checked>
+          </div>
+          <div class="line">
+            <label for='sessionConfigAudioProfile'>audioProfile</label>
+            <select id='sessionConfigAudioProfile'>
+              <option value="">默认（不选）</option>
+              <option value='speech_low_quality'>16 kHz 采样率，单声道，编码码率约 24 Kbps，speech_low_quality</option>
+              <option value='speech_standard'>32 kHz 采样率，单声道，编码码率约 24 Kbps，speech_standard</option>
+              <option value='music_standard'>48 kHz 采样率，单声道，编码码率约 40 Kbps，music_standard</option>
+              <option value='standard_stereo'>48 kHz 采样率，双声道，编码码率约 64 Kbps，standard_stereo</option>
+              <option value='high_quality'>48 kHz 采样率，单声道， 编码码率约 128 Kbps，high_quality</option>
+              <option value='high_quality_stereo'> 48 kHz 采样率，双声道，编码码率约 192 Kbps，high_quality_stereo</option>
+            </select>
+          </div>
+          <div class="line">
+            <label for='sessionConfigScreenProfile'>屏幕共享分辨率</label>
+            <select id='sessionConfigScreenProfile'>
+              <option value='VIDEO_QUALITY_1080p'>1920x1080</option>
+              <option value='VIDEO_QUALITY_480p'>640x480</option>
+              <option value='VIDEO_QUALITY_720p'>1280x720</option>
+            </select>
+          </div>
+          <div class="line">
+            <label for='sessionConfigScreenFrameRate'>屏幕共享帧率</label>
+            <select id='sessionConfigScreenFrameRate'>
+              <option value='CHAT_VIDEO_FRAME_RATE_5'>5</option>
+              <option value='CHAT_VIDEO_FRAME_RATE_10'>10</option>
+              <option value='CHAT_VIDEO_FRAME_RATE_15'>15</option>
+              <option value='CHAT_VIDEO_FRAME_RATE_20'>20</option>
+              <option value='CHAT_VIDEO_FRAME_RATE_25'>25</option>
+            </select>
+          </div>
+          <div class="line">
+            <label for='sessionConfigVideoQuality'>视频质量</label>
+            <select id='sessionConfigVideoQuality'>
+              <option value='VIDEO_QUALITY_480p'>640x480</option>
+              <option value='VIDEO_QUALITY_180p'>320x180</option>
+              <option value='VIDEO_QUALITY_720p'>1280x720</option>
+              <option value='VIDEO_QUALITY_1080p'>1920x1080</option>
+            </select>
+          </div>
+          <div class="line">
+            <label for='sessionConfigVideoFrameRate'>视频帧率</label>
+            <select id='sessionConfigVideoFrameRate'>
+              <option value='CHAT_VIDEO_FRAME_RATE_NORMAL'>normal</option>
+              <option value='CHAT_VIDEO_FRAME_RATE_5'>5</option>
+              <option value='CHAT_VIDEO_FRAME_RATE_10'>10</option>
+              <option value='CHAT_VIDEO_FRAME_RATE_15'>15</option>
+              <option value='CHAT_VIDEO_FRAME_RATE_20'>20</option>
+              <option value='CHAT_VIDEO_FRAME_RATE_25'>25</option>
+            </select>
+          </div>
+          <div class="line">
+            摄像头
+            <select id="camera"></select>
+          </div>
+          <div class="line">
+            麦克风
+            <select id="micro"></select>
+          </div>
+          <div class="line">
+            <select id="aec" style="width:32%">
+              <option value="" selected>回声消除AEC:默认</option>
+              <option value="true">回声消除AEC:true</option>
+              <option value="false">回声消除AEC:false</option>
+            </select>
+            <select id="ans" style="width:32%">
+              <option value="" selected>噪声抑制ANS:默认</option>
+              <option value="true">噪声抑制ANS:true</option>
+              <option value="false">噪声抑制ANS:false</option>
+            </select>
+            <select id="agc" style="width:32%">
+              <option value="" selected>增益控制AGC:默认</option>
+              <option value="true">增益控制AGC:true</option>
+              <option value="false">增益控制AGC:false</option>
+            </select>
+          </div>
+          <div class="line">
+            <button type="button" id="initLocalStream">初始化本地流</button>
+            <button type="button" id="pub">发布</button>
+            <button type="button" id="unpub">停止发布</button>
+            <!-- <button type="button" id="closeAsl">关闭ASL</button>
+            <button type="button" id="openAsl">打开ASL</button> -->
+          </div>
+        </div>
+
+        <p class="block-header">订阅配置相关</p>
+        <div class="part" id="sub-part">
+          <!--
+          <div class="line">
+            <div>自动订阅
+              <input type="checkbox" id="autoSub" checked>
+            </div>
+          </div>
+          <div class="line">
+            <div>是否订阅音频
+              <input type="checkbox" id="subAudio" checked>
+            </div>
+          </div>
+          -->
+          <div class="line">
+            <div>是否订阅视频
+              <input type="checkbox" id="subVideo" checked>
+            </div>
+          </div>
+          
+          <div class="line">
+            订阅大小流
+            <select id='subResolution'>
+              <option value= '0'>小流</option>
+              <option value= '1'>大流</option>
+            </select>
+          </div>
+          <div class="line">
+            订阅列表
+            <select id="subList">
+            </select>
+          </div>
+          <div class="line">
+            <button type="button" id="sub">订阅</button>
+            <button type="button" id="unsub">停止订阅</button>
+            <button type="button" id="unsubVideo">停止订阅视频</button>
+            <button type="button" id="subUpdateResolution">订阅大小流</button>
+          </div>
+        </div>
+        
+      </div>
+      <div class="block">
+        <p class="block-header">播放相关</p>
+        <div class="part" id="part-play">
+          <div class="line">
+            <label>操作对象(不填则默认操作自己)</label>
+            <input type="text" name="uid">
+          </div>
+
+          <div class="part">
+            <div class="line">mute自己或者对方: </div>
+            <div class="line">
+              <button id="muteAudio">muteAudio</button>
+              <button id="unmuteAudio">unmuteAudio</button>
+            </div>
+            <div class="line">
+              <button id="muteVideo">muteVideo</button>
+              <button id="unmuteVideo">unmuteVideo</button>
+            </div>
+          </div>
+
+          <div class="part">
+            <div class="line">设置自己的画面尺寸: </div>
+            <div class="line">
+              宽度
+              <input type="text" id="localWidth" class="input-40"> 高度
+              <input type="text" id="localHeight" class="input-40"> 裁剪
+              <input type="checkbox" checked id="localCrop" />
+              <button id="setLocal">设置</button>
+            </div>
+            <div class="line">设置对方的画面尺寸: </div>
+            <div class="line">
+              宽度
+              <input type="text" id="remoteWidth" class="input-40"> 高度
+              <input type="text" id="remoteHeight" class="input-40"> 裁剪
+              <input type="checkbox" checked id="remoteCrop" />
+              <button id="setRemote">设置</button>
+            </div>
+            <div class="line">
+              <button type="button" id="showStats">查看统计</button>
+            </div>
+          </div>
+        </div>
+        <p class="block-header">音量设置</p>
+        <div class="part" id="part-volume">
+          <div class="line">
+            <label>操作对象(uid)</label>
+            <input type="text" name="uid">
+          </div>
+          <div class="line">
+            <span>播放音量[扬声器](0-100)：</span>
+            <input type="text" id="playVolumeInput">
+            <button id="setPlayVolume">设置</button>
+          </div>
+          <div class="line">
+            <span>采集音量[麦克风](0-100)：</span>
+            <input type="text" id="captureVolumeInput">
+            <button id="setCaptureVolume">设置</button>
+          </div>
+          <div class="line">
+            <span>设置扬声器: </span>
+            <select id="sounder"></select> <button id="setAudioOutput">设置</button>
+          </div>
+        </div>
+        <p class="block-header">音量检测</p>
+          <div class="part">
+            <div class="line">
+              <div id="meters">
+                <div id="instant">
+                    <div class="label">音量:</div>
+                    <meter high="0.25" max="1" value="0"></meter>
+                    <div class="value"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+      </div>
+      <div class="block">
+        <p class="block-header">设备相关</p>
+        <div class="part">
+          <div class="line">
+            麦克风：
+            <button id="playMicro" class="close">打开</button>
+            <button id="playMicroOff" class="close">关闭</button>
+          </div>
+          <div class="line">
+            摄像头：
+            <button id="playCamera" class="close">打开</button>
+            <button id="playCameraOff" class="close">关闭</button>
+          </div>
+          <div class="line">
+            Chrome屏幕共享：
+            <button id="playScreen" class="close">打开</button>
+            <button id="playScreenOff" class="close">关闭</button>
+          </div>
+          <div class="line">
+              <button id="snapshot" class="close">截图</button>
+               uid：
+              <input type="text" id="snapshotAccount" class="input-40">
+               图片名称：
+              <input type="text" id="snapshotName" class="input-40">
+            </div>
+        </div>
+        <p class="block-header">客户端录制相关</p>
+        <div class="part" id="part-record">
+          <div class="line">
+            视频录制：<br/>
+            <label>操作对象(账号或UID)，不填录本地</label><input type="text" id="recordUid"><br/>
+            <input type="radio" name="recordSource" value="camera" checked>
+            <label>摄像头录制</label>
+            <input type="radio" name="recordSource" value="screen">
+            <label>屏幕录制</label>
+            <input type="radio" name="recordSource" value="video">
+            <label>视频录制(可混屏)</label>
+            <input type="radio" name="recordSource" value="audio">
+            <label>混音录制</label><br/>
+            <button id="recordVideo" class="close">开始</button>
+          </div>
+          <div class="line">
+            录制ID
+            <!-- <input type="text" class="recordId"> -->
+            <select class="recordId"></select>
+          </div>
+          <div class="line">
+            录制列表
+            <button id="recordVideoEnd" class="close">结束</button>
+            <button id="recordList" class="close">获取列表</button>
+            <button id="recordDownload" class="close">下载</button>
+            <button id="recordClean" class="close">清理</button>
+          </div>
+        </div>
+        <p class="block-header">网络回调展示</p>
+        <div class="part">
+          <div class="line">
+            <table border="1" id='netQuality'>
+              <tr>
+                <th>uid</th>
+                <th>上行状态</th>
+                <th>下行状态</th>
+              </tr>
+            </table>
+          </div>
+
+          <div class="line">
+            <table border="2" id='netStatus'>
+              <tr>
+                <th> 网络状态 </th>
+                <th> 上行状态 </th>
+              </tr>
+            </table>
+          </div>
+          
+          <div class="line">
+            <button type="button" id="getConnectionState">获取连接状态</button>
+            <button type="button" id="disconnectWS">断开WebSocket</button>
+          </div>
+        </div>
+
+      </div>
+      <div class="block">
+          <p class="block-header">伴音功能</p>
+          <div class="part">
+            <div class="line">
+              云端音乐文件地址：
+              <input type="text" id="audioFilePath">
+            </div>
+            <div class="line">
+              是否循环播放
+              <input type="checkbox" id="loopback">
+            </div>
+            <div class="line">
+              是否替换mic
+              <input type="checkbox" id="replace">
+            </div>
+            <div class="line">
+              循环播放的次数：
+              <input type="text" id="cycle" class="input-40">
+            </div>
+            <div class="line">
+              开始播放时间：
+              <input type="text" id="playStartTime" class="input-40">
+            </div>
+            <div class="line">
+              伴音的音量：
+              <input type="text" id="playVolume" class="input-40">
+            </div>
+            <div class="line">
+                <button id="startAudioMixing">开始</button>
+                <button id="pauseAudioMixing">暂停</button>
+                <button id="resumeAudioMixing">恢复</button>
+                <button id="stopAudioMixing">停止</button>
+            </div>
+            <div class="line">
+              设置伴音的音量:
+              <input type="text" id="volume" class="input-40">
+              <button id="setAudioMixingVolume">设置</button>
+            </div>
+            <div class="line">
+                <div id="auidoMixing">
+                  <div class="value"></div>
+                  <progress value="0" max="100"></progress>
+                </div>
+            </div>
+          </div>
+
+          <p class="block-header">检查视频卡顿</p>
+          <div class="part">
+            <canvas id="struckCanvas"></canvas>
+          </div>
+      </div>
+
+    </div>
+    <div class="bottom">
+      <div class="block">
+        <p class="block-header">日志</p>
+        <button id="clear-btn">清空</button>
+        <div class="part">
+          <div id="debug-content" class="bottom-debug-content"></div>
+        </div>
+      </div>
+      <div class="block3">
+        <h1>画面区域</h1>
+        <div id="local-container" class="video-container">
+          <h5>自己的画面</h5>
+
+        </div>
+        <div id="remote-container" class="video-container">
+          <h5>其他人的画面</h5>
+
+        </div>
+      </div>
+      <div class="block3" id="statsPanel" style="display: none">
+      </div>
+    </div>
+  </div>
+
+  <script src="./js/lib/graph.js"></script>
+  <script src="./js/lib/common.js"></script>
+
+  <script src="./js/nim/NIM_Web_WebRTC2.js"></script>
+  <script src="./js/lib/jquery.min.js"></script>
+<!--   <script src="./js/lib/vconsole.min.js"></script> -->
+  <script src="./js/lib/parseQuery.js"></script>
+  <script src="./js/webrtc/config.js"></script>
+  <script src="./js/webrtc/init_webrtc2.js"></script>
+</body>
+
+</html>

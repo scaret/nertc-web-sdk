@@ -1,0 +1,50 @@
+extends:
+  - standard
+  - plugin:import/errors
+  - plugin:import/warnings
+plugins:
+  - standard
+  - promise
+  - import
+rules:
+  no-debugger: off
+  quotes: off
+  eqeqeq: off
+  semi: off
+  prefer-promise-reject-errors: off
+  no-trailing-spaces: off
+  no-unused-vars: warn
+  space-before-function-paren: off
+  comma-dangle: off
+  spaced-comment: off
+  no-multi-spaces: off
+  import/no-webpack-loader-syntax: warn
+  import/named: 2
+  import/namespace: 2
+  import/default: 2
+  import/export: 2
+ 
+
+globals:
+  WebSocket: true
+  postMessage: true
+  Worker: true
+  Blob: true
+  URL: true
+  WebGLRenderingContext: true
+  WebGL2RenderingContext: true
+  RTCIceCandidate: true
+  RTCPeerConnection: true
+  MediaStream: true
+  MediaRecorder: true
+  RTCSessionDescription: true
+  MediaStreamTrack: true
+  NIM: true
+  XMLHttpRequest: true
+  platform: true
+  wx: true
+  netDetectAddr: true
+  defaultLinkUrl: true
+  nrtcNetcallCheckSumUrl: true
+  nrtcNetcallGetChannelInfoUrl: true
+

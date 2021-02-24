@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Precall QUnit</title>
+  <link rel="stylesheet" href="./js/lib/qunit-2.12.0.css">
+</head>
+
+<body>
+<div class="line">
+  <label>
+    appkey:
+    <input type="text" id="appkey" value="eca23f68c66d4acfceee77c200200359">
+  </label>
+  <label>
+    token:
+    <input type="text" id="token">
+  </label>
+</div>
+<div class="line" id="infoBox" style="display: flex;"></div>
+<div class="line">
+</div>
+<div id="qunit"></div>
+<div id="qunit-fixture"></div>
+<script src="./js/lib/jquery.min.js"></script>
+<script src="./js/lib/qunit-2.12.0.js"></script>
+<script src="./js/lib/qunit-assert-compare.js"></script>
+<script src="./js/lib/highcharts.js"></script>
+<script src="./js/lib/browser-detect.umd.js"></script>
+<script src="./js/nim/NIM_Web_WebRTC2.js"></script>
+<script src="./js/webrtc/config.js"></script>
+
+<script>
+  QUnit.onUnhandledRejection = function(p){
+    console.error("onUnhandledRejection", p);
+  };
+</script>
+<script src="./js/precall/browser.test.js"></script>
+<script src="./js/precall/microphone.test.js"></script>
+<script src="./js/precall/camera.test.js"></script>
+<script src="./js/precall/connection.test.js"></script>
+<script src="./js/precall/pubsub.test.js"></script>
+
+</body>
+
+</html>

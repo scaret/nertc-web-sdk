@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>推流任务功能</title>
+  <link rel="stylesheet" href="./css/reset.css">
+  <link rel="stylesheet" href="./css/common.css">
+  <link rel="stylesheet" href="./css/nrtc-new.css">
+  <link rel="stylesheet" href="./css/main.css">
+</head>
+
+<body>
+  <div class="nrtc-container">
+    <div class="top">
+      <div class="block">
+        <div id='sessionConf' style="display: block;">
+
+          <p class="block-header">推流任务task</p>
+          <div class="line">
+            <div class="line">
+              设置的推流任务列表
+              <select id="roomconfig" size="4">
+              </select>
+            </div>
+          </div>
+          <div class="line">
+            <button type="button" id="remove-btn">删除选中的一个推流任务</button>
+          </div>
+          <div class="line">
+            <button type="button" id="reset-btn">删除所有的推流任务</button>
+          </div>
+
+          <div class="line">
+            <div class="line">
+              当前设置成功的推流任务ID列表 
+              <select id="succTasksList"></select>
+            </div>
+          </div>
+
+          <div class="line">
+            <div class="line">
+              当前设置失败的推流任务ID列表 
+              <select id="failTasksList"></select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="block">
+          <p class="block-header">推流任务配置</p>
+          <div class="part" id="part-roomConf">
+            
+            <div class="line">
+              <div>
+                  <label for="taskId">唯一任务id(taskId):</label>
+                  <input type="text" id="taskId">
+              </div>
+            </div>
+
+            <div class="line">
+              <div>
+                  <label for="streamUrl">推流地址(streamUrl):</label>
+                  <input type="text" id="streamUrl">
+              </div>
+            </div>
+
+            <div class="line">
+              <div>
+                  <label for="record">录制(record):</label>
+                  <input type="checkbox" id="record" checked>
+              </div>
+            </div>
+
+            <div class="line">
+              <div>
+                <label>canvas设置(width):
+                <input type="text" id="canvasWidth">
+                </label>
+              </div>
+              <div>
+                <label>canvas设置(height):
+                <input type="text" id="canvasHeight">
+                </label>
+              </div>
+              <div>
+                <label>canvas设置(color):
+                <input type="text" id="canvasColor">
+                </label>
+              </div>
+            </div>
+
+            <div class="line">
+              <div>
+                <label>背景图片设置设置(url):
+                <input type="text" id="imagesUrl">
+                </label>
+              </div>
+              <div>
+                <label>背景图片设置左偏移(x):
+                <input type="text" id="imagesX">
+                </label>
+              </div>
+              <div>
+                <label>背景图片设置右偏移(y):
+                <input type="text" id="imagesY">
+                </label>
+              </div>
+              <div>
+                <label>背景图片设置宽(width):
+                <input type="text" id="imagesWidth">
+                </label>
+              </div>
+              <div>
+                <label>背景图片设置高(height):
+                <input type="text" id="imagesHeight">
+                </label>
+              </div>
+            </div>
+
+            <div class="line">
+              <div>
+                  <button type="button" id="add-btn">添加当前设置的推流任务</button>
+              </div>
+            </div>
+          </div>
+      </div>
+
+
+      <div class="block">
+          <p class="block-header">user配置</p>
+          <div class="part" id="part-roomConf">
+
+            <div class="line">
+              <div>
+                <label>users1设置(uid):
+                <input type="text" id="user1Uid">
+                </label>
+              </div>
+              <div>
+                <label>users1设置左偏移(x):
+                <input type="text" id="user1X">
+                </label>
+              </div>
+              <div>
+                <label>users1设置右偏移(y):
+                <input type="text" id="user1Y">
+                </label>
+              </div>
+              <div>
+                <label>users1设置宽(width):
+                <input type="text" id="user1Width">
+                </label>
+              </div>
+              <div>
+                <label>users1设置高(height):
+                <input type="text" id="user1Height">
+                </label>
+              </div>
+              <div>
+                <label>users1设置裁剪(adaption):
+                <input type="checkbox" id="user1Adaption" checked>
+                </label>
+              </div>
+              <div>
+                <label>users1设置视频(pushVideo):
+                <input type="checkbox" id="user1PushVideo" checked>
+                </label>
+              </div>
+              <div>
+                <label>users1设置音频(pushAudio):
+                <input type="checkbox" id="user1PushAudio" checked>
+                </label>
+              </div>
+            </div>
+
+            <div class="line">
+              <div>
+                <label>users2设置(uid):
+                <input type="text" id="user2Uid">
+                </label>
+              </div>
+              <div>
+                <label>users2设置左偏移(x):
+                <input type="text" id="user2X">
+                </label>
+              </div>
+              <div>
+                <label>users2设置右偏移(y):
+                <input type="text" id="user2Y">
+                </label>
+              </div>
+              <div>
+                <label>users2设置宽(width):
+                <input type="text" id="user2Width">
+                </label>
+              </div>
+              <div>
+                <label>users2设置高(height):
+                <input type="text" id="user2Height">
+                </label>
+              </div>
+              <div>
+                <label>users2设置裁剪(adaption):
+                <input type="checkbox" id="user2Adaption" checked>
+                </label>
+              </div>
+              <div>
+                <label>users2设置视频(pushVideo):
+                <input type="checkbox" id="user2PushVideo" checked>
+                </label>
+              </div>
+              <div>
+                <label>users2设置音频(pushAudio):
+                <input type="checkbox" id="user2PushAudio" checked>
+                </label>
+              </div>
+            </div>
+          </div>
+      </div>
+
+      <div class="block">
+        <p class="block-header">其他设置</p>
+        <div class="part">
+          <div class="line">
+            <div>
+              <label>单视频直推不转码
+                <input type="checkbox" id="singleVideoNoTrans">
+              </label>
+            </div>
+            <div>
+              <p class="block-header"><input type="checkbox" id="audioParam">音频设置</p>
+              <label>
+                推流音频比特率设置
+                <input type="text" id="audioBitRate" value="">
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="bottom">
+      <div class="block">
+        <p class="block-header">推流功能</p>
+        <div id="part-channel" class="part">
+          <div class="line">
+            <button type="button" id="addTasks-btn">添加推流任务列表中的任务</button>
+          </div>
+          <div class="line">
+            <button type="button" id="deleteTasks-btn">刪除当前选中的推流成功的任务ID列表中的任务</button>
+          </div>
+          <div class="line">
+            <button type="button" id="updateTasks-btn">更新推流任务列表中的任务</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="./js/lib/jquery.min.js"></script>
+  <script>
+    const roomconfig = document.querySelector('select#roomconfig');
+    var succTasksList = document.getElementById('succTasksList');
+    var failTasksList = document.getElementById('failTasksList')
+    
+    let len = window.opener.rtc.confTaskList.length
+    if (len) {
+
+      let task = JSON.parse(window.opener.rtc.confTaskList[len - 1])
+      $('#taskId').val(task['taskId'])
+      $('#streamUrl').val(task['streamUrl'])
+      $('#record').prop('checked', task['record'])
+
+      $('#canvasWidth').val(task['layout']['canvas']['width'])
+      $('#canvasHeight').val(task['layout']['canvas']['height'])
+      $('#canvasColor').val(task['layout']['canvas']['color'])
+
+      $('#imagesUrl').val(task['layout']['images'][0]['url'])
+      $('#imagesX').val(task['layout']['images'][0]['x'])
+      $('#imagesY').val(task['layout']['images'][0]['y'])
+      $('#imagesWidth').val(task['layout']['images'][0]['width'])
+      $('#imagesHeight').val(task['layout']['images'][0]['height'])
+
+
+      $('#user1Uid').val(task['layout']['users'][0]['uid'])
+      $('#user1X').val(task['layout']['users'][0]['x'])
+      $('#user1Y').val(task['layout']['users'][0]['y'])
+      $('#user1Width').val(task['layout']['users'][0]['width'])
+      $('#user1Height').val(task['layout']['users'][0]['height'])
+      $('#user1Adaption').prop('checked', task['layout']['users'][0]['adaption'] ? true : false)
+      $('#user1PushAudio').prop('checked', task['layout']['users'][0]['pushAudio'])
+      $('#user1PushVideo').prop('checked', task['layout']['users'][0]['pushVideo'])
+
+
+      $('#user2Uid').val(task['layout']['users'][1]['uid'])
+      $('#user2X').val(task['layout']['users'][1]['x'])
+      $('#user2Y').val(task['layout']['users'][1]['y'])
+      $('#user2Width').val(task['layout']['users'][1]['width'])
+      $('#user2Height').val(task['layout']['users'][1]['height'])
+      $('#user2Adaption').prop('checked', task['layout']['users'][1]['adaption'] ? true : false)
+      $('#user2PushAudio').prop('checked', task['layout']['users'][1]['pushAudio'])
+      $('#user2PushVideo').prop('checked', task['layout']['users'][1]['pushVideo'])
+      
+    } else {
+      $('#taskId').val(Math.ceil(Math.random() * 1e6))
+      $('#streamUrl').val('rtmp://pf4dfc931.live.126.net/live/5a562efe9cac4bcd8ee5874f02a16510?wsSecret=3295efd4e3db87809b3dbfc0948bc70e&wsTime=1534906364')
+      $('#canvasWidth').val(1280)
+      $('#canvasHeight').val(720)
+      $('#canvasColor').val(16777215)
+      $('#user1Uid').val(window.opener.$('#uid').val())
+      $('#user1X').val(0)
+      $('#user1Y').val(0)
+      $('#user1Width').val(640)
+      $('#user1Height').val(480)
+      $('#user1Adaption').prop('checked') ? 1 : 0
+      $('#user2Uid').val(Math.ceil(Math.random() * 1e4))
+      $('#user2X').val(640)
+      $('#user2Y').val(0)
+      $('#user2Width').val(640)
+      $('#user2Height').val(720)
+      $('#user2Adaption').prop('checked') ? 1 : 0
+      $('#imagesUrl').val('https://www.w3school.com.cn/i/shanghai_lupu_bridge.jpg')
+      $('#imagesX').val(0)
+      $('#imagesY').val(0)
+      $('#imagesWidth').val(480)
+      $('#imagesHeight').val(360)
+    }
+
+    for (var i = 0; i < window.opener.rtc.confTaskList.length; i++) {
+      var option = document.createElement('option');
+      option.value = window.opener.rtc.confTaskList[i];
+      option.text = window.opener.rtc.confTaskList[i];
+      roomconfig.add(option);
+    }
+
+    for (var i = 0; i < window.opener.rtc.succTasksList.length; i++) {
+      succTasksList.add(new Option(window.opener.rtc.succTasksList[i], window.opener.rtc.succTasksList[i]))
+    }
+
+    for (var i = 0; i < window.opener.rtc.failTasksList.length; i++) {
+      failTasksList.add(new Option(window.opener.rtc.failTasksList[i], window.opener.rtc.failTasksList[i]))
+    }
+
+    $('#add-btn').on('click', () => {
+      let users = []
+      if ($('#user1Uid').val()) {
+        users.push({
+          uid: $('#user1Uid').val() - 0,
+          x: $('#user1X').val() - 0,
+          y: $('#user1Y').val() - 0,
+          width: $('#user1Width').val() - 0,
+          height: $('#user1Height').val() - 0,
+          adaption: $('#user1Adaption').prop('checked') ? 1 : 0,
+          pushAudio: $('#user1PushAudio').prop('checked'),
+          pushVideo: $('#user1PushVideo').prop('checked')
+        })
+      }
+      if ($('#user2Uid').val()) {
+        users.push({
+          uid: $('#user2Uid').val() - 0,
+          x: $('#user2X').val() - 0,
+          y: $('#user2Y').val() - 0,
+          width: $('#user2Width').val() - 0,
+          height: $('#user2Height').val() - 0,
+          adaption: $('#user2Adaption').prop('checked') ? 1 : 0,
+          pushAudio: $('#user2PushAudio').prop('checked'),
+          pushVideo: $('#user2PushVideo').prop('checked')
+        })
+      }
+      
+
+      const option = document.createElement('option');
+      taskId = $('#taskId').val()
+      const rtmpTasks = {
+        taskId,
+        streamUrl: $('#streamUrl').val(),
+        record: $('#record').prop('checked'),
+        layout: {
+          canvas: {
+            width: $('#canvasWidth').val() - 0,
+            height: $('#canvasHeight').val() - 0,
+            color: $('#canvasColor').val() - 0
+          },
+          users,
+          images:[{
+            url: $('#imagesUrl').val(),
+            x: $('#imagesX').val() - 0,
+            y: $('#imagesY').val() - 0,
+            width: $('#imagesWidth').val() - 0,
+            height: $('#imagesHeight').val() - 0,
+            adaption: 1
+          }]
+        },
+        config: {
+          singleVideoNoTrans: $('#singleVideoNoTrans').prop("checked"),
+        }
+      }
+      if ($("#audioParam").prop("checked")){
+        rtmpTasks.config.audioParam = {
+          bitRate: parseInt($("#audioBitRate").val())
+        }
+      }
+      console.warn('rtmpTasks 添加任务: ', rtmpTasks)
+      option.value = JSON.stringify(rtmpTasks);
+      option.text = JSON.stringify(rtmpTasks);
+      roomconfig.add(option);
+      window.opener.rtc.confTaskList.push(JSON.stringify(rtmpTasks))
+    })
+
+    $('#remove-btn').on('click', () => {
+      for (var i = roomconfig.options.length - 1; i >= 0; --i) {
+        if (roomconfig.options[i].selected) {
+          roomconfig.remove(i);
+        }
+      }
+      let len = roomconfig && roomconfig.options.length
+      window.opener.rtc.confTaskList.length = 0
+      for (var i = 0; i < len; i++) {
+        window.opener.rtc.confTaskList.push(roomconfig.options[i].value)
+      }
+    })
+
+    $('#reset-btn').on('click', () => {
+      roomconfig.options.length = 0
+      window.opener.rtc.confTaskList.length = 0
+    })
+
+
+
+    $('#addTasks-btn').on('click', () => {
+      /*var rtmpTasks = [//推流参数配置
+        {
+          version: 1,
+          taskId: Math.random().toString(36).slice(-8), //推流任务ID,string格式。taskId为推流任务的唯一标识，用于过程中增删任务操作
+          streamUrl: "rtmp://pf4dfc931.live.126.net/live/5a562efe9cac4bcd8ee5874f02a16510?wsSecret=3295efd4e3db87809b3dbfc0948bc70e&wsTime=1534906364",
+          record: true,                   //录制开关
+          hostUid: window.opener.$('#uid').val() - 0,                   //选填，指定大画面uid
+          layout: {
+            canvas: {
+              width: 1280,
+              height: 720,
+              color: 16777215
+            },
+            users: [{
+                uid: window.opener.$('#uid').val() - 0,
+                x: 0,
+                y: 0,
+                width: 640,
+                height: 360,
+                adaption: 1,
+                pushAudio: true,
+                pushVideo: true
+              }
+          ],
+          images: [{
+              url: "https://www.w3school.com.cn/i/shanghai_lupu_bridge.jpg",
+              x: 0,
+              y: 0,
+              width: 480,
+              height: 360,
+              adaption: 1
+          }]
+          }
+        }
+      ]*/
+
+      let  rtmpTasks = []
+      let len = roomconfig && roomconfig.options.length
+      for (var i = 0; i < len; i++) {
+        let value = JSON.parse(roomconfig.options[i].value)
+        rtmpTasks.push(value)
+      }
+
+      console.warn('rtmpTasks: ', rtmpTasks)
+      window.opener.rtc.client.addTasks({
+        rtmpTasks
+      }).then((obj) => {
+        window.opener.window.addLog('添加推流任务成功')
+        console.info('添加推流任务成功...')
+      }).catch(err=>{
+        console.error('添加推流任务失败: ',err)
+        window.opener.window.addLog('添加推流任务失败: '+ err)
+      })
+    })
+
+    $('#deleteTasks-btn').on('click', () => {
+
+      let  taskIds = []
+      taskIds.push( succTasksList.value)
+      console.warn('taskIds: ', taskIds)
+      window.opener.rtc.client.deleteTasks({
+        taskIds
+      }).then((obj) => {
+        window.opener.window.addLog('删除推流任务成功')
+        console.info('删除推流任务成功...')
+        succTasksList.remove(succTasksList.value)
+      }).catch(err=>{
+        console.error('删除推流任务失败: ',err)
+        window.opener.window.addLog('删除推流任务失败: '+ err)
+      }) 
+    })
+
+    $('#updateTasks-btn').on('click', () => {
+
+      let users = []
+      if ($('#user1Uid').val()) {
+        users.push({
+          uid: $('#user1Uid').val() - 0,
+          x: $('#user1X').val() - 0,
+          y: $('#user1Y').val() - 0,
+          width: $('#user1Width').val() - 0,
+          height: $('#user1Height').val() - 0,
+          adaption: $('#user1Adaption').prop('checked') ? 1 : 0,
+          pushAudio: $('#user1PushAudio').prop('checked'),
+          pushVideo: $('#user1PushVideo').prop('checked')
+        })
+      }
+      if ($('#user2Uid').val()) {
+        users.push({
+          uid: $('#user2Uid').val() - 0,
+          x: $('#user2X').val() - 0,
+          y: $('#user2Y').val() - 0,
+          width: $('#user2Width').val() - 0,
+          height: $('#user2Height').val() - 0,
+          adaption: $('#user2Adaption').prop('checked') ? 1 : 0,
+          pushAudio: $('#user2PushAudio').prop('checked'),
+          pushVideo: $('#user2PushVideo').prop('checked')
+        })
+      }
+
+      const option = document.createElement('option');
+      taskId = $('#taskId').val()
+      const rtmpTasks = [{
+        taskId,
+        streamUrl: $('#streamUrl').val(),
+        record: $('#record').prop('checked'),
+        layout: {
+          canvas: {
+            width: $('#canvasWidth').val() - 0,
+            height: $('#canvasHeight').val() - 0,
+            color: $('#canvasColor').val() - 0
+          },
+          users,
+          images:[{
+            url: $('#imagesUrl').val(),
+            x: $('#imagesX').val() - 0,
+            y: $('#imagesY').val() - 0,
+            width: $('#imagesWidth').val() - 0,
+            height: $('#imagesHeight').val() - 0,
+            adaption: 1
+          }]
+        },
+        config: {
+          singleVideoNoTrans: $('#singleVideoNoTrans').prop("checked"),
+        }
+      }]
+      
+      if ($("#audioParam").prop("checked")){
+        rtmpTasks[0].config.audioParam = {
+          bitRate: parseInt($("#audioBitRate").val())
+        }
+      }
+      console.warn('rtmpTasks 更新任务: ', rtmpTasks)
+      window.opener.rtc.client.updateTasks({
+        rtmpTasks
+      }).then((obj) => {
+        window.opener.window.addLog('更新推流任务成功')
+        console.info('更新推流任务成功...')
+      }).catch(err=>{
+        console.error('更新推流任务失败: ',err)
+        window.opener.window.addLog('更新推流任务失败: '+ err)
+      }) 
+    })
+
+    function isRepeatability(listNode, item) {
+      for(i = 0,len=listNode.options.length; i < len; i++) {
+        console.warn(listNode.options[i].value)
+        if(listNode.options[i].value === item) {
+          return false
+        }
+      }
+      return true
+    }
+
+  </script>
+
+
+</body>
+
+</html>

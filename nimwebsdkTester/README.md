@@ -1,0 +1,3 @@
+- use `yarn` to install npm packages
+- run `node app.js` to start demo, visit https://10.242.196.204:3000/index.html?debug=true&chatroomId=21&account=zyy1
+- run `npm run py` to start python server in order to test demo in IE7
