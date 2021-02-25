@@ -788,6 +788,7 @@ export interface JoinOptions{
   wssArr?: string[]|null;
   joinChannelLiveConfig?: LiveConfig;
   joinChannelRecordConfig?: RecordConfig;
+  neRtcServerAddresses?:NeRtcServerAddresses
 }
 
 export interface JoinChannelRequestParam4WebRTC2{
@@ -801,6 +802,13 @@ export interface JoinChannelRequestParam4WebRTC2{
   appkey: string;
   userRole: number;
   token?: string;
+}
+
+export interface NeRtcServerAddresses{
+  channelServer?: string;
+  statisticsServer?: string;
+  roomServer?: string;
+  mediaServer?: string;
 }
 
 export interface ValidIntegerOptions{
