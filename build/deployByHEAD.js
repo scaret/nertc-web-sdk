@@ -1,0 +1,84 @@
+/**
+ * 部署到测试服务器的代码: 现在是本地copy到本地
+ */
+
+const fs = require('fs-extra')
+
+const path = require('path')
+const pjson = require('../package.json')
+const git = require('./git')
+
+const version = pjson.private ? pjson.privateVersion : pjson.version
+const commitId = git.currentCommit();
+const webrtcG2Version = pjson.webrtcG2Version
+const nodeEnv = process.env.NODE_ENV || 'test'
+const TARGET_DIR = process.env.TARGET_DIR || path.join(__dirname, '../../web-nrtc')
+const map = {
+  production: 'prod',
+  test: 'dev'
+}
+
+console.log('deploy by commit PLATFORM:', process.env.PLATFORM, 'webrtcG2Version:', webrtcG2Version, 'commitId', commitId)
+const env = map[nodeEnv] || nodeEnv
+console.log('webrtcG2Version:', webrtcG2Version, 'nodeEnv:', nodeEnv)
+var srcFolder3 = path.join(
+  __dirname,
+  `../dist/nimwebsdkTester/nimwebsdkTester_${webrtcG2Version}_${nodeEnv}/web/`
+)
+var destFolder3 = path.join(TARGET_DIR, `${commitId}`)
+fs.emptyDirSync(destFolder3)
+copy(srcFolder3, destFolder3, ['webrtc2.html', 'css', 'js'], 'rtc2Rtmp.html')
+
+function copy (srcFolder, destFolder, allowPath, excludePath) {
+  console.log('\nsrcFolder:', srcFolder)
+  console.log('destFolder:', destFolder)
+
+  const obj = {
+    dereference: true
+  }
+  if (excludePath) {
+    console.warn('copy excludePath: ', excludePath)
+    obj.filter = file => file !== excludePath
+  }
+
+  if (allowPath) {
+    /*allowPath.forEach(item => {
+      console.warn('copy item: ', item)
+      obj.filter = file => file == 'webrtc2.html'
+      obj.filter = file => /webrtc2/i.test(file)
+    })*/
+    
+    obj.filter = (src, dest) => {
+      /*console.log('src: ', src)
+      console.log('dest: ', dest)*/
+      let stat = fs.lstatSync(src)
+      let isDirectory = stat.isDirectory()
+      if (isDirectory) {
+        if (/css$/i.test(src) || /\js/.test(src) || /web$/.test(src) || /auido$/.test(src)) {
+          return true;
+        } else {
+          return false;
+        }
+        /*var files = fs.readdirSync(src);
+        files.forEach(item => {
+          if (/\.html$/i.test(item) || /whiteboard\.js$/.test(item)) {
+            return true;
+          } else {
+            return true;
+          }
+        })*/
+      } else {
+        if (/webrtc2/i.test(src) || /rtc2Rtmp/i.test(src) || /css/i.test(src) || /\js/i.test(src) || /web$/.test(src) || /mp3/.test(src)) {
+          return true;
+        } else {
+          return false
+        }
+      }
+    }
+  }
+
+  fs.copy(srcFolder, destFolder, obj, err => {
+    if (err) return  console.error('err', err);
+    console.log("拷贝文件成功！")
+  })
+}
