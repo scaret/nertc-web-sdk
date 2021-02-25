@@ -10,8 +10,8 @@
     "moduleResolution": "node",
     "strict": true,
     "outDir": "types",
-    "declaration": true,
+    "declaration": false,
     "declarationMap": false
   },
-  "include": [ "src/netcall-G2" ]
+  "include": [ "src/netcall-G2", "src/entry"]
 }
