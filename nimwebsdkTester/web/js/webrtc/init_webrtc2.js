@@ -423,7 +423,7 @@ $('#joinChannel-btn').on('click', () => {
   // 互动直播相关
   const liveEnable = $('#sessionConfigLiveEnable').prop('checked') 
 
-  let channelServer; statisticsServer; roomServer;
+  let channelServer=null; statisticsServer=null; roomServer=null;
   if ($('#isPrivatization').prop('checked')) {
     channelServer = $('#channelServer').val()
     statisticsServer = $('#statisticsServer').val()
@@ -456,8 +456,7 @@ $('#joinChannel-btn').on('click', () => {
     neRtcServerAddresses: {
       channelServer,
       statisticsServer,
-      roomServer,
-      //mediaServer
+      roomServer
     }
   }).then((obj) => {
     addLog('加入房间成功')

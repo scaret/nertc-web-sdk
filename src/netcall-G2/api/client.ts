@@ -87,7 +87,6 @@ class Client extends Base {
    * @param {String} [options.neRtcServerAddresses.channelServer]  获取通道信息服务器
    * @param {String} [options.neRtcServerAddresses.statisticsServer]  统计上报服务器
    * @param {String} [options.neRtcServerAddresses.roomServer]  roomServer服务器
-   * @param {String} [options.neRtcServerAddresses.mediaServer]  媒体服务器地址
    * @return {Promise}
    */
   async join (options: JoinOptions) {
@@ -124,8 +123,7 @@ class Client extends Base {
       this._params.neRtcServerAddresses = {
         channelServer: options.neRtcServerAddresses.channelServer || '',
         statisticsServer: options.neRtcServerAddresses.statisticsServer || '',
-        roomServer: options.neRtcServerAddresses.roomServer || '',
-        mediaServer: options.neRtcServerAddresses.mediaServer || ''
+        roomServer: options.neRtcServerAddresses.roomServer || ''
       }
     }
     

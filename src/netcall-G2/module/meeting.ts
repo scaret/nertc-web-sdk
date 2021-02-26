@@ -50,7 +50,8 @@ class Meeting extends EventEmitter {
     this.adapterRef.logger.log('getChannelInfoUrl: ', getChannelInfoUrl)
     let url = getChannelInfoUrl
     if (this.adapterRef.instance._params.neRtcServerAddresses.channelServer) {
-     url = getChannelInfoUrl.replace(/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+\.?/, this.adapterRef.instance._params.neRtcServerAddresses.channelServer)
+      //url = getChannelInfoUrl.replace(/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+\.?/, this.adapterRef.instance._params.neRtcServerAddresses.channelServer)
+      url = this.adapterRef.instance._params.neRtcServerAddresses.channelServer
       this.adapterRef.logger.log('私有化配置的 getChannelInfoUrl: ', url)
     }
 
@@ -197,7 +198,8 @@ class Meeting extends EventEmitter {
     let url = roomsTaskUrl
     this.adapterRef.logger.log('roomsTaskUrl: ', roomsTaskUrl)
     if (this.adapterRef.instance._params.neRtcServerAddresses.roomServer) {
-      url = roomsTaskUrl.replace(/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+\.?/, this.adapterRef.instance._params.neRtcServerAddresses.roomServer)
+      //url = roomsTaskUrl.replace(/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+\.?/, this.adapterRef.instance._params.neRtcServerAddresses.roomServer)
+      url = this.adapterRef.instance._params.neRtcServerAddresses.roomServer
       this.adapterRef.logger.log('私有化配置的 roomsTaskUrl: ', url)
     }
     url = `${url}${this.adapterRef.channelInfo.cid}/tasks`
@@ -301,7 +303,8 @@ class Meeting extends EventEmitter {
     let url = roomsTaskUrl
     this.adapterRef.logger.log('roomsTaskUrl: ', roomsTaskUrl)
     if (this.adapterRef.instance._params.neRtcServerAddresses.roomServer) {
-      url = roomsTaskUrl.replace(/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+\.?/, this.adapterRef.instance._params.neRtcServerAddresses.roomServer)
+      //url = roomsTaskUrl.replace(/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+\.?/, this.adapterRef.instance._params.neRtcServerAddresses.roomServer)
+      url = this.adapterRef.instance._params.neRtcServerAddresses.roomServer
       this.adapterRef.logger.log('私有化配置的 roomsTaskUrl: ', url)
     }
 
@@ -386,7 +389,8 @@ class Meeting extends EventEmitter {
     let url = roomsTaskUrl
     this.adapterRef.logger.log('roomsTaskUrl: ', roomsTaskUrl)
     if (this.adapterRef.instance._params.neRtcServerAddresses.roomServer) {
-      url = roomsTaskUrl.replace(/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+\.?/, this.adapterRef.instance._params.neRtcServerAddresses.roomServer)
+      //url = roomsTaskUrl.replace(/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+\.?/, this.adapterRef.instance._params.neRtcServerAddresses.roomServer)
+      url = this.adapterRef.instance._params.neRtcServerAddresses.roomServer
       this.adapterRef.logger.log('私有化配置的 roomsTaskUrl: ', url)
     }
     url = `${url}${this.adapterRef.channelInfo.cid}/task/update`
