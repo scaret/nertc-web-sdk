@@ -673,7 +673,7 @@ export interface Client{
     userRole: number;
     audienceList: {[uid:number]: boolean}
   }
-  publish: (...args:any)=>void
+  publish: (stream: Stream)=>void
   apiEventReport: (...args:any)=>void
   getPeer: (...args:any)=>any
   leave: (...args:any)=>any
