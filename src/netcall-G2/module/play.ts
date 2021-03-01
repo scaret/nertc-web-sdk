@@ -1,4 +1,5 @@
 import { EventEmitter } from 'eventemitter3'
+import {createWatermarkControl, WatermarkControl} from "../module/watermark";
 import {
   PlayOptions,
   AdapterRef,
@@ -23,6 +24,7 @@ class Play extends EventEmitter {
   public videoView:HTMLElement | null;
   
   
+  public _watermarkControl: WatermarkControl;
   constructor (options:PlayOptions) {
     super()
     this._reset()
@@ -41,6 +43,7 @@ class Play extends EventEmitter {
       height:0,
     };
     this.audioSinkId = "";
+    this._watermarkControl = createWatermarkControl(this.adapterRef.logger);
     this._initNode()
   }
 
@@ -117,6 +120,7 @@ class Play extends EventEmitter {
       this.adapterRef.logger.log('Play: _mountVideoToDom: videoContainerDom: ', this.videoContainerDom.outerHTML)
       if (this.videoView){
         this.videoView.appendChild(this.videoContainerDom)
+        this._watermarkControl.start(this.videoContainerDom);
       }
     }
   }

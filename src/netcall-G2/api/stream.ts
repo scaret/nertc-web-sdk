@@ -11,7 +11,7 @@ import {
   AdapterRef, AudioMixingOptions,
   AudioProcessingOptions,
   Client,
-  MediaRecordingOptions,
+  MediaRecordingOptions, NERtcCanvasWatermarkConfig,
   PubStatus,
   RenderMode,
   ScreenProfileOptions,
@@ -19,7 +19,7 @@ import {
   StreamOptions,
   SubscribeConfig,
   SubscribeOptions,
-  VideoProfileOptions
+  VideoProfileOptions,
 } from "../types";
 import {MediaHelper} from "../module/media";
 import {checkExists} from "../util/param";
@@ -1660,6 +1660,30 @@ class Stream extends EventEmitter {
     return this.mediaHelper.setAudioMixingPlayTime(playStartTime) 
   }
 
+  /**
+   * 水印相关
+   */
+  setCanvasWatermarkConfigs (options: NERtcCanvasWatermarkConfig){
+    if (this._play && this._play._watermarkControl){
+      const LIMITS = {
+        TEXT: 10,
+        TIMESTAMP: 1,
+        IMAGE: 4,
+      };
+      if (options.textWatermarks && options.textWatermarks.length > LIMITS.TEXT){
+        this.client.adapterRef.logger.error(`目前的文字水印数量：${options.textWatermarks.length}。允许的数量：${LIMITS.TEXT}`);
+          throw new Error('WATERMARK_EXCEEDS_LIMIT');
+      }
+      if (options.imageWatermarks && options.imageWatermarks.length > LIMITS.IMAGE){
+        this.client.adapterRef.logger.error(`目前的图片水印数量：${options.imageWatermarks.length}。允许的数量：${LIMITS.IMAGE}`);
+        throw new Error('WATERMARK_EXCEEDS_LIMIT');
+      }
+      this._play._watermarkControl.checkWatermarkParams(options);
+      this._play._watermarkControl.updateWatermarks(options);
+    }else{
+      this.client.adapterRef.logger.error("setCanvasWatermarkConfigs：播放器未初始化");
+    }
+  };
   /**
    *  销毁实例
    *  @method destroy

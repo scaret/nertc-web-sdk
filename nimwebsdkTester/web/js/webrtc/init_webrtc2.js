@@ -501,6 +501,7 @@ $('#leaveChannel-btn').on('click', () => {
   if (rtc.videoSource) {
     rtc.videoSource.map(track=>{track.stop()})
   }
+  watermarks = {local: null, remote: {}};
 })
 
 $('#tasks-btn').on('click', () => {
@@ -635,6 +636,15 @@ function initLocalStream(audioSource, videoSource) {
     audioSource,
     videoSource
   })
+  if (watermarks.local){
+    rtc.localStream.setCanvasWatermarkConfigs(watermarks.local);
+  }else if ($('#idWatermark').prop('checked')){
+    rtc.localStream.setCanvasWatermarkConfigs({
+      textWatermarks: [{
+        content: 'localStream ' + $('#uid').val(),
+      }],
+    });
+  }
   const videoQuality = $('#sessionConfigVideoQuality').val()
   const frameRate = $('#sessionConfigVideoFrameRate').val()
   rtc.localStream.setVideoProfile({
@@ -703,6 +713,15 @@ function subscribe(remoteStream) {
   rtc.client.subscribe(remoteStream).then(()=>{
     console.log('本地 subscribe 成功')
     addLog('本地 subscribe 成功')
+    if (watermarks.remote[remoteStream.streamID]){
+      remoteStream.setCanvasWatermarkConfigs(watermarks.remote[remoteStream.streamID]);
+    }else if ($('#idWatermark').prop('checked')){
+      remoteStream.setCanvasWatermarkConfigs({
+        textWatermarks: [{
+          content: 'remoteStream ' + remoteStream.streamID,
+        }],
+      });
+    }
   }).catch(err=>{
     addLog('本地 subscribe 失败')
     console.log('本地 subscribe 失败: ', err)
@@ -1455,6 +1474,153 @@ $('#setAudioMixingVolume').click(function(){
   } 
 });
 
+/**
+ * ----------------------------------------
+ *              水印相关
+ * ----------------------------------------
+ */
+let watermarks = {local: null, remote: {}};
+$("#clearWatermark").on('click', ()=>{
+  let stream;
+  let uid = $("#watermarkUid").val();
+  if (uid) {
+    stream = rtc.remoteStreams[uid];
+  } else{
+    stream = rtc.localStream;
+  }
+  if (!stream){
+    return addLog('水印：请检查uid是否正确')
+  }
+  addLog('清空水印');
+  if(uid){
+    watermarks.remote[uid] = {};
+  }else{
+    watermarks.local = {};
+  }
+  stream.setCanvasWatermarkConfigs({});
+});
+$("#setWatermark").on('click', ()=>{
+  let stream, watermarkConf;
+  let uid = $("#watermarkUid").val();
+  if (uid) {
+    stream = rtc.remoteStreams[uid];
+    if (!watermarks.remote[uid]){
+      watermarks.remote[uid] = {};
+    }
+    watermarkConf = watermarks.remote[uid]
+  } else{
+    stream = rtc.localStream;
+    if (!watermarks.local){
+      watermarks.local = {};
+    }
+    watermarkConf = watermarks.local;
+  }
+  if (!stream){
+    return addLog('水印：请检查uid是否正确')
+  }
+  const watermarkOptions = {};
+  const type = $('#watermarkType').val()
+  if ($('#watermarkContent').val()) {
+    watermarkOptions.content = $('#watermarkContent').val()
+  }
+  if ($('#watermarkFontColor').val()) {
+    watermarkOptions.fontColor = toIntegerOrStringOrNull($('#watermarkFontColor').val())
+  }
+  if ($('#watermarkFontSize').val()) {
+    watermarkOptions.fontSize = toIntegerOrStringOrNull($('#watermarkFontSize').val())
+  }
+  if ($('#watermarkOffsetX').val()) {
+    watermarkOptions.offsetX = toIntegerOrStringOrNull($('#watermarkOffsetX').val())
+  }
+  if ($('#watermarkOffsetY').val()) {
+    watermarkOptions.offsetY = toIntegerOrStringOrNull($('#watermarkOffsetY').val())
+  }
+  if ($('#watermarkWmWidth').val()) {
+    watermarkOptions.wmWidth = toIntegerOrStringOrNull($('#watermarkWmWidth').val())
+  }
+  if ($('#watermarkWmHeight').val()) {
+    watermarkOptions.wmHeight = toIntegerOrStringOrNull($('#watermarkWmHeight').val())
+  }
+  if ($('#watermarkWmColor').val()) {
+    watermarkOptions.wmColor = toIntegerOrStringOrNull($('#watermarkWmColor').val())
+  }
+  if ($('#watermarkImageUrls').val()) {
+    watermarkOptions.imageUrls = $('#watermarkImageUrls').val()
+  }
+  if ($('#watermarkFps').val()) {
+    watermarkOptions.fps = parseFloat($('#watermarkFps').val())
+  }
+  if (!$('#watermarkLoop').prop("checked")) {
+    watermarkOptions.loop = false
+  }
+  switch(type){
+    case "text":
+      if (!watermarkConf.textWatermarks){
+        watermarkConf.textWatermarks = [];
+      }
+      watermarkConf.textWatermarks.push(watermarkOptions);
+      break;
+    case "timestamp":
+      watermarkConf.timestampWatermarks = watermarkOptions;
+      break;
+    case "image":
+      if (!watermarkConf.imageWatermarks){
+        watermarkConf.imageWatermarks = [];
+      }
+      watermarkConf.imageWatermarks.push(watermarkOptions);
+      break;
+  }
+  console.log(`水印设置 UID ${stream.streamID}\n${JSON.stringify(watermarkConf, null, 2)}`);
+  stream.setCanvasWatermarkConfigs(watermarkConf);
+
+})
+$("#showUpdateWatermark").on("click", function(){
+  $("#updateWatermarkPanel").show();
+  let uid = $("#watermarkUid").val();
+  let watermarkConf;
+  if (uid) {
+    watermarkConf = watermarks.remote[uid];
+  } else{
+    watermarkConf = watermarks.local;
+  }
+  $("#watermarkConfStr").val(JSON.stringify(watermarkConf, null, 2));
+});
+
+$("#doUpdateWatermark").on("click", function (){
+  let stream,watermarkConf;
+  let uid = $("#watermarkUid").val();
+  if (uid) {
+    stream = rtc.remoteStreams[uid];
+  } else{
+    stream = rtc.localStream;
+  }
+  if (!stream){
+    return alert('水印：请检查uid是否正确')
+  }
+  let wm;
+  try{
+    wm = JSON.parse($("#watermarkConfStr").val())
+  }catch(e){
+    alert("JSON格式不对");
+    throw e;
+  }
+
+  if (uid) {
+    watermarks.remote[uid] = wm;
+  } else{
+    watermarks.local = wm;
+  }
+
+  console.log(`水印设置 UID ${stream.streamID}\n${JSON.stringify(wm, null, 2)}`);
+  stream.setCanvasWatermarkConfigs(wm);
+  
+});
+
+
+$("#closeWatermarkPanel").on("click", function (){
+  $("#updateWatermarkPanel").hide();
+});
+
 $("#sdkVersion").text(WebRTC2.VERSION);
 $("#sdkBuild").text(WebRTC2.BUILD);
 
@@ -1551,6 +1717,19 @@ function formatSeconds(value) {
       result = "" + parseInt(hourTime) + ":" + parseInt(minuteTime) + ":" + parseInt(secondTime);
     }
     return result;
+}
+
+function toIntegerOrStringOrNull(val){
+  //数字开头转为数字，否则保留为字符串
+  if (!val){
+    return null
+  }else if (val.substr(0, 2) === "0x"){
+    return parseInt(val, 16)
+  }else if (/^\-?[\d\.]+$/.test(val)){
+    return parseFloat(val)
+  }else{
+    return val;
+  }
 }
 
 $('#clear-btn').on('click', () => {
