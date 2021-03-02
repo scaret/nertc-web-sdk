@@ -107,6 +107,7 @@ class Client extends Base {
       channelName: options.channelName,
       wssArr: options.wssArr,
       uid: options.uid,
+      token: options.token,
       joinChannelLiveConfig: options.joinChannelLiveConfig || {liveEnable: false},
       joinChannelRecordConfig: options.joinChannelRecordConfig || {
         recordAudio: false, // 是否开启音频实时音录制，0不需要，1需要（默认0）

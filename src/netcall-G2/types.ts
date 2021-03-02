@@ -785,6 +785,7 @@ export interface JoinOptions{
   channelName: string;
   uid: number;
   wssArr?: string[]|null;
+  token?: string;
   joinChannelLiveConfig?: LiveConfig;
   joinChannelRecordConfig?: RecordConfig;
 }
