@@ -244,6 +244,11 @@
           </div>
           
           <div class="line">
+            <div>是否订阅屏幕共享
+              <input type="checkbox" id="subScreen" checked>
+            </div>
+          </div>
+          <div class="line">
             订阅大小流
             <select id='subResolution'>
               <option value= '0'>小流</option>
@@ -282,6 +287,10 @@
               <button id="muteVideo">muteVideo</button>
               <button id="unmuteVideo">unmuteVideo</button>
             </div>
+            <div class="line">
+              <button id="muteScreen">muteScreen</button>
+              <button id="unmuteScreen">unmuteScreen</button>
+            </div>
           </div>
 
           <div class="part">
@@ -291,6 +300,11 @@
               <input type="text" id="localWidth" class="input-40"> 高度
               <input type="text" id="localHeight" class="input-40"> 裁剪
               <input type="checkbox" checked id="localCrop" />
+              <select id="localRenderMediaType" class="input-40">
+                <option value="" selected>默认</option>
+                <option value="video">主流</option>
+                <option value="screen">辅流</option>
+              </select>
               <button id="setLocal">设置</button>
             </div>
             <div class="line">设置对方的画面尺寸: </div>
@@ -299,6 +313,11 @@
               <input type="text" id="remoteWidth" class="input-40"> 高度
               <input type="text" id="remoteHeight" class="input-40"> 裁剪
               <input type="checkbox" checked id="remoteCrop" />
+              <select id="remoteRenderMediaType" class="input-40">
+                <option value="" selected>默认</option>
+                <option value="video">主流</option>
+                <option value="screen">辅流</option>
+              </select>
               <button id="setRemote">设置</button>
             </div>
             <div class="line">

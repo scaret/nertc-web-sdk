@@ -2,7 +2,7 @@ import { EventEmitter } from 'eventemitter3'
 import {
   PlayOptions,
   AdapterRef,
-  SDKRef, SnapshotOptions,
+  SDKRef, SnapshotOptions, MediaTypeShort,
 
 } from "../types"
 
@@ -13,14 +13,21 @@ class Play extends EventEmitter {
   private volume:number | null;
   private index:number;
   private audioSinkId:string;
-  private containerSize:{
+  private videoContainerSize:{
+    width:number;
+    height: number;
+  };
+  private screenContainerSize:{
     width:number;
     height: number;
   };
   public videoDom: HTMLVideoElement | null;
+  public screenDom: HTMLVideoElement | null;
   public audioDom: HTMLAudioElement | null;
   public videoContainerDom: HTMLElement | null;
+  public screenContainerDom: HTMLElement | null;
   public videoView:HTMLElement | null;
+  public screenView:HTMLElement | null;
   
   
   constructor (options:PlayOptions) {
@@ -31,17 +38,23 @@ class Play extends EventEmitter {
     this.sdkRef = options.sdkRef
     this.uid = options.uid
     this.videoDom = null;
+    this.screenDom = null;
     this.audioDom = null;
     this.videoContainerDom = null;
+    this.screenContainerDom = null;
     this.videoView = null;
+    this.screenView = null;
     this.volume = null;
     this.index = 0;
-    this.containerSize = {
+    this.videoContainerSize = {
+      width: 0,
+      height:0,
+    };
+    this.screenContainerSize = {
       width: 0,
       height:0,
     };
     this.audioSinkId = "";
-    this._initNode()
   }
 
   _reset() {
@@ -49,18 +62,26 @@ class Play extends EventEmitter {
     // this.adapterRef = null // adapter层的成员属性与方法引用
     this.sdkRef = null // SDK 实例指针
     this.videoDom = null
+    this.screenDom = null
     this.videoContainerDom = null
+    this.screenContainerDom = null
     this.videoView = null
+    this.screenView = null
     this.audioDom = null
     this.volume = null
     this.index = 0
-    this.containerSize = { // 外部存在开启流之后，再设置画面大小，如果先预设一个大小的话，会导致画面跳动
+    this.videoContainerSize = { // 外部存在开启流之后，再设置画面大小，如果先预设一个大小的话，会导致画面跳动
       width: 0,
       height: 0
     }
+    this.screenContainerSize = { // 外部存在开启流之后，再设置画面大小，如果先预设一个大小的话，会导致画面跳动
+      width: 0,
+      height: 0
+    }
+
   }
 
-  _initNode() {
+  _initNodeVideo() {
     this._initVideoContainer()
     this._initVideo()
     if (this.videoDom){
@@ -75,16 +96,46 @@ class Play extends EventEmitter {
       }
     }
   }
+  
+  _initNodeScreen() {
+    this._initScreenContainer()
+    this._initScreen()
+    if (this.screenDom){
+      if (this.screenContainerDom){
+        if (this.screenContainerDom == this.screenDom.parentNode){
+          this.adapterRef.logger.log('Play: _initscreenNode: 节点已挂载，请勿重复挂载')
+          return
+        }else{
+          this.screenContainerDom.appendChild(this.screenDom)
+          this.adapterRef.logger.log('Play: _initscreenNode, screenContainerDom: ', this.screenContainerDom.outerHTML)
+        }
+      }
+    }
+  }
 
   _initVideoContainer() {
     if(!this.videoContainerDom) {
       this.videoContainerDom = document.createElement('div')
+      this.videoContainerDom.className = "nertc-video-container";
       // 样式
       this.videoContainerDom.style.overflow = 'hidden'
       this.videoContainerDom.style.position = 'relative'
-      this.videoContainerDom.style.width = `${this.containerSize.width}px`
-      this.videoContainerDom.style.height = `${this.containerSize.height}px`
+      this.videoContainerDom.style.width = `${this.videoContainerSize.width}px`
+      this.videoContainerDom.style.height = `${this.videoContainerSize.height}px`
       this.videoContainerDom.style.display = 'inline-block'
+    }
+  }
+
+  _initScreenContainer() {
+    if(!this.screenContainerDom) {
+      this.screenContainerDom = document.createElement('div')
+      this.screenContainerDom.className = "nertc-screen-container";
+      // 样式
+      this.screenContainerDom.style.overflow = 'hidden'
+      this.screenContainerDom.style.position = 'relative'
+      this.screenContainerDom.style.width = `${this.screenContainerSize.width}px`
+      this.screenContainerDom.style.height = `${this.screenContainerSize.height}px`
+      this.screenContainerDom.style.display = 'inline-block'
     }
   }
 
@@ -107,7 +158,27 @@ class Play extends EventEmitter {
       this.videoDom.muted = true
     }
   }
+  
+  _initScreen() {
+    if(!this.screenDom) {
+      this.screenDom = document.createElement('video')
+      // 样式
+      this.screenDom.style.position = 'absolute'
+      this.screenDom.style.left = '50%'
+      this.screenDom.style.top = '50%'
+      this.screenDom.style.transform = 'translate(-50%,-50%)'
 
+      // 设置属性
+      this.screenDom.setAttribute('x-webkit-airplay', 'x-webkit-airplay')
+      this.screenDom.setAttribute('playsinline', 'playsinline')
+      this.screenDom.setAttribute('webkit-playsinline', 'webkit-playsinline')
+      this.screenDom.preload = 'auto'
+      this.screenDom.dataset['uid'] = "" + this.uid
+      this.screenDom.autoplay = true
+      this.screenDom.muted = true
+    }
+  }
+  
   _mountVideoToDom () {
     if (this.videoContainerDom){
       if (this.videoView == this.videoContainerDom.parentNode) {
@@ -121,6 +192,18 @@ class Play extends EventEmitter {
     }
   }
 
+  _mountScreenToDom () {
+    if (this.screenContainerDom){
+      if (this.screenView == this.screenContainerDom.parentNode) {
+        this.adapterRef.logger.log('Play: _mountScreenToDom: 节点已挂载，请勿重复挂载')
+        return
+      }
+      this.adapterRef.logger.log('Play: _mountScreenToDom: screenContainerDom: ', this.screenContainerDom.outerHTML)
+      if (this.screenView){
+        this.screenView.appendChild(this.screenContainerDom)
+      }
+    }
+  }
 
   async playAudioStream(stream:MediaStream) {
     if(!stream) return
@@ -210,11 +293,27 @@ class Play extends EventEmitter {
     return secondTotalVideoFrames > firstTotalVideoFrames
   }
 
+  async isPlayScreenStream() {
+    const getScreenFrames = async (time:number) => {
+      if (time) {
+        await new Promise((resolve)=>{setTimeout(resolve, time)});
+      }
+      if (this.screenDom && this.screenDom.srcObject) {
+        return this.screenDom.getVideoPlaybackQuality().totalVideoFrames
+      } else {
+        return 0;
+      }
+    }
+    const firstTotalVideoFrames = await getScreenFrames(0);
+    const secondTotalVideoFrames = await getScreenFrames(100)
+    return secondTotalVideoFrames > firstTotalVideoFrames
+  }
+
   async playVideoStream(stream:MediaStream, view:HTMLElement) {
     if(!stream) return
     this.adapterRef.logger.log(`播放视频, id: ${stream.id}, active state: ${stream.active}`)
     this.videoView = view
-    this._initNode()
+    this._initNodeVideo()
     this._mountVideoToDom()
     if (!this.videoDom){
       this.adapterRef.logger.error(`没有视频源`);
@@ -234,6 +333,30 @@ class Play extends EventEmitter {
     }
   }
 
+  async playScreenStream(stream:MediaStream, view:HTMLElement) {
+    if(!stream) return
+    this.adapterRef.logger.log(`播放辅流视频, id: ${stream.id}, active state: ${stream.active}`)
+    this.screenView = view
+    this._initNodeScreen()
+    this._mountScreenToDom()
+    if (!this.screenDom){
+      this.adapterRef.logger.error(`辅流没有视频源`);
+      return;
+    }
+    if (this.screenDom.srcObject === stream) {
+      this.adapterRef.logger.log(`请勿重复 ${this.uid} 播放` )
+      return
+    }
+    try {
+      this.screenDom.srcObject = stream
+      this.adapterRef.logger.log('播放 %o 的辅流, streamId: %o, stream状态: %o', this.uid, stream.id, stream.active)
+      await this.screenDom.play()
+      this.adapterRef.logger.log('播放 %s 的辅流，当前播放状态: %o', this.uid, this.screenDom && this.screenDom.played && this.screenDom.played.length)
+    } catch (e) {
+      this.adapterRef && this.adapterRef.logger.warn('播放 %s 的辅流出现问题: %o', this.uid, e)
+    }
+  }
+
   async stopPlayVideoStream() {
     if (this.videoContainerDom && this.videoDom) {
       this.videoContainerDom.removeChild(this.videoDom)
@@ -245,12 +368,24 @@ class Play extends EventEmitter {
       this.videoView = null
     }
   }
+  
+  async stopPlayScreenStream() {
+    if (this.screenContainerDom && this.screenDom) {
+      this.screenContainerDom.removeChild(this.screenDom)
+      this.screenDom = null
+    }
+    if (this.screenView && this.screenContainerDom) {
+      this.screenView.removeChild(this.screenContainerDom)
+      this.screenContainerDom = null
+      this.screenView = null
+    }
+  }
 
-  setRender(options = {width: 100, height: 100, cut: true}) {
+  setVideoRender(options = {width: 100, height: 100, cut: true}) {
     if(!this.videoDom) return
     this.adapterRef.logger.log('setRender: uid %s, options: %s', this.uid, JSON.stringify(options, null, ' '))
 
-    this.containerSize = options
+    this.videoContainerSize = Object.assign({}, options);
     // 设置外部容器
     if (this.videoContainerDom){
       this.videoContainerDom.style.width = `${options.width}px`
@@ -275,6 +410,38 @@ class Play extends EventEmitter {
       // 宽度不够但是高度填满 => 填充宽度，高度自适应
       this.videoDom.style.width = '100%'
       this.videoDom.style.height = 'auto'
+    }
+  }
+  
+  setScreenRender(options = {width: 100, height: 100, cut: true}) {
+    if(!this.screenDom) return
+    this.adapterRef.logger.log('setScreenRender: uid %s, options: %s', this.uid, JSON.stringify(options, null, ' '))
+
+    this.screenContainerSize = options
+    // 设置外部容器
+    if (this.screenContainerDom){
+      this.screenContainerDom.style.width = `${options.width}px`
+      this.screenContainerDom.style.height = `${options.height}px`
+    }else{
+      this.adapterRef.logger.error('未找到screenContainerDom');
+    }
+    // 是否裁剪
+    if (!options.cut) {
+      this.screenDom.style.height = '100%'
+      this.screenDom.style.width = '100%'
+      return
+    }
+    // 计算宽高比后设置screen宽高
+    let screenDomRatio = this.screenDom.videoWidth / this.screenDom.videoHeight // 计算视频原始宽高得出的ratio
+    let optionsRatio = options.width / options.height
+    if (screenDomRatio > optionsRatio) {
+      // 宽度填满但是高度填不满 => 填充高度，宽度自适应
+      this.screenDom.style.width = 'auto'
+      this.screenDom.style.height = '100%'
+    } else {
+      // 宽度不够但是高度填满 => 填充宽度，高度自适应
+      this.screenDom.style.width = '100%'
+      this.screenDom.style.height = 'auto'
     }
   }
   
@@ -327,6 +494,7 @@ class Play extends EventEmitter {
   destroy() {
     this.stopPlayAudioStream()
     this.stopPlayVideoStream()
+    this.stopPlayScreenStream()
     this._reset()
   }
 }

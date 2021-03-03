@@ -10,7 +10,7 @@ import {
   AdapterRef,
   APIFrequencyControlOptions,
   ClientOptions, JoinChannelRequestParam4WebRTC2,
-  LiveConfig, RecordConfig
+  LiveConfig, MediaTypeShort, RecordConfig
 } from "../types";
 import {Stream} from "./stream";
 
@@ -343,6 +343,7 @@ class Base extends EventEmitter {
       const stream = this.adapterRef.remoteStreamMap[streamId];
       stream.pubStatus.audio.consumerId = ""
       stream.pubStatus.video.consumerId = ""
+      stream.pubStatus.screen.consumerId = ""
       //@ts-ignore
       await this.subscribe(stream)
     }
@@ -416,7 +417,7 @@ class Base extends EventEmitter {
     return this.adapterRef.uid2SscrList[uid] && this.adapterRef.uid2SscrList[uid][kind]
   }
 
-  addSsrc(uid:number, kind:string, ssrc:number) {
+  addSsrc(uid:number, kind:MediaTypeShort, ssrc:number) {
     if(!this.adapterRef.uid2SscrList[uid]){
       this.adapterRef.uid2SscrList[uid] = {}
     } 
@@ -428,7 +429,7 @@ class Base extends EventEmitter {
     }
   }
 
-  removeSsrc(uid:number, kind:string = '') {
+  removeSsrc(uid:number, kind?:MediaTypeShort) {
     if(this.adapterRef.uid2SscrList[uid]){
       if (kind) {
         if(this.adapterRef.uid2SscrList[uid][kind]){

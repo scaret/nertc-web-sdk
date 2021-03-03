@@ -2,7 +2,7 @@ import { EventEmitter } from 'eventemitter3'
 import * as mediasoupClient from './3rd/mediasoup-client/'
 import {
   AdapterRef,
-  MediasoupManagerOptions,
+  MediasoupManagerOptions, MediaType,
   ProduceConsumeInfo, ProducerAppData,
   SDKRef,
   Timer
@@ -492,8 +492,8 @@ class Mediasoup extends EventEmitter {
     }
   }
 
-  async createConsumer(uid:number, kind:'audio'|'video', id:string, preferredSpatialLayer:number = 0){
-    this._eventQueue.push({uid, kind, id, preferredSpatialLayer})
+  async createConsumer(uid:number, kind:'audio'|'video',mediaType: MediaType, id:string, preferredSpatialLayer:number = 0){
+    this._eventQueue.push({uid, kind, id, mediaType, preferredSpatialLayer})
     if (this._eventQueue.length > 1) {
       return
     } else {
@@ -502,8 +502,9 @@ class Mediasoup extends EventEmitter {
   }
 
   async _createConsumer(info:ProduceConsumeInfo){
-    const {uid, kind, id, preferredSpatialLayer = 0} = info;
-    this.adapterRef.logger.log('开始订阅 %s 的 %s 媒体: %s 大小流: ', uid, kind, id, preferredSpatialLayer)
+    const {uid, kind, mediaType, id, preferredSpatialLayer = 0} = info;
+    const mediaTypeShort = (mediaType === 'screenShare' ? 'screen' : mediaType);
+    this.adapterRef.logger.log('开始订阅 %s 的 %s 媒体: %s 大小流: ', uid, mediaTypeShort, id, preferredSpatialLayer)
     if (!id) {
       this._eventQueue.shift()
       if (this._eventQueue.length > 0) {
@@ -522,10 +523,10 @@ class Mediasoup extends EventEmitter {
       }
       return
     }
-    if (remoteStream['pubStatus'][kind]['consumerId']) {
+    if (remoteStream['pubStatus'][mediaTypeShort]['consumerId']) {
       this.adapterRef.logger.log('已经订阅过')
       
-      const isPlaying = await remoteStream.isPlaying(kind)
+      const isPlaying = await remoteStream.isPlaying(mediaTypeShort)
       if (isPlaying) {
         this.adapterRef.logger.log('当前播放正常，直接返回')
         this._eventQueue.shift()
@@ -538,8 +539,9 @@ class Mediasoup extends EventEmitter {
         this.adapterRef.logger.log('先停止之前的订阅')
         try {
           remoteStream.setSubscribeConfig({
-            audio: kind !== 'audio',
-            video: kind !== 'video'
+            audio: mediaTypeShort !== 'audio',
+            video: mediaTypeShort !== 'video',
+            screen: mediaTypeShort !== 'screen'
           })
           await this.adapterRef.instance.unsubscribe(remoteStream)
         } catch (e) {
@@ -550,7 +552,7 @@ class Mediasoup extends EventEmitter {
     }
 
     let codecOptions = null;
-    if (kind === 'audio') {
+    if (mediaTypeShort === 'audio') {
       codecOptions = {
         opusStereo: 1
       }
@@ -606,7 +608,7 @@ class Mediasoup extends EventEmitter {
     }
     let { transportId, iceParameters, iceCandidates, dtlsParameters, probeSSrc, rtpParameters, producerId, consumerId, code, errMsg } = consumeRes;
     if (rtpParameters && rtpParameters.encodings && rtpParameters.encodings.length && rtpParameters.encodings[0].ssrc) {
-      this.adapterRef.instance.addSsrc(uid, kind, rtpParameters.encodings[0].ssrc)
+      this.adapterRef.instance.addSsrc(uid, mediaTypeShort, rtpParameters.encodings[0].ssrc)
     }
     if (transportId !== undefined) {
       this._recvTransport.id = transportId;
@@ -622,7 +624,7 @@ class Mediasoup extends EventEmitter {
     dtlsParameters ? this._tempRecv.dtlsParameters = dtlsParameters : null
     iceCandidates ? this._tempRecv.iceCandidates = iceCandidates : null
     //@ts-ignore
-    rtpParameters ? this._tempRecv[`${kind}RtpParameters`] = rtpParameters : null
+    rtpParameters ? this._tempRecv[`${mediaTypeShort}RtpParameters`] = rtpParameters : null
 
     try {
       const peerId = consumeRes.uid
@@ -685,16 +687,16 @@ class Mediasoup extends EventEmitter {
         this._consumers && delete this._consumers[consumer.id];
       });
       this.adapterRef.logger.log('订阅consume完成 peerId = %s', peerId);
-      if (remoteStream && remoteStream['pubStatus'][kind]['producerId']) {
-        remoteStream['subStatus'][kind] = true
+      if (remoteStream && remoteStream['pubStatus'][mediaTypeShort]['producerId']) {
+        remoteStream['subStatus'][mediaTypeShort] = true
         //@ts-ignore
-        remoteStream['pubStatus'][kind][kind] = true
-        remoteStream['pubStatus'][kind]['consumerId'] = consumerId
-        remoteStream['pubStatus'][kind]['producerId'] = producerId
+        remoteStream['pubStatus'][mediaTypeShort][mediaTypeShort] = true
+        remoteStream['pubStatus'][mediaTypeShort]['consumerId'] = consumerId
+        remoteStream['pubStatus'][mediaTypeShort]['producerId'] = producerId
         if (!remoteStream.mediaHelper){
           throw new Error('No remoteStream.mediaHelper');
         }
-        remoteStream.mediaHelper.updateStream(kind, consumer.track)
+        remoteStream.mediaHelper.updateStream(mediaTypeShort, consumer.track)
         this.adapterRef.instance.emit('stream-subscribed', {stream: remoteStream})
       } else {
         this.adapterRef.logger.log('该次consume状态错误： ', JSON.stringify(remoteStream['pubStatus'], null, ''))
@@ -710,7 +712,7 @@ class Mediasoup extends EventEmitter {
         return
       }
       this.adapterRef && this.adapterRef.logger.error('"newConsumer" request failed:%o', error);
-      this.adapterRef.logger.error('订阅 %s 的 %s 媒体失败，做容错处理: 重新建立下行连接', uid, kind)
+      this.adapterRef.logger.error('订阅 %s 的 %s 媒体失败，做容错处理: 重新建立下行连接', uid, mediaTypeShort)
       this._eventQueue.length = 0
       if (this._recvTransport) {
         await this.closeTransport(this._recvTransport);
@@ -868,6 +870,60 @@ class Mediasoup extends EventEmitter {
               mute: false 
             }
           } 
+        });
+    } catch (e) {
+      this.adapterRef.logger.error('muteMic() | failed: %o', e);
+    }
+  }
+  
+  async muteScreen(){
+    this.adapterRef.logger.log('mute视频')
+    if (!this._screenProducer){
+      throw new Error('No _screenProducer');
+    }
+    this._screenProducer.pause();
+    try {
+      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
+        throw new Error('No _protoo');
+      }
+      await this.adapterRef._signalling._protoo.request(
+        'SendUserData', {
+          externData: {
+            'type': 'Mute',
+            cid: this.adapterRef.channelInfo.cid,
+            uid: this.adapterRef.channelInfo.uid - 0,
+            data: {
+              producerId: this._screenProducer.id,
+              mute: true
+            }
+          }
+        });
+    } catch (e) {
+      this.adapterRef.logger.error('muteScreen() | failed: %o', e);
+    }
+  }
+
+  async unmuteScreen(){
+    this.adapterRef.logger.log('resume视频')
+    if (!this._webcamProducer){
+      throw new Error('No _webcamProducer');
+    }
+    this._webcamProducer.resume();
+    try{
+      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
+        throw new Error('No _protoo');
+      }
+      await this.adapterRef._signalling._protoo.request(
+        'SendUserData', {
+          externData: {
+            'type': 'Mute',
+            cid: this.adapterRef.channelInfo.cid,
+            uid: this.adapterRef.channelInfo.uid - 0,
+            data: {
+              producerId: this._webcamProducer.id,
+              mute: false
+            }
+          }
         });
     } catch (e) {
       this.adapterRef.logger.error('muteMic() | failed: %o', e);
