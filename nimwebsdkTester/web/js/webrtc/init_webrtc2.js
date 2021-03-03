@@ -479,6 +479,15 @@ $('#joinChannel-btn').on('click', () => {
   // 互动直播相关
   const liveEnable = $('#sessionConfigLiveEnable').prop('checked') 
 
+  let channelServer=null; statisticsServer=null; roomServer=null;
+  if ($('#isPrivatization').prop('checked')) {
+    channelServer = $('#channelServer').val()
+    statisticsServer = $('#statisticsServer').val()
+    roomServer = $('#roomServer').val()
+  }
+  
+  //const mediaServer = $('#mediaServer').val()
+
   addLog('开始加入房间，判断一下角色...')
   console.info('开始加入房间，判断一下角色...')
   const role = +($('#part-mode input[name="role"]:checked').val())
@@ -500,6 +509,11 @@ $('#joinChannel-btn').on('click', () => {
     },
     joinChannelLiveConfig: {
       liveEnable
+    },
+    neRtcServerAddresses: {
+      channelServer,
+      statisticsServer,
+      roomServer
     }
   }).then((obj) => {
     addLog('加入房间成功')

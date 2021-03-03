@@ -83,6 +83,10 @@ class Client extends Base {
    * @param {Boolean} [options.joinChannelRecordConfig.recordAudio]  是否开启音频实时音录制，0不需要，1需要（默认0）
    * @param {Boolean} [options.joinChannelRecordConfig.recordVideo]  是否开启视频实时音录制，0不需要，1需要（默认0）
    * @param {Number} [options.joinChannelRecordConfig.recordType]  录制模式，0混单（产生混合录制文件+单独录制文件） 1只混（只产生混合录制文件） 2只单（只产生单独录制文件）
+   * @param {Object} [options.neRtcServerAddresses] 私有化服务器地址
+   * @param {String} [options.neRtcServerAddresses.channelServer]  获取通道信息服务器
+   * @param {String} [options.neRtcServerAddresses.statisticsServer]  统计上报服务器
+   * @param {String} [options.neRtcServerAddresses.roomServer]  roomServer服务器
    * @return {Promise}
    */
   async join (options: JoinOptions) {
@@ -116,6 +120,14 @@ class Client extends Base {
         isHostSpeaker: false // 主讲人
       },
     }
+    if(options.neRtcServerAddresses){
+      this._params.neRtcServerAddresses = {
+        channelServer: options.neRtcServerAddresses.channelServer || '',
+        statisticsServer: options.neRtcServerAddresses.statisticsServer || '',
+        roomServer: options.neRtcServerAddresses.roomServer || ''
+      }
+    }
+    
     this.setStartSessionTime()
     this.initMode()
     if (!this.adapterRef._meetings){
