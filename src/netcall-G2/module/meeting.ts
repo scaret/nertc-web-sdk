@@ -212,6 +212,7 @@ class Meeting extends EventEmitter {
             hostUid: parseInt(rtmpTasks[i].hostUid),
             layout: rtmpTasks[i].layout,
             config: rtmpTasks[i].config,
+            extraInfo: rtmpTasks[i].extraInfo,
           }
         })
         if (data.code === 200) {
