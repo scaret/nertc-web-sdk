@@ -1,4 +1,3 @@
-import {Peer} from "./module/3rd/protoo-client";
 import {MediaHelper} from "./module/media";
 import {Stream} from "./api/stream";
 import {Mediasoup} from "./module/mediasoup";
@@ -668,17 +667,17 @@ export interface Client{
   getMediaHlperByUid:(streamId: number)=>MediaHelper;
   adapterRef: AdapterRef;
   apiFrequencyControl: (event:any)=>void;
-  emit:(...args:any)=>void
+  emit:(eventName: string, eventData?:any)=>void
   _roleInfo: {
     userRole: number;
     audienceList: {[uid:number]: boolean}
   }
-  publish: (...args:any)=>void
-  apiEventReport: (...args:any)=>void
-  getPeer: (...args:any)=>any
-  leave: (...args:any)=>any
-  addSsrc: (...args:any)=>any
-  reBuildRecvTransport: (...args:any)=>any
+  publish: (stream: Stream)=>void
+  apiEventReport: (eventName: string, eventData: any)=>void
+  getPeer: (sendOrRecv: 'send'|'recv')=>any
+  leave: ()=>any
+  addSsrc: (uid:number, kind:string, ssrc:number)=>any
+  reBuildRecvTransport: ()=>any
   _params: any
   setSessionConfig: any
   [key:string]: any
@@ -786,6 +785,7 @@ export interface JoinOptions{
   channelName: string;
   uid: number;
   wssArr?: string[]|null;
+  token?: string;
   joinChannelLiveConfig?: LiveConfig;
   joinChannelRecordConfig?: RecordConfig;
 }

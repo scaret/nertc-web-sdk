@@ -560,7 +560,12 @@ class Signalling extends EventEmitter {
       this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities;
       await this.adapterRef._mediasoup.init()
       this.adapterRef.logger.log('重连成功，重新publish本端流')
-      this.adapterRef.instance.publish(this.adapterRef.localStream)
+      if (this.adapterRef.localStream){
+        this.adapterRef.logger.log('重连成功，重新publish本端流')
+        this.adapterRef.instance.publish(this.adapterRef.localStream)
+      }else{
+        this.adapterRef.logger.log('重连成功')
+      }
     } else {
       const webrtc2Param = this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2
       const currentTime = Date.now()

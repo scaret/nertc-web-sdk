@@ -34,13 +34,11 @@
           <div class="line">
             appkey:
             <input type="text" id="appkey">
+            <input type="text" id="AppSecret">
             <button type="button" id='setAppkey'>设置appkey</button>
+            <button type="button" id='clearLocalStorage'>重置</button>
           </div>
 
-          <div class="line" style="display: none">
-            token:
-            <input type="text" id="token">
-          </div>
           <div class="line">
             网关地址:
             <input type="text" id="getwayAddr" value='webrtcgwcn.netease.im/?ip=59.111.190.69:2060'>
@@ -103,6 +101,10 @@
           <div class="line">
             UID：
             <input type="text" id="uid" value="">
+          </div>
+          <div class="line">
+            token:
+            <input type="text" id="token">
           </div>
           <div class="line">
             <button type="button" id="joinChannel-btn">加入房间</button>
@@ -584,6 +586,8 @@
 
   <script src="./js/lib/graph.js"></script>
   <script src="./js/lib/common.js"></script>
+  <script src="./js/lib/sha1.min.js"></script>
+  <script src="./js/lib/axios.min.js"></script>
 
   <script src="./js/nim/NIM_Web_WebRTC2.js"></script>
   <script src="./js/lib/jquery.min.js"></script>

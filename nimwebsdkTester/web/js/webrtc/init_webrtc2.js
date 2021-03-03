@@ -16,13 +16,24 @@ const globalConfig = window.globalConfig = {
 
 var WEBRTC2_ENV = {
   DEV: {
-    appkey: "eca23f68c66d4acfceee77c200200359", //"eca23f68c66d4acfceee77c200200359","be8648374778fdfc3e445d5a0aac0c3b"
-    token: ""
+    appkey: 'eca23f68c66d4acfceee77c200200359', //'3bbb213564b441dfcc26eb55731c8a8c',
+    checkSumUrl: "https://webtest.netease.im/nrtcproxy/demo/getChecksum.action",
+    getTokenUrl: 'https://imtest.netease.im/nimserver/user/getToken.action',
+    AppSecret: 'c9df0b60c1ba'
+  },
+  SAFEDEV: {
+    appkey: 'abb4cce04e5e4a7b7fc381ba799878dc', //'3bbb213564b441dfcc26eb55731c8a8c',
+    checkSumUrl: "https://webtest.netease.im/nrtcproxy/demo/getChecksum.action",
+    getTokenUrl: 'https://imtest.netease.im/nimserver/user/getToken.action',
+    AppSecret: '1209afc826ea'
   },
   PROD: {
     appkey: "6acf024e190215b685905444b6e57dd7",
-    token: ""
-  }
+    checkSumUrl: "https://nrtc.netease.im/demo/getChecksum.action",
+    getTokenUrl: 'https://api.netease.im/nimserver/user/getToken.action',
+    AppSecret: 'fffeeb78f165'
+  },
+  
 };
 
 const roomconfig = document.querySelector('select#roomconfig');
@@ -58,8 +69,15 @@ window.rtc = {
 // 获取大白测试页环境
 function loadEnv() {
   const env = globalConfig.env = $('#part-env input[name="env"]:checked').val()
-  $('#appkey').val(WEBRTC2_ENV[env].appkey)
-  $('#token').val(WEBRTC2_ENV[env].token)
+  if (window.localStorage && window.localStorage.getItem(`appkey-${env}`)){
+    $('#appkey').val(window.localStorage.getItem(`appkey-${env}`))
+    if (window.localStorage.getItem(`AppSecret-${env}`)){
+      $('#AppSecret').val(window.localStorage.getItem(`AppSecret-${env}`))
+    }
+  }else{
+    $('#appkey').val(WEBRTC2_ENV[env].appkey)
+    $('#AppSecret').val(WEBRTC2_ENV[env].AppSecret)
+  }
   $('#uid').val(Math.ceil(Math.random() * 1e4))
   //$('#channelName').val(Math.ceil(Math.random() * 1e10))
   const channelName = window.localStorage ? window.localStorage.getItem("channelName") : "";
@@ -80,6 +98,10 @@ $('#setAppkey').on('click', () => {
   console.log('更新 appkey')
   init()
 })
+$('#clearLocalStorage').on('click', () => {
+  window.localStorage.clear();
+  window.location.reload();
+})
 
 $('#config').on('click', () => {
   if ($("#sessionConf").css("display") == 'none') {
@@ -97,6 +119,39 @@ $('input[name="mode"]').on('click', () => {
 
 loadEnv()
 
+async function loadTokenByAppKey(){
+  const config = WEBRTC2_ENV[globalConfig.env];
+  let appkey = $("#appkey").val();
+  let AppSecret = $("#AppSecret").val();
+  let uid = $("#uid").val();
+  let channelName = $("#channelName").val();
+  if (AppSecret && uid && channelName){
+    let Nonce = Math.ceil(Math.random() * 1e9);
+    let CurTime = Math.ceil(Date.now() / 1000);
+    let CheckSum = sha1(`${AppSecret}${Nonce}${CurTime}`);
+    const headers = {
+      'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+      AppKey: appkey,
+      Nonce,
+      CurTime,
+      CheckSum,
+    }
+    // console.log("config.getTokenUrl", config.getTokenUrl, "headers", headers, "appSecret", AppSecret);
+    $("#token").val("");
+    const data = await axios.post(config.getTokenUrl, `uid=${encodeURIComponent(uid)}&channelName=${encodeURIComponent(channelName)}`, {headers});
+    if (data.data && data.data.token){
+      $("#token").val(data.data.token);
+    }else{
+      console.error(data.data || data);
+    }
+  }else{
+    $("#token").val("");
+  }
+}
+
+$("#uid").on("change", loadTokenByAppKey);
+$("#channelName").on("change", loadTokenByAppKey);
+
 function init() {
   if (globalConfig.inited) {
     /*addLog('已经初始化过了，刷新页面重试!!')
@@ -108,11 +163,10 @@ function init() {
   globalConfig.inited = true
   addLog('初始化实例')
   const appkey = $('#appkey').val()
-  const token = $('#token').val() || ''
+  loadTokenByAppKey();
   const chrome = $('#part-env input[name="screen-type"]:checked').val()
   rtc.client = WebRTC2.createClient({
     appkey,
-    token,
     debug: true,
   })
   initDevices()
@@ -413,6 +467,8 @@ $('#joinChannel-btn').on('click', () => {
   const channelName = $('#channelName').val()
   if (window.localStorage){
     window.localStorage.setItem("channelName", channelName);
+    window.localStorage.setItem(`appkey-${globalConfig.env}`, $("#appkey").val());
+    window.localStorage.setItem(`AppSecret-${globalConfig.env}`, $("#AppSecret").val());
   }
   const uid = $('#uid').val()
   // 实时音录制
@@ -434,6 +490,7 @@ $('#joinChannel-btn').on('click', () => {
   rtc.client.join({
     channelName,
     uid: +uid,
+    token: $("#token").val(),
     wssArr: $('#isGetwayAddrConf').prop('checked') ? [$('#isGetwayAddrConf').prop('checked') && $('#getwayAddr').val()] : null,
     joinChannelRecordConfig: {
       isHostSpeaker,
