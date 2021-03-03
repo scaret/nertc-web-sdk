@@ -110,7 +110,7 @@ class MediaHelper extends EventEmitter {
     if (videoSource) {
       this.videoStream = new MediaStream()
       this.videoStream.addTrack(videoSource)
-      video = screen = false
+      video = false
       this.videoSource = videoSource;
     }
 
@@ -144,7 +144,6 @@ class MediaHelper extends EventEmitter {
           return;
         }
         this.screenTrack = this.screenStream.getVideoTracks()[0];
-        this.videoStream = this.screenStream
         if (audio) {
           this.micStream = await GUM.getStream({
             audio: (this.getAudioConstraints()) ? this.getAudioConstraints() : true,

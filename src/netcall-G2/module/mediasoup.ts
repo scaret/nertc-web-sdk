@@ -3,7 +3,7 @@ import * as mediasoupClient from './3rd/mediasoup-client/'
 import {
   AdapterRef,
   MediasoupManagerOptions,
-  ProduceConsumeInfo,
+  ProduceConsumeInfo, ProducerAppData,
   SDKRef,
   Timer
 } from "../types";
@@ -24,6 +24,8 @@ class Mediasoup extends EventEmitter {
   private _micProducerId:string|null;
   public _webcamProducer:Producer|null;
   private _webcamProducerId:string|null;
+  public _screenProducer:Producer|null;
+  private _screenProducerId:string|null;
   public _sendTransport:Transport|null;
   public _recvTransport:Transport|null;
   private _sendTransportTimeoutTimer:Timer|null;
@@ -51,6 +53,8 @@ class Mediasoup extends EventEmitter {
     this._micProducerId = null
     this._webcamProducer = null
     this._webcamProducerId = null
+    this._screenProducer = null
+    this._screenProducerId = null
     this._consumers = null
     this._sendTransport = null
     this._recvTransport = null
@@ -91,6 +95,8 @@ class Mediasoup extends EventEmitter {
     this._micProducerId = null
     this._webcamProducer = null
     this._webcamProducerId = null
+    this._screenProducer = null
+    this._screenProducerId = null
     this._consumers = null
 
     if (this._sendTransportTimeoutTimer) {
@@ -296,8 +302,8 @@ class Mediasoup extends EventEmitter {
             //mediaProfile: [{'ssrc':123, 'res':"320*240", 'fps':30, 'spatialLayer':0, 'maxBitrate':1000}],
             externData    : {
               producerInfo  : {
-                mediaType   : kind,
-                screenShare  : false,
+                mediaType   : appData.mediaType,
+                screenShare  : appData.mediaType === 'screenShare',
                 simulcastEnable  :false,
                 mute: false, //  false
                 spatialLayer: 0, //0:low 1:high
@@ -306,7 +312,7 @@ class Mediasoup extends EventEmitter {
             },
             ...appData
           };
-          if (kind === 'video') {
+          if (appData.mediaType === 'video') {
             producerData.mediaProfile = [{
               ssrc: offer.sdp.match(/a=ssrc:(\d+)/)[1] || '',
               res: '640*480',
@@ -314,6 +320,15 @@ class Mediasoup extends EventEmitter {
               spatialLayer: 0,
               maxBitrate: 1000
             }]
+          }
+          if (appData.mediaType === 'screenShare') {
+            // producerData.mediaProfile = [{
+            //   ssrc: offer.sdp.match(/a=ssrc:(\d+)/)[1] || '',
+            //   res: '640*480',
+            //   fps: '15',
+            //   spatialLayer: 0,
+            //   maxBitrate: 1000
+            // }]
           }
 
           if (localDtlsParameters === undefined){
@@ -331,10 +346,12 @@ class Mediasoup extends EventEmitter {
             this._sendTransport.id = transportId;
           }
           this.adapterRef.logger.log('produce请求反馈结果, kind: %s, producerId: %s', kind, producerId)
-          if (kind === 'audio') {
+          if (appData.mediaType === 'audio') {
             this._micProducerId = producerId
-          } else if (kind === 'video') {
+          } else if (appData.mediaType === 'video') {
             this._webcamProducerId = producerId
+          } else if (appData.mediaType === 'screenShare') {
+            this._screenProducerId = producerId
           }
           if (iceParameters) {
             this._sendTransportIceParameters = iceParameters
@@ -344,6 +361,7 @@ class Mediasoup extends EventEmitter {
           }
           this._sendTransport.fillRemoteRecvSdp({
             kind,
+            appData,
             iceParameters,
             iceCandidates,
             dtlsParameters,
@@ -381,7 +399,7 @@ class Mediasoup extends EventEmitter {
           opusStereo: 1,
           opusDtx: 1
         },
-        appData: {deviceId: audioTrack.id} 
+        appData: {deviceId: audioTrack.id, mediaType: 'audio'} as ProducerAppData
       });
       this._micProducer.on('trackended', notify => {
         //停止的原因可能是设备拔出、取消授权等
@@ -401,20 +419,37 @@ class Mediasoup extends EventEmitter {
         codecOptions:{
           videoGoogleStartBitrate: 1000
         },
-        appData: {deviceId: videoTrack.id}
+        appData: {deviceId: videoTrack.id, mediaType: 'video'} as ProducerAppData
       });
       this._webcamProducer.on('trackended', notify => {
         //停止的原因可能是设备拔出、取消授权等
-        if(stream.mediaHelper && stream.mediaHelper.screenStream) {
-          this.adapterRef.logger.warn('屏幕共享已停止')
-          this.adapterRef.instance.emit('stopScreenSharing')
-        } else {
-          this.adapterRef.logger.warn('视频轨道已停止')
-          this.adapterRef.instance.emit('videoTrackEnded')
-        }
+        this.adapterRef.logger.warn('视频轨道已停止')
+        this.adapterRef.instance.emit('videoTrackEnded')
       })
       if (!this.adapterRef.state.startPubVideoTime) {
         this.adapterRef.state.startPubVideoTime = Date.now()
+      }
+    }
+
+    if (stream.mediaHelper && stream.mediaHelper.screenStream && this._screenProducer) {
+      this.adapterRef.logger.log('屏幕共享已经publish，重复操作')
+    } else if(stream.mediaHelper && stream.mediaHelper.screenStream) {
+      const screenTrack = stream.mediaHelper.screenStream.getVideoTracks()[0]
+      this.adapterRef.logger.log('发布 screenTrack: ', screenTrack.id)
+      stream.pubStatus.screen.screen = true
+      this._screenProducer = await this._sendTransport.produce({
+        track: screenTrack,
+        codecOptions:{
+          videoGoogleStartBitrate: 1000
+        },
+        appData: {deviceId: screenTrack.id, mediaType: 'screenShare'} as ProducerAppData
+      });
+      this._screenProducer.on('trackended', notify => {
+        this.adapterRef.logger.warn('屏幕共享已停止')
+        this.adapterRef.instance.emit('stopScreenSharing')
+      })
+      if (!this.adapterRef.state.startPubScreenTime) {
+        this.adapterRef.state.startPubScreenTime = Date.now()
       }
     }
   }

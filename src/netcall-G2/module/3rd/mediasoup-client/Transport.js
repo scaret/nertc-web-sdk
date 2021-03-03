@@ -234,6 +234,7 @@ class Transport extends EnhancedEventEmitter_1.EnhancedEventEmitter {
                 track,
                 encodings: normalizedEncodings,
                 codecOptions,
+                appData,
                 codec
             });
             try {
@@ -281,9 +282,10 @@ class Transport extends EnhancedEventEmitter_1.EnhancedEventEmitter {
             throw error;
         });
     }
-    async fillRemoteRecvSdp({ kind, iceParameters, iceCandidates, dtlsParameters, sctpParameters, sendingRtpParameters, codecOptions, offer, audioProfile }) {
+    async fillRemoteRecvSdp({ kind, appData, iceParameters, iceCandidates, dtlsParameters, sctpParameters, sendingRtpParameters, codecOptions, offer, audioProfile }) {
         await this._handler.fillRemoteRecvSdp({
             kind,
+            appData,
             iceParameters,
             iceCandidates,
             dtlsParameters,

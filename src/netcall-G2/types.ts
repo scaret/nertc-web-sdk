@@ -29,6 +29,7 @@ export interface AdapterRef {
     startSessionTime: number;
     endSessionTime: number;
     startPubVideoTime: number;
+    startPubScreenTime: number;
   };
   nim?: any;
   instance: Client;
@@ -90,6 +91,11 @@ export interface AdapterRef {
   requestId: {
     [apiName: string]: number;
   }
+}
+
+export interface ProducerAppData{
+  deviceId: string;
+  mediaType: 'audio'|'video'|'screenShare';
 }
 
 export interface NetStatusItem{

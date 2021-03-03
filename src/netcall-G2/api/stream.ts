@@ -180,9 +180,6 @@ class Stream extends EventEmitter {
     this.cameraId = options.cameraId || ''
     this.video = options.video || false
     this.screen = options.screen || false
-    if (this.screen) {
-      this.video = false
-    }
     this.client = options.client
     this.audioSource = options.audioSource || null
     this.videoSource = options.videoSource || null
@@ -391,9 +388,6 @@ class Stream extends EventEmitter {
       this.client.adapterRef.channelInfo.sessionConfig.videoQuality = this.videoProfile.resolution
       this.client.adapterRef.channelInfo.sessionConfig.videoFrameRate = this.videoProfile.frameRate
     }
-    if(this.screen){
-      this.video = false
-    }
     this.client.apiFrequencyControl({
       name: 'init',
       code: 0,
@@ -414,11 +408,13 @@ class Stream extends EventEmitter {
       if (!this.mediaHelper){
         throw new Error('No MediaHelper');
       }
-      await this.mediaHelper.getStream({
-        audio: this.audio,
-        audioDeviceId: this.microphoneId,
-        audioSource: this.audioSource
-      })
+      if (this.audio){
+        await this.mediaHelper.getStream({
+          audio: this.audio,
+          audioDeviceId: this.microphoneId,
+          audioSource: this.audioSource
+        })
+      }
     } catch (e) {
       this.client.adapterRef.logger.log('打开mic失败: ', e)
       this.audio = false
@@ -435,12 +431,13 @@ class Stream extends EventEmitter {
       if (!this.mediaHelper){
         throw new Error('No Media Helper');
       }
-      await this.mediaHelper.getStream({
-        video: this.video,
-        videoSource: this.videoSource,
-        videoDeviceId: this.cameraId,
-        screen: this.screen
-      })
+      if (this.video){
+        await this.mediaHelper.getStream({
+          video: this.video,
+          videoSource: this.videoSource,
+          videoDeviceId: this.cameraId,
+        })
+      }
     } catch (e) {
       this.client.adapterRef.logger.log('打开camera失败: ', e)
       this.video = false
@@ -453,6 +450,30 @@ class Stream extends EventEmitter {
       } else {
         this.client.emit('deviceError', 'video')
       }
+    }
+
+    try {
+      if (!this.mediaHelper){
+        throw new Error('No Media Helper');
+      }
+      if (this.screen){
+        await this.mediaHelper.getStream({
+          screen: this.screen
+        })
+      }
+    } catch (e) {
+      this.client.adapterRef.logger.log('打开屏幕共享失败: ', e)
+      console.error(e);
+      // this.video = false
+      // if (e.message && e.message.indexOf('Permission denied') > -1) {
+      //   this.client.emit('accessDenied', 'video')
+      // } else if (e.message && e.message.indexOf('not found') > -1) {
+      //   this.client.emit('notFound', 'video')
+      // } else if (e.message && e.message.indexOf('not start video source') > -1) {
+      //   this.client.emit('beOccupied', 'video')
+      // } else {
+      //   this.client.emit('deviceError', 'video')
+      // }
     }
   }
   
