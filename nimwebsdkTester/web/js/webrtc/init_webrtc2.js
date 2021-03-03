@@ -69,7 +69,15 @@ window.rtc = {
 // 获取大白测试页环境
 function loadEnv() {
   const env = globalConfig.env = $('#part-env input[name="env"]:checked').val()
-  $('#appkey').val(WEBRTC2_ENV[env].appkey)
+  if (window.localStorage && window.localStorage.getItem(`appkey-${env}`)){
+    $('#appkey').val(window.localStorage.getItem(`appkey-${env}`))
+    if (window.localStorage.getItem(`AppSecret-${env}`)){
+      $('#AppSecret').val(window.localStorage.getItem(`AppSecret-${env}`))
+    }
+  }else{
+    $('#appkey').val(WEBRTC2_ENV[env].appkey)
+    $('#AppSecret').val(WEBRTC2_ENV[env].AppSecret)
+  }
   $('#uid').val(Math.ceil(Math.random() * 1e4))
   //$('#channelName').val(Math.ceil(Math.random() * 1e10))
   const channelName = window.localStorage ? window.localStorage.getItem("channelName") : "";
@@ -90,6 +98,10 @@ $('#setAppkey').on('click', () => {
   console.log('更新 appkey')
   init()
 })
+$('#clearLocalStorage').on('click', () => {
+  window.localStorage.clear();
+  window.location.reload();
+})
 
 $('#config').on('click', () => {
   if ($("#sessionConf").css("display") == 'none') {
@@ -108,21 +120,23 @@ $('input[name="mode"]').on('click', () => {
 loadEnv()
 
 async function loadTokenByAppKey(){
-  const config = Object.values(WEBRTC2_ENV).find((conf)=> conf.appkey === $("#appkey").val());
+  const config = WEBRTC2_ENV[globalConfig.env];
+  let appkey = $("#appkey").val();
+  let AppSecret = $("#AppSecret").val();
   let uid = $("#uid").val();
   let channelName = $("#channelName").val();
-  if (config && config.AppSecret && uid && channelName){
+  if (AppSecret && uid && channelName){
     let Nonce = Math.ceil(Math.random() * 1e9);
     let CurTime = Math.ceil(Date.now() / 1000);
-    let CheckSum = sha1(`${config.AppSecret}${Nonce}${CurTime}`);
+    let CheckSum = sha1(`${AppSecret}${Nonce}${CurTime}`);
     const headers = {
       'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
-      AppKey: config.appkey,
+      AppKey: appkey,
       Nonce,
       CurTime,
       CheckSum,
     }
-    // console.log("config.getTokenUrl", config.getTokenUrl, "headers", headers, "appSecret", config.AppSecret);
+    // console.log("config.getTokenUrl", config.getTokenUrl, "headers", headers, "appSecret", AppSecret);
     $("#token").val("");
     const data = await axios.post(config.getTokenUrl, `uid=${encodeURIComponent(uid)}&channelName=${encodeURIComponent(channelName)}`, {headers});
     if (data.data && data.data.token){
@@ -453,6 +467,8 @@ $('#joinChannel-btn').on('click', () => {
   const channelName = $('#channelName').val()
   if (window.localStorage){
     window.localStorage.setItem("channelName", channelName);
+    window.localStorage.setItem(`appkey-${globalConfig.env}`, $("#appkey").val());
+    window.localStorage.setItem(`AppSecret-${globalConfig.env}`, $("#AppSecret").val());
   }
   const uid = $('#uid').val()
   // 实时音录制
