@@ -32,9 +32,20 @@ var WEBRTC2_ENV = {
     checkSumUrl: "https://nrtc.netease.im/demo/getChecksum.action",
     getTokenUrl: 'https://api.netease.im/nimserver/user/getToken.action',
     AppSecret: 'fffeeb78f165'
-  },
-  
+  }
 };
+
+const test = {
+  "appkey": "09a39532e122c912241b05f6f92c97b7",
+  "demoServer": "https://yunxinent-demo.netease.im/nrtcproxy/demo/getChecksum.action",
+  "channelServer": "https://yunxinent-demo.netease.im/nrtcproxy/nrtc/getChannelInfos.action",
+  "statisticsServer": "https://yunxinent-demo.netease.im/report/statics/report/common/form",
+  "roomServer": "https://yunxinent-demo.netease.im/v2/sdk/rooms",
+  "compatServer": "https://yunxinent-demo.netease.im/lbs/cc/nrtc/v2",
+  "nosLbsServer": "https://yunxinent-demo.netease.im/lbs/noslbs443.jsp",
+  "nosUploadSever": "https://yunxinent-demo.netease.im",
+  "nosTokenServer": "https://yunxinent-demo.netease.im/report/sdklog/getToken"
+}
 
 const roomconfig = document.querySelector('select#roomconfig');
 var debugContentNode = $('#debug-content').get(0)
@@ -72,12 +83,13 @@ function loadEnv() {
   if (window.localStorage && window.localStorage.getItem(`appkey-${env}`)){
     $('#appkey').val(window.localStorage.getItem(`appkey-${env}`))
     if (window.localStorage.getItem(`AppSecret-${env}`)){
-      $('#AppSecret').val(window.localStorage.getItem(`AppSecret-${env}`))
+      //$('#AppSecret').val(window.localStorage.getItem(`AppSecret-${env}`))
     }
   }else{
     $('#appkey').val(WEBRTC2_ENV[env].appkey)
-    $('#AppSecret').val(WEBRTC2_ENV[env].AppSecret)
+    //$('#AppSecret').val(WEBRTC2_ENV[env].AppSecret)
   }
+  $('#appkey').val('09a39532e122c912241b05f6f92c97b7')
   $('#uid').val(Math.ceil(Math.random() * 1e4))
   //$('#channelName').val(Math.ceil(Math.random() * 1e10))
   const channelName = window.localStorage ? window.localStorage.getItem("channelName") : "";
@@ -481,9 +493,9 @@ $('#joinChannel-btn').on('click', () => {
 
   let channelServer=null; statisticsServer=null; roomServer=null;
   if ($('#isPrivatization').prop('checked')) {
-    channelServer = $('#channelServer').val()
-    statisticsServer = $('#statisticsServer').val()
-    roomServer = $('#roomServer').val()
+    channelServer = $('#channelServer').val() || 'https://yunxinent-demo.netease.im/nrtcproxy/nrtc/getChannelInfos.action'
+    statisticsServer = $('#statisticsServer').val() || 'https://yunxinent-demo.netease.im/report/statics/report/common/form'
+    roomServer = $('#roomServer').val() || '"https://yunxinent-demo.netease.im/v2/sdk/rooms"'
   }
   
   //const mediaServer = $('#mediaServer').val()

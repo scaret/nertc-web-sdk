@@ -784,8 +784,8 @@ export interface RecordConfig{
 export interface JoinOptions{
   channelName: string;
   uid: number;
+  token: string;
   wssArr?: string[]|null;
-  token?: string;
   joinChannelLiveConfig?: LiveConfig;
   joinChannelRecordConfig?: RecordConfig;
   neRtcServerAddresses?:NeRtcServerAddresses

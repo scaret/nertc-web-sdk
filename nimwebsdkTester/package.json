@@ -33,7 +33,7 @@
     "foo": "NODE_ENV=production node build/foo.js",
     "node": "node app.js",
     "py": "cd python && python manage.py runserver_plus --cert server.crt 0.0.0.0:3000",
-    "https-server": "badcert --no-reload web",
+    "https-server": "badcert --no-reload web --p 8083",
     "http-server": "http-server --p 8082"
   },
   "author": "zyy",
