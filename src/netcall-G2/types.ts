@@ -1,4 +1,3 @@
-import {Peer} from "./module/3rd/protoo-client";
 import {MediaHelper} from "./module/media";
 import {Stream} from "./api/stream";
 import {Mediasoup} from "./module/mediasoup";
@@ -668,17 +667,17 @@ export interface Client{
   getMediaHlperByUid:(streamId: number)=>MediaHelper;
   adapterRef: AdapterRef;
   apiFrequencyControl: (event:any)=>void;
-  emit:(...args:any)=>void
+  emit:(eventName: string, eventData?:any)=>void
   _roleInfo: {
     userRole: number;
     audienceList: {[uid:number]: boolean}
   }
-  publish: (...args:any)=>void
-  apiEventReport: (...args:any)=>void
-  getPeer: (...args:any)=>any
-  leave: (...args:any)=>any
-  addSsrc: (...args:any)=>any
-  reBuildRecvTransport: (...args:any)=>any
+  publish: (stream: Stream)=>void
+  apiEventReport: (eventName: string, eventData: any)=>void
+  getPeer: (sendOrRecv: 'send'|'recv')=>any
+  leave: ()=>any
+  addSsrc: (uid:number, kind:string, ssrc:number)=>any
+  reBuildRecvTransport: ()=>any
   _params: any
   setSessionConfig: any
   [key:string]: any
@@ -786,6 +785,7 @@ export interface JoinOptions{
   channelName: string;
   uid: number;
   wssArr?: string[]|null;
+  token?: string;
   joinChannelLiveConfig?: LiveConfig;
   joinChannelRecordConfig?: RecordConfig;
   neRtcServerAddresses?:NeRtcServerAddresses
@@ -804,6 +804,173 @@ export interface JoinChannelRequestParam4WebRTC2{
   token?: string;
 }
 
+export interface WatermarkSetting{
+  type: 'text'|'timestamp'|'image';
+  content: string;
+  imageUrls?: string[];
+  loop: boolean;
+  interval?: number;
+  elem: HTMLElement|null;
+  loopTimer?: Timer|null;
+  loopIndex: number;
+  imgElems?: HTMLImageElement[]
+  style: {
+    [key:string]: string;
+  }
+}
+
+/**
+ * 画布水印配置
+ */
+export interface NERtcCanvasWatermarkConfig {
+
+  /**
+   * 文字水印 最对支持10个
+   */
+  textWatermarks:NERtcTextWatermarkConfig[] ;
+
+  /**
+   * 时间戳水印
+   */
+  timestampWatermarks:NERtcTimestampWatermarkConfig ;
+
+  /**
+   * 图片水印，最多支持4个
+   */
+  imageWatermarks:NERtcImageWatermarkConfig[] ;
+}
+/**
+ * 文字水印设置参数
+ */
+export interface NERtcTextWatermarkConfig {
+
+  /**
+   * 文字内容。
+   * <br>支持自动换行。当文字内容长度超过水印框宽度时，会自动换行<br/>
+   * <br>字符串长度没有限制。最终显示受字体大小和水印框大小的影响，超出水印框的部分不显示<br/>
+   */
+  content:string;
+
+  /**
+   * 字体大小。默认值为 10，相当于 144 dpi 设备上的 10 x 15 磅
+   */
+  fontSize: number;
+
+  /**
+   * 字体颜色。默认白色
+   */
+  fontColor: number;
+
+  /**
+   * 水印框左上角与视频画布左上角的水平距离。单位为像素（pixel），默认值为 0
+   */
+  offsetX: number;
+
+  /**
+   * 水印框左上角与视频画布左上角的垂直距离。单位为像素（pixel），默认值为 0。
+   */
+  offsetY: number;
+
+  /**
+   * 水印框颜色。默认灰色（支持透明度）
+   */
+  wmColor: number;
+
+  /**
+   * 水印框的宽度。单位为像素（pixel），默认值为 0 表示没有水印框
+   */
+  wmWidth: number;
+
+  /**
+   * 水印框的高度。单位为像素（pixel），默认值为 0 表示没有水印框
+   */
+  wmHeight: number;
+}
+
+
+/**
+ * 时间戳水印，格式为 yyyy-MM-dd HH:mm:ss
+ */
+export interface NERtcTimestampWatermarkConfig {
+
+  content?: string;
+  /**
+   * 字体大小。默认值为 10，相当于 144 dpi 设备上的 10 x 15 磅
+   */
+  fontSize: number;
+
+  /**
+   * 字体颜色。默认白色
+   */
+  fontColor: number;
+
+  /**
+   * 水印框左上角与视频画布左上角的水平距离。单位为像素（pixel），默认值为 0
+   */
+  offsetX: number;
+
+  /**
+   * 水印框左上角与视频画布左上角的垂直距离。单位为像素（pixel），默认值为 0。
+   */
+  offsetY: number;
+
+  /**
+   * 水印框颜色。默认灰色（支持透明度）
+   */
+  wmColor: number;
+
+  /**
+   * 水印框的宽度。单位为像素（pixel），默认值为 0 表示没有水印框
+   */
+  wmWidth: number;
+
+  /**
+   * 水印框的高度。单位为像素（pixel），默认值为 0 表示没有水印框
+   */
+  wmHeight: number;
+}
+
+
+/**
+ * 图片水印设置参数
+ */
+export interface NERtcImageWatermarkConfig {
+
+  /**
+   * 水印图片
+   */
+  imageUrls: string[];
+
+  /**
+   * 水印框左上角与视频画布左上角的水平距离。单位为像素（pixel），默认值为 0
+   */
+  offsetX: number;
+
+  /**
+   * 水印框左上角与视频画布左上角的垂直距离。单位为像素（pixel），默认值为 0。
+   */
+  offsetY: number;
+
+  /**
+   * 水印框的宽度。单位为像素（pixel），默认值为 0 表示没有水印框
+   */
+  wmWidth?: number;
+
+  /**
+   * 水印框的高度。单位为像素（pixel），默认值为 0 表示没有水印框
+   */
+  wmHeight?: number;
+  /**
+   * 播放帧率。默认 0 帧
+   */
+  fps: number;
+
+  /**
+   * 是否设置循环。默认循环，设置为false后水印数组播放完毕后消失
+   */
+  loop: boolean;
+}
+  
 export interface NeRtcServerAddresses{
   channelServer?: string;
   statisticsServer?: string;
@@ -813,7 +980,14 @@ export interface NeRtcServerAddresses{
 
 export interface ValidIntegerOptions{
   tag: string;
-  value: number;
+  value: any;
+  min?: number;
+  max?: number;
+}
+
+export interface ValidFloatOptions{
+  tag: string;
+  value: any;
   min?: number;
   max?: number;
 }

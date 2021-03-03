@@ -16,13 +16,24 @@ const globalConfig = window.globalConfig = {
 
 var WEBRTC2_ENV = {
   DEV: {
-    appkey: "eca23f68c66d4acfceee77c200200359", //"eca23f68c66d4acfceee77c200200359","be8648374778fdfc3e445d5a0aac0c3b"
-    token: ""
+    appkey: 'eca23f68c66d4acfceee77c200200359', //'3bbb213564b441dfcc26eb55731c8a8c',
+    checkSumUrl: "https://webtest.netease.im/nrtcproxy/demo/getChecksum.action",
+    getTokenUrl: 'https://imtest.netease.im/nimserver/user/getToken.action',
+    AppSecret: 'c9df0b60c1ba'
+  },
+  SAFEDEV: {
+    appkey: 'abb4cce04e5e4a7b7fc381ba799878dc', //'3bbb213564b441dfcc26eb55731c8a8c',
+    checkSumUrl: "https://webtest.netease.im/nrtcproxy/demo/getChecksum.action",
+    getTokenUrl: 'https://imtest.netease.im/nimserver/user/getToken.action',
+    AppSecret: '1209afc826ea'
   },
   PROD: {
     appkey: "6acf024e190215b685905444b6e57dd7",
-    token: ""
-  }
+    checkSumUrl: "https://nrtc.netease.im/demo/getChecksum.action",
+    getTokenUrl: 'https://api.netease.im/nimserver/user/getToken.action',
+    AppSecret: 'fffeeb78f165'
+  },
+  
 };
 
 const roomconfig = document.querySelector('select#roomconfig');
@@ -58,8 +69,15 @@ window.rtc = {
 // 获取大白测试页环境
 function loadEnv() {
   const env = globalConfig.env = $('#part-env input[name="env"]:checked').val()
-  $('#appkey').val(WEBRTC2_ENV[env].appkey)
-  $('#token').val(WEBRTC2_ENV[env].token)
+  if (window.localStorage && window.localStorage.getItem(`appkey-${env}`)){
+    $('#appkey').val(window.localStorage.getItem(`appkey-${env}`))
+    if (window.localStorage.getItem(`AppSecret-${env}`)){
+      $('#AppSecret').val(window.localStorage.getItem(`AppSecret-${env}`))
+    }
+  }else{
+    $('#appkey').val(WEBRTC2_ENV[env].appkey)
+    $('#AppSecret').val(WEBRTC2_ENV[env].AppSecret)
+  }
   $('#uid').val(Math.ceil(Math.random() * 1e4))
   //$('#channelName').val(Math.ceil(Math.random() * 1e10))
   const channelName = window.localStorage ? window.localStorage.getItem("channelName") : "";
@@ -80,6 +98,10 @@ $('#setAppkey').on('click', () => {
   console.log('更新 appkey')
   init()
 })
+$('#clearLocalStorage').on('click', () => {
+  window.localStorage.clear();
+  window.location.reload();
+})
 
 $('#config').on('click', () => {
   if ($("#sessionConf").css("display") == 'none') {
@@ -97,6 +119,39 @@ $('input[name="mode"]').on('click', () => {
 
 loadEnv()
 
+async function loadTokenByAppKey(){
+  const config = WEBRTC2_ENV[globalConfig.env];
+  let appkey = $("#appkey").val();
+  let AppSecret = $("#AppSecret").val();
+  let uid = $("#uid").val();
+  let channelName = $("#channelName").val();
+  if (AppSecret && uid && channelName){
+    let Nonce = Math.ceil(Math.random() * 1e9);
+    let CurTime = Math.ceil(Date.now() / 1000);
+    let CheckSum = sha1(`${AppSecret}${Nonce}${CurTime}`);
+    const headers = {
+      'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+      AppKey: appkey,
+      Nonce,
+      CurTime,
+      CheckSum,
+    }
+    // console.log("config.getTokenUrl", config.getTokenUrl, "headers", headers, "appSecret", AppSecret);
+    $("#token").val("");
+    const data = await axios.post(config.getTokenUrl, `uid=${encodeURIComponent(uid)}&channelName=${encodeURIComponent(channelName)}`, {headers});
+    if (data.data && data.data.token){
+      $("#token").val(data.data.token);
+    }else{
+      console.error(data.data || data);
+    }
+  }else{
+    $("#token").val("");
+  }
+}
+
+$("#uid").on("change", loadTokenByAppKey);
+$("#channelName").on("change", loadTokenByAppKey);
+
 function init() {
   if (globalConfig.inited) {
     /*addLog('已经初始化过了，刷新页面重试!!')
@@ -108,11 +163,10 @@ function init() {
   globalConfig.inited = true
   addLog('初始化实例')
   const appkey = $('#appkey').val()
-  const token = $('#token').val() || ''
+  loadTokenByAppKey();
   const chrome = $('#part-env input[name="screen-type"]:checked').val()
   rtc.client = WebRTC2.createClient({
     appkey,
-    token,
     debug: true,
   })
   initDevices()
@@ -413,6 +467,8 @@ $('#joinChannel-btn').on('click', () => {
   const channelName = $('#channelName').val()
   if (window.localStorage){
     window.localStorage.setItem("channelName", channelName);
+    window.localStorage.setItem(`appkey-${globalConfig.env}`, $("#appkey").val());
+    window.localStorage.setItem(`AppSecret-${globalConfig.env}`, $("#AppSecret").val());
   }
   const uid = $('#uid').val()
   // 实时音录制
@@ -443,6 +499,7 @@ $('#joinChannel-btn').on('click', () => {
   rtc.client.join({
     channelName,
     uid: +uid,
+    token: $("#token").val(),
     wssArr: $('#isGetwayAddrConf').prop('checked') ? [$('#isGetwayAddrConf').prop('checked') && $('#getwayAddr').val()] : null,
     joinChannelRecordConfig: {
       isHostSpeaker,
@@ -515,6 +572,7 @@ $('#leaveChannel-btn').on('click', () => {
   if (rtc.videoSource) {
     rtc.videoSource.map(track=>{track.stop()})
   }
+  watermarks = {local: null, remote: {}};
 })
 
 $('#tasks-btn').on('click', () => {
@@ -649,6 +707,15 @@ function initLocalStream(audioSource, videoSource) {
     audioSource,
     videoSource
   })
+  if (watermarks.local){
+    rtc.localStream.setCanvasWatermarkConfigs(watermarks.local);
+  }else if ($('#idWatermark').prop('checked')){
+    rtc.localStream.setCanvasWatermarkConfigs({
+      textWatermarks: [{
+        content: 'localStream ' + $('#uid').val(),
+      }],
+    });
+  }
   const videoQuality = $('#sessionConfigVideoQuality').val()
   const frameRate = $('#sessionConfigVideoFrameRate').val()
   rtc.localStream.setVideoProfile({
@@ -717,6 +784,15 @@ function subscribe(remoteStream) {
   rtc.client.subscribe(remoteStream).then(()=>{
     console.log('本地 subscribe 成功')
     addLog('本地 subscribe 成功')
+    if (watermarks.remote[remoteStream.streamID]){
+      remoteStream.setCanvasWatermarkConfigs(watermarks.remote[remoteStream.streamID]);
+    }else if ($('#idWatermark').prop('checked')){
+      remoteStream.setCanvasWatermarkConfigs({
+        textWatermarks: [{
+          content: 'remoteStream ' + remoteStream.streamID,
+        }],
+      });
+    }
   }).catch(err=>{
     addLog('本地 subscribe 失败')
     console.log('本地 subscribe 失败: ', err)
@@ -1469,6 +1545,153 @@ $('#setAudioMixingVolume').click(function(){
   } 
 });
 
+/**
+ * ----------------------------------------
+ *              水印相关
+ * ----------------------------------------
+ */
+let watermarks = {local: null, remote: {}};
+$("#clearWatermark").on('click', ()=>{
+  let stream;
+  let uid = $("#watermarkUid").val();
+  if (uid) {
+    stream = rtc.remoteStreams[uid];
+  } else{
+    stream = rtc.localStream;
+  }
+  if (!stream){
+    return addLog('水印：请检查uid是否正确')
+  }
+  addLog('清空水印');
+  if(uid){
+    watermarks.remote[uid] = {};
+  }else{
+    watermarks.local = {};
+  }
+  stream.setCanvasWatermarkConfigs({});
+});
+$("#setWatermark").on('click', ()=>{
+  let stream, watermarkConf;
+  let uid = $("#watermarkUid").val();
+  if (uid) {
+    stream = rtc.remoteStreams[uid];
+    if (!watermarks.remote[uid]){
+      watermarks.remote[uid] = {};
+    }
+    watermarkConf = watermarks.remote[uid]
+  } else{
+    stream = rtc.localStream;
+    if (!watermarks.local){
+      watermarks.local = {};
+    }
+    watermarkConf = watermarks.local;
+  }
+  if (!stream){
+    return addLog('水印：请检查uid是否正确')
+  }
+  const watermarkOptions = {};
+  const type = $('#watermarkType').val()
+  if ($('#watermarkContent').val()) {
+    watermarkOptions.content = $('#watermarkContent').val()
+  }
+  if ($('#watermarkFontColor').val()) {
+    watermarkOptions.fontColor = toIntegerOrStringOrNull($('#watermarkFontColor').val())
+  }
+  if ($('#watermarkFontSize').val()) {
+    watermarkOptions.fontSize = toIntegerOrStringOrNull($('#watermarkFontSize').val())
+  }
+  if ($('#watermarkOffsetX').val()) {
+    watermarkOptions.offsetX = toIntegerOrStringOrNull($('#watermarkOffsetX').val())
+  }
+  if ($('#watermarkOffsetY').val()) {
+    watermarkOptions.offsetY = toIntegerOrStringOrNull($('#watermarkOffsetY').val())
+  }
+  if ($('#watermarkWmWidth').val()) {
+    watermarkOptions.wmWidth = toIntegerOrStringOrNull($('#watermarkWmWidth').val())
+  }
+  if ($('#watermarkWmHeight').val()) {
+    watermarkOptions.wmHeight = toIntegerOrStringOrNull($('#watermarkWmHeight').val())
+  }
+  if ($('#watermarkWmColor').val()) {
+    watermarkOptions.wmColor = toIntegerOrStringOrNull($('#watermarkWmColor').val())
+  }
+  if ($('#watermarkImageUrls').val()) {
+    watermarkOptions.imageUrls = $('#watermarkImageUrls').val()
+  }
+  if ($('#watermarkFps').val()) {
+    watermarkOptions.fps = parseFloat($('#watermarkFps').val())
+  }
+  if (!$('#watermarkLoop').prop("checked")) {
+    watermarkOptions.loop = false
+  }
+  switch(type){
+    case "text":
+      if (!watermarkConf.textWatermarks){
+        watermarkConf.textWatermarks = [];
+      }
+      watermarkConf.textWatermarks.push(watermarkOptions);
+      break;
+    case "timestamp":
+      watermarkConf.timestampWatermarks = watermarkOptions;
+      break;
+    case "image":
+      if (!watermarkConf.imageWatermarks){
+        watermarkConf.imageWatermarks = [];
+      }
+      watermarkConf.imageWatermarks.push(watermarkOptions);
+      break;
+  }
+  console.log(`水印设置 UID ${stream.streamID}\n${JSON.stringify(watermarkConf, null, 2)}`);
+  stream.setCanvasWatermarkConfigs(watermarkConf);
+
+})
+$("#showUpdateWatermark").on("click", function(){
+  $("#updateWatermarkPanel").show();
+  let uid = $("#watermarkUid").val();
+  let watermarkConf;
+  if (uid) {
+    watermarkConf = watermarks.remote[uid];
+  } else{
+    watermarkConf = watermarks.local;
+  }
+  $("#watermarkConfStr").val(JSON.stringify(watermarkConf, null, 2));
+});
+
+$("#doUpdateWatermark").on("click", function (){
+  let stream,watermarkConf;
+  let uid = $("#watermarkUid").val();
+  if (uid) {
+    stream = rtc.remoteStreams[uid];
+  } else{
+    stream = rtc.localStream;
+  }
+  if (!stream){
+    return alert('水印：请检查uid是否正确')
+  }
+  let wm;
+  try{
+    wm = JSON.parse($("#watermarkConfStr").val())
+  }catch(e){
+    alert("JSON格式不对");
+    throw e;
+  }
+
+  if (uid) {
+    watermarks.remote[uid] = wm;
+  } else{
+    watermarks.local = wm;
+  }
+
+  console.log(`水印设置 UID ${stream.streamID}\n${JSON.stringify(wm, null, 2)}`);
+  stream.setCanvasWatermarkConfigs(wm);
+  
+});
+
+
+$("#closeWatermarkPanel").on("click", function (){
+  $("#updateWatermarkPanel").hide();
+});
+
 $("#sdkVersion").text(WebRTC2.VERSION);
 $("#sdkBuild").text(WebRTC2.BUILD);
 
@@ -1565,6 +1788,19 @@ function formatSeconds(value) {
       result = "" + parseInt(hourTime) + ":" + parseInt(minuteTime) + ":" + parseInt(secondTime);
     }
     return result;
+}
+
+function toIntegerOrStringOrNull(val){
+  //数字开头转为数字，否则保留为字符串
+  if (!val){
+    return null
+  }else if (val.substr(0, 2) === "0x"){
+    return parseInt(val, 16)
+  }else if (/^\-?[\d\.]+$/.test(val)){
+    return parseFloat(val)
+  }else{
+    return val;
+  }
 }
 
 $('#clear-btn').on('click', () => {

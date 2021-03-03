@@ -29,4 +29,9 @@ obj.currentBranch = function () {
   return result;
 }
 
+obj.currentCommit = function () {
+  const result = execSync("git rev-parse --short HEAD", baseOpt).trim();
+  return result;
+}
+
 module.exports = obj

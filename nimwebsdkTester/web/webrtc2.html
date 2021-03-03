@@ -34,13 +34,11 @@
           <div class="line">
             appkey:
             <input type="text" id="appkey">
+            <input type="text" id="AppSecret">
             <button type="button" id='setAppkey'>设置appkey</button>
+            <button type="button" id='clearLocalStorage'>重置</button>
           </div>
 
-          <div class="line" style="display: none">
-            token:
-            <input type="text" id="token">
-          </div>
           <div class="line">
             网关地址:
             <input type="text" id="getwayAddr" value='webrtcgwcn.netease.im/?ip=59.111.190.69:2060'>
@@ -107,6 +105,10 @@
           <div class="line">
             UID：
             <input type="text" id="uid" value="">
+          </div>
+          <div class="line">
+            token:
+            <input type="text" id="token">
           </div>
           <div class="line">
             <button type="button" id="joinChannel-btn">加入房间</button>
@@ -471,7 +473,83 @@
                 </div>
             </div>
           </div>
+          <p class="block-header">水印功能</p>
+          <div class="part">
+            <div class="line">
+              ID水印
+              <input type="checkbox" id="idWatermark" checked>
+            </div>
+            <div class="line">
+              操作对象(不填则操作自己)
+              <input type="text" id="watermarkUid">
+            </div>
+          </div>
+          <div class="part">
+            <div class="line">
+              <label>
+                类型type <select id='watermarkType'>
+                <option value='text'>text</option>
+                <option value='timestamp'>timestamp</option>
+                <option value='image'>image</option>
+              </select>
+              </label><br/>
+              <label>
+                内容content
+                <input placeholder="" type="text" id="watermarkContent">
+              </label><br/>
+              <label>
+                颜色fontColor
+                <input placeholder="例：0xFFFF0000" type="text" id="watermarkFontColor">
+              </label><br/>
+              <label>
+                大小fontSize
+                <input placeholder="例：20" type="text" id="watermarkFontSize">
+              </label><br/>
+              <label>
+                左距离offsetX
+                <input placeholder="例：20" type="text" id="watermarkOffsetX">
+              </label><br/>
+              <label>
+                上距离offsetY
+                <input placeholder="例：20" type="text" id="watermarkOffsetY">
+              </label><br/>
+              <label>
+                宽度wmWidth
+                <input placeholder="例：20" type="text" id="watermarkWmWidth">
+              </label><br/>
+              <label>
+                高度wmHeight
+                <input placeholder="例：20" type="text" id="watermarkWmHeight">
+              </label><br/>
+              <label>
+                背景色wmColor
+                <input placeholder="例：0xFF000000" type="text" id="watermarkWmColor">
+              </label><br/>
+              <label>
+                图片
+                <select id="watermarkImageUrls" multiple>
+                  <option value="https://netease.im/res/image/m/logo_big.png">云信</option>
+                  <option value="https://static.chiefmore.com/u/cms/www/201908/09100143mbgu.jpg">七鱼</option>
+                  <option value="https://img.51miz.com/Element/00/83/05/25/69a3270b_E830525_0ce9bbdf.png">网易云音乐</option>
+                  <option value="https://dun.163.com/public/res/news/qr-logo.jpg">易盾</option>
+                </select>
+              </label><br/>
+              <label>
+                图片帧率fps
+                <input placeholder="默认0帧" type="text" id="watermarkFps">
+              </label><br/>
+              <label>
+                图片是否循环loop
+                <input type="checkbox" id="watermarkLoop" checked>
+              </label><br/>
+              <button id="setWatermark">增加</button>
+              <button id="clearWatermark">清空该用户水印</button>
+              <button id="showUpdateWatermark">【高级】更新</button>
+            </div>
+          </div>
+        
 
+        
           <p class="block-header">检查视频卡顿</p>
           <div class="part">
             <canvas id="struckCanvas"></canvas>
@@ -503,8 +581,17 @@
     </div>
   </div>
 
+  <div id="updateWatermarkPanel" style="position: absolute; left: 0; top: 0; min-width: 500px; background: yellow; border: 1px solid black; display: none;">
+    <textarea cols="80" rows="40" id="watermarkConfStr"></textarea>
+    <br/>
+    <button id="doUpdateWatermark">更新</button>
+    <button id="closeWatermarkPanel">关闭</button>
+  </div>
+
   <script src="./js/lib/graph.js"></script>
   <script src="./js/lib/common.js"></script>
+  <script src="./js/lib/sha1.min.js"></script>
+  <script src="./js/lib/axios.min.js"></script>
 
   <script src="./js/nim/NIM_Web_WebRTC2.js"></script>
   <script src="./js/lib/jquery.min.js"></script>

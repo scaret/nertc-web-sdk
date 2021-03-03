@@ -61,10 +61,10 @@ config = merge(config, {
               search: /\n.*WEBPACK_STRING_REPLACE_VERSION.*\n/,
               replace: `\nconst SDK_VERSION="${webrtcG2Version}";\n`,
             },
-            /*{
+            {
               search: /\n.*WEBPACK_STRING_REPLACE_BUILD.*\n/,
               replace: `\nconst BUILD="${git.describe()}";\n`,
-            },*/
+            },
             {
               search: /\n(.*)(development)(.*WEBPACK_STRING_REPLACE_ENV.*)\n/,
               replace: `\n$1${process.env.NODE_ENV}$3\n`,
