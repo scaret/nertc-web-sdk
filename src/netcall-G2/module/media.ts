@@ -7,7 +7,7 @@ import { ajax } from '../util/ajax'
 import {
   AdapterRef, AudioMixingOptions,
   GetStreamConstraints,
-  MediaHelperOptions, MixAudioConf,
+  MediaHelperOptions, MediaTypeShort, MixAudioConf,
   SDKRef
 } from "../types";
 class MediaHelper extends EventEmitter {
@@ -448,7 +448,7 @@ class MediaHelper extends EventEmitter {
     }
   }
   
-  updateStream(kind:string, track:MediaStreamTrack) {
+  updateStream(kind:MediaTypeShort, track:MediaStreamTrack) {
     if (kind === 'audio') {
       this.audioStream = new MediaStream()
       this.micTrack = track;
@@ -464,7 +464,7 @@ class MediaHelper extends EventEmitter {
     }
   }
 
-  stopStream(kind:string) {
+  stopStream(kind:MediaTypeShort) {
     let type = 'set_mic'
     if (kind === 'audio' && this.micStream) {
       this._stopTrack(this.micStream)

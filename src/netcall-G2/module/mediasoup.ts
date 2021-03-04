@@ -2,7 +2,7 @@ import { EventEmitter } from 'eventemitter3'
 import * as mediasoupClient from './3rd/mediasoup-client/'
 import {
   AdapterRef,
-  MediasoupManagerOptions, MediaType,
+  MediasoupManagerOptions, MediaType, MediaTypeShort,
   ProduceConsumeInfo, ProducerAppData,
   SDKRef,
   Timer
@@ -454,7 +454,7 @@ class Mediasoup extends EventEmitter {
     }
   }
 
-  async destroyProduce (kind:string) {
+  async destroyProduce (kind:MediaTypeShort) {
     let producer = null
     let producerId = null
     if (kind === 'audio') {
@@ -473,10 +473,18 @@ class Mediasoup extends EventEmitter {
         throw new Error('No this.adapterRef.localStream');
       }
       this.adapterRef.localStream.pubStatus.video.video = false
+    } else if (kind === 'screen') {
+      producer = this._screenProducer
+      producerId = this._screenProducerId
+      this._screenProducer = this._screenProducerId = null
+      if (!this.adapterRef.localStream){
+        throw new Error('No this.adapterRef.localStream');
+      }
+      this.adapterRef.localStream.pubStatus.screen.screen = false
     }
 
     try {
-      this.adapterRef.logger.warn('停止发布 destroyProduce producerId=%o', producerId);
+      this.adapterRef.logger.warn(`停止发布 destroyProduce ${kind} producerId=%o`, producerId);
       if(!producer) return
       await producer.close();
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){

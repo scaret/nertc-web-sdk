@@ -711,7 +711,7 @@ class Stream extends EventEmitter {
    * @param {String }  options.sourceId 屏幕共享的数据源Id（electron用户可以自己获取）
    * @returns {Promise}
    */
-  async open (options:{type: string,deviceId?: string}) {
+  async open (options:{type: MediaTypeShort,deviceId?: string}) {
     let {type, deviceId} = options
     if (this.client._roleInfo.userRole === 1) {
       const reason = `观众不允许打开设备`;
@@ -740,7 +740,7 @@ class Stream extends EventEmitter {
         case 'video':
         case 'screen':
           this.client.adapterRef.logger.log(`开启${type === 'video' ? 'camera' : 'screen'}设备`)
-          if (this.screen || this.video) {
+          if (this[type]) {
             this.client.adapterRef.logger.log('请先关闭摄像头或者屏幕共享')
             this.client.apiFrequencyControl({
               name: 'open',
@@ -804,7 +804,7 @@ class Stream extends EventEmitter {
    * @param {String }  options.type 媒体设备: audio/video/screen
    * @returns {Promise}
    */
-  async close (options: { type:string}) {
+  async close (options: { type:MediaTypeShort}) {
     let {type} = options
     let reason = null
     switch(type) {
@@ -860,15 +860,15 @@ class Stream extends EventEmitter {
         if (!this.mediaHelper){
           throw new Error('No mediaHelper');
         }
-        this.mediaHelper.stopStream('video')
+        this.mediaHelper.stopStream('screen')
         if (!this._play){
           throw new Error('No this._play');
         }
-        this._play.stopPlayVideoStream()
+        this._play.stopPlayScreenStream()
         if (!this.client.adapterRef._mediasoup){
           throw new Error('No _mediasoup');
         }
-        await this.client.adapterRef._mediasoup.destroyProduce('video');
+        await this.client.adapterRef._mediasoup.destroyProduce('screen');
         break
       default:
         this.client.adapterRef.logger.log('不能识别type')
