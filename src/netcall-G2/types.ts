@@ -752,6 +752,7 @@ export interface ScreenProfileOptions{
 export interface SnapshotOptions{
   uid: number;
   name: string;
+  mediaType?: MediaTypeShort;
 }
 
 export interface MediaRecordingOptions{

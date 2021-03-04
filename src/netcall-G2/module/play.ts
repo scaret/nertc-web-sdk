@@ -456,39 +456,74 @@ class Play extends EventEmitter {
   /**
   * 视频截图功能
   */
-  takeSnapshot (options:SnapshotOptions,recordId?: string) {
-    let { uid, name = '' } = options 
-    if (!name) {
-      name = (uid || this.adapterRef.channelInfo.uid) + '-' + this.index++
+  async takeSnapshot (options:SnapshotOptions,recordId?: string) {
+    let { uid} = options
+    let snapshotVideo = (!options.mediaType && this.videoDom) || options.mediaType === 'video';
+    let snapshotScreen = (!options.mediaType && this.screenDom) || options.mediaType === 'screen';
+
+    let canvas = document.createElement("canvas")
+    let ctx = canvas.getContext("2d");
+    if (!ctx){
+      throw new Error('无法获取canvas上下文');
     }
-    return new Promise((resolve, reject) => {
-      let canvas = document.createElement("canvas")
-      let ctx = canvas.getContext("2d");
-      if (!ctx){
-        return reject(new Error('无法获取canvas上下文'));
-      }
-      if (!this.videoDom){
-        return reject(new Error('没有videoDom'));
-      }
+    // video
+    if (snapshotVideo){
+      const name = options.name || ((uid || this.adapterRef.channelInfo.uid) + '-' + this.index++);
       ctx.fillStyle = '#ffffff'
+      if (!this.videoDom){
+        throw new Error('没有videoDom');
+      }
       ctx.fillRect(0, 0, this.videoDom.videoWidth, this.videoDom.videoHeight)
       canvas.width = this.videoDom.videoWidth
       canvas.height = this.videoDom.videoHeight
       ctx.drawImage(this.videoDom, 0, 0, this.videoDom.videoWidth, this.videoDom.videoHeight, 0, 0, this.videoDom.videoWidth, this.videoDom.videoHeight)
-      canvas.toBlob(blob => {
-        this.adapterRef.logger.log('takeSnapshot, 获取到截图的blob: ', blob)
-        let url = URL.createObjectURL(blob)
-        this.adapterRef.logger.log('截图的url: ', url)
-        let a = document.createElement('a')
-        document.body.appendChild(a)
-        a.style.display = 'none'
-        a.href = url
-        a.download = name + '.png'
-        a.click()
-        window.URL.revokeObjectURL(url)
-        return resolve(name + '.png')
+      const fileUrl = await new Promise((resolve, reject)=>{
+        canvas.toBlob(blob => {
+          this.adapterRef.logger.log('takeSnapshot, 获取到截图的blob: ', blob)
+          let url = URL.createObjectURL(blob)
+          this.adapterRef.logger.log('截图的url: ', url)
+          let a = document.createElement('a')
+          document.body.appendChild(a)
+          a.style.display = 'none'
+          a.href = url
+          a.download = name + '.png'
+          a.click()
+          window.URL.revokeObjectURL(url)
+          resolve(name + '.png')
+        })
       })
-    })
+      if (!snapshotScreen){
+        return fileUrl;
+      }
+    }
+    // screen
+    if (snapshotScreen){
+      const name = options.name || ((uid || this.adapterRef.channelInfo.uid) + '-' + this.index++);
+      ctx.fillStyle = '#ffffff'
+      if (!this.screenDom){
+        throw new Error('没有screenDom');
+      }
+      ctx.fillRect(0, 0, this.screenDom.videoWidth, this.screenDom.videoHeight)
+      canvas.width = this.screenDom.videoWidth
+      canvas.height = this.screenDom.videoHeight
+      ctx.drawImage(this.screenDom, 0, 0, this.screenDom.videoWidth, this.screenDom.videoHeight, 0, 0, this.screenDom.videoWidth, this.screenDom.videoHeight)
+      const fileUrl = await new Promise((resolve, reject)=>{
+        canvas.toBlob(blob => {
+          this.adapterRef.logger.log('takeSnapshot, 获取到截图的blob: ', blob)
+          let url = URL.createObjectURL(blob)
+          this.adapterRef.logger.log('截图的url: ', url)
+          let a = document.createElement('a')
+          document.body.appendChild(a)
+          a.style.display = 'none'
+          a.href = url
+          a.download = name + '.png'
+          a.click()
+          window.URL.revokeObjectURL(url)
+          resolve(name + '.png')
+        })
+      })
+      return fileUrl;
+    }
   }
 
   destroy() {
