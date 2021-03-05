@@ -1488,21 +1488,37 @@ class Stream extends EventEmitter {
   }
 
 
-  adjustResolution () {
+  adjustResolution (mediaTypeShort: MediaTypeShort) {
 
     if ( 'RTCRtpSender' in window && 'setParameters' in window.RTCRtpSender.prototype) {
-      const maxbitrate = this.getBW()
       const peer = this.client.adapterRef._mediasoup && this.client.adapterRef._mediasoup._sendTransport && this.client.adapterRef._mediasoup._sendTransport.handler._pc
-      if(maxbitrate && peer){
-        const videoSender = peer && peer.videoSender
-        const parameters = videoSender.getParameters();
-        if (!parameters) return
+      if (peer){
+        let sender, maxbitrate;
+        if (mediaTypeShort === "video"){
+          sender = peer.videoSender;
+          maxbitrate = this.getVideoBW();
+        }else if (mediaTypeShort === "screen"){
+          sender = peer.screenSender;
+          maxbitrate = this.getScreenBW();
+        }
+        if (!maxbitrate){
+          console.error("没有maxbitrate啊啊啊啊啊");
+          return;
+        }
+        if (!sender){
+          throw new Error(`Unknown media type ${sender}`);
+        }
+        const parameters = sender.getParameters();
+        if (!parameters) {
+          console.error("No Parameter");
+          return;
+        }
         if (!parameters.encodings) {
           parameters.encodings = [{}];
         }
         parameters.encodings[0].maxBitrate = maxbitrate;
         //this.client.adapterRef.logger.warn('设置video 码率: ', parameters)
-        videoSender.setParameters(parameters)
+        sender.setParameters(parameters)
           .then(() => {
             //this.client.adapterRef.logger.log('设置video 码率成功')
           })
@@ -1513,7 +1529,7 @@ class Stream extends EventEmitter {
     }
   }
 
-  getBW(){
+  getVideoBW(){
     if (!this.videoProfile){
       throw new Error('No this.videoProfile');
     }
@@ -1527,7 +1543,21 @@ class Stream extends EventEmitter {
       return 1500 * 1000
     } return 0
   }
-
+  
+  getScreenBW(){
+    if (!this.screenProfile){
+      throw new Error('No this.screenProfile');
+    }
+    if(this.screenProfile.resolution == WEBRTC2_VIDEO_QUALITY.VIDEO_QUALITY_180p) {
+      return 300 * 1000
+    } else if (this.screenProfile.resolution == WEBRTC2_VIDEO_QUALITY.VIDEO_QUALITY_480p) {
+      return 800 * 1000
+    } else if (this.screenProfile.resolution == WEBRTC2_VIDEO_QUALITY.VIDEO_QUALITY_720p) {
+      return 1200 * 1000
+    } else if (this.screenProfile.resolution == WEBRTC2_VIDEO_QUALITY.VIDEO_QUALITY_1080p) {
+      return 1500 * 1000
+    } return 0
+  }
   /**
    * 截取指定用户的视频画面(文件保存在浏览器默认路径)
    * @function takeSnapshot

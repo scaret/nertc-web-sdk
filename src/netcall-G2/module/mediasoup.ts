@@ -291,6 +291,7 @@ class Mediasoup extends EventEmitter {
         if (!this._sendTransport){
           throw new Error('NO_SEND_TRANSPORT');
         }
+        const mediaTypeShort:MediaTypeShort = (appData.mediaType == "screenShare") ? "screen" : appData.mediaType;
         const iceUfragReg = offer.sdp.match(/a=ice-ufrag:([0-9a-zA-Z#=+-_\/\\\\]+)/)
         try {
           let producerData = {
@@ -378,7 +379,7 @@ class Mediasoup extends EventEmitter {
           });
 
           if (kind === 'video') {
-            this.adapterRef.localStream.adjustResolution()
+            this.adapterRef.localStream.adjustResolution(mediaTypeShort)
           }
           callback({ id: producerId });
         } catch (error) {
