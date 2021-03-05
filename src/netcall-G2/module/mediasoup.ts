@@ -313,9 +313,16 @@ class Mediasoup extends EventEmitter {
             },
             ...appData
           };
+
+          let ssrc = offer.sdp.match(/a=ssrc:(\d+)/)[1] || ''; //历史遗留
+          let mLineIndex = offer.sdp.indexOf(producerData.deviceId);
+          if (producerData.deviceId && mLineIndex > -1){
+            let mLinePiece = offer.sdp.substring(mLineIndex);
+            ssrc = mLinePiece.match(/a=ssrc:(\d+)/)[1] || '';
+          }
           if (appData.mediaType === 'video') {
             producerData.mediaProfile = [{
-              ssrc: offer.sdp.match(/a=ssrc:(\d+)/)[1] || '',
+              ssrc,
               res: '640*480',
               fps: '15',
               spatialLayer: 0,
@@ -323,13 +330,13 @@ class Mediasoup extends EventEmitter {
             }]
           }
           if (appData.mediaType === 'screenShare') {
-            // producerData.mediaProfile = [{
-            //   ssrc: offer.sdp.match(/a=ssrc:(\d+)/)[1] || '',
-            //   res: '640*480',
-            //   fps: '15',
-            //   spatialLayer: 0,
-            //   maxBitrate: 1000
-            // }]
+            producerData.mediaProfile = [{
+              ssrc,
+              res: '640*480',
+              fps: '15',
+              spatialLayer: 0,
+              maxBitrate: 1000
+            }]
           }
 
           if (localDtlsParameters === undefined){
