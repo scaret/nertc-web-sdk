@@ -459,16 +459,16 @@
       if ($("#audioParam").prop("checked")){
         rtmpTasks.config.audioParam = {};
         if ($("#audioBitRate").val()){
-          rtmpTasks.config.bitRate = parseInt($("#audioBitRate").val());
+          rtmpTasks.config.audioParam.bitRate = parseInt($("#audioBitRate").val());
         }
         if ($("#audioSampleRate").val()){
-          rtmpTasks.config.sampleRate = parseInt($("#audioSampleRate").val());
+          rtmpTasks.config.audioParam.sampleRate = parseInt($("#audioSampleRate").val());
         }
         if ($("#audioCodecProfile").val()){
-          rtmpTasks.config.codecProfile = parseInt($("#audioCodecProfile").val());
+          rtmpTasks.config.audioParam.codecProfile = parseInt($("#audioCodecProfile").val());
         }
         if ($("#audioChannels").val()){
-          rtmpTasks.config.channels = parseInt($("#audioChannels").val());
+          rtmpTasks.config.audioParam.channels = parseInt($("#audioChannels").val());
         }
       }
       console.warn('rtmpTasks 添加任务: ', rtmpTasks)
@@ -631,16 +631,16 @@
       if ($("#audioParam").prop("checked")){
         rtmpTasks[0].config.audioParam = {};
         if ($("#audioBitRate").val()){
-          rtmpTasks[0].config.bitRate = parseInt($("#audioBitRate").val());
+          rtmpTasks[0].config.audioParam.bitRate = parseInt($("#audioBitRate").val());
         }
         if ($("#audioSampleRate").val()){
-          rtmpTasks[0].config.sampleRate = parseInt($("#audioSampleRate").val());
+          rtmpTasks[0].config.audioParam.sampleRate = parseInt($("#audioSampleRate").val());
         }
         if ($("#audioCodecProfile").val()){
-          rtmpTasks[0].config.codecProfile = parseInt($("#audioCodecProfile").val());
+          rtmpTasks[0].config.audioParam.codecProfile = parseInt($("#audioCodecProfile").val());
         }
         if ($("#audioChannels").val()){
-          rtmpTasks[0].config.channels = parseInt($("#audioChannels").val());
+          rtmpTasks[0].config.audioParam.channels = parseInt($("#audioChannels").val());
         }
       }
       console.warn('rtmpTasks 更新任务: ', rtmpTasks)
