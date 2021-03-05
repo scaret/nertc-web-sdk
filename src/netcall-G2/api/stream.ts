@@ -1576,13 +1576,16 @@ class Stream extends EventEmitter {
   async startMediaRecording (options: MediaRecordingOptions) {
     const streams = []
     if (this.client.adapterRef.channelInfo.uid === this.streamID) { // 录制自己
+      if (!this.mediaHelper){
+        throw new Error('No MediaHelper');
+      }
       switch (options.type) {
         case 'screen':
+          this.mediaHelper.screenStream && streams.push(this.mediaHelper.screenStream)
+          this.mediaHelper.audioStream && streams.push(this.mediaHelper.audioStream)
+          break;
         case 'camera':
         case 'video':
-          if (!this.mediaHelper){
-            throw new Error('No MediaHelper');
-          }
           this.mediaHelper.videoStream && streams.push(this.mediaHelper.videoStream)
           this.mediaHelper.audioStream && streams.push(this.mediaHelper.audioStream)
           break
@@ -1599,8 +1602,20 @@ class Stream extends EventEmitter {
       if (!this.mediaHelper){
         throw new Error('No MediaHelper');
       }
-      this.mediaHelper.videoStream && streams.push(this.mediaHelper.videoStream)
-      this.mediaHelper.audioStream && streams.push(this.mediaHelper.audioStream)
+      switch (options.type) {
+        case 'screen':
+          this.mediaHelper.screenStream && streams.push(this.mediaHelper.screenStream)
+          this.mediaHelper.audioStream && streams.push(this.mediaHelper.audioStream)
+          break;
+        case 'camera':
+        case 'video':
+          this.mediaHelper.videoStream && streams.push(this.mediaHelper.videoStream)
+          this.mediaHelper.audioStream && streams.push(this.mediaHelper.audioStream)
+          break
+        case 'audio':
+          this.mediaHelper.audioStream && streams.push(this.mediaHelper.audioStream)
+          break;
+      }
     }
     if (streams.length === 0) {
       this.client.adapterRef.logger.log('没有没发现要录制的媒体流')
