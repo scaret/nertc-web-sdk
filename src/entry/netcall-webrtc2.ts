@@ -87,6 +87,7 @@ function createStream (options:StreamOptions) {
   
   if (client || options.client) {
     return new Stream(Object.assign(options, {
+      isRemote: false,
       client: options.client || client
     }))
   } else {

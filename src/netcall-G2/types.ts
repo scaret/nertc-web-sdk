@@ -29,6 +29,7 @@ export interface AdapterRef {
     startSessionTime: number;
     endSessionTime: number;
     startPubVideoTime: number;
+    startPubScreenTime: number;
   };
   nim?: any;
   instance: Client;
@@ -90,6 +91,15 @@ export interface AdapterRef {
   requestId: {
     [apiName: string]: number;
   }
+}
+
+// screenShare 为服务端协议叫法，但代码中有大量screen叫法，故使用这种不好的类型名做区分。
+export type MediaType = 'audio'|'video'|'screenShare';
+export type MediaTypeShort = 'audio'|'video'|'screen';
+
+export interface ProducerAppData{
+  deviceId: string;
+  mediaType: MediaType;
 }
 
 export interface NetStatusItem{
@@ -639,6 +649,7 @@ export interface MediasoupManagerOptions{
 export interface ProduceConsumeInfo{
   uid: number;
   kind: 'audio'|'video';
+  mediaType: MediaType;
   id: string;
   preferredSpatialLayer:number;
 }
@@ -676,7 +687,7 @@ export interface Client{
   apiEventReport: (eventName: string, eventData: any)=>void
   getPeer: (sendOrRecv: 'send'|'recv')=>any
   leave: ()=>any
-  addSsrc: (uid:number, kind:string, ssrc:number)=>any
+  addSsrc: (uid:number, kind:MediaTypeShort, ssrc:number)=>any
   reBuildRecvTransport: ()=>any
   _params: any
   setSessionConfig: any
@@ -716,12 +727,14 @@ export interface PubStatus{
 export interface SubscribeOptions{
   audio?: boolean;
   video?: boolean;
+  screen?: boolean;
   highOrLow?: boolean;
 }
 
 export interface SubscribeConfig{
   audio: boolean;
   video: boolean;
+  screen: boolean;
   highOrLow: number;
   resolution: number;
 }
@@ -739,6 +752,7 @@ export interface ScreenProfileOptions{
 export interface SnapshotOptions{
   uid: number;
   name: string;
+  mediaType?: MediaTypeShort;
 }
 
 export interface MediaRecordingOptions{
@@ -815,4 +829,10 @@ export interface ExistsOptions{
   value: any;
   min?: number;
   max?: number;
+}
+
+export interface StreamPlayOptions{
+  audio?: boolean;
+  video?: boolean;
+  screen?: boolean;
 }

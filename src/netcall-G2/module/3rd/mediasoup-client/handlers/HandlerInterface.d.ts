@@ -51,7 +51,10 @@ export declare type HandlerReceiveDataChannelResult = {
     dataChannel: RTCDataChannel;
 };
 export declare abstract class HandlerInterface extends EnhancedEventEmitter {
-  _pc: undefined | {videoSender: {setParameters: (...args:any)=>any,getParameters: (...args:any)=>any}} | null;
+  _pc: undefined | {
+    videoSender: {setParameters: (...args:any)=>any,getParameters: (...args:any)=>any};
+    screenSender: {setParameters: (...args:any)=>any,getParameters: (...args:any)=>any};
+  } | null;
     /**
      * @emits @connect - (
      *     { dtlsParameters: DtlsParameters },

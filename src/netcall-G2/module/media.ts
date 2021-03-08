@@ -7,7 +7,7 @@ import { ajax } from '../util/ajax'
 import {
   AdapterRef, AudioMixingOptions,
   GetStreamConstraints,
-  MediaHelperOptions, MixAudioConf,
+  MediaHelperOptions, MediaTypeShort, MixAudioConf,
   SDKRef
 } from "../types";
 class MediaHelper extends EventEmitter {
@@ -110,7 +110,7 @@ class MediaHelper extends EventEmitter {
     if (videoSource) {
       this.videoStream = new MediaStream()
       this.videoStream.addTrack(videoSource)
-      video = screen = false
+      video = false
       this.videoSource = videoSource;
     }
 
@@ -144,7 +144,6 @@ class MediaHelper extends EventEmitter {
           return;
         }
         this.screenTrack = this.screenStream.getVideoTracks()[0];
-        this.videoStream = this.screenStream
         if (audio) {
           this.micStream = await GUM.getStream({
             audio: (this.getAudioConstraints()) ? this.getAudioConstraints() : true,
@@ -449,7 +448,7 @@ class MediaHelper extends EventEmitter {
     }
   }
   
-  updateStream(kind:string, track:MediaStreamTrack) {
+  updateStream(kind:MediaTypeShort, track:MediaStreamTrack) {
     if (kind === 'audio') {
       this.audioStream = new MediaStream()
       this.micTrack = track;
@@ -465,7 +464,7 @@ class MediaHelper extends EventEmitter {
     }
   }
 
-  stopStream(kind:string) {
+  stopStream(kind:MediaTypeShort) {
     let type = 'set_mic'
     if (kind === 'audio' && this.micStream) {
       this._stopTrack(this.micStream)
