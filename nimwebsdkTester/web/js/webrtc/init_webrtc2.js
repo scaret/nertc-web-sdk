@@ -286,8 +286,22 @@ function initEvents() {
       remoteStream.setAudioOutput(deviceId);
     }
     
-    remoteStream.play(document.getElementById('remote-container')).then(()=>{
-      console.log('播放对端的流成功')
+    if ($('#allowRemoteAudioRendering').prop("checked")){
+      const elemId = `audio-uid-${remoteStream.streamID}`;
+      if (!$(`#${elemId}`).length){
+        const elem = $(`<audio id="${elemId}" autoplay controls ></audio>`);
+        elem.appendTo($('#remoteAudioRenderingContainer'));
+      }
+      const audioStream = remoteStream.getAudioStream();
+      $(`#${elemId}`)[0].srcObject = audioStream;
+    }
+    const playOptions = {
+      audio: $("#playOptionsAudio").prop('checked'),
+      video: $("#playOptionsVideo").prop('checked'),
+      screen: $("#playOptionsScreen").prop('checked'),
+    };
+    remoteStream.play(document.getElementById('remote-container'), playOptions).then(()=>{
+      console.log('播放对端的流成功', playOptions)
       remoteStream.setRemoteRenderMode(globalConfig.remoteViewConfig)
       setTimeout(checkRemoteStramStruck, 2000)
     }).catch(err=>{
@@ -1364,6 +1378,10 @@ document.body.addEventListener('click', function (e) {
     target.parentNode.classList.add('fullScreen')
   }
 })
+
+$('#allowRemoteAudioRendering').click(async ()=>{
+  $("#playOptionsAudio").removeAttr("checked");
+});
 
 // 用户角色
 $('#setRoleHost-btn').click(async ()=>{

@@ -113,6 +113,8 @@ class Stream extends EventEmitter {
   private isRemote: boolean;
   
   constructor (options:StreamOptions) {
+    super()
+    
     if(typeof options.uid !== 'number' || isNaN(options.uid)){
       throw new Error('uid 非 number类型')
     }
@@ -120,7 +122,6 @@ class Stream extends EventEmitter {
       throw new Error('uid 超出 number精度')
     }
 
-    super()
     // init for ts rule
     this.isRemote = options.isRemote;
     this.videoProfile = null;
@@ -393,6 +394,14 @@ class Stream extends EventEmitter {
     })
   }
 
+  getAudioStream(){
+    if (this.mediaHelper){
+      return this.mediaHelper.audioStream;
+    }else{
+      return null;
+    }
+  }
+  
   /**
    * 初始化音视频流对象
    * @memberOf Stream#

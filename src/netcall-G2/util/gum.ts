@@ -31,7 +31,22 @@ function getScreenStream (constraint:MediaStreamConstraints, logger:Logger = con
   return p;
 }
 
+function emptyStreamWith(stream:MediaStream, withTrack: MediaStreamTrack|null){
+  let sameTrack = false;
+  stream.getTracks().forEach((track)=>{
+    if (track !== withTrack){
+      stream.removeTrack(track);
+    }else{
+      sameTrack = true;
+    }
+  })
+  if (!sameTrack && withTrack){
+    stream.addTrack(withTrack);
+  }
+}
+
 export {
+  emptyStreamWith,
   getStream,
   getScreenStream
 }
