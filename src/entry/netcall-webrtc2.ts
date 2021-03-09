@@ -5,6 +5,7 @@ import {clientNotYetUninitialized} from '../netcall-G2/constant/ErrorCode'
 import {ClientOptions, StreamOptions} from "../netcall-G2/types";
 import {BUILD, SDK_VERSION as VERSION} from "../netcall-G2/Config";
 import {VIDEO_FRAME_RATE, WEBRTC2_VIDEO_QUALITY as VIDEO_QUALITY} from "../netcall-G2/constant/videoQuality";
+import {LIVE_STREAM_AUDIO_SAMPLE_RATE, LIVE_STREAM_AUDIO_CODEC_PROFILE} from "../netcall-G2/constant/liveStream";
 import {checkExists, checkValidInteger} from "../netcall-G2/util/param";
 
 /**
@@ -201,7 +202,9 @@ WebRTC2 = {
   destroy,
   VIDEO_FRAME_RATE,
   VIDEO_QUALITY,
-
+  LIVE_STREAM_AUDIO_SAMPLE_RATE,
+  LIVE_STREAM_AUDIO_CODEC_PROFILE,
+  
   CHAT_VIDEO_FRAME_RATE_NORMAL,
   CHAT_VIDEO_FRAME_RATE_5,
   CHAT_VIDEO_FRAME_RATE_10,
@@ -230,7 +233,9 @@ export {
   destroy,
   VIDEO_FRAME_RATE,
   VIDEO_QUALITY,
-
+  LIVE_STREAM_AUDIO_SAMPLE_RATE,
+  LIVE_STREAM_AUDIO_CODEC_PROFILE,
+  
   CHAT_VIDEO_FRAME_RATE_NORMAL,
   CHAT_VIDEO_FRAME_RATE_5,
   CHAT_VIDEO_FRAME_RATE_10,

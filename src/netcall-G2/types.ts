@@ -623,6 +623,7 @@ export interface RTMPTask{
       adaption: number;
       pushAudio: boolean;
       pushVideo: boolean;
+      zOrder: number;
     }[];
     images: {
       url: string;
@@ -637,8 +638,12 @@ export interface RTMPTask{
     singleVideoNoTrans: boolean;
     audioParam?: {
       bitRate: number;
+      sampleRate: number;
+      channels: number;
+      codecProfile: number;
     }
   };
+  extraInfo: string;
 }
 
 export interface MediasoupManagerOptions{
