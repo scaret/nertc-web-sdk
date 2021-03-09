@@ -286,8 +286,23 @@ function initEvents() {
       remoteStream.setAudioOutput(deviceId);
     }
     
-    remoteStream.play(document.getElementById('remote-container')).then(()=>{
-      console.log('播放对端的流成功')
+    if ($('#allowRemoteAudioRendering').prop("checked")){
+      const elemId = `audio-uid-${remoteStream.streamID}`;
+      if (!$(`#${elemId}`).length){
+        const elem = $(`<audio id="${elemId}" autoplay controls ></audio>`);
+        elem.appendTo($('#remoteAudioRenderingContainer'));
+      }
+      const audioStream = remoteStream.getAudioStream();
+      $(`#${elemId}`)[0].srcObject = audioStream;
+    }
+    
+    const playOptions = $('#remotePlayOptionsEnabled').prop('checked') ? {
+      audio: $("#remotePlayOptionsAudio").prop('checked'),
+      video: $("#remotePlayOptionsVideo").prop('checked'),
+      screen: $("#remotePlayOptionsScreen").prop('checked'),
+    } : null;
+    remoteStream.play(document.getElementById('remote-container'), playOptions).then(()=>{
+      console.log('播放对端的流成功', playOptions)
       remoteStream.setRemoteRenderMode(globalConfig.remoteViewConfig)
       setTimeout(checkRemoteStramStruck, 2000)
     }).catch(err=>{
@@ -720,8 +735,15 @@ function initLocalStream(audioSource, videoSource) {
     frameRate: WebRTC2.VIDEO_FRAME_RATE[screenFrameRate]
   })
   rtc.localStream.init().then(()=>{
-    console.warn('音视频初始化完成，播放本地视频')
-    rtc.localStream.play(document.getElementById('local-container'))
+    const playOptions = $('#localPlayOptionsEnabled').prop('checked') ? {
+      audio: $("#localPlayOptionsAudio").prop('checked'),
+      audioType: $("#localPlayOptionsAudioType").val(),
+      video: $("#localPlayOptionsVideo").prop('checked'),
+      screen: $("#localPlayOptionsScreen").prop('checked'),
+    } : null;
+    
+    rtc.localStream.play(document.getElementById('local-container'), playOptions)
+    console.warn('音视频初始化完成，播放本地视频', playOptions);
     rtc.localStream.setLocalRenderMode(globalConfig.localViewConfig)
     if(!$('#camera').val())
       initDevices()
@@ -764,6 +786,7 @@ function subscribe(remoteStream) {
   remoteStream.setSubscribeConfig({
     audio: true,
     video: $('#subVideo').prop('checked'),
+    screen: $('#subScreen').prop('checked'),
     highOrLow: parseInt($('#subResolution').val()),
   })
 
@@ -947,6 +970,57 @@ $('#unmuteVideo').on('click', () => {
   }
 })
 
+
+$('#muteScreen').on('click', () => {
+  let uid = $('#part-play input[name="uid"]').val()
+  console.warn('muteScreen: ', uid)
+  if (uid) {
+    let remoteStream = rtc.remoteStreams[uid]
+    if (remoteStream) {
+      remoteStream.muteScreen().catch(err =>{
+        addLog('muteScreen 错误：' + err)
+        console.log('muteScreen 错误：', err)
+      })
+    } else {
+      console.warn('请检查uid是否正确')
+      addLog('请检查uid是否正确')
+      return
+    }
+  } else if(rtc.localStream) {
+    rtc.localStream.muteScreen().catch(err =>{
+      addLog('muteScreen 错误：' + err)
+      console.log('muteScreen 错误：', err)
+    })
+  } else {
+    addLog('当前不能进行此操作')
+  }
+})
+
+$('#unmuteScreen').on('click', () => {
+  let uid = $('#part-play input[name="uid"]').val()
+  console.warn('unmuteScreen: ', uid)
+  if (uid) {
+    let remoteStream = rtc.remoteStreams[uid]
+    if (remoteStream) {
+      remoteStream.unmuteScreen().catch(err =>{
+        addLog('unmuteScreen 错误：' + err)
+        console.log('unmuteScreen 错误：', err)
+      })
+    } else {
+      console.warn('请检查uid是否正确')
+      addLog('请检查uid是否正确')
+      return
+    }
+  } else if(rtc.localStream){
+    rtc.localStream.unmuteScreen().catch(err =>{
+      addLog('unmuteScreen 错误：' + err)
+      console.log('unmuteScreen 错误：', err)
+    })
+  } else {
+    addLog('当前不能进行此操作')
+  }
+})
+
 // 设置自己的画面
 $('#setLocal').on('click', () => {
   if (!rtc.localStream) {
@@ -961,7 +1035,8 @@ $('#setLocal').on('click', () => {
     height: +height,
     cut
   }
-  window.rtc.localStream.setLocalRenderMode(window.globalConfig.localViewConfig)
+  const mediaType = $("#localRenderMediaType").val() || undefined;
+  window.rtc.localStream.setLocalRenderMode(window.globalConfig.localViewConfig, mediaType)
 })
 
 // 设置对方的画面
@@ -981,11 +1056,12 @@ $('#setRemote').on('click', () => {
     cut
   }
 
+  const mediaType = $("#remoteRenderMediaType").val() || undefined;
   remoteStream.setRemoteRenderMode({
     width: +width,
     height: +height,
     cut
-  })
+  }, mediaType)
 })
 
 /**
@@ -1329,6 +1405,10 @@ document.body.addEventListener('click', function (e) {
     target.parentNode.classList.add('fullScreen')
   }
 })
+
+$('#allowRemoteAudioRendering').click(async ()=>{
+  $("#playOptionsAudio").removeAttr("checked");
+});
 
 // 用户角色
 $('#setRoleHost-btn').click(async ()=>{

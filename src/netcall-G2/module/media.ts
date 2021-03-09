@@ -7,16 +7,22 @@ import { ajax } from '../util/ajax'
 import {
   AdapterRef, AudioMixingOptions,
   GetStreamConstraints,
-  MediaHelperOptions, MixAudioConf,
+  MediaHelperOptions, MediaTypeShort, MixAudioConf,
   SDKRef
 } from "../types";
+import {emptyStreamWith} from "../util/gum";
 class MediaHelper extends EventEmitter {
   private adapterRef: AdapterRef;
   private sdkRef: SDKRef;
   private uid:number;
   private isLocal:boolean;
-  private micStream: MediaStream|null;
-  public audioStream: MediaStream|null;
+  micStream: MediaStream|null;
+  // audioStream对localStream而言是PeerConnection发送的MediaStream，
+  // 对remoteStream而言是包含了接收的MediaStream
+  // 无论是否有audio，audioStream总是存在，且始终是同一个对象。
+  public audioStream: MediaStream;
+  // musicStream指没有人声的混音音乐
+  public musicStream: MediaStream;
   public audioSource: MediaStreamTrack|null;
   public micTrack: MediaStreamTrack|null;
   private webAudio: WebAudio|null;
@@ -32,14 +38,14 @@ class MediaHelper extends EventEmitter {
   
   constructor (options:MediaHelperOptions) {
     super()
-    this._reset()
     // 设置对象引用
     this.adapterRef = options.adapterRef
     this.sdkRef = options.sdkRef
     this.uid = options.uid
     this.isLocal = this.adapterRef.channelInfo.uid == this.uid
     this.micStream = null;
-    this.audioStream = null;
+    this.audioStream = new MediaStream();
+    this.musicStream = new MediaStream();
     this.audioSource = null;
     this.webAudio = null;
     this.audioConstraint = null;
@@ -68,7 +74,8 @@ class MediaHelper extends EventEmitter {
     this.webAudio = null
     this.micStream = null
     this.audioConstraint = null
-    this.audioStream = null
+    emptyStreamWith(this.audioStream, null);
+    emptyStreamWith(this.musicStream, null);
     if (this.videoStream) {
       this._stopTrack(this.videoStream)
     }
@@ -101,8 +108,7 @@ class MediaHelper extends EventEmitter {
       return
     }
     if (audioSource) {
-      this.audioStream = new MediaStream()
-      this.audioStream.addTrack(audioSource)
+      emptyStreamWith(this.audioStream, audioSource);
       this.audioSource = audioSource
       audio = false
     }
@@ -110,7 +116,7 @@ class MediaHelper extends EventEmitter {
     if (videoSource) {
       this.videoStream = new MediaStream()
       this.videoStream.addTrack(videoSource)
-      video = screen = false
+      video = false
       this.videoSource = videoSource;
     }
 
@@ -144,7 +150,6 @@ class MediaHelper extends EventEmitter {
           return;
         }
         this.screenTrack = this.screenStream.getVideoTracks()[0];
-        this.videoStream = this.screenStream
         if (audio) {
           this.micStream = await GUM.getStream({
             audio: (this.getAudioConstraints()) ? this.getAudioConstraints() : true,
@@ -155,7 +160,7 @@ class MediaHelper extends EventEmitter {
             oper: '1',
             value: 'success'
           })
-          this.audioStream = this.micStream
+          emptyStreamWith(this.audioStream, this.micTrack);
           if (navigator.userAgent.indexOf('Chrome') > -1 && !RtcSystem.h5()) {
             if (!this.webAudio) {
               this.webAudio = new WebAudio({
@@ -166,10 +171,9 @@ class MediaHelper extends EventEmitter {
               this.webAudio.updateStream(this.audioStream)
             }
             if (this.webAudio.destination){
-              //@ts-ignore
               const outputStream = this.webAudio.destination.stream;
               this.adapterRef.logger.log('音频的outputStream: ', outputStream)
-              this.audioStream = outputStream;
+              emptyStreamWith(this.audioStream, outputStream.getAudioTracks()[0]);
             }
           }
           
@@ -230,7 +234,7 @@ class MediaHelper extends EventEmitter {
             }
             this.micStream = new MediaStream()
             this.micStream.addTrack(this.micTrack)
-            this.audioStream = this.micStream
+            emptyStreamWith(this.audioStream, this.micTrack);
 
             if (navigator.userAgent.indexOf('Chrome') > -1 && !RtcSystem.h5()) {
               if (!this.webAudio) {
@@ -242,10 +246,13 @@ class MediaHelper extends EventEmitter {
                 this.webAudio.updateStream(this.audioStream)
               }
               if (this.webAudio.destination){
-                //@ts-ignore
                 const outputStream = this.webAudio.destination.stream;
                 this.adapterRef.logger.log('音频的outputStream: ', outputStream)
-                this.audioStream = outputStream;
+                emptyStreamWith(this.audioStream, outputStream.getAudioTracks()[0]);
+              }
+              if (this.webAudio.musicDestination){
+                const musicStream = this.webAudio.musicDestination.stream;
+                emptyStreamWith(this.musicStream, musicStream.getAudioTracks()[0]);
               }
             }
           }
@@ -324,13 +331,12 @@ class MediaHelper extends EventEmitter {
         }
         this.micStream = new MediaStream()
         this.micStream.addTrack(audioTrack)
-        this.audioStream = this.micStream
+        emptyStreamWith(this.audioStream, audioTrack);
         if (this.webAudio){
           this.webAudio.updateStream(this.audioStream)
           if (this.webAudio.destination){
-            //@ts-ignore
             const outputStream = this.webAudio.destination.stream;
-            this.audioStream = outputStream;
+            emptyStreamWith(this.audioStream, outputStream.getAudioTracks()[0]);
           }
         }
       }
@@ -449,10 +455,10 @@ class MediaHelper extends EventEmitter {
     }
   }
   
-  updateStream(kind:string, track:MediaStreamTrack) {
+  updateStream(kind:MediaTypeShort, track:MediaStreamTrack) {
     if (kind === 'audio') {
-      this.audioStream = new MediaStream()
       this.micTrack = track;
+      emptyStreamWith(this.audioStream, track);
       this.audioStream.addTrack(track)
     } else if (kind === 'video') {
       this.videoStream = new MediaStream()
@@ -465,11 +471,12 @@ class MediaHelper extends EventEmitter {
     }
   }
 
-  stopStream(kind:string) {
+  stopStream(kind:MediaTypeShort) {
     let type = 'set_mic'
     if (kind === 'audio' && this.micStream) {
       this._stopTrack(this.micStream)
-      this.audioStream = this.micStream = null
+      this.micStream = null;
+      emptyStreamWith(this.audioStream, null);
     } else if (kind === 'video' && this.videoStream) {
       type = 'set_camera'
       this._stopTrack(this.videoStream)

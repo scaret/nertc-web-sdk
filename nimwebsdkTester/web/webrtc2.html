@@ -246,6 +246,11 @@
           </div>
           
           <div class="line">
+            <div>是否订阅屏幕共享
+              <input type="checkbox" id="subScreen" checked>
+            </div>
+          </div>
+          <div class="line">
             订阅大小流
             <select id='subResolution'>
               <option value= '0'>小流</option>
@@ -284,8 +289,37 @@
               <button id="muteVideo">muteVideo</button>
               <button id="unmuteVideo">unmuteVideo</button>
             </div>
+            <div class="line">
+              <button id="muteScreen">muteScreen</button>
+              <button id="unmuteScreen">unmuteScreen</button>
+            </div>
           </div>
 
+          <div class="part">
+            <div class="line">
+              本地播放设置<input type="checkbox" id="localPlayOptionsEnabled" checked><br/>
+              播放音频
+              <input type="checkbox" id="localPlayOptionsAudio">
+              音频类型
+              <select id="localPlayOptionsAudioType" style="width:32%">
+                <option value="">默认</option>
+                <option value="voice">voice</option>
+                <option value="music">music</option>
+                <option value="mixing">mixing</option>
+              </select><br/>
+              播放视频
+              <input type="checkbox" id="localPlayOptionsVideo" checked>
+              播放辅流
+              <input type="checkbox" id="localPlayOptionsScreen" checked><br/>
+              远端进频道设置<input type="checkbox" id="remotePlayOptionsEnabled" checked><br/>
+              播放音频
+              <input type="checkbox" id="remotePlayOptionsAudio" checked>
+              播放视频
+              <input type="checkbox" id="remotePlayOptionsVideo" checked>
+              播放辅流
+              <input type="checkbox" id="remotePlayOptionsScreen" checked>
+            </div>
+          </div>
           <div class="part">
             <div class="line">设置自己的画面尺寸: </div>
             <div class="line">
@@ -293,6 +327,11 @@
               <input type="text" id="localWidth" class="input-40"> 高度
               <input type="text" id="localHeight" class="input-40"> 裁剪
               <input type="checkbox" checked id="localCrop" />
+              <select id="localRenderMediaType" class="input-40">
+                <option value="" selected>默认</option>
+                <option value="video">主流</option>
+                <option value="screen">辅流</option>
+              </select>
               <button id="setLocal">设置</button>
             </div>
             <div class="line">设置对方的画面尺寸: </div>
@@ -301,6 +340,11 @@
               <input type="text" id="remoteWidth" class="input-40"> 高度
               <input type="text" id="remoteHeight" class="input-40"> 裁剪
               <input type="checkbox" checked id="remoteCrop" />
+              <select id="remoteRenderMediaType" class="input-40">
+                <option value="" selected>默认</option>
+                <option value="video">主流</option>
+                <option value="screen">辅流</option>
+              </select>
               <button id="setRemote">设置</button>
             </div>
             <div class="line">
@@ -394,6 +438,14 @@
             <button id="recordList" class="close">获取列表</button>
             <button id="recordDownload" class="close">下载</button>
             <button id="recordClean" class="close">清理</button>
+          </div>
+        </div>
+        <p class="block-header">自渲染</p>
+        <div class="part" id="audio-self">
+          <div class="line">
+            远端音频自渲染 <input type="checkbox" id="allowRemoteAudioRendering">
+            <div id="remoteAudioRenderingContainer">
+            </div>
           </div>
         </div>
         <p class="block-header">网络回调展示</p>

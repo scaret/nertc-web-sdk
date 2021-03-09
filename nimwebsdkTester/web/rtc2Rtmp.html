@@ -160,6 +160,11 @@
                 </label>
               </div>
               <div>
+                <label>users1设置顺序(zOrder):
+                  <input type="text" id="user1ZOrder" value="1">
+                </label>
+              </div>
+              <div>
                 <label>users1设置裁剪(adaption):
                 <input type="checkbox" id="user1Adaption" checked>
                 </label>
@@ -203,6 +208,11 @@
                 </label>
               </div>
               <div>
+                <label>users2设置顺序(zOrder):
+                  <input type="text" id="user2ZOrder" value="2">
+                </label>
+              </div>
+              <div>
                 <label>users2设置裁剪(adaption):
                 <input type="checkbox" id="user2Adaption" checked>
                 </label>
@@ -231,10 +241,33 @@
               </label>
             </div>
             <div>
+              <label>extraInfo
+                <input type="text" id="extraInfo">
+              </label>
+            </div>
+            <div>
               <p class="block-header"><input type="checkbox" id="audioParam">音频设置</p>
               <label>
                 推流音频比特率设置
                 <input type="text" id="audioBitRate" value="">
+              </label>
+              <label>
+                推流音频采样率设置
+                <select id="audioSampleRate">
+                  <option value="">不填</option>
+                </select>
+              </label>
+
+              <label>
+                推流音频编码规格
+                <select id="audioCodecProfile">
+                  <option value="">不填</option>
+                </select>
+              </label>
+
+              <label>
+                推流音频通道数
+                <input type="number" id="audioChannels" value="2">
               </label>
             </div>
           </div>
@@ -267,6 +300,10 @@
     const roomconfig = document.querySelector('select#roomconfig');
     var succTasksList = document.getElementById('succTasksList');
     var failTasksList = document.getElementById('failTasksList')
+    
+    if (!window.WebRTC2 && window.opener){
+      window.WebRTC2 = window.opener.WebRTC2;
+    }
     
     let len = window.opener.rtc.confTaskList.length
     if (len) {
@@ -345,6 +382,20 @@
     for (var i = 0; i < window.opener.rtc.failTasksList.length; i++) {
       failTasksList.add(new Option(window.opener.rtc.failTasksList[i], window.opener.rtc.failTasksList[i]))
     }
+    
+    if (WebRTC2.LIVE_STREAM_AUDIO_SAMPLE_RATE){
+      for (const key in WebRTC2.LIVE_STREAM_AUDIO_SAMPLE_RATE){
+        const value = WebRTC2.LIVE_STREAM_AUDIO_SAMPLE_RATE[key];
+        $("#audioSampleRate").append(`<option value="${value}">${key}</option>`)
+      }
+    }
+
+    if (WebRTC2.LIVE_STREAM_AUDIO_CODEC_PROFILE){
+      for (const key in WebRTC2.LIVE_STREAM_AUDIO_CODEC_PROFILE){
+        const value = WebRTC2.LIVE_STREAM_AUDIO_CODEC_PROFILE[key];
+        $("#audioCodecProfile").append(`<option value="${value}">${key}</option>`)
+      }
+    }
 
     $('#add-btn').on('click', () => {
       let users = []
@@ -355,6 +406,7 @@
           y: $('#user1Y').val() - 0,
           width: $('#user1Width').val() - 0,
           height: $('#user1Height').val() - 0,
+          zOrder: $('#user1ZOrder').val() - 0,
           adaption: $('#user1Adaption').prop('checked') ? 1 : 0,
           pushAudio: $('#user1PushAudio').prop('checked'),
           pushVideo: $('#user1PushVideo').prop('checked')
@@ -367,6 +419,7 @@
           y: $('#user2Y').val() - 0,
           width: $('#user2Width').val() - 0,
           height: $('#user2Height').val() - 0,
+          zOrder: $('#user2ZOrder').val() - 0,
           adaption: $('#user2Adaption').prop('checked') ? 1 : 0,
           pushAudio: $('#user2PushAudio').prop('checked'),
           pushVideo: $('#user2PushVideo').prop('checked')
@@ -398,11 +451,24 @@
         },
         config: {
           singleVideoNoTrans: $('#singleVideoNoTrans').prop("checked"),
-        }
+        },
+      }
+      if ($('#extraInfo').val()){
+        rtmpTasks.extraInfo = $('#extraInfo').val();
       }
       if ($("#audioParam").prop("checked")){
-        rtmpTasks.config.audioParam = {
-          bitRate: parseInt($("#audioBitRate").val())
+        rtmpTasks.config.audioParam = {};
+        if ($("#audioBitRate").val()){
+          rtmpTasks.config.audioParam.bitRate = parseInt($("#audioBitRate").val());
+        }
+        if ($("#audioSampleRate").val()){
+          rtmpTasks.config.audioParam.sampleRate = parseInt($("#audioSampleRate").val());
+        }
+        if ($("#audioCodecProfile").val()){
+          rtmpTasks.config.audioParam.codecProfile = parseInt($("#audioCodecProfile").val());
+        }
+        if ($("#audioChannels").val()){
+          rtmpTasks.config.audioParam.channels = parseInt($("#audioChannels").val());
         }
       }
       console.warn('rtmpTasks 添加任务: ', rtmpTasks)
@@ -515,6 +581,7 @@
           y: $('#user1Y').val() - 0,
           width: $('#user1Width').val() - 0,
           height: $('#user1Height').val() - 0,
+          zOrder: $('#user1ZOrder').val() - 0,
           adaption: $('#user1Adaption').prop('checked') ? 1 : 0,
           pushAudio: $('#user1PushAudio').prop('checked'),
           pushVideo: $('#user1PushVideo').prop('checked')
@@ -527,6 +594,7 @@
           y: $('#user2Y').val() - 0,
           width: $('#user2Width').val() - 0,
           height: $('#user2Height').val() - 0,
+          zOrder: $('#user2ZOrder').val() - 0,
           adaption: $('#user2Adaption').prop('checked') ? 1 : 0,
           pushAudio: $('#user2PushAudio').prop('checked'),
           pushVideo: $('#user2PushVideo').prop('checked')
@@ -561,8 +629,18 @@
       }]
       
       if ($("#audioParam").prop("checked")){
-        rtmpTasks[0].config.audioParam = {
-          bitRate: parseInt($("#audioBitRate").val())
+        rtmpTasks[0].config.audioParam = {};
+        if ($("#audioBitRate").val()){
+          rtmpTasks[0].config.audioParam.bitRate = parseInt($("#audioBitRate").val());
+        }
+        if ($("#audioSampleRate").val()){
+          rtmpTasks[0].config.audioParam.sampleRate = parseInt($("#audioSampleRate").val());
+        }
+        if ($("#audioCodecProfile").val()){
+          rtmpTasks[0].config.audioParam.codecProfile = parseInt($("#audioCodecProfile").val());
+        }
+        if ($("#audioChannels").val()){
+          rtmpTasks[0].config.audioParam.channels = parseInt($("#audioChannels").val());
         }
       }
       console.warn('rtmpTasks 更新任务: ', rtmpTasks)
