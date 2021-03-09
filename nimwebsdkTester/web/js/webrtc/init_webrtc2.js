@@ -286,8 +286,23 @@ function initEvents() {
       remoteStream.setAudioOutput(deviceId);
     }
     
-    remoteStream.play(document.getElementById('remote-container')).then(()=>{
-      console.log('播放对端的流成功')
+    if ($('#allowRemoteAudioRendering').prop("checked")){
+      const elemId = `audio-uid-${remoteStream.streamID}`;
+      if (!$(`#${elemId}`).length){
+        const elem = $(`<audio id="${elemId}" autoplay controls ></audio>`);
+        elem.appendTo($('#remoteAudioRenderingContainer'));
+      }
+      const audioStream = remoteStream.getAudioStream();
+      $(`#${elemId}`)[0].srcObject = audioStream;
+    }
+    
+    const playOptions = $('#remotePlayOptionsEnabled').prop('checked') ? {
+      audio: $("#remotePlayOptionsAudio").prop('checked'),
+      video: $("#remotePlayOptionsVideo").prop('checked'),
+      screen: $("#remotePlayOptionsScreen").prop('checked'),
+    } : null;
+    remoteStream.play(document.getElementById('remote-container'), playOptions).then(()=>{
+      console.log('播放对端的流成功', playOptions)
       remoteStream.setRemoteRenderMode(globalConfig.remoteViewConfig)
       setTimeout(checkRemoteStramStruck, 2000)
     }).catch(err=>{
@@ -710,8 +725,15 @@ function initLocalStream(audioSource, videoSource) {
     frameRate: WebRTC2.VIDEO_FRAME_RATE[screenFrameRate]
   })
   rtc.localStream.init().then(()=>{
-    console.warn('音视频初始化完成，播放本地视频')
-    rtc.localStream.play(document.getElementById('local-container'))
+    const playOptions = $('#localPlayOptionsEnabled').prop('checked') ? {
+      audio: $("#localPlayOptionsAudio").prop('checked'),
+      audioType: $("#localPlayOptionsAudioType").val(),
+      video: $("#localPlayOptionsVideo").prop('checked'),
+      screen: $("#localPlayOptionsScreen").prop('checked'),
+    } : null;
+    
+    rtc.localStream.play(document.getElementById('local-container'), playOptions)
+    console.warn('音视频初始化完成，播放本地视频', playOptions);
     rtc.localStream.setLocalRenderMode(globalConfig.localViewConfig)
     if(!$('#camera').val())
       initDevices()
@@ -1364,6 +1386,10 @@ document.body.addEventListener('click', function (e) {
     target.parentNode.classList.add('fullScreen')
   }
 })
+
+$('#allowRemoteAudioRendering').click(async ()=>{
+  $("#playOptionsAudio").removeAttr("checked");
+});
 
 // 用户角色
 $('#setRoleHost-btn').click(async ()=>{

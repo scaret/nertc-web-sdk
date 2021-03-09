@@ -60,7 +60,8 @@ class WebAudio{
     auidoMixingEnd: ((evt:Event) => void)|null,
   };
   private gainFilter?:GainNode;
-  public destination?: AudioDestinationNode|null;
+  public musicDestination: MediaStreamAudioDestinationNode | null;
+  public destination: MediaStreamAudioDestinationNode|null;
   public context: AudioContext| null;
   
   constructor(option: WebAudioOptions) {
@@ -104,10 +105,11 @@ class WebAudio{
     }
     
     if (this.context){
-      //@ts-ignore
       this.destination = this.context.createMediaStreamDestination();
+      this.musicDestination = this.context.createMediaStreamDestination();
     }else{
       this.destination = null;
+      this.musicDestination = null;
     }
     
     if (this.support) {
@@ -389,6 +391,9 @@ class WebAudio{
     this.mixAudioConf.auidoMixingEnd = options.auidoMixingEnd
     this.mixAudioConf.audioSource.connect(this.mixAudioConf.gainFilter)
     this.mixAudioConf.gainFilter.connect(this.destination)
+    if (this.musicDestination){
+      this.mixAudioConf.gainFilter.connect(this.musicDestination)
+    }
     if (options.replace) {
       if (this.script) {
         this.script.disconnect(0)

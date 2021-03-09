@@ -22,7 +22,7 @@ import {
   VideoProfileOptions
 } from "../types";
 import {MediaHelper} from "../module/media";
-import {checkExists} from "../util/param";
+import {checkExists, isExistOptions} from "../util/param";
 
 /**
  *  请使用 {@link WEBRTC2.createStream} 通过WEBRTC2.createStream创建
@@ -113,6 +113,8 @@ class Stream extends EventEmitter {
   private isRemote: boolean;
   
   constructor (options:StreamOptions) {
+    super()
+    
     if(typeof options.uid !== 'number' || isNaN(options.uid)){
       throw new Error('uid 非 number类型')
     }
@@ -120,7 +122,6 @@ class Stream extends EventEmitter {
       throw new Error('uid 超出 number精度')
     }
 
-    super()
     // init for ts rule
     this.isRemote = options.isRemote;
     this.videoProfile = null;
@@ -393,6 +394,14 @@ class Stream extends EventEmitter {
     })
   }
 
+  getAudioStream(){
+    if (this.mediaHelper){
+      return this.mediaHelper.audioStream;
+    }else{
+      return null;
+    }
+  }
+  
   /**
    * 初始化音视频流对象
    * @memberOf Stream#
@@ -531,13 +540,39 @@ class Stream extends EventEmitter {
    * @param {div} view div标签，播放画面的dom容器节点
    * @return {Promise}
    */
-  async play (view:HTMLElement, playOptions:StreamPlayOptions = {audio: this.isRemote, video: true, screen: true}) {
+  async play (view:HTMLElement, playOptions:StreamPlayOptions = {}) {
     checkExists({tag: 'Stream.play:view', value: view});
+    if (!isExistOptions({tag: 'Stream.playOptions.audio', value: playOptions.audio}).result){
+      playOptions.audio = this.isRemote;
+    }
+    if (playOptions.audio && !this.isRemote && !playOptions.audioType){
+      playOptions.audioType = "music";
+    }
+    if (!isExistOptions({tag: 'Stream.playOptions.video', value: playOptions.video}).result){
+      playOptions.video = true;
+    }
+    if (!isExistOptions({tag: 'Stream.playOptions.screen', value: playOptions.screen}).result){
+      playOptions.screen = true;
+    }
+    
     this.client.adapterRef.logger.log('音视频播放: ', this.streamID, playOptions)
     this.view = view
-    if(playOptions.audio && this._play && this.mediaHelper && this.mediaHelper.audioStream){
-      this.client.adapterRef.logger.log('开始播放音频: ', this.streamID)
-      await this._play.playAudioStream(this.mediaHelper.audioStream)
+    if (this.isRemote){
+      if(playOptions.audio && this._play && this.mediaHelper && this.mediaHelper.audioStream){
+        this.client.adapterRef.logger.log('开始播放远端音频: ', this.streamID)
+        this._play.playAudioStream(this.mediaHelper.audioStream)
+      }
+    }else{
+      if(playOptions.audio && this._play && this.mediaHelper && this.mediaHelper.micStream){
+        this.client.adapterRef.logger.log('开始播放本地音频: ',this.streamID, playOptions.audioType);
+        if (playOptions.audioType === "voice"){
+          this._play.playAudioStream(this.mediaHelper.micStream)
+        }else if (playOptions.audioType === "music"){
+          this._play.playAudioStream(this.mediaHelper.musicStream)
+        }else if (playOptions.audioType === "mixing"){
+          this._play.playAudioStream(this.mediaHelper.audioStream)
+        }
+      }
     }
     
     if(playOptions.video && this._play && this.mediaHelper && this.mediaHelper.videoStream){
