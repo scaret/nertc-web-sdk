@@ -833,6 +833,7 @@ export interface ExistsOptions{
 
 export interface StreamPlayOptions{
   audio?: boolean;
+  audioType?: "voice"|"music"|"mixing";
   video?: boolean;
   screen?: boolean;
 }

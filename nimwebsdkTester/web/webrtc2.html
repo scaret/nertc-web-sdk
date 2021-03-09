@@ -297,13 +297,27 @@
 
           <div class="part">
             <div class="line">
-              远端进频道设置<br/>
+              本地播放设置<input type="checkbox" id="localPlayOptionsEnabled" checked><br/>
               播放音频
-              <input type="checkbox" id="playOptionsAudio" checked>
+              <input type="checkbox" id="localPlayOptionsAudio">
+              音频类型
+              <select id="localPlayOptionsAudioType" style="width:32%">
+                <option value="">默认</option>
+                <option value="voice">voice</option>
+                <option value="music">music</option>
+                <option value="mixing">mixing</option>
+              </select><br/>
               播放视频
-              <input type="checkbox" id="playOptionsVideo" checked>
+              <input type="checkbox" id="localPlayOptionsVideo" checked>
               播放辅流
-              <input type="checkbox" id="playOptionsScreen" checked>
+              <input type="checkbox" id="localPlayOptionsScreen" checked><br/>
+              远端进频道设置<input type="checkbox" id="remotePlayOptionsEnabled" checked><br/>
+              播放音频
+              <input type="checkbox" id="remotePlayOptionsAudio" checked>
+              播放视频
+              <input type="checkbox" id="remotePlayOptionsVideo" checked>
+              播放辅流
+              <input type="checkbox" id="remotePlayOptionsScreen" checked>
             </div>
           </div>
           <div class="part">

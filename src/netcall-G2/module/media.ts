@@ -16,10 +16,13 @@ class MediaHelper extends EventEmitter {
   private sdkRef: SDKRef;
   private uid:number;
   private isLocal:boolean;
-  private micStream: MediaStream|null;
-  // audioStream对localStream而言是包含了发送的MediaStream，对remoteStream而言是包含了接收的MediaStream
+  micStream: MediaStream|null;
+  // audioStream对localStream而言是PeerConnection发送的MediaStream，
+  // 对remoteStream而言是包含了接收的MediaStream
   // 无论是否有audio，audioStream总是存在，且始终是同一个对象。
   public audioStream: MediaStream;
+  // musicStream指没有人声的混音音乐
+  public musicStream: MediaStream;
   public audioSource: MediaStreamTrack|null;
   public micTrack: MediaStreamTrack|null;
   private webAudio: WebAudio|null;
@@ -42,6 +45,7 @@ class MediaHelper extends EventEmitter {
     this.isLocal = this.adapterRef.channelInfo.uid == this.uid
     this.micStream = null;
     this.audioStream = new MediaStream();
+    this.musicStream = new MediaStream();
     this.audioSource = null;
     this.webAudio = null;
     this.audioConstraint = null;
@@ -71,6 +75,7 @@ class MediaHelper extends EventEmitter {
     this.micStream = null
     this.audioConstraint = null
     emptyStreamWith(this.audioStream, null);
+    emptyStreamWith(this.musicStream, null);
     if (this.videoStream) {
       this._stopTrack(this.videoStream)
     }
@@ -166,7 +171,6 @@ class MediaHelper extends EventEmitter {
               this.webAudio.updateStream(this.audioStream)
             }
             if (this.webAudio.destination){
-              //@ts-ignore
               const outputStream = this.webAudio.destination.stream;
               this.adapterRef.logger.log('音频的outputStream: ', outputStream)
               emptyStreamWith(this.audioStream, outputStream.getAudioTracks()[0]);
@@ -242,10 +246,13 @@ class MediaHelper extends EventEmitter {
                 this.webAudio.updateStream(this.audioStream)
               }
               if (this.webAudio.destination){
-                //@ts-ignore
                 const outputStream = this.webAudio.destination.stream;
                 this.adapterRef.logger.log('音频的outputStream: ', outputStream)
                 emptyStreamWith(this.audioStream, outputStream.getAudioTracks()[0]);
+              }
+              if (this.webAudio.musicDestination){
+                const musicStream = this.webAudio.musicDestination.stream;
+                emptyStreamWith(this.musicStream, musicStream.getAudioTracks()[0]);
               }
             }
           }
@@ -328,7 +335,6 @@ class MediaHelper extends EventEmitter {
         if (this.webAudio){
           this.webAudio.updateStream(this.audioStream)
           if (this.webAudio.destination){
-            //@ts-ignore
             const outputStream = this.webAudio.destination.stream;
             emptyStreamWith(this.audioStream, outputStream.getAudioTracks()[0]);
           }
