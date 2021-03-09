@@ -191,7 +191,7 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
     async getTransportStats() {
         return this._pc.getStats();
     }
-    async send({ track, encodings, codecOptions, codec }) {
+    async send({ track, encodings, codecOptions, codec , appData}) {
         this._assertSendDirection();
         logger.debug('send() [kind:%s, track.id:%s encodings:%o]', track.kind, track.id, encodings);
         if (encodings && encodings.length > 1) {
@@ -206,11 +206,11 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
         
         let mediaSectionIdx = undefined;
         let transceiver = {}
-        if (track.kind === 'audio' && this._pc.audioSender) {
+        if (appData.mediaType === 'audio' && this._pc.audioSender) {
             logger.debug('audioSender更新track: ', this._pc.audioSender)
             this._pc.audioSender.replaceTrack(track)
             mediaSectionIdx = 0
-        } else if (track.kind === 'video' && this._pc.videoSender) {
+        } else if (appData.mediaType === 'video' && this._pc.videoSender) {
             logger.debug('videoSender更新track: ', this._pc.videoSender)
             this._pc.videoSender.replaceTrack(track)
             if (this._pc.audioSender) {
@@ -219,6 +219,16 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
                 //没有开启mic或者mic开启失败
                 mediaSectionIdx = 0
             }
+        } else if (appData.mediaType === 'screenShare' && this._pc.screenSender) {
+          //
+          logger.debug('screenSender更新track: ', this._pc.screenSender)
+          this._pc.screenSender.replaceTrack(track)
+          if (this._pc.audioSender) {
+            mediaSectionIdx = 1
+          } else {
+            //没有开启mic或者mic开启失败
+            mediaSectionIdx = 0
+          }
         } else {
             let stream = new MediaStream();
             stream.addTrack(track)
@@ -228,10 +238,12 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
                 sendEncodings: encodings
             });
         }
-        if (track.kind === 'audio' && !this._pc.audioSender) {
+        if (appData.mediaType === 'audio' && !this._pc.audioSender) {
             this._pc.audioSender = transceiver.sender
-        } else if (track.kind === 'video' && !this._pc.videoSender) {
+        } else if (appData.mediaType === 'video' && !this._pc.videoSender) {
             this._pc.videoSender = transceiver.sender
+        } else if (appData.mediaType === 'screenShare' && !this._pc.screenSender) {
+          this._pc.screenSender = transceiver.sender
         }
 
         logger.debug('send() | [transceivers:%d]', this._pc.getTransceivers().length);

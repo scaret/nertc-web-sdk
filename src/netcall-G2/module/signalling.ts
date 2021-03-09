@@ -3,7 +3,7 @@ import { Stream } from '../api/stream'
 import { RtcSystem } from '../util/rtcUtil/rtcSystem'
 import BigNumber from 'bignumber.js'
 import {
-  AdapterRef, NetStatusItem,
+  AdapterRef, MediaTypeShort, NetStatusItem,
   NetworkQualityItem,
   SDKRef,
   SignallingOptions,
@@ -223,12 +223,18 @@ class Signalling extends EventEmitter {
           simulcastEnable
         } = externData.producerInfo;
         let kind:'audio'|'video';
+        let mediaTypeShort: MediaTypeShort;
         switch (mediaType){
           case "video":
+            mediaTypeShort = 'video';
+            kind = 'video';
+            break;
           case "screenShare":
+            mediaTypeShort = 'screen';
             kind = 'video';
             break;
           case "audio":
+            mediaTypeShort = 'audio';
             kind = 'audio';
             break;
           default:
@@ -239,26 +245,24 @@ class Signalling extends EventEmitter {
           remoteStream = new Stream({
             isRemote: true,
             uid: uid,
-            audio: kind === 'audio',
-            video: kind === 'video',
-            screen: false,
+            audio: mediaTypeShort === 'audio',
+            video: mediaTypeShort === 'video',
+            screen: mediaTypeShort === 'screen',
             client: this.adapterRef.instance,
           })
           this.adapterRef.remoteStreamMap[uid] = remoteStream
           this.adapterRef.memberMap[uid] = uid;
         }
-        if (kind !== "audio" && kind !== "video"){
-          throw new Error(`Unrecognized kind ${kind}`);
-        }
-        remoteStream[kind] = true
+        remoteStream[mediaTypeShort] = true
         //@ts-ignore
-        remoteStream.pubStatus[kind][kind] = true
-        remoteStream.pubStatus[kind].producerId = producerId
-        remoteStream.pubStatus[kind].mute = mute
-        remoteStream.pubStatus[kind].simulcastEnable = simulcastEnable
+        remoteStream.pubStatus[mediaTypeShort][mediaTypeShort] = true
+        remoteStream.pubStatus[mediaTypeShort].producerId = producerId
+        console.error("Set producer id", mediaTypeShort, producerId);
+        remoteStream.pubStatus[mediaTypeShort].mute = mute
+        remoteStream.pubStatus[mediaTypeShort].simulcastEnable = simulcastEnable
         this.adapterRef.instance.emit('stream-added', {stream: remoteStream})
         if (mute) {
-          this.adapterRef.instance.emit(`mute-${kind}`, {uid: remoteStream.getId()})
+          this.adapterRef.instance.emit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
         }
         break
       }
@@ -272,12 +276,18 @@ class Signalling extends EventEmitter {
         } = externData;
         this.adapterRef.logger.log('收到OnProducerClose消息 code = %d, errMsg = %s, uid = %s, mediaType = %s', code, errMsg, uid, mediaType);
         let kind:'audio'|'video';
+        let mediaTypeShort:MediaTypeShort;
         switch (mediaType){
           case "video":
+            mediaTypeShort = 'video';
+            kind = 'video';
+            break;
           case "screenShare":
+            mediaTypeShort = 'screen';
             kind = 'video';
             break;
           case "audio":
+            mediaTypeShort = 'audio';
             kind = 'audio';
             break;
           default:
@@ -288,28 +298,30 @@ class Signalling extends EventEmitter {
         if (!this.adapterRef._mediasoup){
           throw new Error('No this.adapterRef._mediasoup');
         }
-        this.adapterRef._mediasoup.destroyConsumer(remoteStream.pubStatus[kind].consumerId)
-        this.adapterRef.instance.removeSsrc(uid, kind)
-        remoteStream.subStatus[kind] = false
+        this.adapterRef._mediasoup.destroyConsumer(remoteStream.pubStatus[mediaTypeShort].consumerId)
+        this.adapterRef.instance.removeSsrc(uid, mediaTypeShort)
+        remoteStream.subStatus[mediaTypeShort] = false
         //@ts-ignore
-        remoteStream.pubStatus[kind][kind] = false
-        remoteStream[kind] = false
-        remoteStream.pubStatus[kind].consumerId = ''
-        remoteStream.pubStatus[kind].producerId = ''
+        remoteStream.pubStatus[mediaTypeShort][mediaTypeShort] = false
+        remoteStream[mediaTypeShort] = false
+        remoteStream.pubStatus[mediaTypeShort].consumerId = ''
+        remoteStream.pubStatus[mediaTypeShort].producerId = ''
         const data = this.adapterRef._statsReport && this.adapterRef._statsReport.formativeStatsReport && this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
-        if (kind === 'audio') {
+        if (mediaTypeShort === 'audio') {
           delete this.adapterRef.remoteAudioStats[uid];
           if (data) {
             data.recvFirstAudioFrame = false
             data.recvFirstAudioPackage = false
           }
-        } else if (kind === 'video') {
+        } else if (mediaTypeShort === 'video') {
           delete this.adapterRef.remoteVideoStats[uid];
           if (data) {
             data.recvFirstVideoFrame = false
             data.recvFirstVideoPackage = false
             data.videoTotalPlayDuration = 0
           }
+        }else{
+          console.error("记得写Screen啊啊啊啊啊")
         }
 
         this.adapterRef.instance.emit('stream-removed', {stream: remoteStream})
@@ -616,25 +628,31 @@ class Signalling extends EventEmitter {
           for (const peoducerInfo of peer.producerInfoList) {
             const { mediaType, producerId, mute, simulcastEnable } = peoducerInfo;
             let kind:'audio'|'video';
+            let mediaTypeShort: MediaTypeShort;
             switch (mediaType){
               case "video":
+                mediaTypeShort = "video";
+                kind = "video";
+                break;
               case "screenShare":
+                mediaTypeShort = "screen";
                 kind = 'video';
                 break;
               case "audio":
+                mediaTypeShort = "audio";
                 kind = 'audio';
                 break;
               default:
                 throw new Error(`Unrecognized mediaType ${mediaType}`);
             }
-            remoteStream[kind] = true
+            remoteStream[mediaTypeShort] = true
             //@ts-ignore
-            remoteStream['pubStatus'][kind][kind] = true
-            remoteStream['pubStatus'][kind]['producerId'] = producerId
-            remoteStream['pubStatus'][kind]['mute'] = mute
-            remoteStream['pubStatus'][kind]['simulcastEnable'] = simulcastEnable
+            remoteStream['pubStatus'][mediaTypeShort][mediaTypeShort] = true
+            remoteStream['pubStatus'][mediaTypeShort]['producerId'] = producerId
+            remoteStream['pubStatus'][mediaTypeShort]['mute'] = mute
+            remoteStream['pubStatus'][mediaTypeShort]['simulcastEnable'] = simulcastEnable
             if (mute) {
-              this.adapterRef.instance.emit(`mute-${kind}`, {uid: remoteStream.getId()})
+              this.adapterRef.instance.emit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
             }
           }
         }

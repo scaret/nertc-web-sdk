@@ -10,7 +10,7 @@ import {
   AdapterRef,
   APIFrequencyControlOptions,
   ClientOptions, JoinChannelRequestParam4WebRTC2,
-  LiveConfig, RecordConfig
+  LiveConfig, MediaTypeShort, RecordConfig
 } from "../types";
 import {Stream} from "./stream";
 
@@ -155,14 +155,15 @@ class Base extends EventEmitter {
         video: {
           type: null,
           device: null
-        }
+        },
       },
       audioDeviceHasOpened: false, // 是否启用了麦克风
       videoDeviceHasOpened: false, // 是否启用了摄像头
       chromeScreenShareOpened: false, // 是否启用了屏幕共享
       startSessionTime: 0, // 通话开始时间
       endSessionTime: 0, // 通话时间结束
-      startPubVideoTime: 0 // 视频发布开始时间
+      startPubVideoTime: 0, // 视频发布开始时间
+      startPubScreenTime: 0, //屏幕共享发布开始时间
     };
 
     Object.assign(this.adapterRef, {
@@ -342,6 +343,7 @@ class Base extends EventEmitter {
       const stream = this.adapterRef.remoteStreamMap[streamId];
       stream.pubStatus.audio.consumerId = ""
       stream.pubStatus.video.consumerId = ""
+      stream.pubStatus.screen.consumerId = ""
       //@ts-ignore
       await this.subscribe(stream)
     }
@@ -415,7 +417,7 @@ class Base extends EventEmitter {
     return this.adapterRef.uid2SscrList[uid] && this.adapterRef.uid2SscrList[uid][kind]
   }
 
-  addSsrc(uid:number, kind:string, ssrc:number) {
+  addSsrc(uid:number, kind:MediaTypeShort, ssrc:number) {
     if(!this.adapterRef.uid2SscrList[uid]){
       this.adapterRef.uid2SscrList[uid] = {}
     } 
@@ -427,7 +429,7 @@ class Base extends EventEmitter {
     }
   }
 
-  removeSsrc(uid:number, kind:string = '') {
+  removeSsrc(uid:number, kind?:MediaTypeShort) {
     if(this.adapterRef.uid2SscrList[uid]){
       if (kind) {
         if(this.adapterRef.uid2SscrList[uid][kind]){

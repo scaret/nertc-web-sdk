@@ -754,6 +754,7 @@ function subscribe(remoteStream) {
   remoteStream.setSubscribeConfig({
     audio: true,
     video: $('#subVideo').prop('checked'),
+    screen: $('#subScreen').prop('checked'),
     highOrLow: parseInt($('#subResolution').val()),
   })
 
@@ -928,6 +929,57 @@ $('#unmuteVideo').on('click', () => {
   }
 })
 
+
+$('#muteScreen').on('click', () => {
+  let uid = $('#part-play input[name="uid"]').val()
+  console.warn('muteScreen: ', uid)
+  if (uid) {
+    let remoteStream = rtc.remoteStreams[uid]
+    if (remoteStream) {
+      remoteStream.muteScreen().catch(err =>{
+        addLog('muteScreen 错误：' + err)
+        console.log('muteScreen 错误：', err)
+      })
+    } else {
+      console.warn('请检查uid是否正确')
+      addLog('请检查uid是否正确')
+      return
+    }
+  } else if(rtc.localStream) {
+    rtc.localStream.muteScreen().catch(err =>{
+      addLog('muteScreen 错误：' + err)
+      console.log('muteScreen 错误：', err)
+    })
+  } else {
+    addLog('当前不能进行此操作')
+  }
+})
+
+$('#unmuteScreen').on('click', () => {
+  let uid = $('#part-play input[name="uid"]').val()
+  console.warn('unmuteScreen: ', uid)
+  if (uid) {
+    let remoteStream = rtc.remoteStreams[uid]
+    if (remoteStream) {
+      remoteStream.unmuteScreen().catch(err =>{
+        addLog('unmuteScreen 错误：' + err)
+        console.log('unmuteScreen 错误：', err)
+      })
+    } else {
+      console.warn('请检查uid是否正确')
+      addLog('请检查uid是否正确')
+      return
+    }
+  } else if(rtc.localStream){
+    rtc.localStream.unmuteScreen().catch(err =>{
+      addLog('unmuteScreen 错误：' + err)
+      console.log('unmuteScreen 错误：', err)
+    })
+  } else {
+    addLog('当前不能进行此操作')
+  }
+})
+
 // 设置自己的画面
 $('#setLocal').on('click', () => {
   if (!rtc.localStream) {
@@ -942,7 +994,8 @@ $('#setLocal').on('click', () => {
     height: +height,
     cut
   }
-  window.rtc.localStream.setLocalRenderMode(window.globalConfig.localViewConfig)
+  const mediaType = $("#localRenderMediaType").val() || undefined;
+  window.rtc.localStream.setLocalRenderMode(window.globalConfig.localViewConfig, mediaType)
 })
 
 // 设置对方的画面
@@ -962,11 +1015,12 @@ $('#setRemote').on('click', () => {
     cut
   }
 
+  const mediaType = $("#remoteRenderMediaType").val() || undefined;
   remoteStream.setRemoteRenderMode({
     width: +width,
     height: +height,
     cut
-  })
+  }, mediaType)
 })
 
 /**

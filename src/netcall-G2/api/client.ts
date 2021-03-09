@@ -308,7 +308,7 @@ class Client extends Base {
         if (stream.pubStatus.audio.consumerStatus !== 'start') {
           this.adapterRef.logger.log('开始订阅 %s 音频流', stream.getId())
           stream.pubStatus.audio.consumerStatus = 'start'
-          await this.adapterRef._mediasoup.createConsumer(uid, 'audio', stream.pubStatus.audio.producerId);
+          await this.adapterRef._mediasoup.createConsumer(uid, 'audio', 'audio', stream.pubStatus.audio.producerId);
           stream.pubStatus.audio.consumerStatus = 'end'
           this.adapterRef.logger.log('订阅 %s 音频流完成', stream.getId())
         }
@@ -318,9 +318,19 @@ class Client extends Base {
           this.adapterRef.logger.log('开始订阅 %s 视频流', stream.getId())
           stream.pubStatus.video.consumerStatus = 'start'
           const preferredSpatialLayer = stream.pubStatus.video.simulcastEnable ? stream.subConf.highOrLow : 0
-          await this.adapterRef._mediasoup.createConsumer(uid, 'video', stream.pubStatus.video.producerId, preferredSpatialLayer);
+          await this.adapterRef._mediasoup.createConsumer(uid, 'video', 'video', stream.pubStatus.video.producerId, preferredSpatialLayer);
           stream.pubStatus.video.consumerStatus = 'end'
           this.adapterRef.logger.log('订阅 %s 视频流完成', stream.getId())
+        }
+      }
+      if (stream.subConf.screen && stream.pubStatus.screen.screen) {
+        if (stream.pubStatus.screen.consumerStatus !== 'start') {
+          this.adapterRef.logger.log('开始订阅 %s 视频辅流', stream.getId())
+          stream.pubStatus.screen.consumerStatus = 'start'
+          const preferredSpatialLayer = stream.pubStatus.screen.simulcastEnable ? stream.subConf.highOrLow : 0
+          await this.adapterRef._mediasoup.createConsumer(uid, 'video', 'screenShare', stream.pubStatus.screen.producerId, preferredSpatialLayer);
+          stream.pubStatus.screen.consumerStatus = 'end'
+          this.adapterRef.logger.log('订阅 %s 视频辅流完成', stream.getId())
         }
       }
       this.apiFrequencyControl({
@@ -492,7 +502,7 @@ class Client extends Base {
           stream.pubStatus.video.consumerStatus = 'start'
           stream.subConf.highOrLow = highOrLow
           const preferredSpatialLayer = stream.pubStatus.video.simulcastEnable ? stream.subConf.highOrLow : 0
-          await this.adapterRef._mediasoup.createConsumer(streamId, 'video', stream.pubStatus.video.producerId, preferredSpatialLayer);
+          await this.adapterRef._mediasoup.createConsumer(streamId, 'video', 'video', stream.pubStatus.video.producerId, preferredSpatialLayer);
           stream.pubStatus.video.consumerStatus = 'end'
           this.adapterRef.logger.log('订阅 %s 视频流完成', stream.getId())
         }
