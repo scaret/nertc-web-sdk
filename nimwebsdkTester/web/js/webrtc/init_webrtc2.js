@@ -36,15 +36,16 @@ var WEBRTC2_ENV = {
 };
 
 const test = {
-  "appkey": "09a39532e122c912241b05f6f92c97b7",
-  "demoServer": "https://yunxinent-demo.netease.im/nrtcproxy/demo/getChecksum.action",
-  "channelServer": "https://yunxinent-demo.netease.im/nrtcproxy/nrtc/getChannelInfos.action",
-  "statisticsServer": "https://yunxinent-demo.netease.im/report/statics/report/common/form",
-  "roomServer": "https://yunxinent-demo.netease.im/v2/sdk/rooms",
-  "compatServer": "https://yunxinent-demo.netease.im/lbs/cc/nrtc/v2",
-  "nosLbsServer": "https://yunxinent-demo.netease.im/lbs/noslbs443.jsp",
-  "nosUploadSever": "https://yunxinent-demo.netease.im",
-  "nosTokenServer": "https://yunxinent-demo.netease.im/report/sdklog/getToken"
+  "appkey":"6c6a4f0c8928b54032ebc495e442ebbf",
+  "demoServer":"http://59.111.99.186:20080/nrtcproxy/demo/getChecksum.action",
+  "channelServer":"http://59.111.99.186:20080/nrtcproxy/nrtc/getChannelInfos.action",
+  "statisticsServer":"http://59.111.99.186:20080/report/statics/report/common/form",
+  "roomServer":"http://59.111.99.186:20080/v2/sdk/rooms",
+  "compatServer":"http://59.111.99.186:20080/lbs/cc/nrtc/v2",
+  "nosLbsServer":"http://59.111.99.186:20080/lbs/noslbs.jsp",
+  "nosUploadSever":"http://59.111.99.186:20080",
+  "nosTokenServer":"http://59.111.99.186:20080/report/sdklog/getToken",
+  "useIPv6":false
 }
 
 const roomconfig = document.querySelector('select#roomconfig');
@@ -89,7 +90,7 @@ function loadEnv() {
     $('#appkey').val(WEBRTC2_ENV[env].appkey)
     //$('#AppSecret').val(WEBRTC2_ENV[env].AppSecret)
   }
-  $('#appkey').val('09a39532e122c912241b05f6f92c97b7')
+  $('#appkey').val('eca23f68c66d4acfceee77c200200359')
   $('#uid').val(Math.ceil(Math.random() * 1e4))
   //$('#channelName').val(Math.ceil(Math.random() * 1e10))
   const channelName = window.localStorage ? window.localStorage.getItem("channelName") : "";
@@ -475,7 +476,7 @@ $('#init-btn').on('click', () => {
  * ----------------------------------------
  */
 
-$('#joinChannel-btn').on('click', () => {
+$('#joinChannel-btn').on('click', async () => {
   const channelName = $('#channelName').val()
   if (window.localStorage){
     window.localStorage.setItem("channelName", channelName);
@@ -491,18 +492,71 @@ $('#joinChannel-btn').on('click', () => {
   // 互动直播相关
   const liveEnable = $('#sessionConfigLiveEnable').prop('checked') 
 
-  let channelServer=null; statisticsServer=null; roomServer=null;
+  let channelServer=null; statisticsServer=null; roomServer=null; demoServer=null;appkey=null
   if ($('#isPrivatization').prop('checked')) {
-    channelServer = $('#channelServer').val() || 'https://yunxinent-demo.netease.im/nrtcproxy/nrtc/getChannelInfos.action'
-    statisticsServer = $('#statisticsServer').val() || 'https://yunxinent-demo.netease.im/report/statics/report/common/form'
-    roomServer = $('#roomServer').val() || '"https://yunxinent-demo.netease.im/v2/sdk/rooms"'
+    if ($('#configUrl').val()) {
+      try {
+        let checkSumUrl = WEBRTC2_ENV[env].checkSumUrl
+        const data = await axios.get($('#configUrl').val())
+        var d = data.data;
+        console.log("获取到私有化的配置参数: " + d);
+        if (d.code != 200) {
+          console.error("获取到私有化的配置参数失败");
+          addLog('获取到私有化的配置参数失败，请检查url是否正确')
+          return
+        }
+        channelServer = d.channelServer || test.channelServer
+        statisticsServer = d.statisticsServer || test.statisticsServer
+        roomServer = d.roomServer || test.roomServer
+        demoServer = d.demoServer || test.demoServer
+        appkey = d.appkey || test.appkey
+      } catch (e) {
+        console.error("获取到私有化的配置参数失败: ", e);
+        addLog('获取到私有化的配置参数失败，请检查url是否正确')
+        return
+      }
+    } else {
+      appkey = $('#privatizationAppkey').val() || test.appkey
+      channelServer = $('#channelServer').val() || test.channelServer
+      statisticsServer = $('#statisticsServer').val() || test.statisticsServer
+      roomServer = $('#roomServer').val() || test.roomServer
+      demoServer = $('#demoServer').val() || test.demoServer
+    }
+    if (appkey) {
+      $('#appkey').val(appkey)
+      $('#privatizationAppkey').val(appkey)
+      $('#channelServer').val(channelServer)
+      $('#statisticsServer').val(statisticsServer)
+      $('#roomServer').val(roomServer)
+      $('#demoServer').val(demoServer)
+      init()
+    } else {
+      console.error("私有化配置: 没有获取appkey");
+      addLog('私有化配置: 没有获取appkey，请检查设置的参数是否正确')
+      return
+    }
+    const safemode = $('#part-env input[name="safemode"]:checked').val()
+    if(!$("#token").val() && safemode == 'safe' && demoServer){
+      try {
+        const data = await axios.post(demoServer, `uid=${uid}&appkey=${appkey}`)
+        var d = data.data;
+        console.warn("获取token反馈结果: ", data);
+        if (d.code != 200) {
+          console.error("获取token失败");
+          addLog('获取token失败，请检查设置的参数是否正确')
+          return
+        }
+        $("#token").val(d.checksum)
+      } catch (e) {
+        console.error("获取token失败: ", e);
+        addLog('获取token失败，请检查设置的参数是否正确')
+        return
+      }
+    }
   }
   
-  //const mediaServer = $('#mediaServer').val()
+  console.info('开始加入房间')
 
-  addLog('开始加入房间，判断一下角色...')
-  console.info('开始加入房间，判断一下角色...')
-  const role = +($('#part-mode input[name="role"]:checked').val())
   rtc.client.adapterRef.testConf = {
     turnAddr: $('#isTurnAddrConf').prop('checked') ? $('#isTurnAddrConf').prop('checked') && $('#turnAddr').val() : null,
     ForwardedAddr: $('#isForwardedAddrConf').prop('checked') ? $('#isForwardedAddrConf').prop('checked') && $('#forwardedAddr').val() : null

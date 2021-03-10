@@ -107,10 +107,10 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
         this._pc = new RTCPeerConnection({
             iceServers: iceServers || [],
             iceTransportPolicy: iceTransportPolicy || 'all',
-            bundlePolicy: 'max-bundle',
+            //bundlePolicy: 'max-bundle',
             rtcpMuxPolicy: 'require',
-            sdpSemantics: 'unified-plan',
-            ...additionalSettings
+            //sdpSemantics: 'unified-plan',
+            //...additionalSettings
         }, proprietaryConstraints);
         // Handle RTCPeerConnection connection status.
         //使用onconnectionstatechange接口判断peer的状态，废弃使用 iceconnectionstatechange
@@ -134,12 +134,16 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
                     break;
             }
         }
-        /*this._pc.onicecandidate = (event) =>{
+        this._pc.onicecandidate = (event) =>{
             console.error('本地候选地址的收集: ', event.candidate)
-        }*/
+        }
         /*this._pc.onconnectionstatechange = (event) =>{
             console.error('peer的状态: ', event)
         }*/
+
+        this._pc.onicecandidateerror = (e) => {
+            console.error('地址收集失败: ', e)
+        }
     }
     async updateIceServers(iceServers) {
         logger.debug('updateIceServers()');

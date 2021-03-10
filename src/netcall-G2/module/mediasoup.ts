@@ -138,12 +138,11 @@ class Mediasoup extends EventEmitter {
     if (this.adapterRef.channelInfo.relaytoken && this.adapterRef.channelInfo.relayaddrs) {
       this.adapterRef.channelInfo.relayaddrs.forEach( (item: string) => {
         iceServers.push({
-          urls: 'turn:' + item + '?transport=udp',
+          urls: 'turn:' + item, // + '?transport=udp',
           credential: this.adapterRef.channelInfo.uid + '/' + this.adapterRef.channelInfo.cid,
           username: this.adapterRef.channelInfo.relaytoken
         })
       })
-      iceTransportPolicy = 'relay'
     }
     if (this.adapterRef.testConf.turnAddr) {
       iceServers.length = 0
@@ -164,7 +163,7 @@ class Mediasoup extends EventEmitter {
         iceServers,
         iceTransportPolicy,
         proprietaryConstraints   : {
-          optional: [ { googDscp: true } ]
+          optional: [ { googDscp: true }, { googIPv6: false } ]
         },
         appData: {
           cid: this.adapterRef.channelInfo.cid,

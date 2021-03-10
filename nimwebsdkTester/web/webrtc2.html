@@ -27,13 +27,14 @@
           </div>
           <div class="line">
             <label>
-              <input type="radio" id="rtc-mode" name="mode" value="rtc" checked> rtc</label>
+              <input type="radio" name="safemode" value="safe" checked> 安全模式</label>
             <label>
-              <input type="radio" id="live-mode" name="mode" value="live"> live</label>
+              <input type="radio" name="safemode" value="unsafe">非安全模式</label>
           </div>
           <div class="line">
             appkey:
             <input type="text" id="appkey">
+            AppSecret:
             <input type="text" id="AppSecret">
             <button type="button" id='setAppkey'>设置appkey</button>
             <button type="button" id='clearLocalStorage'>重置</button>
@@ -44,14 +45,24 @@
             <input type="text" id="getwayAddr" value='webrtcgwcn.netease.im/?ip=59.111.190.69:2060'>
             是否使用：<input type="checkbox" id="isGetwayAddrConf"/>
           </div>
+          <!-- <div class="line">
+            方式一：参数配置URL:
+            <input type="text" id="configUrl" value=''>
+          </div> -->
           <div class="line">
+            私有化配置：<input type="checkbox" checked id="isPrivatization"/>
+          </div>
+          <div class="line">
+            appkey:
+            <input type="text" id="privatizationAppkey" value=''>
             channelServer:
             <input type="text" id="channelServer" value=''>
             statisticsServer:
             <input type="text" id="statisticsServer" value=''>
             roomServer:
             <input type="text" id="roomServer" value=''>
-            私有化配置：<input type="checkbox" checked id="isPrivatization"/>
+            demoServer:
+            <input type="text" id="demoServer" value=''>
           </div>
           <div class="line">
             turn地址:
