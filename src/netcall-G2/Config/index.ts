@@ -1,5 +1,5 @@
 //Common Configs
-const SDK_VERSION = "3.9.300";// WEBPACK_STRING_REPLACE_VERSION -don't delete the comment
+const SDK_VERSION = "4.1.0";// WEBPACK_STRING_REPLACE_VERSION -don't delete the comment
 const ENGINE_VERSION = "4.1.0.0";
 const BUILD = ""; // WEBPACK_STRING_REPLACE_BUILD -don't delete the comment
 
