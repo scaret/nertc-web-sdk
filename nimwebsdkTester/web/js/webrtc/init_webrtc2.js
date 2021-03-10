@@ -289,7 +289,7 @@ function initEvents() {
     if ($('#allowRemoteAudioRendering').prop("checked")){
       const elemId = `audio-uid-${remoteStream.streamID}`;
       if (!$(`#${elemId}`).length){
-        const elem = $(`<audio id="${elemId}" autoplay controls ></audio>`);
+        const elem = $(`<audio title="${elemId}" id="${elemId}" autoplay controls ></audio>`);
         elem.appendTo($('#remoteAudioRenderingContainer'));
       }
       const audioStream = remoteStream.getAudioStream();
@@ -1407,7 +1407,7 @@ document.body.addEventListener('click', function (e) {
 })
 
 $('#allowRemoteAudioRendering').click(async ()=>{
-  $("#playOptionsAudio").removeAttr("checked");
+  $("#remotePlayOptionsAudio").removeAttr("checked");
 });
 
 // 用户角色
