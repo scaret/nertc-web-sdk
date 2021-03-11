@@ -6,7 +6,12 @@ import {Meeting} from "./module/meeting";
 import {StatsReport} from "./module/report/statsReport";
 
 export interface AdapterRef {
-  uid2SscrList: {[uid:number]:{[kind:string]:{ssrc: number}}};
+  uid2SscrList: {[uid:number]:{
+      audio:{ssrc: number},
+      video:{ssrc: number},
+      screen:{ssrc: number},
+    }
+  };
   netStatusTimer: Timer|null;
   networkQuality: {};
   _statsReport: StatsReport|null;
@@ -733,7 +738,7 @@ export interface SubscribeOptions{
   audio?: boolean;
   video?: boolean;
   screen?: boolean;
-  highOrLow?: boolean;
+  highOrLow?: number;
 }
 
 export interface SubscribeConfig{
