@@ -34,6 +34,7 @@
     "node": "node app.js",
     "py": "cd python && python manage.py runserver_plus --cert server.crt 0.0.0.0:3000",
     "https-server": "badcert --no-reload web --p 8083",
+    //"https-server": "http-server --ssl --key ./ssh/privkey.pem --cert ./ssh/cert.pem --p 9091",
     "http-server": "http-server --p 8082"
   },
   "author": "zyy",
