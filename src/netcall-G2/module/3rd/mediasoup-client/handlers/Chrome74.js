@@ -408,6 +408,8 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
             this._pc.videoSender.replaceTrack(null);
             //this._remoteSdp.closeMediaSection('1');
             //console.error('删除发送的video track: ', this._pc.videoSender)
+        } else if (kind === 'screenShare') {
+          this._pc.screenSender.replaceTrack(null);
         } else {
             transceiver.sender.replaceTrack(null);
         }

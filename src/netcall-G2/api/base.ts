@@ -404,27 +404,32 @@ class Base extends EventEmitter {
   /*** 用户成员uid和ssrc对应的list ***/
   getUidAndKindBySsrc(ssrc:number) {
     for (let i in this.adapterRef.uid2SscrList) {
-      if(this.adapterRef.uid2SscrList[i].audio && this.adapterRef.uid2SscrList[i].audio.ssrc == ssrc){
+      if(this.adapterRef.uid2SscrList[i].audio.ssrc == ssrc){
         return {uid: i, kind: 'audio'}
       } else if(this.adapterRef.uid2SscrList[i].video && this.adapterRef.uid2SscrList[i].video.ssrc == ssrc){
         return {uid: i, kind: 'video'}
+      } else if(this.adapterRef.uid2SscrList[i].screen && this.adapterRef.uid2SscrList[i].screen.ssrc == ssrc){
+        return {uid: i, kind: 'screen'}
       }
     }
     return {uid: 0, kind: ''}
   }
 
-  getSsrcByUidAndKind (uid:number, kind:string) {
+  getSsrcByUidAndKind (uid:number, kind:MediaTypeShort) {
     return this.adapterRef.uid2SscrList[uid] && this.adapterRef.uid2SscrList[uid][kind]
   }
 
   addSsrc(uid:number, kind:MediaTypeShort, ssrc:number) {
-    if(!this.adapterRef.uid2SscrList[uid]){
-      this.adapterRef.uid2SscrList[uid] = {}
-    } 
-
-    if(!this.adapterRef.uid2SscrList[uid][kind]){
+    if (!this.adapterRef.uid2SscrList[uid]) {
+      this.adapterRef.uid2SscrList[uid] = {
+        audio: {ssrc: 0},
+        video: {ssrc: 0},
+        screen: {ssrc: 0},
+      };
+    }
+    if (!this.adapterRef.uid2SscrList[uid][kind]) {
       this.adapterRef.uid2SscrList[uid][kind] = {ssrc: ssrc};
-    }else{
+    } else {
       this.adapterRef.uid2SscrList[uid][kind].ssrc = ssrc
     }
   }
@@ -436,7 +441,7 @@ class Base extends EventEmitter {
           this.adapterRef.uid2SscrList[uid][kind].ssrc = 0
         }
       } else {
-        this.adapterRef.uid2SscrList[uid] = {}
+        delete this.adapterRef.uid2SscrList[uid];
       }
     }
   }

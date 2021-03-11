@@ -399,21 +399,23 @@ class Mediasoup extends EventEmitter {
       this.adapterRef.logger.log('音频已经publish，重复操作')
     } else if(stream.mediaHelper && stream.mediaHelper.audioStream) {
       const audioTrack = stream.mediaHelper.audioStream.getAudioTracks()[0]
-      this.adapterRef.logger.log('发布 audioTrack: ', audioTrack.id)
-      stream.pubStatus.audio.audio = true
-      this._micProducer = await this._sendTransport.produce({
-        track: audioTrack,
-        codecOptions:{
-          opusStereo: 1,
-          opusDtx: 1
-        },
-        appData: {deviceId: audioTrack.id, mediaType: 'audio'} as ProducerAppData
-      });
-      this._micProducer.on('trackended', notify => {
-        //停止的原因可能是设备拔出、取消授权等
-        this.adapterRef.logger.warn('音频轨道已停止')
-        this.adapterRef.instance.emit('audioTrackEnded')
-      })
+      if (audioTrack){
+        this.adapterRef.logger.log('发布 audioTrack: ', audioTrack.id)
+        stream.pubStatus.audio.audio = true
+        this._micProducer = await this._sendTransport.produce({
+          track: audioTrack,
+          codecOptions:{
+            opusStereo: 1,
+            opusDtx: 1
+          },
+          appData: {deviceId: audioTrack.id, mediaType: 'audio'} as ProducerAppData
+        });
+        this._micProducer.on('trackended', notify => {
+          //停止的原因可能是设备拔出、取消授权等
+          this.adapterRef.logger.warn('音频轨道已停止')
+          this.adapterRef.instance.emit('audioTrackEnded')
+        })
+      }
     }
 
     if (stream.mediaHelper && stream.mediaHelper.videoStream && this._webcamProducer) {

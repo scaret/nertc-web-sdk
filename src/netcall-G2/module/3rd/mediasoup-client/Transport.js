@@ -483,7 +483,7 @@ class Transport extends EnhancedEventEmitter_1.EnhancedEventEmitter {
             if (this._closed)
                 return;
             logger.warn('producer 关闭: ', producer.localId)
-            this._awaitQueue.push(async () => this._handler.stopSending(producer.localId, producer.kind))
+            this._awaitQueue.push(async () => this._handler.stopSending(producer.localId, producer.appData.mediaType))
                 .catch((error) => logger.warn('producer.close() failed:%o', error));
         });
         producer.on('@replacetrack', (track, callback, errback) => {

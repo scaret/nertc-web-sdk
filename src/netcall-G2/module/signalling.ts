@@ -272,7 +272,7 @@ class Signalling extends EventEmitter {
           uid,
           producerId,
           mediaType,
-          mute
+          cid
         } = externData;
         this.adapterRef.logger.log('收到OnProducerClose消息 code = %d, errMsg = %s, uid = %s, mediaType = %s', code, errMsg, uid, mediaType);
         let kind:'audio'|'video';
@@ -298,7 +298,10 @@ class Signalling extends EventEmitter {
         if (!this.adapterRef._mediasoup){
           throw new Error('No this.adapterRef._mediasoup');
         }
-        this.adapterRef._mediasoup.destroyConsumer(remoteStream.pubStatus[mediaTypeShort].consumerId)
+        if (remoteStream.pubStatus[mediaTypeShort].consumerId){
+          console.error("destroyConsumer", remoteStream.pubStatus[mediaTypeShort].consumerId)
+          this.adapterRef._mediasoup.destroyConsumer(remoteStream.pubStatus[mediaTypeShort].consumerId)
+        }
         this.adapterRef.instance.removeSsrc(uid, mediaTypeShort)
         remoteStream.subStatus[mediaTypeShort] = false
         //@ts-ignore
