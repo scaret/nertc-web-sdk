@@ -364,29 +364,38 @@ class Stream extends EventEmitter {
   */
   setSubscribeConfig (conf:SubscribeOptions) {
     this.client.adapterRef.logger.log('设置订阅规则：%o ', JSON.stringify(conf, null, ' '))
-    let {audio = false, video = false, screen = false, highOrLow = 0} = conf
-    if (highOrLow !== 0) {
-      highOrLow = 1
+    if (typeof conf.audio === "boolean"){
+      this.subConf.audio = conf.audio;
     }
-    this.subConf = {
-      audio,
-      video,
-      screen,
-      highOrLow,
-      resolution: this.subConf.resolution
+    if (typeof conf.video === "boolean"){
+      this.subConf.video = conf.video;
     }
-    if (this.pubStatus.audio && this.pubStatus.audio.audio && audio) {
+    if (typeof conf.screen === "boolean"){
+      this.subConf.screen = conf.screen;
+    }
+    if (typeof conf.highOrLow === "number"){
+      this.subConf.highOrLow = conf.highOrLow;
+    }
+    
+    if (this.pubStatus.audio.audio && this.subConf.audio) {
       this.subConf.audio = true
       this.audio = true
     } else {
       this.subConf.audio = false
     }
 
-    if (this.pubStatus.video && this.pubStatus.video.video && video) {
+    if (this.pubStatus.video.video && this.subConf.video) {
       this.subConf.video = true
       this.video = true
     } else {
       this.subConf.video = false
+    }
+    
+    if (this.pubStatus.screen.screen && this.subConf.screen) {
+      this.subConf.screen = true
+      this.screen = true
+    } else {
+      this.subConf.screen = false
     }
 
     this.client.adapterRef.logger.log('订阅规则：%o ', JSON.stringify(this.subConf, null, ' '))
@@ -696,11 +705,16 @@ class Stream extends EventEmitter {
       this._play.stopPlayAudioStream()
     } else if (type === 'video') {
       this._play.stopPlayVideoStream()
+    } else if (type === 'screen') {
+      this._play.stopPlayScreenStream()
     } else {
-      if(!this.audio)
+      if(!this.audio){
         this._play.stopPlayAudioStream()
-      if(!this.video)
+      } if (!this.video){
         this._play.stopPlayVideoStream()
+      } if (!this.screen){
+        this._play.stopPlayScreenStream()
+      }
     }
     this.client.apiFrequencyControl({
       name: 'stop',

@@ -268,7 +268,7 @@ function initEvents() {
     console.warn('收到别人停止发布的消息: ', remoteStream.streamID)
     addLog(`${remoteStream.streamID}停止发布${!remoteStream.audio ? '音频 和 ' :' ' }${!remoteStream.Video ? '视频' :'' }`)
     
-    if (!remoteStream.audio && !remoteStream.video) {
+    if (!remoteStream.audio && !remoteStream.video && !remoteStream.screen) {
       delete rtc.remoteStreams[remoteStream.streamID]
       $(`#subList option[value=${remoteStream.streamID}]`).remove()
     }
@@ -646,6 +646,27 @@ $('#sub').on('click', () => {
   subscribe(remoteStream)
 })
 
+$('#unsubAudio').on('click', () => {
+  if (!rtc.remoteStreams[subList[subList.selectedIndex].value]) {
+    addLog('无法进行此操作')
+    return
+  }
+
+  let remoteStream = rtc.remoteStreams[subList[subList.selectedIndex].value]
+
+  remoteStream.setSubscribeConfig({
+    audio: false
+  })
+
+  rtc.client.unsubscribe(remoteStream).then(()=>{
+    console.log('本地 取消订阅音频 成功')
+    addLog('本地 取消订阅音频 成功')
+  }).catch(err=>{
+    addLog('本地 取消订阅音频 失败')
+    console.log('本地 取消订阅音频 失败: ', err)
+  })
+})
+
 $('#unsubVideo').on('click', () => {
   if (!rtc.remoteStreams[subList[subList.selectedIndex].value]) {
     addLog('无法进行此操作')
@@ -655,7 +676,6 @@ $('#unsubVideo').on('click', () => {
   let remoteStream = rtc.remoteStreams[subList[subList.selectedIndex].value]
 
   remoteStream.setSubscribeConfig({
-    audio: true,
     video: false
   })
 
@@ -665,6 +685,28 @@ $('#unsubVideo').on('click', () => {
   }).catch(err=>{
     addLog('本地 取消订阅视频 失败')
     console.log('本地 取消订阅视频 失败: ', err)
+  })
+})
+
+
+$('#unsubScreen').on('click', () => {
+  if (!rtc.remoteStreams[subList[subList.selectedIndex].value]) {
+    addLog('无法进行此操作')
+    return
+  }
+
+  let remoteStream = rtc.remoteStreams[subList[subList.selectedIndex].value]
+
+  remoteStream.setSubscribeConfig({
+    screen: false
+  })
+
+  rtc.client.unsubscribe(remoteStream).then(()=>{
+    console.log('本地 取消订阅辅流 成功')
+    addLog('本地 取消订阅辅流 成功')
+  }).catch(err=>{
+    addLog('本地 取消订阅辅流 失败')
+    console.log('本地 取消订阅辅流 失败: ', err)
   })
 })
 
@@ -784,7 +826,7 @@ function unpublish(type=null) {
 
 function subscribe(remoteStream) {
   remoteStream.setSubscribeConfig({
-    audio: true,
+    audio: $('#subAudio').prop('checked'),
     video: $('#subVideo').prop('checked'),
     screen: $('#subScreen').prop('checked'),
     highOrLow: parseInt($('#subResolution').val()),

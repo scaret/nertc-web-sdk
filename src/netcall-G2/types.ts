@@ -738,7 +738,7 @@ export interface SubscribeOptions{
   audio?: boolean;
   video?: boolean;
   screen?: boolean;
-  highOrLow?: boolean;
+  highOrLow?: number;
 }
 
 export interface SubscribeConfig{
