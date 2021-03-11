@@ -314,11 +314,16 @@ class Mediasoup extends EventEmitter {
             ...appData
           };
 
-          let ssrc = offer.sdp.match(/a=ssrc:(\d+)/)[1] || ''; //历史遗留
+          let ssrc:number;
           let mLineIndex = offer.sdp.indexOf(producerData.deviceId);
-          if (producerData.deviceId && mLineIndex > -1){
+          if (rtpParameters.encodings && rtpParameters.encodings[0] && rtpParameters.encodings[0].ssrc){
+            ssrc = rtpParameters.encodings[0].ssrc;
+          }else if (producerData.deviceId && mLineIndex > -1){
             let mLinePiece = offer.sdp.substring(mLineIndex);
             ssrc = mLinePiece.match(/a=ssrc:(\d+)/)[1] || '';
+            console.error("SSRC Type 2", appData.mediaType, ssrc);
+          }else{
+            ssrc = offer.sdp.match(/a=ssrc:(\d+)/)[1] || ''; //历史遗留
           }
           if (appData.mediaType === 'video') {
             producerData.mediaProfile = [{

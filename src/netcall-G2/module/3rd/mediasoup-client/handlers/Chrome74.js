@@ -193,7 +193,7 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
     }
     async send({ track, encodings, codecOptions, codec , appData}) {
         this._assertSendDirection();
-        logger.debug('send() [kind:%s, track.id:%s encodings:%o]', track.kind, track.id, encodings);
+        logger.debug('send() [kind:%s, track.id:%s encodings:%o appData:%o]', track.kind, track.id, encodings, appData);
         if (encodings && encodings.length > 1) {
             encodings.forEach((encoding, idx) => {
                 encoding.rid = `r${idx}`;
@@ -204,31 +204,31 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
         sendingRtpParameters.codecs =
             ortc.reduceCodecs(sendingRtpParameters.codecs, codec);
         
-        let mediaSectionIdx = undefined;
+        // let mediaSectionIdx = undefined;
         let transceiver = {}
         if (appData.mediaType === 'audio' && this._pc.audioSender) {
             logger.debug('audioSender更新track: ', this._pc.audioSender)
             this._pc.audioSender.replaceTrack(track)
-            mediaSectionIdx = 0
+            // mediaSectionIdx = 0
         } else if (appData.mediaType === 'video' && this._pc.videoSender) {
             logger.debug('videoSender更新track: ', this._pc.videoSender)
             this._pc.videoSender.replaceTrack(track)
             if (this._pc.audioSender) {
-                mediaSectionIdx = 1
+                // mediaSectionIdx = 1
             } else {
                 //没有开启mic或者mic开启失败
-                mediaSectionIdx = 0
+                // mediaSectionIdx = 0
             }
         } else if (appData.mediaType === 'screenShare' && this._pc.screenSender) {
           //
           logger.debug('screenSender更新track: ', this._pc.screenSender)
           this._pc.screenSender.replaceTrack(track)
-          if (this._pc.audioSender) {
-            mediaSectionIdx = 1
-          } else {
-            //没有开启mic或者mic开启失败
-            mediaSectionIdx = 0
-          }
+          // if (this._pc.audioSender) {
+          //   mediaSectionIdx = 1
+          // } else {
+          //   //没有开启mic或者mic开启失败
+          //   mediaSectionIdx = 0
+          // }
         } else {
             let stream = new MediaStream();
             stream.addTrack(track)
@@ -263,7 +263,31 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
         //console.error('localId： ', localId)
         // Set MID.
         sendingRtpParameters.mid = localId;
-        if (mediaSectionIdx === undefined) {
+        //寻找 mediaSectionIdx
+        let mediaSectionIdx = -1;
+        for(var i in localSdpObject.media){
+          if (appData.mediaType === "audio"){
+            if (localSdpObject.media[i].type === "audio"){
+              mediaSectionIdx = i;
+              break;
+            }
+          }else if (appData.mediaType === "video"){
+            if (localSdpObject.media[i].type === "video"){
+              if (!this._pc.screenSender || !this._pc.screenSender.offerMediaObject || this._pc.screenSender.offerMediaObject.msid !== localSdpObject.media[i].msId){
+                mediaSectionIdx = i;
+                break;
+              }
+            }
+            if (localSdpObject.media[i].type === "screenShare"){
+              if (!this._pc.videoSender || !this._pc.videoSender.offerMediaObject || this._pc.videoSender.offerMediaObject.msid !== localSdpObject.media[i].msId){
+                mediaSectionIdx = i;
+                break;
+              }
+            }
+          }
+        }
+        
+        if (mediaSectionIdx === -1) {
             mediaSectionIdx = localSdpObject.media.length - 1;
         }
         const offerMediaObject = localSdpObject.media[mediaSectionIdx];
