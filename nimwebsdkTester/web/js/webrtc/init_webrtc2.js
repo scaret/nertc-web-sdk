@@ -37,14 +37,14 @@ var WEBRTC2_ENV = {
 
 const test = {
   "appkey":"6c6a4f0c8928b54032ebc495e442ebbf",
-  "demoServer":"http://59.111.99.186:20080/nrtcproxy/demo/getChecksum.action",
-  "channelServer":"http://59.111.99.186:20080/nrtcproxy/nrtc/getChannelInfos.action",
-  "statisticsServer":"http://59.111.99.186:20080/report/statics/report/common/form",
-  "roomServer":"http://59.111.99.186:20080/v2/sdk/rooms",
-  "compatServer":"http://59.111.99.186:20080/lbs/cc/nrtc/v2",
-  "nosLbsServer":"http://59.111.99.186:20080/lbs/noslbs.jsp",
-  "nosUploadSever":"http://59.111.99.186:20080",
-  "nosTokenServer":"http://59.111.99.186:20080/report/sdklog/getToken",
+  "demoServer":"https://yunxinent-demo.netease.im/nrtcproxy/demo/getChecksum.action",
+  "channelServer":"https://yunxinent-demo.netease.im/nrtcproxy/nrtc/getChannelInfos.action",
+  "statisticsServer":"https://yunxinent-demo.netease.im/report/statics/report/common/form",
+  "roomServer":"https://yunxinent-demo.netease.im/v2/sdk/rooms",
+  "compatServer":"https://yunxinent-demo.netease.im/lbs/cc/nrtc/v2",
+  "nosLbsServer":"https://yunxinent-demo.netease.im/lbs/noslbs-https.jsp",
+  "nosUploadSever":"https://yunxinent-demo.netease.im",
+  "nosTokenServer":"https://yunxinent-demo.netease.im/report/sdklog/getToken",
   "useIPv6":false
 }
 
