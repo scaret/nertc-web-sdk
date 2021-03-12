@@ -928,10 +928,10 @@ class Mediasoup extends EventEmitter {
 
   async unmuteScreen(){
     this.adapterRef.logger.log('resume视频')
-    if (!this._webcamProducer){
-      throw new Error('No _webcamProducer');
+    if (!this._screenProducer){
+      throw new Error('No _screenProducer');
     }
-    this._webcamProducer.resume();
+    this._screenProducer.resume();
     try{
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
         throw new Error('No _protoo');
@@ -943,7 +943,7 @@ class Mediasoup extends EventEmitter {
             cid: this.adapterRef.channelInfo.cid,
             uid: this.adapterRef.channelInfo.uid - 0,
             data: {
-              producerId: this._webcamProducer.id,
+              producerId: this._screenProducer.id,
               mute: false
             }
           }

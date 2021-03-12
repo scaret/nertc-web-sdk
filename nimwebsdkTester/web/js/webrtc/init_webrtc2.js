@@ -658,7 +658,7 @@ $('#unsubAudio').on('click', () => {
     audio: false
   })
 
-  rtc.client.unsubscribe(remoteStream).then(()=>{
+  rtc.client.subscribe(remoteStream).then(()=>{
     console.log('本地 取消订阅音频 成功')
     addLog('本地 取消订阅音频 成功')
   }).catch(err=>{
@@ -679,7 +679,7 @@ $('#unsubVideo').on('click', () => {
     video: false
   })
 
-  rtc.client.unsubscribe(remoteStream).then(()=>{
+  rtc.client.subscribe(remoteStream).then(()=>{
     console.log('本地 取消订阅视频 成功')
     addLog('本地 取消订阅视频 成功')
   }).catch(err=>{
@@ -701,7 +701,7 @@ $('#unsubScreen').on('click', () => {
     screen: false
   })
 
-  rtc.client.unsubscribe(remoteStream).then(()=>{
+  rtc.client.subscribe(remoteStream).then(()=>{
     console.log('本地 取消订阅辅流 成功')
     addLog('本地 取消订阅辅流 成功')
   }).catch(err=>{
@@ -1467,6 +1467,7 @@ $('#snapshot').click(function(event) {
   if (rtc.client) {
     let stream
     let uid = $('#snapshotAccount').val()
+    let mediaType = $('#snapType').val()
     console.warn('截图: ', uid)
     if (rtc.client.getUid() == uid || !uid) {
       stream = rtc.localStream
@@ -1485,13 +1486,14 @@ $('#snapshot').click(function(event) {
     }
     stream.takeSnapshot({
       uid: uid,
+      mediaType: mediaType,
       name: $('#snapshotName').val()
     }).then(res => {
-      console.log('截图成功')
-      addLog('截图成功')
+      console.log('截图成功' + mediaType)
+      addLog('截图成功' + mediaType)
     }).catch(err => {
-      console.log('截图失败: ', err)
-      addLog('截图失败')
+      console.log('截图失败: ' + mediaType, err)
+      addLog('截图失败' + mediaType)
     })
   }
 })
