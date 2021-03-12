@@ -698,7 +698,7 @@ class Stream extends EventEmitter {
    * @memberOf Stream#
    * @return {Void}
    */
-  stop (type?:string) {
+  stop (type?:MediaTypeShort) {
     this.client.adapterRef.logger.log('停止播放 %s 音视频流', this.streamID)
     if(!this._play) return
     if (type === 'audio') {

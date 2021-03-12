@@ -660,7 +660,7 @@ class Signalling extends EventEmitter {
           }
         }
         this.adapterRef.logger.log('通知房间成员发布信息: ', JSON.stringify(remoteStream.pubStatus, null, ''))
-        if (remoteStream.pubStatus.audio.audio || remoteStream.pubStatus.video.video) {
+        if (remoteStream.pubStatus.audio.audio || remoteStream.pubStatus.video.video || remoteStream.pubStatus.screen.screen) {
           this.adapterRef.instance.emit('stream-added', {stream: remoteStream})
         } 
       }
