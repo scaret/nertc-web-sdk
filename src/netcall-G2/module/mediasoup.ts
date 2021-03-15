@@ -32,6 +32,13 @@ class Mediasoup extends EventEmitter {
   private _recvTransportTimeoutTimer:Timer|null;
   private _eventQueue: ProduceConsumeInfo[];
   public _protoo: Peer|null;
+  // senderEncodingParameter。会复用上次的senderEncodingParameter
+  private senderEncodingParameter: {
+    ssrcList: number[]
+    audio: {ssrc: number, dtx: boolean}|null,
+    video: {ssrc: number, rtx: {ssrc: number}}|null,
+    screen: {ssrc: number, rtx: {ssrc: number}}|null,
+  }
   private _tempRecv :{
     audioRtpParameters: any,
     videoRtpParameters: any,
@@ -65,6 +72,12 @@ class Mediasoup extends EventEmitter {
     //this.adapterRef = null
     //this.sdkRef = null
     this._eventQueue = []
+    this.senderEncodingParameter = {
+      ssrcList: [],
+      audio: null,
+      video: null,
+      screen: null,
+    }
     this._tempRecv = {
       audioRtpParameters: null,
       videoRtpParameters: null,
@@ -314,20 +327,58 @@ class Mediasoup extends EventEmitter {
             ...appData
           };
 
-          let ssrc:number;
+          // 1. 使用原有的encoding
+          let encoding = this.senderEncodingParameter[mediaTypeShort];
           let mLineIndex = offer.sdp.indexOf(producerData.deviceId);
-          if (rtpParameters.encodings && rtpParameters.encodings[0] && rtpParameters.encodings[0].ssrc){
-            ssrc = rtpParameters.encodings[0].ssrc;
-          }else if (producerData.deviceId && mLineIndex > -1){
-            let mLinePiece = offer.sdp.substring(mLineIndex);
-            ssrc = mLinePiece.match(/a=ssrc:(\d+)/)[1] || '';
-            console.error("SSRC Type 2", appData.mediaType, ssrc);
-          }else{
-            ssrc = offer.sdp.match(/a=ssrc:(\d+)/)[1] || ''; //历史遗留
+          console.error("rtpParameters", JSON.stringify(rtpParameters, null, 2));
+          if (!encoding){
+            if (rtpParameters.encodings){
+              // 2. 使用rtpParameter中的值
+              encoding = rtpParameters.encodings[0];
+              if (encoding && this.senderEncodingParameter.ssrcList.indexOf(encoding.ssrc) > -1){
+                // 已被其他占据，丢弃
+                encoding = null;
+              }
+            }
+            if (!encoding && producerData.deviceId && mLineIndex > -1){
+              // 3. 在SDP中寻找ssrc-group字段匹配
+              let mLinePiece = offer.sdp.substring(mLineIndex);
+              const match = mLinePiece.match(/a=ssrc-group:FID (\d+) (\d+)/);
+              if (match){
+                encoding = {
+                  ssrc: parseInt(match[1]),
+                  rtx: {
+                    ssrc: parseInt(match[2])
+                  }
+                };
+              }
+              if (encoding && this.senderEncodingParameter.ssrcList.indexOf(encoding.ssrc) > -1){
+                // 已被其他占据，丢弃
+                encoding = null;
+              }
+            }
+            if (!encoding){
+              this.adapterRef.logger.log('使用sdp中第一个ssrc');
+              encoding = {
+                ssrc: parseInt(offer.sdp.match(/a=ssrc:(\d+)/)[1]),//历史遗留
+                dtx: false,
+              }
+            }
+            //@ts-ignore
+            this.senderEncodingParameter[mediaTypeShort] = encoding;
+            this.senderEncodingParameter.ssrcList.push(encoding.ssrc);
+          }
+          if (rtpParameters.encodings && rtpParameters.encodings[0]) {
+            rtpParameters.encodings[0].ssrc = encoding.ssrc;
+            // @ts-ignore
+            if (rtpParameters.encodings[0].rtx && encoding.rtx && encoding.rtx) {
+              // @ts-ignore
+              rtpParameters.encodings[0].rtx.ssrc = encoding.rtx.ssrc;
+            }
           }
           if (appData.mediaType === 'video') {
             producerData.mediaProfile = [{
-              ssrc,
+              ssrc: encoding.ssrc,
               res: '640*480',
               fps: '15',
               spatialLayer: 0,
@@ -336,7 +387,7 @@ class Mediasoup extends EventEmitter {
           }
           if (appData.mediaType === 'screenShare') {
             producerData.mediaProfile = [{
-              ssrc,
+              ssrc: encoding.ssrc,
               res: '640*480',
               fps: '15',
               spatialLayer: 0,
