@@ -995,6 +995,7 @@ class Stream extends EventEmitter {
         }, null, ' ')
       })
     } catch (e) {
+      this.client.adapterRef.logger.error('API调用失败：Stream:unmuteAudio' ,e, ...arguments);
       this.client.apiFrequencyControl({
         name: 'unmuteAudio',
         code: -1,
@@ -1038,6 +1039,7 @@ class Stream extends EventEmitter {
         }, null, ' ')
       })
     } catch (e) {
+      this.client.adapterRef.logger.error('API调用失败：Stream:muteAudio' ,e, ...arguments);
       this.client.apiFrequencyControl({
         name: 'muteAudio',
         code: -1,
@@ -1291,6 +1293,7 @@ class Stream extends EventEmitter {
       await this.mediaHelper.getSecondStream(constraint)
       this.inSwitchDevice = false
     } catch (e) {
+      this.client.adapterRef.logger.error('API调用失败：Stream:switchDevice' ,e, ...arguments);
       this.inSwitchDevice = false
       return Promise.reject(e)
     }
@@ -1335,6 +1338,7 @@ class Stream extends EventEmitter {
         }, null, ' ')
       })
     } catch (e) {
+      this.client.adapterRef.logger.error('API调用失败：Stream:unmuteVideo' ,e, ...arguments);
       this.client.apiFrequencyControl({
         name: 'unmuteVideo',
         code: -1,
@@ -1377,6 +1381,7 @@ class Stream extends EventEmitter {
         }, null, ' ')
       })
     } catch (e) {
+      this.client.adapterRef.logger.error('API调用失败：Stream:muteVideo' ,e, ...arguments);
       this.client.apiFrequencyControl({
         name: 'muteVideo',
         code: -1,
@@ -1426,6 +1431,7 @@ class Stream extends EventEmitter {
         }, null, ' ')
       })
     } catch (e) {
+      this.client.adapterRef.logger.error('API调用失败：Stream:unmuteScreen' ,e, ...arguments);
       this.client.apiFrequencyControl({
         name: 'unmuteScreen',
         code: -1,
@@ -1468,6 +1474,7 @@ class Stream extends EventEmitter {
         }, null, ' ')
       })
     } catch (e) {
+      this.client.adapterRef.logger.error('API调用失败：Stream:muteScreen' ,e, ...arguments);
       this.client.apiFrequencyControl({
         name: 'muteScreen',
         code: -1,
