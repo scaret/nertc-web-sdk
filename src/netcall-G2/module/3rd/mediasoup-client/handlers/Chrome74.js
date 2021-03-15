@@ -135,7 +135,7 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
             }
         }
         this._pc.onicecandidate = (event) =>{
-            console.error('本地候选地址的收集: ', event.candidate)
+            //console.error('本地候选地址的收集: ', event.candidate)
         }
         /*this._pc.onconnectionstatechange = (event) =>{
             console.error('peer的状态: ', event)

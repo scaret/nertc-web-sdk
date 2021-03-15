@@ -50,9 +50,11 @@
             <input type="text" id="configUrl" value=''>
           </div> -->
           <div class="line">
-            私有化配置：<input type="checkbox" checked id="isPrivatization"/>
+            <!-- 启用私有化：<input type="checkbox" checked id="isPrivatization"/> -->
+            私有化配置项<input type="file" id = "privatizationConfigFildId" />
+            <button type="button" id='privatizationConfig'>启用私有化</button>
           </div>
-          <div class="line">
+          <!-- <div class="line">
             appkey:
             <input type="text" id="privatizationAppkey" value=''>
             channelServer:
@@ -63,7 +65,7 @@
             <input type="text" id="roomServer" value=''>
             demoServer:
             <input type="text" id="demoServer" value=''>
-          </div>
+          </div> -->
           <div class="line">
             turn地址:
             <input type="text" id="turnAddr" value='turn:223.252.198.177:3478?transport=tcp'>

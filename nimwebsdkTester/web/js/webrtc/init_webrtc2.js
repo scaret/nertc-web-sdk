@@ -35,7 +35,8 @@ var WEBRTC2_ENV = {
   }
 };
 
-const test = {
+let privatizationConfig = null
+/*{
   "appkey":"6c6a4f0c8928b54032ebc495e442ebbf",
   "demoServer":"https://yunxinent-demo.netease.im/nrtcproxy/demo/getChecksum.action",
   "channelServer":"https://yunxinent-demo.netease.im/nrtcproxy/nrtc/getChannelInfos.action",
@@ -46,7 +47,7 @@ const test = {
   "nosUploadSever":"https://yunxinent-demo.netease.im",
   "nosTokenServer":"https://yunxinent-demo.netease.im/report/sdklog/getToken",
   "useIPv6":false
-}
+}*/
 
 const roomconfig = document.querySelector('select#roomconfig');
 var debugContentNode = $('#debug-content').get(0)
@@ -114,6 +115,29 @@ $('#setAppkey').on('click', () => {
 $('#clearLocalStorage').on('click', () => {
   window.localStorage.clear();
   window.location.reload();
+})
+
+$('#privatizationConfig').on('click', () => {
+  var objFile = document.getElementById("privatizationConfigFildId");
+  if(objFile.value == "") {
+    alert("不能为空空");
+    return false;
+  }
+
+  console.log(objFile.files[0].size); // 文件字节数
+  
+  var files = $('#privatizationConfigFildId').prop('files');//获取到文件列表
+  if(files.length == 0){
+      alert('请选择文件');
+  }else{
+    var reader = new FileReader();//新建一个FileReader
+    reader.readAsText(files[0], "UTF-8");//读取文件 
+    reader.onload = function(evt){ //读取完文件之后会回来这里
+      var fileString = evt.target.result; // 读取文件内容
+      //console.log(fileString)
+      privatizationConfig = JSON.parse(fileString)
+    }
+  }
 })
 
 $('#config').on('click', () => {
@@ -493,7 +517,7 @@ $('#joinChannel-btn').on('click', async () => {
   const liveEnable = $('#sessionConfigLiveEnable').prop('checked') 
 
   let channelServer=null; statisticsServer=null; roomServer=null; demoServer=null;appkey=null
-  if ($('#isPrivatization').prop('checked')) {
+  if (privatizationConfig) {
     if ($('#configUrl').val()) {
       try {
         let checkSumUrl = WEBRTC2_ENV[env].checkSumUrl
@@ -516,11 +540,11 @@ $('#joinChannel-btn').on('click', async () => {
         return
       }
     } else {
-      appkey = $('#privatizationAppkey').val() || test.appkey
-      channelServer = $('#channelServer').val() || test.channelServer
-      statisticsServer = $('#statisticsServer').val() || test.statisticsServer
-      roomServer = $('#roomServer').val() || test.roomServer
-      demoServer = $('#demoServer').val() || test.demoServer
+      appkey = $('#privatizationAppkey').val() || privatizationConfig.appkey
+      channelServer = $('#channelServer').val() || privatizationConfig.channelServer
+      statisticsServer = $('#statisticsServer').val() || privatizationConfig.statisticsServer
+      roomServer = $('#roomServer').val() || privatizationConfig.roomServer
+      demoServer = $('#demoServer').val() || privatizationConfig.demoServer
     }
     if (appkey) {
       $('#appkey').val(appkey)
