@@ -2,39 +2,36 @@
 
 let devicesCache = []
 let timer = null
-// 文档见: https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/enumerateDevices
-if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
-  throw new Error('your browser not support get media devices, see https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/enumerateDevices')
-}
-navigator.mediaDevices.ondevicechange = function (event) {
-  // TODO修复
-  // if (timer) {
-  //   clearTimeout(timer)
-  //   timer = null
-  // }
-  // // 考虑拔掉外接摄像头会触发两次devicechange,一次是video，一次是audio的情况，
-  // // 定时器500ms,合并成一次deviceStatus事件
-  // let preDevices = Object.assign({}, devicesCache)
-  // timer = setTimeout(() => {
-  //   timer = null
-  //   // 更新设备列表
-  //   that.getDevices(true)
-  //     .then(() => {
-  //       that.emit('deviceStatus', devicesCache)
-  //       that.filterDeviceChange(devicesCache, preDevices)
-  //     })
-  //     .catch(() => {})
-  // }, 500)
-}
 
 export interface DeviceInfo {
   deviceId: string;
   label: string
 }
+/*navigator.mediaDevices.ondevicechange = function (event) {
+  if (timer) {
+    clearTimeout(timer)
+    timer = null
+  }
+  // 考虑拔掉外接摄像头会触发两次devicechange,一次是video，一次是audio的情况，
+  // 定时器500ms,合并成一次deviceStatus事件
+  let preDevices = Object.assign({}, devicesCache)
+  timer = setTimeout(() => {
+    timer = null
+    // 更新设备列表
+    that.getDevices(true)
+      .then(() => {
+        that.emit('deviceStatus', devicesCache)
+        that.filterDeviceChange(devicesCache, preDevices)
+      })
+      .catch(() => {})
+  }, 500)
+}*/
 
 const Device = {
   async getDevices () {
-
+    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+      throw new Error('your browser not support get media devices, see https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/enumerateDevices')
+    }
     let result:{video: DeviceInfo[], audioIn: DeviceInfo[], audioOut: DeviceInfo[]} = {
       video: [],
       audioIn: [],

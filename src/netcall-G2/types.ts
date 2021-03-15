@@ -3,6 +3,7 @@ import {MediaHelper} from "./module/media";
 import {Stream} from "./api/stream";
 import {Mediasoup} from "./module/mediasoup";
 import {Signalling} from "./module/signalling";
+import {RTSTransport} from "./module/rtsTransport";
 import {Meeting} from "./module/meeting";
 import {StatsReport} from "./module/report/statsReport";
 
@@ -12,6 +13,7 @@ export interface AdapterRef {
   networkQuality: {};
   _statsReport: StatsReport|null;
   _meetings: Meeting|null;
+  _enableRts: Boolean;
   state: {
     lastDeviceStatus: {
       // 暂存上次用户打开的设备类型(供重连使用)
@@ -31,7 +33,6 @@ export interface AdapterRef {
     endSessionTime: number;
     startPubVideoTime: number;
   };
-  nim?: any;
   instance: Client;
   channelInfo?: any;
   apiEvent: {
@@ -81,6 +82,7 @@ export interface AdapterRef {
   channelStatus: string;
   signalInited: boolean;
   _signalling: Signalling|null;
+  _rtsTransport: RTSTransport|null;
   connectState:{
     prevState: string;
     curState:string;
@@ -785,6 +787,7 @@ export interface RecordConfig{
 export interface JoinOptions{
   channelName: string;
   uid: number;
+  token?: string;
   wssArr?: string[]|null;
   joinChannelLiveConfig?: LiveConfig;
   joinChannelRecordConfig?: RecordConfig;
@@ -815,4 +818,11 @@ export interface ExistsOptions{
   value: any;
   min?: number;
   max?: number;
+}
+
+export interface RTSTransportOptions{
+  url: string;
+  port: number;
+  transportId: string;
+  adapterRef: AdapterRef;
 }

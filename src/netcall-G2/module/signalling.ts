@@ -11,6 +11,7 @@ import {
 } from "../types";
 import {Peer, ProtooNotification} from "./3rd/protoo-client";
 import {Consumer} from "./3rd/mediasoup-client/Consumer";
+import {RTSTransport} from "./rtsTransport";
 const protooClient = require('./3rd/protoo-client/')
 const CryptoJS = require("crypto-js");
 
@@ -20,6 +21,7 @@ class Signalling extends EventEmitter {
   private _reconnectionTimer: Timer|null;
   public _protoo: Peer|null;
   private _times: number;
+  private _url: string|null;
   private _timeOut: number;
   private _reconnectionTimeout: number;
   private _resolve: ((data:any)=>void)|null;
@@ -34,6 +36,7 @@ class Signalling extends EventEmitter {
     this._reconnectionTimer = null
     this._protoo = null
     this._times = 0
+    this._url = null
     this._timeOut = 2 * 1000
     this._reconnectionTimeout = 30 * 1000
     this._resolve = null
@@ -142,10 +145,9 @@ class Signalling extends EventEmitter {
   _init(url:string) {
     this.adapterRef.logger.log('Signalling: init url=%o',  url)
     this.adapterRef.channelInfo._protooUrl = url
-    //let wssurl = this.adapterRef.channelInfo._protooUrl.split('=')[1]
-    url = `wss://${url}&cid=${this.adapterRef.channelInfo.cid}&uid=${this.adapterRef.channelInfo.uid}`
-    this.adapterRef.logger.log('连接的url: ', url)
-    const protooTransport = new protooClient.WebSocketTransport(url, {
+    this._url = `wss://${url}&cid=${this.adapterRef.channelInfo.cid}&uid=${this.adapterRef.channelInfo.uid}`
+    this.adapterRef.logger.log('连接的url: ', this._url)
+    const protooTransport = new protooClient.WebSocketTransport(this._url, {
       retry: {
         retries    : 0,
         factor     : 2,
@@ -256,7 +258,13 @@ class Signalling extends EventEmitter {
         remoteStream.pubStatus[kind].producerId = producerId
         remoteStream.pubStatus[kind].mute = mute
         remoteStream.pubStatus[kind].simulcastEnable = simulcastEnable
-        this.adapterRef.instance.emit('stream-added', {stream: remoteStream})
+        if (this.adapterRef._enableRts && this.adapterRef._rtsTransport) {
+          //this.adapterRef._rtsTransport.emit(`on_add_rts_${kind}_stream`, {uid: uid, audio: kind == 'audio', video: kind == 'video'})
+          this.adapterRef.instance.emit('rts-stream-added', {stream: remoteStream, kind})
+        } else {
+          this.adapterRef.instance.emit('stream-added', {stream: remoteStream})
+        }
+
         if (mute) {
           this.adapterRef.instance.emit(`mute-${kind}`, {uid: remoteStream.getId()})
         }
@@ -560,7 +568,9 @@ class Signalling extends EventEmitter {
       this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities;
       await this.adapterRef._mediasoup.init()
       this.adapterRef.logger.log('重连成功，重新publish本端流')
-      this.adapterRef.instance.publish(this.adapterRef.localStream)
+      if (!this.adapterRef._enableRts) {
+        this.adapterRef.instance.publish(this.adapterRef.localStream)
+      }
     } else {
       const webrtc2Param = this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2
       const currentTime = Date.now()
@@ -583,6 +593,11 @@ class Signalling extends EventEmitter {
     }
         
     this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
+    if (this.adapterRef._enableRts) {
+      await this.createRTSTransport()
+      this.adapterRef.instance.emit('connected')
+    }
+
     this.adapterRef.logger.log('加入房间成功, 查看房间其他人的发布信息: ', response.externData.userList)
     if (response.externData !== undefined && response.externData.userList && response.externData.userList.length) {
       for (const peer of response.externData.userList) {
@@ -631,10 +646,16 @@ class Signalling extends EventEmitter {
             if (mute) {
               this.adapterRef.instance.emit(`mute-${kind}`, {uid: remoteStream.getId()})
             }
+            if (this.adapterRef._enableRts && this.adapterRef._rtsTransport) {
+              this.adapterRef.instance.emit('rts-stream-added', {stream: remoteStream, kind})
+            }
           }
         }
         this.adapterRef.logger.log('通知房间成员发布信息: ', JSON.stringify(remoteStream.pubStatus, null, ''))
-        if (remoteStream.pubStatus.audio.audio || remoteStream.pubStatus.video.video) {
+        
+        if(this.adapterRef._enableRts && this.adapterRef._rtsTransport){
+
+        } else if (remoteStream.pubStatus.audio.audio || remoteStream.pubStatus.video.video) {
           this.adapterRef.instance.emit('stream-added', {stream: remoteStream})
         } 
       }
@@ -687,6 +708,68 @@ class Signalling extends EventEmitter {
       }
     }
   }
+
+  async createRTSTransport() {
+    this.adapterRef.logger.log(`createRTSTransport()`);
+    if (!this._protoo) {
+      throw new Error('createRTSTransport: _protoo is null');
+    } else if (!this._url) {
+      throw new Error('createRTSTransport: _url is null');
+    }
+
+    try {
+      const response = await this._protoo.request('CreateWsTrasnport');
+      this.adapterRef.logger.warn('CreateWsTrasnport response: ', JSON.stringify(response, null, ''))
+      const { code, errMsg, transportId, wsPort='6666' } = response;
+      if (code == 200) {
+        /*if (this.adapterRef._rtsTransport && wsPort == this.adapterRef._rtsTransport._port) {
+          this.adapterRef.logger.log('CreateWsTrasnport: 已经创建')
+          return 
+        } */
+        if (this.adapterRef._rtsTransport) {
+          this.adapterRef.logger.log('CreateWsTrasnport: 需要更新')
+          this.adapterRef._rtsTransport.destroy()
+        }
+        this.adapterRef.logger.log('CreateWsTrasnport: 开始创建')
+        //url = `wss://${url}&cid=${this.adapterRef.channelInfo.cid}&uid=${this.adapterRef.channelInfo.uid}`
+        this.adapterRef._rtsTransport = new RTSTransport({
+          url: this._url.replace(/:\d+/, `:${wsPort}`) + `&transportId=${transportId}`,
+          transportId,
+          port: wsPort,
+          adapterRef: this.adapterRef
+        })
+      } else {
+        this.adapterRef.logger.error(`createWsTrasnport failed, code: ${code}, reason: ${errMsg}`)
+      }
+    } catch (e) {
+      this.adapterRef.logger.error('createRTSTransport failed: %o', e);
+      throw e;
+    }
+  }
+
+  async rtsRequestKeyFrame(consumerId: string) {
+    this.adapterRef.logger.log(`rtsRequestKeyFrame(): `, consumerId);
+    if (!this._protoo) {
+      throw new Error('rtsRequestKeyFrame: no _proto');
+    } else if (!consumerId) {
+      throw new Error('rtsRequestKeyFrame: no consumerId');
+    }
+    try {
+      const response = await this._protoo.request('rtsRequestKeyFrame', {consumerId});
+      this.adapterRef.logger.warn('rtsRequestKeyFrame response: ', response)
+      let { code, errMsg } = response;
+      if (code == 200) {
+        this.adapterRef.logger.log('RTS 关键帧请求完成')
+      } else {
+        this.adapterRef.logger.error(`RTS 关键帧请求失败, code: ${code}, reason: ${errMsg}`)
+      }
+    } catch (e) {
+      this.adapterRef.logger.error('rtsRequestKeyFrame failed: %o', e);
+      throw e;
+    }
+  }
+
+
 
   async doSendLogout () {
     this.adapterRef.logger.log('doSendLogout begin')

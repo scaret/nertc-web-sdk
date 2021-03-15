@@ -3,6 +3,7 @@ import {Meeting} from '../module/meeting'
 import {MediaHelper} from '../module/media'
 import {Signalling} from '../module/signalling'
 import {Mediasoup} from '../module/mediasoup'
+import {RTSTransport} from '../module/rtsTransport'
 import {StatsReport} from '../module/report/statsReport'
 import {DataReport} from '../module/report/dataReport'
 import {Logger} from "../util/webrtcLogger";
@@ -66,6 +67,7 @@ class Base extends EventEmitter {
       requestId: {},
       //@ts-ignore
       instance: this,
+      _enableRts: false //rts是否启动的标志位
     };
     
     this._resetState(); // 内部状态对象
@@ -112,6 +114,11 @@ class Base extends EventEmitter {
     if(this.adapterRef._signalling){
       this.adapterRef._signalling.destroy()
       this.adapterRef._signalling = null
+    }
+
+    if (this.adapterRef._rtsTransport) {
+      this.adapterRef._rtsTransport.destroy()
+      this.adapterRef._rtsTransport = null
     }
 
     if(this.adapterRef._mediasoup){
@@ -306,7 +313,11 @@ class Base extends EventEmitter {
       return item.uid !== uid
     })
     this.adapterRef.logger.log('%s 离开房间 通知用户', uid);
-    this.adapterRef.instance.emit('peer-leave', {uid});
+    if (this.adapterRef._enableRts) {
+      this.adapterRef.instance.emit('rts-peer-leave', {uid});
+    } else {
+      this.adapterRef.instance.emit('peer-leave', {uid});
+    }
   }
 
   // 设置通话开始时间
@@ -346,6 +357,14 @@ class Base extends EventEmitter {
       await this.subscribe(stream)
     }
   }
+
+  async rtsRequestKeyFrame(stream:Stream) {
+    this.adapterRef.logger.log('请求关键帧: ', stream.pubStatus.video.consumerId)
+    if (this.adapterRef._signalling) {
+      await this.adapterRef._signalling.rtsRequestKeyFrame(stream.pubStatus.video.consumerId);
+    }
+  }
+
 
   /**************************业务类工具******************************/
 

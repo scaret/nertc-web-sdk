@@ -107,6 +107,7 @@ class Client extends Base {
       channelName: options.channelName,
       wssArr: options.wssArr,
       uid: options.uid,
+      token: options.token,
       joinChannelLiveConfig: options.joinChannelLiveConfig || {liveEnable: false},
       joinChannelRecordConfig: options.joinChannelRecordConfig || {
         recordAudio: false, // 是否开启音频实时音录制，0不需要，1需要（默认0）
@@ -131,6 +132,22 @@ class Client extends Base {
    * @return {null}
    */
   async leave () {
+    this.adapterRef.logger.log('离开频道')
+    if (this.adapterRef.channelStatus !== 'join' && this.adapterRef.channelStatus !== 'connectioning') {
+      this.adapterRef.logger.log(' 状态: ', this.adapterRef.channelStatus)
+      //return Promise.reject('ERR_REPEAT_LEAVE')
+    }
+    this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
+    this.adapterRef.connectState.curState = 'DISCONNECTING'
+    this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
+    this.setEndSessionTime()
+    if (this.adapterRef._meetings) {
+      this.adapterRef._meetings.leaveChannel()
+    }
+  }
+
+
+  async leaveRts () {
     this.adapterRef.logger.log('离开频道')
     if (this.adapterRef.channelStatus !== 'join' && this.adapterRef.channelStatus !== 'connectioning') {
       this.adapterRef.logger.log(' 状态: ', this.adapterRef.channelStatus)
@@ -362,6 +379,77 @@ class Client extends Base {
     }
   }
 
+
+  async subscribeRts (stream:Stream) {
+    checkExists({tag: 'client.subscribe:stream', value: stream});
+    this.adapterRef.logger.log(`订阅远端 ${stream.streamID} 音视频流`)
+    const uid = stream.getId()
+    if (!uid){
+      throw new Error('No uid');
+    }
+    if (!this.adapterRef._mediasoup){
+      throw new Error('No this.adapterRef._mediasoup');
+    }
+    try {
+      if (stream.subConf.audio && stream.pubStatus.audio.audio) {
+        if (stream.pubStatus.audio.consumerStatus !== 'start') {
+          this.adapterRef.logger.log('开始订阅 %s 音频流', stream.getId())
+          stream.pubStatus.audio.consumerStatus = 'start'
+          await this.adapterRef._mediasoup.createConsumer(uid, 'audio', stream.pubStatus.audio.producerId);
+          stream.pubStatus.audio.consumerStatus = 'end'
+          this.adapterRef.logger.log('订阅 %s 音频流完成', stream.getId())
+        }
+      }
+      if (stream.subConf.video && stream.pubStatus.video.video) {
+        if (stream.pubStatus.audio.consumerStatus !== 'start') {
+          this.adapterRef.logger.log('开始订阅 %s 视频流', stream.getId())
+          stream.pubStatus.video.consumerStatus = 'start'
+          const preferredSpatialLayer = stream.pubStatus.video.simulcastEnable ? stream.subConf.highOrLow : 0
+          await this.adapterRef._mediasoup.createConsumer(uid, 'video', stream.pubStatus.video.producerId, preferredSpatialLayer);
+          stream.pubStatus.video.consumerStatus = 'end'
+          this.adapterRef.logger.log('订阅 %s 视频流完成', stream.getId())
+        }
+      }
+      this.apiFrequencyControl({
+        name: 'subscribe',
+        code: 0,
+        param: JSON.stringify({
+          reason: '',
+          videoProfile: stream.videoProfile,
+          audio: stream.audio,
+          audioProfile: stream.audioProfile,
+          cameraId: stream.cameraId,
+          subStatus: stream.subStatus,
+          microphoneId: stream.microphoneId,
+          subConf: stream.subConf,
+          pubStatus: stream.pubStatus,
+          renderMode: stream.renderMode,
+          screen: stream.screen,
+          screenProfile: stream.screenProfile
+        }, null, ' ')
+      })
+    } catch (e) {
+      this.apiFrequencyControl({
+        name: 'subscribe',
+        code: -1,
+        param: JSON.stringify({
+          reason: e,
+          videoProfile: stream.videoProfile,
+          audio: stream.audio,
+          audioProfile: stream.audioProfile,
+          cameraId: stream.cameraId,
+          subStatus: stream.subStatus,
+          microphoneId: stream.microphoneId,
+          subConf: stream.subConf,
+          pubStatus: stream.pubStatus,
+          renderMode: stream.renderMode,
+          screen: stream.screen,
+          screenProfile: stream.screenProfile
+        }, null, ' ')
+      })
+    }
+  }
+
   /**
    * 取消订阅远端音视频流
    * @method unsubscribe
@@ -370,6 +458,101 @@ class Client extends Base {
    * @returns {Promise}  
    */
   async unsubscribe (stream:Stream) {
+    checkExists({tag: 'client.unsubscribe:stream', value: stream});
+    this.adapterRef.logger.log('取消订阅远端音视频流: ', stream)
+    try {
+      if (stream.subConf.video) {                                 
+        if (stream.pubStatus.audio.stopconsumerStatus !== 'start'){
+          this.adapterRef.logger.log('开始取消订阅音频流')
+          stream.pubStatus.audio.stopconsumerStatus = 'start'
+          if (!this.adapterRef._mediasoup){
+            throw new Error('No this.adapterRef._mediasoup');
+          }
+          await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.audio.consumerId);
+          this.adapterRef.instance.removeSsrc(stream.getId(), 'audio')
+          stream.pubStatus.audio.consumerId = '';
+          stream.stop('audio')
+          stream.pubStatus.audio.stopconsumerStatus = 'end'
+          stream.subStatus.audio = false
+          const uid = stream.getId()
+          if(uid){
+            delete this.adapterRef.remoteAudioStats[uid];
+            const data = this.adapterRef._statsReport && this.adapterRef._statsReport.formativeStatsReport && this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
+            if (data) {
+              data.recvFirstAudioFrame = false
+              data.recvFirstAudioPackage = false
+            }
+          }
+          
+          this.adapterRef.logger.log('取消订阅音频流完成')
+        }
+      } 
+      if (stream.pubStatus.video.stopconsumerStatus !== 'start'){
+        this.adapterRef.logger.log('开始取消订阅视频流')
+        stream.pubStatus.video.stopconsumerStatus = 'start'
+        if (!this.adapterRef._mediasoup){
+          throw new Error('No this.adapterRef._mediasoup');
+        }
+        await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.video.consumerId);
+        this.adapterRef.instance.removeSsrc(stream.getId(), 'video')
+        stream.pubStatus.video.consumerId = '';
+        stream.stop('video')
+        stream.pubStatus.video.stopconsumerStatus = 'end'
+        stream.subStatus.video = false
+        const uid = stream.getId()
+        if(uid){
+            delete this.adapterRef.remoteVideoStats[uid];
+            const data = this.adapterRef._statsReport && this.adapterRef._statsReport.formativeStatsReport && this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
+            if (data) {
+              data.recvFirstVideoFrame = false
+              data.recvFirstVideoPackage = false
+              data.videoTotalPlayDuration = 0
+            }
+          }
+        
+        this.adapterRef.logger.log('取消订阅视频流完成')
+      }
+      this.apiFrequencyControl({
+        name: 'unsubscribe',
+        code: 0,
+        param: JSON.stringify({
+          reason: '',
+          videoProfile: stream.videoProfile,
+          audio: stream.audio,
+          audioProfile: stream.audioProfile,
+          cameraId: stream.cameraId,
+          subStatus: stream.subStatus,
+          microphoneId: stream.microphoneId,
+          subConf: stream.subConf,
+          pubStatus: stream.pubStatus,
+          renderMode: stream.renderMode,
+          screen: stream.screen,
+          screenProfile: stream.screenProfile
+        }, null, ' ')
+      })
+    } catch (e) {
+      this.apiFrequencyControl({
+        name: 'unsubscribe',
+        code: -1,
+        param: JSON.stringify({
+          reason: e,
+          videoProfile: stream.videoProfile,
+          audio: stream.audio,
+          audioProfile: stream.audioProfile,
+          cameraId: stream.cameraId,
+          subStatus: stream.subStatus,
+          microphoneId: stream.microphoneId,
+          subConf: stream.subConf,
+          pubStatus: stream.pubStatus,
+          renderMode: stream.renderMode,
+          screen: stream.screen,
+          screenProfile: stream.screenProfile
+        }, null, ' ')
+      })
+    }
+  }
+
+  async unsubscribeRts (stream:Stream) {
     checkExists({tag: 'client.unsubscribe:stream', value: stream});
     this.adapterRef.logger.log('取消订阅远端音视频流: ', stream)
     try {
@@ -819,7 +1002,8 @@ class Client extends Base {
    *  @param {Void}
    */
   destroy () {
-    //this.adapterRef.logger.warn('清除 Client 实例')
+    this.adapterRef.logger.warn('清除 Client 实例')
+    this._reset();
   }
 }
 
