@@ -14,7 +14,6 @@ import {
   MediaRecordingOptions,
   NERtcCanvasWatermarkConfig,
   MediaTypeShort,
-  PlayOptions,
   PubStatus,
   RenderMode,
   ScreenProfileOptions,
@@ -86,7 +85,8 @@ class Stream extends EventEmitter {
     resolution: number;
   }|null;
   private inited:boolean;
-  public view:HTMLElement|null;
+  public videoView:HTMLElement|null;
+  public screenView:HTMLElement|null;
   public renderMode: {
     local: {
       video: RenderMode|{},
@@ -130,7 +130,8 @@ class Stream extends EventEmitter {
     this.videoProfile = null;
     this.screenProfile = null;
     this.inited = false;
-    this.view = null;
+    this.videoView = null;
+    this.screenView = null;
     this.renderMode = {
       local: {video: {}, screen: {}}, 
       remote: {video: {}, screen: {}}
@@ -261,7 +262,8 @@ class Stream extends EventEmitter {
     this.video = false
     this.cameraId = ''
     this.screen = false
-    this.view = null
+    this.videoView = null
+    this.screenView = null
     this.renderMode = {local: {video: {}, screen: {}}, remote: {video: {}, screen: {}}}
     this.consumerId = null
     this.producerId = null
@@ -552,13 +554,12 @@ class Stream extends EventEmitter {
    * @param {div} view div标签，播放画面的dom容器节点
    * @return {Promise}
    */
-  async play (view:HTMLElement, playOptions:StreamPlayOptions = {}) {
-    checkExists({tag: 'Stream.play:view', value: view});
+  async play (view:HTMLElement|null, playOptions:StreamPlayOptions = {}) {
     if (!isExistOptions({tag: 'Stream.playOptions.audio', value: playOptions.audio}).result){
       playOptions.audio = this.isRemote;
     }
     if (playOptions.audio && !this.isRemote && !playOptions.audioType){
-      playOptions.audioType = "music";
+      playOptions.audioType = "mixing";
     }
     if (!isExistOptions({tag: 'Stream.playOptions.video', value: playOptions.video}).result){
       playOptions.video = true;
@@ -568,7 +569,6 @@ class Stream extends EventEmitter {
     }
     
     this.client.adapterRef.logger.log('音视频播放: ', this.streamID, playOptions)
-    this.view = view
     if (this.isRemote){
       if(playOptions.audio && this._play && this.mediaHelper && this.mediaHelper.audioStream){
         this.client.adapterRef.logger.log('开始播放远端音频: ', this.streamID)
@@ -586,14 +586,22 @@ class Stream extends EventEmitter {
         }
       }
     }
-    
-    if(playOptions.video && this._play && this.mediaHelper && this.mediaHelper.videoStream){
-      this.client.adapterRef.logger.log('开始播放视频: ', this.streamID)
-      this._play.playVideoStream(this.mediaHelper.videoStream, view)
-    }
-    if(playOptions.screen && this._play && this.mediaHelper && this.mediaHelper.screenStream){
-      this.client.adapterRef.logger.log('开始播放辅流: ', this.streamID)
-      this._play.playScreenStream(this.mediaHelper.screenStream, view)
+
+    if (view){
+      if (playOptions.video){
+        this.videoView = view;
+        if(this._play && this.mediaHelper && this.mediaHelper.videoStream){
+          this.client.adapterRef.logger.log('开始播放视频: ', this.streamID)
+          this._play.playVideoStream(this.mediaHelper.videoStream, view)
+        }  
+      }
+      if (playOptions.screen){
+        this.screenView = view;
+        if(this._play && this.mediaHelper && this.mediaHelper.screenStream){
+          this.client.adapterRef.logger.log('开始播放辅流: ', this.streamID)
+          this._play.playScreenStream(this.mediaHelper.screenStream, view)
+        }
+      }
     }
     this.client.apiFrequencyControl({
       name: 'play',
@@ -1310,10 +1318,10 @@ class Stream extends EventEmitter {
         if (!this._play){
           throw new Error('No _play');
         }
-        if (!this.mediaHelper || !this.mediaHelper.videoStream || !this.view){
+        if (!this.mediaHelper || !this.mediaHelper.videoStream || !this.videoView){
           throw new Error('No mediaHelper or videoStream or this.view');
         }
-        this._play.playVideoStream(this.mediaHelper.videoStream, this.view)
+        this._play.playVideoStream(this.mediaHelper.videoStream, this.videoView)
         if ("width" in this.renderMode.remote.video){
           this._play.setVideoRender(this.renderMode.remote.video)
         }
@@ -1401,10 +1409,10 @@ class Stream extends EventEmitter {
         if (!this._play){
           throw new Error('No _play');
         }
-        if (!this.mediaHelper || !this.mediaHelper.screenStream || !this.view){
+        if (!this.mediaHelper || !this.mediaHelper.screenStream || !this.screenView){
           throw new Error('No mediaHelper or screenStream or this.view');
         }
-        this._play.playScreenStream(this.mediaHelper.screenStream, this.view)
+        this._play.playScreenStream(this.mediaHelper.screenStream, this.screenView)
         if ("width" in this.renderMode.remote.screen){
           this._play.setScreenRender(this.renderMode.remote.screen)
         }
