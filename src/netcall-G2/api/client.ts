@@ -869,9 +869,11 @@ class Client extends Base {
     }
 
     const mode = options.mode || 'rtc';
-    if (mode == 'live') {
-      if (this.adapterRef.localStream) {
+    if (this.adapterRef.localStream) {
+      if (mode === 'live'){
         this.adapterRef.localStream.audioProfile = 'music_standard'
+      }else if (mode === 'rtc'){
+        this.adapterRef.localStream.audioProfile = 'speech_low_quality'
       }
     }
     this._params.mode = mode
