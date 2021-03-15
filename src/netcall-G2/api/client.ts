@@ -198,6 +198,7 @@ class Client extends Base {
         param
       })
     } catch (e) {
+      this.adapterRef.logger.error('API调用失败：Client:publish' ,e, ...arguments);
       this.apiFrequencyControl({
         name: 'publish',
         code: -1,
@@ -267,6 +268,7 @@ class Client extends Base {
         }, null, ' ')
       })
     } catch (e) {
+      this.adapterRef.logger.error('API调用失败：Client:unpublish' ,e, ...arguments);
       this.apiFrequencyControl({
         name: 'unpublish',
         code: -1,
@@ -438,6 +440,7 @@ class Client extends Base {
         }, null, ' ')
       })
     } catch (e) {
+      this.adapterRef.logger.error('API调用失败：Client:subscribe' ,e, ...arguments);
       this.apiFrequencyControl({
         name: 'subscribe',
         code: -1,
@@ -563,6 +566,7 @@ class Client extends Base {
         }, null, ' ')
       })
     } catch (e) {
+      this.adapterRef.logger.error('API调用失败：Client:unsubscribe' ,e, ...arguments);
       this.apiFrequencyControl({
         name: 'unsubscribe',
         code: -1,
@@ -624,6 +628,7 @@ class Client extends Base {
         }, null, ' ')
       })
     } catch (e) {
+      this.adapterRef.logger.error('API调用失败：Client:setRemoteVideoStreamType' ,e, ...arguments);
       this.apiFrequencyControl({
         name: 'setRemoteVideoStreamType',
         code: -1,
@@ -864,9 +869,11 @@ class Client extends Base {
     }
 
     const mode = options.mode || 'rtc';
-    if (mode == 'live') {
-      if (this.adapterRef.localStream) {
+    if (this.adapterRef.localStream) {
+      if (mode === 'live'){
         this.adapterRef.localStream.audioProfile = 'music_standard'
+      }else if (mode === 'rtc'){
+        this.adapterRef.localStream.audioProfile = 'speech_low_quality'
       }
     }
     this._params.mode = mode

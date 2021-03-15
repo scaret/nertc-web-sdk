@@ -361,10 +361,10 @@ class MediaHelper extends EventEmitter {
         this.cameraStream = new MediaStream()
         this.cameraStream.addTrack(videoTrack)
         this.videoStream = this.cameraStream
-        if (isPlaying && this.adapterRef.localStream.view) {
-          await this.adapterRef.localStream.play(this.adapterRef.localStream.view)
+        if (isPlaying && this.adapterRef.localStream.videoView) {
+          await this.adapterRef.localStream.play(this.adapterRef.localStream.videoView)
           if ("width" in this.adapterRef.localStream.renderMode.local){
-            this.adapterRef.localStream.setLocalRenderMode(this.adapterRef.localStream.renderMode.local)
+            this.adapterRef.localStream.setLocalRenderMode(this.adapterRef.localStream.renderMode.local, 'video')
           }
         }
         const peer = this.adapterRef.instance.getPeer('send')
