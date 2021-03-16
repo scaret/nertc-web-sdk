@@ -612,11 +612,6 @@ class Mediasoup extends EventEmitter {
       } else {
         this.adapterRef.logger.log('先停止之前的订阅')
         try {
-          remoteStream.setSubscribeConfig({
-            audio: mediaTypeShort !== 'audio',
-            video: mediaTypeShort !== 'video',
-            screen: mediaTypeShort !== 'screen'
-          })
           await this.adapterRef.instance.unsubscribe(remoteStream)
         } catch (e) {
           this.adapterRef.logger.error('停止之前的订阅出现错误: ', e)
