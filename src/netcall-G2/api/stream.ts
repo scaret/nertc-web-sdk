@@ -984,8 +984,11 @@ class Stream extends EventEmitter {
         if (!this.mediaHelper || !this.mediaHelper.audioStream){
           throw new Error('No audioStream');
         }
-        await this._play.playAudioStream(this.mediaHelper.audioStream)
         this.muteStatus.audioRecv = false;
+        if (this.mediaHelper && this.mediaHelper.micTrack){
+          this.mediaHelper.micTrack.enabled = true;
+        }
+        this._play.playAudioStream(this.mediaHelper.audioStream)
       }
       this.client.apiFrequencyControl({
         name: 'unmuteAudio',
@@ -1029,7 +1032,10 @@ class Stream extends EventEmitter {
           throw new Error('No _play');
         }
         this.muteStatus.audioRecv = true
-        await this._play.stopPlayAudioStream()
+        if (this.mediaHelper && this.mediaHelper.micTrack){
+          this.mediaHelper.micTrack.enabled = false;
+        }
+        this._play.stopPlayAudioStream()
       }
       this.client.apiFrequencyControl({
         name: 'muteAudio',
@@ -1324,11 +1330,15 @@ class Stream extends EventEmitter {
         if (!this.mediaHelper || !this.mediaHelper.videoStream || !this.videoView){
           throw new Error('No mediaHelper or videoStream or this.view');
         }
+
+        this.muteStatus.videoRecv = false
+        if (this.mediaHelper && this.mediaHelper.cameraTrack){
+          this.mediaHelper.cameraTrack.enabled = true;
+        }
         this._play.playVideoStream(this.mediaHelper.videoStream, this.videoView)
         if ("width" in this.renderMode.remote.video){
           this._play.setVideoRender(this.renderMode.remote.video)
         }
-        this.muteStatus.videoRecv = false
       }
       this.client.apiFrequencyControl({
         name: 'unmuteVideo',
@@ -1370,8 +1380,11 @@ class Stream extends EventEmitter {
         if (!this._play){
           throw new Error('No _play');
         }
-        await this._play.stopPlayVideoStream()
         this.muteStatus.videoRecv = true
+        if (this.mediaHelper && this.mediaHelper.cameraTrack){
+          this.mediaHelper.cameraTrack.enabled = false;
+        }
+        this._play.stopPlayVideoStream()
       }
       this.client.apiFrequencyControl({
         name: 'muteVideo',
@@ -1417,11 +1430,14 @@ class Stream extends EventEmitter {
         if (!this.mediaHelper || !this.mediaHelper.screenStream || !this.screenView){
           throw new Error('No mediaHelper or screenStream or this.view');
         }
+        this.muteStatus.screenRecv = false
+        if (this.mediaHelper && this.mediaHelper.screenTrack){
+          this.mediaHelper.screenTrack.enabled = true;
+        }
         this._play.playScreenStream(this.mediaHelper.screenStream, this.screenView)
         if ("width" in this.renderMode.remote.screen){
           this._play.setScreenRender(this.renderMode.remote.screen)
         }
-        this.muteStatus.screenRecv = false
       }
       this.client.apiFrequencyControl({
         name: 'unmuteScreen',
@@ -1463,7 +1479,10 @@ class Stream extends EventEmitter {
         if (!this._play){
           throw new Error('No _play');
         }
-        await this._play.stopPlayScreenStream()
+        if (this.mediaHelper && this.mediaHelper.screenTrack){
+          this.mediaHelper.screenTrack.enabled = false;
+        }
+        this._play.stopPlayScreenStream()
         this.muteStatus.screenRecv = true
       }
       this.client.apiFrequencyControl({
