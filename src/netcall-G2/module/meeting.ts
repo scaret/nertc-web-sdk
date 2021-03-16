@@ -148,7 +148,6 @@ class Meeting extends EventEmitter {
    * 多人通话：离开房间
    */
   leaveChannel () {
-    this.adapterRef.signalInited = false
     this.adapterRef.instance.apiEventReport('setLogout', {
       reason: this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason || 0
     })

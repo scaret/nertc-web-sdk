@@ -863,7 +863,7 @@ class Client extends Base {
    */
   setChannelProfile(options:{mode: 'rtc'|'live'}) {
     this.adapterRef.logger.log('设置房间模型, options: ', JSON.stringify(options, null, ' '))
-    if (this.adapterRef.signalInited) {
+    if (this.adapterRef.connectState.curState !== "DISCONNECTED") {
       this.adapterRef.logger.warn('已经在频道中')
       return 'INVALID_OPERATION'
     }

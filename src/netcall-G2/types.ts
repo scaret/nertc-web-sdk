@@ -84,11 +84,10 @@ export interface AdapterRef {
     relaytoken?: string;
   };
   channelStatus: string;
-  signalInited: boolean;
   _signalling: Signalling|null;
   connectState:{
-    prevState: string;
-    curState:string;
+    prevState: ConnectionState;
+    curState:ConnectionState;
   };
   _mediasoup?:Mediasoup|null;
   mediaHelpers: {[uid:number]:MediaHelper};
@@ -97,6 +96,8 @@ export interface AdapterRef {
     [apiName: string]: number;
   }
 }
+
+export type ConnectionState = 'DISCONNECTED'|'CONNECTING'|'CONNECTED'|'DISCONNECTING';
 
 // screenShare 为服务端协议叫法，但代码中有大量screen叫法，故使用这种不好的类型名做区分。
 export type MediaType = 'audio'|'video'|'screenShare';
