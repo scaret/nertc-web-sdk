@@ -319,8 +319,12 @@ class Signalling extends EventEmitter {
             data.videoTotalPlayDuration = 0
           }
         }
-
-        this.adapterRef.instance.emit('stream-removed', {stream: remoteStream})
+        if (this.adapterRef._enableRts) {
+          this.adapterRef.instance.emit('stream-removed', {stream: remoteStream})
+        } else {
+          this.adapterRef.instance.emit('rts-stream-removed', {stream: remoteStream})
+        }
+        
         break
       }
       case 'OnConsumerClose': {
@@ -755,7 +759,7 @@ class Signalling extends EventEmitter {
       throw new Error('rtsRequestKeyFrame: no consumerId');
     }
     try {
-      const response = await this._protoo.request('rtsRequestKeyFrame', {consumerId});
+      const response = await this._protoo.request('RequestKeyFrame', {consumerId});
       this.adapterRef.logger.warn('rtsRequestKeyFrame response: ', response)
       let { code, errMsg } = response;
       if (code == 200) {
