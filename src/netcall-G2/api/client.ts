@@ -308,7 +308,7 @@ class Client extends Base {
     try {
       if (stream.subConf.audio){
         // 应该订阅音频
-        if (stream.pubStatus.audio.audio){
+        if (stream.pubStatus.audio.audio && !stream.pubStatus.audio.consumerId){
           if (stream.pubStatus.audio.consumerStatus !== 'start') {
             this.adapterRef.logger.log('开始订阅 %s 音频流', stream.getId())
             stream.pubStatus.audio.consumerStatus = 'start'
@@ -345,7 +345,7 @@ class Client extends Base {
       }
       if (stream.subConf.video){
         // 应该订阅视频
-        if (stream.pubStatus.video.video){
+        if (stream.pubStatus.video.video && !stream.pubStatus.video.consumerId){
           if (stream.pubStatus.video.consumerStatus !== 'start') {
             this.adapterRef.logger.log('开始订阅 %s 视频流', stream.getId())
             stream.pubStatus.video.consumerStatus = 'start'
@@ -384,7 +384,7 @@ class Client extends Base {
       }
       if (stream.subConf.screen){
         // 应该订阅辅流
-        if (stream.pubStatus.screen.screen){
+        if (stream.pubStatus.screen.screen && !stream.pubStatus.screen.consumerId){
           if (stream.pubStatus.screen.consumerStatus !== 'start') {
             this.adapterRef.logger.log('开始订阅 %s 辅流', stream.getId())
             stream.pubStatus.screen.consumerStatus = 'start'
