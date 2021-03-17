@@ -507,7 +507,6 @@ class Stream extends EventEmitter {
       }
     } catch (e) {
       this.client.adapterRef.logger.log('打开屏幕共享失败: ', e)
-      console.error(e);
       // this.video = false
       // if (e.message && e.message.indexOf('Permission denied') > -1) {
       //   this.client.emit('accessDenied', 'video')
@@ -1588,7 +1587,6 @@ class Stream extends EventEmitter {
           maxbitrate = this.getScreenBW();
         }
         if (!maxbitrate){
-          console.error("没有maxbitrate啊啊啊啊啊");
           return;
         }
         if (!sender){

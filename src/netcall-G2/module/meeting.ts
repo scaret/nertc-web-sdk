@@ -371,7 +371,6 @@ class Meeting extends EventEmitter {
     const url = `${roomsTaskUrl}${this.adapterRef.channelInfo.cid}/task/update`
     for (let i = 0; i < rtmpTasks.length; i++) {
       rtmpTasks[i].hostUid = this.adapterRef.channelInfo.uid
-      console.log('updateTasks: ', rtmpTasks[i])
       try {
         const data:any = await ajax({
           url, 
