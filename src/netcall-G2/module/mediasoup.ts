@@ -143,6 +143,7 @@ class Mediasoup extends EventEmitter {
           username: this.adapterRef.channelInfo.relaytoken
         })
       })
+      iceTransportPolicy = 'relay'
     }
     if (this.adapterRef.testConf.turnAddr) {
       iceServers.length = 0
