@@ -3,6 +3,7 @@ import { Base } from './base'
 import {AddTaskOptions, ClientOptions, JoinOptions, RTMPTask} from "../types";
 import {Stream} from "./stream";
 import {checkExists} from "../util/param";
+import {ReportParamSetChannelProfile, ReportParamSetClientRole} from "../interfaces/ApiReportParam";
 
 /**
  *  请使用 {@link WEBRTC2.createClient} 通过WEBRTC2.createClient创建 Client对象，client对象指通话中的本地或远程用户，提供云信sdk的核心功能。
@@ -686,6 +687,7 @@ class Client extends Base {
 
   async setClientRole(role:string) {
     let userRole;
+    let reason;
     if (role === "host" || role === "broadcaster") {
       // broadcaster为云信Native叫法。这里做了兼容，以host为准。
       // http://doc.hz.netease.com/pages/viewpage.action?pageId=267631447
@@ -694,40 +696,57 @@ class Client extends Base {
       userRole = 1;
     } else {
       this.adapterRef.logger.error(`setClientRole: 无法识别的角色：${role}`);
-      return Promise.reject(`INVALID_OPERATION`);
+      reason = `INVALID_OPERATION`;
+      userRole = -1
     }
     
-    const localUser = this.adapterRef.channelInfo ? this.adapterRef.channelInfo.uid || "" : "";
-    if (userRole === this._roleInfo.userRole) {
-      this.adapterRef.logger.warn(`setClientRole: 用户${localUser}的角色已经是${role}了`);
-      return;
+    if (!reason){
+      const localUser = this.adapterRef.channelInfo ? this.adapterRef.channelInfo.uid || "" : "";
+      if (userRole === this._roleInfo.userRole) {
+        this.adapterRef.logger.warn(`setClientRole: 用户${localUser}的角色已经是${role}了`);
+        reason = `USER_ROLE_UNCHANGED`
+      }else{
+        switch (this.adapterRef.connectState.curState) {
+          case "CONNECTED":
+            if (userRole === 1 && this.adapterRef.localStream && this.isPublished(this.adapterRef.localStream)) {
+              // 主播变为观众时会自动Unpublish所有流
+              this.adapterRef.logger.info(`setClientRole：主播 ${localUser}将设为观众，自动Unpublish中`);
+              await this.unpublish(this.adapterRef.localStream);
+            }
+            if (!this.adapterRef._mediasoup){
+              throw new Error('No this.adapterRef._mediasoup');
+            }
+            await this.adapterRef._mediasoup.updateUserRole(userRole);
+            if (this._roleInfo.userRole !== userRole) {
+              this._roleInfo.userRole = userRole;
+              this.adapterRef.logger.info(`setClientRole：本地用户${localUser} 设置角色为 ${role}`);
+              this.emit('client-role-changed', {role: role});
+            }
+            break;
+          case "DISCONNECTED":
+            if (this._roleInfo.userRole !== userRole) {
+              this._roleInfo.userRole = userRole;
+              this.adapterRef.logger.info(`setClientRole：本地用户${localUser}设置角色为 ${role}`);
+              this.emit('client-role-changed', {role: role});
+            }
+            break;
+          default:
+            this.adapterRef.logger.error(`setClientRole: 本地用户${localUser}当前不在频道中，可能是网络波动导致暂时断开连接`);
+            reason = 'USER_NOT_IN_CHANNEL';
+        }
+      }
     }
-    switch (this.adapterRef.connectState.curState) {
-      case "CONNECTED":
-        if (userRole === 1 && this.adapterRef.localStream && this.isPublished(this.adapterRef.localStream)) {
-          // 主播变为观众时会自动Unpublish所有流
-          this.adapterRef.logger.info(`setClientRole：主播 ${localUser}将设为观众，自动Unpublish中`);
-          await this.unpublish(this.adapterRef.localStream);
-        }
-        if (!this.adapterRef._mediasoup){
-          throw new Error('No this.adapterRef._mediasoup');
-        }
-        await this.adapterRef._mediasoup.updateUserRole(userRole);
-        if (this._roleInfo.userRole !== userRole) {
-          this._roleInfo.userRole = userRole;
-          this.adapterRef.logger.info(`setClientRole：本地用户${localUser} 设置角色为 ${role}`);
-          this.emit('client-role-changed', {role: role});
-        }
-        break;
-      case "DISCONNECTED":
-        if (this._roleInfo.userRole !== userRole) {
-          this._roleInfo.userRole = userRole;
-          this.adapterRef.logger.info(`setClientRole：本地用户${localUser}设置角色为 ${role}`);
-          this.emit('client-role-changed', {role: role});
-        }
-        break;
-      default:
-        this.adapterRef.logger.error(`setClientRole: 本地用户${localUser}当前不在频道中，可能是网络波动导致暂时断开连接`);
+    const param:ReportParamSetClientRole = {
+      reason,
+      role: userRole
+    };
+    this.apiFrequencyControl({
+      name: 'setClientRole',
+      code: reason ? -1 : 0,
+      param: JSON.stringify(param, null, ' ')
+    })
+    if (reason){
+      return Promise.reject(reason);
     }
   }
 
@@ -862,21 +881,34 @@ class Client extends Base {
    * @return {null}
    */
   setChannelProfile(options:{mode: 'rtc'|'live'}) {
+    let reason;
     this.adapterRef.logger.log('设置房间模型, options: ', JSON.stringify(options, null, ' '))
-    if (this.adapterRef.signalInited) {
+    if (this.adapterRef.connectState.curState !== "DISCONNECTED") {
       this.adapterRef.logger.warn('已经在频道中')
-      return 'INVALID_OPERATION'
-    }
-
-    const mode = options.mode || 'rtc';
-    if (this.adapterRef.localStream) {
-      if (mode === 'live'){
-        this.adapterRef.localStream.audioProfile = 'music_standard'
-      }else if (mode === 'rtc'){
-        this.adapterRef.localStream.audioProfile = 'speech_low_quality'
+      reason = 'INVALID_OPERATION'
+    }else{
+      const mode = options.mode || 'rtc';
+      if (this.adapterRef.localStream) {
+        if (mode === 'live'){
+          this.adapterRef.localStream.audioProfile = 'music_standard'
+        }else if (mode === 'rtc'){
+          this.adapterRef.localStream.audioProfile = 'speech_low_quality'
+        }
       }
+      this._params.mode = mode  
     }
-    this._params.mode = mode
+    const param:ReportParamSetChannelProfile = {
+      reason,
+      channelProfile: (options.mode === "live" ? 1 : 0)
+    };
+    this.apiFrequencyControl({
+      name: 'setChannelProfile',
+      code: reason ? -1 : 0,
+      param: JSON.stringify(param, null, ' ')
+    })
+    if (reason){
+      throw new Error(reason);
+    }
   }
 
   /**

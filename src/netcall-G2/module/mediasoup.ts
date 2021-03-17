@@ -671,9 +671,9 @@ class Mediasoup extends EventEmitter {
     }
     const consumeRes = await this.adapterRef._signalling._protoo.request('Consume', data);
     this.adapterRef.logger.log('consume反馈结果 = %o', consumeRes);
-    if(this.adapterRef.connectState.curState == 'DISCONNECTING' || this.adapterRef.connectState.curState == 'DISCONNECTED'){
-      return
-    }
+    // if(this.adapterRef.connectState.curState == 'DISCONNECTING' || this.adapterRef.connectState.curState == 'DISCONNECTED'){
+    //   return
+    // }
     let { transportId, iceParameters, iceCandidates, dtlsParameters, probeSSrc, rtpParameters, producerId, consumerId, code, errMsg } = consumeRes;
     if (rtpParameters && rtpParameters.encodings && rtpParameters.encodings.length && rtpParameters.encodings[0].ssrc) {
       this.adapterRef.instance.addSsrc(uid, mediaTypeShort, rtpParameters.encodings[0].ssrc)
@@ -703,9 +703,9 @@ class Mediasoup extends EventEmitter {
         if (this._recvTransport) {
           await this.closeTransport(this._recvTransport);
         }
-        if(this.adapterRef.connectState.curState == 'DISCONNECTING' || this.adapterRef.connectState.curState == 'DISCONNECTED'){
-          return
-        }
+        // if(this.adapterRef.connectState.curState == 'DISCONNECTING' || this.adapterRef.connectState.curState == 'DISCONNECTED'){
+        //   return
+        // }
         this._recvTransport = null
         this.adapterRef.instance.reBuildRecvTransport()
         return
@@ -743,9 +743,9 @@ class Mediasoup extends EventEmitter {
         probeSSrc: isFake ? 0 : this._probeSSrc
       });
       
-      if(this.adapterRef.connectState.curState == 'DISCONNECTING' || this.adapterRef.connectState.curState == 'DISCONNECTED'){
-        return
-      }
+      // if(this.adapterRef.connectState.curState == 'DISCONNECTING' || this.adapterRef.connectState.curState == 'DISCONNECTED'){
+      //   return
+      // }
       if(!this._consumers) {
         this._consumers = {}
       }
@@ -776,9 +776,9 @@ class Mediasoup extends EventEmitter {
         return;
       }
     } catch (error) {
-      if(this.adapterRef.connectState.curState == 'DISCONNECTING' || this.adapterRef.connectState.curState == 'DISCONNECTED'){
-        return
-      }
+      // if(this.adapterRef.connectState.curState == 'DISCONNECTING' || this.adapterRef.connectState.curState == 'DISCONNECTED'){
+      //   return
+      // }
       this.adapterRef && this.adapterRef.logger.error('"newConsumer" request failed:%o', error);
       this.adapterRef.logger.error('订阅 %s 的 %s 媒体失败，做容错处理: 重新建立下行连接', uid, mediaTypeShort)
       this._eventQueue.length = 0
