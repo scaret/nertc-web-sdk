@@ -330,7 +330,7 @@ class Play extends EventEmitter {
     try {
       this.videoDom.srcObject = stream
       this.adapterRef.logger.log('播放 %o 的视频频, streamId: %o, stream状态: %o', this.uid, stream.id, stream.active)
-      await this.videoDom.play()
+      this.videoDom.play()
       this.adapterRef.logger.log('播放 %s 的视频完成，当前播放状态: %o', this.uid, this.videoDom && this.videoDom.played && this.videoDom.played.length)
     } catch (e) {
       this.adapterRef && this.adapterRef.logger.warn('播放 %s 的视频出现问题: %o', this.uid, e)
