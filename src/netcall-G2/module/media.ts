@@ -484,7 +484,7 @@ class MediaHelper extends EventEmitter {
     } else if (kind === 'screen' && this.screenStream) {
       type = 'set_screen'
       this._stopTrack(this.screenStream)
-      this.videoStream = this.screenStream = null
+      this.screenStream = null
     } 
     this.adapterRef.instance.apiEventReport('setFunction', {
       name: type,
