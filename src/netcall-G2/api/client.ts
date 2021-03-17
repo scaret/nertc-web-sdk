@@ -253,6 +253,7 @@ class Client extends Base {
       }
       await this.adapterRef._mediasoup.destroyProduce('audio');
       await this.adapterRef._mediasoup.destroyProduce('video');
+      await this.adapterRef._mediasoup.destroyProduce('screen');
       this.apiFrequencyControl({
         name: 'unpublish',
         code: 0,
