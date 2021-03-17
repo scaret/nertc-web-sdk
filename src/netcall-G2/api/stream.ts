@@ -25,6 +25,7 @@ import {
 } from "../types";
 import {MediaHelper} from "../module/media";
 import {checkExists, isExistOptions} from "../util/param";
+import {ReportParamSubscribeRemoteSubStreamVideo} from "../interfaces/ApiReportParam";
 
 /**
  *  请使用 {@link WEBRTC2.createStream} 通过WEBRTC2.createStream创建
@@ -406,6 +407,17 @@ class Stream extends EventEmitter {
       code: 0,
       param: JSON.stringify(conf, null, ' ')
     })
+    if (this.pubStatus.screen.screen){
+      const param:ReportParamSubscribeRemoteSubStreamVideo = {
+        uid: this.streamID,
+        subscribe: this.subConf.screen
+      }
+      this.client.apiFrequencyControl({
+        name: 'subscribeRemoteSubStreamVideo',
+        code: 0,
+        param: JSON.stringify(param, null, ' ')
+      })
+    }
   }
 
   getAudioStream(){
