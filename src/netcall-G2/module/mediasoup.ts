@@ -330,7 +330,6 @@ class Mediasoup extends EventEmitter {
           // 1. 使用原有的encoding
           let encoding = this.senderEncodingParameter[mediaTypeShort];
           let mLineIndex = offer.sdp.indexOf(producerData.deviceId);
-          console.error("rtpParameters", JSON.stringify(rtpParameters, null, 2));
           if (!encoding){
             if (rtpParameters.encodings){
               // 2. 使用rtpParameter中的值

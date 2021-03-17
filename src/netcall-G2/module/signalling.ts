@@ -257,7 +257,6 @@ class Signalling extends EventEmitter {
         //@ts-ignore
         remoteStream.pubStatus[mediaTypeShort][mediaTypeShort] = true
         remoteStream.pubStatus[mediaTypeShort].producerId = producerId
-        console.error("Set producer id", mediaTypeShort, producerId);
         remoteStream.pubStatus[mediaTypeShort].mute = mute
         remoteStream.pubStatus[mediaTypeShort].simulcastEnable = simulcastEnable
         this.adapterRef.instance.emit('stream-added', {stream: remoteStream})
@@ -299,7 +298,6 @@ class Signalling extends EventEmitter {
           throw new Error('No this.adapterRef._mediasoup');
         }
         if (remoteStream.pubStatus[mediaTypeShort].consumerId){
-          console.error("destroyConsumer", remoteStream.pubStatus[mediaTypeShort].consumerId)
           this.adapterRef._mediasoup.destroyConsumer(remoteStream.pubStatus[mediaTypeShort].consumerId)
         }
         this.adapterRef.instance.removeSsrc(uid, mediaTypeShort)
@@ -324,7 +322,6 @@ class Signalling extends EventEmitter {
             data.videoTotalPlayDuration = 0
           }
         }else{
-          console.error("记得写Screen啊啊啊啊啊")
         }
 
         this.adapterRef.instance.emit('stream-removed', {stream: remoteStream})
