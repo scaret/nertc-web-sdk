@@ -16,7 +16,8 @@ const globalConfig = window.globalConfig = {
 
 var WEBRTC2_ENV = {
   DEV: {
-    appkey: "eca23f68c66d4acfceee77c200200359", //"eca23f68c66d4acfceee77c200200359","be8648374778fdfc3e445d5a0aac0c3b"
+    appkey: 'b8e51166f2fc093d9d2f0680cb1f2d28', 
+    //appkey: "eca23f68c66d4acfceee77c200200359",
     token: ""
   },
   PROD: {
@@ -409,7 +410,7 @@ $('#init-btn').on('click', () => {
  * ----------------------------------------
  */
 
-$('#joinChannel-btn').on('click', () => {
+$('#joinChannel-btn').on('click', async () => {
   const channelName = $('#channelName').val()
   if (window.localStorage){
     window.localStorage.setItem("channelName", channelName);
@@ -430,11 +431,36 @@ $('#joinChannel-btn').on('click', () => {
     turnAddr: $('#isTurnAddrConf').prop('checked') ? $('#isTurnAddrConf').prop('checked') && $('#turnAddr').val() : null,
     ForwardedAddr: $('#isForwardedAddrConf').prop('checked') ? $('#isForwardedAddrConf').prop('checked') && $('#forwardedAddr').val() : null
   }
+
+  var AppSecret = 'caea9a0b900b'
+  var token = ''
+  if (AppSecret){
+    let Nonce = Math.ceil(Math.random() * 1e9);
+    let CurTime = Math.ceil(Date.now() / 1000);
+    let CheckSum = sha1(`${AppSecret}${Nonce}${CurTime}`);
+    const headers = {
+      'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+      AppKey: 'b8e51166f2fc093d9d2f0680cb1f2d28',
+      Nonce,
+      CurTime,
+      CheckSum,
+    }
+    // console.log("config.getTokenUrl", config.getTokenUrl, "headers", headers, "appSecret", AppSecret);
+    var getTokenUrl = 'https://api.netease.im/nimserver/user/getToken.action'
+    //getTokenUrl: 'https://imtest.netease.im/nimserver/user/getToken.action',
+    const data = await axios.post(getTokenUrl, `uid=${encodeURIComponent(uid)}&channelName=${encodeURIComponent(channelName)}`, {headers});
+    if (data.data && data.data.token){
+      token = data.data.token
+    }else{
+      console.error(data.data || data);
+    }
+  }
   
   rtc.client.join({
     channelName,
     uid: +uid,
-    wssArr: $('#isGetwayAddrConf').prop('checked') ? [$('#isGetwayAddrConf').prop('checked') && $('#getwayAddr').val()] : null,
+    token,
+    //wssArr: $('#isGetwayAddrConf').prop('checked') ? [$('#isGetwayAddrConf').prop('checked') && $('#getwayAddr').val()] : null,
     joinChannelRecordConfig: {
       isHostSpeaker,
       recordAudio,
