@@ -317,7 +317,7 @@ class Mediasoup extends EventEmitter {
             externData    : {
               producerInfo  : {
                 mediaType   : appData.mediaType,
-                screenShare  : appData.mediaType === 'screenShare',
+                subStream  : appData.mediaType === 'screenShare',
                 simulcastEnable  :false,
                 mute: false, //  false
                 spatialLayer: 0, //0:low 1:high
