@@ -601,14 +601,14 @@ class Stream extends EventEmitter {
     if (view){
       if (playOptions.video){
         this.videoView = view;
-        if(this._play && this.mediaHelper && this.mediaHelper.videoStream){
+        if(this._play && this.mediaHelper && this.mediaHelper.videoStream && this.mediaHelper.videoStream.getVideoTracks().length){
           this.client.adapterRef.logger.log('开始播放视频: ', this.streamID)
           this._play.playVideoStream(this.mediaHelper.videoStream, view)
         }  
       }
       if (playOptions.screen){
         this.screenView = view;
-        if(this._play && this.mediaHelper && this.mediaHelper.screenStream){
+        if(this._play && this.mediaHelper && this.mediaHelper.screenStream && this.mediaHelper.screenStream.getVideoTracks().length){
           this.client.adapterRef.logger.log('开始播放辅流: ', this.streamID)
           this._play.playScreenStream(this.mediaHelper.screenStream, view)
         }

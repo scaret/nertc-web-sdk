@@ -11,6 +11,7 @@ import {
 } from "../types";
 import {Peer, ProtooNotification} from "./3rd/protoo-client";
 import {Consumer} from "./3rd/mediasoup-client/Consumer";
+import {emptyStreamWith} from "../util/gum";
 const protooClient = require('./3rd/protoo-client/')
 const CryptoJS = require("crypto-js");
 
@@ -309,19 +310,31 @@ class Signalling extends EventEmitter {
         remoteStream.pubStatus[mediaTypeShort].producerId = ''
         const data = this.adapterRef._statsReport && this.adapterRef._statsReport.formativeStatsReport && this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
         if (mediaTypeShort === 'audio') {
+          if (remoteStream.mediaHelper){
+            remoteStream.mediaHelper.micTrack = null;
+            emptyStreamWith(remoteStream.mediaHelper.audioStream, null);
+          }
           delete this.adapterRef.remoteAudioStats[uid];
           if (data) {
             data.recvFirstAudioFrame = false
             data.recvFirstAudioPackage = false
           }
         } else if (mediaTypeShort === 'video') {
+          if (remoteStream.mediaHelper){
+            remoteStream.mediaHelper.cameraTrack = null;
+            remoteStream.mediaHelper.videoStream = null;
+          }
           delete this.adapterRef.remoteVideoStats[uid];
           if (data) {
             data.recvFirstVideoFrame = false
             data.recvFirstVideoPackage = false
             data.videoTotalPlayDuration = 0
           }
-        }else{
+        }else if (mediaTypeShort === 'screen'){
+          if (remoteStream.mediaHelper){
+            remoteStream.mediaHelper.screenTrack = null;
+            remoteStream.mediaHelper.screenStream = null;
+          }
         }
 
         this.adapterRef.instance.emit('stream-removed', {stream: remoteStream})
