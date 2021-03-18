@@ -705,7 +705,6 @@ class Client extends Base {
       const localUser = this.adapterRef.channelInfo ? this.adapterRef.channelInfo.uid || "" : "";
       if (userRole === this._roleInfo.userRole) {
         this.adapterRef.logger.warn(`setClientRole: 用户${localUser}的角色已经是${role}了`);
-        reason = `USER_ROLE_UNCHANGED`
       }else{
         switch (this.adapterRef.connectState.curState) {
           case "CONNECTED":
