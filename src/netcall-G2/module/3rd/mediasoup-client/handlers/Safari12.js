@@ -1,4 +1,6 @@
 "use strict";
+import {getMediaSecionIdx} from "../../../../util/getMediaSecionIdx";
+
 Object.defineProperty(exports, "__esModule", { value: true });
 const sdpTransform = require("sdp-transform");
 const Logger_1 = require("../Logger");
@@ -178,9 +180,9 @@ class Safari12 extends HandlerInterface_1.HandlerInterface {
     async getTransportStats() {
         return this._pc.getStats();
     }
-    async send({ track, encodings, codecOptions, codec }) {
+    async send({ track, encodings, codecOptions, codec, appData }) {
         this._assertSendDirection();
-        logger.debug('send() [kind:%s, track.id:%s]', track.kind, track.id);
+        logger.debug('send() [kind:%s, track.id:%s, appData]', track.kind, track.id, appData);
         const sendingRtpParameters = utils.clone(this._sendingRtpParametersByKind[track.kind]);
         // This may throw.
         sendingRtpParameters.codecs =
@@ -190,21 +192,28 @@ class Safari12 extends HandlerInterface_1.HandlerInterface {
         sendingRemoteRtpParameters.codecs =
             ortc.reduceCodecs(sendingRemoteRtpParameters.codecs, codec);
 
-        let mediaSectionIdx = undefined;
         let transceiver = {}
-        if (track.kind === 'audio' && this._pc.audioSender) {
+        if (appData.mediaType === 'audio' && this._pc.audioSender) {
             logger.warn('audioSender更新track: ', this._pc.audioSender)
             this._pc.audioSender.replaceTrack(track)
-            mediaSectionIdx = 0
-        } else if (track.kind === 'video' && this._pc.videoSender) {
+        } else if (appData.mediaType === 'video' && this._pc.videoSender) {
             logger.warn('videoSender更新track: ', this._pc.videoSender)
             this._pc.videoSender.replaceTrack(track)
             if (this._pc.audioSender) {
-                mediaSectionIdx = 1
+                // mediaSectionIdx = 1
             } else {
                 //没有开启mic或者mic开启失败
-                mediaSectionIdx = 0
+                // mediaSectionIdx = 0
             }
+        } else if (appData.mediaType === 'screenShare' && this._pc.screenSender) {
+          logger.warn('screenSender更新track: ', this._pc.screenSender)
+          this._pc.screenSender.replaceTrack(track)
+          // if (this._pc.audioSender) {
+            // mediaSectionIdx = 1
+          // } else {
+            //没有开启mic或者mic开启失败
+            // mediaSectionIdx = 0
+          // }
         } else {
             let stream = new MediaStream();
             stream.addTrack(track)
@@ -214,10 +223,12 @@ class Safari12 extends HandlerInterface_1.HandlerInterface {
                 sendEncodings: encodings
             });
         }
-        if (track.kind === 'audio' && !this._pc.audioSender) {
+        if (appData.mediaType === 'audio' && !this._pc.audioSender) {
             this._pc.audioSender = transceiver.sender
-        } else if (track.kind === 'video' && !this._pc.videoSender) {
+        } else if (appData.mediaType === 'video' && !this._pc.videoSender) {
             this._pc.videoSender = transceiver.sender
+        } else if (appData.mediaType === 'screenShare' && !this._pc.screenSender) {
+          this._pc.screenSender = transceiver.sender
         }
 
         logger.debug('send() | [transceivers:%d]', this._pc.getTransceivers().length);
@@ -235,6 +246,7 @@ class Safari12 extends HandlerInterface_1.HandlerInterface {
         if (encodings && encodings.length > 1) {
             logger.debug('send() | enabling legacy simulcast');
             localSdpObject = sdpTransform.parse(offer.sdp);
+            let mediaSectionIdx = getMediaSecionIdx(localSdpObject, appData, this._pc);
             offerMediaObject = localSdpObject.media[mediaSectionIdx];
             sdpUnifiedPlanUtils.addLegacySimulcast({
                 offerMediaObject,
@@ -249,9 +261,7 @@ class Safari12 extends HandlerInterface_1.HandlerInterface {
         // Set MID.
         sendingRtpParameters.mid = localId;
         localSdpObject = sdpTransform.parse(offer.sdp);
-        if (mediaSectionIdx === undefined) {
-            mediaSectionIdx = localSdpObject.media.length - 1;
-        }
+        let mediaSectionIdx = getMediaSecionIdx(localSdpObject, appData, this._pc);
         offerMediaObject = localSdpObject.media[mediaSectionIdx];
         // Set RTCP CNAME.
         sendingRtpParameters.rtcp.cname =
@@ -374,9 +384,13 @@ class Safari12 extends HandlerInterface_1.HandlerInterface {
             //this._remoteSdp.closeMediaSection('0');
             logger.debug('删除发送的audio track: ', this._pc.audioSender)
         } else if (kind === 'video') {
-            this._pc.videoSender.replaceTrack(null);
-            //this._remoteSdp.closeMediaSection('1');
-            logger.debug('删除发送的video track: ', this._pc.videoSender)
+          this._pc.videoSender.replaceTrack(null);
+          //this._remoteSdp.closeMediaSection('1');
+          logger.debug('删除发送的video track: ', this._pc.videoSender)
+        } else if (kind === 'screenShare') {
+          this._pc.screenSender.replaceTrack(null);
+          //this._remoteSdp.closeMediaSection('1');
+          logger.debug('删除发送的screen track: ', this._pc.screenSender)
         } else {
             transceiver.sender.replaceTrack(null);
         }

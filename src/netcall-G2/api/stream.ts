@@ -1602,7 +1602,7 @@ class Stream extends EventEmitter {
           return;
         }
         if (!sender){
-          throw new Error(`Unknown media type ${sender}`);
+          throw new Error(`Unknown media type ${mediaTypeShort}`);
         }
         const parameters = sender.getParameters();
         if (!parameters) {
