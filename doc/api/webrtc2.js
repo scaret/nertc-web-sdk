@@ -71,6 +71,8 @@ export default Object.assign(
      *  @param {MeidaTrack} [options.videoSource] 自定义的视频的track
      *  @param {client} [options.client] 和要Stream绑定的client实例对象，默认是最初使用用createClient创建的client实例（多实例场景使用）
      *  @returns {Stream}  Stream对象
+     *  @description 该方法创建并返回音视频流对象。
+     *  注意：从4.1.0版本起，摄像头与屏幕共享的视频流可以一起发送了。屏幕共享流会以辅流发送。
      */
     createStream (options = {}) {
       if (client || options.client) {

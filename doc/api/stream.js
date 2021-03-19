@@ -209,6 +209,7 @@ class Stream extends EventEmitter {
    * @param {Object} options 配置参数
    * @param {Boolean} [options.audio] 是否订阅音频
    * @param {Boolean} [options.video] 是否订阅视频
+   * @param {Boolean} [options.screen] 是否订阅屏幕共享
    * @param {Number} [options.highOrLow] : 0是小流，1是大流
    * @returns {Null}
    */
@@ -316,6 +317,28 @@ class Stream extends EventEmitter {
   }
 
   /**
+   * 获取音频流
+   * @function getAudioStream
+   * @memberOf Stream#
+   * @return {MediaStream}
+   * @description 获取音频流，可用于自定义音频渲染
+   远端Stream对象新增接口getAudioStream()，可以返回一个MediaStream对象。
+   用户可以自行渲染这个对象，例如，将audio dom节点的srcObject属性设为该对象。
+   使用音频自渲染功能时，应该在播放远端流时，关闭默认的音频渲染：
+   @example
+remoteStream.play({
+  audio: false,
+  video: true
+});
+const audioStream = remoteStream.getAudioStream();
+// audioDom为自行创建的DOM节点
+audioDom.srcObject = audioStream;
+   */
+  getAudioStream () {
+    
+  }
+  
+  /**
    * 获取音频轨道
    * @function getAudioTrack
    * @memberOf STREAM#
@@ -340,6 +363,10 @@ class Stream extends EventEmitter {
    * @function play
    * @memberOf Stream#
    * @param {div} view div标签，播放画面的dom容器节点
+   * @param {object} [options] 播放的音视频选项
+   * @param {boolean} [options.audio] 是否播放音频。默认本地不播放，远端播放。
+   * @param {boolean} [options.video] 是否播放视频。默认播放。
+   * @param {boolean} [options.screen] 是否播放屏幕共享。默认播放。
    * @return {Promise}
    */
   async play (view) {
@@ -370,6 +397,7 @@ class Stream extends EventEmitter {
    * @param {Number }  options.width 宽度
    * @param {Number }  options.height 高度
    * @param {Boolean }  options.cut 是否裁剪
+   * @param  {"video"|"screen"} [options.mediaType] 设置视频还是屏幕共享。不填则同时设置。
    * @returns {Void}
    */
   setLocalRenderMode (options) {
@@ -400,6 +428,7 @@ class Stream extends EventEmitter {
    * @param {Number }  options.width 宽度
    * @param {Number }  options.height 高度
    * @param {Boolean }  options.cut 是否裁剪
+   * @param  {"video"|"screen"} [options.mediaType] 设置视频还是屏幕共享。不填则同时设置。
    * @returns {Void}
    */
   setRemoteRenderMode (options) {
@@ -953,6 +982,8 @@ class Stream extends EventEmitter {
    * @function unmuteVideo
    * @memberOf Stream#
    * @return {Promise}
+   * @description 启用视频轨道
+   * 注意：从4.1.0版本起，原muteVideo和unmuteVideo接口不再对屏幕共享有效，应使用muteScreen和unmuteScreen。
    */
 
   async unmuteVideo () {
@@ -989,6 +1020,8 @@ class Stream extends EventEmitter {
    * @function muteVideo
    * @memberOf Stream#
    * @return {Promise}
+   * @description 禁用视频轨道
+   * 注意：从4.1.0版本起，原muteVideo和unmuteVideo接口不再对屏幕共享有效，应使用muteScreen和unmuteScreen。
    */
   async muteVideo () {
     this.client.adapterRef.logger.log(`禁用 ${this.streamID} 的视频轨道`)
@@ -1018,6 +1051,28 @@ class Stream extends EventEmitter {
     }
   }
 
+
+  /**
+   * 启用辅流轨道
+   * @function unmuteScreen
+   * @memberOf Stream#
+   * @return {Promise}
+   */
+
+  async unmuteScreen () {
+  }
+
+  /**
+   * 禁用辅流轨道
+   * @function muteScreen
+   * @memberOf Stream#
+   * @return {Promise}
+   */
+  async muteScreen () {
+  }
+
+  
+  
   /**
    * 获取视频 flag
    * @function hasVideo
@@ -1128,6 +1183,7 @@ class Stream extends EventEmitter {
    * @memberOf Stream#
    * @param  {Object} options  配置参数
    * @param  {String} options.name 截取的图片的保存名称(默认是uid-1的格式名称)
+   * @param  {"video"|"screen"} [options.mediaType] 截取视频流还是屏幕共享。不填就都截取。
    * @returns {Promise}
    */
   async takeSnapshot (options) {
