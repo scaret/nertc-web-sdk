@@ -73,9 +73,8 @@ export interface AdapterRef {
   localAudioStats: {
     [uid: number]: LocalAudioStats
   };
-  localVideoStats: {
-    [uid: number]: LocalVideoStats
-  };
+  localVideoStats: [LocalVideoStats];
+  localScreenStats: [LocalVideoStats];
   logger:Logger;
   testConf: {
     ForwardedAddr?:string;
@@ -439,6 +438,7 @@ export interface LocalAudioStats{
 }
 
 export interface LocalVideoStats{
+  LayerType: number;
   CaptureFrameRate: number;
   CaptureResolutionHeight: number;
   CaptureResolutionWidth: number;

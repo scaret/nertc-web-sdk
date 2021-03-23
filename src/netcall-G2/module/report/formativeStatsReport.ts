@@ -25,6 +25,7 @@ class FormativeStatsReport {
   private publicIP: string;
   public LocalAudioEnable: boolean;
   public localVideoEnable: boolean;
+  public localScreenEnable: boolean;
   private _audioLevel: {uid:number, level: number}[];
   private infos: {
     cid?: number;
@@ -49,6 +50,7 @@ class FormativeStatsReport {
   private paramSecond: {
     upAudioCache: any,
     upVideoCache: any,
+    upScreenCache: any,
     downAudioCache: any,
     downVideoCache: any,
   };
@@ -56,6 +58,7 @@ class FormativeStatsReport {
     recvFirstData: {[uid:number]: any};
     sendFirstAudioPackage: boolean;
     sendFirstVideoPackage: boolean;
+    sendFirstScreenPackage: boolean;
   }
   private network: string;
   
@@ -73,17 +76,20 @@ class FormativeStatsReport {
     this.paramSecond = {
       upAudioCache: {},
       upVideoCache: {},
+      upScreenCache: {},
       downAudioCache: {},
       downVideoCache: {},
     };
     this.firstData = {
       recvFirstData: {},
       sendFirstAudioPackage: false,
-      sendFirstVideoPackage: false
+      sendFirstVideoPackage: false,
+      sendFirstScreenPackage: false,
     };
     this.network = "";
     this.LocalAudioEnable = false;
     this.localVideoEnable = false;
+    this.localScreenEnable = false;
     this.init(this.adapterRef.channelInfo.appkey)
     this.resetStatus()
   }
@@ -135,7 +141,8 @@ class FormativeStatsReport {
     this.firstData = {
       recvFirstData: {},
       sendFirstAudioPackage: false,
-      sendFirstVideoPackage: false
+      sendFirstVideoPackage: false,
+      sendFirstScreenPackage: false,
     }
     if (this._audioLevel) {
       this._audioLevel.length = 0
@@ -224,6 +231,7 @@ class FormativeStatsReport {
     this.paramSecond = {
       upAudioCache: {},
       upVideoCache: {},
+      upScreenCache: {},
       downAudioCache: {},
       downVideoCache: {}
     }
@@ -254,6 +262,7 @@ class FormativeStatsReport {
     data = Object.assign({}, data.local, data.remote)
     let upAudioList = []
     let upVideoList = []
+    let upScreenList = []
     let downAudioList = []
     let downVideoList = []
     if (this.webrtcStats.length == 2) {
@@ -278,6 +287,14 @@ class FormativeStatsReport {
           nextPacket: 0,
           rtt: 0,
           jitter: 0
+        },
+        screen: {
+          prevLost: 0,
+          nextLost: 0,
+          prevPacket: 0,
+          nextPacket: 0,
+          rtt: 0,
+          jitter: 0
         }
       },
       recv: {
@@ -291,6 +308,14 @@ class FormativeStatsReport {
           jitter: 0
         }, 
         video: {
+          prevLost: 0,
+          nextLost: 0,
+          prevPacket: 0,
+          nextPacket: 0,
+          rtt: 0,
+          jitter: 0
+        },
+        screen: {
           prevLost: 0,
           nextLost: 0,
           prevPacket: 0,
@@ -362,6 +387,33 @@ class FormativeStatsReport {
         currentData.send.video.rtt = currentData.recv.video.rtt = data[i].googRtt
         currentData.send.video.jitter = currentData.recv.video.jitter = data[i].googJitterReceived || 0
         upVideoList.push(data[i])
+      } else if (i.indexOf('_send_') !== -1 && i.indexOf('_screen') !== -1) {
+        if (!this.firstData.sendFirstScreenPackage && data[i].packetsSent > 0) {
+          this.firstData.sendFirstScreenPackage = true
+          this.adapterRef.instance.apiEventReport('setSendFirstPackage', {
+            media_type: 2
+          })
+        }
+        if (this.paramSecond.upScreenCache[uid]) {
+          currentData.send.screen.prevLost = this.paramSecond.upScreenCache[uid].packetsLost
+          currentData.send.screen.prevPacket = this.paramSecond.upScreenCache[uid].packetsSent
+          data[i].vlr = this.getPacketLossRate(this.paramSecond.upScreenCache[uid], data[i], true)
+          // this.dispatchExceptionEventSendScreen(this.paramSecond.upScreenCache[uid], data[i], uid)
+        }
+
+        let stats = this.getLocalScreenFreezeStats(data[i], uid)
+        data[i].freezeTime = stats.freezeTime
+        data[i].totalFreezeTime = stats.totalFreezeTime
+
+        Object.assign(data[i], data['bweforscreen'])
+        bytesSent += parseInt(data[i].bytesSent)
+        this.paramSecond.upScreenCache[uid] = data[i]
+        currentData.send.uid = this.adapterRef.channelInfo.uid
+        currentData.send.screen.nextLost = data[i].packetsLost
+        currentData.send.screen.nextPacket = data[i].packetsSent
+        currentData.send.screen.rtt = currentData.recv.screen.rtt = data[i].googRtt
+        currentData.send.screen.jitter = currentData.recv.screen.jitter = data[i].googJitterReceived || 0
+        upScreenList.push(data[i])
       } else if (i.indexOf('_recv_') !== -1 && i.indexOf('_audio') !== -1) {
         if (!this.firstData.recvFirstData[uid]) {
           this.firstData.recvFirstData[uid] = {
@@ -482,7 +534,7 @@ class FormativeStatsReport {
     if (time % 2 === 0) {
       this.adapterRef.instance.emit('volume-indicator', this._audioLevel)
       // 更新上行信息
-      this.updateTxMediaInfo(upAudioList, upVideoList)
+      this.updateTxMediaInfo(upAudioList, upVideoList, upScreenList);
       // 更新下行信息
       this.updateRxMediaInfo(downAudioList, downVideoList)
       let length = this.infos2.tx2 && this.infos2.tx2[0].v_res.length
@@ -627,22 +679,29 @@ class FormativeStatsReport {
   }
 
   // 获取本地上行的媒体信息
-  getLocalMediaStats (upAudioList: UpAudioItem[], upVideoList: UpVideoItem[]) {
 
+  getLocalMediaStats (upAudioList: UpAudioItem[], upVideoList: UpVideoItem[], upScreenList: UpVideoItem[]) {
     let result = {
       a_lost: (upAudioList[0] && upAudioList[0].alr) || 0, // 音频丢包百分比
       v_lost: (upVideoList[0] && upVideoList[0].vlr) || 0, // 视频丢包百分比
+      s_lost: (upScreenList[0] && upScreenList[0].vlr) || 0, // 辅流丢包百分比
       rtt: parseInt(upVideoList[0] && upVideoList[0].googRtt) || 0, // 延迟
       rtt_mdev: -1, // 时延抖动。
       set_v_fps: parseInt(this.adapterRef.channelInfo.sessionConfig.frameRate) || 0, // 视频设置帧率（用户设置）
       v_cap_fps: parseInt(upVideoList[0] && upVideoList[0].googFrameRateInput) || 0, //视频采集帧率
+      s_cap_fps: parseInt(upScreenList[0] && upScreenList[0].googFrameRateInput) || 0, //辅流采集帧率
       qos_v_fps: parseInt(upVideoList[0] && upVideoList[0].googFrameRateInput) || 0, // 视频设置帧率（QoS设置）
+      qos_s_fps: parseInt(upScreenList[0] && upScreenList[0].googFrameRateInput) || 0, // 辅流设置帧率（QoS设置）
       v_fps: parseInt(upVideoList[0] && upVideoList[0].googFrameRateSent) || 0, // 视频发送帧率
+      s_fps: parseInt(upScreenList[0] && upScreenList[0].googFrameRateSent) || 0, // 辅流发送帧率
       set_v_quality: this.adapterRef.channelInfo.sessionConfig.videoQuality, // 客户端设置图像清晰度. 默认 0,低 1,中 2,高 3, 480P 4, 540P 5, 720P 6
       // 客户端发送图像分辨率-宽度、高度wxh e.g."640x480"
       real_v_res: ((upVideoList[0] && upVideoList[0].googFrameWidthSent) || 0) + 'x' + ((upVideoList[0] && upVideoList[0].googFrameHeightSent) || 0),
+      real_s_res: ((upScreenList[0] && upScreenList[0].googFrameWidthSent) || 0) + 'x' + ((upScreenList[0] && upScreenList[0].googFrameHeightSent) || 0),
       real_v_kbps: parseFloat(upVideoList[0] && upVideoList[0].googActualEncBitrate) || 0, // 客户端视频SDK编码码率
+      real_s_kbps: parseFloat(upScreenList[0] && upScreenList[0].googActualEncBitrate) || 0, // 客户端辅流SDK编码码率
       real_v_kbps_n: parseFloat(upVideoList[0] && upVideoList[0].googTransmitBitrate) || 0, // 客户端视频网络出口发送码率（含冗余包）
+      real_s_kbps_n: parseFloat(upScreenList[0] && upScreenList[0].googTransmitBitrate) || 0, // 客户端辅流网络出口发送码率（含冗余包）
       real_a_kbps: -1, //客户端音频SDK编码码率
       real_a_kbps_n: upAudioList[0] ? upAudioList[0].bitsSentPerSecond : 0, // 客户端音频网络出口发送码率（含冗余包）
       set_v_kbps: -1, // 客户端视频设置码率
@@ -653,8 +712,11 @@ class FormativeStatsReport {
       a_stream_ended: this.LocalAudioEnable || false, //发送的音频流是否正常
       a_ssrc: (upAudioList[0] && upAudioList[0].ssrc) || '', //音频流的ssrc
       v_codec: (upVideoList[0] && upVideoList[0].googCodecName) || 'h264', //视频编解码名称
+      s_codec: (upScreenList[0] && upScreenList[0].googCodecName) || 'h264', //视频编解码名称
       v_stream_ended: this.localVideoEnable || false, //发送的视频流是否正常
-      v_ssrc: (upVideoList[0] && upVideoList[0].ssrc) || '' // 视频流的ssrc
+      s_stream_ended: this.localScreenEnable || false, //发送的辅流是否正常
+      v_ssrc: (upVideoList[0] && upVideoList[0].ssrc) || '', // 视频流的ssrc
+      s_ssrc: (upScreenList[0] && upScreenList[0].ssrc) || '', // 视频流的ssrc
     }
 
     let SamplingRate = 48
@@ -678,6 +740,7 @@ class FormativeStatsReport {
     }
 
     this.adapterRef.localVideoStats[0] = {
+      LayerType: 1,
       CaptureFrameRate: result.v_cap_fps,
       CaptureResolutionHeight: parseInt(upVideoList[0] && upVideoList[0].googFrameHeightInput) || 0,
       CaptureResolutionWidth: parseInt(upVideoList[0] && upVideoList[0].googFrameWidthInput) || 0,
@@ -690,6 +753,22 @@ class FormativeStatsReport {
       TargetSendBitrate: parseInt(upVideoList[0] && upVideoList[0].googTargetEncBitrate) || 0,
       TotalDuration: this.adapterRef.state.startPubVideoTime ? (Date.now() -  this.adapterRef.state.startPubVideoTime) / 1000 : 0,
       TotalFreezeTime: upVideoList[0] ? upVideoList[0].totalFreezeTime :0
+    }
+    
+    this.adapterRef.localScreenStats[0] = {
+      LayerType: 2,
+      CaptureFrameRate: result.s_cap_fps,
+      CaptureResolutionHeight: parseInt(upScreenList[0] && upScreenList[0].googFrameHeightInput) || 0,
+      CaptureResolutionWidth: parseInt(upScreenList[0] && upScreenList[0].googFrameWidthInput) || 0,
+      EncodeDelay: parseInt(upScreenList[0] && upScreenList[0].googAvgEncodeMs) || 0,
+      MuteState: this.adapterRef.localStream.muteStatus.screenSend,
+      SendBitrate: result.real_s_kbps_n,
+      SendFrameRate: result.s_fps,
+      SendResolutionHeight: parseInt(upScreenList[0] && upScreenList[0].googFrameHeightSent) || 0,
+      SendResolutionWidth: parseInt(upScreenList[0] && upScreenList[0].googFrameWidthSent) || 0,
+      TargetSendBitrate: parseInt(upScreenList[0] && upScreenList[0].googTargetEncBitrate) || 0,
+      TotalDuration: this.adapterRef.state.startPubScreenTime ? (Date.now() -  this.adapterRef.state.startPubScreenTime) / 1000 : 0,
+      TotalFreezeTime: upScreenList[0] ? upScreenList[0].totalFreezeTime :0
     }
 
     //G2的统计上报
@@ -711,9 +790,9 @@ class FormativeStatsReport {
   }
 
   // 组装上行的媒体信息
-  updateTxMediaInfo (upAudioList:UpAudioItem[], upVideoList:UpVideoItem[]) {
+  updateTxMediaInfo (upAudioList:UpAudioItem[], upVideoList:UpVideoItem[], upScreenList:UpVideoItem[]) {
     if(!this.adapterRef.localStream) return
-    let tmp = this.getLocalMediaStats(upAudioList, upVideoList)
+    let tmp = this.getLocalMediaStats(upAudioList, upVideoList, upScreenList)
     // 更新其他信息
     // @ts-ignore
     let systemNetworkType = ((navigator.connection || {}).type || 'unknown').toString().toLowerCase()
@@ -904,6 +983,34 @@ class FormativeStatsReport {
         totalFreezeTime,
         freezeTime: 0
       } 
+    }
+  }
+
+  getLocalScreenFreezeStats(data:UpVideoItem, uid:number) {
+    let totalFreezeTime = 0
+    if (!data) {
+      return {
+        totalFreezeTime,
+        freezeTime: 0
+      }
+    }
+
+    let n = parseInt(data.googFrameRateInput)
+    let i = parseInt(data.googFrameRateSent)
+    if (n > 5 && i < 3) {
+      if (this.adapterRef.localScreenStats && this.adapterRef.localScreenStats[uid]) {
+        totalFreezeTime = this.adapterRef.localScreenStats[uid].TotalFreezeTime || 0
+      }
+      totalFreezeTime++
+      return {
+        totalFreezeTime,
+        freezeTime: 2
+      }
+    } else {
+      return {
+        totalFreezeTime,
+        freezeTime: 0
+      }
     }
   }
 

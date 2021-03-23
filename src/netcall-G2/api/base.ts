@@ -183,6 +183,7 @@ class Base extends EventEmitter {
       },
       localAudioStats: [],
       localVideoStats: [],
+      localScreenStats: [],
       remoteAudioStats: {},
       remoteVideoStats: {}
     })
