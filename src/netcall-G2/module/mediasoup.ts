@@ -178,6 +178,12 @@ class Mediasoup extends EventEmitter {
           uid: this.adapterRef.channelInfo.uid
         }
       })
+      this.senderEncodingParameter = {
+        ssrcList: [],
+        audio: null,
+        video: null,
+        screen: null,
+      };
       this._sendTransport.on('connectionstatechange', this._sendTransportConnectionstatechange.bind(this))
     }
     
