@@ -614,10 +614,18 @@ class Mediasoup extends EventEmitter {
           return
         }
         return
-      } else {
+      } else if (remoteStream.pubStatus[mediaTypeShort].stopconsumerStatus !== 'start'){
         this.adapterRef.logger.log('先停止之前的订阅')
         try {
-          await this.adapterRef.instance.unsubscribe(remoteStream)
+          remoteStream.pubStatus[mediaTypeShort].stopconsumerStatus = 'start'
+          if (!this.adapterRef._mediasoup){
+            throw new Error('No this.adapterRef._mediasoup');
+          }
+          await this.destroyConsumer(remoteStream.pubStatus.audio.consumerId);
+          this.adapterRef.instance.removeSsrc(remoteStream.getId(), mediaTypeShort)
+          remoteStream.pubStatus[mediaTypeShort].consumerId = '';
+          remoteStream.stop(mediaTypeShort)
+          remoteStream.pubStatus[mediaTypeShort].stopconsumerStatus = 'end'
         } catch (e) {
           this.adapterRef.logger.error('停止之前的订阅出现错误: ', e)
         }
@@ -808,13 +816,13 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
         throw new Error('No _protoo');
       }
-      await this.adapterRef._signalling._protoo.request(
+      this.adapterRef._signalling._protoo.request(
         'CloseConsumer', { 
           requestId: `${Math.ceil(Math.random() * 1e9)}`, 
           consumerId, 
           producerId: consumer.producerId,
         });
-      await consumer.close();
+      consumer.close();
       delete this._consumers[consumerId];
     } catch (error) {
       this.adapterRef.logger.error('destroyConsumer() | failed:%o', error);

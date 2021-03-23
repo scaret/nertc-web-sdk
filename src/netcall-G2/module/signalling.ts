@@ -254,6 +254,10 @@ class Signalling extends EventEmitter {
           this.adapterRef.remoteStreamMap[uid] = remoteStream
           this.adapterRef.memberMap[uid] = uid;
         }
+        if (remoteStream.pubStatus[mediaTypeShort].consumerId){
+          this.adapterRef._mediasoup?.destroyConsumer(remoteStream.pubStatus[mediaTypeShort].consumerId);
+          remoteStream.pubStatus[mediaTypeShort].consumerId = '';
+        }
         remoteStream[mediaTypeShort] = true
         //@ts-ignore
         remoteStream.pubStatus[mediaTypeShort][mediaTypeShort] = true
@@ -300,6 +304,7 @@ class Signalling extends EventEmitter {
         }
         if (remoteStream.pubStatus[mediaTypeShort].consumerId){
           this.adapterRef._mediasoup.destroyConsumer(remoteStream.pubStatus[mediaTypeShort].consumerId)
+          remoteStream.pubStatus[mediaTypeShort].consumerId = '';
         }
         this.adapterRef.instance.removeSsrc(uid, mediaTypeShort)
         remoteStream.subStatus[mediaTypeShort] = false
