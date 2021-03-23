@@ -66,13 +66,13 @@ export default Object.assign(
      *  @param {String} [options.microphoneId] 麦克风设备 deviceId，通过 getMicrophones() 获取
      *  @param {Object} options.video 是否从摄像头采集视频
      *  @param {String} [options.cameraId] 摄像头设备 deviceId，通过 getCameras() 获取
-     *  @param {Object} [options.screen] 是否采集屏幕分享流
+     *  @param {Object} [options.screen] 是否采集屏幕共享流（辅流）
      *  @param {MeidaTrack} [options.audioSource] 自定义的音频的track
      *  @param {MeidaTrack} [options.videoSource] 自定义的视频的track
      *  @param {client} [options.client] 和要Stream绑定的client实例对象，默认是最初使用用createClient创建的client实例（多实例场景使用）
      *  @returns {Stream}  Stream对象
      *  @description 该方法创建并返回音视频流对象。
-     *  注意：从4.1.0版本起，摄像头与屏幕共享的视频流可以一起发送了。屏幕共享流会以辅流发送。
+     *  注意：自 V4.1.0 版本起，摄像头与屏幕共享的视频流可以同时发送，其中，屏幕共享流会以辅流形式发送。
      */
     createStream (options = {}) {
       if (client || options.client) {
