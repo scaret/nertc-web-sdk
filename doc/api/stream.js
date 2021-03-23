@@ -23,7 +23,7 @@ import {Record} from '../module/record'
  *  @param {String} [options.microphoneId] 麦克风设备 deviceId，通过 getMicrophones() 获取
  *  @param {Object} [options.video] 是否从摄像头采集视频
  *  @param {String} [options.cameraId] 摄像头设备 deviceId，通过 getCameras() 获取
- *  @param {Object} [options.screen] 是否采集屏幕分享流
+ *  @param {Object} [options.screen] 是否采集屏幕共享流。
  *  @param {Object} [options.audioProcessing] 是否开启/关闭音频处理接口（3A接口)
  ##### 注意：
  音频处理接口取决于浏览器支持情况。目前Safari不支持AGC及ANS设置。
@@ -206,11 +206,11 @@ class Stream extends EventEmitter {
    * 设置视频订阅的参数。
    * @method setSubscribeConfig
    * @memberOf Stream#
-   * @param {Object} options 配置参数
-   * @param {Boolean} [options.audio] 是否订阅音频
-   * @param {Boolean} [options.video] 是否订阅视频
-   * @param {Boolean} [options.screen] 是否订阅屏幕共享
-   * @param {Number} [options.highOrLow] : 0是小流，1是大流
+   * @param {Object} options 配置参数。
+   * @param {Boolean} [options.audio] 是否订阅音频流。
+   * @param {Boolean} [options.video] 是否订阅视频流。
+   * @param {Boolean} [options.screen] 是否订阅屏幕共享流（辅流）。默认为 true，即订阅辅流形式的屏幕共享。
+   * @param {Number} [options.highOrLow]  0 表示小流，1 表示大流。
    * @returns {Null}
    */
   setSubscribeConfig (conf = {}) {
@@ -317,14 +317,13 @@ class Stream extends EventEmitter {
   }
 
   /**
-   * 获取音频流
+   * 获取音频流对象。
    * @function getAudioStream
    * @memberOf Stream#
    * @return {MediaStream}
-   * @description 获取音频流，可用于自定义音频渲染
-   远端Stream对象新增接口getAudioStream()，可以返回一个MediaStream对象。
-   用户可以自行渲染这个对象，例如，将audio dom节点的srcObject属性设为该对象。
-   使用音频自渲染功能时，应该在播放远端流时，关闭默认的音频渲染：
+   * @description 获取音频流 MediaStream 对象，可用于自定义音频渲染。
+   * 您可以自行渲染这个对象，例如将 audio dom 节点的 srcObject 属性设为该对象。
+   * **注意**：使用自定义音频渲染功能时，应该在播放远端流时，关闭默认的音频渲染。
    @example
 remoteStream.play({
   audio: false,
@@ -359,13 +358,13 @@ audioDom.srcObject = audioStream;
   }
 
   /**
-   * 播放音视频流
+   * 播放音视频流。
    * @function play
    * @memberOf Stream#
-   * @param {div} view div标签，播放画面的dom容器节点
-   * @param {object} [options] 播放的音视频选项
-   * @param {boolean} [options.audio] 是否播放音频。默认本地不播放，远端播放。
-   * @param {boolean} [options.video] 是否播放视频。默认播放。
+   * @param {div} view div标签，播放画面的dom容器节点。
+   * @param {object} [options] 播放的音视频选项。
+   * @param {boolean} [options.audio] 是否播放音频流。默认播放本地音频流，不播放远端音频流。
+   * @param {boolean} [options.video] 是否播放视频流。默认播放视频流。
    * @param {boolean} [options.screen] 是否播放屏幕共享。默认播放。
    * @return {Promise}
    */
@@ -390,14 +389,17 @@ audioDom.srcObject = audioStream;
   }
 
   /**
-   * 设置本端视频画面大小
+   * 设置本端视频画面大小。
    * @function setLocalRenderMode
    * @memberOf Stream#
-   * @param {Object} options 配置对象
-   * @param {Number }  options.width 宽度
-   * @param {Number }  options.height 高度
-   * @param {Boolean }  options.cut 是否裁剪
-   * @param  {"video"|"screen"} [options.mediaType] 设置视频还是屏幕共享。不填则同时设置。
+   * @param {Object} options 配置对象。
+   * @param {Number}  options.width 宽度。
+   * @param {Number}  options.height 高度。
+   * @param {Boolean}  options.cut 是否裁剪。
+   * @param {String} [options.mediaType] 指定设置的对象，即调整的是摄像头画面还是屏幕共享画面。默认为同时设置。
+   * 可设置为：
+   * - video：设置本端摄像头画面。
+   * - screen：设置本端屏幕共享画面。
    * @returns {Void}
    */
   setLocalRenderMode (options) {
@@ -421,14 +423,17 @@ audioDom.srcObject = audioStream;
   }
 
   /**
-   * 设置对端视频画面大小
+   * 设置远端视频画面大小。
    * @function setRemoteRenderMode
    * @memberOf Stream#
    * @param {Object} options 配置对象
    * @param {Number }  options.width 宽度
    * @param {Number }  options.height 高度
    * @param {Boolean }  options.cut 是否裁剪
-   * @param  {"video"|"screen"} [options.mediaType] 设置视频还是屏幕共享。不填则同时设置。
+   * @param {String} [options.mediaType] 指定设置的对象，即调整的是摄像头画面还是屏幕共享画面。默认为同时设置。
+   * 可设置为：
+   * - video：设置远端摄像头画面。
+   * - screen：设置远端屏幕共享画面。
    * @returns {Void}
    */
   setRemoteRenderMode (options) {
@@ -508,13 +513,16 @@ audioDom.srcObject = audioStream;
   }
 
   /**
-   * 打开音视频输入设备，如麦克风、摄像头、屏幕共享，并且发布出去。
+   * 打开音视频输入设备，如麦克风、摄像头、屏幕共享，并且发布设备对应的音视频流。
    * @function open
    * @memberOf Stream#
-   * @param {Object} options 配置对象
-   * @param {String }  options.type 媒体设备: audio/video/screen
-   * @param {String }  options.deviceId 指定要开启的设备ID，通过getDevices接口获取到设备列表
-   * @param {String }  options.sourceId 屏幕共享的数据源Id（electron用户可以自己获取）
+   * @param {Object} options 配置对象。
+   * @param {String}  options.type 媒体设备类型。可设置为：
+   * - audio：音频设备，例如麦克风。
+   * - video：视频设备，例如摄像头。
+   * - screen：屏幕共享，即启动屏幕共享。
+   * @param {String }  options.deviceId 指定要开启的设备 ID。您可以通过 getDevices 查看设备列表、获取设备 ID。
+   * @param {String }  options.sourceId Electron 屏幕共享的数据源 ID，您可以自行获取。
    * @returns {Promise}
    */
   async open (options={}) {
@@ -601,8 +609,11 @@ audioDom.srcObject = audioStream;
    * 关闭音视频输入设备，如麦克风、摄像头、屏幕共享，并且停止发布
    * @function close
    * @memberOf Stream#
-   * @param {Object} options 配置对象
-   * @param {String }  options.type 媒体设备: audio/video/screen
+   * @param {Object} options 配置对象。
+   * @param {String }  options.type 媒体设备类型。可设置为：
+   * - audio：音频设备，例如麦克风。
+   * - video：视频设备，例如摄像头。
+   * - screen：屏幕共享，即关闭屏幕共享。
    * @returns {Promise}
    */
   async close (options={}) {
@@ -978,12 +989,12 @@ audioDom.srcObject = audioStream;
   }
 
   /**
-   * 启用视频轨道
+   * 启用视频轨道。
    * @function unmuteVideo
    * @memberOf Stream#
    * @return {Promise}
-   * @description 启用视频轨道
-   * 注意：从4.1.0版本起，原muteVideo和unmuteVideo接口不再对屏幕共享有效，应使用muteScreen和unmuteScreen。
+   * @description 启用视频轨道。
+   * 注意：自 V4.1.0 版本起，muteVideo 和 unmuteVideo 接口不再对屏幕共享有效，应使用 muteScreen 和 unmuteScreen 暂停或重新启动屏幕共享。
    */
 
   async unmuteVideo () {
@@ -1016,12 +1027,12 @@ audioDom.srcObject = audioStream;
   }
 
   /**
-   * 禁用视频轨道
+   * 禁用视频轨道。
    * @function muteVideo
    * @memberOf Stream#
    * @return {Promise}
    * @description 禁用视频轨道
-   * 注意：从4.1.0版本起，原muteVideo和unmuteVideo接口不再对屏幕共享有效，应使用muteScreen和unmuteScreen。
+   * 注意：自 V4.1.0 版本起，muteVideo 和 unmuteVideo 接口不再对屏幕共享有效，应使用 muteScreen 和 unmuteScreen 暂停或重新启动屏幕共享。
    */
   async muteVideo () {
     this.client.adapterRef.logger.log(`禁用 ${this.streamID} 的视频轨道`)
@@ -1053,7 +1064,8 @@ audioDom.srcObject = audioStream;
 
 
   /**
-   * 启用辅流轨道
+   * 重新启用辅流轨道。
+   * 调用此方法之后，屏幕共享会被重新启动。
    * @function unmuteScreen
    * @memberOf Stream#
    * @return {Promise}
@@ -1063,7 +1075,8 @@ audioDom.srcObject = audioStream;
   }
 
   /**
-   * 禁用辅流轨道
+   * 禁用辅流轨道。
+   * 调用此方法之后，屏幕共享会被暂停。
    * @function muteScreen
    * @memberOf Stream#
    * @return {Promise}
@@ -1178,12 +1191,15 @@ audioDom.srcObject = audioStream;
   }
 
   /**
-   * 截取指定用户的视频画面(文件保存在浏览器默认路径)
+   * 截取指定用户的视频画面，文件保存在浏览器默认路径下。
    * @function takeSnapshot
    * @memberOf Stream#
    * @param  {Object} options  配置参数
    * @param  {String} options.name 截取的图片的保存名称(默认是uid-1的格式名称)
-   * @param  {"video"|"screen"} [options.mediaType] 截取视频流还是屏幕共享。不填就都截取。
+   * @param  {String} [options.mediaType] 指定截取的视频流类型，即截取的是摄像头画面还是屏幕共享画面。默认为同时截取。
+   * 可设置为：
+   * - video：截取摄像头画面。
+   * - screen：截取屏幕共享画面。
    * @returns {Promise}
    */
   async takeSnapshot (options) {
@@ -1229,13 +1245,16 @@ audioDom.srcObject = audioStream;
    * ************************ 客户端录制相关 *****************************
    */
   /**
-   * 开启单人视频录制
+   * 开启单人视频录制。
    * @function startMediaRecording
    * @memberOf Stream#
-   * @param {Object} param 参数对象
-   * @param {String} param.type 如果是自己流录制，'audio','video'或'screen'
+   * @param {Object} param 参数对象。
+   * @param {String} param.type 指定录制的音视频流类型。可设置为：
+   * - audio：仅录制音频流。
+   * - video：同时录制音频流和摄像头视频流。
+   * - screen：同时录制音频流和屏幕共享流（辅流）。
    * @param {Boolean} param.reset 如果之前的录制视频未下载，是否重置，默认false
-   * @returns {Promise} 包含recordId值，用于下载等操作
+   * @returns {Promise} 包含 recordId 值，用于下载等操作。
    */
   async startMediaRecording (options) {
     options.uid = this.streamID
