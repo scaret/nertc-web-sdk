@@ -1813,10 +1813,19 @@ const showStats = async ()=>{
     str += `${key}:${localAudioStats[0][key]}\n`
   };
   const localVideoStats = await rtc.client.getLocalVideoStats();
-  str += `本地视频\n`;
-  for (var key in localVideoStats[0]){
-    str += `${key}:${localVideoStats[0][key]}\n`
-  };
+  for (var i in localVideoStats){
+    if (!localVideoStats[i].TotalDuration){
+      continue;
+    }
+    if (localVideoStats[i].LayerType === 2){
+      str += `本地辅流\n`;
+    }else{
+      str += `本地视频\n`;
+    }
+    for (var key in localVideoStats[i]){
+      str += `${key}:${localVideoStats[i][key]}\n`
+    };
+  }
   str += `</pre>`
   //////////////
   const remoteAudioStats = await rtc.client.getRemoteAudioStats();

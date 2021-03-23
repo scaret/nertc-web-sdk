@@ -1,6 +1,6 @@
 
 import { Base } from './base'
-import {AddTaskOptions, ClientOptions, JoinOptions, RTMPTask} from "../types";
+import {AddTaskOptions, ClientOptions, JoinOptions, LocalVideoStats, MediaTypeShort, RTMPTask} from "../types";
 import {Stream} from "./stream";
 import {checkExists} from "../util/param";
 import {ReportParamSetChannelProfile, ReportParamSetClientRole} from "../interfaces/ApiReportParam";
@@ -843,9 +843,7 @@ class Client extends Base {
    * @return {Promise}
    */
   getLocalVideoStats(){
-    return new Promise((resolve, reject) =>{
-      resolve(this.adapterRef.localVideoStats)
-    })
+    return Promise.resolve(([] as LocalVideoStats[]).concat(this.adapterRef.localVideoStats, this.adapterRef.localScreenStats))
   }
 
   /**
