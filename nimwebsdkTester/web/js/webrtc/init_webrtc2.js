@@ -91,7 +91,7 @@ function loadEnv() {
     $('#appkey').val(WEBRTC2_ENV[env].appkey)
     //$('#AppSecret').val(WEBRTC2_ENV[env].AppSecret)
   }
-  $('#appkey').val('eca23f68c66d4acfceee77c200200359')
+  $('#appkey').val('6acf024e190215b685905444b6e57dd7')
   $('#uid').val(Math.ceil(Math.random() * 1e4))
   //$('#channelName').val(Math.ceil(Math.random() * 1e10))
   const channelName = window.localStorage ? window.localStorage.getItem("channelName") : "";
@@ -866,7 +866,7 @@ function unpublish(type=null) {
 
 function subscribe(remoteStream) {
   remoteStream.setSubscribeConfig({
-    audio: true,
+    audio: false,
     video: $('#subVideo').prop('checked'),
     highOrLow: parseInt($('#subResolution').val()),
   })

@@ -503,7 +503,7 @@ class Mediasoup extends EventEmitter {
       this.adapterRef.logger.log('已经订阅过')
       
       const isPlaying = await remoteStream.isPlaying(kind)
-      if (isPlaying) {
+      if (isPlaying || true) {
         this.adapterRef.logger.log('当前播放正常，直接返回')
         this._eventQueue.shift()
         if (this._eventQueue.length > 0) {
