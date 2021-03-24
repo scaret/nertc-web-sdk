@@ -221,6 +221,7 @@ WebRTC2 = {
   BUILD
 }
 
+export default WebRTC2
 
 export {
   createClient,
