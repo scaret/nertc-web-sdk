@@ -378,7 +378,7 @@ class FormativeStatsReport {
         data[i].freezeTime = stats.freezeTime
         data[i].totalFreezeTime = stats.totalFreezeTime
 
-        Object.assign(data[i], data['bweforvideo'])
+        Object.assign(data[i], data['bweforvideo']) //FIXME 多条视频流时BWE是针对所有视频的。
         bytesSent += parseInt(data[i].bytesSent) 
         this.paramSecond.upVideoCache[uid] = data[i]
         currentData.send.uid = this.adapterRef.channelInfo.uid
@@ -405,7 +405,7 @@ class FormativeStatsReport {
         data[i].freezeTime = stats.freezeTime
         data[i].totalFreezeTime = stats.totalFreezeTime
 
-        Object.assign(data[i], data['bweforscreen'])
+        Object.assign(data[i], data['bweforvideo']) //FIXME 多条视频流时BWE是针对所有视频的。
         bytesSent += parseInt(data[i].bytesSent)
         this.paramSecond.upScreenCache[uid] = data[i]
         currentData.send.uid = this.adapterRef.channelInfo.uid
