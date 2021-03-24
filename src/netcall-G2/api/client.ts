@@ -410,16 +410,16 @@ class Client extends Base {
           stream.stop('screen')
           stream.pubStatus.screen.stopconsumerStatus = 'end'
           stream.subStatus.screen = false
-          // const uid = stream.getId()
-          // if(uid){
-          //   delete this.adapterRef.remoteVideoStats[uid];
-          //   const data = this.adapterRef._statsReport && this.adapterRef._statsReport.formativeStatsReport && this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
-          //   if (data) {
-          //     data.recvFirstVideoFrame = false
-          //     data.recvFirstVideoPackage = false
-          //     data.videoTotalPlayDuration = 0
-          //   }
-          // }
+          const uid = stream.getId()
+          if(uid){
+            delete this.adapterRef.remoteScreenStats[uid];
+            const data = this.adapterRef._statsReport && this.adapterRef._statsReport.formativeStatsReport && this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
+            if (data) {
+              data.recvFirstScreenFrame = false
+              data.recvFirstScreenPackage = false
+              data.screenTotalPlayDuration = 0
+            }
+          }
           this.adapterRef.logger.log('取消订阅辅助流完成')
         }
       }
@@ -536,16 +536,16 @@ class Client extends Base {
         stream.stop('screen')
         stream.pubStatus.screen.stopconsumerStatus = 'end'
         stream.subStatus.screen = false
-        // const uid = stream.getId()
-        // if(uid){
-        //   delete this.adapterRef.remoteVideoStats[uid];
-        //   const data = this.adapterRef._statsReport && this.adapterRef._statsReport.formativeStatsReport && this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
-        //   if (data) {
-        //     data.recvFirstVideoFrame = false
-        //     data.recvFirstVideoPackage = false
-        //     data.videoTotalPlayDuration = 0
-        //   }
-        // }
+        const uid = stream.getId()
+        if(uid){
+          delete this.adapterRef.remoteScreenStats[uid];
+          const data = this.adapterRef._statsReport && this.adapterRef._statsReport.formativeStatsReport && this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
+          if (data) {
+            data.recvFirstScreenFrame = false
+            data.recvFirstScreenPackage = false
+            data.screenTotalPlayDuration = 0
+          }
+        }
         this.adapterRef.logger.log('取消订阅辅助流完成')
       }
       
@@ -842,8 +842,15 @@ class Client extends Base {
    * @memberOf Client#
    * @return {Promise}
    */
-  getLocalVideoStats(){
-    return Promise.resolve(([] as LocalVideoStats[]).concat(this.adapterRef.localVideoStats, this.adapterRef.localScreenStats))
+  getLocalVideoStats(mediaType?: MediaTypeShort){
+    let data:any = [];
+    if (!mediaType || mediaType === "video"){
+      data = data.concat(this.adapterRef.localVideoStats);
+    }
+    if (!mediaType || mediaType === "screen"){
+      data = data.concat(this.adapterRef.localScreenStats);
+    }
+    return Promise.resolve(data);
   }
 
   /**
@@ -864,10 +871,15 @@ class Client extends Base {
    * @memberOf Client#
    * @return {Promise}
    */
-  getRemoteVideoStats(){
-    return new Promise((resolve, reject) =>{
-      resolve(this.adapterRef.remoteVideoStats)
-    })
+  getRemoteVideoStats(mediaType?: MediaTypeShort){
+    let data:any = {};
+    if (!mediaType || mediaType === "screen"){
+      data = Object.assign(data ,this.adapterRef.remoteScreenStats)
+    }
+    if (!mediaType || mediaType === "video"){
+      data = Object.assign(data ,this.adapterRef.remoteVideoStats)
+    }
+    return Promise.resolve(data);
   }
 
   /**

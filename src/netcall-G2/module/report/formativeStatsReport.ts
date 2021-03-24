@@ -53,9 +53,19 @@ class FormativeStatsReport {
     upScreenCache: any,
     downAudioCache: any,
     downVideoCache: any,
+    downScreenCache: any,
   };
   public firstData: {
-    recvFirstData: {[uid:number]: any};
+    recvFirstData: {[uid:number]: {
+        recvFirstAudioFrame: boolean;
+        recvFirstVideoFrame: boolean;
+        recvFirstScreenFrame: boolean;
+        recvFirstAudioPackage: boolean;
+        recvFirstVideoPackage: boolean;
+        recvFirstScreenPackage: boolean;
+        videoTotalPlayDuration: number;
+        screenTotalPlayDuration: number;
+      }};
     sendFirstAudioPackage: boolean;
     sendFirstVideoPackage: boolean;
     sendFirstScreenPackage: boolean;
@@ -79,6 +89,7 @@ class FormativeStatsReport {
       upScreenCache: {},
       downAudioCache: {},
       downVideoCache: {},
+      downScreenCache: {},
     };
     this.firstData = {
       recvFirstData: {},
@@ -233,7 +244,8 @@ class FormativeStatsReport {
       upVideoCache: {},
       upScreenCache: {},
       downAudioCache: {},
-      downVideoCache: {}
+      downVideoCache: {},
+      downScreenCache: {},
     }
   }
 
@@ -265,6 +277,7 @@ class FormativeStatsReport {
     let upScreenList = []
     let downAudioList = []
     let downVideoList = []
+    let downScreenList = []
     if (this.webrtcStats.length == 2) {
       this.webrtcStats.shift()
     }
@@ -419,9 +432,12 @@ class FormativeStatsReport {
           this.firstData.recvFirstData[uid] = {
             recvFirstAudioFrame: false,
             recvFirstVideoFrame: false,
+            recvFirstScreenFrame: false,
             recvFirstAudioPackage: false,
             recvFirstVideoPackage: false,
-            videoTotalPlayDuration: 0
+            recvFirstScreenPackage: false,
+            videoTotalPlayDuration: 0,
+            screenTotalPlayDuration: 0,
           }
         }
         if (!this.firstData.recvFirstData[uid].recvFirstAudioFrame && parseInt(data[i].googDecodingNormal) > 0) {
@@ -460,13 +476,17 @@ class FormativeStatsReport {
           level: +data[i].audioOutputLevel
         })
       } else if (i.indexOf('_recv_') !== -1 && i.indexOf('_video') !== -1) {
+        //主流
         if (!this.firstData.recvFirstData[uid]) {
           this.firstData.recvFirstData[uid] = {
             recvFirstAudioFrame: false,
             recvFirstVideoFrame: false,
+            recvFirstScreenFrame: false,
             recvFirstAudioPackage: false,
             recvFirstVideoPackage: false,
-            videoTotalPlayDuration: 0
+            recvFirstScreenPackage: false,
+            videoTotalPlayDuration: 0,
+            screenTotalPlayDuration: 0,
           }
         }
         if (!this.firstData.recvFirstData[uid].recvFirstVideoFrame && data[i].framesDecoded > 0) {
@@ -502,7 +522,54 @@ class FormativeStatsReport {
         currentData.recv.video.nextLost = data[i].packetsLost
         currentData.recv.video.nextPacket = data[i].packetsReceived
         downVideoList.push(data[i])
-      } else if (i.indexOf('Conn-') !== -1) {
+      } else if (i.indexOf('_recv_') !== -1 && i.indexOf('_screen') !== -1) {
+        //辅流
+        if (!this.firstData.recvFirstData[uid]) {
+          this.firstData.recvFirstData[uid] = {
+            recvFirstAudioFrame: false,
+            recvFirstVideoFrame: false,
+            recvFirstScreenFrame: false,
+            recvFirstAudioPackage: false,
+            recvFirstVideoPackage: false,
+            recvFirstScreenPackage: false,
+            videoTotalPlayDuration: 0,
+            screenTotalPlayDuration: 0,
+          }
+        }
+        if (!this.firstData.recvFirstData[uid].recvFirstScreenFrame && data[i].framesDecoded > 0) {
+          this.firstData.recvFirstData[uid].recvFirstScreenFrame = true
+          this.adapterRef.instance.apiEventReport('setRecvFirstFrame', {
+            media_type: 2,
+            pull_uid: uid
+          })
+        } else if (data[i].framesDecoded > 0) {
+          this.firstData.recvFirstData[uid].screenTotalPlayDuration++
+        }
+
+        if (!this.firstData.recvFirstData[uid].recvFirstScreenPackage && data[i].packetsReceived > 0) {
+          this.firstData.recvFirstData[uid].recvFirstScreenPackage = true
+          this.adapterRef.instance.apiEventReport('setRecvFirstPackage', {
+            media_type: 2,
+            pull_uid: uid
+          })
+        }
+
+        if (this.paramSecond.downScreenCache[uid]) {
+          currentData.recv.screen.prevLost = this.paramSecond.downScreenCache[uid].packetsLost
+          currentData.recv.screen.prevPacket = this.paramSecond.downScreenCache[uid].packetsReceived
+          data[i].vlr = this.getPacketLossRate(this.paramSecond.downScreenCache[uid], data[i])
+        }
+        let stats = this.getRemoteScreenFreezeStats(this.paramSecond.downScreenCache[uid], data[i], uid)
+        data[i].freezeTime = stats.freezeTime
+        data[i].totalFreezeTime = stats.totalFreezeTime
+        this.dispatchExceptionEventRecvScreen(this.paramSecond.downScreenCache[uid], data[i], uid)
+        bytesReceived += parseInt(data[i].bytesReceived)
+        this.paramSecond.downScreenCache[uid] = data[i]
+        currentData.recv.uid = +uid
+        currentData.recv.screen.nextLost = data[i].packetsLost
+        currentData.recv.screen.nextPacket = data[i].packetsReceived
+        downScreenList.push(data[i])
+      }else if (i.indexOf('Conn-') !== -1) {
         this.publicIP = data[i] && data[i].googLocalAddress.match(/([0-9\.]+)/)[1]
         let rtt = data[i].googRtt == '0' ? '1' : data[i].googRtt 
         this.adapterRef.transportStats.txRtt = rtt
@@ -536,7 +603,7 @@ class FormativeStatsReport {
       // 更新上行信息
       this.updateTxMediaInfo(upAudioList, upVideoList, upScreenList);
       // 更新下行信息
-      this.updateRxMediaInfo(downAudioList, downVideoList)
+      this.updateRxMediaInfo(downAudioList, downVideoList, downScreenList)
       let length = this.infos2.tx2 && this.infos2.tx2[0].v_res.length
       if ( length === this.infos.interval / 2) {
         this.send()
@@ -551,7 +618,7 @@ class FormativeStatsReport {
   }
 
   // 组装下行的媒体信息
-  updateRxMediaInfo (downAudioList: DownAudioItem[], downVideoList: DownVideoItem[]) {
+  updateRxMediaInfo (downAudioList: DownAudioItem[], downVideoList: DownVideoItem[], downScreenList: DownVideoItem[]) {
     let audio2:AudioRtxInfo = {
       uid: [],
       a_p_volume: [],
@@ -566,6 +633,18 @@ class FormativeStatsReport {
     }
 
     let video2:VideoRtxInfo = {
+      v_res: [],
+      v_fps: [],
+      v_plis: [],
+      v_stuck: [],
+      v_bw_kbps: [],
+      v_bps: [],
+      v_p_lost_r: [],
+      v_dec_ms: [],
+      v_delay: []
+    }
+    
+    let screen2:VideoRtxInfo = {
       v_res: [],
       v_fps: [],
       v_plis: [],
@@ -628,6 +707,7 @@ class FormativeStatsReport {
 
       const videoDom = remoteStream && remoteStream.Play && remoteStream.Play.videoDom
       this.adapterRef.remoteVideoStats[uid] = {
+        LayerType: 1,
         End2EndDelay: (parseInt(item.googCurrentDelayMs) || 0) + (parseInt(item.googJitterBufferMs) || 0) + (parseInt(item.googRenderDelayMs) || 0),
         MuteState: (remoteStream && (remoteStream.muteStatus.videoSend || remoteStream.muteStatus.videoRecv)), //(remoteStream && remoteStream.video) || (remoteStream && remoteStream.muteStatus.video),
         PacketLossRate: item.vlr || 0,
@@ -654,6 +734,48 @@ class FormativeStatsReport {
       video2.v_delay.push(parseInt(item.googJitterBufferMs))
     })
 
+    //辅流-复制
+    downScreenList.map(item => {
+      // 格式： ssrc_359_recv_970_screen
+      let uid = 0;
+      if (item.id) {
+        uid = +item.id.split('_')[3]
+      }
+
+      const remoteStream = this.adapterRef.remoteStreamMap[uid]
+      if (this.adapterRef.remoteScreenStats[uid]) {
+        this.adapterRef.remoteScreenStats[uid] = {TotalFreezeTime: 0};
+      }
+
+      const screenDom = remoteStream && remoteStream.Play && remoteStream.Play.screenDom
+      this.adapterRef.remoteScreenStats[uid] = {
+        LayerType: 2,
+        End2EndDelay: (parseInt(item.googCurrentDelayMs) || 0) + (parseInt(item.googJitterBufferMs) || 0) + (parseInt(item.googRenderDelayMs) || 0),
+        MuteState: (remoteStream && (remoteStream.muteStatus.screenSend || remoteStream.muteStatus.screenRecv)), //(remoteStream && remoteStream.screen) || (remoteStream && remoteStream.muteStatus.screen),
+        PacketLossRate: item.vlr || 0,
+        RecvBitrate: item.bitsReceivedPerSecond || 0,
+        RecvResolutionHeight: parseInt(item.googFrameHeightReceived) || 0,
+        RecvResolutionWidth: parseInt(item.googFrameWidthReceived) || 0,
+        RenderFrameRate: parseInt(item.googFrameRateOutput) || 0,
+        RenderResolutionHeight: screenDom ? screenDom.videoHeight : 0,
+        RenderResolutionWidth: screenDom ? screenDom.videoWidth : 0,
+        TotalFreezeTime: item.totalFreezeTime || 0,
+        TotalPlayDuration: (this.firstData.recvFirstData[uid] && this.firstData.recvFirstData[uid].screenTotalPlayDuration) || (screenDom && screenDom.played && screenDom.played.length ? screenDom.played.end(0) : 0),
+        TransportDelay: parseInt(item.googCurrentDelayMs) || 0
+      }
+
+      RecvBitrate = RecvBitrate + item.bitsReceivedPerSecond
+      screen2.v_res.push((item.googFrameWidthReceived || 0) + 'x' + (item.googFrameHeightReceived || 0))
+      screen2.v_fps.push(parseInt(item.googFrameRateOutput))
+      screen2.v_plis.push(parseInt(item.googPlisSent))
+      screen2.v_stuck.push(item.freezeTime || 0)
+      screen2.v_bw_kbps.push(0)
+      screen2.v_bps.push(item.bitsReceivedPerSecond || 0)
+      screen2.v_p_lost_r.push(item.vlr || 0)
+      screen2.v_dec_ms.push(parseInt(item.googDecodeMs) || 0)
+      screen2.v_delay.push(parseInt(item.googJitterBufferMs))
+    })
+
     this.adapterRef.sessionStats.RecvBitrate = RecvBitrate
     this.infos2.rx2.push({
       uid: audio2.uid,
@@ -674,7 +796,17 @@ class FormativeStatsReport {
       v_bps: video2.v_bps,
       v_p_lost_r: video2.v_p_lost_r,
       v_dec_ms: video2.v_dec_ms,
-      v_delay: video2.v_delay
+      v_delay: video2.v_delay,
+
+      s_res: screen2.v_res,
+      s_fps: screen2.v_fps,
+      s_plis: screen2.v_plis,
+      s_stuck: screen2.v_stuck,
+      s_bw_kbps: screen2.v_bw_kbps,
+      s_bps: screen2.v_bps,
+      s_p_lost_r: screen2.v_p_lost_r,
+      s_dec_ms: screen2.v_dec_ms,
+      s_delay: screen2.v_delay,
     })
   }
 
@@ -917,6 +1049,28 @@ class FormativeStatsReport {
       })
     }
   }
+  
+  dispatchExceptionEventRecvScreen(prev: DownVideoItem, next: DownVideoItem, uid: number){
+    if (!prev || !next) {
+      return
+    }
+    const remoteStream = this.adapterRef.remoteStreamMap[uid]
+    const muteStatus = remoteStream && (remoteStream.muteStatus.screenSend || remoteStream.muteStatus.screenSend)
+    if (remoteStream && muteStatus) {
+      return
+    }
+    /*this.adapterRef.logger.warn('前一周期 video prev.bytesReceived: ', prev.bytesReceived)
+    this.adapterRef.logger.warn('当前节点 video next.bytesReceived: ', next.bytesReceived)
+    this.adapterRef.logger.warn('当前节点 video next.googFrameRateDecoded: ', next.googFrameRateDecoded)*/
+    let screenRecvBytesDelta = parseInt(next.bytesReceived) - parseInt(prev.bytesReceived)
+    if (screenRecvBytesDelta > 0 && parseInt(next.googFrameRateDecoded) === 0) {
+      this.adapterRef.instance.emit('exception', {
+        msg: 'RECV_SCREEN_DECODE_FAILED',
+        code: 1005,
+        uid
+      })
+    }
+  }
 
   getRemoteAudioFreezeStats(prev: DownAudioItem, next:DownAudioItem, uid:number) {
     let totalFreezeTime = 0
@@ -1039,6 +1193,34 @@ class FormativeStatsReport {
         totalFreezeTime,
         freezeTime: 0
       } 
+    }
+  }
+
+  getRemoteScreenFreezeStats(prev: DownVideoItem, next: DownVideoItem, uid:number) {
+    let totalFreezeTime = 0
+    if (!next) {
+      return {
+        totalFreezeTime,
+        freezeTime: 0
+      }
+    }
+
+    let n = parseInt(next.googFrameRateReceived)
+    let i = parseInt(next.googFrameRateDecoded)
+    if (n > 5 && n < 10 && i < 3 || n > 10 && n < 20 && i < 4 || n > 20 && i < 5) {
+      if (this.adapterRef.remoteScreenStats && this.adapterRef.remoteScreenStats[uid]) {
+        totalFreezeTime = this.adapterRef.remoteScreenStats[uid].TotalFreezeTime || 0
+      }
+      totalFreezeTime++
+      return {
+        totalFreezeTime,
+        freezeTime: 2
+      }
+    } else {
+      return {
+        totalFreezeTime,
+        freezeTime: 0
+      }
     }
   }
 

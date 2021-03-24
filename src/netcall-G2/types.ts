@@ -66,6 +66,9 @@ export interface AdapterRef {
   remoteVideoStats: {
     [uid: number]: MediaStats
   }
+  remoteScreenStats: {
+    [uid: number]: MediaStats
+  }
   remoteStreamMap: {
     [uid: number]: Stream
   }
@@ -702,6 +705,7 @@ export interface Client{
   reBuildRecvTransport: ()=>any
   _params: any
   setSessionConfig: any
+  getUidAndKindBySsrc: (ssrc:number)=>{uid:number;kind: MediaTypeShort}
   [key:string]: any
 }
 

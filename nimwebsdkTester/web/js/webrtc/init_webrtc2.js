@@ -1829,7 +1829,8 @@ const showStats = async ()=>{
   str += `</pre>`
   //////////////
   const remoteAudioStats = await rtc.client.getRemoteAudioStats();
-  const remoteVideoStats = await rtc.client.getRemoteVideoStats();
+  const remoteVideoStats = await rtc.client.getRemoteVideoStats('video');
+  const remoteScreenStats = await rtc.client.getRemoteVideoStats('screen');
   // uid求交集
   const uids = Object.keys(remoteAudioStats).concat(Object.keys(remoteVideoStats).filter(v => !Object.keys(remoteAudioStats).includes(v)))
   uids.forEach((uid)=>{
@@ -1841,6 +1842,10 @@ const showStats = async ()=>{
     str += `远端视频 ${uid}\n`;
     for (var key in remoteVideoStats[uid]){
       str += `${key}:${remoteVideoStats[uid][key]}\n`
+    }
+    str += `远端辅流 ${uid}\n`;
+    for (var key in remoteScreenStats[uid]){
+      str += `${key}:${remoteScreenStats[uid][key]}\n`
     }
     str += `</pre>`
   });

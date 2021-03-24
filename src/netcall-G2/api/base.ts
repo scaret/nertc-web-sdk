@@ -185,7 +185,8 @@ class Base extends EventEmitter {
       localVideoStats: [],
       localScreenStats: [],
       remoteAudioStats: {},
-      remoteVideoStats: {}
+      remoteVideoStats: {},
+      remoteScreenStats: {},
     })
   }
 
@@ -299,8 +300,9 @@ class Base extends EventEmitter {
       delete this.adapterRef.memberMap[uid];
       delete this.adapterRef.remoteAudioStats[uid];
       delete this.adapterRef.remoteVideoStats[uid];
-      const data = this.adapterRef._statsReport && this.adapterRef._statsReport.formativeStatsReport && this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
-      if (data) {
+      delete this.adapterRef.remoteScreenStats[uid];
+      const data = this.adapterRef._statsReport && this.adapterRef._statsReport.formativeStatsReport && this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData
+      if (data && data[uid]) {
         delete data[uid]
       }
     }

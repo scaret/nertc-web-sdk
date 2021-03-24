@@ -196,12 +196,21 @@ class GetStats extends EventEmitter{
         console.error("getStats行为没有client关联")
         return;
       }
-      const targetUid = this.adapterRef.instance.getUidAndKindBySsrc(ssrc).uid
+      //TODO 应该补上本地
+      const uidAndKindBySsrc = this.adapterRef.instance.getUidAndKindBySsrc(parseInt(ssrc));
+      let targetUid = uidAndKindBySsrc.uid;
+      let mediaTypeShort;
+      if (uidAndKindBySsrc.kind){
+        mediaTypeShort = uidAndKindBySsrc.kind;
+      }else if (item.googContentType === "screen"){
+        mediaTypeShort = "screen";
+      }else{
+        mediaTypeShort = item.mediaType;
+      }
       if(!targetUid && direction === 'recv') return tmp;
-      const mediaTypeShort:MediaTypeShort = item.googContentType === "screen" ? "screen" : "video";
       item.id = `ssrc_${this.adapterRef.channelInfo.uid}_${direction}_${
         direction === 'recv' ? targetUid : 0
-      }_${item.mediaType === "video" ? mediaTypeShort : item.mediaType}`;
+      }_${mediaTypeShort}`;
 
       item = this.computeData(pc, item);
       if (item.googInterframeDelayMax == -1) {
