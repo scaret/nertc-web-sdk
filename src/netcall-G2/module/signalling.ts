@@ -340,6 +340,12 @@ class Signalling extends EventEmitter {
             remoteStream.mediaHelper.screenTrack = null;
             remoteStream.mediaHelper.screenStream = null;
           }
+          delete this.adapterRef.remoteScreenStats[uid];
+          if (data) {
+            data.recvFirstScreenFrame = false
+            data.recvFirstScreenPackage = false
+            data.screenTotalPlayDuration = 0
+          }
         }
 
         this.adapterRef.instance.emit('stream-removed', {stream: remoteStream})
