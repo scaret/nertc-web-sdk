@@ -12,6 +12,7 @@ const merge = require('webpack-merge')
 const path = require('path')
 const pjson = require('./package.json')
 const configs = require('./build/configs')
+const webpack = require('webpack')
 const WebpackOnBuildPlugin = require('./build/webpackOnBuildPlugin')
 const HappyPack = require('happypack')
 const os = require('os')
@@ -126,7 +127,10 @@ let configWebrtcG2 = merge(config, {
       const dir = './nimwebsdkTester/web/js/nim'
       fse.emptyDirSync(dir)
       fse.copySync(configWebrtcG2.output.path, dir)
-    })
+    }),
+    new webpack.BannerPlugin({
+      banner: `NeRTC ${webrtcG2Version}|BUILD ${git.describe(webrtcG2Version)} ${process.env.NODE_ENV}`
+    }),
   ],
   resolve: {
     alias: {
