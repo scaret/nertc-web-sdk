@@ -572,12 +572,14 @@ class Mediasoup extends EventEmitter {
   }
 
   async createConsumer(uid:number, kind:'audio'|'video',mediaType: MediaType, id:string, preferredSpatialLayer:number = 0){
-    this._eventQueue.push({uid, kind, id, mediaType, preferredSpatialLayer})
-    if (this._eventQueue.length > 1) {
-      return
-    } else {
-      this._createConsumer(this._eventQueue[0])
-    }
+    return new Promise((resolve, reject)=>{
+      this._eventQueue.push({uid, kind, id, mediaType, preferredSpatialLayer, resolve, reject});
+      if (this._eventQueue.length > 1) {
+        return
+      } else {
+        this._createConsumer(this._eventQueue[0])
+      }
+    })
   }
 
   async _createConsumer(info:ProduceConsumeInfo){
@@ -586,6 +588,7 @@ class Mediasoup extends EventEmitter {
     this.adapterRef.logger.log('开始订阅 %s 的 %s 媒体: %s 大小流: ', uid, mediaTypeShort, id, preferredSpatialLayer)
     if (!id) {
       this._eventQueue.shift()
+      info.resolve(null);
       if (this._eventQueue.length > 0) {
         this._createConsumer(this._eventQueue[0])
         return;
@@ -596,6 +599,7 @@ class Mediasoup extends EventEmitter {
     if (!remoteStream) {
       this._eventQueue.shift()
       //this._eventQueue = this._eventQueue.filter((item)=>{item.uid != uid })
+      info.resolve(null);
       if (this._eventQueue.length > 0) {
         this._createConsumer(this._eventQueue[0])
         return
@@ -609,6 +613,7 @@ class Mediasoup extends EventEmitter {
       if (isPlaying) {
         this.adapterRef.logger.log('当前播放正常，直接返回')
         this._eventQueue.shift()
+        info.resolve(null);
         if (this._eventQueue.length > 0) {
           this._createConsumer(this._eventQueue[0])
           return
@@ -640,6 +645,7 @@ class Mediasoup extends EventEmitter {
       }
     }
     if (!this._recvTransport){
+      info.resolve(null);
       throw new Error('NO_RECV_TRANSPORT');
     }
     //this.adapterRef.logger.log('参看_edgeRtpCapabilities = %o',this._edgeRtpCapabilities);
@@ -681,6 +687,7 @@ class Mediasoup extends EventEmitter {
       data.dtlsParameters = localDtlsParameters;
     this.adapterRef.logger.log('发送consume请求 = %o', data);
     if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
+      info.resolve(null);
       throw new Error('No _protoo');
     }
     const consumeRes = await this.adapterRef._signalling._protoo.request('Consume', data);
@@ -721,6 +728,7 @@ class Mediasoup extends EventEmitter {
         //   return
         // }
         this._recvTransport = null
+        info.resolve(null);
         this.adapterRef.instance.reBuildRecvTransport()
         return
 
@@ -785,6 +793,7 @@ class Mediasoup extends EventEmitter {
       }
       this.adapterRef.logger.log('查看事件队列, _eventQueue: ', this._eventQueue)
       this._eventQueue.shift()
+      info.resolve(null);
       if (this._eventQueue.length > 0) {
         this._createConsumer(this._eventQueue[0])
         return;
@@ -800,6 +809,7 @@ class Mediasoup extends EventEmitter {
         await this.closeTransport(this._recvTransport);
       }
       this._recvTransport = null
+      info.reject(error);
       this.adapterRef.instance.reBuildRecvTransport()
     }
   }
