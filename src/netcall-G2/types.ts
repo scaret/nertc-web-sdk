@@ -666,6 +666,8 @@ export interface ProduceConsumeInfo{
   mediaType: MediaType;
   id: string;
   preferredSpatialLayer:number;
+  resolve: (data:any)=>void;
+  reject: (err:any)=>void;
 }
 
 export interface AudioProcessingOptions{
