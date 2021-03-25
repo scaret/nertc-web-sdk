@@ -208,6 +208,21 @@ class FormativeStatsReport {
         v_tx_kbps:[], //transmitBitrate 
         v_retx_kbps:[], //retransmitBitrate 
         v_delay:[], //bucketDelay 
+        
+        //辅流
+        s_fps: [], // 视频发送帧率
+        s_res: [], // 客户端发送图像分辨率-宽度、高度wxh  e.g."640x480"
+        s_plis: [], // plisReceived
+        s_rtt: [], // 延迟
+        s_simulcast: [], //多流
+        s_bw_kbps:[], //视频发送评估带宽
+        s_tar_kbps:[], //视频发送目标码率 
+        s_rel_kbps:[], //视频实际发送码率
+
+        s_tx_kbps:[], //transmitBitrate 
+        s_retx_kbps:[], //retransmitBitrate 
+        s_delay:[], //bucketDelay 
+        
         a_cap_volume: [], // 客户端采集的声音声量，int16
         a_rtt: [] //音频时延
       }],
@@ -915,6 +930,19 @@ class FormativeStatsReport {
     this.infos2.tx2[0].v_tx_kbps.push(upVideoList[0] && upVideoList[0].googTransmitBitrate)
     this.infos2.tx2[0].v_retx_kbps.push(upVideoList[0] && upVideoList[0].googRetransmitBitrate)
     this.infos2.tx2[0].v_delay.push(0)
+    //辅流的统计上报
+    this.infos2.tx2[0].s_res.push(result.real_s_res)
+    this.infos2.tx2[0].s_fps.push(result.s_fps)
+    this.infos2.tx2[0].s_plis.push(upScreenList[0] && upScreenList[0].googPlisReceived)
+    this.infos2.tx2[0].s_rtt.push(result.rtt)
+    this.infos2.tx2[0].s_simulcast.push(0)
+    this.infos2.tx2[0].s_bw_kbps.push(upScreenList[0] && upScreenList[0].googAvailableSendBandwidth)
+    this.infos2.tx2[0].s_tar_kbps.push(upScreenList[0] && upScreenList[0].googTargetEncBitrate)
+    this.infos2.tx2[0].s_rel_kbps.push(upScreenList[0] && upScreenList[0].googActualEncBitrate)
+    this.infos2.tx2[0].s_tx_kbps.push(upScreenList[0] && upScreenList[0].googTransmitBitrate)
+    this.infos2.tx2[0].s_retx_kbps.push(upScreenList[0] && upScreenList[0].googRetransmitBitrate)
+    this.infos2.tx2[0].s_delay.push(0)
+
     this.infos2.tx2[0].a_cap_volume.push(result.a_cap_volume)
     this.infos2.tx2[0].a_rtt.push(upAudioList[0] && upAudioList[0].googRtt)
 
