@@ -18,8 +18,17 @@ obj.getFirstCommitHash = function () {
   }
 }
 
-obj.describe = function () {
-  const result = execSync("git describe --tags --long --dirty", baseOpt).trim();
+obj.describe = function (tagName) {
+  let result;
+  let cmd;
+  if (tagName) {
+    try {
+      cmd = `git describe --match "*${tagName}*" --tags --long --dirty`;
+      result = execSync(cmd, baseOpt).trim();
+    } catch (e) {
+      result = execSync("git describe --tags --long --dirty", baseOpt).trim();
+    }
+  }
   return result;
 }
 

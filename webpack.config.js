@@ -63,7 +63,7 @@ config = merge(config, {
             },
             {
               search: /\n.*WEBPACK_STRING_REPLACE_BUILD.*\n/,
-              replace: `\nconst BUILD="${git.describe()}";\n`,
+              replace: `\nconst BUILD="${git.describe(webrtcG2Version)}";\n`,
             },
             {
               search: /\n(.*)(development)(.*WEBPACK_STRING_REPLACE_ENV.*)\n/,
