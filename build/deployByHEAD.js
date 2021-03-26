@@ -11,21 +11,21 @@ const git = require('./git')
 const version = pjson.private ? pjson.privateVersion : pjson.version
 const commitId = git.currentCommit();
 const webrtcG2Version = pjson.webrtcG2Version
+const buildId = git.describe();
 const nodeEnv = process.env.NODE_ENV || 'test'
 const TARGET_DIR = process.env.TARGET_DIR || path.join(__dirname, '../../web-nrtc')
 const map = {
   production: 'prod',
   test: 'dev'
 }
-
-console.log('deploy by commit PLATFORM:', process.env.PLATFORM, 'webrtcG2Version:', webrtcG2Version, 'commitId', commitId)
+console.log('deploy by Build ID PLATFORM:', process.env.PLATFORM, 'webrtcG2Version:', webrtcG2Version, 'commitId', commitId, 'buildId', buildId)
 const env = map[nodeEnv] || nodeEnv
 console.log('webrtcG2Version:', webrtcG2Version, 'nodeEnv:', nodeEnv)
 var srcFolder3 = path.join(
   __dirname,
   `../dist/nimwebsdkTester/nimwebsdkTester_${webrtcG2Version}_${nodeEnv}/web/`
 )
-var destFolder3 = path.join(TARGET_DIR, `${commitId}`)
+var destFolder3 = path.join(TARGET_DIR, `${buildId}`)
 fs.emptyDirSync(destFolder3)
 copy(srcFolder3, destFolder3, ['webrtc2.html', 'css', 'js'], 'rtc2Rtmp.html')
 

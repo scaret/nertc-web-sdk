@@ -64,7 +64,7 @@ config = merge(config, {
             },
             {
               search: /\n.*WEBPACK_STRING_REPLACE_BUILD.*\n/,
-              replace: `\nconst BUILD="${git.describe(webrtcG2Version)}";\n`,
+              replace: `\nconst BUILD="${git.describe()}";\n`,
             },
             {
               search: /\n(.*)(development)(.*WEBPACK_STRING_REPLACE_ENV.*)\n/,
@@ -129,7 +129,7 @@ let configWebrtcG2 = merge(config, {
       fse.copySync(configWebrtcG2.output.path, dir)
     }),
     new webpack.BannerPlugin({
-      banner: `NeRTC ${webrtcG2Version}|BUILD ${git.describe(webrtcG2Version)} ${process.env.NODE_ENV}`
+      banner: `NeRTC ${webrtcG2Version}|BUILD ${git.describe()} ${process.env.NODE_ENV}`
     }),
   ],
   resolve: {
