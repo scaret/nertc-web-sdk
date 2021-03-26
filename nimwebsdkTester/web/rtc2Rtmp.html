@@ -627,7 +627,10 @@
           singleVideoNoTrans: $('#singleVideoNoTrans').prop("checked"),
         }
       }]
-      
+
+      if ($('#extraInfo').val()){
+        rtmpTasks[0].extraInfo = $('#extraInfo').val();
+      }
       if ($("#audioParam").prop("checked")){
         rtmpTasks[0].config.audioParam = {};
         if ($("#audioBitRate").val()){
