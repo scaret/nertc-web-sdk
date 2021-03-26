@@ -34,7 +34,7 @@
     "pack:custom": "cross-env PLATFORM=all NODE_ENV=custom npm run pack",
     "deploy": "node build/deploy.js",
     "deploy:g2": "cross-env PLATFORM=g2 node build/deploy.js",
-    "pack:head:g2": "npm run clean && PLATFORM=g2 NODE_ENV=test npm run build:sdk:g2 && PLATFORM=g2 NODE_ENV=test npm run build:tester:g2 && npm run build:api && PLATFORM=g2 NODE_ENV=test TARGET_DIR=/var/nertc-builds/by-commit node build/deployByHEAD.js",
+    "pack:head:g2": "npm run clean && PLATFORM=g2 NODE_ENV=test npm run build:sdk:g2 && PLATFORM=g2 NODE_ENV=test npm run build:tester:g2 && npm run build:api && PLATFORM=g2 NODE_ENV=test TARGET_DIR=/var/nertc-builds/by-build node build/deployByHEAD.js",
     "tester": "cross-env PLATFORM=all NODE_ENV=test node build/tester.js"
   },
   "author": "netease im",
