@@ -309,12 +309,12 @@ class MediaHelper extends EventEmitter {
     } = constraint
     if(!audio && !video){
       this.adapterRef.logger.error('getSecondStream:必须指定一个参数');
-      return
+      return Promise.reject('INVALID_OPERATION')
     }
 
     try {
       const stream = await GUM.getStream(constraint, this.adapterRef.logger)
-      this.adapterRef.logger.log('获取到stream: ', stream)
+      this.adapterRef.logger.log('获取到stream: ', stream.id)
       const audioTrack = stream.getAudioTracks().length && stream.getAudioTracks()[0]
       const videoTrack = stream.getVideoTracks().length && stream.getVideoTracks()[0]
       if (audioTrack) {
@@ -496,7 +496,7 @@ class MediaHelper extends EventEmitter {
   _stopTrack (stream:MediaStream) {
     if (!stream) return
     if (!this.isLocal) return
-    this.adapterRef.logger.log('清除stream: ', stream)
+    this.adapterRef.logger.log('清除stream: ', stream.id)
     const tracks = stream.getTracks()
     if (!tracks || tracks.length === 0) return
     tracks.forEach(track => {

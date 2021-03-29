@@ -264,7 +264,7 @@ class Signalling extends EventEmitter {
         remoteStream.pubStatus[mediaTypeShort].producerId = producerId
         remoteStream.pubStatus[mediaTypeShort].mute = mute
         remoteStream.pubStatus[mediaTypeShort].simulcastEnable = simulcastEnable
-        this.adapterRef.instance.emit('stream-added', {stream: remoteStream})
+        this.adapterRef.instance.emit('stream-added', {stream: remoteStream, 'mediaType': mediaTypeShort})
         if (mute) {
           this.adapterRef.instance.emit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
         }
@@ -348,7 +348,7 @@ class Signalling extends EventEmitter {
           }
         }
 
-        this.adapterRef.instance.emit('stream-removed', {stream: remoteStream})
+        this.adapterRef.instance.emit('stream-removed', {stream: remoteStream, 'mediaType': mediaTypeShort})
         break
       }
       case 'OnConsumerClose': {
@@ -678,11 +678,11 @@ class Signalling extends EventEmitter {
             if (mute) {
               this.adapterRef.instance.emit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
             }
+            this.adapterRef.logger.log('通知房间成员发布信息: ', JSON.stringify(remoteStream.pubStatus, null, ''))
+            if (remoteStream.pubStatus.audio.audio || remoteStream.pubStatus.video.video || remoteStream.pubStatus.screen.screen) {
+              this.adapterRef.instance.emit('stream-added', {stream: remoteStream, 'mediaType': mediaTypeShort})
+            }
           }
-        }
-        this.adapterRef.logger.log('通知房间成员发布信息: ', JSON.stringify(remoteStream.pubStatus, null, ''))
-        if (remoteStream.pubStatus.audio.audio || remoteStream.pubStatus.video.video || remoteStream.pubStatus.screen.screen) {
-          this.adapterRef.instance.emit('stream-added', {stream: remoteStream})
         } 
       }
     }

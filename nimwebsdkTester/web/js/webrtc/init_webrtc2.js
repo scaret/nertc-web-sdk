@@ -252,7 +252,7 @@ function initEvents() {
 
   rtc.client.on('stream-added', evt => {
     var remoteStream = evt.stream;
-    console.warn('收到别人的发布消息: ', remoteStream.streamID)
+    console.warn('收到别人的发布消息: ', remoteStream.streamID, 'mediaType: ', evt.mediaType)
     
     if (rtc.remoteStreams[remoteStream.streamID]) {
       console.warn('清除之前的音视频流，重新sub')
@@ -265,7 +265,7 @@ function initEvents() {
 
   rtc.client.on('stream-removed', evt => {
     var remoteStream = evt.stream;
-    console.warn('收到别人停止发布的消息: ', remoteStream.streamID)
+    console.warn('收到别人停止发布的消息: ', remoteStream.streamID, 'mediaType: ', evt.mediaType)
     addLog(`${remoteStream.streamID}停止发布${!remoteStream.audio ? '音频 和 ' :' ' }${!remoteStream.Video ? '视频' :'' }`)
     
     if (!remoteStream.audio && !remoteStream.video && !remoteStream.screen) {
@@ -276,9 +276,8 @@ function initEvents() {
   })
 
   rtc.client.on('stream-subscribed', evt => {
-    console.warn('订阅别人的流成功的通知')
     var remoteStream = evt.stream;
-
+    console.warn('订阅别人的流成功的通知: ', remoteStream.streamID, 'mediaType: ', evt.mediaType)
     const uid = $('#part-volume input[name="uid"]').val();
     const deviceId = $('#sounder').val();
     if (uid === "" + remoteStream.streamID && deviceId && deviceId !== "default"){

@@ -565,7 +565,7 @@ class Stream extends EventEmitter {
    * @param {div} view div标签，播放画面的dom容器节点
    * @return {Promise}
    */
-  async play (view:HTMLElement|null, playOptions:StreamPlayOptions = {}) {
+  async play (view:HTMLElement|null|undefined, playOptions:StreamPlayOptions = {}) {
     if (!isExistOptions({tag: 'Stream.playOptions.audio', value: playOptions.audio}).result){
       playOptions.audio = this.isRemote;
     }
@@ -1265,15 +1265,20 @@ class Stream extends EventEmitter {
         this.inSwitchDevice = false
         return Promise.reject('INVALID_OPERATION')
       }
-      this.microphoneId = deviceId
       //constraint = {...this.mediaHelper.audioConstraint, ...{audio: {deviceId: {exact: deviceId}}}}
       if (!this.mediaHelper){
         throw new Error('No MediaHelper');
       }
       if(this.mediaHelper.audioConstraint && this.mediaHelper.audioConstraint.audio){
         this.mediaHelper.audioConstraint.audio.deviceId = {exact: deviceId}
-        constraint = this.mediaHelper.audioConstraint
+      } else if(this.mediaHelper.audioConstraint){
+        this.mediaHelper.audioConstraint.audio = {}
+        this.mediaHelper.audioConstraint.audio.deviceId = {exact: deviceId}
+      } else {
+        this.mediaHelper.audioConstraint = { audio: {deviceId: {exact: deviceId}}}
       }
+      constraint = this.mediaHelper.audioConstraint
+      this.microphoneId = deviceId
     } else if (type === 'video') {
       if (deviceId === this.cameraId) {
         this.client.adapterRef.logger.log(`切换相同的摄像头设备，不处理`)
@@ -1292,7 +1297,6 @@ class Stream extends EventEmitter {
         this.inSwitchDevice = false
         return Promise.reject('INVALID_OPERATION')
       }
-      this.cameraId = deviceId
       //constraint = {...this.mediaHelper.videoConstraint, ...{video: {deviceId: {exact: deviceId}}}}
       if (!this.mediaHelper){
         throw new Error('No MediaHelper');
@@ -1301,6 +1305,7 @@ class Stream extends EventEmitter {
         this.mediaHelper.videoConstraint.video.deviceId = {exact: deviceId}
         constraint = this.mediaHelper.videoConstraint
       }
+      this.cameraId = deviceId
     } else {
       this.client.adapterRef.logger.log(`unknown type`)
       this.inSwitchDevice = false

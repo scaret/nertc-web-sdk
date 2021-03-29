@@ -787,7 +787,7 @@ class Mediasoup extends EventEmitter {
           throw new Error('No remoteStream.mediaHelper');
         }
         remoteStream.mediaHelper.updateStream(mediaTypeShort, consumer.track)
-        this.adapterRef.instance.emit('stream-subscribed', {stream: remoteStream})
+        this.adapterRef.instance.emit('stream-subscribed', {stream: remoteStream, 'mediaType': mediaTypeShort})
       } else {
         this.adapterRef.logger.log('该次consume状态错误： ', JSON.stringify(remoteStream['pubStatus'], null, ''))
       }
