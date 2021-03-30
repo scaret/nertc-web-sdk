@@ -10,6 +10,7 @@ import {
 import {Consumer, Device, Producer, Transport} from "./3rd/mediasoup-client/types";
 import {Peer} from "./3rd/protoo-client";
 import {Stream} from "../api/stream";
+import {waitForEvent} from "../util/waitForEvent";
 
 class Mediasoup extends EventEmitter {
   private adapterRef:AdapterRef;
@@ -206,6 +207,7 @@ class Mediasoup extends EventEmitter {
       });
       this._recvTransport.on('connectionstatechange', this._recvTransportConnectionstatechange.bind(this))
     }
+    this.emit('transportReady');
   }
 
   async _sendTransportConnectionstatechange (connectionState:string) {
@@ -643,6 +645,10 @@ class Mediasoup extends EventEmitter {
       codecOptions = {
         opusStereo: 1
       }
+    }
+    if (!this._mediasoupDevice || !this._mediasoupDevice.loaded){
+      this.adapterRef.logger.error('createConsumer：Waiting for Transport Ready');
+      await waitForEvent(this, 'transportReady', 5000);
     }
     if (!this._recvTransport){
       info.resolve(null);
