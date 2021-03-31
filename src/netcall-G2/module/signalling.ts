@@ -118,6 +118,16 @@ class Signalling extends EventEmitter {
       await this._protoo.close()
       this._protoo = null
     }
+    for (let uid in this.adapterRef.remoteStreamMap){
+      const remoteStream = this.adapterRef.remoteStreamMap[uid];
+      if (remoteStream._play){
+        this.adapterRef.logger.warn('Destroy Remote Player', uid);
+        remoteStream._play.destroy();
+      }
+    }
+    if (this.adapterRef._mediasoup){
+      this.adapterRef._mediasoup._reset();
+    }
     
     if(this._times < 3){
       this.adapterRef.logger.warn('Signalling 第%s次重连', ++this._times)

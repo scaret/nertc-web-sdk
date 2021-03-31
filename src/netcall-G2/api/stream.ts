@@ -72,7 +72,7 @@ class Stream extends EventEmitter {
   private audioSource: MediaStreamTrack|null;
   private videoSource:MediaStreamTrack|null;
   public mediaHelper:MediaHelper|null;
-  private _play: Play|null;
+  _play: Play|null;
   private _record: Record|null;
   public audioProfile:string;
   public videoProfile: {
