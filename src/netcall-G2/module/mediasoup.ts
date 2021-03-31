@@ -189,7 +189,7 @@ class Mediasoup extends EventEmitter {
     }
     
     if (!this._recvTransport) {
-      this._recvTransport = this._mediasoupDevice.createRecvTransport({
+      const _recvTransport = this._mediasoupDevice.createRecvTransport({
         id: this.adapterRef.channelInfo.uid,
         iceParameters: undefined,
         iceCandidates: undefined,
@@ -205,7 +205,8 @@ class Mediasoup extends EventEmitter {
           uid: this.adapterRef.channelInfo.uid
         }
       });
-      this._recvTransport.on('connectionstatechange', this._recvTransportConnectionstatechange.bind(this))
+      this._recvTransport = _recvTransport;
+      _recvTransport.on('connectionstatechange', this._recvTransportConnectionstatechange.bind(this, _recvTransport))
     }
     this.emit('transportReady');
   }
@@ -243,7 +244,11 @@ class Mediasoup extends EventEmitter {
     }
   }
 
-  async _recvTransportConnectionstatechange (connectionState:string) {
+  async _recvTransportConnectionstatechange (_recvTransport:Transport, connectionState:string) {
+    if (this._recvTransport !== _recvTransport){
+      this.adapterRef.logger.error('_recvTransportConnectionstatechange：出现了_recvTransport绑定不一致的状况。');
+      return;
+    }
     this.adapterRef.logger.warn('recv connection state changed to %s', connectionState);
     if (connectionState === 'failed') {
       try {
