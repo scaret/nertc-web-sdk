@@ -14,6 +14,7 @@ class Logger{
   private logHelper?:logHelper;
   private supportedBrowsers: string[];
   private cs:Console;
+  private isDebug: boolean;
   constructor(options:LoggerOptions) {
     this.options = options;
     this.api = 'log';
@@ -27,10 +28,26 @@ class Logger{
     }
     this.supportedBrowsers = ['Chrome', 'Safari', 'Firefox'];
     this.cs = console;
+    this.isDebug = true;
+    this.setDebug(options.debug);
+  }
+  
+  setDebug(debug?: boolean|LoggerDebugOptions){
+    if (typeof debug === "boolean"){
+      this.isDebug = debug;
+    }else{
+      this.isDebug = true;
+      if (debug && debug.style){
+        this.style = debug.style;
+      }
+    }
   }
   
   debug(){
     var logger = this;
+    if (!this.isDebug){
+      return;
+    }
     this.logHelper && this.logHelper.log(arguments)
     var args = logger.formatArgs([].slice.call(arguments, 0))
     if (this.supportedBrowsers.indexOf(platform.name) !== -1 && typeof args[0] === "string") {
@@ -42,6 +59,9 @@ class Logger{
   
   log(){
     var logger = this;
+    if (!this.isDebug){
+      return;
+    }
     this.logHelper && this.logHelper.log(arguments)
     var args = logger.formatArgs([].slice.call(arguments, 0))
     if (this.supportedBrowsers.indexOf(platform.name) !== -1 && typeof args[0] === "string") {
@@ -53,6 +73,9 @@ class Logger{
   
   info(){
     var logger = this;
+    if (!this.isDebug){
+      return;
+    }
     this.logHelper && this.logHelper.log(arguments)
     var args = logger.formatArgs([].slice.call(arguments, 0))
     if (this.supportedBrowsers.indexOf(platform.name) !== -1 && typeof args[0] === "string") {
@@ -64,6 +87,9 @@ class Logger{
   
   warn(){
     var logger = this;
+    if (!this.isDebug){
+      return;
+    }
     this.logHelper && this.logHelper.log(arguments)
     var args = logger.formatArgs([].slice.call(arguments, 0))
     if (this.supportedBrowsers.indexOf(platform.name) !== -1 && typeof args[0] === "string") {
@@ -75,6 +101,9 @@ class Logger{
   
   error(){
     var logger = this;
+    if (!this.isDebug){
+      return;
+    }
     this.logHelper && this.logHelper.log(arguments)
     var args = logger.formatArgs([].slice.call(arguments, 0))
     if (this.supportedBrowsers.indexOf(platform.name) !== -1 && typeof args[0] === "string") {
