@@ -109,7 +109,7 @@ class RemoteSdp {
         }
     }
     receive({ mid, kind, offerRtpParameters, streamId, trackId, reuseMid = null }) {
-        logger.warn('receive() [设置远端的mid: %s, kind: %s, reuseMid: %s]', mid, kind, reuseMid);
+        logger.debug('receive() [设置远端的mid: %s, kind: %s, reuseMid: %s]', mid, kind, reuseMid);
         const idx = this._midToIndex.get(mid);
         let mediaSection;
         if (idx !== undefined)

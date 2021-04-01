@@ -173,18 +173,18 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
 
             offer.sdp = sdpTransform.write(localSdpObject)
 
-            logger.debug('restartIce() | calling pc.setLocalDescription() [offer:%o]', offer);
+            logger.debug('restartIce() | calling pc.setLocalDescription()');
             await this._pc.setLocalDescription(offer);
             const answer = { type: 'answer', sdp: this._remoteSdp.getSdp() };
-            logger.debug('restartIce() | calling pc.setRemoteDescription() [answer:%o]', answer);
+            logger.debug('restartIce() | calling pc.setRemoteDescription()');
             await this._pc.setRemoteDescription(answer);
         }
         else {
             const offer = { type: 'offer', sdp: this._remoteSdp.getSdp() };
-            logger.debug('restartIce() | calling pc.setRemoteDescription() [offer:%o]', offer);
+            logger.debug('restartIce() | calling pc.setRemoteDescription()');
             await this._pc.setRemoteDescription(offer);
             const answer = await this._pc.createAnswer();
-            logger.debug('restartIce() | calling pc.setLocalDescription() [answer:%o]', answer);
+            logger.debug('restartIce() | calling pc.setLocalDescription()');
             await this._pc.setLocalDescription(answer);
         }
     }
@@ -335,7 +335,7 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
     async fillRemoteRecvSdp({ kind, iceParameters, iceCandidates, dtlsParameters, sctpParameters, sendingRtpParameters, codecOptions, offer,audioProfile }) {
         //offer.sdp = offer.sdp.replace(/a=extmap:2 http:([0-9a-zA-Z=+-_\/\\\\]+)\r\n/, ``)
         //offer.sdp = offer.sdp.replace(/a=extmap:3 http:([0-9a-zA-Z=+-_\/\\\\]+)\r\n/, ``)
-        logger.debug('fillRemoteRecvSdp() | calling pc.setLocalDescription() [offer:%o]', offer.sdp);
+        logger.debug('fillRemoteRecvSdp() | calling pc.setLocalDescription()');
         await this._pc.setLocalDescription(offer);
         if (!this._remoteSdp) {
             this._remoteSdp = new RemoteSdp_1.RemoteSdp({
@@ -398,7 +398,7 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
           }
           answer.sdp = answer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=maxptime:60`)
         }
-        logger.debug('fillRemoteRecvSdp() | calling pc.setRemoteDescription() [answer:%o]', answer.sdp);
+        logger.debug('fillRemoteRecvSdp() | calling pc.setRemoteDescription() [answer: %o]', answer.sdp);
         await this._pc.setRemoteDescription(answer);
     }
 
@@ -446,7 +446,7 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
 
         offer.sdp = sdpTransform.write(localSdpObject)
 
-        logger.debug('stopSending() | calling pc.setLocalDescription() [offer:%s]', offer.sdp);
+        logger.debug('stopSending() | calling pc.setLocalDescription()');
         try {
             await this._pc.setLocalDescription(offer);
         }
@@ -584,7 +584,7 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
 
     async receive({ iceParameters, iceCandidates, dtlsParameters, sctpParameters, trackId, kind, rtpParameters, offer, probeSSrc=-1 }) {
         this._assertRecvDirection();
-        logger.debug('receive() | calling pc.setLocalDescription() [offer:%o]', offer.sdp);
+        logger.debug('receive() | calling pc.setLocalDescription()');
         await this._pc.setLocalDescription(offer);
         logger.debug('receive() [trackId:%s, kind:%s]', trackId, kind);
         if (!this._remoteSdp) {
@@ -652,7 +652,7 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
         if (offer.sdp.indexOf(`a=ice-ufrag:${this._appDate.cid}#${this._appDate.uid}#`) < 0) {
             offer.sdp = offer.sdp.replace(/a=ice-ufrag:([0-9a-zA-Z=+-_\/\\\\]+)/g, `a=ice-ufrag:${this._appDate.cid}#${this._appDate.uid}#recv`)
         }
-        logger.debug('stopReceiving() | calling pc.setLocalDescription() [offer:%o]', offer.sdp);
+        logger.debug('stopReceiving() | calling pc.setLocalDescription()');
         await this._pc.setLocalDescription(offer);
         
         const answer = { type: 'answer', sdp: this._remoteSdp.getSdp() };

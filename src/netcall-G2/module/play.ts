@@ -328,6 +328,25 @@ class Play extends EventEmitter {
     return secondTotalVideoFrames > firstTotalVideoFrames
   }
 
+  async isPlayVideoStreamError() {
+    const getVideoFrames = async (time:number) => {
+      if (time) {
+        await new Promise((resolve)=>{setTimeout(resolve, time)});
+      }
+      if (this.videoDom && this.videoDom.srcObject && this.videoDom.getVideoPlaybackQuality()) {
+        return this.videoDom.getVideoPlaybackQuality().totalVideoFrames
+      } else {
+        return 0;
+      }
+    }
+    if (!this.videoDom || !this.videoDom.srcObject) {
+      return true;
+    }
+    const firstTotalVideoFrames = await getVideoFrames(0);
+    const secondTotalVideoFrames = await getVideoFrames(100)
+    return secondTotalVideoFrames > firstTotalVideoFrames
+  }
+
   async playVideoStream(stream:MediaStream, view:HTMLElement) {
     if(!stream || !view) return
     this.adapterRef.logger.log(`播放视频, id: ${stream.id}, active state: ${stream.active}`)

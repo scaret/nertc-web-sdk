@@ -132,7 +132,7 @@ class Mediasoup extends EventEmitter {
     
     //this.adapterRef = null
     //this.sdkRef = null
-    this._eventQueue = []
+    this._eventQueue.length = 0
     this._tempRecv = {
       audioRtpParameters: null,
       videoRtpParameters: null,
@@ -209,7 +209,7 @@ class Mediasoup extends EventEmitter {
   }
 
   async _sendTransportConnectionstatechange (connectionState:string) {
-    this.adapterRef.logger.warn('send connection state changed to %s', connectionState);
+    this.adapterRef.logger.log('send connection state changed to %s', connectionState);
     if (connectionState === 'failed') {
       try {
         if (this._sendTransport) {
@@ -609,7 +609,10 @@ class Mediasoup extends EventEmitter {
     if (remoteStream['pubStatus'][mediaTypeShort]['consumerId']) {
       this.adapterRef.logger.log('已经订阅过')
       
-      const isPlaying = await remoteStream.isPlaying(mediaTypeShort)
+      let isPlaying = true
+      if (remoteStream.Play) {
+        isPlaying = await remoteStream.Play.isPlayVideoStreamError()
+      }
       if (isPlaying) {
         this.adapterRef.logger.log('当前播放正常，直接返回')
         this._eventQueue.shift()
@@ -652,7 +655,7 @@ class Mediasoup extends EventEmitter {
     const prepareRes = 
       await this._recvTransport.prepareLocalSdp(kind, this._edgeRtpCapabilities);
     if(!this.adapterRef || this.adapterRef.connectState.curState == 'DISCONNECTING' || this.adapterRef.connectState.curState == 'DISCONNECTED') return
-    this.adapterRef.logger.log('获取本地sdp，prepareRes = %o', prepareRes);
+    this.adapterRef.logger.log('获取本地sdp，mid = %o', prepareRes.mid);
     let { rtpCapabilities, offer} = prepareRes;
     let mid:number|undefined = prepareRes.mid;
     const localDtlsParameters = prepareRes.dtlsParameters;
@@ -685,17 +688,19 @@ class Mediasoup extends EventEmitter {
       data.transportId = this._recvTransport.id;
     else
       data.dtlsParameters = localDtlsParameters;
-    this.adapterRef.logger.log('发送consume请求 = %o', data);
+    this.adapterRef.logger.log(`发送consume请求, uid: ${uid}, kind: ${kind}, producerId: ${data.producerId}, transportId: ${data.transportId}, requestId: ${data.requestId}`);
     if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
       info.resolve(null);
       throw new Error('No _protoo');
     }
     const consumeRes = await this.adapterRef._signalling._protoo.request('Consume', data);
-    this.adapterRef.logger.log('consume反馈结果 = %o', consumeRes);
     // if(this.adapterRef.connectState.curState == 'DISCONNECTING' || this.adapterRef.connectState.curState == 'DISCONNECTED'){
     //   return
     // }
     let { transportId, iceParameters, iceCandidates, dtlsParameters, probeSSrc, rtpParameters, producerId, consumerId, code, errMsg } = consumeRes;
+
+    this.adapterRef.logger.log(`consume反馈结果: code: ${code} uid: ${uid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
+
     if (rtpParameters && rtpParameters.encodings && rtpParameters.encodings.length && rtpParameters.encodings[0].ssrc) {
       this.adapterRef.instance.addSsrc(uid, mediaTypeShort, rtpParameters.encodings[0].ssrc)
     }
@@ -791,7 +796,11 @@ class Mediasoup extends EventEmitter {
       } else {
         this.adapterRef.logger.log('该次consume状态错误： ', JSON.stringify(remoteStream['pubStatus'], null, ''))
       }
-      this.adapterRef.logger.log('查看事件队列, _eventQueue: ', this._eventQueue)
+
+      this.adapterRef.logger.log('查看事件队列, _eventQueue: ', this._eventQueue.length)
+      this._eventQueue.forEach(item => {
+        this.adapterRef.logger.log('consumerList, uid: ${item.uid}, kind: ${item.kind}, id: ${item.id}')
+      })
       this._eventQueue.shift()
       info.resolve(null);
       if (this._eventQueue.length > 0) {

@@ -342,13 +342,18 @@ class Base extends EventEmitter {
       throw new Error('No this.adapterRef._mediasoup');
     }
     this.adapterRef._mediasoup.init()
+    this.adapterRef.logger.log('下行通道异常, remoteStreamMap', this.adapterRef.remoteStreamMap)
     for (const streamId in this.adapterRef.remoteStreamMap) {
       const stream = this.adapterRef.remoteStreamMap[streamId];
+      stream.pubStatus.audio.consumerStatus = 'init'
+      stream.pubStatus.video.consumerStatus = 'init'
       stream.pubStatus.audio.consumerId = ""
       stream.pubStatus.video.consumerId = ""
       stream.pubStatus.screen.consumerId = ""
+      this.adapterRef.logger.log('重连逻辑订阅 start：', stream.streamID)
       //@ts-ignore
       await this.subscribe(stream)
+      this.adapterRef.logger.log('重连逻辑订阅 over：', stream.streamID)
     }
   }
 
