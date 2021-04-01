@@ -309,12 +309,12 @@ class MediaHelper extends EventEmitter {
     } = constraint
     if(!audio && !video){
       this.adapterRef.logger.error('getSecondStream:必须指定一个参数');
-      return
+      return Promise.reject('INVALID_OPERATION')
     }
 
     try {
       const stream = await GUM.getStream(constraint, this.adapterRef.logger)
-      this.adapterRef.logger.log('获取到stream: ', stream)
+      this.adapterRef.logger.log('获取到stream: ', stream.id)
       const audioTrack = stream.getAudioTracks().length && stream.getAudioTracks()[0]
       const videoTrack = stream.getVideoTracks().length && stream.getVideoTracks()[0]
       if (audioTrack) {
@@ -361,8 +361,9 @@ class MediaHelper extends EventEmitter {
         this.cameraStream = new MediaStream()
         this.cameraStream.addTrack(videoTrack)
         this.videoStream = this.cameraStream
-        if (isPlaying && this.adapterRef.localStream.videoView) {
-          await this.adapterRef.localStream.play(this.adapterRef.localStream.videoView)
+        const videoView = this.adapterRef.localStream.videoView || (this.adapterRef.localStream.Play && this.adapterRef.localStream.Play.videoView)
+        if (isPlaying && videoView) {
+          await this.adapterRef.localStream.play(videoView)
           if ("width" in this.adapterRef.localStream.renderMode.local){
             this.adapterRef.localStream.setLocalRenderMode(this.adapterRef.localStream.renderMode.local, 'video')
           }
@@ -496,7 +497,7 @@ class MediaHelper extends EventEmitter {
   _stopTrack (stream:MediaStream) {
     if (!stream) return
     if (!this.isLocal) return
-    this.adapterRef.logger.log('清除stream: ', stream)
+    this.adapterRef.logger.log('清除stream: ', stream.id)
     const tracks = stream.getTracks()
     if (!tracks || tracks.length === 0) return
     tracks.forEach(track => {

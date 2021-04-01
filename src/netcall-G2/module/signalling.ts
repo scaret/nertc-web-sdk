@@ -191,20 +191,32 @@ class Signalling extends EventEmitter {
   }
 
   async _handleMessage (notification:ProtooNotification) {
-    this.adapterRef.logger.log(
+    /*this.adapterRef.logger.log(
       'proto "notification" event [method:%s, data:%o]',
-      notification.method, notification.data);
+      notification.method, notification.data);*/
 
     switch (notification.method) {
       case 'OnPeerJoin': {
         const { requestId, externData } = notification.data;
         this.adapterRef.logger.log('收到OnPeerJoin成员加入消息 externData = %o', externData.uid);
-        this.adapterRef.logger.log(`${externData.uid} has joined the room`)
         if(typeof externData.uid !== 'number' || isNaN(externData.uid)){
           throw new Error('对端uid 非 number类型')
         }
         if(externData.uid > Number.MAX_SAFE_INTEGER){
           throw new Error('对端uid 超出 number精度')
+        }
+        let remoteStream = this.adapterRef.remoteStreamMap[externData.uid]
+        if (!remoteStream) {
+          remoteStream = new Stream({
+            isRemote: true,
+            uid: externData.uid,
+            audio: false,
+            video: false,
+            screen: false,
+            client: this.adapterRef.instance,
+          })
+          this.adapterRef.remoteStreamMap[externData.uid] = remoteStream
+          this.adapterRef.memberMap[externData.uid] = externData.uid;
         }
         this.adapterRef.instance._roleInfo.audienceList[externData.uid] = false;
         this.adapterRef.instance.emit('peer-online', {uid: +externData.uid})
@@ -225,7 +237,7 @@ class Signalling extends EventEmitter {
       }
       case 'OnNewProducer': {
         const { requestId, externData } = notification.data;
-        this.adapterRef.logger.log('收到OnNewProducer发布消息 externData = %o', externData)
+        this.adapterRef.logger.log('收到OnNewProducer发布消息 externData = %o', JSON.stringify(externData.producerInfo, null, ' '))
         let {
           uid,
           producerId,
@@ -274,7 +286,7 @@ class Signalling extends EventEmitter {
         remoteStream.pubStatus[mediaTypeShort].producerId = producerId
         remoteStream.pubStatus[mediaTypeShort].mute = mute
         remoteStream.pubStatus[mediaTypeShort].simulcastEnable = simulcastEnable
-        this.adapterRef.instance.emit('stream-added', {stream: remoteStream})
+        this.adapterRef.instance.emit('stream-added', {stream: remoteStream, 'mediaType': mediaTypeShort})
         if (mute) {
           this.adapterRef.instance.emit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
         }
@@ -288,7 +300,7 @@ class Signalling extends EventEmitter {
           mediaType,
           cid
         } = externData;
-        this.adapterRef.logger.log('收到OnProducerClose消息 code = %d, errMsg = %s, uid = %s, mediaType = %s', code, errMsg, uid, mediaType);
+        this.adapterRef.logger.log('收到OnProducerClose消息 code = %d, errMsg = %s, uid = %s, mediaType = %s, producerId: %s', code, errMsg, uid, mediaType, producerId);
         let kind:'audio'|'video';
         let mediaTypeShort:MediaTypeShort;
         switch (mediaType){
@@ -309,6 +321,11 @@ class Signalling extends EventEmitter {
         }
         let remoteStream = this.adapterRef.remoteStreamMap[uid]
         if(!remoteStream) return
+        if (remoteStream.pubStatus[kind].producerId !== producerId) {
+          this.adapterRef.logger.log('该 producerId 已经无效，不处理')
+          return
+        }
+
         if (!this.adapterRef._mediasoup){
           throw new Error('No this.adapterRef._mediasoup');
         }
@@ -358,7 +375,7 @@ class Signalling extends EventEmitter {
           }
         }
 
-        this.adapterRef.instance.emit('stream-removed', {stream: remoteStream})
+        this.adapterRef.instance.emit('stream-removed', {stream: remoteStream, 'mediaType': mediaTypeShort})
         break
       }
       case 'OnConsumerClose': {
@@ -605,7 +622,6 @@ class Signalling extends EventEmitter {
       }
       this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities;
       await this.adapterRef._mediasoup.init()
-      this.adapterRef.logger.log('重连成功，重新publish本端流')
       if (this.adapterRef.localStream){
         this.adapterRef.logger.log('重连成功，重新publish本端流')
         this.adapterRef.instance.publish(this.adapterRef.localStream)
@@ -688,11 +704,11 @@ class Signalling extends EventEmitter {
             if (mute) {
               this.adapterRef.instance.emit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
             }
+            this.adapterRef.logger.log('通知房间成员发布信息: ', JSON.stringify(remoteStream.pubStatus, null, ''))
+            if (remoteStream.pubStatus.audio.audio || remoteStream.pubStatus.video.video || remoteStream.pubStatus.screen.screen) {
+              this.adapterRef.instance.emit('stream-added', {stream: remoteStream, 'mediaType': mediaTypeShort})
+            }
           }
-        }
-        this.adapterRef.logger.log('通知房间成员发布信息: ', JSON.stringify(remoteStream.pubStatus, null, ''))
-        if (remoteStream.pubStatus.audio.audio || remoteStream.pubStatus.video.video || remoteStream.pubStatus.screen.screen) {
-          this.adapterRef.instance.emit('stream-added', {stream: remoteStream})
         } 
       }
     }
@@ -859,7 +875,7 @@ class Signalling extends EventEmitter {
     }
     let isExit = true
     let newList:NetStatusItem[] = []
-    this.adapterRef.logger.log('服务器下发的网络状态通知: %o', networkQuality)
+    //this.adapterRef.logger.log('服务器下发的网络状态通知: %o', networkQuality)
     networkQuality = networkQuality.filter((item)=>{return item.uid != 0})
     this.adapterRef.netStatusList.map(statusItem => {
       isExit = true

@@ -181,6 +181,17 @@ class Play extends EventEmitter {
       this.screenDom.muted = true
     }
   }
+
+  _removeUselessDom () {
+    if(!this.videoView) return
+    const length = this.videoView.children.length
+    for (var i = length - 1; i >= 0; i--) {
+      if (this.videoView.children[i].outerHTML.indexOf('data-uid=')){
+        this.adapterRef.logger.log('删除多余的节点: ', this.videoView.children[i].outerHTML)
+        this.videoView.removeChild(this.videoView.children[i])
+      }
+    }
+  }
   
   _mountVideoToDom () {
     if (this.videoContainerDom){
@@ -188,6 +199,10 @@ class Play extends EventEmitter {
         this.adapterRef.logger.log('Play: _mountVideoToDom: 节点已挂载，请勿重复挂载')
         return
       }
+      /*if (this.videoView && this.videoView.children) {
+        this.adapterRef.logger.log('出现多余的dom节点')
+        this._removeUselessDom()
+      }*/
       this.adapterRef.logger.log('Play: _mountVideoToDom: videoContainerDom: ', this.videoContainerDom.outerHTML)
       if (this.videoView){
         this.videoView.appendChild(this.videoContainerDom)
@@ -286,7 +301,7 @@ class Play extends EventEmitter {
       if (time) {
         await new Promise((resolve)=>{setTimeout(resolve, time)});
       }
-      if (this.videoDom && this.videoDom.srcObject) {
+      if (this.videoDom && this.videoDom.srcObject && this.videoDom.getVideoPlaybackQuality()) {
         return this.videoDom.getVideoPlaybackQuality().totalVideoFrames
       } else {
         return 0;
@@ -302,7 +317,7 @@ class Play extends EventEmitter {
       if (time) {
         await new Promise((resolve)=>{setTimeout(resolve, time)});
       }
-      if (this.screenDom && this.screenDom.srcObject) {
+      if (this.screenDom && this.screenDom.srcObject && this.screenDom.getVideoPlaybackQuality()) {
         return this.screenDom.getVideoPlaybackQuality().totalVideoFrames
       } else {
         return 0;
@@ -313,9 +328,32 @@ class Play extends EventEmitter {
     return secondTotalVideoFrames > firstTotalVideoFrames
   }
 
+  async isPlayVideoStreamError() {
+    const getVideoFrames = async (time:number) => {
+      if (time) {
+        await new Promise((resolve)=>{setTimeout(resolve, time)});
+      }
+      if (this.videoDom && this.videoDom.srcObject && this.videoDom.getVideoPlaybackQuality()) {
+        return this.videoDom.getVideoPlaybackQuality().totalVideoFrames
+      } else {
+        return 0;
+      }
+    }
+    if (!this.videoDom || !this.videoDom.srcObject) {
+      return true;
+    }
+    const firstTotalVideoFrames = await getVideoFrames(0);
+    const secondTotalVideoFrames = await getVideoFrames(100)
+    return secondTotalVideoFrames > firstTotalVideoFrames
+  }
+
   async playVideoStream(stream:MediaStream, view:HTMLElement) {
-    if(!stream) return
+    if(!stream || !view) return
     this.adapterRef.logger.log(`播放视频, id: ${stream.id}, active state: ${stream.active}`)
+    if (this.videoDom && this.videoDom.srcObject === stream) {
+      this.adapterRef.logger.log(`请勿重复 ${this.uid} 播放` )
+      return
+    }
     this.videoView = view
     this._initNodeVideo()
     this._mountVideoToDom()
@@ -338,7 +376,7 @@ class Play extends EventEmitter {
   }
 
   async playScreenStream(stream:MediaStream, view:HTMLElement) {
-    if(!stream) return
+    if(!stream || !view) return
     this.adapterRef.logger.log(`播放辅流视频, id: ${stream.id}, active state: ${stream.active}`)
     this.screenView = view
     this._initNodeScreen()
@@ -362,12 +400,26 @@ class Play extends EventEmitter {
   }
 
   async stopPlayVideoStream() {
+    this.adapterRef.logger.log('停止播发视频')
     if (this.videoContainerDom && this.videoDom) {
-      this.videoContainerDom.removeChild(this.videoDom)
+      if(this.videoContainerDom == this.videoDom.parentNode) {
+        this.adapterRef.logger.log('清除 videoDom')
+        this.videoContainerDom.removeChild(this.videoDom)
+      } else if(this.videoContainerDom.lastChild){
+        this.adapterRef.logger.log('videoContainerDom 删除子节点')
+        this.videoContainerDom.removeChild(this.videoContainerDom.lastChild)
+      }
       this.videoDom = null
     }
     if (this.videoView && this.videoContainerDom) {
-      this.videoView.removeChild(this.videoContainerDom)
+      if (this.videoView == this.videoContainerDom.parentNode) {
+        this.adapterRef.logger.log('清除 videoContainerDom')
+        this.videoView.removeChild(this.videoContainerDom)
+      } else if(this.videoView.lastChild){
+        this.adapterRef.logger.log('videoView 删除子节点')
+        this.videoView.removeChild(this.videoView.lastChild)
+        this.videoView.innerHTML = ''
+      }
       this.videoContainerDom = null
       this.videoView = null
     }
@@ -391,10 +443,10 @@ class Play extends EventEmitter {
 
     this.videoContainerSize = Object.assign({}, options);
     // 设置外部容器
-    if (this.videoContainerDom){
+    if (this.videoContainerDom) {
       this.videoContainerDom.style.width = `${options.width}px`
       this.videoContainerDom.style.height = `${options.height}px`
-    }else{
+    } else {
       this.adapterRef.logger.error('未找到videoContainerDom');
     }
     // 是否裁剪

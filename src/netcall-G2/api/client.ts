@@ -308,7 +308,7 @@ class Client extends Base {
       throw new Error('No this.adapterRef._mediasoup');
     }
     try {
-      if (stream.subConf.audio){
+      if (stream.subConf.audio) {
         // 应该订阅音频
         if (stream.pubStatus.audio.audio && !stream.pubStatus.audio.consumerId){
           if (stream.pubStatus.audio.consumerStatus !== 'start') {
@@ -319,7 +319,7 @@ class Client extends Base {
             this.adapterRef.logger.log('订阅 %s 音频流完成', stream.getId())
           }
         }
-      }else{
+      } else {
         // 不应该订阅音频
         if (stream.pubStatus.audio.consumerId && stream.pubStatus.audio.stopconsumerStatus !== 'start'){
           this.adapterRef.logger.log('开始取消订阅音频流')
