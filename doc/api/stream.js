@@ -1152,6 +1152,25 @@ class Stream extends EventEmitter {
     }
   }
 
+
+  /**
+   * ************************ 水印相关 *****************************
+   */
+  /**
+   * 设置画布水印
+   * @function setCanvasWatermarkConfigs
+   * @memberOf Stream#
+   * @param {NERtcCanvasWatermarkConfig} options 水印参数对象
+   * @param {NERtcTextWatermarkConfig[]} options.textWatermarks 文字水印，最多支持10个
+   * @param {NERtcTimestampWatermarkConfig} options.timestampWatermarks 时间戳水印
+   * @param {NERtcImageWatermarkConfig[]} options.imageWatermarks 图片水印，最多支持4个
+   * @returns {Promise} ，用于下载等操作
+   */
+  setCanvasWatermarkConfigs (options) {
+  }
+
+
+
   /**
    * ************************ 客户端录制相关 *****************************
    */
@@ -1589,6 +1608,7 @@ class Stream extends EventEmitter {
     this.client.adapterRef.logger.log('设置伴音音频文件的播放位置: %s', playStartTime)
     return this.mediaHelper.setAudioMixingPlayTime(playStartTime)
   }
+
 
   /**
    *  销毁实例
