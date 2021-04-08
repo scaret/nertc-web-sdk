@@ -1641,4 +1641,63 @@ class Stream extends EventEmitter {
 
 export { Stream }
 
+/**
+ * @typedef {Object} NERtcTextWatermarkConfig 文字水印设置参数，可通过{@link Stream#setCanvasWatermarkConfigs}使用
+ * @property {string} content
+ *    支持自动换行。当文字内容长度超过水印框宽度时，会自动换行。
+ *    字符串长度没有限制。最终显示受字体大小和水印框大小的影响，超出水印框的部分不显示
+ * @property {number} [fontSize]
+ *    字体大小。默认值为 10，相当于 144 dpi 设备上的 10 x 15 磅
+ * @property {number} [fontColor]
+ *    字体颜色。默认白色
+ * @property {number} [offsetX]
+ *    水印框左上角与视频画布左上角的水平距离。单位为像素（pixel），默认值为 0
+ * @property {number} [offsetY]
+ *    水印框左上角与视频画布左上角的垂直距离。单位为像素（pixel），默认值为 0。
+ * @property {number} [wmColor]
+ *    水印框颜色。默认灰色（支持透明度），格式为ARGB，例如0x08080808。
+ * @property {number} [wmWidth]
+ *    水印框的宽度。单位为像素（pixel），默认值为 0 表示没有水印框
+ * @property {number} [wmHeight]
+ *    水印框的高度。单位为像素（pixel），默认值为 0 表示没有水印框
+ */
+
+/**
+ * @typedef {Object} NERtcTimestampWatermarkConfig 时间戳水印，可通过{@link Stream#setCanvasWatermarkConfigs}使用，格式为 yyyy-MM-dd HH:mm:ss
+ * @property {number} [fontSize]
+ *    字体大小。默认值为 10，相当于 144 dpi 设备上的 10 x 15 磅
+ * @property {number} [fontColor]
+ *    字体颜色。默认白色
+ * @property {number} [offsetX]
+ *    水印框左上角与视频画布左上角的水平距离。单位为像素（pixel），默认值为 0
+ * @property {number} [offsetY]
+ *    水印框左上角与视频画布左上角的垂直距离。单位为像素（pixel），默认值为 0。
+ * @property {number} [wmColor]
+ *    水印框颜色。默认灰色（支持透明度），格式为ARGB，例如0x08080808。
+ * @property {number} [wmWidth]
+ *    水印框的宽度。单位为像素（pixel），默认值为 0 表示没有水印框
+ * @property {number} [wmHeight]
+ *    水印框的高度。单位为像素（pixel），默认值为 0 表示没有水印框
+ */
+
+/**
+ * @typedef {Object} NERtcImageWatermarkConfig 图片水印设置参数，可通过{@link Stream#setCanvasWatermarkConfigs}使用
+ * @property {String[]} imageUrls
+ *    水印图片URL，支持多张轮播
+ * @property {number} [offsetX]
+ *    水印框左上角与视频画布左上角的水平距离。单位为像素（pixel），默认值为 0
+ * @property {number} [offsetY]
+ *    水印框左上角与视频画布左上角的垂直距离。单位为像素（pixel），默认值为 0。
+ * @property {number} [wmColor]
+ *    水印框颜色。默认灰色（支持透明度），格式为ARGB，例如0x08080808。
+ * @property {number} [wmWidth]
+ *    水印框的宽度。单位为像素（pixel），默认值为 0 表示没有水印框
+ * @property {number} [wmHeight]
+ *    水印框的高度。单位为像素（pixel），默认值为 0 表示没有水印框
+ * @property {number} [fps]
+ *    播放帧率。默认 0 帧
+ * @property {number} [loop]
+ *    是否设置循环。默认循环，设置为false后水印数组播放完毕后消失
+ */
+
 /* eslint prefer-promise-reject-errors: 0 */
