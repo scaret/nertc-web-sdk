@@ -97,6 +97,7 @@ export interface AdapterRef {
   requestId: {
     [apiName: string]: number;
   }
+  report: boolean | undefined;
 }
 
 export type ConnectionState = 'DISCONNECTED'|'CONNECTING'|'CONNECTED'|'DISCONNECTING';
@@ -785,6 +786,7 @@ export interface SignallingOptions{
 export interface ClientOptions{
   appkey: string;
   debug: boolean | LoggerDebugOptions;
+  report: boolean | undefined;
   ref: any;
 }
 

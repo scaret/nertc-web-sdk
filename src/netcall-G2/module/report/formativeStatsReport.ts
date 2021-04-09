@@ -1253,6 +1253,7 @@ class FormativeStatsReport {
   }
 
   send () {
+    if(!this.adapterRef.report) return
     if (!this.infos.uid || !this.infos.cid) return
 
       //上报G2的数据
