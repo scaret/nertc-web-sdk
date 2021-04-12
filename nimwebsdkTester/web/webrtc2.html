@@ -539,6 +539,12 @@
               操作对象(不填则操作自己)
               <input type="text" id="watermarkUid">
             </div>
+            <div class="line">
+              <select id="watermarkMediaType">
+                <option value="video" selected>主流</option>
+                <option value="screen">辅流</option>
+              </select>
+            </div>
           </div>
           <div class="part">
             <div class="line">
@@ -599,7 +605,7 @@
                 <input type="checkbox" id="watermarkLoop" checked>
               </label><br/>
               <button id="setWatermark">增加</button>
-              <button id="clearWatermark">清空该用户水印</button>
+              <button id="clearWatermark">清空该用户主/辅流水印</button>
               <button id="showUpdateWatermark">【高级】更新</button>
             </div>
           </div>

@@ -754,7 +754,13 @@ function initLocalStream(audioSource, videoSource) {
   }else if ($('#idWatermark').prop('checked')){
     rtc.localStream.setCanvasWatermarkConfigs({
       textWatermarks: [{
-        content: 'localStream ' + $('#uid').val(),
+        content: 'video ' + $('#uid').val(),
+      }],
+    });
+    rtc.localStream.setCanvasWatermarkConfigs({
+      mediaType: "screen",
+      textWatermarks: [{
+        content: 'screen ' + $('#uid').val(),
       }],
     });
   }
@@ -835,11 +841,19 @@ function subscribe(remoteStream) {
     console.log('本地 subscribe 成功')
     addLog('本地 subscribe 成功')
     if (watermarks.remote[remoteStream.streamID]){
-      remoteStream.setCanvasWatermarkConfigs(watermarks.remote[remoteStream.streamID]);
+      remoteStream.setCanvasWatermarkConfigs(watermarks.remote[remoteStream.streamID].video);
+      remoteStream.setCanvasWatermarkConfigs(watermarks.remote[remoteStream.streamID].screen);
     }else if ($('#idWatermark').prop('checked')){
       remoteStream.setCanvasWatermarkConfigs({
+        mediaType: "video",
         textWatermarks: [{
-          content: 'remoteStream ' + remoteStream.streamID,
+          content: 'video ' + remoteStream.streamID,
+        }],
+      });
+      remoteStream.setCanvasWatermarkConfigs({
+        mediaType: "screen",
+        textWatermarks: [{
+          content: 'screen ' + remoteStream.streamID,
         }],
       });
     }
@@ -1663,6 +1677,7 @@ let watermarks = {local: null, remote: {}};
 $("#clearWatermark").on('click', ()=>{
   let stream;
   let uid = $("#watermarkUid").val();
+  let mediaType = $("#watermarkMediaType").val();
   if (uid) {
     stream = rtc.remoteStreams[uid];
   } else{
@@ -1673,27 +1688,44 @@ $("#clearWatermark").on('click', ()=>{
   }
   addLog('清空水印');
   if(uid){
-    watermarks.remote[uid] = {};
+    if (watermarks.remote[uid]){
+      watermarks.remote[uid][mediaType] = {
+        mediaType: mediaType,
+      }
+    }
   }else{
-    watermarks.local = {};
+    if (watermarks.local){
+      watermarks.local[mediaType] = {
+        mediaType: mediaType,
+      };
+    }
   }
-  stream.setCanvasWatermarkConfigs({});
+  stream.setCanvasWatermarkConfigs({
+    mediaType: $("#watermarkMediaType").val()
+  });
 });
 $("#setWatermark").on('click', ()=>{
   let stream, watermarkConf;
   let uid = $("#watermarkUid").val();
+  let watermarkMediaType = $("#watermarkMediaType").val()
   if (uid) {
     stream = rtc.remoteStreams[uid];
     if (!watermarks.remote[uid]){
-      watermarks.remote[uid] = {};
+      watermarks.remote[uid] = {
+        video: {mediaType: 'video'},
+        screen: {mediaType: 'screen'}
+      };
     }
-    watermarkConf = watermarks.remote[uid]
+    watermarkConf = watermarks.remote[uid][watermarkMediaType];
   } else{
     stream = rtc.localStream;
     if (!watermarks.local){
-      watermarks.local = {};
+      watermarks.local = {
+        video: {mediaType: 'video'},
+        screen: {mediaType: 'screen'}
+      };
     }
-    watermarkConf = watermarks.local;
+    watermarkConf = watermarks.local[watermarkMediaType];
   }
   if (!stream){
     return addLog('水印：请检查uid是否正确')

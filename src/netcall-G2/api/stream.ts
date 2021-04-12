@@ -1973,6 +1973,22 @@ class Stream extends EventEmitter {
    */
   setCanvasWatermarkConfigs (options: NERtcCanvasWatermarkConfig){
     if (this._play && this._play._watermarkControl){
+      let watermarkControl = null;
+      if (!options.mediaType || options.mediaType === "video"){
+        if (this._play._watermarkControl){
+          watermarkControl = this._play._watermarkControl;
+        }
+      }
+      else if (options.mediaType === "screen"){
+        if (this._play._watermarkControlScreen){
+          watermarkControl = this._play._watermarkControlScreen;
+        }
+      }
+      if (!watermarkControl){
+        this.client.adapterRef.logger.error("setCanvasWatermarkConfigs：播放器未初始化", options.mediaType);
+        return;
+      }
+
       const LIMITS = {
         TEXT: 10,
         TIMESTAMP: 1,
@@ -1986,8 +2002,8 @@ class Stream extends EventEmitter {
         this.client.adapterRef.logger.error(`目前的图片水印数量：${options.imageWatermarks.length}。允许的数量：${LIMITS.IMAGE}`);
         throw new Error('WATERMARK_EXCEEDS_LIMIT');
       }
-      this._play._watermarkControl.checkWatermarkParams(options);
-      this._play._watermarkControl.updateWatermarks(options);
+      watermarkControl.checkWatermarkParams(options);
+      watermarkControl.updateWatermarks(options);
     }else{
       this.client.adapterRef.logger.error("setCanvasWatermarkConfigs：播放器未初始化");
     }

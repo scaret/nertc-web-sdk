@@ -32,6 +32,7 @@ class Play extends EventEmitter {
   
   
   public _watermarkControl: WatermarkControl;
+  public _watermarkControlScreen: WatermarkControl;
   constructor (options:PlayOptions) {
     super()
     this._reset()
@@ -58,6 +59,7 @@ class Play extends EventEmitter {
     };
     this.audioSinkId = "";
     this._watermarkControl = createWatermarkControl(this.adapterRef.logger);
+    this._watermarkControlScreen = createWatermarkControl(this.adapterRef.logger);
   }
 
   _reset() {
@@ -220,6 +222,7 @@ class Play extends EventEmitter {
       this.adapterRef.logger.log('Play: _mountScreenToDom: screenContainerDom: ', this.screenContainerDom.outerHTML)
       if (this.screenView){
         this.screenView.appendChild(this.screenContainerDom)
+        this._watermarkControlScreen.start(this.screenContainerDom);
       }
     }
   }
