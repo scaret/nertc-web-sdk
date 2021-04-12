@@ -21,6 +21,7 @@ class Base extends EventEmitter {
   public _params: {
     mode: "rtc" | "live";
     appkey: string;
+    token?: string;
     JoinChannelRequestParam4WebRTC2?: JoinChannelRequestParam4WebRTC2
   }
   public adapterRef:AdapterRef;
