@@ -787,6 +787,7 @@ export interface ClientOptions{
   appkey: string;
   debug: boolean | LoggerDebugOptions;
   report: boolean | undefined;
+  token?: string;
   ref: any;
 }
 
