@@ -94,10 +94,10 @@ config = merge(config, {
       verbose: true
     })
   ],
-  mode: env.isDevelopment() ? 'development' : 'production'
+  mode: (env.isDevelopment() || env.isTest()) ? 'development' : 'production'
 })
 
-if (env.isDevelopment()) {
+if (env.isDevelopment() || env.isTest()) {
   // sourceMap 相关
   config.output.pathinfo = true
   if (!process.env.NO_SOURCE_MAP) {

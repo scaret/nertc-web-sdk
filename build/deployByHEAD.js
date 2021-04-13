@@ -29,6 +29,14 @@ var destFolder3 = path.join(TARGET_DIR, `${buildId}`)
 fs.emptyDirSync(destFolder3)
 copy(srcFolder3, destFolder3, ['webrtc2.html', 'css', 'js'], 'rtc2Rtmp.html')
 
+var srcFolderApidoc = path.join(
+  __dirname,
+  `../dist/api/`
+)
+var destFolderApidoc = path.join(TARGET_DIR, `${buildId}`, 'api')
+fs.emptyDirSync(destFolderApidoc)
+copy(srcFolderApidoc, destFolderApidoc)
+
 function copy (srcFolder, destFolder, allowPath, excludePath) {
   console.log('\nsrcFolder:', srcFolder)
   console.log('destFolder:', destFolder)
