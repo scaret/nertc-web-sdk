@@ -1,4 +1,4 @@
-import {Client} from "./Client";
+import {Client} from "./client";
 
 export declare type ConnectionState = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'DISCONNECTING';
 export declare type MediaType = 'audio' | 'video' | 'screen';
