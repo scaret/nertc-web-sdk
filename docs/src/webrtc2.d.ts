@@ -1,9 +1,7 @@
-import { Client } from './Client';
-import { Stream } from './Stream';
-import { ClientOptions, StreamOptions } from "./Types";
-import {DeviceInfo} from "./Browser";
-
-export as namespace WebRTC2;
+import { Client } from './client';
+import { Stream } from './stream';
+import { ClientOptions, StreamOptions } from "./types";
+import {DeviceInfo} from "./browser";
 
 /**
  * WebRTC2 是 云信 Web SDK 中所有可调用方法的入口

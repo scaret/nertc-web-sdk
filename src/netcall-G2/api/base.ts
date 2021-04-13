@@ -21,6 +21,7 @@ class Base extends EventEmitter {
   public _params: {
     mode: "rtc" | "live";
     appkey: string;
+    token?: string;
     JoinChannelRequestParam4WebRTC2?: JoinChannelRequestParam4WebRTC2
   }
   public adapterRef:AdapterRef;
@@ -42,6 +43,7 @@ class Base extends EventEmitter {
       requestId: {},
       //@ts-ignore
       instance: this,
+      report: true
     };
     this._reset();
     this.adapterRef.logger = new Logger({
@@ -52,6 +54,11 @@ class Base extends EventEmitter {
     window.debugG2 = options.debug ? true : false
     this.adapterRef.testConf = {}; //内部测试配置
     this.sdkRef = options.ref;
+    if (options.report === undefined) {
+      this.adapterRef.report = true
+    } else {
+      this.adapterRef.report = options.report
+    }
   }
 
   _reset() {
@@ -65,7 +72,7 @@ class Base extends EventEmitter {
       apiEvents: {},
       requestId: {},
       //@ts-ignore
-      instance: this,
+      instance: this
     };
     
     this._resetState(); // 内部状态对象
@@ -395,6 +402,7 @@ class Base extends EventEmitter {
   
   //G2 事件上报
   apiEventReport(func: string, value: any){
+    if(!this.adapterRef.report) return
     if (!func) return
     let datareport = new DataReport({
       adapterRef: this.adapterRef,

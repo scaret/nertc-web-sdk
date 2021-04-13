@@ -1,7 +1,7 @@
 import { EventEmitter } from "eventemitter3";
-import { AddTaskOptions, ClientOptions, JoinOptions, MediaType, RTMPTask } from "./Types";
-import { Stream } from "./Stream";
-import {ConnectionState} from "./Types";
+import { AddTaskOptions, ClientOptions, JoinOptions, MediaType, RTMPTask } from "./types";
+import { Stream } from "./stream";
+import {ConnectionState} from "./types";
 
 /**
  *  请使用 [[WebRTC2.createClient]] 创建 Client对象，client对象指通话中的本地或远程用户，提供云信sdk的核心功能。

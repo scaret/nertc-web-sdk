@@ -8,7 +8,7 @@ import {
   SubscribeOptions,
   VideoProfileOptions,
   RecordStartOptions, RecordStatus
-} from "./Types";
+} from "./types";
 /**
  * 请使用 [[WebRTC2.createStream]] 通过WEBRTC2.createStream创建
  */

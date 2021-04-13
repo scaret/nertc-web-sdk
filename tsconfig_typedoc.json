@@ -20,12 +20,12 @@
   "include": [ "docs"],
   "typedocOptions": {
     "entryPoints": [
-      "docs/src/WebRTC2.d.ts",
-      "docs/src/Client.d.ts",
-      "docs/src/Stream.d.ts",
-      "docs/src/Types.d.ts",
-      "docs/src/Constant.d.ts",
-      "docs/src/Browser.d.ts"
+      "docs/src/webrtc2.d.ts",
+      "docs/src/client.d.ts",
+      "docs/src/stream.d.ts",
+      "docs/src/types.d.ts",
+      "docs/src/constant.d.ts",
+      "docs/src/browser.d.ts"
     ],
     "disableSources": true,
     "hideGenerator": true,
