@@ -8,7 +8,7 @@ import {DataReport} from '../module/report/dataReport'
 import {Logger} from "../util/webrtcLogger";
 import {
   AdapterRef,
-  APIFrequencyControlOptions,
+  APIFrequencyControlOptions, NeRtcServerAddresses,
   ClientOptions, JoinChannelRequestParam4WebRTC2,
   LiveConfig, MediaTypeShort, RecordConfig
 } from "../types";
@@ -22,6 +22,7 @@ class Base extends EventEmitter {
     mode: "rtc" | "live";
     appkey: string;
     JoinChannelRequestParam4WebRTC2?: JoinChannelRequestParam4WebRTC2
+    neRtcServerAddresses?: NeRtcServerAddresses
   }
   public adapterRef:AdapterRef;
   private sdkRef: any;
@@ -126,6 +127,7 @@ class Base extends EventEmitter {
   }
 
   _resetState() {
+    this._params.neRtcServerAddresses = {}
     this.adapterRef.channelStatus = 'init'
     this.adapterRef.connectState = {
       prevState: 'DISCONNECTED',

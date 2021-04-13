@@ -154,9 +154,21 @@ class Mediasoup extends EventEmitter {
     }
     let iceServers = [];
     let iceTransportPolicy:RTCIceTransportPolicy = 'all';
+
+    if (this.adapterRef.channelInfo.relaytoken && this.adapterRef.channelInfo.relayaddrs) {
+      this.adapterRef.channelInfo.relayaddrs.forEach( (item: string) => {
+        iceServers.push({
+          urls: 'turn:' + item, // + '?transport=udp',
+          credential: this.adapterRef.channelInfo.uid + '/' + this.adapterRef.channelInfo.cid,
+          username: this.adapterRef.channelInfo.relaytoken
+        })
+      })
+      iceTransportPolicy = 'relay'
+    }
     if (this.adapterRef.testConf.turnAddr) {
+      iceServers.length = 0
       iceServers.push({
-        urls: this.adapterRef.testConf.turnAddr,//'turn:' + item + '?transport=udp',
+        urls: this.adapterRef.testConf.turnAddr, //'turn:' + item + '?transport=udp',
         credential: this.adapterRef.channelInfo.uid + '/' + this.adapterRef.channelInfo.cid,
         username: this.adapterRef.testConf.relaytoken || '123456'
       })
@@ -172,7 +184,7 @@ class Mediasoup extends EventEmitter {
         iceServers,
         iceTransportPolicy,
         proprietaryConstraints   : {
-          optional: [ { googDscp: true } ]
+          optional: [ { googDscp: true }, { googIPv6: false } ]
         },
         appData: {
           cid: this.adapterRef.channelInfo.cid,
@@ -615,7 +627,6 @@ class Mediasoup extends EventEmitter {
     }
     if (remoteStream['pubStatus'][mediaTypeShort]['consumerId']) {
       this.adapterRef.logger.log('已经订阅过')
-      
       let isPlaying = true
       if (remoteStream.Play) {
         isPlaying = await remoteStream.Play.isPlayVideoStreamError()

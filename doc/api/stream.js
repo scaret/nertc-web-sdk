@@ -1229,7 +1229,7 @@ audioDom.srcObject = audioStream;
    * ************************ 水印相关 *****************************
    */
   /**
-   * 设置画布
+   * 设置画布水印
    * @function setCanvasWatermarkConfigs
    * @memberOf Stream#
    * @param {NERtcCanvasWatermarkConfig} options 水印参数对象
@@ -1681,6 +1681,7 @@ audioDom.srcObject = audioStream;
     this.client.adapterRef.logger.log('设置伴音音频文件的播放位置: %s', playStartTime)
     return this.mediaHelper.setAudioMixingPlayTime(playStartTime)
   }
+
 
   /**
    *  销毁实例

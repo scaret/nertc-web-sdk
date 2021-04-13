@@ -1969,8 +1969,16 @@ class Stream extends EventEmitter {
   }
 
   /**
-   * 水印相关
+   * 设置画布水印
+   * @function setCanvasWatermarkConfigs
+   * @memberOf Stream#
+   * @param {NERtcCanvasWatermarkConfig} options 水印参数对象
+   * @param {NERtcTextWatermarkConfig[]} options.textWatermarks 文字水印，最多支持10个
+   * @param {NERtcTimestampWatermarkConfig} options.timestampWatermarks 时间戳水印
+   * @param {NERtcImageWatermarkConfig[]} options.imageWatermarks 图片水印，最多支持4个
+   * @returns {Promise} ，用于下载等操作
    */
+
   setCanvasWatermarkConfigs (options: NERtcCanvasWatermarkConfig){
     if (this._play && this._play._watermarkControl){
       let watermarkControl = null;
