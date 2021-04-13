@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "lib": [
+      "es6",
+      "dom"
+    ],
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "baseUrl": "docs/",
+    "typeRoots": [
+      "docs/"
+    ],
+    "types": [],
+    "noEmit": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": [ "docs"],
+  "typedocOptions": {
+    "entryPoints": [
+      "docs/src/webrtc2.d.ts",
+      "docs/src/client.d.ts",
+      "docs/src/stream.d.ts",
+      "docs/src/types.d.ts",
+      "docs/src/constant.d.ts",
+      "docs/src/browser.d.ts"
+    ],
+    "disableSources": true,
+    "hideGenerator": true,
+    "out": "dist/api"
+  }
+}

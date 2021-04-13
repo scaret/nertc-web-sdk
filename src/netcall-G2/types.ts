@@ -97,6 +97,7 @@ export interface AdapterRef {
   requestId: {
     [apiName: string]: number;
   }
+  report: boolean | undefined;
 }
 
 export type ConnectionState = 'DISCONNECTED'|'CONNECTING'|'CONNECTED'|'DISCONNECTING';
@@ -785,6 +786,8 @@ export interface SignallingOptions{
 export interface ClientOptions{
   appkey: string;
   debug: boolean | LoggerDebugOptions;
+  report: boolean | undefined;
+  token?: string;
   ref: any;
 }
 
@@ -854,9 +857,11 @@ export interface WatermarkSetting{
  * 画布水印配置
  */
 export interface NERtcCanvasWatermarkConfig {
+  /**
+   * 水印类型，video为主流，screen为辅流
+   */
+  mediaType: 'video'|'screen';
   
-  mediaType?: 'video'|'screen';
-
   /**
    * 文字水印 最对支持10个
    */

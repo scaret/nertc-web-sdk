@@ -205,6 +205,7 @@ function init() {
   rtc.client = WebRTC2.createClient({
     appkey,
     debug: true,
+    //report: false
   })
   initDevices()
   initEvents()

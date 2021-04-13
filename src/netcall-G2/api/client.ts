@@ -44,12 +44,13 @@ class Client extends Base {
   }
   // 初始化nrtc
   _init (options:ClientOptions) {
-    const { appkey = '' } = options
+    const { appkey = '', token } = options
     if (!appkey) {
       this.adapterRef.logger.error('Client: init error: 请传入appkey')
       throw new Error('请传入appkey')
     }
     this._params.appkey = appkey
+    this._params.token = token
     this._roleInfo = {
       userRole: 0, // 0:主播，1：观众
       audienceList: {}, // Workaround，用于处理仍然收到的观众端消息
@@ -105,6 +106,9 @@ class Client extends Base {
     this.adapterRef.connectState.curState = 'CONNECTING'
     this.adapterRef.connectState.prevState = 'DISCONNECTED'
     this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
+    if (options.token){
+      this._params.token = options.token;
+    }
     this._params.JoinChannelRequestParam4WebRTC2 = {
       startJoinTime: Date.now(),
       appkey: this._params.appkey,
@@ -112,7 +116,7 @@ class Client extends Base {
       channelName: options.channelName,
       wssArr: options.wssArr,
       uid: options.uid,
-      token: options.token,
+      token: this._params.token,
       joinChannelLiveConfig: options.joinChannelLiveConfig || {liveEnable: false},
       joinChannelRecordConfig: options.joinChannelRecordConfig || {
         recordAudio: false, // 是否开启音频实时音录制，0不需要，1需要（默认0）
