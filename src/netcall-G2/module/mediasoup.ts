@@ -133,7 +133,7 @@ class Mediasoup extends EventEmitter {
     
     //this.adapterRef = null
     //this.sdkRef = null
-    this._eventQueue.length = 0
+    this.resetConsumeRequestStatus();
     this._tempRecv = {
       audioRtpParameters: null,
       videoRtpParameters: null,
@@ -589,6 +589,16 @@ class Mediasoup extends EventEmitter {
     })
   }
 
+  async resetConsumeRequestStatus(){
+    const queue = this._eventQueue;
+    this._eventQueue = [];
+    for (let i = 0; i < queue.length; i++){
+      const info:ProduceConsumeInfo = queue[i];
+      this.adapterRef.logger.warn(`取消Consume：uid ${info.uid}, uid ${info.uid}, kind ${info.kind}, id ${info.id}`)
+      info.reject('resetConsumeRequestStatus');
+    }
+  }
+
   async _createConsumer(info:ProduceConsumeInfo){
     const {uid, kind, mediaType, id, preferredSpatialLayer = 0} = info;
     const mediaTypeShort = (mediaType === 'screenShare' ? 'screen' : mediaType);
@@ -736,7 +746,7 @@ class Mediasoup extends EventEmitter {
       let isFake = false
       if (code !== 200 || !this.adapterRef.remoteStreamMap[uid]) {
         this.adapterRef.logger.error('订阅 %s 的 %s 媒体失败, errcode: %s, reason: %s ，做容错处理: 重新建立下行连接', uid, kind, code, errMsg)
-        this._eventQueue.length = 0
+        this.resetConsumeRequestStatus();
         if (this._recvTransport) {
           await this.closeTransport(this._recvTransport);
         }
@@ -824,7 +834,7 @@ class Mediasoup extends EventEmitter {
       // }
       this.adapterRef && this.adapterRef.logger.error('"newConsumer" request failed:%o', error);
       this.adapterRef.logger.error('订阅 %s 的 %s 媒体失败，做容错处理: 重新建立下行连接', uid, mediaTypeShort)
-      this._eventQueue.length = 0
+      this.resetConsumeRequestStatus();
       if (this._recvTransport) {
         await this.closeTransport(this._recvTransport);
       }
