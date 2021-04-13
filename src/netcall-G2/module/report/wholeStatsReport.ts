@@ -86,6 +86,7 @@ class WholeStatsReport {
   }
 
   send () {
+    if(!this.adapterRef.report) return
     // 空数据保护
     if (Object.keys(this.infos.data).length === 0) return
     this.infos.uid = this.adapterRef.channelInfo.uid
@@ -106,7 +107,8 @@ class WholeStatsReport {
         this.clear()
       })
       .catch(err => {
-        //console.log('err', err)
+        this.adapterRef.logger.log('wholeStatsReport send error: ', err)
+        this.clear()
       })
   }
   destroy () {

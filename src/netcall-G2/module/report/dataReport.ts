@@ -344,7 +344,8 @@ class DataReport {
         }
       })
       .catch(err => {
-        //console.log("CommonDataReport: send: err", err);
+        this.adapterRef.logger.log("dataReport, send error: ", err);
+        this.reset();
       });
 
     return this;
