@@ -319,18 +319,15 @@ class DataReport {
       return this;
     }
 
-    let url = reportUrl;
-    const nimOptions = (this.configs.adapterRef.nim && this.configs.adapterRef.nim.options) || {};
-    let statisticServer = nimOptions.statisticServer || '';
-    if (statisticServer) {
-      url = statisticServer;
-    } else if (this.configs.wssServer) {
-      url = url.replace("statistic.live.126.net", this.configs.wssServer);
+    this.adapterRef.logger.log('reportUrl: ', reportUrl)
+    if (this.adapterRef.instance._params.neRtcServerAddresses.statisticsServer) {
+      //reportUrl = reportUrl.replace("statistic.live.126.net", this.adapterRef.instance._params.neRtcServerAddresses.statisticsServer);
+      reportUrl = this.adapterRef.instance._params.neRtcServerAddresses.statisticsServer
+      this.adapterRef.logger.log('私有化配置的 reportUrl: ', reportUrl)
     }
-
     ajax({ 
       type: "post", 
-      url, 
+      url: reportUrl, 
       data: data, 
       header: {
         sdktype: this.common.sdk_type,

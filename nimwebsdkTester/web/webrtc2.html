@@ -27,13 +27,14 @@
           </div>
           <div class="line">
             <label>
-              <input type="radio" id="rtc-mode" name="mode" value="rtc" checked> rtc</label>
+              <input type="radio" name="safemode" value="safe" checked> 安全模式</label>
             <label>
-              <input type="radio" id="live-mode" name="mode" value="live"> live</label>
+              <input type="radio" name="safemode" value="unsafe">非安全模式</label>
           </div>
           <div class="line">
             appkey:
             <input type="text" id="appkey">
+            AppSecret:
             <input type="text" id="AppSecret">
             <button type="button" id='setAppkey'>设置appkey</button>
             <button type="button" id='clearLocalStorage'>重置</button>
@@ -44,11 +45,27 @@
             <input type="text" id="getwayAddr" value='webrtcgwcn.netease.im/?ip=59.111.190.69:2060'>
             是否使用：<input type="checkbox" id="isGetwayAddrConf"/>
           </div>
+          <!-- <div class="line">
+            方式一：参数配置URL:
+            <input type="text" id="configUrl" value=''>
+          </div> -->
           <div class="line">
-            Forwarded地址:
-            <input type="text" id="forwardedAddr" value='10.219.25.82'>
-            是否使用：<input type="checkbox" id="isForwardedAddrConf"/>
+            <!-- 启用私有化：<input type="checkbox" checked id="isPrivatization"/> -->
+            私有化配置项<input type="file" id = "privatizationConfigFildId" />
+            <button type="button" id='privatizationConfig'>启用私有化</button>
           </div>
+          <!-- <div class="line">
+            appkey:
+            <input type="text" id="privatizationAppkey" value=''>
+            channelServer:
+            <input type="text" id="channelServer" value=''>
+            statisticsServer:
+            <input type="text" id="statisticsServer" value=''>
+            roomServer:
+            <input type="text" id="roomServer" value=''>
+            demoServer:
+            <input type="text" id="demoServer" value=''>
+          </div> -->
           <div class="line">
             turn地址:
             <input type="text" id="turnAddr" value='turn:223.252.198.177:3478?transport=tcp'>
