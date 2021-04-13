@@ -853,9 +853,11 @@ export interface WatermarkSetting{
  * 画布水印配置
  */
 export interface NERtcCanvasWatermarkConfig {
+  /**
+   * 水印类型，video为主流，screen为辅流
+   */
+  mediaType: 'video'|'screen';
   
-  mediaType?: 'video'|'screen';
-
   /**
    * 文字水印 最对支持10个
    */
