@@ -1893,11 +1893,12 @@ $("#setWatermark").on('click', ()=>{
 $("#showUpdateWatermark").on("click", function(){
   $("#updateWatermarkPanel").show();
   let uid = $("#watermarkUid").val();
+  let mediaType = $("#watermarkMediaType").val();
   let watermarkConf;
   if (uid) {
-    watermarkConf = watermarks.remote[uid];
+    watermarkConf = watermarks.remote[uid][mediaType];
   } else{
-    watermarkConf = watermarks.local;
+    watermarkConf = watermarks.local[mediaType];
   }
   $("#watermarkConfStr").val(JSON.stringify(watermarkConf, null, 2));
 });
@@ -1905,6 +1906,7 @@ $("#showUpdateWatermark").on("click", function(){
 $("#doUpdateWatermark").on("click", function (){
   let stream,watermarkConf;
   let uid = $("#watermarkUid").val();
+  let mediaType = $("#watermarkMediaType").val();
   if (uid) {
     stream = rtc.remoteStreams[uid];
   } else{
@@ -1922,9 +1924,9 @@ $("#doUpdateWatermark").on("click", function (){
   }
 
   if (uid) {
-    watermarks.remote[uid] = wm;
+    watermarks.remote[uid][mediaType] = wm;
   } else{
-    watermarks.local = wm;
+    watermarks.local[mediaType] = wm;
   }
 
   console.log(`水印设置 UID ${stream.streamID}\n${JSON.stringify(wm, null, 2)}`);
