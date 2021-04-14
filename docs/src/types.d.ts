@@ -367,6 +367,10 @@ export interface JoinOptions {
    * 加入房间录制相关参数
    */
   joinChannelRecordConfig?: RecordConfig;
+  /**
+   * 私有化服务器地址对象
+   */
+  neRtcServerAddresses?: NeRtcServerAddresses
 }
 
 /**
@@ -497,3 +501,21 @@ export interface NERtcImageWatermarkConfig {
   loop: boolean;
 }
 
+export interface NeRtcServerAddresses{
+  /**
+   * 获取通道信息服务器
+   */
+  channelServer?: string;
+  /**
+   * 统计上报服务器
+   */
+  statisticsServer?: string;
+  /**
+   * roomServer服务器
+   */
+  roomServer?: string;
+  /**
+   * mediaServer服务器
+   */
+  mediaServer?: string;
+}
