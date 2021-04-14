@@ -65,7 +65,7 @@ httpServer.listen(2000, function () {
   logAddress(httpServer, 'http')
 })
 var httpsServer = https.createServer(options, app)
-httpsServer.listen(3000, function () {
+httpsServer.listen(3002, function () {
   logAddress(httpsServer, 'https')
 })
 

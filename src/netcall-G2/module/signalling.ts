@@ -245,20 +245,16 @@ class Signalling extends EventEmitter {
           mute,
           simulcastEnable
         } = externData.producerInfo;
-        let kind:'audio'|'video';
         let mediaTypeShort: MediaTypeShort;
         switch (mediaType){
           case "video":
             mediaTypeShort = 'video';
-            kind = 'video';
             break;
           case "screenShare":
             mediaTypeShort = 'screen';
-            kind = 'video';
             break;
           case "audio":
             mediaTypeShort = 'audio';
-            kind = 'audio';
             break;
           default:
             throw new Error(`Unrecognized mediaType ${mediaType}`);
@@ -301,27 +297,23 @@ class Signalling extends EventEmitter {
           cid
         } = externData;
         this.adapterRef.logger.log('收到OnProducerClose消息 code = %d, errMsg = %s, uid = %s, mediaType = %s, producerId: %s', code, errMsg, uid, mediaType, producerId);
-        let kind:'audio'|'video';
         let mediaTypeShort:MediaTypeShort;
         switch (mediaType){
           case "video":
             mediaTypeShort = 'video';
-            kind = 'video';
             break;
           case "screenShare":
             mediaTypeShort = 'screen';
-            kind = 'video';
             break;
           case "audio":
             mediaTypeShort = 'audio';
-            kind = 'audio';
             break;
           default:
             throw new Error(`Unrecognized mediaType ${mediaType}`);
         }
         let remoteStream = this.adapterRef.remoteStreamMap[uid]
         if(!remoteStream) return
-        if (remoteStream.pubStatus[kind].producerId !== producerId) {
+        if (remoteStream.pubStatus[mediaTypeShort].producerId !== producerId) {
           this.adapterRef.logger.log('该 producerId 已经无效，不处理')
           return
         }
@@ -677,20 +669,16 @@ class Signalling extends EventEmitter {
         if (peer.producerInfoList) {
           for (const peoducerInfo of peer.producerInfoList) {
             const { mediaType, producerId, mute, simulcastEnable } = peoducerInfo;
-            let kind:'audio'|'video';
             let mediaTypeShort: MediaTypeShort;
             switch (mediaType){
               case "video":
                 mediaTypeShort = "video";
-                kind = "video";
                 break;
               case "screenShare":
                 mediaTypeShort = "screen";
-                kind = 'video';
                 break;
               case "audio":
                 mediaTypeShort = "audio";
-                kind = 'audio';
                 break;
               default:
                 throw new Error(`Unrecognized mediaType ${mediaType}`);

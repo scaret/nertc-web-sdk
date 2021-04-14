@@ -818,10 +818,11 @@ export interface RecordConfig{
 export interface JoinOptions{
   channelName: string;
   uid: number;
+  token: string;
   wssArr?: string[]|null;
-  token?: string;
   joinChannelLiveConfig?: LiveConfig;
   joinChannelRecordConfig?: RecordConfig;
+  neRtcServerAddresses?:NeRtcServerAddresses
 }
 
 export interface JoinChannelRequestParam4WebRTC2{
@@ -1008,6 +1009,13 @@ export interface NERtcImageWatermarkConfig {
   loop: boolean;
 }
   
+export interface NeRtcServerAddresses{
+  channelServer?: string;
+  statisticsServer?: string;
+  roomServer?: string;
+  mediaServer?: string;
+}
+
 export interface ValidIntegerOptions{
   tag: string;
   value: any;

@@ -4,31 +4,12 @@ import {
   VIDEO_QUALITY,
   VIDEO_FRAME_RATE,
   WEBRTC2_VIDEO_QUALITY
-} from "../constant/videoQuality";
+} from "../constant";
 import {Play} from '../module/play'
 import {Record} from '../module/record'
-import {
-  AdapterRef, AudioMixingOptions,
-  AudioProcessingOptions,
-  Client,
-  MediaRecordingOptions,
-  NERtcCanvasWatermarkConfig,
-  MediaTypeShort,
-  PubStatus,
-  RenderMode,
-  ScreenProfileOptions,
-  SnapshotOptions,
-  StreamOptions, StreamPlayOptions,
-  SubscribeConfig,
-  SubscribeOptions,
-  VideoProfileOptions,
-} from "../types";
-import {MediaHelper} from "../module/media";
-import {checkExists, isExistOptions} from "../util/param";
-import {ReportParamSubscribeRemoteSubStreamVideo} from "../interfaces/ApiReportParam";
 
 /**
- *  请使用 {@link WEBRTC2.createStream} 通过WEBRTC2.createStream创建
+ *  请使用 {@link WebRTC2#createStream} 创建本地音视频流。
  *  @class
  *  @name Stream
  */
@@ -42,187 +23,65 @@ import {ReportParamSubscribeRemoteSubStreamVideo} from "../interfaces/ApiReportP
  *  @param {String} [options.microphoneId] 麦克风设备 deviceId，通过 getMicrophones() 获取
  *  @param {Object} [options.video] 是否从摄像头采集视频
  *  @param {String} [options.cameraId] 摄像头设备 deviceId，通过 getCameras() 获取
- *  @param {Object} [options.screen] 是否采集屏幕分享流
+ *  @param {Object} [options.screen] 是否采集屏幕共享流。
  *  @param {Object} [options.audioProcessing] 是否开启/关闭音频处理接口（3A接口)
  ##### 注意：
  音频处理接口取决于浏览器支持情况。目前Safari不支持AGC及ANS设置。
  + `AEC`: 是否开启声学回声消除。默认为 true。
-    + `true`：开启声学回声消除。
-    + `false`：关闭声学回声消除。
+ + `true`：开启声学回声消除。
+ + `false`：关闭声学回声消除。
  + `AGC`: 是否开启自动增益控制。默认为 true。
-    + `true`：开启自动增益控制。
-    + `false`：关闭自动增益控制。
+ + `true`：开启自动增益控制。
+ + `false`：关闭自动增益控制。
  + `ANS`: 是否开启自动噪声抑制。默认为 true。
-    + `true`：开启自动噪声抑制。
-    + `false`：关闭自动噪声抑制。
+ + `true`：开启自动噪声抑制。
+ + `false`：关闭自动噪声抑制。
  *  @param {Object} [options.sourceId] 屏幕共享的数据源Id（electron用户可以自己获取）
  *  @param {MeidaTrack} [options.audioSource] 自定义的音频的track
  *  @param {MeidaTrack} [options.videoSource] 自定义的视频的track
- *  @returns {Stream}  
+ *  @returns {Stream}
  */
 class Stream extends EventEmitter {
-  public streamID:number|null;
-  public audio: boolean;
-  public audioProcessing: AudioProcessingOptions|null;
-  public microphoneId:string;
-  public cameraId: string;
-  public video: boolean;
-  public screen: boolean;
-  private client: Client;
-  private audioSource: MediaStreamTrack|null;
-  private videoSource:MediaStreamTrack|null;
-  public mediaHelper:MediaHelper|null;
-  _play: Play|null;
-  private _record: Record|null;
-  public audioProfile:string;
-  public videoProfile: {
-    frameRate: number;
-    videoBW: number;
-    resolution: number;
-  }|null;
-  public screenProfile:{
-    frameRate: number;
-    videoBW: number;
-    resolution: number;
-  }|null;
-  private inited:boolean;
-  public videoView:HTMLElement|null;
-  public screenView:HTMLElement|null;
-  public renderMode: {
-    local: {
-      video: RenderMode|{},
-      screen: RenderMode|{},
-    },
-    remote:{
-      video: RenderMode|{},
-      screen: RenderMode|{},
-    }
-  };
-  private consumerId: string|null;
-  private producerId: string|null;
-  private inSwitchDevice: boolean;
-  public pubStatus:PubStatus;
-  subConf: SubscribeConfig;
-  public subStatus: { audio: boolean; video: boolean; screen: boolean };
-  public muteStatus: {
-    // localStream只有send
-    // remoteStream的send表示发送端的mute状态，recv表示接收端的mute状态
-    audioSend: boolean;
-    videoSend: boolean;
-    screenSend: boolean;
-    audioRecv: boolean;
-    videoRecv: boolean;
-    screenRecv: boolean;
-  };
-  private isRemote: boolean;
-  
-  constructor (options:StreamOptions) {
-    super()
-    
-    if(typeof options.uid !== 'number' || isNaN(options.uid)){
+  constructor (options) {
+    if(typeof options.uid !== 'number' && isNaN(options.uid)){
       throw new Error('uid 非 number类型')
     }
     if(options.uid > Number.MAX_SAFE_INTEGER){
       throw new Error('uid 超出 number精度')
     }
-
-    // init for ts rule
-    this.isRemote = options.isRemote;
-    this.videoProfile = null;
-    this.screenProfile = null;
-    this.inited = false;
-    this.videoView = null;
-    this.screenView = null;
-    this.renderMode = {
-      local: {video: {}, screen: {}}, 
-      remote: {video: {}, screen: {}}
-    };
-    this.consumerId = null;
-    this.producerId = null;
-    this.inSwitchDevice = false;
-    this.pubStatus = {
-      audio: {
-        audio: false,
-        producerId: '',
-        consumerId: '',
-        consumerStatus: 'init',
-        stopconsumerStatus: 'init',
-        mute: false,
-        simulcastEnable: false,
-      },
-      video: {
-        video: false,
-        producerId: '',
-        consumerId: '',
-        consumerStatus: 'init',
-        stopconsumerStatus: 'init',
-        mute: false,
-        simulcastEnable: false,
-      },
-      screen: {
-        screen: false,
-        producerId: '',
-        consumerId: '',
-        consumerStatus: 'init',
-        stopconsumerStatus: 'init',
-        mute: false,
-        simulcastEnable: false,
-      }
-    }
-    this.subConf = {
-      audio: true,
-      video: true,
-      screen: true,
-      highOrLow: 1,
-      resolution: 0
-    }
-    this.subStatus = {
-      audio: false,
-      video: false,
-      screen: false,
-    }
-    this.muteStatus = {
-      audioSend: false,
-      videoSend: false,
-      screenSend: false,
-      audioRecv: false,
-      videoRecv: false,
-      screenRecv: false,
-    }
-    this.renderMode = {
-      local: {video: {}, screen: {}},
-      remote: {video: {}, screen: {}}
-    }
-    
+    let {isRemote = false} = options
+    super(options)
     this._reset()
     this.streamID = options.uid
     this.audio = options.audio
-    this.audioProcessing = options.audioProcessing||null
+    this.audioProcessing = options.audioProcessing
     this.microphoneId = options.microphoneId || ''
     this.cameraId = options.cameraId || ''
+    this.sourceId = options.sourceId || ''
     this.video = options.video || false
     this.screen = options.screen || false
+    if (this.screen) {
+      this.video = false
+    }
     this.client = options.client
     this.audioSource = options.audioSource || null
     this.videoSource = options.videoSource || null
     this.mediaHelper = this.client.getMediaHlperByUid(this.streamID)
     this._play = new Play({
-      sdkRef: this.client,
+      dkRef: this.client,
       adapterRef: this.client.adapterRef,
       uid: options.uid
     })
     this._record = new Record({
-      sdkRef: this.client,
+      dkRef: this.client,
       adapterRef: this.client.adapterRef,
       uid: options.uid,
       media: this.mediaHelper
     })
     if (this.client._params && this.client._params.mode === 'live') {
       this.audioProfile = 'music_standard'
-    }else{
-      this.audioProfile = 'speech_low_quality'
     }
-    
+
     this.client.adapterRef.logger.log('创建Stream: %s', JSON.stringify({
       streamID: options.uid,
       audio: options.audio,
@@ -263,9 +122,10 @@ class Stream extends EventEmitter {
     this.video = false
     this.cameraId = ''
     this.screen = false
-    this.videoView = null
-    this.screenView = null
-    this.renderMode = {local: {video: {}, screen: {}}, remote: {video: {}, screen: {}}}
+    this.sourceId = ''
+    this.negotype = false
+    this.view = null
+    this.renderMode = null
     this.consumerId = null
     this.producerId = null
     this.inSwitchDevice = false
@@ -275,52 +135,39 @@ class Stream extends EventEmitter {
         producerId: '',
         consumerId: '',
         consumerStatus: 'init',
-        stopconsumerStatus: 'init',
-        mute: false,
-        simulcastEnable: false,
+        stopconsumerStatus: 'init'
       },
       video: {
         video: false,
         producerId: '',
         consumerId: '',
         consumerStatus: 'init',
-        stopconsumerStatus: 'init',
-        mute: false,
-        simulcastEnable: false,
+        stopconsumerStatus: 'init'
       },
       screen: {
         screen: false,
         producerId: '',
         consumerId: '',
         consumerStatus: 'init',
-        stopconsumerStatus: 'init',
-        mute: false,
-        simulcastEnable: false,
+        stopconsumerStatus: 'init'
       }
     }
     this.subConf = {
       audio: true,
       video: true,
-      screen: true,
-      highOrLow: 1,
       resolution: 0
     }
     this.subStatus = {
       audio: false,
-      video: false,
-      screen: false,
+      video: false
     }
     this.muteStatus = {
-      audioSend: false,
-      videoSend: false,
-      screenSend: false,
-      audioRecv: false,
-      videoRecv: false,
-      screenRecv: false,
+      audio: false,
+      video: false
     }
     this.renderMode = {
-      local: {video: {}, screen: {}},
-      remote: {video: {}, screen: {}}
+      local: {},
+      remote: {}
     }
     if (this.mediaHelper) {
       this.mediaHelper.destroy()
@@ -343,10 +190,10 @@ class Stream extends EventEmitter {
   get Record() {
     return this._record
   }
- 
+
   /**
    *  获取音视频流 ID
-   *  @method getId
+   *  @method destroy
    *  @memberOf Stream
    *  @return number
    */
@@ -354,51 +201,37 @@ class Stream extends EventEmitter {
     //this.client.adapterRef.logger.log('获取音视频流 ID: ', this.streamID)
     return this.streamID
   }
-  
+
   /**
    * 设置视频订阅的参数。
    * @method setSubscribeConfig
    * @memberOf Stream#
-   * @param {Object} options 配置参数
-   * @param {Boolean} [options.audio] 是否订阅音频
-   * @param {Boolean} [options.video] 是否订阅视频
-   * @param {Number} [options.highOrLow] : 0是小流，1是大流
-   * @returns {Null}  
-  */
-  setSubscribeConfig (conf:SubscribeOptions) {
+   * @param {Object} options 配置参数。
+   * @param {Boolean} [options.audio] 是否订阅音频流。
+   * @param {Boolean} [options.video] 是否订阅视频流。
+   * @param {Boolean} [options.screen] 是否订阅屏幕共享流（辅流）。默认为 true，即订阅辅流形式的屏幕共享。
+   * @param {Number} [options.highOrLow]  0 表示小流，1 表示大流。
+   * @returns {Null}
+   */
+  setSubscribeConfig (conf = {}) {
     this.client.adapterRef.logger.log('设置订阅规则：%o ', JSON.stringify(conf, null, ' '))
-    if (typeof conf.audio === "boolean"){
-      this.subConf.audio = conf.audio;
+    let {audio = false, video = false, highOrLow = 0} = conf
+    if (highOrLow !== 0) {
+      highOrLow = 1
     }
-    if (typeof conf.video === "boolean"){
-      this.subConf.video = conf.video;
-    }
-    if (typeof conf.screen === "boolean"){
-      this.subConf.screen = conf.screen;
-    }
-    if (typeof conf.highOrLow === "number"){
-      this.subConf.highOrLow = conf.highOrLow;
-    }
-    
-    if (this.pubStatus.audio.audio && this.subConf.audio) {
+    this.subConf = {audio, video, highOrLow}
+    if (this.pubStatus.audio && this.pubStatus.audio.audio && audio) {
       this.subConf.audio = true
       this.audio = true
     } else {
       this.subConf.audio = false
     }
 
-    if (this.pubStatus.video.video && this.subConf.video) {
+    if (this.pubStatus.video && this.pubStatus.video.video && video) {
       this.subConf.video = true
       this.video = true
     } else {
       this.subConf.video = false
-    }
-    
-    if (this.pubStatus.screen.screen && this.subConf.screen) {
-      this.subConf.screen = true
-      this.screen = true
-    } else {
-      this.subConf.screen = false
     }
 
     this.client.adapterRef.logger.log('订阅规则：%o ', JSON.stringify(this.subConf, null, ' '))
@@ -407,27 +240,8 @@ class Stream extends EventEmitter {
       code: 0,
       param: JSON.stringify(conf, null, ' ')
     })
-    if (this.pubStatus.screen.screen){
-      const param:ReportParamSubscribeRemoteSubStreamVideo = {
-        uid: this.streamID,
-        subscribe: this.subConf.screen
-      }
-      this.client.apiFrequencyControl({
-        name: 'subscribeRemoteSubStreamVideo',
-        code: 0,
-        param: JSON.stringify(param, null, ' ')
-      })
-    }
   }
 
-  getAudioStream(){
-    if (this.mediaHelper){
-      return this.mediaHelper.audioStream;
-    }else{
-      return null;
-    }
-  }
-  
   /**
    * 初始化音视频流对象
    * @memberOf Stream#
@@ -440,9 +254,10 @@ class Stream extends EventEmitter {
     this.client.adapterRef.localStream = this
     //设置分辨率和码率
     this.client.adapterRef.channelInfo.sessionConfig.maxVideoQuality = WEBRTC2_VIDEO_QUALITY.VIDEO_QUALITY_1080p
-    if (this.videoProfile){
-      this.client.adapterRef.channelInfo.sessionConfig.videoQuality = this.videoProfile.resolution
-      this.client.adapterRef.channelInfo.sessionConfig.videoFrameRate = this.videoProfile.frameRate
+    this.client.adapterRef.channelInfo.sessionConfig.videoQuality = this.videoProfile.resolution
+    this.client.adapterRef.channelInfo.sessionConfig.videoFrameRate = this.videoProfile.frameRate
+    if(this.screen){
+      this.video = false
     }
     this.client.apiFrequencyControl({
       name: 'init',
@@ -459,18 +274,13 @@ class Stream extends EventEmitter {
         screenProfile: this.screenProfile
       }, null, ' ')
     })
-    
+
     try {
-      if (!this.mediaHelper){
-        throw new Error('No MediaHelper');
-      }
-      if (this.audio){
-        await this.mediaHelper.getStream({
-          audio: this.audio,
-          audioDeviceId: this.microphoneId,
-          audioSource: this.audioSource
-        })
-      }
+      await this.mediaHelper.getStream({
+        audio: this.audio,
+        audioDeviceId: this.microphoneId,
+        audioSource: this.audioSource
+      })
     } catch (e) {
       this.client.adapterRef.logger.log('打开mic失败: ', e)
       this.audio = false
@@ -484,16 +294,13 @@ class Stream extends EventEmitter {
     }
 
     try {
-      if (!this.mediaHelper){
-        throw new Error('No Media Helper');
-      }
-      if (this.video){
-        await this.mediaHelper.getStream({
-          video: this.video,
-          videoSource: this.videoSource,
-          videoDeviceId: this.cameraId,
-        })
-      }
+      await this.mediaHelper.getStream({
+        video: this.video,
+        videoSource: this.videoSource,
+        videoDeviceId: this.cameraId,
+        screen: this.screen,
+        sourceId: this.sourceId
+      })
     } catch (e) {
       this.client.adapterRef.logger.log('打开camera失败: ', e)
       this.video = false
@@ -507,29 +314,27 @@ class Stream extends EventEmitter {
         this.client.emit('deviceError', 'video')
       }
     }
+  }
 
-    try {
-      if (!this.mediaHelper){
-        throw new Error('No Media Helper');
-      }
-      if (this.screen){
-        await this.mediaHelper.getStream({
-          screen: this.screen
-        })
-      }
-    } catch (e) {
-      this.client.adapterRef.logger.log('打开屏幕共享失败: ', e)
-      // this.video = false
-      // if (e.message && e.message.indexOf('Permission denied') > -1) {
-      //   this.client.emit('accessDenied', 'video')
-      // } else if (e.message && e.message.indexOf('not found') > -1) {
-      //   this.client.emit('notFound', 'video')
-      // } else if (e.message && e.message.indexOf('not start video source') > -1) {
-      //   this.client.emit('beOccupied', 'video')
-      // } else {
-      //   this.client.emit('deviceError', 'video')
-      // }
-    }
+  /**
+   * 获取音频流对象。
+   * @function getAudioStream
+   * @memberOf Stream#
+   * @return {MediaStream}
+   * @description 获取音频流 MediaStream 对象，可用于自定义音频渲染。
+   * 您可以自行渲染这个对象，例如将 audio dom 节点的 srcObject 属性设为该对象。
+   * **注意**：使用自定义音频渲染功能时，应该在播放远端流时，关闭默认的音频渲染。
+   @example
+remoteStream.play({
+  audio: false,
+  video: true
+});
+const audioStream = remoteStream.getAudioStream();
+// audioDom为自行创建的DOM节点
+audioDom.srcObject = audioStream;
+   */
+  getAudioStream () {
+    
   }
   
   /**
@@ -539,11 +344,7 @@ class Stream extends EventEmitter {
    * @return {MediaStreamTrack}
    */
   getAudioTrack () {
-    if (this.mediaHelper){
-      return this.mediaHelper.micTrack || this.mediaHelper.audioSource || null;
-    }else{
-      return null;
-    }
+    return this.mediaHelper.micTrack || this.mediaHelper.audioSource;
   }
 
   /**
@@ -553,72 +354,32 @@ class Stream extends EventEmitter {
    * @return {MediaStreamTrack}
    */
   getVideoTrack () {
-    if (this.mediaHelper){
-      return this.mediaHelper.cameraTrack || this.mediaHelper.screenTrack || this.mediaHelper.videoSource;
-    }
+    return this.mediaHelper.cameraTrack || this.mediaHelper.screenTrack || this.mediaHelper.videoSource;
   }
 
   /**
-   * 播放音视频流
+   * 播放音视频流。
    * @function play
    * @memberOf Stream#
-   * @param {div} view div标签，播放画面的dom容器节点
+   * @param {div} view div标签，播放画面的dom容器节点。
+   * @param {object} [options] 播放的音视频选项。
+   * @param {boolean} [options.audio] 是否播放音频流。默认播放本地音频流，不播放远端音频流。
+   * @param {boolean} [options.video] 是否播放视频流。默认播放视频流。
+   * @param {boolean} [options.screen] 是否播放屏幕共享。默认播放。
    * @return {Promise}
    */
-  async play (view:HTMLElement|null|undefined, playOptions:StreamPlayOptions = {}) {
-    if (!isExistOptions({tag: 'Stream.playOptions.audio', value: playOptions.audio}).result){
-      playOptions.audio = this.isRemote;
+  async play (view) {
+    this.client.adapterRef.logger.log('音视频播放: ', this.streamID)
+    this.view = view
+    if(this.streamID != this.client.adapterRef.channelInfo.uid){
+      await this._play.playAudioStream(this.mediaHelper.audioStream)
     }
-    if (playOptions.audio && !this.isRemote && !playOptions.audioType){
-      playOptions.audioType = "mixing";
-    }
-    if (!isExistOptions({tag: 'Stream.playOptions.video', value: playOptions.video}).result){
-      playOptions.video = true;
-    }
-    if (!isExistOptions({tag: 'Stream.playOptions.screen', value: playOptions.screen}).result){
-      playOptions.screen = true;
-    }
-    
-    this.client.adapterRef.logger.log('音视频播放: ', this.streamID, playOptions)
-    if (this.isRemote){
-      if(playOptions.audio && this._play && this.mediaHelper && this.mediaHelper.audioStream){
-        this.client.adapterRef.logger.log('开始播放远端音频: ', this.streamID)
-        this._play.playAudioStream(this.mediaHelper.audioStream)
-      }
-    }else{
-      if(playOptions.audio && this._play && this.mediaHelper && this.mediaHelper.micStream){
-        this.client.adapterRef.logger.log('开始播放本地音频: ',this.streamID, playOptions.audioType);
-        if (playOptions.audioType === "voice"){
-          this._play.playAudioStream(this.mediaHelper.micStream)
-        }else if (playOptions.audioType === "music"){
-          this._play.playAudioStream(this.mediaHelper.musicStream)
-        }else if (playOptions.audioType === "mixing"){
-          this._play.playAudioStream(this.mediaHelper.audioStream)
-        }
-      }
-    }
-
-    if (view){
-      if (playOptions.video){
-        this.videoView = view;
-        if(this._play && this.mediaHelper && this.mediaHelper.videoStream && this.mediaHelper.videoStream.getVideoTracks().length){
-          this.client.adapterRef.logger.log('开始播放视频: ', this.streamID)
-          this._play.playVideoStream(this.mediaHelper.videoStream, view)
-        }  
-      }
-      if (playOptions.screen){
-        this.screenView = view;
-        if(this._play && this.mediaHelper && this.mediaHelper.screenStream && this.mediaHelper.screenStream.getVideoTracks().length){
-          this.client.adapterRef.logger.log('开始播放辅流: ', this.streamID)
-          this._play.playScreenStream(this.mediaHelper.screenStream, view)
-        }
-      }
-    }
+    this.client.adapterRef.logger.log('开始播放视频: ', this.streamID)
+    await this._play.playVideoStream(this.mediaHelper.videoStream, view)
     this.client.apiFrequencyControl({
       name: 'play',
       code: 0,
       param: JSON.stringify({
-        playOptions:playOptions,
         audio: this.audio,
         video: this.video,
         screen: this.screen,
@@ -628,16 +389,20 @@ class Stream extends EventEmitter {
   }
 
   /**
-   * 设置本端视频画面大小
+   * 设置本端视频画面大小。
    * @function setLocalRenderMode
    * @memberOf Stream#
-   * @param {Object} options 配置对象
-   * @param {Number }  options.width 宽度
-   * @param {Number }  options.height 高度
-   * @param {Boolean }  options.cut 是否裁剪
+   * @param {Object} options 配置对象。
+   * @param {Number}  options.width 宽度。
+   * @param {Number}  options.height 高度。
+   * @param {Boolean}  options.cut 是否裁剪。
+   * @param {String} [options.mediaType] 指定设置的对象，即调整的是摄像头画面还是屏幕共享画面。默认为同时设置。
+   * 可设置为：
+   * - video：设置本端摄像头画面。
+   * - screen：设置本端屏幕共享画面。
    * @returns {Void}
    */
-  setLocalRenderMode (options: RenderMode, mediaType?: MediaTypeShort) {
+  setLocalRenderMode (options) {
     if (!options || !(options.width - 0) || !(options.height - 0)) {
       this.client.adapterRef.logger.warn('setLocalRenderMode 参数错误')
       this.client.apiFrequencyControl({
@@ -647,20 +412,9 @@ class Stream extends EventEmitter {
       })
       return 'INVALID_ARGUMENTS'
     }
-    this.client.adapterRef.logger.log('设置本地视频播放窗口大小: ', JSON.stringify(options, null, ' '), mediaType)
-    // mediaType不填则都设
-    if (!mediaType || mediaType === "video"){
-      if (this._play){
-        this._play.setVideoRender(options)
-      }
-      this.renderMode.local.video = options;
-    }
-    if (!mediaType || mediaType === "screen"){
-      this.renderMode.local.screen = options;
-      if (this._play){
-        this._play.setScreenRender(options)
-      }
-    }
+    this.client.adapterRef.logger.log('设置本地视频播放窗口大小: ', JSON.stringify(options, null, ' '))
+    this._play.setRender(options)
+    this.renderMode.local = options || {}
     this.client.apiFrequencyControl({
       name: 'setLocalRenderMode',
       code: 0,
@@ -669,16 +423,20 @@ class Stream extends EventEmitter {
   }
 
   /**
-   * 设置对端视频画面大小
+   * 设置远端视频画面大小。
    * @function setRemoteRenderMode
    * @memberOf Stream#
    * @param {Object} options 配置对象
    * @param {Number }  options.width 宽度
    * @param {Number }  options.height 高度
    * @param {Boolean }  options.cut 是否裁剪
+   * @param {String} [options.mediaType] 指定设置的对象，即调整的是摄像头画面还是屏幕共享画面。默认为同时设置。
+   * 可设置为：
+   * - video：设置远端摄像头画面。
+   * - screen：设置远端屏幕共享画面。
    * @returns {Void}
    */
-  setRemoteRenderMode (options:RenderMode, mediaType?:MediaTypeShort) {
+  setRemoteRenderMode (options) {
     if (!options || !(options.width - 0) || !(options.height - 0)) {
       this.client.adapterRef.logger.warn('setRemoteRenderMode 参数错误')
       this.client.apiFrequencyControl({
@@ -689,21 +447,10 @@ class Stream extends EventEmitter {
     }
     if (!this.client || !this._play) {
       return
-    } 
+    }
     this.client.adapterRef.logger.log('设对端视频播放窗口大小: ', JSON.stringify(options, null, ' '))
-    // mediaType不填则都设
-    if (!mediaType || mediaType === "video"){
-      if (this._play){
-        this._play.setVideoRender(options)
-      }
-      this.renderMode.remote.video = options;
-    }
-    if (!mediaType || mediaType === "screen"){
-      this.renderMode.remote.screen = options;
-      if (this._play){
-        this._play.setScreenRender(options)
-      }
-    }
+    this._play.setRender(options)
+    this.renderMode.remote = options || {}
     this.client.apiFrequencyControl({
       name: 'setRemoteRenderMode',
       code: 0,
@@ -717,23 +464,18 @@ class Stream extends EventEmitter {
    * @memberOf Stream#
    * @return {Void}
    */
-  stop (type?:MediaTypeShort) {
+  stop (type) {
     this.client.adapterRef.logger.log('停止播放 %s 音视频流', this.streamID)
     if(!this._play) return
     if (type === 'audio') {
       this._play.stopPlayAudioStream()
     } else if (type === 'video') {
       this._play.stopPlayVideoStream()
-    } else if (type === 'screen') {
-      this._play.stopPlayScreenStream()
     } else {
-      if(!this.audio){
+      if(!this.audio)
         this._play.stopPlayAudioStream()
-      } if (!this.video){
+      if(!this.video)
         this._play.stopPlayVideoStream()
-      } if (!this.screen){
-        this._play.stopPlayScreenStream()
-      }
     }
     this.client.apiFrequencyControl({
       name: 'stop',
@@ -754,7 +496,7 @@ class Stream extends EventEmitter {
    * @param {string} type 查看的媒体类型： audio/video
    * @returns {Promise}
    */
-  async isPlaying (type:MediaTypeShort) {
+  async isPlaying (type) {
     let isPlaying = false
     if (!this._play) {
 
@@ -762,10 +504,8 @@ class Stream extends EventEmitter {
       isPlaying = await this._play.isPlayAudioStream()
     } else if (type === 'video') {
       isPlaying = await this._play.isPlayVideoStream()
-    }else if (type === 'screen') {
-      isPlaying = await this._play.isPlayScreenStream()
     } else {
-      this.client.adapterRef.logger.warn('isPlaying: unknown type')
+      this.client.adapterRef.logger.warn('unknown type')
       return Promise.reject('unknownType')
     }
     this.client.adapterRef.logger.log(`检查${this.streamID}的${type}播放状态: ${isPlaying}`)
@@ -773,17 +513,21 @@ class Stream extends EventEmitter {
   }
 
   /**
-   * 打开音视频输入设备，如麦克风、摄像头、屏幕共享,并且发布出去
+   * 打开音视频输入设备，如麦克风、摄像头、屏幕共享，并且发布设备对应的音视频流。
    * @function open
    * @memberOf Stream#
-   * @param {Object} options 配置对象
-   * @param {String }  options.type 媒体设备: audio/video/screen
-   * @param {String }  options.deviceId 指定要开启的设备ID，通过getDevices接口获取到设备列表
-   * @param {String }  options.sourceId 屏幕共享的数据源Id（electron用户可以自己获取）
+   * @param {Object} options 配置对象。
+   * @param {String}  options.type 媒体设备类型。可设置为：
+   * - audio：音频设备，例如麦克风。
+   * - video：视频设备，例如摄像头。
+   * - screen：屏幕共享，即启动屏幕共享。
+   * @param {String }  options.deviceId 指定要开启的设备 ID。您可以通过 getDevices 查看设备列表、获取设备 ID。
+   * @param {String }  options.sourceId Electron 屏幕共享的数据源 ID，您可以自行获取。
    * @returns {Promise}
    */
-  async open (options:{type: MediaTypeShort,deviceId?: string}) {
-    let {type, deviceId} = options
+  async open (options={}) {
+    let {type, deviceId, sourceId} = options
+
     if (this.client._roleInfo.userRole === 1) {
       const reason = `观众不允许打开设备`;
       this.client.adapterRef.logger.error(reason);
@@ -797,21 +541,19 @@ class Stream extends EventEmitter {
       });
       return Promise.reject(`INVALID_OPERATION`);
     }
-    
+
     try {
       switch(type) {
-        case 'audio': 
+        case 'audio':
           this.client.adapterRef.logger.log('开启mic设备')
           this.audio = true
-          if(this.mediaHelper){
-            await this.mediaHelper.getStream({audio: true, audioDeviceId: deviceId})
-            await this.client.publish(this)
-          }
+          await this.mediaHelper.getStream({audio: true, audioDeviceId: deviceId})
+          await this.client.publish(this)
           break
         case 'video':
         case 'screen':
           this.client.adapterRef.logger.log(`开启${type === 'video' ? 'camera' : 'screen'}设备`)
-          if (this[type]) {
+          if (this.screen || this.video) {
             this.client.adapterRef.logger.log('请先关闭摄像头或者屏幕共享')
             this.client.apiFrequencyControl({
               name: 'open',
@@ -824,14 +566,13 @@ class Stream extends EventEmitter {
             return Promise.reject('CLOSE_VIDEO_OR_SCREEN_FIRST')
           }
           this[type] = true
-          const constraint:any = {
-            videoDeviceId: deviceId
+          const constraint = {
+            videoDeviceId: deviceId,
+            sourceId
           }
           constraint[type] = true
-          if (this.mediaHelper){
-            await this.mediaHelper.getStream(constraint)
-            await this.client.publish(this)
-          }
+          await this.mediaHelper.getStream(constraint)
+          await this.client.publish(this)
           break
         default:
           this.client.adapterRef.logger.error('非法参数')
@@ -844,10 +585,7 @@ class Stream extends EventEmitter {
         }, null, ' ')
       })
     } catch (e) {
-      if (["audio", "video", "screen"].indexOf(type) > -1){
-        //@ts-ignore
-        this[type] = false
-      }
+      this[type] = false
       this.client.adapterRef.logger.log(`${type} 开启失败: `, e.message)
       this.client.apiFrequencyControl({
         name: 'open',
@@ -871,15 +609,18 @@ class Stream extends EventEmitter {
    * 关闭音视频输入设备，如麦克风、摄像头、屏幕共享，并且停止发布
    * @function close
    * @memberOf Stream#
-   * @param {Object} options 配置对象
-   * @param {String }  options.type 媒体设备: audio/video/screen
+   * @param {Object} options 配置对象。
+   * @param {String }  options.type 媒体设备类型。可设置为：
+   * - audio：音频设备，例如麦克风。
+   * - video：视频设备，例如摄像头。
+   * - screen：屏幕共享，即关闭屏幕共享。
    * @returns {Promise}
    */
-  async close (options: { type:MediaTypeShort}) {
+  async close (options={}) {
     let {type} = options
     let reason = null
     switch(type) {
-      case 'audio': 
+      case 'audio':
         this.client.adapterRef.logger.log('关闭mic设备')
         if (!this.audio) {
           this.client.adapterRef.logger.log('没有开启过麦克风')
@@ -887,16 +628,8 @@ class Stream extends EventEmitter {
           break
         }
         this.audio = false
-        if (this.mediaHelper){
-          this.mediaHelper.stopStream('audio')
-        }else{
-          throw new Error('No Media Helper')
-        }
-        if (this.client.adapterRef && this.client.adapterRef._mediasoup){
-          await this.client.adapterRef._mediasoup.destroyProduce('audio');
-        }else{
-          throw new Error('No Media Soup');
-        }
+        this.mediaHelper.stopStream('audio')
+        await this.client.adapterRef._mediasoup.destroyProduce('audio');
         break
       case 'video':
         this.client.adapterRef.logger.log('关闭camera设备')
@@ -906,18 +639,8 @@ class Stream extends EventEmitter {
           break
         }
         this.video = false
-        if (this.mediaHelper){
-          this.mediaHelper.stopStream('video')
-        }else{
-          throw new Error("No mediaHelper");
-        }
-        if (!this._play){
-          throw new Error('No this._play');
-        }
+        this.mediaHelper.stopStream('video')
         this._play.stopPlayVideoStream()
-        if (!this.client.adapterRef._mediasoup){
-          throw new Error('No _mediasoup');
-        }
         await this.client.adapterRef._mediasoup.destroyProduce('video');
         break
       case 'screen':
@@ -928,47 +651,38 @@ class Stream extends EventEmitter {
           break
         }
         this.screen = false
-        if (!this.mediaHelper){
-          throw new Error('No mediaHelper');
-        }
-        this.mediaHelper.stopStream('screen')
-        if (!this._play){
-          throw new Error('No this._play');
-        }
-        this._play.stopPlayScreenStream()
-        if (!this.client.adapterRef._mediasoup){
-          throw new Error('No _mediasoup');
-        }
-        await this.client.adapterRef._mediasoup.destroyProduce('screen');
+        this.mediaHelper.stopStream('video')
+        this._play.stopPlayVideoStream()
+        await this.client.adapterRef._mediasoup.destroyProduce('video');
         break
       default:
         this.client.adapterRef.logger.log('不能识别type')
         reason = 'INVALID_ARGUMENTS'
-      if (reason) {
-        this.client.apiFrequencyControl({
-          name: 'close',
-          code: -1,
-          param: JSON.stringify({
-            reason,
-            audio: this.audio,
-            video: this.video,
-            screen: this.screen,
-          }, null, ' ')
-        })
-        return Promise.reject(reason)
-      } else {
-        this.client.apiFrequencyControl({
-          name: 'close',
-          code: 0,
-          param: JSON.stringify({
-            reason,
-            audio: this.audio,
-            video: this.video,
-            screen: this.screen,
-          }, null, ' ')
-        })
-        return
-      }
+        if (reason) {
+          this.client.apiFrequencyControl({
+            name: 'close',
+            code: -1,
+            param: JSON.stringify({
+              reason,
+              audio: this.audio,
+              video: this.video,
+              screen: this.screen,
+            }, null, ' ')
+          })
+          return Promise.reject(reason)
+        } else {
+          this.client.apiFrequencyControl({
+            name: 'close',
+            code: 0,
+            param: JSON.stringify({
+              reason,
+              audio: this.audio,
+              video: this.video,
+              screen: this.screen,
+            }, null, ' ')
+          })
+          return
+        }
     }
   }
 
@@ -982,25 +696,11 @@ class Stream extends EventEmitter {
     this.client.adapterRef.logger.log('启用音频轨道: ', this.streamID)
     try {
       if (this.streamID == this.client.adapterRef.channelInfo.uid) {
-        if (!this.client.adapterRef._mediasoup){
-          throw new Error('No _mediasoup');
-        }
-          // localstream unmute
-        await this.client.adapterRef._mediasoup.unmuteAudio()
-        this.muteStatus.audioSend = false;
+        this.client.adapterRef._mediasoup.unmuteAudio()
       } else {
-        if (!this._play){
-          throw new Error('No _play');
-        }
-        if (!this.mediaHelper || !this.mediaHelper.audioStream){
-          throw new Error('No audioStream');
-        }
-        this.muteStatus.audioRecv = false;
-        if (this.mediaHelper && this.mediaHelper.micTrack){
-          this.mediaHelper.micTrack.enabled = true;
-        }
         this._play.playAudioStream(this.mediaHelper.audioStream)
       }
+      this.muteStatus.audio = false
       this.client.apiFrequencyControl({
         name: 'unmuteAudio',
         code: 0,
@@ -1009,7 +709,6 @@ class Stream extends EventEmitter {
         }, null, ' ')
       })
     } catch (e) {
-      this.client.adapterRef.logger.error('API调用失败：Stream:unmuteAudio' ,e, ...arguments);
       this.client.apiFrequencyControl({
         name: 'unmuteAudio',
         code: -1,
@@ -1032,22 +731,11 @@ class Stream extends EventEmitter {
 
     try {
       if (this.streamID == this.client.adapterRef.channelInfo.uid) {
-        if (!this.client.adapterRef._mediasoup){
-          throw new Error('No _mediasoup');
-        }
         await this.client.adapterRef._mediasoup.muteAudio()
-        // localStream mute
-        this.muteStatus.audioSend = true
       } else {
-        if (!this._play){
-          throw new Error('No _play');
-        }
-        this.muteStatus.audioRecv = true
-        if (this.mediaHelper && this.mediaHelper.micTrack){
-          this.mediaHelper.micTrack.enabled = false;
-        }
-        this._play.stopPlayAudioStream()
+        await this._play.stopPlayAudioStream()
       }
+      this.muteStatus.audio = true
       this.client.apiFrequencyControl({
         name: 'muteAudio',
         code: 0,
@@ -1056,7 +744,6 @@ class Stream extends EventEmitter {
         }, null, ' ')
       })
     } catch (e) {
-      this.client.adapterRef.logger.error('API调用失败：Stream:muteAudio' ,e, ...arguments);
       this.client.apiFrequencyControl({
         name: 'muteAudio',
         code: -1,
@@ -1085,9 +772,6 @@ class Stream extends EventEmitter {
    * @return {volume}
    */
   getAudioLevel () {
-    if (!this.mediaHelper){
-      throw new Error('No MediaHelper');
-    }
     return this.mediaHelper.getGain()
   }
 
@@ -1095,10 +779,10 @@ class Stream extends EventEmitter {
    * 设置音频属性
    * @function setAudioProfile
    * @memberOf Stream#
-   * @param {String} profile 要设置的音频的属性：speech_low_quality（表示16 kHz 采样率，单声道，编码码率约 24 Kbps）、speech_standard'（表示32 kHz 采样率，单声道，编码码率约 24 Kbps）、music_standard（表示48 kHz 采样率，单声道，编码码率约 40 Kbps）、standard_stereo（表达48 kHz 采样率，双声道，编码码率约 64 Kbps）、high_quality（表示48 kHz 采样率，单声道， 编码码率约 128 Kbps）、high_quality_stereo（表示48 kHz 采样率，双声道，编码码率约 192 Kbps）                                                                                            
+   * @param {String} profile 要设置的音频的属性：speech_low_quality（表示16 kHz 采样率，单声道，编码码率约 24 Kbps）、speech_standard'（表示32 kHz 采样率，单声道，编码码率约 24 Kbps）、music_standard（表示48 kHz 采样率，单声道，编码码率约 40 Kbps）、standard_stereo（表达48 kHz 采样率，双声道，编码码率约 64 Kbps）、high_quality（表示48 kHz 采样率，单声道， 编码码率约 128 Kbps）、high_quality_stereo（表示48 kHz 采样率，双声道，编码码率约 192 Kbps）
    * @return {Void}
    */
-  setAudioProfile (profile:string) {
+  setAudioProfile (profile) {
     this.client.adapterRef.logger.log('设置音频属性: ', profile)
     this.audioProfile = profile
     this.client.apiFrequencyControl({
@@ -1130,9 +814,6 @@ class Stream extends EventEmitter {
     this.client.adapterRef.logger.log(`调节${this.streamID}的音量大小: ${volume}`)
 
     if (this.audio) {
-      if (!this._play){
-        throw new Error('No _play');
-      }
       this._play.setPlayVolume(volume)
     } else {
       this.client.adapterRef.logger.log(`没有音频流，请检查是否有发布过音频`)
@@ -1165,7 +846,7 @@ class Stream extends EventEmitter {
    * @param {Number} volume 要设置的麦克风采集音量。，范围为 0（静音）到 100（声音最大）
    * @return {Void}
    */
-  setCaptureVolume (volume:number) {
+  setCaptureVolume (volume) {
     let reason = null
     if (!Number.isInteger(volume)) {
       this.client.adapterRef.logger.log('volume 为 0 - 100 的整数')
@@ -1174,13 +855,10 @@ class Stream extends EventEmitter {
       volume = 0
     } else if (volume > 100) {
       volume = 100
-    } 
+    }
     this.client.adapterRef.logger.log(`调节${this.streamID}的音量大小: ${volume}`)
 
     if (this.audio) {
-      if (!this.mediaHelper){
-        throw new Error('No MediaHelper');
-      }
       this.mediaHelper.setGain(volume / 100)
     } else {
       this.client.adapterRef.logger.log(`没有音频流，请检查是否有发布过音频`)
@@ -1215,7 +893,7 @@ class Stream extends EventEmitter {
    * @param deviceId 设备的 ID,可以通过 getDevices 方法获取。获取的 ID 为 ASCII 字符，字符串长度大于 0 小于 256 字节。
    * @return {Promise}
    */
-  async setAudioOutput (deviceId:string, callback: (err:any)=>void) {
+  async setAudioOutput (deviceId, callback) {
     if (this._play) {
       try {
         await this._play.setAudioOutput(deviceId);
@@ -1242,7 +920,7 @@ class Stream extends EventEmitter {
    * @param {String} deviceId 设备的 ID,可以通过 getDevices 方法获取。获取的 ID 为 ASCII 字符，字符串长度大于 0 小于 256 字节。
    * @return {Promise}
    */
-  async switchDevice (type:string, deviceId:string) {
+  async switchDevice (type, deviceId) {
     this.client.adapterRef.logger.log(`切换媒体输入设备: ${type}, deviceId: ${deviceId}`)
     let constraint = {}
     if (this.inSwitchDevice) {
@@ -1265,20 +943,12 @@ class Stream extends EventEmitter {
         this.inSwitchDevice = false
         return Promise.reject('INVALID_OPERATION')
       }
-      //constraint = {...this.mediaHelper.audioConstraint, ...{audio: {deviceId: {exact: deviceId}}}}
-      if (!this.mediaHelper){
-        throw new Error('No MediaHelper');
-      }
-      if(this.mediaHelper.audioConstraint && this.mediaHelper.audioConstraint.audio){
-        this.mediaHelper.audioConstraint.audio.deviceId = {exact: deviceId}
-      } else if(this.mediaHelper.audioConstraint){
-        this.mediaHelper.audioConstraint.audio = {}
-        this.mediaHelper.audioConstraint.audio.deviceId = {exact: deviceId}
-      } else {
-        this.mediaHelper.audioConstraint = { audio: {deviceId: {exact: deviceId}}}
-      }
-      constraint = this.mediaHelper.audioConstraint
       this.microphoneId = deviceId
+      //constraint = {...this.mediaHelper.audioConstraint, ...{audio: {deviceId: {exact: deviceId}}}}
+      if(this.mediaHelper.audioConstraint && this.mediaHelper.audioConstraint.audio.deviceId){
+        this.mediaHelper.audioConstraint.audio.deviceId.exact = deviceId
+        constraint = this.mediaHelper.audioConstraint
+      }
     } else if (type === 'video') {
       if (deviceId === this.cameraId) {
         this.client.adapterRef.logger.log(`切换相同的摄像头设备，不处理`)
@@ -1297,15 +967,12 @@ class Stream extends EventEmitter {
         this.inSwitchDevice = false
         return Promise.reject('INVALID_OPERATION')
       }
+      this.cameraId = deviceId
       //constraint = {...this.mediaHelper.videoConstraint, ...{video: {deviceId: {exact: deviceId}}}}
-      if (!this.mediaHelper){
-        throw new Error('No MediaHelper');
-      }
-      if(this.mediaHelper.videoConstraint && this.mediaHelper.videoConstraint.video){
-        this.mediaHelper.videoConstraint.video.deviceId = {exact: deviceId}
+      if(this.mediaHelper.videoConstraint && this.mediaHelper.videoConstraint.video.deviceId){
+        this.mediaHelper.videoConstraint.video.deviceId.exact = deviceId
         constraint = this.mediaHelper.videoConstraint
       }
-      this.cameraId = deviceId
     } else {
       this.client.adapterRef.logger.log(`unknown type`)
       this.inSwitchDevice = false
@@ -1315,47 +982,31 @@ class Stream extends EventEmitter {
       await this.mediaHelper.getSecondStream(constraint)
       this.inSwitchDevice = false
     } catch (e) {
-      this.client.adapterRef.logger.error('API调用失败：Stream:switchDevice' ,e, ...arguments);
       this.inSwitchDevice = false
       return Promise.reject(e)
     }
-    
+
   }
 
   /**
-   * 启用视频轨道
+   * 启用视频轨道。
    * @function unmuteVideo
    * @memberOf Stream#
    * @return {Promise}
+   * @description 启用视频轨道。
+   * 注意：自 V4.1.0 版本起，muteVideo 和 unmuteVideo 接口不再对屏幕共享有效，应使用 muteScreen 和 unmuteScreen 暂停或重新启动屏幕共享。
    */
-  
+
   async unmuteVideo () {
     this.client.adapterRef.logger.log(`启用 ${this.streamID} 的视频轨道`)
     try {
       if (this.streamID == this.client.adapterRef.channelInfo.uid) {
-        if (!this.client.adapterRef._mediasoup){
-          throw new Error('No _mediasoup');
-        }
         this.client.adapterRef._mediasoup.unmuteVideo()
-        // local unmute
-        this.muteStatus.videoSend = false
       } else {
-        if (!this._play){
-          throw new Error('No _play');
-        }
-        if (!this.mediaHelper || !this.mediaHelper.videoStream || !this.videoView){
-          throw new Error('No mediaHelper or videoStream or this.view');
-        }
-
-        this.muteStatus.videoRecv = false
-        if (this.mediaHelper && this.mediaHelper.cameraTrack){
-          this.mediaHelper.cameraTrack.enabled = true;
-        }
-        this._play.playVideoStream(this.mediaHelper.videoStream, this.videoView)
-        if ("width" in this.renderMode.remote.video){
-          this._play.setVideoRender(this.renderMode.remote.video)
-        }
+        this._play.playVideoStream(this.mediaHelper.videoStream, this.view)
+        this._play.setRender(this.renderMode.remote)
       }
+      this.muteStatus.video = false
       this.client.apiFrequencyControl({
         name: 'unmuteVideo',
         code: 0,
@@ -1364,7 +1015,6 @@ class Stream extends EventEmitter {
         }, null, ' ')
       })
     } catch (e) {
-      this.client.adapterRef.logger.error('API调用失败：Stream:unmuteVideo' ,e, ...arguments);
       this.client.apiFrequencyControl({
         name: 'unmuteVideo',
         code: -1,
@@ -1377,31 +1027,22 @@ class Stream extends EventEmitter {
   }
 
   /**
-   * 禁用视频轨道
+   * 禁用视频轨道。
    * @function muteVideo
    * @memberOf Stream#
    * @return {Promise}
+   * @description 禁用视频轨道
+   * 注意：自 V4.1.0 版本起，muteVideo 和 unmuteVideo 接口不再对屏幕共享有效，应使用 muteScreen 和 unmuteScreen 暂停或重新启动屏幕共享。
    */
   async muteVideo () {
     this.client.adapterRef.logger.log(`禁用 ${this.streamID} 的视频轨道`)
     try {
       if (this.streamID == this.client.adapterRef.channelInfo.uid) {
-        if (!this.client.adapterRef._mediasoup){
-          throw new Error('No _mediasoup');
-        }
-        // local mute
         await this.client.adapterRef._mediasoup.muteVideo()
-        this.muteStatus.videoSend = true
       } else {
-        if (!this._play){
-          throw new Error('No _play');
-        }
-        this.muteStatus.videoRecv = true
-        if (this.mediaHelper && this.mediaHelper.cameraTrack){
-          this.mediaHelper.cameraTrack.enabled = false;
-        }
-        this._play.stopPlayVideoStream()
+        await this._play.stopPlayVideoStream()
       }
+      this.muteStatus.video = true
       this.client.apiFrequencyControl({
         name: 'muteVideo',
         code: 0,
@@ -1410,7 +1051,6 @@ class Stream extends EventEmitter {
         }, null, ' ')
       })
     } catch (e) {
-      this.client.adapterRef.logger.error('API调用失败：Stream:muteVideo' ,e, ...arguments);
       this.client.apiFrequencyControl({
         name: 'muteVideo',
         code: -1,
@@ -1422,108 +1062,34 @@ class Stream extends EventEmitter {
     }
   }
 
+
   /**
-   * 启用视频轨道
+   * 重新启用辅流轨道。
+   * 调用此方法之后，屏幕共享会被重新启动。
    * @function unmuteScreen
    * @memberOf Stream#
    * @return {Promise}
    */
-  
+
   async unmuteScreen () {
-    this.client.adapterRef.logger.log(`启用 ${this.streamID} 的视频轨道`)
-    try {
-      if (this.streamID == this.client.adapterRef.channelInfo.uid) {
-        if (!this.client.adapterRef._mediasoup){
-          throw new Error('No _mediasoup');
-        }
-        this.client.adapterRef._mediasoup.unmuteScreen()
-        // local unmute
-        this.muteStatus.screenSend = false
-      } else {
-        if (!this._play){
-          throw new Error('No _play');
-        }
-        if (!this.mediaHelper || !this.mediaHelper.screenStream || !this.screenView){
-          throw new Error('No mediaHelper or screenStream or this.view');
-        }
-        this.muteStatus.screenRecv = false
-        if (this.mediaHelper && this.mediaHelper.screenTrack){
-          this.mediaHelper.screenTrack.enabled = true;
-        }
-        this._play.playScreenStream(this.mediaHelper.screenStream, this.screenView)
-        if ("width" in this.renderMode.remote.screen){
-          this._play.setScreenRender(this.renderMode.remote.screen)
-        }
-      }
-      this.client.apiFrequencyControl({
-        name: 'unmuteScreen',
-        code: 0,
-        param: JSON.stringify({
-          streamID: this.streamID
-        }, null, ' ')
-      })
-    } catch (e) {
-      this.client.adapterRef.logger.error('API调用失败：Stream:unmuteScreen' ,e, ...arguments);
-      this.client.apiFrequencyControl({
-        name: 'unmuteScreen',
-        code: -1,
-        param: JSON.stringify({
-          streamID: this.streamID,
-          reason: e
-        }, null, ' ')
-      })
-    }
   }
 
   /**
-   * 禁用视频轨道
+   * 禁用辅流轨道。
+   * 调用此方法之后，屏幕共享会被暂停。
    * @function muteScreen
    * @memberOf Stream#
    * @return {Promise}
    */
   async muteScreen () {
-    this.client.adapterRef.logger.log(`禁用 ${this.streamID} 的视频轨道`)
-    try {
-      if (this.streamID == this.client.adapterRef.channelInfo.uid) {
-        if (!this.client.adapterRef._mediasoup){
-          throw new Error('No _mediasoup');
-        }
-        // local mute
-        await this.client.adapterRef._mediasoup.muteScreen()
-        this.muteStatus.screenSend = true
-      } else {
-        if (!this._play){
-          throw new Error('No _play');
-        }
-        if (this.mediaHelper && this.mediaHelper.screenTrack){
-          this.mediaHelper.screenTrack.enabled = false;
-        }
-        this._play.stopPlayScreenStream()
-        this.muteStatus.screenRecv = true
-      }
-      this.client.apiFrequencyControl({
-        name: 'muteScreen',
-        code: 0,
-        param: JSON.stringify({
-          streamID: this.streamID
-        }, null, ' ')
-      })
-    } catch (e) {
-      this.client.adapterRef.logger.error('API调用失败：Stream:muteScreen' ,e, ...arguments);
-      this.client.apiFrequencyControl({
-        name: 'muteScreen',
-        code: -1,
-        param: JSON.stringify({
-          streamID: this.streamID,
-          reason: e
-        }, null, ' ')
-      })
-    }
   }
 
+  
+  
   /**
    * 获取视频 flag
    * @function hasVideo
+   * @memberOf Stream#
    * @return {Boolean}
    */
   hasVideo () {
@@ -1531,20 +1097,18 @@ class Stream extends EventEmitter {
     return this.video && this.mediaHelper && this.mediaHelper.videoStream
   }
 
-   /**
+  /**
    * 设置视频属性。
    * @method setVideoProfile
    * @memberOf Stream#
    * @param {Object} options 配置参数
    * @param {Number} [options.resolution] 设置本端视频分辨率：WebRTC2.VIDEO_QUALITY_180p、WebRTC2.VIDEO_QUALITY_480p、WebRTC2.VIDEO_QUALITY_720p、WebRTC2.VIDEO_QUALITY_1080p
    * @param {Number} [options.frameRate] 设置本端视频帧率：WebRTC2.CHAT_VIDEO_FRAME_RATE_5、WebRTC2.CHAT_VIDEO_FRAME_RATE_10、WebRTC2.CHAT_VIDEO_FRAME_RATE_15、WebRTC2.CHAT_VIDEO_FRAME_RATE_20、WebRTC2.CHAT_VIDEO_FRAME_RATE_25
-   * @returns {Null}  
-  */
-  setVideoProfile (options:VideoProfileOptions) {
+   * @returns {Null}
+   */
+  setVideoProfile (options) {
+    let {resolution, frameRate} = options
     this.client.adapterRef.logger.log('设置视频属性: ', JSON.stringify(options, null, ' '))
-    if (!this.videoProfile){
-      throw new Error('No videoProfile');
-    }
     Object.assign(this.videoProfile, options)
     this.client.adapterRef.channelInfo.sessionConfig.maxVideoQuality = VIDEO_QUALITY.CHAT_VIDEO_QUALITY_1080P
     this.client.adapterRef.channelInfo.sessionConfig.videoQuality = this.videoProfile.resolution
@@ -1576,9 +1140,9 @@ class Stream extends EventEmitter {
    * @param {Object} options 配置参数
    * @param {String} [options.resolution] 设置本端屏幕共享分辨率：WebRTC2.VIDEO_QUALITY_480p、WebRTC2.VIDEO_QUALITY_720p、WebRTC2.VIDEO_QUALITY_1080p
    * @param {String} [options.frameRate] 设置本端视频帧率：WebRTC2.CHAT_VIDEO_FRAME_RATE_5、WebRTC2.CHAT_VIDEO_FRAME_RATE_10、WebRTC2.CHAT_VIDEO_FRAME_RATE_15、WebRTC2.CHAT_VIDEO_FRAME_RATE_20、WebRTC2.CHAT_VIDEO_FRAME_RATE_25
-   * @returns {Void}  
-  */
-  setScreenProfile (profile: ScreenProfileOptions) {
+   * @returns {Void}
+   */
+  setScreenProfile (profile) {
     this.client.adapterRef.logger.log('设置屏幕共享中的屏幕属性: ', profile)
     Object.assign(this.screenProfile, profile)
     this.client.adapterRef.channelInfo.sessionConfig.screenQuality = profile
@@ -1590,50 +1154,31 @@ class Stream extends EventEmitter {
   }
 
 
-  adjustResolution (mediaTypeShort: MediaTypeShort) {
+  adjustResolution () {
 
     if ( 'RTCRtpSender' in window && 'setParameters' in window.RTCRtpSender.prototype) {
+      const maxbitrate = this.getBW()
       const peer = this.client.adapterRef._mediasoup && this.client.adapterRef._mediasoup._sendTransport && this.client.adapterRef._mediasoup._sendTransport.handler._pc
-      if (peer){
-        let sender, maxbitrate;
-        if (mediaTypeShort === "video"){
-          sender = peer.videoSender;
-          maxbitrate = this.getVideoBW();
-        }else if (mediaTypeShort === "screen"){
-          sender = peer.screenSender;
-          maxbitrate = this.getScreenBW();
-        }
-        if (!maxbitrate){
-          return;
-        }
-        if (!sender){
-          throw new Error(`Unknown media type ${mediaTypeShort}`);
-        }
-        const parameters = sender.getParameters();
-        if (!parameters) {
-          console.error("No Parameter");
-          return;
-        }
+      if(maxbitrate && peer){
+        const videoSender = peer && peer.videoSender
+        const parameters = videoSender.getParameters();
         if (!parameters.encodings) {
           parameters.encodings = [{}];
         }
         parameters.encodings[0].maxBitrate = maxbitrate;
         //this.client.adapterRef.logger.warn('设置video 码率: ', parameters)
-        sender.setParameters(parameters)
+        videoSender.setParameters(parameters)
           .then(() => {
             //this.client.adapterRef.logger.log('设置video 码率成功')
           })
-          .catch((e:any) => {
+          .catch(e => {
             this.client.adapterRef.logger.error('设置video 码率失败: ', e)
           });
       }
     }
   }
 
-  getVideoBW(){
-    if (!this.videoProfile){
-      throw new Error('No this.videoProfile');
-    }
+  getBW(){
     if(this.videoProfile.resolution == WEBRTC2_VIDEO_QUALITY.VIDEO_QUALITY_180p) {
       return 300 * 1000
     } else if (this.videoProfile.resolution == WEBRTC2_VIDEO_QUALITY.VIDEO_QUALITY_480p) {
@@ -1644,34 +1189,21 @@ class Stream extends EventEmitter {
       return 1500 * 1000
     } return 0
   }
-  
-  getScreenBW(){
-    if (!this.screenProfile){
-      throw new Error('No this.screenProfile');
-    }
-    if(this.screenProfile.resolution == WEBRTC2_VIDEO_QUALITY.VIDEO_QUALITY_180p) {
-      return 300 * 1000
-    } else if (this.screenProfile.resolution == WEBRTC2_VIDEO_QUALITY.VIDEO_QUALITY_480p) {
-      return 800 * 1000
-    } else if (this.screenProfile.resolution == WEBRTC2_VIDEO_QUALITY.VIDEO_QUALITY_720p) {
-      return 1200 * 1000
-    } else if (this.screenProfile.resolution == WEBRTC2_VIDEO_QUALITY.VIDEO_QUALITY_1080p) {
-      return 1500 * 1000
-    } return 0
-  }
+
   /**
-   * 截取指定用户的视频画面(文件保存在浏览器默认路径)
+   * 截取指定用户的视频画面，文件保存在浏览器默认路径下。
    * @function takeSnapshot
    * @memberOf Stream#
    * @param  {Object} options  配置参数
    * @param  {String} options.name 截取的图片的保存名称(默认是uid-1的格式名称)
-   * @returns {Promise} 
+   * @param  {String} [options.mediaType] 指定截取的视频流类型，即截取的是摄像头画面还是屏幕共享画面。默认为同时截取。
+   * 可设置为：
+   * - video：截取摄像头画面。
+   * - screen：截取屏幕共享画面。
+   * @returns {Promise}
    */
-  async takeSnapshot (options: SnapshotOptions) {
+  async takeSnapshot (options) {
     if (this.video || this.screen) {
-      if (!this._play){
-        throw new Error('No _play');
-      }
       await this._play.takeSnapshot(options)
       this.client.apiFrequencyControl({
         name: 'takeSnapshot',
@@ -1679,42 +1211,57 @@ class Stream extends EventEmitter {
         param: JSON.stringify(options, null, ' ')
       })
     } else {
-      this.client.adapterRef.logger.log(`没有视频流，请检查是否有 ${this.inited ? '发布' : '订阅'} 过视频`)
+      this.client.adapterRef.logger.log(`没有视频流，请检查是否有 ${isLocal ? '发布' : '订阅'} 过视频`)
       this.client.apiFrequencyControl({
         name: 'takeSnapshot',
         code: -1,
         param: JSON.stringify({
           streamID: this.streamID,
-          reason: `没有视频流，请检查是否有 ${this.inited ? '发布' : '订阅'} 过视频`
+          reason: `没有视频流，请检查是否有 ${isLocal ? '发布' : '订阅'} 过视频`
         }, null, ' ')
       })
       return 'INVALID_OPERATION'
     }
   }
 
+
+  /**
+   * ************************ 水印相关 *****************************
+   */
+  /**
+   * 设置画布水印
+   * @function setCanvasWatermarkConfigs
+   * @memberOf Stream#
+   * @param {NERtcCanvasWatermarkConfig} options 水印参数对象
+   * @param {NERtcTextWatermarkConfig[]} options.textWatermarks 文字水印，最多支持10个
+   * @param {NERtcTimestampWatermarkConfig} options.timestampWatermarks 时间戳水印
+   * @param {NERtcImageWatermarkConfig[]} options.imageWatermarks 图片水印，最多支持4个
+   * @returns {Promise} ，用于下载等操作
+   */
+  setCanvasWatermarkConfigs (options) {
+  }
+
   /**
    * ************************ 客户端录制相关 *****************************
    */
   /**
-   * 开启单人视频录制
+   * 开启单人视频录制。
    * @function startMediaRecording
    * @memberOf Stream#
-   * @param {Object} param 参数对象
-   * @param {String} param.type 如果是自己流录制，'audio','video'或'screen'
+   * @param {Object} param 参数对象。
+   * @param {String} param.type 指定录制的音视频流类型。可设置为：
+   * - audio：仅录制音频流。
+   * - video：同时录制音频流和摄像头视频流。
+   * - screen：同时录制音频流和屏幕共享流（辅流）。
    * @param {Boolean} param.reset 如果之前的录制视频未下载，是否重置，默认false
-   * @returns {Promise} 包含recordId值，用于下载等操作
+   * @returns {Promise} 包含 recordId 值，用于下载等操作。
    */
-  async startMediaRecording (options: MediaRecordingOptions) {
+  async startMediaRecording (options) {
+    options.uid = this.streamID
     const streams = []
     if (this.client.adapterRef.channelInfo.uid === this.streamID) { // 录制自己
-      if (!this.mediaHelper){
-        throw new Error('No MediaHelper');
-      }
       switch (options.type) {
         case 'screen':
-          this.mediaHelper.screenStream && streams.push(this.mediaHelper.screenStream)
-          this.mediaHelper.audioStream && streams.push(this.mediaHelper.audioStream)
-          break;
         case 'camera':
         case 'video':
           this.mediaHelper.videoStream && streams.push(this.mediaHelper.videoStream)
@@ -1723,44 +1270,22 @@ class Stream extends EventEmitter {
         case 'audio':
           // 音频则为混音
           const mediaHelpers = this.client.adapterRef.mediaHelpers
-          Object.values(mediaHelpers).forEach((item) => {
+          mediaHelpers.forEach((item) => {
             if (item.audioStream) {
               streams.push(item.audioStream)
             }
           })
       }
     } else { // 录制别人
-      if (!this.mediaHelper){
-        throw new Error('No MediaHelper');
-      }
-      switch (options.type) {
-        case 'screen':
-          this.mediaHelper.screenStream && streams.push(this.mediaHelper.screenStream)
-          this.mediaHelper.audioStream && streams.push(this.mediaHelper.audioStream)
-          break;
-        case 'camera':
-        case 'video':
-          this.mediaHelper.videoStream && streams.push(this.mediaHelper.videoStream)
-          this.mediaHelper.audioStream && streams.push(this.mediaHelper.audioStream)
-          break
-        case 'audio':
-          this.mediaHelper.audioStream && streams.push(this.mediaHelper.audioStream)
-          break;
-      }
+      this.mediaHelper.videoStream && streams.push(this.mediaHelper.videoStream)
+      this.mediaHelper.audioStream && streams.push(this.mediaHelper.audioStream)
     }
     if (streams.length === 0) {
       this.client.adapterRef.logger.log('没有没发现要录制的媒体流')
-      return 
+      return
     }
-    if (!this._record || !this.streamID || !streams){
-      throw new Error('startMediaRecording: 参数错误');
-    }
-    return this._record && this._record.start({
-      uid: this.streamID,
-      type: options.type,
-      reset: options.reset,
-      stream: streams
-    })
+    options.stream = streams
+    return this._record.start(options)
   }
   /**
    * 结束视频录制
@@ -1770,12 +1295,8 @@ class Stream extends EventEmitter {
    * @param {String} options.recordId 录制id，可以通过listMediaRecording接口获取
    * @returns {Promise}
    */
-  stopMediaRecording (options: {recordId?: string}) {
-    if (!this._record){
-      throw new Error('No this._record');
-    }
-    //FIXME
-    return this._record.stop({})
+  stopMediaRecording (options) {
+    return this._record.stop(options)
   }
 
   /**
@@ -1787,10 +1308,7 @@ class Stream extends EventEmitter {
    * @param {Element} options.view 音频或者视频画面待渲染的DOM节点，如div、span等非流媒体节点
    * @returns {Promise}
    */
-  playMediaRecording (options:{recordId: string; view: HTMLElement}) {
-    if (!this._record){
-      throw new Error('No this._record');
-    }
+  playMediaRecording (options) {
     return this._record.play(options.view)
   }
   /**
@@ -1801,9 +1319,6 @@ class Stream extends EventEmitter {
    */
   listMediaRecording () {
     let list = []
-    if (!this._record){
-      throw new Error('No this._record');
-    }
     const recordStatus = this._record.getRecordStatus();
     if (recordStatus.status !== "init") {
       list.push(recordStatus);
@@ -1818,11 +1333,8 @@ class Stream extends EventEmitter {
    * @param {String} options.recordId 录制id，可以通过listMediaRecording接口获取
    * @returns {Promise}
    */
-  cleanMediaRecording (options: {recordId: string}) {
-    if (!this._record){
-      throw new Error('No this._record');
-    }
-    return this._record.clean()
+  cleanMediaRecording (options) {
+    return this._record.clean(options)
   }
   /**
    * 下载录制的音视频
@@ -1831,21 +1343,17 @@ class Stream extends EventEmitter {
    * @param {Object} param 参数对象
    * @param {Object} options 参数对象
    * @param {String} options.recordId 录制id，可以通过listMediaRecording接口获取
- * @returns {Promise}
+   * @returns {Promise}
    */
-  downloadMediaRecording (options: {recordId: string}) {
-    if (!this._record){
-      throw new Error('No this._record');
-    }
-    return this._record.download()
+  downloadMediaRecording (options) {
+    return this._record.download(options)
   }
-  
+
   /**
    * ************************ 云端伴音相关 *****************************
    */
 
   /**
-   * 云端音乐文件和本地麦克风声音混合；需要在启动麦克风之后使用
    * @function startAudioMixing
    * @memberOf Stream#
    * @param {Object} options 参数对象
@@ -1854,16 +1362,89 @@ class Stream extends EventEmitter {
    * @param {String} options.replace 可选，是否替换麦克风采集的音频数据，缺省为false
    * @param {Number} options.cycle 可选，循环的次数，需要loopback参数置为true（如果想无限循环，cycle设置为0，loopback设置为true），缺省为0，如果loopback为true，表示无限循环，如果loopback为false，该参数不生效
    * @param {Number} options.playStartTime 可选，设置音频文件开始播放的位置，单位为 s。缺省设为 0，即从头开始播放
-   * @param {Function} options.volume 可选，设置伴音文件的音量 
+   * @param {Function} options.volume 可选，设置伴音文件的音量
    * @param {Function} options.auidoMixingEnd 可选，伴音文件播放完成的通知反馈（正常停止伴音或关掉通话获取其他原因停止伴音不会触发）
    * @returns {Promise}
-   */
-  startAudioMixing (options:AudioMixingOptions) {
+   * @description 云端音乐文件和本地麦克风声音混合；需要在启动麦克风之后使用
+
+   ##### 注意事项
+   Web 端 NERTC SDK 在 H5 平台不支持以下伴音相关 API：
+
+   + {@link Stream#startAudioMixing}
+   + {@link Stream#stopAudioMixing}
+   + {@link Stream#pauseAudioMixing}
+   + {@link Stream#resumeAudioMixing}
+   + {@link Stream#adjustAudioMixingVolume}
+   + {@link Stream#getAudioMixingDuration}
+
+   如果您调用了这些 API，SDK 会报错 `BROWSER_NOT_SUPPORT`。
+
+   ##### 实现方法
+   参考如下步骤，在你的项目中实现播放云端混音文件：
+
+   1. 在加入频道成功后调用 `startAudioMixing` 开始混音。
+   2. 根据 `pauseAudioMixing`、`resumeAudioMixing` 等操作 进行 暂停、恢复、控制音量、seek 等功能。
+   3. 在离开频道前调用 `stopAudioMixing` 结束混音。
+
+   ##### 示例代码
+
+```javascript
+   const audioMixingEndHandler = function(event){
+  console.warn('伴音结束: ', event)
+}
+
+   const options = {
+  audioFilePath: '"someaudio.mp3"',
+  loopback: false,
+  replace: false,
+  cycle: 0,
+  playStartTime: 0,
+  volume: 200,
+  auidoMixingEnd: audioMixingEndHandler
+}
+   localStream.startAudioMixing(options).then(res=>{
+  console.log('伴音成功')
+}).catch(err=>{
+  console.error('伴音失败: ', err)
+})
+```
+
+
+   - 参数options对象说明
+
+   | **参数名**|**类型** |**说明** |
+   | :-------- | :--------| :--------|
+   | audioFilePath |String|必须，云端音频文件路径|
+   | loopback |Boolean|可选，是否循环播放，缺省为false，即播放一次就结束（这里如果是false，则cycle参数不生效）|
+   | replace |Boolean|可选，是否替换麦克风采集的音频数据，缺省为false|
+   | cycle |number|可选，表示循环播放的次数，需要loopback参数置为true（如果想无限循环，cycle设置为0，loopback设置为true），缺省为0，如果loopback为true，表示无限循环，如果loopback为false，该参数不生效|
+   | playStartTime |number|可选，设置音频文件开始播放的位置，单位为 s。缺省设为 0，即从头开始播放|
+   | volume |number|可选，设置音频文件的音量，范围（0-255）|
+   | auidoMixingEnd |Function|可选，伴音文件播放完成时的通知反馈|
+
+
+   err（格式是Object）伴音错误码，属性如下：
+
+   | **err属性名**|**类型** |**说明** |
+   | :-------- | :--------| --------|
+   | name |string|错误名称|
+   | code |number|错误码|
+   | desc |string|错误描述|
+
+
+   startAudioMixing接口可能出现的错误码：
+
+   | **name**|**code** |**desc** |
+   | :-------- | :--------| :--------|
+   | 'AudioMixingUnsupport' |63102|'该浏览器不支持伴音功能'|
+   | 'AudioFileDownloadError' |63101|'伴音文件加载失败'|
+   | 'AudioStreamFetchError' |63002|'获取麦克风音频流失败'|
+   | 'AudioDisabled' |63007|'音频功能已被禁用'|
+
+*/
+  startAudioMixing (options) {
     this.client.adapterRef.logger.log('开始伴音')
-    if (!this.mediaHelper){
-      throw new Error('No MediaHelper');
-    }
-    return this.mediaHelper.startAudioMixing(options) 
+    return this.mediaHelper.startAudioMixing(options)
   }
 
   /**
@@ -1871,13 +1452,39 @@ class Stream extends EventEmitter {
    * @function stopAudioMixing
    * @memberOf Stream#
    * @return {Promise}
+   * @description
+   停止播放伴奏
+   停止远端音乐文件的播放，麦克风采集的声音不变。
+
+   ##### 示例
+
+   ```javascript
+   localStream.stopAudioMixing().then(res=>{
+  console.log('停止伴音成功')
+}).catch(err=>{
+  console.error('停止伴音失败: ', err)
+})
+   ```
+   err（格式是Object）伴音错误码，属性如下：
+
+   | **err属性名**|**类型** |**说明** |
+   | :-------- | :--------| :--------|
+   | name |string|错误名称|
+   | code |number|错误码|
+   | desc |string|错误描述|
+
+   stopAudioMixing接口可能出现的错误码
+
+   | **name**|**code** |**desc**|
+   | :-------- | :--------| :--------|
+   | 'AudioMixingUnsupport' |63102|'该浏览器不支持伴音功能'|
+   | 'UnstartMusicalAccompaniment' |63105|'当前没有伴音'|
+
+   *
    */
   stopAudioMixing () {
     this.client.adapterRef.logger.log('停止伴音')
-    if (!this.mediaHelper){
-      throw new Error('No MediaHelper');
-    }
-    return this.mediaHelper.stopAudioMixing() 
+    return this.mediaHelper.stopAudioMixing()
   }
 
   /**
@@ -1885,27 +1492,75 @@ class Stream extends EventEmitter {
    * @function pauseAudioMixing
    * @memberOf Stream#
    * @return {Promise}
+   * @description 暂停播放伴奏
+   开启云端音乐文件和本地麦克风声音混合后，暂停远端音乐的播放，麦克风采集到的声音不变。
+   ```javascript
+   localStream.pauseAudioMixing().then(res=>{
+      console.log('暂停伴音成功')
+   }).catch(err=>{
+      console.error('暂停伴音失败: ', err)
+   })
+   ```
+
+   err（格式是Object）伴音错误码，属性如下：
+
+   | **err属性名**|**类型** |**说明** |
+   | :-------- | :--------| :--------|
+   | name |string|错误名称|
+   | code |number|错误码|
+   | desc |string|错误描述|
+
+   pauseAudioMixing接口可能出现的错误码
+
+   | **name**|**code** |**desc** |
+   | :-------- | :--------| --------|
+   | 'AudioMixingUnsupport' |63102|'该浏览器不支持伴音功能'|
+   | 'pausedMusicalAccompaniment' |63104|'已经暂停伴音'|
+   | 'UnstartMusicalAccompaniment' |63105|'当前没有伴音'|
+
    */
   pauseAudioMixing () {
     this.client.adapterRef.logger.log('暂停伴音')
-    if (!this.mediaHelper){
-      throw new Error('No MediaHelper');
-    }
-    return this.mediaHelper.pauseAudioMixing() 
+    return this.mediaHelper.pauseAudioMixing()
   }
 
   /**
-   * 恢复播放伴奏
+   *
    * @function resumeAudioMixing
    * @memberOf Stream#
    * @return {Promise}
+   * @description 恢复播放伴奏
+
+   恢复本地语音伴音，伴音文件将从暂停时位置开始播放。
+
+   ```javascript
+   localStream.resumeAudioMixing().then(res=>{
+      console.log('恢复伴音成功')
+   }).catch(err=>{
+      console.error('恢复伴音失败: ', err)
+   })
+   ```
+
+   err（格式是Object）伴音错误码，属性如下：
+
+   | **err属性名**|**类型** |**说明** |
+   | :-------- | :--------| :--------|
+   | name |string|错误名称|
+   | code |number|错误码|
+   | desc |string|错误描述|
+
+   resumeAudioMixing接口可能出现的错误码
+
+   | **name**|**code** |**desc** |
+   | :-------- | :--------| :--------|
+   | 'AudioMixingUnsupport' |63102|'该浏览器不支持伴音功能'|
+   | 'UnpauseMusicalAccompaniment' |63103|'已经暂停伴音'|
+   | 'UnstartMusicalAccompaniment' |63105|'当前没有伴音'|
+
    */
   resumeAudioMixing () {
     this.client.adapterRef.logger.log('恢复伴音')
-    if (!this.mediaHelper){
-      throw new Error('No MediaHelper');
-    }
-    return this.mediaHelper.resumeAudioMixing() 
+    return this.mediaHelper.resumeAudioMixing()
   }
 
 
@@ -1914,13 +1569,31 @@ class Stream extends EventEmitter {
    * @function adjustAudioMixingVolume
    * @memberOf Stream#
    * @return {Promise}
+   * @description 调节伴奏音量
+
+   设置云端音乐的播放音量，不影响麦克风采集到的声音。
+
+   ##### 示例
+
+```javascript
+   const volume = 100
+   localStream.adjustAudioMixingVolume(volume).then(res=>{
+  console.log('设置伴音的音量成功')
+}).catch(err=>{
+  console.error('设置伴音的音量失败: ', err)
+})
+```
+
+   - 参数volume对象说明
+
+   | **参数名**|**类型** |**说明** |
+   | :-------- | :--------| :--------|
+   | volume |Number|必须，设置的音量，取值0-255|
+
    */
-  adjustAudioMixingVolume (volume:number) {
+  adjustAudioMixingVolume (volume) {
     this.client.adapterRef.logger.log('调节伴音音量: %s', volume)
-    if (!this.mediaHelper){
-      throw new Error('No MediaHelper');
-    }
-    return this.mediaHelper.setAudioMixingVolume(volume) 
+    return this.mediaHelper.setAudioMixingVolume(volume)
   }
 
   /**
@@ -1928,13 +1601,25 @@ class Stream extends EventEmitter {
    * @function getAudioMixingDuration
    * @memberOf Stream#
    * @return {Object}
+   * @description 获取伴奏时长
+   获取云端音乐文件的时长，单位是s。
+
+   ##### 示例
+
+   ```javascript
+   const audioFileTotalTime = localStream.getAudioMixingDuration()
+   ```
+
+   - audioFileTotalTime（类型是Object）返回值，说明如下：
+
+   | **audioFileTotalTime属性**|**类型** |**说明** |
+   | :-------- | :--------| :--------|
+   | totalTime |Number|音乐文件总时长，单位是s|
+
    */
   getAudioMixingDuration () {
     this.client.adapterRef.logger.log('获取伴音总时长')
-    if (!this.mediaHelper){
-      throw new Error('No MediaHelper');
-    }
-    return this.mediaHelper.getAudioMixingTotalTime() 
+    return this.mediaHelper.getAudioMixingTotalTime()
   }
 
 
@@ -1944,13 +1629,26 @@ class Stream extends EventEmitter {
    * @memberOf Stream#
    * @memberOf Stream#
    * @return {Object}
+   * @description 获取伴奏播放进度
+   * 获取云端音乐的播放进度，单位是s，即从头开始播放了多少秒，可以供用户实现云端音乐的播放进度条。
+
+   * 示例
+
+   ```javascript
+   const audioFilePlayedTime = localStream.getAudioMixingCurrentPosition()
+   ```
+
+   audioFilePlayedTime（类型是Object）返回值，说明如下：
+
+   | **audioFilePlayedTime属性**|**类型** |**说明** |
+   | :-------- | :--------| :--------|
+   | playedTime |Number|音乐文件已经播放了多久，单位是s|
+
+   *
    */
   getAudioMixingCurrentPosition () {
     //this.client.adapterRef.logger.log('获取伴音播放进度')
-    if (!this.mediaHelper){
-      throw new Error('No MediaHelper');
-    }
-    return this.mediaHelper.getAudioMixingPlayedTime() 
+    return this.mediaHelper.getAudioMixingPlayedTime()
   }
 
   /**
@@ -1959,63 +1657,32 @@ class Stream extends EventEmitter {
    * @memberOf Stream#
    * @param {Number} playStartTime 伴音播放的位置
    * @return {Promise}
+   * @description 设置伴奏音频文件的播放位置。可以根据实际情况播放文件，而不是非得从头到尾播放一个文件,单位为ms
+
+   设置云端音乐的播放位置，即直接跳到设置的时间点开始播放，可以供用户实现音乐拖动、快进、快退等功能。
+
+   ```javascript
+   const playStartTime = 10
+   localStream.setAudioMixingPosition(playStartTime).then(res=>{
+  console.log('设置伴音播放的位置成功')
+}).catch(err=>{
+  console.error('设置伴音播放的位置失败: ', err)
+})
+   ```
+
+   ##### 参数playStartTime对象说明
+
+   | **参数名**|**类型** |**说明** |
+   | :-------- | :--------| :--------|
+   | playStartTime |Number|必须，设置的开始播放时间，取值0-音乐文件的总时长|
+
    */
-  setAudioMixingPosition (playStartTime: number) {
+  setAudioMixingPosition (playStartTime) {
     this.client.adapterRef.logger.log('设置伴音音频文件的播放位置: %s', playStartTime)
-    if (!this.mediaHelper){
-      throw new Error('No MediaHelper');
-    }
-    return this.mediaHelper.setAudioMixingPlayTime(playStartTime) 
+    return this.mediaHelper.setAudioMixingPlayTime(playStartTime)
   }
 
-  /**
-   * 设置画布水印
-   * @function setCanvasWatermarkConfigs
-   * @memberOf Stream#
-   * @param {NERtcCanvasWatermarkConfig} options 水印参数对象
-   * @param {NERtcTextWatermarkConfig[]} options.textWatermarks 文字水印，最多支持10个
-   * @param {NERtcTimestampWatermarkConfig} options.timestampWatermarks 时间戳水印
-   * @param {NERtcImageWatermarkConfig[]} options.imageWatermarks 图片水印，最多支持4个
-   * @returns {Promise} ，用于下载等操作
-   */
 
-  setCanvasWatermarkConfigs (options: NERtcCanvasWatermarkConfig){
-    if (this._play && this._play._watermarkControl){
-      let watermarkControl = null;
-      if (!options.mediaType || options.mediaType === "video"){
-        if (this._play._watermarkControl){
-          watermarkControl = this._play._watermarkControl;
-        }
-      }
-      else if (options.mediaType === "screen"){
-        if (this._play._watermarkControlScreen){
-          watermarkControl = this._play._watermarkControlScreen;
-        }
-      }
-      if (!watermarkControl){
-        this.client.adapterRef.logger.error("setCanvasWatermarkConfigs：播放器未初始化", options.mediaType);
-        return;
-      }
-
-      const LIMITS = {
-        TEXT: 10,
-        TIMESTAMP: 1,
-        IMAGE: 4,
-      };
-      if (options.textWatermarks && options.textWatermarks.length > LIMITS.TEXT){
-        this.client.adapterRef.logger.error(`目前的文字水印数量：${options.textWatermarks.length}。允许的数量：${LIMITS.TEXT}`);
-          throw new Error('WATERMARK_EXCEEDS_LIMIT');
-      }
-      if (options.imageWatermarks && options.imageWatermarks.length > LIMITS.IMAGE){
-        this.client.adapterRef.logger.error(`目前的图片水印数量：${options.imageWatermarks.length}。允许的数量：${LIMITS.IMAGE}`);
-        throw new Error('WATERMARK_EXCEEDS_LIMIT');
-      }
-      watermarkControl.checkWatermarkParams(options);
-      watermarkControl.updateWatermarks(options);
-    }else{
-      this.client.adapterRef.logger.error("setCanvasWatermarkConfigs：播放器未初始化");
-    }
-  };
   /**
    *  销毁实例
    *  @method destroy
@@ -2046,5 +1713,64 @@ class Stream extends EventEmitter {
 }
 
 export { Stream }
+
+/**
+ * @typedef {Object} NERtcTextWatermarkConfig 文字水印设置参数，可通过{@link Stream#setCanvasWatermarkConfigs}使用
+ * @property {string} content
+ *    支持自动换行。当文字内容长度超过水印框宽度时，会自动换行。
+ *    字符串长度没有限制。最终显示受字体大小和水印框大小的影响，超出水印框的部分不显示
+ * @property {number} [fontSize]
+ *    字体大小。默认值为 10，相当于 144 dpi 设备上的 10 x 15 磅
+ * @property {number} [fontColor]
+ *    字体颜色。默认白色
+ * @property {number} [offsetX]
+ *    水印框左上角与视频画布左上角的水平距离。单位为像素（pixel），默认值为 0
+ * @property {number} [offsetY]
+ *    水印框左上角与视频画布左上角的垂直距离。单位为像素（pixel），默认值为 0。
+ * @property {number} [wmColor]
+ *    水印框颜色。默认灰色（支持透明度），格式为ARGB，例如0x08080808。
+ * @property {number} [wmWidth]
+ *    水印框的宽度。单位为像素（pixel），默认值为 0 表示没有水印框
+ * @property {number} [wmHeight]
+ *    水印框的高度。单位为像素（pixel），默认值为 0 表示没有水印框
+ */
+
+/**
+ * @typedef {Object} NERtcTimestampWatermarkConfig 时间戳水印，可通过{@link Stream#setCanvasWatermarkConfigs}使用，格式为 yyyy-MM-dd HH:mm:ss
+ * @property {number} [fontSize]
+ *    字体大小。默认值为 10，相当于 144 dpi 设备上的 10 x 15 磅
+ * @property {number} [fontColor]
+ *    字体颜色。默认白色
+ * @property {number} [offsetX]
+ *    水印框左上角与视频画布左上角的水平距离。单位为像素（pixel），默认值为 0
+ * @property {number} [offsetY]
+ *    水印框左上角与视频画布左上角的垂直距离。单位为像素（pixel），默认值为 0。
+ * @property {number} [wmColor]
+ *    水印框颜色。默认灰色（支持透明度），格式为ARGB，例如0x08080808。
+ * @property {number} [wmWidth]
+ *    水印框的宽度。单位为像素（pixel），默认值为 0 表示没有水印框
+ * @property {number} [wmHeight]
+ *    水印框的高度。单位为像素（pixel），默认值为 0 表示没有水印框
+ */
+
+/**
+ * @typedef {Object} NERtcImageWatermarkConfig 图片水印设置参数，可通过{@link Stream#setCanvasWatermarkConfigs}使用
+ * @property {String[]} imageUrls
+ *    水印图片URL，支持多张轮播
+ * @property {number} [offsetX]
+ *    水印框左上角与视频画布左上角的水平距离。单位为像素（pixel），默认值为 0
+ * @property {number} [offsetY]
+ *    水印框左上角与视频画布左上角的垂直距离。单位为像素（pixel），默认值为 0。
+ * @property {number} [wmColor]
+ *    水印框颜色。默认灰色（支持透明度），格式为ARGB，例如0x08080808。
+ * @property {number} [wmWidth]
+ *    水印框的宽度。单位为像素（pixel），默认值为 0 表示没有水印框
+ * @property {number} [wmHeight]
+ *    水印框的高度。单位为像素（pixel），默认值为 0 表示没有水印框
+ * @property {number} [fps]
+ *    播放帧率。默认 0 帧
+ * @property {number} [loop]
+ *    是否设置循环。默认循环，设置为false后水印数组播放完毕后消失
+ */
 
 /* eslint prefer-promise-reject-errors: 0 */

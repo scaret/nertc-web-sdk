@@ -38,8 +38,6 @@ class Meeting extends EventEmitter {
       appkey,
       channelName,
       uid,
-      // videoMode,
-      // aslMode,
       wssArr = null,
       sessionMode = 'meeting',
       joinChannelRecordConfig,
@@ -49,10 +47,17 @@ class Meeting extends EventEmitter {
 
     let T1 = Date.now()
     let curtime = +new Date()
+    this.adapterRef.logger.log('getChannelInfoUrl: ', getChannelInfoUrl)
+    let url = getChannelInfoUrl
+    if (this.adapterRef.instance._params.neRtcServerAddresses.channelServer) {
+      //url = getChannelInfoUrl.replace(/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+\.?/, this.adapterRef.instance._params.neRtcServerAddresses.channelServer)
+      url = this.adapterRef.instance._params.neRtcServerAddresses.channelServer
+      this.adapterRef.logger.log('私有化配置的 getChannelInfoUrl: ', url)
+    }
 
     try{
       const data:any = await ajax({
-        url: getChannelInfoUrl, //'https://webtest.netease.im/nrtcproxy/nrtc/getChannelInfos.action'
+        url, //'https://webtest.netease.im/nrtcproxy/nrtc/getChannelInfos.action'
         type: 'POST',
         contentType: 'application/x-www-form-urlencoded',
         header: {
@@ -189,8 +194,14 @@ class Meeting extends EventEmitter {
       this.adapterRef.logger.error('添加推流任务失败: 参数格式错误，rtmpTasks为空，或者该数组长度为空')
       return Promise.reject('INVALID ARGUMENTS')
     }
-
-    const url = `${roomsTaskUrl}${this.adapterRef.channelInfo.cid}/tasks`
+    let url = roomsTaskUrl
+    this.adapterRef.logger.log('roomsTaskUrl: ', roomsTaskUrl)
+    if (this.adapterRef.instance._params.neRtcServerAddresses.roomServer) {
+      //url = roomsTaskUrl.replace(/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+\.?/, this.adapterRef.instance._params.neRtcServerAddresses.roomServer)
+      url = this.adapterRef.instance._params.neRtcServerAddresses.roomServer
+      this.adapterRef.logger.log('私有化配置的 roomsTaskUrl: ', url)
+    }
+    url = `${url}${this.adapterRef.channelInfo.cid}/tasks`
     for (let i=0; i < rtmpTasks.length; i++) {
       rtmpTasks[i].hostUid = this.adapterRef.channelInfo.uid
       rtmpTasks[i].version = 1
@@ -288,8 +299,16 @@ class Meeting extends EventEmitter {
       this.adapterRef.logger.error('删除推流任务失败: 参数格式错误，taskIds为空，或者该数组长度为空')
       return Promise.reject('INVALID ARGUMENTS')
     }
+    
+    let url = roomsTaskUrl
+    this.adapterRef.logger.log('roomsTaskUrl: ', roomsTaskUrl)
+    if (this.adapterRef.instance._params.neRtcServerAddresses.roomServer) {
+      //url = roomsTaskUrl.replace(/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+\.?/, this.adapterRef.instance._params.neRtcServerAddresses.roomServer)
+      url = this.adapterRef.instance._params.neRtcServerAddresses.roomServer
+      this.adapterRef.logger.log('私有化配置的 roomsTaskUrl: ', url)
+    }
 
-    const url = `${roomsTaskUrl}${this.adapterRef.channelInfo.cid}/tasks/delete`
+    url = `${url}${this.adapterRef.channelInfo.cid}/tasks/delete`
     for (let i=0; i < taskIds.length; i++) {
       this.adapterRef.logger.log('deleteTasks: ', taskIds[i])
       try {
@@ -367,7 +386,14 @@ class Meeting extends EventEmitter {
       return Promise.reject('INVALID ARGUMENTS')
     }
 
-    const url = `${roomsTaskUrl}${this.adapterRef.channelInfo.cid}/task/update`
+    let url = roomsTaskUrl
+    this.adapterRef.logger.log('roomsTaskUrl: ', roomsTaskUrl)
+    if (this.adapterRef.instance._params.neRtcServerAddresses.roomServer) {
+      //url = roomsTaskUrl.replace(/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+\.?/, this.adapterRef.instance._params.neRtcServerAddresses.roomServer)
+      url = this.adapterRef.instance._params.neRtcServerAddresses.roomServer
+      this.adapterRef.logger.log('私有化配置的 roomsTaskUrl: ', url)
+    }
+    url = `${url}${this.adapterRef.channelInfo.cid}/task/update`
     for (let i = 0; i < rtmpTasks.length; i++) {
       rtmpTasks[i].hostUid = this.adapterRef.channelInfo.uid
       try {
