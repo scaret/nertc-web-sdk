@@ -85,13 +85,12 @@ function loadEnv() {
   if (window.localStorage && window.localStorage.getItem(`appkey-${env}`)){
     $('#appkey').val(window.localStorage.getItem(`appkey-${env}`))
     if (window.localStorage.getItem(`AppSecret-${env}`)){
-      //$('#AppSecret').val(window.localStorage.getItem(`AppSecret-${env}`))
+      $('#AppSecret').val(window.localStorage.getItem(`AppSecret-${env}`))
     }
   }else{
     $('#appkey').val(WEBRTC2_ENV[env].appkey)
-    //$('#AppSecret').val(WEBRTC2_ENV[env].AppSecret)
+    $('#AppSecret').val(WEBRTC2_ENV[env].AppSecret)
   }
-  $('#appkey').val('6acf024e190215b685905444b6e57dd7')
   $('#uid').val(Math.ceil(Math.random() * 1e4))
   //$('#channelName').val(Math.ceil(Math.random() * 1e10))
   const channelName = window.localStorage ? window.localStorage.getItem("channelName") : "";
