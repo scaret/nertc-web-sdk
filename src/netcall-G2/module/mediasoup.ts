@@ -197,7 +197,7 @@ class Mediasoup extends EventEmitter {
         video: null,
         screen: null,
       };
-      this._sendTransport.on('connectionstatechange', this._sendTransportConnectionstatechange.bind(this))
+      this._sendTransport.on('connectionstatechange', this._sendTransportConnectionstatechange.bind(this, this._sendTransport))
     }
     
     if (!this._recvTransport) {
@@ -223,7 +223,11 @@ class Mediasoup extends EventEmitter {
     this.emit('transportReady');
   }
 
-  async _sendTransportConnectionstatechange (connectionState:string) {
+  async _sendTransportConnectionstatechange (_sendTransport:Transport, connectionState:string) {
+    if (this._sendTransport !== _sendTransport){
+      this.adapterRef.logger.error('_sendTransportConnectionstatechange：出现了_sendTransport绑定不一致的状况。');
+      return;
+    }
     this.adapterRef.logger.log('send connection state changed to %s', connectionState);
     if (connectionState === 'failed') {
       try {
