@@ -1,7 +1,14 @@
-import { EventEmitter } from "eventemitter3";
-import { AddTaskOptions, ClientOptions, JoinOptions, MediaType, RTMPTask } from "./types";
+import {
+  AddTaskOptions,
+  ClientExceptionEvt,
+  JoinOptions,
+  MediaType,
+  RTMPTask,
+  RTMPTaskState
+} from "./types";
 import { Stream } from "./stream";
 import {ConnectionState} from "./types";
+import {NetStatusItem} from "./types";
 
 /**
  *  请使用 [[WebRTC2.createClient]] 创建 Client对象，client对象指通话中的本地或远程用户，提供云信sdk的核心功能。
@@ -81,7 +88,7 @@ declare interface Client{
    + `audience`: 直播模式中的观众，只能接收音视频流。主播模式切换到观众模式后，会自动停止发送音视频流。
    
    */
-  setClientRole(role: string): Promise<undefined>;
+  setClientRole(role: "host"|"audience"): Promise<undefined>;
     /**
      #### 主动获取网络连接状态。
      推荐用于以下场景：
@@ -197,6 +204,20 @@ declare interface Client{
   }) => void): void;
 
   /**
+   * 该事件会返回当前频道内的用户及音量。
+   */
+  on(event: "volume-indicator", callback: (evt: {
+    /**
+     * 主播uid
+     */
+    uid: number;
+    /**
+     * 音量
+     */
+    level: number;
+  }) => void): void;
+  
+  /**
    * 该事件会返回当前频道内声音最大的用户的uid。
    */
   on(event: "active-speaker", callback: (evt: {
@@ -283,9 +304,67 @@ declare interface Client{
   }) => void): void;
   
   /**
+   * 该事件表示房间已关闭
+   */
+  on(event: "channel-closed", callback: () => void): void;
+
+  /**
    * 该事件表示本地的屏幕共享停止了
    */
   on(event: "stopScreenSharing", callback: (evt: {
   }) => void): void;
+
+  /**
+   * 与服务器的连接状态发生了变化。
+   */
+  on(event: "connection-state-change", callback: (evt: {
+    /**
+     * 变化后的状态
+     */
+    curState: ConnectionState;
+    /**
+     * 变化前的状态
+     */
+    prevState: ConnectionState;
+  }) => void): void;
+
+  /**
+   * 客户端遇到错误。可能有：
+   * * SOCKET_ERROR: 连接错误。
+   * * RELOGIN_ERROR: 重连失败。
+   * 
+   */
+  on(event: "error", callback: (errorName: string) => void): void;
+  
+  /**
+   * 音频轨道结束。造成的原因可能是设备被拔出。
+   */
+  on(event: "audioTrackEnded"): void;
+
+  /**
+   * 视频频轨道结束。造成的原因可能是设备被拔出。
+   */
+  on(event: "videoTrackEnded"): void;
+
+  /**
+   * 该事件表示推流状态发生了变化
+   */
+  on(event: "rtmp-state", callback: (state: RTMPTaskState) => void): void;
+
+  /**
+   * 该事件表示推流状态发生了变化
+   */
+  on(event: "rtmp-state", callback: (state: RTMPTaskState) => void): void;
+
+  /**
+   * 该事件展示了对端的网络状态
+   */
+  on(event: "network-quality", callback: (netStatus: NetStatusItem[]) => void): void;
+
+  /**
+   * 该事件展示了目前频道内的异常
+   */
+  on(event: "exception", callback: (exceptionEvent: ClientExceptionEvt) => void): void;
+
 }
 export { Client };
