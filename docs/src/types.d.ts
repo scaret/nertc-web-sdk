@@ -42,6 +42,41 @@ export interface RecordStartOptions {
   reset: boolean;
 }
 
+
+export interface RTMPTaskState{
+  
+  code: number;
+
+  hostUid: number;
+
+  msg: string;
+  
+  streamUrl: string;
+  
+  taskId: string;
+
+}
+
+/**
+ * 可能的异常有：
+ * * AUDIO_INPUT_LEVEL_TOO_LOW
+ * * SEND_AUDIO_BITRATE_TOO_LOW
+ * * FRAMERATE_SENT_TOO_LOW
+ * * FRAMERATE_VIDEO_BITRATE_TOO_LOW
+ * * RECV_AUDIO_DECODE_FAILED
+ * * AUDIO_OUTPUT_LEVEL_TOO_LOW
+ * * RECV_VIDEO_DECODE_FAILED
+ * * RECV_SCREEN_DECODE_FAILED
+ */
+export interface ClientExceptionEvt{
+  msg: 'string';
+  uid: number;
+}
+
+export interface NetStatusItem {
+  uid: number;
+}
+
 export interface AddTaskOptions {
   rtmpTasks: RTMPTask[];
 }
@@ -332,6 +367,10 @@ export interface JoinOptions {
    * 加入房间录制相关参数
    */
   joinChannelRecordConfig?: RecordConfig;
+  /**
+   * 私有化服务器地址对象
+   */
+  neRtcServerAddresses?: NeRtcServerAddresses
 }
 
 /**
@@ -462,3 +501,21 @@ export interface NERtcImageWatermarkConfig {
   loop: boolean;
 }
 
+export interface NeRtcServerAddresses{
+  /**
+   * 获取通道信息服务器
+   */
+  channelServer?: string;
+  /**
+   * 统计上报服务器
+   */
+  statisticsServer?: string;
+  /**
+   * roomServer服务器
+   */
+  roomServer?: string;
+  /**
+   * mediaServer服务器
+   */
+  mediaServer?: string;
+}

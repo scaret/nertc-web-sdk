@@ -376,5 +376,36 @@ declare interface Stream {
      *  销毁实例
      */
     destroy(): void;
+    
+    /**
+     * 获取设备权限被拒绝。
+     */
+    on(event: "accessDenied", callback: (
+      mediaType: "audio"|"video"
+    ) => void): void;
+  
+    /**
+     * 获取麦克风或摄像头权限时，无法找到指定设备
+     */
+    on(event: "notFound", callback: (
+      mediaType: "audio"|"video"
+    ) => void): void;
+
+    /**
+     * 获取麦克风或摄像头权限时，遭遇未知错误错误
+     */
+    on(event: "deviceError", callback: (
+      mediaType: "audio"|"video"
+    ) => void): void;
+
+    /**
+     * 获取麦克风或摄像头权限时，设备被占用
+     */
+    on(event: "beOccupied", callback: (
+      mediaType: "audio"|"video"
+    ) => void): void;
+
+    
+
 }
 export { Stream };
