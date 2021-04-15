@@ -537,15 +537,11 @@ class Signalling extends EventEmitter {
           name: RtcSystem.browser.ua,       
           version: `${RtcSystem.browser.version}`
         },
-        userPriority: this.adapterRef.userPriority ? this.adapterRef.userPriority : undefined
+        userPriority: this.adapterRef.userPriority
       }
     }
 
     this.adapterRef.logger.log('Signalling: edge连接成功，加入房间 -> ', JSON.stringify(requestData, null, ''))
-    if (this._reconnectionTimer) {
-      clearTimeout(this._reconnectionTimer)
-      this._reconnectionTimer = null
-    }
     
     this._times = 0
     if (!this._protoo){
@@ -580,7 +576,8 @@ class Signalling extends EventEmitter {
         time_elapsed: currentTime - webrtc2Param.startJoinTime
       })
 
-      if (this._reject) {
+      //重连时的login失败，执行else的内容
+      if (this._reject && this.adapterRef.channelStatus !== 'connectioning') {
         this.adapterRef.logger.error('加入房间失败, 反馈通知')
         const errMsg = response.externData ? response.externData.errMsg : response.errMsg
         this._reject(errMsg)
@@ -597,6 +594,11 @@ class Signalling extends EventEmitter {
         this.adapterRef.instance.leave()
       }
       return
+    }
+
+    if (this._reconnectionTimer) {
+      clearTimeout(this._reconnectionTimer)
+      this._reconnectionTimer = null
     }
     this.adapterRef.logger.log('Signalling:加入房间成功')
     this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
