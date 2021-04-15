@@ -98,7 +98,7 @@ export interface AdapterRef {
     [apiName: string]: number;
   }
   report: boolean | undefined;
-  userPriority: MediaPriorityOptions | undefined;
+  userPriority: MediaPriorityOptions;
 }
 
 export type ConnectionState = 'DISCONNECTED'|'CONNECTING'|'CONNECTED'|'DISCONNECTING';
