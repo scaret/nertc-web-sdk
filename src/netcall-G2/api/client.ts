@@ -3,7 +3,11 @@ import { Base } from './base'
 import {AddTaskOptions, ClientOptions, MediaPriorityOptions, JoinOptions, LocalVideoStats, MediaTypeShort, RTMPTask} from "../types";
 import {Stream} from "./stream";
 import {checkExists} from "../util/param";
-import {ReportParamSetChannelProfile, ReportParamSetClientRole} from "../interfaces/ApiReportParam";
+import {
+  ReportParamGetConnectionState,
+  ReportParamSetChannelProfile,
+  ReportParamSetClientRole
+} from "../interfaces/ApiReportParam";
 
 /**
  *  请使用 {@link WEBRTC2.createClient} 通过WEBRTC2.createClient创建 Client对象，client对象指通话中的本地或远程用户，提供云信sdk的核心功能。
@@ -825,6 +829,11 @@ class Client extends Base {
    * @returns {String}
    */
   getConnectionState () {
+    this.apiFrequencyControl({
+      name: 'getConnectionState',
+      code: 0,
+      param: JSON.stringify({} as ReportParamGetConnectionState, null, ' ')
+    })
     return this.adapterRef.connectState.curState;
   }
 

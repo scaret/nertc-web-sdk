@@ -14,3 +14,16 @@ export interface ReportParamSubscribeRemoteSubStreamVideo extends ReportParamBas
   uid: number|null,
   subscribe: boolean
 }
+
+export interface ReportParamGetConnectionState extends ReportParamBase{
+}
+
+export interface ReportParamEnableEarback extends ReportParamBase{
+  enable?: boolean
+}
+
+export interface ReportParamSwitchCamera extends ReportParamBase{
+}
+
+export interface ReportParamSetExternalAudioRender extends ReportParamBase{
+}

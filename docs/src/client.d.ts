@@ -61,9 +61,6 @@ declare interface Client{
      * 中途更新订阅的视频分辨率。
     */
     setRemoteVideoStreamType(stream: Stream, highOrLow: number): Promise<void>;
-    enableAudioVolumeIndicator(): void;
-    enableDualStream(): void;
-    disableDualStream(): void;
 
   /**
    设置用户角色。默认情况下用户以主播角色加入房间。
