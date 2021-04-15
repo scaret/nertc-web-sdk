@@ -585,6 +585,12 @@ class Signalling extends EventEmitter {
         const errMsg = response.externData ? response.externData.errMsg : response.errMsg
         this._reject(errMsg)
         this._reject = null
+        if (this.keepAliveTimer) {
+          clearInterval(this.keepAliveTimer)
+          this.keepAliveTimer = null
+        }
+        this.adapterRef.channelStatus = 'leave'
+        this.adapterRef.instance.stopSession()
       } else {
         this.adapterRef.logger.error('网络重连时，加入房间失败，主动离开')
         this.adapterRef.instance.emit('error', 'RELOGIN_ERROR')
