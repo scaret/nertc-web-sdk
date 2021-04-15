@@ -25,7 +25,12 @@ import {
 } from "../types";
 import {MediaHelper} from "../module/media";
 import {checkExists, isExistOptions} from "../util/param";
-import {ReportParamSubscribeRemoteSubStreamVideo} from "../interfaces/ApiReportParam";
+import {
+  ReportParamEnableEarback,
+  ReportParamSetExternalAudioRender,
+  ReportParamSubscribeRemoteSubStreamVideo,
+  ReportParamSwitchCamera
+} from "../interfaces/ApiReportParam";
 
 /**
  *  请使用 {@link WEBRTC2.createStream} 通过WEBRTC2.createStream创建
@@ -422,6 +427,11 @@ class Stream extends EventEmitter {
 
   getAudioStream(){
     if (this.mediaHelper){
+      this.client.apiFrequencyControl({
+        name: 'setExternalAudioRender',
+        code: 0,
+        param: JSON.stringify({} as ReportParamSetExternalAudioRender, null, ' ')
+      })
       return this.mediaHelper.audioStream;
     }else{
       return null;
@@ -614,6 +624,17 @@ class Stream extends EventEmitter {
         }
       }
     }
+    if (!this.isRemote && this.audio){
+      const param:ReportParamEnableEarback = {
+        enable: true
+      }
+      this.client.apiFrequencyControl({
+        name: 'enableEarback',
+        code: 0,
+        param: JSON.stringify(param, null, ' ')
+      })
+    }
+    
     this.client.apiFrequencyControl({
       name: 'play',
       code: 0,
@@ -1287,14 +1308,20 @@ class Stream extends EventEmitter {
       } else if(!this.hasVideo()) {
         this.client.adapterRef.logger.log(`当前没有开启视频输入设备，无法切换`)
         this.inSwitchDevice = false
-        return Promise.reject('INVALID_OPERATION')
-      } else if(this.hasScreen()) {
-        this.client.adapterRef.logger.log(`屏幕共享不支持，无法切换`)
-        this.inSwitchDevice = false
+        this.client.apiFrequencyControl({
+          name: 'switchCamera',
+          code: -1,
+          param: JSON.stringify({reason: 'INVALID_OPERATION'} as ReportParamSwitchCamera, null, ' ')
+        })
         return Promise.reject('INVALID_OPERATION')
       } else if(this.videoSource) {
         this.client.adapterRef.logger.log(`自定义视频输入不支持，无法切换`)
         this.inSwitchDevice = false
+        this.client.apiFrequencyControl({
+          name: 'switchCamera',
+          code: -1,
+          param: JSON.stringify({reason: 'INVALID_OPERATION'} as ReportParamSwitchCamera, null, ' ')
+        })
         return Promise.reject('INVALID_OPERATION')
       }
       //constraint = {...this.mediaHelper.videoConstraint, ...{video: {deviceId: {exact: deviceId}}}}
@@ -1314,9 +1341,23 @@ class Stream extends EventEmitter {
     try {
       await this.mediaHelper.getSecondStream(constraint)
       this.inSwitchDevice = false
+      if (type === "video"){
+        this.client.apiFrequencyControl({
+          name: 'switchCamera',
+          code: 0,
+          param: JSON.stringify({} as ReportParamSwitchCamera, null, ' ')
+        })
+      }
     } catch (e) {
       this.client.adapterRef.logger.error('API调用失败：Stream:switchDevice' ,e, ...arguments);
       this.inSwitchDevice = false
+      if (type === "video"){
+        this.client.apiFrequencyControl({
+          name: 'switchCamera',
+          code: -1,
+          param: JSON.stringify({reason: e.message || e.name}, null, ' ')
+        })
+      }
       return Promise.reject(e)
     }
     
