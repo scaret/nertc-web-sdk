@@ -287,6 +287,17 @@ function initEvents() {
     addLog(`${evt.uid} unmute自己的视频`)
   })
 
+
+  rtc.client.on('mute-screen', evt => {
+    console.warn(`${evt.uid} mute自己的辅流`)
+    addLog(`${evt.uid} mute自己的辅流`)
+  })
+
+  rtc.client.on('unmute-screen', evt => {
+    console.warn(`${evt.uid} mute自己的辅流`)
+    addLog(`${evt.uid} unmute自己的辅流`)
+  })
+
   rtc.client.on('stream-added', evt => {
     var remoteStream = evt.stream;
     console.warn('收到别人的发布消息: ', remoteStream.streamID, 'mediaType: ', evt.mediaType)
