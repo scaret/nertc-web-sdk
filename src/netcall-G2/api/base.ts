@@ -152,6 +152,7 @@ class Base extends EventEmitter {
 
     this.adapterRef.mediaHelpers = {}
     this.adapterRef.uid2SscrList = {}
+    this.adapterRef.userPriority = undefined
 
     // 状态类变量
     this.adapterRef.state = {
