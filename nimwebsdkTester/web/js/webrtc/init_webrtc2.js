@@ -530,7 +530,7 @@ $('#joinChannel-btn').on('click', async () => {
   // 互动直播相关
   const liveEnable = $('#sessionConfigLiveEnable').prop('checked') 
   // 媒体优先级
-  const enableMeidaPriority = $('#enableMeidaPriority').prop('checked') 
+  //const enableMeidaPriority = $('#enableMeidaPriority').prop('checked') 
   const priority = +($('#priority').val())
   const isPreemptive = $('#isPreemptive').prop('checked')   
 
@@ -598,15 +598,10 @@ $('#joinChannel-btn').on('click', async () => {
   }
   
   console.info('开始加入房间')
-
-  if (enableMeidaPriority) {
-    rtc.client.setLocalMediaPriority({
-      priority,
-      isPreemptive
-    })
-  } else {
-    rtc.client.setLocalMediaPriority()
-  }
+  rtc.client.setLocalMediaPriority({
+    priority,
+    isPreemptive
+  })
 
   rtc.client.adapterRef.testConf = {
     turnAddr: $('#isTurnAddrConf').prop('checked') ? $('#isTurnAddrConf').prop('checked') && $('#turnAddr').val() : null,

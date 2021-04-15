@@ -68,6 +68,10 @@ class Base extends EventEmitter {
       channelInfo: {
         sessionConfig: {}
       },
+      userPriority: {
+        priority: 100, 
+        isPreemptive: false
+      },
       //webrtc G2 API上报频控
       apiEvent: {},
       apiEvents: {},
@@ -152,7 +156,6 @@ class Base extends EventEmitter {
 
     this.adapterRef.mediaHelpers = {}
     this.adapterRef.uid2SscrList = {}
-    this.adapterRef.userPriority = undefined
 
     // 状态类变量
     this.adapterRef.state = {
