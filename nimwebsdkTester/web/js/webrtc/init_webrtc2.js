@@ -529,6 +529,10 @@ $('#joinChannel-btn').on('click', async () => {
   const recordVideo = $('#sessionConfigRecordVideo').prop('checked')
   // 互动直播相关
   const liveEnable = $('#sessionConfigLiveEnable').prop('checked') 
+  // 媒体优先级
+  const enableMeidaPriority = $('#enableMeidaPriority').prop('checked') 
+  const priority = +($('#priority').val())
+  const isPreemptive = $('#isPreemptive').prop('checked')   
 
   let channelServer=null; statisticsServer=null; roomServer=null; demoServer=null;appkey=null
   if (privatizationConfig) {
@@ -595,9 +599,17 @@ $('#joinChannel-btn').on('click', async () => {
   
   console.info('开始加入房间')
 
+  if (enableMeidaPriority) {
+    rtc.client.setLocalMediaPriority({
+      priority,
+      isPreemptive
+    })
+  } else {
+    rtc.client.setLocalMediaPriority()
+  }
+
   rtc.client.adapterRef.testConf = {
     turnAddr: $('#isTurnAddrConf').prop('checked') ? $('#isTurnAddrConf').prop('checked') && $('#turnAddr').val() : null,
-    ForwardedAddr: $('#isForwardedAddrConf').prop('checked') ? $('#isForwardedAddrConf').prop('checked') && $('#forwardedAddr').val() : null
   }
   
   rtc.client.join({

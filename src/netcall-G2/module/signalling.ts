@@ -536,7 +536,8 @@ class Signalling extends EventEmitter {
         browser: {                       
           name: RtcSystem.browser.ua,       
           version: `${RtcSystem.browser.version}`
-        }
+        },
+        userPriority: this.adapterRef.userPriority ? this.adapterRef.userPriority : undefined
       }
     }
 

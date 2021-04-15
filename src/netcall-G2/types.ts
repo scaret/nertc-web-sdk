@@ -98,6 +98,7 @@ export interface AdapterRef {
     [apiName: string]: number;
   }
   report: boolean | undefined;
+  userPriority: MediaPriorityOptions | undefined;
 }
 
 export type ConnectionState = 'DISCONNECTED'|'CONNECTING'|'CONNECTED'|'DISCONNECTING';
@@ -813,6 +814,11 @@ export interface RecordConfig{
   recordAudio: boolean;
   recordVideo: boolean;
   recordType: number;
+}
+
+export interface MediaPriorityOptions{
+  priority: number;
+  isPreemptive?: boolean;
 }
 
 export interface JoinOptions{
