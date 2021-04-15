@@ -624,7 +624,7 @@ class Stream extends EventEmitter {
         }
       }
     }
-    if (!this.isRemote && this.audio){
+    if (!this.isRemote && playOptions.audio){
       const param:ReportParamEnableEarback = {
         enable: true
       }
