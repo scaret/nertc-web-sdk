@@ -95,10 +95,10 @@ class Client extends Base {
       this.adapterRef.logger.error('setLocalMediaPriority: 请在加入房间前调用')
       return 'INVALID_OPERATION'
     }
-    if (options === undefined) {
+    /*if (options === undefined) {
       this.adapterRef.userPriority = undefined
       return
-    }
+    }*/
     const {priority = 100, isPreemptive = false} = options
     if(typeof priority !== 'number' || isNaN(priority)){
       throw new Error('setLocalMediaPriority: priority 非 number类型')
