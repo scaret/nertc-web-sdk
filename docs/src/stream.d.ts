@@ -171,7 +171,7 @@ declare interface Stream {
      */
     setCaptureVolume(volume: number): string | undefined;
     /**
-     * 设置音频输出设备，可以在麦克风和扬声器之间切换。在播放订阅流之前或之后都可以调用该方法。
+     * 设置音频输出设备，可以在耳机和扬声器之间切换。在播放订阅流之前或之后都可以调用该方法。
      * 目前只有 Chrome 浏览器支持该方法。
      * @param deviceId 设备的 ID,可以通过 getDevices 方法获取。获取的 ID 为 ASCII 字符，字符串长度大于 0 小于 256 字节。
      */
