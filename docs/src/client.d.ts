@@ -184,6 +184,21 @@ declare interface Client{
     stream: Stream;
   }) => void): void;
 
+
+  /**
+   * 远端用户发布的一路音视频轨道被订阅了。
+   */
+  on(event: "stream-subscribed", callback: (evt: {
+    /**
+     * 被订阅的远端流
+     */
+    stream: Stream;
+    /**
+     * 被订阅的音视频轨道
+     */
+    mediaType: MediaType
+  }) => void): void;
+
   /**
    * 该事件表示指定远端流被移除了
    */
@@ -295,6 +310,26 @@ declare interface Client{
   }) => void): void;
   
   /**
+   * 该事件表示指定主播将屏幕共享静音
+   */
+  on(event: "mute-screen", callback: (evt: {
+    /**
+     * 主播uid
+     */
+    uid: number;
+  }) => void): void;
+
+  /**
+   * 该事件表示指定主播将屏幕共享取消静音
+   */
+  on(event: "unmute-screen", callback: (evt: {
+    /**
+     * 主播uid
+     */
+    uid: number;
+  }) => void): void;
+
+  /**
    * 该事件表示指定主播被踢出房间
    */
   on(event: "client-banned", callback: (evt: {
@@ -346,11 +381,6 @@ declare interface Client{
    * 视频频轨道结束。造成的原因可能是设备被拔出。
    */
   on(event: "videoTrackEnded"): void;
-
-  /**
-   * 该事件表示推流状态发生了变化
-   */
-  on(event: "rtmp-state", callback: (state: RTMPTaskState) => void): void;
 
   /**
    * 该事件表示推流状态发生了变化

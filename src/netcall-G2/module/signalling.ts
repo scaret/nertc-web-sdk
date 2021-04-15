@@ -900,6 +900,13 @@ class Signalling extends EventEmitter {
         } else {
           this.adapterRef.instance.emit('unmute-video', {uid: stream.getId()})
         }
+      } else if (stream.pubStatus.screen.producerId === producerId) {
+        stream.muteStatus.screenSend = mute
+        if (mute) {
+          this.adapterRef.instance.emit('mute-screen', {uid: stream.getId()})
+        } else {
+          this.adapterRef.instance.emit('unmute-screen', {uid: stream.getId()})
+        }
       }
     })
   }
