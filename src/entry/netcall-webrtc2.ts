@@ -76,7 +76,9 @@ function createClient (options:ClientOptions) {
  *  @param {String} [options.microphoneId] 麦克风设备 deviceId，通过 getMicrophones() 获取
  *  @param {Object} [options.video] 是否从摄像头采集视频
  *  @param {String} [options.cameraId] 摄像头设备 deviceId，通过 getCameras() 获取
+ *  @param {String} [options.cameraId] 摄像头设备 deviceId，通过 getCameras() 获取
  *  @param {Object} [options.screen] 是否采集屏幕分享流
+ *  @param {String} [options.sourceId] 屏幕共享的数据源Id（electron用户可以自己获取）
  *  @param {MeidaTrack} [options.audioSource] 自定义的音频的track
  *  @param {MeidaTrack} [options.videoSource] 自定义的视频的track
  *  @param {client} [options.client] 和要Stream绑定的client实例对象，默认是最初使用用createClient创建的client实例（多实例场景使用）
