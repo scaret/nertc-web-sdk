@@ -552,6 +552,7 @@ export interface GetStreamConstraints{
   video?: boolean;
   videoDeviceId?: string;
   screen?: boolean;
+  sourceId?: string;
   audioSource?: MediaStreamTrack|null;
   videoSource?: MediaStreamTrack|null;
   deviceId?: string;
@@ -685,6 +686,7 @@ export interface StreamOptions{
   audioProcessing?: AudioProcessingOptions;
   microphoneId?: '';
   cameraId?: '';
+  sourceId?: '';
   video: boolean;
   screen: boolean;
   client: Client;

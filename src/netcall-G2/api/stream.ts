@@ -60,7 +60,7 @@ import {
  + `ANS`: 是否开启自动噪声抑制。默认为 true。
     + `true`：开启自动噪声抑制。
     + `false`：关闭自动噪声抑制。
- *  @param {Object} [options.sourceId] 屏幕共享的数据源Id（electron用户可以自己获取）
+ *  @param {String} [options.sourceId] 屏幕共享的数据源Id（electron用户可以自己获取）
  *  @param {MeidaTrack} [options.audioSource] 自定义的音频的track
  *  @param {MeidaTrack} [options.videoSource] 自定义的视频的track
  *  @returns {Stream}  
@@ -71,6 +71,7 @@ class Stream extends EventEmitter {
   public audioProcessing: AudioProcessingOptions|null;
   public microphoneId:string;
   public cameraId: string;
+  public sourceId: string;
   public video: boolean;
   public screen: boolean;
   private client: Client;
@@ -207,6 +208,7 @@ class Stream extends EventEmitter {
     this.cameraId = options.cameraId || ''
     this.video = options.video || false
     this.screen = options.screen || false
+    this.sourceId = options.sourceId || ''
     this.client = options.client
     this.audioSource = options.audioSource || null
     this.videoSource = options.videoSource || null
@@ -268,6 +270,7 @@ class Stream extends EventEmitter {
     this.video = false
     this.cameraId = ''
     this.screen = false
+    this.sourceId = ''
     this.videoView = null
     this.screenView = null
     this.renderMode = {local: {video: {}, screen: {}}, remote: {video: {}, screen: {}}}
@@ -466,6 +469,7 @@ class Stream extends EventEmitter {
         cameraId: this.cameraId,
         microphoneId: this.microphoneId,
         screen: this.screen,
+        sourceId: this.sourceId,
         screenProfile: this.screenProfile
       }, null, ' ')
     })
@@ -803,8 +807,8 @@ class Stream extends EventEmitter {
    * @param {String }  options.sourceId 屏幕共享的数据源Id（electron用户可以自己获取）
    * @returns {Promise}
    */
-  async open (options:{type: MediaTypeShort,deviceId?: string}) {
-    let {type, deviceId} = options
+  async open (options:{type: MediaTypeShort, deviceId?: string, sourceId?: string}) {
+    let {type, deviceId, sourceId} = options
     if (this.client._roleInfo.userRole === 1) {
       const reason = `观众不允许打开设备`;
       this.client.adapterRef.logger.error(reason);
@@ -846,7 +850,8 @@ class Stream extends EventEmitter {
           }
           this[type] = true
           const constraint:any = {
-            videoDeviceId: deviceId
+            videoDeviceId: deviceId,
+            sourceId
           }
           constraint[type] = true
           if (this.mediaHelper){

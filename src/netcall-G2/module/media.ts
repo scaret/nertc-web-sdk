@@ -99,6 +99,7 @@ class MediaHelper extends EventEmitter {
       video = false,
       videoDeviceId = '', 
       screen = false, 
+      sourceId = '',
       audioSource = null, 
       videoSource = null,
       deviceId = ''
@@ -126,20 +127,37 @@ class MediaHelper extends EventEmitter {
           throw new Error('No screenProfile')
         }
         const {width, height, frameRate} = this.convert(this.adapterRef.localStream.screenProfile)
-        this.screenStream = await GUM.getScreenStream({
-          video:{
-            width: {
-              ideal: width
-            },
-            height: {
-              ideal: height
-            },
-            frameRate: {
-              ideal: frameRate,
-              max: frameRate
+        
+        if (sourceId) {
+          this.screenStream = await GUM.getStream({
+            video: {
+              mandatory: {
+                maxWidth: width,
+                maxHeight: height,
+                maxFrameRate: frameRate,
+                minFrameRate: 5,
+                chromeMediaSource: 'desktop',
+                chromeMediaSourceId: sourceId
+              }
             }
-          }
-        }, this.adapterRef.logger)
+          }, this.adapterRef.logger)
+        } else {
+          this.screenStream = await GUM.getScreenStream({
+            video:{
+              width: {
+                ideal: width
+              },
+              height: {
+                ideal: height
+              },
+              frameRate: {
+                ideal: frameRate,
+                max: frameRate
+              }
+            }
+          }, this.adapterRef.logger)
+        }
+        
         this.adapterRef.instance.apiEventReport('setFunction', {
           name: 'set_screen',
           oper: '1',
