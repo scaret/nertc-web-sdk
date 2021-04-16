@@ -131,6 +131,7 @@ class MediaHelper extends EventEmitter {
         if (sourceId) {
           this.screenStream = await GUM.getStream({
             video: {
+              // @ts-ignore
               mandatory: {
                 maxWidth: width,
                 maxHeight: height,
