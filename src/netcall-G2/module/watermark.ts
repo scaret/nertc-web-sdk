@@ -267,6 +267,11 @@ class WatermarkControl extends EventEmitter{
           style.top = item.offsetY;
         }
 
+        if (item.wmWidth === 0 || item.wmHeight === 0){
+          // NRTCG2-8635 图片维持默认宽高
+          delete item.wmWidth;
+          delete item.wmHeight;
+        }
         // 宽度
         if (!item.wmWidth) {
           // 维持默认值
