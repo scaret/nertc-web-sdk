@@ -209,8 +209,6 @@ declare interface Stream {
     * @param options 配置参数
    */
     setVideoProfile(options: VideoProfileOptions): void;
-    setVideoEncoderConfiguration(): void;
-    setBeautyEffectOptions(): void;
     hasScreen(): boolean;
     /**
      * 设置屏幕共享属性。
@@ -218,8 +216,6 @@ declare interface Stream {
     */
     setScreenProfile(profile: ScreenProfileOptions): void;
     adjustResolution(MediaType: MediaType): void;
-    getVideoBW(): number;
-    getScreenBW(): number;
     /**
      * 截取指定用户的视频画面(文件保存在浏览器默认路径)
      */
