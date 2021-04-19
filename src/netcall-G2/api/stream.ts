@@ -1631,7 +1631,7 @@ class Stream extends EventEmitter {
     this.client.apiFrequencyControl({
       name: 'setScreenProfile',
       code: 0,
-      param: `${profile}`
+      param: JSON.stringify(profile, null, 2)
     })
   }
 
