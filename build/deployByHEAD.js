@@ -7,6 +7,7 @@ const fs = require('fs-extra')
 const path = require('path')
 const pjson = require('../package.json')
 const git = require('./git')
+const file = require('./file')
 
 const version = pjson.private ? pjson.privateVersion : pjson.version
 const commitId = git.currentCommit();
@@ -36,6 +37,39 @@ var srcFolderApidoc = path.join(
 var destFolderApidoc = path.join(TARGET_DIR, `${buildId}`, 'api')
 fs.emptyDirSync(destFolderApidoc)
 copy(srcFolderApidoc, destFolderApidoc)
+
+// 搬运Electron的app文件夹
+var srcFolderElectronApp = path.join(
+  __dirname,
+  `../build/electron/Electron.app/Contents/Resources/app`
+)
+var srcFolderElectronSrc = srcFolder3;
+var destFilenameZip = path.join(TARGET_DIR, `${buildId}`, 'electronApp.zip')
+
+const zipSources = [];
+const fileNames = fs.readdirSync(srcFolderElectronApp);
+fileNames.forEach((name) => {
+  zipSources.push({
+    type: 'file',
+    path: path.join(srcFolderElectronApp, name),
+    name: name,
+  })
+});
+zipSources.push({
+  type: 'directory',
+  path: srcFolderElectronSrc,
+  name: 'nim'
+});
+
+file.zip(destFilenameZip, {
+  sources: zipSources,
+  done () {
+    console.log('zip electron app folder done')
+  },
+  onerror (err) {
+    throw err
+  }
+})
 
 function copy (srcFolder, destFolder, allowPath, excludePath) {
   console.log('\nsrcFolder:', srcFolder)

@@ -528,6 +528,7 @@ class Stream extends EventEmitter {
       }
       if (this.screen){
         await this.mediaHelper.getStream({
+          sourceId: this.sourceId,
           screen: this.screen
         })
       }
