@@ -662,7 +662,7 @@ $('#joinChannel-btn').on('click', async () => {
       }
     }
     const { cid } = rtc.client.getChannelInfo()
-    $('#cid').html(cid)
+    $('#cid').html(`<a target="_blank" href="http://vcloud-statics.hz.netease.com/grafana/d/tYiznOXZk/sdkke-hu-duan?orgId=1&from=now%2Fw&to=now%2Fw&fullscreen&panelId=104&var-cid=${cid}&var-uid=${$("#uid").val()}">${cid}</a>`)
   },
   error =>{
     console.error('加入房间失败',error)
