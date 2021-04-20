@@ -281,6 +281,10 @@ export interface StreamOptions {
    * 自定义的视频的track
    */
   videoSource?: MediaStreamTrack;
+  /**
+   * Electron 屏幕共享的数据源 ID，您可以自行获取。
+   */
+  sourceId?: string;
 }
 
 export interface SubscribeOptions {
