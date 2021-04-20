@@ -14,7 +14,7 @@ import {
   FirstPacketSentEvent,
   FunctionEvent,
   CommonEvent,
-  HeartbeatEvent,
+  HeartbeatEvent, APIEventItem,
 } from "../../types";
 
 let reportUrl = "https://statistic.live.126.net/statics/report/common/form";
@@ -36,7 +36,7 @@ class DataReport {
   private eventMap: {
     [prop: string]: DataEvent;
   }
-  private api: DataEvent[];
+  private api: APIEventItem[];
   private heartbeat: HeartbeatEvent | null;
   private networkChange?: DataEvent;
   /**
@@ -109,7 +109,7 @@ class DataReport {
     const apiEventsKeys = Object.keys(this.adapterRef.apiEvents);
     const eventNames = apiEventKeys.concat(apiEventsKeys.filter((eventName)=> !apiEventKeys.includes(eventName)));
     
-    let api:DataEvent[] = [];
+    let api:APIEventItem[] = [];
     for (let i in eventNames) {
       const eventName = eventNames[i];
       if (this.adapterRef.apiEvents[eventName] && this.adapterRef.apiEvents[eventName].length){
@@ -282,7 +282,7 @@ class DataReport {
       common: CommonEvent;
       heartbeat?: HeartbeatEvent;
       event? :{
-        [prop: string]: DataEvent[];
+        [prop: string]: APIEventItem[];
       };
     } = {
       common: this.common
@@ -293,6 +293,14 @@ class DataReport {
     if (this.heartbeat)  {
       data.heartbeat = this.heartbeat
       if (this.api.length) {
+        this.api.forEach((evt)=>{
+          if (!evt.uid){
+            evt.uid = this.adapterRef.channelInfo && this.adapterRef.channelInfo.uid
+          }
+          if (!evt.cid){
+            evt.cid = this.adapterRef.channelInfo && this.adapterRef.channelInfo.cid
+          }
+        });
         data.event = {apiEvent: this.api};
         this.api = [];
       }

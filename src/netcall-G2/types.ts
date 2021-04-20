@@ -44,7 +44,7 @@ export interface AdapterRef {
   };
   memberMap: {[uid:number]: string};
   apiEvents: {
-    [prop: string]: DataEvent[];
+    [prop: string]: APIEventItem[];
   };
   transportStats: {
     txRtt: number;
@@ -802,7 +802,10 @@ export interface APIFrequencyControlOptions{
 
 export interface APIEventItem{
   name: string;
+  code?: number;
   time: number;
+  cid: number;
+  uid: number;
   param: string;
   request_id: number;
 }

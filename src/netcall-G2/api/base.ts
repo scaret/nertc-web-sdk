@@ -374,7 +374,7 @@ class Base extends EventEmitter {
 
   //G2 API事件上报频率控制
   apiFrequencyControl(options: APIFrequencyControlOptions) {
-    const {name, param} = options;
+    const {name, code, param} = options;
     if(!name) return
     if (!this.adapterRef.apiEvent[name]) {
       this.adapterRef.apiEvent[name] = []
@@ -385,6 +385,9 @@ class Base extends EventEmitter {
     let length = this.adapterRef.apiEvent[name].length
     if (length < 10) {
       this.adapterRef.apiEvent[name].push({
+        cid: this.adapterRef.channelInfo && this.adapterRef.channelInfo.cid,
+        uid: this.adapterRef.channelInfo && this.adapterRef.channelInfo.uid,
+        code: code,
         name,
         time: clientNtpTime + Date.now(),
         param,
