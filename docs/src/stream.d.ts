@@ -122,6 +122,10 @@ declare interface Stream {
        * 指定要开启的设备ID，通过getDevices接口获取到设备列表
        */
       deviceId?: string;
+      /**
+       * Electron 屏幕共享的数据源 ID，您可以自行获取。
+       */
+      sourceId?: string;
     }): Promise<undefined>;
     /**
      * 关闭音视频输入设备，如麦克风、摄像头、屏幕共享，并且停止发布
