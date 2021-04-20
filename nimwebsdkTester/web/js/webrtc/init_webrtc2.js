@@ -860,6 +860,11 @@ $('#closeAsl').on('click', () => {
 })
 
 function initLocalStream(audioSource, videoSource) {
+  let sourceId = "";
+  if ($("#enableScreen").prop("checked")){
+    sourceId = getUrlVars().sourceId;
+    addLog("Electron屏幕共享：" + sourceId)
+  }
   rtc.localStream = WebRTC2.createStream({
     uid: +$('#uid').val(),
     audio: $('#enableAudio').prop('checked'),
@@ -868,6 +873,7 @@ function initLocalStream(audioSource, videoSource) {
     video: $('#enableVideo').prop('checked'),
     cameraId: $('#camera').val(),
     screen: $('#enableScreen').prop('checked'),
+    sourceId: sourceId,
     audioSource,
     videoSource
   })
@@ -1400,7 +1406,8 @@ $('#playScreen').on('click', () => {
     frameRate: WebRTC2.VIDEO_FRAME_RATE[screenFrameRate]
   })
   rtc.localStream.open({
-    type: 'screen'
+    type: 'screen',
+    sourceId: getUrlVars().sourceId
   }).then(()=>{
     rtc.localStream.play(document.getElementById('local-container'))
     rtc.localStream.setLocalRenderMode(globalConfig.localViewConfig)
@@ -2112,6 +2119,20 @@ function checkRemoteStramStruck(){
     struckGraph.updateEndDate();
     num = 0
   }, 1000)
+}
+
+// Read a page's GET URL variables and return them as an associative array.
+function getUrlVars()
+{
+  var vars = [], hash;
+  var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+  for(var i = 0; i < hashes.length; i++)
+  {
+    hash = hashes[i].split('=');
+    vars.push(decodeURIComponent(hash[0]));
+    vars[hash[0]] = decodeURIComponent(hash[1]);
+  }
+  return vars;
 }
 
 function getdate() {
