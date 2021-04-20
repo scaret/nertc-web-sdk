@@ -41,7 +41,7 @@ QUnit.module('连接测试', function() {
       });
       const localStream = WebRTC2.createStream({
         client: client,
-        uid: "" + uid,
+        uid: uid,
         audio: false,
         video: true
       });
@@ -49,16 +49,17 @@ QUnit.module('连接测试', function() {
       window.localStream = localStream;
       const joinResult = await client.join({
         "channelName": `channel_${uid}`,
-        "uid": "" + uid
+        "uid": uid
       });
       assert.true(true, `uid ${uid} 加入房间 channel_${uid} 成功，信令通道可以连通。`);
+      localStream.setVideoProfile({resolution: WebRTC2.VIDEO_QUALITY[resolution[0]]})
       await localStream.init();
       const localViewConfig = {
         width: 400,
         height: 400,
       };
-      localStream.setLocalRenderMode(localViewConfig)
       localStream.play(document.querySelector("#publisherWrapper"));
+      localStream.setLocalRenderMode(localViewConfig)
 
       const videoSendBitrate = series;
       // const audioSendBitrate = chart.series[1];
