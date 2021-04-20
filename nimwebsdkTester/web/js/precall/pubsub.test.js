@@ -16,7 +16,7 @@ QUnit.module('发布-接收测试', function() {
     });
     const localStream = WebRTC2.createStream({
       client: client,
-      uid: "" + uid,
+      uid: uid,
       audio: true,
       video: true
     });
@@ -24,11 +24,10 @@ QUnit.module('发布-接收测试', function() {
     window.localStream = localStream;
     const joinResult = await client.join({
         "channelName": `channel_${uid}`,
-        "uid": "" + uid
+        "uid": uid
     });
     assert.true(true, `uid ${uid} 加入房间 channel_${uid} 成功`);
     await localStream.init();
-    await client.publish(localStream);
     
     // 接收端
     const subUid = counter++;
@@ -52,11 +51,11 @@ QUnit.module('发布-接收测试', function() {
       console.warn('订阅别人的流成功的通知')
       var remoteStream = evt.stream;
       window.remoteStream = remoteStream;
+      remoteStream.play(document.querySelector("#subscriberWrapper"));
       remoteStream.setRemoteRenderMode({
         width: 400,
         height: 400,
       });
-      remoteStream.play(document.querySelector("#subscriberWrapper"));
       const highchartOptions = {
         title:  {text: "接收端码率"},
         yAxis: {
@@ -99,8 +98,10 @@ QUnit.module('发布-接收测试', function() {
     });
     await subClient.join({
       "channelName": `channel_${uid}`,
-      "uid": "" + subUid
+      "uid": subUid
     });
+    await client.publish(localStream);
+
     subClient.on('stream-added', async (evt)=>{
       console.log('stream-added', evt);
       evt.stream.subConf = {
