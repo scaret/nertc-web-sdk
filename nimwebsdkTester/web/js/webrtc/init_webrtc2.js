@@ -611,7 +611,7 @@ $('#joinChannel-btn').on('click', async () => {
   console.info('开始加入房间')
   rtc.client.setLocalMediaPriority({
     priority,
-    isPreemptive
+    preemtiveMode: isPreemptive
   })
 
   rtc.client.adapterRef.testConf = {

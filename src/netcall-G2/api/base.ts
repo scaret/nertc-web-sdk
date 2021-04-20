@@ -70,7 +70,7 @@ class Base extends EventEmitter {
       },
       userPriority: {
         priority: 100, 
-        isPreemptive: false
+        preemtiveMode: false
       },
       //webrtc G2 API上报频控
       apiEvent: {},
