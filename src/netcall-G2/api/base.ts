@@ -400,7 +400,7 @@ class Base extends EventEmitter {
       if (!this.adapterRef.apiEvent[name][0].time){
         throw new Error('Invalid time for ');
       }
-      if ((clientNtpTime + Date.now() - this.adapterRef.apiEvent[name][0].time) < 10) {
+      if ((clientNtpTime + Date.now() - this.adapterRef.apiEvent[name][0].time) < 10000) {
         this.adapterRef.requestId[name]++
       } else {
         this.adapterRef.apiEvents[name] = this.adapterRef.apiEvents[name].concat(this.adapterRef.apiEvent[name])
