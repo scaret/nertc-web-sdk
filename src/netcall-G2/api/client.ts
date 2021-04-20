@@ -81,11 +81,11 @@ class Client extends Base {
    * @description
    设置用户自身媒体流优先级，如果某个用户的优先级设为高，那么这个用户的媒体流的优先级就会高于其他用户，弱网下会优先保证接收高优先级用户流的质量。
    ##### 注意：
-   isPreemptive如果是true，可以抢占其他人的优先级，被抢占的人的媒体优先级变为普通优先级，目前抢占者退出其他人的优先级也无法恢复。推荐一个音视频房间中只有一个高优先级的用户调用该接口。
+   preemtiveMode如果是true，可以抢占其他人的优先级，被抢占的人的媒体优先级变为普通优先级，目前抢占者退出其他人的优先级也无法恢复。推荐一个音视频房间中只有一个高优先级的用户调用该接口。
    * @memberOf Client#
    * @param {Object} options
    * @param {Number} options.priority 优先级, 目前支持50或100两个值，其中50为高优先级，100位普通优先级，默认100
-   * @param {Boolean} options.isPreemptive  是否为抢占模式，默认false
+   * @param {Boolean} options.preemtiveMode  是否为抢占模式，默认false
    * @return {null}
    */
 
@@ -99,7 +99,7 @@ class Client extends Base {
       this.adapterRef.userPriority = undefined
       return
     }*/
-    const {priority = 100, isPreemptive = false} = options
+    const {priority = 100, preemtiveMode = false} = options
     if(typeof priority !== 'number' || isNaN(priority)){
       throw new Error('setLocalMediaPriority: priority 非 number类型')
     }

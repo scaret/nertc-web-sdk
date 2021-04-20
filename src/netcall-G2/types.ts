@@ -823,7 +823,7 @@ export interface RecordConfig{
 
 export interface MediaPriorityOptions{
   priority: number;
-  isPreemptive?: boolean;
+  preemtiveMode?: boolean;
 }
 
 export interface JoinOptions{
