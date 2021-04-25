@@ -381,7 +381,10 @@ class Base extends EventEmitter {
       this.adapterRef.apiEvents[name] = []
       this.adapterRef.requestId[name] = 0
     }
-    let clientNtpTime = this.adapterRef.channelInfo.clientNtpTime || 0
+    let time = this.adapterRef.channelInfo.clientNtpTime - this.adapterRef.channelInfo.T4;
+    if (!(time > 0)){
+      time = 0;
+    }
     let length = this.adapterRef.apiEvent[name].length
     if (length < 10) {
       this.adapterRef.apiEvent[name].push({
@@ -389,7 +392,7 @@ class Base extends EventEmitter {
         uid: this.adapterRef.channelInfo && this.adapterRef.channelInfo.uid,
         code: code,
         name,
-        time: clientNtpTime + Date.now(),
+        time: Date.now() + time,
         param,
         request_id: this.adapterRef.requestId[name]++
       })
@@ -400,7 +403,7 @@ class Base extends EventEmitter {
       if (!this.adapterRef.apiEvent[name][0].time){
         throw new Error('Invalid time for ');
       }
-      if ((clientNtpTime + Date.now() - this.adapterRef.apiEvent[name][0].time) < 10000) {
+      if ((Date.now() - this.adapterRef.apiEvent[name][0].time) < 10000) {
         this.adapterRef.requestId[name]++
       } else {
         this.adapterRef.apiEvents[name] = this.adapterRef.apiEvents[name].concat(this.adapterRef.apiEvent[name])
