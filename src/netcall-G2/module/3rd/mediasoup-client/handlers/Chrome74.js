@@ -561,14 +561,21 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
                 break;
             }
         }
-        
         return { mid };
     }
 
     async recoverTransceiver(remoteUid, mid, kind) {
         logger.debug('recoverTransceiver() [kind:%s, remoteUid:%s, mid: %s]', kind, remoteUid, mid);
         const transceiver = this._mapMidTransceiver.get(mid);
-        transceiver.isUseless = true
+        if (transceiver) {
+            transceiver.isUseless = true
+        } else {
+            logger.debug('recoverTransceiver() transceiver undefined');
+            const transceivers = this._pc.getReceivers()
+            transceivers.forEach(item => {
+                logger.debug('recoverTransceiver() transceiver undefined');
+            })
+        }
         return;
     }
 

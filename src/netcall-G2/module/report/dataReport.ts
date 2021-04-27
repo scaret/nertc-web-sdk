@@ -327,11 +327,11 @@ class DataReport {
       return this;
     }
 
-    this.adapterRef.logger.log('reportUrl: ', reportUrl)
+    //this.adapterRef.logger.log('reportUrl: ', reportUrl)
     if (this.adapterRef.instance._params.neRtcServerAddresses.statisticsServer) {
       //reportUrl = reportUrl.replace("statistic.live.126.net", this.adapterRef.instance._params.neRtcServerAddresses.statisticsServer);
       reportUrl = this.adapterRef.instance._params.neRtcServerAddresses.statisticsServer
-      this.adapterRef.logger.log('私有化配置的 reportUrl: ', reportUrl)
+      //this.adapterRef.logger.log('私有化配置的 reportUrl: ', reportUrl)
     }
     ajax({ 
       type: "post", 

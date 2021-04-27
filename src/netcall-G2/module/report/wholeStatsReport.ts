@@ -92,7 +92,7 @@ class WholeStatsReport {
     this.infos.uid = this.adapterRef.channelInfo.uid
     this.infos.cid = this.adapterRef.channelInfo.cid
     this.infos.time = Date.now()
-    this.adapterRef.logger.log('url: ', url)
+    //this.adapterRef.logger.log('url: ', url)
     if (this.adapterRef.instance._params.neRtcServerAddresses.statisticsServer) {
       //url = url.replace("statistic.live.126.net", this.adapterRef.instance._params.neRtcServerAddresses.statisticsServer);
       url = this.adapterRef.instance._params.neRtcServerAddresses.statisticsServer
