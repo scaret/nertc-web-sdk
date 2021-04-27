@@ -2,20 +2,17 @@
 
 NERTC Web SDK 提供完善的音视频通话 JavaScript 开发框架，提供基于网络的视频通话和语音通话功能，支持在网页中调用API快速建立音视频连接，进行音视频通话和推流的服务。
 
-完整的 NERTC Web SDK 由 WEBRTC2、Client 和 Stream 三部分组成。
+完整的 NERTC Web SDK 由 WebRTC2、Client 和 Stream 三部分组成。
 - [[WebRTC2]] 是基础对象，是所有可调用方法的入口。
 - [[Client]] 是客户端对象，负责通话中的本地或远程用户的核心操作。
 - [[Stream]] 是音视频流对象，负责音视频流相关的设置。
 
 <style>
 table th:first-of-type {
-    width: 35%;
+    width: 10%;
 }
 table th:nth-of-type(2) {
-    width: 50%;
-}
-table th:nth-of-type(3) {
-    width: 15%;
+    width: 10%;
 }
 </style>
 
