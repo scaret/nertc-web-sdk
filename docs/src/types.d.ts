@@ -448,7 +448,6 @@ export interface NERtcTextWatermarkConfig {
  * - 时间戳水印的时间和当前时间相同，且实时变化。
  */
 export interface NERtcTimestampWatermarkConfig {
-  content?: string;
   /**
    * 字体大小。默认值为 10，相当于 144 dpi 设备上的 10 x 15 磅。
    */
@@ -497,11 +496,11 @@ export interface NERtcImageWatermarkConfig {
    */
   offsetY: number;
   /**
-   * 水印框的宽度。单位为像素（pixel），默认值为 0 表示没有水印框
+   * 水印图片的宽度。单位为像素（pixel），默认值为 0 表示按原始图宽。
    */
   wmWidth?: number;
   /**
-   * 水印框的高度。单位为像素（pixel），默认值为 0 表示没有水印框
+   * 水印图片的高度。单位为像素（pixel），默认值为 0 表示按原始图高。
    */
   wmHeight?: number;
   /**
