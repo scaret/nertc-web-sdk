@@ -354,16 +354,16 @@ class Client extends Base {
     checkExists({tag: 'client.subscribe:stream', value: stream});
     this.adapterRef.logger.log(`订阅远端 ${stream.streamID} 音视频流`)
     const uid = stream.getId()
-    if (!uid){
+    if (!uid) {
       throw new Error('No uid');
     }
-    if (!this.adapterRef._mediasoup){
+    if (!this.adapterRef._mediasoup) {
       throw new Error('No this.adapterRef._mediasoup');
     }
     try {
       if (stream.subConf.audio) {
         // 应该订阅音频
-        if (stream.pubStatus.audio.audio && !stream.pubStatus.audio.consumerId){
+        if (stream.pubStatus.audio.audio && !stream.pubStatus.audio.consumerId) {
           if (stream.pubStatus.audio.consumerStatus !== 'start') {
             this.adapterRef.logger.log('开始订阅 %s 音频流', stream.getId())
             stream.pubStatus.audio.consumerStatus = 'start'
@@ -398,9 +398,9 @@ class Client extends Base {
           this.adapterRef.logger.log('取消订阅音频流完成')
         }
       }
-      if (stream.subConf.video){
+      if (stream.subConf.video) {
         // 应该订阅视频
-        if (stream.pubStatus.video.video && !stream.pubStatus.video.consumerId){
+        if (stream.pubStatus.video.video && !stream.pubStatus.video.consumerId) {
           if (stream.pubStatus.video.consumerStatus !== 'start') {
             this.adapterRef.logger.log('开始订阅 %s 视频流', stream.getId())
             stream.pubStatus.video.consumerStatus = 'start'
@@ -410,9 +410,9 @@ class Client extends Base {
             this.adapterRef.logger.log('订阅 %s 视频流完成', stream.getId())
           }
         }
-      }else{
+      } else {
         // 不应该订阅视频
-        if (stream.pubStatus.video.consumerId && stream.pubStatus.video.stopconsumerStatus !== 'start'){
+        if (stream.pubStatus.video.consumerId && stream.pubStatus.video.stopconsumerStatus !== 'start') {
           this.adapterRef.logger.log('开始取消订阅视频流')
           stream.pubStatus.video.stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup){

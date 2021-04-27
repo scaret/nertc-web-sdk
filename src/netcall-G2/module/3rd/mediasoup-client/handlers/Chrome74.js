@@ -550,13 +550,45 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
         return { dataChannel, sctpStreamParameters };
     }
 
-    async prepareLocalSdp(kind) {
-        logger.debug('prepareLocalSdp() [kind:%s]', kind);
+    async prepareMid(kind, remoteUid) {
+        logger.debug('prepareMid() [kind:%s, remoteUid:%s]', kind, remoteUid);
         let mid = -1
         for (const transceiver of this._mapMidTransceiver.values()) {
-            logger.debug('transceiver M行信息: %o', transceiver)
             const mediaType = transceiver.receiver.track && transceiver.receiver.track.kind || kind
-            logger.debug('mediaType: ', mediaType)
+            logger.debug('prepareMid() transceiver M行信息 [mid: %s, mediaType: %s, isUseless: %s]', transceiver.mid, mediaType, transceiver.isUseless)
+            if (transceiver.isUseless && mediaType === kind) {
+                mid = transceiver.mid;
+                break;
+            }
+        }
+        
+        return { mid };
+    }
+
+    async recoverTransceiver(remoteUid, mid, kind) {
+        logger.debug('recoverTransceiver() [kind:%s, remoteUid:%s, mid: %s]', kind, remoteUid, mid);
+        const transceiver = this._mapMidTransceiver.get(mid);
+        transceiver.isUseless = true
+        return;
+    }
+
+    async prepareLocalProperty(kind, remoteUid) {
+        logger.debug('prepareLocalProperty() [kind:%s, remoteUid:%s]', kind, remoteUid);
+       let offer = await this._pc.localDescription;
+        const localSdpObject = sdpTransform.parse(offer.sdp);
+        let dtlsParameters = undefined;
+        if (!this._transportReady)
+            dtlsParameters = await this._setupTransport({ localDtlsRole: 'server', localSdpObject });
+        const rtpCapabilities = sdpCommonUtils.extractRtpCapabilities({ sdpObject: localSdpObject });
+        return { dtlsParameters, rtpCapabilities };
+    }
+
+    async prepareLocalSdp(kind, remoteUid) {
+        logger.debug('prepareLocalSdp() [kind:%s, remoteUid:%s]', kind, remoteUid);
+        let mid = -1
+        for (const transceiver of this._mapMidTransceiver.values()) {
+            const mediaType = transceiver.receiver.track && transceiver.receiver.track.kind || kind
+            logger.debug('prepareLocalSdp() transceiver M行信息 [mid: %s, mediaType: %s, isUseless: %s]', transceiver.mid, mediaType, transceiver.isUseless)
             if (transceiver.isUseless && mediaType === kind) {
                 mid = transceiver.mid;
                 transceiver.isUseless = false
@@ -565,7 +597,7 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
         }
 
         if (mid === -1) {
-            logger.debug('添加一个M行')
+            logger.debug('prepareLocalSdp() 添加一个M行')
             this._pc.addTransceiver(kind, { direction: "recvonly" });
         } 
         
@@ -580,17 +612,17 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
             dtlsParameters = await this._setupTransport({ localDtlsRole: 'server', localSdpObject });
         const rtpCapabilities = sdpCommonUtils.extractRtpCapabilities({ sdpObject: localSdpObject });
 
-        /*if (mid === -1) {
+        if (mid === -1) {
             mid = localSdpObject.media.length - 1
-        } */
+        } 
         return { dtlsParameters, rtpCapabilities, offer, mid };
     }
 
-    async receive({ iceParameters, iceCandidates, dtlsParameters, sctpParameters, trackId, kind, rtpParameters, offer, probeSSrc=-1 }) {
+    async receive({ iceParameters, iceCandidates, dtlsParameters, sctpParameters, trackId, kind, rtpParameters, offer, probeSSrc=-1, remoteUid }) {
         this._assertRecvDirection();
-        logger.debug('receive() | calling pc.setLocalDescription()');
+        logger.debug('receive() [trackId: %s, kind: %s, remoteUid: %s]', trackId, kind, remoteUid);
         await this._pc.setLocalDescription(offer);
-        logger.debug('receive() [trackId:%s, kind:%s]', trackId, kind);
+        logger.debug('receive() | calling pc.setLocalDescription()');
         if (!this._remoteSdp) {
             this._remoteSdp = new RemoteSdp_1.RemoteSdp({
                 iceParameters,
@@ -604,7 +636,7 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
         //let localId = String(this._mapMidTransceiver.size);
         let reuseMid = null
         const localId = rtpParameters.mid
-        logger.debug('处理对端的M行 localId: ', localId)
+        logger.debug('处理对端的M行 mid: ', localId)
         this._remoteSdp.receive({
             mid: rtpParameters.mid,
             kind,
@@ -637,14 +669,16 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
     }
     async stopReceiving(localId) {
         this._assertRecvDirection();
-        logger.debug('stopReceiving() [localId:%s]', localId);
+        logger.debug('stopReceiving() [localId: %s]', localId);
         const transceiver = this._mapMidTransceiver.get(localId);
         if (!transceiver)
             throw new Error('associated RTCRtpTransceiver not found');
+        console.log('测试 测试 测试 stopReceiving(), transceiver: ', transceiver)
         if (transceiver.receiver && transceiver.receiver.track && transceiver.receiver.track && transceiver.receiver.track.kind === 'audio') {
             //audio的M行，删除ssrc，导致track终止，ssrc变更也会导致track终止
             //处理策略：M行不复用，新增
         } else {
+            console.log('测试 测试 测试 stopReceiving(), 复用了transceiver')
             transceiver.isUseless = true
         }
         this._remoteSdp.disableMediaSection(transceiver.mid)

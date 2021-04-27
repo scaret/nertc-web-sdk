@@ -350,6 +350,18 @@ export interface RecordConfig {
    */
   recordType: number;
 }
+
+export interface MediaPriorityOptions {
+  /**
+   * 优先级, 目前支持50或100两个值，其中50为高优先级，100位普通优先级，默认100
+   */
+  priority: number;
+  /**
+   * 是否为抢占模式，默认false
+   */
+  preemtiveMode?: boolean;
+}
+
 export interface JoinOptions {
   /**
    * 频道名称
