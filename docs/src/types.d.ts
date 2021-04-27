@@ -350,6 +350,22 @@ export interface RecordConfig {
    */
   recordType: number;
 }
+
+export interface MediaPriorityOptions {
+  /**
+   * 本地用户的媒体流优先级。支持设置为：
+   * - 50：高优先级。
+   * - 100：（默认）普通优先级。
+   */
+  priority: number;
+  /**
+   * 是否开启抢占模式。默认为 false，即不开启。
+   * - 抢占模式开启后，本地用户可以抢占其他用户的高优先级，被抢占的用户的媒体优先级变为普通优先级，在抢占者退出房间后，其他用户的优先级仍旧维持普通优先级。
+   * - 抢占模式关闭时，如果房间中已有高优先级用户，则本地用户的高优先级设置不生效，仍旧为普通优先级。
+   */
+  preemtiveMode?: boolean;
+}
+
 export interface JoinOptions {
   /**
    * 频道名称

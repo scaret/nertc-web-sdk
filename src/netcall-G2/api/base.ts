@@ -356,6 +356,7 @@ class Base extends EventEmitter {
     }
     this.adapterRef._mediasoup.init()
     this.adapterRef.logger.log('下行通道异常, remoteStreamMap', this.adapterRef.remoteStreamMap)
+    this.adapterRef.logger.log('this._eventQueue: ', this.adapterRef._mediasoup._eventQueue)
     for (const streamId in this.adapterRef.remoteStreamMap) {
       const stream = this.adapterRef.remoteStreamMap[streamId];
       stream.pubStatus.audio.consumerStatus = 'init'
@@ -364,8 +365,14 @@ class Base extends EventEmitter {
       stream.pubStatus.video.consumerId = ""
       stream.pubStatus.screen.consumerId = ""
       this.adapterRef.logger.log('重连逻辑订阅 start：', stream.streamID)
-      //@ts-ignore
-      await this.subscribe(stream)
+      try {
+        //@ts-ignore
+        await this.subscribe(stream)
+      } catch (e) {
+        this.adapterRef.logger.log('重连逻辑订阅 error：', e)
+        break
+      }
+      
       this.adapterRef.logger.log('重连逻辑订阅 over：', stream.streamID)
     }
   }

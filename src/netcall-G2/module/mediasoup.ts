@@ -31,7 +31,7 @@ class Mediasoup extends EventEmitter {
   public _recvTransport:Transport|null;
   private _sendTransportTimeoutTimer:Timer|null;
   private _recvTransportTimeoutTimer:Timer|null;
-  private _eventQueue: ProduceConsumeInfo[];
+  public _eventQueue: ProduceConsumeInfo[];
   public _protoo: Peer|null;
   // senderEncodingParameter。会复用上次的senderEncodingParameter
   private senderEncodingParameter: {
@@ -329,7 +329,7 @@ class Mediasoup extends EventEmitter {
     if(!this._sendTransport._events['produce']) {
       this._sendTransport.on(
         'produce', async ({ kind, rtpParameters, appData, localDtlsParameters, offer }, callback, errback) => {
-        this.adapterRef.logger.log('produce 反馈 appData = %o', appData);
+        this.adapterRef.logger.log('produce 反馈 [kind= %s, appData= %o]',kind, JSON.stringify(appData, null, ' '));
         if (!this._sendTransport){
           throw new Error('NO_SEND_TRANSPORT');
         }
@@ -610,8 +610,23 @@ class Mediasoup extends EventEmitter {
     this._eventQueue = [];
     for (let i = 0; i < queue.length; i++){
       const info:ProduceConsumeInfo = queue[i];
-      this.adapterRef.logger.warn(`取消Consume：uid ${info.uid}, uid ${info.uid}, kind ${info.kind}, id ${info.id}`)
+      this.adapterRef.logger.log(`resetConsumeRequestStatus：uid ${info.uid}, uid ${info.uid}, kind ${info.kind}, id ${info.id}`)
       info.reject('resetConsumeRequestStatus');
+    }
+  }
+
+  removeUselessConsumeRequest( options: {producerId?: string, uid?: number}) {
+    const {producerId, uid} = options
+    if(!producerId || !uid) return
+    console.log('options: ', options)
+    this.adapterRef.logger.log(`removeUselessConsumeRequest：producerId ${producerId}, uid ${uid}`)
+    for (let i = 0; i < this._eventQueue.length; i++){
+      const info:ProduceConsumeInfo = this._eventQueue[i];
+      this.adapterRef.logger.log(`removeUselessConsumeRequest：uid ${info.uid}, uid ${info.uid}, kind ${info.kind}, id ${info.id}`)
+      if (info.id === producerId || info.uid === uid) {
+        this._eventQueue.splice(i, 1)
+        i++
+      }
     }
   }
 
@@ -654,7 +669,7 @@ class Mediasoup extends EventEmitter {
           return
         }
         return
-      } else if (remoteStream.pubStatus[mediaTypeShort].stopconsumerStatus !== 'start'){
+      } else if (remoteStream.pubStatus[mediaTypeShort].stopconsumerStatus !== 'start') {
         this.adapterRef.logger.log('先停止之前的订阅')
         try {
           remoteStream.pubStatus[mediaTypeShort].stopconsumerStatus = 'start'
@@ -681,15 +696,15 @@ class Mediasoup extends EventEmitter {
     }
     if (!this._mediasoupDevice || !this._mediasoupDevice.loaded){
       this.adapterRef.logger.error('createConsumer：Waiting for Transport Ready');
-      await waitForEvent(this, 'transportReady', 5000);
+      await waitForEvent(this, 'transportReady', 1000);
     }
     if (!this._recvTransport){
       info.resolve(null);
       throw new Error('NO_RECV_TRANSPORT');
     }
-    //this.adapterRef.logger.log('参看_edgeRtpCapabilities = %o',this._edgeRtpCapabilities);
+    this.adapterRef.logger.log(`prepareLocalSdp [kind: ${kind}, uid: ${uid}]`);
     const prepareRes = 
-      await this._recvTransport.prepareLocalSdp(kind, this._edgeRtpCapabilities);
+      await this._recvTransport.prepareLocalSdp(kind, this._edgeRtpCapabilities, uid);
     if(!this.adapterRef || this.adapterRef.connectState.curState == 'DISCONNECTING' || this.adapterRef.connectState.curState == 'DISCONNECTED') return
     this.adapterRef.logger.log('获取本地sdp，mid = %o', prepareRes.mid);
     let { rtpCapabilities, offer} = prepareRes;
@@ -734,34 +749,26 @@ class Mediasoup extends EventEmitter {
     //   return
     // }
     let { transportId, iceParameters, iceCandidates, dtlsParameters, probeSSrc, rtpParameters, producerId, consumerId, code, errMsg } = consumeRes;
-
-    this.adapterRef.logger.log(`consume反馈结果: code: ${code} uid: ${uid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
-
-    if (rtpParameters && rtpParameters.encodings && rtpParameters.encodings.length && rtpParameters.encodings[0].ssrc) {
-      this.adapterRef.instance.addSsrc(uid, mediaTypeShort, rtpParameters.encodings[0].ssrc)
-    }
-    if (transportId !== undefined) {
-      this._recvTransport.id = transportId;
-    }
-
-    if (probeSSrc !== undefined) {
-      this._probeSSrc = probeSSrc;
-    }
-    if (iceParameters) {
-      this._recvTransportIceParameters = iceParameters
-      this._tempRecv.iceParameters = iceParameters
-    } 
-    dtlsParameters ? this._tempRecv.dtlsParameters = dtlsParameters : null
-    iceCandidates ? this._tempRecv.iceCandidates = iceCandidates : null
-    //@ts-ignore
-    rtpParameters ? this._tempRecv[`${mediaTypeShort}RtpParameters`] = rtpParameters : null
-
+    this.adapterRef.logger.log(`consume反馈结果: code: ${code} uid: ${uid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
     try {
       const peerId = consumeRes.uid
       let isFake = false
+
       if (code !== 200 || !this.adapterRef.remoteStreamMap[uid]) {
-        this.adapterRef.logger.error('订阅 %s 的 %s 媒体失败, errcode: %s, reason: %s ，做容错处理: 重新建立下行连接', uid, kind, code, errMsg)
-        this.resetConsumeRequestStatus();
+        //@ts-ignore
+        if (!remoteStream[kind] || !remoteStream.pubStatus[kind][kind] || !remoteStream.pubStatus[kind].producerId) {
+          this.adapterRef.logger.log(`${uid} 的 ${kind} 的媒体已经停止发布了，直接返回`)
+          await this._recvTransport.recoverLocalSdp(uid, mid, kind)
+          this._eventQueue.shift()
+          info.resolve(null);
+          if (this._eventQueue.length > 0) {
+            this._createConsumer(this._eventQueue[0])
+          }
+          return
+        }
+        this.adapterRef.logger.warn('订阅 %s 的 %s 媒体失败, errcode: %s, reason: %s ，做容错处理: 重新建立下行连接', uid, kind, code, errMsg)
+
+        //this.resetConsumeRequestStatus();
         if (this._recvTransport) {
           await this.closeTransport(this._recvTransport);
         }
@@ -770,6 +777,7 @@ class Mediasoup extends EventEmitter {
         // }
         this._recvTransport = null
         info.resolve(null);
+        this._eventQueue.length = 0
         this.adapterRef.instance.reBuildRecvTransport()
         return
 
@@ -789,6 +797,25 @@ class Mediasoup extends EventEmitter {
         dtlsParameters = this._tempRecv.dtlsParameters
         isFake = true*/
       } 
+
+      if (rtpParameters && rtpParameters.encodings && rtpParameters.encodings.length && rtpParameters.encodings[0].ssrc) {
+        this.adapterRef.instance.addSsrc(uid, mediaTypeShort, rtpParameters.encodings[0].ssrc)
+      }
+      if (transportId !== undefined) {
+        this._recvTransport.id = transportId;
+      }
+
+      if (probeSSrc !== undefined) {
+        this._probeSSrc = probeSSrc;
+      }
+      if (iceParameters) {
+        this._recvTransportIceParameters = iceParameters
+        this._tempRecv.iceParameters = iceParameters
+      } 
+      dtlsParameters ? this._tempRecv.dtlsParameters = dtlsParameters : null
+      iceCandidates ? this._tempRecv.iceCandidates = iceCandidates : null
+      //@ts-ignore
+      rtpParameters ? this._tempRecv[`${mediaTypeShort}RtpParameters`] = rtpParameters : null
       
       let appData = {};
       const consumer = await this._recvTransport.consume({
@@ -797,7 +824,7 @@ class Mediasoup extends EventEmitter {
         kind,
         rtpParameters,
         codecOptions,
-        appData: { ...appData, peerId }, // Trick.
+        appData: { ...appData, peerId, remoteUid: uid }, // Trick.
         offer,
         iceParameters,
         iceCandidates,
@@ -835,7 +862,7 @@ class Mediasoup extends EventEmitter {
 
       this.adapterRef.logger.log('查看事件队列, _eventQueue: ', this._eventQueue.length)
       this._eventQueue.forEach(item => {
-        this.adapterRef.logger.log('consumerList, uid: ${item.uid}, kind: ${item.kind}, id: ${item.id}')
+        this.adapterRef.logger.log(`consumerList, uid: ${item.uid}, kind: ${item.kind}, id: ${item.id}`)
       })
       this._eventQueue.shift()
       info.resolve(null);
@@ -847,14 +874,16 @@ class Mediasoup extends EventEmitter {
       // if(this.adapterRef.connectState.curState == 'DISCONNECTING' || this.adapterRef.connectState.curState == 'DISCONNECTED'){
       //   return
       // }
-      this.adapterRef && this.adapterRef.logger.error('"newConsumer" request failed:%o', error);
+      this.adapterRef && this.adapterRef.logger.log('"newConsumer" request failed: ', error);
+      console.log('"newConsumer" request failed:', error);
       this.adapterRef.logger.error('订阅 %s 的 %s 媒体失败，做容错处理: 重新建立下行连接', uid, mediaTypeShort)
-      this.resetConsumeRequestStatus();
+      //this.resetConsumeRequestStatus();
       if (this._recvTransport) {
         await this.closeTransport(this._recvTransport);
       }
       this._recvTransport = null
       info.reject(error);
+      this._eventQueue.length = 0
       this.adapterRef.instance.reBuildRecvTransport()
     }
   }
@@ -887,7 +916,7 @@ class Mediasoup extends EventEmitter {
   async closeTransport (transport:Transport) {
     if(!transport || !transport.id) return
     try {
-      this.adapterRef.logger.log('停止通道 closeTransport transportId=%o', transport.id);
+      this.adapterRef.logger.log('closeTransport() [停止通道 transportId=%o ]', transport.id);
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
         throw new Error('No _protoo');
       }
@@ -896,7 +925,7 @@ class Mediasoup extends EventEmitter {
           requestId: `${Math.ceil(Math.random() * 1e9)}`, 
           transportId: transport.id,
         });
-      this.adapterRef.logger.log('result: ', result)
+      this.adapterRef.logger.log('closeTransport() [停止通道反馈结果 result=%s ]', JSON.stringify(result, null, ' '));
       transport.close();
     } catch (error) {
       this.adapterRef.logger.error('closeTransport() | failed:%o', error);

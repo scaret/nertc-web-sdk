@@ -4,7 +4,8 @@ import {
   JoinOptions,
   MediaType,
   RTMPTask,
-  RTMPTaskState
+  RTMPTaskState,
+  MediaPriorityOptions
 } from "./types";
 import { Stream } from "./stream";
 import {ConnectionState} from "./types";
@@ -18,6 +19,20 @@ declare interface Client{
      *  获取当前通话信息
      */
     getChannelInfo(): any;
+
+    /**
+     设置本地用户的媒体流优先级。
+     
+     如果某个用户的优先级为高，那么该用户媒体流的优先级就会高于其他用户，弱网环境下 SDK 会优先保证高优先级用户收到的媒体流的质量。
+     
+     @note
+     - 请在加入房间（join）前调用此方法。
+     - 一个音视频房间中只有一个高优先级的用户。建议房间中只有一位用户调用 setLocalMediaPriority 将本端媒体流设为高优先级，否则需要开启抢占模式，保证本地用户的高优先级设置生效。
+
+     @param options 优先级设置。
+     */
+    setLocalMediaPriority (options: MediaPriorityOptions): void;
+
     /**
      * 加入频道
      * @param {Object} options

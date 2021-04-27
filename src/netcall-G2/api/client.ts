@@ -352,24 +352,24 @@ class Client extends Base {
    */
   async subscribe (stream:Stream) {
     checkExists({tag: 'client.subscribe:stream', value: stream});
-    this.adapterRef.logger.log(`订阅远端 ${stream.streamID} 音视频流`)
+    this.adapterRef.logger.log(`subscribe() [订阅远端: ${stream.streamID}]`)
     const uid = stream.getId()
-    if (!uid){
+    if (!uid) {
       throw new Error('No uid');
     }
-    if (!this.adapterRef._mediasoup){
+    if (!this.adapterRef._mediasoup) {
       throw new Error('No this.adapterRef._mediasoup');
     }
     try {
       if (stream.subConf.audio) {
         // 应该订阅音频
-        if (stream.pubStatus.audio.audio && !stream.pubStatus.audio.consumerId){
+        if (stream.pubStatus.audio.audio && !stream.pubStatus.audio.consumerId) {
           if (stream.pubStatus.audio.consumerStatus !== 'start') {
-            this.adapterRef.logger.log('开始订阅 %s 音频流', stream.getId())
+            this.adapterRef.logger.log('subscribe() [开始订阅 %s 音频流]', stream.getId())
             stream.pubStatus.audio.consumerStatus = 'start'
             await this.adapterRef._mediasoup.createConsumer(uid, 'audio', 'audio', stream.pubStatus.audio.producerId);
             stream.pubStatus.audio.consumerStatus = 'end'
-            this.adapterRef.logger.log('订阅 %s 音频流完成', stream.getId())
+            this.adapterRef.logger.log('subscribe() [订阅 %s 音频流完成]', stream.getId())
           }
         }
       } else {
@@ -398,21 +398,22 @@ class Client extends Base {
           this.adapterRef.logger.log('取消订阅音频流完成')
         }
       }
-      if (stream.subConf.video){
+
+      if (stream.subConf.video) {
         // 应该订阅视频
-        if (stream.pubStatus.video.video && !stream.pubStatus.video.consumerId){
+        if (stream.pubStatus.video.video && !stream.pubStatus.video.consumerId) {
           if (stream.pubStatus.video.consumerStatus !== 'start') {
-            this.adapterRef.logger.log('开始订阅 %s 视频流', stream.getId())
+            this.adapterRef.logger.log('subscribe() [开始订阅 %s 视频流]', stream.getId())
             stream.pubStatus.video.consumerStatus = 'start'
             const preferredSpatialLayer = stream.pubStatus.video.simulcastEnable ? stream.subConf.highOrLow : 0
             await this.adapterRef._mediasoup.createConsumer(uid, 'video', 'video', stream.pubStatus.video.producerId, preferredSpatialLayer);
             stream.pubStatus.video.consumerStatus = 'end'
-            this.adapterRef.logger.log('订阅 %s 视频流完成', stream.getId())
+            this.adapterRef.logger.log('subscribe() [订阅 %s 视频流完成]', stream.getId())
           }
         }
-      }else{
+      } else {
         // 不应该订阅视频
-        if (stream.pubStatus.video.consumerId && stream.pubStatus.video.stopconsumerStatus !== 'start'){
+        if (stream.pubStatus.video.consumerId && stream.pubStatus.video.stopconsumerStatus !== 'start') {
           this.adapterRef.logger.log('开始取消订阅视频流')
           stream.pubStatus.video.stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup){
@@ -441,12 +442,12 @@ class Client extends Base {
         // 应该订阅辅流
         if (stream.pubStatus.screen.screen && !stream.pubStatus.screen.consumerId){
           if (stream.pubStatus.screen.consumerStatus !== 'start') {
-            this.adapterRef.logger.log('开始订阅 %s 辅流', stream.getId())
+            this.adapterRef.logger.log('subscribe() [开始订阅 %s 辅流]', stream.getId())
             stream.pubStatus.screen.consumerStatus = 'start'
             const preferredSpatialLayer = stream.pubStatus.screen.simulcastEnable ? stream.subConf.highOrLow : 0
             await this.adapterRef._mediasoup.createConsumer(uid, 'video', 'screenShare', stream.pubStatus.screen.producerId, preferredSpatialLayer);
             stream.pubStatus.screen.consumerStatus = 'end'
-            this.adapterRef.logger.log('订阅 %s 辅流完成', stream.getId())
+            this.adapterRef.logger.log('subscribe() [订阅 %s 辅流完成]', stream.getId())
           }
         }
       }else{
@@ -495,7 +496,8 @@ class Client extends Base {
         }, null, ' ')
       })
     } catch (e) {
-      this.adapterRef.logger.error('API调用失败：Client:subscribe' ,e, ...arguments);
+      console.log(e)
+      this.adapterRef.logger.error('API调用失败：Client:subscribe' ,e , ...arguments);
       this.apiFrequencyControl({
         name: 'subscribe',
         code: -1,

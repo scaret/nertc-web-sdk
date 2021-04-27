@@ -228,6 +228,7 @@ class Signalling extends EventEmitter {
         if (externData.userList) {
           externData.userList.forEach((item:any) =>{
             const uid = +item.uid
+            this.adapterRef._mediasoup?.removeUselessConsumeRequest({uid})
             this.adapterRef.instance.clearMember(uid)
             this.adapterRef.instance.removeSsrc(uid)
             delete this.adapterRef.instance._roleInfo.audienceList[uid];
@@ -275,7 +276,10 @@ class Signalling extends EventEmitter {
         if (remoteStream.pubStatus[mediaTypeShort].consumerId){
           this.adapterRef._mediasoup?.destroyConsumer(remoteStream.pubStatus[mediaTypeShort].consumerId);
           remoteStream.pubStatus[mediaTypeShort].consumerId = '';
+        } else {
+          this.adapterRef._mediasoup?.removeUselessConsumeRequest({producerId: remoteStream.pubStatus[mediaTypeShort].producerId})
         }
+
         remoteStream[mediaTypeShort] = true
         //@ts-ignore
         remoteStream.pubStatus[mediaTypeShort][mediaTypeShort] = true
@@ -313,14 +317,18 @@ class Signalling extends EventEmitter {
         }
         let remoteStream = this.adapterRef.remoteStreamMap[uid]
         if(!remoteStream) return
+        
         if (remoteStream.pubStatus[mediaTypeShort].producerId !== producerId) {
           this.adapterRef.logger.log('该 producerId 已经无效，不处理')
           return
         }
 
+
         if (!this.adapterRef._mediasoup){
           throw new Error('No this.adapterRef._mediasoup');
         }
+
+        this.adapterRef._mediasoup.removeUselessConsumeRequest({producerId})
         if (remoteStream.pubStatus[mediaTypeShort].consumerId){
           this.adapterRef._mediasoup.destroyConsumer(remoteStream.pubStatus[mediaTypeShort].consumerId)
           remoteStream.pubStatus[mediaTypeShort].consumerId = '';

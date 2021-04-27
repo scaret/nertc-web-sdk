@@ -209,6 +209,7 @@ export declare class Transport extends EnhancedEventEmitter {
 
   fillRemoteRecvSdp: (...args:any)=>void;
   prepareLocalSdp: (...args:any)=>{ rtpCapabilities:any, offer:RTCSessionDescription, mid:number, dtlsParameters: any};
+  recoverLocalSdp: (...args:any)=> void;
 }
 export {};
 //# sourceMappingURL=Transport.d.ts.map
