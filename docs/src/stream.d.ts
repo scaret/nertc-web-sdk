@@ -221,16 +221,26 @@ declare interface Stream {
     setScreenProfile(profile: ScreenProfileOptions): void;
     adjustResolution(MediaType: MediaType): void;
     /**
-     * 截取指定用户的视频画面(文件保存在浏览器默认路径)
+     * 截取指定用户的视频流画面。
+     * 
+     * 截图文件保存在浏览器默认路径下。
+     * 
+     * @note
+     * - 本地视频流截图，需要在 Client.join 并 Client.publish 发布流成功之后调用。
+     * - 远端视频流截图，需要在  Client.subscribe 订阅远端视频流之后调用。
+     * - 同时设置文字、时间戳或图片水印时，如果不同类型的水印位置有重叠，会按照图片、文本、时间戳的顺序进行图层覆盖。
      */
     takeSnapshot(options: {
+      /**
+       * 用户 ID。
+       */
       uid: number;
       /**
-       * 截取的图片的保存名称(默认是uid-1的格式名称)
+       * 截图文件名称，默认格式为 uid-1。
        */
       name: string;
       /**
-       * 截取视频还是屏幕共享
+       * 截图的视频流类型。支持设置为主流或辅流。
        */
       mediaType?: MediaType;
     }): Promise<"INVALID_OPERATION" | undefined>;
@@ -369,7 +379,11 @@ declare interface Stream {
      */
     setAudioMixingPosition(playStartTime: number): Promise<unknown>;
     /**
-     * 水印相关
+     * 添加视频画布水印。
+     * 
+     * @note setCanvasWatermarkConfigs 方法作用于本地视频画布，不影响视频流。视频流截图时，图片中不包含水印。
+     * 
+     * @param options 画布水印设置。支持设置文字水印、图片水印和时间戳水印，设置为 null 表示清除水印。
      */
     setCanvasWatermarkConfigs(options: NERtcCanvasWatermarkConfig): void;
     /**
