@@ -378,113 +378,122 @@ export interface JoinOptions {
 }
 
 /**
- * 画布水印配置
+ * 画布水印设置。
+ * 
+ * 同时设置文字、时间戳或图片水印时，如果不同类型的水印位置有重叠，会按照图片、文本、时间戳的顺序进行图层覆盖。
  */
 export interface NERtcCanvasWatermarkConfig {
   /**
-   * 水印类型，video为主流，screen为辅流
+   * 视频流类型。支持设置为主流（video）或辅流（screen）。
    */
   mediaType: 'video'|'screen';
   /**
-   * 文字水印 最对支持10个
+   * 文字水印。最多可以添加 10 个文字水印。
    */
   textWatermarks: NERtcTextWatermarkConfig[];
   /**
-   * 时间戳水印
+   * 时间戳水印。只能添加 1 个时间戳水印。
    */
   timestampWatermarks: NERtcTimestampWatermarkConfig;
   /**
-   * 图片水印，最多支持4个
+   * 图片水印，最多可以添加 4 个图片水印。
    */
   imageWatermarks: NERtcImageWatermarkConfig[];
 }
 /**
- * 文字水印设置参数
+ * 文字水印设置参数。
+ * 
+ * 最多可添加 10 个文字水印。
  */
 export interface NERtcTextWatermarkConfig {
   /**
-   * 文字内容。
-   * <br>支持自动换行。当文字内容长度超过水印框宽度时，会自动换行<br/>
-   * <br>字符串长度没有限制。最终显示受字体大小和水印框大小的影响，超出水印框的部分不显示<br/>
+   * 文字内容，设置为空时，表示不添加文字水印。
+   * - 字符串长度无限制。最终显示受字体大小和水印框大小的影响。超出水印框的部分不显示。
+   * - 如果设置了水印框宽度，当文字内容长度超过水印框宽度时，会自动换行，如果超出水印框高度，超出部分不显示。
+   * - 未设置水印框宽度和高度时，文字不换行，超出水印框的部分不显示。
    */
   content: string;
   /**
-   * 字体大小。默认值为 10，相当于 144 dpi 设备上的 10 x 15 磅
+   * 字体大小。默认值为 10，相当于 144 dpi 设备上的 10 x 15 磅。
    */
   fontSize: number;
   /**
-   * 字体颜色。默认白色
+   * 字体颜色。默认为白色。
    */
   fontColor: number;
   /**
-   * 水印框左上角与视频画布左上角的水平距离。单位为像素（pixel），默认值为 0
+   * 水印左上角与视频画布左上角的水平距离。单位为像素（pixel）。默认为 0。
    */
   offsetX: number;
   /**
-   * 水印框左上角与视频画布左上角的垂直距离。单位为像素（pixel），默认值为 0。
+   * 水印左上角与视频画布左上角的垂直距离。单位为像素（pixel）。默认为 0。
    */
   offsetY: number;
   /**
-   * 水印框颜色。默认灰色（支持透明度）
+   * 水印框内背景颜色。默认为灰色。支持透明度设置。
    */
   wmColor: number;
   /**
-   * 水印框的宽度。单位为像素（pixel），默认值为 0 表示没有水印框
+   * 水印框的宽度。单位为像素（pixel），默认值为 0，表示没有水印框。
    */
   wmWidth: number;
   /**
-   * 水印框的高度。单位为像素（pixel），默认值为 0 表示没有水印框
+   * 水印框的高度。单位为像素（pixel），默认值为 0，表示没有水印框。
    */
   wmHeight: number;
 }
 /**
- * 时间戳水印，格式为 yyyy-MM-dd HH:mm:ss
+ * 时间戳水印设置。
+ * - 只能添加 1 个时间戳水印，格式为 yyyy-MM-dd HH:mm:ss。
+ * - 时间戳水印的时间和当前时间相同，且实时变化。
  */
 export interface NERtcTimestampWatermarkConfig {
   content?: string;
   /**
-   * 字体大小。默认值为 10，相当于 144 dpi 设备上的 10 x 15 磅
+   * 字体大小。默认值为 10，相当于 144 dpi 设备上的 10 x 15 磅。
    */
   fontSize: number;
   /**
-   * 字体颜色。默认白色
+   * 字体颜色。默认为白色。
    */
   fontColor: number;
   /**
-   * 水印框左上角与视频画布左上角的水平距离。单位为像素（pixel），默认值为 0
+   * 水印左上角与视频画布左上角的水平距离。单位为像素（pixel）。默认为 0。
    */
   offsetX: number;
   /**
-   * 水印框左上角与视频画布左上角的垂直距离。单位为像素（pixel），默认值为 0。
+   * 水印左上角与视频画布左上角的垂直距离。单位为像素（pixel）。默认为 0。
    */
   offsetY: number;
   /**
-   * 水印框颜色。默认灰色（支持透明度）
+   * 水印框内背景颜色。默认为灰色。支持透明度设置。
    */
   wmColor: number;
   /**
-   * 水印框的宽度。单位为像素（pixel），默认值为 0 表示没有水印框
+   * 水印框的宽度。单位为像素（pixel），默认值为 0，表示没有水印框。
    */
   wmWidth: number;
   /**
-   * 水印框的高度。单位为像素（pixel），默认值为 0 表示没有水印框
+   * 水印框的高度。单位为像素（pixel），默认值为 0，表示没有水印框。
    */
   wmHeight: number;
 }
 /**
- * 图片水印设置参数
+ * 图片水印设置参数。
+ * 
+ * 支持添加 4 个图片水印。
  */
 export interface NERtcImageWatermarkConfig {
   /**
-   * 水印图片
+   * 水印图片。
    */
   imageUrls: string[];
   /**
-   * 水印框左上角与视频画布左上角的水平距离。单位为像素（pixel），默认值为 0
+   * 水印图片左上角与视频画布左上角的水平距离。单位为像素（pixel），默认值为 0。
    */
   offsetX: number;
   /**
-   * 水印框左上角与视频画布左上角的垂直距离。单位为像素（pixel），默认值为 0。
+   * 水印图片左上角与视频画布左上角的垂直距离。单位为像素（pixel），默认值为 0。
    */
   offsetY: number;
   /**
@@ -496,11 +505,11 @@ export interface NERtcImageWatermarkConfig {
    */
   wmHeight?: number;
   /**
-   * 播放帧率。默认 0 帧
+   * 播放帧率。默认 0 帧/秒，即不自动切换图片，图片单帧静态显示。
    */
   fps: number;
   /**
-   * 是否设置循环。默认循环，设置为false后水印数组播放完毕后消失
+   * 是否设置循环。默认循环，设置为 false 后水印数组播放完毕后消失。
    */
   loop: boolean;
 }
