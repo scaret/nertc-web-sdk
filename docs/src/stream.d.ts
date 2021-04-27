@@ -226,7 +226,8 @@ declare interface Stream {
      * 截图文件保存在浏览器默认路径下。
      * 
      * @note
-     * - 
+     * - 本地视频流截图，需要在 Client.join 并 Client.publish 发布流成功之后调用。
+     * - 远端视频流截图，需要在  Client.subscribe 订阅远端视频流之后调用。
      * - 同时设置文字、时间戳或图片水印时，如果不同类型的水印位置有重叠，会按照图片、文本、时间戳的顺序进行图层覆盖。
      */
     takeSnapshot(options: {
@@ -380,7 +381,9 @@ declare interface Stream {
     /**
      * 添加视频画布水印。
      * 
-     * @param options 视频水印设置。
+     * @note setCanvasWatermarkConfigs 方法作用于本地视频画布，不影响视频流。视频流截图时，图片中不包含水印。
+     * 
+     * @param options 画布水印设置。支持设置文字水印、图片水印和时间戳水印，设置为 null 表示清除水印。
      */
     setCanvasWatermarkConfigs(options: NERtcCanvasWatermarkConfig): void;
     /**
