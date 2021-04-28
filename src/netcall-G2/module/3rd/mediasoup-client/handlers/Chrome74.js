@@ -680,12 +680,10 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
         const transceiver = this._mapMidTransceiver.get(localId);
         if (!transceiver)
             throw new Error('associated RTCRtpTransceiver not found');
-        console.log('测试 测试 测试 stopReceiving(), transceiver: ', transceiver)
         if (transceiver.receiver && transceiver.receiver.track && transceiver.receiver.track && transceiver.receiver.track.kind === 'audio') {
             //audio的M行，删除ssrc，导致track终止，ssrc变更也会导致track终止
             //处理策略：M行不复用，新增
         } else {
-            console.log('测试 测试 测试 stopReceiving(), 复用了transceiver')
             transceiver.isUseless = true
         }
         this._remoteSdp.disableMediaSection(transceiver.mid)
