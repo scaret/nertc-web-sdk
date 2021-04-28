@@ -199,21 +199,9 @@ class Safari12 extends HandlerInterface_1.HandlerInterface {
         } else if (appData.mediaType === 'video' && this._pc.videoSender) {
             logger.warn('videoSender更新track: ', this._pc.videoSender)
             this._pc.videoSender.replaceTrack(track)
-            if (this._pc.audioSender) {
-                // mediaSectionIdx = 1
-            } else {
-                //没有开启mic或者mic开启失败
-                // mediaSectionIdx = 0
-            }
         } else if (appData.mediaType === 'screenShare' && this._pc.screenSender) {
           logger.warn('screenSender更新track: ', this._pc.screenSender)
           this._pc.screenSender.replaceTrack(track)
-          // if (this._pc.audioSender) {
-            // mediaSectionIdx = 1
-          // } else {
-            //没有开启mic或者mic开启失败
-            // mediaSectionIdx = 0
-          // }
         } else {
             let stream = new MediaStream();
             stream.addTrack(track)
@@ -286,6 +274,19 @@ class Safari12 extends HandlerInterface_1.HandlerInterface {
             }
         }
 
+        localSdpObject.media.forEach(media => {
+            if (media.type === 'audio') {
+                media.ext = media.ext.filter((item)=>{
+                   return item.uri.indexOf('transport-wide-cc') == -1 && item.uri.indexOf('abs-send-time') == -1
+                })
+                media.rtcpFb = media.rtcpFb.map((item)=>{
+                   item.type = item.type.replace(/transport-cc/g, 'nack')
+                   return item
+                })
+            }
+        })
+        
+        offer.sdp = sdpTransform.write(localSdpObject)
         // Store in the map.
         this._mapMidTransceiver.set(localId, transceiver);
         return {
@@ -311,7 +312,7 @@ class Safari12 extends HandlerInterface_1.HandlerInterface {
         })
         offer.sdp = sdpTransform.write(localSdp)
 
-        logger.debug('fillRemoteRecvSdp() | calling pc.setLocalDescription() [offer:%o]', offer.sdp);
+        logger.debug('fillRemoteRecvSdp() | calling pc.setLocalDescription()');
         await this._pc.setLocalDescription(offer);
         if (!this._remoteSdp) {
             this._remoteSdp = new RemoteSdp_1.RemoteSdp({
@@ -344,29 +345,35 @@ class Safari12 extends HandlerInterface_1.HandlerInterface {
           let profile = null
           switch(audioProfile) {
             case 'speech_low_quality':
-              profile = 'maxplaybackrate=16000; sprop-maxcapturerate=16000'
+              //16 kHz 采样率，单声道，编码码率约 32 Kbps
+              profile = 'maxplaybackrate=16000;sprop-maxcapturerate=16000;maxaveragebitrate=32000'
               break
             case 'speech_standard':
-              profile = 'maxplaybackrate=32000;sprop-maxcapturerate=32000;maxaveragebitrate=18000'
+              //32 kHz 采样率，单声道，编码码率约 36 Kbps
+              profile = 'maxplaybackrate=32000;sprop-maxcapturerate=32000;maxaveragebitrate=36000'
               break
             case 'music_standard':
-              profile = 'maxplaybackrate=48000;sprop-maxcapturerate=48000'
+              //48 kHz 采样率，单声道，编码码率约 40 Kbps
+              profile = 'maxplaybackrate=48000;sprop-maxcapturerate=48000;'
               break
             case 'standard_stereo':
+              //48 kHz 采样率，双声道，编码码率约 64 Kbps
               profile = 'stereo=1;sprop-stereo=1;maxplaybackrate=48000;sprop-maxcapturerate=48000;maxaveragebitrate=56000'
               break
             case 'high_quality':
+              //48 kHz 采样率，单声道， 编码码率约 128 Kbps
               profile = 'maxplaybackrate=48000;sprop-maxcapturerate=48000;maxaveragebitrate=128000'
               break
             case 'high_quality_stereo':
+              //48 kHz 采样率，双声道，编码码率约 192 Kbps
               profile = 'stereo=1;sprop-stereo=1;maxplaybackrate=48000;sprop-maxcapturerate=48000;maxaveragebitrate=192000'
               break
           }
           if (answer.sdp.indexOf('a=fmtp:111')) {
             //answer.sdp = answer.sdp.replace(/a=fmtp:111 ([0-9=;a-zA-Z]*)/, 'a=fmtp:111 $1;' + profile)
-            answer.sdp = answer.sdp.replace(/a=fmtp:111 ([0-9=;a-zA-Z]*)/, 'a=fmtp:111 minptime=20;maxptime=20;useinbandfec=1;' + profile)
+            answer.sdp = answer.sdp.replace(/a=fmtp:111 ([0-9=;a-zA-Z]*)/, 'a=fmtp:111 minptime=10;useinbandfec=1;' + profile)
           }
-          answer.sdp = answer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=rtcp-fb:111 transport-cc\r\na=minptime:20\r\na=maxptime:20\r\na=rtcp-fb:111 nack`)
+          answer.sdp = answer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=maxptime:60`)
 
         }
         logger.debug('fillRemoteRecvSdp() | calling pc.setRemoteDescription() [answer:%o]', answer.sdp);
@@ -512,13 +519,52 @@ class Safari12 extends HandlerInterface_1.HandlerInterface {
         return { dataChannel, sctpStreamParameters };
     }
 
-    async prepareLocalSdp(kind) {
-        logger.debug('prepareLocalSdp() [kind:%s]', kind);
+    async prepareMid(kind, remoteUid) {
+        logger.debug('prepareMid() [kind:%s, remoteUid:%s]', kind, remoteUid);
         let mid = -1
         for (const transceiver of this._mapMidTransceiver.values()) {
-            logger.debug('transceiver M行信息: %o', transceiver)
             const mediaType = transceiver.receiver.track && transceiver.receiver.track.kind || kind
-            logger.debug('mediaType: ', mediaType)
+            logger.debug('prepareMid() transceiver M行信息 [mid: %s, mediaType: %s, isUseless: %s]', transceiver.mid, mediaType, transceiver.isUseless)
+            if (transceiver.isUseless && mediaType === kind) {
+                mid = transceiver.mid;
+                break;
+            }
+        }
+        return { mid };
+    }
+
+    async recoverTransceiver(remoteUid, mid, kind) {
+        logger.debug('recoverTransceiver() [kind:%s, remoteUid:%s, mid: %s]', kind, remoteUid, mid);
+        const transceiver = this._mapMidTransceiver.get(mid);
+        if (transceiver) {
+            transceiver.isUseless = true
+        } else {
+            logger.debug('recoverTransceiver() transceiver undefined');
+            const transceivers = this._pc.getReceivers()
+            transceivers.forEach(item => {
+                logger.debug('recoverTransceiver() transceiver undefined');
+            })
+        }
+        return;
+    }
+
+    async prepareLocalProperty(kind, remoteUid) {
+        logger.debug('prepareLocalProperty() [kind:%s, remoteUid:%s]', kind, remoteUid);
+       let offer = await this._pc.localDescription;
+        const localSdpObject = sdpTransform.parse(offer.sdp);
+        let dtlsParameters = undefined;
+        if (!this._transportReady)
+            dtlsParameters = await this._setupTransport({ localDtlsRole: 'server', localSdpObject });
+        const rtpCapabilities = sdpCommonUtils.extractRtpCapabilities({ sdpObject: localSdpObject });
+        return { dtlsParameters, rtpCapabilities };
+    }
+
+    async prepareLocalSdp(kind, remoteUid) {
+        logger.debug('prepareLocalSdp() [kind:%s, remoteUid:%s]', kind, remoteUid);
+        let mid = -1
+        for (const transceiver of this._mapMidTransceiver.values()) {
+            const mediaType = transceiver.receiver.track && transceiver.receiver.track.kind || kind
+            logger.debug('prepareLocalSdp() transceiver M行信息 [mid: %s, mediaType: %s, isUseless: %s]', transceiver.mid, mediaType, transceiver.isUseless)
             if (transceiver.isUseless && mediaType === kind) {
                 mid = transceiver.mid;
                 transceiver.isUseless = false
@@ -527,7 +573,7 @@ class Safari12 extends HandlerInterface_1.HandlerInterface {
         }
 
         if (mid === -1) {
-            logger.debug('添加一个M行')
+            logger.debug('prepareLocalSdp() 添加一个M行')
             this._pc.addTransceiver(kind, { direction: "recvonly" });
         } 
         
@@ -542,18 +588,18 @@ class Safari12 extends HandlerInterface_1.HandlerInterface {
             dtlsParameters = await this._setupTransport({ localDtlsRole: 'server', localSdpObject });
         const rtpCapabilities = sdpCommonUtils.extractRtpCapabilities({ sdpObject: localSdpObject });
 
-        /*if (mid === -1) {
+        if (mid === -1) {
             mid = localSdpObject.media.length - 1
-        } */
+        } 
         return { dtlsParameters, rtpCapabilities, offer, mid };
     }
 
 
-    async receive({ iceParameters, iceCandidates, dtlsParameters, sctpParameters, trackId, kind, rtpParameters, offer, probeSSrc=-1 }) {
+    async receive({ iceParameters, iceCandidates, dtlsParameters, sctpParameters, trackId, kind, rtpParameters, offer, probeSSrc=-1, remoteUid}) {
         this._assertRecvDirection();
-        logger.debug('receive() | calling pc.setLocalDescription() [offer:%o]', offer.sdp);
+        logger.debug('receive() [trackId: %s, kind: %s, remoteUid: %s]', trackId, kind, remoteUid);
         await this._pc.setLocalDescription(offer);
-        logger.debug('receive() [trackId:%s, kind:%s]', trackId, kind);
+        logger.debug('receive() | calling pc.setLocalDescription()');
         if (!this._remoteSdp) {
             this._remoteSdp = new RemoteSdp_1.RemoteSdp({
                 iceParameters,
@@ -617,7 +663,7 @@ class Safari12 extends HandlerInterface_1.HandlerInterface {
         if (offer.sdp.indexOf(`a=ice-ufrag:${this._appDate.cid}#${this._appDate.uid}#`) < 0) {
             offer.sdp = offer.sdp.replace(/a=ice-ufrag:([0-9a-zA-Z=+-_\/\\\\]+)/g, `a=ice-ufrag:${this._appDate.cid}#${this._appDate.uid}#recv`)
         }
-        logger.debug('stopReceiving() | calling pc.setLocalDescription() [offer:%o]', offer.sdp);
+        logger.debug('stopReceiving() | calling pc.setLocalDescription()');
         await this._pc.setLocalDescription(offer);
         
         const answer = { type: 'answer', sdp: this._remoteSdp.getSdp() };

@@ -818,6 +818,10 @@ class Mediasoup extends EventEmitter {
       rtpParameters ? this._tempRecv[`${mediaTypeShort}RtpParameters`] = rtpParameters : null
       
       let appData = {};
+      if(rtpParameters.mid != undefined) {
+        rtpParameters.mid = rtpParameters.mid + '' 
+      }
+      
       const consumer = await this._recvTransport.consume({
         id: consumerId,
         producerId,
@@ -877,6 +881,7 @@ class Mediasoup extends EventEmitter {
       this.adapterRef && this.adapterRef.logger.log('"newConsumer" request failed: ', error);
       console.log('"newConsumer" request failed:', error);
       this.adapterRef.logger.error('订阅 %s 的 %s 媒体失败，做容错处理: 重新建立下行连接', uid, mediaTypeShort)
+      //return
       //this.resetConsumeRequestStatus();
       if (this._recvTransport) {
         await this.closeTransport(this._recvTransport);

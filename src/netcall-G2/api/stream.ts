@@ -594,7 +594,7 @@ class Stream extends EventEmitter {
       playOptions.screen = true;
     }
     
-    this.client.adapterRef.logger.log('音视频播放: ', this.streamID, playOptions)
+    this.client.adapterRef.logger.log(`音视频播放, uid: ${this.streamID}, playOptions: `, JSON.stringify(playOptions, null, ' '))
     if (this.isRemote){
       if(playOptions.audio && this._play && this.mediaHelper && this.mediaHelper.audioStream){
         this.client.adapterRef.logger.log('开始播放远端音频: ', this.streamID)
