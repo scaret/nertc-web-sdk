@@ -163,7 +163,14 @@ function getSpeakers() {
 };
 
 function checkSystemRequirements() {
+  var PC = window.RTCPeerConnection || window.webkitRTCPeerConnection;
+  var getUserMedia = navigator.mediaDevices.getUserMedia;
+  var webSocket = window.WebSocket;
+  var isAPISupport = !!PC && !!getUserMedia && !!webSocket;
+  return isAPISupport;
+};
 
+function getHandler() {
   return detectDevice()
 };
 /**
@@ -203,6 +210,7 @@ WebRTC2 = {
   getMicrophones,
   getSpeakers,
   checkSystemRequirements,
+  getHandler,
   destroy,
   VIDEO_FRAME_RATE,
   VIDEO_QUALITY,
@@ -235,6 +243,7 @@ export {
   getMicrophones,
   getSpeakers,
   checkSystemRequirements,
+  getHandler,
   destroy,
   VIDEO_FRAME_RATE,
   VIDEO_QUALITY,

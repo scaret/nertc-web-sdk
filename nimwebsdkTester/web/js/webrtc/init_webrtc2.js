@@ -1966,7 +1966,7 @@ $("#closeWatermarkPanel").on("click", function (){
 
 $("#sdkVersion").text(WebRTC2.VERSION);
 $("#sdkBuild").text(WebRTC2.BUILD);
-$("#systemRequirement").text(WebRTC2.checkSystemRequirements() || "不支持");
+$("#systemRequirement").text(`WebRTC:${WebRTC2.checkSystemRequirements() ? "支持": "不支持"}； 适配器:${WebRTC2.getHandler()}`);
 
 const showStats = async ()=>{
   let str = `<hr/><pre class="pubStats" style="min-width: 200px; float: left;">`;
