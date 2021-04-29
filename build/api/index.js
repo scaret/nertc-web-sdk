@@ -3,7 +3,7 @@ const path = require('path');
 const child_process = require('child_process')
 const pjson = require('../../package.json');
 
-const title = `NeRTC G2 v${pjson.webrtcG2Version}`
+const title = `NERTC V${pjson.webrtcG2Version}`
 if (fs.existsSync(path.join(__dirname, '../../doc'))){
   console.error('文档已迁移至docs/src, 请把文件迁移到d.ts');
   process.exit(0)
