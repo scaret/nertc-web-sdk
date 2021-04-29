@@ -86,6 +86,10 @@ function detectDevice() {
                 return 'Chrome74';
             }
         }
+        else if (browser.getBrowserName() === "WeChat" && browser.getOS() && browser.getOS().name === "iOS") {
+          //微信iOS端
+          return 'Safari12';
+        }
         // Unsupported browser.
         else {
             logger.warn('this._detectDevice() | browser not supported [name:%s, version:%s]', browser.getBrowserName(), browser.getBrowserVersion());
