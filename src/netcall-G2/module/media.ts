@@ -521,6 +521,16 @@ class MediaHelper extends EventEmitter {
     if (!tracks || tracks.length === 0) return
     tracks.forEach(track => {
       track.stop()
+      stream.removeTrack(track);
+      if (this.micTrack === track){
+        this.micTrack = null;
+      }
+      if (this.cameraTrack === track){
+        this.cameraTrack = null;
+      }
+      if (this.screenTrack === track){
+        this.screenTrack = null;
+      }
     })
   }
 
