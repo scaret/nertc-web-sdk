@@ -7,6 +7,7 @@ import {BUILD, SDK_VERSION as VERSION} from "../netcall-G2/Config";
 import {VIDEO_FRAME_RATE, WEBRTC2_VIDEO_QUALITY as VIDEO_QUALITY} from "../netcall-G2/constant/videoQuality";
 import {LIVE_STREAM_AUDIO_SAMPLE_RATE, LIVE_STREAM_AUDIO_CODEC_PROFILE} from "../netcall-G2/constant/liveStream";
 import {checkExists, checkValidInteger} from "../netcall-G2/util/param";
+import {getSupportedCodec} from "../netcall-G2/util/rtcUtil/codec";
 import {detectDevice} from "../netcall-G2/module/3rd/mediasoup-client";
 
 /**
@@ -261,6 +262,8 @@ export {
   VIDEO_QUALITY_480p,
   VIDEO_QUALITY_720p,
   VIDEO_QUALITY_1080p,
+
+  getSupportedCodec,
   
   VERSION,
   BUILD
