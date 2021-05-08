@@ -1967,6 +1967,11 @@ $("#closeWatermarkPanel").on("click", function (){
 $("#sdkVersion").text(WebRTC2.VERSION);
 $("#sdkBuild").text(WebRTC2.BUILD);
 $("#systemRequirement").text(`WebRTC:${WebRTC2.checkSystemRequirements() ? "支持": "不支持"}； 适配器:${WebRTC2.getHandler()}`);
+if (WebRTC2.getSupportedCodec){
+  WebRTC2.getSupportedCodec().then((data)=>{
+    $("#systemRequirement").append(`<br/>视频编码：${data.video.join(",")}；音频编码：${data.audio.join(",")}`)
+  })
+}
 
 const showStats = async ()=>{
   let str = `<hr/><pre class="pubStats" style="min-width: 200px; float: left;">`;

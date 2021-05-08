@@ -826,6 +826,10 @@ export interface MediaPriorityOptions{
   preemtiveMode?: boolean;
 }
 
+export type VideoCodecType = "H264"|"VP8";
+
+export type AudioCodecType = "OPUS";
+
 export interface JoinOptions{
   channelName: string;
   uid: number;
