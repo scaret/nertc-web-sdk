@@ -4,7 +4,23 @@
 
 import { Device } from '../../module/device'
 import { RtcSystem } from './rtcSystem'
-import {platform} from "../platform";
+import { platform } from "../platform";
+import * as env from './rtcEnvironment';
+import { getSupportedCodecs } from './codec';
+
+// default check result
+let checkResult = {
+  result: false,
+  detail: {
+    isBrowserSupported: false,
+    isWebRTCSupported: false,
+    isMediaDevicesSupported: false,
+    isH264EncodeSupported: false,
+    isVp8EncodeSupported: false,
+    isH264DecodeSupported: false,
+    isVp8DecodeSupported: false
+  }
+};
 
 // var version
 
@@ -152,4 +168,103 @@ const RtcSupport =  {
 
 export {
   RtcSupport
+}
+
+export const isWebRTCSupported = function() {
+  const apiList = ['RTCPeerConnection', 'webkitRTCPeerConnection', 'RTCIceGatherer'];
+  return apiList.filter(api => api in window).length > 0;
+};
+
+export const isMediaDevicesSupported = function() {
+  if (!navigator.mediaDevices) {
+    return false;
+  }
+  const apiList = ['getUserMedia', 'enumerateDevices'];
+  return apiList.filter(api => api in navigator.mediaDevices).length === apiList.length;
+};
+
+export const isScreenShareSupport = function() {
+  if (env.IS_ELECTRON) {
+    return true;
+  } else {
+    let mediaDevices = navigator.mediaDevices as any;
+    return !!(mediaDevices && mediaDevices.getDisplayMedia);
+  }
+};
+
+// 支持 chrome 72+ 浏览器，桌面版 safari 12+ 浏览器，移动端 safari 13+ 浏览器，firefox 浏览器（M56+）, edge浏览器（M80+）
+export const isBrowserSupported = function() {
+  const MIN_FIREFOX_VERSION = 56;
+  const MIN_EDG_VERSION = 80;
+  const MIN_CHROME_VERSION = 72;
+  const MIN_MAC_SAFARI_VERSION = 12;
+  const MIN_IOS_SAFARI_VERSION = 13;
+  // 目前仅支持chrome 72+ 浏览器，桌面版 safari 12+ 浏览器，移动端 safari 13+ 浏览器，微信内嵌网页
+  if (!(env.IS_CHROME || env.IS_SAFARI || env.IS_TBS || env.IS_XWEB )) {
+    return false;
+  }
+  if (env.IS_CHROME && (env.CHROME_MAJOR_VERSION as any) < MIN_CHROME_VERSION) {
+    return false;
+  }
+
+  if (env.IS_MAC_SAFARI && (env.SAFARI_MAJOR_VERSION as any) < MIN_MAC_SAFARI_VERSION ) {
+    return false;
+  }
+
+  if (env.IS_IOS_SAFARI && (env.SAFARI_MAJOR_VERSION as any) < MIN_IOS_SAFARI_VERSION ) {
+    return false;
+  }
+  // if (env.IS_EDG && env.EDG_VERSION? < MIN_EDG_VERSION) {
+  //   return false;
+  // }
+  // if (env.IS_FIREFOX && env.FIREFOX_VERSION < MIN_FIREFOX_VERSION) {
+  //   return false;
+  // }
+  return true;
+};
+
+// compatibility check
+export const checkRTCCompatibility = async function() {
+  // check cached result
+  if (checkResult.result) {
+    return checkResult;
+  }
+  
+    // TODO: check blacklists of browser
+    const isBrowserSupport = isBrowserSupported();
+    // check WebRTC Api
+    const isWebRTCSupport = isWebRTCSupported();
+    // check media api
+    const isMediaDevicesSupport = isMediaDevicesSupported();
+    // check encode
+    const encode = await getSupportedCodecs('send') as any;
+    // check decode
+    const decode = await getSupportedCodecs('recv') as any;
+
+    
+    checkResult.detail.isBrowserSupported = isBrowserSupport;
+    checkResult.detail.isWebRTCSupported = isWebRTCSupport;
+    checkResult.detail.isMediaDevicesSupported = isMediaDevicesSupport;
+    checkResult.detail.isH264EncodeSupported = encode.video.indexOf('H264') > -1;
+    checkResult.detail.isVp8EncodeSupported = encode.video.indexOf('VP8') > -1;
+    checkResult.detail.isH264DecodeSupported = decode.video.indexOf('H264') > -1;
+    checkResult.detail.isVp8DecodeSupported = decode.video.indexOf('VP8') > -1;
+
+    checkResult.result =
+      isBrowserSupport &&
+      isWebRTCSupport &&
+      isMediaDevicesSupport &&
+      (checkResult.detail.isH264EncodeSupported || checkResult.detail.isVp8EncodeSupported) &&
+      (checkResult.detail.isH264EncodeSupported || checkResult.detail.isVp8EncodeSupported) 
+
+    // if (!checkResult.result) {
+    //   // TODO: upload log
+    //   console.log(
+    //     `${navigator.userAgent} isBrowserSupported: ${isBrowserSupport}` +
+    //       `isWebRTCSupported: ${isWebRTCSupport} isMediaSupported: ${isMediaDevicesSupport}` +
+    //       `isH264EncodeSupported: ${checkResult.detail.isH264EncodeSupported} isVp8EncodeSupported: ${checkResult.detail.isVp8EncodeSupported}` +
+    //       `isH264DecodeSupported: ${checkResult.detail.isH264DecodeSupported} isVp8DecodeSupported: ${checkResult.detail.isVp8DecodeSupported}`
+    //   );
+    // }
+    return checkResult;
 }

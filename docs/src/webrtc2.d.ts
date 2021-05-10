@@ -65,7 +65,33 @@ declare namespace WebRTC2 {
    * 获取可用的音频输出设备。
    */
   function getSpeakers(): Promise<DeviceInfo[]>;
-  function checkSystemRequirements(): void;
+
+  /**
+   * 检查 SDK 对正在使用的浏览器的适配情况。
+   * 
+   * @returns
+   * ```true```: SDK 与当前使用的浏览器适配
+   * 
+   * ```false```: SDK 与当前使用的浏览器不适配
+   */
+  function checkSystemRequirements(): Boolean;
+
+  /**
+   * 获取 SDK 对当前浏览器支持的编解码格式。
+   *
+   * ```JavaScript
+   * //接口使用示例
+   * WebRTC2.getSupportedCodec().then(data => {
+   *   data.forEach(item=>{
+   *     console.log(`Supported video codec: ${data.video.join(",")});
+   *     console.log(`Supported audio codec: ${data.audio.join(",")});
+   *   })
+   * })
+   * ```
+   */
+
+  function getSupportedCodec(): Promise<{audio: ["OPUS"], video: ["H264", "VP8"]}>;
+
 
   const VERSION: string;
   const BUILD: string;

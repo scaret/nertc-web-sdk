@@ -1,14 +1,14 @@
 import { Client } from '../netcall-G2/api/client'
 import { Stream } from '../netcall-G2/api/stream'
 import { Device } from '../netcall-G2/module/device'
-import {clientNotYetUninitialized} from '../netcall-G2/constant/ErrorCode'
-import {ClientOptions, StreamOptions} from "../netcall-G2/types";
-import {BUILD, SDK_VERSION as VERSION} from "../netcall-G2/Config";
-import {VIDEO_FRAME_RATE, WEBRTC2_VIDEO_QUALITY as VIDEO_QUALITY} from "../netcall-G2/constant/videoQuality";
-import {LIVE_STREAM_AUDIO_SAMPLE_RATE, LIVE_STREAM_AUDIO_CODEC_PROFILE} from "../netcall-G2/constant/liveStream";
-import {checkExists, checkValidInteger} from "../netcall-G2/util/param";
-import {getSupportedCodec} from "../netcall-G2/util/rtcUtil/codec";
-import {detectDevice} from "../netcall-G2/module/3rd/mediasoup-client";
+import { clientNotYetUninitialized } from '../netcall-G2/constant/ErrorCode'
+import { ClientOptions, StreamOptions } from "../netcall-G2/types";
+import { BUILD, SDK_VERSION as VERSION } from "../netcall-G2/Config";
+import { VIDEO_FRAME_RATE, WEBRTC2_VIDEO_QUALITY as VIDEO_QUALITY } from "../netcall-G2/constant/videoQuality";
+import { LIVE_STREAM_AUDIO_SAMPLE_RATE, LIVE_STREAM_AUDIO_CODEC_PROFILE } from "../netcall-G2/constant/liveStream";
+import { checkExists, checkValidInteger } from "../netcall-G2/util/param";
+import { getSupportedCodecs } from "../netcall-G2/util/rtcUtil/codec";
+import { detectDevice } from "../netcall-G2/module/3rd/mediasoup-client";
 
 /**
  * {@link WebRTC2} 
@@ -163,6 +163,12 @@ function getSpeakers() {
   return Device.getSpeakers()
 };
 
+/**
+ * 检查 SDK 对正在使用的浏览器的适配情况。
+ * @function checkSystemRequirements
+ * @memberOf WebRTC2#
+ * 
+ */
 function checkSystemRequirements() {
   var PC = window.RTCPeerConnection || window.webkitRTCPeerConnection;
   var getUserMedia = navigator.mediaDevices.getUserMedia;
@@ -170,6 +176,24 @@ function checkSystemRequirements() {
   var isAPISupport = !!PC && !!getUserMedia && !!webSocket;
   return isAPISupport;
 };
+/**
+ * 获取 SDK 对当前浏览器支持的编解码格式。
+ * @function getSupportedCodec
+ * @memberOf WebRTC2#
+ *  @returns {Promise}
+ *
+ * @example
+ //接口使用示例
+ WebRTC2.getSupportedCodec().then(data => {
+      data.forEach(item=>{
+        console.log(`Supported video codec: ${data.video.join(",")});
+        console.log(`Supported audio codec: ${data.audio.join(",")});
+      })
+    })
+ */
+async function getSupportedCodec() {
+  return await getSupportedCodecs();
+}
 
 function getHandler() {
   return detectDevice()
@@ -229,6 +253,8 @@ WebRTC2 = {
   VIDEO_QUALITY_480p,
   VIDEO_QUALITY_720p,
   VIDEO_QUALITY_1080p,
+
+  getSupportedCodec,
   
   VERSION,
   BUILD
