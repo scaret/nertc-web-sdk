@@ -48,7 +48,7 @@ function getSupportedCodecFromCapability(videoCapabilities: RTCRtpCapabilities|n
   return result;
 }
 
-async function getSupportedCodec(direction:"send"|"recv" =  "recv", PeerConnection = RTCPeerConnection){
+async function getSupportedCodecs(direction:"send"|"recv" =  "recv", PeerConnection = RTCPeerConnection){
   if (direction === "recv"){
     if (typeof RTCRtpReceiver !== "undefined" && RTCRtpReceiver.getCapabilities){
       const videoCapabilties = RTCRtpReceiver.getCapabilities("video");
@@ -62,7 +62,8 @@ async function getSupportedCodec(direction:"send"|"recv" =  "recv", PeerConnecti
       const offer = await pc.createOffer({});
       pc.close()
       if (!offer.sdp) {
-        throw new Error("offer sdp is empty");
+        // throw new Error("offer sdp is empty");
+        return false;
       }
       const result = getSupportedCodecFromSDP(offer.sdp);
       return result;
@@ -75,7 +76,8 @@ async function getSupportedCodec(direction:"send"|"recv" =  "recv", PeerConnecti
       const result = getSupportedCodecFromCapability(videoCapabilties, audioCapabilties);
       return result;
     }else{
-      throw new Error(`direction ${direction} Not supported yet`);
+      // throw new Error(`direction ${direction} Not supported yet`);
+      return false;
     }
   }
 }
@@ -99,7 +101,7 @@ function reduceCodecs(codecs: any[], selectedCodec:RTCRtpCodecCapability) {
 
 export {
   
-  getSupportedCodec,
+  getSupportedCodecs,
 
   reduceCodecs,
   
