@@ -255,6 +255,7 @@ class WebAudio{
         that.script.connect(that.gainFilter)
       }*/
       audioIn.connect(that.gainFilter)
+      that.audioIn[ms.id] = audioIn
       if (that.mixAudioConf.state === AuidoMixingState.UNSTART) {
         if (that.script) {
           that.gainFilter.connect(that.script)

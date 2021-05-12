@@ -830,6 +830,7 @@ class Stream extends EventEmitter {
           this.client.adapterRef.logger.log('开启mic设备')
           this.audio = true
           if(this.mediaHelper){
+            this.mediaHelper.enableAudioRouting()
             await this.mediaHelper.getStream({audio: true, audioDeviceId: deviceId})
             await this.client.publish(this)
           }
@@ -1013,6 +1014,12 @@ class Stream extends EventEmitter {
           throw new Error('No _mediasoup');
         }
           // localstream unmute
+        const tracks = this.mediaHelper && this.mediaHelper.audioStream.getAudioTracks();
+        if (tracks && tracks.length) {
+          tracks.forEach((track)=>{
+            track.enabled = true;
+          })
+        }
         await this.client.adapterRef._mediasoup.unmuteAudio()
         this.muteStatus.audioSend = false;
       } else {
@@ -1064,6 +1071,12 @@ class Stream extends EventEmitter {
         }
         await this.client.adapterRef._mediasoup.muteAudio()
         // localStream mute
+        const tracks = this.mediaHelper && this.mediaHelper.audioStream.getAudioTracks();
+        if (tracks && tracks.length) {
+          tracks.forEach((track)=>{
+            track.enabled = false;
+          })
+        }
         this.muteStatus.audioSend = true
       } else {
         if (!this._play){
@@ -1207,6 +1220,9 @@ class Stream extends EventEmitter {
     if (this.audio) {
       if (!this.mediaHelper){
         throw new Error('No MediaHelper');
+      }
+      if (!this.mediaHelper.audioRoutingEnabled){
+        this.mediaHelper.enableAudioRouting();
       }
       this.mediaHelper.setGain(volume / 100)
     } else {

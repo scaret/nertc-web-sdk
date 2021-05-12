@@ -20,6 +20,9 @@ class MediaHelper extends EventEmitter {
   // audioStream对localStream而言是PeerConnection发送的MediaStream，
   // 对remoteStream而言是包含了接收的MediaStream
   // 无论是否有audio，audioStream总是存在，且始终是同一个对象。
+  // 对localStream而言：
+  // 1: 当audioRoutingEnabled == true 时，audioStream包含AudioDestinationNode
+  // 2: 当audioRoutingEnabled == false 时，audioStream包含getUserMedia的输出
   public audioStream: MediaStream;
   // musicStream指没有人声的混音音乐
   public musicStream: MediaStream;
@@ -35,6 +38,7 @@ class MediaHelper extends EventEmitter {
   public screenTrack: MediaStreamTrack|null;
   public cameraTrack: MediaStreamTrack|null;
   private mixAudioConf:MixAudioConf;
+  public audioRoutingEnabled:boolean;
   
   constructor (options:MediaHelperOptions) {
     super()
@@ -57,6 +61,7 @@ class MediaHelper extends EventEmitter {
     this.screenTrack = null;
     this.micTrack = null;
     this.cameraTrack = null;
+    this.audioRoutingEnabled = false;
     this.mixAudioConf = {
       index: 0,
       audioBuffer: {}, //云端音频buffer数组
@@ -74,6 +79,7 @@ class MediaHelper extends EventEmitter {
     this.webAudio = null
     this.micStream = null
     this.audioConstraint = null
+    this.audioRoutingEnabled = false;
     emptyStreamWith(this.audioStream, null);
     emptyStreamWith(this.musicStream, null);
     if (this.videoStream) {
@@ -109,7 +115,15 @@ class MediaHelper extends EventEmitter {
       return
     }
     if (audioSource) {
-      emptyStreamWith(this.audioStream, audioSource);
+      if (this.webAudio){
+        const stream = new MediaStream;
+        stream.addTrack(audioSource);
+        this.webAudio.updateStream(stream);
+      }
+      if (!this.audioRoutingEnabled){
+        emptyStreamWith(this.audioStream, audioSource);
+        this.updateAudioSender(audioSource);
+      }
       this.audioSource = audioSource
       audio = false
     }
@@ -184,15 +198,14 @@ class MediaHelper extends EventEmitter {
             if (!this.webAudio) {
               this.webAudio = new WebAudio({
                 adapterRef: this.adapterRef,
-                stream: this.audioStream
+                stream: this.micStream
               })
             } else {
-              this.webAudio.updateStream(this.audioStream)
+              this.webAudio.updateStream(this.micStream)
             }
-            if (this.webAudio.destination){
-              const outputStream = this.webAudio.destination.stream;
-              this.adapterRef.logger.log('音频的outputStream: ', outputStream)
-              emptyStreamWith(this.audioStream, outputStream.getAudioTracks()[0]);
+            if (!this.audioRoutingEnabled){
+              emptyStreamWith(this.audioStream, this.micTrack);
+              this.updateAudioSender(this.micTrack);
             }
           }
           
@@ -253,21 +266,19 @@ class MediaHelper extends EventEmitter {
             }
             this.micStream = new MediaStream()
             this.micStream.addTrack(this.micTrack)
-            emptyStreamWith(this.audioStream, this.micTrack);
+            if (!this.audioRoutingEnabled){
+              emptyStreamWith(this.audioStream, this.micTrack);
+              this.updateAudioSender(this.micTrack);
+            }
 
             if (navigator.userAgent.indexOf('Chrome') > -1 && !RtcSystem.h5()) {
               if (!this.webAudio) {
                 this.webAudio = new WebAudio({
                   adapterRef: this.adapterRef,
-                  stream: this.audioStream
+                  stream: this.micStream
                 })
               } else {
-                this.webAudio.updateStream(this.audioStream)
-              }
-              if (this.webAudio.destination){
-                const outputStream = this.webAudio.destination.stream;
-                this.adapterRef.logger.log('音频的outputStream: ', outputStream)
-                emptyStreamWith(this.audioStream, outputStream.getAudioTracks()[0]);
+                this.webAudio.updateStream(this.micStream)
               }
               if (this.webAudio.musicDestination){
                 const musicStream = this.webAudio.musicDestination.stream;
@@ -350,13 +361,13 @@ class MediaHelper extends EventEmitter {
         }
         this.micStream = new MediaStream()
         this.micStream.addTrack(audioTrack)
-        emptyStreamWith(this.audioStream, audioTrack);
+        this.micTrack = audioTrack;
         if (this.webAudio){
-          this.webAudio.updateStream(this.audioStream)
-          if (this.webAudio.destination){
-            const outputStream = this.webAudio.destination.stream;
-            emptyStreamWith(this.audioStream, outputStream.getAudioTracks()[0]);
-          }
+          this.webAudio.updateStream(this.micStream)
+        }
+        if(!this.audioRoutingEnabled){
+          emptyStreamWith(this.audioStream, audioTrack);
+          this.updateAudioSender(audioTrack);
         }
       }
 
@@ -563,6 +574,9 @@ class MediaHelper extends EventEmitter {
   /******************************* 伴音 ********************************/
   startAudioMixing (options:AudioMixingOptions) {
     this.adapterRef.logger.log(`开始伴音: %s`, JSON.stringify(options, null, ' '))
+    if (!this.audioRoutingEnabled){
+      this.enableAudioRouting();
+    }
     Object.assign(this.mixAudioConf, options)
     let reason = null
     if (!this.mixAudioConf.audioFilePath) {
@@ -970,6 +984,65 @@ class MediaHelper extends EventEmitter {
 
   isMixAuido () {
     return this.webAudio && this.webAudio.mixAudioConf && this.webAudio.mixAudioConf.audioSource ? true : false
+  }
+  
+  enableAudioRouting(){
+    if (this.webAudio && this.webAudio.destination){
+      this.audioRoutingEnabled = true;
+      const outputStream = this.webAudio.destination.stream;
+      const destinationTrack = outputStream.getAudioTracks()[0];
+      this.adapterRef.logger.log('enableAudioRouting: ', destinationTrack.label)
+      const formerTrack = this.audioStream.getAudioTracks()[0];
+      if (formerTrack){
+        this.audioStream.removeTrack(formerTrack);
+        destinationTrack.enabled = formerTrack.enabled
+        formerTrack.enabled = true;
+      }
+      this.audioStream.addTrack(destinationTrack);
+      this.updateAudioSender(destinationTrack);
+    }else{
+      this.adapterRef.logger.log('enableAudioRouting: 已替换为Destination');
+    }
+  }
+  
+  disableAudioRouting(){
+    const audioTrack = this.micTrack || this.audioSource;
+    this.audioRoutingEnabled = false;
+    this.adapterRef.logger.log('disableAudioRouting: ', audioTrack)
+    const formerTrack = this.audioStream.getAudioTracks()[0];
+    if (formerTrack){
+      this.audioStream.removeTrack(formerTrack);
+    }
+    if (audioTrack){
+      if (formerTrack){
+        audioTrack.enabled = formerTrack.enabled;
+        formerTrack.enabled = true;
+      }
+      this.audioStream.addTrack(audioTrack);
+      this.updateAudioSender(audioTrack);
+    }
+  }
+  
+  updateAudioSender(audioTrack: MediaStreamTrack){
+    if (this.adapterRef._mediasoup &&
+      this.adapterRef._mediasoup._micProducer){
+      //@ts-ignore
+      if (this.adapterRef._mediasoup._micProducer && this.adapterRef._mediasoup._micProducer._rtpSender){
+        this.adapterRef.logger.info('updateAudioSender: 替换当前_micProducer的track', audioTrack.label);
+        //@ts-ignore
+        this.adapterRef._mediasoup._micProducer._rtpSender.replaceTrack(audioTrack);
+      }
+      else if (this.adapterRef._mediasoup._sendTransport && this.adapterRef._mediasoup._sendTransport.handler && this.adapterRef._mediasoup._sendTransport.handler._pc){
+        //@ts-ignore
+        const senders = this.adapterRef._mediasoup._sendTransport.handler._pc.getSenders();
+        for (var i in senders){
+          if (senders[i].track && senders[i].track.kind === "audio"){
+            this.adapterRef.logger.info('updateAudioSender: 替换audioSender', senders[i].track && senders[i].track.label);
+            senders[i].replaceTrack(audioTrack);
+          }
+        }
+      }
+    }
   }
 
   destroy() {
