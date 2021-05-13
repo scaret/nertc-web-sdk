@@ -28,7 +28,7 @@ class MediaHelper extends EventEmitter {
   public musicStream: MediaStream;
   public audioSource: MediaStreamTrack|null;
   public micTrack: MediaStreamTrack|null;
-  private webAudio: WebAudio|null;
+  public webAudio: WebAudio|null;
   public audioConstraint: {audio: MediaTrackConstraints}|null;
   private cameraStream: MediaStream|null;
   public videoStream: MediaStream|null;
@@ -507,6 +507,7 @@ class MediaHelper extends EventEmitter {
     if (kind === 'audio' && this.micStream) {
       this._stopTrack(this.micStream)
       this.micStream = null;
+      this.disableAudioRouting();
       emptyStreamWith(this.audioStream, null);
     } else if (kind === 'video' && this.videoStream) {
       type = 'set_camera'
