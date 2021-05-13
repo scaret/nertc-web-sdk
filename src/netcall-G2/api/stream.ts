@@ -31,6 +31,7 @@ import {
   ReportParamSubscribeRemoteSubStreamVideo,
   ReportParamSwitchCamera
 } from "../interfaces/ApiReportParam";
+import {AuidoMixingState} from "../constant/state";
 
 /**
  *  请使用 {@link WEBRTC2.createStream} 通过WEBRTC2.createStream创建
@@ -830,7 +831,11 @@ class Stream extends EventEmitter {
           this.client.adapterRef.logger.log('开启mic设备')
           this.audio = true
           if(this.mediaHelper){
-            this.mediaHelper.enableAudioRouting()
+            if (this.mediaHelper.webAudio){
+              if (this.mediaHelper.webAudio.gainFilter && this.mediaHelper.webAudio.gainFilter.gain.value !== 1 || this.mediaHelper.webAudio.mixAudioConf.state !== AuidoMixingState.UNSTART){
+                  this.mediaHelper.enableAudioRouting(); 
+                }
+            }
             await this.mediaHelper.getStream({audio: true, audioDeviceId: deviceId})
             await this.client.publish(this)
           }

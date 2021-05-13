@@ -1704,6 +1704,51 @@ function playAuido(){
   progressInfo.innerText = fileName + formatSeconds(res.playedTime) + ' / ' + formatSeconds(totalTime)
 }
 
+function showAudioSenderLabel(){
+  let label = '';
+  if (rtc.client && rtc.client.adapterRef._mediasoup && rtc.client.adapterRef._mediasoup._sendTransport){
+    const senders = rtc.client.adapterRef._mediasoup._sendTransport.handler._pc.getSenders();
+    for (var i in senders){
+      if (senders[i].track && senders[i].track.kind === "audio"){
+        label += senders[i].track.label;
+      }
+    }
+  }
+  if ($("#audioSenderLabel").text() !== label){
+    $("#audioSenderLabel").text(label);
+  }
+}
+
+function showAudioMixingStatus(){
+  const AuidoMixingState = {
+    UNSTART: 0,
+    STARTING: 1,
+    PLAYED: 2,
+    PAUSED: 3,
+    STOPED: 4
+  };
+  let stateText = ''
+  if (rtc.localStream && rtc.localStream.mediaHelper && rtc.localStream.mediaHelper.webAudio){
+    const state = rtc.localStream.mediaHelper.webAudio.mixAudioConf.state;
+    stateText += state;
+    for (let key in AuidoMixingState){
+      if (AuidoMixingState[key] === state){
+        stateText += `(${key})`;
+      }
+    }
+  }
+  if ($("#audioMixingState").text() !== stateText){
+    $("#audioMixingState").text(stateText);
+  }
+}
+
+function updateAudioMixingStatus(){
+  showAudioSenderLabel();
+  showAudioMixingStatus()
+}
+
+setInterval(updateAudioMixingStatus, 1000);
+
 $('#startAudioMixing').click(function(){
   console.info('开始伴音...')
   const progressInfo = document.querySelector('#auidoMixing .value');
