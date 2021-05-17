@@ -811,8 +811,7 @@ class Mediasoup extends EventEmitter {
           this.unsupportedProducers.push(consumeRes.producerId);
         }
         this._recvTransport = null
-        info.resolve(null);
-        this._eventQueue.length = 0
+        this.resetConsumeRequestStatus()
         this.adapterRef.instance.reBuildRecvTransport()
         return
 
@@ -913,17 +912,13 @@ class Mediasoup extends EventEmitter {
       // if(this.adapterRef.connectState.curState == 'DISCONNECTING' || this.adapterRef.connectState.curState == 'DISCONNECTED'){
       //   return
       // }
-      this.adapterRef && this.adapterRef.logger.log('"newConsumer" request failed: ', error);
-      console.log('"newConsumer" request failed:', error);
-      this.adapterRef.logger.error('订阅 %s 的 %s 媒体失败，做容错处理: 重新建立下行连接', uid, mediaTypeShort)
-      //return
-      //this.resetConsumeRequestStatus();
+      this.adapterRef && this.adapterRef.logger.error('"newConsumer" request failed:%o', error.name, error.message);
+      this.adapterRef.logger.error('订阅 %s 的 %s 媒体失败，做容错处理: 重新建立下行连接', uid, kind)
+      this.resetConsumeRequestStatus()
       if (this._recvTransport) {
         await this.closeTransport(this._recvTransport);
       }
       this._recvTransport = null
-      info.reject(error);
-      this._eventQueue.length = 0
       this.adapterRef.instance.reBuildRecvTransport()
     }
   }
