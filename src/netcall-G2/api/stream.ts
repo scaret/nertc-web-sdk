@@ -1120,7 +1120,11 @@ class Stream extends EventEmitter {
    * @return {Boolean}
    */
   hasAudio () {
-    return this.audio && this.mediaHelper && this.mediaHelper.audioStream
+    if (this.audio && this.mediaHelper && this.mediaHelper.micStream){
+      return true;
+    }else{
+      return false;
+    }
   }
 
   /**
@@ -1596,7 +1600,11 @@ class Stream extends EventEmitter {
    */
   hasVideo () {
     this.client.adapterRef.logger.log('获取视频 flag')
-    return this.video && this.mediaHelper && this.mediaHelper.videoStream
+    if (this.video && this.mediaHelper && this.mediaHelper.videoStream){
+      return true;
+    }else{
+      return false;
+    }
   }
 
    /**
@@ -1634,7 +1642,11 @@ class Stream extends EventEmitter {
   }
 
   hasScreen () {
-    return this.screen && this.mediaHelper && this.mediaHelper.screenStream
+    if (this.screen && this.mediaHelper && this.mediaHelper.screenStream){
+      return true
+    }else{
+      return false
+    }
   }
 
   /**
