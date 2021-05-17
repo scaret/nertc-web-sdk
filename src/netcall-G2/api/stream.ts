@@ -31,6 +31,7 @@ import {
   ReportParamSubscribeRemoteSubStreamVideo,
   ReportParamSwitchCamera
 } from "../interfaces/ApiReportParam";
+import {AuidoMixingState} from "../constant/state";
 
 /**
  *  请使用 {@link WEBRTC2.createStream} 通过WEBRTC2.createStream创建
@@ -830,6 +831,11 @@ class Stream extends EventEmitter {
           this.client.adapterRef.logger.log('开启mic设备')
           this.audio = true
           if(this.mediaHelper){
+            if (this.mediaHelper.webAudio){
+              if (this.mediaHelper.webAudio.gainFilter && this.mediaHelper.webAudio.gainFilter.gain.value !== 1 || this.mediaHelper.webAudio.mixAudioConf.state !== AuidoMixingState.UNSTART){
+                  this.mediaHelper.enableAudioRouting(); 
+                }
+            }
             await this.mediaHelper.getStream({audio: true, audioDeviceId: deviceId})
             await this.client.publish(this)
           }
@@ -1013,6 +1019,12 @@ class Stream extends EventEmitter {
           throw new Error('No _mediasoup');
         }
           // localstream unmute
+        const tracks = this.mediaHelper && this.mediaHelper.audioStream.getAudioTracks();
+        if (tracks && tracks.length) {
+          tracks.forEach((track)=>{
+            track.enabled = true;
+          })
+        }
         await this.client.adapterRef._mediasoup.unmuteAudio()
         this.muteStatus.audioSend = false;
       } else {
@@ -1064,6 +1076,12 @@ class Stream extends EventEmitter {
         }
         await this.client.adapterRef._mediasoup.muteAudio()
         // localStream mute
+        const tracks = this.mediaHelper && this.mediaHelper.audioStream.getAudioTracks();
+        if (tracks && tracks.length) {
+          tracks.forEach((track)=>{
+            track.enabled = false;
+          })
+        }
         this.muteStatus.audioSend = true
       } else {
         if (!this._play){
@@ -1102,7 +1120,11 @@ class Stream extends EventEmitter {
    * @return {Boolean}
    */
   hasAudio () {
-    return this.audio && this.mediaHelper && this.mediaHelper.audioStream
+    if (this.audio && this.mediaHelper && this.mediaHelper.micStream){
+      return true;
+    }else{
+      return false;
+    }
   }
 
   /**
@@ -1207,6 +1229,9 @@ class Stream extends EventEmitter {
     if (this.audio) {
       if (!this.mediaHelper){
         throw new Error('No MediaHelper');
+      }
+      if (!this.mediaHelper.audioRoutingEnabled){
+        this.mediaHelper.enableAudioRouting();
       }
       this.mediaHelper.setGain(volume / 100)
     } else {
@@ -1575,7 +1600,11 @@ class Stream extends EventEmitter {
    */
   hasVideo () {
     this.client.adapterRef.logger.log('获取视频 flag')
-    return this.video && this.mediaHelper && this.mediaHelper.videoStream
+    if (this.video && this.mediaHelper && this.mediaHelper.videoStream){
+      return true;
+    }else{
+      return false;
+    }
   }
 
    /**
@@ -1613,7 +1642,11 @@ class Stream extends EventEmitter {
   }
 
   hasScreen () {
-    return this.screen && this.mediaHelper && this.mediaHelper.screenStream
+    if (this.screen && this.mediaHelper && this.mediaHelper.screenStream){
+      return true
+    }else{
+      return false
+    }
   }
 
   /**
