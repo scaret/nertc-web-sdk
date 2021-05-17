@@ -388,6 +388,12 @@ declare interface Client{
   on(event: "error", callback: (errorName: string) => void): void;
   
   /**
+   * 客户端遇到警告。可能有：
+   * * 406：ability not support。客户端的能力与房间不匹配（如不支持某个编码类型），接下来的通话可能受到影响。
+   */
+  on(event: "warning", callback: (evt: { code:number,reason:string }) => void): void;
+  
+  /**
    * 音频轨道结束。造成的原因可能是设备被拔出。
    */
   on(event: "audioTrackEnded"): void;

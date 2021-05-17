@@ -5,7 +5,7 @@ import {
   MediasoupManagerOptions, MediaType, MediaTypeShort,
   ProduceConsumeInfo, ProducerAppData,
   SDKRef,
-  Timer
+  Timer, VideoCodecType
 } from "../types";
 import {Consumer, Device, Producer, Transport} from "./3rd/mediasoup-client/types";
 import {Peer} from "./3rd/protoo-client";
@@ -27,6 +27,8 @@ class Mediasoup extends EventEmitter {
   private _webcamProducerId:string|null;
   public _screenProducer:Producer|null;
   private _screenProducerId:string|null;
+  public _webcamProducerCodec: VideoCodecType|null;
+  public _screenProducerCodec: VideoCodecType|null;
   public _sendTransport:Transport|null;
   public _recvTransport:Transport|null;
   private _sendTransportTimeoutTimer:Timer|null;
@@ -49,6 +51,7 @@ class Mediasoup extends EventEmitter {
     probeSSrc: number
   };
   private _probeSSrc?: string;
+  public unsupportedProducers: string[];
   constructor (options:MediasoupManagerOptions) {
     super()
     this._timeout = 30 * 1000
@@ -63,6 +66,8 @@ class Mediasoup extends EventEmitter {
     this._webcamProducerId = null
     this._screenProducer = null
     this._screenProducerId = null
+    this._webcamProducerCodec = null
+    this._screenProducerCodec = null
     this._consumers = null
     this._sendTransport = null
     this._recvTransport = null
@@ -79,6 +84,7 @@ class Mediasoup extends EventEmitter {
       video: null,
       screen: null,
     }
+    this.unsupportedProducers = [];
     this._tempRecv = {
       audioRtpParameters: null,
       videoRtpParameters: null,
@@ -438,12 +444,19 @@ class Mediasoup extends EventEmitter {
             this._sendTransport.id = transportId;
           }
           this.adapterRef.logger.log('produce请求反馈结果, kind: %s, producerId: %s', kind, producerId)
+          let codecInfo = {codecParam: null, codecName: null};
           if (appData.mediaType === 'audio') {
             this._micProducerId = producerId
           } else if (appData.mediaType === 'video') {
             this._webcamProducerId = producerId
+            //@ts-ignore
+            codecInfo = this.adapterRef.mediaCapability.getCodecSend("video", this._sendTransport.handler._sendingRtpParametersByKind["video"]);
+            this._webcamProducerCodec = codecInfo.codecName;
           } else if (appData.mediaType === 'screenShare') {
             this._screenProducerId = producerId
+            //@ts-ignore
+            codecInfo = this.adapterRef.mediaCapability.getCodecSend("screen", this._sendTransport.handler._sendingRtpParametersByKind["video"]);
+            this._screenProducerCodec = codecInfo.codecName;
           }
           if (iceParameters) {
             this._sendTransportIceParameters = iceParameters
@@ -466,6 +479,7 @@ class Mediasoup extends EventEmitter {
                 videoGoogleStartBitrate: 1000
               },
             offer,
+            codec: codecInfo.codecParam,
             audioProfile: this.adapterRef.localStream.audioProfile
           });
 
@@ -508,8 +522,11 @@ class Mediasoup extends EventEmitter {
       const videoTrack = stream.mediaHelper.videoStream.getVideoTracks()[0]
       this.adapterRef.logger.log('发布 videoTrack: ', videoTrack.id)
       stream.pubStatus.video.video = true
+      //@ts-ignore
+      const codecInfo = this.adapterRef.mediaCapability.getCodecSend("video", this._sendTransport.handler._sendingRtpParametersByKind["video"]);
       this._webcamProducer = await this._sendTransport.produce({
         track: videoTrack,
+        codec: codecInfo.codecParam,
         codecOptions:{
           videoGoogleStartBitrate: 1000
         },
@@ -531,8 +548,11 @@ class Mediasoup extends EventEmitter {
       const screenTrack = stream.mediaHelper.screenStream.getVideoTracks()[0]
       this.adapterRef.logger.log('发布 screenTrack: ', screenTrack.id)
       stream.pubStatus.screen.screen = true
+      //@ts-ignore
+      const codecInfo = this.adapterRef.mediaCapability.getCodecSend("screen", this._sendTransport.handler._sendingRtpParametersByKind["video"]);
       this._screenProducer = await this._sendTransport.produce({
         track: screenTrack,
+        codec: codecInfo.codecParam,
         codecOptions:{
           videoGoogleStartBitrate: 1000
         },
@@ -642,6 +662,15 @@ class Mediasoup extends EventEmitter {
         return;
       }
       return
+    }else if (this.unsupportedProducers.indexOf(id) > -1){
+      this.adapterRef.logger.warn("跳过不支持的Producer", id)
+      this._eventQueue.shift()
+      info.resolve(null);
+      if (this._eventQueue.length > 0) {
+        this._createConsumer(this._eventQueue[0])
+        return;
+      }
+      return
     }
     const remoteStream = this.adapterRef.remoteStreamMap[uid]
     if (!remoteStream) {
@@ -696,7 +725,7 @@ class Mediasoup extends EventEmitter {
     }
     if (!this._mediasoupDevice || !this._mediasoupDevice.loaded){
       this.adapterRef.logger.error('createConsumer：Waiting for Transport Ready');
-      await waitForEvent(this, 'transportReady', 1000);
+      await waitForEvent(this, 'transportReady', 5000);
     }
     if (!this._recvTransport){
       info.resolve(null);
@@ -775,6 +804,12 @@ class Mediasoup extends EventEmitter {
         // if(this.adapterRef.connectState.curState == 'DISCONNECTING' || this.adapterRef.connectState.curState == 'DISCONNECTED'){
         //   return
         // }
+
+        if (code === 800){
+          // FIXME：当无法接收一个Producer时，应该回退而不是重建整个下行链路。
+          this.adapterRef.logger.error('800错误：无法建立连接。将Producer拉入黑名单：', consumeRes.producerId);
+          this.unsupportedProducers.push(consumeRes.producerId);
+        }
         this._recvTransport = null
         info.resolve(null);
         this._eventQueue.length = 0
@@ -914,7 +949,7 @@ class Mediasoup extends EventEmitter {
       consumer.close();
       delete this._consumers[consumerId];
     } catch (error) {
-      this.adapterRef.logger.error('destroyConsumer() | failed:%o', error);
+      this.adapterRef.logger.error('destroyConsumer() | failed:%o', error.name, error.message, error.stack);
     }
   }
 

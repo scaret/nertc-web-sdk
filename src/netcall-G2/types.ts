@@ -4,6 +4,7 @@ import {Mediasoup} from "./module/mediasoup";
 import {Signalling} from "./module/signalling";
 import {Meeting} from "./module/meeting";
 import {StatsReport} from "./module/report/statsReport";
+import {MediaCapability} from "./module/mediaCapability";
 
 export interface AdapterRef {
   uid2SscrList: {[uid:number]:{
@@ -36,6 +37,7 @@ export interface AdapterRef {
     startPubVideoTime: number;
     startPubScreenTime: number;
   };
+  mediaCapability: MediaCapability;
   nim?: any;
   instance: Client;
   channelInfo?: any;
@@ -444,6 +446,7 @@ export interface LocalAudioStats{
 
 export interface LocalVideoStats{
   LayerType: number;
+  CodecName: string;
   CaptureFrameRate: number;
   CaptureResolutionHeight: number;
   CaptureResolutionWidth: number;

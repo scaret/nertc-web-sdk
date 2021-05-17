@@ -1,4 +1,7 @@
 "use strict";
+
+import {reduceCodecs} from "../../../../util/rtcUtil/codec";
+
 Object.defineProperty(exports, "__esModule", { value: true });
 const sdpTransform = require("sdp-transform");
 const Logger_1 = require("../Logger");
@@ -206,7 +209,7 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
         const sendingRtpParameters = utils.clone(this._sendingRtpParametersByKind[track.kind]);
         // This may throw.
         sendingRtpParameters.codecs =
-            ortc.reduceCodecs(sendingRtpParameters.codecs, codec);
+            reduceCodecs(sendingRtpParameters.codecs, codec);
         
         let transceiver = {}
         if (appData.mediaType === 'audio' && this._pc.audioSender) {
@@ -336,7 +339,7 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
         };
     }
 
-    async fillRemoteRecvSdp({ kind, iceParameters, iceCandidates, dtlsParameters, sctpParameters, sendingRtpParameters, codecOptions, offer,audioProfile }) {
+    async fillRemoteRecvSdp({ kind, iceParameters, iceCandidates, dtlsParameters, sctpParameters, sendingRtpParameters, codecOptions, offer,audioProfile, codec }) {
         //offer.sdp = offer.sdp.replace(/a=extmap:2 http:([0-9a-zA-Z=+-_\/\\\\]+)\r\n/, ``)
         //offer.sdp = offer.sdp.replace(/a=extmap:3 http:([0-9a-zA-Z=+-_\/\\\\]+)\r\n/, ``)
         logger.debug('fillRemoteRecvSdp() | calling pc.setLocalDescription()');
@@ -353,7 +356,7 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
         const sendingRemoteRtpParameters = utils.clone(this._sendingRemoteRtpParametersByKind[kind]);
         // This may throw.
         sendingRemoteRtpParameters.codecs =
-            ortc.reduceCodecs(sendingRemoteRtpParameters.codecs, undefined);
+            reduceCodecs(sendingRemoteRtpParameters.codecs, codec);
         let localSdpObject = sdpTransform.parse(this._pc.localDescription.sdp);
         const mediaSectionIdx = this._remoteSdp.getNextMediaSectionIdx();
         let offerMediaObject = localSdpObject.media[mediaSectionIdx.idx];

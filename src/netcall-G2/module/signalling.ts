@@ -7,11 +7,12 @@ import {
   NetworkQualityItem,
   SDKRef,
   SignallingOptions,
-  Timer
+  Timer, VideoCodecType
 } from "../types";
 import {Peer, ProtooNotification} from "./3rd/protoo-client";
 import {Consumer} from "./3rd/mediasoup-client/Consumer";
 import {emptyStreamWith} from "../util/gum";
+import {SignalJoinRes} from "../interfaces/SignalProtocols";
 const protooClient = require('./3rd/protoo-client/')
 const CryptoJS = require("crypto-js");
 
@@ -124,9 +125,6 @@ class Signalling extends EventEmitter {
         this.adapterRef.logger.warn('Destroy Remote Player', uid);
         remoteStream._play.destroy();
       }
-    }
-    if (this.adapterRef._mediasoup){
-      this.adapterRef._mediasoup._reset();
     }
     
     if(this._times < 3){
@@ -492,6 +490,37 @@ class Signalling extends EventEmitter {
         } else if (type === 'RtmpTaskStatus') {
           this.adapterRef.logger.log('RtmpTaskStatus变更: ', JSON.stringify(data, null, ''))
           this.adapterRef.instance.emit('rtmp-state', data)
+        } else if (type === 'MediaCapability') {
+          this.adapterRef.logger.error('MediaCapability房间能力变更: ', JSON.stringify(data, null, ''))
+          this.adapterRef.mediaCapability.parseRoom(data);
+          this.adapterRef.instance.emit('mediaCapabilityChange');
+          if (this.adapterRef._mediasoup && this.adapterRef.mediaCapability.room.videoCodecType && this.adapterRef.localStream){
+            //@ts-ignore
+            const targetCodecVideo = this.adapterRef.mediaCapability.getCodecSend("video", this.adapterRef._mediasoup._sendTransport.handler._sendingRtpParametersByKind["video"]);
+            //@ts-ignore
+            const targetCodecScreen = this.adapterRef.mediaCapability.getCodecSend("screen", this.adapterRef._mediasoup._sendTransport.handler._sendingRtpParametersByKind["video"]);
+            const switchVideoCodec = this.adapterRef._mediasoup._webcamProducerCodec && this.adapterRef._mediasoup._webcamProducerCodec !== targetCodecVideo.codecName;
+            if (switchVideoCodec){
+              this.adapterRef.logger.error(`将视频的Codec切走：`, this.adapterRef._mediasoup._webcamProducerCodec, "=>", targetCodecVideo.codecName);
+            }
+            const switchScreenCodec = this.adapterRef._mediasoup._screenProducerCodec && this.adapterRef._mediasoup._screenProducerCodec !== targetCodecVideo.codecName;
+            if (switchScreenCodec){
+              this.adapterRef.logger.error(`将辅流的Codec切走：`, this.adapterRef._mediasoup._screenProducerCodec, "=>", targetCodecScreen.codecName);
+            }
+            if (switchVideoCodec || switchScreenCodec){
+              // TODO 目前不知道如何在不重新协商的情况下直接切换Codec
+              //  Workaround: 主动触发一次重连，导致重新建立RTC连接。
+              // @ts-ignore
+              if (this._protoo && this._protoo._transport && this._protoo._transport._ws){
+                // @ts-ignore
+                this._protoo._transport._ws.close()
+              }
+            }else{
+              this.adapterRef.logger.log(`Codec保持不动。video:`, this.adapterRef._mediasoup._webcamProducerCodec, `, screen:`, this.adapterRef._mediasoup._screenProducerCodec);
+            }
+          }
+        } else if (type === "Ability"){
+          this._handleAbility(notification.data.externData.data);
         } else {
           this.adapterRef.logger.error('收到OnUserData通知消息 type = %s, data: %o', type, data)
         }
@@ -541,6 +570,7 @@ class Signalling extends EventEmitter {
           supportAuido: this.adapterRef.channelInfo.sessionConfig.recordAudio,
           recordType: this.adapterRef.channelInfo.sessionConfig.recordType - 0      
         },
+        mediaCapabilitySet: this.adapterRef.mediaCapability.stringify(),
         browser: {                       
           name: RtcSystem.browser.ua,       
           version: `${RtcSystem.browser.version}`
@@ -558,7 +588,7 @@ class Signalling extends EventEmitter {
     const response = await this._protoo.request('Join', {
       requestId: requestData.requestId,
       externData: requestData.externData
-    })
+    }) as SignalJoinRes;
     this.adapterRef.logger.log('Signalling:加入房间 ack ->  ', response)
     if (response.code != 200) {
       this.adapterRef.logger.error(
@@ -630,6 +660,8 @@ class Signalling extends EventEmitter {
         throw new Error('No this.adapterRef._mediasoup');
       }
       this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities;
+      this.adapterRef.mediaCapability.parseRoom(response.externData.roomCapability);
+      this.adapterRef.instance.emit('mediaCapabilityChange');
       await this.adapterRef._mediasoup.init()
       if (this.adapterRef.localStream){
         this.adapterRef.logger.log('重连成功，重新publish本端流')
@@ -655,6 +687,8 @@ class Signalling extends EventEmitter {
         throw new Error('No this.adapterRef._mediasoup');
       }
       this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities;
+      this.adapterRef.mediaCapability.parseRoom(response.externData.roomCapability);
+      this.adapterRef.instance.emit('mediaCapabilityChange');
       await this.adapterRef._mediasoup.init()
     }
         
@@ -680,7 +714,7 @@ class Signalling extends EventEmitter {
             client: this.adapterRef.instance,
           })
           this.adapterRef.remoteStreamMap[uid] = remoteStream
-          this.adapterRef.memberMap[uid] = uid;
+          this.adapterRef.memberMap[uid] = "" + uid;
           this.adapterRef.instance.emit('peer-online', {uid})
         }
         if (peer.producerInfoList) {
@@ -942,6 +976,13 @@ class Signalling extends EventEmitter {
       this.adapterRef.instance.emit('peer-online', {uid: uid})
       this.adapterRef.instance._roleInfo.audienceList[uid] = false;
     }
+  }
+  
+  _handleAbility (data:{code:number, msg:string}){
+    this.adapterRef.instance.emit('warning', {
+      code: data.code,
+      msg: data.msg
+    })
   }
   
   _handleKickedNotify (reason:number, uid = this.adapterRef.channelInfo.uid) {

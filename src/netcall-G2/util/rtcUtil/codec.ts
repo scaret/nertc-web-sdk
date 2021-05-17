@@ -1,6 +1,6 @@
 import {AudioCodecType, VideoCodecType} from "../../types";
 
-// 表示所有已知的编码类型
+// 表示所有网易支持的编码类型
 export const VideoCodecList: VideoCodecType[] = ["H264", "VP8"];
 
 function getSupportedCodecFromSDP(sdp: string): { video: VideoCodecType[], audio: AudioCodecType[] } {

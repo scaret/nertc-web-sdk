@@ -13,6 +13,7 @@ import {
   LiveConfig, MediaTypeShort, RecordConfig
 } from "../types";
 import {Stream} from "./stream";
+import {MediaCapability} from "../module/mediaCapability";
 
 /**
  * 基础框架
@@ -46,6 +47,7 @@ class Base extends EventEmitter {
       instance: this,
       report: true
     };
+    this.adapterRef.mediaCapability = new MediaCapability(this.adapterRef);
     this._reset();
     this.adapterRef.logger = new Logger({
       debug: options.debug,
@@ -79,6 +81,7 @@ class Base extends EventEmitter {
       //@ts-ignore
       instance: this
     };
+    this.adapterRef.mediaCapability = new MediaCapability(this.adapterRef);
     
     this._resetState(); // 内部状态对象
     this._destroyModule();
@@ -361,6 +364,7 @@ class Base extends EventEmitter {
       const stream = this.adapterRef.remoteStreamMap[streamId];
       stream.pubStatus.audio.consumerStatus = 'init'
       stream.pubStatus.video.consumerStatus = 'init'
+      stream.pubStatus.screen.consumerStatus = 'init'
       stream.pubStatus.audio.consumerId = ""
       stream.pubStatus.video.consumerId = ""
       stream.pubStatus.screen.consumerId = ""

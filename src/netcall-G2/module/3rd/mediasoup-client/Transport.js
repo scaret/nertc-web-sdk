@@ -282,7 +282,7 @@ class Transport extends EnhancedEventEmitter_1.EnhancedEventEmitter {
             throw error;
         });
     }
-    async fillRemoteRecvSdp({ kind, appData, iceParameters, iceCandidates, dtlsParameters, sctpParameters, sendingRtpParameters, codecOptions, offer, audioProfile }) {
+    async fillRemoteRecvSdp({ kind, appData, iceParameters, iceCandidates, dtlsParameters, sctpParameters, sendingRtpParameters, codecOptions, offer, audioProfile, codec}) {
         await this._handler.fillRemoteRecvSdp({
             kind,
             appData,
@@ -293,6 +293,7 @@ class Transport extends EnhancedEventEmitter_1.EnhancedEventEmitter {
             sendingRtpParameters,
             codecOptions,
             offer,
+            codec,
             audioProfile
         });
     }
@@ -377,8 +378,11 @@ class Transport extends EnhancedEventEmitter_1.EnhancedEventEmitter {
         return this._awaitQueue.push(async () => {
             // Ensure the device can consume it.
             const canConsume = ortc.canReceive(rtpParameters, this._extendedRtpCapabilities);
-            if (!canConsume)
-                throw new errors_1.UnsupportedError('cannot consume this Producer');
+            // 屏蔽canConsume的两个原因：
+            // 1. 本地的extendedRtpCapabilities是来自编码而非解码的，这会导致某些能解的情况下这里报错。
+            // 2. Native经常会不遵守声明的codec
+            // if (!canConsume)
+            //     throw new errors_1.UnsupportedError('cannot consume this Producer');
             const { localId, rtpReceiver, track } = await this._handler.receive({ iceParameters, iceCandidates, dtlsParameters, sctpParameters,
                 trackId: id, kind, rtpParameters, offer, probeSSrc, remoteUid: appData.remoteUid});
             const consumer = new Consumer_1.Consumer({

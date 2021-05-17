@@ -209,6 +209,7 @@ function init() {
   initDevices()
   initEvents()
   initVolumeDetect()
+  initCodecOptions()
 }
 
 function initDevices() {
@@ -255,6 +256,15 @@ function initEvents() {
   rtc.client.on('peer-online', evt => {
     console.warn(`${evt.uid} 加入房间`)
     addLog(`${evt.uid} 加入房间`)
+  })
+  
+  rtc.client.on('mediaCapabilityChange', evt=>{
+    $("#room-codec-wrapper").text(JSON.stringify(rtc.client.adapterRef.mediaCapability.room.videoCodecType));
+  })
+  
+  rtc.client.on('warning', evt => {
+    console.warn(`收到警告：`, evt)
+    addLog(`警告：${evt.code} ${evt.msg}`);
   })
 
   rtc.client.on('peer-leave', evt => {
@@ -515,6 +525,20 @@ function initVolumeDetect() {
   }, 200);
 }
 
+async function initCodecOptions(){
+  if (WebRTC2.getSupportedCodec){
+    const supportedCodecsRecv = await WebRTC2.getSupportedCodec("recv");
+    const supportedCodecsSend = await WebRTC2.getSupportedCodec("send");
+    const codecs = ["H264", "VP8"];
+    $('#supported-codec-wrapper').empty();
+    $('#publish-codec-wrapper').empty();
+    codecs.forEach((codec)=>{
+      $('#supported-codec-wrapper').append(`<label><input type="checkbox" id="support${codec}" ${(supportedCodecsRecv.video.indexOf(codec) > -1) ? "checked" : "disabled"}>${codec}</label>`)
+      $('#publish-codec-wrapper').append(`<label><input type="checkbox" id="publish${codec}" ${(supportedCodecsSend.video.indexOf(codec) > -1) ? "checked" : "disabled"}>${codec}</label>`)
+    });
+  }
+}
+
 $('#init-btn').on('click', () => {
   
 })
@@ -617,6 +641,19 @@ $('#joinChannel-btn').on('click', async () => {
   rtc.client.adapterRef.testConf = {
     turnAddr: $('#isTurnAddrConf').prop('checked') ? $('#isTurnAddrConf').prop('checked') && $('#turnAddr').val() : null,
   }
+
+  //supportedCodec用于测试
+  const supportedCodecRecv = [];
+  if ($("#supportH264").prop("checked")){
+    supportedCodecRecv.push("H264");
+  }
+  if ($("#supportH265").prop("checked")){
+    supportedCodecRecv.push("H265");
+  }
+  if ($("#supportVP8").prop("checked")){
+    supportedCodecRecv.push("VP8");
+  }
+  rtc.client.adapterRef.mediaCapability.supportedCodecRecv = supportedCodecRecv;
   
   rtc.client.join({
     channelName,
@@ -936,6 +973,18 @@ function initLocalStream(audioSource, videoSource) {
 function publish() {
   console.warn('开始发布视频流')
   addLog('开始发布视频流')
+  if (rtc.client.adapterRef.mediaCapability){
+    let preferredCodecSend = {video: [], screen: []};
+    if ($("#publishH264").prop("checked")){
+      preferredCodecSend.video.push("H264");
+      preferredCodecSend.screen.push("H264");
+    }
+    if ($("#publishVP8").prop("checked")){
+      preferredCodecSend.video.push("VP8");
+      preferredCodecSend.screen.push("VP8");
+    }
+    rtc.client.adapterRef.mediaCapability.preferredCodecSend = preferredCodecSend;
+  }
   rtc.client.publish(rtc.localStream).then(()=>{
     addLog('本地 publish 成功')
     console.warn('本地 publish 成功')
