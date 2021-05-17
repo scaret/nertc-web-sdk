@@ -900,7 +900,9 @@ function initLocalStream(audioSource, videoSource) {
   let sourceId = "";
   if ($("#enableScreen").prop("checked")){
     sourceId = getUrlVars().sourceId;
-    addLog("Electron屏幕共享：" + sourceId)
+    if (sourceId){
+      addLog("Electron屏幕共享：" + sourceId)
+    }
   }
   rtc.localStream = WebRTC2.createStream({
     uid: +$('#uid').val(),
