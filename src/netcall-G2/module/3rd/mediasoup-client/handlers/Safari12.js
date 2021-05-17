@@ -1,5 +1,6 @@
 "use strict";
 import {getMediaSecionIdx} from "../../../../util/getMediaSecionIdx";
+import {reduceCodecs} from "../../../../util/rtcUtil/codec";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const sdpTransform = require("sdp-transform");
@@ -186,11 +187,7 @@ class Safari12 extends HandlerInterface_1.HandlerInterface {
         const sendingRtpParameters = utils.clone(this._sendingRtpParametersByKind[track.kind]);
         // This may throw.
         sendingRtpParameters.codecs =
-            ortc.reduceCodecs(sendingRtpParameters.codecs, codec);
-        const sendingRemoteRtpParameters = utils.clone(this._sendingRemoteRtpParametersByKind[track.kind]);
-        // This may throw.
-        sendingRemoteRtpParameters.codecs =
-            ortc.reduceCodecs(sendingRemoteRtpParameters.codecs, codec);
+            reduceCodecs(sendingRtpParameters.codecs, codec);
 
         let transceiver = {}
         if (appData.mediaType === 'audio' && this._pc.audioSender) {
@@ -297,7 +294,7 @@ class Safari12 extends HandlerInterface_1.HandlerInterface {
             offer: offer
         };
     }
-    async fillRemoteRecvSdp({ kind, iceParameters, iceCandidates, dtlsParameters, sctpParameters, sendingRtpParameters, codecOptions, offer,audioProfile }) {
+    async fillRemoteRecvSdp({ kind, iceParameters, iceCandidates, dtlsParameters, sctpParameters, sendingRtpParameters, codecOptions, offer,audioProfile, codec }) {
         let localSdp = sdpTransform.parse(offer.sdp);
         localSdp.media.forEach(media => {
             if (media.type === 'audio') {
@@ -326,7 +323,7 @@ class Safari12 extends HandlerInterface_1.HandlerInterface {
         const sendingRemoteRtpParameters = utils.clone(this._sendingRemoteRtpParametersByKind[kind]);
         // This may throw.
         sendingRemoteRtpParameters.codecs =
-            ortc.reduceCodecs(sendingRemoteRtpParameters.codecs, undefined);
+            reduceCodecs(sendingRemoteRtpParameters.codecs, codec);
         let localSdpObject = sdpTransform.parse(this._pc.localDescription.sdp);
         const mediaSectionIdx = this._remoteSdp.getNextMediaSectionIdx();
         let offerMediaObject = localSdpObject.media[mediaSectionIdx.idx];

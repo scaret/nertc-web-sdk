@@ -172,6 +172,13 @@ class Client extends Base {
     
     this.setStartSessionTime()
     this.initMode()
+    if (!this.adapterRef.mediaCapability.supportedCodecRecv){
+      try{
+        await this.adapterRef.mediaCapability.detect();
+      }catch(e){
+        this.adapterRef.logger.error('Failed to detect mediaCapability', e.name);
+      }
+    }
     if (!this.adapterRef._meetings){
       throw new Error('No this.adapterRef._meetings');
     }
@@ -252,7 +259,7 @@ class Client extends Base {
         param
       })
     } catch (e) {
-      this.adapterRef.logger.error('API调用失败：Client:publish' ,e, ...arguments);
+      this.adapterRef.logger.error('API调用失败：Client:publish' ,e.name, e.message, e.stack, ...arguments);
       this.apiFrequencyControl({
         name: 'publish',
         code: -1,
@@ -496,8 +503,11 @@ class Client extends Base {
         }, null, ' ')
       })
     } catch (e) {
-      console.log(e)
-      this.adapterRef.logger.error('API调用失败：Client:subscribe' ,e , ...arguments);
+      if (e === "resetConsumeRequestStatus") {
+        this.adapterRef.logger.warn(`API调用被打断：Client:subscribe`, e);
+        return;
+      }
+      this.adapterRef.logger.error(`API调用失败：Client:subscribe`, e, e.name, e.message, ...arguments);
       this.apiFrequencyControl({
         name: 'subscribe',
         code: -1,

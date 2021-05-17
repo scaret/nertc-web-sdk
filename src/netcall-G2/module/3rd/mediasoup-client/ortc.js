@@ -742,9 +742,17 @@ function canReceive(rtpParameters, extendedRtpCapabilities) {
     validateRtpParameters(rtpParameters);
     if (rtpParameters.codecs.length === 0)
         return false;
-    const firstMediaCodec = rtpParameters.codecs[0];
-    return extendedRtpCapabilities.codecs
-        .some((codec) => codec.localPayloadType === firstMediaCodec.payloadType);
+    for (let i in rtpParameters.codecs){
+      if (rtpParameters.codecs[i].mimeType === "video/rtx"){
+        continue;
+      }
+      for (let j in extendedRtpCapabilities.codecs){
+        if (extendedRtpCapabilities.codecs[j].localPayloadType === rtpParameters.codecs[i].payloadType){
+          return true;
+        }
+      }
+    }
+    return false;
 }
 exports.canReceive = canReceive;
 function isRtxCodec(codec) {

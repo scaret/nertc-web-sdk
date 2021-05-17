@@ -723,6 +723,7 @@ class FormativeStatsReport {
       const videoDom = remoteStream && remoteStream.Play && remoteStream.Play.videoDom
       this.adapterRef.remoteVideoStats[uid] = {
         LayerType: 1,
+        CodecName: item.googCodecName,
         End2EndDelay: (parseInt(item.googCurrentDelayMs) || 0) + (parseInt(item.googJitterBufferMs) || 0) + (parseInt(item.googRenderDelayMs) || 0),
         MuteState: (remoteStream && (remoteStream.muteStatus.videoSend || remoteStream.muteStatus.videoRecv)), //(remoteStream && remoteStream.video) || (remoteStream && remoteStream.muteStatus.video),
         PacketLossRate: item.vlr || 0,
@@ -888,6 +889,7 @@ class FormativeStatsReport {
 
     this.adapterRef.localVideoStats[0] = {
       LayerType: 1,
+      CodecName: upVideoList[0] && upVideoList[0].googCodecName,
       CaptureFrameRate: result.v_cap_fps,
       CaptureResolutionHeight: parseInt(upVideoList[0] && upVideoList[0].googFrameHeightInput) || 0,
       CaptureResolutionWidth: parseInt(upVideoList[0] && upVideoList[0].googFrameWidthInput) || 0,
@@ -904,6 +906,7 @@ class FormativeStatsReport {
     
     this.adapterRef.localScreenStats[0] = {
       LayerType: 2,
+      CodecName: upScreenList[0] && upScreenList[0].googCodecName,
       CaptureFrameRate: result.s_cap_fps,
       CaptureResolutionHeight: parseInt(upScreenList[0] && upScreenList[0].googFrameHeightInput) || 0,
       CaptureResolutionWidth: parseInt(upScreenList[0] && upScreenList[0].googFrameWidthInput) || 0,

@@ -36,6 +36,11 @@
               <input type="radio" name="safemode" value="safe" checked> 安全模式</label>
             <label>
               <input type="radio" name="safemode" value="unsafe">非安全模式</label>
+          <div class="line"></div>
+            <label>支持的解码能力</label>
+            <div id="supported-codec-wrapper"></div>
+            <label>房间的能力</label>
+            <span id="room-codec-wrapper"></span>
           </div>
           <div class="line">
             appkey:
@@ -173,6 +178,10 @@
             <input type="checkbox" id="privateAudio">
             自定义视频
             <input type="checkbox" id="privateVideo">
+          </div>
+          <div class="line">
+            <label>发布的Codec</label>
+            <div id="publish-codec-wrapper"></div>
           </div>
           <div class="line">
             自动发布
