@@ -59,7 +59,7 @@ class WebAudio{
     setPlayStartTime: number,
     auidoMixingEnd: ((evt:Event) => void)|null,
   };
-  private gainFilter?:GainNode;
+  public gainFilter?:GainNode;
   public musicDestination: MediaStreamAudioDestinationNode | null;
   public destination: MediaStreamAudioDestinationNode|null;
   public context: AudioContext| null;
@@ -148,6 +148,10 @@ class WebAudio{
       playStartTime: 0,
       setPlayStartTime: 0,
       auidoMixingEnd: null
+    }
+    if (this.gainFilter && this.gainFilter.gain.value === 1 && this.adapterRef.localStream && this.adapterRef.localStream.mediaHelper){
+      // Hack：应该抛出事件，让mediaHelper执行。
+      this.adapterRef.localStream.mediaHelper.disableAudioRouting();
     }
   }
   
@@ -255,6 +259,7 @@ class WebAudio{
         that.script.connect(that.gainFilter)
       }*/
       audioIn.connect(that.gainFilter)
+      that.audioIn[ms.id] = audioIn
       if (that.mixAudioConf.state === AuidoMixingState.UNSTART) {
         if (that.script) {
           that.gainFilter.connect(that.script)
