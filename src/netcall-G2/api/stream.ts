@@ -363,6 +363,124 @@ class Stream extends EventEmitter {
     //this.client.adapterRef.logger.log('获取音视频流 ID: ', this.streamID)
     return this.streamID
   }
+
+  /**
+   *  获取音视频流的连接数据
+   *  @method getStats
+   *  @memberOf Stream
+   *  @return object
+   */
+
+  async getStats() {
+    let localPc = this.client.adapterRef && this.client.adapterRef._mediasoup && this.client.adapterRef._mediasoup._sendTransport && this.client.adapterRef._mediasoup._sendTransport._handler._pc;
+    let remotePc = this.client.adapterRef && this.client.adapterRef._mediasoup && this.client.adapterRef._mediasoup._recvTransport && this.client.adapterRef._mediasoup._recvTransport._handler._pc;
+    this.client.adapterRef.logger.log(`获取音视频连接数据, uid: ${this.streamID}`);
+    if (this.isRemote){
+      if(remotePc){
+        const stats = {
+          accessDelay: "0",
+          audioReceiveBytes: "0",
+          // audioReceiveDelay: "0",
+          audioReceivePackets: "0",
+          audioReceivePacketsLost: "0",
+          endToEndDelay: "0",
+          videoReceiveBytes: "0",
+          videoReceiveDecodeFrameRate: "0",
+          // videoReceiveDelay: "0",
+          videoReceiveFrameRate: "0",
+          videoReceivePackets: "0",
+          videoReceivePacketsLost: "0",
+          videoReceiveResolutionHeight: "0",
+          videoReceiveResolutionWidth: "0"
+        };
+        try {
+          const results = await remotePc.getStats();
+          results.forEach((item:any) => {
+            if (item.type === 'inbound-rtp') {
+              if (item.mediaType === 'video') {
+                stats.videoReceiveBytes = item.bytesReceived.toString();
+                stats.videoReceivePackets = item.packetsReceived.toString();
+                stats.videoReceivePacketsLost = item.packetsLost.toString();
+                stats.videoReceiveFrameRate = item.framesPerSecond.toString();
+                stats.videoReceiveDecodeFrameRate = item.framesPerSecond.toString();
+              } else if (item.mediaType === 'audio') {
+                stats.audioReceiveBytes = item.bytesReceived.toString();
+                stats.audioReceivePackets = item.packetsReceived.toString();
+                stats.audioReceivePacketsLost = item.packetsLost.toString();
+              }
+            } else if (item.type === 'candidate-pair') {
+              if (typeof item.currentRoundTripTime === 'number') {
+                stats.accessDelay = (item.currentRoundTripTime * 1000).toString();
+              }
+              if (typeof item.totalRoundTripTime === 'number') {
+                stats.endToEndDelay = 
+                Math.round(item.totalRoundTripTime * 100).toString();
+              }
+            } else if (item.type === 'track') {
+              if (typeof item.frameWidth !== 'undefined') {
+                stats.videoReceiveResolutionWidth = item.frameWidth.toString();
+                stats.videoReceiveResolutionHeight = item.frameHeight.toString();
+              }
+            } 
+          });
+        } catch (error) {
+          this.client.adapterRef.logger.error('failed to get remoteStats');
+        }
+        return stats;
+      }
+      
+    }else{
+      if (localPc) {
+        const stats = {
+          accessDelay: "0",
+          audioSendBytes: "0",
+          audioSendPackets: "0",
+          audioSendPacketsLost: "0",
+          videoSendBytes: "0",
+          videoSendFrameRate: "0",
+          videoSendPackets: "0",
+          videoSendPacketsLost: "0",
+          videoSendResolutionHeight: "0",
+          videoSendResolutionWidth: "0"
+        };
+        try {
+          const results = await localPc.getStats();
+          results.forEach((item:any) => {
+            if (item.type === 'outbound-rtp') {
+              if (item.mediaType === 'video') {
+                stats.videoSendBytes = item.bytesSent.toString();
+                stats.videoSendPackets = item.packetsSent.toString();
+                stats.videoSendFrameRate = item.framesPerSecond.toString();
+              } else if (item.mediaType === 'audio') {
+                stats.audioSendBytes = item.bytesSent.toString();
+                stats.audioSendPackets = item.packetsSent.toString();
+              }
+            } else if (item.type === 'candidate-pair') {
+              if (typeof item.currentRoundTripTime === 'number') {
+                stats.accessDelay = (item.currentRoundTripTime * 1000).toString();
+              }
+            } else if (item.type === 'track') {
+              if (typeof item.frameWidth !== 'undefined') {
+                stats.videoSendResolutionWidth = item.frameWidth.toString();
+                stats.videoSendResolutionHeight = item.frameHeight.toString();
+              }
+            } else if (item.type === 'remote-inbound-rtp') {
+              if (item.kind === 'audio') {
+                stats.audioSendPacketsLost = item.packetsLost.toString();
+              } else if (item.kind === 'video') {
+                stats.videoSendPacketsLost = item.packetsLost.toString();
+              }
+            }
+          });
+        } catch (error) {
+          this.client.adapterRef.logger.error('failed to get localStats');
+        }
+        return stats;
+      }
+    }
+  }
+
+
   
   /**
    * 设置视频订阅的参数。
