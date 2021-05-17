@@ -257,9 +257,21 @@ class Play extends EventEmitter {
     }
   }
 
-  async isPlayAudioStream() {
+  async stopPlayAudioStream() {
+    if (this.audioDom) {
+      this.audioDom.muted = true
+    }
+  }
+
+  setPlayVolume(volume:number) {
+    this.volume = volume
+    if (!this.audioDom) return
+    this.audioDom.volume = volume / 255
+  }
+
+  async isPlayAudioStream(musthasDom = true) {
     const getTimeRanges = async (time:number) => {
-      if (time){
+      if(time){
         await new Promise((resolve)=>{setTimeout(resolve, time)});
       }
       if (!this.audioDom) {
@@ -273,7 +285,13 @@ class Play extends EventEmitter {
         }
       }
     }
-    if(!this.audioDom || !this.audioDom.srcObject) return false
+    if (!this.audioDom || !this.audioDom.srcObject) {
+      if (musthasDom) {
+        return false
+      } else {
+        return true
+      }
+    }
     const firstTimeRanges  = await getTimeRanges(0)
     if (!firstTimeRanges) {
       return false;
@@ -287,51 +305,7 @@ class Play extends EventEmitter {
     return secondTimeRanges > firstTimeRanges
   }
 
-  async stopPlayAudioStream() {
-    if (this.audioDom) {
-      this.audioDom.muted = true
-    }
-  }
-
-  setPlayVolume(volume:number) {
-    this.volume = volume
-    if (!this.audioDom) return
-    this.audioDom.volume = volume / 255
-  }
-
-  async isPlayVideoStream() {
-    const getVideoFrames = async (time:number) => {
-      if (time) {
-        await new Promise((resolve)=>{setTimeout(resolve, time)});
-      }
-      if (this.videoDom && this.videoDom.srcObject && this.videoDom.getVideoPlaybackQuality()) {
-        return this.videoDom.getVideoPlaybackQuality().totalVideoFrames
-      } else {
-        return 0;
-      }
-    }
-    const firstTotalVideoFrames = await getVideoFrames(0);
-    const secondTotalVideoFrames = await getVideoFrames(100)
-    return secondTotalVideoFrames > firstTotalVideoFrames
-  }
-
-  async isPlayScreenStream() {
-    const getScreenFrames = async (time:number) => {
-      if (time) {
-        await new Promise((resolve)=>{setTimeout(resolve, time)});
-      }
-      if (this.screenDom && this.screenDom.srcObject && this.screenDom.getVideoPlaybackQuality()) {
-        return this.screenDom.getVideoPlaybackQuality().totalVideoFrames
-      } else {
-        return 0;
-      }
-    }
-    const firstTotalVideoFrames = await getScreenFrames(0);
-    const secondTotalVideoFrames = await getScreenFrames(100)
-    return secondTotalVideoFrames > firstTotalVideoFrames
-  }
-
-  async isPlayVideoStreamError() {
+  async isPlayVideoStream(musthasDom = true) {
     const getVideoFrames = async (time:number) => {
       if (time) {
         await new Promise((resolve)=>{setTimeout(resolve, time)});
@@ -343,11 +317,54 @@ class Play extends EventEmitter {
       }
     }
     if (!this.videoDom || !this.videoDom.srcObject) {
-      return true;
+      if (musthasDom) {
+        return false
+      } else {
+        return true
+      }
     }
     const firstTotalVideoFrames = await getVideoFrames(0);
     const secondTotalVideoFrames = await getVideoFrames(100)
     return secondTotalVideoFrames > firstTotalVideoFrames
+  }
+
+  async isPlayScreenStream(musthasDom = true) {
+    const getScreenFrames = async (time:number) => {
+      if (time) {
+        await new Promise((resolve)=>{setTimeout(resolve, time)});
+      }
+      if (this.screenDom && this.screenDom.srcObject && this.screenDom.getVideoPlaybackQuality()) {
+        return this.screenDom.getVideoPlaybackQuality().totalVideoFrames
+      } else {
+        return 0;
+      }
+    }
+    if (!this.screenDom || !this.screenDom.srcObject) {
+      if (musthasDom) {
+        return false
+      } else {
+        return true
+      }
+    }
+    const firstTotalVideoFrames = await getScreenFrames(0);
+    const secondTotalVideoFrames = await getScreenFrames(100)
+    return secondTotalVideoFrames > firstTotalVideoFrames
+  }
+
+  async isPlayStreamError(mediaType?: string) {
+    let dom = null
+    switch (mediaType) {
+      case "audio":
+        return this.isPlayAudioStream(true)
+        break;
+      case "video":
+        return this.isPlayVideoStream(true)
+      case "screen":
+        return this.isPlayScreenStream(true)
+        break;
+      default:
+        return true;
+    }
   }
 
   async playVideoStream(stream:MediaStream, view:HTMLElement) {
