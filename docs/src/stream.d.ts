@@ -126,6 +126,10 @@ declare interface Stream {
        * Electron 屏幕共享的数据源 ID，您可以自行获取。
        */
       sourceId?: string;
+      /**
+       * 开启屏幕共享音频。仅在未开启音频且type为screen时有效。注意事项见[[StreamOptions.screenAudio]]
+       */
+      screenAudio?: boolean;
     }): Promise<undefined>;
     /**
      * 关闭音视频输入设备，如麦克风、摄像头、屏幕共享，并且停止发布

@@ -89,6 +89,14 @@ function createClient (options:ClientOptions) {
 function createStream (options:StreamOptions) {
   checkExists({tag: 'createStream:options', value: options});
   checkExists({tag: 'createStream:options.uid', value: options.uid});
+  if (options.screenAudio){
+    if (!options.screen){
+      throw new Error('createStream:screenAudio要与screen一起开启');
+    }
+    if (options.audio){
+      throw new Error('createStream:screenAudio与audio只能开启一个');
+    }
+  }
   
   if (client || options.client) {
     return new Stream(Object.assign(options, {

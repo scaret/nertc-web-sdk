@@ -559,6 +559,7 @@ export interface GetStreamConstraints{
   audioSource?: MediaStreamTrack|null;
   videoSource?: MediaStreamTrack|null;
   deviceId?: string;
+  screenAudio?: boolean;
 }
 
 export interface RecordInitOptions{
@@ -692,6 +693,7 @@ export interface StreamOptions{
   sourceId?: '';
   video: boolean;
   screen: boolean;
+  screenAudio?: boolean;
   client: Client;
   audioSource?: MediaStreamTrack|null;
   videoSource?: MediaStreamTrack|null;

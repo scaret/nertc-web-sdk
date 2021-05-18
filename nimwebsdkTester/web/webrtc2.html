@@ -172,8 +172,12 @@
             <input type="checkbox" id="enableAudio" checked>
             启用视频
             <input type="checkbox" id="enableVideo" checked>
+            <br/>
             启用屏幕共享
-            <input type="checkbox" id="enableScreen" >
+            <input type="checkbox" id="enableScreen">
+            启用屏幕共享背景音
+            <input type="checkbox" id="enableScreenAudio">
+            <br/>
             自定义音频
             <input type="checkbox" id="privateAudio">
             自定义视频
@@ -448,7 +452,11 @@
             <button id="playCameraOff" class="close">关闭</button>
           </div>
           <div class="line">
-            Chrome屏幕共享：
+            屏幕共享：
+            <select id="playScreenAudio" style="width: 30%">
+              <option value="false">音频关</option>
+              <option value="true">音频开</option>
+            </select>
             <button id="playScreen" class="close">打开</button>
             <button id="playScreenOff" class="close">关闭</button>
           </div>
@@ -457,7 +465,7 @@
               uid：
               <input type="text" id="snapshotAccount" class="input-40">
               类型：
-              <select type="text" id="snapType">
+              <select type="text" id="snapType" style="width:30%">
                 <option value="">默认</option>
                 <option value="video">主流</option>
                 <option value="screen">辅流</option>
