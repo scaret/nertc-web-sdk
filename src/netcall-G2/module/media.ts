@@ -157,7 +157,7 @@ class MediaHelper extends EventEmitter {
             }
           }, this.adapterRef.logger)
         } else {
-          this.screenStream = await GUM.getScreenStream({
+          let screenStream = await GUM.getScreenStream({
             video:{
               width: {
                 ideal: width
@@ -169,8 +169,37 @@ class MediaHelper extends EventEmitter {
                 ideal: frameRate,
                 max: frameRate
               }
-            }
+            },
+            audio: (constraint.screenAudio && this.getAudioConstraints()) ? this.getAudioConstraints() : constraint.screenAudio,
           }, this.adapterRef.logger)
+          this.screenStream = screenStream;
+          if (constraint.screenAudio){
+            const screenAudioTrack = screenStream.getAudioTracks()[0];
+            if (screenAudioTrack){
+              const stream = new MediaStream;
+              screenStream.removeTrack(screenAudioTrack);
+              stream.addTrack(screenAudioTrack);
+              this.micTrack = screenAudioTrack;
+              this.micStream = stream;
+              if (!this.webAudio) {
+                this.webAudio = new WebAudio({
+                  adapterRef: this.adapterRef,
+                  stream: this.micStream
+                })
+              } else {
+                this.webAudio.updateStream(this.micStream)
+              }
+              if (!this.audioRoutingEnabled){
+                emptyStreamWith(this.audioStream, this.micTrack);
+                this.updateAudioSender(screenAudioTrack);
+              }
+            }else{
+              this.adapterRef.logger.warn('getStream screenAudio: 未获取到屏幕共享音频');
+              if (this.adapterRef.instance){
+                this.adapterRef.instance.emit('error', 'screenAudioNotAllowed');
+              }
+            }
+          }
         }
         
         this.adapterRef.instance.apiEventReport('setFunction', {
@@ -478,6 +507,25 @@ class MediaHelper extends EventEmitter {
         constraint.googAutoGainControl = audioProcessing.AGC;
         constraint.googAutoGainControl2 = audioProcessing.AGC;
       }
+    }
+    switch(this.adapterRef.localStream.audioProfile){
+      case "speech_low_quality":
+        constraint.sampleRate = 16000;
+        break;
+      case "speech_standard":
+        constraint.sampleRate = 32000;
+        break;
+      case "music_standard":
+        constraint.sampleRate = 48000;
+        break;
+      case "standard_stereo":
+        constraint.sampleRate = 48000;
+        constraint.channelCount = 2;
+        break;
+      case "high_quality_stereo":
+        constraint.sampleRate = 48000;
+        constraint.channelCount = 2;
+        break;
     }
     if (JSON.stringify(constraint) === "{}") {
       return null;

@@ -270,6 +270,16 @@ export interface StreamOptions {
    */
   screen?: boolean;
   /**
+   * 是否采集屏幕分享流的共享音频。
+   * 
+   * 注意事项：
+   * 1. 需确保设置screen选项为true
+   * 2. 需确保设置audio选项为false
+   * 3. 由于浏览器支持限制，需确保用户使用Windows版本的Chrome，并勾选了屏幕共享下的【Share audio】选项
+   * 4. 推荐 [[Stream.setAudioProfile]] 为`high_quality_stereo`
+   */
+  screenAudio?: boolean;
+  /**
    * 和要Stream绑定的client实例对象，默认是最初使用用createClient创建的client实例（多实例场景使用）
    */
   client?: Client;

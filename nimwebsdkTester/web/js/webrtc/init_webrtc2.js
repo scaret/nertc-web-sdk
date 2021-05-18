@@ -912,6 +912,7 @@ function initLocalStream(audioSource, videoSource) {
     video: $('#enableVideo').prop('checked'),
     cameraId: $('#camera').val(),
     screen: $('#enableScreen').prop('checked'),
+    screenAudio: $('#enableScreenAudio').prop('checked'),
     sourceId: sourceId,
     audioSource,
     videoSource
@@ -1458,6 +1459,7 @@ $('#playScreen').on('click', () => {
   })
   rtc.localStream.open({
     type: 'screen',
+    screenAudio: $("#playScreenAudio").val() === "true",
     sourceId: getUrlVars().sourceId
   }).then(()=>{
     rtc.localStream.play(document.getElementById('local-container'))

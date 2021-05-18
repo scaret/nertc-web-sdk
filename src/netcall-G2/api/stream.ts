@@ -75,6 +75,7 @@ class Stream extends EventEmitter {
   public sourceId: string;
   public video: boolean;
   public screen: boolean;
+  public screenAudio: boolean;
   private client: Client;
   private audioSource: MediaStreamTrack|null;
   private videoSource:MediaStreamTrack|null;
@@ -209,6 +210,7 @@ class Stream extends EventEmitter {
     this.cameraId = options.cameraId || ''
     this.video = options.video || false
     this.screen = options.screen || false
+    this.screenAudio = options.screenAudio || false
     this.sourceId = options.sourceId || ''
     this.client = options.client
     this.audioSource = options.audioSource || null
@@ -271,6 +273,7 @@ class Stream extends EventEmitter {
     this.video = false
     this.cameraId = ''
     this.screen = false
+    this.screenAudio = false
     this.sourceId = ''
     this.videoView = null
     this.screenView = null
@@ -530,8 +533,12 @@ class Stream extends EventEmitter {
       if (this.screen){
         await this.mediaHelper.getStream({
           sourceId: this.sourceId,
-          screen: this.screen
+          screen: this.screen,
+          screenAudio: this.screenAudio,
         })
+        if (this.screenAudio){
+          this.audio = true;
+        }
       }
     } catch (e) {
       this.client.adapterRef.logger.log('打开屏幕共享失败: ', e)
@@ -809,7 +816,7 @@ class Stream extends EventEmitter {
    * @param {String }  options.sourceId 屏幕共享的数据源Id（electron用户可以自己获取）
    * @returns {Promise}
    */
-  async open (options:{type: MediaTypeShort, deviceId?: string, sourceId?: string}) {
+  async open (options:{type: MediaTypeShort, deviceId?: string, sourceId?: string, screenAudio?: boolean}) {
     let {type, deviceId, sourceId} = options
     if (this.client._roleInfo.userRole === 1) {
       const reason = `观众不允许打开设备`;
@@ -861,6 +868,10 @@ class Stream extends EventEmitter {
             sourceId
           }
           constraint[type] = true
+          if (type === "screen" && options.screenAudio){
+            constraint.screenAudio = true
+            this.audio = true
+          }
           if (this.mediaHelper){
             await this.mediaHelper.getStream(constraint)
             await this.client.publish(this)
