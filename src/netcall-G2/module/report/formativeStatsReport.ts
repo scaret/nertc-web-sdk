@@ -766,6 +766,7 @@ class FormativeStatsReport {
       const screenDom = remoteStream && remoteStream.Play && remoteStream.Play.screenDom
       this.adapterRef.remoteScreenStats[uid] = {
         LayerType: 2,
+        CodecName: item.googCodecName,
         End2EndDelay: (parseInt(item.googCurrentDelayMs) || 0) + (parseInt(item.googJitterBufferMs) || 0) + (parseInt(item.googRenderDelayMs) || 0),
         MuteState: (remoteStream && (remoteStream.muteStatus.screenSend || remoteStream.muteStatus.screenRecv)), //(remoteStream && remoteStream.screen) || (remoteStream && remoteStream.muteStatus.screen),
         PacketLossRate: item.vlr || 0,
