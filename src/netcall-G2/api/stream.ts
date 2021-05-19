@@ -862,6 +862,18 @@ class Stream extends EventEmitter {
             })
             return Promise.reject('CLOSE_VIDEO_OR_SCREEN_FIRST')
           }
+          if (options.screenAudio && this.audio){
+            this.client.adapterRef.logger.error('请先关闭麦克风')
+            this.client.apiFrequencyControl({
+              name: 'open',
+              code: -1,
+              param: JSON.stringify({
+                reason: '请先关闭麦克风',
+                type
+              }, null, ' ')
+            })
+            return Promise.reject('CLOSE_AUDIO_FIRST')
+          }
           this[type] = true
           const constraint:any = {
             videoDeviceId: deviceId,
