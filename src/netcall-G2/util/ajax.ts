@@ -76,7 +76,11 @@ function ajax (option:AjaxOptions) {
       }
     } else {
       if (option.data) {
-        xhr.send(JSON.stringify(option.data))
+        if (option.header && option.header['Content-Encoding'] === 'gzip') {
+          xhr.send(option.data)
+        } else {
+          xhr.send(JSON.stringify(option.data))
+        }
       } else {
         xhr.send()
       }
