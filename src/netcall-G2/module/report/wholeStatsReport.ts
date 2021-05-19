@@ -9,6 +9,9 @@ import {
   AdapterRef,
   WholeStatsReportStartOptions,
 } from "../../types";
+import * as pako from 'pako';
+// @ts-ignore
+import * as gzip from 'gzip-js';
 
 let url = 'https://statistic.live.126.net/webrtc/stat'
 
@@ -41,7 +44,7 @@ class WholeStatsReport {
 
   init (appkey: string) {
     this.infos = {
-      interval: 30,
+      interval: 9,
       ver: "2",
       platform:
         tool.convertPlatform(platform.os.family) + '-' + platform.os.version,
@@ -80,6 +83,7 @@ class WholeStatsReport {
 
   update (data: any) {
     this.infos.data[`stat_${Date.now()}`] = data
+    
     if (Object.keys(this.infos.data).length >= this.infos.interval) {
       this.send()
     }
@@ -98,12 +102,16 @@ class WholeStatsReport {
       url = this.adapterRef.instance._params.neRtcServerAddresses.statisticsServer
       this.adapterRef.logger.log('私有化配置的 reportUrl: ', url)
     }
-    //console.log('send stats data', this.infos)
+
+    // compress report data
+    // pako.gzip(params) 默认返回一个 Uint8Array 对象
+    let params = pako.gzip(JSON.stringify(this.infos))
     ajax({ 
       type: 'post', 
       url, 
-      data: this.infos,
+      data: new Blob([params]), 
       header: {
+        'Content-Encoding': 'gzip',
         sdktype: 'nrtc',
         appkey: this.infos.appkey,
         platform: 'web',
