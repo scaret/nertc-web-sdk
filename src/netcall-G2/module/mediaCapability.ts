@@ -1,12 +1,15 @@
 import {SignalRoomCapability, VideoCodecInt2Str, VideoCodecStr2Int} from "../interfaces/SignalProtocols";
 import {AdapterRef, VideoCodecType} from "../types";
-import {getSupportedCodecs} from "../util/rtcUtil/codec";
+import {getSupportedCodecs, VideoCodecList} from "../util/rtcUtil/codec";
 
 export class MediaCapability{
   public adapterRef: AdapterRef;
 
   // 表示本地支持的解码类型
   public supportedCodecRecv: VideoCodecType[] | null;
+  // 表示本地支持的编码类型
+  public supportedCodecSend: VideoCodecType[] | null;
+
   // 表示用户想用的编码类型
   public preferredCodecSend: {
     video: VideoCodecType[],
@@ -20,6 +23,7 @@ export class MediaCapability{
   constructor(adapterRef: AdapterRef) {
     this.adapterRef = adapterRef;
     this.supportedCodecRecv = null;
+    this.supportedCodecSend = null;
     this.preferredCodecSend = {
       video: ["H264", "VP8"],
       screen: ["H264", "VP8"]
@@ -30,27 +34,41 @@ export class MediaCapability{
   }
   
   async detect(){
-    const supportedCodecs = await getSupportedCodecs("recv");
-    if (!supportedCodecs){
-      throw new Error('Failed to detect codec');
+    let supportedCodecsRecv = await getSupportedCodecs("recv") || {video: [], audio: ["OPUS"]};
+    let supportedCodecsSend = await getSupportedCodecs("send") || {video: [], audio: ["OPUS"]};
+    this.supportedCodecRecv = supportedCodecsRecv.video;
+    this.supportedCodecSend = supportedCodecsSend.video;
+    this.adapterRef.logger.log("detect supportedCodecRecv", this.supportedCodecRecv , "supportedCodecSend", this.supportedCodecSend, 'Preferred codec:', this.preferredCodecSend);
+  }
+  
+  getCodecCapability(){
+    //策略：取发送与接收的编码交集
+    if (this.supportedCodecRecv && this.supportedCodecSend){
+      const supportedCodec:VideoCodecType[] = [];
+      for (let codec of VideoCodecList){
+        if (this.supportedCodecRecv.indexOf(codec) > -1 && this.supportedCodecSend.indexOf(codec) > -1){
+          supportedCodec.push(codec);
+        }
+      }
+      return supportedCodec;
+    }else{
+      this.adapterRef.logger.error('getCodecCapability: call detect first');
+      return [];
     }
-    this.supportedCodecRecv = supportedCodecs.video;
   }
   
   stringify(){
     let mediaCapabilitySet:any = {};
-    if (this.supportedCodecRecv){
-      mediaCapabilitySet[256] = [];
-      for (let codec of this.supportedCodecRecv){
-        if (VideoCodecStr2Int[codec] > -1){
-          mediaCapabilitySet[256].push(VideoCodecStr2Int[codec])
-        }
-      }
-      if (mediaCapabilitySet[256].length === 0){
-        this.adapterRef.logger.error('No Local Suitable codec available. Supported:', this.supportedCodecRecv, 'Preferred:', this.preferredCodecSend);
+    mediaCapabilitySet[256] = [];
+    for (let codec of this.getCodecCapability()){
+      if (VideoCodecStr2Int[codec] > -1){
+        mediaCapabilitySet[256].push(VideoCodecStr2Int[codec])
       }else{
-        this.adapterRef.logger.log('Local Supported codec:', this.supportedCodecRecv, 'Preferred codec:', this.preferredCodecSend);
+        this.adapterRef.logger.error('MediaCapability:Unknown VideoCodecStr2Int', codec);
       }
+    }
+    if (mediaCapabilitySet[256].length === 0){
+      this.adapterRef.logger.error('MediaCapability:No Local Suitable codec available');
     }
     const str = JSON.stringify(mediaCapabilitySet);
     return str;

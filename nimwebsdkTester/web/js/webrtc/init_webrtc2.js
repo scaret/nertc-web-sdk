@@ -526,15 +526,15 @@ function initVolumeDetect() {
 }
 
 async function initCodecOptions(){
-  if (WebRTC2.getSupportedCodec){
-    const supportedCodecsRecv = await WebRTC2.getSupportedCodec("recv");
-    const supportedCodecsSend = await WebRTC2.getSupportedCodec("send");
+  if (rtc.client && rtc.client._getSupportedCodecs){
+    const supportedCodecsRecv = await rtc.client._getSupportedCodecs("recv");
+    const supportedCodecsSend = await rtc.client._getSupportedCodecs("send");
     const codecs = ["H264", "VP8"];
-    $('#supported-codec-wrapper').empty();
-    $('#publish-codec-wrapper').empty();
+    $('#supported-recv-codec-wrapper').empty();
+    $('#supported-send-codec-wrapper').empty();
     codecs.forEach((codec)=>{
-      $('#supported-codec-wrapper').append(`<label><input type="checkbox" id="support${codec}" ${(supportedCodecsRecv.video.indexOf(codec) > -1) ? "checked" : "disabled"}>${codec}</label>`)
-      $('#publish-codec-wrapper').append(`<label><input type="checkbox" id="publish${codec}" ${(supportedCodecsSend.video.indexOf(codec) > -1) ? "checked" : "disabled"}>${codec}</label>`)
+      $('#supported-recv-codec-wrapper').append(`<label><input type="checkbox" class="codec-hacking" disabled id="supportRecv${codec}" ${(supportedCodecsRecv.video.indexOf(codec) > -1) ? "checked" : ""}>${codec}</label>`)
+      $('#supported-send-codec-wrapper').append(`<label><input type="checkbox" class="codec-hacking" disabled id="supportSend${codec}" ${(supportedCodecsSend.video.indexOf(codec) > -1) ? "checked" : ""}>${codec}</label>`)
     });
   }
 }
@@ -643,18 +643,24 @@ $('#joinChannel-btn').on('click', async () => {
   }
 
   //supportedCodec用于测试
-  const supportedCodecRecv = [];
-  if ($("#supportH264").prop("checked")){
-    supportedCodecRecv.push("H264");
+  if ($("#enableCodecHacking").prop("checked")){
+    const supportedCodecRecv = [];
+    if ($("#supportRecvH264").prop("checked")){
+      supportedCodecRecv.push("H264");
+    }
+    if ($("#supportRecvVP8").prop("checked")){
+      supportedCodecRecv.push("VP8");
+    }
+    rtc.client.adapterRef.mediaCapability.supportedCodecRecv = supportedCodecRecv;
+    const supportedCodecSend = [];
+    if ($("#supportSendH264").prop("checked")){
+      supportedCodecSend.push("H264");
+    }
+    if ($("#supportSendVP8").prop("checked")){
+      supportedCodecSend.push("VP8");
+    }
+    rtc.client.adapterRef.mediaCapability.supportedCodecSend = supportedCodecSend;
   }
-  if ($("#supportH265").prop("checked")){
-    supportedCodecRecv.push("H265");
-  }
-  if ($("#supportVP8").prop("checked")){
-    supportedCodecRecv.push("VP8");
-  }
-  rtc.client.adapterRef.mediaCapability.supportedCodecRecv = supportedCodecRecv;
-  
   rtc.client.join({
     channelName,
     uid: +uid,
@@ -896,6 +902,15 @@ $('#closeAsl').on('click', () => {
   rtc.client.closeAslMode()
 })
 
+$('#enableCodecHacking').on('change', ()=>{
+  console.error("Here");
+  if ($("#enableCodecHacking").prop("checked")){
+    $(".codec-hacking").removeAttr("disabled");
+  }else{
+    $(".codec-hacking").attr("disabled", "disabled");
+  }
+});
+
 function initLocalStream(audioSource, videoSource) {
   let sourceId = "";
   if ($("#enableScreen").prop("checked")){
@@ -976,13 +991,13 @@ function initLocalStream(audioSource, videoSource) {
 function publish() {
   console.warn('开始发布视频流')
   addLog('开始发布视频流')
-  if (rtc.client.adapterRef.mediaCapability){
+  if (rtc.client.adapterRef.mediaCapability && $("#enableCodecHacking").prop("checked")){
     let preferredCodecSend = {video: [], screen: []};
-    if ($("#publishH264").prop("checked")){
+    if ($("#supportSendH264").prop("checked")){
       preferredCodecSend.video.push("H264");
       preferredCodecSend.screen.push("H264");
     }
-    if ($("#publishVP8").prop("checked")){
+    if ($("#supportSendVP8").prop("checked")){
       preferredCodecSend.video.push("VP8");
       preferredCodecSend.screen.push("VP8");
     }
