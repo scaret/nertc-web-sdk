@@ -208,7 +208,7 @@ export declare class Transport extends EnhancedEventEmitter {
     _handleDataConsumer(dataConsumer: DataConsumer): void;
 
   fillRemoteRecvSdp: (...args:any)=>void;
-  prepareLocalSdp: (...args:any)=>{ rtpCapabilities:any, offer:RTCSessionDescription, mid:number, dtlsParameters: any};
+  prepareLocalSdp: (...args:any)=>{ rtpCapabilities:any, offer:RTCSessionDescription, mid:number, dtlsParameters: any, iceUfragReg: any};
   recoverLocalSdp: (...args:any)=> void;
 }
 export {};

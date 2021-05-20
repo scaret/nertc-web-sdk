@@ -49,6 +49,39 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
             catch (error) { }
         }
     }
+    async getRtpCapabilities(mediaType) {
+        logger.debug('getRtpCapabilities()');
+        const pc = new RTCPeerConnection({
+            iceServers: [],
+            iceTransportPolicy: 'all',
+            bundlePolicy: 'max-bundle',
+            rtcpMuxPolicy: 'require',
+            sdpSemantics: 'unified-plan'
+        });
+        try {
+            if (mediaType) {
+                pc.addTransceiver(mediaType);
+            } else {
+                pc.addTransceiver('audio');
+                pc.addTransceiver('video');
+            }
+            
+            const offer = await pc.createOffer();
+            try {
+                pc.close();
+            }
+            catch (error) { }
+            return offer;
+        }
+        catch (error) {
+            try {
+                pc.close();
+            }
+            catch (error2) { }
+            throw error;
+        }
+    }
+
     async getNativeRtpCapabilities() {
         logger.debug('getNativeRtpCapabilities()');
         const pc = new RTCPeerConnection({
@@ -553,20 +586,6 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
         return { dataChannel, sctpStreamParameters };
     }
 
-    async prepareMid(kind, remoteUid) {
-        logger.debug('prepareMid() [kind:%s, remoteUid:%s]', kind, remoteUid);
-        let mid = -1
-        for (const transceiver of this._mapMidTransceiver.values()) {
-            const mediaType = transceiver.receiver.track && transceiver.receiver.track.kind || kind
-            logger.debug('prepareMid() transceiver M行信息 [mid: %s, mediaType: %s, isUseless: %s]', transceiver.mid, mediaType, transceiver.isUseless)
-            if (transceiver.isUseless && mediaType === kind) {
-                mid = transceiver.mid;
-                break;
-            }
-        }
-        return { mid };
-    }
-
     async recoverTransceiver(remoteUid, mid, kind) {
         logger.debug('recoverTransceiver() [kind:%s, remoteUid:%s, mid: %s]', kind, remoteUid, mid);
         const transceiver = this._mapMidTransceiver.get(mid);
@@ -574,23 +593,8 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
             transceiver.isUseless = true
         } else {
             logger.debug('recoverTransceiver() transceiver undefined');
-            const transceivers = this._pc.getReceivers()
-            transceivers.forEach(item => {
-                logger.debug('recoverTransceiver() transceiver undefined');
-            })
         }
         return;
-    }
-
-    async prepareLocalProperty(kind, remoteUid) {
-        logger.debug('prepareLocalProperty() [kind:%s, remoteUid:%s]', kind, remoteUid);
-       let offer = await this._pc.localDescription;
-        const localSdpObject = sdpTransform.parse(offer.sdp);
-        let dtlsParameters = undefined;
-        if (!this._transportReady)
-            dtlsParameters = await this._setupTransport({ localDtlsRole: 'server', localSdpObject });
-        const rtpCapabilities = sdpCommonUtils.extractRtpCapabilities({ sdpObject: localSdpObject });
-        return { dtlsParameters, rtpCapabilities };
     }
 
     async prepareLocalSdp(kind, remoteUid) {
@@ -606,16 +610,21 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
             }
         }
 
-        if (mid === -1) {
-            logger.debug('prepareLocalSdp() 添加一个M行')
-            this._pc.addTransceiver(kind, { direction: "recvonly" });
-        } 
-        
-        let offer = await this._pc.createOffer();
-        if (offer.sdp.indexOf(`a=ice-ufrag:${this._appDate.cid}#${this._appDate.uid}#`) < 0) {
-            offer.sdp = offer.sdp.replace(/a=ice-ufrag:([0-9a-zA-Z=+-_\/\\\\]+)/g, `a=ice-ufrag:${this._appDate.cid}#${this._appDate.uid}#recv`)
-            offer.sdp = offer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`)
+        let offer = this._pc.localDescription;
+
+        if (!offer || !offer.sdp || !offer.sdp.includes(`m=${kind}`)) {
+            if (mid === -1) {
+                logger.debug('prepareLocalSdp() 添加一个M行')
+                this._pc.addTransceiver(kind, { direction: "recvonly" });
+            } 
+            
+            offer = await this._pc.createOffer();
+            if (offer.sdp.indexOf(`a=ice-ufrag:${this._appDate.cid}#${this._appDate.uid}#`) < 0) {
+                offer.sdp = offer.sdp.replace(/a=ice-ufrag:([0-9a-zA-Z=+-_\/\\\\]+)/g, `a=ice-ufrag:${this._appDate.cid}#${this._appDate.uid}#recv`)
+                offer.sdp = offer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`)
+            }
         }
+
         const localSdpObject = sdpTransform.parse(offer.sdp);
         let dtlsParameters = undefined;
         if (!this._transportReady)
@@ -623,16 +632,15 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
         const rtpCapabilities = sdpCommonUtils.extractRtpCapabilities({ sdpObject: localSdpObject });
 
         if (mid === -1) {
-            mid = localSdpObject.media.length - 1
+            //mid = localSdpObject.media.length - 1
+            mid = this._pc.getTransceivers().length
         } 
-        return { dtlsParameters, rtpCapabilities, offer, mid };
+        return { dtlsParameters, rtpCapabilities, offer, mid, iceUfragReg: '' };
     }
 
     async receive({ iceParameters, iceCandidates, dtlsParameters, sctpParameters, trackId, kind, rtpParameters, offer, probeSSrc=-1, remoteUid }) {
         this._assertRecvDirection();
         logger.debug('receive() [trackId: %s, kind: %s, remoteUid: %s]', trackId, kind, remoteUid);
-        await this._pc.setLocalDescription(offer);
-        logger.debug('receive() | calling pc.setLocalDescription()');
         if (!this._remoteSdp) {
             this._remoteSdp = new RemoteSdp_1.RemoteSdp({
                 iceParameters,
@@ -642,8 +650,6 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
             });
             this._remoteSdp.updateDtlsRole('client');
         }
-        
-        //let localId = String(this._mapMidTransceiver.size);
         let reuseMid = null
         const localId = rtpParameters.mid
         logger.debug('处理对端的M行 mid: ', localId)
@@ -659,6 +665,36 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
             this._remoteSdp.disableMediaSection(localId)
         }
         const answer = { type: 'answer', sdp: this._remoteSdp.getSdp() };
+
+        const offerMediaSessionLength = this._pc.getTransceivers().length
+        const answerMediaSessionLength = this._remoteSdp.getNextMediaSectionIdx().idx  
+        console.log(`offerMediaSessionLength: ${offerMediaSessionLength}，answerMediaSessionLength: ${answerMediaSessionLength}`)
+        if (offerMediaSessionLength < answerMediaSessionLength) {
+            let mid = -1
+            for (const transceiver of this._mapMidTransceiver.values()) {
+                const mediaType = transceiver.receiver.track && transceiver.receiver.track.kind || kind
+                logger.debug('prepareLocalSdp() transceiver M行信息 [mid: %s, mediaType: %s, isUseless: %s]', transceiver.mid, mediaType, transceiver.isUseless)
+                if (transceiver.isUseless && mediaType === kind) {
+                    mid = transceiver.mid;
+                    transceiver.isUseless = false
+                    break;
+                }
+            }
+
+            if (mid === -1) {
+                logger.debug('prepareLocalSdp() 添加一个M行')
+                this._pc.addTransceiver(kind, { direction: "recvonly" });
+            }
+            offer = await this._pc.createOffer(); 
+        }
+        if (offer.sdp.indexOf(`a=ice-ufrag:${this._appDate.cid}#${this._appDate.uid}#`) < 0) {
+            offer.sdp = offer.sdp.replace(/a=ice-ufrag:([0-9a-zA-Z=+-_\/\\\\]+)/g, `a=ice-ufrag:${this._appDate.cid}#${this._appDate.uid}#recv`)
+            offer.sdp = offer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`)
+        }
+        await this._pc.setLocalDescription(offer);
+        logger.debug('receive() | calling pc.setLocalDescription()');
+        
+        
         logger.debug('receive() | calling pc.setRemoteDescription() [answer:%o]', answer.sdp);
         await this._pc.setRemoteDescription(answer);
         const transceiver = this._pc.getTransceivers()
