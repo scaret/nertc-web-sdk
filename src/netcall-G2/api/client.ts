@@ -172,7 +172,7 @@ class Client extends Base {
     
     this.setStartSessionTime()
     this.initMode()
-    if (!this.adapterRef.mediaCapability.supportedCodecRecv){
+    if (!this.adapterRef.mediaCapability.supportedCodecRecv || !this.adapterRef.mediaCapability.supportedCodecSend){
       try{
         await this.adapterRef.mediaCapability.detect();
       }catch(e){

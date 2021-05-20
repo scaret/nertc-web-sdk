@@ -14,6 +14,7 @@ import {
 } from "../types";
 import {Stream} from "./stream";
 import {MediaCapability} from "../module/mediaCapability";
+import {getSupportedCodecs} from "../util/rtcUtil/codec";
 
 /**
  * 基础框架
@@ -87,6 +88,9 @@ class Base extends EventEmitter {
     this._destroyModule();
   }
 
+  _getSupportedCodecs(){
+    return getSupportedCodecs(...arguments);
+  }
 
   initMode() {
     if (!this.adapterRef._meetings) {
