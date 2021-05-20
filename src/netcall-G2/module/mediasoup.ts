@@ -667,10 +667,10 @@ class Mediasoup extends EventEmitter {
 
     if (!id) {
       return this.checkConsumerList(info)
-    } else if (this.unsupportedProducers.indexOf(id) > -1){
+    } /*else if (this.unsupportedProducers.indexOf(id) > -1){
       this.adapterRef.logger.warn("跳过不支持的Producer", id)
       return
-    }
+    }*/
 
     const remoteStream = this.adapterRef.remoteStreamMap[uid]
     if (!remoteStream) {
@@ -726,17 +726,17 @@ class Mediasoup extends EventEmitter {
       await this._recvTransport.prepareLocalSdp(kind, this._edgeRtpCapabilities, uid);
     if(!this.adapterRef || this.adapterRef.connectState.curState == 'DISCONNECTING' || this.adapterRef.connectState.curState == 'DISCONNECTED') return
     this.adapterRef.logger.log('获取本地sdp，mid = %o', prepareRes.mid);
-    let { rtpCapabilities, offer} = prepareRes;
+    let { rtpCapabilities, offer, iceUfragReg, } = prepareRes;
     let mid:number|undefined = prepareRes.mid;
     const localDtlsParameters = prepareRes.dtlsParameters;
 
     if (mid < 0) {
       mid = undefined
     }
-    const iceUfragReg = offer.sdp.match(/a=ice-ufrag:([0-9a-zA-Z=#+-_\/\\\\]+)/)
+    /*const iceUfragReg = offer.sdp.match(/a=ice-ufrag:([0-9a-zA-Z=#+-_\/\\\\]+)/)
     if (!iceUfragReg){
       throw new Error("iceUfragReg is null");
-    }
+    }*/
     let data:any = {
       requestId: `${Math.ceil(Math.random() * 1e9)}`,
       kind,
@@ -746,7 +746,7 @@ class Mediasoup extends EventEmitter {
       preferredSpatialLayer,
       mid,
       pause: false,
-      iceUfrag: iceUfragReg.length ? iceUfragReg[1] : `${this.adapterRef.channelInfo.cid}#${this.adapterRef.channelInfo.uid}#recv`,
+      iceUfrag: /*iceUfragReg.length ? iceUfragReg[1] : */`${this.adapterRef.channelInfo.cid}#${this.adapterRef.channelInfo.uid}#recv`,
     };
     
     this.adapterRef.instance.apiEventReport('setFunction', {
@@ -764,9 +764,6 @@ class Mediasoup extends EventEmitter {
       throw new Error('No _protoo');
     }
     const consumeRes = await this.adapterRef._signalling._protoo.request('Consume', data);
-    // if(this.adapterRef.connectState.curState == 'DISCONNECTING' || this.adapterRef.connectState.curState == 'DISCONNECTED'){
-    //   return
-    // }
     let { transportId, iceParameters, iceCandidates, dtlsParameters, probeSSrc, rtpParameters, producerId, consumerId, code, errMsg } = consumeRes;
     this.adapterRef.logger.log(`consume反馈结果: code: ${code} uid: ${uid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
     try {
@@ -778,9 +775,10 @@ class Mediasoup extends EventEmitter {
         if (!remoteStream[kind] || !remoteStream.pubStatus[kind][kind] || !remoteStream.pubStatus[kind].producerId) {
           this.adapterRef.logger.log(`${uid} 的 ${kind} 的媒体已经停止发布了，直接返回`)
           await this._recvTransport.recoverLocalSdp(uid, mid, kind)
-          return this.checkConsumerList(info)
+          //return this.checkConsumerList(info)
         }
-        this.adapterRef.logger.warn('订阅 %s 的 %s 媒体失败, errcode: %s, reason: %s ，做容错处理: 重新建立下行连接', uid, kind, code, errMsg)
+        return this.checkConsumerList(info)
+        /*this.adapterRef.logger.warn('订阅 %s 的 %s 媒体失败, errcode: %s, reason: %s ，做容错处理: 重新建立下行连接', uid, kind, code, errMsg)
         if (this._recvTransport) {
           await this.closeTransport(this._recvTransport);
         }
@@ -796,7 +794,7 @@ class Mediasoup extends EventEmitter {
         this._recvTransport = null
         this.resetConsumeRequestStatus()
         this.adapterRef.instance.reBuildRecvTransport()
-        return
+        return*/
       } 
 
       if (rtpParameters && rtpParameters.encodings && rtpParameters.encodings.length && rtpParameters.encodings[0].ssrc) {
@@ -837,10 +835,6 @@ class Mediasoup extends EventEmitter {
         sctpParameters: undefined,
         probeSSrc: isFake ? 0 : this._probeSSrc
       });
-      
-      // if(this.adapterRef.connectState.curState == 'DISCONNECTING' || this.adapterRef.connectState.curState == 'DISCONNECTED'){
-      //   return
-      // }
       if(!this._consumers) {
         this._consumers = {}
       }
@@ -871,9 +865,6 @@ class Mediasoup extends EventEmitter {
       })
       return this.checkConsumerList(info)
     } catch (error) {
-      // if(this.adapterRef.connectState.curState == 'DISCONNECTING' || this.adapterRef.connectState.curState == 'DISCONNECTED'){
-      //   return
-      // }
       this.adapterRef && this.adapterRef.logger.error('"newConsumer" request failed:%o', error.name, error.message);
       this.adapterRef.logger.error('订阅 %s 的 %s 媒体失败，做容错处理: 重新建立下行连接', uid, kind)
       this.resetConsumeRequestStatus()

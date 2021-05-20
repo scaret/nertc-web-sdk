@@ -299,7 +299,7 @@ class Transport extends EnhancedEventEmitter_1.EnhancedEventEmitter {
     }
     async prepareLocalSdp(kind, edgeRtpCapabilities, uid) {
         try {
-            const { dtlsParameters, rtpCapabilities, offer, mid } = await this._handler.prepareLocalSdp(kind, uid);
+            const { dtlsParameters, rtpCapabilities, offer, mid, iceUfragReg } = await this._handler.prepareLocalSdp(kind, uid);
             if (!this._recvRtpCapabilities ||
                 !ortc.canSend('audio', this._recvRtpCapabilities) ||
                 !ortc.canSend('video', this._recvRtpCapabilities)) {
@@ -310,7 +310,7 @@ class Transport extends EnhancedEventEmitter_1.EnhancedEventEmitter {
                 // This may throw.
                 ortc.validateRtpCapabilities(this._recvRtpCapabilities);
             }
-            return { dtlsParameters, rtpCapabilities: this._recvRtpCapabilities, offer, mid };
+            return { dtlsParameters, rtpCapabilities: this._recvRtpCapabilities, offer, mid, iceUfragReg };
         }
         catch (error) {
             throw error;
