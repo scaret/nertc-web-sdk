@@ -371,12 +371,11 @@ class WebAudio{
     // check for support
     if (!this.gainFilter || !this.destination) return
     
-    if (this.script) {
+    if (this.script && this.analyzeDestination) {
       this.gainFilter.connect(this.script)
-      this.script.connect(this.destination)
-    } else {
-      this.gainFilter.connect(this.destination)
+      this.script.connect(this.analyzeDestination)
     }
+    this.gainFilter.connect(this.destination)
   }
 
 
