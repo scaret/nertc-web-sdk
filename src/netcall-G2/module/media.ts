@@ -277,14 +277,10 @@ class MediaHelper extends EventEmitter {
         if (constraint.screen) {
           this.screenStream = stream
         } else {
-          if (stream.getAudioTracks().length){
-            this.micTrack = stream.getAudioTracks()[0]
-          }
-          if (stream.getVideoTracks().length){
-            this.cameraTrack = stream.getVideoTracks()[0]
-          }
-          
-          if (this.micTrack) {
+          const cameraTrack = stream.getVideoTracks()[0];
+          const micTrack = stream.getAudioTracks()[0];
+          if (micTrack){
+            this.micTrack = micTrack;
             this.adapterRef.instance.apiEventReport('setFunction', {
               name: 'set_mic',
               oper: '1',
@@ -306,7 +302,7 @@ class MediaHelper extends EventEmitter {
                   adapterRef: this.adapterRef,
                   stream: this.micStream
                 })
-              } else {
+              } else if (this.micTrack){
                 this.webAudio.updateStream(this.micStream)
               }
               if (this.webAudio.musicDestination){
@@ -315,8 +311,8 @@ class MediaHelper extends EventEmitter {
               }
             }
           }
-
-          if (this.cameraTrack) {
+          if (cameraTrack){
+            this.cameraTrack = cameraTrack;
             this.adapterRef.instance.apiEventReport('setFunction', {
               name: 'set_camera',
               oper: '1',
