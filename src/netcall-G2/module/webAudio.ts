@@ -61,6 +61,7 @@ class WebAudio{
   };
   public gainFilter?:GainNode;
   public musicDestination: MediaStreamAudioDestinationNode | null;
+  public analyzeDestination: MediaStreamAudioDestinationNode | null;
   public destination: MediaStreamAudioDestinationNode|null;
   public context: AudioContext| null;
   
@@ -105,11 +106,16 @@ class WebAudio{
     }
     
     if (this.context){
-      this.destination = this.context.createMediaStreamDestination();
-      this.musicDestination = this.context.createMediaStreamDestination();
+      // 伴音+音频输入
+      this.destination = new MediaStreamAudioDestinationNode(this.context);
+      // 仅有伴音，用于本地回放:localStream.play({audio: true, audioType: "music"})
+      this.musicDestination = new MediaStreamAudioDestinationNode(this.context);
+      // 仅用于测量音量
+      this.analyzeDestination = new MediaStreamAudioDestinationNode(this.context);
     }else{
       this.destination = null;
       this.musicDestination = null;
+      this.analyzeDestination = null;
     }
     
     if (this.support) {
@@ -127,12 +133,11 @@ class WebAudio{
     if (this.mixAudioConf.replace) {
       this.logger.log('伴音停止了，恢复mic')
       if (this.gainFilter && this.destination){
-        if (this.script) {
+        if (this.script && this.analyzeDestination) {
           this.gainFilter.connect(this.script)
-          this.script.connect(this.destination)
-        } else {
-          this.gainFilter.connect(this.destination)
+          this.script.connect(this.analyzeDestination)
         }
+        this.gainFilter.connect(this.destination);
       }
     }
     this.mixAudioConf = {
@@ -251,8 +256,8 @@ class WebAudio{
         that.logger.log('addMs失败');
         return null;
       }
-      let audioIn = that.context.createMediaStreamSource(ms)
-
+      let audioIn = new MediaStreamAudioSourceNode(that.context, {mediaStream: ms})
+      
       // 大坑问题！ script目前的代码是没有输出的，只作分析使用，所以source还要再连接一下下一个输出!
       /*if (that.isAnalyze && that.script) {
         audioIn.connect(that.script)
@@ -261,12 +266,11 @@ class WebAudio{
       audioIn.connect(that.gainFilter)
       that.audioIn[ms.id] = audioIn
       if (that.mixAudioConf.state === AuidoMixingState.UNSTART) {
-        if (that.script) {
+        if (that.script && that.analyzeDestination) {
           that.gainFilter.connect(that.script)
-          that.script.connect(that.destination)
-        } else {
-          that.gainFilter.connect(that.destination)
+          that.script.connect(that.analyzeDestination)
         }
+        that.gainFilter.connect(that.destination)
       }
       return audioIn
     }
@@ -317,7 +321,7 @@ class WebAudio{
       
       return
     }
-    var audioIn = this.context.createMediaStreamSource(stream)
+    var audioIn = new MediaStreamAudioSourceNode(this.context, {mediaStream: stream})
     if (this.isAnalyze && this.script) {
       audioIn.connect(this.script)
     }
