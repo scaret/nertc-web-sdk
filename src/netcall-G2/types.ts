@@ -540,6 +540,13 @@ export interface MixAudioConf{
   auidoMixingEnd?:(()=>void)|null;
 }
 
+export interface AudioEffectOptions{
+  cycle?: number;
+  soundId: number;
+  filePath: string;
+}
+
+
 export interface MediaHelperOptions{
   sdkRef: SDKRef;
   adapterRef: AdapterRef;

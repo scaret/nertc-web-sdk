@@ -22,6 +22,7 @@ import {
   SubscribeConfig,
   SubscribeOptions,
   VideoProfileOptions,
+  AudioEffectOptions
 } from "../types";
 import {MediaHelper} from "../module/media";
 import {checkExists, isExistOptions} from "../util/param";
@@ -2152,6 +2153,199 @@ class Stream extends EventEmitter {
       throw new Error('No MediaHelper');
     }
     return this.mediaHelper.setAudioMixingPlayTime(playStartTime) 
+  }
+
+  /**
+   * ************************ 音效功能相关 *****************************
+   */
+
+  /**
+   * 云端音乐文件和本地麦克风声音混合；需要在启动麦克风之后使用
+   * @function playEffect
+   * @memberOf Stream#
+   * @param {Object} options 参数对象
+   * @param {String} options.filePath 必须，指定在线音效文件的绝对路径(支持MP3，AAC 以及浏览器支持的其他音频格式。)
+   * @param {Number} options.cycle 可选，指定音效文件循环播放的次数
+   * ##### 注意：
+   正整数，取值范围为 [1,10000]。默认值为 1，即播放 1 次。
+   * @param {Number} options.soundId 指定音效的 ID。每个音效均有唯一的 ID。
+   * ##### 注意：
+    正整数，取值范围为 [1,10000]。
+    如果你已通过 preloadEffect 将音效加载至内存，确保这里的 soundID 与 preloadEffect 设置的 soundID 相同。
+   * @returns {Promise}
+   */
+   async playEffect (options:AudioEffectOptions) {
+    this.client.adapterRef.logger.log('开始播放音效: ', JSON.stringify(options, null, ' '))
+    return this.mediaHelper.playEffect(options) 
+  }
+
+  /**
+   * 停止播放指定音效文件
+   * @function stopEffect
+   * @memberOf Stream#
+   * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+   * @return {Promise}
+   */
+  async stopEffect (soundId: number) {
+    this.client.adapterRef.logger.log('停止播放音效: ', soundId)
+    if (!this.mediaHelper) {
+      throw new Error('No MediaHelper');
+    }
+    return this.mediaHelper.stopEffect() 
+  }
+
+  /**
+   * 暂停播放指定音效文件
+   * @function pauseEffect
+   * @memberOf Stream#
+   * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+   * @return {Promise}
+   */
+   async pauseEffect (soundId: number) {
+    this.client.adapterRef.logger.log('暂停播放音效：', soundId)
+    if (!this.mediaHelper) {
+      throw new Error('No MediaHelper');
+    }
+    return this.mediaHelper.pauseEffect() 
+  }
+
+  /**
+   * 恢复播放指定音效文件
+   * @function resumeEffect
+   * @memberOf Stream#
+   * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+   * @return {Promise}
+   */
+   async resumeEffect (soundId: number) {
+    this.client.adapterRef.logger.log('恢复播放音效文件: ', soundId)
+    if (!this.mediaHelper) {
+      throw new Error('No MediaHelper');
+    }
+    return this.mediaHelper.resumeEffect() 
+  }
+
+
+  /**
+   * 调节伴奏音量
+   * @function setVolumeOfEffect
+   * @memberOf Stream#
+   * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+   * @param {Number} volume 音效音量。整数，范围为 [0,100]。默认 100 为原始文件音量。
+   * @return {Promise}
+   */
+   async setVolumeOfEffect (soundId: number, volume: number) {
+    this.client.adapterRef.logger.log(`调节 ${soundId} 音效文件音量为: ${volume}`)
+    if (!this.mediaHelper) {
+      throw new Error('No MediaHelper');
+    }
+    return this.mediaHelper.setVolumeOfEffect(soundId, volume) 
+  }
+
+  /**
+   * 预加载指定音效文件
+   * 该方法缓存音效文件，以供快速播放。为保证通信畅通，请注意控制预加载音效文件的大小。
+   * @function preloadEffect
+   * @memberOf Stream#
+   * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+   * @param {Number} volume 音效音量。整数，范围为 [0,100]。默认 100 为原始文件音量。
+   * @return {Object}
+   */
+   async preloadEffect (soundId: number, filePath: string) {
+    this.client.adapterRef.logger.log(`预加载 ${soundId} 音效文件地址: ${filePath}`)
+    if (!this.mediaHelper){
+      throw new Error('No MediaHelper');
+    }
+    return this.mediaHelper.preloadEffect(soundId, filePath) 
+  }
+
+  /**
+   * 释放指定音效文件
+   * 该方法从内存释放某个预加载的音效文件，以节省内存占用。
+   * @function unloadEffect
+   * @memberOf Stream#
+   * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+   * @return {Object}
+   */
+   async unloadEffect (soundId: number, filePath: string) {
+    this.client.adapterRef.logger.log(`预加载 ${soundId} 音效文件地址: ${filePath}`)
+    if (!this.mediaHelper){
+      throw new Error('No MediaHelper');
+    }
+    return this.mediaHelper.unloadEffect(soundId, filePath) 
+  }
+
+  /**
+   * 获取所有音效文件播放音量
+   * @function getEffectsVolume
+   * @memberOf Stream#
+   * @return Array<{ soundId: number; volume: number }>
+   * 返回一个包含 soundId 和 volume 的数组。每个 soundId 对应一个 volume。
+      + `soundId`: 为音效的 ID，正整数，取值范围为 [1,10000]。
+      + `volume`: 为音量值，整数，范围为 [0,100]。
+   */
+   getEffectsVolume () {
+    this.client.adapterRef.logger.log('获取所有音效文件播放音量')
+    if (!this.mediaHelper){
+      throw new Error('No MediaHelper');
+    }
+    return this.mediaHelper.getEffectsVolume() 
+  }
+
+  /**
+   * 设置所有音效文件播放音量
+   * @function setEffectsVolume
+   * @memberOf Stream#
+   * @param {Number} volume 音效音量。整数，范围为 [0,100]。默认 100 为原始文件音量。
+   * @return {void}
+   */
+   setEffectsVolume (volume: number) {
+    this.client.adapterRef.logger.log('设置所有音效文件播放音量: %s', volume)
+    if (!this.mediaHelper){
+      throw new Error('No MediaHelper');
+    }
+    return this.mediaHelper.setEffectsVolume(volume) 
+  }
+
+  /**
+   * 停止播放所有音效文件
+   * @function stopAllEffects
+   * @memberOf Stream#
+   * @return {Promise}
+   */
+   async stopAllEffects () {
+    this.client.adapterRef.logger.log('停止播放所有音效文件: %s', volume)
+    if (!this.mediaHelper){
+      throw new Error('No MediaHelper');
+    }
+    return this.mediaHelper.stopAllEffects() 
+  }
+
+  /**
+   * 暂停播放所有音效文件
+   * @function pauseAllEffects
+   * @memberOf Stream#
+   * @return {Promise}
+   */
+   async pauseAllEffects () {
+    this.client.adapterRef.logger.log('暂停播放所有音效文件: %s', volume)
+    if (!this.mediaHelper){
+      throw new Error('No MediaHelper');
+    }
+    return this.mediaHelper.pauseAllEffects() 
+  }
+
+  /**
+   * 恢复播放所有音效文件
+   * @function resumeAllEffects
+   * @memberOf Stream#
+   * @return {Promise}
+   */
+   async resumeAllEffects () {
+    this.client.adapterRef.logger.log('恢复播放所有音效文件: %s', volume)
+    if (!this.mediaHelper){
+      throw new Error('No MediaHelper');
+    }
+    return this.mediaHelper.resumeAllEffects() 
   }
 
   /**
