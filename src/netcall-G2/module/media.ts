@@ -4,10 +4,11 @@ import { WebAudio } from './webAudio'
 import { RtcSystem } from '../util/rtcUtil/rtcSystem'
 import { AuidoMixingState } from '../constant/state'
 import { ajax } from '../util/ajax'
+import {checkExists, isExistOptions, checkValidInteger} from "../util/param";
 import {
   AdapterRef, AudioMixingOptions,
   GetStreamConstraints,
-  MediaHelperOptions, MediaTypeShort, MixAudioConf,
+  MediaHelperOptions, MediaTypeShort, MixAudioConf,AudioEffectOptions,
   SDKRef
 } from "../types";
 import {emptyStreamWith} from "../util/gum";
@@ -65,11 +66,13 @@ class MediaHelper extends EventEmitter {
     this.mixAudioConf = {
       index: 0,
       audioBuffer: {}, //云端音频buffer数组
+      sounds: {}
     };
   }
   
 
   _reset() {
+    this.stopAllEffects()
     if (this.micStream) {
       this._stopTrack(this.micStream)
     }
@@ -94,7 +97,8 @@ class MediaHelper extends EventEmitter {
     this.screenStream = null
     this.mixAudioConf = {
       index: 0,
-      audioBuffer: {} //云端音频buffer数组
+      audioBuffer: {}, //云端音频buffer数组
+      sounds: {}
     };
   }
 
@@ -624,6 +628,9 @@ class MediaHelper extends EventEmitter {
     return (this.webAudio && this.webAudio.getVolumeData()) || '0.0'
   }
 
+
+
+
   /******************************* 伴音 ********************************/
   startAudioMixing (options:AudioMixingOptions) {
     this.adapterRef.logger.log(`开始伴音: %s`, JSON.stringify(options, null, ' '))
@@ -1038,6 +1045,348 @@ class MediaHelper extends EventEmitter {
   isMixAuido () {
     return this.webAudio && this.webAudio.mixAudioConf && this.webAudio.mixAudioConf.audioSource ? true : false
   }
+
+
+  /****************     音效功能      *******************/
+
+  _initSoundIfNotExists (soundId: number, filePath: string) {
+    if (!this.mixAudioConf.sounds[soundId]) {
+      this.mixAudioConf.sounds[soundId] = {
+        soundId,
+        state: "UNSTART",
+        filePath,
+        volume: 100,
+        sourceNode: null,
+        gainNode: null,
+        cycle: 1,
+        playStartTime: 0,
+        playOverTime: 0,
+        pauseTime: 0,
+        startTime: 0,
+        totalTime: 0,
+        options: {}
+      }
+    } 
+  }
+
+  async playEffect (options: AudioEffectOptions) {
+    const {soundId, filePath, cycle = 1} = options
+    const filePathCheck = {
+      tag: 'Stream.playEffect:filePath',
+      value: filePath,
+    };
+    checkExists(filePathCheck)
+    const soundIdCheck = {
+      tag: 'Stream.playEffect:soundId',
+      value: soundId,
+    };
+    if (isExistOptions(soundIdCheck).result){
+      checkValidInteger(soundIdCheck);
+    }
+
+
+    this._initSoundIfNotExists(soundId, filePath)
+    
+    
+    if (!this.audioRoutingEnabled){
+      this.enableAudioRouting();
+    }
+
+    if (!this.webAudio || !this.webAudio.context) {
+      this.adapterRef.logger.log('playEffect: 浏览器不支持')
+      return Promise.reject('BROWSER_NOT_SUPPORT')
+    } else if (this.mixAudioConf.sounds[soundId] && (this.mixAudioConf.sounds[soundId].state === 'PLAYED' || this.mixAudioConf.sounds[soundId].state === 'PAUSED')) {
+      this.adapterRef.logger.log(`pauseEffect: 该音效文件正处于: ${this.mixAudioConf.sounds[soundId].state} 状态`)
+      //return Promise.reject('INVALID_OPERATION')
+    }
+    this.mixAudioConf.sounds[soundId].state = 'STARTING'
+
+    if (this.mixAudioConf.audioBuffer[filePath]) {
+      this.adapterRef.logger.log('playEffect: 已经 load 音效文件')
+    } else {
+      this.adapterRef.logger.log('playEffect, 先 load 音效文件')
+      await this.preloadEffect(soundId, filePath)
+    }
+
+    try {
+      const result = this.webAudio.createAudioBufferSource(this.mixAudioConf.audioBuffer[filePath])
+      //@ts-ignore
+      this.mixAudioConf.sounds[soundId].sourceNode = result.sourceNode
+      //@ts-ignore
+      this.mixAudioConf.sounds[soundId].gainNode = result.gainNode
+      this.mixAudioConf.sounds[soundId].totalTime = this.mixAudioConf.audioBuffer[filePath] && this.mixAudioConf.audioBuffer[filePath].duration
+      this.mixAudioConf.sounds[soundId].cycle = cycle
+      const totalTime = this.mixAudioConf.audioBuffer[filePath] && this.mixAudioConf.audioBuffer[filePath].duration
+      this.mixAudioConf.sounds[soundId].playOverTime = totalTime
+      if (cycle > 1) {
+        this.mixAudioConf.sounds[soundId].playOverTime = cycle * totalTime - this.mixAudioConf.sounds[soundId].playStartTime
+      } 
+      this.webAudio.startAudioEffectMix(this.mixAudioConf.sounds[soundId])
+      this.mixAudioConf.sounds[soundId].state = 'PLAYED'
+      this.mixAudioConf.sounds[soundId].startTime = Date.now()
+    } catch (e) {
+
+    }
+  }
+
+  async stopEffect (soundId: number) {
+    const soundIdCheck = {
+      tag: 'Stream.stopEffect:soundId',
+      value: soundId,
+    };
+    if (isExistOptions(soundIdCheck).result){
+      checkValidInteger(soundIdCheck);
+    }
+
+    let reason = null
+    if (!this.webAudio || !this.webAudio.context) {
+      this.adapterRef.logger.log('playEffect: 浏览器不支持')
+      return Promise.reject('BROWSER_NOT_SUPPORT')
+    } 
+
+    this.webAudio.stopAudioEffectMix(this.mixAudioConf.sounds[soundId])
+    this.mixAudioConf.sounds[soundId].state = 'STOPED'
+  }
+
+  async pauseEffect (soundId: number) {
+    const soundIdCheck = {
+      tag: 'Stream.pauseEffect:soundId',
+      value: soundId,
+    };
+    if (isExistOptions(soundIdCheck).result){
+      checkValidInteger(soundIdCheck);
+    }
+    let reason = null
+    if (!this.mixAudioConf.sounds[soundId]) {
+      this.adapterRef.logger.log('pauseEffect: 没有该音效文件')
+      reason = 'SOUND_NOT_EXISTS'
+    } if (!this.webAudio || !this.webAudio.context) {
+      this.adapterRef.logger.log('pauseEffect: 不支持音效功能')
+      reason = 'BROWSER_NOT_SUPPORT'
+    } else if (this.mixAudioConf.sounds[soundId].state === 'PAUSED') {
+      this.adapterRef.logger.log('pauseEffect: 已经暂停')
+      reason = 'INVALID_OPERATION'
+    } else if (this.mixAudioConf.sounds[soundId].state !== 'PLAYED') {
+      this.adapterRef.logger.log('pauseEffect: 当前没有开启该音效')
+      reason = 'INVALID_OPERATION'
+    }
+    if (reason) {
+      return Promise.reject(reason)
+    }
+    if(!this.webAudio) return
+    this.webAudio.stopAudioEffectMix(this.mixAudioConf.sounds[soundId])
+
+    this.mixAudioConf.sounds[soundId].pauseTime = Date.now()
+    this.mixAudioConf.sounds[soundId].state = 'PAUSED'
+    let playedTime = (this.mixAudioConf.sounds[soundId].pauseTime - this.mixAudioConf.sounds[soundId].startTime) / 1000 + this.mixAudioConf.sounds[soundId].playStartTime
+    this.adapterRef.logger.log('pauseEffect 已经播放的时间: ', playedTime)
+    if (playedTime > this.mixAudioConf.sounds[soundId].totalTime) {
+      playedTime = playedTime % this.mixAudioConf.sounds[soundId].totalTime
+    }
+    this.adapterRef.logger.log("pauseEffect 暂停位置: ", playedTime)
+  }
+
+  async resumeEffect (soundId: number) {
+    const soundIdCheck = {
+      tag: 'Stream.resumeEffect:soundId',
+      value: soundId,
+    };
+    if (isExistOptions(soundIdCheck).result){
+      checkValidInteger(soundIdCheck);
+    }
+    let reason = null
+    if (!this.mixAudioConf.sounds[soundId]) {
+      this.adapterRef.logger.log('resumeEffect: 没有该音效文件')
+      reason = 'SOUND_NOT_EXISTS'
+    } if (!this.webAudio || !this.webAudio.context) {
+      this.adapterRef.logger.log('resumeEffect: 不支持音效功能')
+      reason = 'BROWSER_NOT_SUPPORT'
+    } else if (this.mixAudioConf.sounds[soundId].state !== 'PAUSED') {
+      this.adapterRef.logger.log('resumeEffect: 当前没有暂停该音效文件')
+      reason = 'INVALID_OPERATION'
+    }
+    if (reason) {
+      return Promise.reject(reason)
+    }
+    if(!this.webAudio) return
+    let playedTime = (this.mixAudioConf.sounds[soundId].pauseTime - this.mixAudioConf.sounds[soundId].startTime) / 1000 + this.mixAudioConf.sounds[soundId].playStartTime
+    this.adapterRef.logger.log('resumeEffect 已经播放的时间: ', playedTime)
+    if (playedTime > this.mixAudioConf.sounds[soundId].totalTime) {
+      playedTime = playedTime % this.mixAudioConf.sounds[soundId].totalTime
+      this.adapterRef.logger.log('播发过的圈数 playedCycle: ', Math.floor(playedTime / this.webAudio.mixAudioConf.totalTime))
+      this.mixAudioConf.sounds[soundId].cycle = this.mixAudioConf.sounds[soundId].cycle - Math.floor(playedTime / this.webAudio.mixAudioConf.totalTime)
+    }
+
+    this.mixAudioConf.sounds[soundId].playOverTime = this.mixAudioConf.sounds[soundId].totalTime
+    if (this.mixAudioConf.sounds[soundId].cycle > 1) {
+      this.mixAudioConf.sounds[soundId].playOverTime = this.mixAudioConf.sounds[soundId].cycle * this.mixAudioConf.sounds[soundId].totalTime - this.mixAudioConf.sounds[soundId].playStartTime
+    }
+
+    if (playedTime > this.mixAudioConf.sounds[soundId].totalTime) {
+      playedTime = playedTime % this.mixAudioConf.sounds[soundId].totalTime
+    }
+    this.mixAudioConf.sounds[soundId].playStartTime = playedTime
+    this.adapterRef.logger.log('resumeEffect 回复重置的时间点：', playedTime)
+    //this.webAudio.startAudioEffectMix(this.mixAudioConf.sounds[soundId])
+    this.playEffect({soundId, filePath: this.mixAudioConf.sounds[soundId].filePath, cycle: this.mixAudioConf.sounds[soundId].cycle})
+    this.mixAudioConf.sounds[soundId].state = 'PLAYED'
+    this.mixAudioConf.sounds[soundId].startTime = Date.now()
+  }
+
+  async setVolumeOfEffect (soundId: number, volume: number) {
+    const soundIdCheck = {
+      tag: 'Stream.setVolumeOfEffect:soundId',
+      value: soundId,
+      min: 1
+    };
+    if (isExistOptions(soundIdCheck).result){
+      checkValidInteger(soundIdCheck);
+    }
+    this.adapterRef.logger.log(`setVolumeOfEffect 设置 ${soundId} 音效文件的音量: ${volume}`)
+    let reason = null
+    if (!this.mixAudioConf.sounds[soundId]) {
+      this.adapterRef.logger.log('setVolumeOfEffect: 没有该音效文件')
+      reason = 'SOUND_NOT_EXISTS'
+    } if (!this.webAudio || !this.webAudio.context) {
+      this.adapterRef.logger.log('setVolumeOfEffect: 不支持音效功能')
+      reason = 'BROWSER_NOT_SUPPORT'
+    } 
+    if (reason) {
+      return Promise.reject(reason)
+    }
+    //@ts-ignore
+    if (this.mixAudioConf.sounds[soundId].gainNode && this.mixAudioConf.sounds[soundId].gainNode.gain) {
+      //@ts-ignore
+      this.mixAudioConf.sounds[soundId].gainNode.gain.value = volume/100
+    } else {
+      this.adapterRef.logger.log('setVolumeOfEffect: no gainNode')
+    }
+    this.mixAudioConf.sounds[soundId].volume = volume
+  }
+
+  async preloadEffect (soundId: number, filePath: string) {
+    const filePathCheck = {
+      tag: 'Stream.preloadEffect:filePath',
+      value: filePath,
+    };
+    checkExists(filePathCheck)
+    const soundIdCheck = {
+      tag: 'Stream.preloadEffect:soundId',
+      value: soundId,
+    };
+    if (isExistOptions(soundIdCheck).result){
+      checkValidInteger(soundIdCheck);
+    }
+    this.adapterRef.logger.log(`preloadEffect 设置 ${soundId} 音效文件的filePath: ${filePath}`)
+    this._initSoundIfNotExists(soundId, filePath)
+    if (!this.audioRoutingEnabled){
+      this.enableAudioRouting();
+    }
+    try {
+      //@ts-ignore
+      await this.loadAudioBuffer(filePath)
+    } catch (e) {
+      this.adapterRef.logger.error('preloadEffect 错误: ', e)
+    }
+  }
+
+  async unloadEffect (soundId: number) {
+    const soundIdCheck = {
+      tag: 'Stream.unloadEffect:soundId',
+      value: soundId,
+      min: 1
+    };
+    if (isExistOptions(soundIdCheck).result){
+      checkValidInteger(soundIdCheck);
+    }
+    this.adapterRef.logger.log(`unloadEffect： ${soundId} 音效文件`)
+    if (!this.mixAudioConf.sounds[soundId]) {
+      this.adapterRef.logger.log('unloadEffect: 没有该音效文件')
+      return Promise.reject('SOUND_NOT_EXISTS')
+    } else if (this.mixAudioConf.sounds[soundId].state !== 'UNSTART' && this.mixAudioConf.sounds[soundId].state !== 'STOPED') {
+      this.adapterRef.logger.log('unloadEffect: 该音效文件已经播放，请使用 stopEffect 方法')
+      return Promise.reject('INVALID_OPERATION')
+    }
+    delete this.mixAudioConf.audioBuffer[this.mixAudioConf.sounds[soundId].filePath]
+    delete this.mixAudioConf.sounds[soundId]
+  }
+
+  getEffectsVolume () {
+    this.adapterRef.logger.log(`getEffectsVolume`)
+    const result = new Array()
+    Object.values(this.mixAudioConf.sounds).forEach(item => {
+      result.push({
+        soundId: item.soundId,
+        volume: item.volume
+      })
+    })
+    return result
+  }
+
+  setEffectsVolume (volume: number) {
+    const volumeCheck = {
+      tag: 'Stream.setEffectsVolume:volume',
+      value: volume,
+      min: 0,
+      max: 100
+    };
+    if (isExistOptions(volumeCheck).result){
+      checkValidInteger(volumeCheck);
+    }
+    this.adapterRef.logger.log(`setEffectsVolume, 设置音量: ${volume}`)
+    Object.values(this.mixAudioConf.sounds).forEach(item => {
+      this.setVolumeOfEffect(item.soundId, volume)
+    })
+  }
+
+  async stopAllEffects () {
+    this.adapterRef.logger.log(`stopAllEffects`)
+    Object.values(this.mixAudioConf.sounds).forEach(item => {
+      this.stopEffect(item.soundId)
+    })
+  }
+
+  async pauseAllEffects () {
+    this.adapterRef.logger.log(`pauseAllEffects`)
+    Object.values(this.mixAudioConf.sounds).forEach(item => {
+      this.pauseEffect(item.soundId)
+    })
+  }
+
+  async resumeAllEffects () {
+    this.adapterRef.logger.log(`resumeAllEffects`)
+    Object.values(this.mixAudioConf.sounds).forEach(item => {
+      this.resumeEffect(item.soundId)
+    })
+  }
+
+  loadAudioBuffer (filePath: string) {
+    return ajax({
+      url: filePath,
+      type: 'GET',
+      dataType: 'arraybuffer'
+    }).then(data => {
+      this.adapterRef.logger.log("loadAudioBuffer 加载 audio file 成功")
+      return new Promise((resolve, reject) => {
+        if (!this.webAudio || !this.webAudio.context){
+          reject('webAudio丢失')
+          return;
+        }
+        this.webAudio.context.decodeAudioData(data as ArrayBuffer, buffer => {
+          this.adapterRef.logger.log("loadAudioBuffer audio file 解码成功")
+          this.mixAudioConf.audioBuffer[filePath] = buffer;
+          resolve(buffer)
+        }, e => {
+          this.adapterRef.logger.log("loadRemoteAudioFile 云端音乐解码失败：", e)
+          reject('CREATE_BUFFERSOURCE_FAILED')
+        })
+      })
+    }).catch(error => {
+      this.adapterRef.logger.log('loadRemoteAudioFile 加载云端音乐失败: ', error)
+      return Promise.reject('LOAD_AUDIO_FAILED') 
+    })
+  }
+
   
   enableAudioRouting(){
     if (this.webAudio && this.webAudio.destination){

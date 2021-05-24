@@ -144,6 +144,25 @@ table th:nth-of-type(2) {
 [[Stream.getAudioMixingDuration]] | 获取音乐文件的总长度。
 [[Stream.setAudioMixingPosition]] | 获取音乐文件当前播放进度。
 
+
+### <span id="播放音效文件">播放音效文件</span>
+
+方法 | 功能描述
+---|---|
+[[Stream.playEffect]] | 播放指定音效文件
+[[Stream.stopEffect]] | 停止播放指定音效文件
+[[Stream.pauseEffect]] | 暂停播放指定音效文件
+[[Stream.resumeEffect]] | 恢复播放指定音效文件
+[[Stream.setVolumeOfEffect]] | 调节指定音效文件的音量
+[[Stream.preloadEffect]] | 预加载指定音效文件
+[[Stream.unloadEffect]] | 释放指定音效文件
+[[Stream.getEffectsVolume]] | 获取所有音效文件播放音量
+[[Stream.setEffectsVolume]] | 设置所有音效文件播放音量
+[[Stream.stopAllEffects]] | 停止播放所有音效文件
+[[Stream.pauseAllEffects]] | 暂停播放所有音效文件
+[[Stream.resumeAllEffects]] | 恢复播放所有音效文件
+
+
 ## <span id="录制管理">录制管理</span>
 
 方法 | 功能描述

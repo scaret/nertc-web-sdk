@@ -22,9 +22,11 @@ import {
   SubscribeConfig,
   SubscribeOptions,
   VideoProfileOptions,
+  AudioEffectOptions
 } from "../types";
 import {MediaHelper} from "../module/media";
-import {checkExists, isExistOptions} from "../util/param";
+import {checkExists, isExistOptions, checkValidInteger} from "../util/param";
+
 import {
   ReportParamEnableEarback,
   ReportParamSetExternalAudioRender,
@@ -99,8 +101,8 @@ class Stream extends EventEmitter {
     resolution: number;
   }|null;
   private inited:boolean;
-  public videoView:HTMLElement|null;
-  public screenView:HTMLElement|null;
+  public videoView:HTMLElement|null|undefined|String;
+  public screenView:HTMLElement|null|undefined|String;
   public renderMode: {
     local: {
       video: RenderMode|{},
@@ -373,6 +375,124 @@ class Stream extends EventEmitter {
     //this.client.adapterRef.logger.log('获取音视频流 ID: ', this.streamID)
     return this.streamID
   }
+
+  /**
+   *  获取音视频流的连接数据
+   *  @method getStats
+   *  @memberOf Stream
+   *  @return object
+   */
+
+  async getStats() {
+    let localPc = this.client.adapterRef && this.client.adapterRef._mediasoup && this.client.adapterRef._mediasoup._sendTransport && this.client.adapterRef._mediasoup._sendTransport._handler._pc;
+    let remotePc = this.client.adapterRef && this.client.adapterRef._mediasoup && this.client.adapterRef._mediasoup._recvTransport && this.client.adapterRef._mediasoup._recvTransport._handler._pc;
+    this.client.adapterRef.logger.log(`获取音视频连接数据, uid: ${this.streamID}`);
+    if (this.isRemote){
+      if(remotePc){
+        const stats = {
+          accessDelay: "0",
+          audioReceiveBytes: "0",
+          // audioReceiveDelay: "0",
+          audioReceivePackets: "0",
+          audioReceivePacketsLost: "0",
+          endToEndDelay: "0",
+          videoReceiveBytes: "0",
+          videoReceiveDecodeFrameRate: "0",
+          // videoReceiveDelay: "0",
+          videoReceiveFrameRate: "0",
+          videoReceivePackets: "0",
+          videoReceivePacketsLost: "0",
+          videoReceiveResolutionHeight: "0",
+          videoReceiveResolutionWidth: "0"
+        };
+        try {
+          const results = await remotePc.getStats();
+          results.forEach((item:any) => {
+            if (item.type === 'inbound-rtp') {
+              if (item.mediaType === 'video') {
+                stats.videoReceiveBytes = item.bytesReceived.toString();
+                stats.videoReceivePackets = item.packetsReceived.toString();
+                stats.videoReceivePacketsLost = item.packetsLost.toString();
+                stats.videoReceiveFrameRate = item.framesPerSecond.toString();
+                stats.videoReceiveDecodeFrameRate = item.framesPerSecond.toString();
+              } else if (item.mediaType === 'audio') {
+                stats.audioReceiveBytes = item.bytesReceived.toString();
+                stats.audioReceivePackets = item.packetsReceived.toString();
+                stats.audioReceivePacketsLost = item.packetsLost.toString();
+              }
+            } else if (item.type === 'candidate-pair') {
+              if (typeof item.currentRoundTripTime === 'number') {
+                stats.accessDelay = (item.currentRoundTripTime * 1000).toString();
+              }
+              if (typeof item.totalRoundTripTime === 'number') {
+                stats.endToEndDelay = 
+                Math.round(item.totalRoundTripTime * 100).toString();
+              }
+            } else if (item.type === 'track') {
+              if (typeof item.frameWidth !== 'undefined') {
+                stats.videoReceiveResolutionWidth = item.frameWidth.toString();
+                stats.videoReceiveResolutionHeight = item.frameHeight.toString();
+              }
+            } 
+          });
+        } catch (error) {
+          this.client.adapterRef.logger.error('failed to get remoteStats');
+        }
+        return stats;
+      }
+      
+    }else{
+      if (localPc) {
+        const stats = {
+          accessDelay: "0",
+          audioSendBytes: "0",
+          audioSendPackets: "0",
+          audioSendPacketsLost: "0",
+          videoSendBytes: "0",
+          videoSendFrameRate: "0",
+          videoSendPackets: "0",
+          videoSendPacketsLost: "0",
+          videoSendResolutionHeight: "0",
+          videoSendResolutionWidth: "0"
+        };
+        try {
+          const results = await localPc.getStats();
+          results.forEach((item:any) => {
+            if (item.type === 'outbound-rtp') {
+              if (item.mediaType === 'video') {
+                stats.videoSendBytes = item.bytesSent.toString();
+                stats.videoSendPackets = item.packetsSent.toString();
+                stats.videoSendFrameRate = item.framesPerSecond.toString();
+              } else if (item.mediaType === 'audio') {
+                stats.audioSendBytes = item.bytesSent.toString();
+                stats.audioSendPackets = item.packetsSent.toString();
+              }
+            } else if (item.type === 'candidate-pair') {
+              if (typeof item.currentRoundTripTime === 'number') {
+                stats.accessDelay = (item.currentRoundTripTime * 1000).toString();
+              }
+            } else if (item.type === 'track') {
+              if (typeof item.frameWidth !== 'undefined') {
+                stats.videoSendResolutionWidth = item.frameWidth.toString();
+                stats.videoSendResolutionHeight = item.frameHeight.toString();
+              }
+            } else if (item.type === 'remote-inbound-rtp') {
+              if (item.kind === 'audio') {
+                stats.audioSendPacketsLost = item.packetsLost.toString();
+              } else if (item.kind === 'video') {
+                stats.videoSendPacketsLost = item.packetsLost.toString();
+              }
+            }
+          });
+        } catch (error) {
+          this.client.adapterRef.logger.error('failed to get localStats');
+        }
+        return stats;
+      }
+    }
+  }
+
+
   
   /**
    * 设置视频订阅的参数。
@@ -596,7 +716,7 @@ class Stream extends EventEmitter {
    * @param {div} view div标签，播放画面的dom容器节点
    * @return {Promise}
    */
-  async play (view:HTMLElement|null|undefined, playOptions:StreamPlayOptions = {}) {
+  async play (view:HTMLElement|String|null|undefined, playOptions:StreamPlayOptions = {}) {
     if (!isExistOptions({tag: 'Stream.playOptions.audio', value: playOptions.audio}).result){
       playOptions.audio = this.isRemote;
     }
@@ -616,7 +736,7 @@ class Stream extends EventEmitter {
         this.client.adapterRef.logger.log('开始播放远端音频: ', this.streamID)
         this._play.playAudioStream(this.mediaHelper.audioStream)
       }
-    }else{
+    } else {
       if(playOptions.audio && this._play && this.mediaHelper && this.mediaHelper.micStream){
         this.client.adapterRef.logger.log('开始播放本地音频: ',this.streamID, playOptions.audioType);
         if (playOptions.audioType === "voice"){
@@ -629,11 +749,16 @@ class Stream extends EventEmitter {
       }
     }
 
+    if (typeof view === "string") {
+      view = document.getElementById(view)
+    }
+
     if (view){
       if (playOptions.video){
         this.videoView = view;
         if(this._play && this.mediaHelper && this.mediaHelper.videoStream && this.mediaHelper.videoStream.getVideoTracks().length){
           this.client.adapterRef.logger.log('开始播放视频: ', this.streamID)
+          //@ts-ignore
           this._play.playVideoStream(this.mediaHelper.videoStream, view)
         }  
       }
@@ -641,6 +766,7 @@ class Stream extends EventEmitter {
         this.screenView = view;
         if(this._play && this.mediaHelper && this.mediaHelper.screenStream && this.mediaHelper.screenStream.getVideoTracks().length){
           this.client.adapterRef.logger.log('开始播放辅流: ', this.streamID)
+          //@ts-ignore
           this._play.playScreenStream(this.mediaHelper.screenStream, view)
         }
       }
@@ -1459,6 +1585,7 @@ class Stream extends EventEmitter {
         if (this.mediaHelper && this.mediaHelper.cameraTrack){
           this.mediaHelper.cameraTrack.enabled = true;
         }
+        //@ts-ignore
         this._play.playVideoStream(this.mediaHelper.videoStream, this.videoView)
         if ("width" in this.renderMode.remote.video){
           this._play.setVideoRender(this.renderMode.remote.video)
@@ -1558,6 +1685,7 @@ class Stream extends EventEmitter {
         if (this.mediaHelper && this.mediaHelper.screenTrack){
           this.mediaHelper.screenTrack.enabled = true;
         }
+        //@ts-ignore
         this._play.playScreenStream(this.mediaHelper.screenStream, this.screenView)
         if ("width" in this.renderMode.remote.screen){
           this._play.setScreenRender(this.renderMode.remote.screen)
@@ -2082,6 +2210,207 @@ class Stream extends EventEmitter {
       throw new Error('No MediaHelper');
     }
     return this.mediaHelper.setAudioMixingPlayTime(playStartTime) 
+  }
+
+  /**
+   * ************************ 音效功能相关 *****************************
+   */
+
+  /**
+   * 播放指定音效文件
+   * @function playEffect
+   * * @description
+   与 startAudioMixing 方法的区别是，该方法更适合播放较小的音效文件，且支持同时播放多个音效。
+   ##### 注意：
+   + 受浏览器策略影响，在 Chrome 70 及以上和 Safari 浏览器上，该方法必须由用户手势触发.
+   + 请在频道内调用该方法，如果在频道外调用该方法可能会出现问题。
+   * @memberOf Stream#
+   * @param {Object} options 参数对象
+   * @param {String} options.filePath 必须，指定在线音效文件的绝对路径(支持MP3，AAC 以及浏览器支持的其他音频格式。)
+   * @param {Number} options.cycle 可选，指定音效文件循环播放的次数
+   * ##### 注意：
+   正整数，取值范围为 [1,10000]。默认值为 1，即播放 1 次。
+   * @param {Number} options.soundId 指定音效的 ID。每个音效均有唯一的 ID。
+   * ##### 注意：
+    正整数，取值范围为 [1,10000]。
+    如果你已通过 preloadEffect 将音效加载至内存，确保这里的 soundID 与 preloadEffect 设置的 soundID 相同。
+   * @returns {Promise}
+   */
+   async playEffect (options:AudioEffectOptions) {
+    this.client.adapterRef.logger.log('开始播放音效: ', JSON.stringify(options, null, ' '))
+    if (!this.mediaHelper) {
+      throw new Error('No MediaHelper');
+    }
+    return this.mediaHelper.playEffect(options) 
+  }
+
+  /**
+   * 停止播放指定音效文件
+   * @function stopEffect
+   * @memberOf Stream#
+   * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+   * @return {Promise}
+   */
+  async stopEffect (soundId: number) {
+    this.client.adapterRef.logger.log('停止播放音效: ', soundId)
+    if (!this.mediaHelper) {
+      throw new Error('No MediaHelper');
+    }
+    return this.mediaHelper.stopEffect(soundId) 
+  }
+
+  /**
+   * 暂停播放指定音效文件
+   * @function pauseEffect
+   * @memberOf Stream#
+   * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+   * @return {Promise}
+   */
+   async pauseEffect (soundId: number) {
+    this.client.adapterRef.logger.log('暂停播放音效：', soundId)
+    if (!this.mediaHelper) {
+      throw new Error('No MediaHelper');
+    }
+    return this.mediaHelper.pauseEffect(soundId) 
+  }
+
+  /**
+   * 恢复播放指定音效文件
+   * @function resumeEffect
+   * @memberOf Stream#
+   * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+   * @return {Promise}
+   */
+   async resumeEffect (soundId: number) {
+    this.client.adapterRef.logger.log('恢复播放音效文件: ', soundId)
+    if (!this.mediaHelper) {
+      throw new Error('No MediaHelper');
+    }
+    return this.mediaHelper.resumeEffect(soundId) 
+  }
+
+
+  /**
+   * 调节指定音效文件的音量
+   * @function setVolumeOfEffect
+   * @memberOf Stream#
+   * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+   * @param {Number} volume 音效音量。整数，范围为 [0,100]。默认 100 为原始文件音量。
+   * @return {Promise}
+   */
+   async setVolumeOfEffect (soundId: number, volume: number) {
+    this.client.adapterRef.logger.log(`调节 ${soundId} 音效文件音量为: ${volume}`)
+    if (!this.mediaHelper) {
+      throw new Error('No MediaHelper');
+    }
+    return this.mediaHelper.setVolumeOfEffect(soundId, volume) 
+  }
+
+  /**
+   * 预加载指定音效文件
+   * 该方法缓存音效文件，以供快速播放。为保证通信畅通，请注意控制预加载音效文件的大小。
+   * @function preloadEffect
+   * @memberOf Stream#
+   * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+   * @param {Number} volume 音效音量。整数，范围为 [0,100]。默认 100 为原始文件音量。
+   * @return {Object}
+   */
+   async preloadEffect (soundId: number, filePath: string) {
+    this.client.adapterRef.logger.log(`预加载 ${soundId} 音效文件地址: ${filePath}`)
+    if (!this.mediaHelper){
+      throw new Error('No MediaHelper');
+    }
+    return this.mediaHelper.preloadEffect(soundId, filePath) 
+  }
+
+  /**
+   * 释放指定音效文件
+   * 该方法从内存释放某个预加载的音效文件，以节省内存占用。
+   * @function unloadEffect
+   * @memberOf Stream#
+   * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+   * @return {Object}
+   */
+   async unloadEffect (soundId: number) {
+    this.client.adapterRef.logger.log(`释放指定音效文件 ${soundId}`)
+    if (!this.mediaHelper){
+      throw new Error('No MediaHelper');
+    }
+    return this.mediaHelper.unloadEffect(soundId) 
+  }
+
+  /**
+   * 获取所有音效文件播放音量
+   * @function getEffectsVolume
+   * @memberOf Stream#
+   * @return Array<{ soundId: number; volume: number }>
+   * 返回一个包含 soundId 和 volume 的数组。每个 soundId 对应一个 volume。
+      + `soundId`: 为音效的 ID，正整数，取值范围为 [1,10000]。
+      + `volume`: 为音量值，整数，范围为 [0,100]。
+   */
+   getEffectsVolume () {
+    this.client.adapterRef.logger.log('获取所有音效文件播放音量')
+    if (!this.mediaHelper){
+      throw new Error('No MediaHelper');
+    }
+    return this.mediaHelper.getEffectsVolume() 
+  }
+
+  /**
+   * 设置所有音效文件播放音量
+   * @function setEffectsVolume
+   * @memberOf Stream#
+   * @param {Number} volume 音效音量。整数，范围为 [0,100]。默认 100 为原始文件音量。
+   * @return {void}
+   */
+   setEffectsVolume (volume: number) {
+    this.client.adapterRef.logger.log('设置所有音效文件播放音量: %s', volume)
+    if (!this.mediaHelper){
+      throw new Error('No MediaHelper');
+    }
+    return this.mediaHelper.setEffectsVolume(volume) 
+  }
+
+  /**
+   * 停止播放所有音效文件
+   * @function stopAllEffects
+   * @memberOf Stream#
+   * @return {Promise}
+   */
+   async stopAllEffects () {
+    this.client.adapterRef.logger.log('停止播放所有音效文件')
+    if (!this.mediaHelper){
+      throw new Error('No MediaHelper');
+    }
+    return this.mediaHelper.stopAllEffects() 
+  }
+
+  /**
+   * 暂停播放所有音效文件
+   * @function pauseAllEffects
+   * @memberOf Stream#
+   * @return {Promise}
+   */
+   async pauseAllEffects () {
+    this.client.adapterRef.logger.log('暂停播放所有音效文件')
+    if (!this.mediaHelper){
+      throw new Error('No MediaHelper');
+    }
+    return this.mediaHelper.pauseAllEffects() 
+  }
+
+  /**
+   * 恢复播放所有音效文件
+   * @function resumeAllEffects
+   * @memberOf Stream#
+   * @return {Promise}
+   */
+   async resumeAllEffects () {
+    this.client.adapterRef.logger.log('恢复播放所有音效文件')
+    if (!this.mediaHelper){
+      throw new Error('No MediaHelper');
+    }
+    return this.mediaHelper.resumeAllEffects() 
   }
 
   /**
