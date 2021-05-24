@@ -295,6 +295,10 @@ export interface StreamOptions {
    * Electron 屏幕共享的数据源 ID，您可以自行获取。
    */
   sourceId?: string;
+  /*
+  * 指定使用前置/后置摄像头来采集视频
+   */
+  facingMode?: String
 }
 
 export interface SubscribeOptions {

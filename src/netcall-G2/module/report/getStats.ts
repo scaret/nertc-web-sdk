@@ -309,30 +309,33 @@ class GetStats extends EventEmitter{
 
   formatSafariNonStandardStats (pc:RTCPeerConnection, stats:{[key:string]:any}, direction:string) {
     let result:{[key:string]:any} = {}
-    let ssrc = 0
-    let uid = 0
+    let uidMap = new Map()
     stats.forEach((item:any) => {
       if( item.type == 'outbound-rtp' || item.type == 'inbound-rtp' ) {
-        uid = this.adapterRef ? this.adapterRef.instance.getUidAndKindBySsrc(item.ssrc).uid: uid
-        ssrc = item.ssrc
+        const uid = this.adapterRef ? this.adapterRef.instance.getUidAndKindBySsrc(item.ssrc).uid : 0
+        uidMap.set(item.trackId, {uid, ssrc:item.ssrc})
+        item.uid = uid
         return
       }
     })
 
     stats.forEach((item:any)=>{
       if (item.type == 'track') {
+       //console.log('item: ', item)
+        item.ssrc = uidMap.get(item.id).ssrc
+        item.uid = uidMap.get(item.id).uid
         if(item.framesSent || item.framesReceived) {
-          item.ssrc = ssrc
           item = this.computeData(pc, item)
-          result[`video_${item.type}_${this.adapterRef && this.adapterRef.channelInfo.uid}_${direction}_${uid}`] = item
+          result[`${item.type}_${this.adapterRef && this.adapterRef.channelInfo.uid}_${direction}_${item.uid}_video`] = item
         } else {
-          result[`audio_${item.type}_${this.adapterRef && this.adapterRef.channelInfo.uid}_${direction}_${uid}`] = item
+          result[`${item.type}_${this.adapterRef && this.adapterRef.channelInfo.uid}_${direction}_${item.uid}_audio`] = item
         }
       } else if (item.type == 'outbound-rtp' || item.type == 'inbound-rtp') {
         item = this.computeData(pc, item)
-        result[`${item.mediaType}_${item.type}_${this.adapterRef && this.adapterRef.channelInfo.uid}_${direction}_${uid}`] = item
+        result[`${item.mediaType}_${item.type}_${this.adapterRef && this.adapterRef.channelInfo.uid}_${direction}_${item.uid}`] = item
       }
     })
+    //console.log('')
     return result;
   }
 

@@ -744,7 +744,7 @@ class Mediasoup extends EventEmitter {
       uid,
       producerId: id,
       preferredSpatialLayer,
-      mid,
+      mid: mid + '',
       pause: false,
       iceUfrag: /*iceUfragReg.length ? iceUfragReg[1] : */`${this.adapterRef.channelInfo.cid}#${this.adapterRef.channelInfo.uid}#recv`,
     };

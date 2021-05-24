@@ -62,6 +62,10 @@ import {AuidoMixingState} from "../constant/state";
     + `true`：开启自动噪声抑制。
     + `false`：关闭自动噪声抑制。
  *  @param {String} [options.sourceId] 屏幕共享的数据源Id（electron用户可以自己获取）
+ *  @param {String} [options.facingMode] 指定使用前置/后置摄像头来采集视频
+   在移动设备上，可以设置该参数选择使用前置或后置摄像头：
+   + "user"：前置摄像头
+   + "environment"：后置摄像头
  *  @param {MeidaTrack} [options.audioSource] 自定义的音频的track
  *  @param {MeidaTrack} [options.videoSource] 自定义的视频的track
  *  @returns {Stream}  
@@ -73,6 +77,7 @@ class Stream extends EventEmitter {
   public microphoneId:string;
   public cameraId: string;
   public sourceId: string;
+  public facingMode: string;
   public video: boolean;
   public screen: boolean;
   public screenAudio: boolean;
@@ -212,6 +217,7 @@ class Stream extends EventEmitter {
     this.screen = options.screen || false
     this.screenAudio = options.screenAudio || false
     this.sourceId = options.sourceId || ''
+    this.facingMode = options.facingMode || ''
     this.client = options.client
     this.audioSource = options.audioSource || null
     this.videoSource = options.videoSource || null
@@ -275,6 +281,7 @@ class Stream extends EventEmitter {
     this.screen = false
     this.screenAudio = false
     this.sourceId = ''
+    this.facingMode = ''
     this.videoView = null
     this.screenView = null
     this.renderMode = {local: {video: {}, screen: {}}, remote: {video: {}, screen: {}}}
@@ -533,6 +540,7 @@ class Stream extends EventEmitter {
       if (this.screen){
         await this.mediaHelper.getStream({
           sourceId: this.sourceId,
+          facingMode: this.facingMode,
           screen: this.screen,
           screenAudio: this.screenAudio,
         })
@@ -814,10 +822,14 @@ class Stream extends EventEmitter {
    * @param {String }  options.type 媒体设备: audio/video/screen
    * @param {String }  options.deviceId 指定要开启的设备ID，通过getDevices接口获取到设备列表
    * @param {String }  options.sourceId 屏幕共享的数据源Id（electron用户可以自己获取）
+   * @param {String }  options.facingMode 指定使用前置/后置摄像头来采集视频
+   在移动设备上，可以设置该参数选择使用前置或后置摄像头：
+   + "user"：前置摄像头
+   + "environment"：后置摄像头
    * @returns {Promise}
    */
-  async open (options:{type: MediaTypeShort, deviceId?: string, sourceId?: string, screenAudio?: boolean}) {
-    let {type, deviceId, sourceId} = options
+  async open (options:{type: MediaTypeShort, deviceId?: string, sourceId?: string, facingMode?: string, screenAudio?: boolean}) {
+    let {type, deviceId, sourceId, facingMode} = options
     if (this.client._roleInfo.userRole === 1) {
       const reason = `观众不允许打开设备`;
       this.client.adapterRef.logger.error(reason);
@@ -877,7 +889,8 @@ class Stream extends EventEmitter {
           this[type] = true
           const constraint:any = {
             videoDeviceId: deviceId,
-            sourceId
+            sourceId,
+            facingMode
           }
           constraint[type] = true
           if (type === "screen" && options.screenAudio){

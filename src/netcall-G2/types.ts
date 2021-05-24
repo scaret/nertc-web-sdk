@@ -292,6 +292,7 @@ export interface DownAudioItem{
   //from Chrome Mac 87.0.4280.88
   alr: number;
   audioOutputLevel: string;
+  audioLevel: string;
   bitsReceivedPerSecond: number;
   bytesReceived: string;
   freezeTime: number;
@@ -556,6 +557,7 @@ export interface GetStreamConstraints{
   videoDeviceId?: string;
   screen?: boolean;
   sourceId?: string;
+  facingMode?: string;
   audioSource?: MediaStreamTrack|null;
   videoSource?: MediaStreamTrack|null;
   deviceId?: string;
@@ -691,6 +693,7 @@ export interface StreamOptions{
   microphoneId?: '';
   cameraId?: '';
   sourceId?: '';
+  facingMode?: '';
   video: boolean;
   screen: boolean;
   screenAudio?: boolean;

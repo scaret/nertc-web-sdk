@@ -106,6 +106,7 @@ class MediaHelper extends EventEmitter {
       videoDeviceId = '', 
       screen = false, 
       sourceId = '',
+      facingMode = '',
       audioSource = null, 
       videoSource = null,
       deviceId = ''
@@ -267,11 +268,18 @@ class MediaHelper extends EventEmitter {
           }
         }
 
-        if (videoDeviceId && video) {
-          (config.video as any).deviceId = {
-            exact: videoDeviceId
+        if (video) {
+          if (facingMode) {
+            (config.video as any).facingMode = {
+              exact: facingMode
+            }
+          } else if (videoDeviceId) {
+            (config.video as any).deviceId = {
+              exact: videoDeviceId
+            }
           }
         }
+        
 
         const stream = await GUM.getStream(config, this.adapterRef.logger)
         if (constraint.screen) {
