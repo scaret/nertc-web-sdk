@@ -379,6 +379,95 @@ declare interface Stream {
      */
     setAudioMixingPosition(playStartTime: number): Promise<unknown>;
     /**
+     * 播放指定音效文件
+     与 startAudioMixing 方法的区别是，该方法更适合播放较小的音效文件，且支持同时播放多个音效。
+     ##### 注意：
+     + 受浏览器策略影响，在 Chrome 70 及以上和 Safari 浏览器上，该方法必须由用户手势触发.
+     + 请在频道内调用该方法，如果在频道外调用该方法可能会出现问题。
+     */
+    playEffect (options: {
+      /**
+       * 必须，指定在线音效文件的绝对路径(支持MP3，AAC 以及浏览器支持的其他音频格式。)
+       */
+      filePath: string;
+      /**
+       * 可选，可选，指定音效文件循环播放的次数
+       */
+      cycle: number;
+      /**
+       * 必须，指定音效的 ID。每个音效均有唯一的 ID
+       */
+      soundId: number;
+    }) : Promise<unknown>
+    /**
+     * 停止播放指定音效文件
+     * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]
+     */
+    stopEffect (soundId: number) : Promise<unknown>
+    /**
+     * 暂停播放指定音效文件
+     * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+     * @return {Promise}
+     */
+    pauseEffect (soundId: number) : Promise<unknown>
+    /**
+     * 恢复播放指定音效文件
+     * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+     * @return {Promise}
+     */
+    resumeEffect (soundId: number) : Promise<unknown>
+    /**
+     * 调节指定音效文件的音量
+     * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+     * @param {Number} volume 音效音量。整数，范围为 [0,100]。默认 100 为原始文件音量。
+     * @return {Promise}
+     */
+    setVolumeOfEffect (soundId: number) : Promise<unknown>
+    /**
+     * 预加载指定音效文件
+     * 该方法缓存音效文件，以供快速播放。为保证通信畅通，请注意控制预加载音效文件的大小。
+     * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+     * @param {Number} volume 音效音量。整数，范围为 [0,100]。默认 100 为原始文件音量。
+     * @return {Object}
+     */
+    preloadEffect(soundId: number, filePath: string): Promise<unknown>
+    /**
+     * 释放指定音效文件
+     * 该方法从内存释放某个预加载的音效文件，以节省内存占用。
+     * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+     * @return {Object}
+     */
+    unloadEffect (soundId: number): Promise<unknown>
+    /**
+     * 获取所有音效文件播放音量
+     * @return Array<{ soundId: number; volume: number }>
+     * 返回一个包含 soundId 和 volume 的数组。每个 soundId 对应一个 volume。
+        + `soundId`: 为音效的 ID，正整数，取值范围为 [1,10000]。
+        + `volume`: 为音量值，整数，范围为 [0,100]。
+     */
+    getEffectsVolume(): Array<{ soundId: number; volume: number }> 
+    /**
+     * 设置所有音效文件播放音量
+     * @param {Number} volume 音效音量。整数，范围为 [0,100]。默认 100 为原始文件音量。
+     * @return {void}
+     */
+    setEffectsVolume (volume: number): void;
+    /**
+     * 停止播放所有音效文件
+     * @return {Promise}
+     */
+    stopAllEffects(): Promise<unknown>
+    /**
+     * 暂停播放所有音效文件
+     * @return {Promise}
+     */
+    pauseAllEffects(): Promise<unknown> 
+    /**
+     * 恢复播放所有音效文件
+     * @return {Promise}
+     */
+    resumeAllEffects(): Promise<unknown>
+    /**
      * 添加视频画布水印。
      * 
      * @note setCanvasWatermarkConfigs 方法作用于本地视频画布，不影响视频流。视频流截图时，图片中不包含水印。

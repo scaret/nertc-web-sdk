@@ -25,7 +25,8 @@ import {
   AudioEffectOptions
 } from "../types";
 import {MediaHelper} from "../module/media";
-import {checkExists, isExistOptions} from "../util/param";
+import {checkExists, isExistOptions, checkValidInteger} from "../util/param";
+
 import {
   ReportParamEnableEarback,
   ReportParamSetExternalAudioRender,
@@ -94,8 +95,8 @@ class Stream extends EventEmitter {
     resolution: number;
   }|null;
   private inited:boolean;
-  public videoView:HTMLElement|null;
-  public screenView:HTMLElement|null;
+  public videoView:HTMLElement|null|undefined|String;
+  public screenView:HTMLElement|null|undefined|String;
   public renderMode: {
     local: {
       video: RenderMode|{},
@@ -700,7 +701,7 @@ class Stream extends EventEmitter {
    * @param {div} view div标签，播放画面的dom容器节点
    * @return {Promise}
    */
-  async play (view:HTMLElement|null|undefined, playOptions:StreamPlayOptions = {}) {
+  async play (view:HTMLElement|String|null|undefined, playOptions:StreamPlayOptions = {}) {
     if (!isExistOptions({tag: 'Stream.playOptions.audio', value: playOptions.audio}).result){
       playOptions.audio = this.isRemote;
     }
@@ -720,7 +721,7 @@ class Stream extends EventEmitter {
         this.client.adapterRef.logger.log('开始播放远端音频: ', this.streamID)
         this._play.playAudioStream(this.mediaHelper.audioStream)
       }
-    }else{
+    } else {
       if(playOptions.audio && this._play && this.mediaHelper && this.mediaHelper.micStream){
         this.client.adapterRef.logger.log('开始播放本地音频: ',this.streamID, playOptions.audioType);
         if (playOptions.audioType === "voice"){
@@ -733,11 +734,16 @@ class Stream extends EventEmitter {
       }
     }
 
+    if (typeof view === "string") {
+      view = document.getElementById(view)
+    }
+
     if (view){
       if (playOptions.video){
         this.videoView = view;
         if(this._play && this.mediaHelper && this.mediaHelper.videoStream && this.mediaHelper.videoStream.getVideoTracks().length){
           this.client.adapterRef.logger.log('开始播放视频: ', this.streamID)
+          //@ts-ignore
           this._play.playVideoStream(this.mediaHelper.videoStream, view)
         }  
       }
@@ -745,6 +751,7 @@ class Stream extends EventEmitter {
         this.screenView = view;
         if(this._play && this.mediaHelper && this.mediaHelper.screenStream && this.mediaHelper.screenStream.getVideoTracks().length){
           this.client.adapterRef.logger.log('开始播放辅流: ', this.streamID)
+          //@ts-ignore
           this._play.playScreenStream(this.mediaHelper.screenStream, view)
         }
       }
@@ -1538,6 +1545,7 @@ class Stream extends EventEmitter {
         if (this.mediaHelper && this.mediaHelper.cameraTrack){
           this.mediaHelper.cameraTrack.enabled = true;
         }
+        //@ts-ignore
         this._play.playVideoStream(this.mediaHelper.videoStream, this.videoView)
         if ("width" in this.renderMode.remote.video){
           this._play.setVideoRender(this.renderMode.remote.video)
@@ -1637,6 +1645,7 @@ class Stream extends EventEmitter {
         if (this.mediaHelper && this.mediaHelper.screenTrack){
           this.mediaHelper.screenTrack.enabled = true;
         }
+        //@ts-ignore
         this._play.playScreenStream(this.mediaHelper.screenStream, this.screenView)
         if ("width" in this.renderMode.remote.screen){
           this._play.setScreenRender(this.renderMode.remote.screen)
@@ -2160,8 +2169,13 @@ class Stream extends EventEmitter {
    */
 
   /**
-   * 云端音乐文件和本地麦克风声音混合；需要在启动麦克风之后使用
+   * 播放指定音效文件
    * @function playEffect
+   * * @description
+   与 startAudioMixing 方法的区别是，该方法更适合播放较小的音效文件，且支持同时播放多个音效。
+   ##### 注意：
+   + 受浏览器策略影响，在 Chrome 70 及以上和 Safari 浏览器上，该方法必须由用户手势触发.
+   + 请在频道内调用该方法，如果在频道外调用该方法可能会出现问题。
    * @memberOf Stream#
    * @param {Object} options 参数对象
    * @param {String} options.filePath 必须，指定在线音效文件的绝对路径(支持MP3，AAC 以及浏览器支持的其他音频格式。)
@@ -2176,6 +2190,9 @@ class Stream extends EventEmitter {
    */
    async playEffect (options:AudioEffectOptions) {
     this.client.adapterRef.logger.log('开始播放音效: ', JSON.stringify(options, null, ' '))
+    if (!this.mediaHelper) {
+      throw new Error('No MediaHelper');
+    }
     return this.mediaHelper.playEffect(options) 
   }
 
@@ -2191,7 +2208,7 @@ class Stream extends EventEmitter {
     if (!this.mediaHelper) {
       throw new Error('No MediaHelper');
     }
-    return this.mediaHelper.stopEffect() 
+    return this.mediaHelper.stopEffect(soundId) 
   }
 
   /**
@@ -2206,7 +2223,7 @@ class Stream extends EventEmitter {
     if (!this.mediaHelper) {
       throw new Error('No MediaHelper');
     }
-    return this.mediaHelper.pauseEffect() 
+    return this.mediaHelper.pauseEffect(soundId) 
   }
 
   /**
@@ -2221,12 +2238,12 @@ class Stream extends EventEmitter {
     if (!this.mediaHelper) {
       throw new Error('No MediaHelper');
     }
-    return this.mediaHelper.resumeEffect() 
+    return this.mediaHelper.resumeEffect(soundId) 
   }
 
 
   /**
-   * 调节伴奏音量
+   * 调节指定音效文件的音量
    * @function setVolumeOfEffect
    * @memberOf Stream#
    * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
@@ -2266,12 +2283,12 @@ class Stream extends EventEmitter {
    * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
    * @return {Object}
    */
-   async unloadEffect (soundId: number, filePath: string) {
-    this.client.adapterRef.logger.log(`预加载 ${soundId} 音效文件地址: ${filePath}`)
+   async unloadEffect (soundId: number) {
+    this.client.adapterRef.logger.log(`释放指定音效文件 ${soundId}`)
     if (!this.mediaHelper){
       throw new Error('No MediaHelper');
     }
-    return this.mediaHelper.unloadEffect(soundId, filePath) 
+    return this.mediaHelper.unloadEffect(soundId) 
   }
 
   /**
@@ -2313,7 +2330,7 @@ class Stream extends EventEmitter {
    * @return {Promise}
    */
    async stopAllEffects () {
-    this.client.adapterRef.logger.log('停止播放所有音效文件: %s', volume)
+    this.client.adapterRef.logger.log('停止播放所有音效文件')
     if (!this.mediaHelper){
       throw new Error('No MediaHelper');
     }
@@ -2327,7 +2344,7 @@ class Stream extends EventEmitter {
    * @return {Promise}
    */
    async pauseAllEffects () {
-    this.client.adapterRef.logger.log('暂停播放所有音效文件: %s', volume)
+    this.client.adapterRef.logger.log('暂停播放所有音效文件')
     if (!this.mediaHelper){
       throw new Error('No MediaHelper');
     }
@@ -2341,7 +2358,7 @@ class Stream extends EventEmitter {
    * @return {Promise}
    */
    async resumeAllEffects () {
-    this.client.adapterRef.logger.log('恢复播放所有音效文件: %s', volume)
+    this.client.adapterRef.logger.log('恢复播放所有音效文件')
     if (!this.mediaHelper){
       throw new Error('No MediaHelper');
     }
