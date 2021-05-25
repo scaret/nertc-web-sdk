@@ -82,11 +82,11 @@
             demoServer:
             <input type="text" id="demoServer" value=''>
           </div> -->
-          <div class="line">
+          <!-- <div class="line">
             turn地址:
             <input type="text" id="turnAddr" value='turn:223.252.198.177:3478?transport=tcp'>
             是否使用：<input type="checkbox" id="isTurnAddrConf"/>
-          </div>
+          </div> -->
           <div class="line">
             CID: <span id="cid"></span>
           </div>
@@ -475,34 +475,7 @@
               <input type="text" id="snapshotName" class="input-40">
             </div>
         </div>
-        <p class="block-header">客户端录制相关</p>
-        <div class="part" id="part-record">
-          <div class="line">
-            视频录制：<br/>
-            <label>操作对象(账号或UID)，不填录本地</label><input type="text" id="recordUid"><br/>
-            <input type="radio" name="recordSource" value="camera" checked>
-            <label>摄像头录制</label>
-            <input type="radio" name="recordSource" value="screen">
-            <label>屏幕录制</label>
-            <input type="radio" name="recordSource" value="video">
-            <label>视频录制(可混屏)</label>
-            <input type="radio" name="recordSource" value="audio">
-            <label>混音录制</label><br/>
-            <button id="recordVideo" class="close">开始</button>
-          </div>
-          <div class="line">
-            录制ID
-            <!-- <input type="text" class="recordId"> -->
-            <select class="recordId"></select>
-          </div>
-          <div class="line">
-            录制列表
-            <button id="recordVideoEnd" class="close">结束</button>
-            <button id="recordList" class="close">获取列表</button>
-            <button id="recordDownload" class="close">下载</button>
-            <button id="recordClean" class="close">清理</button>
-          </div>
-        </div>
+        
         <p class="block-header">自渲染</p>
         <div class="part" id="audio-self">
           <div class="line">
@@ -540,8 +513,38 @@
 
       </div>
       <div class="block">
-          <p class="block-header">伴音功能</p>
-          <div class="part">
+
+          <p class="block-header" id="clientRecord">客户端录制相关</p>
+          <div class="part" id="part-record" style="display: none">
+            <div class="line">
+              视频录制：<br/>
+              <label>操作对象(账号或UID)，不填录本地</label><input type="text" id="recordUid"><br/>
+              <input type="radio" name="recordSource" value="camera" checked>
+              <label>摄像头录制</label>
+              <input type="radio" name="recordSource" value="screen">
+              <label>屏幕录制</label>
+              <input type="radio" name="recordSource" value="video">
+              <label>视频录制(可混屏)</label>
+              <input type="radio" name="recordSource" value="audio">
+              <label>混音录制</label><br/>
+              <button id="recordVideo" class="close">开始</button>
+            </div>
+            <div class="line">
+              录制ID
+              <!-- <input type="text" class="recordId"> -->
+              <select class="recordId"></select>
+            </div>
+            <div class="line">
+              录制列表
+              <button id="recordVideoEnd" class="close">结束</button>
+              <button id="recordList" class="close">获取列表</button>
+              <button id="recordDownload" class="close">下载</button>
+              <button id="recordClean" class="close">清理</button>
+            </div>
+          </div>
+
+          <p class="block-header" id="audioMixing">伴音功能</p>
+          <div class="part" id='audioMixingFeature' style="display: none">
             <div class="line">
               云端音乐文件地址：
               <input type="text" id="audioFilePath">
@@ -588,8 +591,48 @@
               上行音频：<span id="audioSenderLabel"></span>
             </div>
           </div>
-          <p class="block-header">水印功能</p>
-          <div class="part">
+
+          <p class="block-header" id="audioEffect">音效功能</p>
+          <div class="part" id='audioEffectFeature' style="display: none">
+            
+            <div class="line">
+              Play Effect #1
+              <select id="audioEffect1Path" style="width:32%">
+                <option value="yrybz.aac">yrybz.aac</option>
+                <option value="蓝天白云.mp3">蓝天白云.mp3</option>
+                <option value="bui.mp3">bui.mp3</option>
+                <option value="smlt.flac">smlt.flac</option>
+              </select><br/>
+              Cycle
+              <input type="number" value="1" min="1" data-panel-id="1" id="audioEffect1Cycle" style="width:12%">
+              SoundId
+              <input type="number" value="1" min="1" data-panel-id="1" id="audioEffect1SoundId" style="width:15%">
+            </div>
+
+            <div class="line">
+                <button id="startAudioMixing">开始</button>
+                <button id="pauseAudioMixing">暂停</button>
+                <button id="resumeAudioMixing">恢复</button>
+                <button id="stopAudioMixing">停止</button>
+            </div>
+
+          </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+          <p class="block-header" id="watermark">水印功能</p>
+          <div class="part" id='watermarkFeature1' style="display: none">
             <div class="line">
               ID水印
               <input type="checkbox" id="idWatermark" checked>
@@ -605,7 +648,7 @@
               </select>
             </div>
           </div>
-          <div class="part">
+          <div class="part" id='watermarkFeature2' style="display: none">
             <div class="line">
               <label>
                 类型type <select id='watermarkType'>

@@ -27,6 +27,7 @@
   text-align: center;
   position: relative;
   font-size: 15px;
+  margin-bottom: 3px;
 }
 /* 底部 */
 .nrtc-container .bottom .block {

@@ -147,6 +147,43 @@ $('#config').on('click', () => {
   }
 })
 
+$('#audioMixing').on('click', () => {
+  if ($("#audioMixingFeature").css("display") == 'none') {
+    $("#audioMixingFeature").css("display", 'block')
+  } else {
+    $("#audioMixingFeature").css("display", 'none')
+  }
+})
+
+$('#audioEffect').on('click', () => {
+  if ($("#audioEffectFeature").css("display") == 'none') {
+    $("#audioEffectFeature").css("display", 'block')
+  } else {
+    $("#audioEffectFeature").css("display", 'none')
+  }
+})
+
+$('#watermark').on('click', () => {
+  if ($("#watermarkFeature1").css("display") == 'none') {
+    $("#watermarkFeature1").css("display", 'block')
+  } else {
+    $("#watermarkFeature1").css("display", 'none')
+  }
+  if ($("#watermarkFeature2").css("display") == 'none') {
+    $("#watermarkFeature2").css("display", 'block')
+  } else {
+    $("#watermarkFeature2").css("display", 'none')
+  }
+})
+
+$('#clientRecord').on('click', () => {
+  if ($("#part-record").css("display") == 'none') {
+    $("#part-record").css("display", 'block')
+  } else {
+    $("#part-record").css("display", 'none')
+  }
+})
+
 $('input[name="mode"]').on('click', () => {
   const mode = $('#part-env input[name="mode"]:checked').val()
   console.log('频道模式: ', mode)
