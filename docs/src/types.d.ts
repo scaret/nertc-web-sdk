@@ -97,8 +97,6 @@ export interface RTMPTask {
    * 旁路推流是否需要进行音视频录制。
    */
   record: boolean;
-  hostUid: string;
-  version: number;
   /**
    * 互动直播中的布局相关参数。详细参数说明请参考layout。布局参数的配置方式及典型配置示例请参考旁路推流画面布局。
    */
@@ -170,7 +168,7 @@ export interface RTMPTask {
     /**
      * 用于设置混流视频中占位图片属性。若参数 users 指定的用户未上线，会在其对应的区域展示占位图片。
      */
-    images: {
+    images?: {
       /**
        * 占位图片的URL。
        */
@@ -204,11 +202,11 @@ export interface RTMPTask {
   /**
    * 其他设置
    */
-  config: {
+  config?: {
     /**
      * 单视频直推不转码。开启后推流服务器会透传用户的视频编码，不再对视频做转码。
      */
-    singleVideoNoTrans: boolean;
+    singleVideoNoTrans?: boolean;
     /**
      * 音频参数
      */
@@ -216,13 +214,27 @@ export interface RTMPTask {
       /**
        * 自定义音频比特率。取值范围为 10～192。语音场景建议64以上，音乐场景建议128。
        */
-      bitRate: number;
-      sampleRate: number;
-      channels: number;
-      codecProfile: number;
+      bitRate?: number;
+      /**
+       * 音频推流采样率。可以设置为以下值。
+       * * `WebRTC2.LIVE_STREAM_AUDIO_SAMPLE_RATE.SAMPLE_RATE_32000` : 32000
+       * * `WebRTC2.LIVE_STREAM_AUDIO_SAMPLE_RATE.SAMPLE_RATE_44100` : 44100
+       * * `WebRTC2.LIVE_STREAM_AUDIO_SAMPLE_RATE.SAMPLE_RATE_48000` : 48000（默认）
+       */
+      sampleRate?: number;
+      /**
+       * 音频推流声道数。可以设置为`1`（mono）或者`2`（stereo）。默认为`2`。
+       */
+      channels?: number;
+      /**
+       * 音频编码规格。可以设置为以下值。
+       * * `WebRTC2.LIVE_STREAM_AUDIO_CODEC_PROFILE.LC_AAC`: 表示基本音频编码规格（默认）
+       * * `WebRTC2.LIVE_STREAM_AUDIO_CODEC_PROFILE.HE_AAC`: 表示高效音频编码规格
+       */
+      codecProfile?: number;
     };
   };
-  extraInfo: string;
+  extraInfo?: string;
 }
 
 export interface StreamOptions {
