@@ -49,38 +49,6 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
             catch (error) { }
         }
     }
-    async getRtpCapabilities(mediaType) {
-        logger.debug('getRtpCapabilities()');
-        const pc = new RTCPeerConnection({
-            iceServers: [],
-            iceTransportPolicy: 'all',
-            bundlePolicy: 'max-bundle',
-            rtcpMuxPolicy: 'require',
-            sdpSemantics: 'unified-plan'
-        });
-        try {
-            if (mediaType) {
-                pc.addTransceiver(mediaType);
-            } else {
-                pc.addTransceiver('audio');
-                pc.addTransceiver('video');
-            }
-            
-            const offer = await pc.createOffer();
-            try {
-                pc.close();
-            }
-            catch (error) { }
-            return offer;
-        }
-        catch (error) {
-            try {
-                pc.close();
-            }
-            catch (error2) { }
-            throw error;
-        }
-    }
 
     async getNativeRtpCapabilities() {
         logger.debug('getNativeRtpCapabilities()');
@@ -612,12 +580,12 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
 
         let offer = this._pc.localDescription;
 
-        if (!offer || !offer.sdp || !offer.sdp.includes(`m=${kind}`)) {
+        if (!offer /*|| !offer.sdp || !offer.sdp.includes(`m=${kind}`)*/) {
             if (mid === -1) {
                 logger.debug('prepareLocalSdp() 添加一个M行')
                 this._pc.addTransceiver(kind, { direction: "recvonly" });
+                mid = 0
             } 
-            
             offer = await this._pc.createOffer();
             if (offer.sdp.indexOf(`a=ice-ufrag:${this._appDate.cid}#${this._appDate.uid}#`) < 0) {
                 offer.sdp = offer.sdp.replace(/a=ice-ufrag:([0-9a-zA-Z=+-_\/\\\\]+)/g, `a=ice-ufrag:${this._appDate.cid}#${this._appDate.uid}#recv`)
@@ -629,7 +597,7 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
         let dtlsParameters = undefined;
         if (!this._transportReady)
             dtlsParameters = await this._setupTransport({ localDtlsRole: 'server', localSdpObject });
-        const rtpCapabilities = sdpCommonUtils.extractRtpCapabilities({ sdpObject: localSdpObject });
+        const rtpCapabilities = null //sdpCommonUtils.extractRtpCapabilities({ sdpObject: localSdpObject });
 
         if (mid === -1) {
             //mid = localSdpObject.media.length - 1

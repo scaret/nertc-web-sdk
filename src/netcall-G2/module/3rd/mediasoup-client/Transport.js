@@ -303,10 +303,12 @@ class Transport extends EnhancedEventEmitter_1.EnhancedEventEmitter {
             if (!this._recvRtpCapabilities ||
                 !ortc.canSend('audio', this._recvRtpCapabilities) ||
                 !ortc.canSend('video', this._recvRtpCapabilities)) {
-                let extendedRtpCapabilities = ortc.getExtendedRtpCapabilities(rtpCapabilities, edgeRtpCapabilities);
+                //let extendedRtpCapabilities = ortc.getExtendedRtpCapabilities(rtpCapabilities, edgeRtpCapabilities);
                 // Generate our receiving RTP capabilities for receiving media.
-                this._recvRtpCapabilities =
-                    ortc.getRecvRtpCapabilities(extendedRtpCapabilities);
+                /*this._recvRtpCapabilities =
+                    ortc.getRecvRtpCapabilities(extendedRtpCapabilities);*/
+
+                this._recvRtpCapabilities = ortc.getRecvRtpCapabilities(this._extendedRtpCapabilities);
                 // This may throw.
                 ortc.validateRtpCapabilities(this._recvRtpCapabilities);
             }
@@ -321,36 +323,6 @@ class Transport extends EnhancedEventEmitter_1.EnhancedEventEmitter {
         try {
             await this._handler.recoverTransceiver(remoteUid, mid, kind);
             return;
-        }
-        catch (error) {
-            throw error;
-        }
-    }
-
-    
-
-    async prepareMid (kind, edgeRtpCapabilities, uid) {
-        try {
-
-            if (!this._recvRtpCapabilities ||
-                !ortc.canSend('audio', this._recvRtpCapabilities) ||
-                !ortc.canSend('video', this._recvRtpCapabilities)) {
-
-                const { dtlsParameters, rtpCapabilities, offer, mid } = await this._handler.prepareLocalSdp(kind, uid);
-
-                let extendedRtpCapabilities = ortc.getExtendedRtpCapabilities(rtpCapabilities, edgeRtpCapabilities);
-                // Generate our receiving RTP capabilities for receiving media.
-                this._recvRtpCapabilities =
-                    ortc.getRecvRtpCapabilities(extendedRtpCapabilities);
-                // This may throw.
-                ortc.validateRtpCapabilities(this._recvRtpCapabilities);
-                return { dtlsParameters, rtpCapabilities: this._recvRtpCapabilities, offer, mid };
-            } else {
-                const { dtlsParameters, rtpCapabilities } = await this._handler.prepareLocalSdp(kind, uid);
-                const { mid } = await this._handler.prepareMid(kind, uid);
-                return { dtlsParameters, rtpCapabilities: this._recvRtpCapabilities, offer, mid };
-            }
-            
         }
         catch (error) {
             throw error;

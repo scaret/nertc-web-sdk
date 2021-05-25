@@ -413,7 +413,7 @@ function initEvents() {
   })
 
   rtc.client.on('active-speaker', _data => {
-    console.log("===== 当前在讲话的人：", _data.uid)
+    //console.log("===== 当前在讲话的人：", _data.uid)
     
     if (!currentSpeaker || currentSpeaker.uid != _data.uid) {
       //console.warn('currentSpeaker: ', currentSpeaker)
@@ -424,7 +424,7 @@ function initEvents() {
   })
   
   rtc.client.on('volume-indicator', _data => {
-    console.log("===== 正在说话的远端用户及其音量：", _data)
+   // console.log("===== 正在说话的远端用户及其音量：", _data)
   })
 
   rtc.client.on('stopScreenSharing', _data => {

@@ -243,11 +243,17 @@ class Base extends EventEmitter {
 
   startSession() {
     this.adapterRef.logger.log('开始音视频会话')
-    let { wssArr } = this.adapterRef.channelInfo
+    let { wssArr, cid } = this.adapterRef.channelInfo
     if (!wssArr || wssArr.length === 0) {
       this.adapterRef.logger.error('没有找到服务器地址')
       this.adapterRef.channelStatus = 'leave'
-      return Promise.reject()
+      return Promise.reject('NO_SERVER_ADDRESS')
+    }
+
+    if (!cid) {
+      this.adapterRef.logger.error('服务器没有分配cid')
+      this.adapterRef.channelStatus = 'leave'
+      return Promise.reject('NO_CID')
     }
     this.adapterRef.logger.log('开始连接服务器: %s, url: %o', this.adapterRef.channelInfo.wssArrIndex, wssArr)
     if (this.adapterRef.channelInfo.wssArrIndex >= wssArr.length) {
