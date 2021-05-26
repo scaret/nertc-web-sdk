@@ -1069,7 +1069,7 @@ class MediaHelper extends EventEmitter {
     } 
   }
 
-  async playEffect (options: AudioEffectOptions) {
+  async playEffect (options: AudioEffectOptions, playStartTime?:number) {
     const {soundId, filePath, cycle = 1} = options
     const filePathCheck = {
       tag: 'Stream.playEffect:filePath',
@@ -1095,9 +1095,11 @@ class MediaHelper extends EventEmitter {
     if (!this.webAudio || !this.webAudio.context) {
       this.adapterRef.logger.log('playEffect: 浏览器不支持')
       return Promise.reject('BROWSER_NOT_SUPPORT')
-    } else if (this.mixAudioConf.sounds[soundId] && (this.mixAudioConf.sounds[soundId].state === 'PLAYED' || this.mixAudioConf.sounds[soundId].state === 'PAUSED')) {
+    } else if (this.mixAudioConf.sounds[soundId] && (this.mixAudioConf.sounds[soundId].state === 'STARTING' || this.mixAudioConf.sounds[soundId].state === 'PLAYED' || this.mixAudioConf.sounds[soundId].state === 'PAUSED')) {
       this.adapterRef.logger.log(`pauseEffect: 该音效文件正处于: ${this.mixAudioConf.sounds[soundId].state} 状态`)
-      //return Promise.reject('INVALID_OPERATION')
+      if (playStartTime === undefined) {
+        return Promise.reject('INVALID_OPERATION')
+      }
     }
     this.mixAudioConf.sounds[soundId].state = 'STARTING'
 
@@ -1113,6 +1115,14 @@ class MediaHelper extends EventEmitter {
       //@ts-ignore
       this.mixAudioConf.sounds[soundId].sourceNode = result.sourceNode
       //@ts-ignore
+      if(result && result.sourceNode){
+        //@ts-ignore
+        result.sourceNode.onended = onended = event => {
+          console.log('sounds: ', this.mixAudioConf.sounds)
+          this.stopEffect(soundId)
+        }
+      }
+      //@ts-ignore
       this.mixAudioConf.sounds[soundId].gainNode = result.gainNode
       this.mixAudioConf.sounds[soundId].totalTime = this.mixAudioConf.audioBuffer[filePath] && this.mixAudioConf.audioBuffer[filePath].duration
       this.mixAudioConf.sounds[soundId].cycle = cycle
@@ -1121,6 +1131,7 @@ class MediaHelper extends EventEmitter {
       if (cycle > 1) {
         this.mixAudioConf.sounds[soundId].playOverTime = cycle * totalTime - this.mixAudioConf.sounds[soundId].playStartTime
       } 
+      this.mixAudioConf.sounds[soundId].playStartTime = playStartTime || 0
       this.webAudio.startAudioEffectMix(this.mixAudioConf.sounds[soundId])
       this.mixAudioConf.sounds[soundId].state = 'PLAYED'
       this.mixAudioConf.sounds[soundId].startTime = Date.now()
@@ -1140,12 +1151,13 @@ class MediaHelper extends EventEmitter {
 
     let reason = null
     if (!this.webAudio || !this.webAudio.context) {
-      this.adapterRef.logger.log('playEffect: 浏览器不支持')
+      this.adapterRef.logger.log('stopEffect: 浏览器不支持')
       return Promise.reject('BROWSER_NOT_SUPPORT')
     } 
 
     this.webAudio.stopAudioEffectMix(this.mixAudioConf.sounds[soundId])
     this.mixAudioConf.sounds[soundId].state = 'STOPED'
+    delete this.mixAudioConf.sounds[soundId]
   }
 
   async pauseEffect (soundId: number) {
@@ -1228,7 +1240,7 @@ class MediaHelper extends EventEmitter {
     this.mixAudioConf.sounds[soundId].playStartTime = playedTime
     this.adapterRef.logger.log('resumeEffect 回复重置的时间点：', playedTime)
     //this.webAudio.startAudioEffectMix(this.mixAudioConf.sounds[soundId])
-    this.playEffect({soundId, filePath: this.mixAudioConf.sounds[soundId].filePath, cycle: this.mixAudioConf.sounds[soundId].cycle})
+    this.playEffect({soundId, filePath: this.mixAudioConf.sounds[soundId].filePath, cycle: this.mixAudioConf.sounds[soundId].cycle}, playedTime)
     this.mixAudioConf.sounds[soundId].state = 'PLAYED'
     this.mixAudioConf.sounds[soundId].startTime = Date.now()
   }
@@ -1277,10 +1289,14 @@ class MediaHelper extends EventEmitter {
     if (isExistOptions(soundIdCheck).result){
       checkValidInteger(soundIdCheck);
     }
-    this.adapterRef.logger.log(`preloadEffect 设置 ${soundId} 音效文件的filePath: ${filePath}`)
+    this.adapterRef.logger.log(`preloadEffect 设置soundId: ${soundId}, 音效文件的filePath: ${filePath}`)
     this._initSoundIfNotExists(soundId, filePath)
     if (!this.audioRoutingEnabled){
       this.enableAudioRouting();
+    }
+    if (this.mixAudioConf.audioBuffer[filePath]) {
+      this.adapterRef.logger.log('preloadEffect: 已经 load 音效文件')
+      return
     }
     try {
       //@ts-ignore

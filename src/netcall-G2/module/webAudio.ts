@@ -609,7 +609,7 @@ class WebAudio{
 
     if (cycle > 1) {
       sourceNode.loop = true
-      sourceNode.start(0, playStartTime, playOverTime - 1)
+      sourceNode.start(0, playStartTime, playOverTime)
     } else {
       sourceNode.loop = false
       sourceNode.start(0, playStartTime)

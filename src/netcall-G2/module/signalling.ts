@@ -529,21 +529,22 @@ class Signalling extends EventEmitter {
     }
   }
 
-  _handleFailed (event) {
-    this.adapterRef.logger.log('Signalling:_handleFailed <- ', event)
+  _handleFailed () {
+    this.adapterRef.logger.log('Signalling:_handleFailed')
   }
 
-  _handleClose (event) {
-    this.adapterRef.logger.log('Signalling:_handleClose <- ', event)
+  _handleClose () {
+    
+  }
+  
+  _handleDisconnected () {
+    this.adapterRef.logger.log('Signalling:_handleDisconnected')
+    this.adapterRef.logger.log('Signalling:_handleClose')
     this.adapterRef.channelStatus = 'connectioning'
     this.adapterRef.instance.apiEventReport('setDisconnect', {
       reason: '2' //ws中断
     })
     this._reconnection()
-  }
-  
-  _handleDisconnected (event) {
-    this.adapterRef.logger.log('Signalling:_handleDisconnected <- ', event)
   }
 
   async join () {

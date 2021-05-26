@@ -286,20 +286,15 @@
           </div>
           -->
           <div class="line">
-            <div>是否订阅音频
+            订阅audio
               <input type="checkbox" id="subAudio" checked>
-            </div>
-          </div>
-          <div class="line">
-            <div>是否订阅视频
+ 
+            订阅video
               <input type="checkbox" id="subVideo" checked>
-            </div>
-          </div>
-          
-          <div class="line">
-            <div>是否订阅屏幕共享
+  
+            订阅screen
               <input type="checkbox" id="subScreen" checked>
-            </div>
+            
           </div>
           <div class="line">
             订阅大小流
@@ -405,8 +400,8 @@
             </div>
           </div>
         </div>
-        <p class="block-header">音量设置</p>
-        <div class="part" id="part-volume">
+        <p class="block-header" id="audioLevelConfig">音量设置</p>
+        <div class="part" id="part-volume" style="display: none">
           <div class="line">
             <label>操作对象(uid)</label>
             <input type="text" name="uid">
@@ -595,41 +590,111 @@
           <p class="block-header" id="audioEffect">音效功能</p>
           <div class="part" id='audioEffectFeature' style="display: none">
             
-            <div class="line">
-              Play Effect #1
-              <select id="audioEffect1Path" style="width:32%">
-                <option value="yrybz.aac">yrybz.aac</option>
-                <option value="蓝天白云.mp3">蓝天白云.mp3</option>
-                <option value="bui.mp3">bui.mp3</option>
-                <option value="smlt.flac">smlt.flac</option>
-              </select><br/>
-              Cycle
-              <input type="number" value="1" min="1" data-panel-id="1" id="audioEffect1Cycle" style="width:12%">
-              SoundId
-              <input type="number" value="1" min="1" data-panel-id="1" id="audioEffect1SoundId" style="width:15%">
+            <div class="part">
+              <div class="line">
+                音效文件 #1
+                <select id="path1" style="width:32%">
+                  <option value="auido/yrybz.aac">yrybz.aac</option>
+                  <option value="auido/蓝天白云.mp3">蓝天白云.mp3</option>
+                  <option value="auido/biu.mp3">biu.mp3</option>
+                  <option value="auido/smlt.flac">smlt.flac</option>
+                </select>
+              </div>
+              <div class="line">
+                Cycle
+                <input type="number" value="1" min="1" data-panel-id="1" id="cycle1" style="width:12%">
+                SoundId
+                <input type="number" value="1" min="1" data-panel-id="1" id="soundId1" style="width:15%">
+              </div>
+          
+                setVolumeOfEffect:
+                <input type="number" rows="10" value="100" max="100" min="0" step="10" data-panel-id="1" id="volume1" style="width:15%">
+                <button id="setVolumeOfEffect1">设置</button>
+              
+              <div class="line">
+                <button id="playEffect1">play</button>
+                <button id="stopEffect1">stop</button>
+                <button id="pauseEffect1">pause</button>
+                <button id="resumeEffect1">resume</button>
+                <button id="preloadEffect1">preload</button>
+                <button id="unloadEffect1">unload</button>
+              </div>
+            </div>
+            
+            <div class="part">
+              <div class="line">
+                音效文件 #2
+                <select id="path2" style="width:32%">
+                  <option value="auido/蓝天白云.mp3">蓝天白云.mp3</option>
+                  <option value="auido/yrybz.aac">yrybz.aac</option>
+                  <option value="auido/biu.mp3">biu.mp3</option>
+                  <option value="auido/smlt.flac">smlt.flac</option>
+                </select>
+ 
+
+                Cycle
+                <input type="number" value="1" min="1" data-panel-id="1" id="cycle2" style="width:12%">
+                SoundId
+                <input type="number" value="2" min="1" data-panel-id="1" id="soundId2" style="width:15%">
+          
+                setVolumeOfEffect:
+                <input type="number" rows="10" value="100" max="100" min="0" step="10" data-panel-id="1" id="volume2" style="width:15%">
+                <button id="setVolumeOfEffect2">设置</button>
+              </div>
+              <div class="line">
+                <button id="playEffect2">play</button>
+                <button id="stopEffect2">stop</button>
+                <button id="pauseEffect2">pause</button>
+                <button id="resumeEffect2">resume</button>
+                <button id="preloadEffect2">preload</button>
+                <button id="unloadEffect2">unload</button>
+              </div>
             </div>
 
-            <div class="line">
-                <button id="startAudioMixing">开始</button>
-                <button id="pauseAudioMixing">暂停</button>
-                <button id="resumeAudioMixing">恢复</button>
-                <button id="stopAudioMixing">停止</button>
+            <div class="part">
+              <div class="line">
+                音效文件 #3
+                <select id="path3" style="width:32%">
+                  <option value="auido/biu.mp3">biu.mp3</option>
+                  <option value="auido/yrybz.aac">yrybz.aac</option>
+                  <option value="auido/蓝天白云.mp3">蓝天白云.mp3</option>
+                  <option value="auido/smlt.flac">smlt.flac</option>
+                </select>
+
+                Cycle
+                <input type="number" value="1" min="1" data-panel-id="1" id="cycle3" style="width:12%">
+                SoundId
+                <input type="number" value="3" min="1" data-panel-id="1" id="soundId3" style="width:15%">
+                setVolumeOfEffect:
+                <input type="number" rows="10" value="100" max="100" min="0" step="10" data-panel-id="1" id="volume2" style="width:15%">
+                <button id="setVolumeOfEffect3">设置</button>
+              </div>
+              <div class="line">
+                <button id="playEffect3">play</button>
+                <button id="stopEffect3">stop</button>
+                <button id="pauseEffect3">pause</button>
+                <button id="resumeEffect3">resume</button>
+                <button id="preloadEffect3">preload</button>
+                <button id="unloadEffect3">unload</button>
+              </div>
+            </div>
+
+            <div class="part">
+              <div class="line">
+                setEffectsVolume:
+                <input type="number" rows="10" value="100" max="100" min="0" step="10" data-panel-id="1" id="volumeAll" style="width:15%">
+                <button id="setEffectsVolume">setEffectsVolume</button>
+                <button id="getEffectsVolume">getEffectsVolume</button>
+              </div>
+              <div class="line">
+                <button id="stopAllEffects">stopAllEffects</button>
+                <button id="pauseAllEffects">pauseAllEffects</button>
+                <button id="resumeAllEffects">resumeAllEffects</button>
+                
+              </div>
             </div>
 
           </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
 
           <p class="block-header" id="watermark">水印功能</p>
           <div class="part" id='watermarkFeature1' style="display: none">
