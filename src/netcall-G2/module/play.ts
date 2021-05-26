@@ -119,14 +119,15 @@ class Play extends EventEmitter {
   }
 
   _initVideoContainer() {
+    if(!this.videoView) return
     if(!this.videoContainerDom) {
       this.videoContainerDom = document.createElement('div')
       this.videoContainerDom.className = "nertc-video-container";
       // 样式
       this.videoContainerDom.style.overflow = 'hidden'
       this.videoContainerDom.style.position = 'relative'
-      this.videoContainerDom.style.width = `${this.videoContainerSize.width}px`
-      this.videoContainerDom.style.height = `${this.videoContainerSize.height}px`
+      this.videoContainerDom.style.width = `${this.videoView.clientWidth}px`
+      this.videoContainerDom.style.height = `${this.videoView.clientHeight}px`
       this.videoContainerDom.style.display = 'inline-block'
     }
   }
@@ -152,7 +153,7 @@ class Play extends EventEmitter {
       this.videoDom.style.left = '50%'
       this.videoDom.style.top = '50%'
       this.videoDom.style.transform = 'translate(-50%,-50%)'
-
+      //this.videoDom.style.objectFit = 'cover'
       // 设置属性
       this.videoDom.setAttribute('x-webkit-airplay', 'x-webkit-airplay')
       this.videoDom.setAttribute('playsinline', 'playsinline')

@@ -139,11 +139,67 @@ $('#privatizationConfig').on('click', () => {
   }
 })
 
+/**
+ * ----------------------------------------
+ *             demo页面模块隐藏
+ * ----------------------------------------
+ */
 $('#config').on('click', () => {
+  //会话参数配置
   if ($("#sessionConf").css("display") == 'none') {
     $("#sessionConf").css("display", 'block')
   } else {
     $("#sessionConf").css("display", 'none')
+  }
+})
+
+$('#audioMixing').on('click', () => {
+  //伴音功能模块
+  if ($("#audioMixingFeature").css("display") == 'none') {
+    $("#audioMixingFeature").css("display", 'block')
+  } else {
+    $("#audioMixingFeature").css("display", 'none')
+  }
+})
+
+$('#audioEffect').on('click', () => {
+  //音效功能模块
+  if ($("#audioEffectFeature").css("display") == 'none') {
+    $("#audioEffectFeature").css("display", 'block')
+  } else {
+    $("#audioEffectFeature").css("display", 'none')
+  }
+})
+
+$('#watermark').on('click', () => {
+  //水印功能模块
+  if ($("#watermarkFeature1").css("display") == 'none') {
+    $("#watermarkFeature1").css("display", 'block')
+  } else {
+    $("#watermarkFeature1").css("display", 'none')
+  }
+  if ($("#watermarkFeature2").css("display") == 'none') {
+    $("#watermarkFeature2").css("display", 'block')
+  } else {
+    $("#watermarkFeature2").css("display", 'none')
+  }
+})
+
+$('#clientRecord').on('click', () => {
+  //客户端录制相关模块
+  if ($("#part-record").css("display") == 'none') {
+    $("#part-record").css("display", 'block')
+  } else {
+    $("#part-record").css("display", 'none')
+  }
+})
+
+$('#audioLevelConfig').on('click', () => {
+  //音量设置模块
+  if ($("#part-volume").css("display") == 'none') {
+    $("#part-volume").css("display", 'block')
+  } else {
+    $("#part-volume").css("display", 'none')
   }
 })
 
@@ -376,7 +432,7 @@ function initEvents() {
   })
 
   rtc.client.on('active-speaker', _data => {
-    //console.log('"===== 当前在讲话的人：", _data.uid')
+    //console.log("===== 当前在讲话的人：", _data.uid)
     
     if (!currentSpeaker || currentSpeaker.uid != _data.uid) {
       //console.warn('currentSpeaker: ', currentSpeaker)
@@ -387,7 +443,7 @@ function initEvents() {
   })
   
   rtc.client.on('volume-indicator', _data => {
-    //console.log("===== 正在说话的远端用户及其音量：", _data)
+   // console.log("===== 正在说话的远端用户及其音量：", _data)
   })
 
   rtc.client.on('stopScreenSharing', _data => {
@@ -1398,7 +1454,8 @@ $('#playCamera').on('click', () => {
   })
   rtc.localStream.open({
     type: 'video',
-    deviceId: $('#camera').val()
+    deviceId: $('#camera').val(),
+    facingMode: 'user'//'environment'
   }).then(()=>{
     console.log('打开摄像头 sucess')
     rtc.localStream.play(document.getElementById('local-container'))
@@ -1503,7 +1560,7 @@ $('#playScreenOff').on('click', () => {
 
 /** 
  * ----------------------------------------
- *              录制逻辑
+ *              本地录制逻辑
  * ----------------------------------------
  */
 function getRecordId() {
@@ -1662,7 +1719,11 @@ $('#allowRemoteAudioRendering').click(async ()=>{
   $("#remotePlayOptionsAudio").removeAttr("checked");
 });
 
-// 用户角色
+/**
+ * ----------------------------------------
+ *             用户角色
+ * ----------------------------------------
+ */
 $('#setRoleHost-btn').click(async ()=>{
   addLog('尝试切换为主播');
   await rtc.client.setClientRole("host");
@@ -1672,7 +1733,11 @@ $('#setRoleAudience-btn').click(async ()=>{
   await rtc.client.setClientRole("audience");
 });
 
-//视频截图
+/**
+ * ----------------------------------------
+ *             截图
+ * ----------------------------------------
+ */
 $('#snapshot').click(function(event) {
   if (rtc.client) {
     let stream
@@ -1709,8 +1774,172 @@ $('#snapshot').click(function(event) {
 })
 
 /**
-  * ************************ 伴音功能相关 *****************************
-*/
+ * ----------------------------------------
+ *             音效相关
+ * ----------------------------------------
+ */
+
+/**
+ * 音效文件一
+ */
+
+for (i = 1; i < 4; i++ ) {
+
+  $(`#playEffect${i}`).click(function(event){
+    var num = event.target.id.match(/\d/)[0]
+    console.info('开启音效文件:  ', $(`#path${num}`).val())
+    if (rtc.localStream) {
+      rtc.localStream.playEffect({
+        filePath: $(`#path${num}`).val(), 
+        cycle: Number($(`#cycle${num}`).val()),
+        soundId: Number($(`#soundId${num}`).val())
+      }).then(res=>{
+        console.log('音效文件播放成功: ', $(`#path${num}`).val())
+      }).catch(err=>{
+        console.error('播放音效文件 %s 失败: %o', $(`#path${num}`).val(), err)
+      })
+    } 
+  })
+
+  $(`#stopEffect${i}`).click(function(event){
+    var num = event.target.id.match(/\d/)[0]
+    console.info('停止音效文件:  ', $(`#soundId${num}`).val())
+    if (rtc.localStream) {
+      rtc.localStream.stopEffect(Number($(`#soundId${num}`).val()))
+      .then(res=>{
+        console.log('停止文件播放成功: ', $(`#path${num}`).val())
+      }).catch(err=>{
+        console.error('停止音效文件 %s 失败: %o', $(`#path${num}`).val(), err)
+      })
+    } 
+  });
+
+  $(`#pauseEffect${i}`).click(function(event){
+    var num = event.target.id.match(/\d/)[0]
+    console.info('暂停音效文件:  ', $(`#soundId${num}`).val())
+    if (rtc.localStream) {
+      rtc.localStream.pauseEffect(Number($(`#soundId${num}`).val()))
+      .then(res=>{
+        console.log('暂停文件播放成功: ', $(`#path${num}`).val())
+      }).catch(err=>{
+        console.error('暂停音效文件 %s 失败: %o', $(`#path${num}`).val(), err)
+      })
+    } 
+  });
+
+  $(`#resumeEffect${i}`).click(function(event){
+    var num = event.target.id.match(/\d/)[0]
+   console.info('恢复音效文件1:  ', $(`#soundId${num}`).val())
+    if (rtc.localStream) {
+      rtc.localStream.resumeEffect(Number($(`#soundId${num}`).val()))
+      .then(res=>{
+        console.log('恢复文件播放成功: ', $(`#path${num}`).val())
+      }).catch(err=>{
+        console.error('恢复音效文件 %s 失败: %o', $(`#path${num}`).val(), err)
+      })
+    } 
+  });
+
+  $(`#preloadEffect${i}`).click(function(event){
+    var num = event.target.id.match(/\d/)[0]
+    console.info('预加载音效文件:  ', $(`#soundId${num}`).val())
+    if (rtc.localStream) {
+      rtc.localStream.preloadEffect(Number($(`#soundId${num}`).val()), $(`#path${num}`).val())
+      .then(res=>{
+        console.log('预加载音效文件成功: ', $(`#path${num}`).val())
+      }).catch(err=>{
+        console.error('预加载音效文件 %s 失败: %o', $(`#path${num}`).val(), err)
+      })
+    } 
+  });
+
+  $(`#unloadEffect${i}`).click(function(event){
+    var num = event.target.id.match(/\d/)[0]
+    console.info('释放音效文件:  ', $(`#soundId${num}`).val())
+    if (rtc.localStream) {
+      rtc.localStream.unloadEffect(Number($(`#soundId${num}`).val()))
+      .then(res=>{
+        console.log('释放音效文件成功: ', $(`#path${num}`).val())
+      }).catch(err=>{
+        console.error('释放音效文件 %s 失败: %o', $(`#path${num}`).val(), err)
+      })
+    } 
+  });
+
+  $(`#setVolumeOfEffect${i}`).click(function(event){
+    var num = event.target.id.match(/\d/)[0]
+    console.info('音效文件num: %s 音量: %s', $(`#soundId${num}`).val(), $(`#volume${num}`).val())
+    if (rtc.localStream) {
+      rtc.localStream.setVolumeOfEffect(Number($(`#soundId${num}`).val()), Number($(`#volume${num}`).val()))
+      .then(res=>{
+        console.log('设置音效文件音量成功: ', $(`#path${num}`).val())
+      }).catch(err=>{
+        console.error('设置音效文件音量 %s 失败: %o', $(`#path${num}`).val(), err)
+      })
+    } 
+  });
+}
+
+$('#setEffectsVolume').click(function(){
+  console.info('setEffectsVolume:  ', $(`#volumeAll`).val())
+  if (rtc.localStream) {
+    rtc.localStream.setEffectsVolume(Number($('#volumeAll').val()))
+  } 
+});
+
+$('#getEffectsVolume').click(function(){
+  console.info('getEffectsVolume')
+  if (rtc.localStream) {
+    const volumes = rtc.localStream.getEffectsVolume()
+    console.log('volumes: ', volumes)
+    volumes.forEach(item=>{
+      addLog(`soundId: ${item.soundId}, volume: ${item.volume}`)
+    })
+  } 
+});
+
+$('#stopAllEffects').click(function(){
+ console.info('stopAllEffects')
+  if (rtc.localStream) {
+    rtc.localStream.stopAllEffects()
+    .then(res=>{
+      console.log('stopAllEffects成功')
+    }).catch(err=>{
+      console.error('stopAllEffects失败: %o', err)
+    })
+  } 
+});
+
+$('#pauseAllEffects').click(function(){
+ console.info('pauseAllEffects')
+  if (rtc.localStream) {
+    rtc.localStream.pauseAllEffects()
+    .then(res=>{
+      console.log('pauseAllEffects成功')
+    }).catch(err=>{
+      console.error('pauseAllEffects失败: %o', err)
+    })
+  } 
+});
+
+$('#resumeAllEffects').click(function(){
+ console.info('resumeAllEffects')
+  if (rtc.localStream) {
+    rtc.localStream.resumeAllEffects()
+    .then(res=>{
+      console.log('resumeAllEffects成功')
+    }).catch(err=>{
+      console.error('resumeAllEffects失败: %o', err)
+    })
+  } 
+});
+ 
+
+/**
+ * ----------------------------------------
+ *              伴音相关
+ * ----------------------------------------
+ */
 
 $('#audioFilePath').val('auido/大头儿子小头爸爸.mp3') //'auido/nico - love mail.mp3' 'auido/大头儿子小头爸爸.mp3'
 const progress = document.querySelector('#auidoMixing progress');

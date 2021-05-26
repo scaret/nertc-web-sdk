@@ -516,20 +516,6 @@ class Safari12 extends HandlerInterface_1.HandlerInterface {
         return { dataChannel, sctpStreamParameters };
     }
 
-    async prepareMid(kind, remoteUid) {
-        logger.debug('prepareMid() [kind:%s, remoteUid:%s]', kind, remoteUid);
-        let mid = -1
-        for (const transceiver of this._mapMidTransceiver.values()) {
-            const mediaType = transceiver.receiver.track && transceiver.receiver.track.kind || kind
-            logger.debug('prepareMid() transceiver M行信息 [mid: %s, mediaType: %s, isUseless: %s]', transceiver.mid, mediaType, transceiver.isUseless)
-            if (transceiver.isUseless && mediaType === kind) {
-                mid = transceiver.mid;
-                break;
-            }
-        }
-        return { mid };
-    }
-
     async recoverTransceiver(remoteUid, mid, kind) {
         logger.debug('recoverTransceiver() [kind:%s, remoteUid:%s, mid: %s]', kind, remoteUid, mid);
         const transceiver = this._mapMidTransceiver.get(mid);
@@ -569,26 +555,32 @@ class Safari12 extends HandlerInterface_1.HandlerInterface {
             }
         }
 
-        if (mid === -1) {
-            logger.debug('prepareLocalSdp() 添加一个M行')
-            this._pc.addTransceiver(kind, { direction: "recvonly" });
-        } 
-        
-        let offer = await this._pc.createOffer();
-        if (offer.sdp.indexOf(`a=ice-ufrag:${this._appDate.cid}#${this._appDate.uid}#`) < 0) {
-            offer.sdp = offer.sdp.replace(/a=ice-ufrag:([0-9a-zA-Z=+-_\/\\\\]+)/g, `a=ice-ufrag:${this._appDate.cid}#${this._appDate.uid}#recv`)
-            offer.sdp = offer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`)
+        let offer = this._pc.localDescription;
+
+        if (!offer /*|| !offer.sdp || !offer.sdp.includes(`m=${kind}`)*/) {
+            if (mid === -1) {
+                logger.debug('prepareLocalSdp() 添加一个M行')
+                this._pc.addTransceiver(kind, { direction: "recvonly" });
+                mid = 0
+            } 
+            offer = await this._pc.createOffer();
+            if (offer.sdp.indexOf(`a=ice-ufrag:${this._appDate.cid}#${this._appDate.uid}#`) < 0) {
+                offer.sdp = offer.sdp.replace(/a=ice-ufrag:([0-9a-zA-Z=+-_\/\\\\]+)/g, `a=ice-ufrag:${this._appDate.cid}#${this._appDate.uid}#recv`)
+                offer.sdp = offer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`)
+            }
         }
+
         const localSdpObject = sdpTransform.parse(offer.sdp);
         let dtlsParameters = undefined;
         if (!this._transportReady)
             dtlsParameters = await this._setupTransport({ localDtlsRole: 'server', localSdpObject });
-        const rtpCapabilities = sdpCommonUtils.extractRtpCapabilities({ sdpObject: localSdpObject });
+        const rtpCapabilities = null //sdpCommonUtils.extractRtpCapabilities({ sdpObject: localSdpObject });
 
         if (mid === -1) {
-            mid = localSdpObject.media.length - 1
+            //mid = localSdpObject.media.length - 1
+            mid = this._pc.getTransceivers().length
         } 
-        return { dtlsParameters, rtpCapabilities, offer, mid };
+        return { dtlsParameters, rtpCapabilities, offer, mid, iceUfragReg: '' };
     }
 
 

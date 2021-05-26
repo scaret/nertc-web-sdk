@@ -13,7 +13,7 @@
 import { RtcSupport } from '../util/rtcUtil/rtcSupport'
 import { AuidoMixingState } from '../constant/state'
 import {
-  AdapterRef, AudioMixingOptions,
+  AdapterRef, AudioMixingOptions,soundsConf,
   Logger,
   WebAudioOptions,
 
@@ -559,6 +559,81 @@ class WebAudio{
   */
   getAudioMixingTotalTime() {
     return {totalTime: this.mixAudioConf.totalTime}
+  }
+
+
+
+  /**   音效     */
+
+  createAudioBufferSource (buffer: AudioBuffer) {
+    if (!this.context || !this.destination || !this.gainFilter){
+      this.logger.error("initMonitor:参数不够");
+      return {}
+    }
+    const sourceNode =  this.context.createBufferSource()
+    sourceNode.buffer = buffer
+    const gainNode = this.context.createGain()
+    sourceNode.connect(gainNode)
+    const result = {sourceNode, gainNode}
+    return result
+  }
+
+
+  startAudioEffectMix (options:soundsConf) {
+    if (!this.context || !this.destination || !this.gainFilter){
+      this.logger.error("initMonitor:参数不够");
+      return Promise.reject("initMonitor:参数不够");
+    }
+    const {
+      sourceNode,
+      gainNode,
+      playOverTime,
+      playStartTime,
+      volume,
+      cycle
+    } = options
+
+    if (!gainNode || !sourceNode) {
+      return 
+    }
+    this.logger.log('startAudioEffectMix: ', options)
+    gainNode.connect(this.destination)
+    if (this.musicDestination){
+      gainNode.connect(this.musicDestination)
+    }
+    gainNode.gain.value = volume / 100
+
+    if (cycle > 1) {
+      sourceNode.loop = true
+      sourceNode.start(0, playStartTime, playOverTime)
+    } else {
+      sourceNode.loop = false
+      sourceNode.start(0, playStartTime)
+    } 
+
+    this.mixAudioConf.state = AuidoMixingState.PLAYED
+    this.mixAudioConf.startTime = Date.now()
+  }
+
+
+  stopAudioEffectMix (options:soundsConf) {
+    const {
+      sourceNode,
+      gainNode,
+      playOverTime,
+      playStartTime,
+      volume,
+      cycle
+    } = options
+    if (!gainNode || !sourceNode){
+      this.logger.error("stopAudioEffectMix: 参数不够");
+      return Promise.reject("stopAudioEffectMix: 参数不够");
+    }
+    this.logger.log('stopAudioEffectMix: ', options)
+    sourceNode.onended = null
+    sourceNode.disconnect(0)
+    gainNode.disconnect(0)
+    sourceNode.stop()
   }
 
   off() {

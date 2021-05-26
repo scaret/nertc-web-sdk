@@ -673,7 +673,8 @@ class Mediasoup extends EventEmitter {
     }*/
 
     const remoteStream = this.adapterRef.remoteStreamMap[uid]
-    if (!remoteStream) {
+    //@ts-ignore
+    if (!remoteStream || !remoteStream.pubStatus[mediaTypeShort][mediaTypeShort] || !remoteStream.pubStatus[mediaTypeShort].producerId) {
       //this._eventQueue = this._eventQueue.filter((item)=>{item.uid != uid })
       return this.checkConsumerList(info)
     }
@@ -717,7 +718,7 @@ class Mediasoup extends EventEmitter {
       this.adapterRef.logger.error('createConsumer：Waiting for Transport Ready');
       await waitForEvent(this, 'transportReady', 5000);
     }
-    if (!this._recvTransport){
+    if (!this._recvTransport) {
       info.resolve(null);
       throw new Error('NO_RECV_TRANSPORT');
     }
@@ -727,11 +728,13 @@ class Mediasoup extends EventEmitter {
     if(!this.adapterRef || this.adapterRef.connectState.curState == 'DISCONNECTING' || this.adapterRef.connectState.curState == 'DISCONNECTED') return
     this.adapterRef.logger.log('获取本地sdp，mid = %o', prepareRes.mid);
     let { rtpCapabilities, offer, iceUfragReg, } = prepareRes;
-    let mid:number|undefined = prepareRes.mid;
+    let mid:number|string|undefined = prepareRes.mid;
     const localDtlsParameters = prepareRes.dtlsParameters;
 
     if (mid < 0) {
       mid = undefined
+    } else {
+      mid = `${mid}`
     }
     /*const iceUfragReg = offer.sdp.match(/a=ice-ufrag:([0-9a-zA-Z=#+-_\/\\\\]+)/)
     if (!iceUfragReg){
@@ -765,18 +768,30 @@ class Mediasoup extends EventEmitter {
     }
     const consumeRes = await this.adapterRef._signalling._protoo.request('Consume', data);
     let { transportId, iceParameters, iceCandidates, dtlsParameters, probeSSrc, rtpParameters, producerId, consumerId, code, errMsg } = consumeRes;
-    this.adapterRef.logger.log(`consume反馈结果: code: ${code} uid: ${uid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
+    this.adapterRef.logger.log(`consume反馈结果: code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
     try {
       const peerId = consumeRes.uid
       let isFake = false
 
       if (code !== 200 || !this.adapterRef.remoteStreamMap[uid]) {
+        console.warn('remoteStream.pubStatus: ', remoteStream.pubStatus)
+        
         //@ts-ignore
         if (!remoteStream[kind] || !remoteStream.pubStatus[kind][kind] || !remoteStream.pubStatus[kind].producerId) {
           this.adapterRef.logger.log(`${uid} 的 ${kind} 的媒体已经停止发布了，直接返回`)
           await this._recvTransport.recoverLocalSdp(uid, mid, kind)
           //return this.checkConsumerList(info)
         }
+        await this._recvTransport.recoverLocalSdp(uid, mid, kind)
+        this.adapterRef.logger.warn('订阅 %s 的 %s 媒体失败, errcode: %s, reason: %s ，做容错处理: 重新建立下行连接', uid, kind, code, errMsg)
+        if (this._recvTransport) {
+          await this.closeTransport(this._recvTransport);
+        }
+        this._recvTransport = null
+        this.resetConsumeRequestStatus()
+        this.adapterRef.instance.reBuildRecvTransport()
+        return
+
         return this.checkConsumerList(info)
         /*this.adapterRef.logger.warn('订阅 %s 的 %s 媒体失败, errcode: %s, reason: %s ，做容错处理: 重新建立下行连接', uid, kind, code, errMsg)
         if (this._recvTransport) {

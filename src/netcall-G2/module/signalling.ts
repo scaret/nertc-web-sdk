@@ -153,6 +153,7 @@ class Signalling extends EventEmitter {
     this.adapterRef.channelInfo._protooUrl = url
     //let wssurl = this.adapterRef.channelInfo._protooUrl.split('=')[1]
     url = `wss://${url}&cid=${this.adapterRef.channelInfo.cid}&uid=${this.adapterRef.channelInfo.uid}`
+    //url = `wss://${url}&cid=${'NaN'}&uid=${this.adapterRef.channelInfo.uid}`
     this.adapterRef.logger.log('连接的url: ', url)
     const protooTransport = new protooClient.WebSocketTransport(url, {
       retry: {
@@ -529,15 +530,16 @@ class Signalling extends EventEmitter {
   }
 
   _handleFailed () {
-    this.adapterRef.logger.log('Signalling:_handleFailed <- ')
+    this.adapterRef.logger.log('Signalling:_handleFailed')
   }
 
   _handleClose () {
-    this.adapterRef.logger.log('Signalling:_handleClose <- ', event)
+    
   }
   
   _handleDisconnected () {
-    this.adapterRef.logger.log('Signalling:_handleDisconnected <- ', event)
+    this.adapterRef.logger.log('Signalling:_handleDisconnected')
+    this.adapterRef.logger.log('Signalling:_handleClose')
     this.adapterRef.channelStatus = 'connectioning'
     this.adapterRef.instance.apiEventReport('setDisconnect', {
       reason: '2' //ws中断
@@ -585,178 +587,187 @@ class Signalling extends EventEmitter {
     if (!this._protoo){
       throw new Error('No this._proto');
     }
-    const response = await this._protoo.request('Join', {
-      requestId: requestData.requestId,
-      externData: requestData.externData
-    }) as SignalJoinRes;
-    this.adapterRef.logger.log('Signalling:加入房间 ack ->  ', response)
-    if (response.code != 200) {
-      this.adapterRef.logger.error(
-        'Signalling: 加入房间失败, reason = %s',
-        response.errMsg
-      )
-      this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
-      this.adapterRef.connectState.curState = 'DISCONNECTED'
-      this.adapterRef.channelStatus = 'init'
-      this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
 
-      //上报login事件
-      const currentTime = Date.now()
-      const webrtc2Param = this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2
-      this.adapterRef.instance.apiEventReport('setLogin', {
-        a_record: this.adapterRef.channelInfo.sessionConfig.recordAudio,
-        v_record: this.adapterRef.channelInfo.sessionConfig.recordVideo,
-        record_type: this.adapterRef.channelInfo.sessionConfig.recordType,
-        host_speaker: this.adapterRef.channelInfo.sessionConfig.isHostSpeaker,
-        result: response.code,
-        server_ip: this.adapterRef.channelInfo._protooUrl,
-        signal_time_elapsed: webrtc2Param.startWssTime - webrtc2Param.startJoinTime,
-        time_elapsed: currentTime - webrtc2Param.startJoinTime
-      })
-
-      //重连时的login失败，执行else的内容
-      if (this._reject && this.adapterRef.channelStatus !== 'connectioning') {
-        this.adapterRef.logger.error('加入房间失败, 反馈通知')
+    try {
+      const response = await this._protoo.request('Join', {
+        requestId: requestData.requestId,
+        externData: requestData.externData
+      }) as SignalJoinRes;
+      this.adapterRef.logger.log('Signalling:加入房间 ack ->  ', response)
+      if (response.code != 200) {
+        this.adapterRef.logger.error(
+          'Signalling: 加入房间失败, reason = %s',
+          response.errMsg
+        )
         const errMsg = response.externData ? response.externData.errMsg : response.errMsg
-        this._reject(errMsg)
-        this._reject = null
-        if (this.keepAliveTimer) {
-          clearInterval(this.keepAliveTimer)
-          this.keepAliveTimer = null
+        this._joinFailed(response.code, errMsg)
+        return
+      }
+      if (this._reconnectionTimer) {
+        clearTimeout(this._reconnectionTimer)
+        this._reconnectionTimer = null
+      }
+      this.adapterRef.logger.log('Signalling:加入房间成功')
+      this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
+      this.adapterRef.connectState.curState = 'CONNECTED'
+      this.adapterRef.channelStatus == 'join'
+      
+      if (this.adapterRef.channelStatus === 'connectioning') {
+        this.adapterRef.logger.log('重连成功，清除之前的媒体的通道')
+        this.adapterRef.instance.apiEventReport('setRelogin', {
+          a_record: this.adapterRef.channelInfo.sessionConfig.recordAudio,
+          v_record: this.adapterRef.channelInfo.sessionConfig.recordVideo,
+          record_type: this.adapterRef.channelInfo.sessionConfig.recordType,
+          host_speaker: this.adapterRef.channelInfo.sessionConfig.isHostSpeaker,
+          result: 0,
+          reason: 1,
+          server_ip: this.adapterRef.channelInfo._protooUrl
+        })
+
+        this.adapterRef.instance.resetChannel()
+        if (!this.adapterRef._mediasoup){
+          throw new Error('No this.adapterRef._mediasoup');
         }
-        this.adapterRef.channelStatus = 'leave'
-        this.adapterRef.instance.stopSession()
+        this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities;
+        this.adapterRef.mediaCapability.parseRoom(response.externData.roomCapability);
+        this.adapterRef.instance.emit('mediaCapabilityChange');
+        await this.adapterRef._mediasoup.init()
+        if (this.adapterRef.localStream){
+          this.adapterRef.logger.log('重连成功，重新publish本端流')
+          this.adapterRef.instance.publish(this.adapterRef.localStream)
+        }else{
+          this.adapterRef.logger.log('重连成功')
+        }
       } else {
-        this.adapterRef.logger.error('网络重连时，加入房间失败，主动离开')
-        this.adapterRef.instance.emit('error', 'RELOGIN_ERROR')
-        this.adapterRef.instance.leave()
-      }
-      return
-    }
-
-    if (this._reconnectionTimer) {
-      clearTimeout(this._reconnectionTimer)
-      this._reconnectionTimer = null
-    }
-    this.adapterRef.logger.log('Signalling:加入房间成功')
-    this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
-    this.adapterRef.connectState.curState = 'CONNECTED'
-    this.adapterRef.channelStatus == 'join'
-    
-    if (this.adapterRef.channelStatus === 'connectioning') {
-      this.adapterRef.logger.log('重连成功，清除之前的媒体的通道')
-      this.adapterRef.instance.apiEventReport('setRelogin', {
-        a_record: this.adapterRef.channelInfo.sessionConfig.recordAudio,
-        v_record: this.adapterRef.channelInfo.sessionConfig.recordVideo,
-        record_type: this.adapterRef.channelInfo.sessionConfig.recordType,
-        host_speaker: this.adapterRef.channelInfo.sessionConfig.isHostSpeaker,
-        result: 0,
-        reason: 1,
-        server_ip: this.adapterRef.channelInfo._protooUrl
-      })
-
-      this.adapterRef.instance.resetChannel()
-      if (!this.adapterRef._mediasoup){
-        throw new Error('No this.adapterRef._mediasoup');
-      }
-      this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities;
-      this.adapterRef.mediaCapability.parseRoom(response.externData.roomCapability);
-      this.adapterRef.instance.emit('mediaCapabilityChange');
-      await this.adapterRef._mediasoup.init()
-      if (this.adapterRef.localStream){
-        this.adapterRef.logger.log('重连成功，重新publish本端流')
-        this.adapterRef.instance.publish(this.adapterRef.localStream)
-      }else{
-        this.adapterRef.logger.log('重连成功')
-      }
-    } else {
-      const webrtc2Param = this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2
-      const currentTime = Date.now()
-      this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.joinedSuccessedTime = currentTime
-      this.adapterRef.instance.apiEventReport('setLogin', {
-        a_record: this.adapterRef.channelInfo.sessionConfig.recordAudio,
-        v_record: this.adapterRef.channelInfo.sessionConfig.recordVideo,
-        record_type: this.adapterRef.channelInfo.sessionConfig.recordType,
-        host_speaker: this.adapterRef.channelInfo.sessionConfig.isHostSpeaker,
-        result: 0,
-        server_ip: this.adapterRef.channelInfo._protooUrl,
-        signal_time_elapsed: webrtc2Param.startWssTime - webrtc2Param.startJoinTime,
-        time_elapsed: currentTime - webrtc2Param.startJoinTime
-      })
-      if (!this.adapterRef._mediasoup){
-        throw new Error('No this.adapterRef._mediasoup');
-      }
-      this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities;
-      this.adapterRef.mediaCapability.parseRoom(response.externData.roomCapability);
-      this.adapterRef.instance.emit('mediaCapabilityChange');
-      await this.adapterRef._mediasoup.init()
-    }
-        
-    this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
-    this.adapterRef.logger.log('加入房间成功, 查看房间其他人的发布信息: ', response.externData.userList)
-    if (response.externData !== undefined && response.externData.userList && response.externData.userList.length) {
-      for (const peer of response.externData.userList) {
-        const uid = peer.uid
-        if(typeof peer.uid !== 'number' || isNaN(peer.uid)){
-          throw new Error('对端uid 非 number类型')
+        const webrtc2Param = this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2
+        const currentTime = Date.now()
+        this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.joinedSuccessedTime = currentTime
+        this.adapterRef.instance.apiEventReport('setLogin', {
+          a_record: this.adapterRef.channelInfo.sessionConfig.recordAudio,
+          v_record: this.adapterRef.channelInfo.sessionConfig.recordVideo,
+          record_type: this.adapterRef.channelInfo.sessionConfig.recordType,
+          host_speaker: this.adapterRef.channelInfo.sessionConfig.isHostSpeaker,
+          result: 0,
+          server_ip: this.adapterRef.channelInfo._protooUrl,
+          signal_time_elapsed: webrtc2Param.startWssTime - webrtc2Param.startJoinTime,
+          time_elapsed: currentTime - webrtc2Param.startJoinTime
+        })
+        if (!this.adapterRef._mediasoup){
+          throw new Error('No this.adapterRef._mediasoup');
         }
-        if(peer.uid > Number.MAX_SAFE_INTEGER){
-          throw new Error('对端uid 超出 number精度')
-        }
-        let remoteStream = this.adapterRef.remoteStreamMap[uid]
-        if (!remoteStream) {
-          remoteStream = new Stream({
-            isRemote: true,
-            uid: uid,
-            audio: false,
-            video: false,
-            screen: false,
-            client: this.adapterRef.instance,
-          })
-          this.adapterRef.remoteStreamMap[uid] = remoteStream
-          this.adapterRef.memberMap[uid] = "" + uid;
-          this.adapterRef.instance.emit('peer-online', {uid})
-        }
-        if (peer.producerInfoList) {
-          for (const peoducerInfo of peer.producerInfoList) {
-            const { mediaType, producerId, mute, simulcastEnable } = peoducerInfo;
-            let mediaTypeShort: MediaTypeShort;
-            switch (mediaType){
-              case "video":
-                mediaTypeShort = "video";
-                break;
-              case "screenShare":
-                mediaTypeShort = "screen";
-                break;
-              case "audio":
-                mediaTypeShort = "audio";
-                break;
-              default:
-                throw new Error(`Unrecognized mediaType ${mediaType}`);
-            }
-            remoteStream[mediaTypeShort] = true
-            //@ts-ignore
-            remoteStream['pubStatus'][mediaTypeShort][mediaTypeShort] = true
-            remoteStream['pubStatus'][mediaTypeShort]['producerId'] = producerId
-            remoteStream['pubStatus'][mediaTypeShort]['mute'] = mute
-            remoteStream['pubStatus'][mediaTypeShort]['simulcastEnable'] = simulcastEnable
-            if (mute) {
-              this.adapterRef.instance.emit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
-            }
-            this.adapterRef.logger.log('通知房间成员发布信息: ', JSON.stringify(remoteStream.pubStatus, null, ''))
-            if (remoteStream.pubStatus.audio.audio || remoteStream.pubStatus.video.video || remoteStream.pubStatus.screen.screen) {
-              this.adapterRef.instance.emit('stream-added', {stream: remoteStream, 'mediaType': mediaTypeShort})
-            }
+        this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities;
+        this.adapterRef.mediaCapability.parseRoom(response.externData.roomCapability);
+        this.adapterRef.instance.emit('mediaCapabilityChange');
+        await this.adapterRef._mediasoup.init()
+      }
+          
+      this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
+      this.adapterRef.logger.log('加入房间成功, 查看房间其他人的发布信息: ', response.externData.userList)
+      if (response.externData !== undefined && response.externData.userList && response.externData.userList.length) {
+        for (const peer of response.externData.userList) {
+          const uid = peer.uid
+          if(typeof peer.uid !== 'number' || isNaN(peer.uid)){
+            throw new Error('对端uid 非 number类型')
           }
-        } 
+          if(peer.uid > Number.MAX_SAFE_INTEGER){
+            throw new Error('对端uid 超出 number精度')
+          }
+          let remoteStream = this.adapterRef.remoteStreamMap[uid]
+          if (!remoteStream) {
+            remoteStream = new Stream({
+              isRemote: true,
+              uid: uid,
+              audio: false,
+              video: false,
+              screen: false,
+              client: this.adapterRef.instance,
+            })
+            this.adapterRef.remoteStreamMap[uid] = remoteStream
+            this.adapterRef.memberMap[uid] = "" + uid;
+            this.adapterRef.instance.emit('peer-online', {uid})
+          }
+          if (peer.producerInfoList) {
+            for (const peoducerInfo of peer.producerInfoList) {
+              const { mediaType, producerId, mute, simulcastEnable } = peoducerInfo;
+              let mediaTypeShort: MediaTypeShort;
+              switch (mediaType){
+                case "video":
+                  mediaTypeShort = "video";
+                  break;
+                case "screenShare":
+                  mediaTypeShort = "screen";
+                  break;
+                case "audio":
+                  mediaTypeShort = "audio";
+                  break;
+                default:
+                  throw new Error(`Unrecognized mediaType ${mediaType}`);
+              }
+              remoteStream[mediaTypeShort] = true
+              //@ts-ignore
+              remoteStream['pubStatus'][mediaTypeShort][mediaTypeShort] = true
+              remoteStream['pubStatus'][mediaTypeShort]['producerId'] = producerId
+              remoteStream['pubStatus'][mediaTypeShort]['mute'] = mute
+              remoteStream['pubStatus'][mediaTypeShort]['simulcastEnable'] = simulcastEnable
+              if (mute) {
+                this.adapterRef.instance.emit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
+              }
+              this.adapterRef.logger.log('通知房间成员发布信息: ', JSON.stringify(remoteStream.pubStatus, null, ''))
+              if (remoteStream.pubStatus.audio.audio || remoteStream.pubStatus.video.video || remoteStream.pubStatus.screen.screen) {
+                this.adapterRef.instance.emit('stream-added', {stream: remoteStream, 'mediaType': mediaTypeShort})
+              }
+            }
+          } 
+        }
       }
+      if (this._resolve) {
+        this.adapterRef.logger.log('加入房间成功, 反馈通知')
+        this._resolve(response)
+        this._resolve = null
+      }
+      this.doSendKeepAliveTask()
+    } catch (e) {
+      this.adapterRef.logger.error('join() 登录失败, ' + e.name + ': ' + e.message)
+      this._joinFailed(-1, 'LOGIN_ERROR')
     }
-    if (this._resolve) {
-      this.adapterRef.logger.log('加入房间成功, 反馈通知')
-      this._resolve(response)
-      this._resolve = null
+  }
+
+  _joinFailed (reasonCode:string|undefined|number, errMsg: string|undefined) {
+    this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
+    this.adapterRef.connectState.curState = 'DISCONNECTED'
+    this.adapterRef.channelStatus = 'init'
+    this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
+
+    //上报login事件
+    const currentTime = Date.now()
+    const webrtc2Param = this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2
+    this.adapterRef.instance.apiEventReport('setLogin', {
+      a_record: this.adapterRef.channelInfo.sessionConfig.recordAudio,
+      v_record: this.adapterRef.channelInfo.sessionConfig.recordVideo,
+      record_type: this.adapterRef.channelInfo.sessionConfig.recordType,
+      host_speaker: this.adapterRef.channelInfo.sessionConfig.isHostSpeaker,
+      result: reasonCode,
+      server_ip: this.adapterRef.channelInfo._protooUrl,
+      signal_time_elapsed: webrtc2Param.startWssTime - webrtc2Param.startJoinTime,
+      time_elapsed: currentTime - webrtc2Param.startJoinTime
+    })
+
+    //重连时的login失败，执行else的内容
+    if (this._reject && this.adapterRef.channelStatus !== 'connectioning') {
+      this.adapterRef.logger.error('加入房间失败, 反馈通知')
+      this._reject(errMsg)
+      this._reject = null
+      if (this.keepAliveTimer) {
+        clearInterval(this.keepAliveTimer)
+        this.keepAliveTimer = null
+      }
+      this.adapterRef.channelStatus = 'leave'
+      this.adapterRef.instance.stopSession()
+    } else {
+      this.adapterRef.logger.error('网络重连时，加入房间失败，主动离开')
+      this.adapterRef.instance.emit('error', 'RELOGIN_ERROR')
+      this.adapterRef.instance.leave()
     }
-    this.doSendKeepAliveTask()
   }
 
   doSendKeepAliveTask () {

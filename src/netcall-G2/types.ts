@@ -292,6 +292,7 @@ export interface DownAudioItem{
   //from Chrome Mac 87.0.4280.88
   alr: number;
   audioOutputLevel: string;
+  audioLevel: string;
   bitsReceivedPerSecond: number;
   bytesReceived: string;
   freezeTime: number;
@@ -541,7 +542,34 @@ export interface MixAudioConf{
   playStartTime?:number;
   volume?:number;
   auidoMixingEnd?:(()=>void)|null;
+  sounds: {
+    [name:number]: soundsConf
+  };
 }
+
+
+export interface soundsConf{
+  soundId: number;
+  state: string, // STARTING,PLAYED,PAUSED,STOPED
+  sourceNode:AudioBufferSourceNode|null;
+  gainNode: GainNode|null;
+  filePath: string;
+  cycle: number;
+  playStartTime: number;
+  playOverTime: number;
+  pauseTime: number,
+  startTime: number,
+  totalTime: number,
+  volume: number;
+  options?: {}|null;
+}
+
+export interface AudioEffectOptions{
+  cycle?: number;
+  soundId: number;
+  filePath: string;
+}
+
 
 export interface MediaHelperOptions{
   sdkRef: SDKRef;
@@ -556,6 +584,7 @@ export interface GetStreamConstraints{
   videoDeviceId?: string;
   screen?: boolean;
   sourceId?: string;
+  facingMode?: string;
   audioSource?: MediaStreamTrack|null;
   videoSource?: MediaStreamTrack|null;
   deviceId?: string;
@@ -691,6 +720,7 @@ export interface StreamOptions{
   microphoneId?: '';
   cameraId?: '';
   sourceId?: '';
+  facingMode?: '';
   video: boolean;
   screen: boolean;
   screenAudio?: boolean;
