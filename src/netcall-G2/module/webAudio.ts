@@ -403,11 +403,7 @@ class WebAudio{
       this.mixAudioConf.gainFilter.connect(this.musicDestination)
     }
     if (options.replace) {
-      if (this.script) {
-        this.script.disconnect(0)
-      } else {
-        this.gainFilter.disconnect(0)
-      }
+      this.gainFilter.disconnect(0)
       this.instant = 0.0
     }
     this.mixAudioConf.audioSource.onended = event => {
