@@ -134,7 +134,7 @@ class Peer extends EnhancedEventEmitter
 
 		return new Promise((pResolve, pReject) =>
 		{
-			const timeout = 1500 * (15 + (0.1 * this._sents.size));
+			const timeout = 15000 * (15 + (0.1 * this._sents.size));
 			const sent =
 			{
 				id      : request.id,
@@ -321,7 +321,6 @@ class Peer extends EnhancedEventEmitter
 	_handleResponse(response)
 	{
 		const sent = this._sents.get(response.id);
-
 		if (!sent)
 		{
 			logger.error(

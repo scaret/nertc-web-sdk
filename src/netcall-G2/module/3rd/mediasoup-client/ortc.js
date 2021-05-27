@@ -495,6 +495,10 @@ function getRecvRtpCapabilities(extendedRtpCapabilities) {
         headerExtensions: []
     };
     for (const extendedCodec of extendedRtpCapabilities.codecs) {
+        /*if (extendedCodec.mimeType == 'video/H264') {
+            console.error('H264 不要')
+            continue
+        }*/
         const codec = {
             mimeType: extendedCodec.mimeType,
             kind: extendedCodec.kind,

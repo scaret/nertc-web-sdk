@@ -42,14 +42,6 @@ class Mediasoup extends EventEmitter {
     video: {ssrc: number, rtx: {ssrc: number}}|null,
     screen: {ssrc: number, rtx: {ssrc: number}}|null,
   }
-  private _tempRecv :{
-    audioRtpParameters: any,
-    videoRtpParameters: any,
-    iceCandidates: any,
-    dtlsParameters: any,
-    iceParameters: any,
-    probeSSrc: number
-  };
   private _probeSSrc?: string;
   public unsupportedProducers: string[];
   constructor (options:MediasoupManagerOptions) {
@@ -85,15 +77,6 @@ class Mediasoup extends EventEmitter {
       screen: null,
     }
     this.unsupportedProducers = [];
-    this._tempRecv = {
-      audioRtpParameters: null,
-      videoRtpParameters: null,
-      iceCandidates: null,
-      dtlsParameters: null,
-      iceParameters: null,
-      probeSSrc: 0
-    }
-    
     this._reset()
     // 设置对象引用
     this.adapterRef = options.adapterRef
@@ -140,14 +123,6 @@ class Mediasoup extends EventEmitter {
     //this.adapterRef = null
     //this.sdkRef = null
     this.resetConsumeRequestStatus();
-    this._tempRecv = {
-      audioRtpParameters: null,
-      videoRtpParameters: null,
-      iceCandidates: null,
-      dtlsParameters: null,
-      iceParameters: null,
-      probeSSrc: 0
-    }
   }
 
   async init() {
@@ -638,7 +613,6 @@ class Mediasoup extends EventEmitter {
   removeUselessConsumeRequest( options: {producerId?: string, uid?: number}) {
     const {producerId, uid} = options
     if(!producerId || !uid) return
-    console.log('options: ', options)
     this.adapterRef.logger.log(`removeUselessConsumeRequest：producerId ${producerId}, uid ${uid}`)
     for (let i = 0; i < this._eventQueue.length; i++){
       const info:ProduceConsumeInfo = this._eventQueue[i];
@@ -771,7 +745,6 @@ class Mediasoup extends EventEmitter {
     this.adapterRef.logger.log(`consume反馈结果: code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
     try {
       const peerId = consumeRes.uid
-      let isFake = false
 
       if (code !== 200 || !this.adapterRef.remoteStreamMap[uid]) {
         console.warn('remoteStream.pubStatus: ', remoteStream.pubStatus)
@@ -779,32 +752,22 @@ class Mediasoup extends EventEmitter {
         //@ts-ignore
         if (!remoteStream[kind] || !remoteStream.pubStatus[kind][kind] || !remoteStream.pubStatus[kind].producerId) {
           this.adapterRef.logger.log(`${uid} 的 ${kind} 的媒体已经停止发布了，直接返回`)
-          await this._recvTransport.recoverLocalSdp(uid, mid, kind)
-          //return this.checkConsumerList(info)
         }
+        //底层做了M行伪造处理，所以遇到非2oo的回复，不用关心
         await this._recvTransport.recoverLocalSdp(uid, mid, kind)
-        this.adapterRef.logger.warn('订阅 %s 的 %s 媒体失败, errcode: %s, reason: %s ，做容错处理: 重新建立下行连接', uid, kind, code, errMsg)
-        if (this._recvTransport) {
-          await this.closeTransport(this._recvTransport);
-        }
-        this._recvTransport = null
-        this.resetConsumeRequestStatus()
-        this.adapterRef.instance.reBuildRecvTransport()
-        return
-
         return this.checkConsumerList(info)
-        /*this.adapterRef.logger.warn('订阅 %s 的 %s 媒体失败, errcode: %s, reason: %s ，做容错处理: 重新建立下行连接', uid, kind, code, errMsg)
-        if (this._recvTransport) {
-          await this.closeTransport(this._recvTransport);
-        }
-        // if(this.adapterRef.connectState.curState == 'DISCONNECTING' || this.adapterRef.connectState.curState == 'DISCONNECTED'){
-        //   return
-        // }
 
-        if (code === 800) {
+
+        /*if (code === 800) {
           // FIXME：当无法接收一个Producer时，应该回退而不是重建整个下行链路。
           this.adapterRef.logger.error('800错误：无法建立连接。将Producer拉入黑名单：', consumeRes.producerId);
           this.unsupportedProducers.push(consumeRes.producerId);
+        }
+        return*/
+
+        /*this.adapterRef.logger.warn('订阅 %s 的 %s 媒体失败, errcode: %s, reason: %s ，做容错处理: 重新建立下行连接', uid, kind, code, errMsg)
+        if (this._recvTransport) {
+          await this.closeTransport(this._recvTransport);
         }
         this._recvTransport = null
         this.resetConsumeRequestStatus()
@@ -824,12 +787,7 @@ class Mediasoup extends EventEmitter {
       }
       if (iceParameters) {
         this._recvTransportIceParameters = iceParameters
-        this._tempRecv.iceParameters = iceParameters
       } 
-      dtlsParameters ? this._tempRecv.dtlsParameters = dtlsParameters : null
-      iceCandidates ? this._tempRecv.iceCandidates = iceCandidates : null
-      //@ts-ignore
-      rtpParameters ? this._tempRecv[`${mediaTypeShort}RtpParameters`] = rtpParameters : null
       
       let appData = {};
       if(rtpParameters.mid != undefined) {
@@ -848,7 +806,7 @@ class Mediasoup extends EventEmitter {
         iceCandidates,
         dtlsParameters,
         sctpParameters: undefined,
-        probeSSrc: isFake ? 0 : this._probeSSrc
+        probeSSrc: this._probeSSrc
       });
       if(!this._consumers) {
         this._consumers = {}
@@ -882,12 +840,13 @@ class Mediasoup extends EventEmitter {
     } catch (error) {
       this.adapterRef && this.adapterRef.logger.error('"newConsumer" request failed:%o', error.name, error.message);
       this.adapterRef.logger.error('订阅 %s 的 %s 媒体失败，做容错处理: 重新建立下行连接', uid, kind)
-      this.resetConsumeRequestStatus()
+      return
+      /*this.resetConsumeRequestStatus()
       if (this._recvTransport) {
         await this.closeTransport(this._recvTransport);
       }
       this._recvTransport = null
-      this.adapterRef.instance.reBuildRecvTransport()
+      this.adapterRef.instance.reBuildRecvTransport()*/
     }
   }
 

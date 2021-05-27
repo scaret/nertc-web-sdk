@@ -1455,7 +1455,7 @@ $('#playCamera').on('click', () => {
   rtc.localStream.open({
     type: 'video',
     deviceId: $('#camera').val(),
-    facingMode: 'user'//'environment'
+    //facingMode: 'user'//'environment'
   }).then(()=>{
     console.log('打开摄像头 sucess')
     rtc.localStream.play(document.getElementById('local-container'))

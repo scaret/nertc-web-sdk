@@ -303,11 +303,10 @@ class Transport extends EnhancedEventEmitter_1.EnhancedEventEmitter {
             if (!this._recvRtpCapabilities ||
                 !ortc.canSend('audio', this._recvRtpCapabilities) ||
                 !ortc.canSend('video', this._recvRtpCapabilities)) {
-                //let extendedRtpCapabilities = ortc.getExtendedRtpCapabilities(rtpCapabilities, edgeRtpCapabilities);
+                /*let extendedRtpCapabilities = ortc.getExtendedRtpCapabilities(rtpCapabilities, edgeRtpCapabilities);
                 // Generate our receiving RTP capabilities for receiving media.
-                /*this._recvRtpCapabilities =
+                this._recvRtpCapabilities =
                     ortc.getRecvRtpCapabilities(extendedRtpCapabilities);*/
-
                 this._recvRtpCapabilities = ortc.getRecvRtpCapabilities(this._extendedRtpCapabilities);
                 // This may throw.
                 ortc.validateRtpCapabilities(this._recvRtpCapabilities);
@@ -356,7 +355,7 @@ class Transport extends EnhancedEventEmitter_1.EnhancedEventEmitter {
             // if (!canConsume)
             //     throw new errors_1.UnsupportedError('cannot consume this Producer');
             const { localId, rtpReceiver, track } = await this._handler.receive({ iceParameters, iceCandidates, dtlsParameters, sctpParameters,
-                trackId: id, kind, rtpParameters, offer, probeSSrc, remoteUid: appData.remoteUid});
+                trackId: id, kind, rtpParameters, offer, probeSSrc, remoteUid: appData.remoteUid, extendedRtpCapabilities: this._extendedRtpCapabilities});
             const consumer = new Consumer_1.Consumer({
                 id,
                 localId,

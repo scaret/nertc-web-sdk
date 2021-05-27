@@ -109,7 +109,9 @@ class RemoteSdp {
         }
     }
     receive({ mid, kind, offerRtpParameters, streamId, trackId, reuseMid = null }) {
-        logger.debug('receive() [设置远端的mid: %s, kind: %s, reuseMid: %s]', mid, kind, reuseMid);
+        /*logger.debug('receive() [设置远端的mid: %s, kind: %s, reuseMid: %s]', mid, kind, reuseMid);
+        console.log('offerRtpParameters: ', offerRtpParameters)
+        console.log('_midToIndex: ', this._midToIndex)*/
         const idx = this._midToIndex.get(mid);
         let mediaSection;
         if (idx !== undefined)
@@ -213,6 +215,8 @@ class RemoteSdp {
     getSdp() {
         // Increase SDP version.
         this._sdpObject.origin.sessionVersion++;
+        //由于伪造了M行，可能出现M行顺序混乱的问题，这里处理一下
+        this._sdpObject.media.sort(function(a, b){return a.mid - b.mid})
         return sdpTransform.write(this._sdpObject);
     }
     _addMediaSection(newMediaSection) {
