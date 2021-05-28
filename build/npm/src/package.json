@@ -1,0 +1,22 @@
+{
+  "name": "nertc-web-sdk",
+  "version": "勿改。版本号会被脚本覆盖",
+  "description": "NeRTC SDK for web",
+  "main": "NeRTCSDK.min.js",
+  "typings": "types/webrtc2.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/scaret/nertc-npm"
+  },
+  "keywords": [
+    "NeRTC",
+    "Netease",
+    "Webrtc",
+    "Javascript"
+  ],
+  "author": "netease",
+  "bugs": {
+    "url": "https://github.com/scaret/nertc-npm/issues"
+  },
+  "homepage": "https://github.com/scaret/nertc-npm#readme"
+}

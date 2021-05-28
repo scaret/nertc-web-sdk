@@ -6,6 +6,8 @@ import {DeviceInfo} from "./browser";
 /**
  * WebRTC2 是 云信 Web SDK 中所有可调用方法的入口
  */
+export  = WebRTC2
+export  as namespace WebRTC2
 declare namespace WebRTC2 {
   /**
    * 创建客户端，开始通话前调用一次即可
