@@ -564,9 +564,9 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
             logger.debug('recoverTransceiver() transceiver undefined');
         }
 
-        if(this._transportReady) {
+        /*if (this._transportReady) {
             this._transportReady = false
-        }
+        }*/
         return;
     }
 

@@ -1157,7 +1157,7 @@ class MediaHelper extends EventEmitter {
 
     this.webAudio.stopAudioEffectMix(this.mixAudioConf.sounds[soundId])
     this.mixAudioConf.sounds[soundId].state = 'STOPED'
-    delete this.mixAudioConf.sounds[soundId]
+    //delete this.mixAudioConf.sounds[soundId]
   }
 
   async pauseEffect (soundId: number) {

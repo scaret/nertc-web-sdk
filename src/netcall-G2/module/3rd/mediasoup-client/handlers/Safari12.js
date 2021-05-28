@@ -516,6 +516,7 @@ class Safari12 extends HandlerInterface_1.HandlerInterface {
         return { dataChannel, sctpStreamParameters };
     }
 
+    //处理非200的consume response，将isUseless设置为true，因为该M行会被伪造
     async recoverTransceiver(remoteUid, mid, kind) {
         logger.debug('recoverTransceiver() [kind:%s, remoteUid:%s, mid: %s]', kind, remoteUid, mid);
         const transceiver = this._mapMidTransceiver.get(mid);
@@ -523,62 +524,54 @@ class Safari12 extends HandlerInterface_1.HandlerInterface {
             transceiver.isUseless = true
         } else {
             logger.debug('recoverTransceiver() transceiver undefined');
-            const transceivers = this._pc.getReceivers()
-            transceivers.forEach(item => {
-                logger.debug('recoverTransceiver() transceiver undefined');
-            })
         }
-        return;
-    }
 
-    async prepareLocalProperty(kind, remoteUid) {
-        logger.debug('prepareLocalProperty() [kind:%s, remoteUid:%s]', kind, remoteUid);
-       let offer = await this._pc.localDescription;
-        const localSdpObject = sdpTransform.parse(offer.sdp);
-        let dtlsParameters = undefined;
-        if (!this._transportReady)
-            dtlsParameters = await this._setupTransport({ localDtlsRole: 'server', localSdpObject });
-        const rtpCapabilities = sdpCommonUtils.extractRtpCapabilities({ sdpObject: localSdpObject });
-        return { dtlsParameters, rtpCapabilities };
+        /*if (this._transportReady) {
+            this._transportReady = false
+        }*/
+        return;
     }
 
     async prepareLocalSdp(kind, remoteUid) {
         logger.debug('prepareLocalSdp() [kind:%s, remoteUid:%s]', kind, remoteUid);
         let mid = -1
-        for (const transceiver of this._mapMidTransceiver.values()) {
-            const mediaType = transceiver.receiver.track && transceiver.receiver.track.kind || kind
-            logger.debug('prepareLocalSdp() transceiver M行信息 [mid: %s, mediaType: %s, isUseless: %s]', transceiver.mid, mediaType, transceiver.isUseless)
+        for (const key of this._mapMidTransceiver.keys()) {
+            const transceiver = this._mapMidTransceiver.get(key)
+            const mediaType = transceiver.receiver && transceiver.receiver.track && transceiver.receiver.track.kind || kind
+            logger.debug('prepareLocalSdp() transceiver M行信息 [mid: %s, mediaType: %s, isUseless: %s]', transceiver.mid || key, mediaType, transceiver.isUseless)
             if (transceiver.isUseless && mediaType === kind) {
-                mid = transceiver.mid;
+                mid = key - 0;
                 transceiver.isUseless = false
                 break;
             }
         }
 
         let offer = this._pc.localDescription;
-
-        if (!offer /*|| !offer.sdp || !offer.sdp.includes(`m=${kind}`)*/) {
+        let transceiver = null
+        if (true /*!offer || !offer.sdp || !offer.sdp.includes(`m=${kind}`)*/) {
             if (mid === -1) {
                 logger.debug('prepareLocalSdp() 添加一个M行')
-                this._pc.addTransceiver(kind, { direction: "recvonly" });
-                mid = 0
+                transceiver = this._pc.addTransceiver(kind, { direction: "recvonly" });
+                offer = await this._pc.createOffer();
+                if (offer.sdp.indexOf(`a=ice-ufrag:${this._appDate.cid}#${this._appDate.uid}#`) < 0) {
+                    offer.sdp = offer.sdp.replace(/a=ice-ufrag:([0-9a-zA-Z=+-_\/\\\\]+)/g, `a=ice-ufrag:${this._appDate.cid}#${this._appDate.uid}#recv`)
+                    offer.sdp = offer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`)
+                }
+                logger.debug('prepareLocalSdp() | calling pc.setLocalDescription()');
+                await this._pc.setLocalDescription(offer);
             } 
-            offer = await this._pc.createOffer();
-            if (offer.sdp.indexOf(`a=ice-ufrag:${this._appDate.cid}#${this._appDate.uid}#`) < 0) {
-                offer.sdp = offer.sdp.replace(/a=ice-ufrag:([0-9a-zA-Z=+-_\/\\\\]+)/g, `a=ice-ufrag:${this._appDate.cid}#${this._appDate.uid}#recv`)
-                offer.sdp = offer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`)
-            }
+            
         }
 
         const localSdpObject = sdpTransform.parse(offer.sdp);
         let dtlsParameters = undefined;
         if (!this._transportReady)
             dtlsParameters = await this._setupTransport({ localDtlsRole: 'server', localSdpObject });
-        const rtpCapabilities = null //sdpCommonUtils.extractRtpCapabilities({ sdpObject: localSdpObject });
+        const rtpCapabilities = null//sdpCommonUtils.extractRtpCapabilities({ sdpObject: localSdpObject });
 
         if (mid === -1) {
-            //mid = localSdpObject.media.length - 1
-            mid = this._pc.getTransceivers().length
+            mid = localSdpObject.media.length - 1
+            this._mapMidTransceiver.set(`${mid}`, transceiver);
         } 
         return { dtlsParameters, rtpCapabilities, offer, mid, iceUfragReg: '' };
     }
@@ -587,8 +580,6 @@ class Safari12 extends HandlerInterface_1.HandlerInterface {
     async receive({ iceParameters, iceCandidates, dtlsParameters, sctpParameters, trackId, kind, rtpParameters, offer, probeSSrc=-1, remoteUid}) {
         this._assertRecvDirection();
         logger.debug('receive() [trackId: %s, kind: %s, remoteUid: %s]', trackId, kind, remoteUid);
-        await this._pc.setLocalDescription(offer);
-        logger.debug('receive() | calling pc.setLocalDescription()');
         if (!this._remoteSdp) {
             this._remoteSdp = new RemoteSdp_1.RemoteSdp({
                 iceParameters,
@@ -598,11 +589,71 @@ class Safari12 extends HandlerInterface_1.HandlerInterface {
             });
             this._remoteSdp.updateDtlsRole('client');
         }
-        
-        //let localId = String(this._mapMidTransceiver.size);
         let reuseMid = null
         const localId = rtpParameters.mid
-        logger.debug('处理对端的M行 localId: ', localId)
+        logger.debug('处理对端的M行 mid: ', localId)
+        
+
+        const offerMediaSessionLength = this._pc.getTransceivers().length
+        //const answerMediaSessionLength = this._remoteSdp.getNextMediaSectionIdx().idx
+        const answerMediaSessionLength = this._remoteSdp._mediaSections.length + 1  
+        logger.debug(`offerMediaSessionLength: ${offerMediaSessionLength}，answerMediaSessionLength: ${answerMediaSessionLength}`)
+        if (offerMediaSessionLength < answerMediaSessionLength) {
+            /*let mid = -1
+            for (const transceiver of this._mapMidTransceiver.values()) {
+                const mediaType = transceiver.receiver.track && transceiver.receiver.track.kind || kind
+                logger.debug('prepareLocalSdp() transceiver M行信息 [mid: %s, mediaType: %s, isUseless: %s]', transceiver.mid, mediaType, transceiver.isUseless)
+                if (transceiver.isUseless && mediaType === kind) {
+                    mid = transceiver.mid;
+                    transceiver.isUseless = false
+                    break;
+                }
+            }
+
+            if (mid === -1) {
+                logger.debug('prepareLocalSdp() 添加一个M行')
+                this._pc.addTransceiver(kind, { direction: "recvonly" });
+            }
+            offer = await this._pc.createOffer(); */
+        } else if (offerMediaSessionLength > answerMediaSessionLength) {
+            logger.debug('mediaSession 不匹配, 兼容处理')
+            const missMediaSessions = []
+            const localSdpObject = sdpTransform.parse(offer.sdp)
+            localSdpObject.media.forEach(media => {
+                let isExist = false
+                this._remoteSdp._mediaSections.forEach(mediaSession => {
+                    //这里使用隐式转换，因为_remoteSdp的mid格式是string，localSdpObject解析出来是的number类型
+                    if (media.mid == mediaSession.mid) {
+                        isExist = true
+                        return
+                    }
+                })
+                if (!isExist) {
+                    missMediaSessions.push({mid: media.mid, kind: media.type})
+                }
+            })
+
+            logger.debug('receive() 检索出来了缺失的media Session: ', missMediaSessions)
+            missMediaSessions.forEach(item => {
+                this._remoteSdp.receive({
+                    mid: `${item.mid}`, 
+                    kind: item.kind, 
+                    offerRtpParameters: {
+                        codecs: extendedRtpCapabilities.codecs.filter(codec=>{return codec.kind == item.kind}), 
+                        encodings:[{ssrc: 0}], 
+                        headerExtensions:[],
+                        rtcp:{},
+                        mid:`${item.mid}`
+                    }
+                })
+                this._remoteSdp.disableMediaSection(`${item.mid}`)
+            })
+        }
+        if (offer.sdp.indexOf(`a=ice-ufrag:${this._appDate.cid}#${this._appDate.uid}#`) < 0) {
+            offer.sdp = offer.sdp.replace(/a=ice-ufrag:([0-9a-zA-Z=+-_\/\\\\]+)/g, `a=ice-ufrag:${this._appDate.cid}#${this._appDate.uid}#recv`)
+            offer.sdp = offer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`)
+        }
+
         this._remoteSdp.receive({
             mid: rtpParameters.mid,
             kind,
@@ -611,20 +662,17 @@ class Safari12 extends HandlerInterface_1.HandlerInterface {
             trackId,
             reuseMid,
         });
-        if (probeSSrc === 0) {
-            this._remoteSdp.disableMediaSection(localId)
-        }
         const answer = { type: 'answer', sdp: this._remoteSdp.getSdp() };
-        logger.debug('receive() | calling pc.setRemoteDescription() [answer:%o]', answer.sdp);
+        logger.debug('receive() | calling pc.setRemoteDescription() [answer]: ', answer.sdp);
+        if (this._pc.signalingState === 'stable') {
+            await this._pc.setLocalDescription(offer);
+            logger.debug('receive() | calling pc.setLocalDescription()');
+        }
         await this._pc.setRemoteDescription(answer);
         const transceiver = this._pc.getTransceivers()
             .find((t) => t.mid === localId);
         if (!transceiver)
             throw new Error('new RTCRtpTransceiver not found');
-        if (probeSSrc === 0) {
-            logger.debug('伪造的M行是无用的，标记')
-            transceiver.isUseless = true
-        }
         // Store in the map.
         this._mapMidTransceiver.set(localId, transceiver);
         return {
