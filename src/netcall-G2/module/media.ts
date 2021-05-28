@@ -634,9 +634,6 @@ class MediaHelper extends EventEmitter {
   /******************************* 伴音 ********************************/
   startAudioMixing (options:AudioMixingOptions) {
     this.adapterRef.logger.log(`开始伴音: %s`, JSON.stringify(options, null, ' '))
-    if (!this.audioRoutingEnabled){
-      this.enableAudioRouting();
-    }
     Object.assign(this.mixAudioConf, options)
     let reason = null
     if (!this.mixAudioConf.audioFilePath) {
@@ -731,6 +728,9 @@ class MediaHelper extends EventEmitter {
     if (index !== this.mixAudioConf.index) {
       this.adapterRef.logger.log('startMix: 该次伴音已经取消')
       return Promise.resolve()
+    }
+    if (!this.audioRoutingEnabled){
+      this.enableAudioRouting();
     }
     const {
       audioFilePath = '',
