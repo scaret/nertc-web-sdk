@@ -1267,7 +1267,7 @@ class MediaHelper extends EventEmitter {
     let playedTime = (this.mixAudioConf.sounds[soundId].pauseTime - this.mixAudioConf.sounds[soundId].startTime) / 1000 + this.mixAudioConf.sounds[soundId].playStartTime
     this.adapterRef.logger.log('resumeEffect 已经播放的时间: ', playedTime)
     if (playedTime > this.mixAudioConf.sounds[soundId].totalTime) {
-      const = cyclePlayed = Math.floor(playedTime / this.mixAudioConf.sounds[soundId].totalTime)
+      const cyclePlayed = Math.floor(playedTime / this.mixAudioConf.sounds[soundId].totalTime)
       this.adapterRef.logger.log('播发过的圈数 playedCycle: ', cyclePlayed)
       playedTime = playedTime % this.mixAudioConf.sounds[soundId].totalTime
       this.mixAudioConf.sounds[soundId].cycle = this.mixAudioConf.sounds[soundId].cycle - cyclePlayed
