@@ -201,7 +201,6 @@ class WebSocketTransport extends EnhancedEventEmitter
 
 					return;
 				}
-
 				// Emit 'message' event.
 				this.safeEmit('message', message);
 			};

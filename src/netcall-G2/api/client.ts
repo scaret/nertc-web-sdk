@@ -409,6 +409,7 @@ class Client extends Base {
       if (stream.subConf.video) {
         // 应该订阅视频
         if (stream.pubStatus.video.video && !stream.pubStatus.video.consumerId) {
+          console.log('应该订阅视频 stream.pubStatus.video.consumerStatus: ', stream.pubStatus.video.consumerStatus)
           if (stream.pubStatus.video.consumerStatus !== 'start') {
             this.adapterRef.logger.log('subscribe() [开始订阅 %s 视频流]', stream.getId())
             stream.pubStatus.video.consumerStatus = 'start'
@@ -416,7 +417,11 @@ class Client extends Base {
             await this.adapterRef._mediasoup.createConsumer(uid, 'video', 'video', stream.pubStatus.video.producerId, preferredSpatialLayer);
             stream.pubStatus.video.consumerStatus = 'end'
             this.adapterRef.logger.log('subscribe() [订阅 %s 视频流完成]', stream.getId())
+          } else {
+            console.log('stream.pubStatus.video.consumerStatus: ', stream.pubStatus.video.consumerStatus)
           }
+        } else {
+          console.log('stream.pubStatus.video: ', stream.pubStatus.video)
         }
       } else {
         // 不应该订阅视频

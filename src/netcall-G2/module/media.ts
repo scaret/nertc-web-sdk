@@ -77,6 +77,7 @@ class MediaHelper extends EventEmitter {
       this._stopTrack(this.micStream)
     }
     if(this.webAudio){
+      this.webAudio.off('audioFilePlaybackCompleted')
       this.webAudio.destroy()
     }
     this.webAudio = null
@@ -178,7 +179,7 @@ class MediaHelper extends EventEmitter {
             audio: (constraint.screenAudio && this.getAudioConstraints()) ? this.getAudioConstraints() : constraint.screenAudio,
           }, this.adapterRef.logger)
           this.screenStream = screenStream;
-          if (constraint.screenAudio){
+          if (constraint.screenAudio) {
             const screenAudioTrack = screenStream.getAudioTracks()[0];
             if (screenAudioTrack){
               const stream = new MediaStream;
@@ -191,6 +192,7 @@ class MediaHelper extends EventEmitter {
                   adapterRef: this.adapterRef,
                   stream: this.micStream
                 })
+                this.webAudio.on('audioFilePlaybackCompleted', this._audioFilePlaybackCompletedEvent.bind(this))
               } else {
                 this.webAudio.updateStream(this.micStream)
               }
@@ -234,6 +236,7 @@ class MediaHelper extends EventEmitter {
                 adapterRef: this.adapterRef,
                 stream: this.micStream
               })
+              this.webAudio.on('audioFilePlaybackCompleted', this._audioFilePlaybackCompletedEvent.bind(this))
             } else {
               this.webAudio.updateStream(this.micStream)
             }
@@ -314,6 +317,7 @@ class MediaHelper extends EventEmitter {
                   adapterRef: this.adapterRef,
                   stream: this.micStream
                 })
+                this.webAudio.on('audioFilePlaybackCompleted', this._audioFilePlaybackCompletedEvent.bind(this))
               } else if (this.micTrack){
                 this.webAudio.updateStream(this.micStream)
               }
@@ -632,11 +636,31 @@ class MediaHelper extends EventEmitter {
 
 
   /******************************* 伴音 ********************************/
+
+  _audioFilePlaybackCompletedEvent () {
+    let isMixAuidoCompleted = true
+    if(!this.webAudio) return
+
+    //判断伴音是否都已经结束了
+    if (this.webAudio.mixAudioConf.state === AuidoMixingState.PLAYED || this.webAudio.mixAudioConf.state === AuidoMixingState.PAUSED) {
+      isMixAuidoCompleted = false
+    }
+
+    //判断音效是否都已经结束了
+    Object.values(this.mixAudioConf.sounds).forEach(item => {
+      if (item.state === 'STARTING' || item.state === 'PLAYED' || item.state === 'PAUSED') {
+        isMixAuidoCompleted = false
+        return
+      }
+    })
+
+    if (isMixAuidoCompleted) {
+      this.disableAudioRouting();
+    }
+  }
+
   startAudioMixing (options:AudioMixingOptions) {
     this.adapterRef.logger.log(`开始伴音: %s`, JSON.stringify(options, null, ' '))
-    if (!this.audioRoutingEnabled){
-      this.enableAudioRouting();
-    }
     Object.assign(this.mixAudioConf, options)
     let reason = null
     if (!this.mixAudioConf.audioFilePath) {
@@ -731,6 +755,9 @@ class MediaHelper extends EventEmitter {
     if (index !== this.mixAudioConf.index) {
       this.adapterRef.logger.log('startMix: 该次伴音已经取消')
       return Promise.resolve()
+    }
+    if (!this.audioRoutingEnabled){
+      this.enableAudioRouting();
     }
     const {
       audioFilePath = '',
@@ -1049,12 +1076,12 @@ class MediaHelper extends EventEmitter {
 
   /****************     音效功能      *******************/
 
-  _initSoundIfNotExists (soundId: number, filePath: string) {
+  _initSoundIfNotExists (soundId: number, filePath?: string) {
     if (!this.mixAudioConf.sounds[soundId]) {
       this.mixAudioConf.sounds[soundId] = {
         soundId,
         state: "UNSTART",
-        filePath,
+        filePath: filePath || '',
         volume: 100,
         sourceNode: null,
         gainNode: null,
@@ -1067,6 +1094,9 @@ class MediaHelper extends EventEmitter {
         options: {}
       }
     } 
+    if (filePath) {
+      this.mixAudioConf.sounds[soundId].filePath = filePath
+    }
   }
 
   async playEffect (options: AudioEffectOptions, playStartTime?:number) {
@@ -1079,9 +1109,21 @@ class MediaHelper extends EventEmitter {
     const soundIdCheck = {
       tag: 'Stream.playEffect:soundId',
       value: soundId,
+      min: 1,
+      max: 10000
     };
     if (isExistOptions(soundIdCheck).result){
       checkValidInteger(soundIdCheck);
+    }
+    const cycleCheck = {
+      tag: 'Stream.playEffect:cycle',
+      value: cycle,
+      min: 1,
+      max: 10000
+    };
+
+    if (isExistOptions(cycleCheck).result){
+      checkValidInteger(cycleCheck);
     }
 
 
@@ -1157,7 +1199,8 @@ class MediaHelper extends EventEmitter {
 
     this.webAudio.stopAudioEffectMix(this.mixAudioConf.sounds[soundId])
     this.mixAudioConf.sounds[soundId].state = 'STOPED'
-    delete this.mixAudioConf.sounds[soundId]
+    this._audioFilePlaybackCompletedEvent()
+    //delete this.mixAudioConf.sounds[soundId]
   }
 
   async pauseEffect (soundId: number) {
@@ -1224,9 +1267,10 @@ class MediaHelper extends EventEmitter {
     let playedTime = (this.mixAudioConf.sounds[soundId].pauseTime - this.mixAudioConf.sounds[soundId].startTime) / 1000 + this.mixAudioConf.sounds[soundId].playStartTime
     this.adapterRef.logger.log('resumeEffect 已经播放的时间: ', playedTime)
     if (playedTime > this.mixAudioConf.sounds[soundId].totalTime) {
+      const cyclePlayed = Math.floor(playedTime / this.mixAudioConf.sounds[soundId].totalTime)
+      this.adapterRef.logger.log('播发过的圈数 playedCycle: ', cyclePlayed)
       playedTime = playedTime % this.mixAudioConf.sounds[soundId].totalTime
-      this.adapterRef.logger.log('播发过的圈数 playedCycle: ', Math.floor(playedTime / this.webAudio.mixAudioConf.totalTime))
-      this.mixAudioConf.sounds[soundId].cycle = this.mixAudioConf.sounds[soundId].cycle - Math.floor(playedTime / this.webAudio.mixAudioConf.totalTime)
+      this.mixAudioConf.sounds[soundId].cycle = this.mixAudioConf.sounds[soundId].cycle - cyclePlayed
     }
 
     this.mixAudioConf.sounds[soundId].playOverTime = this.mixAudioConf.sounds[soundId].totalTime
@@ -1254,12 +1298,21 @@ class MediaHelper extends EventEmitter {
     if (isExistOptions(soundIdCheck).result){
       checkValidInteger(soundIdCheck);
     }
+    const volumeCheck = {
+      tag: 'Stream.playEffect:volume',
+      value: volume,
+      min: 0,
+      max: 100
+    };
+
+    if (isExistOptions(volumeCheck).result){
+      checkValidInteger(volumeCheck);
+    }
+
     this.adapterRef.logger.log(`setVolumeOfEffect 设置 ${soundId} 音效文件的音量: ${volume}`)
+    this._initSoundIfNotExists(soundId)
     let reason = null
-    if (!this.mixAudioConf.sounds[soundId]) {
-      this.adapterRef.logger.log('setVolumeOfEffect: 没有该音效文件')
-      reason = 'SOUND_NOT_EXISTS'
-    } if (!this.webAudio || !this.webAudio.context) {
+    if (!this.webAudio || !this.webAudio.context) {
       this.adapterRef.logger.log('setVolumeOfEffect: 不支持音效功能')
       reason = 'BROWSER_NOT_SUPPORT'
     } 
@@ -1426,7 +1479,7 @@ class MediaHelper extends EventEmitter {
   disableAudioRouting(){
     const audioTrack = this.micTrack || this.audioSource;
     this.audioRoutingEnabled = false;
-    this.adapterRef.logger.log('disableAudioRouting: ', audioTrack)
+    this.adapterRef.logger.warn('disableAudioRouting: ', audioTrack)
     const formerTrack = this.audioStream.getAudioTracks()[0];
     if (formerTrack){
       this.audioStream.removeTrack(formerTrack);
