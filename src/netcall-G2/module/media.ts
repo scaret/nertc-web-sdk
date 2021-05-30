@@ -1076,12 +1076,12 @@ class MediaHelper extends EventEmitter {
 
   /****************     音效功能      *******************/
 
-  _initSoundIfNotExists (soundId: number, filePath: string) {
+  _initSoundIfNotExists (soundId: number, filePath?: string) {
     if (!this.mixAudioConf.sounds[soundId]) {
       this.mixAudioConf.sounds[soundId] = {
         soundId,
         state: "UNSTART",
-        filePath,
+        filePath: filePath || '',
         volume: 100,
         sourceNode: null,
         gainNode: null,
@@ -1094,6 +1094,9 @@ class MediaHelper extends EventEmitter {
         options: {}
       }
     } 
+    if (filePath) {
+      this.mixAudioConf.sounds[soundId].filePath = filePath
+    }
   }
 
   async playEffect (options: AudioEffectOptions, playStartTime?:number) {
@@ -1306,6 +1309,7 @@ class MediaHelper extends EventEmitter {
     }
 
     this.adapterRef.logger.log(`setVolumeOfEffect 设置 ${soundId} 音效文件的音量: ${volume}`)
+    this._initSoundIfNotExists(soundId)
     let reason = null
     if (!this.mixAudioConf.sounds[soundId]) {
       this.adapterRef.logger.log('setVolumeOfEffect: 没有该音效文件')
