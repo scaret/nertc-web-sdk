@@ -1311,10 +1311,7 @@ class MediaHelper extends EventEmitter {
     this.adapterRef.logger.log(`setVolumeOfEffect 设置 ${soundId} 音效文件的音量: ${volume}`)
     this._initSoundIfNotExists(soundId)
     let reason = null
-    if (!this.mixAudioConf.sounds[soundId]) {
-      this.adapterRef.logger.log('setVolumeOfEffect: 没有该音效文件')
-      reason = 'SOUND_NOT_EXISTS'
-    } if (!this.webAudio || !this.webAudio.context) {
+    if (!this.webAudio || !this.webAudio.context) {
       this.adapterRef.logger.log('setVolumeOfEffect: 不支持音效功能')
       reason = 'BROWSER_NOT_SUPPORT'
     } 
