@@ -9,7 +9,7 @@
  * 2. 实时音量获取
  * 3. 多路音频输入
  */
-
+import { EventEmitter } from 'eventemitter3'
 import { RtcSupport } from '../util/rtcUtil/rtcSupport'
 import { AuidoMixingState } from '../constant/state'
 import {
@@ -32,7 +32,7 @@ const supports = RtcSupport.checkWebAudio()
 
 let globalAc:AudioContext;
 
-class WebAudio{
+class WebAudio extends EventEmitter{
   private support:boolean;
   private gain: number;
   private stream: MediaStream | MediaStream[];
@@ -66,6 +66,7 @@ class WebAudio{
   public context: AudioContext| null;
   
   constructor(option: WebAudioOptions) {
+    super()
     const { adapterRef, stream, isAnalyze=true, isRemote = false } = option
     this.support = supports.WebAudio && supports.MediaStream
 
@@ -121,42 +122,6 @@ class WebAudio{
     if (this.support) {
       this.resetMixConf()
       this.init()
-    }
-  }
-
-
-  /**
-   * ************************ 伴音功能相关 *****************************
-   */
-
-  resetMixConf() {
-    if (this.mixAudioConf.replace) {
-      this.logger.log('伴音停止了，恢复mic')
-      if (this.gainFilter && this.destination){
-        if (this.script && this.analyzeDestination) {
-          this.gainFilter.connect(this.script)
-          this.script.connect(this.analyzeDestination)
-        }
-        this.gainFilter.connect(this.destination);
-      }
-    }
-    this.mixAudioConf = {
-      state: AuidoMixingState.UNSTART,
-      audioSource: null,
-      gainFilter: null,
-      replace: false,
-      cycle: 0,
-      pauseTime: 0,
-      startTime: 0,
-      totalTime: 0,
-      volume: 1,
-      playStartTime: 0,
-      setPlayStartTime: 0,
-      auidoMixingEnd: null
-    }
-    if (this.gainFilter && this.gainFilter.gain.value === 1 && this.adapterRef.localStream && this.adapterRef.localStream.mediaHelper){
-      // Hack：应该抛出事件，让mediaHelper执行。
-      this.adapterRef.localStream.mediaHelper.disableAudioRouting();
     }
   }
   
@@ -379,9 +344,42 @@ class WebAudio{
   }
 
 
-  /*
-    混音
-  */
+  /**
+   * ************************ 伴音功能相关 *****************************
+   */
+
+  resetMixConf() {
+    if (this.mixAudioConf.replace) {
+      this.logger.log('伴音停止了，恢复mic')
+      if (this.gainFilter && this.destination){
+        if (this.script && this.analyzeDestination) {
+          this.gainFilter.connect(this.script)
+          this.script.connect(this.analyzeDestination)
+        }
+        this.gainFilter.connect(this.destination);
+      }
+    }
+    this.mixAudioConf = {
+      state: AuidoMixingState.UNSTART,
+      audioSource: null,
+      gainFilter: null,
+      replace: false,
+      cycle: 0,
+      pauseTime: 0,
+      startTime: 0,
+      totalTime: 0,
+      volume: 1,
+      playStartTime: 0,
+      setPlayStartTime: 0,
+      auidoMixingEnd: null
+    }
+    if (this.gainFilter && this.gainFilter.gain.value === 1 && this.adapterRef.localStream && this.adapterRef.localStream.mediaHelper){
+      // Hack：应该抛出事件，让mediaHelper执行。
+      //this.adapterRef.localStream.mediaHelper.disableAudioRouting();
+      this.emit('audioFilePlaybackCompleted')
+    }
+  }
+
   startMix(options:AudioMixingOptions) {
     if (!this.context || !this.destination || !this.gainFilter){
       this.logger.error("initMonitor:参数不够");
@@ -636,13 +634,13 @@ class WebAudio{
     sourceNode.stop()
   }
 
-  off() {
+  /*off() {
     return this.setGain(0)
   }
 
   on() {
     this.setGain(1)
-  }
+  }*/
 
   destroy() {
     const that = this;
