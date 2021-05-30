@@ -1106,9 +1106,21 @@ class MediaHelper extends EventEmitter {
     const soundIdCheck = {
       tag: 'Stream.playEffect:soundId',
       value: soundId,
+      min: 1,
+      max: 10000
     };
     if (isExistOptions(soundIdCheck).result){
       checkValidInteger(soundIdCheck);
+    }
+    const cycleCheck = {
+      tag: 'Stream.playEffect:cycle',
+      value: cycle,
+      min: 1,
+      max: 10000
+    };
+
+    if (isExistOptions(cycleCheck).result){
+      checkValidInteger(cycleCheck);
     }
 
 
@@ -1282,6 +1294,17 @@ class MediaHelper extends EventEmitter {
     if (isExistOptions(soundIdCheck).result){
       checkValidInteger(soundIdCheck);
     }
+    const volumeCheck = {
+      tag: 'Stream.playEffect:volume',
+      value: volume,
+      min: 0,
+      max: 100
+    };
+
+    if (isExistOptions(volumeCheck).result){
+      checkValidInteger(volumeCheck);
+    }
+
     this.adapterRef.logger.log(`setVolumeOfEffect 设置 ${soundId} 音效文件的音量: ${volume}`)
     let reason = null
     if (!this.mixAudioConf.sounds[soundId]) {
