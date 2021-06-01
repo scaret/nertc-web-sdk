@@ -197,7 +197,7 @@ class Signalling extends EventEmitter {
     switch (notification.method) {
       case 'OnPeerJoin': {
         const { requestId, externData } = notification.data;
-        this.adapterRef.logger.log('收到OnPeerJoin成员加入消息 externData = %o', externData.uid);
+        this.adapterRef.logger.log('收到OnPeerJoin成员加入消息 uid = %o', externData.uid);
         if(typeof externData.uid !== 'number' || isNaN(externData.uid)){
           throw new Error('对端uid 非 number类型')
         }

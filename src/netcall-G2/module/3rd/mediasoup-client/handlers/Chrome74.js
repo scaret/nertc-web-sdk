@@ -605,7 +605,7 @@ class Chrome74 extends HandlerInterface_1.HandlerInterface {
         let dtlsParameters = undefined;
         if (!this._transportReady)
             dtlsParameters = await this._setupTransport({ localDtlsRole: 'server', localSdpObject });
-        const rtpCapabilities = null//sdpCommonUtils.extractRtpCapabilities({ sdpObject: localSdpObject });
+        const rtpCapabilities = sdpCommonUtils.extractRtpCapabilities({ sdpObject: localSdpObject });
 
         if (mid === -1) {
             mid = localSdpObject.media.length - 1
