@@ -136,12 +136,13 @@ table th:nth-of-type(2) {
 
 方法 | 功能描述
 ---|---|
-[[Stream.startAudioMixing]] | 开始播放音乐文件和本地麦克风声音的混合。
+[[Stream.startAudioMixing]] | 开始播放音乐文件和本地麦克风声音的混合。 
 [[Stream.pauseAudioMixing]] | 暂停播放音乐文件。
 [[Stream.resumeAudioMixing]] | 恢复播放音乐文件。
 [[Stream.stopAudioMixing]] | 停止播放音乐文件。
 [[Stream.adjustAudioMixingVolume]] | 调节音乐文件播放音量。
 [[Stream.getAudioMixingDuration]] | 获取音乐文件的总长度。
+[[Stream.getAudioMixingCurrentPosition]] | 获取音乐文件当前播放进度。
 [[Stream.setAudioMixingPosition]] | 获取音乐文件当前播放进度。
 
 
