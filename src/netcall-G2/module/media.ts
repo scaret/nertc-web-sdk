@@ -1299,7 +1299,7 @@ class MediaHelper extends EventEmitter {
       checkValidInteger(soundIdCheck);
     }
     const volumeCheck = {
-      tag: 'Stream.playEffect:volume',
+      tag: 'Stream.setVolumeOfEffect:volume',
       value: volume,
       min: 0,
       max: 100

@@ -450,7 +450,7 @@ class Client extends Base {
           this.adapterRef.logger.log('取消订阅视频流完成')
         }
       }
-      if (stream.subConf.screen){
+      if (stream.subConf.screen) {
         // 应该订阅辅流
         if (stream.pubStatus.screen.screen && !stream.pubStatus.screen.consumerId){
           if (stream.pubStatus.screen.consumerStatus !== 'start') {
@@ -462,9 +462,9 @@ class Client extends Base {
             this.adapterRef.logger.log('subscribe() [订阅 %s 辅流完成]', stream.getId())
           }
         }
-      }else{
+      } else {
         // 不应该订阅辅流
-        if (stream.pubStatus.screen.consumerId && stream.pubStatus.screen.stopconsumerStatus !== 'start'){
+        if (stream.pubStatus.screen.consumerId && stream.pubStatus.screen.stopconsumerStatus !== 'start') {
           this.adapterRef.logger.log('开始取消订阅辅流')
           stream.pubStatus.screen.stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup){
@@ -545,7 +545,7 @@ class Client extends Base {
     checkExists({tag: 'client.unsubscribe:stream', value: stream});
     this.adapterRef.logger.log('取消订阅远端音视频流: ', stream)
     try {
-      if (stream.pubStatus.audio.consumerId && stream.pubStatus.audio.stopconsumerStatus !== 'start'){
+      if (stream.pubStatus.audio.consumerId && stream.pubStatus.audio.stopconsumerStatus !== 'start') {
         this.adapterRef.logger.log('开始取消订阅音频流')
         stream.pubStatus.audio.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup){

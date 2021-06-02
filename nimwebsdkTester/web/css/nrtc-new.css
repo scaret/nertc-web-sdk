@@ -31,14 +31,14 @@
 }
 /* 底部 */
 .nrtc-container .bottom .block {
-  flex: 3;
+  flex: atuo;
   border: 1px solid #ddd;
   display: inline-block;
   margin: 1px;
   background-color: #f3f3f3;
 }
 .nrtc-container .bottom .block3 {
-  flex: 5;
+  flex: atuo;
   border: 1px solid #ddd;
   display: inline-block;
   margin: 1px;
