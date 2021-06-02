@@ -69,20 +69,39 @@ declare namespace WebRTC2 {
   function getSpeakers(): Promise<DeviceInfo[]>;
 
   /**
-   * 检查 SDK 对正在使用的浏览器的适配情况。
+   * 检查 NERTC Web SDK 对正在使用的浏览器的适配情况。
+   * 
+   * @note
+   * 
+   * - 请在创建音视频对象（createClient）之前调用该方法。
+   * - SDK 和浏览器的适配情况与浏览器类型和版本有关，不同的浏览器版本可能会返回不一样的适配结果。
    * 
    * @returns
-   * ```true```: SDK 与当前使用的浏览器适配
-   * 
-   * ```false```: SDK 与当前使用的浏览器不适配
+   * - `true`: SDK 与当前使用的浏览器适配
+   * - `false`: SDK 与当前使用的浏览器不适配
    */
   function checkSystemRequirements(): Boolean;
 
   /**
-   * 获取 SDK 对当前浏览器支持的编解码格式。
+   * 检查 NERTC Web SDK 和当前浏览器同时支持的编解码格式。
+   * 
+   * NERTC Web SDK 2.0 视频编解码支持 VP8、H.264、H.265、NEVC 格式，音频支持 OPUS 格式。
+   * 您可以调用此接口检查 NERTC Web SDK 与当前浏览器同时支持的编解码格式，以免因编解码能力不匹配导致通话过程中出现音视频播放问题。
+   * 
+   * @note 
+   * - 请在初始化之后调用该方法。
+   * - 该方法支持部分浏览器，列表请查看[Web SDK 支持的浏览器类型](/docs/jcyOTA0ODM/TU5NjUzNjU?platformId=50082#Web端支持的浏览器类型和版本)。
+   * - 返回的音视频编码为浏览器通过 SDP 声明的的编码类型，为参考值。
+   * - 目前部分安卓手机 H.264 与其他平台 H.264 存在无法互通或单通问题，对于这部分机型推荐使用 VP8 编码格式。
    *
+   * @returns  NERTC Web SDK 和当前浏览器同时支持的编解码格式。
+   * 
+   * 调用该方法会返回一个 Promise 对象，在 .then(data(result){}) 回调中，data 包含以下属性：
+   * - video: 支持的视频编解码格式，数组类型。返回值包括 "H264"、"VP8"。
+   * - audio: 支持的音频编解码格式，数组类型。返回值包括 "OPUS"。
+   * 
    * ```JavaScript
-   * //接口使用示例
+   * //示例
    * WebRTC2.getSupportedCodec().then(data => {
    *   data.forEach(item=>{
    *     console.log(`Supported video codec: ${data.video.join(",")});
@@ -91,8 +110,7 @@ declare namespace WebRTC2 {
    * })
    * ```
    */
-
-  function getSupportedCodec(): Promise<{audio: ["OPUS"], video: ["H264", "VP8"]}>;
+   function getSupportedCodec(): Promise<{audio: ["OPUS"], video: ["H264", "VP8"]}>;
 
 
   const VERSION: string;
