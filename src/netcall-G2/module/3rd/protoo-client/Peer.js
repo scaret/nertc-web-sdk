@@ -109,9 +109,10 @@ class Peer extends EnhancedEventEmitter
 		{
 			sent.close();
 		}
-
+		this._sents.clear()
 		// Emit 'close' event.
-		this.safeEmit('close');
+		//主动关闭socket，不上报close事件
+		//this.safeEmit('close');
 	}
 
 	/**

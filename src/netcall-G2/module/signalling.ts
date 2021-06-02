@@ -274,7 +274,7 @@ class Signalling extends EventEmitter {
         }
         if (remoteStream.pubStatus[mediaTypeShort].consumerId){
           this.adapterRef._mediasoup?.destroyConsumer(remoteStream.pubStatus[mediaTypeShort].consumerId);
-          remoteStream.pubStatus[mediaTypeShort].consumerId = '';
+          //remoteStream.pubStatus[mediaTypeShort].consumerId = '';
         } else {
           this.adapterRef._mediasoup?.removeUselessConsumeRequest({producerId: remoteStream.pubStatus[mediaTypeShort].producerId})
         }
@@ -285,6 +285,8 @@ class Signalling extends EventEmitter {
         remoteStream.pubStatus[mediaTypeShort].producerId = producerId
         remoteStream.pubStatus[mediaTypeShort].mute = mute
         remoteStream.pubStatus[mediaTypeShort].simulcastEnable = simulcastEnable
+        //旧的consumer已经失效了
+        remoteStream.pubStatus[mediaTypeShort].consumerId = ''
         this.adapterRef.instance.emit('stream-added', {stream: remoteStream, 'mediaType': mediaTypeShort})
         if (mute) {
           this.adapterRef.instance.emit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
@@ -632,10 +634,10 @@ class Signalling extends EventEmitter {
         this.adapterRef.mediaCapability.parseRoom(response.externData.roomCapability);
         this.adapterRef.instance.emit('mediaCapabilityChange');
         await this.adapterRef._mediasoup.init()
-        if (this.adapterRef.localStream){
+        if (this.adapterRef.localStream) {
           this.adapterRef.logger.log('重连成功，重新publish本端流')
           this.adapterRef.instance.publish(this.adapterRef.localStream)
-        }else{
+        } else {
           this.adapterRef.logger.log('重连成功')
         }
       } else {
