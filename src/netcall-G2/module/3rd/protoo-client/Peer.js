@@ -103,12 +103,13 @@ class Peer extends EnhancedEventEmitter
 
 		// Close Transport.
 		this._transport.close();
-
+		this._transport = null;
 		// Close every pending sent.
 		for (const sent of this._sents.values())
 		{
 			sent.close();
 		}
+
 		this._sents.clear()
 		// Emit 'close' event.
 		//主动关闭socket，不上报close事件

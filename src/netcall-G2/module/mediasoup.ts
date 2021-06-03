@@ -753,6 +753,10 @@ class Mediasoup extends EventEmitter {
     const consumeRes = await this.adapterRef._signalling._protoo.request('Consume', data);
     let { transportId, iceParameters, iceCandidates, dtlsParameters, probeSSrc, rtpParameters, producerId, consumerId, code, errMsg } = consumeRes;
     this.adapterRef.logger.log(`consume反馈结果: code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
+    if (!this._recvTransport) {
+      this.adapterRef.logger.error(`transport undefined，直接返回`)
+      return
+    }
     try {
       const peerId = consumeRes.uid
 
