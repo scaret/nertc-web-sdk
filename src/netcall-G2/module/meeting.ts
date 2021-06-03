@@ -345,7 +345,7 @@ class Meeting extends EventEmitter {
           return Promise.reject('DELETE_TASKS_FAILED')
         }
       } catch (e) {
-        console.error('deleteTasks发生错误: ', e)
+        this.adapterRef.logger.error('deleteTasks发生错误: ', e)
         this.adapterRef.instance.apiFrequencyControl({
           name: 'deleteTasks',
           code: -1,

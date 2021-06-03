@@ -38,7 +38,7 @@
   background-color: #f3f3f3;
 }
 .nrtc-container .bottom .block3 {
-  flex: atuo;
+  flex: auto;
   border: 1px solid #ddd;
   display: inline-block;
   margin: 1px;

@@ -1855,7 +1855,7 @@ class Stream extends EventEmitter {
         }
         const parameters = sender.getParameters();
         if (!parameters) {
-          console.error("No Parameter");
+          this.client.adapterRef.logger.error("No Parameter");
           return;
         }
         if (!parameters.encodings) {
