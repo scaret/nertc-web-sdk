@@ -1160,7 +1160,6 @@ class MediaHelper extends EventEmitter {
       if(result && result.sourceNode){
         //@ts-ignore
         result.sourceNode.onended = onended = event => {
-          console.log('sounds: ', this.mixAudioConf.sounds)
           this.stopEffect(soundId)
         }
       }

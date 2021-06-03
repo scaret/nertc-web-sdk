@@ -757,11 +757,11 @@ class Mediasoup extends EventEmitter {
       const peerId = consumeRes.uid
 
       if (code !== 200 || !this.adapterRef.remoteStreamMap[uid]) {
-        console.warn('remoteStream.pubStatus: ', remoteStream.pubStatus)
+        this.adapterRef.logger.warn('remoteStream.pubStatus: ', remoteStream.pubStatus)
         
         if (peerId && uid != peerId) {
-          console.log('peerId: ', peerId)
-          console.warn('id 不匹配不处理')
+          this.adapterRef.logger.log('peerId: ', peerId)
+          this.adapterRef.logger.log('id 不匹配不处理')
         }
         //@ts-ignore
         if (!remoteStream[mediaTypeShort] || !remoteStream.pubStatus[mediaTypeShort][mediaTypeShort] || !remoteStream.pubStatus[mediaTypeShort].producerId) {
@@ -770,10 +770,10 @@ class Mediasoup extends EventEmitter {
         //底层做了M行伪造处理，所以遇到非2oo的回复，不用关心
         await this._recvTransport.recoverLocalSdp(uid, mid, kind)
         
-        console.log('发送请求的 producerId: ', id)
-        console.log('当前的 producerId：', remoteStream.pubStatus[mediaTypeShort].producerId)
+        this.adapterRef.logger.log('发送请求的 producerId: ', id)
+        this.adapterRef.logger.log('当前的 producerId：', remoteStream.pubStatus[mediaTypeShort].producerId)
         if (remoteStream.pubStatus[mediaTypeShort].producerId && id != remoteStream.pubStatus[mediaTypeShort].producerId) {
-          console.error('此前的订阅已经失效，重新订阅')
+          this.adapterRef.logger.log('此前的订阅已经失效，重新订阅')
           this.adapterRef.instance.subscribe(remoteStream)
         }
         return this.checkConsumerList(info)
@@ -855,12 +855,12 @@ class Mediasoup extends EventEmitter {
       this.adapterRef && this.adapterRef.logger.error('"newConsumer" request failed:%o', error.name, error.message);
       this.adapterRef.logger.error('订阅 %s 的 %s 媒体失败，做容错处理: 重新建立下行连接', uid, kind)
       
-      /*this.resetConsumeRequestStatus()
+      this.resetConsumeRequestStatus()
       if (this._recvTransport) {
         await this.closeTransport(this._recvTransport);
       }
       this._recvTransport = null
-      this.adapterRef.instance.reBuildRecvTransport()*/
+      this.adapterRef.instance.reBuildRecvTransport()
     }
   }
 
