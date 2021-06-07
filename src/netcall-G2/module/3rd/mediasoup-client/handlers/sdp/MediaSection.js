@@ -323,13 +323,10 @@ class OfferMediaSection extends MediaSection {
                             });
                         }
                     }
-
-                    console.log('处理完 codecs')
                     this._mediaObject.payloads = offerRtpParameters.codecs
                         .map((codec) => codec.payloadType || codec.localPayloadType || 125)
                         .join(' ');
                     this._mediaObject.ext = [];
-                    console.log('处理完 000000')
                     for (const ext of offerRtpParameters.headerExtensions) {
                         this._mediaObject.ext.push({
                             uri: ext.uri,
@@ -345,7 +342,6 @@ class OfferMediaSection extends MediaSection {
                         : undefined;
                     this._mediaObject.ssrcs = [];
                     this._mediaObject.ssrcGroups = [];
-                    console.log('处理完 111111')
                     if (offerRtpParameters.rtcp.cname) {
                         this._mediaObject.ssrcs.push({
                             id: ssrc,
@@ -360,7 +356,6 @@ class OfferMediaSection extends MediaSection {
                             value: `${streamId || '-'} ${trackId}`
                         });
                     }
-                     console.log('处理完 2222222')
                     if (rtxSsrc) {
                         if (offerRtpParameters.rtcp.cname) {
                             this._mediaObject.ssrcs.push({
@@ -382,7 +377,6 @@ class OfferMediaSection extends MediaSection {
                             ssrcs: `${ssrc} ${rtxSsrc}`
                         });
                     }
-                     console.log('处理完 3333333')
                     break;
                 }
             case 'application':

@@ -303,11 +303,11 @@ class Transport extends EnhancedEventEmitter_1.EnhancedEventEmitter {
             if (!this._recvRtpCapabilities ||
                 !ortc.canSend('audio', this._recvRtpCapabilities) ||
                 !ortc.canSend('video', this._recvRtpCapabilities)) {
-                /*let extendedRtpCapabilities = ortc.getExtendedRtpCapabilities(rtpCapabilities, edgeRtpCapabilities);
+                let extendedRtpCapabilities = ortc.getExtendedRtpCapabilities(rtpCapabilities, edgeRtpCapabilities);
                 // Generate our receiving RTP capabilities for receiving media.
                 this._recvRtpCapabilities =
-                    ortc.getRecvRtpCapabilities(extendedRtpCapabilities);*/
-                this._recvRtpCapabilities = ortc.getRecvRtpCapabilities(this._extendedRtpCapabilities);
+                    ortc.getRecvRtpCapabilities(extendedRtpCapabilities);
+                //this._recvRtpCapabilities = ortc.getRecvRtpCapabilities(this._extendedRtpCapabilities);
                 // This may throw.
                 ortc.validateRtpCapabilities(this._recvRtpCapabilities);
             }

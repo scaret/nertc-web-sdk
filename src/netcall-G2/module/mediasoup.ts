@@ -628,6 +628,10 @@ class Mediasoup extends EventEmitter {
   checkConsumerList (info:ProduceConsumeInfo) {
     this._eventQueue.shift()
     info.resolve(null);
+    this.adapterRef.logger.log('查看事件队列, _eventQueue: ', this._eventQueue.length)
+    this._eventQueue.forEach(item => {
+      this.adapterRef.logger.log(`consumerList, uid: ${item.uid}, kind: ${item.kind}, mediaType: ${item.mediaType}, id: ${item.id}`)
+    })
     if (this._eventQueue.length > 0) {
       this._createConsumer(this._eventQueue[0])
       return;
@@ -690,18 +694,23 @@ class Mediasoup extends EventEmitter {
     }
     if (!this._mediasoupDevice || !this._mediasoupDevice.loaded){
       this.adapterRef.logger.error('createConsumer：Waiting for Transport Ready');
-      await waitForEvent(this, 'transportReady', 5000);
+      await waitForEvent(this, 'transportReady', 3000);
     }
     if (!this._recvTransport) {
       info.resolve(null);
       throw new Error('NO_RECV_TRANSPORT');
     }
-    this.adapterRef.logger.log(`prepareLocalSdp [kind: ${kind}, uid: ${uid}]`);
+
+    this.adapterRef.logger.log(`prepareLocalSdp [kind: ${kind}, mediaTypeShort: ${mediaTypeShort}, uid: ${uid}]`);
+    if (this._recvTransport.id === this.adapterRef.channelInfo.uid) {
+      this.adapterRef.logger.log('transporth还没有协商，需要dtls消息')
+      this._recvTransport._handler._transportReady = false
+    }
     const prepareRes = 
       await this._recvTransport.prepareLocalSdp(kind, this._edgeRtpCapabilities, uid);
     if(!this.adapterRef || this.adapterRef.connectState.curState == 'DISCONNECTING' || this.adapterRef.connectState.curState == 'DISCONNECTED') return
     this.adapterRef.logger.log('获取本地sdp，mid = %o', prepareRes.mid);
-    let { rtpCapabilities, offer, iceUfragReg, } = prepareRes;
+    let { rtpCapabilities, offer, iceUfragReg} = prepareRes;
     let mid:number|string|undefined = prepareRes.mid;
     const localDtlsParameters = prepareRes.dtlsParameters;
 
@@ -731,33 +740,47 @@ class Mediasoup extends EventEmitter {
       oper: '1',
       value: preferredSpatialLayer
     })
-    if (localDtlsParameters === undefined)
+    if (localDtlsParameters === undefined) {
       data.transportId = this._recvTransport.id;
+    }
     else
       data.dtlsParameters = localDtlsParameters;
-    this.adapterRef.logger.log(`发送consume请求, uid: ${uid}, kind: ${kind}, producerId: ${data.producerId}, transportId: ${data.transportId}, requestId: ${data.requestId}`);
-    if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
+    this.adapterRef.logger.log(`发送consume请求, uid: ${uid}, kind: ${kind}, mediaTypeShort: ${mediaTypeShort}, producerId: ${data.producerId}, transportId: ${data.transportId}, requestId: ${data.requestId}`);
+    if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
       info.resolve(null);
       throw new Error('No _protoo');
     }
     const consumeRes = await this.adapterRef._signalling._protoo.request('Consume', data);
     let { transportId, iceParameters, iceCandidates, dtlsParameters, probeSSrc, rtpParameters, producerId, consumerId, code, errMsg } = consumeRes;
     this.adapterRef.logger.log(`consume反馈结果: code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
+    if (!this._recvTransport) {
+      this.adapterRef.logger.error(`transport undefined，直接返回`)
+      return
+    }
     try {
       const peerId = consumeRes.uid
 
       if (code !== 200 || !this.adapterRef.remoteStreamMap[uid]) {
-        console.warn('remoteStream.pubStatus: ', remoteStream.pubStatus)
+        this.adapterRef.logger.warn('remoteStream.pubStatus: ', remoteStream.pubStatus)
         
+        if (peerId && uid != peerId) {
+          this.adapterRef.logger.log('peerId: ', peerId)
+          this.adapterRef.logger.log('id 不匹配不处理')
+        }
         //@ts-ignore
-        if (!remoteStream[kind] || !remoteStream.pubStatus[kind][kind] || !remoteStream.pubStatus[kind].producerId) {
-          this.adapterRef.logger.log(`${uid} 的 ${kind} 的媒体已经停止发布了，直接返回`)
+        if (!remoteStream[mediaTypeShort] || !remoteStream.pubStatus[mediaTypeShort][mediaTypeShort] || !remoteStream.pubStatus[mediaTypeShort].producerId) {
+          this.adapterRef.logger.log(`${uid} 的 ${mediaTypeShort} 的媒体已经停止发布了，直接返回`)
         }
         //底层做了M行伪造处理，所以遇到非2oo的回复，不用关心
         await this._recvTransport.recoverLocalSdp(uid, mid, kind)
+        
+        this.adapterRef.logger.log('发送请求的 producerId: ', id)
+        this.adapterRef.logger.log('当前的 producerId：', remoteStream.pubStatus[mediaTypeShort].producerId)
+        if (remoteStream.pubStatus[mediaTypeShort].producerId && id != remoteStream.pubStatus[mediaTypeShort].producerId) {
+          this.adapterRef.logger.log('此前的订阅已经失效，重新订阅')
+          this.adapterRef.instance.subscribe(remoteStream)
+        }
         return this.checkConsumerList(info)
-
-
         /*if (code === 800) {
           // FIXME：当无法接收一个Producer时，应该回退而不是重建整个下行链路。
           this.adapterRef.logger.error('800错误：无法建立连接。将Producer拉入黑名单：', consumeRes.producerId);
@@ -831,22 +854,17 @@ class Mediasoup extends EventEmitter {
       } else {
         this.adapterRef.logger.log('该次consume状态错误： ', JSON.stringify(remoteStream['pubStatus'], null, ''))
       }
-
-      this.adapterRef.logger.log('查看事件队列, _eventQueue: ', this._eventQueue.length)
-      this._eventQueue.forEach(item => {
-        this.adapterRef.logger.log(`consumerList, uid: ${item.uid}, kind: ${item.kind}, id: ${item.id}`)
-      })
       return this.checkConsumerList(info)
     } catch (error) {
       this.adapterRef && this.adapterRef.logger.error('"newConsumer" request failed:%o', error.name, error.message);
       this.adapterRef.logger.error('订阅 %s 的 %s 媒体失败，做容错处理: 重新建立下行连接', uid, kind)
-      return
-      /*this.resetConsumeRequestStatus()
+      
+      this.resetConsumeRequestStatus()
       if (this._recvTransport) {
         await this.closeTransport(this._recvTransport);
       }
       this._recvTransport = null
-      this.adapterRef.instance.reBuildRecvTransport()*/
+      this.adapterRef.instance.reBuildRecvTransport()
     }
   }
 

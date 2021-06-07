@@ -1855,7 +1855,7 @@ class Stream extends EventEmitter {
         }
         const parameters = sender.getParameters();
         if (!parameters) {
-          console.error("No Parameter");
+          this.client.adapterRef.logger.error("No Parameter");
           return;
         }
         if (!parameters.encodings) {
@@ -2312,7 +2312,7 @@ class Stream extends EventEmitter {
    * @function preloadEffect
    * @memberOf Stream#
    * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
-   * @param {Number} volume 音效音量。整数，范围为 [0,100]。默认 100 为原始文件音量。
+   * @param {String} filePath 必须，指定在线音效文件的绝对路径(支持MP3，AAC 以及浏览器支持的其他音频格式。)
    * @return {Object}
    */
    async preloadEffect (soundId: number, filePath: string) {

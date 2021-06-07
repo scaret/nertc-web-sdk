@@ -127,7 +127,7 @@ declare interface Stream {
        */
       sourceId?: string;
       /**
-       * 开启屏幕共享音频。仅在未开启音频且type为screen时有效。注意事项见[[StreamOptions.screenAudio]]
+       * 指定屏幕共享时是否共享本地播放的背景音。仅在未开启音频且 type 为 screen 时有效。详细说明请参考 [[StreamOptions.screenAudio]]。
        */
       screenAudio?: boolean;
     }): Promise<undefined>;
@@ -319,158 +319,284 @@ declare interface Stream {
         recordId: string;
     }): Promise<RecordStatus>;
     /**
-     * 云端音乐文件和本地麦克风声音混合；需要在启动麦克风之后使用
-     * @param options 参数对象
+     * 开始播放音乐文件。
+     * 
+     * - 该方法指定在线音频文件和麦克风采集的音频流进行混音或替换，即用音频文件替换麦克风采集的音频流。
+     * @note 请在加入房间并启动麦克风之后使用该方法。
+     * @param options 混音设置。
      */
     startAudioMixing(options: {
       /**
-       * 必须，云端音频文件路径
+       * 必选，在线音乐文件的 URL 地址。
+       * 
+       * @note 目前仅支持在线音频文件，格式一般为 MP3 等浏览器支持的音频文件类型。
        */
       audioFilePath: string;
       /**
-       * 可选，是否替换麦克风采集的音频数据，缺省为false
+       * 可选，是否要用音频文件替换本地音频流。
+       * - true：音频文件内容将会替换本地录音的音频流。
+       * - false：（默认值）音频文件内容将会和麦克风采集的音频流进行混音。
        */
       replace: boolean;
       /**
-       * 可选，循环的次数，需要loopback参数置为true（如果想无限循环，cycle设置为0，loopback设置为true），缺省为0，如果loopback为true，表示无限循环，如果loopback为false，该参数不生效
+       * 可选，指定音频文件循环播放的次数。
+       * @note
+       * - 通过 cycle 指定循环播放次数时，需要同时指定 loopback 参数置为 true。如果 loopback 为 false，该参数不生效。
+       * - cycle 默认为 0，表示无限循环播放，直至调用 stopAudioMixing 后停止。
        */
       cycle: number;
       /**
-       * 可选，设置音频文件开始播放的位置，单位为 s。缺省设为 0，即从头开始播放
+       * 可选，设置音频文件开始播放的时间位置，单位为秒（s）。默认为 0，即从头开始播放。
        */
       playStartTime: number;
       /**
-       * 可选，设置伴音文件的音量
+       * 可选，音乐文件的播放音量，取值范围为 0~100。默认为 100，表示使用文件的原始音量。
+       * @note 若您在通话中途修改了音量设置，则当前通话中再次调用时默认沿用此设置。
        */
       volume?: number;
       /**
-       * 可选，伴音文件播放完成的通知反馈（正常停止伴音或关掉通话获取其他原因停止伴音不会触发）
+       * 可选，伴音文件播放完成的通知反馈。正常停止伴音或关掉通话获取其他原因停止伴音不会触发。
        */
       auidoMixingEnd: (() => void) | null;
       /**
-       * 是否循环播放，缺省为false，表示播放一次就结束（这里如果是false，则cycle参数不生效）
+       * 是否循环播放音频文件，默认为 false。
+       * - true：循环播放音频文件。此时可通过 cycle 设置循环播放次数，cycle 默认为 0，表示无限循环播放。
+       * - false：（默认值）关闭无限循环播放。
        */
       loopback: boolean;
     }): Promise<unknown> | undefined;
     /**
-     * 停止播放伴奏
+     * 停止播放音乐文件。
+     * 
+     * 请在房间内调用该方法。
      */
     stopAudioMixing(): Promise<void>;
     /**
-     * 暂停播放伴奏
+     * 暂停播放音乐文件。
+     * 
+     * 请在房间内调用该方法。
      */
     pauseAudioMixing(): Promise<void> | null | undefined;
     /**
-     * 恢复播放伴奏
+     * 恢复播放音乐文件。
+     * 
+     * 请在房间内调用该方法。
      */
     resumeAudioMixing(): Promise<void> | undefined;
     /**
-     * 调节伴奏音量
+     * 调节音乐文件音量。
+     * 
+     * 该方法调节混音里伴奏的播放音量大小。请在房间内调用该方法。
+     * 
+     * @param volume 伴奏发送音量。取值范围为 0~100。默认 100，即原始文件音量。
      */
     adjustAudioMixingVolume(volume: number): Promise<void> | null | undefined;
     /**
-     * 获取伴奏时长
+     * 获取音乐文件时长。
+     * 
+     * 该方法获取伴奏时长，单位为毫秒。请在房间内调用该方法。
+     * 
+     * @returns 方法调用成功返回音乐文件时长，单位为毫秒（ms）。
+     * 
      */
     getAudioMixingDuration(): Promise<void>;
     /**
-     * 获取伴奏播放进度
-     * @function getAudioMixingCurrentPosition
+     * 获取音乐文件当前播放进度。
+     * 
+     * 该方法获取当前伴奏播放进度，单位为毫秒。请在房间内调用该方法。
+     * 
+     * @returns 方法调用成功返回音乐文件播放进度。
      */
     getAudioMixingCurrentPosition(): Promise<void>;
     /**
-     * 设置伴奏音频文件的播放位置。可以根据实际情况播放文件，而不是非得从头到尾播放一个文件,单位为ms
-     * @param playStartTime 伴音播放的位置
+     * 设置音乐文件的播放位置。
+     * 
+     * 该方法可以设置音频文件的播放位置，这样你可以根据实际情况播放文件，而非从头到尾播放整个文件。
+     * @param playStartTime 音乐文件的播放位置，单位为毫秒。
      */
     setAudioMixingPosition(playStartTime: number): Promise<unknown>;
     /**
-     * 播放指定音效文件
-     与 startAudioMixing 方法的区别是，该方法更适合播放较小的音效文件，且支持同时播放多个音效。
-     ##### 注意：
-     + 受浏览器策略影响，在 Chrome 70 及以上和 Safari 浏览器上，该方法必须由用户手势触发.
-     + 请在频道内调用该方法，如果在频道外调用该方法可能会出现问题。
+     * 播放指定音效文件。
+     * - 支持的音效文件类型包括 MP3，AAC 等浏览器支持的其他音频格式。仅支持在线 URL。
+     * - playEffect 与 startAudioMixing 方法的区别在于，该方法更适合播放较小的音效文件，且支持同时播放多个音效。
+     * @since V4.3.0
+     * @note
+     *    - 请在 publish 音频之后调用该方法。
+     *    - 您可以多次调用该方法，通过传入不同的音效文件的 soundId 和 filePath，同时播放多个音效文件，实现音效叠加。为获得最佳用户体验，建议同时播放的音效文件不超过 3 个。
+     * 
+     * @return 可能返回的错误码：
+         - ""BROWSER_NOT_SUPPORT: 不支持的浏览器类型。
+         - "INVALID_OPERATION"：非法操作，详细原因请查看日志，通常为状态错误。
+         - "No MediaHelper": localStream 没有 init() 初始化，无法使用音效功能。 
+         - "Stream.playEffect:soundId"：soundId 参数格式错误。
+         - "Stream.playEffect:filePath"：filePath 参数格式错误。
+         - "Stream.playEffect:cycle"：cycle 参数格式错误。
      */
-    playEffect (options: {
-      /**
-       * 必须，指定在线音效文件的绝对路径(支持MP3，AAC 以及浏览器支持的其他音频格式。)
-       */
-      filePath: string;
-      /**
-       * 可选，可选，指定音效文件循环播放的次数
-       */
-      cycle: number;
-      /**
-       * 必须，指定音效的 ID。每个音效均有唯一的 ID
-       */
-      soundId: number;
-    }) : Promise<unknown>
+         playEffect (options: {
+          /**
+           * 必选。指定在线音效文件的 URL地址。
+           * 
+           * 支持的音效文件类型包括 MP3，AAC 等浏览器支持的其他音频格式。
+           */
+          filePath: string;
+          /**
+           * 可选，指定音效文件循环播放的次数。默认值为 1，即播放 1 次。
+           */
+          cycle: number;
+          /**
+           * 必选，指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+           * 
+           * 如果您已通过 preloadEffect 将音效加载至内存，确保 playEffect 的 soundID 与 preloadEffect 设置的 soundID 相同。
+           */
+          soundId: number;
+        }) : Promise<unknown>    
     /**
-     * 停止播放指定音效文件
-     * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]
+     * 停止播放指定音效文件。
+     * @since V4.3.0
+     * @note 请在频道内调用该方法。
+     * @return 可能返回的错误码：
+         - "BROWSER_NOT_SUPPORT": 浏览器不支持
+         - "No MediaHelper": localStream没有init()初始化,无法使用音效功能 
+         - "Stream.playEffect:soundId"：soundId参数格式错误
+         
+     * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
      */
     stopEffect (soundId: number) : Promise<unknown>
     /**
-     * 暂停播放指定音效文件
+     * 暂停播放指定音效文件。
+     * @since V4.3.0
+     * 
+     * @note 请在频道内调用该方法。
+     * 
      * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
      * @return {Promise}
+     * 可能返回的错误码：
+         - "BROWSER_NOT_SUPPORT": 浏览器不支持
+         - "SOUND_NOT_EXISTS": soundId指定的音效文件不存在
+         - "INVALID_OPERATION"：非法操作，可以通过console日志查看原因，一般是状态不对
+         - "No MediaHelper": localStream没有init()初始化,无法使用音效功能 
+         - "Stream.pauseEffect:soundId"：soundId参数格式错误  
+     * 
      */
     pauseEffect (soundId: number) : Promise<unknown>
     /**
-     * 恢复播放指定音效文件
+     * 恢复播放指定音效文件。
+     * 
+     * @note 请在频道内调用该方法。
+     * @since V4.3.0
+     * @return 可能返回的错误码：
+         - "BROWSER_NOT_SUPPORT": 浏览器不支持
+         - "No MediaHelper": localStream没有init()初始化,无法使用音效功能 
+         - "Stream.resumeEffect :soundId": soundId 参数格式错误
      * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
      * @return {Promise}
      */
     resumeEffect (soundId: number) : Promise<unknown>
     /**
-     * 调节指定音效文件的音量
+     * 调节指定音效文件的音量。
+     * @note 请在频道内调用该方法。
+     * @since V4.3.0
+     * 
      * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
-     * @param {Number} volume 音效音量。整数，范围为 [0,100]。默认 100 为原始文件音量。
-     * @return {Promise}
+     * @param {Number} volume 音效音量。整数，范围为 [0,100]。默认为 100，即原始文件音量。
+     * @return {Promise} 
+     * 可能返回的错误码：
+         - "BROWSER_NOT_SUPPORT": 浏览器不支持
+         - "No MediaHelper": localStream没有init()初始化,无法使用音效功能 
+         - "Stream.setVolumeOfEffect:soundId": 参数格式错误
+         - "Stream.setVolumeOfEffect:volume": 参数格式错误 
      */
     setVolumeOfEffect (soundId: number) : Promise<unknown>
     /**
-     * 预加载指定音效文件
+     * 预加载指定音效文件。
+     * 
      * 该方法缓存音效文件，以供快速播放。为保证通信畅通，请注意控制预加载音效文件的大小。
+     * @note 请在频道内调用该方法。
+     * @since V4.3.0
+     * 
      * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
-     * @param {Number} volume 音效音量。整数，范围为 [0,100]。默认 100 为原始文件音量。
-     * @return {Object}
+     * @param {String} filePath 必选。指定在线音效文件的绝对路径。支持MP3、AAC 以及浏览器支持的其他音频格式。
+     * @return {Object} 可能返回的错误码：
+         - "BROWSER_NOT_SUPPORT": 浏览器不支持
+         - "No MediaHelper": localStream没有init()初始化,无法使用音效功能 
+         - "Stream.preloadEffect:filePath": 参数格式错误
+         - "Stream.preloadEffect:soundId": 参数格式错误 
      */
     preloadEffect(soundId: number, filePath: string): Promise<unknown>
     /**
-     * 释放指定音效文件
+     * 释放指定音效文件。
+     * 
      * 该方法从内存释放某个预加载的音效文件，以节省内存占用。
+     * @note 请在频道内调用该方法。
+     * @since V4.3.0
+     * 
      * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
-     * @return {Object}
+     * @return {Object} 可能返回的错误码：
+         - "BROWSER_NOT_SUPPORT": 浏览器不支持
+         - "SOUND_NOT_EXISTS": soundId指定的音效文件不存在
+         - "INVALID_OPERATION": 非法操作，可以查看console日志得到原因，一般是状态原因，如此时应处于播放、暂停状态，不能使用
+         - "No MediaHelper": localStream没有init()初始化,无法使用音效功能 
+         - "Stream.unloadEffect:soundId": 参数格式错误
      */
     unloadEffect (soundId: number): Promise<unknown>
     /**
-     * 获取所有音效文件播放音量
+     * 获取所有音效文件播放音量。
+     * @note 请在频道内调用该方法。
+     * @since V4.3.0
+     * @return 可能返回的错误码：
+         - "No MediaHelper": localStream没有init()初始化,无法使用音效功能 
      * @return Array<{ soundId: number; volume: number }>
      * 返回一个包含 soundId 和 volume 的数组。每个 soundId 对应一个 volume。
         + `soundId`: 为音效的 ID，正整数，取值范围为 [1,10000]。
         + `volume`: 为音量值，整数，范围为 [0,100]。
      */
-    getEffectsVolume(): Array<{ soundId: number; volume: number }> 
+        getEffectsVolume(): Array<{ soundId: number; volume: number }> 
     /**
-     * 设置所有音效文件播放音量
+     * 设置所有音效文件播放音量。
+     * 
+     * @note 请在频道内调用该方法。
+     * @since V4.3.0
      * @param {Number} volume 音效音量。整数，范围为 [0,100]。默认 100 为原始文件音量。
-     * @return {void}
+     * @return {void} 可能返回的错误码：
+         - "BROWSER_NOT_SUPPORT": 浏览器不支持
+         - "Stream.setEffectsVolume:volume": volume 参数格式错误
+         - "No MediaHelper": localStream没有init()初始化,无法使用音效功能 
      */
     setEffectsVolume (volume: number): void;
     /**
-     * 停止播放所有音效文件
-     * @return {Promise}
+     * 停止播放所有音效文件。
+     * 
+     * @note 请在频道内调用该方法。
+     * @since V4.3.0
+     * @return {Promise} 可能返回的错误码：
+         - "BROWSER_NOT_SUPPORT": 浏览器不支持
+         - "No MediaHelper": localStream没有init()初始化,无法使用音效功能 
+         - "Stream.playEffect:soundId"：soundId参数格式错误
      */
-    stopAllEffects(): Promise<unknown>
+         stopAllEffects(): Promise<unknown>
     /**
-     * 暂停播放所有音效文件
+     * 暂停播放所有音效文件。
+     * @note 请在频道内调用该方法。
+     * @since V4.3.0
+     * @return 可能返回的错误码：
+         - "BROWSER_NOT_SUPPORT": 浏览器不支持
+         - "SOUND_NOT_EXISTS": soundId指定的音效文件不存在
+         - "INVALID_OPERATION"：非法操作，可以通过console日志查看原因，一般是状态不对
+         - "No MediaHelper": localStream没有init()初始化,无法使用音效功能 
+         - "Stream.pauseEffect:soundId"：soundId参数格式错误
      * @return {Promise}
      */
-    pauseAllEffects(): Promise<unknown> 
+         pauseAllEffects(): Promise<unknown> 
     /**
-     * 恢复播放所有音效文件
+     * 恢复播放所有音效文件。
+     * @note
+     * - 请在频道内调用该方法。
+     * - 可能返回的错误码同 resumeEffect 一致
+     * 
+     * @since V4.3.0
      * @return {Promise}
      */
-    resumeAllEffects(): Promise<unknown>
+     resumeAllEffects(): Promise<unknown>
     /**
      * 添加视频画布水印。
      * 

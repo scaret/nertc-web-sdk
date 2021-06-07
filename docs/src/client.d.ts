@@ -389,7 +389,7 @@ declare interface Client{
   
   /**
    * 客户端遇到警告。可能有：
-   * * 406：ability not support。客户端的能力与房间不匹配（如不支持某个编码类型），接下来的通话可能受到影响。
+   * * 406：ability not support。当前客户端设备视频编解码能力与房间不匹配，例如设备不支持 VP8 等编码类型。在此房间中可能无法成功进行视频编解码，即本端可能无法正常显示某些远端的视频画面，同样远端也可能无法显示本端画面。
    */
   on(event: "warning", callback: (evt: { code:number,reason:string }) => void): void;
   

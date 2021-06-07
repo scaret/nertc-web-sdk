@@ -278,19 +278,26 @@ export interface StreamOptions {
    */
   video: boolean;
   /**
-   * 是否采集屏幕分享流
+   * 是否采集屏幕共享流
    */
   screen?: boolean;
-  /**
+/**
    * 是否采集屏幕分享流的共享音频。
    * 
-   * 注意事项：
-   * 1. 需确保设置screen选项为true
-   * 2. 需确保设置audio选项为false
-   * 3. 由于浏览器支持限制，需确保用户使用Windows版本的Chrome，并勾选了屏幕共享下的【Share audio】选项
-   * 4. 推荐 [[Stream.setAudioProfile]] 为`high_quality_stereo`
+   * @since V4.3.0
+   * 
+   * screenAudio 字段用于指定该屏幕共享流中是否包含本地播放的声音。
+   * 
+   * 可设置为：
+   * - true：屏幕共享同时共享本地播放的背景音。
+   * - false：（默认）屏幕共享时不共享本地播放的背景音。
+   * 
+   * @note
+   * - 该功能仅支持 Windows 和 macOS 平台 Chrome 浏览器 74 及以上版本。其中 macOS 平台的 Chrome 浏览器仅支持 Chrome 标签页（Chrome Tab）模式。
+   * - 如需使用屏幕共享背景音功能，必须将 screen 设为 true、audio 设为 false。[[Stream.setAudioProfile]] 推荐设置为 `high_quality_stereo`。如果 screenAudio 和 audio 都设置为 true，音视频流中只会包含本地播放的背景音。
+   * - 如需使用屏幕共享背景音功能，还需要在屏幕共享的弹出框中，勾选 **分享音频**（Share audio）。
    */
-  screenAudio?: boolean;
+ screenAudio?: boolean;
   /**
    * 和要Stream绑定的client实例对象，默认是最初使用用createClient创建的client实例（多实例场景使用）
    */
