@@ -976,7 +976,7 @@ function initLocalStream(audioSource, videoSource) {
     }
   }
   rtc.localStream = NERTC.createStream({
-    uid: +$('#uid').val(),
+    uid: +$('#uid').val() ? +$('#uid').val() : rtc.client.getChannelInfo().uid,
     audio: $('#enableAudio').prop('checked'),
     audioProcessing: getAudioProcessingConfig(),
     microphoneId: $('#micro').val(),
