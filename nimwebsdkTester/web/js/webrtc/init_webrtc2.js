@@ -250,14 +250,14 @@ function init() {
     console.error('已经初始化过了，刷新页面重试!!')
     return*/
     rtc.client.destroy()
-    WebRTC2.destroy()
+    NERTC.destroy()
   }
   globalConfig.inited = true
   addLog('初始化实例')
   const appkey = $('#appkey').val()
   loadTokenByAppKey();
   const chrome = $('#part-env input[name="screen-type"]:checked').val()
-  rtc.client = WebRTC2.createClient({
+  rtc.client = NERTC.createClient({
     appkey,
     debug: true,
     //report: false
@@ -269,17 +269,17 @@ function init() {
 }
 
 function initDevices() {
-  WebRTC2.getMicrophones().then((data) => {
+  NERTC.getMicrophones().then((data) => {
     var info = JSON.stringify(data)
     console.log('麦克风: %o', info)
     renderDeivce($('#micro'), data)
   })
-  WebRTC2.getCameras().then((data) => {
+  NERTC.getCameras().then((data) => {
     var info = JSON.stringify(data)
     console.log('摄像头: %o', info)
     renderDeivce($('#camera'), data)
   })
-  WebRTC2.getDevices().then((data)=>{
+  NERTC.getDevices().then((data)=>{
     const sounders = data.audioOut;
     renderDeivce($("#sounder"), sounders);
   })
@@ -975,7 +975,7 @@ function initLocalStream(audioSource, videoSource) {
       addLog("Electron屏幕共享：" + sourceId)
     }
   }
-  rtc.localStream = WebRTC2.createStream({
+  rtc.localStream = NERTC.createStream({
     uid: +$('#uid').val(),
     audio: $('#enableAudio').prop('checked'),
     audioProcessing: getAudioProcessingConfig(),
@@ -1006,8 +1006,8 @@ function initLocalStream(audioSource, videoSource) {
   const videoQuality = $('#sessionConfigVideoQuality').val()
   const frameRate = $('#sessionConfigVideoFrameRate').val()
   rtc.localStream.setVideoProfile({
-    resolution: WebRTC2.VIDEO_QUALITY[videoQuality],
-    frameRate: WebRTC2.VIDEO_FRAME_RATE[frameRate]
+    resolution: NERTC.VIDEO_QUALITY[videoQuality],
+    frameRate: NERTC.VIDEO_FRAME_RATE[frameRate]
   })
 
   const audioProfile = $('#sessionConfigAudioProfile').val();
@@ -1017,8 +1017,8 @@ function initLocalStream(audioSource, videoSource) {
   const screenProfile = $('#sessionConfigScreenProfile').val()
   const screenFrameRate = $('#sessionConfigScreenFrameRate').val()
   rtc.localStream.setScreenProfile({
-    resolution: WebRTC2.VIDEO_QUALITY[screenProfile],
-    frameRate: WebRTC2.VIDEO_FRAME_RATE[screenFrameRate]
+    resolution: NERTC.VIDEO_QUALITY[screenProfile],
+    frameRate: NERTC.VIDEO_FRAME_RATE[screenFrameRate]
   })
   rtc.localStream.init().then(()=>{
     const playOptions = $('#localPlayOptionsEnabled').prop('checked') ? {
@@ -1449,8 +1449,8 @@ $('#playCamera').on('click', () => {
   const videoQuality = $('#sessionConfigVideoQuality').val()
   const frameRate = $('#sessionConfigVideoFrameRate').val()
   rtc.localStream.setVideoProfile({
-    resolution: WebRTC2.VIDEO_QUALITY[videoQuality],
-    frameRate: WebRTC2.VIDEO_FRAME_RATE[frameRate],
+    resolution: NERTC.VIDEO_QUALITY[videoQuality],
+    frameRate: NERTC.VIDEO_FRAME_RATE[frameRate],
   })
   rtc.localStream.open({
     type: 'video',
@@ -1526,8 +1526,8 @@ $('#playScreen').on('click', () => {
   const screenProfile = $('#sessionConfigScreenProfile').val()
   const screenFrameRate = $('#sessionConfigScreenFrameRate').val()
   rtc.localStream.setScreenProfile({
-    resolution: WebRTC2.VIDEO_QUALITY[screenProfile],
-    frameRate: WebRTC2.VIDEO_FRAME_RATE[screenFrameRate]
+    resolution: NERTC.VIDEO_QUALITY[screenProfile],
+    frameRate: NERTC.VIDEO_FRAME_RATE[screenFrameRate]
   })
   rtc.localStream.open({
     type: 'screen',
@@ -1679,7 +1679,7 @@ $('#camera').on('change', () => {
 $('#sessionConfigVideoQuality').on('change', () => {
   const videoQuality = $('#sessionConfigVideoQuality').val()
   window.rtc.localStream && window.rtc.localStream.setVideoProfile({
-    quality: WebRTC2.VIDEO_QUALITY[videoQuality]
+    quality: NERTC.VIDEO_QUALITY[videoQuality]
   })
   console.log('change video quality ', videoQuality)
 })
@@ -1688,7 +1688,7 @@ $('#sessionConfigVideoQuality').on('change', () => {
 $('#sessionConfigVideoFrameRate').on('change', () => {
   const frameRate = $('#sessionConfigVideoFrameRate').val()
   window.rtc.localStream && window.rtc.localStream.setVideoProfile({
-    frameRate: WebRTC2.VIDEO_FRAME_RATE[frameRate]
+    frameRate: NERTC.VIDEO_FRAME_RATE[frameRate]
   })
   console.log('change frame rate ', frameRate)
 })
@@ -2306,11 +2306,11 @@ $("#closeWatermarkPanel").on("click", function (){
   $("#updateWatermarkPanel").hide();
 });
 
-$("#sdkVersion").text(WebRTC2.VERSION);
-$("#sdkBuild").text(WebRTC2.BUILD);
-$("#systemRequirement").text(`WebRTC:${WebRTC2.checkSystemRequirements() ? "支持": "不支持"}； 适配器:${WebRTC2.getHandler()}`);
-if (WebRTC2.getSupportedCodec){
-  WebRTC2.getSupportedCodec().then((data)=>{
+$("#sdkVersion").text(NERTC.VERSION);
+$("#sdkBuild").text(NERTC.BUILD);
+$("#systemRequirement").text(`WebRTC:${NERTC.checkSystemRequirements() ? "支持": "不支持"}； 适配器:${NERTC.getHandler()}`);
+if (NERTC.getSupportedCodec){
+  NERTC.getSupportedCodec().then((data)=>{
     $("#systemRequirement").append(`<br/>视频编码：${data.video.join(",")}；音频编码：${data.audio.join(",")}`)
   })
 }

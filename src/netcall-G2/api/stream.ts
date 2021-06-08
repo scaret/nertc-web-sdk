@@ -3,7 +3,7 @@ import { EventEmitter } from "eventemitter3";
 import {
   VIDEO_QUALITY,
   VIDEO_FRAME_RATE,
-  WEBRTC2_VIDEO_QUALITY
+  NERTC_VIDEO_QUALITY
 } from "../constant/videoQuality";
 import {Play} from '../module/play'
 import {Record} from '../module/record'
@@ -36,7 +36,7 @@ import {
 import {AuidoMixingState} from "../constant/state";
 
 /**
- *  请使用 {@link WEBRTC2.createStream} 通过WEBRTC2.createStream创建
+ *  请使用 {@link NERTC.createStream} 通过NERTC.createStream创建
  *  @class
  *  @name Stream
  */
@@ -268,13 +268,13 @@ class Stream extends EventEmitter {
     this.videoProfile = {
       frameRate: VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_NORMAL, //15
       videoBW: 500,
-      resolution: WEBRTC2_VIDEO_QUALITY.VIDEO_QUALITY_480p // 640*480
+      resolution: NERTC_VIDEO_QUALITY.VIDEO_QUALITY_480p // 640*480
     }
     this.audioProfile = 'speech_low_quality'
     this.screenProfile = {
       frameRate: VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_5, //5
       videoBW: 1000,
-      resolution: WEBRTC2_VIDEO_QUALITY.VIDEO_QUALITY_1080p // 1920*1080
+      resolution: NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p // 1920*1080
     }
     this.audio = false
     this.microphoneId = ''
@@ -583,7 +583,7 @@ class Stream extends EventEmitter {
     this.inited = true
     this.client.adapterRef.localStream = this
     //设置分辨率和码率
-    this.client.adapterRef.channelInfo.sessionConfig.maxVideoQuality = WEBRTC2_VIDEO_QUALITY.VIDEO_QUALITY_1080p
+    this.client.adapterRef.channelInfo.sessionConfig.maxVideoQuality = NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p
     if (this.videoProfile){
       this.client.adapterRef.channelInfo.sessionConfig.videoQuality = this.videoProfile.resolution
       this.client.adapterRef.channelInfo.sessionConfig.videoFrameRate = this.videoProfile.frameRate
@@ -1776,8 +1776,8 @@ class Stream extends EventEmitter {
    * @method setVideoProfile
    * @memberOf Stream#
    * @param {Object} options 配置参数
-   * @param {Number} [options.resolution] 设置本端视频分辨率：WebRTC2.VIDEO_QUALITY_180p、WebRTC2.VIDEO_QUALITY_480p、WebRTC2.VIDEO_QUALITY_720p、WebRTC2.VIDEO_QUALITY_1080p
-   * @param {Number} [options.frameRate] 设置本端视频帧率：WebRTC2.CHAT_VIDEO_FRAME_RATE_5、WebRTC2.CHAT_VIDEO_FRAME_RATE_10、WebRTC2.CHAT_VIDEO_FRAME_RATE_15、WebRTC2.CHAT_VIDEO_FRAME_RATE_20、WebRTC2.CHAT_VIDEO_FRAME_RATE_25
+   * @param {Number} [options.resolution] 设置本端视频分辨率：NERTC.VIDEO_QUALITY_180p、NERTC.VIDEO_QUALITY_480p、NERTC.VIDEO_QUALITY_720p、NERTC.VIDEO_QUALITY_1080p
+   * @param {Number} [options.frameRate] 设置本端视频帧率：NERTC.CHAT_VIDEO_FRAME_RATE_5、NERTC.CHAT_VIDEO_FRAME_RATE_10、NERTC.CHAT_VIDEO_FRAME_RATE_15、NERTC.CHAT_VIDEO_FRAME_RATE_20、NERTC.CHAT_VIDEO_FRAME_RATE_25
    * @returns {Null}  
   */
   setVideoProfile (options:VideoProfileOptions) {
@@ -1818,8 +1818,8 @@ class Stream extends EventEmitter {
    * @method setScreenProfile
    * @memberOf Stream#
    * @param {Object} options 配置参数
-   * @param {String} [options.resolution] 设置本端屏幕共享分辨率：WebRTC2.VIDEO_QUALITY_480p、WebRTC2.VIDEO_QUALITY_720p、WebRTC2.VIDEO_QUALITY_1080p
-   * @param {String} [options.frameRate] 设置本端视频帧率：WebRTC2.CHAT_VIDEO_FRAME_RATE_5、WebRTC2.CHAT_VIDEO_FRAME_RATE_10、WebRTC2.CHAT_VIDEO_FRAME_RATE_15、WebRTC2.CHAT_VIDEO_FRAME_RATE_20、WebRTC2.CHAT_VIDEO_FRAME_RATE_25
+   * @param {String} [options.resolution] 设置本端屏幕共享分辨率：NERTC.VIDEO_QUALITY_480p、NERTC.VIDEO_QUALITY_720p、NERTC.VIDEO_QUALITY_1080p
+   * @param {String} [options.frameRate] 设置本端视频帧率：NERTC.CHAT_VIDEO_FRAME_RATE_5、NERTC.CHAT_VIDEO_FRAME_RATE_10、NERTC.CHAT_VIDEO_FRAME_RATE_15、NERTC.CHAT_VIDEO_FRAME_RATE_20、NERTC.CHAT_VIDEO_FRAME_RATE_25
    * @returns {Void}  
   */
   setScreenProfile (profile: ScreenProfileOptions) {
@@ -1878,13 +1878,13 @@ class Stream extends EventEmitter {
     if (!this.videoProfile){
       throw new Error('No this.videoProfile');
     }
-    if(this.videoProfile.resolution == WEBRTC2_VIDEO_QUALITY.VIDEO_QUALITY_180p) {
+    if(this.videoProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_180p) {
       return 300 * 1000
-    } else if (this.videoProfile.resolution == WEBRTC2_VIDEO_QUALITY.VIDEO_QUALITY_480p) {
+    } else if (this.videoProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_480p) {
       return 800 * 1000
-    } else if (this.videoProfile.resolution == WEBRTC2_VIDEO_QUALITY.VIDEO_QUALITY_720p) {
+    } else if (this.videoProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_720p) {
       return 1200 * 1000
-    } else if (this.videoProfile.resolution == WEBRTC2_VIDEO_QUALITY.VIDEO_QUALITY_1080p) {
+    } else if (this.videoProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p) {
       return 1500 * 1000
     } return 0
   }
@@ -1893,13 +1893,13 @@ class Stream extends EventEmitter {
     if (!this.screenProfile){
       throw new Error('No this.screenProfile');
     }
-    if(this.screenProfile.resolution == WEBRTC2_VIDEO_QUALITY.VIDEO_QUALITY_180p) {
+    if(this.screenProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_180p) {
       return 300 * 1000
-    } else if (this.screenProfile.resolution == WEBRTC2_VIDEO_QUALITY.VIDEO_QUALITY_480p) {
+    } else if (this.screenProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_480p) {
       return 800 * 1000
-    } else if (this.screenProfile.resolution == WEBRTC2_VIDEO_QUALITY.VIDEO_QUALITY_720p) {
+    } else if (this.screenProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_720p) {
       return 1200 * 1000
-    } else if (this.screenProfile.resolution == WEBRTC2_VIDEO_QUALITY.VIDEO_QUALITY_1080p) {
+    } else if (this.screenProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p) {
       return 1500 * 1000
     } return 0
   }

@@ -21,12 +21,12 @@ QUnit.module('麦克风', function() {
     if (!window.counter){window.counter = 1;}
     const appkey = $('#appkey').val()
     const token = $('#token').val() || ''
-    const client = WebRTC2.createClient({
+    const client = NERTC.createClient({
       appkey,
       token,
       debug: true,
     });
-    const localStream = WebRTC2.createStream({
+    const localStream = NERTC.createStream({
       client: client,
       uid: counter++,
       audio: true,

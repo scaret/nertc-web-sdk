@@ -33,13 +33,13 @@ QUnit.module('连接测试', function() {
       console.log("New series", series);
       
       const uid = counter++;
-      const client = WebRTC2.createClient({
+      const client = NERTC.createClient({
         uid: uid,
         appkey: appkey,
         token,
         debug: true,
       });
-      const localStream = WebRTC2.createStream({
+      const localStream = NERTC.createStream({
         client: client,
         uid: uid,
         audio: false,
@@ -52,7 +52,7 @@ QUnit.module('连接测试', function() {
         "uid": uid
       });
       assert.true(true, `uid ${uid} 加入房间 channel_${uid} 成功，信令通道可以连通。`);
-      localStream.setVideoProfile({resolution: WebRTC2.VIDEO_QUALITY[resolution[0]]})
+      localStream.setVideoProfile({resolution: NERTC.VIDEO_QUALITY[resolution[0]]})
       await localStream.init();
       const localViewConfig = {
         width: 400,

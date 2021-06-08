@@ -22,7 +22,7 @@ QUnit.module('摄像头', function() {
       ["VIDEO_QUALITY_720p", 1280, 720],
       ["VIDEO_QUALITY_1080p", 1920, 1080],
     ];
-    const client = WebRTC2.createClient({
+    const client = NERTC.createClient({
       appkey,
       token,
       debug: true,
@@ -37,7 +37,7 @@ QUnit.module('摄像头', function() {
         assert.ok(true, `不支持分辨率 ${resolution[0]}，但仍可通过兼容的分辨率进行通话`);
         continue;
       }
-      let localStream = WebRTC2.createStream({
+      let localStream = NERTC.createStream({
         client: client,
         uid: counter++,
         cameraId: cameraId,
@@ -45,7 +45,7 @@ QUnit.module('摄像头', function() {
         video: true
       });
       window.localStream = localStream;
-      localStream.setVideoProfile({resolution: WebRTC2.VIDEO_QUALITY[resolution[0]]});
+      localStream.setVideoProfile({resolution: NERTC.VIDEO_QUALITY[resolution[0]]});
       await localStream.init();
       await localStream.play(document.querySelector("#infoBox"));
       assert.true(true, `正在使用分辨率${resolution[0]} ${resolution[1]}x${resolution[2]}进行摄像头测试`);

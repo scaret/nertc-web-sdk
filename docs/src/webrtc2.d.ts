@@ -4,10 +4,11 @@ import { ClientOptions, StreamOptions } from "./types";
 import {DeviceInfo} from "./browser";
 
 /**
- * WebRTC2 是 云信 Web SDK 中所有可调用方法的入口
+ * NERTC 是 云信 Web SDK 中所有可调用方法的入口
  */
-export  as namespace WebRTC2
-declare namespace WebRTC2 {
+export  = NERTC
+export  as namespace NERTC
+declare namespace NERTC {
   /**
    * 创建客户端，开始通话前调用一次即可
    * @param options 配置参数
@@ -28,7 +29,7 @@ declare namespace WebRTC2 {
    *
    * ```JavaScript
    * // 接口使用示例
-   * WebRTC2.getDevices().then(data => {
+   * NERTC.getDevices().then(data => {
    *   const {audioIn, audioOut, video} = data
    *   audioIn.forEach(item=>{
    *     console.log('mic label: ', item.label, 'deviceId: ', item.deviceId)
@@ -50,7 +51,7 @@ declare namespace WebRTC2 {
    * 
    * ```JavaScript
    * //接口使用示例
-   * WebRTC2.getCameras().then(data => {
+   * NERTC.getCameras().then(data => {
    *   data.forEach(item=>{
    *     console.log('video label: ', item.label, 'deviceId: ', item.deviceId)
    *   })
@@ -100,8 +101,8 @@ declare namespace WebRTC2 {
    * - audio: 支持的音频编解码格式，数组类型。返回值包括 "OPUS"。
    * 
    * ```JavaScript
-   * //示例
-   * WebRTC2.getSupportedCodec().then(data => {
+   * //接口使用示例
+   * NERTC.getSupportedCodec().then(data => {
    *   data.forEach(item=>{
    *     console.log(`Supported video codec: ${data.video.join(",")});
    *     console.log(`Supported audio codec: ${data.audio.join(",")});

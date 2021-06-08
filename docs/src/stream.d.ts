@@ -10,7 +10,7 @@ import {
   RecordStartOptions, RecordStatus
 } from "./types";
 /**
- * 请使用 [[WebRTC2.createStream]] 通过WEBRTC2.createStream创建
+ * 请使用 [[NERTC.createStream]] 通过NERTC.createStream创建
  */
 declare interface Stream {
     /**
