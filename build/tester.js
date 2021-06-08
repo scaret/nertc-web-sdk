@@ -36,7 +36,7 @@ const minLibNames = {
   sdk: filename.replace("[name]", "SDK"),
   netcall: filename.replace("[name]", "Netcall"),
   webrtc: filename.replace("[name]", "WebRTC"),
-  webrtc2: webrtc2Filename.replace("[name]", "WebRTC2"),
+  webrtc2: webrtc2Filename.replace("[name]", "NERTC"),
   whiteboard: filename.replace("[name]", "WhiteBoard"),
   nrtc: filename.replace("[name]", "NRTC"),
   nbb: filename.replace("[name]", "NBB")

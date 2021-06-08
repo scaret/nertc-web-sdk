@@ -2,8 +2,8 @@
 
 NERTC Web SDK 提供完善的音视频通话 JavaScript 开发框架，提供基于网络的视频通话和语音通话功能，支持在网页中调用API快速建立音视频连接，进行音视频通话和推流的服务。
 
-完整的 NERTC Web SDK 由 WebRTC2、Client 和 Stream 三部分组成。
-- [[WebRTC2]] 是基础对象，是所有可调用方法的入口。
+完整的 NERTC Web SDK 由 NERTC、Client 和 Stream 三部分组成。
+- [[NERTC]] 是基础对象，是所有可调用方法的入口。
 - [[Client]] 是客户端对象，负责通话中的本地或远程用户的核心操作。
 - [[Stream]] 是音视频流对象，负责音视频流相关的设置。
 
@@ -16,16 +16,16 @@ table th:nth-of-type(2) {
 }
 </style>
 
-## <span id="WebRTC2 对象">WebRTC2 对象</span>
+## <span id="NERTC 对象">NERTC 对象</span>
 
 方法 | 功能描述
 ---|---|
-[[WebRTC2.createClient]] | 创建客户端。
-[[WebRTC2.createStream]] | 创建音视频流对象。
-[[WebRTC2.getDevices]] | 获取可用的媒体输入/输出设备。
-[[WebRTC2.getCameras]] | 获取可用的视频输入设备。
-[[WebRTC2.getMicrophones]] | 获取可用的音频输入设备。
-[[WebRTC2.getSpeakers]] | 获取可用的音频输出设备。
+[[NERTC.createClient]] | 创建客户端。
+[[NERTC.createStream]] | 创建音视频流对象。
+[[NERTC.getDevices]] | 获取可用的媒体输入/输出设备。
+[[NERTC.getCameras]] | 获取可用的视频输入设备。
+[[NERTC.getMicrophones]] | 获取可用的音频输入设备。
+[[NERTC.getSpeakers]] | 获取可用的音频输出设备。
 
 ## <span id="Client 客户端对象">Client 客户端对象</span>
 
@@ -33,7 +33,7 @@ table th:nth-of-type(2) {
 
 方法 | 功能描述
 ---|---|
-[[WebRTC2.createClient]] | 创建客户端对象实例。
+[[NERTC.createClient]] | 创建客户端对象实例。
 [[Client.destroy]] | 销毁客户端对象实例。
 
 
@@ -93,7 +93,7 @@ table th:nth-of-type(2) {
 
 方法 | 功能描述
 ---|---|
-[[WebRTC2.createStream]] | 创建音视频流对象。
+[[NERTC.createStream]] | 创建音视频流对象。
 [[Stream.destroy]] | 销毁音视频流对象。
 [[Stream.init]] | 初始化音视频流对象。
 [[Stream.play]] | 播放音视频流。

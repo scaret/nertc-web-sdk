@@ -12,7 +12,7 @@ import {ConnectionState} from "./types";
 import {NetStatusItem} from "./types";
 
 /**
- *  请使用 [[WebRTC2.createClient]] 创建 Client对象，client对象指通话中的本地或远程用户，提供云信sdk的核心功能。
+ *  请使用 [[NERTC.createClient]] 创建 Client对象，client对象指通话中的本地或远程用户，提供云信sdk的核心功能。
  */
 declare interface Client{
     /**

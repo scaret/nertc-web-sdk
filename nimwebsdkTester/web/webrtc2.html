@@ -36,7 +36,7 @@
               <input type="radio" name="safemode" value="safe" checked> 安全模式</label>
             <label>
               <input type="radio" name="safemode" value="unsafe">非安全模式</label>
-          <div class="line"></div>
+            <div class="line"></div>
             <label>浏览器支持的解码能力</label>
             <div id="supported-recv-codec-wrapper"></div>
             <label>浏览器支持的编码能力</label>
@@ -59,7 +59,7 @@
           <div class="line">
             网关地址:
             <input type="text" id="getwayAddr" value='webrtcgwcn.netease.im/?ip=59.111.190.69:2060'>
-            是否使用：<input type="checkbox" id="isGetwayAddrConf"/>
+            是否使用：<input type="checkbox" id="isGetwayAddrConf" />
           </div>
           <!-- <div class="line">
             方式一：参数配置URL:
@@ -67,7 +67,7 @@
           </div> -->
           <div class="line">
             <!-- 启用私有化：<input type="checkbox" checked id="isPrivatization"/> -->
-            私有化配置项<input type="file" id = "privatizationConfigFildId" />
+            私有化配置项<input type="file" id="privatizationConfigFildId" />
             <button type="button" id='privatizationConfig'>启用私有化</button>
           </div>
           <!-- <div class="line">
@@ -92,7 +92,7 @@
           </div>
           <div class="line">
             版本号: <span id="sdkVersion"></span><br>
-            提交号: <span id="sdkBuild"></span><br/>
+            提交号: <span id="sdkBuild"></span><br />
             <span id="systemRequirement"></span>
           </div>
         </div>
@@ -111,9 +111,9 @@
             <div class="line">
               <label for='sessionConfigRecordType'>录制模式</label>
               <select id='sessionConfigRecordType'>
-                  <option value='0'>混合录制并且录制单人文件</option>
-                  <option value='1'>混合录制</option>
-                  <option value='2'>单人录制</option>
+                <option value='0'>混合录制并且录制单人文件</option>
+                <option value='1'>混合录制</option>
+                <option value='2'>单人录制</option>
               </select>
             </div>
           </div>
@@ -128,7 +128,7 @@
           <p class="block-header">媒体优先级设置</p>
           <div class="part">
             <div class="line">
-             <input type="checkbox" id="isPreemptive"> 抢占模式
+              <input type="checkbox" id="isPreemptive"> 抢占模式
             </div>
             <div class="line">
               选择优先级
@@ -156,7 +156,7 @@
           <div class="line">
             <button type="button" id="joinChannel-btn">加入房间</button>
             <button type="button" id="leaveChannel-btn">离开房间</button>
-            <br/>
+            <br />
             <button type="button" id="setRoleHost-btn">设为主播</button>
             <button type="button" id="setRoleAudience-btn">设为观众</button>
             <span id="currentRole"></span>
@@ -177,12 +177,12 @@
             <input type="checkbox" id="enableAudio" checked>
             启用视频
             <input type="checkbox" id="enableVideo" checked>
-            <br/>
+            <br />
             启用屏幕共享
             <input type="checkbox" id="enableScreen">
             启用屏幕共享背景音
             <input type="checkbox" id="enableScreenAudio">
-            <br/>
+            <br />
             自定义音频
             <input type="checkbox" id="privateAudio">
             自定义视频
@@ -287,20 +287,20 @@
           -->
           <div class="line">
             订阅audio
-              <input type="checkbox" id="subAudio" checked>
- 
+            <input type="checkbox" id="subAudio" checked>
+
             订阅video
-              <input type="checkbox" id="subVideo" checked>
-  
+            <input type="checkbox" id="subVideo" checked>
+
             订阅screen
-              <input type="checkbox" id="subScreen" checked>
-            
+            <input type="checkbox" id="subScreen" checked>
+
           </div>
           <div class="line">
             订阅大小流
             <select id='subResolution'>
-              <option value= '0'>小流</option>
-              <option value= '1'>大流</option>
+              <option value='0'>小流</option>
+              <option value='1'>大流</option>
             </select>
           </div>
           <div class="line">
@@ -317,7 +317,7 @@
             <button type="button" id="subUpdateResolution">订阅大小流</button>
           </div>
         </div>
-        
+
       </div>
       <div class="block">
         <p class="block-header">播放相关</p>
@@ -345,7 +345,7 @@
 
           <div class="part">
             <div class="line">
-              本地播放设置<input type="checkbox" id="localPlayOptionsEnabled" checked><br/>
+              本地播放设置<input type="checkbox" id="localPlayOptionsEnabled" checked><br />
               播放音频
               <input type="checkbox" id="localPlayOptionsAudio">
               音频类型
@@ -354,12 +354,12 @@
                 <option value="voice">voice</option>
                 <option value="music">music</option>
                 <option value="mixing">mixing</option>
-              </select><br/>
+              </select><br />
               播放视频
               <input type="checkbox" id="localPlayOptionsVideo" checked>
               播放辅流
-              <input type="checkbox" id="localPlayOptionsScreen" checked><br/>
-              远端进频道设置<input type="checkbox" id="remotePlayOptionsEnabled" checked><br/>
+              <input type="checkbox" id="localPlayOptionsScreen" checked><br />
+              远端进频道设置<input type="checkbox" id="remotePlayOptionsEnabled" checked><br />
               播放音频
               <input type="checkbox" id="remotePlayOptionsAudio" checked>
               播放视频
@@ -422,17 +422,17 @@
           </div>
         </div>
         <p class="block-header">音量检测</p>
-          <div class="part">
-            <div class="line">
-              <div id="meters">
-                <div id="instant">
-                    <div class="label">音量:</div>
-                    <meter high="0.25" max="1" value="0"></meter>
-                    <div class="value"></div>
-                </div>
+        <div class="part">
+          <div class="line">
+            <div id="meters">
+              <div id="instant">
+                <div class="label">音量:</div>
+                <meter high="0.25" max="1" value="0"></meter>
+                <div class="value"></div>
               </div>
             </div>
           </div>
+        </div>
       </div>
       <div class="block">
         <p class="block-header">设备相关</p>
@@ -457,20 +457,20 @@
             <button id="playScreenOff" class="close">关闭</button>
           </div>
           <div class="line">
-              <button id="snapshot" class="close">截图</button>
-              uid：
-              <input type="text" id="snapshotAccount" class="input-40">
-              类型：
-              <select type="text" id="snapType" style="width:30%">
-                <option value="">默认</option>
-                <option value="video">主流</option>
-                <option value="screen">辅流</option>
-              </select>
-               图片名称：
-              <input type="text" id="snapshotName" class="input-40">
-            </div>
+            <button id="snapshot" class="close">截图</button>
+            uid：
+            <input type="text" id="snapshotAccount" class="input-40">
+            类型：
+            <select type="text" id="snapType" style="width:30%">
+              <option value="">默认</option>
+              <option value="video">主流</option>
+              <option value="screen">辅流</option>
+            </select>
+            图片名称：
+            <input type="text" id="snapshotName" class="input-40">
+          </div>
         </div>
-        
+
         <p class="block-header">自渲染</p>
         <div class="part" id="audio-self">
           <div class="line">
@@ -499,7 +499,7 @@
               </tr>
             </table>
           </div>
-          
+
           <div class="line">
             <button type="button" id="getConnectionState">获取连接状态</button>
             <button type="button" id="disconnectWS">断开WebSocket</button>
@@ -509,280 +509,284 @@
       </div>
       <div class="block">
 
-          <p class="block-header" id="clientRecord">客户端录制相关</p>
-          <div class="part" id="part-record" style="display: none">
-            <div class="line">
-              视频录制：<br/>
-              <label>操作对象(账号或UID)，不填录本地</label><input type="text" id="recordUid"><br/>
-              <input type="radio" name="recordSource" value="camera" checked>
-              <label>摄像头录制</label>
-              <input type="radio" name="recordSource" value="screen">
-              <label>屏幕录制</label>
-              <input type="radio" name="recordSource" value="video">
-              <label>视频录制(可混屏)</label>
-              <input type="radio" name="recordSource" value="audio">
-              <label>混音录制</label><br/>
-              <button id="recordVideo" class="close">开始</button>
-            </div>
-            <div class="line">
-              录制ID
-              <!-- <input type="text" class="recordId"> -->
-              <select class="recordId"></select>
-            </div>
-            <div class="line">
-              录制列表
-              <button id="recordVideoEnd" class="close">结束</button>
-              <button id="recordList" class="close">获取列表</button>
-              <button id="recordDownload" class="close">下载</button>
-              <button id="recordClean" class="close">清理</button>
+        <p class="block-header" id="clientRecord">客户端录制相关</p>
+        <div class="part" id="part-record" style="display: none">
+          <div class="line">
+            视频录制：<br />
+            <label>操作对象(账号或UID)，不填录本地</label><input type="text" id="recordUid"><br />
+            <input type="radio" name="recordSource" value="camera" checked>
+            <label>摄像头录制</label>
+            <input type="radio" name="recordSource" value="screen">
+            <label>屏幕录制</label>
+            <input type="radio" name="recordSource" value="video">
+            <label>视频录制(可混屏)</label>
+            <input type="radio" name="recordSource" value="audio">
+            <label>混音录制</label><br />
+            <button id="recordVideo" class="close">开始</button>
+          </div>
+          <div class="line">
+            录制ID
+            <!-- <input type="text" class="recordId"> -->
+            <select class="recordId"></select>
+          </div>
+          <div class="line">
+            录制列表
+            <button id="recordVideoEnd" class="close">结束</button>
+            <button id="recordList" class="close">获取列表</button>
+            <button id="recordDownload" class="close">下载</button>
+            <button id="recordClean" class="close">清理</button>
+          </div>
+        </div>
+
+        <p class="block-header" id="audioMixing">伴音功能</p>
+        <div class="part" id='audioMixingFeature' style="display: none">
+          <div class="line">
+            云端音乐文件地址：
+            <input type="text" id="audioFilePath">
+          </div>
+          <div class="line">
+            是否循环播放
+            <input type="checkbox" id="loopback">
+          </div>
+          <div class="line">
+            是否替换mic
+            <input type="checkbox" id="replace">
+          </div>
+          <div class="line">
+            循环播放的次数：
+            <input type="text" id="cycle" class="input-40">
+          </div>
+          <div class="line">
+            开始播放时间：
+            <input type="text" id="playStartTime" class="input-40">
+          </div>
+          <div class="line">
+            伴音的音量：
+            <input type="text" id="playVolume" class="input-40">
+          </div>
+          <div class="line">
+            <button id="startAudioMixing">开始</button>
+            <button id="pauseAudioMixing">暂停</button>
+            <button id="resumeAudioMixing">恢复</button>
+            <button id="stopAudioMixing">停止</button>
+          </div>
+          <div class="line">
+            设置伴音的音量:
+            <input type="text" id="volume" class="input-40">
+            <button id="setAudioMixingVolume">设置</button>
+          </div>
+          <div class="line">
+            <div id="auidoMixing">
+              <div class="value"></div>
+              <progress value="0" max="100"></progress>
             </div>
           </div>
-
-          <p class="block-header" id="audioMixing">伴音功能</p>
-          <div class="part" id='audioMixingFeature' style="display: none">
-            <div class="line">
-              云端音乐文件地址：
-              <input type="text" id="audioFilePath">
-            </div>
-            <div class="line">
-              是否循环播放
-              <input type="checkbox" id="loopback">
-            </div>
-            <div class="line">
-              是否替换mic
-              <input type="checkbox" id="replace">
-            </div>
-            <div class="line">
-              循环播放的次数：
-              <input type="text" id="cycle" class="input-40">
-            </div>
-            <div class="line">
-              开始播放时间：
-              <input type="text" id="playStartTime" class="input-40">
-            </div>
-            <div class="line">
-              伴音的音量：
-              <input type="text" id="playVolume" class="input-40">
-            </div>
-            <div class="line">
-                <button id="startAudioMixing">开始</button>
-                <button id="pauseAudioMixing">暂停</button>
-                <button id="resumeAudioMixing">恢复</button>
-                <button id="stopAudioMixing">停止</button>
-            </div>
-            <div class="line">
-              设置伴音的音量:
-              <input type="text" id="volume" class="input-40">
-              <button id="setAudioMixingVolume">设置</button>
-            </div>
-            <div class="line">
-                <div id="auidoMixing">
-                  <div class="value"></div>
-                  <progress value="0" max="100"></progress>
-                </div>
-            </div>
-            <div class="line">
-              混音状态：<span id="audioMixingState"></span>
-              上行音频：<span id="audioSenderLabel"></span>
-            </div>
+          <div class="line">
+            混音状态：<span id="audioMixingState"></span>
+            上行音频：<span id="audioSenderLabel"></span>
           </div>
+        </div>
 
-          <p class="block-header" id="audioEffect">音效功能</p>
-          <div class="part" id='audioEffectFeature' style="display: none">
-            
-            <div class="part">
-              <div class="line">
-                音效文件 #1
-                <select id="path1" style="width:32%">
-                  <option value="auido/yrybz.aac">yrybz.aac</option>
-                  <option value="auido/蓝天白云.mp3">蓝天白云.mp3</option>
-                  <option value="auido/biu.mp3">biu.mp3</option>
-                  <option value="auido/smlt.flac">smlt.flac</option>
-                </select>
-              </div>
-              <div class="line">
-                Cycle
-                <input type="number" value="1" min="1" data-panel-id="1" id="cycle1" style="width:12%">
-                SoundId
-                <input type="number" value="1" min="1" data-panel-id="1" id="soundId1" style="width:15%">
-              </div>
-          
-                setVolumeOfEffect:
-                <input type="number" rows="10" value="100" max="100" min="0" step="10" data-panel-id="1" id="volume1" style="width:15%">
-                <button id="setVolumeOfEffect1">设置</button>
-              
-              <div class="line">
-                <button id="playEffect1">play</button>
-                <button id="stopEffect1">stop</button>
-                <button id="pauseEffect1">pause</button>
-                <button id="resumeEffect1">resume</button>
-                <button id="preloadEffect1">preload</button>
-                <button id="unloadEffect1">unload</button>
-              </div>
-            </div>
-            
-            <div class="part">
-              <div class="line">
-                音效文件 #2
-                <select id="path2" style="width:32%">
-                  <option value="auido/蓝天白云.mp3">蓝天白云.mp3</option>
-                  <option value="auido/yrybz.aac">yrybz.aac</option>
-                  <option value="auido/biu.mp3">biu.mp3</option>
-                  <option value="auido/smlt.flac">smlt.flac</option>
-                </select>
- 
+        <p class="block-header" id="audioEffect">音效功能</p>
+        <div class="part" id='audioEffectFeature' style="display: none">
 
-                Cycle
-                <input type="number" value="1" min="1" data-panel-id="1" id="cycle2" style="width:12%">
-                SoundId
-                <input type="number" value="2" min="1" data-panel-id="1" id="soundId2" style="width:15%">
-          
-                setVolumeOfEffect:
-                <input type="number" rows="10" value="100" max="100" min="0" step="10" data-panel-id="1" id="volume2" style="width:15%">
-                <button id="setVolumeOfEffect2">设置</button>
-              </div>
-              <div class="line">
-                <button id="playEffect2">play</button>
-                <button id="stopEffect2">stop</button>
-                <button id="pauseEffect2">pause</button>
-                <button id="resumeEffect2">resume</button>
-                <button id="preloadEffect2">preload</button>
-                <button id="unloadEffect2">unload</button>
-              </div>
-            </div>
-
-            <div class="part">
-              <div class="line">
-                音效文件 #3
-                <select id="path3" style="width:32%">
-                  <option value="auido/biu.mp3">biu.mp3</option>
-                  <option value="auido/yrybz.aac">yrybz.aac</option>
-                  <option value="auido/蓝天白云.mp3">蓝天白云.mp3</option>
-                  <option value="auido/smlt.flac">smlt.flac</option>
-                </select>
-
-                Cycle
-                <input type="number" value="1" min="1" data-panel-id="1" id="cycle3" style="width:12%">
-                SoundId
-                <input type="number" value="3" min="1" data-panel-id="1" id="soundId3" style="width:15%">
-                setVolumeOfEffect:
-                <input type="number" rows="10" value="100" max="100" min="0" step="10" data-panel-id="1" id="volume3" style="width:15%">
-                <button id="setVolumeOfEffect3">设置</button>
-              </div>
-              <div class="line">
-                <button id="playEffect3">play</button>
-                <button id="stopEffect3">stop</button>
-                <button id="pauseEffect3">pause</button>
-                <button id="resumeEffect3">resume</button>
-                <button id="preloadEffect3">preload</button>
-                <button id="unloadEffect3">unload</button>
-              </div>
-            </div>
-
-            <div class="part">
-              <div class="line">
-                setEffectsVolume:
-                <input type="number" rows="10" value="100" max="100" min="0" step="10" data-panel-id="1" id="volumeAll" style="width:15%">
-                <button id="setEffectsVolume">setEffectsVolume</button>
-                <button id="getEffectsVolume">getEffectsVolume</button>
-              </div>
-              <div class="line">
-                <button id="stopAllEffects">stopAllEffects</button>
-                <button id="pauseAllEffects">pauseAllEffects</button>
-                <button id="resumeAllEffects">resumeAllEffects</button>
-                
-              </div>
-            </div>
-
-          </div>
-
-          <p class="block-header" id="watermark">水印功能</p>
-          <div class="part" id='watermarkFeature1' style="display: none">
+          <div class="part">
             <div class="line">
-              ID水印
-              <input type="checkbox" id="idWatermark" checked>
-            </div>
-            <div class="line">
-              操作对象(不填则操作自己)
-              <input type="text" id="watermarkUid">
-            </div>
-            <div class="line">
-              <select id="watermarkMediaType">
-                <option value="video" selected>主流</option>
-                <option value="screen">辅流</option>
+              音效文件 #1
+              <select id="path1" style="width:32%">
+                <option value="auido/yrybz.aac">yrybz.aac</option>
+                <option value="auido/蓝天白云.mp3">蓝天白云.mp3</option>
+                <option value="auido/biu.mp3">biu.mp3</option>
+                <option value="auido/smlt.flac">smlt.flac</option>
               </select>
             </div>
-          </div>
-          <div class="part" id='watermarkFeature2' style="display: none">
             <div class="line">
-              <label>
-                类型type <select id='watermarkType'>
+              Cycle
+              <input type="number" value="1" min="1" data-panel-id="1" id="cycle1" style="width:12%">
+              SoundId
+              <input type="number" value="1" min="1" data-panel-id="1" id="soundId1" style="width:15%">
+            </div>
+
+            setVolumeOfEffect:
+            <input type="number" rows="10" value="100" max="100" min="0" step="10" data-panel-id="1" id="volume1"
+              style="width:15%">
+            <button id="setVolumeOfEffect1">设置</button>
+
+            <div class="line">
+              <button id="playEffect1">play</button>
+              <button id="stopEffect1">stop</button>
+              <button id="pauseEffect1">pause</button>
+              <button id="resumeEffect1">resume</button>
+              <button id="preloadEffect1">preload</button>
+              <button id="unloadEffect1">unload</button>
+            </div>
+          </div>
+
+          <div class="part">
+            <div class="line">
+              音效文件 #2
+              <select id="path2" style="width:32%">
+                <option value="auido/蓝天白云.mp3">蓝天白云.mp3</option>
+                <option value="auido/yrybz.aac">yrybz.aac</option>
+                <option value="auido/biu.mp3">biu.mp3</option>
+                <option value="auido/smlt.flac">smlt.flac</option>
+              </select>
+
+
+              Cycle
+              <input type="number" value="1" min="1" data-panel-id="1" id="cycle2" style="width:12%">
+              SoundId
+              <input type="number" value="2" min="1" data-panel-id="1" id="soundId2" style="width:15%">
+
+              setVolumeOfEffect:
+              <input type="number" rows="10" value="100" max="100" min="0" step="10" data-panel-id="1" id="volume2"
+                style="width:15%">
+              <button id="setVolumeOfEffect2">设置</button>
+            </div>
+            <div class="line">
+              <button id="playEffect2">play</button>
+              <button id="stopEffect2">stop</button>
+              <button id="pauseEffect2">pause</button>
+              <button id="resumeEffect2">resume</button>
+              <button id="preloadEffect2">preload</button>
+              <button id="unloadEffect2">unload</button>
+            </div>
+          </div>
+
+          <div class="part">
+            <div class="line">
+              音效文件 #3
+              <select id="path3" style="width:32%">
+                <option value="auido/biu.mp3">biu.mp3</option>
+                <option value="auido/yrybz.aac">yrybz.aac</option>
+                <option value="auido/蓝天白云.mp3">蓝天白云.mp3</option>
+                <option value="auido/smlt.flac">smlt.flac</option>
+              </select>
+
+              Cycle
+              <input type="number" value="1" min="1" data-panel-id="1" id="cycle3" style="width:12%">
+              SoundId
+              <input type="number" value="3" min="1" data-panel-id="1" id="soundId3" style="width:15%">
+              setVolumeOfEffect:
+              <input type="number" rows="10" value="100" max="100" min="0" step="10" data-panel-id="1" id="volume3"
+                style="width:15%">
+              <button id="setVolumeOfEffect3">设置</button>
+            </div>
+            <div class="line">
+              <button id="playEffect3">play</button>
+              <button id="stopEffect3">stop</button>
+              <button id="pauseEffect3">pause</button>
+              <button id="resumeEffect3">resume</button>
+              <button id="preloadEffect3">preload</button>
+              <button id="unloadEffect3">unload</button>
+            </div>
+          </div>
+
+          <div class="part">
+            <div class="line">
+              setEffectsVolume:
+              <input type="number" rows="10" value="100" max="100" min="0" step="10" data-panel-id="1" id="volumeAll"
+                style="width:15%">
+              <button id="setEffectsVolume">setEffectsVolume</button>
+              <button id="getEffectsVolume">getEffectsVolume</button>
+            </div>
+            <div class="line">
+              <button id="stopAllEffects">stopAllEffects</button>
+              <button id="pauseAllEffects">pauseAllEffects</button>
+              <button id="resumeAllEffects">resumeAllEffects</button>
+
+            </div>
+          </div>
+
+        </div>
+
+        <p class="block-header" id="watermark">水印功能</p>
+        <div class="part" id='watermarkFeature1' style="display: none">
+          <div class="line">
+            ID水印
+            <input type="checkbox" id="idWatermark" checked>
+          </div>
+          <div class="line">
+            操作对象(不填则操作自己)
+            <input type="text" id="watermarkUid">
+          </div>
+          <div class="line">
+            <select id="watermarkMediaType">
+              <option value="video" selected>主流</option>
+              <option value="screen">辅流</option>
+            </select>
+          </div>
+        </div>
+        <div class="part" id='watermarkFeature2' style="display: none">
+          <div class="line">
+            <label>
+              类型type <select id='watermarkType'>
                 <option value='text'>text</option>
                 <option value='timestamp'>timestamp</option>
                 <option value='image'>image</option>
               </select>
-              </label><br/>
-              <label>
-                内容content
-                <input placeholder="" type="text" id="watermarkContent">
-              </label><br/>
-              <label>
-                颜色fontColor
-                <input placeholder="例：0xFFFF0000" type="text" id="watermarkFontColor">
-              </label><br/>
-              <label>
-                大小fontSize
-                <input placeholder="例：20" type="text" id="watermarkFontSize">
-              </label><br/>
-              <label>
-                左距离offsetX
-                <input placeholder="例：20" type="text" id="watermarkOffsetX">
-              </label><br/>
-              <label>
-                上距离offsetY
-                <input placeholder="例：20" type="text" id="watermarkOffsetY">
-              </label><br/>
-              <label>
-                宽度wmWidth
-                <input placeholder="例：20" type="text" id="watermarkWmWidth">
-              </label><br/>
-              <label>
-                高度wmHeight
-                <input placeholder="例：20" type="text" id="watermarkWmHeight">
-              </label><br/>
-              <label>
-                背景色wmColor
-                <input placeholder="例：0xFF000000" type="text" id="watermarkWmColor">
-              </label><br/>
-              <label>
-                图片
-                <select id="watermarkImageUrls" multiple>
-                  <option value="https://netease.im/res/image/m/logo_big.png">云信</option>
-                  <option value="https://static.chiefmore.com/u/cms/www/201908/09100143mbgu.jpg">七鱼</option>
-                  <option value="https://img.51miz.com/Element/00/83/05/25/69a3270b_E830525_0ce9bbdf.png">网易云音乐</option>
-                  <option value="https://dun.163.com/public/res/news/qr-logo.jpg">易盾</option>
-                </select>
-              </label><br/>
-              <label>
-                图片帧率fps
-                <input placeholder="默认0帧" type="text" id="watermarkFps">
-              </label><br/>
-              <label>
-                图片是否循环loop
-                <input type="checkbox" id="watermarkLoop" checked>
-              </label><br/>
-              <button id="setWatermark">增加</button>
-              <button id="clearWatermark">清空该用户主/辅流水印</button>
-              <button id="showUpdateWatermark">【高级】更新</button>
-            </div>
+            </label><br />
+            <label>
+              内容content
+              <input placeholder="" type="text" id="watermarkContent">
+            </label><br />
+            <label>
+              颜色fontColor
+              <input placeholder="例：0xFFFF0000" type="text" id="watermarkFontColor">
+            </label><br />
+            <label>
+              大小fontSize
+              <input placeholder="例：20" type="text" id="watermarkFontSize">
+            </label><br />
+            <label>
+              左距离offsetX
+              <input placeholder="例：20" type="text" id="watermarkOffsetX">
+            </label><br />
+            <label>
+              上距离offsetY
+              <input placeholder="例：20" type="text" id="watermarkOffsetY">
+            </label><br />
+            <label>
+              宽度wmWidth
+              <input placeholder="例：20" type="text" id="watermarkWmWidth">
+            </label><br />
+            <label>
+              高度wmHeight
+              <input placeholder="例：20" type="text" id="watermarkWmHeight">
+            </label><br />
+            <label>
+              背景色wmColor
+              <input placeholder="例：0xFF000000" type="text" id="watermarkWmColor">
+            </label><br />
+            <label>
+              图片
+              <select id="watermarkImageUrls" multiple>
+                <option value="https://netease.im/res/image/m/logo_big.png">云信</option>
+                <option value="https://static.chiefmore.com/u/cms/www/201908/09100143mbgu.jpg">七鱼</option>
+                <option value="https://img.51miz.com/Element/00/83/05/25/69a3270b_E830525_0ce9bbdf.png">网易云音乐</option>
+                <option value="https://dun.163.com/public/res/news/qr-logo.jpg">易盾</option>
+              </select>
+            </label><br />
+            <label>
+              图片帧率fps
+              <input placeholder="默认0帧" type="text" id="watermarkFps">
+            </label><br />
+            <label>
+              图片是否循环loop
+              <input type="checkbox" id="watermarkLoop" checked>
+            </label><br />
+            <button id="setWatermark">增加</button>
+            <button id="clearWatermark">清空该用户主/辅流水印</button>
+            <button id="showUpdateWatermark">【高级】更新</button>
           </div>
-        
+        </div>
 
-        
-          <p class="block-header">检查视频卡顿</p>
-          <div class="part">
-            <canvas id="struckCanvas"></canvas>
-          </div>
+
+
+        <p class="block-header">检查视频卡顿</p>
+        <div class="part">
+          <canvas id="struckCanvas"></canvas>
+        </div>
       </div>
 
     </div>
@@ -810,9 +814,10 @@
     </div>
   </div>
 
-  <div id="updateWatermarkPanel" style="position: absolute; left: 0; top: 0; min-width: 500px; background: yellow; border: 1px solid black; display: none;">
+  <div id="updateWatermarkPanel"
+    style="position: absolute; left: 0; top: 0; min-width: 500px; background: yellow; border: 1px solid black; display: none;">
     <textarea cols="80" rows="40" id="watermarkConfStr"></textarea>
-    <br/>
+    <br />
     <button id="doUpdateWatermark">更新</button>
     <button id="closeWatermarkPanel">关闭</button>
   </div>
@@ -822,7 +827,7 @@
   <script src="./js/lib/sha1.min.js"></script>
   <script src="./js/lib/axios.min.js"></script>
 
-  <script src="./js/nim/NIM_Web_WebRTC2.js"></script>
+  <script src="./js/nim/NIM_Web_NERTC.js"></script>
   <script src="./js/lib/jquery.min.js"></script>
   <!-- <script src="./js/lib/vconsole.min.js"></script> -->
   <script src="./js/lib/parseQuery.js"></script>

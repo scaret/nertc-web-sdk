@@ -217,9 +217,9 @@ export interface RTMPTask {
       bitRate?: number;
       /**
        * 音频推流采样率。可以设置为以下值。
-       * * `WebRTC2.LIVE_STREAM_AUDIO_SAMPLE_RATE.SAMPLE_RATE_32000` : 32000
-       * * `WebRTC2.LIVE_STREAM_AUDIO_SAMPLE_RATE.SAMPLE_RATE_44100` : 44100
-       * * `WebRTC2.LIVE_STREAM_AUDIO_SAMPLE_RATE.SAMPLE_RATE_48000` : 48000（默认）
+       * * `NERTC.LIVE_STREAM_AUDIO_SAMPLE_RATE.SAMPLE_RATE_32000` : 32000
+       * * `NERTC.LIVE_STREAM_AUDIO_SAMPLE_RATE.SAMPLE_RATE_44100` : 44100
+       * * `NERTC.LIVE_STREAM_AUDIO_SAMPLE_RATE.SAMPLE_RATE_48000` : 48000（默认）
        */
       sampleRate?: number;
       /**
@@ -228,8 +228,8 @@ export interface RTMPTask {
       channels?: number;
       /**
        * 音频编码规格。可以设置为以下值。
-       * * `WebRTC2.LIVE_STREAM_AUDIO_CODEC_PROFILE.LC_AAC`: 表示基本音频编码规格（默认）
-       * * `WebRTC2.LIVE_STREAM_AUDIO_CODEC_PROFILE.HE_AAC`: 表示高效音频编码规格
+       * * `NERTC.LIVE_STREAM_AUDIO_CODEC_PROFILE.LC_AAC`: 表示基本音频编码规格（默认）
+       * * `NERTC.LIVE_STREAM_AUDIO_CODEC_PROFILE.HE_AAC`: 表示高效音频编码规格
        */
       codecProfile?: number;
     };
@@ -266,7 +266,7 @@ export interface StreamOptions {
     AGC?: boolean;
   };
   /**
-   * 麦克风设备 deviceId，通过 [[WebRTC2.getMicrophones()]] 获取
+   * 麦克风设备 deviceId，通过 [[NERTC.getMicrophones()]] 获取
    */
   microphoneId?: string;
   /**
@@ -329,19 +329,19 @@ export interface SubscribeOptions {
 
 export interface VideoProfileOptions {
   /**
-   * @param options.resolution 设置本端视频分辨率，见 [[WebRTC2.VIDEO_QUALITY]]
+   * @param options.resolution 设置本端视频分辨率，见 [[NERTC.VIDEO_QUALITY]]
    */
   resolution: number;
   /**
-   * @param options.frameRate 设置本端视频帧率，见[[WebRTC2.VIDEO_FRAME_RATE]]
+   * @param options.frameRate 设置本端视频帧率，见[[NERTC.VIDEO_FRAME_RATE]]
    */
   frameRate: number;
 }
 
 export interface ScreenProfileOptions {
   /**
-   * @param {String} [options.resolution] 设置本端屏幕共享分辨率：WebRTC2.VIDEO_QUALITY_480p、WebRTC2.VIDEO_QUALITY_720p、WebRTC2.VIDEO_QUALITY_1080p
-   * @param {String} [options.frameRate] 设置本端视频帧率：WebRTC2.CHAT_VIDEO_FRAME_RATE_5、WebRTC2.CHAT_VIDEO_FRAME_RATE_10、WebRTC2.CHAT_VIDEO_FRAME_RATE_15、WebRTC2.CHAT_VIDEO_FRAME_RATE_20、WebRTC2.CHAT_VIDEO_FRAME_RATE_25
+   * @param {String} [options.resolution] 设置本端屏幕共享分辨率：NERTC.VIDEO_QUALITY_480p、NERTC.VIDEO_QUALITY_720p、NERTC.VIDEO_QUALITY_1080p
+   * @param {String} [options.frameRate] 设置本端视频帧率：NERTC.CHAT_VIDEO_FRAME_RATE_5、NERTC.CHAT_VIDEO_FRAME_RATE_10、NERTC.CHAT_VIDEO_FRAME_RATE_15、NERTC.CHAT_VIDEO_FRAME_RATE_20、NERTC.CHAT_VIDEO_FRAME_RATE_25
    */
   resolution: number;
   frameRate: number;

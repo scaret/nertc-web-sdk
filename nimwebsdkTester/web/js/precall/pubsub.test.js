@@ -8,13 +8,13 @@ QUnit.module('发布-接收测试', function() {
     
     // 发布端
     const uid = counter++;
-    const client = WebRTC2.createClient({
+    const client = NERTC.createClient({
       uid: uid,
       appkey: appkey,
       token,
       debug: true,
     });
-    const localStream = WebRTC2.createStream({
+    const localStream = NERTC.createStream({
       client: client,
       uid: uid,
       audio: true,
@@ -31,7 +31,7 @@ QUnit.module('发布-接收测试', function() {
     
     // 接收端
     const subUid = counter++;
-    const subClient = WebRTC2.createClient({
+    const subClient = NERTC.createClient({
       uid: subUid,
       appkey: appkey,
       token,

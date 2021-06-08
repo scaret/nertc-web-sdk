@@ -112,7 +112,7 @@ if (env.isDevelopment() || env.isTest()) {
 // 设置webrtcG2相关的配置
 let configWebrtcG2 = merge(config, {
   entry: {
-    WebRTC2: './src/entry/netcall-webrtc2'
+    NERTC: './src/entry/netcall-webrtc2'
   },
   output: {
     path: path.join(cwd, './dist/lib/', webrtcG2Version, nodeEnv),
