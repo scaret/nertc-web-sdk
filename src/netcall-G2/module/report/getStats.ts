@@ -7,16 +7,16 @@ import {AdapterRef, MediaTypeShort} from "../../types";
 
 class GetStats extends EventEmitter{  
   private adapterRef:AdapterRef|null;
-  private interval:number;
-  private timer:ReturnType<typeof setInterval>|null;
+  // private interval:number;
+  // private timer:ReturnType<typeof setInterval>|null;
   private times:number;
   private browser:'chrome'|'safari'|'firefox';
   private KeyTransform:{K:{[key:string]:number},T:{[key:string]:number}};
-  constructor(options: {adapterRef:AdapterRef, interval: number}) {
+  constructor(options: {adapterRef:AdapterRef}) {
     super()
     this.adapterRef = options.adapterRef;
-    this.interval = options.interval || 1000
-    this.timer = null
+    // this.interval = options.interval || 1000
+    // this.timer = null
     //workaround for TS2564
     this.times = 0;
     this.browser = 'chrome';
@@ -37,8 +37,8 @@ class GetStats extends EventEmitter{
 
   _reset () {
     this.times = 0
-    this.timer && clearInterval(this.timer)
-    this.timer = null
+    // this.timer && clearInterval(this.timer)
+    // this.timer = null
     this.browser = 'chrome'
     const ua = navigator.userAgent;
     const temp = bowser.getParser(ua);
@@ -65,8 +65,8 @@ class GetStats extends EventEmitter{
   }
 
   start () {
-    if(this.timer) return
-    this.timer = setInterval(this.getAllStats.bind(this), this.interval)
+    // if(this.timer) return
+    // this.timer = setInterval(this.getAllStats.bind(this), this.interval)
   }
 
   async getAllStats () {
@@ -81,9 +81,178 @@ class GetStats extends EventEmitter{
       local: localPc ? await this.getLocalStats(localPc) : null,
       remote: remotePc ? await this.getRemoteStats(remotePc): null,
     };
-
     this.times = (this.times || 0) + 1
+
+    this.reviseData(result, this.browser)
     this.emit('stats', result, this.times)
+    return result
+  }
+
+  reviseData (params: any, browser: string) {
+    let localDatasObj_ = new Map();
+    let remoteDatasObj_ = new Map();
+    if(browser === 'chrome') {
+      let localDatasMap_ = new Map([
+        ['candidate-pair',[]],
+        ['local-candidate',[]],
+        ['media-source',[]],
+        ['outbound-rtp',[]],
+        ['remote-candidate',[]],
+        ['remote-inbound-rtp',[]],
+        ['ssrc',[]], // audio/video
+        ['VideoBwe',[]], // video
+        ['track',[]],
+        ['transport',[]]
+      ]);
+      let remoteDatasMap_ = new Map([
+        ['candidate-pair',[]],
+        ['inbound-rtp',[]],
+        ['local-candidate',[]],
+        ['remote-candidate',[]],
+        ['ssrc',[]], // 根据 mediaType 区分是 audio/video
+        ['track',[]],
+        ['transport',[]]
+      ]);
+      let local = params.local;
+      let remote = params.remote;
+  
+      for(let item in local){
+        if(localDatasMap_.has(local[item].type)) {
+          if(local[item].type === 'ssrc'){
+            let key = `${local[item].mediaType}_${local[item].type}`
+            if(localDatasObj_.has(key)){
+              localDatasObj_.get(key).push(local[item])
+            } else{
+              localDatasObj_.set(key,[]);
+              localDatasObj_.get(key).push(local[item])
+            }
+  
+          }
+          // else if(local[item].type === 'VideoBwe'){
+          //   localDatasObj_.set('videobwe',[]);
+          //   localDatasObj_.get('videobwe').push(local[item])
+          // }
+          else {
+            localDatasObj_.set(local[item].type,[]);
+            localDatasObj_.get(local[item].type).push(local[item])
+          }
+        }
+      }
+      let localObj = Object.create(null);
+      for (let[k,v] of localDatasObj_) {
+        localObj[k] = v;
+      }
+      params.local = localObj;
+  
+      for(let item in remote){
+        if(remoteDatasMap_.has(remote[item].type)) {
+          if(remote[item].type === 'ssrc') {
+              let key = `${remote[item].mediaType}_${remote[item].type}`
+              // 判断是否已经有key了
+              if(remoteDatasObj_.has(key)){
+                remoteDatasObj_.get(key).push(remote[item])
+              } else{
+                remoteDatasObj_.set(key,[]);
+                remoteDatasObj_.get(key).push(remote[item])
+              }
+          } else {
+            let key = remote[item].type;
+            if(remoteDatasObj_.has(key)){
+              remoteDatasObj_.get(key).push(remote[item])
+            }else {
+              remoteDatasObj_.set(key,[]);
+              remoteDatasObj_.get(key).push(remote[item])
+            }
+          }
+        }
+      }
+      let remoteObj = Object.create(null);
+      for (let[k,v] of remoteDatasObj_) {
+        remoteObj[k] = v;
+      }
+      params.remote = remoteObj;
+    } else if(browser === 'safari') {
+      let local = params.local;
+      let remote = params.remote;
+      let localDatasMap_ = new Map([
+        ['outbound-rtp',[]],
+        ['track',[]],
+      ]);
+      for(let item in local){
+        if(localDatasMap_.has(local[item].type)) {
+          let key = `${local[item].mediaType}_${local[item].type}`
+          if(localDatasObj_.has(key)){
+            localDatasObj_.get(key).push(local[item])
+          } else{
+            localDatasObj_.set(key,[]);
+            localDatasObj_.get(key).push(local[item])
+          }
+        }
+      }
+      let localObj = Object.create(null);
+      for (let[k,v] of localDatasObj_) {
+        localObj[k] = v;
+      }
+      params.local = localObj;
+
+      let remoteDatasMap_ = new Map([
+        ['inbound-rtp',[]],
+        ['track',[]],
+      ]);
+      for(let item in remote){
+        if(remoteDatasMap_.has(remote[item].type)) {
+          let key = `${remote[item].mediaType}_${remote[item].type}`
+          // 判断是否已经有key了
+          if(remoteDatasObj_.has(key)){
+            remoteDatasObj_.get(key).push(remote[item])
+          } else{
+            remoteDatasObj_.set(key,[]);
+            remoteDatasObj_.get(key).push(remote[item])
+          }
+        }
+      }
+      let remoteObj = Object.create(null);
+      for (let[k,v] of remoteDatasObj_) {
+        remoteObj[k] = v;
+      }
+      params.remote = remoteObj;
+    }
+
+    // 后端平台不支持key中的 - ，改成 _
+    let keyMap_ = {
+      'candidate-pair': 'candidate_pair',
+      'local-candidate': 'local_candidate',
+      'media-source': 'media_source',
+      'outbound-rtp': 'outbound_rtp',
+      'remote-candidate': 'remote_candidate',
+      'remote-inbound-rtp': 'remote_inbound_rtp',
+      'VideoBwe': 'video_bwe',
+      'inbound-rtp': 'inbound_rtp',
+      'audio_outbound-rtp': 'audio_outbound_rtp',
+      'video_outbound-rtp': 'video_outbound_rtp',
+      'audio_inbound-rtp': 'audio_inbound_rtp',
+      'video_inbound-rtp': 'video_inbound_rtp',
+    }
+    for( let key in params.local){
+      // @ts-ignore
+      let localKey = keyMap_[key];
+      if(localKey) {
+        params.local[localKey] = params.local[key];
+        delete params.local[key];
+      }
+    }
+
+    for( let key in params.remote){
+      // @ts-ignore
+      let remoteKey = keyMap_[key];
+      if(remoteKey) {
+        params.remote[remoteKey] = params.remote[key];
+        delete params.remote[key];
+      }
+    }
+    params.timestamp = new Date().getTime();
+
+    return params;
   }
 
   async getLocalStats (pc:RTCPeerConnection) {
@@ -165,10 +334,12 @@ class GetStats extends EventEmitter{
 
     const nonStandardResult = await nonStandardStats()
     const standardizedResult = await standardizedStats()
-    return Object.assign(nonStandardResult, standardizedResult)
+    let assignedResult = Object.assign(nonStandardResult, standardizedResult)
+    return assignedResult
   }
 
   //转换非标准getStats格式
+  //TODO: 去除key中动态标识
   async formatChromeNonStandardStats (pc:RTCPeerConnection, stats:{[key:string]:any}, direction:string) {
     const tmp:any = {};
     Object.values(stats).forEach(item => {
@@ -196,7 +367,6 @@ class GetStats extends EventEmitter{
         console.error("getStats行为没有client关联")
         return;
       }
-      //TODO 应该补上本地
       const uidAndKindBySsrc = this.adapterRef.instance.getUidAndKindBySsrc(parseInt(ssrc));
       let targetUid = uidAndKindBySsrc.uid;
       let mediaTypeShort;
@@ -211,6 +381,9 @@ class GetStats extends EventEmitter{
       item.id = `ssrc_${this.adapterRef.channelInfo.uid}_${direction}_${
         direction === 'recv' ? targetUid : 0
       }_${mediaTypeShort}`;
+
+      item.localuid = this.adapterRef.channelInfo.uid;
+      item.remoteuid = targetUid;
 
       item = this.computeData(pc, item);
       if (item.googInterframeDelayMax == -1) {
@@ -326,9 +499,11 @@ class GetStats extends EventEmitter{
         item.uid = uidMap.get(item.id).uid
         if(item.framesSent || item.framesReceived) {
           item = this.computeData(pc, item)
-          result[`${item.type}_${this.adapterRef && this.adapterRef.channelInfo.uid}_${direction}_${item.uid}_video`] = item
+          result[`video_${item.type}_${this.adapterRef && this.adapterRef.channelInfo.uid}_${direction}_${item.uid}`] = item
+          item.mediaType = 'video'
         } else {
-          result[`${item.type}_${this.adapterRef && this.adapterRef.channelInfo.uid}_${direction}_${item.uid}_audio`] = item
+          result[`audio_${item.type}_${this.adapterRef && this.adapterRef.channelInfo.uid}_${direction}_${item.uid}`] = item
+          item.mediaType = 'audio'
         }
       } else if (item.type == 'outbound-rtp' || item.type == 'inbound-rtp') {
         item = this.computeData(pc, item)
