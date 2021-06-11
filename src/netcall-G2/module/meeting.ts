@@ -97,12 +97,14 @@ class Meeting extends EventEmitter {
           relaytoken: ips.relaytoken || null,
           wssArrIndex: 0,
           maxVideoQuality,
-          netDetect: false
+          netDetect: false,
+          uid: ips.uid,
         }, {
-          uid,
+          
           sessionMode,
           appkey
         })
+        options.uid = options.uid ? options.uid : this.adapterRef.channelInfo.uid
         this.adapterRef.testConf.relayaddrs = ips.relayaddrs
         this.adapterRef.testConf.relaytoken = ips.relaytoken
         this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.token = data.token
