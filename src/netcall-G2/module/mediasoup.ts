@@ -307,7 +307,7 @@ class Mediasoup extends EventEmitter {
     if (!this._sendTransport){
       throw new Error('NO_SEND_TRANSPORT');
     }
-    if(!this._sendTransport._events['produce']) {
+    if(this._sendTransport.listenerCount('produce') === 0) {
       this._sendTransport.on(
         'produce', async ({ kind, rtpParameters, appData, localDtlsParameters, offer }, callback, errback) => {
         this.adapterRef.logger.log('produce 反馈 [kind= %s, appData= %o]',kind, JSON.stringify(appData, null, ' '));
@@ -416,7 +416,7 @@ class Mediasoup extends EventEmitter {
             await this.adapterRef._signalling._protoo.request('Produce', producerData);
 
           if (transportId !== undefined) {
-            this._sendTransport.id = transportId;
+            this._sendTransport._id = transportId;
           }
           this.adapterRef.logger.log('produce请求反馈结果, kind: %s, producerId: %s', kind, producerId)
           let codecInfo = {codecParam: null, codecName: null};
@@ -478,8 +478,8 @@ class Mediasoup extends EventEmitter {
         this._micProducer = await this._sendTransport.produce({
           track: audioTrack,
           codecOptions:{
-            opusStereo: 1,
-            opusDtx: 1
+            opusStereo: true,
+            opusDtx: true
           },
           appData: {deviceId: audioTrack.id, mediaType: 'audio'} as ProducerAppData
         });
@@ -714,7 +714,7 @@ class Mediasoup extends EventEmitter {
     let mid:number|string|undefined = prepareRes.mid;
     const localDtlsParameters = prepareRes.dtlsParameters;
 
-    if (mid < 0) {
+    if (typeof mid === "number" && mid< 0) {
       mid = undefined
     } else {
       mid = `${mid}`
@@ -802,7 +802,7 @@ class Mediasoup extends EventEmitter {
         this.adapterRef.instance.addSsrc(uid, mediaTypeShort, rtpParameters.encodings[0].ssrc)
       }
       if (transportId !== undefined) {
-        this._recvTransport.id = transportId;
+        this._recvTransport._id = transportId;
       }
 
       if (probeSSrc !== undefined) {

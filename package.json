@@ -46,6 +46,7 @@
     "@types/dom-mediacapture-record": "^1.0.7",
     "@types/md5": "^2.2.1",
     "@types/retry": "^0.12.0",
+    "@types/sdp-transform": "^2.4.4",
     "@types/webrtc": "0.0.26",
     "@types/websocket": "^1.0.2",
     "axios": "^0.18.0",
