@@ -1506,9 +1506,10 @@ class MediaHelper extends EventEmitter {
         //@ts-ignore
         const senders = this.adapterRef._mediasoup._sendTransport.handler._pc.getSenders();
         for (var i in senders){
-          if (senders[i].track && senders[i].track.kind === "audio"){
-            this.adapterRef.logger.info('updateAudioSender: 替换audioSender', senders[i].track && senders[i].track.label);
-            senders[i].replaceTrack(audioTrack);
+          const sender = senders[i];
+          if (sender.track && sender.track.kind === "audio"){
+            this.adapterRef.logger.info('updateAudioSender: 替换audioSender', sender.track.label);
+            sender.replaceTrack(audioTrack);
           }
         }
       }

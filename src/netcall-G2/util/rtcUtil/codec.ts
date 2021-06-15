@@ -82,7 +82,7 @@ async function getSupportedCodecs(direction:"send"|"recv" =  "recv", PeerConnect
   }
 }
 
-function reduceCodecs(codecs: any[], selectedCodec:RTCRtpCodecCapability) {
+function reduceCodecs(codecs: any[], selectedCodec?:RTCRtpCodecCapability) {
   const filteredCodecs = [];
   for (let i = 0; i < codecs.length; i++){
     if (codecs[i].mimeType && selectedCodec){

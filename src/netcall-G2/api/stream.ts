@@ -1853,15 +1853,16 @@ class Stream extends EventEmitter {
         if (!sender){
           throw new Error(`Unknown media type ${mediaTypeShort}`);
         }
-        const parameters = sender.getParameters();
+        const parameters = (sender.getParameters() as RTCRtpSendParameters);
         if (!parameters) {
           this.client.adapterRef.logger.error("No Parameter");
           return;
         }
-        if (!parameters.encodings) {
-          parameters.encodings = [{}];
+        if (parameters.encodings && parameters.encodings.length) {
+          parameters.encodings[0].maxBitrate = maxbitrate;
+        }else{
+          this.client.adapterRef.logger.warn('Stream.adjustResolution: 无encodings选项', parameters)
         }
-        parameters.encodings[0].maxBitrate = maxbitrate;
         //this.client.adapterRef.logger.warn('设置video 码率: ', parameters)
         sender.setParameters(parameters)
           .then(() => {
