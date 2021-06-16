@@ -20,7 +20,7 @@
   "include": [ "docs"],
   "typedocOptions": {
     "entryPoints": [
-      "docs/src/webrtc2.d.ts",
+      "docs/src/nertc.d.ts",
       "docs/src/client.d.ts",
       "docs/src/stream.d.ts",
       "docs/src/types.d.ts",
