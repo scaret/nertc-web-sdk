@@ -6,8 +6,7 @@ import {DeviceInfo} from "./browser";
 /**
  * NERTC 是 云信 Web SDK 中所有可调用方法的入口
  */
-export  = NERTC
-export  as namespace NERTC
+export as namespace NERTC
 declare namespace NERTC {
   /**
    * 创建客户端，开始通话前调用一次即可
