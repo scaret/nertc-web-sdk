@@ -2,12 +2,14 @@
 import { Base } from './base'
 import {AddTaskOptions, ClientOptions, MediaPriorityOptions, JoinOptions, LocalVideoStats, MediaTypeShort, RTMPTask} from "../types";
 import {Stream} from "./stream";
-import {checkExists} from "../util/param";
+import {checkExists, checkValidInteger, checkValidString} from "../util/param";
 import {
+  ReportParamEnableEncryption,
   ReportParamGetConnectionState,
   ReportParamSetChannelProfile,
   ReportParamSetClientRole
 } from "../interfaces/ApiReportParam";
+import {EncryptionMode, EncryptionModes, encryptionModeToInt} from "../module/encryption";
 
 /**
  *  请使用 {@link WEBRTC2.createClient} 通过WEBRTC2.createClient创建 Client对象，client对象指通话中的本地或远程用户，提供云信sdk的核心功能。
@@ -1054,6 +1056,40 @@ class Client extends Base {
       throw new Error('No this.adapterRef._meetings');
     }
     return this.adapterRef._meetings.updateTasks(options)
+  }
+
+  setEncryptionMode(encryptionMode: EncryptionMode){
+    checkValidInteger({
+      tag: 'Valid encryptionModes are: ' + Object.keys(EncryptionModes).join(','),
+      value: encryptionModeToInt(encryptionMode),
+    })
+    this.adapterRef.logger.log('设置加密模式：', encryptionMode);
+    this.adapterRef.encryption.setEncryptionMode(encryptionMode);
+    const param:ReportParamEnableEncryption = {
+      enable: encryptionMode !== "none",
+      mode: encryptionModeToInt(encryptionMode)
+    };
+    this.apiFrequencyControl({
+      name: 'enableEncryption',
+      code: 0,
+      param: JSON.stringify(param, null, ' ')
+    })
+  }
+
+  setEncryptionSecret(encryptionSecret: string){
+    switch (this.adapterRef.encryption.encryptionMode){
+      case "none":
+        throw new Error('Client.setEncryptionSecret:请先设置加密模式');
+      case "sm4-128-ecb":
+        checkValidString({
+          tag: 'client.setEncryptionSecret:encryptionSecret',
+          value:encryptionSecret,
+          min:16,
+          max:16
+        });
+    }
+    this.adapterRef.logger.log('设置加密密钥');
+    this.adapterRef.encryption.setEncryptionSecret(encryptionSecret);
   }
 
   /**

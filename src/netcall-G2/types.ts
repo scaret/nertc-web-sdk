@@ -5,6 +5,7 @@ import {Signalling} from "./module/signalling";
 import {Meeting} from "./module/meeting";
 import {StatsReport} from "./module/report/statsReport";
 import {MediaCapability} from "./module/mediaCapability";
+import {Encryption} from "./module/encryption";
 
 export interface AdapterRef {
   uid2SscrList: {[uid:number]:{
@@ -101,6 +102,7 @@ export interface AdapterRef {
   }
   report: boolean | undefined;
   userPriority: MediaPriorityOptions;
+  encryption: Encryption,
 }
 
 export type ConnectionState = 'DISCONNECTED'|'CONNECTING'|'CONNECTED'|'DISCONNECTING';
@@ -1064,6 +1066,13 @@ export interface NeRtcServerAddresses{
   statisticsServer?: string;
   roomServer?: string;
   mediaServer?: string;
+}
+
+export interface ValidStringOptions{
+  tag: string;
+  value: any;
+  min?: number;
+  max?: number;
 }
 
 export interface ValidIntegerOptions{

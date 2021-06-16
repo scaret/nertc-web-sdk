@@ -5,7 +5,8 @@ import {
   MediaType,
   RTMPTask,
   RTMPTaskState,
-  MediaPriorityOptions
+  MediaPriorityOptions,
+  EncryptionMode,
 } from "./types";
 import { Stream } from "./stream";
 import {ConnectionState} from "./types";
@@ -123,6 +124,39 @@ declare interface Client{
        + 在调用 `Client.leave` 的时候为此状态。
      */
     getConnectionState(): ConnectionState;
+
+  /**
+   #### 设置加密方案
+   该方法和 [[Client.setEncryptionSecret]] 搭配使用，可以开启内置加密功能，需要在加入频道前调用。
+   
+   同一频道内的所有用户必须设置相同的加密方案、密钥才能进行通话。
+
+   + 必须先调用`setEncryptionMode`，再调用`setEncryptionSecret`。
+
+   + 同一频道内的所有用户应设置相同的密钥。如果未指定密钥，则无法激活加密功能。
+   
+   + 密钥规则与加密方法有关。`sm4-128-ecb`模式要求密钥长度为16。
+   
+   + 如果该方法设置错误，在加入频道时会触发 `Client.on("crypt-error")` 回调。
+   
+   + 请勿在转码推流场景中使用加密功能。
+   
+   ```JavaScript
+     // 例如，使用 sm4-128-ecb
+     client.setEncryptionMode('sm4-128-ecb');
+     client.setEncryptionSecret('abcdefghijklmnop');
+     // 然后通过client.join()加入频道
+   ```
+   */
+  setEncryptionMode(encryptionMode: EncryptionMode): void;
+
+  /**
+   #### 设置加密密钥
+   
+   该方法和 [[Client.setEncryptionMode]] 搭配使用，可以开启加密功能，需要在加入频道前调用。
+   */
+  setEncryptionSecret(encryptionSecret: string): void;
+  
     /**
      * 获取系统电量
      */
@@ -418,5 +452,11 @@ declare interface Client{
    */
   on(event: "exception", callback: (exceptionEvent: ClientExceptionEvt) => void): void;
 
+  /**
+   * 该回调表示用户在发布或者订阅流过程中出现了加密或者解密失败，
+   * 一般都是因为加密方案 [[Client.setEncryptionMode]] 或者加密密码[[Client.setEncryptionSecret]]不匹配导致的。
+   */
+  on(event: "crypt-error", callback: (evt: { cryptType: EncryptionMode }) => void): void;
+  
 }
 export { Client };

@@ -27,3 +27,8 @@ export interface ReportParamSwitchCamera extends ReportParamBase{
 
 export interface ReportParamSetExternalAudioRender extends ReportParamBase{
 }
+
+export interface ReportParamEnableEncryption extends ReportParamBase{
+  mode?: number;
+  enable: boolean;
+}

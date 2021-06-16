@@ -190,6 +190,7 @@ export class Chrome74 extends HandlerInterface
     logger.debug('iceServers: %o', iceServers)
 		this._pc = new (RTCPeerConnection as any)(
 			{
+        encodedInsertableStreams: appData.encodedInsertableStreams,
 				iceServers         : iceServers || [],
 				iceTransportPolicy : iceTransportPolicy || 'all',
 				// bundlePolicy       : 'max-bundle',

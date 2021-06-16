@@ -70,6 +70,7 @@
     "pako": "^1.0.11",
     "protobufjs": "~6.11.2",
     "sdp-transform": "^2.3.0",
+    "sm4-128-ecb": "^1.1.0",
     "string-replace-loader": "^3.0.1",
     "ts-loader": "^8.0.12",
     "typedoc": "^0.20.35",
