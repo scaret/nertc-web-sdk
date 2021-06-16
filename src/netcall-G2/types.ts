@@ -2,6 +2,7 @@ import {MediaHelper} from "./module/media";
 import {Stream} from "./api/stream";
 import {Mediasoup} from "./module/mediasoup";
 import {Signalling} from "./module/signalling";
+import {RTSTransport} from "./module/rtsTransport";
 import {Meeting} from "./module/meeting";
 import {StatsReport} from "./module/report/statsReport";
 import {MediaCapability} from "./module/mediaCapability";
@@ -18,6 +19,7 @@ export interface AdapterRef {
   networkQuality: {};
   _statsReport: StatsReport|null;
   _meetings: Meeting|null;
+  _enableRts: Boolean;
   state: {
     lastDeviceStatus: {
       // 暂存上次用户打开的设备类型(供重连使用)
@@ -91,6 +93,7 @@ export interface AdapterRef {
   };
   channelStatus: string;
   _signalling: Signalling|null;
+  _rtsTransport: RTSTransport|null;
   connectState:{
     prevState: ConnectionState;
     curState:ConnectionState;
@@ -879,7 +882,7 @@ export type AudioCodecType = "OPUS";
 export interface JoinOptions{
   channelName: string;
   uid: number;
-  token: string;
+  token?: string;
   wssArr?: string[]|null;
   joinChannelLiveConfig?: LiveConfig;
   joinChannelRecordConfig?: RecordConfig;
@@ -1105,9 +1108,16 @@ export interface ExistsOptions{
   max?: number;
 }
 
+
 export interface StreamPlayOptions{
   audio?: boolean;
   audioType?: "voice"|"music"|"mixing";
   video?: boolean;
   screen?: boolean;
+}
+export interface RTSTransportOptions{
+  url: string;
+  port: number;
+  transportId: string;
+  adapterRef: AdapterRef;
 }

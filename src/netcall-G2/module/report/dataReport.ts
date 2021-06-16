@@ -51,16 +51,14 @@ class DataReport {
     const adapterRef = options.adapterRef;
     const sdkRef = options.sdkRef || {};
     this.adapterRef = adapterRef;
-    let configs = adapterRef.nim && adapterRef.nim.options;
     let instance = adapterRef.instance;
     let channelInfo = adapterRef.channelInfo || {};
     let { sessionConfig = {} } = channelInfo
     this.cid = channelInfo.cid || channelInfo.channelId || 0;
     this.uid = channelInfo.uid || 0;
     let sessionStart = this.adapterRef.state.startSessionTime ||  Date.now();
-    let appKeyRTC = configs && configs.appKey
     let appKeyWebrtc2 = instance._params && instance._params.appkey
-    let appKey = appKeyRTC || appKeyWebrtc2;
+    const appKey = appKeyWebrtc2;
     this.time = channelInfo.clientNtpTime - channelInfo.T4
     this.common = {
       name: 'common',
