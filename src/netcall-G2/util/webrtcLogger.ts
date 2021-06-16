@@ -1,9 +1,11 @@
 import {platform} from "./platform";
 import {logHelper} from "./logHelper";
 import {
+  AdapterRef,
   LoggerDebugOptions,
   LoggerOptions,
 } from "../types";
+import * as loglevel from 'loglevel';
 
 
 class Logger{
@@ -15,6 +17,8 @@ class Logger{
   private supportedBrowsers: string[];
   private cs:Console;
   private isDebug: boolean;
+  public adapterRef: AdapterRef;
+  public logStorage:any;
   constructor(options:LoggerOptions) {
     this.options = options;
     this.api = 'log';
@@ -30,6 +34,8 @@ class Logger{
     this.cs = console;
     this.isDebug = true;
     this.setDebug(options.debug);
+    this.adapterRef = options.adapterRef;
+    this.logStorage = options.logStorage;
   }
   
   setDebug(debug?: boolean|LoggerDebugOptions){
@@ -55,9 +61,12 @@ class Logger{
       args.splice(1, 0, logger.style)
     }
     logger._log('debug', args)
+    this.logStorage && this.logStorage.log('debug', ...args)
+    // loglevel.debug(arguments);
   }
   
   log(){
+    // console.log('123--->', this.adapterRef.logStorage);
     var logger = this;
     if (!this.isDebug){
       return;
@@ -69,6 +78,8 @@ class Logger{
       args.splice(1, 0, logger.style)
     }
     logger._log('log', args)
+    //  loglevel.trace(args);
+    this.logStorage && this.logStorage.log('log', ...args)
   }
   
   info(){
@@ -83,6 +94,8 @@ class Logger{
       args.splice(1, 0, logger.style)
     }
     logger._log('info', args)
+    // loglevel.info(arguments);
+    this.logStorage && this.logStorage.log('info', ...args)
   }
   
   warn(){
@@ -97,6 +110,8 @@ class Logger{
       args.splice(1, 0, logger.style)
     }
     logger._log('warn', args)
+    // loglevel.warn(arguments);
+    this.logStorage && this.logStorage.log('warn', ...args)
   }
   
   error(){
@@ -111,6 +126,8 @@ class Logger{
       args.splice(1, 0, logger.style)
     }
     logger._log('error', args)
+    // loglevel.error(arguments);
+    this.logStorage && this.logStorage.log('error', ...args)
   }
 
   _log(name:string, args:any[]) {
@@ -153,6 +170,10 @@ class Logger{
     if (this.supportedBrowsers.indexOf(platform.name) !== -1) {
       //@ts-ignore
       this.cs[func].apply(this.cs, args)
+
+    // 存入indexedDB
+    console.log(...args)
+
     } else {
       //@ts-ignore
       logger.ie(func, args)

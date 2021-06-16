@@ -1,7 +1,8 @@
 import { EventEmitter } from 'eventemitter3'
 import { ajax } from '../util/ajax'
 import {getChannelInfoUrl, SDK_VERSION, roomsTaskUrl} from '../Config'
-import * as md5 from 'md5';
+// import * as md5 from 'md5';
+import  md5 = require('md5');
 import {
   AdapterRef, AddTaskOptions,
   MeetingJoinChannelOptions,
@@ -73,6 +74,7 @@ class Meeting extends EventEmitter {
           netType: '0', // 先填0吧 微信接口又是异步的 1:2G、2:3G、3:4G、4:wifi、5:有线、0:未知
           version: SDK_VERSION + '.0' || '1.0.0',
           curtime,
+          // @ts-ignore
           checksum: token ? token : md5(appkey + "." + uid + "." + curtime),
           webrtc: 1, // 是否与其它端互通
           nrtcg2: 1,

@@ -10,6 +10,7 @@ import {
   ReportParamSetClientRole
 } from "../interfaces/ApiReportParam";
 import {EncryptionMode, EncryptionModes, encryptionModeToInt} from "../module/encryption";
+import { logController } from '../util/log/upload'
 
 /**
  *  请使用 {@link WEBRTC2.createClient} 通过WEBRTC2.createClient创建 Client对象，client对象指通话中的本地或远程用户，提供云信sdk的核心功能。
@@ -47,12 +48,14 @@ class Client extends Base {
       audienceList: {}, // Workaround，用于处理仍然收到的观众端消息
     };
     this._init(options)
+    
   }
   // 初始化nrtc
   _init (options:ClientOptions) {
     const { appkey = '', token } = options
     if (!appkey) {
       this.adapterRef.logger.error('Client: init error: 请传入appkey')
+      // this.logStorage.log('log','Client: init error: 请传入appkey')
       throw new Error('请传入appkey')
     }
     this._params.appkey = appkey
@@ -132,6 +135,7 @@ class Client extends Base {
    */
   async join (options: JoinOptions) {
     this.adapterRef.logger.log('加入频道, options: ', JSON.stringify(options, null, ' '))
+    // this.logStorage.log('log',`加入频道, options: ${JSON.stringify(options, null, ' ')}`)
     if (this.adapterRef.channelStatus === 'join' || this.adapterRef.channelStatus === 'connectioning') {
       return Promise.reject('ERR_REPEAT_JOIN')
     }
@@ -207,6 +211,11 @@ class Client extends Base {
     if (this.adapterRef._meetings) {
       this.adapterRef._meetings.leaveChannel()
     }
+    // invoke uploadLog() if uploadLogEnabled is true
+    if(Number(sessionStorage.getItem('uploadLogEnabled'))) {
+      logController.startUploadLog(this.adapterRef);
+    }
+
   }
 
   /**

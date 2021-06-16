@@ -9,6 +9,7 @@ import { LIVE_STREAM_AUDIO_SAMPLE_RATE, LIVE_STREAM_AUDIO_CODEC_PROFILE } from "
 import { checkExists, checkValidInteger } from "../netcall-G2/util/param";
 import { getSupportedCodecs } from "../netcall-G2/util/rtcUtil/codec";
 import { detectDevice } from "../netcall-G2/module/3rd/mediasoup-client";
+import log from '../netcall-G2/util/log/logger';
 
 /**
  * {@link NERTC} 
@@ -34,6 +35,75 @@ let client:Client|null;
 
 
 const NERTC = {
+
+  Logger: {
+    /**
+     * 日志输出等级
+     * @readonly
+     * @enum {number}
+     */
+    // LogLevel: {
+    //   /**
+    //    * 输出所有日志
+    //    */
+    //   TRACE: 0,
+    //   /**
+    //    * 输出 DEBUG、INFO、WARN、ERROR 等级日志
+    //    */
+    //   DEBUG: 1,
+    //   /**
+    //    * 输出 INFO、WARN、ERROR 等级日志
+    //    */
+    //   INFO: 2,
+    //   /**
+    //    * 输出 WARN、ERROR 等级日志
+    //    */
+    //   WARN: 3,
+    //   /**
+    //    * 输出 ERROR 等级日志
+    //    */
+    //   ERROR: 4,
+    //   /**
+    //    * 不输出任何日志
+    //    */
+    //   NONE: 5
+    // },
+
+    /**
+     * 设置日志输出等级
+     * <br>
+     * 默认输出 INFO 日志等级，该日志等级包含 SDK 关键路径信息。
+     *
+     * @param {LogLevel} level 日志输出等级 {@link TRTC.Logger.LogLevel LogLevel}
+     * @example
+     * // 输出INFO以上日志等级
+     * TRTC.Logger.setLogLevel(TRTC.Logger.LogLevel.INFO);
+     */
+    setLogLevel(level:number) {
+      log.setLogLevel(level);
+    },
+
+    /**
+     * 打开日志上传
+     * <br>
+     * 默认打开日志上传。如无特别原因，请保持打开日志上传，以便我们帮助您定位线上问题。
+     *
+     */
+    enableUploadLog() {
+      log.enableUploadLog();
+    },
+
+    /**
+     * 关闭日志上传
+     * <br>
+     * **注意：**
+     * **如果您关闭了日志上传，我们将无法协助您定位线上问题！**
+     */
+    disableUploadLog() {
+      log.disableUploadLog();
+    }
+  },
+
   /**
  * 创建客户端，开始通话前调用一次即可
  * @function createClient

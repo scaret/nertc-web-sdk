@@ -82,6 +82,7 @@ export interface AdapterRef {
   localVideoStats: [LocalVideoStats];
   localScreenStats: [LocalVideoStats];
   logger:Logger;
+  logStorage:LogStorage;
   testConf: {
     ForwardedAddr?:string;
     turnAddr?:string[];
@@ -132,6 +133,12 @@ export interface Logger{
   info: (...msg:any)=>void
   warn: (...msg:any)=>void
   error: (...msg:any)=>void
+}
+
+export interface LogStorage{
+  get: (...msg:any)=>any
+  delete: (...msg:any)=>any
+  log: (...msg:any)=>any
 }
 
 export interface RenderMode{
@@ -510,6 +517,8 @@ export interface LoggerOptions{
   logFunc?: {
     [name:string]: ()=>void
   };
+  adapterRef: AdapterRef;
+  logStorage?:any;
 }
 
 export interface StatsReportOptions{
