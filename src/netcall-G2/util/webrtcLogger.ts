@@ -172,7 +172,7 @@ class Logger{
       this.cs[func].apply(this.cs, args)
 
     // 存入indexedDB
-    console.log(...args)
+    //console.log(...args)
 
     } else {
       //@ts-ignore
