@@ -169,7 +169,8 @@ class Mediasoup extends EventEmitter {
         },
         appData: {
           cid: this.adapterRef.channelInfo.cid,
-          uid: this.adapterRef.channelInfo.uid
+          uid: this.adapterRef.channelInfo.uid,
+          encodedInsertableStreams: this.adapterRef.encryption.encodedInsertableStreams,
         }
       })
       this.senderEncodingParameter = {
@@ -195,7 +196,8 @@ class Mediasoup extends EventEmitter {
         },
         appData: {
           cid: this.adapterRef.channelInfo.cid,
-          uid: this.adapterRef.channelInfo.uid
+          uid: this.adapterRef.channelInfo.uid,
+          encodedInsertableStreams: this.adapterRef.encryption.encodedInsertableStreams,
         }
       });
       this._recvTransport = _recvTransport;
@@ -507,6 +509,19 @@ class Mediasoup extends EventEmitter {
         },
         appData: {deviceId: videoTrack.id, mediaType: 'video'} as ProducerAppData
       });
+      if (this.adapterRef.encryption.encodedInsertableStreams && this._webcamProducer.rtpSender
+        //@ts-ignore
+        && !this._webcamProducer.rtpSender.senderStreams){
+        this.adapterRef.logger.log("发送端开始解密", this.adapterRef.encryption.encryptionMode);
+        //@ts-ignore
+        const senderStreams = this._webcamProducer.rtpSender.createEncodedStreams()
+        const transformStream = new TransformStream({
+          transform: this.adapterRef.encryption.encodeFunctionH264.bind(this.adapterRef.encryption),
+        });
+        senderStreams.readable.pipeThrough(transformStream).pipeTo(senderStreams.writable);
+        //@ts-ignore
+        this._webcamProducer.rtpSender.senderStreams = senderStreams
+      }
       this._webcamProducer.on('trackended', notify => {
         //停止的原因可能是设备拔出、取消授权等
         this.adapterRef.logger.warn('视频轨道已停止')
@@ -831,6 +846,22 @@ class Mediasoup extends EventEmitter {
         sctpParameters: undefined,
         probeSSrc: this._probeSSrc
       });
+      if (this.adapterRef.encryption.encodedInsertableStreams && mediaTypeShort === "video"
+        //@ts-ignore
+       && !consumer.rtpReceiver.receiverStreams
+      ){
+        this.adapterRef.logger.log("接收端开始解密", this.adapterRef.encryption.encryptionMode);
+        //@ts-ignore
+        const receiverStreams = consumer.rtpReceiver.createEncodedStreams()
+        const transformStream = new TransformStream({
+          transform: this.adapterRef.encryption.decodeFunctionH264.bind(this.adapterRef.encryption),
+        });
+        receiverStreams.readable
+          .pipeThrough(transformStream)
+          .pipeTo(receiverStreams.writable);
+        //@ts-ignore
+        consumer.rtpReceiver.receiverStreams = receiverStreams;
+      }
       if(!this._consumers) {
         this._consumers = {}
       }

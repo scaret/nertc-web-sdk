@@ -33,7 +33,9 @@ export type HandlerRunOptions =
 	additionalSettings?: any;
 	proprietaryConstraints?: any;
 	extendedRtpCapabilities: any;
-	appData: any;
+	appData: {
+	  encodedInsertableStreams?: boolean
+	};
 };
 
 export type HandlerSendOptions =

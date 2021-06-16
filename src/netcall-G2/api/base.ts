@@ -15,6 +15,7 @@ import {
 import {Stream} from "./stream";
 import {MediaCapability} from "../module/mediaCapability";
 import {getSupportedCodecs} from "../util/rtcUtil/codec";
+import {Encryption} from "../module/encryption";
 
 /**
  * 基础框架
@@ -49,6 +50,7 @@ class Base extends EventEmitter {
       report: true
     };
     this.adapterRef.mediaCapability = new MediaCapability(this.adapterRef);
+    this.adapterRef.encryption = new Encryption(this.adapterRef),
     this._reset();
     this.adapterRef.logger = new Logger({
       debug: options.debug,
@@ -83,6 +85,7 @@ class Base extends EventEmitter {
       instance: this
     };
     this.adapterRef.mediaCapability = new MediaCapability(this.adapterRef);
+    this.adapterRef.encryption = new Encryption(this.adapterRef);
     
     this._resetState(); // 内部状态对象
     this._destroyModule();

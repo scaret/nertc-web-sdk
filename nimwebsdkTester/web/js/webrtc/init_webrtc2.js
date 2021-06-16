@@ -363,6 +363,11 @@ function initEvents() {
     console.warn(`${evt.uid} mute自己的辅流`)
     addLog(`${evt.uid} unmute自己的辅流`)
   })
+  
+  rtc.client.on('crypt-error', evt => {
+    console.warn(`加密失败：`,evt);
+    addLog(`加密失败：` + evt.cryptType);
+  })
 
   rtc.client.on('stream-added', evt => {
     var remoteStream = evt.stream;
@@ -2373,6 +2378,19 @@ $("#showStats").on('click', ()=>{
     statsTimer = null;
   }
 });
+
+$("#setEncryptionMode").click(()=>{
+  const encryptionMode = $("#encryptionMode").val();
+  rtc.client.setEncryptionMode(encryptionMode);
+  addLog("setEncryptionMode " + encryptionMode)
+})
+
+$("#setEncryptionSecret").click(()=>{
+  const encryptionSecret = $("#encryptionSecret").val();
+  rtc.client.setEncryptionSecret(encryptionSecret);
+  addLog("setEncryptionSecret " + encryptionSecret)
+})
+
 
 /** 
  * ----------------------------------------

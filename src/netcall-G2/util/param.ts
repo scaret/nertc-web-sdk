@@ -1,4 +1,4 @@
-import {ValidIntegerOptions, ExistsOptions, ValidFloatOptions} from "../types";
+import {ValidIntegerOptions, ExistsOptions, ValidFloatOptions, ValidStringOptions} from "../types";
 
 const isValidInteger = (param: ValidIntegerOptions)=>{
   if (!Number.isInteger(param.value)){
@@ -25,6 +25,39 @@ const isValidInteger = (param: ValidIntegerOptions)=>{
 
 const checkValidInteger = (param: ValidIntegerOptions)=>{
   const data = isValidInteger(param);
+  if (data.result){
+    return;
+  }else{
+    throw new Error(`参数错误 ${param.tag}:${data.msg}`);
+  }
+}
+
+
+const isValidString = (param: ValidStringOptions)=>{
+  if (typeof param.value !== "string"){
+    return {
+      result: false,
+      msg: `参数不是字符串`
+    }
+  }else if (typeof param.min === "number" && param.value.length < param.min){
+    return {
+      result: false,
+      msg: `参数长度最小值${param.min}`
+    }
+  }else if (typeof param.max === "number" && param.value.length > param.max){
+    return {
+      result: false,
+      msg: `参数长度大于最大值${param.max}`
+    }
+  }else{
+    return {
+      result: true
+    }
+  }
+}
+
+const checkValidString = (param: ValidStringOptions)=>{
+  const data = isValidString(param);
   if (data.result){
     return;
   }else{
@@ -90,6 +123,7 @@ export {
   
   checkValidInteger,
   checkValidFloat,
+  checkValidString,
   
   isExistOptions,
   checkExists,

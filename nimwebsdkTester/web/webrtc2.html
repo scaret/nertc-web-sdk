@@ -163,7 +163,7 @@
           </div>
         </div>
         <p class="block-header">推流任务</p>
-        <div id="part-channel" class="part">
+        <div id="part-tasks" class="part">
           <div class="line">
             <button type="button" id="tasks-btn">推流任务功能</button>
           </div>
@@ -276,6 +276,20 @@
           </div>
         </div>
 
+        <p class="block-header">加密相关</p>
+        <div class="line">
+          <select id="encryptionMode" style="width: 40%;">
+            <option value="none">none</option>
+            <option value="sm4-128-ecb" selected>sm4-128-ecb</option>
+            <option value="encoded-transform-sm4-128-ecb">encoded-transform-sm4-128-ecb</option>
+          </select>
+          <button type="button" id="setEncryptionMode">设置encryptionMode</button>
+        </div>
+
+        <div class="line">
+          <input id="encryptionSecret" cols="16" placeholder="encryptionSecret" value="abcdefghijklmnop">
+          <button type="button" id="setEncryptionSecret">设置encryptionSecret</button>
+        </div>
         <p class="block-header">订阅配置相关</p>
         <div class="part" id="sub-part">
           <!--

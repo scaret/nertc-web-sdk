@@ -13,6 +13,7 @@ import {Peer, ProtooNotification} from "./3rd/protoo-client";
 import {Consumer} from "./3rd/mediasoup-client/Consumer";
 import {emptyStreamWith} from "../util/gum";
 import {SignalJoinRes} from "../interfaces/SignalProtocols";
+import {EncryptionModes, encryptionModeToInt} from "./encryption";
 const protooClient = require('./3rd/protoo-client/')
 const CryptoJS = require("crypto-js");
 
@@ -579,6 +580,9 @@ class Signalling extends EventEmitter {
           name: RtcSystem.browser.ua,       
           version: `${RtcSystem.browser.version}`
         },
+        gmEnable: this.adapterRef.encryption.encryptionMode !== "none" && this.adapterRef.encryption.encryptionMode !== "encoded-transform-sm4-128-ecb",
+        gmMode: encryptionModeToInt(this.adapterRef.encryption.encryptionMode),
+        gmKey: this.adapterRef.encryption.encryptionSecret,
         userPriority: this.adapterRef.userPriority
       }
     }
@@ -740,6 +744,10 @@ class Signalling extends EventEmitter {
     this.adapterRef.channelStatus = 'init'
     this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
 
+    if (reasonCode === 4009){
+      this.adapterRef.instance.emit("crypt-error", {cryptType: this.adapterRef.encryption.encryptionMode});
+    }
+    
     //上报login事件
     const currentTime = Date.now()
     const webrtc2Param = this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2
