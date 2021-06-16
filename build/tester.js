@@ -205,7 +205,7 @@ function rename(srcPath, distPath) {
     );
   }
 
-  const webrtc2Script = data.match(/<script.+NIM_Web_WebRTC2\..+<\/script>/);
+  const webrtc2Script = data.match(/<script.+NIM_Web_NERTC\..+<\/script>/);
   if (webrtc2Script) {
     data = data.replace(
       webrtc2Script[0],

@@ -5,34 +5,34 @@ export type SctpCapabilities =
 
 export type NumSctpStreams =
 {
-	/**
-	 * Initially requested number of outgoing SCTP streams.
-	 */
-	OS: number;
-	/**
-	 * Maximum number of incoming SCTP streams.
-	 */
-	MIS: number;
+  /**
+   * Initially requested number of outgoing SCTP streams.
+   */
+  OS: number;
+  /**
+   * Maximum number of incoming SCTP streams.
+   */
+  MIS: number;
 }
 
 export type SctpParameters =
 {
-	/**
-	 * Must always equal 5000.
-	 */
-	port: number;
-	/**
-	 * Initially requested number of outgoing SCTP streams.
-	 */
-	OS: number;
-	/**
-	 * Maximum number of incoming SCTP streams.
-	 */
-	MIS: number;
-	/**
-	 * Maximum allowed size for SCTP messages.
-	 */
-	maxMessageSize: number;
+  /**
+   * Must always equal 5000.
+   */
+  port: number;
+  /**
+   * Initially requested number of outgoing SCTP streams.
+   */
+  OS: number;
+  /**
+   * Maximum number of incoming SCTP streams.
+   */
+  MIS: number;
+  /**
+   * Maximum allowed size for SCTP messages.
+   */
+  maxMessageSize: number;
 }
 
 /**
@@ -44,31 +44,31 @@ export type SctpParameters =
  */
 export type SctpStreamParameters =
 {
-	/**
-	 * SCTP stream id.
-	 */
-	streamId?: number;
-	/**
-	 * Whether data messages must be received in order. if true the messages will
-	 * be sent reliably. Default true.
-	 */
-	ordered?: boolean;
-	/**
-	 * When ordered is false indicates the time (in milliseconds) after which a
-	 * SCTP packet will stop being retransmitted.
-	 */
-	maxPacketLifeTime?: number;
-	/**
-	 * When ordered is false indicates the maximum number of times a packet will
-	 * be retransmitted.
-	 */
-	maxRetransmits?: number;
-	/**
-	 * A label which can be used to distinguish this DataChannel from others.
-	 */
-	label?: string;
-	/**
-	 * Name of the sub-protocol used by this DataChannel.
-	 */
-	protocol?: string;
+  /**
+   * SCTP stream id.
+   */
+  streamId?: number;
+  /**
+   * Whether data messages must be received in order. if true the messages will
+   * be sent reliably. Default true.
+   */
+  ordered?: boolean;
+  /**
+   * When ordered is false indicates the time (in milliseconds) after which a
+   * SCTP packet will stop being retransmitted.
+   */
+  maxPacketLifeTime?: number;
+  /**
+   * When ordered is false indicates the maximum number of times a packet will
+   * be retransmitted.
+   */
+  maxRetransmits?: number;
+  /**
+   * A label which can be used to distinguish this DataChannel from others.
+   */
+  label?: string;
+  /**
+   * Name of the sub-protocol used by this DataChannel.
+   */
+  protocol?: string;
 }

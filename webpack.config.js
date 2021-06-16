@@ -94,10 +94,10 @@ config = merge(config, {
       verbose: true
     })
   ],
-  mode: (env.isDevelopment() || env.isTest()) ? 'development' : 'production'
+  mode: (env.isDevelopment()) ? 'development' : 'production'
 })
 
-if (env.isDevelopment() || env.isTest()) {
+if (env.isDevelopment()) {
   // sourceMap 相关
   config.output.pathinfo = true
   if (!process.env.NO_SOURCE_MAP) {
@@ -106,6 +106,15 @@ if (env.isDevelopment() || env.isTest()) {
     config.devtool = 'eval'
   }
   config.devtool = 'inline-module-source-map'
+} else if (env.isTest()) {
+  // sourceMap 相关
+  config.output.pathinfo = true
+  if (!process.env.NO_SOURCE_MAP) {
+    // config.devtool = '#eval-source-map'
+    // config.devtool = 'inline-module-source-map'
+    config.devtool = 'eval'
+  }
+  config.devtool = 'source-map'
 }
 
 
