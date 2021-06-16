@@ -16,6 +16,7 @@ import {Stream} from "./stream";
 import {MediaCapability} from "../module/mediaCapability";
 import {getSupportedCodecs} from "../util/rtcUtil/codec";
 import {Encryption} from "../module/encryption";
+import { logController } from "../util/log/upload";
 
 /**
  * 基础框架
@@ -30,12 +31,14 @@ class Base extends EventEmitter {
   }
   public adapterRef:AdapterRef;
   private sdkRef: any;
+  public logStorage: any;
   constructor(options:ClientOptions) {
     super();
     this._params = {
       appkey: "",
       mode: 'rtc'
     };
+    this.logStorage = logController.storage();
     //typescript成员初始化
     this.adapterRef = {// adapter对象内部成员与方法挂载的引用
       channelInfo: {
@@ -45,14 +48,18 @@ class Base extends EventEmitter {
       apiEvent: {},
       apiEvents: {},
       requestId: {},
+      logController: logController,
       //@ts-ignore
       instance: this,
       report: true
     };
+  
     this.adapterRef.mediaCapability = new MediaCapability(this.adapterRef);
     this.adapterRef.encryption = new Encryption(this.adapterRef),
     this._reset();
     this.adapterRef.logger = new Logger({
+      adapterRef: this.adapterRef,
+      logStorage: this.logStorage,
       debug: options.debug,
       prefix: "WEBRTC"
     });
@@ -382,16 +389,16 @@ class Base extends EventEmitter {
       stream.pubStatus.audio.consumerId = ""
       stream.pubStatus.video.consumerId = ""
       stream.pubStatus.screen.consumerId = ""
-      this.adapterRef.logger.log('重连逻辑订阅 start：', stream.streamID)
+      this.adapterRef.logger.log('重连逻辑订阅 start: ', stream.streamID)
       try {
         //@ts-ignore
         await this.subscribe(stream)
       } catch (e) {
-        this.adapterRef.logger.log('重连逻辑订阅 error：', e)
+        this.adapterRef.logger.log('重连逻辑订阅 error: ', e)
         break
       }
       
-      this.adapterRef.logger.log('重连逻辑订阅 over：', stream.streamID)
+      this.adapterRef.logger.log('重连逻辑订阅 over: ', stream.streamID)
     }
   }
 
@@ -539,7 +546,7 @@ class Base extends EventEmitter {
   }
 
   destroy() {
-    this.adapterRef.logger.log("base: destroy！");
+    this.adapterRef.logger.log("base: destroy!");
     this._reset();
   }
 }

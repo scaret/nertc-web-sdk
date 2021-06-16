@@ -4,7 +4,7 @@ const fs = require('fs');
 
 const pathNpmRepo = path.join(__dirname, '../../../nertc-npm');
 const VERSION = require('../../package.json').webrtcG2Version;
-const sdkSrc = path.join(__dirname, `../../dist/lib/${VERSION}/production/NIM_Web_WebRTC2_v${VERSION}.js`);
+const sdkSrc = path.join(__dirname, `../../dist/lib/${VERSION}/production/NIM_Web_NERTC_v${VERSION}.js`);
 const sdkDest = path.join(pathNpmRepo, 'NERTCSDK.min.js')
 
 // 1. 验证SDK版本

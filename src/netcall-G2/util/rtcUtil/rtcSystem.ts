@@ -248,6 +248,7 @@ function detectBrowser () {
     result.version = getVersion(navigator.userAgent, /Firefox\/(\d+)\./, 1)
     // @ts-ignore
     result.UIVersion = navigator.userAgent.match(/Firefox\/([\d.]+)/)[1] //Firefox/64.0
+    // @ts-ignore
   } else if (navigator.webkitGetUserMedia && window.webkitRTCPeerConnection) {
     // Chrome, Chromium, Webview, Opera, Vivaldi all use the chrome shim for now
     if (/micromessenger/.test(userAgent)) {

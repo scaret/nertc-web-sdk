@@ -1,17 +1,23 @@
 {
   "resolveJsonModule": true,
   "compileOnSave": true,
-  "compilerOptions":
-  {
+  "compilerOptions": {
     "sourceMap": true,
-    "lib": [ "es2018", "dom" ],
+    "lib": [
+      "es2018",
+      "dom"
+    ],
     "target": "es2017",
     "module": "commonjs",
     "moduleResolution": "node",
     "strict": true,
     "outDir": "types",
     "declaration": false,
+    "esModuleInterop": true,
     "declarationMap": false
   },
-  "include": [ "src/netcall-G2", "src/entry"]
+  "include": [
+    "src/netcall-G2",
+    "src/entry"
+  ]
 }

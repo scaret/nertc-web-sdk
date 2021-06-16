@@ -1,0 +1,1 @@
+export function Uploader(options:any):any;
