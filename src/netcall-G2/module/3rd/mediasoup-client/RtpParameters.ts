@@ -5,18 +5,18 @@
 
 export type RtpCapabilities =
 {
-	/**
-	 * Supported media and RTX codecs.
-	 */
-	codecs?: RtpCodecCapability[];
-	/**
-	 * Supported RTP header extensions.
-	 */
-	headerExtensions?: RtpHeaderExtension[];
-	/**
-	 * Supported FEC mechanisms.
-	 */
-	fecMechanisms?: string[];
+  /**
+   * Supported media and RTX codecs.
+   */
+  codecs?: RtpCodecCapability[];
+  /**
+   * Supported RTP header extensions.
+   */
+  headerExtensions?: RtpHeaderExtension[];
+  /**
+   * Supported FEC mechanisms.
+   */
+  fecMechanisms?: string[];
 }
 
 /**
@@ -43,37 +43,37 @@ export type MediaKind = 'audio' | 'video';
  */
 export type RtpCodecCapability =
 {
-	/**
-	 * Media kind.
-	 */
-	kind: MediaKind;
-	/**
-	 * The codec MIME media type/subtype (e.g. 'audio/opus', 'video/VP8').
-	 */
-	mimeType: string;
-	/**
-	 * The preferred RTP payload type.
-	 */
-	preferredPayloadType?: number;
-	/**
-	 * Codec clock rate expressed in Hertz.
-	 */
-	clockRate: number;
-	/**
-	 * The number of channels supported (e.g. two for stereo). Just for audio.
-	 * Default 1.
-	 */
-	channels?: number;
-	/**
-	 * Codec specific parameters. Some parameters (such as 'packetization-mode'
-	 * and 'profile-level-id' in H264 or 'profile-id' in VP9) are critical for
-	 * codec matching.
-	 */
-	parameters?: any;
-	/**
-	 * Transport layer and codec-specific feedback messages for this codec.
-	 */
-	rtcpFeedback?: RtcpFeedback[];
+  /**
+   * Media kind.
+   */
+  kind: MediaKind;
+  /**
+   * The codec MIME media type/subtype (e.g. 'audio/opus', 'video/VP8').
+   */
+  mimeType: string;
+  /**
+   * The preferred RTP payload type.
+   */
+  preferredPayloadType?: number;
+  /**
+   * Codec clock rate expressed in Hertz.
+   */
+  clockRate: number;
+  /**
+   * The number of channels supported (e.g. two for stereo). Just for audio.
+   * Default 1.
+   */
+  channels?: number;
+  /**
+   * Codec specific parameters. Some parameters (such as 'packetization-mode'
+   * and 'profile-level-id' in H264 or 'profile-id' in VP9) are critical for
+   * codec matching.
+   */
+  parameters?: any;
+  /**
+   * Transport layer and codec-specific feedback messages for this codec.
+   */
+  rtcpFeedback?: RtcpFeedback[];
 }
 
 /**
@@ -93,31 +93,31 @@ export type RtpHeaderExtensionDirection = 'sendrecv' | 'sendonly' | 'recvonly' |
  */
 export type RtpHeaderExtension =
 {
-	/**
-	 * Media kind. If empty string, it's valid for all kinds.
-	 * Default any media kind.
-	 */
-	kind?: MediaKind | '';
-	/*
-	 * The URI of the RTP header extension, as defined in RFC 5285.
-	 */
-	uri: string;
-	/**
-	 * The preferred numeric identifier that goes in the RTP packet. Must be
-	 * unique.
-	 */
-	preferredId: number;
-	/**
-	 * If true, it is preferred that the value in the header be encrypted as per
-	 * RFC 6904. Default false.
-	 */
-	preferredEncrypt?: boolean;
-	/**
-	 * If 'sendrecv', mediasoup supports sending and receiving this RTP extension.
-	 * 'sendonly' means that mediasoup can send (but not receive) it. 'recvonly'
-	 * means that mediasoup can receive (but not send) it.
-	 */
-	direction?: RtpHeaderExtensionDirection;
+  /**
+   * Media kind. If empty string, it's valid for all kinds.
+   * Default any media kind.
+   */
+  kind?: MediaKind | '';
+  /*
+   * The URI of the RTP header extension, as defined in RFC 5285.
+   */
+  uri: string;
+  /**
+   * The preferred numeric identifier that goes in the RTP packet. Must be
+   * unique.
+   */
+  preferredId: number;
+  /**
+   * If true, it is preferred that the value in the header be encrypted as per
+   * RFC 6904. Default false.
+   */
+  preferredEncrypt?: boolean;
+  /**
+   * If 'sendrecv', mediasoup supports sending and receiving this RTP extension.
+   * 'sendonly' means that mediasoup can send (but not receive) it. 'recvonly'
+   * means that mediasoup can receive (but not send) it.
+   */
+  direction?: RtpHeaderExtensionDirection;
 }
 
 /**
@@ -153,26 +153,26 @@ export type RtpHeaderExtension =
  */
 export type RtpParameters =
 {
-	/**
-	 * The MID RTP extension value as defined in the BUNDLE specification.
-	 */
-	mid?: string;
-	/**
-	 * Media and RTX codecs in use.
-	 */
-	codecs: RtpCodecParameters[];
-	/**
-	 * RTP header extensions in use.
-	 */
-	headerExtensions?: RtpHeaderExtensionParameters[];
-	/**
-	 * Transmitted RTP streams and their settings.
-	 */
-	encodings?: RtpEncodingParameters[];
-	/**
-	 * Parameters used for RTCP.
-	 */
-	rtcp?: RtcpParameters;
+  /**
+   * The MID RTP extension value as defined in the BUNDLE specification.
+   */
+  mid?: string;
+  /**
+   * Media and RTX codecs in use.
+   */
+  codecs: RtpCodecParameters[];
+  /**
+   * RTP header extensions in use.
+   */
+  headerExtensions?: RtpHeaderExtensionParameters[];
+  /**
+   * Transmitted RTP streams and their settings.
+   */
+  encodings?: RtpEncodingParameters[];
+  /**
+   * Parameters used for RTCP.
+   */
+  rtcp?: RtcpParameters;
 }
 
 /**
@@ -182,33 +182,33 @@ export type RtpParameters =
  */
 export type RtpCodecParameters =
 {
-	/**
-	 * The codec MIME media type/subtype (e.g. 'audio/opus', 'video/VP8').
-	 */
-	mimeType: string;
-	/**
-	 * The value that goes in the RTP Payload Type Field. Must be unique.
-	 */
-	payloadType: number;
-	/**
-	 * Codec clock rate expressed in Hertz.
-	 */
-	clockRate: number;
-	/**
-	 * The number of channels supported (e.g. two for stereo). Just for audio.
-	 * Default 1.
-	 */
-	channels?: number;
-	/**
-	 * Codec-specific parameters available for signaling. Some parameters (such
-	 * as 'packetization-mode' and 'profile-level-id' in H264 or 'profile-id' in
-	 * VP9) are critical for codec matching.
-	 */
-	parameters?: any;
-	/**
-	 * Transport layer and codec-specific feedback messages for this codec.
-	 */
-	rtcpFeedback?: RtcpFeedback[];
+  /**
+   * The codec MIME media type/subtype (e.g. 'audio/opus', 'video/VP8').
+   */
+  mimeType: string;
+  /**
+   * The value that goes in the RTP Payload Type Field. Must be unique.
+   */
+  payloadType: number;
+  /**
+   * Codec clock rate expressed in Hertz.
+   */
+  clockRate: number;
+  /**
+   * The number of channels supported (e.g. two for stereo). Just for audio.
+   * Default 1.
+   */
+  channels?: number;
+  /**
+   * Codec-specific parameters available for signaling. Some parameters (such
+   * as 'packetization-mode' and 'profile-level-id' in H264 or 'profile-id' in
+   * VP9) are critical for codec matching.
+   */
+  parameters?: any;
+  /**
+   * Transport layer and codec-specific feedback messages for this codec.
+   */
+  rtcpFeedback?: RtcpFeedback[];
 }
 
 /**
@@ -219,14 +219,14 @@ export type RtpCodecParameters =
  */
 export type RtcpFeedback =
 {
-	/**
-	 * RTCP feedback type.
-	 */
-	type: string;
-	/**
-	 * RTCP feedback parameter.
-	 */
-	parameter?: string;
+  /**
+   * RTCP feedback type.
+   */
+  type: string;
+  /**
+   * RTCP feedback parameter.
+   */
+  parameter?: string;
 }
 
 /**
@@ -235,45 +235,45 @@ export type RtcpFeedback =
  */
 export type RtpEncodingParameters =
 {
-	/**
-	 * The media SSRC.
-	 */
-	ssrc?: number;
-	/**
-	 * The RID RTP extension value. Must be unique.
-	 */
-	rid?: string;
-	/**
-	 * Codec payload type this encoding affects. If unset, first media codec is
-	 * chosen.
-	 */
-	codecPayloadType?: number;
-	/**
-	 * RTX stream information. It must contain a numeric ssrc field indicating
-	 * the RTX SSRC.
-	 */
-	rtx?: { ssrc: number };
-	/**
-	 * It indicates whether discontinuous RTP transmission will be used. Useful
-	 * for audio (if the codec supports it) and for video screen sharing (when
-	 * static content is being transmitted, this option disables the RTP
-	 * inactivity checks in mediasoup). Default false.
-	 */
-	dtx?: boolean;
-	/**
-	 * Number of spatial and temporal layers in the RTP stream (e.g. 'L1T3').
-	 * See webrtc-svc.
-	 */
-	scalabilityMode?: string;
-	/**
-	 * Others.
-	 */
-	scaleResolutionDownBy?: number;
-	maxBitrate?: number;
-	maxFramerate?: number;
-	adaptivePtime?: boolean;
-	priority?: 'very-low' | 'low' | 'medium' | 'high';
-	networkPriority?: 'very-low' | 'low' | 'medium' | 'high';
+  /**
+   * The media SSRC.
+   */
+  ssrc?: number;
+  /**
+   * The RID RTP extension value. Must be unique.
+   */
+  rid?: string;
+  /**
+   * Codec payload type this encoding affects. If unset, first media codec is
+   * chosen.
+   */
+  codecPayloadType?: number;
+  /**
+   * RTX stream information. It must contain a numeric ssrc field indicating
+   * the RTX SSRC.
+   */
+  rtx?: { ssrc: number };
+  /**
+   * It indicates whether discontinuous RTP transmission will be used. Useful
+   * for audio (if the codec supports it) and for video screen sharing (when
+   * static content is being transmitted, this option disables the RTP
+   * inactivity checks in mediasoup). Default false.
+   */
+  dtx?: boolean;
+  /**
+   * Number of spatial and temporal layers in the RTP stream (e.g. 'L1T3').
+   * See webrtc-svc.
+   */
+  scalabilityMode?: string;
+  /**
+   * Others.
+   */
+  scaleResolutionDownBy?: number;
+  maxBitrate?: number;
+  maxFramerate?: number;
+  adaptivePtime?: boolean;
+  priority?: 'very-low' | 'low' | 'medium' | 'high';
+  networkPriority?: 'very-low' | 'low' | 'medium' | 'high';
 }
 
 /**
@@ -286,22 +286,22 @@ export type RtpEncodingParameters =
  */
 export type RtpHeaderExtensionParameters =
 {
-	/**
-	 * The URI of the RTP header extension, as defined in RFC 5285.
-	 */
-	uri: string;
-	/**
-	 * The numeric identifier that goes in the RTP packet. Must be unique.
-	 */
-	id: number;
-	/**
-	 * If true, the value in the header is encrypted as per RFC 6904. Default false.
-	 */
-	encrypt?: boolean;
-	/**
-	 * Configuration parameters for the header extension.
-	 */
-	parameters?: any;
+  /**
+   * The URI of the RTP header extension, as defined in RFC 5285.
+   */
+  uri: string;
+  /**
+   * The numeric identifier that goes in the RTP packet. Must be unique.
+   */
+  id: number;
+  /**
+   * If true, the value in the header is encrypted as per RFC 6904. Default false.
+   */
+  encrypt?: boolean;
+  /**
+   * Configuration parameters for the header extension.
+   */
+  parameters?: any;
 }
 
 /**
@@ -315,17 +315,17 @@ export type RtpHeaderExtensionParameters =
  */
 export type RtcpParameters =
 {
-	/**
-	 * The Canonical Name (CNAME) used by RTCP (e.g. in SDES messages).
-	 */
-	cname?: string;
-	/**
-	 * Whether reduced size RTCP RFC 5506 is configured (if true) or compound RTCP
-	 * as specified in RFC 3550 (if false). Default true.
-	 */
-	reducedSize?: boolean;
-	/**
-	 * Whether RTCP-mux is used. Default true.
-	 */
-	mux?: boolean;
+  /**
+   * The Canonical Name (CNAME) used by RTCP (e.g. in SDES messages).
+   */
+  cname?: string;
+  /**
+   * Whether reduced size RTCP RFC 5506 is configured (if true) or compound RTCP
+   * as specified in RFC 3550 (if false). Default true.
+   */
+  reducedSize?: boolean;
+  /**
+   * Whether RTCP-mux is used. Default true.
+   */
+  mux?: boolean;
 }

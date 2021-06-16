@@ -4,10 +4,10 @@
 export function clone(data: any, defaultValue: any = {}): any
 {
 
-	if (typeof data === 'undefined')
-		return defaultValue;
+  if (typeof data === 'undefined')
+    return defaultValue;
 
-	return JSON.parse(JSON.stringify(data));
+  return JSON.parse(JSON.stringify(data));
 }
 
 /**
@@ -15,5 +15,5 @@ export function clone(data: any, defaultValue: any = {}): any
  */
 export function generateRandomNumber(): number
 {
-	return Math.round(Math.random() * 10000000);
+  return Math.round(Math.random() * 10000000);
 }
