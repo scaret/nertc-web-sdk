@@ -79,9 +79,9 @@ const NERTC = {
      * // 输出INFO以上日志等级
      * TRTC.Logger.setLogLevel(TRTC.Logger.LogLevel.INFO);
      */
-    setLogLevel(level:number) {
-      log.setLogLevel(level);
-    },
+    // setLogLevel(level:number) {
+    //   log.setLogLevel(level);
+    // },
 
     /**
      * 打开日志上传
@@ -311,10 +311,9 @@ VERSION,
 BUILD
 }
 
-const WebRTC2 = NERTC;
 
 module.exports = NERTC;
-module.exports = WebRTC2;
+(<any>window).WebRTC2 = NERTC;
 
 
 
