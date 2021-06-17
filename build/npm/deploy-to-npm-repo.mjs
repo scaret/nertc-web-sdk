@@ -5,7 +5,7 @@ const fs = require('fs');
 const pathNpmRepo = path.join(__dirname, '../../../nertc-npm');
 const VERSION = require('../../package.json').webrtcG2Version;
 const sdkSrc = path.join(__dirname, `../../dist/lib/${VERSION}/production/NIM_Web_NERTC_v${VERSION}.js`);
-const sdkDest = path.join(pathNpmRepo, 'NERTCSDK.min.js')
+const sdkDest = path.join(pathNpmRepo, 'NERTC.js')
 
 // 1. 验证SDK版本
 const commentLine = await $`head -n 1 ${sdkSrc}`;
@@ -27,19 +27,18 @@ if (!match){
 // 2. 拷贝SDK
 await $`cp -f ${sdkSrc} ${sdkDest}`
 
-// 3. 生成package.json
-const npmPackageInfo = require('./src/package.json')
-npmPackageInfo.version = VERSION;
-fs.writeFileSync(
-  path.join(pathNpmRepo, 'package.json'), 
-  JSON.stringify(npmPackageInfo, null, 2),
-  'utf-8');
-
-// 4. 拷贝文档
+// 3. 拷贝文档
 await $`rm -rf ${path.join(pathNpmRepo, 'types')}`
 await $`cp -r ${path.join(__dirname, '../../docs/src/')} ${pathNpmRepo}/types`
+// 改变声明文件输出方式
+let content = fs.readFileSync(`${pathNpmRepo}/types/nertc.d.ts`, 'utf-8');
+content = content.replace("export as namespace", "export =");
+fs.writeFileSync(`${pathNpmRepo}/types/nertc.d.ts`, content, 'utf-8');
 
-// 5. git操作
+// 4. git操作
 await $`cd ${pathNpmRepo} && git add -A .`
 await $`cd ${pathNpmRepo} && git commit -m "v${VERSION}"`
-await $`cd ${pathNpmRepo} && git push origin master`
+
+// 5. 更新package.json
+await $`cd ${pathNpmRepo} && npm version ${VERSION}`
+
