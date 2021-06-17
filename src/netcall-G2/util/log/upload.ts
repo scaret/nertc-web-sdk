@@ -17,7 +17,7 @@ class UploadLog  {
     init() {
         // 进行 LogStorage 实例化
         // 设置全局变量
-        this.logStorage = new LogStorage('WEBRTC');
+        (<any>window).logStorage = this.logStorage = new LogStorage('WEBRTC');
     }
     async getLogs() {
         // 提取日志
@@ -28,16 +28,13 @@ class UploadLog  {
             console.log(err);
         }
     }
-    storage() {
-        return this.logStorage;
-    }
 
     async uploadLog(option:any) {
-        // 日志转成file
+        // log convert to file
         let logs = await this.getLogs();
         let blob = new Blob([JSON.stringify(logs)],{ type: "text/plain" });
         let file = new File([blob], 'logdata', { type: "text/plain" });
-        // 上传到 nos
+        // upload to nos
         let param:any = {
             protocol : 'https'
         }
@@ -77,12 +74,11 @@ class UploadLog  {
             header: {
                 Nonce: Nonce,
                 CurTime: CurTime,
-                // CheckSum: this.sha1(data+Nonce+CurTime+salt)
                 Checksum: sha1(checksum)
             } 
           }).then((res:any) => {
               if(res.code === 200){
-              console.log(res.data);
+              console.log('fileName is: ',res.data.fileName);
               this.uploadLog(res);
               }else {
                 console.log('error code is',res.code);
