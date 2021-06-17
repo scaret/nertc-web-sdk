@@ -170,10 +170,6 @@ class Logger{
     if (this.supportedBrowsers.indexOf(platform.name) !== -1) {
       //@ts-ignore
       this.cs[func].apply(this.cs, args)
-
-    // 存入indexedDB
-    console.log(...args)
-
     } else {
       //@ts-ignore
       logger.ie(func, args)
