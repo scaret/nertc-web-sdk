@@ -15,7 +15,7 @@ import {waitForEvent} from "../util/waitForEvent";
 class Mediasoup extends EventEmitter {
   private adapterRef:AdapterRef;
   private sdkRef:SDKRef;
-  private _consumers: {[consumerId: string]: Consumer}|null;
+  private _consumers: {[consumerId: string]: any}|null;
   private _timeout: number;
   public _edgeRtpCapabilities: any|null;
   private _mediasoupDevice:Device|null;
@@ -127,6 +127,10 @@ class Mediasoup extends EventEmitter {
 
   async init() {
     this.adapterRef.logger.log('初始化 devices、transport')
+    if (this.adapterRef._enableRts) {
+      return
+    }
+
     if (!this._mediasoupDevice) {
       this._mediasoupDevice = new mediasoupClient.Device();
       if (this._mediasoupDevice){
@@ -610,7 +614,11 @@ class Mediasoup extends EventEmitter {
       if (this._eventQueue.length > 1) {
         return
       } else {
-        this._createConsumer(this._eventQueue[0])
+        if (this.adapterRef._enableRts) {
+          this._createConsumerRts(this._eventQueue[0])
+        } else {
+          this._createConsumer(this._eventQueue[0])
+        }
       }
     })
   }
@@ -639,7 +647,6 @@ class Mediasoup extends EventEmitter {
     }
   }
 
-
   checkConsumerList (info:ProduceConsumeInfo) {
     this._eventQueue.shift()
     info.resolve(null);
@@ -648,7 +655,11 @@ class Mediasoup extends EventEmitter {
       this.adapterRef.logger.log(`consumerList, uid: ${item.uid}, kind: ${item.kind}, mediaType: ${item.mediaType}, id: ${item.id}`)
     })
     if (this._eventQueue.length > 0) {
-      this._createConsumer(this._eventQueue[0])
+      if (this.adapterRef._enableRts) {
+        this._createConsumerRts(this._eventQueue[0])
+      } else {
+        this._createConsumer(this._eventQueue[0])
+      }
       return;
     }
   }
@@ -896,6 +907,98 @@ class Mediasoup extends EventEmitter {
       }
       this._recvTransport = null
       this.adapterRef.instance.reBuildRecvTransport()
+    }
+  }
+
+  //@ts-ignore
+  async _createConsumerRts(info:ProduceConsumeInfo) {
+    const {uid, kind, id, mediaType, preferredSpatialLayer = 0} = info;
+    const mediaTypeShort = (mediaType === 'screenShare' ? 'screen' : mediaType);
+    this.adapterRef.logger.log('开始订阅 %s 的 %s 媒体: %s 大小流: ', uid, mediaTypeShort, id, preferredSpatialLayer)
+    if (!this.adapterRef._rtsTransport) {
+      throw new Error('_createConsumerRts: _rtsTransport is null');
+    } else if(!this.adapterRef._signalling || !this.adapterRef._signalling._protoo || !this.adapterRef._signalling._protoo.request){
+      throw new Error('_createConsumerRts: _protoo is null'); 
+    } else if(mediaTypeShort !== 'audio' && mediaTypeShort !== 'video' && mediaTypeShort !== 'screen') {
+      throw new Error('_createConsumerRts: mediaType type error');
+    }
+
+    if (!id) {
+      return this.checkConsumerList(info)
+    }
+    let remoteStream = this.adapterRef.remoteStreamMap[uid]
+    //@ts-ignore
+    if (!remoteStream || !remoteStream.pubStatus[mediaTypeShort][mediaTypeShort] || !remoteStream.pubStatus[mediaTypeShort].producerId) {
+      //this._eventQueue = this._eventQueue.filter((item)=>{item.uid != uid })
+      return this.checkConsumerList(info)
+    }
+    if (remoteStream['pubStatus'][mediaTypeShort]['consumerId']) {
+      this.adapterRef.logger.log('已经订阅过，返回')
+      return this.checkConsumerList(info)
+    }
+    const data = {
+      requestId: `${Math.ceil(Math.random() * 1e9)}`,
+      transportId: this.adapterRef._rtsTransport.transportId,
+      uid: +uid,
+      producerId: id,
+      preferredSpatialLayer,
+      pause: false,
+      rtsCapabilities: {
+        codecs: [{
+          kind: mediaTypeShort,
+          codec: mediaTypeShort == 'video' || mediaTypeShort == 'screen' ? 'h264' : 'opus',
+          payloadType: mediaTypeShort == 'video' || mediaTypeShort == 'screen' ? 0x02 : 0x01,
+        }]
+      }
+    };
+    
+    this.adapterRef.instance.apiEventReport('setFunction', {
+      name: 'set_video_sub',
+      oper: '1',
+      value: preferredSpatialLayer
+    })
+
+    this.adapterRef.logger.log('发送consume请求 = %o', data);
+    if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
+      info.resolve(null);
+      throw new Error('No _protoo');
+    }
+    const consumeRes = await this.adapterRef._signalling._protoo.request('WsConsume', data);
+
+    this.adapterRef.logger.log('consume反馈结果 = %o', consumeRes);
+    let { transportId, rtpParameters, producerId, consumerId, code, errMsg } = consumeRes;
+
+    try {
+      const peerId = consumeRes.uid
+      if (code !== 200 || !this.adapterRef.remoteStreamMap[uid]) {
+        this.adapterRef.logger.error('订阅 %s 的 %s 媒体失败, errcode: %s, reason: %s ，做容错处理: 重新建立下行连接', uid, kind, code, errMsg)
+        this._eventQueue.length = 0
+        this._recvTransport = null
+        return
+      } 
+
+      if(!this._consumers) {
+        this._consumers = {}
+      }
+      this._consumers[consumerId] = {producerId, close: function(){ return Promise.resolve() }}
+
+
+      this.adapterRef.logger.log('订阅consume完成 peerId = %s', peerId);
+      remoteStream = this.adapterRef.remoteStreamMap[uid]
+      if (remoteStream && remoteStream['pubStatus'][mediaTypeShort]['producerId']) {
+        remoteStream['subStatus'][mediaTypeShort] = true
+        //@ts-ignore
+        remoteStream['pubStatus'][mediaTypeShort][mediaTypeShort] = true
+        remoteStream['pubStatus'][mediaTypeShort]['consumerId'] = consumerId
+        remoteStream['pubStatus'][mediaTypeShort]['producerId'] = producerId
+      } else {
+        this.adapterRef.logger.log('该次consume状态错误： ', JSON.stringify(remoteStream['pubStatus'], null, ''))
+      }
+      return this.checkConsumerList(info)
+    } catch (error) {
+      this.adapterRef && this.adapterRef.logger.error('"newConsumer" request failed:%o', error);
+      this.adapterRef.logger.error('订阅 %s 的 %s 媒体失败，做容错处理: 重新建立下行连接', uid, mediaTypeShort)
+      return this.adapterRef.instance.reBuildRecvTransport()
     }
   }
 

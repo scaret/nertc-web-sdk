@@ -134,8 +134,7 @@ class Client extends Base {
    * @return {Promise}
    */
   async join (options: JoinOptions) {
-    this.adapterRef.logger.log('加入频道, options: ', JSON.stringify(options, null, ' '))
-    // this.logStorage.log('log',`加入频道, options: ${JSON.stringify(options, null, ' ')}`)
+    this.adapterRef.logger.warn('加入频道, options: ', JSON.stringify(options, null, ' '))
     if (this.adapterRef.channelStatus === 'join' || this.adapterRef.channelStatus === 'connectioning') {
       return Promise.reject('ERR_REPEAT_JOIN')
     }
@@ -216,6 +215,22 @@ class Client extends Base {
       logController.startUploadLog(this.adapterRef);
     }
 
+  }
+
+
+  async leaveRts () {
+    this.adapterRef.logger.log('离开频道')
+    if (this.adapterRef.channelStatus !== 'join' && this.adapterRef.channelStatus !== 'connectioning') {
+      this.adapterRef.logger.log(' 状态: ', this.adapterRef.channelStatus)
+      //return Promise.reject('ERR_REPEAT_LEAVE')
+    }
+    this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
+    this.adapterRef.connectState.curState = 'DISCONNECTING'
+    this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
+    this.setEndSessionTime()
+    if (this.adapterRef._meetings) {
+      this.adapterRef._meetings.leaveChannel()
+    }
   }
 
   /**
@@ -369,6 +384,10 @@ class Client extends Base {
    * @returns {Promise}  
    */
   async subscribe (stream:Stream) {
+    return this.subscribeRts(stream) 
+  }
+
+  async subscribeRts (stream:Stream) {
     checkExists({tag: 'client.subscribe:stream', value: stream});
     this.adapterRef.logger.log(`subscribe() [订阅远端: ${stream.streamID}]`)
     const uid = stream.getId()
@@ -553,6 +572,10 @@ class Client extends Base {
    * @returns {Promise}  
    */
   async unsubscribe (stream:Stream) {
+    return this.unsubscribeRts(stream)
+  }
+
+  async unsubscribeRts (stream:Stream) {
     checkExists({tag: 'client.unsubscribe:stream', value: stream});
     this.adapterRef.logger.log('取消订阅远端音视频流: ', stream)
     try {
@@ -725,7 +748,7 @@ class Client extends Base {
   }
 
   enableAudioVolumeIndicator () {
-    this.adapterRef.logger.log('关闭双流模式')
+    this.adapterRef.logger.log('开启双流模式')
   }
 
   enableDualStream () {
@@ -1108,7 +1131,8 @@ class Client extends Base {
    *  @param {Void}
    */
   destroy () {
-    //this.adapterRef.logger.warn('清除 Client 实例')
+    this.adapterRef.logger && this.adapterRef.logger.warn('清除 Client 实例')
+    this._reset();
   }
 }
 

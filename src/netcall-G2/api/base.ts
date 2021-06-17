@@ -3,6 +3,7 @@ import {Meeting} from '../module/meeting'
 import {MediaHelper} from '../module/media'
 import {Signalling} from '../module/signalling'
 import {Mediasoup} from '../module/mediasoup'
+import {RTSTransport} from '../module/rtsTransport'
 import {StatsReport} from '../module/report/statsReport'
 import {DataReport} from '../module/report/dataReport'
 import {Logger} from "../util/webrtcLogger";
@@ -87,7 +88,8 @@ class Base extends EventEmitter {
       apiEvents: {},
       requestId: {},
       //@ts-ignore
-      instance: this
+      instance: this,
+      _enableRts: false //rts是否启动的标志位
     };
     this.adapterRef.mediaCapability = new MediaCapability(this.adapterRef);
     this.adapterRef.encryption = new Encryption(this.adapterRef);
@@ -139,6 +141,11 @@ class Base extends EventEmitter {
     if(this.adapterRef._signalling){
       this.adapterRef._signalling.destroy()
       this.adapterRef._signalling = null
+    }
+
+    if (this.adapterRef._rtsTransport) {
+      this.adapterRef._rtsTransport.destroy()
+      this.adapterRef._rtsTransport = null
     }
 
     if(this.adapterRef._mediasoup){
@@ -345,7 +352,12 @@ class Base extends EventEmitter {
       return item.uid !== uid
     })
     this.adapterRef.logger.log('%s 离开房间 通知用户', uid);
-    this.adapterRef.instance.emit('peer-leave', {uid});
+    console.log('_enableRts: ', this.adapterRef._enableRts)
+    if (this.adapterRef._enableRts) {
+      this.adapterRef.instance.emit('rts-peer-leave', {uid});
+    } else {
+      this.adapterRef.instance.emit('peer-leave', {uid});
+    }
   }
 
   // 设置通话开始时间
@@ -399,6 +411,14 @@ class Base extends EventEmitter {
       this.adapterRef.logger.log('重连逻辑订阅 over: ', stream.streamID)
     }
   }
+
+  async rtsRequestKeyFrame(stream:Stream) {
+    this.adapterRef.logger.log('请求关键帧: ', stream.pubStatus.video.consumerId)
+    if (this.adapterRef._signalling) {
+      await this.adapterRef._signalling.rtsRequestKeyFrame(stream.pubStatus.video.consumerId);
+    }
+  }
+
 
   /**************************业务类工具******************************/
 

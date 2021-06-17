@@ -16,13 +16,14 @@ const globalConfig = window.globalConfig = {
 
 var WEBRTC2_ENV = {
   DEV: {
-    appkey: 'eca23f68c66d4acfceee77c200200359', //'3bbb213564b441dfcc26eb55731c8a8c',
+    appkey: 'eca23f68c66d4acfceee77c200200359',
+    //appkey: 'b8e51166f2fc093d9d2f0680cb1f2d28', 
     checkSumUrl: "https://webtest.netease.im/nrtcproxy/demo/getChecksum.action",
     getTokenUrl: 'https://imtest.netease.im/nimserver/user/getToken.action',
     AppSecret: 'c9df0b60c1ba'
   },
   SAFEDEV: {
-    appkey: 'abb4cce04e5e4a7b7fc381ba799878dc', //'3bbb213564b441dfcc26eb55731c8a8c',
+    appkey: 'abb4cce04e5e4a7b7fc381ba799878dc', 
     checkSumUrl: "https://webtest.netease.im/nrtcproxy/demo/getChecksum.action",
     getTokenUrl: 'https://imtest.netease.im/nimserver/user/getToken.action',
     AppSecret: '1209afc826ea'
