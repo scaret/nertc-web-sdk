@@ -18,7 +18,6 @@ class Logger{
   private cs:Console;
   private isDebug: boolean;
   public adapterRef: AdapterRef;
-  public logStorage:any;
   constructor(options:LoggerOptions) {
     this.options = options;
     this.api = 'log';
@@ -35,7 +34,6 @@ class Logger{
     this.isDebug = true;
     this.setDebug(options.debug);
     this.adapterRef = options.adapterRef;
-    this.logStorage = options.logStorage;
   }
   
   setDebug(debug?: boolean|LoggerDebugOptions){
@@ -60,13 +58,12 @@ class Logger{
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
     }
-    logger._log('debug', args)
-    this.logStorage && this.logStorage.log('debug', ...args)
+    logger._log('debug', args);
+    (<any>window).logStorage && (<any>window).logStorage.log('debug', ...args);
     // loglevel.debug(arguments);
   }
   
   log(){
-    // console.log('123--->', this.adapterRef.logStorage);
     var logger = this;
     if (!this.isDebug){
       return;
@@ -77,9 +74,9 @@ class Logger{
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
     }
-    logger._log('log', args)
+    logger._log('log', args);
     //  loglevel.trace(args);
-    this.logStorage && this.logStorage.log('log', ...args)
+    (<any>window).logStorage && (<any>window).logStorage.log('log', ...args);
   }
   
   info(){
@@ -93,9 +90,10 @@ class Logger{
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
     }
-    logger._log('info', args)
+    logger._log('info', args);
     // loglevel.info(arguments);
-    this.logStorage && this.logStorage.log('info', ...args)
+    (<any>window).logStorage && (<any>window).logStorage.log('info', ...args);
+    
   }
   
   warn(){
@@ -109,9 +107,9 @@ class Logger{
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
     }
-    logger._log('warn', args)
+    logger._log('warn', args);
     // loglevel.warn(arguments);
-    this.logStorage && this.logStorage.log('warn', ...args)
+    (<any>window).logStorage && (<any>window).logStorage.log('warn', ...args);
   }
   
   error(){
@@ -125,9 +123,9 @@ class Logger{
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
     }
-    logger._log('error', args)
+    logger._log('error', args);
     // loglevel.error(arguments);
-    this.logStorage && this.logStorage.log('error', ...args)
+    (<any>window).logStorage && (<any>window).logStorage.log('error', ...args);
   }
 
   _log(name:string, args:any[]) {

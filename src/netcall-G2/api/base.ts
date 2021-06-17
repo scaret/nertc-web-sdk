@@ -38,7 +38,6 @@ class Base extends EventEmitter {
       appkey: "",
       mode: 'rtc'
     };
-    this.logStorage = logController.storage();
     //typescript成员初始化
     this.adapterRef = {// adapter对象内部成员与方法挂载的引用
       channelInfo: {
@@ -59,7 +58,6 @@ class Base extends EventEmitter {
     this._reset();
     this.adapterRef.logger = new Logger({
       adapterRef: this.adapterRef,
-      logStorage: this.logStorage,
       debug: options.debug,
       prefix: "WEBRTC"
     });
