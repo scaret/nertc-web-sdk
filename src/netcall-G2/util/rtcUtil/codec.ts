@@ -19,8 +19,8 @@ function getSupportedCodecFromSDP(sdp: string): { video: VideoCodecType[], audio
 
 function getSupportedCodecFromCapability(videoCapabilities: RTCRtpCapabilities|null, audioCapabilities?:RTCRtpCapabilities|null): { video: VideoCodecType[], audio: AudioCodecType[] } {
   const result: { video: VideoCodecType[], audio: AudioCodecType[] } = { video: [], audio: [] };
-  if(videoCapabilities){
-    for (let i in videoCapabilities.codecs){
+  if(videoCapabilities && videoCapabilities.codecs && videoCapabilities.codecs.length){
+    for (let i = 0; i < videoCapabilities.codecs.length; i++){
       const codecCapability = videoCapabilities.codecs[i];
       if (codecCapability.mimeType == "video/H264" && result.video.indexOf("H264") === -1){
         if (codecCapability.sdpFmtpLine && codecCapability.sdpFmtpLine.indexOf("profile-level-id") > -1){
@@ -37,8 +37,8 @@ function getSupportedCodecFromCapability(videoCapabilities: RTCRtpCapabilities|n
       }
     }
   }
-  if(audioCapabilities){
-    for (let i in audioCapabilities.codecs){
+  if(audioCapabilities && audioCapabilities.codecs && audioCapabilities.codecs.length){
+    for (let i = 0; i < audioCapabilities.codecs.length; i++){
       const codecCapability = audioCapabilities.codecs[i];
       if (codecCapability.mimeType == "audio/opus"){
         result.audio.push("OPUS");

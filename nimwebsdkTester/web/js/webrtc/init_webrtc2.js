@@ -2017,7 +2017,7 @@ function showAudioSenderLabel(){
   let label = '';
   if (rtc.client && rtc.client.adapterRef._mediasoup && rtc.client.adapterRef._mediasoup._sendTransport){
     const senders = rtc.client.adapterRef._mediasoup._sendTransport.handler._pc.getSenders();
-    for (var i in senders){
+    for (var i = 0; i < senders.length; i++){
       if (senders[i].track && senders[i].track.kind === "audio"){
         label += senders[i].track.label;
       }
