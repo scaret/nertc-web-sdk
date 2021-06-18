@@ -188,16 +188,19 @@ export class Chrome74 extends HandlerInterface
     };
 
     logger.debug('iceServers: %o', iceServers)
+    const pcConfig:any = {
+      iceServers         : iceServers || [],
+      iceTransportPolicy : iceTransportPolicy || 'all',
+      // bundlePolicy       : 'max-bundle',
+      rtcpMuxPolicy      : 'require',
+      sdpSemantics       : 'unified-plan',
+      // ...additionalSettings
+    };
+    if (appData.encodedInsertableStreams){
+      pcConfig.encodedInsertableStreams = true;
+    }
     this._pc = new (RTCPeerConnection as any)(
-      {
-        encodedInsertableStreams: appData.encodedInsertableStreams,
-        iceServers         : iceServers || [],
-        iceTransportPolicy : iceTransportPolicy || 'all',
-        // bundlePolicy       : 'max-bundle',
-        rtcpMuxPolicy      : 'require',
-        sdpSemantics       : 'unified-plan',
-        // ...additionalSettings
-      },
+      pcConfig,
       proprietaryConstraints);
 
     // Handle RTCPeerConnection connection status.

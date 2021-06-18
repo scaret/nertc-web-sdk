@@ -78,12 +78,15 @@ export class MediaCapability{
   getCodecSend(mediaTypeShort: "video"|"screen", codecsFromRtpCapability: any){
     let roomSupported:{codecParam?: any, codecName?: VideoCodecType|null} = {codecName: null};
     let roomNotSupported:{codecParam?: any, codecName?: VideoCodecType|null} = {codecName: null};
-    for (var i = 0; i < this.preferredCodecSend[mediaTypeShort].length; i++){
+    for (let i = 0; i < this.preferredCodecSend[mediaTypeShort].length; i++){
       // 在备选codec中寻找
       const candidateCodec = this.preferredCodecSend[mediaTypeShort][i];
-      for(var j in codecsFromRtpCapability.codecs){
+      if (!codecsFromRtpCapability.codecs && codecsFromRtpCapability.codecs.length){
+        continue;
+      }
+      for(let j = 0; j < codecsFromRtpCapability.codecs.length; j++){
         const codec = codecsFromRtpCapability.codecs[j];
-        if(codec.mimeType.toLowerCase().indexOf(candidateCodec.toLowerCase()) > -1){
+        if(codec.mimeType && codec.mimeType.toLowerCase().indexOf(candidateCodec.toLowerCase()) > -1){
           if (this.room.videoCodecType.indexOf(candidateCodec) > -1){
             if (!roomSupported.codecName){
               roomSupported = {
