@@ -154,6 +154,12 @@ $('#config').on('click', () => {
   }
 })
 
+$('#uploadLog').on('click', () => {
+  //启动上传日志
+  NERTC.Logger.enableUploadLog();
+})
+
+
 $('#audioMixing').on('click', () => {
   //伴音功能模块
   if ($("#audioMixingFeature").css("display") == 'none') {
