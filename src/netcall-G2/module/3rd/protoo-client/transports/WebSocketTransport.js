@@ -3,7 +3,7 @@ const retry = require('retry');
 const Logger = require('../Logger');
 const EnhancedEventEmitter = require('../EnhancedEventEmitter');
 const Message = require('../Message');
-
+var JSONbig = require('json-bigint');
 const WS_SUBPROTOCOL = 'protoo';
 const DEFAULT_RETRY_OPTIONS =
 {
@@ -84,7 +84,7 @@ class WebSocketTransport extends EnhancedEventEmitter
 
 		try
 		{
-			this._ws.send(JSON.stringify(message));
+			this._ws.send(JSONbig.stringify(message));
 		}
 		catch (error)
 		{

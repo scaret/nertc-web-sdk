@@ -43,13 +43,13 @@ export interface SignalJoinRes extends SignalResBase{
   externData: {
     code: number;
     errMsg: string;
-    uid: number;
+    uid: number|string;
     cid: number;
     appid: string;
     record: boolean;
     roomCapability: SignalRoomCapability;
     userList: {
-      uid: number;
+      uid: number|string;
       userName: string;
       role: string;
       record: boolean;

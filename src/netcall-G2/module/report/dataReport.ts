@@ -30,7 +30,7 @@ class DataReport {
   private configs:DataReportOptions;
   private adapterRef: AdapterRef;
   private cid:string;
-  private uid:number;
+  private uid:number|string;
   private time:number;
   private common: CommonEvent;
   private eventKeys: string[];

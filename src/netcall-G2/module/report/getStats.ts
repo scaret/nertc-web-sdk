@@ -324,13 +324,13 @@ class GetStats extends EventEmitter{
         if(item.direction === 'sendonly') {
           if (item.sender && item.sender.getStats) {
             report = await item.sender.getStats()
-            report = this.formatChromeStandardizedStats(report, direction)
+            report = this.formatChromeStandardizedStats(report, direction, 0)
             Object.assign(result, report)
           }
         } else if(item.direction === 'recvonly') {
           if (item.receiver && item.receiver.getStats) {
             report = await item.receiver.getStats()
-            report = this.formatChromeStandardizedStats(report, direction)
+            report = this.formatChromeStandardizedStats(report, direction, 0)
             Object.assign(result, report)
           }
         }
@@ -404,7 +404,7 @@ class GetStats extends EventEmitter{
   }
 
   //转换标准getStats格式
-  formatChromeStandardizedStats(report:RTCStatsReport, direction:string, uid = 0) {
+  formatChromeStandardizedStats(report:RTCStatsReport, direction:string, uid:string|number) {
     let result: { [key:string]:any } = {}
     report.forEach(report => {
       if( report.type == 'inbound-rtp' && this.adapterRef && this.adapterRef.instance) {
@@ -493,8 +493,8 @@ class GetStats extends EventEmitter{
     stats.forEach((item:any) => {
       if( item.type == 'outbound-rtp' || item.type == 'inbound-rtp' ) {
         const uid = this.adapterRef ? this.adapterRef.instance.getUidAndKindBySsrc(item.ssrc).uid : 0
-        uidMap.set(item.trackId, {uid, ssrc:item.ssrc})
-        item.uid = uid
+        uidMap.set(item.trackId, {uid: uid.toString(), ssrc:item.ssrc})
+        item.uid = uid.toString()
         return
       }
     })
@@ -502,8 +502,8 @@ class GetStats extends EventEmitter{
     stats.forEach((item:any)=>{
       if (item.type == 'track') {
        //console.log('item: ', item)
-        item.ssrc = uidMap.get(item.id).ssrc
-        item.uid = uidMap.get(item.id).uid
+        item.ssrc = uidMap.get(item.id.toString()).ssrc
+        item.uid = uidMap.get(item.id.toString()).uid
         if(item.framesSent || item.framesReceived) {
           item = this.computeData(pc, item)
           result[`video_${item.type}_${this.adapterRef && this.adapterRef.channelInfo.uid}_${direction}_${item.uid}`] = item
@@ -524,7 +524,7 @@ class GetStats extends EventEmitter{
 
   formatSafariStandardizedStats (report:any, direction:string) {
     let result:{[key:string]:any} = {}
-    let uid = 0;
+    let uid:string|number;
     report.forEach((report:any) => {
       if( report.type == 'inbound-rtp') {
         uid = this.adapterRef ? this.adapterRef.instance.getUidAndKindBySsrc(report.ssrc).uid: uid;

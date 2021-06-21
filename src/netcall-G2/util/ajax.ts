@@ -1,5 +1,5 @@
 /** 异步请求api */
-
+var JSONbig = require('json-bigint');
 /**
  * 异步请求方法
  *
@@ -79,7 +79,7 @@ function ajax (option:AjaxOptions) {
         if (option.header && option.header['Content-Encoding'] === 'gzip') {
           xhr.send(option.data)
         } else {
-          xhr.send(JSON.stringify(option.data))
+          xhr.send(JSONbig.stringify(option.data))
         }
       } else {
         xhr.send()

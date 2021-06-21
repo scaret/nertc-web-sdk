@@ -324,7 +324,7 @@ class Base extends EventEmitter {
     this._resetState(); // 内部状态对象
   }
 
-  async clearMember(uid: number) {
+  async clearMember(uid: number | string) {
     this.adapterRef.logger.log('%s 离开房间', uid);
     const remotStream = this.adapterRef.remoteStreamMap[uid];
     if (remotStream) {
@@ -402,7 +402,7 @@ class Base extends EventEmitter {
       stream.pubStatus.audio.consumerId = ""
       stream.pubStatus.video.consumerId = ""
       stream.pubStatus.screen.consumerId = ""
-      this.adapterRef.logger.log('重连逻辑订阅 start: ', stream.streamID)
+      this.adapterRef.logger.log('重连逻辑订阅 start：', stream.stringStreamID)
       try {
         //@ts-ignore
         await this.subscribe(stream)
@@ -411,7 +411,7 @@ class Base extends EventEmitter {
         break
       }
       
-      this.adapterRef.logger.log('重连逻辑订阅 over: ', stream.streamID)
+      this.adapterRef.logger.log('重连逻辑订阅 over: ', stream.stringStreamID)
     }
   }
 
@@ -496,11 +496,11 @@ class Base extends EventEmitter {
     return {uid: 0, kind: ''}
   }
 
-  getSsrcByUidAndKind (uid:number, kind:MediaTypeShort) {
+  getSsrcByUidAndKind (uid:number|string, kind:MediaTypeShort) {
     return this.adapterRef.uid2SscrList[uid] && this.adapterRef.uid2SscrList[uid][kind]
   }
 
-  addSsrc(uid:number, kind:MediaTypeShort, ssrc:number) {
+  addSsrc(uid:number|string, kind:MediaTypeShort, ssrc:number) {
     if (!this.adapterRef.uid2SscrList[uid]) {
       this.adapterRef.uid2SscrList[uid] = {
         audio: {ssrc: 0},
@@ -515,7 +515,7 @@ class Base extends EventEmitter {
     }
   }
 
-  removeSsrc(uid:number, kind?:MediaTypeShort) {
+  removeSsrc(uid:number|string, kind?:MediaTypeShort) {
     if(this.adapterRef.uid2SscrList[uid]){
       if (kind) {
         if(this.adapterRef.uid2SscrList[uid][kind]){
@@ -528,7 +528,7 @@ class Base extends EventEmitter {
   }
 
   //media操作类
-  getMediaHlperByUid(uid: number) {
+  getMediaHlperByUid(uid: number|string) {
     if (!uid) {
       this.adapterRef.logger.error('getMediaHlperByUid: uid undefined')
       return
