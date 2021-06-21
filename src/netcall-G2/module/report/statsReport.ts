@@ -29,7 +29,7 @@ class StatsReport extends EventEmitter {
   private stats: GetStats|null;
   private heartbeat_: any;
   private wsTransport_:any;
-  private wholeStatsReport: WholeStatsReport|null;
+  // private wholeStatsReport: WholeStatsReport|null;
   public formativeStatsReport: FormativeStatsReport|null;
   
   constructor (options:StatsReportOptions) {
@@ -47,14 +47,13 @@ class StatsReport extends EventEmitter {
     this.stats = new GetStats({
       adapterRef: this.adapterRef
     })
-    // this.stats.on('stats', (data, time) => {
-    //   //this.adapterRef.logger.log(time,'object',data, time);
-
-    //   if (time % 2 === 0) { // 两秒上报一次
-    //     this.wholeStatsReport && this.wholeStatsReport.update(data)
-    //   }
-    //   this.formativeStatsReport && this.formativeStatsReport.update(data, time)
-    // })
+    this.stats.on('stats', (data, time) => {
+      // this.adapterRef.logger.log(time,'object',data, time);
+      // if (time % 2 === 0) { // 两秒上报一次
+      //   this.wholeStatsReport && this.wholeStatsReport.update(data)
+      // }
+      this.formativeStatsReport && this.formativeStatsReport.update(data, time)
+    })
 
     this.formativeStatsReport = new FormativeStatsReport({
       adapterRef: this.adapterRef,
@@ -62,10 +61,10 @@ class StatsReport extends EventEmitter {
       appkey: this.appKey
     })
 
-    this.wholeStatsReport = new WholeStatsReport({
-      appkey: this.appKey,
-      adapterRef: this.adapterRef
-    })
+    // this.wholeStatsReport = new WholeStatsReport({
+    //   appkey: this.appKey,
+    //   adapterRef: this.adapterRef
+    // })
   }
 
   _reset () {
@@ -74,10 +73,10 @@ class StatsReport extends EventEmitter {
     }
     this.stats = null
 
-    // if (this.formativeStatsReport) {
-    //   this.formativeStatsReport.destroy()
-    // }
-    // this.formativeStatsReport = null
+    if (this.formativeStatsReport) {
+      this.formativeStatsReport.destroy()
+    }
+    this.formativeStatsReport = null
     
     // if (this.wholeStatsReport) {
     //   this.wholeStatsReport.destroy()
@@ -88,7 +87,7 @@ class StatsReport extends EventEmitter {
 
   stop () {
     this.stats && this.stats.stop()
-    // this.formativeStatsReport && this.formativeStatsReport.stop()
+    this.formativeStatsReport && this.formativeStatsReport.stop()
     // this.wholeStatsReport && this.wholeStatsReport.stop()
   }
 
@@ -97,9 +96,9 @@ class StatsReport extends EventEmitter {
     // if (this.wholeStatsReport) {
     //   this.wholeStatsReport.start()
     // }
-    // if (this.formativeStatsReport) {
-    //   this.formativeStatsReport.start()
-    // }
+    if (this.formativeStatsReport) {
+      this.formativeStatsReport.start()
+    }
     let checkSum = sha1(`${PROD}${timestamp}${SDK_VERSION}${platform}${sdktype}${deviceId}${salt}`);
     let url = `${wsURL}?deviceId=${deviceId}&isTest=${PROD}&sdkVer=${SDK_VERSION}&sdktype=${sdktype}&timestamp=${timestamp}&platform=${platform}&checkSum=${checkSum}`;
     this.wsTransport_ = new WSTransport({

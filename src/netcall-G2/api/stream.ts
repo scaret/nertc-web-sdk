@@ -1315,7 +1315,7 @@ class Stream extends EventEmitter {
     this.client.apiFrequencyControl({
       name: 'setAudioProfile',
       code: 0,
-      param: `${profile}`
+      param: JSON.stringify({profile}, null, '')
     })
   }
 
@@ -1637,6 +1637,11 @@ class Stream extends EventEmitter {
         }
         this._play.stopPlayVideoStream()
       }
+      // this.client.adapterRef.instance.apiEventReport('setFunction', {
+      //   name: 'set_mutevideo',
+      //   oper: '1',
+      //   value: 'test001'
+      // })
       this.client.apiFrequencyControl({
         name: 'muteVideo',
         code: 0,

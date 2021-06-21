@@ -82,9 +82,10 @@ class GetStats extends EventEmitter{
       remote: remotePc ? await this.getRemoteStats(remotePc): null,
     };
     this.times = (this.times || 0) + 1
-
-    this.reviseData(result, this.browser)
     this.emit('stats', result, this.times)
+    this.reviseData(result, this.browser)
+    
+
     return result
   }
 

@@ -165,11 +165,10 @@ class Logger{
 
   // use this form to skip drop_console of uglify
   chrome(func:string, args:any[]) {
-    if (this.supportedBrowsers.indexOf(platform.name) !== -1) {
+    let name = platform.name;
+    if (this.supportedBrowsers.indexOf(name) !== -1) {
       //@ts-ignore
       this.cs[func].apply(this.cs, args)
-      // 存入indexedDB
-      //console.log(...args)
     } else {
       //@ts-ignore
       logger.ie(func, args)
