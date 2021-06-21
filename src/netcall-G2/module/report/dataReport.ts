@@ -322,7 +322,8 @@ class DataReport {
           data.event = ret;
         }
       }
-    } else if(!this.heartbeat){
+    }
+     else if(!this.heartbeat){
       return this;
     }
 
