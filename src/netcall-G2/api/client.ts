@@ -30,6 +30,7 @@ import { logController } from '../util/log/upload'
  */
 class Client extends Base {
   public _roleInfo: { userRole: number; audienceList: {} };
+  public upLoadParam:any;
   constructor (options:ClientOptions) {
     super(options)
 
@@ -212,9 +213,17 @@ class Client extends Base {
     }
     // invoke uploadLog() if uploadLogEnabled is true
     if(Number(sessionStorage.getItem('uploadLogEnabled'))) {
-      logController.startUploadLog(this.adapterRef);
+      this.upLoadParam = {
+        uploadAppkey: this.adapterRef.channelInfo.appkey,
+        uploadUid: this.adapterRef.channelInfo.uid
+      }
+      setTimeout(this.startUpload, 2000, this.upLoadParam);
     }
 
+  }
+
+  startUpload(upLoadParam:any) {
+    logController.startUploadLog(upLoadParam);
   }
 
 
@@ -1132,6 +1141,7 @@ class Client extends Base {
    */
   destroy () {
     this.adapterRef.logger && this.adapterRef.logger.warn('清除 Client 实例')
+    
     this._reset();
   }
 }

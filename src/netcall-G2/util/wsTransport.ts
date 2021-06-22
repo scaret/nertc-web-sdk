@@ -153,7 +153,11 @@ export default class WSTransport {
         // console.log(`buffer = ${Array.prototype.toString.call(buffer)}`);
         // decoded = AwesomeMessage.decode(buffer);
         // console.log(`decoded = ${JSON.stringify(decoded)}`);
-        return buffer;
+        // add header to server
+        let headerArray = [4,1,1,1,1,0,0,0];
+        let newBuffer = Uint8Array.from(headerArray.concat(Array.from(buffer)));
+        // return buffer;
+        return newBuffer;
       }
 
       async startPingPong() {
