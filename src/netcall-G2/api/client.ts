@@ -1116,8 +1116,8 @@ class Client extends Base {
         checkValidString({
           tag: 'client.setEncryptionSecret:encryptionSecret',
           value:encryptionSecret,
-          min:16,
-          max:16
+          min:1,
+          max:128
         });
     }
     this.adapterRef.logger.log('设置加密密钥');
