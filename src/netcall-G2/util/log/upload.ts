@@ -57,12 +57,12 @@ class UploadLog  {
         const CurTime:any = new Date().getTime();
         
         let data = {
-            appkey: params.channelInfo.appkey,
+            appkey: params.uploadAppkey,
             sdktype: 'webrtc',
             sdkver: SDK_VERSION,
             platform: 'web',
             deviceInfo: deviceId,
-            userkey: params.channelInfo.uid, // uid
+            userkey: params.uploadUid, // uid
             ext: 'log'
         };
         let checksum = JSON.stringify(data)+Nonce+CurTime+salt;
