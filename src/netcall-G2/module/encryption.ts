@@ -1,4 +1,5 @@
 import { EventEmitter } from 'eventemitter3'
+import md5 from "md5"
 import {
   sm4_crypt_ecb,
   sm4_setkey_enc,
@@ -62,7 +63,7 @@ class Encryption extends EventEmitter {
     }
   }
   setEncryptionSecret(encryptionSecret: string){
-    this.encryptionSecret = encryptionSecret;
+    this.encryptionSecret =  md5(encryptionSecret);
     if (this.encryptionMode === "encoded-transform-sm4-128-ecb"){
       this.initSm4();
     }
