@@ -2331,11 +2331,11 @@ const showStats = async ()=>{
   let str = `<hr/><pre class="pubStats" style="min-width: 200px; float: left;">`;
   const localAudioStats = await rtc.client.getLocalAudioStats();
   str += `本地音频\n`;
-  for (var key in localAudioStats[0]){
+  for (let key in localAudioStats[0]){
     str += `${key}:${localAudioStats[0][key]}\n`
   };
   const localVideoStats = await rtc.client.getLocalVideoStats();
-  for (var i in localVideoStats){
+  for (let i = 0; i < localVideoStats.length; i++){
     if (!localVideoStats[i].TotalDuration){
       continue;
     }
@@ -2344,7 +2344,7 @@ const showStats = async ()=>{
     }else{
       str += `本地视频\n`;
     }
-    for (var key in localVideoStats[i]){
+    for (let key in localVideoStats[i]){
       str += `${key}:${localVideoStats[i][key]}\n`
     };
   }

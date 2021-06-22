@@ -78,13 +78,14 @@ export default class WSTransport {
           this.isConnected_ = false;
           // 1000 is considered as normal close
           if (event.wasClean && event.code === 1000) {
-            // 
+            // this.close();
           } else {
             console.warn(`onclose code:${event.code} reason:${event.reason}`);
             this.socketInUse_.onclose = () => {};
-            // 4011 indicates that we want reconnect with new WebSocket
-            this.socketInUse_.close(4011);
-            this.socket_  = this.socketInUse_ = null;
+            // 4001 indicates that we want reconnect with new WebSocket
+            this.socketInUse_.close(4001);
+            // this.socket_  = this.socketInUse_ = null;
+            this.socket_ = null;
           }
         }
       }
