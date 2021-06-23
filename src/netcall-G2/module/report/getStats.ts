@@ -119,8 +119,8 @@ class GetStats extends EventEmitter{
   
       for(let item in local){
         if(localDatasMap_.has(local[item].type)) {
-          if(local[item].type === 'ssrc'){
-            let key = `${local[item].mediaType}_${local[item].type}`
+          if(item.indexOf('ssrc') > -1){
+            let key = `${local[item].mediaType}_ssrc`
             if(localDatasObj_.has(key)){
               localDatasObj_.get(key).push(local[item])
             } else{
