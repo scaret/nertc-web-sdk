@@ -109,13 +109,13 @@ export default class WSTransport {
       onmessage(event:any) {
         if (!this.isConnected_) return; // close was requested.
         // deal with pb data
-        const reader = event.data.stream().getReader();
+        // const reader = event.data.stream().getReader();
         // @ts-ignore
-        reader.read().then(({done, value}) => {
+        // reader.read().then(({done, value}) => {
           // console.log(done+" "+value);
           // return;
           // console.log('PONG value--->',value);
-        })
+        // })
         
 
         // TODO: start ping-pong
