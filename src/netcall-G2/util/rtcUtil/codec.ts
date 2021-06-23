@@ -17,13 +17,14 @@ function getSupportedCodecFromSDP(sdp: string): { video: VideoCodecType[], audio
   return result;
 }
 
-function getSupportedCodecFromCapability(videoCapabilities: RTCRtpCapabilities|null, audioCapabilities?:RTCRtpCapabilities|null): { video: VideoCodecType[], audio: AudioCodecType[] } {
+function getSupportedCodecFromCapability(direction: "send"|"recv", videoCapabilities: RTCRtpCapabilities|null, audioCapabilities?:RTCRtpCapabilities|null): { video: VideoCodecType[], audio: AudioCodecType[] } {
   const result: { video: VideoCodecType[], audio: AudioCodecType[] } = { video: [], audio: [] };
   if(videoCapabilities && videoCapabilities.codecs && videoCapabilities.codecs.length){
     for (let i = 0; i < videoCapabilities.codecs.length; i++){
       const codecCapability = videoCapabilities.codecs[i];
       if (codecCapability.mimeType == "video/H264" && result.video.indexOf("H264") === -1){
-        if (codecCapability.sdpFmtpLine && codecCapability.sdpFmtpLine.indexOf("profile-level-id") > -1){
+        //解码：仅当支持H264 high profile，才算支持H264的解码
+        if (direction === "recv" && codecCapability.sdpFmtpLine && codecCapability.sdpFmtpLine.indexOf("profile-level-id") > -1){
           if (codecCapability.sdpFmtpLine.indexOf("profile-level-id=64") > -1){
             // High Profile
             result.video.push("H264");
@@ -53,7 +54,7 @@ async function getSupportedCodecs(direction:"send"|"recv" =  "recv", PeerConnect
     if (typeof RTCRtpReceiver !== "undefined" && RTCRtpReceiver.getCapabilities){
       const videoCapabilties = RTCRtpReceiver.getCapabilities("video");
       const audioCapabilties = RTCRtpReceiver.getCapabilities("audio");
-      const result = getSupportedCodecFromCapability(videoCapabilties, audioCapabilties);
+      const result = getSupportedCodecFromCapability(direction, videoCapabilties, audioCapabilties);
       return result;
     }else{
       const pc = new PeerConnection({});
@@ -73,7 +74,7 @@ async function getSupportedCodecs(direction:"send"|"recv" =  "recv", PeerConnect
     if (typeof RTCRtpSender !== "undefined" && RTCRtpSender.getCapabilities){
       const videoCapabilties = RTCRtpSender.getCapabilities("video");
       const audioCapabilties = RTCRtpSender.getCapabilities("audio");
-      const result = getSupportedCodecFromCapability(videoCapabilties, audioCapabilties);
+      const result = getSupportedCodecFromCapability(direction, videoCapabilties, audioCapabilties);
       return result;
     }else{
       // throw new Error(`direction ${direction} Not supported yet`);
