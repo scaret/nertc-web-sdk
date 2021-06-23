@@ -2398,6 +2398,18 @@ $("#setEncryptionSecret").click(()=>{
   addLog("setEncryptionSecret " + encryptionSecret)
 })
 
+let urlParams = new URLSearchParams(window.location.search);
+let vconsole = null
+$(document).ready(()=>{
+  if (urlParams.get("v") === "1"){
+    vconsole = new VConsole();
+  }
+})
+$("#toggleVConsole").click(()=>{
+  if (!vconsole){
+    vconsole = new VConsole();
+  }
+})
 
 /** 
  * ----------------------------------------
