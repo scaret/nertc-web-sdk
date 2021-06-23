@@ -10,7 +10,7 @@ syntax = "proto2";
 
    message local_obj{
 
-     repeated videobwe_obj videobwe=1;
+     repeated video_bwe_obj video_bwe=1;
 
      repeated audio_ssrc_obj audio_ssrc=2;
 
@@ -40,7 +40,7 @@ syntax = "proto2";
 
      repeated video_outbound_rtp_obj video_outbound_rtp=15;
 
-     message videobwe_obj{
+     message video_bwe_obj{
 
        optional string googActualEncBitrate=1;
 
