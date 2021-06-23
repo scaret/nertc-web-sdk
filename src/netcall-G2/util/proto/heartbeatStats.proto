@@ -7,6 +7,11 @@ syntax = "proto2";
    optional remote_obj remote=2;
 
    optional int64 timestamp=3;
+   optional string appkey=4;
+   optional int64 cid=5;
+   optional int64 uid=6;
+   optional string browser=7;
+   optional string platform=8;
 
    message local_obj{
 
