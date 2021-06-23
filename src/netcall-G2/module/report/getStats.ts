@@ -4,6 +4,7 @@
 import { EventEmitter } from "eventemitter3";
 import * as bowser from "bowser";
 import {AdapterRef, MediaTypeShort} from "../../types";
+import {platform} from "../../util/platform";
 
 class GetStats extends EventEmitter{  
   private adapterRef:AdapterRef|null;
@@ -252,6 +253,11 @@ class GetStats extends EventEmitter{
       }
     }
     params.timestamp = new Date().getTime();
+    params.appkey = this.adapterRef?.channelInfo.appkey;
+    params.cid = this.adapterRef?.channelInfo.cid;
+    params.uid = this.adapterRef?.channelInfo.uid;
+    params.browser = platform.name + '-' + platform.version;
+    params.platform = platform.os.family;
 
     return params;
   }

@@ -18,6 +18,26 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
       timestamp: {
         type: "int64",
         id: 3
+      },
+      appkey: {
+        type: "string",
+        id: 4
+      },
+      cid: {
+        type: "int64",
+        id: 5
+      },
+      uid: {
+        type: "int64",
+        id: 6
+      },
+      browser: {
+        type: "string",
+        id: 7
+      },
+      platform: {
+        type: "string",
+        id: 8
       }
     },
     nested: {
