@@ -145,7 +145,7 @@ class StatsReport extends EventEmitter {
   destroy () {
     this.stop()
     this._reset()
-    this.wsTransport_.close();
+    // this.wsTransport_.close();
   }
 }
 
