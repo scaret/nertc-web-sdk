@@ -1,6 +1,6 @@
 
 import { Base } from './base'
-import {AddTaskOptions, ClientOptions, MediaPriorityOptions, JoinOptions, LocalVideoStats, MediaTypeShort, RTMPTask} from "../types";
+import {AddTaskOptions, ClientOptions, MediaPriorityOptions, JoinOptions, LocalVideoStats, MediaTypeShort, RTMPTask, Client as IClient} from "../types";
 import {Stream} from "./stream";
 import {checkExists, checkValidInteger, checkValidString} from "../util/param";
 import {
@@ -287,6 +287,7 @@ class Client extends Base {
       if (!this.adapterRef._mediasoup){
         throw new Error('No this.adapterRef._mediasoup');
       }
+      this.bindLocalStream(stream)
       await this.adapterRef._mediasoup.createProduce(stream);
       this.apiFrequencyControl({
         name: 'publish',
@@ -861,6 +862,14 @@ class Client extends Base {
     if (reason){
       return Promise.reject(reason);
     }
+  }
+
+  /**
+   * 绑定localStream对象。多次绑定无副作用
+   */
+  bindLocalStream(localStream: Stream){
+    this.adapterRef.localStream = localStream
+    localStream.client = <IClient>this;
   }
 
   /**

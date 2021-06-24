@@ -83,7 +83,7 @@ class Stream extends EventEmitter {
   public video: boolean;
   public screen: boolean;
   public screenAudio: boolean;
-  private client: Client;
+  public client: Client;
   private audioSource: MediaStreamTrack|null;
   private videoSource:MediaStreamTrack|null;
   public mediaHelper:MediaHelper|null;
