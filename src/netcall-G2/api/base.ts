@@ -291,7 +291,7 @@ class Base extends EventEmitter {
         return Promise.reject('No this.adapterRef._statsReport');
       }
       this.adapterRef._statsReport.start()
-      this.adapterRef._statsReport.startHeartbeat()
+      // this.adapterRef._statsReport.startHeartbeat()
       return Promise.resolve()
     });
     p.catch(e => {
