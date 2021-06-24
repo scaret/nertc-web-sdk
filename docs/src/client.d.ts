@@ -186,6 +186,10 @@ declare interface Client{
      */
     getRemoteVideoStats(mediaType?: MediaType): Promise<any>;
     /**
+     * 获取本地uid
+     */
+     getUid(): number | null;
+    /**
      * 设置房间模型
      */
     setChannelProfile(options: {
