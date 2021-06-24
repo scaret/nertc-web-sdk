@@ -385,9 +385,9 @@ class Signalling extends EventEmitter {
         }
 
         if (this.adapterRef._enableRts) {
-          this.adapterRef.instance.emit('stream-removed', {stream: remoteStream, 'mediaType': mediaTypeShort})
-        } else {
           this.adapterRef.instance.emit('rts-stream-removed', {stream: remoteStream})
+        } else {
+          this.adapterRef.instance.emit('stream-removed', {stream: remoteStream, 'mediaType': mediaTypeShort})
         }
         break
       }
