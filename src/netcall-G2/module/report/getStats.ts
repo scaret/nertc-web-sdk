@@ -8,16 +8,16 @@ import {platform} from "../../util/platform";
 
 class GetStats extends EventEmitter{  
   private adapterRef:AdapterRef|null;
-  // private interval:number;
-  // private timer:ReturnType<typeof setInterval>|null;
+  private interval:number;
+  private timer:ReturnType<typeof setInterval>|null;
   private times:number;
   private browser:'chrome'|'safari'|'firefox';
   private KeyTransform:{K:{[key:string]:number},T:{[key:string]:number}};
-  constructor(options: {adapterRef:AdapterRef}) {
+  constructor(options: {adapterRef:AdapterRef, interval: number}) {
     super()
     this.adapterRef = options.adapterRef;
-    // this.interval = options.interval || 1000
-    // this.timer = null
+    this.interval = options.interval || 1000
+    this.timer = null
     //workaround for TS2564
     this.times = 0;
     this.browser = 'chrome';
@@ -38,8 +38,8 @@ class GetStats extends EventEmitter{
 
   _reset () {
     this.times = 0
-    // this.timer && clearInterval(this.timer)
-    // this.timer = null
+    this.timer && clearInterval(this.timer)
+    this.timer = null
     this.browser = 'chrome'
     const ua = navigator.userAgent;
     const temp = bowser.getParser(ua);
@@ -66,8 +66,8 @@ class GetStats extends EventEmitter{
   }
 
   start () {
-    // if(this.timer) return
-    // this.timer = setInterval(this.getAllStats.bind(this), this.interval)
+    if(this.timer) return
+    this.timer = setInterval(this.getAllStats.bind(this), this.interval)
   }
 
   async getAllStats () {
