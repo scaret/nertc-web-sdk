@@ -562,6 +562,16 @@ class Signalling extends EventEmitter {
   }
 
   async join () {
+    
+    let gmEnable;
+    if (!this.adapterRef.encryption.encryptionSecret){
+      gmEnable = false;
+    }else if (this.adapterRef.encryption.encryptionMode === "none" || this.adapterRef.encryption.encryptionMode === "encoded-transform-sm4-128-ecb"){
+      gmEnable = false;
+    }else{
+      gmEnable = true;
+    }
+    
     const requestData = {
       method: 'Join',
       requestId: `${Math.ceil(Math.random() * 1e9)}`,
@@ -591,7 +601,7 @@ class Signalling extends EventEmitter {
           name: RtcSystem.browser.ua,       
           version: `${RtcSystem.browser.version}`
         },
-        gmEnable: this.adapterRef.encryption.encryptionMode !== "none" && this.adapterRef.encryption.encryptionMode !== "encoded-transform-sm4-128-ecb",
+        gmEnable: gmEnable,
         gmMode: encryptionModeToInt(this.adapterRef.encryption.encryptionMode),
         gmKey: this.adapterRef.encryption.encryptionSecret,
         userPriority: this.adapterRef.userPriority
