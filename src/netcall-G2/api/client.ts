@@ -43,6 +43,9 @@ class Client extends Base {
         this.adapterRef.logger.log('离开页面之前，离开房间')
         this.leave()
       })
+      window.addEventListener('unhandledrejection', event => {
+        this.adapterRef.logger.log(event.reason)
+      })
     //typescript constructor requirement
     this._roleInfo = {
       userRole: 0, // 0:主播，1：观众
@@ -215,9 +218,10 @@ class Client extends Base {
     if(Number(sessionStorage.getItem('uploadLogEnabled'))) {
       this.upLoadParam = {
         uploadAppkey: this.adapterRef.channelInfo.appkey,
-        uploadUid: this.adapterRef.channelInfo.uid
+        uploadUid: this.adapterRef.channelInfo.uid,
+        uploadCid: this.adapterRef.channelInfo.cid
       }
-      setTimeout(this.startUpload, 2000, this.upLoadParam);
+      setTimeout(this.startUpload, 3000, this.upLoadParam);
     }
 
   }
