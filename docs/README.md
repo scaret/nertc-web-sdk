@@ -67,7 +67,7 @@ table th:nth-of-type(2) {
 [[Client.updateTasks]] | 更新旁路推流任务。
 
 
-### <span id="设备数据">设备数据</span>
+### <span id="设备数据">设备数据</span> 
 
 方法 | 功能描述
 ---|---|
