@@ -53,10 +53,6 @@ var RTCPeerConnection = (window.RTCPeerConnection =
   window.webkitRTCPeerConnection ||
   (window as any).mozRTCPeerConnection)
 
-// 4. RTCDataChannel
-var RTCDataChannel = (window.RTCDataChannel =
-  window.RTCDataChannel || (window as any).DataChannel)
-
 // 5. RTCSessionDescription 暂时未用到
 // var RTCSessionDescription = (window.RTCSessionDescription =
 //   window.RTCSessionDescription || window.mozRTCSessionDescription)

@@ -11,11 +11,7 @@ import {
   HandlerSendOptions,
   HandlerSendResult,
   HandlerReceiveOptions,
-  HandlerReceiveResult,
-  HandlerSendDataChannelOptions,
-  HandlerSendDataChannelResult,
-  HandlerReceiveDataChannelOptions,
-  HandlerReceiveDataChannelResult, HandlerTransceiver, HandlerAppData, EnhancedTransceiver, EnhancedRTCRtpParameters
+  HandlerAppData, EnhancedTransceiver, EnhancedRTCRtpParameters
 } from './HandlerInterface';
 import { RemoteSdp } from './sdp/RemoteSdp';
 import {IceParameters, DtlsRole, DtlsParameters, FillRemoteRecvSdpOptions} from '../Transport';
@@ -46,10 +42,6 @@ export class Safari12 extends HandlerInterface
     new Map();
   // Local stream for sending.
   private readonly _sendStream = new MediaStream();
-  // Whether a DataChannel m=application section has been created.
-  private _hasDataChannelMediaSection = false;
-  // Sending DataChannel id value counter. Incremented for each new DataChannel.
-  private _nextSendSctpStreamId = 0;
   // Got transport local and remote parameters.
   public _transportReady = false;
   private _appData: HandlerAppData = {};
@@ -646,77 +638,6 @@ export class Safari12 extends HandlerInterface
     return transceiver.sender.getStats();
   }
 
-  async sendDataChannel(
-    {
-      ordered,
-      maxPacketLifeTime,
-      maxRetransmits,
-      label,
-      protocol,
-    }: HandlerSendDataChannelOptions
-  ): Promise<HandlerSendDataChannelResult>
-  {
-    this._assertSendDirection();
-
-    const options =
-    {
-      negotiated : true,
-      id         : this._nextSendSctpStreamId,
-      ordered,
-      maxPacketLifeTime,
-      maxRetransmits,
-      protocol,
-    };
-
-    logger.debug('sendDataChannel() [options:%o]', options);
-
-    const dataChannel = this._pc.createDataChannel(label, options);
-
-    // Increase next id.
-    this._nextSendSctpStreamId =
-      ++this._nextSendSctpStreamId % SCTP_NUM_STREAMS.MIS;
-
-    // If this is the first DataChannel we need to create the SDP answer with
-    // m=application section.
-    if (!this._hasDataChannelMediaSection)
-    {
-      const offer = await this._pc.createOffer();
-      const localSdpObject = sdpTransform.parse(offer.sdp);
-      const offerMediaObject = localSdpObject.media
-        .find((m: any) => m.type === 'application');
-
-      if (!this._transportReady)
-        await this._setupTransport({ localDtlsRole: 'server', localSdpObject });
-
-      logger.debug(
-        'sendDataChannel() | calling pc.setLocalDescription() [offer:%o]',
-        offer);
-
-      await this._pc.setLocalDescription(offer);
-
-      this._remoteSdp!.sendSctpAssociation({ offerMediaObject });
-
-      const answer = { type: 'answer', sdp: this._remoteSdp!.getSdp() };
-
-      logger.debug(
-        'sendDataChannel() | calling pc.setRemoteDescription() [answer:%o]',
-        answer);
-
-      await this._pc.setRemoteDescription(answer);
-
-      this._hasDataChannelMediaSection = true;
-    }
-
-    const sctpStreamParameters: SctpStreamParameters =
-    {
-      streamId          : options.id,
-      ordered           : options.ordered,
-      maxPacketLifeTime : options.maxPacketLifeTime,
-      maxRetransmits    : options.maxRetransmits
-    };
-
-    return { dataChannel, sctpStreamParameters };
-  }
 
   //处理非200的consume response，将isUseless设置为true，因为该M行会被伪造
   async recoverTransceiver(remoteUid:number, mid:string, kind: "video"|"audio") {
@@ -922,68 +843,6 @@ export class Safari12 extends HandlerInterface
       throw new Error('associated RTCRtpTransceiver not found');
 
     return transceiver.receiver.getStats();
-  }
-
-  async receiveDataChannel(
-    { sctpStreamParameters, label, protocol }: HandlerReceiveDataChannelOptions
-  ): Promise<HandlerReceiveDataChannelResult>
-  {
-    this._assertRecvDirection();
-
-    const {
-      streamId,
-      ordered,
-      maxPacketLifeTime,
-      maxRetransmits
-    }: SctpStreamParameters = sctpStreamParameters;
-
-    const options =
-    {
-      negotiated : true,
-      id         : streamId,
-      ordered,
-      maxPacketLifeTime,
-      maxRetransmits,
-      protocol
-    };
-
-    logger.debug('receiveDataChannel() [options:%o]', options);
-
-    const dataChannel = this._pc.createDataChannel(label, options);
-
-    // If this is the first DataChannel we need to create the SDP offer with
-    // m=application section.
-    if (!this._hasDataChannelMediaSection)
-    {
-      this._remoteSdp!.receiveSctpAssociation();
-
-      const offer = { type: 'offer', sdp: this._remoteSdp!.getSdp() };
-
-      logger.debug(
-        'receiveDataChannel() | calling pc.setRemoteDescription() [offer:%o]',
-        offer);
-
-      await this._pc.setRemoteDescription(offer);
-
-      const answer = await this._pc.createAnswer();
-
-      if (!this._transportReady)
-      {
-        const localSdpObject = sdpTransform.parse(answer.sdp);
-
-        await this._setupTransport({ localDtlsRole: 'client', localSdpObject });
-      }
-
-      logger.debug(
-        'receiveDataChannel() | calling pc.setRemoteDescription() [answer:%o]',
-        answer);
-
-      await this._pc.setLocalDescription(answer);
-
-      this._hasDataChannelMediaSection = true;
-    }
-
-    return { dataChannel };
   }
 
   private async _setupTransport(

@@ -78,35 +78,10 @@ export type HandlerReceiveResult =
   rtpReceiver?: RTCRtpReceiver;
 };
 
-export type HandlerSendDataChannelOptions = SctpStreamParameters;
-
-export type HandlerSendDataChannelResult =
-{
-  dataChannel: RTCDataChannel;
-  sctpStreamParameters: SctpStreamParameters;
-};
-
-export type HandlerReceiveDataChannelOptions =
-{
-  sctpStreamParameters: SctpStreamParameters;
-  label?: string;
-  protocol?: string;
-}
-
-export interface HandlerTransceiver{
-  sender?: RTCRtpSender;
-  mid?: string;
-}
-
 export interface HandlerAppData{
   encodedInsertableStreams?: boolean;
   cid?: number;
   uid?: number;
-}
-
-export type HandlerReceiveDataChannelResult =
-{
-  dataChannel: RTCDataChannel;
 }
 
 export interface EnhancedTransceiver extends RTCRtpTransceiver{
@@ -176,10 +151,6 @@ export abstract class HandlerInterface extends EnhancedEventEmitter
 
   abstract getSenderStats(localId: string): Promise<RTCStatsReport>;
 
-  abstract sendDataChannel(
-    options: HandlerSendDataChannelOptions
-  ): Promise<HandlerSendDataChannelResult>;
-
   abstract receive(
     options: HandlerReceiveOptions
   ): Promise<HandlerReceiveResult>;
@@ -188,7 +159,4 @@ export abstract class HandlerInterface extends EnhancedEventEmitter
 
   abstract getReceiverStats(localId: string): Promise<RTCStatsReport>;
 
-  abstract receiveDataChannel(
-    options: HandlerReceiveDataChannelOptions
-  ): Promise<HandlerReceiveDataChannelResult>;
 }
