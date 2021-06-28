@@ -93,9 +93,28 @@ export type HandlerReceiveDataChannelOptions =
   protocol?: string;
 }
 
+export interface HandlerTransceiver{
+  sender?: RTCRtpSender;
+  mid?: string;
+}
+
+export interface HandlerAppData{
+  encodedInsertableStreams?: boolean;
+  cid?: number;
+  uid?: number;
+}
+
 export type HandlerReceiveDataChannelResult =
 {
   dataChannel: RTCDataChannel;
+}
+
+export interface EnhancedTransceiver extends RTCRtpTransceiver{
+  isUseless?: boolean;
+}
+
+export interface EnhancedRTCRtpParameters extends RTCRtpParameters{
+  encodings?: any[]
 }
 
 export abstract class HandlerInterface extends EnhancedEventEmitter
