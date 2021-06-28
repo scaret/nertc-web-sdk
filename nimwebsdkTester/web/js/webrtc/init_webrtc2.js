@@ -156,7 +156,7 @@ $('#config').on('click', () => {
 
 $('#uploadLog').on('click', () => {
   //启动上传日志
-  NERTC.Logger.enableUploadLog();
+  NERTC.Logger.enableLogUpload();
 })
 
 

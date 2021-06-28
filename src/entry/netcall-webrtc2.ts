@@ -86,21 +86,20 @@ const NERTC = {
     /**
      * 打开日志上传
      * <br>
-     * 默认打开日志上传。如无特别原因，请保持打开日志上传，以便我们帮助您定位线上问题。
+     * 调用本方法开启日志上传。日志上传默认是关闭状态，如果你需要开启此功能，请确保在所有方法之前调用本方法。
      *
      */
-    enableUploadLog() {
-      log.enableUploadLog();
+    enableLogUpload() {
+      log.enableLogUpload();
     },
 
     /**
      * 关闭日志上传
      * <br>
-     * **注意：**
-     * **如果您关闭了日志上传，我们将无法协助您定位线上问题！**
+     * 默认是关闭状态，如果你调用了开启日志上传（enableLogUpload)，可以通过本方法停止上传日志。
      */
-    disableUploadLog() {
-      log.disableUploadLog();
+    disableLogUpload() {
+      log.disableLogUpload();
     }
   },
 
