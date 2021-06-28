@@ -23,8 +23,8 @@ var NRTC_ENV = {
 };
 
 //扩充默认对象的属性，以兼容第三方库
-Array.prototype.abc = 123;
-Array.prototype.def = null;
-Array.prototype.ghi = function(){};
-Array.prototype.jkl = undefined;
+// Array.prototype.abc = 123;
+// Array.prototype.def = null;
+// Array.prototype.ghi = function(){};
+// Array.prototype.jkl = undefined;
 

@@ -7,7 +7,7 @@ const logger = {
         loglevel.info('NERTC LogLevel was set to: ' + level);
         loglevel.setLevel(level);
     },
-    enableUploadLog() {
+    enableLogUpload() {
         if(!Number(sessionStorage.getItem('uploadLogEnabled'))){
             loglevel.info('enable upload log');
             // initialize LogStorage
@@ -15,10 +15,10 @@ const logger = {
             sessionStorage.setItem('uploadLogEnabled', '1');
         }
     },
-    disableUploadLog() {
+    disableLogUpload() {
         if(Number(sessionStorage.getItem('uploadLogEnabled'))) {
-            loglevel.warn(
-                'disable upload log! Without log we are difficult to help you triage the issue you might run into!'
+            loglevel.info(
+                'disable upload log'
               );
             sessionStorage.setItem('uploadLogEnabled', '0');
         }
@@ -27,7 +27,7 @@ const logger = {
 }
 
 // disable log upload by default
-logger.disableUploadLog();
+logger.disableLogUpload();
 // default log level is 'INFO'
 loglevel.setLevel('INFO');
 

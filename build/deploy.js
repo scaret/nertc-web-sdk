@@ -95,7 +95,7 @@ function copy (srcFolder, destFolder, allowPath, excludePath) {
           }
         })*/
       } else {
-        if (/webrtc2/i.test(src) || /rtc2Rtmp/i.test(src) || /css/i.test(src) || /\js/i.test(src) || /web$/.test(src) || /mp3/.test(src)) {
+        if (/webrtc2/i.test(src) || /rtc2Rtmp/i.test(src) || /css/i.test(src) || /\.js/i.test(src) || /web$/.test(src) || /mp3|aac|flac/.test(src)) {
           return true;
         } else {
           return false

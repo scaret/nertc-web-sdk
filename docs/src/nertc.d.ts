@@ -9,6 +9,24 @@ import {DeviceInfo} from "./browser";
 /*export  = NERTC
 export  as namespace NERTC*/
 declare namespace NERTC {
+  const Logger: {
+    /**
+     * 打开日志上传
+     * <br>
+     * 调用本方法开启日志上传。日志上传默认是关闭状态，如果你需要开启此功能，请确保在所有方法之前调用本方法。
+     *
+     */
+    enableLogUpload() : void;
+
+    /**
+     * 关闭日志上传
+     * <br>
+     * 默认是关闭状态，如果你调用了开启日志上传（enableLogUpload)，可以通过本方法停止上传日志。
+     */
+
+    disableLogUpload(): void;
+
+  }
   /**
    * 创建客户端，开始通话前调用一次即可
    * @param options 配置参数
