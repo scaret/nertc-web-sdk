@@ -7,6 +7,9 @@ NERTC Web SDK 提供完善的音视频通话 JavaScript 开发框架，提供基
 - [[Client]] 是客户端对象，负责通话中的本地或远程用户的核心操作。
 - [[Stream]] 是音视频流对象，负责音视频流相关的设置。
 
+**注意**：自 V4.4.0 开始，入口 WebRTC2 更名为 NERTC，同时兼容 WebRTC2。 
+
+
 <style>
 table th:first-of-type {
     width: 10%;
@@ -52,6 +55,8 @@ table th:nth-of-type(2) {
 [[Client.unsubscribe]] | 取消接收远端音视频流。
 [[Client.setRemoteVideoStreamType]] | 动态更新订阅视频的分辨率。
 [[Client.getConnectionState]]|主动获取网络连接状态。
+[[Client.getUid]]|获取本地用户 ID。
+
 
 ### <span id="旁路推流管理">旁路推流管理</span>
 
@@ -62,7 +67,7 @@ table th:nth-of-type(2) {
 [[Client.updateTasks]] | 更新旁路推流任务。
 
 
-### <span id="设备数据">设备数据</span>
+### <span id="设备数据">设备数据</span> 
 
 方法 | 功能描述
 ---|---|
@@ -85,6 +90,14 @@ table th:nth-of-type(2) {
 方法 | 功能描述
 ---|---|
 [[Client.setLocalMediaPriority]] | 设置本地用户的媒体流优先级。
+
+
+## <span id="加密">加密</span>
+
+方法 | 功能描述
+---|---|
+[[Client.setEncryptionMode]] | 设置媒体流加密模式。
+[[Client.setEncryptionSecret]] | 设置媒体流加密秘钥。
 
 ## <span id="Stream 音视频流对象">Stream 音视频流对象</span>
 

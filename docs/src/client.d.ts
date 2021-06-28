@@ -35,10 +35,11 @@ declare interface Client{
     setLocalMediaPriority (options: MediaPriorityOptions): void;
 
     /**
-     * 加入频道
+     * 加入房间。
      * @param {Object} options
-     * @param {String} options.channel 频道名称
-     * @param {Number} options.uid  用户唯一标识（整数，建议五位数以上）
+     * @param {String} options.channel 房间名称
+     * @param {Number} options.uid  用户的唯一标识 id，房间内每个用户的 uid 必须是唯一的。
+     *                              <br>uid 可选，默认为 0。如果不指定（即设为 0），SDK 会自动分配一个随机 uid，您可以通过 getUid 查看，App 层必须记住该值并维护，SDK 不对该值进行维护。
      * @param {Object} [options.joinChannelLiveConfig] 加入房间互动直播相关参数
      * @param {Boolean} [options.joinChannelLiveConfig.liveEnable]  是否旁路直播
      * @param {Object} [options.joinChannelRecordConfig] 加入房间录制相关参数
@@ -54,7 +55,7 @@ declare interface Client{
      */
     join(options: JoinOptions): Promise<any>;
     /**
-     * 离开频道
+     * 离开房间
      */
     leave(): Promise<void>;
     /**
@@ -126,34 +127,50 @@ declare interface Client{
     getConnectionState(): ConnectionState;
 
   /**
-   #### 设置加密方案
-   该方法和 [[Client.setEncryptionSecret]] 搭配使用，可以开启内置加密功能，需要在加入频道前调用。
-   
-   同一频道内的所有用户必须设置相同的加密方案、密钥才能进行通话。
+   设置媒体流加密模式。
 
-   + 必须先调用`setEncryptionMode`，再调用`setEncryptionSecret`。
+   在金融行业等安全性要求较高的场景下，您可以在加入房间前通过此方法设置媒体流加密模式。
 
-   + 同一频道内的所有用户应设置相同的密钥。如果未指定密钥，则无法激活加密功能。
-   
-   + 密钥规则与加密方法有关。`sm4-128-ecb`模式要求密钥长度为16。
-   
-   + 如果该方法设置错误，在加入频道时会触发 `Client.on("crypt-error")` 回调。
-   
-   + 请勿在转码推流场景中使用加密功能。
+   - 该方法和 [[Client.setEncryptionSecret]] 搭配使用，必须在加入房间前先调用 [[Client.setEncryptionMode]] 设置媒体流加密方案，再调用 [[Client.setEncryptionSecret]] 设置秘钥。如果未指定密钥，则无法启用媒体流加密。
+   - 用户离开房间后，SDK 会自动关闭加密。如需重新开启加密，需要在用户再次加入房间前调用这两个方法。
+
+   @since V4.4.0
+   @warning 同一房间内所有用户必须使用相同的加密模式和秘钥，否则用户之间无法互通。
+
+   @note 
+   - 请在加入房间前调用该方法，加入房间后无法修改加密模式与秘钥。
+   - 如果该方法设置错误，在加入房间时会触发 `Client.on("crypt-error")` 回调。
+   - 如果开启了内置加密，则不能使用旁路推流功能。
+   - 安全起见，建议每次启用媒体流加密时都更换新的秘钥。
+
+   @param encryptionMode 媒体流加密方案。详细信息请参考 encryptionMode。
    
    ```JavaScript
      // 例如，使用 sm4-128-ecb
      client.setEncryptionMode('sm4-128-ecb');
      client.setEncryptionSecret('abcdefghijklmnop');
-     // 然后通过client.join()加入频道
+     // 然后通过client.join()加入房间
    ```
    */
   setEncryptionMode(encryptionMode: EncryptionMode): void;
 
   /**
-   #### 设置加密密钥
-   
-   该方法和 [[Client.setEncryptionMode]] 搭配使用，可以开启加密功能，需要在加入频道前调用。
+   * 设置媒体流加密秘钥。
+   * 
+   * @since V4.4.0
+   * 
+   * - 该方法和 [[Client.setEncryptionMode]] 搭配使用，必须在加入房间前先调用 [[Client.setEncryptionMode]] 设置媒体流加密方案，再调用 [[Client.setEncryptionSecret]] 设置秘钥。如果未指定密钥，则无法启用媒体流加密。
+   * - 用户离开房间后，SDK 会自动关闭加密。如需重新开启加密，需要在用户再次加入房间前调用这两个方法。
+   * 
+   * @warning 同一房间内所有用户必须使用相同的加密模式和秘钥，否则用户之间无法互通。
+   * 
+   * @note 
+   * - 请在加入房间前调用该方法，加入房间后无法修改加密模式与秘钥。
+   * - 如果该方法设置错误，则无法启用媒体流加密，在加入房间时会触发 `Client.on("crypt-error")` 回调。
+   * - 如果开启了媒体流加密，则不能使用旁路推流功能。
+   * - 安全起见，建议每次启用媒体流加密时都更换新的秘钥。
+   * 
+   * @param encryptionSecret 媒体流加密秘钥。当加密模式为 'sm4-128-ecb' 时，秘钥应为 String 类型的英文字符串，长度为 16 byte（128bit）。 
    */
   setEncryptionSecret(encryptionSecret: string): void;
   
@@ -186,7 +203,10 @@ declare interface Client{
      */
     getRemoteVideoStats(mediaType?: MediaType): Promise<any>;
     /**
-     * 获取本地uid
+     * 获取本地用户 ID。
+     * 
+     * 如果在 join 方法中指定了 uid，此处会返回指定的 ID; 如果未指定 uid，此处将返回云信服务器自动分配的 ID。
+     * @since V4.4.0
      */
      getUid(): number | null;
     /**
@@ -263,7 +283,7 @@ declare interface Client{
   }) => void): void;
 
   /**
-   * 该事件会返回当前频道内声音最大的用户的uid。
+   * 该事件会返回当前房间内声音最大的用户的uid。
    */
   on(event: "active-speaker", callback: (evt: {
     /**
@@ -273,7 +293,7 @@ declare interface Client{
   }) => void): void;
 
   /**
-   * 该事件会返回当前频道内的用户及音量。
+   * 该事件会返回当前房间内的用户及音量。
    */
   on(event: "volume-indicator", callback: (evt: {
     /**
@@ -287,7 +307,7 @@ declare interface Client{
   }) => void): void;
   
   /**
-   * 该事件会返回当前频道内声音最大的用户的uid。
+   * 该事件会返回当前房间内声音最大的用户的uid。
    */
   on(event: "active-speaker", callback: (evt: {
     /**
@@ -452,13 +472,15 @@ declare interface Client{
   on(event: "network-quality", callback: (netStatus: NetStatusItem[]) => void): void;
 
   /**
-   * 该事件展示了目前频道内的异常
+   * 该事件展示了目前房间内的异常
    */
   on(event: "exception", callback: (exceptionEvent: ClientExceptionEvt) => void): void;
 
   /**
-   * 该回调表示用户在发布或者订阅流过程中出现了加密或者解密失败，
-   * 一般都是因为加密方案 [[Client.setEncryptionMode]] 或者加密密码[[Client.setEncryptionSecret]]不匹配导致的。
+   * 该回调表示用户在发布或者订阅流过程中媒体流加密或者解密失败。
+   * 通常原因为：
+   * - 加密方案 [[Client.setEncryptionMode]] 或者加密秘钥 [[Client.setEncryptionSecret]] 与房间中的其他用户不匹配。
+   * - 加密秘钥不正确。
    */
   on(event: "crypt-error", callback: (evt: { cryptType: EncryptionMode }) => void): void;
   
