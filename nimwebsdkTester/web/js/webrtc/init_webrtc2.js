@@ -248,8 +248,8 @@ async function loadTokenByAppKey(){
   }
 }
 
-$("#uid").on("change", loadTokenByAppKey);
-$("#channelName").on("change", loadTokenByAppKey);
+// $("#uid").on("change", loadTokenByAppKey);
+// $("#channelName").on("change", loadTokenByAppKey);
 
 function init() {
   if (globalConfig.inited) {
@@ -262,7 +262,7 @@ function init() {
   globalConfig.inited = true
   addLog('初始化实例')
   const appkey = $('#appkey').val()
-  loadTokenByAppKey();
+  // loadTokenByAppKey();
   const chrome = $('#part-env input[name="screen-type"]:checked').val()
   rtc.client = NERTC.createClient({
     appkey,
@@ -618,6 +618,7 @@ $('#init-btn').on('click', () => {
  */
 
 $('#joinChannel-btn').on('click', async () => {
+  await loadTokenByAppKey();
   const channelName = $('#channelName').val()
   if (window.localStorage){
     window.localStorage.setItem("channelName", channelName);
