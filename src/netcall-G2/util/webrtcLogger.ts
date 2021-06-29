@@ -59,7 +59,7 @@ class Logger{
       args.splice(1, 0, logger.style)
     }
     logger._log('debug', args);
-    (<any>window).logStorage && (<any>window).logStorage.log('debug', ...args);
+    (<any>window).logStorage && (<any>window).logStorage.log('debug', args);
     // loglevel.debug(arguments);
   }
   
@@ -76,7 +76,7 @@ class Logger{
     }
     logger._log('log', args);
     //  loglevel.trace(args);
-    (<any>window).logStorage && (<any>window).logStorage.log('log', ...args);
+    (<any>window).logStorage && (<any>window).logStorage.log('log', args);
   }
   
   info(){
@@ -92,7 +92,7 @@ class Logger{
     }
     logger._log('info', args);
     // loglevel.info(arguments);
-    (<any>window).logStorage && (<any>window).logStorage.log('info', ...args);
+    (<any>window).logStorage && (<any>window).logStorage.log('info', args);
     
   }
   
@@ -109,7 +109,7 @@ class Logger{
     }
     logger._log('warn', args);
     // loglevel.warn(arguments);
-    (<any>window).logStorage && (<any>window).logStorage.log('warn', ...args);
+    (<any>window).logStorage && (<any>window).logStorage.log('warn', args);
   }
   
   error(){
@@ -125,7 +125,7 @@ class Logger{
     }
     logger._log('error', args);
     // loglevel.error(arguments);
-    (<any>window).logStorage && (<any>window).logStorage.log('error', ...args);
+    (<any>window).logStorage && (<any>window).logStorage.log('error', args);
   }
 
   _log(name:string, args:any[]) {
