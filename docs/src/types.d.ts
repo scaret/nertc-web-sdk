@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2021 NetEase, Inc.  All rights reserved.
+ */
+
 import {Client} from "./client";
 
 export declare type ConnectionState = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'DISCONNECTING';
