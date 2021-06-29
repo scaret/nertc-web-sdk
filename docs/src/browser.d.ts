@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2021 NetEase, Inc.  All rights reserved.
+ */
+
 /**
  * 设备详情
  */
