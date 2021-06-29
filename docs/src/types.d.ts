@@ -382,17 +382,17 @@ export interface RecordConfig {
    */
   isHostSpeaker: boolean;
   /**
-   * 是否开启音频实时音录制，0不需要，1需要（默认0）
+   * 是否开启音频实时音录制，`false` 不需要，`true` 需要（默认`false`）
    */
   recordAudio: boolean;
   /**
-   * 是否开启视频实时音录制，0不需要，1需要（默认0）
+   * 是否开启视频实时音录制，`false`不需要，`true`需要（默认`false`）
    */
   recordVideo: boolean;
   /**
    * 录制模式，0混单（产生混合录制文件+单独录制文件） 1只混（只产生混合录制文件） 2只单（只产生单独录制文件）
    */
-  recordType: number;
+  recordType: 0|1|2;
 }
 
 export interface MediaPriorityOptions {

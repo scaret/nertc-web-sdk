@@ -1006,13 +1006,13 @@ function initLocalStream(audioSource, videoSource) {
   }else if ($('#idWatermark').prop('checked')){
     rtc.localStream.setCanvasWatermarkConfigs({
       textWatermarks: [{
-        content: 'video ' + $('#uid').val(),
+        content: 'video ' + rtc.client.getUid(),
       }],
     });
     rtc.localStream.setCanvasWatermarkConfigs({
       mediaType: "screen",
       textWatermarks: [{
-        content: 'screen ' + $('#uid').val(),
+        content: 'screen ' + rtc.client.getUid(),
       }],
     });
   }
