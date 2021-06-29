@@ -39,23 +39,7 @@ declare interface Client{
     setLocalMediaPriority (options: MediaPriorityOptions): void;
 
     /**
-     * 加入房间。
-     * @param {Object} options
-     * @param {String} options.channel 房间名称
-     * @param {Number} options.uid  用户的唯一标识 id，房间内每个用户的 uid 必须是唯一的。
-     *                              <br>uid 可选，默认为 0。如果不指定（即设为 0），SDK 会自动分配一个随机 uid，您可以通过 getUid 查看，App 层必须记住该值并维护，SDK 不对该值进行维护。
-     * @param {Object} [options.joinChannelLiveConfig] 加入房间互动直播相关参数
-     * @param {Boolean} [options.joinChannelLiveConfig.liveEnable]  是否旁路直播
-     * @param {Object} [options.joinChannelRecordConfig] 加入房间录制相关参数
-     * @param {Boolean} [options.joinChannelRecordConfig.isHostSpeaker]  是否是主讲人
-     * @param {Boolean} [options.joinChannelRecordConfig.recordAudio]  是否开启音频实时音录制，0不需要，1需要（默认0）
-     * @param {Boolean} [options.joinChannelRecordConfig.recordVideo]  是否开启视频实时音录制，0不需要，1需要（默认0）
-     * @param {Number} [options.joinChannelRecordConfig.recordType]  录制模式，0混单（产生混合录制文件+单独录制文件） 1只混（只产生混合录制文件） 2只单（只产生单独录制文件）
-     * @param {Object} [options.neRtcServerAddresses] 私有化服务器地址对象
-     * @param {String} [options.neRtcServerAddresses.channelServer]  获取通道信息服务器
-     * @param {String} [options.neRtcServerAddresses.statisticsServer]  统计上报服务器
-     * @param {String} [options.neRtcServerAddresses.roomServer]  roomServer服务器
-     * @return {Promise}
+     * 加入房间
      */
     join(options: JoinOptions): Promise<any>;
     /**
