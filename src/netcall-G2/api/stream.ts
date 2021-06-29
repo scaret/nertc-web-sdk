@@ -94,12 +94,20 @@ class Stream extends EventEmitter {
     frameRate: number;
     videoBW: number;
     resolution: number;
-  }|null;
+  } = {
+    frameRate: VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_NORMAL, //15
+    videoBW: 500,
+    resolution: NERTC_VIDEO_QUALITY.VIDEO_QUALITY_480p // 640*480
+  };
   public screenProfile:{
     frameRate: number;
     videoBW: number;
     resolution: number;
-  }|null;
+  } = {
+    frameRate: VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_5, //5
+    videoBW: 1000,
+    resolution: NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p // 1920*1080
+  };
   private inited:boolean;
   public videoView:HTMLElement|null|undefined|String;
   public screenView:HTMLElement|null|undefined|String;
@@ -143,8 +151,6 @@ class Stream extends EventEmitter {
 
     // init for ts rule
     this.isRemote = options.isRemote;
-    this.videoProfile = null;
-    this.screenProfile = null;
     this.inited = false;
     this.videoView = null;
     this.screenView = null;
@@ -1787,9 +1793,6 @@ class Stream extends EventEmitter {
   */
   setVideoProfile (options:VideoProfileOptions) {
     this.client.adapterRef.logger.log('设置视频属性: ', JSON.stringify(options, null, ' '))
-    if (!this.videoProfile){
-      throw new Error('No videoProfile');
-    }
     Object.assign(this.videoProfile, options)
     this.client.adapterRef.channelInfo.sessionConfig.maxVideoQuality = VIDEO_QUALITY.CHAT_VIDEO_QUALITY_1080P
     this.client.adapterRef.channelInfo.sessionConfig.videoQuality = this.videoProfile.resolution

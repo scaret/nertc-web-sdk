@@ -143,8 +143,9 @@ class MediaHelper extends EventEmitter {
 
     try {
       if (screen) {
-        if (!this.adapterRef.localStream || !this.adapterRef.localStream.screenProfile){
-          throw new Error('No screenProfile')
+        if (!this.adapterRef.localStream){
+          this.adapterRef.logger.error('mediaHelper.getStream screen:No localStream');
+          throw new Error('No localStream')
         }
         const {width, height, frameRate} = this.convert(this.adapterRef.localStream.screenProfile)
         
@@ -248,8 +249,9 @@ class MediaHelper extends EventEmitter {
           
         }
       } else if (audio || video) {
-        if (!this.adapterRef.localStream || !this.adapterRef.localStream.videoProfile){
-          throw new Error('No videoProfile');
+        if (!this.adapterRef.localStream){
+          this.adapterRef.logger.error('Client.getStream:No localStream');
+          throw new Error('No localStream');
         }
         const {height, width, frameRate} = this.convert(this.adapterRef.localStream.videoProfile)
         let config:MediaStreamConstraints = {
