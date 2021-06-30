@@ -99,7 +99,7 @@ table th:nth-of-type(2) {
 方法 | 功能描述
 ---|---|
 [[Client.setEncryptionMode]] | 设置媒体流加密模式。
-[[Client.setEncryptionSecret]] | 设置媒体流加密秘钥。
+[[Client.setEncryptionSecret]] | 设置媒体流加密密钥。
 
 ## <span id="Stream 音视频流对象">Stream 音视频流对象</span>
 
