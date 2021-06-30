@@ -437,16 +437,15 @@ class MediaHelper extends EventEmitter {
         const videoView = this.adapterRef.localStream.videoView || (this.adapterRef.localStream.Play && this.adapterRef.localStream.Play.videoView)
         if (isPlaying && videoView) {
           await this.adapterRef.localStream.play(videoView)
-          if ("width" in this.adapterRef.localStream.renderMode.local){
-            this.adapterRef.localStream.setLocalRenderMode(this.adapterRef.localStream.renderMode.local, 'video')
+          if ("width" in this.adapterRef.localStream.renderMode.local.video){
+            this.adapterRef.localStream.setLocalRenderMode(this.adapterRef.localStream.renderMode.local.video, 'video')
           }
         }
         const peer = this.adapterRef.instance.getPeer('send')
         if (peer && peer.videoSender) {
           peer.videoSender.replaceTrack(videoTrack)
         } else {
-          this.adapterRef.logger.error('getSecondStream: undefined peer')
-          return Promise.reject('undefinedPeer')
+          this.adapterRef.logger.warn('getSecondStream video: 此时未发布流')
         }
       }
     } catch (e){
