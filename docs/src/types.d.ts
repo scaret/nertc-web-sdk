@@ -418,7 +418,7 @@ export interface JoinOptions {
   /**
    * 用户的唯一标识 id，房间内每个用户的 uid 必须是唯一的。
    * 
-   * uid 可选，默认为 0。如果不指定（即设为 0），SDK 会自动分配一个随机 uid，您可以通过 getUid 查看，App 层必须记住该值并维护，SDK 不对该值进行维护。
+   * uid 可选。如果不指定，SDK 会自动分配一个随机 uid，您可以通过 getUid 查看，App 层必须记住该值并维护，SDK 不对该值进行维护。
    */
   uid: number;
   /**

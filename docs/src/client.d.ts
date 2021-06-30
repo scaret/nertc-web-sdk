@@ -119,15 +119,15 @@ declare interface Client{
 
    在金融行业等安全性要求较高的场景下，您可以在加入房间前通过此方法设置媒体流加密模式。
 
-   - 该方法和 [[Client.setEncryptionSecret]] 搭配使用，必须在加入房间前先调用 [[Client.setEncryptionMode]] 设置媒体流加密方案，再调用 [[Client.setEncryptionSecret]] 设置秘钥。如果未指定密钥，则无法启用媒体流加密。
+   - 该方法和 [[Client.setEncryptionSecret]] 搭配使用，必须在加入房间前先调用 [[Client.setEncryptionMode]] 设置媒体流加密方案，再调用 [[Client.setEncryptionSecret]] 设置密钥。如果未指定密钥，则无法启用媒体流加密。
    - 用户离开房间后，SDK 会自动关闭加密。如需重新开启加密，需要在用户再次加入房间前调用这两个方法。
 
    @since V4.4.0
 
    @note 
-   - 请在加入房间前调用该方法，加入房间后无法修改加密模式与秘钥。
-   - 安全起见，建议每次启用媒体流加密时都更换新的秘钥。
-   - 同一房间内，所有开启媒体流加密的用户必须使用相同的加密模式和秘钥，否则使用不同秘钥的成员加入房间时会触发 `Client.on("crypt-error")` 回调。
+   - 请在加入房间前调用该方法，加入房间后无法修改加密模式与密钥。
+   - 安全起见，建议每次启用媒体流加密时都更换新的密钥。
+   - 同一房间内，所有开启媒体流加密的用户必须使用相同的加密模式和密钥，否则使用不同密钥的成员加入房间时会触发 `Client.on("crypt-error")` 回调。
 
    @param encryptionMode 媒体流加密方案。详细信息请参考 encryptionMode。
    
@@ -141,18 +141,18 @@ declare interface Client{
   setEncryptionMode(encryptionMode: EncryptionMode): void;
 
   /**
-   * 设置媒体流加密秘钥。
+   * 设置媒体流加密密钥。
    * 
-   * - 该方法和 [[Client.setEncryptionMode]] 搭配使用，必须在加入房间前先调用 [[Client.setEncryptionMode]] 设置媒体流加密方案，再调用 [[Client.setEncryptionSecret]] 设置秘钥。如果未指定密钥，则无法启用媒体流加密。
+   * - 该方法和 [[Client.setEncryptionMode]] 搭配使用，必须在加入房间前先调用 [[Client.setEncryptionMode]] 设置媒体流加密方案，再调用 [[Client.setEncryptionSecret]] 设置密钥。如果未指定密钥，则无法启用媒体流加密。
    * - 用户离开房间后，SDK 会自动关闭加密。如需重新开启加密，需要在用户再次加入房间前调用这两个方法。
    * 
    * @since V4.4.0
    * @note 
-   * - 请在加入房间前调用该方法，加入房间后无法修改加密模式与秘钥。
-   * - 安全起见，建议每次启用媒体流加密时都更换新的秘钥。
-   * - 同一房间内，所有开启媒体流加密的用户必须使用相同的加密模式和秘钥，否则使用不同秘钥的成员加入房间时会触发 `Client.on("crypt-error")` 回调。
+   * - 请在加入房间前调用该方法，加入房间后无法修改加密模式与密钥。
+   * - 安全起见，建议每次启用媒体流加密时都更换新的密钥。
+   * - 同一房间内，所有开启媒体流加密的用户必须使用相同的加密模式和密钥，否则使用不同密钥的成员加入房间时会触发 `Client.on("crypt-error")` 回调。
    * 
-   * @param encryptionSecret 媒体流加密秘钥。字符串格式，长度为 1~128 字节。推荐设置为英文字符串。 
+   * @param encryptionSecret 媒体流加密密钥。字符串格式，长度为 1~128 字节。推荐设置为英文字符串。 
    */
   setEncryptionSecret(encryptionSecret: string): void;
   
@@ -461,8 +461,8 @@ declare interface Client{
   /**
    * 该回调表示用户在发布或者订阅流过程中媒体流加密或者解密失败。
    * 通常原因为：
-   * - 加密方案 [[Client.setEncryptionMode]] 或者加密秘钥 [[Client.setEncryptionSecret]] 与房间中的其他用户不匹配。
-   * - 加密秘钥不正确。
+   * - 加密方案 [[Client.setEncryptionMode]] 或者加密密钥 [[Client.setEncryptionSecret]] 与房间中的其他用户不匹配。
+   * - 加密密钥不正确。
    */
   on(event: "crypt-error", callback: (evt: { cryptType: EncryptionMode }) => void): void;
   
