@@ -445,8 +445,7 @@ class MediaHelper extends EventEmitter {
         if (peer && peer.videoSender) {
           peer.videoSender.replaceTrack(videoTrack)
         } else {
-          this.adapterRef.logger.error('getSecondStream: undefined peer')
-          return Promise.reject('undefinedPeer')
+          this.adapterRef.logger.warn('getSecondStream video: 此时未发布流')
         }
       }
     } catch (e){
