@@ -29,8 +29,8 @@ table th:nth-of-type(2) {
 [[NERTC.getCameras]] | 获取可用的视频输入设备。
 [[NERTC.getMicrophones]] | 获取可用的音频输入设备。
 [[NERTC.getSpeakers]] | 获取可用的音频输出设备。
-[[NERTC.Logger]].enableLogUpload | 开启日志上传。
-[[NERTC.Logger]].disableLogUpload | 关闭日志上传。
+[[NERTC.Logger.enableLogUpload]] | 开启日志上传。
+[[NERTC.Logger.disableLogUpload]] | 关闭日志上传。
 
 ## <span id="Client 客户端对象">Client 客户端对象</span>
 

@@ -10,10 +10,9 @@ import {DeviceInfo} from "./browser";
 /**
  * NERTC 是 云信 Web SDK 中所有可调用方法的入口
  */
-/*export  = NERTC
-export  as namespace NERTC*/
+export as namespace NERTC
 declare namespace NERTC {
-  const Logger: {
+  namespace Logger {
     /**
      * 开启日志上传。
      * 
@@ -26,7 +25,7 @@ declare namespace NERTC {
      * @note 如果没有成功加入房间，SDK 不会发送日志到云信服务器，服务器上无法查看日志信息。
      *
      */
-    enableLogUpload() : void;
+    function enableLogUpload() : void;
 
     /**
      * 关闭日志上传。
@@ -35,7 +34,7 @@ declare namespace NERTC {
      * 
      * @since V4.4.0
      */
-    disableLogUpload(): void;
+    function disableLogUpload(): void;
 
   }
   /**
