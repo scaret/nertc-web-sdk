@@ -4,48 +4,100 @@
 
 import {Client} from "./client";
 
+/**
+ * 网络连接状态。包括：
+ * - `DISCONNECTED`：网络连接已断开。
+ * - `CONNECTING`：建立网络连接中。
+ * - `CONNECTED`：网络已连接。
+ * - `DISCONNECTING`：网络连接断开中。
+ */
 export declare type ConnectionState = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'DISCONNECTING';
+
+/**
+ * 媒体流类型。包括：
+ * - `audio`：音频。
+ * - `video`：视频。
+ * - `screen`：屏幕共享。
+ */
 export declare type MediaType = 'audio' | 'video' | 'screen';
 
 /**
  * 加密方案，在调用 [[Client.setEncryptionMode]] 时使用。可设置为：
- * - 'none'：不加密。
- * - 'sm4-128-ecb'：128 位 SM4 加密，ECB 模式。
+ * - `none`：不加密。
+ * - `sm4-128-ecb`：128 位 SM4 加密，ECB 模式。
  */
 export declare type EncryptionMode = 'none' | 'sm4-128-ecb';
 
+/**
+ * 视频画布设置。
+ */
 export interface RenderMode {
-  /*
+  /**
    * 宽度
    */
   width: number;
-  /*
+  /**
    * 高度
    */
   height: number;
-  /*
+  /**
    * 是否裁剪
    */
   cut: boolean;
 }
 
+/*
+ * 录制状态。
+ */
 export interface RecordStatus {
   recordedChunks: Blob[];
+  /**
+   * 是否正在录制。
+   */
   isRecording: boolean;
+  /**
+   * 录制的视频流。
+   */
   stream: MediaStream | MediaStream[] | null;
+  /**
+   * 录制配置。
+   */
   option: RecordStartOptions | null;
   contentTypes: string[];
   mimeType: string;
   audioController: null;
   opStream: MediaStream | null;
+  /**
+   * 状态。
+   */
   state: string;
+  /**
+   * 录制文件名称。
+   */
   fileName: string | null;
+  /**
+   * 录制 ID。
+   */
   recordId: number;
+  /**
+   * 录制状态。
+   */
   recordStatus: string;
+  /**
+   * 录制文件的 URL 地址。
+   */
   recordUrl: string | null;
+  /**
+   * 录制开始时间。
+   */
   startTime: number | null;
+  /**
+   * 录制结束时间。
+   */
   endTime: number | null;
 }
+
+
 export interface RecordStartOptions {
   stream: MediaStream | MediaStream[];
   uid: number;
@@ -53,19 +105,30 @@ export interface RecordStartOptions {
   reset: boolean;
 }
 
-
+  /**
+   * 互动直播推流任务状态。
+   */
 export interface RTMPTaskState{
-  
+  /**
+   * 互动直播推流任务状态码。
+   */
   code: number;
-
+  /**
+   * 主讲人的用户 ID。
+   */
   hostUid: number;
-
+  /**
+   * 互动直播推流任务状态信息。
+   */
   msg: string;
-  
+  /**
+   * 推流地址。
+   */
   streamUrl: string;
-  
+  /**
+   * 互动直播任务 ID。
+   */
   taskId: string;
-
 }
 
 /**
@@ -80,28 +143,46 @@ export interface RTMPTaskState{
  * * RECV_SCREEN_DECODE_FAILED
  */
 export interface ClientExceptionEvt{
+  /**
+   * 房间内的异常事件信息。
+   */
   msg: 'string';
+  /**
+   * 用户 ID。
+   */
   uid: number;
 }
 
+  /***
+   * 房间中所有成员的上下行网络质量。
+   */
 export interface NetStatusItem {
+  /**
+   * 用户 ID。
+   */
   uid: number;
 }
 
+  /**
+   * 推流任务选项。
+   */
 export interface AddTaskOptions {
+    /**
+   * 推流任务信息。
+   */
   rtmpTasks: RTMPTask[];
 }
 
 /**
- * 一个推流任务
+ * 推流任务配置。
  */
 export interface RTMPTask {
   /**
-   * 自定义的推流任务ID。请保证此ID唯一。字母数字下划线组成的64位以内的字符串
+   * 自定义的推流任务 ID。请保证此 ID 唯一。字母数字下划线组成的64位以内的字符串。
    */
   taskId: string;
   /**
-   * 流地址，例如`rtmp://test.url`。此处的推流地址可设置为网易云信直播产品中服务端API创建频道的返回参数pushUrl。
+   * 流地址，例如 `rtmp://test.url`。此处的推流地址可设置为网易云信直播产品中服务端API创建房间的返回参数pushUrl。
    */
   streamUrl: string;
   /**
@@ -121,7 +202,7 @@ export interface RTMPTask {
        */
       width: number;
       /**
-       * 整体画布的宽度，单位为 px。取值范围为 0~1920，若设置为奇数值，会自动向下取偶。
+       * 整体画布的高度，单位为 px。取值范围为 0~1920，若设置为奇数值，会自动向下取偶。
        */
       height: number;
       /**
@@ -173,7 +254,14 @@ export interface RTMPTask {
        * * false：在直播中不播放该用户的视频流。
        */
       pushVideo: boolean;
-      
+      /**
+       * 直播视频上用户视频帧的图层编号，用来决定渲染层级。
+       * 
+       * 取值范围为 0~100，默认为 0。
+       * 
+       * - 最小值为 0（默认值），表示该区域图像位于最底层。
+       * - 最大值为 100，表示该区域图像位于最顶层。
+       */
       zOrder: number;
     }[];
     /**
@@ -250,7 +338,7 @@ export interface RTMPTask {
 
 export interface StreamOptions {
   /**
-   * 用户uid
+   * 用户 ID。
    */
   uid: number;
   /**
@@ -258,9 +346,10 @@ export interface StreamOptions {
    */
   audio: boolean;
   /**
-   * 是否开启/关闭音频处理接口（3A接口)
-   * ##### 注意：
-   * 音频处理接口取决于浏览器支持情况。目前Safari不支持AGC及ANS设置。
+   * 是否开启/关闭音频处理接口（3A接口)。
+   * 
+   * @note 音频处理接口取决于浏览器支持情况。目前Safari不支持AGC及ANS设置。
+   * 
    * `AEC`: 是否开启声学回声消除。默认为 true。
    * * `true`：开启声学回声消除。
    * * `false`：关闭声学回声消除。
@@ -277,19 +366,19 @@ export interface StreamOptions {
     AGC?: boolean;
   };
   /**
-   * 麦克风设备 deviceId，通过 [[NERTC.getMicrophones()]] 获取
+   * 麦克风设备 deviceId，通过 [[NERTC.getMicrophones]] 获取。
    */
   microphoneId?: string;
   /**
-   * 摄像头设备 deviceId，通过 getCameras() 获取
+   * 摄像头设备 deviceId，通过 getCameras() 获取。
    */
   cameraId?: string;
   /**
-   * 是否从摄像头采集视频
+   * 是否从摄像头采集视频。
    */
   video: boolean;
   /**
-   * 是否采集屏幕共享流
+   * 是否采集屏幕共享流。
    */
   screen?: boolean;
 /**
@@ -325,72 +414,105 @@ export interface StreamOptions {
    * Electron 屏幕共享的数据源 ID，您可以自行获取。
    */
   sourceId?: string;
-  /*
+  /**
   * 指定使用前置/后置摄像头来采集视频
    */
   facingMode?: String
 }
 
+  /*
+  * 视频订阅配置参数。
+  */
 export interface SubscribeOptions {
+  /**
+  * 是否订阅音频。
+  */
   audio?: boolean;
+  /**
+  * 是否订阅视频。
+   */
   video?: boolean;
+  /**
+  * 是否订阅屏幕共享。
+   */
   screen?: boolean;
+  /**
+   * 订阅大流或小流。
+   * 
+   * 0 表示小流，1 表示大流。
+   */
   highOrLow?: number;
 }
 
+  /**
+   * 视频属性配置参数。
+   */
 export interface VideoProfileOptions {
   /**
-   * @param options.resolution 设置本端视频分辨率，见 [[NERTC.VIDEO_QUALITY]]
+   * @param options.resolution 设置本端视频分辨率，详细信息请参考 [[NERTC.VIDEO_QUALITY]]。
    */
   resolution: number;
   /**
-   * @param options.frameRate 设置本端视频帧率，见[[NERTC.VIDEO_FRAME_RATE]]
+   * @param options.frameRate 设置本端视频帧率，详细信息请参考 [[NERTC.VIDEO_FRAME_RATE]]。
    */
   frameRate: number;
 }
 
+  /**
+   * 屏幕共享中的屏幕属性。
+   */
 export interface ScreenProfileOptions {
   /**
-   * @param {String} [options.resolution] 设置本端屏幕共享分辨率：NERTC.VIDEO_QUALITY_480p、NERTC.VIDEO_QUALITY_720p、NERTC.VIDEO_QUALITY_1080p
-   * @param {String} [options.frameRate] 设置本端视频帧率：NERTC.CHAT_VIDEO_FRAME_RATE_5、NERTC.CHAT_VIDEO_FRAME_RATE_10、NERTC.CHAT_VIDEO_FRAME_RATE_15、NERTC.CHAT_VIDEO_FRAME_RATE_20、NERTC.CHAT_VIDEO_FRAME_RATE_25
+   * 设置本端屏幕共享分辨率。
+   * 
+   * NERTC.VIDEO_QUALITY_480p、NERTC.VIDEO_QUALITY_720p、NERTC.VIDEO_QUALITY_1080p
    */
   resolution: number;
+  /**
+   * 设置本端视频帧率。
+   * 
+   * NERTC.CHAT_VIDEO_FRAME_RATE_5、NERTC.CHAT_VIDEO_FRAME_RATE_10、NERTC.CHAT_VIDEO_FRAME_RATE_15、NERTC.CHAT_VIDEO_FRAME_RATE_20、NERTC.CHAT_VIDEO_FRAME_RATE_25
+   */
   frameRate: number;
 }
 
 export interface ClientOptions {
   /**
-   * 实例的应用ID
+   * 应用的 AppKey。
    */
   appkey: string;
   /**
-   * 是否开启debug模式，默认不开启，debug模式下浏览器会打印log日志。
-   * 默认为false。
+   * 是否开启 debug 模式。
+   * 
+   * debug 模式下浏览器会打印 log 日志。默认为 false，即关闭状态。
    */
   debug?: boolean;
 }
 
 export interface LiveConfig {
   /**
-   * 是否旁路直播
+   * 互动直播开关。加入房间时此开关默认开启。
    */
   liveEnable: boolean;
 }
 export interface RecordConfig {
   /**
-   * 是否是主讲人
+   * 当前用户是否是主讲人。
    */
   isHostSpeaker: boolean;
   /**
-   * 是否开启音频实时音录制，`false` 不需要，`true` 需要（默认`false`）
+   * 是否开启音频实时音录制，`false` 不需要，`true` 需要。默认 `false`。
    */
   recordAudio: boolean;
   /**
-   * 是否开启视频实时音录制，`false`不需要，`true`需要（默认`false`）
+   * 是否开启视频实时音录制，`false` 不需要，`true` 需要。默认 `false`。
    */
   recordVideo: boolean;
   /**
-   * 录制模式，0混单（产生混合录制文件+单独录制文件） 1只混（只产生混合录制文件） 2只单（只产生单独录制文件）
+   * 录制模式。
+   * - 0：合流录制 + 单流录制。
+   * - 1：合流录制模式。只产生混合录制文件。
+   * - 2：单流录制模式。只产生单独录制文件。
    */
   recordType: 0|1|2;
 }
@@ -412,7 +534,7 @@ export interface MediaPriorityOptions {
 
 export interface JoinOptions {
   /**
-   * 频道名称
+   * 房间名称。
    */
   channelName: string;
   /**
@@ -422,19 +544,25 @@ export interface JoinOptions {
    */
   uid: number;
   /**
-   * 用户的token
+   * 安全认证签名。详细信息请参考 [NERTC Token](/docs/jcyOTA0ODM/Dc4NTE4OTY)。
+   * - 调试模式下：无需设置 Token。
+   * - 安全模式下：必须设置为已获取的 NERTC Token。
+   * 
+   * @note 
+   * - 应用测试期间，为便于调试，可以使用调试模式，此时无需 Token 鉴权即可加入房间。
+   * - 出于安全起见，应用正式上线时，应转为安全模式，并在加入房间时使用 Token 鉴权。
    */
   token?: string;
   /**
-   * 加入房间互动直播相关参数
+   * 互动直播相关参数。
    */
   joinChannelLiveConfig?: LiveConfig;
   /**
-   * 加入房间录制相关参数
+   * 云端录制相关参数。
    */
   joinChannelRecordConfig?: RecordConfig;
   /**
-   * 私有化服务器地址对象
+   * 私有化服务器地址对象。
    */
   neRtcServerAddresses?: NeRtcServerAddresses
 }
@@ -575,21 +703,24 @@ export interface NERtcImageWatermarkConfig {
   loop: boolean;
 }
 
+  /**
+   * 私有化服务器相关配置参数。
+   */
 export interface NeRtcServerAddresses{
   /**
-   * 获取通道信息服务器
+   * 通道信息服务器地址。
    */
   channelServer?: string;
   /**
-   * 统计上报服务器
+   * 统计上报服务器地址。
    */
   statisticsServer?: string;
   /**
-   * roomServer服务器
+   * roomServer服务器地址。
    */
   roomServer?: string;
   /**
-   * mediaServer服务器
+   * mediaServer服务器地址。
    */
   mediaServer?: string;
 }
