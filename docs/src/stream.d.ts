@@ -14,41 +14,50 @@ import {
   RecordStartOptions, RecordStatus
 } from "./types";
 /**
- * 请使用 [[NERTC.createStream]] 通过NERTC.createStream创建
+ * 音视频流对象。
+ * 
+ * Stream 接口提供的方法用于定义音视频流对象的行为，例如流的播放控制、音视频的编码配置等。
+ * 
+ * 您可以使用 [[NERTC.createStream]] 创建音视频流对象。 一个 Stream 对象指通话中发布的本地音视频流或订阅的远端音视频流。
  */
 declare interface Stream {
     /**
-     *  获取音视频流 ID
+     *  获取音视频流 ID。
      */
     getId(): number | null;
     /**
      * 设置视频订阅的参数。
-     * @param subscribeOptions 配置参数
+     * 
+     * @param subscribeOptions 配置参数。
     */
     setSubscribeConfig(subscribeOptions: {
       /**
-       * 是否订阅音频
+       * 是否订阅音频。
        */
       audio?: boolean;
       /**
-       * 是否订阅视频
+       * 是否订阅视频。
        */
       video?: boolean;
       /**
-       * 是否订阅屏幕共享
+       * 是否订阅屏幕共享。
        */
       screen?: boolean;
       /**
-       * 0是小流，1是大流
+       * 订阅大流或小流。
+       * 
+       * 0 表示小流，1 表示大流。
        */
       highOrLow?: number;
     }): void;
+
   /**
    * 获取音频流 MediaStream 对象，可用于自定义音频渲染。
    * 
    * 您可以自行渲染这个对象，例如将 audio dom 节点的 srcObject 属性设为该对象。
    * 
-   * **注意**：使用自定义音频渲染功能时，应该在播放远端流时，关闭默认的音频渲染。
+   * @note 使用自定义音频渲染功能时，应该在播放远端流时，关闭默认的音频渲染。
+   * 
    *```JavaScript
    * remoteStream.play({
    *    audio: false,
@@ -61,69 +70,90 @@ declare interface Stream {
    */
   getAudioStream(): MediaStream| null;
     /**
-     * 初始化音视频流对象
+     * 初始化音视频流对象。
+     * 
+     * 该方法用于初始化本地创建的音视频流对象。
      */
     init(): Promise<void>;
     /**
-     * 获取音频轨道
+     * 获取音频轨道。
      */
     getAudioTrack(): MediaStreamTrack | null;
     /**
-     * 获取视频轨道
+     * 获取视频轨道。
      */
     getVideoTrack(): MediaStreamTrack | null | undefined;
     /**
-     * 播放音视频流
-     * @param view div标签，播放画面的dom容器节点
+     * 播放音视频流。
+     * 
+     * @param view div 标签，播放画面的 dom 容器节点。
      * @param playOptions 播放的音视频选项。
      */
     play(view: HTMLElement | null, playOptions?: {
       /**
-       * 是否播放音频流。默认播放本地音频流，不播放远端音频流。
+       * 是否播放音频流。
+       * 
+       * 默认播放本地音频流，不播放远端音频流。
        */
       audio?: boolean;
       /**
-       * 是否播放视频流。默认播放视频流。
+       * 是否播放视频流。
+       * 
+       * 默认播放视频流。
        */
       video?: boolean;
       /**
-       * 是否播放视频流。默认播放视频流。
+       * 是否播放视频流。
+       * 
+       * 默认播放视频流。
        */
       screen?: boolean;
     }): Promise<void>;
+
     /**
-     * 设置本端视频画面大小
-     * @param options 配置对象
-     * @param mediaType 摄像头还是屏幕共享
+     * 设置本地视频画布。
+     * 
+     * 该方法设置本地视频画布。只影响本地用户看到的视频画面，不影响远端。
+     * @param options 配置对象。
+     * @param mediaType 媒体流类型。即指定设置的是摄像头画面还是屏幕共享画面。
      */
     setLocalRenderMode(options: RenderMode, mediaType?: MediaType): "INVALID_ARGUMENTS" | undefined;
     /**
-     * 设置对端视频画面大小
-     * @param options 配置对象
-     * @param mediaType 摄像头还是屏幕共享
+     * 设置远端视频画布。
+     * 
+     * 该方法绑定远端用户和显示视图，只影响本地用户看到的视频画面。退出房间后，SDK 会清除远端用户和视图的绑定关系。
+     * @param options 配置对象。
+     * @param mediaType 媒体流类型。即指定设置的是摄像头画面还是屏幕共享画面。
      */
     setRemoteRenderMode(options: RenderMode, mediaType?: MediaType): void;
     /**
-     * 停止播放音视频流
-     * @param mediaType 摄像头还是屏幕共享
+     * 停止音视频流。
+     * 
+     * 该方法用于停止播放 Stream.play 播放的音视频流。
+     * @param mediaType 媒体流类型。即指定设置的是摄像头画面还是屏幕共享画面。
      */
     stop(type?: MediaType): void;
     /**
-     * 返回音视频流当前是否在播放状态
-     * @param type 查看的媒体类型
+     * 返回音视频流当前是否在播放状态。
+     * @param type 媒体流类型。
+     * @return 
+     *  - true：该音视频流正在渲染或播放。
+     *  - false：该音视频流没有渲染。
      */
     isPlaying(type: MediaType): Promise<boolean>;
     /**
-     * 打开音视频输入设备，如麦克风、摄像头、屏幕共享,并且发布出去
-     * @param options 配置对象
+     * 打开音视频输入设备，如麦克风、摄像头、屏幕共享，并且发布出去。
+     * @param options 配置对象。
      */
     open(options: {
       /**
-       * 媒体设备: audio/video/screen
+       * 媒体流类型，即 audio、video 或 screen。
        */
         type: MediaType;
       /**
-       * 指定要开启的设备ID，通过getDevices接口获取到设备列表
+       * 指定要开启的设备ID。
+       * 
+       * 您可以通过 getDevices 接口获取设备列表。
        */
       deviceId?: string;
       /**
@@ -131,41 +161,52 @@ declare interface Stream {
        */
       sourceId?: string;
       /**
-       * 指定屏幕共享时是否共享本地播放的背景音。仅在未开启音频且 type 为 screen 时有效。详细说明请参考 [[StreamOptions.screenAudio]]。
+       * 指定屏幕共享时是否共享本地播放的背景音。
+       * 
+       * 仅在未开启音频且 type 为 screen 时有效。详细说明请参考 [[StreamOptions.screenAudio]]。
        */
       screenAudio?: boolean;
     }): Promise<undefined>;
     /**
-     * 关闭音视频输入设备，如麦克风、摄像头、屏幕共享，并且停止发布
+     * 关闭音视频输入设备，如麦克风、摄像头、屏幕共享，并且停止发布。
      * @param {Object} options 配置对象
      */
     close(options: {
       /**
-       * 媒体设备: audio/video/screen
+       * 媒体流类型，即 audio、video 或 screen。
        */
         type: MediaType;
     }): Promise<undefined>;
     /**
-     * 启用音频轨道
+     * 启用音频轨道。
      */
     unmuteAudio(): Promise<void>;
     /**
-     * 禁用音频轨道
+     * 禁用音频轨道。
      */
     muteAudio(): Promise<void>;
     /**
-     * 当前Stream是否有音频
+     * 获取音频 flag。
+     * 
+     * 该方法用于确认当前音视频流对象（Stream）中是否包含音频资源。
+     * 
+     * @note 该方法仅对本地流有效。
+     * 
+     * @return 
+     * - true: 该音视频流对象中包含音频资源。
+     * - false: 该音视频流对象中不包含音频资源。
      */
     hasAudio(): boolean;
     /**
-     * 当前从麦克风中采集的音量
+     * 获取从麦克风中采集的当前音量。
      */
     getAudioLevel(): string;
     /**
-     * 设置音频属性
-     * @param profile 要设置的音频的属性：
+     * 设置音频属性。
+     * 
+     * @param profile 要设置的音频的属性类型，可设置为：
      * * speech_low_quality（表示16 kHz 采样率，单声道，编码码率约 24 Kbps）
-     * * speech_standard'（表示32 kHz 采样率，单声道，编码码率约 24 Kbps）
+     * * speech_standard（表示32 kHz 采样率，单声道，编码码率约 24 Kbps）
      * * music_standard（表示48 kHz 采样率，单声道，编码码率约 40 Kbps）
      * * standard_stereo（表达48 kHz 采样率，双声道，编码码率约 64 Kbps）
      * * high_quality（表示48 kHz 采样率，单声道， 编码码率约 128 Kbps）
@@ -174,60 +215,119 @@ declare interface Stream {
     setAudioProfile(profile: string): void;
     /**
      * 设置音频播放的音量。
-     * @param volume 要设置的远端音频的播放音量，范围为 0（静音）到 100（声音最大）
+     * @param volume 要设置的远端音频的播放音量，范围为 [0-100]。0 表示静音。
      */
     setAudioVolume(volume?: number): string | undefined;
     /**
      * 设置麦克风采集的音量。
-     * @param volume 要设置的麦克风采集音量。，范围为 0（静音）到 100（声音最大）
+     * @param volume 要设置的麦克风采集音量。范围为 [0-100]。0 表示静音。
      */
     setCaptureVolume(volume: number): string | undefined;
     /**
-     * 设置音频输出设备，可以在耳机和扬声器之间切换。在播放订阅流之前或之后都可以调用该方法。
-     * 目前只有 Chrome 浏览器支持该方法。
-     * @param deviceId 设备的 ID,可以通过 getDevices 方法获取。获取的 ID 为 ASCII 字符，字符串长度大于 0 小于 256 字节。
+     * 设置订阅流的音频输出设备。
+     * 
+     * 该方法可以在语音场景下设置订阅流的音频输出设备，在通话时切换扬声器。在播放订阅流之前或之后都可以调用该方法。
+     * 
+     * @note
+     * - 在播放订阅流之前或之后都可以调用该方法。
+     * - 目前只有 Chrome 浏览器支持该方法。
+     * 
+     * @param deviceId 设备的 ID，可以通过 getDevices 方法获取。获取的 ID 为 ASCII 字符，字符串长度大于 0 小于 256 字节。
      */
     setAudioOutput(deviceId: string, callback: (err: any) => void): Promise<void>;
     /**
-     * 切换媒体输入设备，已经发布的流，切换后不用重新发流
-     * @param {String} type 设备的类型
+     * 切换媒体输入设备。
+     * 
+     * 该方法用于切换本地流的媒体输入设备，例如麦克风等音频输入设备，摄像头等视频输出设备。
+     * 
+     * @note 已经发布的流，切换后不用重新发流。
+     * 
+     * @param {String} type 设备的类型。
      * * "audio": 音频输入设备
      * * "video": 视频输入设备
-     * @param deviceId 设备的 ID,可以通过 getDevices 方法获取。获取的 ID 为 ASCII 字符，字符串长度大于 0 小于 256 字节。
+     * @param deviceId 设备的 ID，可以通过 getDevices 方法获取。获取的 ID 为 ASCII 字符，字符串长度大于 0 小于 256 字节。
      */
     switchDevice(type: string, deviceId: string): Promise<void>;
     /**
-     * 启用视频轨道
+     * 启用视频轨道。
+     * 
+     * 视频轨道默认为开启状态。如果您调用了 muteVideo，可调用本方法启用视频轨道。
+     * 
+     * 对本地流启用视频轨道后远端会触发 Client.on("unmute-video") 回调。
+     * 
+     * @note 对于本地创建的流，在 createStream 时将 video 设置为 true 才可使用该方法。
      */
     unmuteVideo(): Promise<void>;
     /**
-     * 禁用视频轨道
+     * 禁用视频轨道。
+     * 
+     * - 对于本地流，调用该方法会停止发送视频，远端会触发 Client.on("mute-video") 回调。
+     * - 对于远端流，调用该方法仍然会接收视频，但是会停止播放。
+     * 
+     * @note 对于本地创建的流，在 createStream 时将 video 设置为 true 才可使用该方法。
      */
     muteVideo(): Promise<void>;
     /**
-     * 启用视频轨道
+     * 启用屏幕共享轨道。
+     * 
+     * 如果您调用了 muteScreen，可调用本方法启用屏幕共享轨道。远端会触发 Client.on("ummute-screen") 回调。
      */
     unmuteScreen(): Promise<void>;
     /**
-     * 禁用视频轨道
+     * 禁用屏幕共享轨道。
+     * 
+     * 调用该方法会停止发送屏幕共享，远端会触发 Client.on("mute-screen") 回调。
      */
     muteScreen(): Promise<void>;
     /**
-     * 获取视频 flag
+     * 获取视频 flag。
+     * 
+     * 该方法用于确认当前音视频流对象（Stream）中是否包含视频资源。
+     * 
+     * @note 该方法仅对本地流有效。
+     * 
+     * @return 
+     * - true: 该音视频流对象中包含视频资源。
+     * - false: 该音视频流对象中不包含视频资源。
      */
     hasVideo(): boolean;
+
     /**
     * 设置视频属性。
-    * @param options 配置参数
-   */
+    * @param options 配置参数。
+    */
     setVideoProfile(options: VideoProfileOptions): void;
+      /**
+     * 获取屏幕共享 flag。
+     * 
+     * 该方法用于确认当前音视频流对象（Stream）中是否包含屏幕共享资源。
+     * 
+     * @note 该方法仅对本地流有效。
+     * 
+     * @return 
+     * - true: 该音视频流对象中包含屏幕共享资源。
+     * - false: 该音视频流对象中不包含屏幕共享资源。
+     */
     hasScreen(): boolean;
+
     /**
-     * 设置屏幕共享属性。
-     * @param {Object} options 配置参数
+     * 设置屏幕共享中的屏幕属性。
+     * 
+     * 该方法设置屏幕共享时屏幕的显示属性，必须在 Stream.init 之前调用。
+     * 
+     * @note 该方法仅可对本地流调用。
+     * 
+     * @param profile 屏幕属性。
     */
     setScreenProfile(profile: ScreenProfileOptions): void;
+
+    /**
+     * 设置分辨率。
+     * 
+     * @param MediaType 媒体流类型。
+    */
     adjustResolution(MediaType: MediaType): void;
+
     /**
      * 截取指定用户的视频流画面。
      * 
@@ -248,50 +348,64 @@ declare interface Stream {
        */
       name: string;
       /**
-       * 截图的视频流类型。支持设置为主流或辅流。
+       * 截图的视频流类型。
        */
       mediaType?: MediaType;
     }): Promise<"INVALID_OPERATION" | undefined>;
+
     /**
-     * 开启单人视频录制
-     * @param mediaRecordingOptions 参数对象
+     * 开启单人视频录制。
+     * 
+     * @param mediaRecordingOptions 参数对象。
      */
     startMediaRecording(mediaRecordingOptions: {
       /**
-       * 如果是自己流录制，'audio','video'或'screen'
+       * 流类型，即 'audio'、'video' 或 'screen'。
        */
       type: string;
       /**
-       * 如果之前的录制视频未下载，是否重置，默认false
+       * 如果之前的录制视频未下载，是否重置，默认 false。
        */
       reset: boolean;
     }): Promise<string | undefined>;
+
     /**
-     * 结束视频录制
-     * @param options 参数对象
+     * 结束视频录制。
+     * @param options 参数对象。
      */
     stopMediaRecording(options: {
+
       /**
-       * 录制id，可以通过listMediaRecording接口获取
+       * 录制 ID。可以通过 listMediaRecording 接口获取。
        */
         recordId?: string;
     }): Promise<unknown>;
+
     /**
-     * 播放视频录制
-     * @param options 参数对象
+     * 播放视频录制。
+     * @param options 参数对象。
      */
     playMediaRecording(options: {
       /**
-       * 录制id，可以通过listMediaRecording接口获取
+       * 录制 ID。可以通过 listMediaRecording 接口获取。
        */
         recordId: string;
       /**
-       * 音频或者视频画面待渲染的DOM节点，如div、span等非流媒体节点
+       * 音频或者视频画面待渲染的 DOM 节点，如 div、span 等非流媒体节点。
        */
       view: HTMLElement;
     }): Promise<void>;
     /**
-     * 枚举录制的音视频
+     * 枚举录制的音视频。
+     * 
+     * @returns 录制的音视频信息。
+     * - `id` ：ID。
+     * - `type` ：录制类型。
+     * - `name` ：录制文件名称。
+     * - `status` ：录制状态。
+     * - `isRecording` ：是否正在录制。
+     * - `startTime` ：录制开始时间。
+     * - `endTime` ：录制结束时间。
      */
     listMediaRecording(): {
         id: number;
@@ -302,31 +416,35 @@ declare interface Stream {
         startTime: number | null;
         endTime: number | null;
     }[];
+
     /**
-     * 清除录制的音视频
-     * @param options 参数对象
+     * 清除录制的音视频。
+     * @param options 参数对象。
      */
     cleanMediaRecording(options: {
       /**
-       * 录制id，可以通过listMediaRecording接口获取
+       * 录制 ID。可以通过 listMediaRecording 接口获取。
        */
         recordId: string;
     }): Promise<void>;
+
     /**
-     * 下载录制的音视频
-     * @param options 参数对象
+     * 下载录制的音视频。
+     * @param options 参数对象。
      */
     downloadMediaRecording(options: {
       /**
-       * 录制id，可以通过listMediaRecording接口获取
+       * 录制 ID。可以通过 listMediaRecording 接口获取。
        */
         recordId: string;
     }): Promise<RecordStatus>;
     /**
      * 开始播放音乐文件。
      * 
-     * - 该方法指定在线音频文件和麦克风采集的音频流进行混音或替换，即用音频文件替换麦克风采集的音频流。
+     * 该方法指定在线音频文件和麦克风采集的音频流进行混音或替换，即用音频文件替换麦克风采集的音频流。
+     * 
      * @note 请在加入房间并启动麦克风之后使用该方法。
+     * 
      * @param options 混音设置。
      */
     startAudioMixing(options: {
@@ -457,7 +575,7 @@ declare interface Stream {
     /**
      * 停止播放指定音效文件。
      * @since V4.3.0
-     * @note 请在频道内调用该方法。
+     * @note 请在房间内调用该方法。
      * @return 可能返回的错误码：
          - "BROWSER_NOT_SUPPORT": 浏览器不支持
          - "No MediaHelper": localStream没有init()初始化,无法使用音效功能 
@@ -470,7 +588,7 @@ declare interface Stream {
      * 暂停播放指定音效文件。
      * @since V4.3.0
      * 
-     * @note 请在频道内调用该方法。
+     * @note 请在房间内调用该方法。
      * 
      * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
      * @return {Promise}
@@ -486,7 +604,7 @@ declare interface Stream {
     /**
      * 恢复播放指定音效文件。
      * 
-     * @note 请在频道内调用该方法。
+     * @note 请在房间内调用该方法。
      * @since V4.3.0
      * @return 可能返回的错误码：
          - "BROWSER_NOT_SUPPORT": 浏览器不支持
@@ -498,7 +616,7 @@ declare interface Stream {
     resumeEffect (soundId: number) : Promise<unknown>
     /**
      * 调节指定音效文件的音量。
-     * @note 请在频道内调用该方法。
+     * @note 请在房间内调用该方法。
      * @since V4.3.0
      * 
      * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
@@ -515,7 +633,7 @@ declare interface Stream {
      * 预加载指定音效文件。
      * 
      * 该方法缓存音效文件，以供快速播放。为保证通信畅通，请注意控制预加载音效文件的大小。
-     * @note 请在频道内调用该方法。
+     * @note 请在房间内调用该方法。
      * @since V4.3.0
      * 
      * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
@@ -531,7 +649,7 @@ declare interface Stream {
      * 释放指定音效文件。
      * 
      * 该方法从内存释放某个预加载的音效文件，以节省内存占用。
-     * @note 请在频道内调用该方法。
+     * @note 请在房间内调用该方法。
      * @since V4.3.0
      * 
      * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
@@ -545,7 +663,7 @@ declare interface Stream {
     unloadEffect (soundId: number): Promise<unknown>
     /**
      * 获取所有音效文件播放音量。
-     * @note 请在频道内调用该方法。
+     * @note 请在房间内调用该方法。
      * @since V4.3.0
      * @return 可能返回的错误码：
          - "No MediaHelper": localStream没有init()初始化,无法使用音效功能 
@@ -558,7 +676,7 @@ declare interface Stream {
     /**
      * 设置所有音效文件播放音量。
      * 
-     * @note 请在频道内调用该方法。
+     * @note 请在房间内调用该方法。
      * @since V4.3.0
      * @param {Number} volume 音效音量。整数，范围为 [0,100]。默认 100 为原始文件音量。
      * @return {void} 可能返回的错误码：
@@ -570,7 +688,7 @@ declare interface Stream {
     /**
      * 停止播放所有音效文件。
      * 
-     * @note 请在频道内调用该方法。
+     * @note 请在房间内调用该方法。
      * @since V4.3.0
      * @return {Promise} 可能返回的错误码：
          - "BROWSER_NOT_SUPPORT": 浏览器不支持
@@ -580,7 +698,7 @@ declare interface Stream {
          stopAllEffects(): Promise<unknown>
     /**
      * 暂停播放所有音效文件。
-     * @note 请在频道内调用该方法。
+     * @note 请在房间内调用该方法。
      * @since V4.3.0
      * @return 可能返回的错误码：
          - "BROWSER_NOT_SUPPORT": 浏览器不支持
@@ -594,7 +712,7 @@ declare interface Stream {
     /**
      * 恢复播放所有音效文件。
      * @note
-     * - 请在频道内调用该方法。
+     * - 请在房间内调用该方法。
      * - 可能返回的错误码同 resumeEffect 一致
      * 
      * @since V4.3.0
@@ -610,7 +728,7 @@ declare interface Stream {
      */
     setCanvasWatermarkConfigs(options: NERtcCanvasWatermarkConfig): void;
     /**
-     *  销毁实例
+     *  销毁音视频流对象。
      */
     destroy(): void;
     
@@ -622,21 +740,21 @@ declare interface Stream {
     ) => void): void;
   
     /**
-     * 获取麦克风或摄像头权限时，无法找到指定设备
+     * 获取麦克风或摄像头权限时，无法找到指定设备。
      */
     on(event: "notFound", callback: (
       mediaType: "audio"|"video"
     ) => void): void;
 
     /**
-     * 获取麦克风或摄像头权限时，遭遇未知错误错误
+     * 获取麦克风或摄像头权限时，遭遇未知错误错误。
      */
     on(event: "deviceError", callback: (
       mediaType: "audio"|"video"
     ) => void): void;
 
     /**
-     * 获取麦克风或摄像头权限时，设备被占用
+     * 获取麦克风或摄像头权限时，设备被占用。
      */
     on(event: "beOccupied", callback: (
       mediaType: "audio"|"video"

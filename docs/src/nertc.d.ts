@@ -8,7 +8,7 @@ import { ClientOptions, StreamOptions } from "./types";
 import {DeviceInfo} from "./browser";
 
 /**
- * NERTC 是 云信 Web SDK 中所有可调用方法的入口
+ * NERTC 是 云信 Web SDK 中所有可调用方法的入口。
  */
 export as namespace NERTC
 declare namespace NERTC {
@@ -38,14 +38,19 @@ declare namespace NERTC {
 
   }
   /**
-   * 创建客户端，开始通话前调用一次即可
-   * @param options 配置参数
+   * 创建客户端。
+   * 
+   * 该方法用于创建客户端，每次通话前调用一次即可。
+   * 
+   * @param options 配置参数。
    */
   function createClient(options: ClientOptions): Client;
   /**
    * 该方法创建并返回音视频流对象。
-   * 注意：自 V4.1.0 版本起，摄像头与屏幕共享的视频流可以同时发送，其中，屏幕共享流会以辅流形式发送。
-   * @param options 配置参数 
+   * 
+   * @note 自 V4.1.0 版本起，摄像头与屏幕共享的视频流可以同时发送，其中屏幕共享流会以辅流形式发送。
+   * 
+   * @param options 配置参数。
    */
   function createStream(options: StreamOptions): Stream | {
     name: string;
@@ -54,7 +59,11 @@ declare namespace NERTC {
   };
   /**
    * 该方法枚举可用的媒体输入/输出设备，比如麦克风、摄像头、耳机等。
-   *
+   * 
+   * @return
+   * - video：视频
+   * 
+   * @example
    * ```JavaScript
    * // 接口使用示例
    * NERTC.getDevices().then(data => {
@@ -70,8 +79,17 @@ declare namespace NERTC {
    * ```
    */
   function getDevices(): Promise<{
+    /**
+     * 视频设备。
+     */
     video: DeviceInfo[];
+    /**
+     * 音频输入设备。
+     */
     audioIn: DeviceInfo[];
+    /**
+     * 音频输入设备。
+     */
     audioOut: DeviceInfo[];
   }>;
   /**
@@ -100,7 +118,6 @@ declare namespace NERTC {
    * 检查 NERTC Web SDK 对正在使用的浏览器的适配情况。
    * 
    * @note
-   * 
    * - 请在创建音视频对象（createClient）之前调用该方法。
    * - SDK 和浏览器的适配情况与浏览器类型和版本有关，不同的浏览器版本可能会返回不一样的适配结果。
    * 
@@ -145,8 +162,9 @@ declare namespace NERTC {
   const BUILD: string;
 
   /**
-   * 销毁Client对象
-   * @param client 要销毁的client实例，不传递则销毁最初使用用createClient创建的client实例（一般多实例场景使用）。
+   * 销毁 Client 对象。
+   * 
+   * @param client 指定要销毁的 Client 实例，不传递则销毁最初使用用 createClient 创建的 Client 实例（一般多实例场景使用）。
    */
   function destroy(client?: Client): void;
 
@@ -155,7 +173,7 @@ declare namespace NERTC {
    */
   const VIDEO_FRAME_RATE: {
     /**
-     *    视频通话帧率默认值 最大取每秒15帧
+     * 视频通话帧率默认值 最大取每秒15帧
      */
     CHAT_VIDEO_FRAME_RATE_NORMAL: number;
     /**
@@ -179,17 +197,42 @@ declare namespace NERTC {
      */
     CHAT_VIDEO_FRAME_RATE_25: number;
   };
-
+    /**
+     * 分辨率设置。
+     */
   const VIDEO_QUALITY: {
+    /**
+     * 180P
+     */
     VIDEO_QUALITY_180p: number;
+    /**
+     * 480P
+     */
     VIDEO_QUALITY_480p: number;
+    /**
+     * 720P
+     */
     VIDEO_QUALITY_720p: number;
+    /**
+     * 1080P
+     */
     VIDEO_QUALITY_1080p: number;
   };
-
+    /**
+     * 互动直播的音频采样率。
+     */
   const LIVE_STREAM_AUDIO_SAMPLE_RATE: {
+    /**
+     * 32000 Hz
+     */
     SAMPLE_RATE_32000: number;
+    /**
+     * 44100 Hz
+     */
     SAMPLE_RATE_44100: number;
+    /**
+     * 48000 Hz
+     */
     SAMPLE_RATE_48000: number;
   };
   

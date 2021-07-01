@@ -42,14 +42,14 @@ table th:nth-of-type(2) {
 [[Client.destroy]] | 销毁客户端对象实例。
 
 
-### <span id="频道管理">频道管理</span>
+### <span id="房间管理">房间管理</span>
 
 
 方法 | 功能描述
 ---|---|
-[[Client.join]] | 加入音视频频道。
-[[Client.leave]] | 离开音视频频道。
-[[Client.setChannelProfile]] | 设置频道场景。
+[[Client.join]] | 加入音视频房间。
+[[Client.leave]] | 离开音视频房间。
+[[Client.setChannelProfile]] | 设置房间场景。
 [[Client.setClientRole]]|设置用户角色。
 [[Client.publish]] | 发布音视频流。
 [[Client.unpublish]] | 取消发布音视频流。
