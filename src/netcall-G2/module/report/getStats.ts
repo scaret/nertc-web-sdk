@@ -16,8 +16,8 @@ class GetStats extends EventEmitter{
   constructor(options: {adapterRef:AdapterRef, interval: number}) {
     super()
     this.adapterRef = options.adapterRef;
-    this.interval = options.interval || 1000
-    this.timer = null
+    this.interval = options.interval || 1000;
+    this.timer = null;
     //workaround for TS2564
     this.times = 0;
     this.browser = 'chrome';
@@ -82,15 +82,14 @@ class GetStats extends EventEmitter{
       local: localPc ? await this.getLocalStats(localPc) : null,
       remote: remotePc ? await this.getRemoteStats(remotePc): null,
     };
-    this.times = (this.times || 0) + 1
-    this.emit('stats', result, this.times)
-    this.reviseData(result, this.browser)
-    
-
-    return result
+    this.times = (this.times || 0) + 1;
+    this.emit('stats', result, this.times);
+    let reportData = this.reviseData(result, this.browser);
+    return reportData;
   }
 
   reviseData (params: any, browser: string) {
+
     let localDatasObj_ = new Map();
     let remoteDatasObj_ = new Map();
     if(browser === 'chrome') {
@@ -117,11 +116,11 @@ class GetStats extends EventEmitter{
       ]);
       let local = params.local;
       let remote = params.remote;
-  
       for(let item in local){
         if(localDatasMap_.has(local[item].type)) {
           if(item.indexOf('ssrc') > -1){
             let key = `${local[item].mediaType}_ssrc`
+              
             if(localDatasObj_.has(key)){
               localDatasObj_.get(key).push(local[item])
             } else{
@@ -149,15 +148,21 @@ class GetStats extends EventEmitter{
       for(let item in remote){
         if(remoteDatasMap_.has(remote[item].type)) {
           if(remote[item].type === 'ssrc') {
-              let key = `${remote[item].mediaType}_${remote[item].type}`
-              // 判断是否已经有key了
-              if(remoteDatasObj_.has(key)){
-                remoteDatasObj_.get(key).push(remote[item])
-              } else{
-                remoteDatasObj_.set(key,[]);
-                remoteDatasObj_.get(key).push(remote[item])
-              }
-          } else {
+            let key;
+            if( item.indexOf('audio') > 0 || item.indexOf('video') > 0) {
+              key = `${remote[item].mediaType}_${remote[item].type}`
+            }else if(item.indexOf('screen') > 0) {
+              key = `screen_${remote[item].type}`
+            }
+            // 判断是否已经有key了
+            if(remoteDatasObj_.has(key)){
+              remoteDatasObj_.get(key).push(remote[item])
+            } else{
+              remoteDatasObj_.set(key,[]);
+              remoteDatasObj_.get(key).push(remote[item])
+            }
+          }
+           else {
             let key = remote[item].type;
             if(remoteDatasObj_.has(key)){
               remoteDatasObj_.get(key).push(remote[item])
@@ -258,7 +263,6 @@ class GetStats extends EventEmitter{
     params.uid = this.adapterRef?.channelInfo.uid;
     params.browser = platform.name + '-' + platform.version;
     params.platform = platform.os.family;
-
     return params;
   }
 
@@ -346,7 +350,6 @@ class GetStats extends EventEmitter{
   }
 
   //转换非标准getStats格式
-  //TODO: 去除key中动态标识
   async formatChromeNonStandardStats (pc:RTCPeerConnection, stats:{[key:string]:any}, direction:string) {
     const tmp:any = {};
     Object.values(stats).forEach(item => {
