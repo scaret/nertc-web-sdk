@@ -2,6 +2,7 @@ import { EventEmitter } from 'eventemitter3'
 import { Stream } from '../api/stream'
 import { RtcSystem } from '../util/rtcUtil/rtcSystem'
 import BigNumber from 'bignumber.js'
+import {ENGINE_VERSION} from '../Config/index'
 import {
   AdapterRef, MediaTypeShort, NetStatusItem,
   NetworkQualityItem,
@@ -15,8 +16,8 @@ import {emptyStreamWith} from "../util/gum";
 import {SignalJoinRes} from "../interfaces/SignalProtocols";
 import {EncryptionModes, encryptionModeToInt} from "./encryption";
 import {RTSTransport} from "./rtsTransport";
+import { parseBase64 } from "../util/crypto-ts/base64";
 const protooClient = require('./3rd/protoo-client/')
-const CryptoJS = require("crypto-js");
 
 class Signalling extends EventEmitter {
   private adapterRef: AdapterRef;
@@ -604,7 +605,7 @@ class Signalling extends EventEmitter {
         role: 'part', 
         version: '2.0', 
         sessionMode: 'meeting', 
-        engineVersion: '3.9.0.1', 
+        engineVersion: ENGINE_VERSION,
         userRole: this.adapterRef.instance._roleInfo.userRole, // 0:主播，1:观众
         userType: 3,
         platformType: 16, 
@@ -967,10 +968,10 @@ class Signalling extends EventEmitter {
 
   }
 
-  _handleNetStatusNotify(data: {netStatusList: NetStatusItem[]}) {
+  _handleNetStatusNotify(data: {netStatusList: string}) {
     const netStatusList = data.netStatusList;
     //this.adapterRef.logger.warn('_handleNetStatusNotify: _userNetStatusUpdateEvent 网络状态: %s', netStatusList)
-    const base64 = CryptoJS.enc.Base64.parse(netStatusList)
+    const base64 = parseBase64(netStatusList)
     let str = base64.toString()
     //let str = '02001a080000000000000003001b08000000000000000200'
     let networkQuality:NetworkQualityItem[] = []

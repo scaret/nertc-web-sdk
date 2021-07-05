@@ -1,5 +1,5 @@
 import { EventEmitter } from 'eventemitter3'
-import { format } from 'date-fns'
+import dateformat from 'dateformat'
 import {
   Logger,
   NERtcCanvasWatermarkConfig, NERtcImageWatermarkConfig,
@@ -419,7 +419,7 @@ class WatermarkControl extends EventEmitter{
     }
     if (options.timestampWatermarks){
       [options.timestampWatermarks].forEach((item: NERtcTimestampWatermarkConfig)=>{
-        let content:string = "yyyy-MM-dd HH:mm:ss";
+        let content:string = "yyyy-mm-dd HH:MM:ss";
         counts.timestamp++;
         const style:any = Object.assign({}, this.settings.defaultStyle);
         // 文字颜色
@@ -614,7 +614,7 @@ class WatermarkManager{
         .filter((item)=>{return item.type === 'timestamp'})
         .forEach((item)=>{
           if (item.elem){
-            item.elem.innerText = format(new Date(), item.content || "yyyy-MM-dd HH:mm:ss");
+            item.elem.innerText = dateformat(new Date(), item.content || "yyyy-mm-dd HH:MM:ss");
           }
         });
     })

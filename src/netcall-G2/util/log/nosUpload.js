@@ -1,4 +1,4 @@
-import CryptoJS from './crypto';
+import md5 from "md5"
 function Uploader(options){
 	'use strict';
 	var defaults = {
@@ -124,7 +124,7 @@ function Uploader(options){
 		 */
 		addFile: function(file, callback) {
 			if(file){
-				var fileKey = CryptoJS.MD5(file.name + ':' + file.size).toString(),
+				var fileKey = md5(file.name + ':' + file.size),
 	                fileObj;
 
 	            fileObj = {

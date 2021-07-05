@@ -13,7 +13,6 @@ import {
   DataReport,
 } from "./dataReport";
 import {platform} from "../../util/platform";
-const SDK_VERSION = require('../../../../package.json').webrtcG2Version
 let url = 'https://statistic.live.126.net/statistic/realtime/sdkinfo'
 type UIDTYPE = number | string;
 /**
