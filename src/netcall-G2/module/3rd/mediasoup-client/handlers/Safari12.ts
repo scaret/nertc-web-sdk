@@ -640,7 +640,7 @@ export class Safari12 extends HandlerInterface
 
 
   //处理非200的consume response，将isUseless设置为true，因为该M行会被伪造
-  async recoverTransceiver(remoteUid:number, mid:string, kind: "video"|"audio") {
+  async recoverTransceiver(remoteUid:number|string, mid:string, kind: "video"|"audio") {
     logger.debug('recoverTransceiver() [kind:%s, remoteUid:%s, mid: %s]', kind, remoteUid, mid);
     const transceiver = this._mapMidTransceiver.get(mid);
     if (transceiver) {
@@ -653,7 +653,7 @@ export class Safari12 extends HandlerInterface
     }*/
     return;
   }
-  async prepareLocalSdp(kind:"video"|"audio", remoteUid:number) {
+  async prepareLocalSdp(kind:"video"|"audio", remoteUid:number|string) {
     logger.debug('prepareLocalSdp() [kind:%s, remoteUid:%s]', kind, remoteUid);
     let mid = -1
     for (const key of this._mapMidTransceiver.keys()) {

@@ -945,7 +945,7 @@ class Mediasoup extends EventEmitter {
     const data = {
       requestId: `${Math.ceil(Math.random() * 1e9)}`,
       transportId: this.adapterRef._rtsTransport.transportId,
-      uid: +uid,
+      uid: uid,
       producerId: id,
       preferredSpatialLayer,
       pause: false,

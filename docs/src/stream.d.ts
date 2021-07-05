@@ -342,7 +342,7 @@ declare interface Stream {
       /**
        * 用户 ID。
        */
-      uid: number;
+      uid: number|string;
       /**
        * 截图文件名称，默认格式为 uid-1。
        */
