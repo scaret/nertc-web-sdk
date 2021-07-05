@@ -261,6 +261,10 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               sendPacketLoss: {
                 type: "int64",
                 id: 24
+              },
+              bytesSentPerSecond: {
+                type: "int64",
+                id: 25
               }
             }
           },
@@ -413,6 +417,22 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               sendPacketLoss: {
                 type: "int64",
                 id: 37
+              },
+              freezeTime: {
+                type: "int64",
+                id: 38
+              },
+              totalFreezeTime: {
+                type: "int64",
+                id: 39
+              },
+              bytesSentPerSecond: {
+                type: "int64",
+                id: 40
+              },
+              framesEncodedPerSecond: {
+                type: "int64",
+                id: 41
               }
             }
           },
@@ -1315,7 +1335,12 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
             rule: "repeated",
             type: "video_track_obj",
             id: 12
-          }
+          },
+          screen_ssrc: {
+            rule: "repeated",
+            type: "screen_ssrc_obj",
+            id: 13
+          },
         },
         nested: {
           video_ssrc_obj: {
@@ -1467,6 +1492,22 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               recvPacketLoss: {
                 type: "int64",
                 id: 37
+              },
+              freezeTime: {
+                type: "int64",
+                id: 38
+              },
+              totalFreezeTime: {
+                type: "int64",
+                id: 39
+              },
+              bytesReceivedPerSecond: {
+                type: "int64",
+                id: 40
+              },
+              framesDecodedPerSecond: {
+                type: "int64",
+                id: 41
               }
             }
           },
@@ -1615,6 +1656,18 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               recvPacketLoss: {
                 type: "int64",
                 id: 36
+              },
+              freezeTime: {
+                type: "int64",
+                id: 37
+              },
+              totalFreezeTime: {
+                type: "int64",
+                id: 38
+              },
+              bytesReceivedPerSecond: {
+                type: "int64",
+                id: 39
               }
             }
           },
@@ -2195,7 +2248,11 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               packetsReceivedPerSecond: {
                 type: "int64",
                 id: 31
-              }
+              },
+              uid: {
+                type: "string",
+                id: 32
+              },
             }
           },
           video_inbound_rtp_obj: {
@@ -2315,7 +2372,11 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               packetsReceivedPerSecond: {
                 type: "int64",
                 id: 29
-              }
+              },
+              uid: {
+                type: "string",
+                id: 30
+              },
             }
           },
           audio_track_obj: {
@@ -2445,7 +2506,175 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
                 id: 20
               }
             }
-          }
+          },
+          screen_ssrc_obj: {
+            fields: {
+              googContentType: {
+                type: "string",
+                id: 1
+              },
+              googCaptureStartNtpTimeMs: {
+                type: "string",
+                id: 2
+              },
+              googTargetDelayMs: {
+                type: "string",
+                id: 3
+              },
+              packetsLost: {
+                type: "string",
+                id: 4
+              },
+              googDecodeMs: {
+                type: "string",
+                id: 5
+              },
+              googFrameHeightReceived: {
+                type: "string",
+                id: 6
+              },
+              googFrameRateOutput: {
+                type: "string",
+                id: 7
+              },
+              packetsReceived: {
+                type: "string",
+                id: 8
+              },
+              ssrc: {
+                type: "string",
+                id: 9
+              },
+              googRenderDelayMs: {
+                type: "string",
+                id: 10
+              },
+              googMaxDecodeMs: {
+                type: "string",
+                id: 11
+              },
+              googTrackId: {
+                type: "string",
+                id: 12
+              },
+              googFrameWidthReceived: {
+                type: "string",
+                id: 13
+              },
+              codecImplementationName: {
+                type: "string",
+                id: 14
+              },
+              transportId: {
+                type: "string",
+                id: 15
+              },
+              mediaType: {
+                type: "string",
+                id: 16
+              },
+              googInterframeDelayMax: {
+                type: "string",
+                id: 17
+              },
+              googCodecName: {
+                type: "string",
+                id: 18
+              },
+              googFrameRateReceived: {
+                type: "string",
+                id: 19
+              },
+              framesDecoded: {
+                type: "string",
+                id: 20
+              },
+              googNacksSent: {
+                type: "string",
+                id: 21
+              },
+              googFirsSent: {
+                type: "string",
+                id: 22
+              },
+              bytesReceived: {
+                type: "string",
+                id: 23
+              },
+              googFirstFrameReceivedToDecodedMs: {
+                type: "string",
+                id: 24
+              },
+              googCurrentDelayMs: {
+                type: "string",
+                id: 25
+              },
+              googMinPlayoutDelayMs: {
+                type: "string",
+                id: 26
+              },
+              googFrameRateDecoded: {
+                type: "string",
+                id: 27
+              },
+              googJitterBufferMs: {
+                type: "string",
+                id: 28
+              },
+              googPlisSent: {
+                type: "string",
+                id: 29
+              },
+              id: {
+                type: "string",
+                id: 30
+              },
+              type: {
+                type: "string",
+                id: 31
+              },
+              timestamp: {
+                type: "string",
+                id: 32
+              },
+              localuid: {
+                type: "int64",
+                id: 33
+              },
+              remoteuid: {
+                type: "string",
+                id: 34
+              },
+              bitsReceivedPerSecond: {
+                type: "int64",
+                id: 35
+              },
+              packetsReceivedPerSecond: {
+                type: "int64",
+                id: 36
+              },
+              recvPacketLoss: {
+                type: "int64",
+                id: 37
+              },
+              freezeTime: {
+                type: "int64",
+                id: 38
+              },
+              totalFreezeTime: {
+                type: "int64",
+                id: 39
+              },
+              bytesReceivedPerSecond: {
+                type: "int64",
+                id: 40
+              },
+              framesDecodedPerSecond: {
+                type: "int64",
+                id: 41
+              }
+            }
+          },
         }
       }
     }
