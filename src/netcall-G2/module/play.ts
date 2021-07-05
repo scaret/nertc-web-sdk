@@ -10,7 +10,7 @@ import {
 class Play extends EventEmitter {
   private adapterRef:AdapterRef;
   private sdkRef:SDKRef | null;
-  private uid:number;
+  private uid:number|string;
   private volume:number | null;
   private index:number;
   private audioSinkId:string;
@@ -534,7 +534,7 @@ class Play extends EventEmitter {
   * 视频截图功能
   */
   async takeSnapshot (options:SnapshotOptions,recordId?: string) {
-    let { uid} = options
+    let {uid} = options
     let snapshotVideo = (!options.mediaType && this.videoDom) || options.mediaType === 'video';
     let snapshotScreen = (!options.mediaType && this.screenDom) || options.mediaType === 'screen';
 

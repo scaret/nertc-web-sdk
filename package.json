@@ -53,6 +53,7 @@
     "axios": "^0.18.0",
     "babel-polyfill": "^6.26.0",
     "backo2": "^1.0.2",
+    "bignumber": "^1.1.0",
     "bignumber.js": "^9.0.1",
     "crypto-js": "^4.0.0",
     "date-fns": "^2.19.0",

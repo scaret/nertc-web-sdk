@@ -201,27 +201,39 @@ class Signalling extends EventEmitter {
       case 'OnPeerJoin': {
         const { requestId, externData } = notification.data;
         this.adapterRef.logger.log('收到OnPeerJoin成员加入消息 uid = %o', externData.uid);
-        if(typeof externData.uid !== 'number' || isNaN(externData.uid)){
-          throw new Error('对端uid 非 number类型')
+        /*if (typeof externData.uid === 'string') {
+          this.adapterRef.logger.log('对端uid是string类型')
+          this.adapterRef.channelInfo.uidType = 'string'
+        } else if (typeof externData.uid === 'number') {
+          this.adapterRef.logger.log('对端uid是number类型')
+          this.adapterRef.channelInfo.uidType = 'string'
+          if(externData.uid > Number.MAX_SAFE_INTEGER){
+            this.adapterRef.logger.log('对端uid超出number精度')
+            externData.uid = new BigNumber(externData.uid)
+            externData.uid = externData.uid.toString()
+          }
+        }*/
+        let uid = externData.uid
+        if (this.adapterRef.channelInfo.uidType === 'string') {
+          uid = new BigNumber(uid)
+          uid = uid.toString()
         }
-        if(externData.uid > Number.MAX_SAFE_INTEGER){
-          throw new Error('对端uid 超出 number精度')
-        }
-        let remoteStream = this.adapterRef.remoteStreamMap[externData.uid]
+
+        let remoteStream = this.adapterRef.remoteStreamMap[uid]
         if (!remoteStream) {
           remoteStream = new Stream({
             isRemote: true,
-            uid: externData.uid,
+            uid,
             audio: false,
             video: false,
             screen: false,
             client: this.adapterRef.instance,
           })
-          this.adapterRef.remoteStreamMap[externData.uid] = remoteStream
-          this.adapterRef.memberMap[externData.uid] = externData.uid;
+          this.adapterRef.remoteStreamMap[uid] = remoteStream
+          this.adapterRef.memberMap[uid] = uid;
         }
-        this.adapterRef.instance._roleInfo.audienceList[externData.uid] = false;
-        this.adapterRef.instance.emit('peer-online', {uid: +externData.uid})
+        this.adapterRef.instance._roleInfo.audienceList[uid] = false;
+        this.adapterRef.instance.emit('peer-online', {uid})
         break
       }
       case 'OnPeerLeave': {
@@ -229,7 +241,11 @@ class Signalling extends EventEmitter {
         this.adapterRef.logger.log('OnPeerLeave externData = %o', externData);
         if (externData.userList) {
           externData.userList.forEach((item:any) =>{
-            const uid = +item.uid
+            let uid = item.uid
+            if (this.adapterRef.channelInfo.uidType === 'string') {
+              uid = new BigNumber(uid)
+              uid = uid.toString()
+            }
             this.adapterRef._mediasoup?.removeUselessConsumeRequest({uid})
             this.adapterRef.instance.clearMember(uid)
             this.adapterRef.instance.removeSsrc(uid)
@@ -248,6 +264,10 @@ class Signalling extends EventEmitter {
           mute,
           simulcastEnable
         } = externData.producerInfo;
+        if (this.adapterRef.channelInfo.uidType === 'string') {
+          uid = new BigNumber(uid)
+          uid = uid.toString()
+        }
         let mediaTypeShort: MediaTypeShort;
         switch (mediaType){
           case "video":
@@ -266,7 +286,7 @@ class Signalling extends EventEmitter {
         if (!remoteStream) {
           remoteStream = new Stream({
             isRemote: true,
-            uid: uid,
+            uid,
             audio: mediaTypeShort === 'audio',
             video: mediaTypeShort === 'video',
             screen: mediaTypeShort === 'screen',
@@ -297,7 +317,7 @@ class Signalling extends EventEmitter {
           this.adapterRef.instance.emit('stream-added', {stream: remoteStream, 'mediaType': mediaTypeShort})
         }
         if (mute) {
-          this.adapterRef.instance.emit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
+          this.adapterRef.instance.emit(`mute-${mediaTypeShort}`, {uid})
         }
         break
       }
@@ -309,6 +329,10 @@ class Signalling extends EventEmitter {
           mediaType,
           cid
         } = externData;
+        if (this.adapterRef.channelInfo.uidType === 'string') {
+          uid = new BigNumber(uid)
+          uid = uid.toString()
+        }
         this.adapterRef.logger.log('收到OnProducerClose消息 code = %d, errMsg = %s, uid = %s, mediaType = %s, producerId: %s', code, errMsg, uid, mediaType, producerId);
         let mediaTypeShort:MediaTypeShort;
         switch (mediaType){
@@ -499,9 +523,6 @@ class Signalling extends EventEmitter {
         } else if (type === 'UserRole') {
           this.adapterRef.logger.log('UserRole变更: ', JSON.stringify(data, null, ''))
           this._handleUserRoleNotify(notification.data.externData)
-        } else if (type === 'RtmpTaskStatus') {
-          this.adapterRef.logger.log('RtmpTaskStatus变更: ', JSON.stringify(data, null, ''))
-          this.adapterRef.instance.emit('rtmp-state', data)
         } else if (type === 'RtmpTaskStatus') {
           this.adapterRef.logger.log('RtmpTaskStatus变更: ', JSON.stringify(data, null, ''))
           this.adapterRef.instance.emit('rtmp-state', data)
@@ -697,12 +718,11 @@ class Signalling extends EventEmitter {
       this.adapterRef.logger.log('加入房间成功, 查看房间其他人的发布信息: ', response.externData.userList)
       if (response.externData !== undefined && response.externData.userList && response.externData.userList.length) {
         for (const peer of response.externData.userList) {
-          const uid = peer.uid
-          if(typeof peer.uid !== 'number' || isNaN(peer.uid)){
-            throw new Error('对端uid 非 number类型')
-          }
-          if(peer.uid > Number.MAX_SAFE_INTEGER){
-            throw new Error('对端uid 超出 number精度')
+          let uid = peer.uid
+          if (this.adapterRef.channelInfo.uidType === 'string') {
+            //@ts-ignore
+            uid = new BigNumber(uid)
+            uid = uid.toString()
           }
           let remoteStream = this.adapterRef.remoteStreamMap[uid]
           if (!remoteStream) {
@@ -973,8 +993,8 @@ class Signalling extends EventEmitter {
       }
       //item.uid = parseInt(uidString, 16)
       const item = {
-        //uid: hex2int2String(uidString),
-        uid: parseInt(uidString, 16),
+        uid: this.adapterRef.channelInfo.uidType === 'string' ? hex2int2String(uidString) : parseInt(uidString, 16),
+        //uid: parseInt(uidString, 16),
         downlinkNetworkQuality: parseInt(serverToClientNetStatusString, 16),
         uplinkNetworkQuality: parseInt(clientToServerNetStatusString, 16),
       };
@@ -1014,17 +1034,19 @@ class Signalling extends EventEmitter {
     function multiply(x: BigNumber, y:BigNumber|number) {
       if(x.toNumber() ==0) return x
       //x = new BigNumber(x)
-      const z = x.multipliedBy(y)          
-      // BigNumber('7e+500').times(y)    // '1.26e+501'
-      // x.multipliedBy('-a', 16)  
+      const z = x.multipliedBy(y)
+      //@ts-ignore          
+      BigNumber('7e+500').times(y)    // '1.26e+501'
+      x.multipliedBy('-a', 16)  
       return z
     }
 
     function plus(x:BigNumber, y:BigNumber|number){
         //x = new BigNumber(x)
-        y = x.plus(y)                
-        // BigNumber(0.7).plus(x).plus(y)  
-        // x.plus('0.1', 8)
+        y = x.plus(y)
+        //@ts-ignore                  
+        BigNumber(0.7).plus(x).plus(y)  
+        x.plus('0.1', 8)
         return y 
     }
     let isExit = true
@@ -1077,7 +1099,12 @@ class Signalling extends EventEmitter {
   }
 
   _handleUserRoleNotify (externData:any) {
-    const uid = externData.uid;
+
+    let uid = externData.uid
+    if (this.adapterRef.channelInfo.uidType === 'string') {
+      uid = new BigNumber(uid)
+      uid = uid.toString()
+    }
     const userRole = externData.data && externData.data.userRole;
     this.adapterRef.logger.warn(`用户${uid}角色变为${userRole ? "观众" : "主播"}`);
     if (uid && userRole === 1) {
@@ -1101,6 +1128,11 @@ class Signalling extends EventEmitter {
   }
   
   _handleKickedNotify (reason:number, uid = this.adapterRef.channelInfo.uid) {
+    if (this.adapterRef.channelInfo.uidType === 'string') {
+      uid = new BigNumber(uid)
+      uid = uid.toString()
+    }
+
     if (reason == 1) {
       this.adapterRef.logger.warn('房间被关闭')
       this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason = 30207
@@ -1109,7 +1141,7 @@ class Signalling extends EventEmitter {
       })
     } else if (reason == 2) {
       this.adapterRef.logger.warn(`${uid}被提出房间`)
-      if (uid == this.adapterRef.channelInfo.uid) {
+      if (uid.toString() == this.adapterRef.channelInfo.uid.toString()) {
         this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason = 30206
         this.adapterRef.instance.leave()
       }

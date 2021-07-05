@@ -11,7 +11,7 @@ export interface ReportParamSetClientRole extends ReportParamBase{
 }
 
 export interface ReportParamSubscribeRemoteSubStreamVideo extends ReportParamBase{
-  uid: number|null,
+  uid: number|string|null,
   subscribe: boolean
 }
 

@@ -11,6 +11,7 @@ import {Consumer, Device, Producer, Transport} from "./3rd/mediasoup-client/type
 import {Peer} from "./3rd/protoo-client";
 import {Stream} from "../api/stream";
 import {waitForEvent} from "../util/waitForEvent";
+import BigNumber from 'bignumber.js'
 
 class Mediasoup extends EventEmitter {
   private adapterRef:AdapterRef;
@@ -608,7 +609,7 @@ class Mediasoup extends EventEmitter {
     }
   }
 
-  async createConsumer(uid:number, kind:'audio'|'video',mediaType: MediaType, id:string, preferredSpatialLayer:number = 0){
+  async createConsumer(uid:number|string, kind:'audio'|'video',mediaType: MediaType, id:string, preferredSpatialLayer:number = 0){
     return new Promise((resolve, reject)=>{
       this._eventQueue.push({uid, kind, id, mediaType, preferredSpatialLayer, resolve, reject});
       if (this._eventQueue.length > 1) {
@@ -633,7 +634,7 @@ class Mediasoup extends EventEmitter {
     }
   }
 
-  removeUselessConsumeRequest( options: {producerId?: string, uid?: number}) {
+  removeUselessConsumeRequest( options: {producerId?: string, uid?: number|string}) {
     const {producerId, uid} = options
     if(!producerId || !uid) return
     this.adapterRef.logger.log(`removeUselessConsumeRequest：producerId ${producerId}, uid ${uid}`)
@@ -749,11 +750,16 @@ class Mediasoup extends EventEmitter {
     if (!iceUfragReg){
       throw new Error("iceUfragReg is null");
     }*/
+    let subUid = uid
+    if (this.adapterRef.channelInfo.uidType === 'string') {
+      //@ts-ignore
+      subUid = new BigNumber(subUid)
+    }
     let data:any = {
       requestId: `${Math.ceil(Math.random() * 1e9)}`,
       kind,
       rtpCapabilities,
-      uid,
+      uid: subUid,
       producerId: id,
       preferredSpatialLayer,
       mid,
@@ -939,7 +945,7 @@ class Mediasoup extends EventEmitter {
     const data = {
       requestId: `${Math.ceil(Math.random() * 1e9)}`,
       transportId: this.adapterRef._rtsTransport.transportId,
-      uid: +uid,
+      uid: uid,
       producerId: id,
       preferredSpatialLayer,
       pause: false,
@@ -1057,12 +1063,17 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
         throw new Error('No _protoo');
       }
+      let muteUid = this.adapterRef.channelInfo.uid
+      if (this.adapterRef.channelInfo.uidType === 'string') {
+        //@ts-ignore
+        muteUid = new BigNumber(muteUid)
+      } 
       await this.adapterRef._signalling._protoo.request(
         'SendUserData', {
           externData: {
             'type': 'Mute',
             cid: this.adapterRef.channelInfo.cid,
-            uid: this.adapterRef.channelInfo.uid - 0,
+            uid: muteUid,
             data: {
               producerId: this._micProducer.id,
               mute: true 
@@ -1084,12 +1095,17 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
         throw new Error('No _protoo');
       }
+      let muteUid = this.adapterRef.channelInfo.uid
+      if (this.adapterRef.channelInfo.uidType === 'string') {
+        //@ts-ignore
+        muteUid = new BigNumber(muteUid)
+      } 
       await this.adapterRef._signalling._protoo.request(
         'SendUserData', { 
           externData: {
             type: 'Mute',
             cid: this.adapterRef.channelInfo.cid,
-            uid: this.adapterRef.channelInfo.uid - 0,
+            uid: muteUid,
             data: {
               producerId: this._micProducer.id,
               mute: false 
@@ -1112,12 +1128,17 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
         throw new Error('No _protoo');
       }
+      let muteUid = this.adapterRef.channelInfo.uid
+      if (this.adapterRef.channelInfo.uidType === 'string') {
+        //@ts-ignore
+        muteUid = new BigNumber(muteUid)
+      } 
       await this.adapterRef._signalling._protoo.request(
         'SendUserData', { 
           externData: {
             'type': 'Mute',
             cid: this.adapterRef.channelInfo.cid,
-            uid: this.adapterRef.channelInfo.uid - 0,
+            uid: muteUid,
             data: {
               producerId: this._webcamProducer.id,
               mute: true 
@@ -1139,12 +1160,17 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
         throw new Error('No _protoo');
       }
+      let muteUid = this.adapterRef.channelInfo.uid
+      if (this.adapterRef.channelInfo.uidType === 'string') {
+        //@ts-ignore
+        muteUid = new BigNumber(muteUid)
+      } 
       await this.adapterRef._signalling._protoo.request(
         'SendUserData', { 
           externData: {
             'type': 'Mute',
             cid: this.adapterRef.channelInfo.cid,
-            uid: this.adapterRef.channelInfo.uid - 0,
+            uid: muteUid,
             data: {
               producerId: this._webcamProducer.id,
               mute: false 
@@ -1166,12 +1192,17 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
         throw new Error('No _protoo');
       }
+      let muteUid = this.adapterRef.channelInfo.uid
+      if (this.adapterRef.channelInfo.uidType === 'string') {
+        //@ts-ignore
+        muteUid = new BigNumber(muteUid)
+      } 
       await this.adapterRef._signalling._protoo.request(
         'SendUserData', {
           externData: {
             'type': 'Mute',
             cid: this.adapterRef.channelInfo.cid,
-            uid: this.adapterRef.channelInfo.uid - 0,
+            uid: muteUid,
             data: {
               producerId: this._screenProducer.id,
               mute: true
@@ -1193,12 +1224,17 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
         throw new Error('No _protoo');
       }
+      let muteUid = this.adapterRef.channelInfo.uid
+      if (this.adapterRef.channelInfo.uidType === 'string') {
+        //@ts-ignore
+        muteUid = new BigNumber(muteUid)
+      } 
       await this.adapterRef._signalling._protoo.request(
         'SendUserData', {
           externData: {
             'type': 'Mute',
             cid: this.adapterRef.channelInfo.cid,
-            uid: this.adapterRef.channelInfo.uid - 0,
+            uid: muteUid,
             data: {
               producerId: this._screenProducer.id,
               mute: false
@@ -1216,12 +1252,17 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
         throw new Error('No _protoo');
       }
+      let muteUid = this.adapterRef.channelInfo.uid
+      if (this.adapterRef.channelInfo.uidType === 'string') {
+        //@ts-ignore
+        muteUid = new BigNumber(muteUid)
+      } 
       await this.adapterRef._signalling._protoo.request(
         'SendUserData', {
           externData: {
             'type': 'UserRole',
             cid: this.adapterRef.channelInfo.cid,
-            uid: this.adapterRef.channelInfo.uid - 0,
+            uid: muteUid,
             data: {
               userRole: userRole
             }

@@ -7,14 +7,17 @@ import {Meeting} from "./module/meeting";
 import {StatsReport} from "./module/report/statsReport";
 import {MediaCapability} from "./module/mediaCapability";
 import {Encryption} from "./module/encryption";
+import BigNumber from 'bignumber.js'
+
+type UIDTYPE = number | string;
 
 export interface AdapterRef {
-  uid2SscrList: {[uid:number]:{
+  uid2SscrList: {[uid in UIDTYPE]:{
       audio:{ssrc: number},
       video:{ssrc: number},
       screen:{ssrc: number},
     }
-  };
+  } 
   netStatusTimer: Timer|null;
   networkQuality: {};
   _statsReport: StatsReport|null;
@@ -47,7 +50,7 @@ export interface AdapterRef {
   apiEvent: {
     [prop: string]: APIEventItem[];
   };
-  memberMap: {[uid:number]: string};
+  memberMap: {[uid in UIDTYPE]: string};
   apiEvents: {
     [prop: string]: APIEventItem[];
   };
@@ -66,21 +69,21 @@ export interface AdapterRef {
     SendBitrate: number;
   }
   remoteAudioStats: {
-    [uid: number]: MediaStats
+    [uid in UIDTYPE]: MediaStats
   }
   remoteVideoStats: {
-    [uid: number]: MediaStats
-  }
+    [uid in UIDTYPE]: MediaStats
+  } 
   remoteScreenStats: {
-    [uid: number]: MediaStats
-  }
+    [uid in UIDTYPE]: MediaStats
+  } 
   remoteStreamMap: {
-    [uid: number]: Stream
-  }
+    [uid in UIDTYPE]: Stream
+  } 
   localStream: Stream|null;
   localAudioStats: {
-    [uid: number]: LocalAudioStats
-  };
+    [uid in UIDTYPE]: LocalAudioStats
+  } 
   localVideoStats: [LocalVideoStats];
   localScreenStats: [LocalVideoStats];
   logger:Logger;
@@ -99,7 +102,7 @@ export interface AdapterRef {
     curState:ConnectionState;
   };
   _mediasoup?:Mediasoup|null;
-  mediaHelpers: {[uid:number]:MediaHelper};
+  mediaHelpers: {[uid in UIDTYPE]:MediaHelper};
   netStatusList: NetStatusItem[];
   requestId: {
     [apiName: string]: number;
@@ -121,12 +124,12 @@ export interface ProducerAppData{
 }
 
 export interface NetStatusItem{
-  uid: number;
+  uid: number|string;
   
 }
 
 export interface NetworkQualityItem{
-  uid: number;
+  uid: number|string;
   downlinkNetworkQuality: number;
   uplinkNetworkQuality: number;
 }
@@ -194,12 +197,12 @@ export interface LogoutEvent extends DataEvent{
 }
 
 export interface RecvFirstFrameEvent extends DataEvent{
-  pull_uid: number;
+  pull_uid: number|string;
   media_type: number;
 }
 
 export interface RecvFirstPackageEvent extends DataEvent{
-  pull_uid: number;
+  pull_uid: number|string;
   media_type: number;
 }
 
@@ -418,7 +421,7 @@ export interface UpAudioItem {
 }
 
 export interface AudioRtxInfo{
-  uid: number[];
+  uid: UIDTYPE[];
   a_p_volume:number[];
   a_d_nor:number[];
   a_d_plc:number[];
@@ -481,7 +484,7 @@ export interface SDKRef{
 export interface PlayOptions{
   adapterRef:AdapterRef;
   sdkRef: SDKRef;
-  uid: number;
+  uid: number|string;
 }
 
 export interface LoggerHelperOptions{
@@ -588,7 +591,7 @@ export interface AudioEffectOptions{
 export interface MediaHelperOptions{
   sdkRef: SDKRef;
   adapterRef: AdapterRef;
-  uid: number;
+  uid: number|string;
 }
 
 export interface GetStreamConstraints{
@@ -608,7 +611,7 @@ export interface GetStreamConstraints{
 export interface RecordInitOptions{
   sdkRef: SDKRef;
   adapterRef: AdapterRef;
-  uid:number;
+  uid:number|string;
   media:MediaHelper;
 }
 
@@ -633,7 +636,7 @@ export interface RecordStatus{
 
 export interface RecordStartOptions{
   stream: MediaStream|MediaStream[];
-  uid: number;
+  uid: number|string;
   type: string;
   reset: boolean;
 }
@@ -649,7 +652,7 @@ export interface MeetingOptions{
 export interface MeetingJoinChannelOptions{
   appkey:string;
   channelName: string;
-  uid: number;
+  uid: number|string|BigNumber;
   wssArr?: string[]|null;
   sessionMode?: string;
   joinChannelRecordConfig: RecordConfig;
@@ -674,7 +677,7 @@ export interface RTMPTask{
       color: number,
     };
     users: {
-      uid: number;
+      uid: number|string|BigNumber;
       x: number;
       y: number;
       width: number;
@@ -711,7 +714,7 @@ export interface MediasoupManagerOptions{
 }
 
 export interface ProduceConsumeInfo{
-  uid: number;
+  uid: number|string;
   kind: 'audio'|'video';
   mediaType: MediaType;
   id: string;
@@ -728,7 +731,7 @@ export interface AudioProcessingOptions{
 
 export interface StreamOptions{
   isRemote: boolean;
-  uid: number;
+  uid: number|string;
   audio: boolean;
   audioProcessing?: AudioProcessingOptions;
   microphoneId?: '';
@@ -744,23 +747,23 @@ export interface StreamOptions{
 }
 
 export interface Client{
-  getMediaHlperByUid:(streamId: number)=>MediaHelper;
+  getMediaHlperByUid:(streamId: number|string)=>MediaHelper;
   adapterRef: AdapterRef;
   apiFrequencyControl: (event:any)=>void;
   emit:(eventName: string, eventData?:any)=>void
   _roleInfo: {
     userRole: number;
-    audienceList: {[uid:number]: boolean}
+    audienceList: {[uid in UIDTYPE]: boolean}
   }
   publish: (stream: Stream)=>void
   apiEventReport: (eventName: string, eventData: any)=>void
   getPeer: (sendOrRecv: 'send'|'recv')=>any
   leave: ()=>any
-  addSsrc: (uid:number, kind:MediaTypeShort, ssrc:number)=>any
+  addSsrc: (uid:number|string, kind:MediaTypeShort, ssrc:number)=>any
   reBuildRecvTransport: ()=>any
   _params: any
   setSessionConfig: any
-  getUidAndKindBySsrc: (ssrc:number)=>{uid:number;kind: MediaTypeShort}
+  getUidAndKindBySsrc: (ssrc:number)=>{uid:number|string;kind: MediaTypeShort}
   [key:string]: any
 }
 
@@ -820,7 +823,7 @@ export interface ScreenProfileOptions{
 }
 
 export interface SnapshotOptions{
-  uid: number;
+  uid: number|string;
   name: string;
   mediaType?: MediaTypeShort;
 }
@@ -854,7 +857,7 @@ export interface APIEventItem{
   code?: number;
   time: number;
   cid: number;
-  uid: number;
+  uid: number|string;
   param: string;
   request_id: number;
 }
@@ -881,8 +884,8 @@ export type AudioCodecType = "OPUS";
 
 export interface JoinOptions{
   channelName: string;
-  uid: number;
-  token?: string;
+  uid: number|string;
+  token: string;
   wssArr?: string[]|null;
   joinChannelLiveConfig?: LiveConfig;
   joinChannelRecordConfig?: RecordConfig;
@@ -891,7 +894,7 @@ export interface JoinOptions{
 
 export interface JoinChannelRequestParam4WebRTC2{
   channelName: string;
-  uid: number;
+  uid: number|string;
   wssArr?: string[]|null;
   joinChannelLiveConfig: LiveConfig;
   joinChannelRecordConfig: RecordConfig;

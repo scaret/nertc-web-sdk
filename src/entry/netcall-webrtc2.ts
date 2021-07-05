@@ -142,7 +142,7 @@ createClient (options:ClientOptions) {
  * @memberOf NERTC#
  * @param {Object} options 配置参数
  *  @param {String} [options.audio] 是否从麦克风采集音频
- *  @param {String} [options.uid] 用户uid
+ *  @param {String | Number} [options.uid] 用户uid
  *  @param {String} [options.microphoneId] 麦克风设备 deviceId，通过 getMicrophones() 获取
  *  @param {Object} [options.video] 是否从摄像头采集视频
  *  @param {String} [options.cameraId] 摄像头设备 deviceId，通过 getCameras() 获取

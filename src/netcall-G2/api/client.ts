@@ -11,6 +11,7 @@ import {
 } from "../interfaces/ApiReportParam";
 import {EncryptionMode, EncryptionModes, encryptionModeToInt} from "../module/encryption";
 import { logController } from '../util/log/upload'
+const BigNumber = require("bignumber.js");
 
 /**
  *  请使用 {@link WEBRTC2.createClient} 通过WEBRTC2.createClient创建 Client对象，client对象指通话中的本地或远程用户，提供云信sdk的核心功能。
@@ -123,7 +124,7 @@ class Client extends Base {
    * @memberOf Client#
    * @param {Object} options
    * @param {String} options.channel 频道名称
-   * @param {Number} options.uid  用户唯一标识（整数，建议五位数以上）
+   * @param {Number|String} options.uid  用户唯一标识（整数，建议五位数以上）
    * @param {Object} [options.joinChannelLiveConfig] 加入房间互动直播相关参数
    * @param {Boolean} [options.joinChannelLiveConfig.liveEnable]  是否旁路直播
    * @param {Object} [options.joinChannelRecordConfig] 加入房间录制相关参数
@@ -142,11 +143,19 @@ class Client extends Base {
     if (this.adapterRef.channelStatus === 'join' || this.adapterRef.channelStatus === 'connectioning') {
       return Promise.reject('ERR_REPEAT_JOIN')
     }
-    if(typeof options.uid !== 'number' || isNaN(options.uid)){
-      throw new Error('uid 非 number类型')
-    }
-    if(options.uid > Number.MAX_SAFE_INTEGER){
-      throw new Error('uid 超出 number精度')
+    if (typeof options.uid === 'string') {
+      this.adapterRef.logger.log('uid是string类型')
+      this.adapterRef.channelInfo.uidType = 'string'
+      //options.uid = new BigNumber(options.uid)
+    } else if (typeof options.uid === 'number') {
+      this.adapterRef.logger.log('uid是number类型')
+      this.adapterRef.channelInfo.uidType = 'number'
+      if(options.uid > Number.MAX_SAFE_INTEGER){
+        throw new Error('uid超出number精度')
+      }
+    } else {
+      this.adapterRef.logger.error('uid参数格式非法')
+      return Promise.reject('INVALID_ARGUMENTS')
     }
 
     this.adapterRef.connectState.curState = 'CONNECTING'
@@ -403,7 +412,7 @@ class Client extends Base {
 
   async subscribeRts (stream:Stream) {
     checkExists({tag: 'client.subscribe:stream', value: stream});
-    this.adapterRef.logger.log(`subscribe() [订阅远端: ${stream.streamID}]`)
+    this.adapterRef.logger.log(`subscribe() [订阅远端: ${stream.stringStreamID}]`)
     const uid = stream.getId()
     if (!uid) {
       throw new Error('No uid');
@@ -744,7 +753,7 @@ class Client extends Base {
         name: 'setRemoteVideoStreamType',
         param: JSON.stringify({
           highOrLow: highOrLow,
-          uid: stream.streamID
+          uid: stream.stringStreamID
         }, null, ' ')
       })
     } catch (e) {
@@ -755,7 +764,7 @@ class Client extends Base {
         param: JSON.stringify({
           reason: e,
           highOrLow: highOrLow,
-          uid: stream.streamID
+          uid: stream.stringStreamID
         }, null, ' ')
       })
     }
