@@ -26,6 +26,7 @@ export default class WSTransport {
     constructor(options: any){
         this.url_ = options.url;
         this.socket_ = null;
+        this.socketInUse_ = null;
         this.isConnected_ = false;
         this.isConnecting_ = false;
         this.pingPongTimeoutId_ = -1;
@@ -63,7 +64,7 @@ export default class WSTransport {
         const url = event.target.url;
         console.log(` websocket[${url}] is connected`);
         // console.log('start ping pong');
-        // this.startPingPong();
+        this.startPingPong();
     }
 
     onclose(event:any) {
@@ -109,17 +110,17 @@ export default class WSTransport {
       onmessage(event:any) {
         if (!this.isConnected_) return; // close was requested.
         // deal with pb data
-        // const reader = event.data.stream().getReader();
-        // @ts-ignore
-        // reader.read().then(({done, value}) => {
-          // console.log(done+" "+value);
-          // return;
-          // console.log('PONG value--->',value);
-        // })
+        const reader = event.data.stream() && event.data.stream().getReader();
         
+        if(reader) {
+          // @ts-ignore
+          reader.read().then(({done, value}) => {
+            // console.log("done--->",done);
+            // console.log("value--->",value);
+            this.emit(PONG, event);
+          })
+        } 
 
-        // TODO: start ping-pong
-        // console.log('start ping pong');
         // this.startPingPong();
       }
 
@@ -191,9 +192,6 @@ export default class WSTransport {
           if (this.pingTimeoutId_ !== -1) {
             return resolve();
           }
-          // let uintPing = new Uint8Array(1);
-          // uintPing[0] = 10;
-          // this.send(uintPing);
           this.send(PING);
 
           this.once(PONG, () => {
@@ -210,7 +208,6 @@ export default class WSTransport {
       }
 
       reconnect() {
-        // TODO: reconnect ws
         if(this.isConnecting_ || this.reconnectionTimer_ !== -1) {
           console.log("websocket is reconnecting");
           return;
@@ -240,8 +237,13 @@ export default class WSTransport {
         this.emitter_.once(event, handler, context);
       }
 
+      emit(event:any, handler:any, context?:any) {
+        this.emitter_.emit(event, handler, context);
+      }
+
       close() {
         console.log('close websocket');
+        this.clearReconnectionTimer();
         this.stopPingPong();
         this.unbindSocket(this.socketInUse_);
         this.isConnected_ = false;

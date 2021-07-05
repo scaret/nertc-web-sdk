@@ -346,7 +346,7 @@
       *  codec: string, 'h264' | 'vp8'
       *  appID: string
       *  channel: string, channel name
-      *  uid: number
+      *  uid: number | number
       *  token; string,
       * }
      **/
@@ -388,7 +388,7 @@
          *    10 numbers 0-9
          *    Space
          *    "!", "#", "$", "%", "&", "(", ")", "+", "-", ":", ";", "<", "=", ".", ">", "?", "@", "[", "]", "^", "_", "{", "}", "|", "~", ","
-         *  uid: number | null
+         *  uid: string | number | null
          *    The user ID, an integer. Ensure this ID is unique. If you set the uid to null, the server assigns one and returns it in the onSuccess callback.
          *   Note:
          *      All users in the same channel should have the same type (number or string) of uid.

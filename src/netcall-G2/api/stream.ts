@@ -73,7 +73,8 @@ import {AuidoMixingState} from "../constant/state";
  *  @returns {Stream}  
  */
 class Stream extends EventEmitter {
-  public streamID:number|null;
+  public streamID:number|string;
+  public stringStreamID:string;
   public audio: boolean;
   public audioProcessing: AudioProcessingOptions|null;
   public microphoneId:string;
@@ -142,13 +143,19 @@ class Stream extends EventEmitter {
   constructor (options:StreamOptions) {
     super()
     
-    if(typeof options.uid !== 'number' || isNaN(options.uid)){
-      throw new Error('uid 非 number类型')
+    if (typeof options.uid === 'string') {
+      options.client.adapterRef.logger.log('uid是string类型')
+      options.client.adapterRef.channelInfo.uidType = 'string'
+    } else if (typeof options.uid === 'number') {
+      options.client.adapterRef.logger.log('uid是number类型')
+      options.client.adapterRef.channelInfo.uidType = 'number'
+      if(options.uid > Number.MAX_SAFE_INTEGER){
+        throw new Error('uid超出number精度')
+      }
+    } else {
+      options.client.adapterRef.logger.error('uid参数格式非法')
+      throw new Error('INVALID_ARGUMENTS')
     }
-    if(options.uid > Number.MAX_SAFE_INTEGER){
-      throw new Error('uid 超出 number精度')
-    }
-
     // init for ts rule
     this.isRemote = options.isRemote;
     this.inited = false;
@@ -217,6 +224,7 @@ class Stream extends EventEmitter {
     
     this._reset()
     this.streamID = options.uid
+    this.stringStreamID = this.streamID.toString()
     this.audio = options.audio
     this.audioProcessing = options.audioProcessing||null
     this.microphoneId = options.microphoneId || ''
@@ -229,16 +237,16 @@ class Stream extends EventEmitter {
     this.client = options.client
     this.audioSource = options.audioSource || null
     this.videoSource = options.videoSource || null
-    this.mediaHelper = this.client.getMediaHlperByUid(this.streamID)
+    this.mediaHelper = this.client.getMediaHlperByUid(this.stringStreamID)
     this._play = new Play({
       sdkRef: this.client,
       adapterRef: this.client.adapterRef,
-      uid: options.uid
+      uid: this.client.adapterRef.channelInfo.uidType === 'string' ? this.stringStreamID : this.streamID
     })
     this._record = new Record({
       sdkRef: this.client,
       adapterRef: this.client.adapterRef,
-      uid: options.uid,
+      uid: this.client.adapterRef.channelInfo.uidType === 'string' ? this.stringStreamID : this.streamID,
       media: this.mediaHelper
     })
     if (this.client._params && this.client._params.mode === 'live') {
@@ -248,7 +256,7 @@ class Stream extends EventEmitter {
     }
     
     this.client.adapterRef.logger.log('创建Stream: %s', JSON.stringify({
-      streamID: options.uid,
+      streamID: this.stringStreamID,
       audio: options.audio,
       video: options.video,
     }, null, ' '))
@@ -269,7 +277,8 @@ class Stream extends EventEmitter {
   }
 
   _reset () {
-    this.streamID = null
+    this.streamID = ''
+    this.stringStreamID = ''
     this.inited = false
     this.videoProfile = {
       frameRate: VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_NORMAL, //15
@@ -379,9 +388,11 @@ class Stream extends EventEmitter {
    */
   getId () {
     //this.client.adapterRef.logger.log('获取音视频流 ID: ', this.streamID)
-    return this.streamID
+    if (this.client.adapterRef.channelInfo.uidType === 'string') {
+      return this.stringStreamID
+    }
+    return this.streamID 
   }
-
   /**
    *  获取音视频流的连接数据
    *  @method getStats
@@ -392,7 +403,7 @@ class Stream extends EventEmitter {
   async getStats() {
     let localPc = this.client.adapterRef && this.client.adapterRef._mediasoup && this.client.adapterRef._mediasoup._sendTransport && this.client.adapterRef._mediasoup._sendTransport._handler._pc;
     let remotePc = this.client.adapterRef && this.client.adapterRef._mediasoup && this.client.adapterRef._mediasoup._recvTransport && this.client.adapterRef._mediasoup._recvTransport._handler._pc;
-    this.client.adapterRef.logger.log(`获取音视频连接数据, uid: ${this.streamID}`);
+    this.client.adapterRef.logger.log(`获取音视频连接数据, uid: ${this.stringStreamID}`);
     if (this.isRemote){
       if(remotePc){
         const stats = {
@@ -554,7 +565,7 @@ class Stream extends EventEmitter {
     })
     if (this.pubStatus.screen.screen){
       const param:ReportParamSubscribeRemoteSubStreamVideo = {
-        uid: this.streamID,
+        uid: this.client.adapterRef.channelInfo.uidType === 'string' ? this.stringStreamID : this.streamID,
         subscribe: this.subConf.screen
       }
       this.client.apiFrequencyControl({
@@ -736,15 +747,15 @@ class Stream extends EventEmitter {
       playOptions.screen = true;
     }
     
-    this.client.adapterRef.logger.log(`音视频播放, uid: ${this.streamID}, playOptions: `, JSON.stringify(playOptions, null, ' '))
+    this.client.adapterRef.logger.log(`音视频播放, uid: ${this.stringStreamID}, playOptions: `, JSON.stringify(playOptions, null, ' '))
     if (this.isRemote){
       if(playOptions.audio && this._play && this.mediaHelper && this.mediaHelper.audioStream){
-        this.client.adapterRef.logger.log('开始播放远端音频: ', this.streamID)
+        this.client.adapterRef.logger.log('开始播放远端音频: ', this.stringStreamID)
         this._play.playAudioStream(this.mediaHelper.audioStream)
       }
     } else {
       if(playOptions.audio && this._play && this.mediaHelper && this.mediaHelper.micStream){
-        this.client.adapterRef.logger.log('开始播放本地音频: ',this.streamID, playOptions.audioType);
+        this.client.adapterRef.logger.log('开始播放本地音频: ',this.stringStreamID, playOptions.audioType);
         if (playOptions.audioType === "voice"){
           this._play.playAudioStream(this.mediaHelper.micStream)
         }else if (playOptions.audioType === "music"){
@@ -763,7 +774,7 @@ class Stream extends EventEmitter {
       if (playOptions.video){
         this.videoView = view;
         if(this._play && this.mediaHelper && this.mediaHelper.videoStream && this.mediaHelper.videoStream.getVideoTracks().length){
-          this.client.adapterRef.logger.log('开始播放视频: ', this.streamID)
+          this.client.adapterRef.logger.log('开始播放视频: ', this.stringStreamID)
           //@ts-ignore
           this._play.playVideoStream(this.mediaHelper.videoStream, view)
         }  
@@ -771,7 +782,7 @@ class Stream extends EventEmitter {
       if (playOptions.screen){
         this.screenView = view;
         if(this._play && this.mediaHelper && this.mediaHelper.screenStream && this.mediaHelper.screenStream.getVideoTracks().length){
-          this.client.adapterRef.logger.log('开始播放辅流: ', this.streamID)
+          this.client.adapterRef.logger.log('开始播放辅流: ', this.stringStreamID)
           //@ts-ignore
           this._play.playScreenStream(this.mediaHelper.screenStream, view)
         }
@@ -892,7 +903,7 @@ class Stream extends EventEmitter {
    * @return {Void}
    */
   stop (type?:MediaTypeShort) {
-    this.client.adapterRef.logger.log('停止播放 %s 音视频流', this.streamID)
+    this.client.adapterRef.logger.log('停止播放 %s 音视频流', this.stringStreamID)
     if(!this._play) return
     if (type === 'audio') {
       this._play.stopPlayAudioStream()
@@ -942,7 +953,7 @@ class Stream extends EventEmitter {
       this.client.adapterRef.logger.warn('isPlaying: unknown type')
       return Promise.reject('unknownType')
     }
-    this.client.adapterRef.logger.log(`检查${this.streamID}的${type}播放状态: ${isPlaying}`)
+    this.client.adapterRef.logger.log(`检查${this.stringStreamID}的${type}播放状态: ${isPlaying}`)
     return isPlaying
   }
 
@@ -1180,9 +1191,9 @@ class Stream extends EventEmitter {
    * @return {Promise}
    */
   async unmuteAudio () {
-    this.client.adapterRef.logger.log('启用音频轨道: ', this.streamID)
+    this.client.adapterRef.logger.log('启用音频轨道: ', this.stringStreamID)
     try {
-      if (this.streamID == this.client.adapterRef.channelInfo.uid) {
+      if (!this.isRemote) {
         if (!this.client.adapterRef._mediasoup){
           throw new Error('No _mediasoup');
         }
@@ -1212,7 +1223,7 @@ class Stream extends EventEmitter {
         name: 'unmuteAudio',
         code: 0,
         param: JSON.stringify({
-          streamID: this.streamID
+          streamID: this.stringStreamID
         }, null, ' ')
       })
     } catch (e) {
@@ -1221,7 +1232,7 @@ class Stream extends EventEmitter {
         name: 'unmuteAudio',
         code: -1,
         param: JSON.stringify({
-          streamID: this.streamID,
+          streamID: this.stringStreamID,
           reason: e
         }, null, ' ')
       })
@@ -1235,10 +1246,10 @@ class Stream extends EventEmitter {
    * @return {Promise}
    */
   async muteAudio () {
-    this.client.adapterRef.logger.log('禁用音频轨道: ', this.streamID)
+    this.client.adapterRef.logger.log('禁用音频轨道: ', this.stringStreamID)
 
     try {
-      if (this.streamID == this.client.adapterRef.channelInfo.uid) {
+      if (!this.isRemote) {
         if (!this.client.adapterRef._mediasoup){
           throw new Error('No _mediasoup');
         }
@@ -1265,7 +1276,7 @@ class Stream extends EventEmitter {
         name: 'muteAudio',
         code: 0,
         param: JSON.stringify({
-          streamID: this.streamID
+          streamID: this.stringStreamID
         }, null, ' ')
       })
     } catch (e) {
@@ -1274,7 +1285,7 @@ class Stream extends EventEmitter {
         name: 'muteAudio',
         code: -1,
         param: JSON.stringify({
-          streamID: this.streamID,
+          streamID: this.stringStreamID,
           reason: e
         }, null, ' ')
       })
@@ -1344,7 +1355,7 @@ class Stream extends EventEmitter {
     } else {
       volume = volume * 2.55
     }
-    this.client.adapterRef.logger.log(`调节${this.streamID}的音量大小: ${volume}`)
+    this.client.adapterRef.logger.log(`调节${this.stringStreamID}的音量大小: ${volume}`)
 
     if (this.audio) {
       if (!this._play){
@@ -1392,7 +1403,7 @@ class Stream extends EventEmitter {
     } else if (volume > 100) {
       volume = 100
     } 
-    this.client.adapterRef.logger.log(`调节${this.streamID}的音量大小: ${volume}`)
+    this.client.adapterRef.logger.log(`调节${this.stringStreamID}的音量大小: ${volume}`)
 
     if (this.audio) {
       if (!this.mediaHelper){
@@ -1570,9 +1581,9 @@ class Stream extends EventEmitter {
    */
   
   async unmuteVideo () {
-    this.client.adapterRef.logger.log(`启用 ${this.streamID} 的视频轨道`)
+    this.client.adapterRef.logger.log(`启用 ${this.stringStreamID} 的视频轨道`)
     try {
-      if (this.streamID == this.client.adapterRef.channelInfo.uid) {
+      if (!this.isRemote) {
         if (!this.client.adapterRef._mediasoup){
           throw new Error('No _mediasoup');
         }
@@ -1601,7 +1612,7 @@ class Stream extends EventEmitter {
         name: 'unmuteVideo',
         code: 0,
         param: JSON.stringify({
-          streamID: this.streamID
+          streamID: this.stringStreamID
         }, null, ' ')
       })
     } catch (e) {
@@ -1610,7 +1621,7 @@ class Stream extends EventEmitter {
         name: 'unmuteVideo',
         code: -1,
         param: JSON.stringify({
-          streamID: this.streamID,
+          streamID: this.stringStreamID,
           reason: e
         }, null, ' ')
       })
@@ -1624,9 +1635,9 @@ class Stream extends EventEmitter {
    * @return {Promise}
    */
   async muteVideo () {
-    this.client.adapterRef.logger.log(`禁用 ${this.streamID} 的视频轨道`)
+    this.client.adapterRef.logger.log(`禁用 ${this.stringStreamID} 的视频轨道`)
     try {
-      if (this.streamID == this.client.adapterRef.channelInfo.uid) {
+      if (!this.isRemote) {
         if (!this.client.adapterRef._mediasoup){
           throw new Error('No _mediasoup');
         }
@@ -1652,7 +1663,7 @@ class Stream extends EventEmitter {
         name: 'muteVideo',
         code: 0,
         param: JSON.stringify({
-          streamID: this.streamID
+          streamID: this.stringStreamID
         }, null, ' ')
       })
     } catch (e) {
@@ -1661,7 +1672,7 @@ class Stream extends EventEmitter {
         name: 'muteVideo',
         code: -1,
         param: JSON.stringify({
-          streamID: this.streamID,
+          streamID: this.stringStreamID,
           reason: e
         }, null, ' ')
       })
@@ -1676,9 +1687,9 @@ class Stream extends EventEmitter {
    */
   
   async unmuteScreen () {
-    this.client.adapterRef.logger.log(`启用 ${this.streamID} 的视频轨道`)
+    this.client.adapterRef.logger.log(`启用 ${this.stringStreamID} 的视频轨道`)
     try {
-      if (this.streamID == this.client.adapterRef.channelInfo.uid) {
+      if (!this.isRemote) {
         if (!this.client.adapterRef._mediasoup){
           throw new Error('No _mediasoup');
         }
@@ -1706,7 +1717,7 @@ class Stream extends EventEmitter {
         name: 'unmuteScreen',
         code: 0,
         param: JSON.stringify({
-          streamID: this.streamID
+          streamID: this.stringStreamID
         }, null, ' ')
       })
     } catch (e) {
@@ -1715,7 +1726,7 @@ class Stream extends EventEmitter {
         name: 'unmuteScreen',
         code: -1,
         param: JSON.stringify({
-          streamID: this.streamID,
+          streamID: this.stringStreamID,
           reason: e
         }, null, ' ')
       })
@@ -1729,9 +1740,9 @@ class Stream extends EventEmitter {
    * @return {Promise}
    */
   async muteScreen () {
-    this.client.adapterRef.logger.log(`禁用 ${this.streamID} 的视频轨道`)
+    this.client.adapterRef.logger.log(`禁用 ${this.stringStreamID} 的视频轨道`)
     try {
-      if (this.streamID == this.client.adapterRef.channelInfo.uid) {
+      if (!this.isRemote) {
         if (!this.client.adapterRef._mediasoup){
           throw new Error('No _mediasoup');
         }
@@ -1752,7 +1763,7 @@ class Stream extends EventEmitter {
         name: 'muteScreen',
         code: 0,
         param: JSON.stringify({
-          streamID: this.streamID
+          streamID: this.stringStreamID
         }, null, ' ')
       })
     } catch (e) {
@@ -1761,7 +1772,7 @@ class Stream extends EventEmitter {
         name: 'muteScreen',
         code: -1,
         param: JSON.stringify({
-          streamID: this.streamID,
+          streamID: this.stringStreamID,
           reason: e
         }, null, ' ')
       })
@@ -1937,7 +1948,7 @@ class Stream extends EventEmitter {
         name: 'takeSnapshot',
         code: -1,
         param: JSON.stringify({
-          streamID: this.streamID,
+          streamID: this.stringStreamID,
           reason: `没有视频流，请检查是否有 ${this.inited ? '发布' : '订阅'} 过视频`
         }, null, ' ')
       })
@@ -1959,7 +1970,7 @@ class Stream extends EventEmitter {
    */
   async startMediaRecording (options: MediaRecordingOptions) {
     const streams = []
-    if (this.client.adapterRef.channelInfo.uid === this.streamID) { // 录制自己
+    if (!this.isRemote) { // 录制自己
       if (!this.mediaHelper){
         throw new Error('No MediaHelper');
       }
@@ -2009,7 +2020,7 @@ class Stream extends EventEmitter {
       throw new Error('startMediaRecording: 参数错误');
     }
     return this._record && this._record.start({
-      uid: this.streamID,
+      uid: this.client.adapterRef.channelInfo.uidType === 'string' ? this.stringStreamID : this.streamID,
       type: options.type,
       reset: options.reset,
       stream: streams
@@ -2493,7 +2504,7 @@ class Stream extends EventEmitter {
         screenProfile: this.screenProfile
       }, null, ' ')
     })
-    this.client.adapterRef.logger.log('销毁 Stream 实例: ', this.streamID)
+    this.client.adapterRef.logger.log('销毁 Stream 实例: ', this.stringStreamID)
     this.stop()
     this._reset()
   }

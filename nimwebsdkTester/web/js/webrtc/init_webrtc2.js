@@ -93,6 +93,7 @@ function loadEnv() {
     $('#AppSecret').val(WEBRTC2_ENV[env].AppSecret)
   }
   $('#uid').val(Math.ceil(Math.random() * 1e4))
+  // $('#uid').val('111111111111111111')
   //$('#channelName').val(Math.ceil(Math.random() * 1e10))
   const channelName = window.localStorage ? window.localStorage.getItem("channelName") : "";
   $('#channelName').val(channelName)
@@ -732,7 +733,7 @@ $('#joinChannel-btn').on('click', async () => {
   }
   rtc.client.join({
     channelName,
-    uid: +uid,
+    uid: uid,
     token: $("#token").val(),
     wssArr: $('#isGetwayAddrConf').prop('checked') ? [$('#isGetwayAddrConf').prop('checked') && $('#getwayAddr').val()] : null,
     joinChannelRecordConfig: {
@@ -989,7 +990,7 @@ function initLocalStream(audioSource, videoSource) {
     }
   }
   rtc.localStream = NERTC.createStream({
-    uid: +$('#uid').val() ? +$('#uid').val() : rtc.client.getChannelInfo().uid,
+    uid: $('#uid').val() ? $('#uid').val() : rtc.client.getChannelInfo().uid,
     audio: $('#enableAudio').prop('checked'),
     audioProcessing: getAudioProcessingConfig(),
     microphoneId: $('#micro').val(),

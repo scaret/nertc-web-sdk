@@ -14,7 +14,7 @@ import {
 } from "./dataReport";
 import {platform} from "../../util/platform";
 let url = 'https://statistic.live.126.net/statistic/realtime/sdkinfo'
-
+type UIDTYPE = number | string;
 /**
  *  @param {Object} options 配置参数
  */
@@ -25,10 +25,10 @@ class FormativeStatsReport {
   public LocalAudioEnable: boolean;
   public localVideoEnable: boolean;
   public localScreenEnable: boolean;
-  private _audioLevel: {uid:number, level: number}[];
+  private _audioLevel: {uid:number|string, level: number}[];
   private infos: {
     cid?: number;
-    uid?: number;
+    uid?: number|string;
     ver?: number;
     device?: number;
     isp?: number;
@@ -55,16 +55,16 @@ class FormativeStatsReport {
     downScreenCache: any,
   };
   public firstData: {
-    recvFirstData: {[uid:number]: {
-        recvFirstAudioFrame: boolean;
-        recvFirstVideoFrame: boolean;
-        recvFirstScreenFrame: boolean;
-        recvFirstAudioPackage: boolean;
-        recvFirstVideoPackage: boolean;
-        recvFirstScreenPackage: boolean;
-        videoTotalPlayDuration: number;
-        screenTotalPlayDuration: number;
-      }};
+    recvFirstData: {[uid in UIDTYPE]: {
+      recvFirstAudioFrame: boolean;
+      recvFirstVideoFrame: boolean;
+      recvFirstScreenFrame: boolean;
+      recvFirstAudioPackage: boolean;
+      recvFirstVideoPackage: boolean;
+      recvFirstScreenPackage: boolean;
+      videoTotalPlayDuration: number;
+      screenTotalPlayDuration: number;
+    }}
     sendFirstAudioPackage: boolean;
     sendFirstVideoPackage: boolean;
     sendFirstScreenPackage: boolean;
@@ -161,7 +161,7 @@ class FormativeStatsReport {
   }
 
   // 开启上报时初始化一些固定值
-  initInfoData (uid?: number) {
+  initInfoData (uid?: number|string) {
     let tmp = {
       uid,
       cid: (this.adapterRef.channelInfo.cid) || 0,
@@ -358,14 +358,16 @@ class FormativeStatsReport {
       this._audioLevel.length = 0
     }
     for (let i in data) {
-      let uid = parseInt(i.split('_')[3] || "");
-      if (uid === 0){
+      //let uid = parseInt(i.split('_')[3] || "");
+      let uid = i.split('_')[3] || ""
+      if (uid === '0'){
         // send
-        uid = parseInt(i.split('_')[1] || "");
+        //uid = parseInt(i.split('_')[1] || "");
+        uid = i.split('_')[1] || ""
       }
-      if (!(uid > 0)){
+      /*if (!(uid - 0)){
         uid = 0;
-      }
+      }*/
       if (i.indexOf('_send_') !== -1 && i.indexOf('_audio') !== -1) {
         if (!this.firstData.sendFirstAudioPackage && data[i].packetsSent > 0) {
           this.firstData.sendFirstAudioPackage = true
@@ -487,7 +489,7 @@ class FormativeStatsReport {
         downAudioList.push(data[i])
         const audioLevel = data[i].audioOutputLevel || data[i].audioLevel
         this._audioLevel.push({
-          uid: +uid,
+          uid,
           level: +audioLevel
         })
       } else if (i.indexOf('_recv_') !== -1 && i.indexOf('_video') !== -1) {
@@ -674,9 +676,9 @@ class FormativeStatsReport {
     let RecvBitrate = 0
 
     downAudioList.map(item => {
-      let uid = 0;
+      let uid='0';
       if (item.id) {
-        uid = +item.id.split('_')[3]
+        uid = item.id.split('_')[3]
       }
 
       if (this.adapterRef.remoteAudioStats[uid]) {
@@ -710,9 +712,9 @@ class FormativeStatsReport {
     
     downVideoList.map(item => {
       // 格式： ssrc_359_recv_970_video
-      let uid = 0;
+      let uid:number|string = '0';
       if (item.id) {
-        uid = +item.id.split('_')[3]
+        uid = item.id.split('_')[3]
       }
 
       const remoteStream = this.adapterRef.remoteStreamMap[uid]
@@ -963,7 +965,7 @@ class FormativeStatsReport {
     this.infos.net = tool.convertNetwork(this.network || systemNetworkType)
   }
 
-  dispatchExceptionEventSendAudio(prev: UpAudioItem, next: UpAudioItem, uid: number){
+  dispatchExceptionEventSendAudio(prev: UpAudioItem, next: UpAudioItem, uid: number|string){
     if (!prev || !next) {
       return
     }
@@ -994,7 +996,7 @@ class FormativeStatsReport {
     }
   }
 
-  dispatchExceptionEventSendVideo(prev: UpVideoItem, next: UpVideoItem, uid: number){
+  dispatchExceptionEventSendVideo(prev: UpVideoItem, next: UpVideoItem, uid: number|string){
     if (!prev || !next) {
       return
     }
@@ -1024,7 +1026,7 @@ class FormativeStatsReport {
     }
   }
   
-  dispatchExceptionEventRecvAudio(prev: DownAudioItem, next: DownAudioItem, uid: number){
+  dispatchExceptionEventRecvAudio(prev: DownAudioItem, next: DownAudioItem, uid: number|string){
     if (!prev || !next) {
       return
     }
@@ -1060,7 +1062,7 @@ class FormativeStatsReport {
     }
   }
   
-  dispatchExceptionEventRecvVideo(prev: DownVideoItem, next: DownVideoItem, uid: number){
+  dispatchExceptionEventRecvVideo(prev: DownVideoItem, next: DownVideoItem, uid: number|string){
     if (!prev || !next) {
       return
     }
@@ -1082,7 +1084,7 @@ class FormativeStatsReport {
     }
   }
   
-  dispatchExceptionEventRecvScreen(prev: DownVideoItem, next: DownVideoItem, uid: number){
+  dispatchExceptionEventRecvScreen(prev: DownVideoItem, next: DownVideoItem, uid: number|string){
     if (!prev || !next) {
       return
     }
@@ -1104,7 +1106,7 @@ class FormativeStatsReport {
     }
   }
 
-  getRemoteAudioFreezeStats(prev: DownAudioItem, next:DownAudioItem, uid:number) {
+  getRemoteAudioFreezeStats(prev: DownAudioItem, next:DownAudioItem, uid:number|string) {
     let totalFreezeTime = 0
     if (!prev || !next) {
       return {
@@ -1144,7 +1146,7 @@ class FormativeStatsReport {
     }
   }
 
-  getLocalVideoFreezeStats(data:UpVideoItem, uid:number) {
+  getLocalVideoFreezeStats(data:UpVideoItem, uid:number|string) {
     let totalFreezeTime = 0
     if (!data) {
       return {
@@ -1156,8 +1158,8 @@ class FormativeStatsReport {
     let n = parseInt(data.googFrameRateInput)
     let i = parseInt(data.googFrameRateSent)
     if (n > 5 && i < 3) {
-      if (this.adapterRef.localVideoStats && this.adapterRef.localVideoStats[uid]) {
-        totalFreezeTime = this.adapterRef.localVideoStats[uid].TotalFreezeTime || 0
+      if (this.adapterRef.localVideoStats && this.adapterRef.localVideoStats[0]) {
+        totalFreezeTime = this.adapterRef.localVideoStats[0].TotalFreezeTime || 0
       }
       totalFreezeTime++
       return {
@@ -1172,7 +1174,7 @@ class FormativeStatsReport {
     }
   }
 
-  getLocalScreenFreezeStats(data:UpVideoItem, uid:number) {
+  getLocalScreenFreezeStats(data:UpVideoItem, uid:number|string) {
     let totalFreezeTime = 0
     if (!data) {
       return {
@@ -1184,8 +1186,8 @@ class FormativeStatsReport {
     let n = parseInt(data.googFrameRateInput)
     let i = parseInt(data.googFrameRateSent)
     if (n > 5 && i < 3) {
-      if (this.adapterRef.localScreenStats && this.adapterRef.localScreenStats[uid]) {
-        totalFreezeTime = this.adapterRef.localScreenStats[uid].TotalFreezeTime || 0
+      if (this.adapterRef.localScreenStats && this.adapterRef.localScreenStats[0]) {
+        totalFreezeTime = this.adapterRef.localScreenStats[0].TotalFreezeTime || 0
       }
       totalFreezeTime++
       return {
@@ -1200,7 +1202,7 @@ class FormativeStatsReport {
     }
   }
 
-  getRemoteVideoFreezeStats(prev: DownVideoItem, next: DownVideoItem, uid:number) {
+  getRemoteVideoFreezeStats(prev: DownVideoItem, next: DownVideoItem, uid:number|string) {
     let totalFreezeTime = 0
     if (!next) {
       return {
@@ -1228,7 +1230,7 @@ class FormativeStatsReport {
     }
   }
 
-  getRemoteScreenFreezeStats(prev: DownVideoItem, next: DownVideoItem, uid:number) {
+  getRemoteScreenFreezeStats(prev: DownVideoItem, next: DownVideoItem, uid:number|string) {
     let totalFreezeTime = 0
     if (!next) {
       return {
@@ -1261,18 +1263,18 @@ class FormativeStatsReport {
     if (!this.infos.uid || !this.infos.cid) return
 
       //上报G2的数据
-      let datareport = new DataReport({
-          adapterRef: this.adapterRef
-        })
-      datareport.setHeartbeat({
-        name: 'setHeartbeat',
-        uid: '' + this.adapterRef.channelInfo.uid,
-        cid: '' + this.adapterRef.channelInfo.cid,
-        rx: this.infos2.rx2,
-        tx: this.infos2.tx2,
-        sys: this.infos2.sys
-      })
-      datareport.send()
+      // let datareport = new DataReport({
+      //     adapterRef: this.adapterRef
+      //   })
+      // datareport.setHeartbeat({
+      //   name: 'setHeartbeat',
+      //   uid: '' + this.adapterRef.channelInfo.uid,
+      //   cid: '' + this.adapterRef.channelInfo.cid,
+      //   rx: this.infos2.rx2,
+      //   tx: this.infos2.tx2,
+      //   sys: this.infos2.sys
+      // })
+      // datareport.send()
       this.clearInfoData()
       return
   }

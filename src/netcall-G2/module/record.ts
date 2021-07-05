@@ -15,7 +15,7 @@ class Record extends EventEmitter {
   private _status:RecordStatus;
   private sdkRef:SDKRef;
   private adapterRef:AdapterRef;
-  private uid:number;
+  private uid:number|string;
   private _media:MediaHelper|null;
   private _recorder:MediaRecorder|null;
   constructor (options:RecordInitOptions) {
@@ -56,7 +56,7 @@ class Record extends EventEmitter {
    * @return {[type]}               [Promise]
    */
   async start (option:RecordStartOptions) {
-    const {stream = null, uid = 0, type = 'video', reset = false } = option
+    const {stream = null, uid = '0', type = 'video', reset = false } = option
     this.adapterRef.logger.log('开始本地录制: ', JSON.stringify(option, null, ''))
     let reason = null;
     if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) {

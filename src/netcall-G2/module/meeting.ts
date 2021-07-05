@@ -3,12 +3,15 @@ import { ajax } from '../util/ajax'
 import {getChannelInfoUrl, SDK_VERSION, roomsTaskUrl} from '../Config'
 // import * as md5 from 'md5';
 import  md5 = require('md5');
+import {deepCopy} from "../util/util";
 import {
   AdapterRef, AddTaskOptions,
   MeetingJoinChannelOptions,
   MeetingOptions, RTMPTask,
   SDKRef
 } from "../types";
+import BigNumber from 'bignumber.js'
+
 /**
  * 会控相关
  */
@@ -55,7 +58,15 @@ class Meeting extends EventEmitter {
       url = this.adapterRef.instance._params.neRtcServerAddresses.channelServer
       this.adapterRef.logger.log('私有化配置的 getChannelInfoUrl: ', url)
     }
-
+    let requestUid = uid
+    if (this.adapterRef.channelInfo.uidType === 'string') {
+      requestUid = new BigNumber(requestUid)
+    }
+    Object.assign(this.adapterRef.channelInfo, {
+      uid,
+      sessionMode,
+      appkey
+    })
     try{
       const data:any = await ajax({
         url, //'https://webtest.netease.im/nrtcproxy/nrtc/getChannelInfos.action'
@@ -65,7 +76,7 @@ class Meeting extends EventEmitter {
           'X-Forwarded-For': this.adapterRef.testConf.ForwardedAddr || ''
         },
         data: {
-          uid,
+          uid: requestUid,
           appkey,
           channelName,
           secureType: token ? '1' : '2', // 安全认证类型：1:安全、2:非安全
@@ -81,6 +92,8 @@ class Meeting extends EventEmitter {
           t1: T1 // 是一个毫秒级的时间戳，若填了这个，服务器会返回t1（客户端请求时间戳）、t2（服务器接收时间戳）、t3（服务器返回时间戳）
         }
       });
+      let isUidExisted = (uid === '0' || (uid != '0' && !Boolean(uid))) ? false : true;
+
 
       this.adapterRef.logger.log('获取到房间信息: %o', data)
       if (data.code === 200) {
@@ -100,9 +113,9 @@ class Meeting extends EventEmitter {
           wssArrIndex: 0,
           maxVideoQuality,
           netDetect: false,
-          uid: ips.uid,
-        }, {
           
+        }, {
+          uid: isUidExisted ? uid : ips.uid,
           sessionMode,
           appkey
         })
@@ -206,10 +219,21 @@ class Meeting extends EventEmitter {
       this.adapterRef.logger.log('私有化配置的 roomsTaskUrl: ', url)
     }
     url = `${url}${this.adapterRef.channelInfo.cid}/tasks`
+    let requestUid = this.adapterRef.channelInfo.uid
+    if (this.adapterRef.channelInfo.uidType === 'string') {
+      requestUid = new BigNumber(requestUid)
+    }
+
     for (let i=0; i < rtmpTasks.length; i++) {
-      rtmpTasks[i].hostUid = this.adapterRef.channelInfo.uid
+      rtmpTasks[i].hostUid = requestUid
       rtmpTasks[i].version = 1
       this.adapterRef.logger.log('rtmpTask: ', rtmpTasks[i])
+      const layout = rtmpTasks[i].layout
+      layout.users.forEach(user=>{
+        if (typeof user.uid === 'string') {
+          user.uid = new BigNumber(user.uid)
+        }
+      }) 
       try {
         const data:any = await ajax({
           url, 
@@ -223,8 +247,8 @@ class Meeting extends EventEmitter {
             taskId: rtmpTasks[i].taskId,
             streamUrl: rtmpTasks[i].streamUrl,
             record: rtmpTasks[i].record,
-            hostUid: parseInt(rtmpTasks[i].hostUid),
-            layout: rtmpTasks[i].layout,
+            hostUid: rtmpTasks[i].hostUid,
+            layout: layout,
             config: rtmpTasks[i].config,
             extraInfo: rtmpTasks[i].extraInfo,
           }
@@ -239,7 +263,7 @@ class Meeting extends EventEmitter {
               taskId: rtmpTasks[i].taskId,
               streamUrl: rtmpTasks[i].streamUrl,
               record: rtmpTasks[i].record,
-              hostUid: parseInt(rtmpTasks[i].hostUid),
+              hostUid: rtmpTasks[i].hostUid,
               layout: rtmpTasks[i].layout,
               config: rtmpTasks[i].config,
             }, null, ' ')
@@ -398,8 +422,18 @@ class Meeting extends EventEmitter {
       this.adapterRef.logger.log('私有化配置的 roomsTaskUrl: ', url)
     }
     url = `${url}${this.adapterRef.channelInfo.cid}/task/update`
+    let requestUid = this.adapterRef.channelInfo.uid
+    if (this.adapterRef.channelInfo.uidType === 'string') {
+      requestUid = new BigNumber(requestUid)
+    }
+
     for (let i = 0; i < rtmpTasks.length; i++) {
-      rtmpTasks[i].hostUid = this.adapterRef.channelInfo.uid
+      const layout = rtmpTasks[i].layout
+      layout.users.forEach(user=>{
+        if (typeof user.uid === 'string') {
+          user.uid = new BigNumber(user.uid)
+        }
+      }) 
       try {
         const data:any = await ajax({
           url, 
@@ -413,8 +447,8 @@ class Meeting extends EventEmitter {
             taskId: rtmpTasks[i].taskId,
             streamUrl: rtmpTasks[i].streamUrl,
             record: rtmpTasks[i].record,
-            hostUid: parseInt(rtmpTasks[i].hostUid),
-            layout: rtmpTasks[i].layout,
+            hostUid: requestUid,
+            layout: layout,
             config: rtmpTasks[i].config,
           }
         })

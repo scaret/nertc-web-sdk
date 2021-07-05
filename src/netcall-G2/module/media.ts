@@ -15,7 +15,7 @@ import {emptyStreamWith} from "../util/gum";
 class MediaHelper extends EventEmitter {
   private adapterRef: AdapterRef;
   private sdkRef: SDKRef;
-  private uid:number;
+  private uid:number|string;
   private isLocal:boolean;
   micStream: MediaStream|null;
   // audioStream对localStream而言是PeerConnection发送的MediaStream，
@@ -47,7 +47,7 @@ class MediaHelper extends EventEmitter {
     this.adapterRef = options.adapterRef
     this.sdkRef = options.sdkRef
     this.uid = options.uid
-    this.isLocal = this.adapterRef.channelInfo.uid == this.uid
+    this.isLocal = this.adapterRef.channelInfo.uid.toString() == this.uid.toString()
     this.micStream = null;
     this.audioStream = new MediaStream();
     this.musicStream = new MediaStream();

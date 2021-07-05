@@ -566,7 +566,7 @@ export class Transport extends EnhancedEventEmitter
       audioProfile
     });
   }
-  async prepareLocalSdp(kind: 'video'|'audio', edgeRtpCapabilities:any, uid: number) {
+  async prepareLocalSdp(kind: 'video'|'audio', edgeRtpCapabilities:any, uid: number|string) {
     try {
       const { dtlsParameters, rtpCapabilities, offer, mid, iceUfragReg } = await this._handler.prepareLocalSdp(kind, uid);
       if (!this._recvRtpCapabilities ||
@@ -587,7 +587,7 @@ export class Transport extends EnhancedEventEmitter
     }
   }
 
-  async recoverLocalSdp(remoteUid: number, mid:string|undefined, kind:'video'|'audio') {
+  async recoverLocalSdp(remoteUid: number|string, mid:string|undefined, kind:'video'|'audio') {
     try {
       await this._handler.recoverTransceiver(remoteUid, mid, kind);
       return;

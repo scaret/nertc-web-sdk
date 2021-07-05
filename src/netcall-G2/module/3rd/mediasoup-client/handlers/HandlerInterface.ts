@@ -67,7 +67,7 @@ export type HandlerReceiveOptions =
   sctpParameters?: SctpParameters;
   offer: any;
   probeSSrc?: number|string;
-  remoteUid: number;
+  remoteUid: number|string;
   extendedRtpCapabilities: any;
 };
 
@@ -133,9 +133,9 @@ export abstract class HandlerInterface extends EnhancedEventEmitter
 
   abstract fillRemoteRecvSdp(options: FillRemoteRecvSdpOptions): any;
   
-  abstract prepareLocalSdp(kind: 'video'|'audio', uid: number): any;
+  abstract prepareLocalSdp(kind: 'video'|'audio', uid: number|string): any;
   
-  abstract recoverTransceiver(remoteUid: number, mid:string|undefined, kind:'video'|'audio'): any;
+  abstract recoverTransceiver(remoteUid: number|string, mid:string|undefined, kind:'video'|'audio'): any;
   
   abstract replaceTrack(
     localId: string, track: MediaStreamTrack | null

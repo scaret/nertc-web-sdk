@@ -12,12 +12,14 @@ import {
 // import { platform } from "../../util/platform";
 import { SDK_VERSION } from '../../Config'
 import { randomId } from '../../util/rtcUtil/utilsId';
+import isEmpty from "../../util/rtcUtil/isEmpty";
 const sha1 =  require('js-sha1');
 
-const wsURL = 'wss://statistic-dev.live.126.net/lps-websocket/websocket/collect';
+const wsURL = 'wss://statistic.live.126.net/lps-websocket/websocket/collect';
 const DEV = 1; // 测试
 const PROD = 0; // 线上
 const deviceId = randomId();
+// const deviceId = '12345asdfg';
 const platform = 'web';
 const sdktype = 'webrtc';
 const timestamp = new Date().getTime();
@@ -29,7 +31,8 @@ class StatsReport extends EventEmitter {
   private stats: GetStats|null;
   private heartbeat_: any;
   private wsTransport_:any;
-  private wholeStatsReport: WholeStatsReport|null;
+  private prevStats_: any;
+  // private wholeStatsReport: WholeStatsReport|null;
   public formativeStatsReport: FormativeStatsReport|null;
   
   constructor (options:StatsReportOptions) {
@@ -41,6 +44,7 @@ class StatsReport extends EventEmitter {
     this.wsTransport_ = null
     this.sdkRef = options.sdkRef
     this.adapterRef = options.adapterRef
+    this.prevStats_ = {}
     this.appKey = this.adapterRef.instance._params.appkey || (this.adapterRef.channelInfo && this.adapterRef.channelInfo.appKey) || ''
 
     // 初始化stats数据统计 
@@ -50,10 +54,12 @@ class StatsReport extends EventEmitter {
     })
     this.stats.on('stats', (data, time) => {
       // this.adapterRef.logger.log(time,'object',data, time);
-      if (time % 2 === 0) { // 两秒上报一次
-        this.wholeStatsReport && this.wholeStatsReport.update(data)
-      }
+
+      // if (time % 2 === 0) { // 两秒上报一次
+      //   this.wholeStatsReport && this.wholeStatsReport.update(data)
+      // }
       this.formativeStatsReport && this.formativeStatsReport.update(data, time)
+      
     })
 
     this.formativeStatsReport = new FormativeStatsReport({
@@ -62,10 +68,10 @@ class StatsReport extends EventEmitter {
       appkey: this.appKey
     })
 
-    this.wholeStatsReport = new WholeStatsReport({
-      appkey: this.appKey,
-      adapterRef: this.adapterRef
-    })
+    // this.wholeStatsReport = new WholeStatsReport({
+    //   appkey: this.appKey,
+    //   adapterRef: this.adapterRef
+    // })
   }
 
   _reset () {
@@ -79,40 +85,40 @@ class StatsReport extends EventEmitter {
     }
     this.formativeStatsReport = null
     
-    if (this.wholeStatsReport) {
-      this.wholeStatsReport.destroy()
-    }
-    this.wholeStatsReport = null
+    // if (this.wholeStatsReport) {
+    //   this.wholeStatsReport.destroy()
+    // }
+    // this.wholeStatsReport = null
     this.stopHeartbeat();
   }
 
   stop () {
     this.stats && this.stats.stop()
     this.formativeStatsReport && this.formativeStatsReport.stop()
-    this.wholeStatsReport && this.wholeStatsReport.stop()
+    // this.wholeStatsReport && this.wholeStatsReport.stop()
   }
 
   start () {
     this.stats && this.stats.start()
-    if (this.wholeStatsReport) {
-      this.wholeStatsReport.start()
-    }
+    // if (this.wholeStatsReport) {
+    //   this.wholeStatsReport.start()
+    // }
     if (this.formativeStatsReport) {
       this.formativeStatsReport.start()
     }
     let checkSum = sha1(`${PROD}${timestamp}${SDK_VERSION}${platform}${sdktype}${deviceId}${salt}`);
     let url = `${wsURL}?deviceId=${deviceId}&isTest=${PROD}&sdkVer=${SDK_VERSION}&sdktype=${sdktype}&timestamp=${timestamp}&platform=${platform}&checkSum=${checkSum}`;
-    // this.wsTransport_ = new WSTransport({
-    //   url: url,      
-    // })
-    // this.wsTransport_.init();
+    this.wsTransport_ = new WSTransport({
+      url: url,      
+    })
+    this.wsTransport_.init();
   }
 
   // 异常情况时单独上报一次
-  uploadFormatDataStatsOnce (data:any) {
-    if (!this.formativeStatsReport) return
-    this.formativeStatsReport.updateOnce()
-  }
+  // uploadFormatDataStatsOnce (data:any) {
+  //   if (!this.formativeStatsReport) return
+  //   this.formativeStatsReport.updateOnce()
+  // }
 
   startHeartbeat() {
     if (this.heartbeat_ === -1) {
@@ -133,7 +139,9 @@ class StatsReport extends EventEmitter {
   async doHeartbeat() {
     try {
       let data = await this.stats?.getAllStats();
-      this.wsTransport_.sendPB(data);
+      let reportData = this.calculateReport(data);
+      // console.log('data--->', reportData)
+      this.wsTransport_.sendPB(reportData);
     } catch (error) {
       // this.adapterRef.logger.error('getStats失败：' , error);
       console.log(error);
@@ -142,10 +150,65 @@ class StatsReport extends EventEmitter {
     
   }
 
+  calculateReport(result:any) {
+    // 正在通话中，远端加入其他音频、视频或屏幕分享流
+    let la = result.local.audio_ssrc ? result.local.audio_ssrc : [],
+      lv = result.local.video_ssrc ? result.local.video_ssrc : [],
+      ra = result.remote.audio_ssrc ? result.remote.audio_ssrc : [],
+      rv = result.remote.video_ssrc ? result.remote.audio_ssrc : [],
+      rs = result.remote.screen_ssrc ? result.remote.screen_ssrc : [];
+
+    if(!isEmpty(this.prevStats_)) {
+      var pla = this.prevStats_.local.audio_ssrc ? this.prevStats_.local.audio_ssrc : [],
+        plv = this.prevStats_.local.video_ssrc ? this.prevStats_.local.video_ssrc : [],
+        pra = this.prevStats_.remote.audio_ssrc ? this.prevStats_.remote.audio_ssrc : [],
+        prv = this.prevStats_.remote.video_ssrc ? this.prevStats_.remote.video_ssrc : [],
+        prs = this.prevStats_.remote.screen_ssrc ? this.prevStats_.remote.screen_ssrc : [];
+    }
+    
+    // 目前只有Chrome有下列数据
+    if(isEmpty(this.prevStats_) || (la.length !== pla.length) || (lv.length !== plv.length) || (ra.length !== pra.length) || (rv.length !== prv.length) || (rs.length !== prs.length) ) {
+      this.prevStats_ = result;
+      this.prevStats_.local.audio_ssrc[0].bytesSentPerSecond = this.prevStats_.local.audio_ssrc[0].bytesSent;
+      this.prevStats_.local.video_ssrc[0].bytesSentPerSecond = this.prevStats_.local.video_ssrc[0].bytesSent;
+      this.prevStats_.local.video_ssrc[0].framesEncodedPerSecond = this.prevStats_.local.video_ssrc[0].framesEncoded;
+      for(let item in this.prevStats_.remote){
+        if(item.indexOf('ssrc') > -1) {
+          for(let i = 0; i < this.prevStats_.remote[item].length; i++){
+            this.prevStats_.remote[item][i].bytesReceivedPerSecond = this.prevStats_.remote[item][i].bytesReceived;
+            if(this.prevStats_.remote[item][i].mediaType === 'video') {
+              this.prevStats_.remote[item][i].framesDecodedPerSecond = this.prevStats_.remote[item][i].framesDecoded;
+            }
+          }
+        }
+      }
+    }else {
+      let local = result.local;
+      let prevLocal = this.prevStats_.local;
+      let remote = result.remote;
+      let prevRemote = this.prevStats_.remote;
+      local.audio_ssrc[0].bytesSentPerSecond = (local.audio_ssrc[0].bytesSent - 0 - prevLocal.audio_ssrc[0].bytesSent)/2;
+      local.video_ssrc[0].bytesSentPerSecond = (local.video_ssrc[0].bytesSent - 0 - prevLocal.video_ssrc[0].bytesSent)/2;
+      local.video_ssrc[0].framesEncodedPerSecond = (local.video_ssrc[0].framesEncoded - 0 - prevLocal.video_ssrc[0].framesEncoded)/2;
+      for(let item in remote){
+        if(item.indexOf('ssrc') > -1) {
+          for(let i = 0; i < remote[item].length; i++){
+            remote[item][i].bytesReceivedPerSecond = (remote[item][i].bytesReceived - 0 - prevRemote[item][i].bytesReceived)/2;
+            if(this.prevStats_.remote[item][i].mediaType === 'video') {
+              remote[item][i].framesDecodedPerSecond = (remote[item][i].framesDecoded - 0 - prevRemote[item][i].framesDecoded)/2;
+            }
+          }
+        }
+      }
+    }
+    this.prevStats_ = result;
+    return this.prevStats_;
+  }
+
   destroy () {
     this.stop()
     this._reset()
-    // this.wsTransport_.close();
+    this.wsTransport_.close();
   }
 }
 

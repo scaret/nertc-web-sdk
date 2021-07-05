@@ -120,6 +120,8 @@ syntax = "proto2";
 
        optional int64 sendPacketLoss=24;
 
+       optional int64 bytesSentPerSecond=25;
+
     }
 
 
@@ -198,6 +200,14 @@ syntax = "proto2";
        optional int64 packetsSentPerSecond=36;
 
        optional int64 sendPacketLoss=37;
+
+       optional int64 freezeTime=38;
+
+       optional int64 totalFreezeTime=39;
+
+       optional int64 bytesSentPerSecond=40;
+
+       optional int64 framesEncodedPerSecond=41;
 
     }
 
@@ -685,6 +695,8 @@ syntax = "proto2";
 
      repeated video_track_obj video_track=12;
 
+     repeated screen_ssrc_obj screen_ssrc=13;
+
      message video_ssrc_obj{
 
        optional string googContentType=1;
@@ -760,6 +772,14 @@ syntax = "proto2";
        optional int64 packetsReceivedPerSecond=36;
 
        optional int64 recvPacketLoss=37;
+
+       optional int64 freezeTime=38;
+
+       optional int64 totalFreezeTime=39;
+
+       optional int64 bytesReceivedPerSecond=40;
+
+       optional int64 framesDecodedPerSecond=41;
 
     }
 
@@ -837,6 +857,12 @@ syntax = "proto2";
        optional int64 packetsReceivedPerSecond=35;
 
        optional int64 recvPacketLoss=36;
+
+       optional int64 freezeTime=37;
+
+       optional int64 totalFreezeTime=38;
+
+       optional int64 bytesReceivedPerSecond=39;
 
     }
 
@@ -1149,6 +1175,8 @@ syntax = "proto2";
 
        optional int64 packetsReceivedPerSecond=31;
 
+       optional string uid=32;
+
     }
 
 
@@ -1211,6 +1239,8 @@ syntax = "proto2";
        optional int64 bitsReceivedPerSecond=28;
 
        optional int64 packetsReceivedPerSecond=29;
+
+       optional string uid=32;
 
     }
 
@@ -1283,6 +1313,93 @@ syntax = "proto2";
        optional string mediaType=20;
 
     }
+
+
+    message screen_ssrc_obj{
+
+      optional string googContentType=1;
+
+      optional string googCaptureStartNtpTimeMs=2;
+
+      optional string googTargetDelayMs=3;
+
+      optional string packetsLost=4;
+
+      optional string googDecodeMs=5;
+
+      optional string googFrameHeightReceived=6;
+
+      optional string googFrameRateOutput=7;
+
+      optional string packetsReceived=8;
+
+      optional string ssrc=9;
+
+      optional string googRenderDelayMs=10;
+
+      optional string googMaxDecodeMs=11;
+
+      optional string googTrackId=12;
+
+      optional string googFrameWidthReceived=13;
+
+      optional string codecImplementationName=14;
+
+      optional string transportId=15;
+
+      optional string mediaType=16;
+
+      optional string googInterframeDelayMax=17;
+
+      optional string googCodecName=18;
+
+      optional string googFrameRateReceived=19;
+
+      optional string framesDecoded=20;
+
+      optional string googNacksSent=21;
+
+      optional string googFirsSent=22;
+
+      optional string bytesReceived=23;
+
+      optional string googFirstFrameReceivedToDecodedMs=24;
+
+      optional string googCurrentDelayMs=25;
+
+      optional string googMinPlayoutDelayMs=26;
+
+      optional string googFrameRateDecoded=27;
+
+      optional string googJitterBufferMs=28;
+
+      optional string googPlisSent=29;
+
+      optional string id=30;
+
+      optional string type=31;
+
+      optional string timestamp=32;
+
+      optional int64 localuid=33;
+
+      optional string remoteuid=34;
+
+      optional int64 bitsReceivedPerSecond=35;
+
+      optional int64 packetsReceivedPerSecond=36;
+
+      optional int64 recvPacketLoss=37;
+
+      optional int64 freezeTime=38;
+
+      optional int64 totalFreezeTime=39;
+
+      optional int64 bytesReceivedPerSecond=40;
+
+      optional int64 framesDecodedPerSecond=41;
+
+   }
 
 
   }

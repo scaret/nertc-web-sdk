@@ -358,7 +358,7 @@ declare interface Client{
     /**
      * 音量最大的用户的 uid。
      */
-    uid: number;
+    uid: number|string;
   }) => void): void;
 
   /**
@@ -368,7 +368,7 @@ declare interface Client{
     /**
      * 用户 ID。
      */
-    uid: number;
+    uid: number|string;
     /**
      * 用户音量。
      */
@@ -390,7 +390,7 @@ declare interface Client{
     /**
      * 远端用户或主播角色的用户 ID。
      */
-    uid: number;
+    uid: number|string;
   }) => void): void;
 
   /**
@@ -406,7 +406,7 @@ declare interface Client{
     /**
      * 远端用户或主播角色的用户 ID。
      */
-    uid: number;
+    uid: number|string;
   }) => void): void;
 
 
@@ -417,7 +417,7 @@ declare interface Client{
     /**
      * 远端用户 ID。
      */
-    uid: number;
+    uid: number|string;
   }) => void): void;
 
 
@@ -428,7 +428,7 @@ declare interface Client{
     /**
      * 远端用户 ID。
      */
-    uid: number;
+    uid: number|string;
   }) => void): void;
 
 
@@ -439,7 +439,7 @@ declare interface Client{
     /**
      * 远端用户 ID。
      */
-    uid: number;
+    uid: number|string;
   }) => void): void;
   
   /**
@@ -449,7 +449,7 @@ declare interface Client{
     /**
      * 远端用户 ID。
      */
-    uid: number;
+    uid: number|string;
   }) => void): void;
   
   /**
@@ -459,7 +459,7 @@ declare interface Client{
     /**
      * 远端用户 ID。
      */
-    uid: number;
+    uid: number|string;
   }) => void): void;
 
   /**
@@ -469,7 +469,7 @@ declare interface Client{
     /**
      * 远端用户 ID。
      */
-    uid: number;
+    uid: number|string;
   }) => void): void;
 
   /**
@@ -481,7 +481,7 @@ declare interface Client{
     /**
      * 远端用户 ID。
      */
-    uid: number;
+    uid: number|string;
   }) => void): void;
   
   /**

@@ -100,7 +100,7 @@ export interface RecordStatus {
 
 export interface RecordStartOptions {
   stream: MediaStream | MediaStream[];
-  uid: number;
+  uid: number|string;
   type: string;
   reset: boolean;
 }
@@ -150,7 +150,7 @@ export interface ClientExceptionEvt{
   /**
    * 用户 ID。
    */
-  uid: number;
+  uid: number|string;
 }
 
   /***
@@ -160,7 +160,7 @@ export interface NetStatusItem {
   /**
    * 用户 ID。
    */
-  uid: number;
+  uid: number|string;
 }
 
   /**
@@ -217,7 +217,7 @@ export interface RTMPTask {
       /**
        * 将指定uid对应用户的视频流拉入直播。如果添加多个 users，则 uid 不能重复。
        */
-      uid: number;
+      uid: number|string;
       /**
        * 通过 x 和 y 指定画布坐标中的一个点，该点将作为用户图像的左上角。x 参数用于设置画布的横轴坐标值。取值范围为 0~1920，若设置为奇数值，会自动向下取偶。
        */
@@ -340,7 +340,7 @@ export interface StreamOptions {
   /**
    * 用户 ID。
    */
-  uid: number;
+  uid: number|string;
   /**
    * 是否从麦克风采集音频
    */
@@ -542,7 +542,7 @@ export interface JoinOptions {
    * 
    * uid 可选。如果不指定，SDK 会自动分配一个随机 uid，您可以通过 getUid 查看，App 层必须记住该值并维护，SDK 不对该值进行维护。
    */
-  uid: number;
+  uid: number|string;
   /**
    * 安全认证签名。详细信息请参考 [NERTC Token](/docs/jcyOTA0ODM/Dc4NTE4OTY)。
    * - 调试模式下：无需设置 Token。
