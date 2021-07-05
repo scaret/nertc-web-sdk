@@ -3,7 +3,7 @@
  */
 import { ajax } from "../../util/ajax";
 import {platform} from "../../util/platform";
-const SDK_VERSION = require('../../../../package.json').webrtcG2Version
+import { SDK_VERSION } from '../../Config/index'
 import {
   WholeStatsReportOptions,
   AdapterRef,
@@ -49,7 +49,7 @@ class WholeStatsReport {
       platform:
         tool.convertPlatform(platform.os.family) + '-' + platform.os.version,
       browser: platform.name + '-' + platform.version,
-      sdk_ver: SDK_VERSION || '3.6.0',
+      sdk_ver: SDK_VERSION,
       uid: "0",
       cid: "0",
       appkey,

@@ -2,6 +2,7 @@ import { EventEmitter } from 'eventemitter3'
 import { Stream } from '../api/stream'
 import { RtcSystem } from '../util/rtcUtil/rtcSystem'
 import BigNumber from 'bignumber.js'
+import {ENGINE_VERSION} from '../Config/index'
 import {
   AdapterRef, MediaTypeShort, NetStatusItem,
   NetworkQualityItem,
@@ -583,7 +584,7 @@ class Signalling extends EventEmitter {
         role: 'part', 
         version: '2.0', 
         sessionMode: 'meeting', 
-        engineVersion: '3.9.0.1', 
+        engineVersion: ENGINE_VERSION,
         userRole: this.adapterRef.instance._roleInfo.userRole, // 0:主播，1:观众
         userType: 3,
         platformType: 16, 
