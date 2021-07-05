@@ -16,7 +16,9 @@ import {SignalJoinRes} from "../interfaces/SignalProtocols";
 import {EncryptionModes, encryptionModeToInt} from "./encryption";
 import {RTSTransport} from "./rtsTransport";
 const protooClient = require('./3rd/protoo-client/')
-const CryptoJS = require("crypto-js");
+const Base64 = require("crypto-js/enc-base64");
+
+console.log("CryptoJS", Base64);
 
 class Signalling extends EventEmitter {
   private adapterRef: AdapterRef;
@@ -950,7 +952,7 @@ class Signalling extends EventEmitter {
   _handleNetStatusNotify(data: {netStatusList: NetStatusItem[]}) {
     const netStatusList = data.netStatusList;
     //this.adapterRef.logger.warn('_handleNetStatusNotify: _userNetStatusUpdateEvent 网络状态: %s', netStatusList)
-    const base64 = CryptoJS.enc.Base64.parse(netStatusList)
+    const base64 = Base64.parse(netStatusList)
     let str = base64.toString()
     //let str = '02001a080000000000000003001b08000000000000000200'
     let networkQuality:NetworkQualityItem[] = []
