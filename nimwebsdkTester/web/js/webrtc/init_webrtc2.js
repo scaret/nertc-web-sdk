@@ -92,8 +92,8 @@ function loadEnv() {
     $('#appkey').val(WEBRTC2_ENV[env].appkey)
     $('#AppSecret').val(WEBRTC2_ENV[env].AppSecret)
   }
-  //$('#uid').val(Math.ceil(Math.random() * 1e4))
-  $('#uid').val('111111111111111111')
+  $('#uid').val(Math.ceil(Math.random() * 1e4))
+  // $('#uid').val('111111111111111111')
   //$('#channelName').val(Math.ceil(Math.random() * 1e10))
   const channelName = window.localStorage ? window.localStorage.getItem("channelName") : "";
   $('#channelName').val(channelName)
