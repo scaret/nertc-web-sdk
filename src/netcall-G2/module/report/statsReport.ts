@@ -1,5 +1,4 @@
 import { EventEmitter } from 'eventemitter3'
-import {WholeStatsReport} from './wholeStatsReport'
 import {GetStats} from './getStats'
 import {FormativeStatsReport} from './formativeStatsReport'
 import raf from '../../util/rtcUtil/raf'
@@ -19,7 +18,6 @@ const wsURL = 'wss://statistic.live.126.net/lps-websocket/websocket/collect';
 const DEV = 1; // 测试
 const PROD = 0; // 线上
 const deviceId = randomId();
-// const deviceId = '12345asdfg';
 const platform = 'web';
 const sdktype = 'webrtc';
 const timestamp = new Date().getTime();
@@ -32,7 +30,6 @@ class StatsReport extends EventEmitter {
   private heartbeat_: any;
   private wsTransport_:any;
   private prevStats_: any;
-  // private wholeStatsReport: WholeStatsReport|null;
   public formativeStatsReport: FormativeStatsReport|null;
   
   constructor (options:StatsReportOptions) {
@@ -55,9 +52,6 @@ class StatsReport extends EventEmitter {
     this.stats.on('stats', (data, time) => {
       // this.adapterRef.logger.log(time,'object',data, time);
 
-      // if (time % 2 === 0) { // 两秒上报一次
-      //   this.wholeStatsReport && this.wholeStatsReport.update(data)
-      // }
       this.formativeStatsReport && this.formativeStatsReport.update(data, time)
       
     })
@@ -68,10 +62,6 @@ class StatsReport extends EventEmitter {
       appkey: this.appKey
     })
 
-    // this.wholeStatsReport = new WholeStatsReport({
-    //   appkey: this.appKey,
-    //   adapterRef: this.adapterRef
-    // })
   }
 
   _reset () {
@@ -84,25 +74,17 @@ class StatsReport extends EventEmitter {
       this.formativeStatsReport.destroy()
     }
     this.formativeStatsReport = null
-    
-    // if (this.wholeStatsReport) {
-    //   this.wholeStatsReport.destroy()
-    // }
-    // this.wholeStatsReport = null
+
     this.stopHeartbeat();
   }
 
   stop () {
     this.stats && this.stats.stop()
     this.formativeStatsReport && this.formativeStatsReport.stop()
-    // this.wholeStatsReport && this.wholeStatsReport.stop()
   }
 
   start () {
     this.stats && this.stats.start()
-    // if (this.wholeStatsReport) {
-    //   this.wholeStatsReport.start()
-    // }
     if (this.formativeStatsReport) {
       this.formativeStatsReport.start()
     }
