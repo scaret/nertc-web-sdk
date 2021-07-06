@@ -11,6 +11,8 @@ import {
   SDKRef
 } from "../types";
 import BigNumber from 'bignumber.js'
+import RtcError from '../util/error/rtcError';
+import ErrorCode from '../util/error/errorCode';
 
 /**
  * 会控相关
@@ -174,7 +176,10 @@ class Meeting extends EventEmitter {
       reason: this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason || 0
     })
     if (!this.adapterRef._signalling){
-      throw new Error('No _signalling');
+      throw new RtcError({
+        code: ErrorCode.NO_SIGNALLING,
+        message: 'No _signalling'
+      })
     }
     return this.adapterRef._signalling.doSendLogout().then(()=>{
       this.adapterRef.channelStatus = 'leave'
@@ -206,10 +211,20 @@ class Meeting extends EventEmitter {
         }, null, '')
       })
       this.adapterRef.logger.error('请先加入房间')
-      return Promise.reject('INVALID_OPERATION')
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.INVALID_OPERATION,
+          message: 'invalid operation'
+        })
+      )
     } else if (!rtmpTasks || !Array.isArray(rtmpTasks) || !rtmpTasks.length){
       this.adapterRef.logger.error('添加推流任务失败: 参数格式错误，rtmpTasks为空，或者该数组长度为空')
-      return Promise.reject('INVALID ARGUMENTS')
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.INVALID_PARAMETER,
+          message: 'invalid parameter'
+        })
+      )
     }
     let url = roomsTaskUrl
     this.adapterRef.logger.log('roomsTaskUrl: ', roomsTaskUrl)
@@ -283,7 +298,12 @@ class Meeting extends EventEmitter {
               config: rtmpTasks[i].config,
             }, null, ' ')
           })
-          return Promise.reject('ADD_TASKS_FAILED')
+          return Promise.reject(
+            new RtcError({
+              code: ErrorCode.ADD_TASK_FAILED,
+              message: 'add task failed'
+            })
+          )
         }
       } catch (e) {
         this.adapterRef.logger.error('addTasks: ', e)
@@ -301,7 +321,12 @@ class Meeting extends EventEmitter {
             config: rtmpTasks[i].config,
           }, null, ' ')
         })
-        return Promise.reject('ADD_TASKS_FAILED')
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.ADD_TASK_FAILED,
+            message: 'add task failed'
+          })
+        )
       }
     } 
   }
@@ -322,10 +347,20 @@ class Meeting extends EventEmitter {
         }, null, ' ')
       })
       this.adapterRef.logger.error('请先加入房间')
-      return Promise.reject('INVALID_OPERATION')
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.INVALID_OPERATION,
+          message: 'please join room first'
+        })
+      )
     } else if (!taskIds || !Array.isArray(taskIds) || !taskIds.length){
       this.adapterRef.logger.error('删除推流任务失败: 参数格式错误，taskIds为空，或者该数组长度为空')
-      return Promise.reject('INVALID ARGUMENTS')
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.INVALID_PARAMETER,
+          message: 'invalid parameter'
+        })
+      )
     }
     
     let url = roomsTaskUrl
@@ -370,7 +405,12 @@ class Meeting extends EventEmitter {
               taskId: taskIds[i]
             }, null, ' ')
           })
-          return Promise.reject('DELETE_TASKS_FAILED')
+          return Promise.reject(
+            new RtcError({
+              code: ErrorCode.DELETE_TASK_FAILED,
+              message: 'delete task failed'
+            })
+          )
         }
       } catch (e) {
         this.adapterRef.logger.error('deleteTasks发生错误: ', e)
@@ -382,7 +422,12 @@ class Meeting extends EventEmitter {
             taskId: taskIds[i]
           }, null, ' ')
         })
-        return Promise.reject('DELETE_TASKS_FAILED')
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.DELETE_TASK_FAILED,
+            message: 'delete task failed'
+          })
+        )
       }
     }
     return
@@ -408,10 +453,20 @@ class Meeting extends EventEmitter {
         }, null, ' ')
       })
       this.adapterRef.logger.error('请先加入房间')
-      return Promise.reject('INVALID_OPERATION')
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.INVALID_OPERATION,
+          message: 'please join room first'
+        })
+      )
     } else if (!rtmpTasks || !Array.isArray(rtmpTasks) || !rtmpTasks.length){
       this.adapterRef.logger.error('更新推流任务失败: 参数格式错误，rtmpTasks为空，或者该数组长度为空')
-      return Promise.reject('INVALID ARGUMENTS')
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.INVALID_PARAMETER,
+          message: 'invalid parameter'
+        })
+      )
     }
 
     let url = roomsTaskUrl
@@ -483,7 +538,12 @@ class Meeting extends EventEmitter {
               config: rtmpTasks[i].config,
             }, null, ' ')
           })
-          return Promise.reject('UPDATE_TASKS_FAILED')
+          return Promise.reject(
+            new RtcError({
+              code: ErrorCode.UPDATE_TASKS_FAILED,
+              message: 'update task failed'
+            })
+          )
         }
       } catch (e) {
         this.adapterRef.logger.error('updateTasks 发生错误: ', e)
@@ -501,7 +561,12 @@ class Meeting extends EventEmitter {
             config: rtmpTasks[i].config,
           }, null, ' ')
         })
-        return Promise.reject('UPDATE_TASKS_FAILED')
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.UPDATE_TASKS_FAILED,
+            message: 'update task failed'
+          })
+        )
       }
     }
   }

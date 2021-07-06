@@ -13,6 +13,9 @@ import {
   DataReport,
 } from "./dataReport";
 import {platform} from "../../util/platform";
+import RtcError from '../../util/error/rtcError';
+import ErrorCode  from '../../util/error/errorCode';
+
 let url = 'https://statistic.live.126.net/statistic/realtime/sdkinfo'
 type UIDTYPE = number | string;
 /**
@@ -879,7 +882,10 @@ class FormativeStatsReport {
 
     this.adapterRef.sessionStats.SendBitrate = result.real_v_kbps_n + result.real_a_kbps_n
     if (!this.adapterRef.localStream){
-      throw new Error('No localStream');
+      throw new RtcError({
+        code: ErrorCode.NO_LOCALSTREAM,
+        message: 'No localStream'
+      })
     }
     this.adapterRef.localAudioStats[0] = {
       CodecType: 'Opus',

@@ -15,6 +15,8 @@ import {
 import { ProducerCodecOptions } from '../../Producer';
 import { MediaKind, RtpParameters } from '../../RtpParameters';
 import { SctpParameters } from '../../SctpParameters';
+import RtcError from '../../../../../util/error/rtcError';
+import ErrorCode  from '../../../../../util/error/errorCode';
 
 const logger = new Logger('RemoteSdp');
 
@@ -280,7 +282,10 @@ export class RemoteSdp
 
     if (idx === undefined)
     {
-      throw new Error(`no media section found with mid '${mid}'`);
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: `no media section found with mid '${mid}'`
+      })
     }
 
     const mediaSection = this._mediaSections[idx];
@@ -294,7 +299,10 @@ export class RemoteSdp
 
     if (idx === undefined)
     {
-      throw new Error(`no media section found with mid '${mid}'`);
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: `no media section found with mid '${mid}'`
+      })
     }
 
     const mediaSection = this._mediaSections[idx];
@@ -333,7 +341,10 @@ export class RemoteSdp
 
     if (idx === undefined)
     {
-      throw new Error(`no media section found with mid '${mid}'`);
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: `no media section found with mid '${mid}'`
+      })
     }
 
     const mediaSection = this._mediaSections[idx] as OfferMediaSection;
@@ -413,7 +424,10 @@ export class RemoteSdp
 
       if (idx === undefined)
       {
-        throw new Error(`no media section found for reuseMid '${reuseMid}'`);
+        throw new RtcError({
+          code: ErrorCode.NOT_FOUND,
+          message: `no media section found for reuseMid '${reuseMid}'`
+        })
       }
 
       const oldMediaSection = this._mediaSections[idx];
@@ -437,8 +451,10 @@ export class RemoteSdp
 
       if (idx === undefined)
       {
-        throw new Error(
-          `no media section found with mid '${newMediaSection.mid}'`);
+        throw new RtcError({
+          code: ErrorCode.NOT_FOUND,
+          message: `no media section found with mid '${newMediaSection.mid}'`
+        })
       }
 
       // Replace the index in the vector with the new media section.

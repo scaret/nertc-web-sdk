@@ -11,7 +11,9 @@ import {Consumer, Device, Producer, Transport} from "./3rd/mediasoup-client/type
 import {Peer} from "./3rd/protoo-client";
 import {Stream} from "../api/stream";
 import {waitForEvent} from "../util/waitForEvent";
-import BigNumber from 'bignumber.js'
+import BigNumber from 'bignumber.js';
+import RtcError from '../util/error/rtcError';
+import ErrorCode from '../util/error/errorCode';
 
 class Mediasoup extends EventEmitter {
   private adapterRef:AdapterRef;
@@ -229,7 +231,10 @@ class Mediasoup extends EventEmitter {
           let iceParameters = null
           if (this._protoo && this._protoo.connected) {
             if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
-              throw new Error('No _protoo');
+              throw new RtcError({
+                code: ErrorCode.NOT_FOUND,
+                message: 'No _protoo'
+              })
             }
             iceParameters = await this.adapterRef._signalling._protoo.request('restartIce', { transportId: this._sendTransport.id });
           } else {
@@ -312,14 +317,20 @@ class Mediasoup extends EventEmitter {
     this.adapterRef.logger.log('发布音视频: ', stream.getId())
     //this._sendTransport.removeListener()
     if (!this._sendTransport){
-      throw new Error('NO_SEND_TRANSPORT');
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'No send trasnport'
+      })
     }
     if(this._sendTransport.listenerCount('produce') === 0) {
       this._sendTransport.on(
         'produce', async ({ kind, rtpParameters, appData, localDtlsParameters, offer }, callback, errback) => {
         this.adapterRef.logger.log('produce 反馈 [kind= %s, appData= %o]',kind, JSON.stringify(appData, null, ' '));
         if (!this._sendTransport){
-          throw new Error('NO_SEND_TRANSPORT');
+          throw new RtcError({
+            code: ErrorCode.NOT_FOUND,
+            message: 'No send trasnport'
+          })
         }
         const mediaTypeShort:MediaTypeShort = (appData.mediaType == "screenShare") ? "screen" : appData.mediaType;
         const iceUfragReg = offer.sdp.match(/a=ice-ufrag:([0-9a-zA-Z#=+-_\/\\\\]+)/)
@@ -417,7 +428,10 @@ class Mediasoup extends EventEmitter {
             producerData.dtlsParameters = localDtlsParameters;
           }
           if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
-            throw new Error('No _protoo');
+            throw new RtcError({
+              code: ErrorCode.NOT_FOUND,
+              message: 'No _protoo'
+            })
           }
           const { transportId, iceParameters, iceCandidates, dtlsParameters, producerId } = 
             await this.adapterRef._signalling._protoo.request('Produce', producerData);
@@ -444,7 +458,10 @@ class Mediasoup extends EventEmitter {
             this._sendTransportIceParameters = iceParameters
           }
           if (!this.adapterRef.localStream){
-            throw new Error('No this.adapterRef.localStream');
+            throw new RtcError({
+              code: ErrorCode.NO_LOCALSTREAM,
+              message: 'localStream not found'
+            })
           }
           this._sendTransport.fillRemoteRecvSdp({
             kind,
@@ -571,7 +588,10 @@ class Mediasoup extends EventEmitter {
       producerId = this._micProducerId
       this._micProducer = this._micProducerId = null
       if (!this.adapterRef.localStream){
-        throw new Error('No this.adapterRef.localStream');
+        throw new RtcError({
+          code: ErrorCode.NO_LOCALSTREAM,
+          message: 'localStream not found'
+        })
       }
       this.adapterRef.localStream.pubStatus.audio.audio = false
     } else if (kind === 'video') {
@@ -579,7 +599,10 @@ class Mediasoup extends EventEmitter {
       producerId = this._webcamProducerId
       this._webcamProducer = this._webcamProducerId = null
       if (!this.adapterRef.localStream){
-        throw new Error('No this.adapterRef.localStream');
+        throw new RtcError({
+          code: ErrorCode.NO_LOCALSTREAM,
+          message: 'localStream not found'
+        })
       }
       this.adapterRef.localStream.pubStatus.video.video = false
     } else if (kind === 'screen') {
@@ -587,7 +610,10 @@ class Mediasoup extends EventEmitter {
       producerId = this._screenProducerId
       this._screenProducer = this._screenProducerId = null
       if (!this.adapterRef.localStream){
-        throw new Error('No this.adapterRef.localStream');
+        throw new RtcError({
+          code: ErrorCode.NO_LOCALSTREAM,
+          message: 'localStream not found'
+        })
       }
       this.adapterRef.localStream.pubStatus.screen.screen = false
     }
@@ -597,7 +623,10 @@ class Mediasoup extends EventEmitter {
       if(!producer) return
       await producer.close();
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
-        throw new Error('No _protoo');
+        throw new RtcError({
+          code: ErrorCode.NOT_FOUND,
+          message: 'No _protoo'
+        })
       }
       await this.adapterRef._signalling._protoo.request(
         'CloseProducer', { 
@@ -699,7 +728,10 @@ class Mediasoup extends EventEmitter {
         try {
           remoteStream.pubStatus[mediaTypeShort].stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup){
-            throw new Error('No this.adapterRef._mediasoup');
+            throw new RtcError({
+              code: ErrorCode.NO_MEDIASOUP,
+              message: 'media server error'
+            })
           }
           await this.destroyConsumer(remoteStream.pubStatus.audio.consumerId);
           this.adapterRef.instance.removeSsrc(remoteStream.getId(), mediaTypeShort)
@@ -725,7 +757,10 @@ class Mediasoup extends EventEmitter {
     }
     if (!this._recvTransport) {
       info.resolve(null);
-      throw new Error('NO_RECV_TRANSPORT');
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'No receive transport'
+      })
     }
 
     this.adapterRef.logger.log(`prepareLocalSdp [kind: ${kind}, mediaTypeShort: ${mediaTypeShort}, uid: ${uid}]`);
@@ -780,7 +815,10 @@ class Mediasoup extends EventEmitter {
     this.adapterRef.logger.log(`发送consume请求, uid: ${uid}, kind: ${kind}, mediaTypeShort: ${mediaTypeShort}, producerId: ${data.producerId}, transportId: ${data.transportId}, requestId: ${data.requestId}`);
     if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
       info.resolve(null);
-      throw new Error('No _protoo');
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'No _protoo'
+      })
     }
     const consumeRes = await this.adapterRef._signalling._protoo.request('Consume', data);
     let { transportId, iceParameters, iceCandidates, dtlsParameters, probeSSrc, rtpParameters, producerId, consumerId, code, errMsg } = consumeRes;
@@ -895,7 +933,10 @@ class Mediasoup extends EventEmitter {
         remoteStream['pubStatus'][mediaTypeShort]['consumerId'] = consumerId
         remoteStream['pubStatus'][mediaTypeShort]['producerId'] = producerId
         if (!remoteStream.mediaHelper){
-          throw new Error('No remoteStream.mediaHelper');
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIAHELPER,
+            message: 'No remoteStream.mediaHelper'
+          })
         }
         remoteStream.mediaHelper.updateStream(mediaTypeShort, consumer.track)
         this.adapterRef.instance.emit('stream-subscribed', {stream: remoteStream, 'mediaType': mediaTypeShort})
@@ -922,11 +963,20 @@ class Mediasoup extends EventEmitter {
     const mediaTypeShort = (mediaType === 'screenShare' ? 'screen' : mediaType);
     this.adapterRef.logger.log('开始订阅 %s 的 %s 媒体: %s 大小流: ', uid, mediaTypeShort, id, preferredSpatialLayer)
     if (!this.adapterRef._rtsTransport) {
-      throw new Error('_createConsumerRts: _rtsTransport is null');
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: '_createConsumerRts: _rtsTransport is null'
+      })
     } else if(!this.adapterRef._signalling || !this.adapterRef._signalling._protoo || !this.adapterRef._signalling._protoo.request){
-      throw new Error('_createConsumerRts: _protoo is null'); 
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: '_createConsumerRts: _protoo is null'
+      })
     } else if(mediaTypeShort !== 'audio' && mediaTypeShort !== 'video' && mediaTypeShort !== 'screen') {
-      throw new Error('_createConsumerRts: mediaType type error');
+      throw new RtcError({
+        code: ErrorCode.UNKNOWN_TYPE,
+        message: '_createConsumerRts: mediaType type error'
+      })
     }
 
     if (!id) {
@@ -967,7 +1017,10 @@ class Mediasoup extends EventEmitter {
     this.adapterRef.logger.log('发送consume请求 = %o', data);
     if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
       info.resolve(null);
-      throw new Error('No _protoo');
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'No _protoo'
+      })
     }
     const consumeRes = await this.adapterRef._signalling._protoo.request('WsConsume', data);
 
@@ -1013,12 +1066,18 @@ class Mediasoup extends EventEmitter {
     try {
       this.adapterRef.logger.log('停止订阅 destroyConsumer consumerId=%o', consumerId);
       if (!this._consumers){
-        throw new Error('No _consumers');
+        throw new RtcError({
+          code: ErrorCode.NOT_FOUND,
+          message: 'No _consumers'
+        })
       }
       const consumer = this._consumers[consumerId];
       if(!consumer) return
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
-        throw new Error('No _protoo');
+        throw new RtcError({
+          code: ErrorCode.NOT_FOUND,
+          message: 'No _protoo'
+        })
       }
       this.adapterRef._signalling._protoo.request(
         'CloseConsumer', { 
@@ -1038,7 +1097,10 @@ class Mediasoup extends EventEmitter {
     try {
       this.adapterRef.logger.log('closeTransport() [停止通道 transportId=%o ]', transport.id);
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
-        throw new Error('No _protoo');
+        throw new RtcError({
+          code: ErrorCode.NOT_FOUND,
+          message: 'No _protoo'
+        })
       }
       const result = await this.adapterRef._signalling._protoo.request(
         'CloseTransport', { 
@@ -1056,12 +1118,18 @@ class Mediasoup extends EventEmitter {
   async muteAudio(){
     this.adapterRef.logger.log('mute音频')
     if (!this._micProducer){
-      throw new Error('No _micProducer');
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'No _micProducer'
+      })
     }
     this._micProducer.pause();
     try{
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
-        throw new Error('No _protoo');
+        throw new RtcError({
+          code: ErrorCode.NOT_FOUND,
+          message: 'No _protoo'
+        })
       }
       let muteUid = this.adapterRef.channelInfo.uid
       if (this.adapterRef.channelInfo.uidType === 'string') {
@@ -1088,12 +1156,18 @@ class Mediasoup extends EventEmitter {
   async unmuteAudio(){
     this.adapterRef.logger.log('resume音频')
     if (!this._micProducer){
-      throw new Error('No _micProducer');
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'No _micProducer'
+      })
     }
     this._micProducer.resume();
     try{
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
-        throw new Error('No _protoo');
+        throw new RtcError({
+          code: ErrorCode.NOT_FOUND,
+          message: 'No _protoo'
+        })
       }
       let muteUid = this.adapterRef.channelInfo.uid
       if (this.adapterRef.channelInfo.uidType === 'string') {
@@ -1121,12 +1195,18 @@ class Mediasoup extends EventEmitter {
   async muteVideo(){
     this.adapterRef.logger.log('mute视频')
     if (!this._webcamProducer){
-      throw new Error('No _webcamProducer');
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'No _webcamProducer'
+      })
     }
     this._webcamProducer.pause();
     try {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
-        throw new Error('No _protoo');
+        throw new RtcError({
+          code: ErrorCode.NOT_FOUND,
+          message: 'No _protoo'
+        })
       }
       let muteUid = this.adapterRef.channelInfo.uid
       if (this.adapterRef.channelInfo.uidType === 'string') {
@@ -1153,12 +1233,18 @@ class Mediasoup extends EventEmitter {
   async unmuteVideo(){
     this.adapterRef.logger.log('resume视频')
     if (!this._webcamProducer){
-      throw new Error('No _webcamProducer');
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'No _webcamProducer'
+      })
     }
     this._webcamProducer.resume();
     try{
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
-        throw new Error('No _protoo');
+        throw new RtcError({
+          code: ErrorCode.NOT_FOUND,
+          message: 'No _protoo'
+        })
       }
       let muteUid = this.adapterRef.channelInfo.uid
       if (this.adapterRef.channelInfo.uidType === 'string') {
@@ -1185,12 +1271,18 @@ class Mediasoup extends EventEmitter {
   async muteScreen(){
     this.adapterRef.logger.log('mute视频')
     if (!this._screenProducer){
-      throw new Error('No _screenProducer');
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'No _screenProducer'
+      })
     }
     this._screenProducer.pause();
     try {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
-        throw new Error('No _protoo');
+        throw new RtcError({
+          code: ErrorCode.NOT_FOUND,
+          message: 'No _protoo'
+        })
       }
       let muteUid = this.adapterRef.channelInfo.uid
       if (this.adapterRef.channelInfo.uidType === 'string') {
@@ -1217,12 +1309,18 @@ class Mediasoup extends EventEmitter {
   async unmuteScreen(){
     this.adapterRef.logger.log('resume视频')
     if (!this._screenProducer){
-      throw new Error('No _screenProducer');
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'No _screenProducer'
+      })
     }
     this._screenProducer.resume();
     try{
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
-        throw new Error('No _protoo');
+        throw new RtcError({
+          code: ErrorCode.NOT_FOUND,
+          message: 'No _protoo'
+        })
       }
       let muteUid = this.adapterRef.channelInfo.uid
       if (this.adapterRef.channelInfo.uidType === 'string') {
@@ -1250,7 +1348,10 @@ class Mediasoup extends EventEmitter {
     this.adapterRef.logger.log(`updateUserRole:更新用户角色为${userRole}`);
     try {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
-        throw new Error('No _protoo');
+        throw new RtcError({
+          code: ErrorCode.NOT_FOUND,
+          message: 'No _protoo'
+        })
       }
       let muteUid = this.adapterRef.channelInfo.uid
       if (this.adapterRef.channelInfo.uidType === 'string') {

@@ -2,9 +2,10 @@ import { EventEmitter } from 'eventemitter3'
 import {
   RTSTransportOptions,
   AdapterRef,
-  SDKRef, SnapshotOptions,
-
+  SDKRef, SnapshotOptions
 } from "../types"
+import RtcError from '../util/error/rtcError';
+import ErrorCode  from '../util/error/errorCode';
 
 class RTSTransport extends EventEmitter {
   private adapterRef:AdapterRef;
@@ -37,7 +38,10 @@ class RTSTransport extends EventEmitter {
   initSocket () {
     this.adapterRef.logger.log('RTSTransport建立连接, url: ', this._url)
     if(!this._url){
-      throw new Error('RTSTransport: No _url');
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'RTSTransport: No _url'
+      })
     }
     this._ws = new WebSocket(this._url, ['protoo'])
     this._ws.binaryType = "arraybuffer"

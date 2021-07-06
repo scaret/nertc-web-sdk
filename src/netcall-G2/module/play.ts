@@ -3,9 +3,10 @@ import {createWatermarkControl, WatermarkControl} from "../module/watermark";
 import {
   PlayOptions,
   AdapterRef,
-  SDKRef, SnapshotOptions, MediaTypeShort,
-
+  SDKRef, SnapshotOptions, MediaTypeShort
 } from "../types"
+import RtcError from '../util/error/rtcError';
+import ErrorCode  from '../util/error/errorCode';
 
 class Play extends EventEmitter {
   private adapterRef:AdapterRef;
@@ -541,14 +542,20 @@ class Play extends EventEmitter {
     let canvas = document.createElement("canvas")
     let ctx = canvas.getContext("2d");
     if (!ctx){
-      throw new Error('无法获取canvas上下文');
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'no context of canvas'
+      })
     }
     // video
     if (snapshotVideo){
       const name = options.name || ((uid || this.adapterRef.channelInfo.uid) + '-' + this.index++);
       ctx.fillStyle = '#ffffff'
       if (!this.videoDom){
-        throw new Error('没有videoDom');
+        throw new RtcError({
+          code: ErrorCode.NOT_FOUND,
+          message: 'no videoDom'
+        })
       }
       ctx.fillRect(0, 0, this.videoDom.videoWidth, this.videoDom.videoHeight)
       canvas.width = this.videoDom.videoWidth
@@ -578,7 +585,10 @@ class Play extends EventEmitter {
       const name = options.name || ((uid || this.adapterRef.channelInfo.uid) + '-' + this.index++);
       ctx.fillStyle = '#ffffff'
       if (!this.screenDom){
-        throw new Error('没有screenDom');
+        throw new RtcError({
+          code: ErrorCode.NOT_FOUND,
+          message: 'no screenDom'
+        })
       }
       ctx.fillRect(0, 0, this.screenDom.videoWidth, this.screenDom.videoHeight)
       canvas.width = this.screenDom.videoWidth

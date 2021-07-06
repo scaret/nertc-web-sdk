@@ -7,6 +7,8 @@ import {
   RtpParameters,
   RtpEncodingParameters
 } from './RtpParameters';
+import RtcError from '../../../util/error/rtcError';
+import ErrorCode  from '../../../util/error/errorCode';
 
 export type ProducerOptions =
 {
@@ -215,7 +217,10 @@ export class Producer extends EnhancedEventEmitter
    */
   set appData(appData) // eslint-disable-line @typescript-eslint/no-unused-vars
   {
-    throw new Error('cannot override appData object');
+    throw new RtcError({
+      code: ErrorCode.APPDATA_ERROR,
+      message: 'cannot override appData object'
+    })
   }
 
   /**

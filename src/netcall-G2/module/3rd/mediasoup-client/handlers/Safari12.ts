@@ -19,6 +19,8 @@ import { RtpCapabilities, RtpParameters } from '../RtpParameters';
 import { SctpCapabilities, SctpStreamParameters } from '../SctpParameters';
 import {reduceCodecs} from "../../../../util/rtcUtil/codec";
 import {getMediaSecionIdx} from "../../../../util/getMediaSecionIdx";
+import RtcError from '../../../../util/error/rtcError';
+import ErrorCode  from '../../../../util/error/errorCode';
 
 const logger = new Logger('Safari12');
 
@@ -500,8 +502,12 @@ export class Safari12 extends HandlerInterface
 
     const transceiver = this._mapMidTransceiver.get(localId);
 
-    if (!transceiver)
-      throw new Error('associated RTCRtpTransceiver not found');
+    if (!transceiver){
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'associated RTCRtpTransceiver not found'
+      })
+    }
     if (kind === 'audio') {
       this._pc.audioSender.replaceTrack(null);
       //this._remoteSdp.closeMediaSection('0');
@@ -569,8 +575,12 @@ export class Safari12 extends HandlerInterface
 
     const transceiver = this._mapMidTransceiver.get(localId);
 
-    if (!transceiver)
-      throw new Error('associated RTCRtpTransceiver not found');
+    if (!transceiver){
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'associated RTCRtpTransceiver not found'
+      })
+    }
 
     await transceiver.sender.replaceTrack(track);
   }
@@ -585,8 +595,12 @@ export class Safari12 extends HandlerInterface
 
     const transceiver = this._mapMidTransceiver.get(localId);
 
-    if (!transceiver)
-      throw new Error('associated RTCRtpTransceiver not found');
+    if (!transceiver){
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'associated RTCRtpTransceiver not found'
+      })
+    }
 
     const parameters = transceiver.sender.getParameters();
 
@@ -612,8 +626,12 @@ export class Safari12 extends HandlerInterface
 
     const transceiver = this._mapMidTransceiver.get(localId);
 
-    if (!transceiver)
-      throw new Error('associated RTCRtpTransceiver not found');
+    if (!transceiver){
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'associated RTCRtpTransceiver not found'
+      })
+    }
 
     const parameters:EnhancedRTCRtpParameters = transceiver.sender.getParameters();
 
@@ -632,8 +650,12 @@ export class Safari12 extends HandlerInterface
 
     const transceiver = this._mapMidTransceiver.get(localId);
 
-    if (!transceiver)
-      throw new Error('associated RTCRtpTransceiver not found');
+    if (!transceiver){
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'associated RTCRtpTransceiver not found'
+      })
+    }
 
     return transceiver.sender.getStats();
   }
@@ -699,7 +721,10 @@ export class Safari12 extends HandlerInterface
   async receive({ iceParameters, iceCandidates, dtlsParameters, sctpParameters, trackId, kind, rtpParameters, offer, probeSSrc=-1, remoteUid, extendedRtpCapabilities}:HandlerReceiveOptions) {
     this._assertRecvDirection();
     if (!rtpParameters.mid){
-      throw new Error("No rtpParameters.mid");
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'No rtpParameters.mid'
+      })
     }
     logger.debug('receive() [trackId: %s, kind: %s, remoteUid: %s]', trackId, kind, remoteUid);
     if (!this._remoteSdp) {
@@ -789,8 +814,12 @@ export class Safari12 extends HandlerInterface
     const transceiver = this._pc.getTransceivers()
       .find((t: RTCRtpTransceiver) => t.mid === localId);
 
-    if (!transceiver)
-      throw new Error('new RTCRtpTransceiver not found');
+    if (!transceiver){
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'new RTCRtpTransceiver not found'
+      })
+    }
 
     // Store in the map.
     this._mapMidTransceiver.set(localId, transceiver);
@@ -810,8 +839,12 @@ export class Safari12 extends HandlerInterface
 
     const transceiver:EnhancedTransceiver|undefined = this._mapMidTransceiver.get(localId);
 
-    if (!transceiver || !transceiver.mid)
-      throw new Error('associated RTCRtpTransceiver not found');
+    if (!transceiver || !transceiver.mid){
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'associated RTCRtpTransceiver not found'
+      })
+    }
 
     logger.debug('transceiver: ', transceiver)
     if (transceiver.receiver && transceiver.receiver.track && transceiver.receiver.track && transceiver.receiver.track.kind === 'audio') {
@@ -839,8 +872,12 @@ export class Safari12 extends HandlerInterface
 
     const transceiver = this._mapMidTransceiver.get(localId);
 
-    if (!transceiver)
-      throw new Error('associated RTCRtpTransceiver not found');
+    if (!transceiver){
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'associated RTCRtpTransceiver not found'
+      })
+    }
 
     return transceiver.receiver.getStats();
   }
@@ -881,8 +918,10 @@ export class Safari12 extends HandlerInterface
   {
     if (this._direction !== 'send')
     {
-      throw new Error(
-        'method can just be called for handlers with "send" direction');
+      throw new RtcError({
+        code: ErrorCode.INVALID_OPERATION,
+        message: 'method can just be called for handlers with "send" direction'
+      })
     }
   }
 
@@ -890,8 +929,10 @@ export class Safari12 extends HandlerInterface
   {
     if (this._direction !== 'recv')
     {
-      throw new Error(
-        'method can just be called for handlers with "recv" direction');
+      throw new RtcError({
+        code: ErrorCode.INVALID_OPERATION,
+        message: 'method can just be called for handlers with "recv" direction'
+      })
     }
   }
 }

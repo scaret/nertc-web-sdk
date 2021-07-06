@@ -7,6 +7,8 @@ import {
   RtpParameters,
   RtcpFeedback
 } from '../../RtpParameters';
+import RtcError from '../../../../../util/error/rtcError';
+import ErrorCode  from '../../../../../util/error/errorCode';
 
 export function extractRtpCapabilities(
   { sdpObject }:
@@ -141,8 +143,12 @@ export function extractDtlsParameters(
       m.iceUfrag && m.port !== 0
     ));
 
-  if (!mediaObject)
-    throw new Error('no active media section found');
+  if (!mediaObject){
+    throw new RtcError({
+      code: ErrorCode.NOT_FOUND,
+      message: 'no active media section found'
+    })
+  }
 
   const fingerprint = mediaObject.fingerprint || sdpObject.fingerprint;
   let role: DtlsRole | undefined;

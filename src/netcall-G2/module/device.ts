@@ -1,3 +1,5 @@
+import RtcError from '../util/error/rtcError';
+import ErrorCode from '../util/error/errorCode';
 // 设备状态监听对应的各种操作
 
 let devicesCache = []
@@ -30,7 +32,11 @@ export interface DeviceInfo {
 const Device = {
   async getDevices () {
     if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
-      throw new Error('your browser not support get media devices, see https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/enumerateDevices')
+      throw new RtcError({
+        code: ErrorCode.NOT_SUPPORT, 
+        message: 'mediaDevices is not support in your browser', 
+        url: 'https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/enumerateDevices'
+      })
     }
     let result:{video: DeviceInfo[], audioIn: DeviceInfo[], audioOut: DeviceInfo[]} = {
       video: [],

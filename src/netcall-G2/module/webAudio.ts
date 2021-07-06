@@ -18,6 +18,8 @@ import {
   WebAudioOptions,
 
 } from '../types'
+import RtcError from '../util/error/rtcError';
+import ErrorCode from '../util/error/errorCode';
 
 /**
  * webaudio 控制
@@ -383,7 +385,12 @@ class WebAudio extends EventEmitter{
   startMix(options:AudioMixingOptions) {
     if (!this.context || !this.destination || !this.gainFilter){
       this.logger.error("initMonitor:参数不够");
-      return Promise.reject("initMonitor:参数不够");
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.INVALID_PARAMETER,
+          message: 'initMonitor: invalid parameter'
+        })
+      )
     }
     
     this.logger.log('开始混音: %s', JSON.stringify(options, null, ' '))
@@ -474,7 +481,12 @@ class WebAudio extends EventEmitter{
   stopAudioMixing(isFinished = true) {
     if (!this.mixAudioConf.audioSource || !this.mixAudioConf.gainFilter){
       this.logger.error("stopAudioMixing:参数不够");
-      return Promise.reject("stopAudioMixing:参数不够");
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.INVALID_PARAMETER,
+          message: 'stopAudioMixing: invalid parameter'
+        })
+      )
     }
     this.logger.log('停止混音, isFinished: ', isFinished)
     this.mixAudioConf.audioSource.onended = null
@@ -580,7 +592,12 @@ class WebAudio extends EventEmitter{
   startAudioEffectMix (options:soundsConf) {
     if (!this.context || !this.destination || !this.gainFilter){
       this.logger.error("initMonitor:参数不够");
-      return Promise.reject("initMonitor:参数不够");
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.INVALID_PARAMETER,
+          message: 'initMonitor: invalid parameter'
+        })
+      )
     }
     const {
       sourceNode,
@@ -625,7 +642,12 @@ class WebAudio extends EventEmitter{
     } = options
     if (!gainNode || !sourceNode){
       this.logger.error("stopAudioEffectMix: 参数不够");
-      return Promise.reject("stopAudioEffectMix: 参数不够");
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.INVALID_PARAMETER,
+          message: 'stopAudioEffectMix: invalid parameter'
+        })
+      )
     }
     this.logger.log('stopAudioEffectMix: ', options)
     sourceNode.onended = null

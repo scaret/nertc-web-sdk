@@ -1,4 +1,6 @@
 import { RtpEncodingParameters } from '../../RtpParameters';
+import RtcError from '../../../../../util/error/rtcError';
+import ErrorCode  from '../../../../../util/error/errorCode';
 
 export function getRtpEncodings(
   { offerMediaObject }:
@@ -14,8 +16,12 @@ export function getRtpEncodings(
     ssrcs.add(ssrc);
   }
 
-  if (ssrcs.size === 0)
-    throw new Error('no a=ssrc lines found');
+  if (ssrcs.size === 0){
+    throw new RtcError({
+      code: ErrorCode.NOT_FOUND,
+      message: 'no a=ssrc lines found'
+    })
+  }
 
   const ssrcToRtxSsrc = new Map();
 
@@ -86,8 +92,12 @@ export function addLegacySimulcast(
   const ssrcMsidLine = (offerMediaObject.ssrcs || [])
     .find((line: any) => line.attribute === 'msid');
 
-  if (!ssrcMsidLine)
-    throw new Error('a=ssrc line with msid information not found');
+  if (!ssrcMsidLine){
+    throw new RtcError({
+      code: ErrorCode.NOT_FOUND,
+      message: 'a=ssrc line with msid information not found'
+    })
+  }
 
   const [ streamId, trackId ] = ssrcMsidLine.value.split(' ');
   const firstSsrc = ssrcMsidLine.id;
@@ -117,8 +127,12 @@ export function addLegacySimulcast(
   const ssrcCnameLine = offerMediaObject.ssrcs
     .find((line: any) => line.attribute === 'cname');
 
-  if (!ssrcCnameLine)
-    throw new Error('a=ssrc line with cname information not found');
+  if (!ssrcCnameLine){
+    throw new RtcError({
+      code: ErrorCode.NOT_FOUND,
+      message: 'a=ssrc line with cname information not found'
+    })
+  }
 
   const cname = ssrcCnameLine.value;
   const ssrcs = [];

@@ -1,4 +1,6 @@
 import { MediaKind, RtpEncodingParameters } from '../../RtpParameters';
+import RtcError from '../../../../../util/error/rtcError';
+import ErrorCode  from '../../../../../util/error/errorCode';
 
 export function extractPlainRtpParameters(
   {
@@ -19,8 +21,12 @@ export function extractPlainRtpParameters(
   const mediaObject = (sdpObject.media || [])
     .find((m: any) => m.type === kind);
 
-  if (!mediaObject)
-    throw new Error(`m=${kind} section not found`);
+  if (!mediaObject){
+    throw new RtcError({
+      code: ErrorCode.NOT_FOUND,
+      message: `m=${kind} section not found`
+    })
+  }
 
   const connectionObject = mediaObject.connection || sdpObject.connection;
 
@@ -45,8 +51,12 @@ export function getRtpEncodings(
   const mediaObject = (sdpObject.media || [])
     .find((m: any) => m.type === kind);
 
-  if (!mediaObject)
-    throw new Error(`m=${kind} section not found`);
+  if (!mediaObject){
+    throw new RtcError({
+      code: ErrorCode.NOT_FOUND,
+      message: `m=${kind} section not found`
+    })
+  }
 
   const ssrcCnameLine = (mediaObject.ssrcs || [])[0];
   const ssrc = ssrcCnameLine ? ssrcCnameLine.id : null;

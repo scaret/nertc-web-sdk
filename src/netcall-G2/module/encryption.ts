@@ -7,6 +7,8 @@ import {
   SM4Ctx,
 } from "sm4-128-ecb";
 import {AdapterRef} from "../types";
+import RtcError from '../util/error/rtcError';
+import ErrorCode  from '../util/error/errorCode';
 
 // "encoded-transform-sm4-128-ecb"是一个测试模式，不向外暴露
 type EncryptionMode = "none"|"sm4-128-ecb"|"encoded-transform-sm4-128-ecb";
@@ -75,7 +77,10 @@ class Encryption extends EventEmitter {
       sm4_setkey_enc(this.encCtx, sk);
       sm4_setkey_dec(this.decCtx, sk);
     }else{
-      throw new Error('No encryptionSecret');
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'No encryptionSecret'
+      })
     }
   }
   findCryptIndexH264(data:Uint8Array){

@@ -17,6 +17,8 @@ import {SignalJoinRes} from "../interfaces/SignalProtocols";
 import {EncryptionModes, encryptionModeToInt} from "./encryption";
 import {RTSTransport} from "./rtsTransport";
 import { parseBase64 } from "../util/crypto-ts/base64";
+import RtcError from '../util/error/rtcError';
+import ErrorCode from '../util/error/errorCode';
 const protooClient = require('./3rd/protoo-client/')
 
 class Signalling extends EventEmitter {
@@ -175,7 +177,10 @@ class Signalling extends EventEmitter {
 
   _bindEvent() {
     if (!this._protoo){
-      throw new Error('No this._protoo');
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'No this._protoo'
+      })
     }
     this._protoo.on('open', this.join.bind(this))
     this._protoo.on('failed', this._handleFailed.bind(this))
@@ -281,7 +286,10 @@ class Signalling extends EventEmitter {
             mediaTypeShort = 'audio';
             break;
           default:
-            throw new Error(`Unrecognized mediaType ${mediaType}`);
+            throw new RtcError({
+              code: ErrorCode.UNKNOWN_TYPE,
+              message: `Unrecognized mediaType ${mediaType}`
+            })
         }
         let remoteStream = this.adapterRef.remoteStreamMap[uid]
         if (!remoteStream) {
@@ -347,7 +355,10 @@ class Signalling extends EventEmitter {
             mediaTypeShort = 'audio';
             break;
           default:
-            throw new Error(`Unrecognized mediaType ${mediaType}`);
+            throw new RtcError({
+              code: ErrorCode.UNKNOWN_TYPE,
+              message: `Unrecognized mediaType ${mediaType}`
+            })
         }
         let remoteStream = this.adapterRef.remoteStreamMap[uid]
         if(!remoteStream) return
@@ -359,7 +370,10 @@ class Signalling extends EventEmitter {
 
 
         if (!this.adapterRef._mediasoup){
-          throw new Error('No this.adapterRef._mediasoup');
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIASOUP,
+            message: 'media server error'
+          })
         }
 
         this.adapterRef._mediasoup.removeUselessConsumeRequest({producerId})
@@ -447,7 +461,10 @@ class Signalling extends EventEmitter {
           this.adapterRef.logger.warn('chence OnTransportClose: code = %d, errMsg = %s, transportId = %s', 
             code, errMsg, transportId);
           if (!this.adapterRef._mediasoup){
-            throw new Error('No this.adapterRef._mediasoup');
+            throw new RtcError({
+              code: ErrorCode.NO_MEDIASOUP,
+              message: 'media server error'
+            })
           }
           if (this.adapterRef._mediasoup._sendTransport 
             && (this.adapterRef._mediasoup._micProducer || this.adapterRef._mediasoup._webcamProducer)) {
@@ -467,7 +484,10 @@ class Signalling extends EventEmitter {
           this.adapterRef.logger.warn('chence OnConsumerClose: code = %d, errMsg = %s consumerId = %s, producerId = %s', 
             code, errMsg, consumerId, producerId);
           if (!this.adapterRef._mediasoup){
-            throw new Error('No this.adapterRef._mediasoup');
+            throw new RtcError({
+              code: ErrorCode.NO_MEDIASOUP,
+              message: 'media server error'
+            })
           }
           if (this.adapterRef._mediasoup._recvTransport) {
             this.adapterRef.logger.warn('下行媒体同时重连')
@@ -491,7 +511,10 @@ class Signalling extends EventEmitter {
               reason: 'OnSignalRestart' 
             })
           if (!this._protoo){
-            throw new Error('No this._protoo');
+            throw new RtcError({
+              code: ErrorCode.NOT_FOUND,
+              message: 'No this._protoo'
+            })
           }
           this.adapterRef.logger.log('connected: ', this._protoo.connected)
           if (this._protoo.connected) {
@@ -634,7 +657,10 @@ class Signalling extends EventEmitter {
     
     this._times = 0
     if (!this._protoo){
-      throw new Error('No this._proto');
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'No this._protoo'
+      })
     }
 
     try {
@@ -676,7 +702,10 @@ class Signalling extends EventEmitter {
 
         this.adapterRef.instance.resetChannel()
         if (!this.adapterRef._mediasoup){
-          throw new Error('No this.adapterRef._mediasoup');
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIASOUP,
+            message: 'media server error'
+          })
         }
         this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities;
         this.adapterRef.mediaCapability.parseRoom(response.externData.roomCapability);
@@ -703,7 +732,10 @@ class Signalling extends EventEmitter {
           time_elapsed: currentTime - webrtc2Param.startJoinTime
         })
         if (!this.adapterRef._mediasoup){
-          throw new Error('No this.adapterRef._mediasoup');
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIASOUP,
+            message: 'media server error'
+          })
         }
         this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities;
         this.adapterRef.mediaCapability.parseRoom(response.externData.roomCapability);
@@ -754,7 +786,10 @@ class Signalling extends EventEmitter {
                   mediaTypeShort = "audio";
                   break;
                 default:
-                  throw new Error(`Unrecognized mediaType ${mediaType}`);
+                  throw new RtcError({
+                    code: ErrorCode.UNKNOWN_TYPE,
+                    message: `Unrecognized mediaType ${mediaType}`
+                  })
               }
               remoteStream[mediaTypeShort] = true
               //@ts-ignore
@@ -852,12 +887,18 @@ class Signalling extends EventEmitter {
 
   async doSendKeepAlive () {
     if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
-      throw new Error('No _protoo');
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'No _protoo'
+      })
     }
     if(this.adapterRef._signalling._protoo.connected === false) return
     try {
       if (!this._protoo){
-        throw new Error('No this._protoo');
+        throw new RtcError({
+          code: ErrorCode.NOT_FOUND,
+          message: 'No this._protoo'
+        })
       }
       const response = await this._protoo.request('Heartbeat');
       //this.adapterRef.logger.log('包活信令回包: ', response)
@@ -877,9 +918,15 @@ class Signalling extends EventEmitter {
   async createRTSTransport() {
     this.adapterRef.logger.log(`createRTSTransport()`);
     if (!this._protoo) {
-      throw new Error('createRTSTransport: _protoo is null');
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'createRTSTransport: _protoo is null'
+      })
     } else if (!this._url) {
-      throw new Error('createRTSTransport: _url is null');
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'createRTSTransport: _url is null'
+      })
     }
 
     try {
@@ -915,9 +962,15 @@ class Signalling extends EventEmitter {
   async rtsRequestKeyFrame(consumerId: string) {
     this.adapterRef.logger.log(`rtsRequestKeyFrame(): `, consumerId);
     if (!this._protoo) {
-      throw new Error('rtsRequestKeyFrame: no _proto');
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'rtsRequestKeyFrame: no _proto'
+      })
     } else if (!consumerId) {
-      throw new Error('rtsRequestKeyFrame: no consumerId');
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'rtsRequestKeyFrame: no consumerId'
+      })
     }
     try {
       const response = await this._protoo.request('RequestKeyFrame', {consumerId});

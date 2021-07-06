@@ -1,4 +1,6 @@
 import {ValidIntegerOptions, ExistsOptions, ValidFloatOptions, ValidStringOptions} from "../types";
+import RtcError from '../util/error/rtcError';
+import ErrorCode  from '../util/error/errorCode';
 
 const isValidInteger = (param: ValidIntegerOptions)=>{
   if (!Number.isInteger(param.value)){
@@ -28,7 +30,10 @@ const checkValidInteger = (param: ValidIntegerOptions)=>{
   if (data.result){
     return;
   }else{
-    throw new Error(`参数错误 ${param.tag}:${data.msg}`);
+    throw new RtcError({
+      code: ErrorCode.INVALID_PARAMETER,
+      message: `参数错误 ${param.tag}:${data.msg}`
+    })
   }
 }
 
@@ -61,7 +66,10 @@ const checkValidString = (param: ValidStringOptions)=>{
   if (data.result){
     return;
   }else{
-    throw new Error(`参数错误 ${param.tag}:${data.msg}`);
+    throw new RtcError({
+      code: ErrorCode.INVALID_PARAMETER,
+      message: `参数错误 ${param.tag}:${data.msg}`
+    })
   }
 }
 
@@ -93,7 +101,10 @@ const checkValidFloat = (param: ValidFloatOptions)=>{
   if (data.result){
     return;
   }else{
-    throw new Error(`参数错误 ${param.tag}:${data.msg}`);
+    throw new RtcError({
+      code: ErrorCode.INVALID_PARAMETER,
+      message: `参数错误 ${param.tag}:${data.msg}`
+    })
   }
 }
 
@@ -115,7 +126,10 @@ const checkExists = (param: ExistsOptions)=>{
   if (data.result){
     return;
   }else{
-    throw new Error(`参数错误：${param.tag} ${data.msg}`);
+    throw new RtcError({
+      code: ErrorCode.INVALID_PARAMETER,
+      message: `参数错误：${param.tag} ${data.msg}`
+    })
   }
 }
 

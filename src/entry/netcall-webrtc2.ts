@@ -10,6 +10,8 @@ import { checkExists, checkValidInteger } from "../netcall-G2/util/param";
 import { getSupportedCodecs } from "../netcall-G2/util/rtcUtil/codec";
 import { detectDevice } from "../netcall-G2/module/3rd/mediasoup-client";
 import log from '../netcall-G2/util/log/logger';
+import RtcError from '../netcall-G2/util/error/rtcError';
+import ErrorCode from '../netcall-G2/util/error/errorCode';
 
 /**
  * {@link NERTC} 
@@ -159,10 +161,17 @@ createStream (options:StreamOptions) {
   checkExists({tag: 'createStream:options.uid', value: options.uid});
   if (options.screenAudio){
     if (!options.screen){
-      throw new Error('createStream:screenAudio要与screen一起开启');
+      throw new RtcError({
+        code: ErrorCode.INVALID_OPERATION,
+        message: 'createStream:screenAudio要与screen一起开启'
+      })
+      
     }
     if (options.audio){
-      throw new Error('createStream:screenAudio与audio只能开启一个');
+      throw new RtcError({
+        code: ErrorCode.INVALID_OPERATION,
+        message: 'createStream:screenAudio与audio只能开启一个'
+      })
     }
   }
   

@@ -9,6 +9,8 @@ import { Producer, ProducerOptions } from './Producer';
 import { Consumer, ConsumerOptions } from './Consumer';
 import { SctpParameters } from './SctpParameters';
 import {RtpParameters} from "./RtpParameters";
+import RtcError from '../../../util/error/rtcError';
+import ErrorCode  from '../../../util/error/errorCode';
 
 interface InternalTransportOptions extends TransportOptions
 {
@@ -298,7 +300,10 @@ export class Transport extends EnhancedEventEmitter
    */
   set appData(appData: any) // eslint-disable-line no-unused-vars
   {
-    throw new Error('cannot override appData object');
+    throw new RtcError({
+      code: ErrorCode.APPDATA_ERROR,
+      message: 'cannot override appData object'
+    })
   }
 
   /**
