@@ -85,8 +85,8 @@ export default class WSTransport {
             this.socketInUse_.onclose = () => {};
             // 4001 indicates that we want reconnect with new WebSocket
             this.socketInUse_.close(4001);
-            // this.socket_  = this.socketInUse_ = null;
-            this.socket_ = null;
+            this.socket_  = this.socketInUse_ = null;
+            // this.socket_ = null;
           }
         }
       }

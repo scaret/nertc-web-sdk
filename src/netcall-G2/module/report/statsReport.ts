@@ -3,6 +3,7 @@ import {GetStats} from './getStats'
 import {FormativeStatsReport} from './formativeStatsReport'
 import raf from '../../util/rtcUtil/raf'
 import WSTransport from "../../util/wsTransport"
+import * as env from '../../util/rtcUtil/rtcEnvironment';
 import {
   AdapterRef,
   SDKRef,
@@ -149,40 +150,43 @@ class StatsReport extends EventEmitter {
     }
     
     // 目前只有Chrome有下列数据
-    if(isEmpty(this.prevStats_) || (la.length !== pla.length) || (lv.length !== plv.length) || (ra.length !== pra.length) || (rv.length !== prv.length) || (rs.length !== prs.length) ) {
-      this.prevStats_ = result;
-      this.prevStats_.local.audio_ssrc[0].bytesSentPerSecond = this.prevStats_.local.audio_ssrc[0].bytesSent;
-      this.prevStats_.local.video_ssrc[0].bytesSentPerSecond = this.prevStats_.local.video_ssrc[0].bytesSent;
-      this.prevStats_.local.video_ssrc[0].framesEncodedPerSecond = this.prevStats_.local.video_ssrc[0].framesEncoded;
-      for(let item in this.prevStats_.remote){
-        if(item.indexOf('ssrc') > -1) {
-          for(let i = 0; i < this.prevStats_.remote[item].length; i++){
-            this.prevStats_.remote[item][i].bytesReceivedPerSecond = this.prevStats_.remote[item][i].bytesReceived;
-            if(this.prevStats_.remote[item][i].mediaType === 'video') {
-              this.prevStats_.remote[item][i].framesDecodedPerSecond = this.prevStats_.remote[item][i].framesDecoded;
+    if(env.IS_CHROME){
+      if(isEmpty(this.prevStats_) || (la.length !== pla.length) || (lv.length !== plv.length) || (ra.length !== pra.length) || (rv.length !== prv.length) || (rs.length !== prs.length) ) {
+        this.prevStats_ = result;
+        this.prevStats_.local.audio_ssrc[0].bytesSentPerSecond = this.prevStats_.local.audio_ssrc[0].bytesSent;
+        this.prevStats_.local.video_ssrc[0].bytesSentPerSecond = this.prevStats_.local.video_ssrc[0].bytesSent;
+        this.prevStats_.local.video_ssrc[0].framesEncodedPerSecond = this.prevStats_.local.video_ssrc[0].framesEncoded;
+        for(let item in this.prevStats_.remote){
+          if(item.indexOf('ssrc') > -1) {
+            for(let i = 0; i < this.prevStats_.remote[item].length; i++){
+              this.prevStats_.remote[item][i].bytesReceivedPerSecond = this.prevStats_.remote[item][i].bytesReceived;
+              if(this.prevStats_.remote[item][i].mediaType === 'video') {
+                this.prevStats_.remote[item][i].framesDecodedPerSecond = this.prevStats_.remote[item][i].framesDecoded;
+              }
             }
           }
         }
-      }
-    }else {
-      let local = result.local;
-      let prevLocal = this.prevStats_.local;
-      let remote = result.remote;
-      let prevRemote = this.prevStats_.remote;
-      local.audio_ssrc[0].bytesSentPerSecond = (local.audio_ssrc[0].bytesSent - 0 - prevLocal.audio_ssrc[0].bytesSent)/2;
-      local.video_ssrc[0].bytesSentPerSecond = (local.video_ssrc[0].bytesSent - 0 - prevLocal.video_ssrc[0].bytesSent)/2;
-      local.video_ssrc[0].framesEncodedPerSecond = (local.video_ssrc[0].framesEncoded - 0 - prevLocal.video_ssrc[0].framesEncoded)/2;
-      for(let item in remote){
-        if(item.indexOf('ssrc') > -1) {
-          for(let i = 0; i < remote[item].length; i++){
-            remote[item][i].bytesReceivedPerSecond = (remote[item][i].bytesReceived - 0 - prevRemote[item][i].bytesReceived)/2;
-            if(this.prevStats_.remote[item][i].mediaType === 'video') {
-              remote[item][i].framesDecodedPerSecond = (remote[item][i].framesDecoded - 0 - prevRemote[item][i].framesDecoded)/2;
+      }else {
+        let local = result.local;
+        let prevLocal = this.prevStats_.local;
+        let remote = result.remote;
+        let prevRemote = this.prevStats_.remote;
+        local.audio_ssrc[0].bytesSentPerSecond = (local.audio_ssrc[0].bytesSent - 0 - prevLocal.audio_ssrc[0].bytesSent)/2;
+        local.video_ssrc[0].bytesSentPerSecond = (local.video_ssrc[0].bytesSent - 0 - prevLocal.video_ssrc[0].bytesSent)/2;
+        local.video_ssrc[0].framesEncodedPerSecond = (local.video_ssrc[0].framesEncoded - 0 - prevLocal.video_ssrc[0].framesEncoded)/2;
+        for(let item in remote){
+          if(item.indexOf('ssrc') > -1) {
+            for(let i = 0; i < remote[item].length; i++){
+              remote[item][i].bytesReceivedPerSecond = (remote[item][i].bytesReceived - 0 - prevRemote[item][i].bytesReceived)/2;
+              if(this.prevStats_.remote[item][i].mediaType === 'video') {
+                remote[item][i].framesDecodedPerSecond = (remote[item][i].framesDecoded - 0 - prevRemote[item][i].framesDecoded)/2;
+              }
             }
           }
         }
       }
     }
+    
     this.prevStats_ = result;
     return this.prevStats_;
   }
