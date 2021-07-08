@@ -7,6 +7,8 @@ import {
   SDKRef
 } from "../types";
 import {MediaHelper} from "./media";
+import RtcError from '../util/error/rtcError';
+import ErrorCode from '../util/error/errorCode';
 
 /**
  * 媒体录制（音频混音录制/视频录制）
@@ -137,7 +139,12 @@ class Record extends EventEmitter {
           recordName: ''
         }, null, ' ')
       })
-      return Promise.reject('RecordApiFailed')
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.RECORD_API_ERROR,
+          message: 'record api error'
+        })
+      )
     }
   }
   /**
@@ -170,7 +177,12 @@ class Record extends EventEmitter {
     this._status.recordStatus = 'stopping'
     return new Promise((resolve, reject) => {
       if (!this._recorder){
-        return reject('NO_RECORDER_FOUND');
+        return reject(
+          new RtcError({
+            code: ErrorCode.NO_RECORDER_FOUND,
+            message: 'no record found'
+          })
+        )
       }
       this._status.fileName = this._status.fileName
       this._recorder.onstop = () => {
@@ -348,7 +360,12 @@ class Record extends EventEmitter {
     return new Promise((resolve, reject) => {
       let opStream = new MediaStream()
       if (!streams){
-        return reject('streams not defined');
+        return reject(
+          new RtcError({
+            code: ErrorCode.NOT_DEFINED,
+            message: 'stream not defined'
+          })
+        )
       }
       if (this._matchLocalStreamConstructor(streams.constructor.toString())) {
         streams = [streams] as MediaStream[]
@@ -407,7 +424,12 @@ class Record extends EventEmitter {
       mimeType: this._status.mimeType
     }
     if (!this._status.opStream){
-      return Promise.reject('_start:NO_STREAM_AVAILABLE');
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.NOT_AVALIABLE,
+          message: 'no stream avaliable'
+        })
+      )
     }
     let recorder = (this._recorder = new MediaRecorder(this._status.opStream, options))
     recorder.ondataavailable = this._onDataAvailable.bind(this)
@@ -475,10 +497,20 @@ class Record extends EventEmitter {
       dom = document.createElement('video')
       dom.autoplay = true
     }else{
-      return Promise.reject(`Unsupported MIME type ${this._status.mimeType}`);
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.NOT_SUPPORT,
+          message: `Unsupported MIME type ${this._status.mimeType}`
+        })
+      )
     }
     if (!this._status.recordUrl){
-      return Promise.reject(`_play:recordUrl undefined`);
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.NOT_DEFINED,
+          message: 'record url is unfefined'
+        })
+      )
     }
     div.appendChild(dom)
     dom.srcObject = null;

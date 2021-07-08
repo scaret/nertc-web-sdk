@@ -1,3 +1,5 @@
+import RtcError from '../util/error/rtcError';
+import ErrorCode from '../util/error/errorCode';
 /** 异步请求api */
 var JSONbig = require('json-bigint');
 /**
@@ -37,7 +39,12 @@ export interface AjaxOptions{
 
 function ajax (option:AjaxOptions) {
   if (!option || !option.url) {
-    return Promise.reject('参数不完整，无法发起请求')
+    return Promise.reject(
+      new RtcError({
+        code: ErrorCode.INVALID_PARAMETER,
+        message: 'could not send request due to invalid parameter'
+      })
+    )
   }
 
   option.dataType = option.dataType || 'json'
@@ -59,7 +66,12 @@ function ajax (option:AjaxOptions) {
   return new Promise((resolve, reject) => {
     xhr.onload = function () {
       if (xhr.status > 400) {
-        return Promise.reject('参数不完整，无法发起请求')
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_PARAMETER,
+            message: 'could not send request due to invalid parameter'
+          })
+        )
       }
       var data = xhr.response
       // data = JSON.parse(data)

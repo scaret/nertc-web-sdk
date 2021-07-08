@@ -11,6 +11,8 @@ import {
 } from "../interfaces/ApiReportParam";
 import {EncryptionMode, EncryptionModes, encryptionModeToInt} from "../module/encryption";
 import { logController } from '../util/log/upload'
+import RtcError from '../util/error/rtcError';
+import ErrorCode  from '../util/error/errorCode';
 const BigNumber = require("bignumber.js");
 
 /**
@@ -61,7 +63,7 @@ class Client extends Base {
     if (!appkey) {
       this.adapterRef.logger.error('Client: init error: 请传入appkey')
       // this.logStorage.log('log','Client: init error: 请传入appkey')
-      throw new Error('请传入appkey')
+      throw new RtcError({code: ErrorCode.INVALID_PARAMETER, message:'请传入appkey'})
     }
     this._params.appkey = appkey
     this._params.token = token
@@ -111,7 +113,10 @@ class Client extends Base {
     }*/
     const {priority = 100, preemtiveMode = false} = options
     if(typeof priority !== 'number' || isNaN(priority)){
-      throw new Error('setLocalMediaPriority: priority 非 number类型')
+      throw new RtcError({
+        code: ErrorCode.INVALID_PARAMETER,
+        message: 'setLocalMediaPriority: priority is not Number'
+      })
     }
     this.adapterRef.userPriority = options
   }
@@ -141,7 +146,15 @@ class Client extends Base {
   async join (options: JoinOptions) {
     this.adapterRef.logger.warn('加入频道, options: ', JSON.stringify(options, null, ' '))
     if (this.adapterRef.channelStatus === 'join' || this.adapterRef.channelStatus === 'connectioning') {
-      return Promise.reject('ERR_REPEAT_JOIN')
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.REPEAT_JOIN,
+          message: 'repeatedly join'
+        })
+      )
+    }
+    if(!options.channelName){
+      throw new RtcError({code: ErrorCode.INVALID_PARAMETER, message:'请填写房间名称'})
     }
     if (typeof options.uid === 'string') {
       this.adapterRef.logger.log('uid是string类型')
@@ -151,11 +164,19 @@ class Client extends Base {
       this.adapterRef.logger.log('uid是number类型')
       this.adapterRef.channelInfo.uidType = 'number'
       if(options.uid > Number.MAX_SAFE_INTEGER){
-        throw new Error('uid超出number精度')
+        throw new RtcError({
+          code: ErrorCode.INVALID_PARAMETER,
+          message: 'uid is exceeds the scope of Number'
+        })
       }
     } else {
       this.adapterRef.logger.error('uid参数格式非法')
-      return Promise.reject('INVALID_ARGUMENTS')
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.INVALID_PARAMETER,
+          message: 'uid is invalid'
+        })
+      )
     }
 
     this.adapterRef.connectState.curState = 'CONNECTING'
@@ -198,7 +219,10 @@ class Client extends Base {
       }
     }
     if (!this.adapterRef._meetings){
-      throw new Error('No this.adapterRef._meetings');
+      throw new RtcError({
+        code: ErrorCode.NO_MEETINGS,
+        message: 'meetings error'
+      })
     }
     return this.adapterRef._meetings.joinChannel(this._params.JoinChannelRequestParam4WebRTC2);
   }
@@ -293,12 +317,29 @@ class Client extends Base {
         code: -1,
         param
       })
-      return Promise.reject(reason)
+      if(reason === 'INVALID_OPERATION') {
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_OPERATION,
+            message: 'invalid operation'
+          })
+        )
+      }else if(reason === 'INVALID_LOCAL_STREAM') {
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.NO_LOCALSTREAM,
+            message: 'no localStream'
+          })
+        )
+      }
     }
     
     try {
       if (!this.adapterRef._mediasoup){
-        throw new Error('No this.adapterRef._mediasoup');
+        throw new RtcError({
+          code: ErrorCode.NO_MEDIASOUP,
+          message: 'media server error'
+        })
       }
       this.bindLocalStream(stream)
       await this.adapterRef._mediasoup.createProduce(stream);
@@ -352,13 +393,30 @@ class Client extends Base {
         code: -1,
         param
       })
-      return Promise.reject(reason)
+      if(reason === 'INVALID_OPERATION') {
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_OPERATION,
+            message: 'invalid operation'
+          })
+        )
+      }else if (reason === 'INVALID_LOCAL_STREAM') {
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.NO_LOCALSTREAM,
+            message: 'no localStream'
+          })
+        )
+      }
     }
 
     this.adapterRef.logger.log(`开始取消发布本地 ${type ? type : '音视频'} 流`)
     try {
       if (!this.adapterRef._mediasoup){
-        throw new Error('No this.adapterRef._mediasoup');
+        throw new RtcError({
+          code: ErrorCode.NO_MEDIASOUP,
+          message: 'media server error'
+        })
       }
       await this.adapterRef._mediasoup.destroyProduce('audio');
       await this.adapterRef._mediasoup.destroyProduce('video');
@@ -415,10 +473,16 @@ class Client extends Base {
     this.adapterRef.logger.log(`subscribe() [订阅远端: ${stream.stringStreamID}]`)
     const uid = stream.getId()
     if (!uid) {
-      throw new Error('No uid');
+      throw new RtcError({
+        code: ErrorCode.INVALID_PARAMETER,
+        message: 'No uid'
+      })
     }
     if (!this.adapterRef._mediasoup) {
-      throw new Error('No this.adapterRef._mediasoup');
+      throw new RtcError({
+        code: ErrorCode.NO_MEDIASOUP,
+        message: 'media server error'
+      })
     }
     try {
       if (stream.subConf.audio) {
@@ -438,7 +502,10 @@ class Client extends Base {
           this.adapterRef.logger.log('开始取消订阅音频流')
           stream.pubStatus.audio.stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup){
-            throw new Error('No this.adapterRef._mediasoup');
+            throw new RtcError({
+              code: ErrorCode.NO_MEDIASOUP,
+              message: 'media server error'
+            })
           }
           await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.audio.consumerId);
           this.adapterRef.instance.removeSsrc(stream.getId(), 'audio')
@@ -482,7 +549,10 @@ class Client extends Base {
           this.adapterRef.logger.log('开始取消订阅视频流')
           stream.pubStatus.video.stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup){
-            throw new Error('No this.adapterRef._mediasoup');
+            throw new RtcError({
+              code: ErrorCode.NO_MEDIASOUP,
+              message: 'media server error'
+            })
           }
           await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.video.consumerId);
           this.adapterRef.instance.removeSsrc(stream.getId(), 'video')
@@ -521,7 +591,10 @@ class Client extends Base {
           this.adapterRef.logger.log('开始取消订阅辅流')
           stream.pubStatus.screen.stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup){
-            throw new Error('No this.adapterRef._mediasoup');
+            throw new RtcError({
+              code: ErrorCode.NO_MEDIASOUP,
+              message: 'media server error'
+            })
           }
           await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.screen.consumerId);
           this.adapterRef.instance.removeSsrc(stream.getId(), 'screen')
@@ -606,7 +679,10 @@ class Client extends Base {
         this.adapterRef.logger.log('开始取消订阅音频流')
         stream.pubStatus.audio.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup){
-          throw new Error('No this.adapterRef._mediasoup');
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIASOUP,
+            message: 'media server error'
+          })
         }
         await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.audio.consumerId);
         this.adapterRef.instance.removeSsrc(stream.getId(), 'audio')
@@ -630,7 +706,10 @@ class Client extends Base {
         this.adapterRef.logger.log('开始取消订阅视频流')
         stream.pubStatus.video.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup){
-          throw new Error('No this.adapterRef._mediasoup');
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIASOUP,
+            message: 'media server error'
+          })
         }
         await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.video.consumerId);
         this.adapterRef.instance.removeSsrc(stream.getId(), 'video')
@@ -655,7 +734,10 @@ class Client extends Base {
         this.adapterRef.logger.log('开始取消订阅辅流')
         stream.pubStatus.screen.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup){
-          throw new Error('No this.adapterRef._mediasoup');
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIASOUP,
+            message: 'media server error'
+          })
         }
         await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.screen.consumerId);
         this.adapterRef.instance.removeSsrc(stream.getId(), 'screen')
@@ -730,11 +812,17 @@ class Client extends Base {
 
     try {
       if (!this.adapterRef._mediasoup){
-        throw new Error('No this.adapterRef._mediasoup');
+        throw new RtcError({
+          code: ErrorCode.NO_MEDIASOUP,
+          message: 'media server error'
+        })
       }
       const streamId = stream.getId();
       if (!streamId){
-        throw new Error('No stream Id');
+        throw new RtcError({
+          code: ErrorCode.INVALID_PARAMETER,
+          message: 'No stream Id'
+        })
       }
       await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.video.consumerId);
       stream.pubStatus.video.consumerId = '';
@@ -841,7 +929,10 @@ class Client extends Base {
               await this.unpublish(this.adapterRef.localStream);
             }
             if (!this.adapterRef._mediasoup){
-              throw new Error('No this.adapterRef._mediasoup');
+              throw new RtcError({
+                code: ErrorCode.NO_MEDIASOUP,
+                message: 'media server error'
+              })
             }
             await this.adapterRef._mediasoup.updateUserRole(userRole);
             if (this._roleInfo.userRole !== userRole) {
@@ -873,7 +964,21 @@ class Client extends Base {
       param: JSON.stringify(param, null, ' ')
     })
     if (reason){
-      return Promise.reject(reason);
+      if(reason === 'INVALID_OPERATION') {
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_OPERATION,
+            message: 'invalid operation'
+          })
+        )
+      }else if (reason === 'USER_NOT_IN_CHANNEL') {
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.NO_LOCALSTREAM,
+            message: 'user not in channel'
+          })
+        )
+      }
     }
   }
 
@@ -928,7 +1033,13 @@ class Client extends Base {
   getSystemStats(){
     //@ts-ignore
     if (!navigator.getBattery) {
-      return Promise.reject('NOT_SUPPORTED_YET')
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.NOT_SUPPORTED_YET,
+          message: 'navigator.getBattery is not support in your browser',
+          url: 'https://developer.mozilla.org/en-US/docs/Web/API/Navigator/getBattery'
+        })
+      )
     }
     return new Promise((resolve, reject) =>{
       //@ts-ignore
@@ -1057,7 +1168,10 @@ class Client extends Base {
       param: JSON.stringify(param, null, ' ')
     })
     if (reason){
-      throw new Error(reason);
+      throw new RtcError({
+        code: ErrorCode.INVALID_OPERATION,
+        message: 'invalid operation'
+      })
     }
   }
 
@@ -1072,11 +1186,19 @@ class Client extends Base {
   addTasks (options:AddTaskOptions) {
     if (this._roleInfo.userRole === 1) {
       this.adapterRef.logger.error(`addTasks: 观众不允许进行直播推流操作`);
-      return Promise.reject(`INVALID_OPERATION`);
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.INVALID_OPERATION,
+          message: 'audience is not allowed to operate task'
+        })
+      );
     }
     this.adapterRef.logger.log('增加互动直播推流任务, options: ', options)
     if (!this.adapterRef._meetings){
-      throw new Error('No this.adapterRef._meetings');
+      throw new RtcError({
+        code: ErrorCode.NO_MEETINGS,
+        message: 'meetings error'
+      })
     }
     return this.adapterRef._meetings.addTasks(options)
   }
@@ -1092,11 +1214,19 @@ class Client extends Base {
   deleteTasks (options:{taskIds: string[]}) {
     if (this._roleInfo.userRole === 1) {
       this.adapterRef.logger.error(`deleteTasks: 观众不允许进行直播推流操作`);
-      return Promise.reject(`INVALID_OPERATION`);
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.INVALID_OPERATION,
+          message: 'audience is not allowed to operate task'
+        })
+      );
     }
     this.adapterRef.logger.log('删除互动直播推流任务, options: ', options)
     if (!this.adapterRef._meetings){
-      throw new Error('No this.adapterRef._meetings');
+      throw new RtcError({
+        code: ErrorCode.NO_MEETINGS,
+        message: 'meetings error'
+      })
     }
     return this.adapterRef._meetings.deleteTasks(options)
   }
@@ -1112,11 +1242,19 @@ class Client extends Base {
   updateTasks (options : {rtmpTasks: RTMPTask[]}) {
     if (this._roleInfo.userRole === 1) {
       this.adapterRef.logger.error(`updateTasks: 观众不允许进行直播推流操作`);
-      return Promise.reject(`INVALID_OPERATION`);
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.INVALID_OPERATION,
+          message: 'audience is not allowed to operate task'
+        })
+      );
     }
     this.adapterRef.logger.log('更新互动直播推流任务, options: ', options)
     if (!this.adapterRef._meetings){
-      throw new Error('No this.adapterRef._meetings');
+      throw new RtcError({
+        code: ErrorCode.NO_MEETINGS,
+        message: 'meetings error'
+      })
     }
     return this.adapterRef._meetings.updateTasks(options)
   }
@@ -1142,7 +1280,10 @@ class Client extends Base {
   setEncryptionSecret(encryptionSecret: string){
     switch (this.adapterRef.encryption.encryptionMode){
       case "none":
-        throw new Error('Client.setEncryptionSecret:请先设置加密模式');
+        throw new RtcError({
+          code: ErrorCode.INVALID_OPERATION,
+          message: 'Client.setEncryptionSecret: please set encryptionMode first'
+        })
       case "sm4-128-ecb":
         checkValidString({
           tag: 'client.setEncryptionSecret:encryptionSecret',

@@ -12,6 +12,8 @@ import {
   SDKRef
 } from "../types";
 import {emptyStreamWith} from "../util/gum";
+import RtcError from '../util/error/rtcError';
+import ErrorCode from '../util/error/errorCode';
 class MediaHelper extends EventEmitter {
   private adapterRef: AdapterRef;
   private sdkRef: SDKRef;
@@ -145,7 +147,10 @@ class MediaHelper extends EventEmitter {
       if (screen) {
         if (!this.adapterRef.localStream){
           this.adapterRef.logger.error('mediaHelper.getStream screen:No localStream');
-          throw new Error('No localStream')
+          throw new RtcError({
+            code: ErrorCode.NO_LOCALSTREAM,
+            message: 'No localStream'
+          })
         }
         const {width, height, frameRate} = this.convert(this.adapterRef.localStream.screenProfile)
         
@@ -251,7 +256,10 @@ class MediaHelper extends EventEmitter {
       } else if (audio || video) {
         if (!this.adapterRef.localStream){
           this.adapterRef.logger.error('Client.getStream:No localStream');
-          throw new Error('No localStream');
+          throw new RtcError({
+            code: ErrorCode.NO_LOCALSTREAM,
+            message: 'No localStream'
+          })
         }
         const {height, width, frameRate} = this.convert(this.adapterRef.localStream.videoProfile)
         let config:MediaStreamConstraints = {
@@ -382,7 +390,12 @@ class MediaHelper extends EventEmitter {
     } = constraint
     if(!audio && !video){
       this.adapterRef.logger.error('getSecondStream:必须指定一个参数');
-      return Promise.reject('INVALID_OPERATION')
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.INVALID_OPERATION,
+          message: 'audio/video is invalid'
+        })
+      )
     }
 
     try {
@@ -424,7 +437,10 @@ class MediaHelper extends EventEmitter {
           this.videoConstraint = {video: constraint.video}
         }
         if (!this.adapterRef.localStream){
-          throw new Error('No LocalStream');
+          throw new RtcError({
+            code: ErrorCode.NO_LOCALSTREAM,
+            message: 'No localStream'
+          })
         }
         const isPlaying = await this.adapterRef.localStream.isPlaying('video')
         if (isPlaying && this.cameraStream) {
@@ -500,7 +516,10 @@ class MediaHelper extends EventEmitter {
 
   getAudioConstraints() {
     if (!this.adapterRef.localStream){
-      throw new Error('No LocalStream');
+      throw new RtcError({
+        code: ErrorCode.NO_LOCALSTREAM,
+        message: 'No localStream'
+      })
     }
     const audioProcessing = this.adapterRef.localStream.audioProcessing;
     let constraint:any = {};
@@ -683,7 +702,28 @@ class MediaHelper extends EventEmitter {
           reason: reason
         }), null, ' ')
       })
-      return Promise.reject(reason)
+      if(reason === 'INVALID_ARGUMENTS') {
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_OPERATION,
+            message: 'file path not found'
+          })
+        )
+      }else if(reason === 'NOT_PUBLIST_AUDIO_YET'){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_OPERATION,
+            message: 'audio source is not published'
+          })
+        )
+      }else if(reason === 'BROWSER_NOT_SUPPORT'){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.NOT_SUPPORT,
+            message: 'audio mixing is not supported in this browser'
+          })
+        )
+      }
     }
 
     if (this.webAudio){
@@ -720,13 +760,23 @@ class MediaHelper extends EventEmitter {
       this.adapterRef.logger.log("loadRemoteAudioFile 加载云端音乐成功")
       return new Promise((resolve, reject) => {
         if (!this.webAudio || !this.webAudio.context){
-          reject('webAudio丢失')
+          reject(
+            new RtcError({
+              code: ErrorCode.NOT_SUPPORT,
+              message: 'webAudio lost'
+            })
+          )
           return;
         }
         this.webAudio.context.decodeAudioData(data as ArrayBuffer, buffer => {
           this.adapterRef.logger.log("loadRemoteAudioFile 云端音乐解码成功")
           if (!this.mixAudioConf.audioFilePath){
-            reject('状态错误')
+            reject(
+              new RtcError({
+                code: ErrorCode.STATE_ERROR,
+                message: 'state error'
+              })
+            )
             return;
           }
           this.mixAudioConf.audioBuffer[this.mixAudioConf.audioFilePath] =buffer;
@@ -735,12 +785,22 @@ class MediaHelper extends EventEmitter {
           })
         }, e => {
           this.adapterRef.logger.log("loadRemoteAudioFile 云端音乐解码失败：", e)
-          reject('CREATE_BUFFERSOURCE_FAILED')
+          reject(
+            new RtcError({
+              code: ErrorCode.STATE_ERROR,
+              message: 'create buffersource failed'
+            })
+          )
         })
       })
     }).catch(error => {
       this.adapterRef.logger.log('loadRemoteAudioFile 加载云端音乐失败: ', error)
-      return Promise.reject('LOAD_AUDIO_FAILED') 
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.STATE_ERROR,
+          message: 'load audio failed'
+        })
+      ) 
     })
   }
 
@@ -750,7 +810,12 @@ class MediaHelper extends EventEmitter {
   startMix (index:number) {
     if (!this.webAudio){
       this.adapterRef.logger.error('startMix:参数错误')
-      return Promise.reject('startMix:参数错误');
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.INVALID_PARAMETER,
+          message: 'startMix parameter error'
+        })
+      );
     }
     this.adapterRef.logger.log('startMix 开始混音: %o', this.mixAudioConf)
     if (index !== this.mixAudioConf.index) {
@@ -790,10 +855,10 @@ class MediaHelper extends EventEmitter {
       reason = 'BROWSER_NOT_SUPPORT'
     } else if (!this.webAudio.mixAudioConf || !this.webAudio.mixAudioConf.audioSource || this.webAudio.mixAudioConf.state === AuidoMixingState.PAUSED) {
       this.adapterRef.logger.log('pauseAudioMixing: 已经暂停')
-      reason = 'INVALID_OPERATION'
+      reason = 'PAUSED'
     } else if (!this.webAudio.mixAudioConf || !this.webAudio.mixAudioConf.audioSource || this.webAudio.mixAudioConf.state !== AuidoMixingState.PLAYED) {
       this.adapterRef.logger.log('pauseAudioMixing: 当前没有开启伴音')
-      reason = 'INVALID_OPERATION'
+      reason = 'NOT_PLAY'
     }
     if(reason){
       this.adapterRef.instance.apiFrequencyControl({
@@ -803,7 +868,28 @@ class MediaHelper extends EventEmitter {
           reason
         }), null, ' ')
       })
-      return Promise.reject(reason)
+      if(reason === 'BROWSER_NOT_SUPPORT') {
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.NOT_SUPPORT,
+            message: 'pauseAudioMixing: audio mixing is not supported in this browser'
+          })
+        )
+      }else if(reason === 'PAUSED'){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_OPERATION,
+            message: 'pauseAudioMixing: has already been paused'
+          })
+        )
+      }else if(reason === 'NOT_PLAY'){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_OPERATION,
+            message: 'pauseAudioMixing: audio mixing is not open'
+          })
+        )
+      }
     }
     this.adapterRef.instance.apiFrequencyControl({
       name: 'pauseAudioMixing',
@@ -824,10 +910,10 @@ class MediaHelper extends EventEmitter {
       reason = 'BROWSER_NOT_SUPPORT'
     } else if (!this.webAudio.mixAudioConf || !this.webAudio.mixAudioConf.audioSource) {
       this.adapterRef.logger.log('resumeAudioMixing: 当前没有开启伴音')
-      reason = 'INVALID_OPERATION'
+      reason = 'NOT_OPEN'
     } else if (this.webAudio.mixAudioConf.state !== AuidoMixingState.PAUSED) {
       this.adapterRef.logger.log('resumeAudioMixing: 当前没有暂停伴音')
-      reason = 'INVALID_OPERATION'
+      reason = 'NOT_PAUSED'
     }
     if(reason){
       this.adapterRef.instance.apiFrequencyControl({
@@ -837,7 +923,28 @@ class MediaHelper extends EventEmitter {
           reason
         }), null, ' ')
       })
-      return Promise.reject(reason)
+      if(reason === 'BROWSER_NOT_SUPPORT') {
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.NOT_SUPPORT,
+            message: 'resumeAudioMixing: audio mixing is not supported in this browser'
+          })
+        )
+      }else if(reason === 'NOT_OPEN'){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_OPERATION,
+            message: 'resumeAudioMixing: audio mixing is not open'
+          })
+        )
+      }else if(reason === 'NOT_PAUSED'){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_OPERATION,
+            message: 'resumeAudioMixing: audio mixing is not paused'
+          })
+        )
+      }
     }
     this.adapterRef.instance.apiFrequencyControl({
       name: 'resumeAudioMixing',
@@ -888,7 +995,7 @@ class MediaHelper extends EventEmitter {
       reason = 'BROWSER_NOT_SUPPORT'
     } else if (!this.webAudio.mixAudioConf || !this.webAudio.mixAudioConf.audioSource) {
       this.adapterRef.logger.log('stopAudioMixing: 当前没有开启伴音')
-      reason = 'INVALID_OPERATION'
+      reason = 'NOT_OPEN'
     } 
     if(reason){
       this.adapterRef.instance.apiFrequencyControl({
@@ -898,7 +1005,21 @@ class MediaHelper extends EventEmitter {
           reason
         }), null, ' ')
       })
-      return Promise.reject(reason)
+      if(reason === 'BROWSER_NOT_SUPPORT') {
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.NOT_SUPPORT,
+            message: 'stopAudioMixing: audio mixing is not supported in this browser'
+          })
+        )
+      }else if(reason === 'NOT_OPEN'){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_OPERATION,
+            message: 'stopAudioMixing: audio mixing is not open'
+          })
+        )
+      }
     }
     this.adapterRef.instance.apiFrequencyControl({
       name: 'stopAudioMixing',
@@ -906,7 +1027,12 @@ class MediaHelper extends EventEmitter {
       param: JSON.stringify(this.mixAudioConf, null, ' ')
     })
     if (!this.webAudio){
-      return Promise.reject('WebAudio Unsupported')
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.NOT_SUPPORT,
+          message: 'webAudio is not supported in this browser'
+        })
+      )
     }else{
       return this.webAudio.stopAudioMixing(isFinished);
     }
@@ -922,7 +1048,7 @@ class MediaHelper extends EventEmitter {
       reason = 'BROWSER_NOT_SUPPORT'
     } else if (!this.webAudio.mixAudioConf || !this.webAudio.mixAudioConf.audioSource) {
       this.adapterRef.logger.log('setAudioMixingVolume: 当前没有开启伴音')
-      reason = 'INVALID_ARGUMENTS'
+      reason = 'NOT_OPEN'
     } else if (!Number.isInteger(volume)) {
       this.adapterRef.logger.log('setAudioMixingVolume: volume不是整数')
       reason = 'INVALID_ARGUMENTS'
@@ -942,7 +1068,28 @@ class MediaHelper extends EventEmitter {
           volume
         }), null, ' ')
       })
-      return Promise.reject(reason)
+      if(reason === 'BROWSER_NOT_SUPPORT') {
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.NOT_SUPPORT,
+            message: 'setAudioMixingVolume: audio mixing is not supported in this browser'
+          })
+        )
+      }else if(reason === 'NOT_OPEN'){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_OPERATION,
+            message: 'setAudioMixingVolume: audio mixing is not open'
+          })
+        )
+      }else if(reason === 'INVALID_ARGUMENTS'){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_PARAMETER,
+            message: 'setAudioMixingVolume: volume must be an integer with scope (0 - 255)'
+          })
+        )
+      }
     }
     this.adapterRef.instance.apiFrequencyControl({
       name: 'adjustAudioMixingVolume',
@@ -982,7 +1129,29 @@ class MediaHelper extends EventEmitter {
           reason: reason
         }, null, ' ')
       })
-      return Promise.reject(reason)
+      // return Promise.reject(reason)
+      if(reason === 'BROWSER_NOT_SUPPORT') {
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.NOT_SUPPORT,
+            message: 'setAudioMixingPlayTime: audio mixing is not supported in this browser'
+          })
+        )
+      }else if(reason === 'NOT_OPEN'){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_OPERATION,
+            message: 'setAudioMixingPlayTime: audio mixing is not open'
+          })
+        )
+      }else if(reason === 'INVALID_ARGUMENTS'){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_PARAMETER,
+            message: 'setAudioMixingPlayTime: playStartTime is invalid'
+          })
+        )
+      }
     }
 
     return new Promise((resolve, reject) => {
@@ -991,7 +1160,12 @@ class MediaHelper extends EventEmitter {
           if (!this.webAudio){
             const reason = 'webAudio not supported';
             reject(reason);
-            return Promise.reject(reason);
+            return Promise.reject(
+              new RtcError({
+                code: ErrorCode.NOT_SUPPORT,
+                message: 'webAudio is not supported in this browser'
+              })
+            );
           }
           this.mixAudioConf.playStartTime = playTime
           let { audioFilePath = '', loopback = false, replace = false, cycle = 0, playStartTime = 0, auidoMixingEnd = null } = this.mixAudioConf
@@ -1137,11 +1311,21 @@ class MediaHelper extends EventEmitter {
 
     if (!this.webAudio || !this.webAudio.context) {
       this.adapterRef.logger.log('playEffect: 浏览器不支持')
-      return Promise.reject('BROWSER_NOT_SUPPORT')
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.NOT_SUPPORT,
+          message: 'playEffect: not supported in this browser'
+        })
+      )
     } else if (this.mixAudioConf.sounds[soundId] && (this.mixAudioConf.sounds[soundId].state === 'STARTING' || this.mixAudioConf.sounds[soundId].state === 'PLAYED' || this.mixAudioConf.sounds[soundId].state === 'PAUSED')) {
       this.adapterRef.logger.log(`pauseEffect: 该音效文件正处于: ${this.mixAudioConf.sounds[soundId].state} 状态`)
       if (playStartTime === undefined) {
-        return Promise.reject('INVALID_OPERATION')
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_PARAMETER,
+            message: 'playEffect: parameter is invalid'
+          })
+        )
       }
     }
     this.mixAudioConf.sounds[soundId].state = 'STARTING'
@@ -1194,7 +1378,12 @@ class MediaHelper extends EventEmitter {
     let reason = null
     if (!this.webAudio || !this.webAudio.context) {
       this.adapterRef.logger.log('stopEffect: 浏览器不支持')
-      return Promise.reject('BROWSER_NOT_SUPPORT')
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.NOT_SUPPORT,
+          message: 'stopEffect: not supported in this browser'
+        })
+      )
     } 
 
     this.webAudio.stopAudioEffectMix(this.mixAudioConf.sounds[soundId])
@@ -1220,13 +1409,41 @@ class MediaHelper extends EventEmitter {
       reason = 'BROWSER_NOT_SUPPORT'
     } else if (this.mixAudioConf.sounds[soundId].state === 'PAUSED') {
       this.adapterRef.logger.log('pauseEffect: 已经暂停')
-      reason = 'INVALID_OPERATION'
+      reason = 'PAUSED'
     } else if (this.mixAudioConf.sounds[soundId].state !== 'PLAYED') {
       this.adapterRef.logger.log('pauseEffect: 当前没有开启该音效')
-      reason = 'INVALID_OPERATION'
+      reason = 'NOT_PLAYED'
     }
     if (reason) {
-      return Promise.reject(reason)
+      if(reason === 'BROWSER_NOT_SUPPORT') {
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.NOT_SUPPORT,
+            message: 'pauseEffect: audio effect is not supported in this browser'
+          })
+        )
+      }else if(reason === 'NOT_PLAYED'){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_OPERATION,
+            message: 'pauseEffect: audio effect is not open'
+          })
+        )
+      }else if(reason === 'PAUSED'){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_OPERATION,
+            message: 'pauseEffect: audio effect is not played'
+          })
+        )
+      }else if(reason === 'SOUND_NOT_EXISTS'){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.NO_FILE,
+            message: 'pauseEffect: audio effect file is not found'
+          })
+        )
+      }
     }
     if(!this.webAudio) return
     this.webAudio.stopAudioEffectMix(this.mixAudioConf.sounds[soundId])
@@ -1258,10 +1475,31 @@ class MediaHelper extends EventEmitter {
       reason = 'BROWSER_NOT_SUPPORT'
     } else if (this.mixAudioConf.sounds[soundId].state !== 'PAUSED') {
       this.adapterRef.logger.log('resumeEffect: 当前没有暂停该音效文件')
-      reason = 'INVALID_OPERATION'
+      reason = 'NOT_PAUSED'
     }
     if (reason) {
-      return Promise.reject(reason)
+      if(reason === 'BROWSER_NOT_SUPPORT') {
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.NOT_SUPPORT,
+            message: 'resumeEffect: audio effect is not supported in this browser'
+          })
+        )
+      }else if(reason === 'NOT_PAUSED'){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_OPERATION,
+            message: 'resumeEffect: audio mixing is not paused'
+          })
+        )
+      }else if(reason === 'SOUND_NOT_EXISTS'){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.NO_FILE,
+            message: 'resumeEffect: audio effect file is not found'
+          })
+        )
+      }
     }
     if(!this.webAudio) return
     let playedTime = (this.mixAudioConf.sounds[soundId].pauseTime - this.mixAudioConf.sounds[soundId].startTime) / 1000 + this.mixAudioConf.sounds[soundId].playStartTime
@@ -1317,7 +1555,12 @@ class MediaHelper extends EventEmitter {
       reason = 'BROWSER_NOT_SUPPORT'
     } 
     if (reason) {
-      return Promise.reject(reason)
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.NOT_SUPPORT,
+          message: 'setVolumeOfEffect: audio effect is not supported in this browser'
+        })
+      )
     }
     //@ts-ignore
     if (this.mixAudioConf.sounds[soundId].gainNode && this.mixAudioConf.sounds[soundId].gainNode.gain) {
@@ -1371,10 +1614,20 @@ class MediaHelper extends EventEmitter {
     this.adapterRef.logger.log(`unloadEffect： ${soundId} 音效文件`)
     if (!this.mixAudioConf.sounds[soundId]) {
       this.adapterRef.logger.log('unloadEffect: 没有该音效文件')
-      return Promise.reject('SOUND_NOT_EXISTS')
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.NO_FILE,
+          message: 'unloadEffect: audio effect file is not found'
+        })
+      )
     } else if (this.mixAudioConf.sounds[soundId].state !== 'UNSTART' && this.mixAudioConf.sounds[soundId].state !== 'STOPED') {
       this.adapterRef.logger.log('unloadEffect: 该音效文件已经播放，请使用 stopEffect 方法')
-      return Promise.reject('INVALID_OPERATION')
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.INVALID_OPERATION,
+          message: 'unloadEffect: invalid operation'
+        })
+      )
     }
     delete this.mixAudioConf.audioBuffer[this.mixAudioConf.sounds[soundId].filePath]
     delete this.mixAudioConf.sounds[soundId]
@@ -1438,7 +1691,12 @@ class MediaHelper extends EventEmitter {
       this.adapterRef.logger.log("loadAudioBuffer 加载 audio file 成功")
       return new Promise((resolve, reject) => {
         if (!this.webAudio || !this.webAudio.context){
-          reject('webAudio丢失')
+          reject(
+            new RtcError({
+              code: ErrorCode.STATE_ERROR,
+              message: 'webAudio lost'
+            })
+          )
           return;
         }
         this.webAudio.context.decodeAudioData(data as ArrayBuffer, buffer => {
@@ -1447,12 +1705,22 @@ class MediaHelper extends EventEmitter {
           resolve(buffer)
         }, e => {
           this.adapterRef.logger.log("loadRemoteAudioFile 云端音乐解码失败：", e)
-          reject('CREATE_BUFFERSOURCE_FAILED')
+          reject(
+            new RtcError({
+              code: ErrorCode.DECODE_FAILED,
+              message: 'create buffersource failed'
+            })
+          )
         })
       })
     }).catch(error => {
       this.adapterRef.logger.log('loadRemoteAudioFile 加载云端音乐失败: ', error)
-      return Promise.reject('LOAD_AUDIO_FAILED') 
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.STATE_ERROR,
+          message: 'load audio failed'
+        })
+      )
     })
   }
 

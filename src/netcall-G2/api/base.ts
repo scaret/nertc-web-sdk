@@ -18,6 +18,8 @@ import {MediaCapability} from "../module/mediaCapability";
 import {getSupportedCodecs} from "../util/rtcUtil/codec";
 import {Encryption} from "../module/encryption";
 import { logController } from "../util/log/upload";
+import RtcError from '../util/error/rtcError';
+import ErrorCode  from '../util/error/errorCode';
 
 /**
  * 基础框架
@@ -265,24 +267,44 @@ class Base extends EventEmitter {
     if (!wssArr || wssArr.length === 0) {
       this.adapterRef.logger.error('没有找到服务器地址')
       this.adapterRef.channelStatus = 'leave'
-      return Promise.reject('NO_SERVER_ADDRESS')
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.NO_SERVER_ADDRESS,
+          message: 'no server address'
+        })
+      )
     }
 
     if (!cid) {
       this.adapterRef.logger.error('服务器没有分配cid')
       this.adapterRef.channelStatus = 'leave'
-      return Promise.reject('NO_CID')
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.INVALID_PARAMETER,
+          message: 'no cid'
+        })
+      )
     }
     this.adapterRef.logger.log('开始连接服务器: %s, url: %o', this.adapterRef.channelInfo.wssArrIndex, wssArr)
     if (this.adapterRef.channelInfo.wssArrIndex >= wssArr.length) {
       this.adapterRef.logger.error('所有的服务器地址都连接失败')
       this.adapterRef.channelInfo.wssArrIndex = 0
       this.adapterRef.channelStatus = 'leave'
-      return Promise.reject('SOCKET_ERROR')
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.SOCKET_ERROR,
+          message: 'socket error'
+        })
+      )
     }
     const url = wssArr[this.adapterRef.channelInfo.wssArrIndex]
     if (!this.adapterRef._signalling){
-      return Promise.reject('No this.adapterRef._signalling');
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.NO_SIGNALLING,
+          message: 'signalling error'
+        })
+      )
     }
     const p =  this.adapterRef._signalling.init(url).then(()=>{
       //将连接成功的url放置到列表的首部，方便后续的重连逻辑
@@ -291,7 +313,12 @@ class Base extends EventEmitter {
       wssArr.unshift(connectUrl)
       this.adapterRef.channelInfo.wssArrIndex = 0
       if (!this.adapterRef._statsReport){
-        return Promise.reject('No this.adapterRef._statsReport');
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.NO_STATS,
+            message: 'no stats'
+          })
+        )
       }
       this.adapterRef._statsReport.start()
       this.adapterRef._statsReport.startHeartbeat()
@@ -330,13 +357,19 @@ class Base extends EventEmitter {
     if (remotStream) {
       if (remotStream.pubStatus.audio) {
         if (!this.adapterRef._mediasoup){
-          throw new Error('No this.adapterRef._mediasoup');
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIASOUP,
+            message: 'media server error'
+          })
         }
         this.adapterRef._mediasoup.destroyConsumer(remotStream.pubStatus.audio.consumerId)
       }
       if (remotStream.pubStatus.video) {
         if (!this.adapterRef._mediasoup){
-          throw new Error('No this.adapterRef._mediasoup');
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIASOUP,
+            message: 'media server error'
+          })
         }
         this.adapterRef._mediasoup.destroyConsumer(remotStream.pubStatus.video.consumerId)
       }
@@ -389,7 +422,10 @@ class Base extends EventEmitter {
   async reBuildRecvTransport() {
     this.adapterRef.logger.warn('下行通道异常，重新建立')
     if (!this.adapterRef._mediasoup){
-      throw new Error('No this.adapterRef._mediasoup');
+      throw new RtcError({
+        code: ErrorCode.NO_MEDIASOUP,
+        message: 'media server error'
+      })
     }
     this.adapterRef._mediasoup.init()
     this.adapterRef.logger.log('下行通道异常, remoteStreamMap', this.adapterRef.remoteStreamMap)
@@ -451,10 +487,16 @@ class Base extends EventEmitter {
       })
     } else {
       if (!this.adapterRef.apiEvent || !this.adapterRef.apiEvent[name] || !this.adapterRef.apiEvent[name].length){
-        throw new Error('No apiEvent Named ' + name);
+        throw new RtcError({
+          code: ErrorCode.NOT_FOUND,
+          message: `No apiEvent Named ${name}`
+        })
       }
       if (!this.adapterRef.apiEvent[name][0].time){
-        throw new Error('Invalid time for ');
+        throw new RtcError({
+          code: ErrorCode.NOT_FOUND,
+          message: 'Invalid time for '
+        })
       }
       if ((Date.now() - this.adapterRef.apiEvent[name][0].time) < 10000) {
         this.adapterRef.requestId[name]++

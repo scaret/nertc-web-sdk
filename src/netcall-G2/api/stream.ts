@@ -34,6 +34,8 @@ import {
   ReportParamSwitchCamera
 } from "../interfaces/ApiReportParam";
 import {AuidoMixingState} from "../constant/state";
+import RtcError from '../util/error/rtcError';
+import ErrorCode  from '../util/error/errorCode';
 
 /**
  *  请使用 {@link NERTC.createStream} 通过NERTC.createStream创建
@@ -150,11 +152,17 @@ class Stream extends EventEmitter {
       options.client.adapterRef.logger.log('uid是number类型')
       options.client.adapterRef.channelInfo.uidType = 'number'
       if(options.uid > Number.MAX_SAFE_INTEGER){
-        throw new Error('uid超出number精度')
+        throw new RtcError({
+          code: ErrorCode.INVALID_PARAMETER,
+          message: 'uid is exceeds the scope of Number'
+        })
       }
     } else {
       options.client.adapterRef.logger.error('uid参数格式非法')
-      throw new Error('INVALID_ARGUMENTS')
+      throw new RtcError({
+        code: ErrorCode.INVALID_PARAMETER,
+        message: 'uid is invalid'
+      })
     }
     // init for ts rule
     this.isRemote = options.isRemote;
@@ -624,7 +632,10 @@ class Stream extends EventEmitter {
     
     try {
       if (!this.mediaHelper){
-        throw new Error('No MediaHelper');
+        throw new RtcError({
+          code: ErrorCode.NO_MEDIAHELPER,
+          message: 'no media helper'
+        })
       }
       if (this.audio){
         await this.mediaHelper.getStream({
@@ -647,7 +658,10 @@ class Stream extends EventEmitter {
 
     try {
       if (!this.mediaHelper){
-        throw new Error('No Media Helper');
+        throw new RtcError({
+          code: ErrorCode.NO_MEDIAHELPER,
+          message: 'no media helper'
+        })
       }
       if (this.video){
         await this.mediaHelper.getStream({
@@ -672,7 +686,10 @@ class Stream extends EventEmitter {
 
     try {
       if (!this.mediaHelper){
-        throw new Error('No Media Helper');
+        throw new RtcError({
+          code: ErrorCode.NO_MEDIAHELPER,
+          message: 'no media helper'
+        })
       }
       if (this.screen){
         await this.mediaHelper.getStream({
@@ -951,7 +968,12 @@ class Stream extends EventEmitter {
       isPlaying = await this._play.isPlayScreenStream()
     } else {
       this.client.adapterRef.logger.warn('isPlaying: unknown type')
-      return Promise.reject('unknownType')
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.UNKNOWN_TYPE,
+          message: 'unknown type'
+        })
+      )
     }
     this.client.adapterRef.logger.log(`检查${this.stringStreamID}的${type}播放状态: ${isPlaying}`)
     return isPlaying
@@ -984,7 +1006,12 @@ class Stream extends EventEmitter {
           type
         }, null, ' ')
       });
-      return Promise.reject(`INVALID_OPERATION`);
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.INVALID_OPERATION,
+          message: 'audience is not allowed to open'
+        })
+      );
     }
     
     try {
@@ -1015,7 +1042,12 @@ class Stream extends EventEmitter {
                 type
               }, null, ' ')
             })
-            return Promise.reject('CLOSE_VIDEO_OR_SCREEN_FIRST')
+            return Promise.reject(
+              new RtcError({
+                code: ErrorCode.INVALID_OPERATION,
+                message: 'please close video or screen-sharing first'
+              })
+            )
           }
           if (options.screenAudio && this.audio){
             this.client.adapterRef.logger.error('请先关闭麦克风')
@@ -1027,7 +1059,11 @@ class Stream extends EventEmitter {
                 type
               }, null, ' ')
             })
-            return Promise.reject('CLOSE_AUDIO_FIRST')
+            return Promise.reject(
+            new RtcError({
+              code: ErrorCode.INVALID_OPERATION,
+              message: 'please close mic first'
+            }))
           }
           this[type] = true
           const constraint:any = {
@@ -1072,7 +1108,12 @@ class Stream extends EventEmitter {
 
       if (e.message && e.message.indexOf('Permission denied') > -1) {
         this.client.emit('accessDenied', type)
-        return Promise.reject('NotAllowedError')
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.NOT_ALLOWED,
+            message: 'access denied'
+          })
+        )
       } else {
         return Promise.reject(e)
       }
@@ -1102,12 +1143,18 @@ class Stream extends EventEmitter {
         if (this.mediaHelper){
           this.mediaHelper.stopStream('audio')
         }else{
-          throw new Error('No Media Helper')
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIAHELPER,
+            message: 'no media helper'
+          })
         }
         if (this.client.adapterRef && this.client.adapterRef._mediasoup){
           await this.client.adapterRef._mediasoup.destroyProduce('audio');
         }else{
-          throw new Error('No Media Soup');
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIASOUP,
+            message: 'media server error'
+          })
         }
         break
       case 'video':
@@ -1121,14 +1168,23 @@ class Stream extends EventEmitter {
         if (this.mediaHelper){
           this.mediaHelper.stopStream('video')
         }else{
-          throw new Error("No mediaHelper");
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIAHELPER,
+            message: 'no media helper'
+          })
         }
         if (!this._play){
-          throw new Error('No this._play');
+          throw new RtcError({
+            code: ErrorCode.NO_PLAY,
+            message: 'no play'
+          })
         }
         this._play.stopPlayVideoStream()
         if (!this.client.adapterRef._mediasoup){
-          throw new Error('No _mediasoup');
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIASOUP,
+            message: 'media server error'
+          })
         }
         await this.client.adapterRef._mediasoup.destroyProduce('video');
         break
@@ -1141,15 +1197,24 @@ class Stream extends EventEmitter {
         }
         this.screen = false
         if (!this.mediaHelper){
-          throw new Error('No mediaHelper');
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIAHELPER,
+            message: 'no media helper'
+          })
         }
         this.mediaHelper.stopStream('screen')
         if (!this._play){
-          throw new Error('No this._play');
+          throw new RtcError({
+            code: ErrorCode.NO_PLAY,
+            message: 'no play'
+          })
         }
         this._play.stopPlayScreenStream()
         if (!this.client.adapterRef._mediasoup){
-          throw new Error('No _mediasoup');
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIASOUP,
+            message: 'media server error'
+          })
         }
         await this.client.adapterRef._mediasoup.destroyProduce('screen');
         break
@@ -1167,7 +1232,35 @@ class Stream extends EventEmitter {
             screen: this.screen,
           }, null, ' ')
         })
-        return Promise.reject(reason)
+        if(reason === 'NOT_OPEN_MIC_YET') {
+          return Promise.reject(
+            new RtcError({
+              code: ErrorCode.INVALID_OPERATION,
+              message: 'mic is not open'
+            })
+          )
+        }else if(reason === 'NOT_OPEN_CAMERA_YET'){
+          return Promise.reject(
+            new RtcError({
+              code: ErrorCode.INVALID_OPERATION,
+              message: 'camera is not open'
+            })
+          )
+        }else if(reason === 'NOT_OPEN_SCREEN_YET'){
+          return Promise.reject(
+            new RtcError({
+              code: ErrorCode.INVALID_OPERATION,
+              message: 'screen-sharing si not open'
+            })
+          )
+        }else if(reason === 'INVALID_ARGUMENTS'){
+          return Promise.reject(
+            new RtcError({
+              code: ErrorCode.INVALID_OPERATION,
+              message: 'unknown type'
+            })
+          )
+        }
       } else {
         this.client.apiFrequencyControl({
           name: 'close',
@@ -1195,7 +1288,10 @@ class Stream extends EventEmitter {
     try {
       if (!this.isRemote) {
         if (!this.client.adapterRef._mediasoup){
-          throw new Error('No _mediasoup');
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIASOUP,
+            message: 'media server error'
+          })
         }
           // localstream unmute
         const tracks = this.mediaHelper && this.mediaHelper.audioStream.getAudioTracks();
@@ -1208,10 +1304,16 @@ class Stream extends EventEmitter {
         this.muteStatus.audioSend = false;
       } else {
         if (!this._play){
-          throw new Error('No _play');
+          throw new RtcError({
+            code: ErrorCode.NO_PLAY,
+            message: 'no play'
+          })
         }
         if (!this.mediaHelper || !this.mediaHelper.audioStream){
-          throw new Error('No audioStream');
+          throw new RtcError({
+            code: ErrorCode.NOT_FOUND,
+            message: 'no audioStream'
+          })
         }
         this.muteStatus.audioRecv = false;
         if (this.mediaHelper && this.mediaHelper.micTrack){
@@ -1251,7 +1353,10 @@ class Stream extends EventEmitter {
     try {
       if (!this.isRemote) {
         if (!this.client.adapterRef._mediasoup){
-          throw new Error('No _mediasoup');
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIASOUP,
+            message: 'media server error'
+          })
         }
         await this.client.adapterRef._mediasoup.muteAudio()
         // localStream mute
@@ -1264,7 +1369,10 @@ class Stream extends EventEmitter {
         this.muteStatus.audioSend = true
       } else {
         if (!this._play){
-          throw new Error('No _play');
+          throw new RtcError({
+            code: ErrorCode.NO_PLAY,
+            message: 'no play'
+          })
         }
         this.muteStatus.audioRecv = true
         if (this.mediaHelper && this.mediaHelper.micTrack){
@@ -1314,7 +1422,10 @@ class Stream extends EventEmitter {
    */
   getAudioLevel () {
     if (!this.mediaHelper){
-      throw new Error('No MediaHelper');
+      throw new RtcError({
+        code: ErrorCode.NO_MEDIAHELPER,
+        message: 'no media helper'
+      })
     }
     return this.mediaHelper.getGain()
   }
@@ -1359,7 +1470,10 @@ class Stream extends EventEmitter {
 
     if (this.audio) {
       if (!this._play){
-        throw new Error('No _play');
+        throw new RtcError({
+          code: ErrorCode.NO_PLAY,
+          message: 'no play'
+        })
       }
       this._play.setPlayVolume(volume)
     } else {
@@ -1407,7 +1521,10 @@ class Stream extends EventEmitter {
 
     if (this.audio) {
       if (!this.mediaHelper){
-        throw new Error('No MediaHelper');
+        throw new RtcError({
+          code: ErrorCode.NO_MEDIAHELPER,
+          message: 'no media helper'
+        })
       }
       if (!this.mediaHelper.audioRoutingEnabled){
         this.mediaHelper.enableAudioRouting();
@@ -1478,7 +1595,12 @@ class Stream extends EventEmitter {
     let constraint = {}
     if (this.inSwitchDevice) {
       this.client.adapterRef.logger.log(`正在切换中，重复`)
-      return Promise.reject('INVALID_OPERATION')
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.INVALID_OPERATION,
+          message: 'switching...'
+        })
+      )
     } else {
       this.inSwitchDevice = true
     }
@@ -1490,15 +1612,28 @@ class Stream extends EventEmitter {
       } else if(!this.hasAudio()) {
         this.client.adapterRef.logger.log(`当前没有开启音频输入设备，无法切换`)
         this.inSwitchDevice = false
-        return Promise.reject('INVALID_OPERATION')
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_OPERATION,
+            message: 'no audio input device'
+          })
+        )
       } else if(this.audioSource) {
         this.client.adapterRef.logger.log(`自定义音频输入不支持，无法切换`)
         this.inSwitchDevice = false
-        return Promise.reject('INVALID_OPERATION')
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_OPERATION,
+            message: 'cannot switch user-defined audio input'
+          })
+        )
       }
       //constraint = {...this.mediaHelper.audioConstraint, ...{audio: {deviceId: {exact: deviceId}}}}
       if (!this.mediaHelper){
-        throw new Error('No MediaHelper');
+        throw new RtcError({
+          code: ErrorCode.NO_MEDIAHELPER,
+          message: 'no media helper'
+        })
       }
       if(this.mediaHelper.audioConstraint && this.mediaHelper.audioConstraint.audio){
         this.mediaHelper.audioConstraint.audio.deviceId = {exact: deviceId}
@@ -1523,7 +1658,12 @@ class Stream extends EventEmitter {
           code: -1,
           param: JSON.stringify({reason: 'INVALID_OPERATION'} as ReportParamSwitchCamera, null, ' ')
         })
-        return Promise.reject('INVALID_OPERATION')
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_OPERATION,
+            message: 'no video input device'
+          })
+        )
       } else if(this.videoSource) {
         this.client.adapterRef.logger.log(`自定义视频输入不支持，无法切换`)
         this.inSwitchDevice = false
@@ -1532,11 +1672,19 @@ class Stream extends EventEmitter {
           code: -1,
           param: JSON.stringify({reason: 'INVALID_OPERATION'} as ReportParamSwitchCamera, null, ' ')
         })
-        return Promise.reject('INVALID_OPERATION')
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_OPERATION,
+            message: 'cannot switch user-defined video input'
+          })
+        )
       }
       //constraint = {...this.mediaHelper.videoConstraint, ...{video: {deviceId: {exact: deviceId}}}}
       if (!this.mediaHelper){
-        throw new Error('No MediaHelper');
+        throw new RtcError({
+          code: ErrorCode.NO_MEDIAHELPER,
+          message: 'no media helper'
+        })
       }
       if(this.mediaHelper.videoConstraint && this.mediaHelper.videoConstraint.video){
         this.mediaHelper.videoConstraint.video.deviceId = {exact: deviceId}
@@ -1546,7 +1694,12 @@ class Stream extends EventEmitter {
     } else {
       this.client.adapterRef.logger.log(`unknown type`)
       this.inSwitchDevice = false
-      return Promise.reject('INVALID_OPERATION')
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.INVALID_OPERATION,
+          message: 'unknown type'
+        })
+      )
     }
     try {
       await this.mediaHelper.getSecondStream(constraint)
@@ -1585,17 +1738,26 @@ class Stream extends EventEmitter {
     try {
       if (!this.isRemote) {
         if (!this.client.adapterRef._mediasoup){
-          throw new Error('No _mediasoup');
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIASOUP,
+            message: 'media server error'
+          })
         }
         this.client.adapterRef._mediasoup.unmuteVideo()
         // local unmute
         this.muteStatus.videoSend = false
       } else {
         if (!this._play){
-          throw new Error('No _play');
+          throw new RtcError({
+            code: ErrorCode.NO_PLAY,
+            message: 'no play'
+          })
         }
         if (!this.mediaHelper || !this.mediaHelper.videoStream || !this.videoView){
-          throw new Error('No mediaHelper or videoStream or this.view');
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIAHELPER,
+            message: 'no media helper or videoStream or this.view'
+          })
         }
 
         this.muteStatus.videoRecv = false
@@ -1639,14 +1801,20 @@ class Stream extends EventEmitter {
     try {
       if (!this.isRemote) {
         if (!this.client.adapterRef._mediasoup){
-          throw new Error('No _mediasoup');
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIASOUP,
+            message: 'media server error'
+          })
         }
         // local mute
         await this.client.adapterRef._mediasoup.muteVideo()
         this.muteStatus.videoSend = true
       } else {
         if (!this._play){
-          throw new Error('No _play');
+          throw new RtcError({
+            code: ErrorCode.NO_PLAY,
+            message: 'no play'
+          })
         }
         this.muteStatus.videoRecv = true
         if (this.mediaHelper && this.mediaHelper.cameraTrack){
@@ -1691,17 +1859,26 @@ class Stream extends EventEmitter {
     try {
       if (!this.isRemote) {
         if (!this.client.adapterRef._mediasoup){
-          throw new Error('No _mediasoup');
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIASOUP,
+            message: 'media server error'
+          })
         }
         this.client.adapterRef._mediasoup.unmuteScreen()
         // local unmute
         this.muteStatus.screenSend = false
       } else {
         if (!this._play){
-          throw new Error('No _play');
+          throw new RtcError({
+            code: ErrorCode.NO_PLAY,
+            message: 'no play'
+          })
         }
         if (!this.mediaHelper || !this.mediaHelper.screenStream || !this.screenView){
-          throw new Error('No mediaHelper or screenStream or this.view');
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIAHELPER,
+            message: 'no media helper or screenStream or this.view'
+          })
         }
         this.muteStatus.screenRecv = false
         if (this.mediaHelper && this.mediaHelper.screenTrack){
@@ -1744,14 +1921,20 @@ class Stream extends EventEmitter {
     try {
       if (!this.isRemote) {
         if (!this.client.adapterRef._mediasoup){
-          throw new Error('No _mediasoup');
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIASOUP,
+            message: 'media server error'
+          })
         }
         // local mute
         await this.client.adapterRef._mediasoup.muteScreen()
         this.muteStatus.screenSend = true
       } else {
         if (!this._play){
-          throw new Error('No _play');
+          throw new RtcError({
+            code: ErrorCode.NO_PLAY,
+            message: 'no play'
+          })
         }
         if (this.mediaHelper && this.mediaHelper.screenTrack){
           this.mediaHelper.screenTrack.enabled = false;
@@ -1870,7 +2053,10 @@ class Stream extends EventEmitter {
           return;
         }
         if (!sender){
-          throw new Error(`Unknown media type ${mediaTypeShort}`);
+          throw new RtcError({
+            code: ErrorCode.UNKNOWN_TYPE,
+            message: '`Unknown media type ${mediaTypeShort}`'
+          })
         }
         const parameters = (sender.getParameters() as RTCRtpSendParameters);
         if (!parameters) {
@@ -1896,7 +2082,10 @@ class Stream extends EventEmitter {
 
   getVideoBW(){
     if (!this.videoProfile){
-      throw new Error('No this.videoProfile');
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'no this.videoProfile'
+      })
     }
     if(this.videoProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_180p) {
       return 300 * 1000
@@ -1911,7 +2100,10 @@ class Stream extends EventEmitter {
   
   getScreenBW(){
     if (!this.screenProfile){
-      throw new Error('No this.screenProfile');
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'no this.screenProfile'
+      })
     }
     if(this.screenProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_180p) {
       return 300 * 1000
@@ -1934,7 +2126,10 @@ class Stream extends EventEmitter {
   async takeSnapshot (options: SnapshotOptions) {
     if (this.video || this.screen) {
       if (!this._play){
-        throw new Error('No _play');
+        throw new RtcError({
+          code: ErrorCode.NO_PLAY,
+          message: 'no play'
+        })
       }
       await this._play.takeSnapshot(options)
       this.client.apiFrequencyControl({
@@ -1972,7 +2167,10 @@ class Stream extends EventEmitter {
     const streams = []
     if (!this.isRemote) { // 录制自己
       if (!this.mediaHelper){
-        throw new Error('No MediaHelper');
+        throw new RtcError({
+          code: ErrorCode.NO_MEDIAHELPER,
+          message: 'no media helper'
+        })
       }
       switch (options.type) {
         case 'screen':
@@ -1995,7 +2193,10 @@ class Stream extends EventEmitter {
       }
     } else { // 录制别人
       if (!this.mediaHelper){
-        throw new Error('No MediaHelper');
+        throw new RtcError({
+          code: ErrorCode.NO_MEDIAHELPER,
+          message: 'no media helper'
+        })
       }
       switch (options.type) {
         case 'screen':
@@ -2017,7 +2218,10 @@ class Stream extends EventEmitter {
       return 
     }
     if (!this._record || !this.streamID || !streams){
-      throw new Error('startMediaRecording: 参数错误');
+      throw new RtcError({
+        code: ErrorCode.INVALID_PARAMETER,
+        message: 'startMediaRecording: invalid parameter'
+      })
     }
     return this._record && this._record.start({
       uid: this.client.adapterRef.channelInfo.uidType === 'string' ? this.stringStreamID : this.streamID,
@@ -2036,7 +2240,10 @@ class Stream extends EventEmitter {
    */
   stopMediaRecording (options: {recordId?: string}) {
     if (!this._record){
-      throw new Error('No this._record');
+      throw new RtcError({
+        code: ErrorCode.NO_RECORD,
+        message: 'no record'
+      })
     }
     //FIXME
     return this._record.stop({})
@@ -2053,7 +2260,10 @@ class Stream extends EventEmitter {
    */
   playMediaRecording (options:{recordId: string; view: HTMLElement}) {
     if (!this._record){
-      throw new Error('No this._record');
+      throw new RtcError({
+        code: ErrorCode.NO_RECORD,
+        message: 'no record'
+      })
     }
     return this._record.play(options.view)
   }
@@ -2066,7 +2276,10 @@ class Stream extends EventEmitter {
   listMediaRecording () {
     let list = []
     if (!this._record){
-      throw new Error('No this._record');
+      throw new RtcError({
+        code: ErrorCode.NO_RECORD,
+        message: 'no record'
+      })
     }
     const recordStatus = this._record.getRecordStatus();
     if (recordStatus.status !== "init") {
@@ -2084,7 +2297,10 @@ class Stream extends EventEmitter {
    */
   cleanMediaRecording (options: {recordId: string}) {
     if (!this._record){
-      throw new Error('No this._record');
+      throw new RtcError({
+        code: ErrorCode.NO_RECORD,
+        message: 'no record'
+      })
     }
     return this._record.clean()
   }
@@ -2099,7 +2315,10 @@ class Stream extends EventEmitter {
    */
   downloadMediaRecording (options: {recordId: string}) {
     if (!this._record){
-      throw new Error('No this._record');
+      throw new RtcError({
+        code: ErrorCode.NO_RECORD,
+        message: 'no record'
+      })
     }
     return this._record.download()
   }
@@ -2125,7 +2344,10 @@ class Stream extends EventEmitter {
   startAudioMixing (options:AudioMixingOptions) {
     this.client.adapterRef.logger.log('开始伴音')
     if (!this.mediaHelper){
-      throw new Error('No MediaHelper');
+      throw new RtcError({
+        code: ErrorCode.NO_MEDIAHELPER,
+        message: 'no media helper'
+      })
     }
     return this.mediaHelper.startAudioMixing(options) 
   }
@@ -2139,7 +2361,10 @@ class Stream extends EventEmitter {
   stopAudioMixing () {
     this.client.adapterRef.logger.log('停止伴音')
     if (!this.mediaHelper){
-      throw new Error('No MediaHelper');
+      throw new RtcError({
+        code: ErrorCode.NO_MEDIAHELPER,
+        message: 'no media helper'
+      })
     }
     return this.mediaHelper.stopAudioMixing() 
   }
@@ -2153,7 +2378,10 @@ class Stream extends EventEmitter {
   pauseAudioMixing () {
     this.client.adapterRef.logger.log('暂停伴音')
     if (!this.mediaHelper){
-      throw new Error('No MediaHelper');
+      throw new RtcError({
+        code: ErrorCode.NO_MEDIAHELPER,
+        message: 'no media helper'
+      })
     }
     return this.mediaHelper.pauseAudioMixing() 
   }
@@ -2167,7 +2395,10 @@ class Stream extends EventEmitter {
   resumeAudioMixing () {
     this.client.adapterRef.logger.log('恢复伴音')
     if (!this.mediaHelper){
-      throw new Error('No MediaHelper');
+      throw new RtcError({
+        code: ErrorCode.NO_MEDIAHELPER,
+        message: 'no media helper'
+      })
     }
     return this.mediaHelper.resumeAudioMixing() 
   }
@@ -2182,7 +2413,10 @@ class Stream extends EventEmitter {
   adjustAudioMixingVolume (volume:number) {
     this.client.adapterRef.logger.log('调节伴音音量: %s', volume)
     if (!this.mediaHelper){
-      throw new Error('No MediaHelper');
+      throw new RtcError({
+        code: ErrorCode.NO_MEDIAHELPER,
+        message: 'no media helper'
+      })
     }
     return this.mediaHelper.setAudioMixingVolume(volume) 
   }
@@ -2196,7 +2430,10 @@ class Stream extends EventEmitter {
   getAudioMixingDuration () {
     this.client.adapterRef.logger.log('获取伴音总时长')
     if (!this.mediaHelper){
-      throw new Error('No MediaHelper');
+      throw new RtcError({
+        code: ErrorCode.NO_MEDIAHELPER,
+        message: 'no media helper'
+      })
     }
     return this.mediaHelper.getAudioMixingTotalTime() 
   }
@@ -2212,7 +2449,10 @@ class Stream extends EventEmitter {
   getAudioMixingCurrentPosition () {
     //this.client.adapterRef.logger.log('获取伴音播放进度')
     if (!this.mediaHelper){
-      throw new Error('No MediaHelper');
+      throw new RtcError({
+        code: ErrorCode.NO_MEDIAHELPER,
+        message: 'no media helper'
+      })
     }
     return this.mediaHelper.getAudioMixingPlayedTime() 
   }
@@ -2227,7 +2467,10 @@ class Stream extends EventEmitter {
   setAudioMixingPosition (playStartTime: number) {
     this.client.adapterRef.logger.log('设置伴音音频文件的播放位置: %s', playStartTime)
     if (!this.mediaHelper){
-      throw new Error('No MediaHelper');
+      throw new RtcError({
+        code: ErrorCode.NO_MEDIAHELPER,
+        message: 'no media helper'
+      })
     }
     return this.mediaHelper.setAudioMixingPlayTime(playStartTime) 
   }
@@ -2259,7 +2502,10 @@ class Stream extends EventEmitter {
    async playEffect (options:AudioEffectOptions) {
     this.client.adapterRef.logger.log('开始播放音效: ', JSON.stringify(options, null, ' '))
     if (!this.mediaHelper) {
-      throw new Error('No MediaHelper');
+      throw new RtcError({
+        code: ErrorCode.NO_MEDIAHELPER,
+        message: 'no media helper'
+      })
     }
     return this.mediaHelper.playEffect(options) 
   }
@@ -2274,7 +2520,10 @@ class Stream extends EventEmitter {
   async stopEffect (soundId: number) {
     this.client.adapterRef.logger.log('停止播放音效: ', soundId)
     if (!this.mediaHelper) {
-      throw new Error('No MediaHelper');
+      throw new RtcError({
+        code: ErrorCode.NO_MEDIAHELPER,
+        message: 'no media helper'
+      })
     }
     return this.mediaHelper.stopEffect(soundId) 
   }
@@ -2289,7 +2538,10 @@ class Stream extends EventEmitter {
    async pauseEffect (soundId: number) {
     this.client.adapterRef.logger.log('暂停播放音效：', soundId)
     if (!this.mediaHelper) {
-      throw new Error('No MediaHelper');
+      throw new RtcError({
+        code: ErrorCode.NO_MEDIAHELPER,
+        message: 'no media helper'
+      })
     }
     return this.mediaHelper.pauseEffect(soundId) 
   }
@@ -2304,7 +2556,10 @@ class Stream extends EventEmitter {
    async resumeEffect (soundId: number) {
     this.client.adapterRef.logger.log('恢复播放音效文件: ', soundId)
     if (!this.mediaHelper) {
-      throw new Error('No MediaHelper');
+      throw new RtcError({
+        code: ErrorCode.NO_MEDIAHELPER,
+        message: 'no media helper'
+      })
     }
     return this.mediaHelper.resumeEffect(soundId) 
   }
@@ -2321,7 +2576,10 @@ class Stream extends EventEmitter {
    async setVolumeOfEffect (soundId: number, volume: number) {
     this.client.adapterRef.logger.log(`调节 ${soundId} 音效文件音量为: ${volume}`)
     if (!this.mediaHelper) {
-      throw new Error('No MediaHelper');
+      throw new RtcError({
+        code: ErrorCode.NO_MEDIAHELPER,
+        message: 'no media helper'
+      })
     }
     return this.mediaHelper.setVolumeOfEffect(soundId, volume) 
   }
@@ -2338,7 +2596,10 @@ class Stream extends EventEmitter {
    async preloadEffect (soundId: number, filePath: string) {
     this.client.adapterRef.logger.log(`预加载 ${soundId} 音效文件地址: ${filePath}`)
     if (!this.mediaHelper){
-      throw new Error('No MediaHelper');
+      throw new RtcError({
+        code: ErrorCode.NO_MEDIAHELPER,
+        message: 'no media helper'
+      })
     }
     return this.mediaHelper.preloadEffect(soundId, filePath) 
   }
@@ -2354,7 +2615,10 @@ class Stream extends EventEmitter {
    async unloadEffect (soundId: number) {
     this.client.adapterRef.logger.log(`释放指定音效文件 ${soundId}`)
     if (!this.mediaHelper){
-      throw new Error('No MediaHelper');
+      throw new RtcError({
+        code: ErrorCode.NO_MEDIAHELPER,
+        message: 'no media helper'
+      })
     }
     return this.mediaHelper.unloadEffect(soundId) 
   }
@@ -2371,7 +2635,10 @@ class Stream extends EventEmitter {
    getEffectsVolume () {
     this.client.adapterRef.logger.log('获取所有音效文件播放音量')
     if (!this.mediaHelper){
-      throw new Error('No MediaHelper');
+      throw new RtcError({
+        code: ErrorCode.NO_MEDIAHELPER,
+        message: 'no media helper'
+      })
     }
     return this.mediaHelper.getEffectsVolume() 
   }
@@ -2386,7 +2653,10 @@ class Stream extends EventEmitter {
    setEffectsVolume (volume: number) {
     this.client.adapterRef.logger.log('设置所有音效文件播放音量: %s', volume)
     if (!this.mediaHelper){
-      throw new Error('No MediaHelper');
+      throw new RtcError({
+        code: ErrorCode.NO_MEDIAHELPER,
+        message: 'no media helper'
+      })
     }
     return this.mediaHelper.setEffectsVolume(volume) 
   }
@@ -2400,7 +2670,10 @@ class Stream extends EventEmitter {
    async stopAllEffects () {
     this.client.adapterRef.logger.log('停止播放所有音效文件')
     if (!this.mediaHelper){
-      throw new Error('No MediaHelper');
+      throw new RtcError({
+        code: ErrorCode.NO_MEDIAHELPER,
+        message: 'no media helper'
+      })
     }
     return this.mediaHelper.stopAllEffects() 
   }
@@ -2414,7 +2687,10 @@ class Stream extends EventEmitter {
    async pauseAllEffects () {
     this.client.adapterRef.logger.log('暂停播放所有音效文件')
     if (!this.mediaHelper){
-      throw new Error('No MediaHelper');
+      throw new RtcError({
+        code: ErrorCode.NO_MEDIAHELPER,
+        message: 'no media helper'
+      })
     }
     return this.mediaHelper.pauseAllEffects() 
   }
@@ -2428,7 +2704,10 @@ class Stream extends EventEmitter {
    async resumeAllEffects () {
     this.client.adapterRef.logger.log('恢复播放所有音效文件')
     if (!this.mediaHelper){
-      throw new Error('No MediaHelper');
+      throw new RtcError({
+        code: ErrorCode.NO_MEDIAHELPER,
+        message: 'no media helper'
+      })
     }
     return this.mediaHelper.resumeAllEffects() 
   }
@@ -2469,11 +2748,17 @@ class Stream extends EventEmitter {
       };
       if (options.textWatermarks && options.textWatermarks.length > LIMITS.TEXT){
         this.client.adapterRef.logger.error(`目前的文字水印数量：${options.textWatermarks.length}。允许的数量：${LIMITS.TEXT}`);
-          throw new Error('WATERMARK_EXCEEDS_LIMIT');
+          throw new RtcError({
+            code: ErrorCode.INVALID_PARAMETER,
+            message: 'watermark exceeds limit'
+          })
       }
       if (options.imageWatermarks && options.imageWatermarks.length > LIMITS.IMAGE){
         this.client.adapterRef.logger.error(`目前的图片水印数量：${options.imageWatermarks.length}。允许的数量：${LIMITS.IMAGE}`);
-        throw new Error('WATERMARK_EXCEEDS_LIMIT');
+        throw new RtcError({
+          code: ErrorCode.INVALID_PARAMETER,
+          message: 'watermark exceeds limit'
+        })
       }
       watermarkControl.checkWatermarkParams(options);
       watermarkControl.updateWatermarks(options);

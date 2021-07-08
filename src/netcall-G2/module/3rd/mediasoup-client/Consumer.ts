@@ -4,6 +4,8 @@ import { InvalidStateError } from './errors';
 import { RtpParameters } from './RtpParameters';
 import {DtlsParameters, IceCandidate, IceParameters} from "./Transport";
 import {SctpParameters} from "./SctpParameters";
+import RtcError from '../../../util/error/rtcError';
+import ErrorCode  from '../../../util/error/errorCode';
 
 export type ConsumerOptions =
 {
@@ -175,7 +177,10 @@ export class Consumer extends EnhancedEventEmitter
    */
   set appData(appData) // eslint-disable-line no-unused-vars
   {
-    throw new Error('cannot override appData object');
+    throw new RtcError({
+      code: ErrorCode.APPDATA_ERROR,
+      message: 'cannot override appData object'
+    })
   }
 
   /**
