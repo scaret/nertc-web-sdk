@@ -229,13 +229,52 @@ class Play extends EventEmitter {
     }
   }
 
-  async playAudioStream(stream:MediaStream) {
+  async resume(stream:MediaStream,option:any){
+    if(!stream){
+      return;
+    }
+    if(option.type === 'audio'){
+      try {
+        await this.playAudioStream(stream);
+      } catch(error) {
+        this.adapterRef.logger.warn('播放 %o 的音频出现问题: %o', this.uid, error)
+        if(error.name === 'NotAllowedError') {
+          throw new RtcError({
+            code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
+            message: error.toString()
+          })
+        }
+      }
+    }else {
+      try {
+        await this.playVideoStream(stream, option.view);
+      } catch(error) {
+        this.adapterRef && this.adapterRef.logger.warn('播放 %s 的视频出现问题: %o', this.uid, error)
+        if(error.name === 'NotAllowedError') {
+          throw new RtcError({
+            code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
+            message: error.toString()
+          })
+        }
+
+      }
+    }
+
+  }
+
+
+  async playAudioStream(stream:MediaStream, ismuted?:boolean) {
     if(!stream) return
     this.adapterRef.logger.log(`播放音频, id: ${stream.id}, active state: ${stream.active}`)
     if (!this.audioDom) {
       this.audioDom = document.createElement('audio')
     }
-    this.audioDom.muted = false
+    if(!ismuted){
+      this.audioDom.muted = false;
+    }else {
+      this.audioDom.muted = ismuted;
+    }
+    
     this.audioDom.srcObject = stream
     this.adapterRef.logger.log('播放 %o 的音频, streamId: %o, stream状态: %o', this.uid, stream.id, stream.active)
     if (this.audioSinkId) {
@@ -254,8 +293,14 @@ class Play extends EventEmitter {
     try {
       await this.audioDom.play()
       this.adapterRef.logger.log('播放 %o 的音频完成，当前播放状态: %o', this.uid, this.audioDom && this.audioDom.played && this.audioDom.played.length)
-    } catch (e) {
-      this.adapterRef.logger.warn('播放 %o 的音频出现问题: %o', this.uid, e)
+    } catch (error) {
+      this.adapterRef.logger.warn('播放 %o 的音频出现问题: %o', this.uid, error)
+      if(error.name === 'NotAllowedError') {
+        throw new RtcError({
+          code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
+          message: error.toString()
+        })
+      }
     }
   }
 
@@ -369,7 +414,7 @@ class Play extends EventEmitter {
     }
   }
 
-  async playVideoStream(stream:MediaStream, view:HTMLElement) {
+  async playVideoStream(stream:MediaStream, view:HTMLElement, ismuted?:boolean) {
     if(!stream || !view) return
     this.adapterRef.logger.log(`播放视频, id: ${stream.id}, active state: ${stream.active}`)
     if (this.videoDom && this.videoDom.srcObject === stream) {
@@ -388,12 +433,23 @@ class Play extends EventEmitter {
       return
     }
     try {
+      if(!ismuted){
+        this.videoDom.muted = false;
+      }else {
+        this.videoDom.muted = ismuted;
+      }
       this.videoDom.srcObject = stream
       this.adapterRef.logger.log('播放 %o 的视频频, streamId: %o, stream状态: %o', this.uid, stream.id, stream.active)
       this.videoDom.play()
       this.adapterRef.logger.log('播放 %s 的视频完成，当前播放状态: %o', this.uid, this.videoDom && this.videoDom.played && this.videoDom.played.length)
-    } catch (e) {
-      this.adapterRef && this.adapterRef.logger.warn('播放 %s 的视频出现问题: %o', this.uid, e)
+    } catch (error) {
+      this.adapterRef && this.adapterRef.logger.warn('播放 %s 的视频出现问题: %o', this.uid, error)
+      if(error.name === 'NotAllowedError') {
+        throw new RtcError({
+          code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
+          message: error.toString()
+        })
+      }
     }
   }
 

@@ -154,6 +154,12 @@ const ErrorCode = {
      *
      */
     APPDATA_ERROR: 1028,
+
+    /*
+     * 自动播放受限
+     *
+     */
+    AUTO_PLAY_NOT_ALLOWED:1030,
     /*
      * 未知错误
      *

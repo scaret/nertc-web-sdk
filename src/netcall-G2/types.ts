@@ -1112,6 +1112,7 @@ export interface StreamPlayOptions{
   audioType?: "voice"|"music"|"mixing";
   video?: boolean;
   screen?: boolean;
+  muted?: boolean;
 }
 export interface RTSTransportOptions{
   url: string;
