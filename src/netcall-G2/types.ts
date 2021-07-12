@@ -592,6 +592,7 @@ export interface MediaHelperOptions{
   adapterRef: AdapterRef;
   uid: number|string;
   isLocal: boolean;
+  stream: Stream;
 }
 
 export interface GetStreamConstraints{
