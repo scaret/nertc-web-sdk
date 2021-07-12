@@ -94,7 +94,7 @@ class Meeting extends EventEmitter {
           t1: T1 // 是一个毫秒级的时间戳，若填了这个，服务器会返回t1（客户端请求时间戳）、t2（服务器接收时间戳）、t3（服务器返回时间戳）
         }
       });
-      let isUidExisted = (uid === '0' || (uid != '0' && !Boolean(uid))) ? false : true;
+      let isUidExisted = (uid == '0' || (uid != '0' && !Boolean(uid))) ? false : true;
 
 
       this.adapterRef.logger.log('获取到房间信息: %o', data)
