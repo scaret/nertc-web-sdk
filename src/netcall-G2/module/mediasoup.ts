@@ -805,7 +805,7 @@ class Mediasoup extends EventEmitter {
     this.adapterRef.instance.apiEventReport('setFunction', {
       name: 'set_video_sub',
       oper: '1',
-      value: preferredSpatialLayer
+      value: JSON.stringify(preferredSpatialLayer)
     })
     if (localDtlsParameters === undefined) {
       data.transportId = this._recvTransport.id;
@@ -1011,7 +1011,7 @@ class Mediasoup extends EventEmitter {
     this.adapterRef.instance.apiEventReport('setFunction', {
       name: 'set_video_sub',
       oper: '1',
-      value: preferredSpatialLayer
+      value: JSON.stringify(preferredSpatialLayer)
     })
 
     this.adapterRef.logger.log('发送consume请求 = %o', data);
