@@ -92,7 +92,6 @@ function loadEnv() {
     $('#appkey').val(WEBRTC2_ENV[env].appkey)
     $('#AppSecret').val(WEBRTC2_ENV[env].AppSecret)
   }
-  $('#uid').val(Math.ceil(Math.random() * 1e4))
   // $('#uid').val('111111111111111111')
   //$('#channelName').val(Math.ceil(Math.random() * 1e10))
   const channelName = window.localStorage ? window.localStorage.getItem("channelName") : "";
@@ -160,6 +159,10 @@ $('#uploadLog').on('click', () => {
   NERTC.Logger.enableLogUpload();
 })
 
+$('#disableUploadLog').on('click', () => {
+  //关闭上传日志
+  NERTC.Logger.disableLogUpload();
+})
 
 $('#audioMixing').on('click', () => {
   //伴音功能模块
@@ -223,7 +226,7 @@ async function loadTokenByAppKey(){
   const config = WEBRTC2_ENV[globalConfig.env];
   let appkey = $("#appkey").val();
   let AppSecret = $("#AppSecret").val();
-  let uid = $("#uid").val();
+  let uid = getUidFromDomInput();
   let channelName = $("#channelName").val();
   if (AppSecret && uid && channelName){
     let Nonce = Math.ceil(Math.random() * 1e9);
@@ -270,6 +273,7 @@ function init() {
     debug: true,
     //report: false
   })
+  NERTC.Logger.enableLogUpload();
   initDevices()
   initEvents()
   initVolumeDetect()
@@ -626,7 +630,7 @@ $('#joinChannel-btn').on('click', async () => {
     window.localStorage.setItem(`appkey-${globalConfig.env}`, $("#appkey").val());
     window.localStorage.setItem(`AppSecret-${globalConfig.env}`, $("#AppSecret").val());
   }
-  const uid = $('#uid').val()
+  const uid = getUidFromDomInput()
   // 实时音录制
   const recordType = ($('#sessionConfigRecordType').val())
   const isHostSpeaker = $('#sessionConfigIsHostSpeaker').prop('checked')
@@ -775,7 +779,7 @@ $('#joinChannel-btn').on('click', async () => {
       }
     }
     const { cid } = rtc.client.getChannelInfo()
-    $('#cid').html(`<a target="_blank" href="http://vcloud-statics.hz.netease.com/grafana/d/tYiznOXZk/sdkke-hu-duan?orgId=1&from=now%2Fw&to=now%2Fw&fullscreen&panelId=104&var-cid=${cid}&var-uid=${$("#uid").val()}">${cid}</a>`)
+    $('#cid').html(`<a target="_blank" href="http://vcloud-statics.hz.netease.com/grafana/d/tYiznOXZk/sdkke-hu-duan?orgId=1&from=now%2Fw&to=now%2Fw&fullscreen&panelId=104&var-cid=${cid}&var-uid=${rtc.client.getUid()}">${cid}</a>`)
   },
   error =>{
     console.error('加入房间失败',error)
@@ -2060,6 +2064,13 @@ function updateAudioMixingStatus(){
 
 setInterval(updateAudioMixingStatus, 1000);
 
+function updateLogUploadStatus(){
+  const uploadLogEnabled = sessionStorage.getItem('uploadLogEnabled')
+  $("#logUploadEnabled").text(uploadLogEnabled);
+}
+
+setInterval(updateLogUploadStatus, 1000);
+
 $('#startAudioMixing').click(function(){
   console.info('开始伴音...')
   const progressInfo = document.querySelector('#auidoMixing .value');
@@ -2152,6 +2163,25 @@ $('#setAudioMixingVolume').click(function(){
     })
   } 
 });
+
+function getUidFromDomInput(){
+  const uidInput = $("#uid").val();
+  if (!uidInput){
+    // 未填
+    return 0;
+  }
+  else{
+    const uid = parseInt($("#uid").val())
+    if (uid >= 0 && uid <= Number.MAX_SAFE_INTEGER){
+      // 未越界
+      return uid;
+    }else{
+      console.warn("uid超过整数范围，使用string类型" + uid);
+      addLog('uid超过整数范围，使用string类型' + uidInput);
+      return uidInput;
+    }
+  }
+}
 
 /**
  * ----------------------------------------

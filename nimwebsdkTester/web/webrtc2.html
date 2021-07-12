@@ -94,11 +94,13 @@
           <div class="line">
             版本号: <span id="sdkVersion"></span><br>
             提交号: <span id="sdkBuild"></span><br />
+            日志上传是否开启: <span id="logUploadEnabled"></span><br/>
             <span id="systemRequirement"></span>
           </div>
         </div>
         <button type="button" id='config'>参数配置</button>
         <button type="button" id='uploadLog'>启动上传日志</button>
+        <button type="button" id='disableUploadLog'>关闭上传日志</button>
         <div class="line">
         </div>
 
@@ -150,6 +152,7 @@
           <div class="line">
             UID：
             <input type="text" id="uid" value="">
+            不填则随机
           </div>
           <div class="line">
             token:
