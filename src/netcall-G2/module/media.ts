@@ -9,15 +9,12 @@ import {
   AdapterRef, AudioMixingOptions,
   GetStreamConstraints,
   MediaHelperOptions, MediaTypeShort, MixAudioConf,AudioEffectOptions,
-  SDKRef
 } from "../types";
 import {emptyStreamWith} from "../util/gum";
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
 class MediaHelper extends EventEmitter {
   private adapterRef: AdapterRef;
-  private sdkRef: SDKRef;
-  private uid:number|string;
   private isLocal:boolean;
   micStream: MediaStream|null;
   // audioStream对localStream而言是PeerConnection发送的MediaStream，
@@ -47,9 +44,7 @@ class MediaHelper extends EventEmitter {
     super()
     // 设置对象引用
     this.adapterRef = options.adapterRef
-    this.sdkRef = options.sdkRef
-    this.uid = options.uid
-    this.isLocal = this.adapterRef.channelInfo.uid.toString() == this.uid.toString()
+    this.isLocal = options.isLocal
     this.micStream = null;
     this.audioStream = new MediaStream();
     this.musicStream = new MediaStream();

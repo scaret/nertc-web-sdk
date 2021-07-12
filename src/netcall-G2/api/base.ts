@@ -181,7 +181,6 @@ class Base extends EventEmitter {
       this.adapterRef.netStatusTimer = null
     }
 
-    this.adapterRef.mediaHelpers = {}
     this.adapterRef.uid2SscrList = {}
 
     // 状态类变量
@@ -347,7 +346,6 @@ class Base extends EventEmitter {
     this.adapterRef.remoteStreamMap = {}
     this.adapterRef.memberMap = {}
     this.adapterRef.uid2SscrList = {}
-    this.adapterRef.mediaHelpers = {}
     this._resetState(); // 内部状态对象
   }
 
@@ -568,26 +566,7 @@ class Base extends EventEmitter {
       }
     }
   }
-
-  //media操作类
-  getMediaHlperByUid(uid: number|string) {
-    if (!uid) {
-      this.adapterRef.logger.error('getMediaHlperByUid: uid undefined')
-      return
-    }
-    let mediaHelper = this.adapterRef.mediaHelpers[uid]
-    // 未初始化则创建实例
-    if (!mediaHelper) {
-      mediaHelper = new MediaHelper({
-        uid,
-        sdkRef: this.sdkRef,
-        adapterRef: this.adapterRef
-      })
-    }
-    this.adapterRef.mediaHelpers[uid] = mediaHelper;
-    return mediaHelper
-  }
-
+  
   isPublished(stream: Stream){
     return stream && (stream.audio && stream.pubStatus.audio.audio) || (stream.video && stream.pubStatus.video.video) || (stream.screen && stream.pubStatus.screen.screen)
   }

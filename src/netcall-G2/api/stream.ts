@@ -89,7 +89,7 @@ class Stream extends EventEmitter {
   public client: Client;
   private audioSource: MediaStreamTrack|null;
   private videoSource:MediaStreamTrack|null;
-  public mediaHelper:MediaHelper|null;
+  public mediaHelper:MediaHelper;
   _play: Play|null;
   private _record: Record|null;
   public audioProfile:string;
@@ -245,7 +245,11 @@ class Stream extends EventEmitter {
     this.client = options.client
     this.audioSource = options.audioSource || null
     this.videoSource = options.videoSource || null
-    this.mediaHelper = this.client.getMediaHlperByUid(this.stringStreamID)
+    this.mediaHelper = new MediaHelper({
+      adapterRef: this.client.adapterRef,
+      uid: options.uid,
+      isLocal: !options.isRemote
+    });
     this._play = new Play({
       sdkRef: this.client,
       adapterRef: this.client.adapterRef,
@@ -369,7 +373,6 @@ class Stream extends EventEmitter {
     if (this.mediaHelper) {
       this.mediaHelper.destroy()
     }
-    this.mediaHelper = null
     if (this._play) {
       this._play.destroy()
     }
@@ -1025,8 +1028,14 @@ class Stream extends EventEmitter {
                   this.mediaHelper.enableAudioRouting(); 
                 }
             }
-            await this.mediaHelper.getStream({audio: true, audioDeviceId: deviceId})
-            await this.client.publish(this)
+            const constraint = {audio: true, audioDeviceId: deviceId};
+            await this.mediaHelper.getStream(constraint);
+            if (this.client.adapterRef && this.client.adapterRef.connectState.curState === "CONNECTED"){
+              this.client.adapterRef.logger.log('Stream.open:开始发布', constraint);
+              await this.client.publish(this)
+            }else{
+              this.client.adapterRef.logger.log('Stream.open:client不在频道中，无需发布。', constraint);
+            }
           }
           break
         case 'video':
@@ -1076,9 +1085,12 @@ class Stream extends EventEmitter {
             constraint.screenAudio = true
             this.audio = true
           }
-          if (this.mediaHelper){
-            await this.mediaHelper.getStream(constraint)
+          await this.mediaHelper.getStream(constraint);
+          if (this.client.adapterRef && this.client.adapterRef.connectState.curState === "CONNECTED"){
+            this.client.adapterRef.logger.log('Stream.open:开始发布', constraint);
             await this.client.publish(this)
+          }else{
+            this.client.adapterRef.logger.log('Stream.open:client不在频道中，无需发布。', constraint);
           }
           break
         default:
@@ -1149,12 +1161,10 @@ class Stream extends EventEmitter {
           })
         }
         if (this.client.adapterRef && this.client.adapterRef._mediasoup){
+          this.client.adapterRef.logger.log('Stream.close:停止发布音频');
           await this.client.adapterRef._mediasoup.destroyProduce('audio');
         }else{
-          throw new RtcError({
-            code: ErrorCode.NO_MEDIASOUP,
-            message: 'media server error'
-          })
+          this.client.adapterRef.logger.log('Stream.close:未发布音频，无需停止发布');
         }
         break
       case 'video':
@@ -1181,12 +1191,11 @@ class Stream extends EventEmitter {
         }
         this._play.stopPlayVideoStream()
         if (!this.client.adapterRef._mediasoup){
-          throw new RtcError({
-            code: ErrorCode.NO_MEDIASOUP,
-            message: 'media server error'
-          })
+          this.client.adapterRef.logger.log('Stream.close:未发布视频，无需停止发布');
+        }else{
+          this.client.adapterRef.logger.log('Stream.close:停止发布视频');
+          await this.client.adapterRef._mediasoup.destroyProduce('video');
         }
-        await this.client.adapterRef._mediasoup.destroyProduce('video');
         break
       case 'screen':
         this.client.adapterRef.logger.log('关闭屏幕共享')
@@ -1211,12 +1220,11 @@ class Stream extends EventEmitter {
         }
         this._play.stopPlayScreenStream()
         if (!this.client.adapterRef._mediasoup){
-          throw new RtcError({
-            code: ErrorCode.NO_MEDIASOUP,
-            message: 'media server error'
-          })
+          this.client.adapterRef.logger.log('Stream.close:未发布辅流，无需停止发布');
+        }else{
+          this.client.adapterRef.logger.log('Stream.close:停止发布辅流');
+          await this.client.adapterRef._mediasoup.destroyProduce('screen');
         }
-        await this.client.adapterRef._mediasoup.destroyProduce('screen');
         break
       default:
         this.client.adapterRef.logger.log('不能识别type')
@@ -2184,12 +2192,15 @@ class Stream extends EventEmitter {
           break
         case 'audio':
           // 音频则为混音
-          const mediaHelpers = this.client.adapterRef.mediaHelpers
-          Object.values(mediaHelpers).forEach((item) => {
-            if (item.audioStream) {
-              streams.push(item.audioStream)
+          streams.push(this.mediaHelper.audioStream);
+          if (this.client.adapterRef.remoteStreamMap){
+            for (var uid in this.client.adapterRef.remoteStreamMap){
+              const remoteStream = this.client.adapterRef.remoteStreamMap[uid];
+              if (remoteStream.mediaHelper && remoteStream.mediaHelper.audioStream){
+                streams.push(remoteStream.mediaHelper.audioStream);
+              }
             }
-          })
+          }
       }
     } else { // 录制别人
       if (!this.mediaHelper){

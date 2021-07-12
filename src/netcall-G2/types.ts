@@ -589,9 +589,9 @@ export interface AudioEffectOptions{
 
 
 export interface MediaHelperOptions{
-  sdkRef: SDKRef;
   adapterRef: AdapterRef;
   uid: number|string;
+  isLocal: boolean;
 }
 
 export interface GetStreamConstraints{
@@ -747,7 +747,6 @@ export interface StreamOptions{
 }
 
 export interface Client{
-  getMediaHlperByUid:(streamId: number|string)=>MediaHelper;
   adapterRef: AdapterRef;
   apiFrequencyControl: (event:any)=>void;
   emit:(eventName: string, eventData?:any)=>void
