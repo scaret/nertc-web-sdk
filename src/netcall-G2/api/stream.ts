@@ -248,7 +248,8 @@ class Stream extends EventEmitter {
     this.mediaHelper = new MediaHelper({
       adapterRef: this.client.adapterRef,
       uid: options.uid,
-      isLocal: !options.isRemote
+      isLocal: !options.isRemote,
+      stream: <Stream> this,
     });
     this._play = new Play({
       sdkRef: this.client,

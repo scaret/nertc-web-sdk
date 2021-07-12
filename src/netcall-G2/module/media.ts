@@ -13,9 +13,11 @@ import {
 import {emptyStreamWith} from "../util/gum";
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
+import {Stream} from "../api/stream";
 class MediaHelper extends EventEmitter {
   private adapterRef: AdapterRef;
   private isLocal:boolean;
+  stream: Stream;
   micStream: MediaStream|null;
   // audioStream对localStream而言是PeerConnection发送的MediaStream，
   // 对remoteStream而言是包含了接收的MediaStream
@@ -45,6 +47,7 @@ class MediaHelper extends EventEmitter {
     // 设置对象引用
     this.adapterRef = options.adapterRef
     this.isLocal = options.isLocal
+    this.stream = options.stream;
     this.micStream = null;
     this.audioStream = new MediaStream();
     this.musicStream = new MediaStream();
@@ -140,14 +143,11 @@ class MediaHelper extends EventEmitter {
 
     try {
       if (screen) {
-        if (!this.adapterRef.localStream){
-          this.adapterRef.logger.error('mediaHelper.getStream screen:No localStream');
-          throw new RtcError({
-            code: ErrorCode.NO_LOCALSTREAM,
-            message: 'No localStream'
-          })
+        if (!this.isLocal){
+          this.adapterRef.logger.error('getStream: 远端流不能够调用getStream');
+          return;
         }
-        const {width, height, frameRate} = this.convert(this.adapterRef.localStream.screenProfile)
+        const {width, height, frameRate} = this.convert(this.stream.screenProfile)
         
         if (sourceId) {
           this.screenStream = await GUM.getStream({
@@ -249,14 +249,10 @@ class MediaHelper extends EventEmitter {
           
         }
       } else if (audio || video) {
-        if (!this.adapterRef.localStream){
-          this.adapterRef.logger.error('Client.getStream:No localStream');
-          throw new RtcError({
-            code: ErrorCode.NO_LOCALSTREAM,
-            message: 'No localStream'
-          })
+        if (!this.isLocal){
+          this.adapterRef.logger.error('MediaHelper.getStream:远端流不能调用getStream');
         }
-        const {height, width, frameRate} = this.convert(this.adapterRef.localStream.videoProfile)
+        const {height, width, frameRate} = this.convert(this.stream.videoProfile)
         let config:MediaStreamConstraints = {
           audio: (audio && this.getAudioConstraints()) ? this.getAudioConstraints() : audio,
           video: video ? {
@@ -431,25 +427,18 @@ class MediaHelper extends EventEmitter {
         if (typeof constraint.video === "object"){
           this.videoConstraint = {video: constraint.video}
         }
-        if (!this.adapterRef.localStream){
-          throw new RtcError({
-            code: ErrorCode.NO_LOCALSTREAM,
-            message: 'No localStream'
-          })
-        }
-        const isPlaying = await this.adapterRef.localStream.isPlaying('video')
-        if (isPlaying && this.cameraStream) {
-          this.adapterRef.localStream.stop('video')
+        if (this.cameraStream) {
+          this.stream.stop('video')
           this._stopTrack(this.cameraStream)
         }
         this.cameraStream = new MediaStream()
         this.cameraStream.addTrack(videoTrack)
         this.videoStream = this.cameraStream
-        const videoView = this.adapterRef.localStream.videoView || (this.adapterRef.localStream.Play && this.adapterRef.localStream.Play.videoView)
-        if (isPlaying && videoView) {
-          await this.adapterRef.localStream.play(videoView)
-          if ("width" in this.adapterRef.localStream.renderMode.local.video){
-            this.adapterRef.localStream.setLocalRenderMode(this.adapterRef.localStream.renderMode.local.video, 'video')
+        const videoView = this.stream.videoView || (this.stream.Play && this.stream.Play.videoView)
+        if (videoView) {
+          await this.stream.play(videoView)
+          if ("width" in this.stream.renderMode.local.video){
+            this.stream.setLocalRenderMode(this.stream.renderMode.local.video, 'video')
           }
         }
         const peer = this.adapterRef.instance.getPeer('send')
@@ -510,13 +499,11 @@ class MediaHelper extends EventEmitter {
   }
 
   getAudioConstraints() {
-    if (!this.adapterRef.localStream){
-      throw new RtcError({
-        code: ErrorCode.NO_LOCALSTREAM,
-        message: 'No localStream'
-      })
+    if (!this.isLocal){
+      this.adapterRef.instance.logger.error('Remote Stream dont have audio constraints');
+      return;
     }
-    const audioProcessing = this.adapterRef.localStream.audioProcessing;
+    const audioProcessing = this.stream.audioProcessing;
     let constraint:any = {};
     if (audioProcessing) {
       if (typeof audioProcessing.AEC !== "undefined") {
@@ -535,7 +522,7 @@ class MediaHelper extends EventEmitter {
         constraint.googAutoGainControl2 = audioProcessing.AGC;
       }
     }
-    switch(this.adapterRef.localStream.audioProfile){
+    switch(this.stream.audioProfile){
       case "speech_low_quality":
         constraint.sampleRate = 16000;
         break;
@@ -681,7 +668,7 @@ class MediaHelper extends EventEmitter {
     if (!this.mixAudioConf.audioFilePath) {
       this.adapterRef.logger.log('开始伴音: 没有找到云端文件路径')
       reason = 'INVALID_ARGUMENTS'
-    } else if (!this.micStream || !this.adapterRef.localStream || !this.adapterRef.localStream.pubStatus.audio.audio) {
+    } else if (!this.micStream || !this.stream.pubStatus.audio.audio) {
       this.adapterRef.logger.log('开始伴音: 当前没有publish音频')
       reason = 'NOT_PUBLIST_AUDIO_YET'
     } else if (!this.webAudio || !this.webAudio.context) {
