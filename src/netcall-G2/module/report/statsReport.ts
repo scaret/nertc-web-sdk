@@ -85,7 +85,6 @@ class StatsReport extends EventEmitter {
   }
 
   start () {
-    this.stats && this.stats.start()
     if (this.formativeStatsReport) {
       this.formativeStatsReport.start()
     }
@@ -96,12 +95,6 @@ class StatsReport extends EventEmitter {
     })
     this.wsTransport_.init();
   }
-
-  // 异常情况时单独上报一次
-  // uploadFormatDataStatsOnce (data:any) {
-  //   if (!this.formativeStatsReport) return
-  //   this.formativeStatsReport.updateOnce()
-  // }
 
   startHeartbeat() {
     if (this.heartbeat_ === -1) {
