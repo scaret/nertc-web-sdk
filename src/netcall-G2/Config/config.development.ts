@@ -10,6 +10,9 @@ const Config:IConfig = {
   roomsTaskUrl: 'https://roomserver-greytest.netease.im/v2/sdk/rooms/'
 }
 
+const ENV = "development";
+
 export {
+  ENV,
   Config
 }

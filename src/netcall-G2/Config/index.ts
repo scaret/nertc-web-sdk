@@ -11,7 +11,7 @@ export interface IConfig{
 }
 
 //Env Specific configs
-import {Config} from "./config.development";// WEBPACK_STRING_REPLACE_ENV -don't delete the comment
+import {Config, ENV} from "./config.development";// WEBPACK_STRING_REPLACE_ENV -don't delete the comment
 
 const checkSumUrl = Config.checkSumUrl;
 const createChannelUrl = Config.createChannelUrl;
@@ -22,6 +22,7 @@ export {
   SDK_VERSION,
   ENGINE_VERSION,
   BUILD,
+  ENV,
   
   checkSumUrl,
   createChannelUrl,

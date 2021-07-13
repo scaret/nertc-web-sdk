@@ -8,6 +8,9 @@ const Config:IConfig = {
   roomsTaskUrl: 'https://roomserver.netease.im/v2/sdk/rooms/'
 }
 
+const ENV = "production";
+
 export {
+  ENV,
   Config
 }

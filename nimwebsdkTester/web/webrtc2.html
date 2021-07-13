@@ -22,7 +22,7 @@
           <h1>环境配置</h1>
           <div class="line">
             <label>
-              <input type="radio" id="test-env" name="env" value="DEV" checked> 测试</label>
+              <input type="radio" id="test-env" name="env" value="DEV"> 测试</label>
             <label>
               <input type="radio" id="online-env" name="env" value="PROD"> 线上</label>
           </div>
@@ -92,7 +92,7 @@
             CID: <span id="cid"></span>
           </div>
           <div class="line">
-            版本号: <span id="sdkVersion"></span><br>
+            版本号: <span id="sdkVersion"></span> 环境: <span id="sdkEnv"></span><br>
             提交号: <span id="sdkBuild"></span><br />
             日志上传是否开启: <span id="logUploadEnabled"></span><br/>
             <span id="systemRequirement"></span>
@@ -151,8 +151,8 @@
           </div>
           <div class="line">
             UID：
-            <input type="text" id="uid" value="">
-            不填则随机
+            <input type="text" id="uid" value="" placeholder="不填则随机">
+            <input type="checkbox" id="useStringUid">string类型
           </div>
           <div class="line">
             token:
