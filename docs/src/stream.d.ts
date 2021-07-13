@@ -103,9 +103,9 @@ declare interface Stream {
        */
       video?: boolean;
       /**
-       * 是否播放视频流。
+       * 是否播放辅流。
        * 
-       * 默认播放视频流。
+       * 默认播放辅流。
        */
       screen?: boolean;
     }): Promise<void>;
