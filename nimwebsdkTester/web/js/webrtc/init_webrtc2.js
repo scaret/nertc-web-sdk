@@ -220,6 +220,16 @@ $('input[name="mode"]').on('click', () => {
   rtc.client.setChannelProfile({mode})
 })
 
+$("#sdkEnv").text(NERTC.ENV);
+switch(NERTC.ENV){
+  case "development":
+  case "test":
+    $("#test-env").prop("checked", true);
+    break;
+  case "production":
+    $("#online-env").prop("checked", true);
+    break;
+}
 loadEnv()
 
 async function loadTokenByAppKey(){

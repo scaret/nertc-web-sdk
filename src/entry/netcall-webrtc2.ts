@@ -3,7 +3,7 @@ import { Stream } from '../netcall-G2/api/stream'
 import { Device } from '../netcall-G2/module/device'
 import { clientNotYetUninitialized } from '../netcall-G2/constant/ErrorCode'
 import { ClientOptions, StreamOptions } from "../netcall-G2/types";
-import { BUILD, SDK_VERSION as VERSION } from "../netcall-G2/Config";
+import { BUILD, SDK_VERSION as VERSION, ENV } from "../netcall-G2/Config";
 import { VIDEO_FRAME_RATE, NERTC_VIDEO_QUALITY as VIDEO_QUALITY } from "../netcall-G2/constant/videoQuality";
 import { LIVE_STREAM_AUDIO_SAMPLE_RATE, LIVE_STREAM_AUDIO_CODEC_PROFILE } from "../netcall-G2/constant/liveStream";
 import { NETWORK_STATUS } from '../netcall-G2/constant/networkStatus';
@@ -318,7 +318,8 @@ VIDEO_FRAME_RATE,
 VIDEO_QUALITY,
 NETWORK_STATUS,
 VERSION,
-BUILD
+BUILD,
+ENV,
 }
 
 
