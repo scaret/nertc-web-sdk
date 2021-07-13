@@ -125,11 +125,6 @@ export interface ProducerAppData{
 
 export interface NetStatusItem{
   uid: number|string;
-  
-}
-
-export interface NetworkQualityItem{
-  uid: number|string;
   downlinkNetworkQuality: number;
   uplinkNetworkQuality: number;
 }

@@ -16,7 +16,7 @@ if (!match){
 }else if (VERSION !== match[1]){
   console.error("版本信息不匹配", VERSION, match[1])
   process.exit(1)
-}else if (!match[2].match(/v\d+\.\d+\.\d+\-0-[0-9a-f]+/)){
+}else if (!match[2].match(/v\d+\.\d+\.\d+\-0-g[0-9a-f]+/)){
   console.error("BUILD信息不对", match[2]);
   process.exit(1)
 }else if (match[3] !== "production"){
