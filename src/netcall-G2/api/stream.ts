@@ -780,7 +780,7 @@ class Stream extends EventEmitter {
           await this._play.playAudioStream(this.mediaHelper.audioStream, playOptions.muted)
           this.audioPlay_ = true;
         }catch(error) {
-          console.warn('NotAllowedError audio--->')
+          // console.warn('NotAllowedError audio--->')
           this.client.emit('NotAllowedError', error)
           // let ErrorMessage = 'NotAllowedError: autoplay is not allowed in current browser, please refer to https://yunxin.163.com/autoplay-policy'
           // throw new RtcError({
@@ -826,7 +826,7 @@ class Stream extends EventEmitter {
             //   code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
             //   message: ErrorMessage
             // })
-            console.warn('NotAllowedError video--->')
+            // console.warn('NotAllowedError video--->')
             this.client.emit('NotAllowedError', error)
           }
         }  
