@@ -153,6 +153,16 @@ export interface ClientExceptionEvt{
   uid: number|string;
 }
 
+export enum NetworkStatus {
+  UNKNOWN= 0,
+  EXCELLENT= 1,
+  GOOD= 2,
+  POOR= 3,
+  BAD= 4,
+  VERYBAD= 5,
+  DOWN= 6,
+}
+
   /***
    * 房间中所有成员的上下行网络质量。
    */
@@ -161,6 +171,8 @@ export interface NetStatusItem {
    * 用户 ID。
    */
   uid: number|string;
+  downlinkNetworkQuality: NetworkStatus;
+  uplinkNetworkQuality: NetworkStatus;
 }
 
   /**

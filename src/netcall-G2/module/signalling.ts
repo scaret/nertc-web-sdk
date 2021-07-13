@@ -5,7 +5,6 @@ import BigNumber from 'bignumber.js'
 import {ENGINE_VERSION} from '../Config/index'
 import {
   AdapterRef, MediaTypeShort, NetStatusItem,
-  NetworkQualityItem,
   SDKRef,
   SignallingOptions,
   Timer, VideoCodecType
@@ -1027,7 +1026,7 @@ class Signalling extends EventEmitter {
     const base64 = parseBase64(netStatusList)
     let str = base64.toString()
     //let str = '02001a080000000000000003001b08000000000000000200'
-    let networkQuality:NetworkQualityItem[] = []
+    let networkQuality:NetStatusItem[] = []
     let count = str.substr(2, 2) + str.substr(0, 2)
     count = parseInt(count, 16)
     str = str.substr(4)

@@ -537,11 +537,11 @@ function initEvents() {
     let tables = $("#netQuality");
     $("#netQuality tr:not(:first)").remove();
     _data.forEach(item => {
-      tr = $("<tr>" +
-        "<td>" + item.uid + "</td>" +
-        "<td>" + item.uplinkNetworkQuality + "</td>" +
-        "<td>" + item.downlinkNetworkQuality + "</td>" +
-        "</tr>")
+      tr = $(`<tr style="font-size: small">
+        <td>${item.uid}</td>
+        <td>${NERTC.NETWORK_STATUS[item.uplinkNetworkQuality]} (${item.uplinkNetworkQuality})</td>
+        <td>${NERTC.NETWORK_STATUS[item.downlinkNetworkQuality]} (${item.downlinkNetworkQuality})</td>
+        </tr>`);
       tr.appendTo(tables)
     })
   })
