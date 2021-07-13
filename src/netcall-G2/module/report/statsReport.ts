@@ -146,9 +146,11 @@ class StatsReport extends EventEmitter {
     if(env.IS_CHROME){
       if(isEmpty(this.prevStats_) || (la.length !== pla.length) || (lv.length !== plv.length) || (ra.length !== pra.length) || (rv.length !== prv.length) || (rs.length !== prs.length) ) {
         this.prevStats_ = result;
-        this.prevStats_.local.audio_ssrc[0].bytesSentPerSecond = this.prevStats_.local.audio_ssrc[0].bytesSent;
-        this.prevStats_.local.video_ssrc[0].bytesSentPerSecond = this.prevStats_.local.video_ssrc[0].bytesSent;
-        this.prevStats_.local.video_ssrc[0].framesEncodedPerSecond = this.prevStats_.local.video_ssrc[0].framesEncoded;
+        if(Object.keys(this.prevStats_.local).length){
+          this.prevStats_.local.audio_ssrc[0].bytesSentPerSecond = this.prevStats_.local.audio_ssrc[0].bytesSent;
+          this.prevStats_.local.video_ssrc[0].bytesSentPerSecond = this.prevStats_.local.video_ssrc[0].bytesSent;
+          this.prevStats_.local.video_ssrc[0].framesEncodedPerSecond = this.prevStats_.local.video_ssrc[0].framesEncoded;
+        }
         for(let item in this.prevStats_.remote){
           if(item.indexOf('ssrc') > -1) {
             for(let i = 0; i < this.prevStats_.remote[item].length; i++){
@@ -164,9 +166,11 @@ class StatsReport extends EventEmitter {
         let prevLocal = this.prevStats_.local;
         let remote = result.remote;
         let prevRemote = this.prevStats_.remote;
-        local.audio_ssrc[0].bytesSentPerSecond = (local.audio_ssrc[0].bytesSent - 0 - prevLocal.audio_ssrc[0].bytesSent)/2;
-        local.video_ssrc[0].bytesSentPerSecond = (local.video_ssrc[0].bytesSent - 0 - prevLocal.video_ssrc[0].bytesSent)/2;
-        local.video_ssrc[0].framesEncodedPerSecond = (local.video_ssrc[0].framesEncoded - 0 - prevLocal.video_ssrc[0].framesEncoded)/2;
+        if(Object.keys(local).length){
+          local.audio_ssrc[0].bytesSentPerSecond = (local.audio_ssrc[0].bytesSent - 0 - prevLocal.audio_ssrc[0].bytesSent)/2;
+          local.video_ssrc[0].bytesSentPerSecond = (local.video_ssrc[0].bytesSent - 0 - prevLocal.video_ssrc[0].bytesSent)/2;
+          local.video_ssrc[0].framesEncodedPerSecond = (local.video_ssrc[0].framesEncoded - 0 - prevLocal.video_ssrc[0].framesEncoded)/2;
+        }
         for(let item in remote){
           if(item.indexOf('ssrc') > -1) {
             for(let i = 0; i < remote[item].length; i++){
