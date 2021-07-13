@@ -265,6 +265,13 @@ async function loadTokenByAppKey(){
 // $("#uid").on("change", loadTokenByAppKey);
 // $("#channelName").on("change", loadTokenByAppKey);
 
+$("#uid").on("input", function(){
+  const uidInput = $("#uid").val();
+  if(uidInput.length > 14){
+    $('#useStringUid').attr("checked", true)
+  }
+});
+
 function init() {
   if (globalConfig.inited) {
     /*addLog('已经初始化过了，刷新页面重试!!')
@@ -2181,15 +2188,14 @@ function getUidFromDomInput(){
     return 0;
   }
   else{
-    const uid = parseInt($("#uid").val())
-    if (uid >= 0 && uid <= Number.MAX_SAFE_INTEGER){
-      // 未越界
-      return uid;
+    let uid = $("#uid").val();
+    if ($("#useStringUid").prop("checked") === false){
+      uid = parseInt(uid);
+      console.log("使用Number类型的uid", uid);
     }else{
-      console.warn("uid超过整数范围，使用string类型" + uid);
-      addLog('uid超过整数范围，使用string类型' + uidInput);
-      return uidInput;
+      console.log("使用String类型的uid", uid);
     }
+    return uid;
   }
 }
 
