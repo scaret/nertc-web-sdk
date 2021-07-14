@@ -163,7 +163,9 @@ declare interface Stream {
       /**
        * 指定屏幕共享时是否共享本地播放的背景音。
        * 
-       * 仅在未开启音频且 type 为 screen 时有效。详细说明请参考 [[StreamOptions.screenAudio]]。
+       * 仅在 type 为 screen 时有效。详细说明请参考 [[StreamOptions.screenAudio]]。
+       * 
+       * 在V4.4.0之前，麦克风和屏幕共享音频不能同时开启。
        */
       screenAudio?: boolean;
     }): Promise<undefined>;
@@ -173,9 +175,9 @@ declare interface Stream {
      */
     close(options: {
       /**
-       * 媒体流类型，即 audio、video 或 screen。
+       * 媒体流类型，即 audio、video、 screen 或 screenAudio。
        */
-        type: MediaType;
+        type: "audio"|"video"|"screen"|"screenAudio";
     }): Promise<undefined>;
     /**
      * 启用音频轨道。

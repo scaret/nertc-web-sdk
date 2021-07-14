@@ -529,7 +529,6 @@ export interface StatsReportOptions{
 
 export interface WebAudioOptions{
   adapterRef: AdapterRef;
-  stream: MediaStream|MediaStream[];
   isAnalyze?: boolean;
   isRemote?: boolean;
 }

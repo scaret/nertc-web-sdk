@@ -706,9 +706,6 @@ class Stream extends EventEmitter {
           screen: this.screen,
           screenAudio: this.screenAudio,
         })
-        if (this.screenAudio){
-          this.audio = true;
-        }
       }
     } catch (e) {
       this.client.adapterRef.logger.log('打开屏幕共享失败: ', e)
@@ -1097,7 +1094,14 @@ class Stream extends EventEmitter {
           this.audio = true
           if(this.mediaHelper){
             if (this.mediaHelper.webAudio){
-              if (this.mediaHelper.webAudio.gainFilter && this.mediaHelper.webAudio.gainFilter.gain.value !== 1 || this.mediaHelper.webAudio.mixAudioConf.state !== AuidoMixingState.UNSTART){
+              if (
+                // 情况1：启用了本地采集音量
+                this.mediaHelper.webAudio.gainFilter && this.mediaHelper.webAudio.gainFilter.gain.value !== 1
+                // 情况2：启用了混音
+                || this.mediaHelper.webAudio.mixAudioConf.state !== AuidoMixingState.UNSTART
+                // 情况3：启用了屏幕共享音频
+                || this.mediaHelper.screenAudioTrack
+              ){
                   this.mediaHelper.enableAudioRouting(); 
                 }
             }
@@ -1131,22 +1135,6 @@ class Stream extends EventEmitter {
               })
             )
           }
-          if (options.screenAudio && this.audio){
-            this.client.adapterRef.logger.error('请先关闭麦克风')
-            this.client.apiFrequencyControl({
-              name: 'open',
-              code: -1,
-              param: JSON.stringify({
-                reason: '请先关闭麦克风',
-                type
-              }, null, ' ')
-            })
-            return Promise.reject(
-            new RtcError({
-              code: ErrorCode.INVALID_OPERATION,
-              message: 'please close mic first'
-            }))
-          }
           this[type] = true
           const constraint:any = {
             videoDeviceId: deviceId,
@@ -1156,7 +1144,7 @@ class Stream extends EventEmitter {
           constraint[type] = true
           if (type === "screen" && options.screenAudio){
             constraint.screenAudio = true
-            this.audio = true
+            this.screenAudio = true
           }
           await this.mediaHelper.getStream(constraint);
           if (this.client.adapterRef && this.client.adapterRef.connectState.curState === "CONNECTED"){
@@ -1213,7 +1201,7 @@ class Stream extends EventEmitter {
    * @param {String }  options.type 媒体设备: audio/video/screen
    * @returns {Promise}
    */
-  async close (options: { type:MediaTypeShort}) {
+  async close (options: { type:MediaTypeShort|"screenAudio"}) {
     let {type} = options
     let reason = null
     switch(type) {
@@ -1234,8 +1222,39 @@ class Stream extends EventEmitter {
           })
         }
         if (this.client.adapterRef && this.client.adapterRef._mediasoup){
-          this.client.adapterRef.logger.log('Stream.close:停止发布音频');
-          await this.client.adapterRef._mediasoup.destroyProduce('audio');
+          if (this.mediaHelper.micTrack || this.mediaHelper.screenAudioTrack){
+            this.client.adapterRef.logger.log('Stream.close:关闭音频，保留发布：', type);
+          }else{
+            this.client.adapterRef.logger.log('Stream.close:停止发布音频');
+            await this.client.adapterRef._mediasoup.destroyProduce('audio');
+          }
+        }else{
+          this.client.adapterRef.logger.log('Stream.close:未发布音频，无需停止发布');
+        }
+        break
+      case 'screenAudio':
+        this.client.adapterRef.logger.log('关闭屏幕共享音频')
+        if (!this.screenAudio) {
+          this.client.adapterRef.logger.log('没有开启过屏幕共享音频')
+          reason = 'NOT_OPEN_SCREENAUDIO_YET'
+          break
+        }
+        this.screenAudio = false
+        if (this.mediaHelper){
+          this.mediaHelper.stopStream('screenAudio')
+        }else{
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIAHELPER,
+            message: 'no media helper'
+          })
+        }
+        if (this.client.adapterRef && this.client.adapterRef._mediasoup){
+          if (this.mediaHelper.micTrack || this.mediaHelper.screenAudioTrack){
+            this.client.adapterRef.logger.log('Stream.close:关闭音频，保留发布：', type);
+          }else{
+            this.client.adapterRef.logger.log('Stream.close:停止发布音频');
+            await this.client.adapterRef._mediasoup.destroyProduce('audio');
+          }
         }else{
           this.client.adapterRef.logger.log('Stream.close:未发布音频，无需停止发布');
         }

@@ -37,7 +37,7 @@ let globalAc:AudioContext;
 class WebAudio extends EventEmitter{
   private support:boolean;
   private gain: number;
-  private stream: MediaStream | MediaStream[];
+  private streamInputs: MediaStream[];
   private logger: Logger;
   private adapterRef: AdapterRef;
   private audioIn: {[key:string]: MediaStreamAudioSourceNode};
@@ -69,12 +69,12 @@ class WebAudio extends EventEmitter{
   
   constructor(option: WebAudioOptions) {
     super()
-    const { adapterRef, stream, isAnalyze=true, isRemote = false } = option
+    const { adapterRef, isAnalyze=true, isRemote = false } = option
     this.support = supports.WebAudio && supports.MediaStream
 
     // set our starting value
     this.gain = 1
-    this.stream = stream
+    this.streamInputs = []
     this.logger = adapterRef.logger
     this.adapterRef = adapterRef
     this.audioIn = {}
@@ -128,7 +128,6 @@ class WebAudio extends EventEmitter{
   }
   
   init() {
-    if (!this.validateInput()) return
     if (this.isAnalyze) {
       this.initMonitor()
     }
@@ -137,13 +136,6 @@ class WebAudio extends EventEmitter{
     this.initWebAudio()
     this.initAudioIn()
   }
-  
-  // 先验证输入流数据是否合法
-  validateInput() {
-    // 注：Firefox通过API获取的原生流构造函数是：LocalMediaStream
-    return /(Array|MediaStream|LocalMediaStream)/.test(this.stream.constructor.toString())
-  }
-
 
   // 第一步：初始化音量分析监控的脚本节点
   initMonitor() {
@@ -198,21 +190,13 @@ class WebAudio extends EventEmitter{
     
     let tmp
 
-    // 单路输入
-    if (/(MediaStream|LocalMediaStream)/.test(this.stream.constructor.toString())) {
-      addMs(this.stream as MediaStream)
-      return
-    }
-
     // 多路输入
-    if (this.stream.constructor === Array) {
-      this.stream.forEach(item => {
-        tmp = addMs(item)
-        if (tmp) {
-          this.audioIn[item.id] = tmp
-        }
-      })
-    }
+    this.streamInputs.forEach(item => {
+      tmp = addMs(item)
+      if (tmp) {
+        this.audioIn[item.id] = tmp
+      }
+    })
 
     function addMs (ms:MediaStream) {
       if (!/(MediaStream|LocalMediaStream)/.test(ms.constructor.toString())){
@@ -259,27 +243,15 @@ class WebAudio extends EventEmitter{
 
   // 格式化流输入，为了不影响原始流，这里需要获取所有音频轨道，对每个轨道进行重新包裹
   formatStreams() {
-    const stream = this.stream
     const arr:MediaStream[] = []
 
-    // 单路输入
-    if (stream instanceof MediaStream) {
-      stream.getAudioTracks().map(track => {
+    // 多路输入
+    this.streamInputs.map(item => {
+      item.getAudioTracks().map(track => {
         arr.push(new MediaStream([track]))
       })
-      this.stream = arr
-      return
-    }
-
-    // 多路输入
-    if (stream.constructor === Array) {
-      stream.map(item => {
-        item.getAudioTracks().map(track => {
-          arr.push(new MediaStream([track]))
-        })
-      })
-      this.stream = arr
-    }
+    })
+    this.streamInputs = arr
   }
 
   // 动态加入音频流进行合并输出
@@ -297,14 +269,20 @@ class WebAudio extends EventEmitter{
   }
   
   // 更新流：全部替换更新
-  updateStream(stream:MediaStream) {
+  updateStream(streamInputs:(MediaStream|null)[]) {
     if (this.audioIn) {
       for (let i in this.audioIn) {
         this.audioIn[i] && this.audioIn[i].disconnect(0)
         delete this.audioIn[i]
       }
     }
-    this.stream = stream
+    const streams:MediaStream[] = [];
+    streamInputs.forEach((stream)=>{
+      if (stream){
+        streams.push(stream);
+      }
+    })
+    this.streamInputs = streams
     this.initAudioIn()
   }
   
@@ -682,18 +660,10 @@ class WebAudio extends EventEmitter{
     }
 
     this.audioIn = {}
-
-    let ms = this.stream
-
-    if (ms instanceof MediaStream) {
-      dropMS(ms)
-    }
-
-    if (ms.constructor === Array) {
-      ms.forEach(item => {
-        dropMS(item)
-      })
-    }
+    
+    this.streamInputs.forEach(item => {
+      dropMS(item)
+    })
 
     function dropMS (mms:MediaStream) {
       if (!mms){
