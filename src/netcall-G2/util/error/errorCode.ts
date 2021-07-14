@@ -5,7 +5,7 @@
  */
 const ErrorCode = {
     /*
-     * 无效参数
+     * 无效参数，可以通过 console 日志查看原因
      *
      */
     INVALID_PARAMETER: 1000,
@@ -50,110 +50,110 @@ const ErrorCode = {
      */
     NO_LOCALSTREAM: 1008,
     /*
-     * 非法操作
+     * 非法操作，可以通过 console 日志查看原因,一般是状态不对
      *
      */
-    INVALID_OPERATION: 1008,
+    INVALID_OPERATION: 1009,
     /*
      * 重复进房
      *
      */
-    REPEAT_JOIN: 1009,
+    REPEAT_JOIN: 1010,
     /*
      * 本地用户不再频道中
      *
      */
-    USER_NOT_IN_CHANNEL: 1010,
+    USER_NOT_IN_CHANNEL: 1011,
     /*
-     * 当前不支持
+     * 当前不支持，可以通过 console 日志查看原因
      *
      */
-    NOT_SUPPORTED_YET: 1011,
+    NOT_SUPPORTED_YET: 1012,
     /*
-     * 未知类型
+     * 未知类型，可以通过 console 日志查看原因
      *
      */
-    UNKNOWN_TYPE: 1012,
+    UNKNOWN_TYPE: 1013,
     /*
      * 无权限，禁止操作
      *
      */
-    NOT_ALLOWED: 1013,
+    NOT_ALLOWED: 1014,
     /*
-     * 状态错误
+     * 状态错误，可以通过 console 日志查看原因
      *
      */
-    STATE_ERROR: 1014,
+    STATE_ERROR: 1015,
     /*
-     * 找不到文件
+     * 找不到文件，可以通过 console 日志查看原因
      *
      */
-    NO_FILE: 1015,
+    NO_FILE: 1016,
     /*
      * 解码失败
      *
      */
-    DECODE_FAILED: 1016,
+    DECODE_FAILED: 1017,
     /*
      * 添加推流任务失败
      *
      */
-    ADD_TASK_FAILED: 1017,
+    ADD_TASK_FAILED: 1018,
     /*
      * 删除推流任务请求失败
      *
      */
-    DELETE_TASK_FAILED: 1018,
+    DELETE_TASK_FAILED: 1019,
     /*
      * 更新推流任务失败
      *
      */
-    UPDATE_TASKS_FAILED: 1019,
+    UPDATE_TASKS_FAILED: 1020,
     /*
      * 录制接口出错
      *
      */
-    RECORD_API_ERROR: 1020,
+    RECORD_API_ERROR: 1021,
     /*
      * 没有进行录制
      *
      */
-    NO_RECORDER_FOUND: 1021,
+    NO_RECORDER_FOUND: 1022,
     /*
-     * 没有定义
+     * 未定义，可以通过 console 日志查看原因
      *
      */
-    NOT_DEFINED: 1022,
+    NOT_DEFINED: 1023,
     /*
-     * 没有获取
+     * 不可用，可以通过 console 日志查看原因
      *
      */
-    NOT_AVALIABLE: 1023,
+    NOT_AVALIABLE: 1024,
     /*
-     * 没有mediaHelper数据
+     * 没有 mediaHelper 数据
      *
      */
-    NO_MEDIAHELPER: 1024,
+    NO_MEDIAHELPER: 1025,
     /*
-     * 没有实例化Play
+     * 没有实例化 Play
      *
      */
-    NO_PLAY: 1025,
+    NO_PLAY: 1026,
     /*
-     * 没有实例化Record
+     * 没有实例化 Record
      *
      */
-    NO_RECORD: 1026,
+    NO_RECORD: 1027,
     /*
-     * 没有找到
+     * 未获取，可以通过 console 日志查看原因
      *
      */
-    NOT_FOUND: 1027,
+    NOT_FOUND: 1028,
     /*
-     * appData错误
+     * appData 错误，可以通过 console 日志查看原因
      *
      */
-    APPDATA_ERROR: 1028,
+    APPDATA_ERROR: 1029,
 
     /*
      * 自动播放受限
