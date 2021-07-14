@@ -535,21 +535,10 @@ class MediaHelper extends EventEmitter {
       }
     }
     switch(this.stream.audioProfile){
-      case "speech_low_quality":
-        constraint.sampleRate = 16000;
-        break;
-      case "speech_standard":
-        constraint.sampleRate = 32000;
-        break;
-      case "music_standard":
-        constraint.sampleRate = 48000;
-        break;
       case "standard_stereo":
-        constraint.sampleRate = 48000;
         constraint.channelCount = 2;
         break;
       case "high_quality_stereo":
-        constraint.sampleRate = 48000;
         constraint.channelCount = 2;
         break;
     }
