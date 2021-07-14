@@ -144,6 +144,7 @@ class GetStats extends EventEmitter{
               key = `${remote[item].mediaType}_${remote[item].type}`
             }else if(item.indexOf('screen') > 0) {
               key = `screen_${remote[item].type}`
+              remote[item].mediaType = 'screen'
             }
             // 判断是否已经有key了
             if(remoteDatasObj_.has(key)){
@@ -152,8 +153,7 @@ class GetStats extends EventEmitter{
               remoteDatasObj_.set(key,[]);
               remoteDatasObj_.get(key).push(remote[item])
             }
-          }
-           else {
+          }else {
             let key = remote[item].type;
             if(remoteDatasObj_.has(key)){
               remoteDatasObj_.get(key).push(remote[item])
