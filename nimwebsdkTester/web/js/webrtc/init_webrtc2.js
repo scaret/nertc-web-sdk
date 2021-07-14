@@ -455,6 +455,14 @@ function initEvents() {
     }).catch(err=>{
       console.log('播放对端的流失败: ', err)
     })
+    // 自动播放受限
+    rtc.client.on('NotAllowedError', err => {
+      const errorCode = err.getCode();
+      if(errorCode === 1030){
+        console.log('start resume--->');
+        remoteStream.resume();
+      }
+    })
   })
 
   rtc.client.on('deviceAdd', _data => {

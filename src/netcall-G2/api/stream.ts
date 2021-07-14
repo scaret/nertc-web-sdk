@@ -141,6 +141,8 @@ class Stream extends EventEmitter {
     screenRecv: boolean;
   };
   private isRemote: boolean;
+  private audioPlay_: boolean;
+  private videoPlay_: boolean;
   
   constructor (options:StreamOptions) {
     super()
@@ -176,6 +178,8 @@ class Stream extends EventEmitter {
     this.consumerId = null;
     this.producerId = null;
     this.inSwitchDevice = false;
+    this.audioPlay_ = false;
+    this.videoPlay_ = false;
     this.pubStatus = {
       audio: {
         audio: false,
@@ -772,17 +776,33 @@ class Stream extends EventEmitter {
     if (this.isRemote){
       if(playOptions.audio && this._play && this.mediaHelper && this.mediaHelper.audioStream){
         this.client.adapterRef.logger.log('开始播放远端音频: ', this.stringStreamID)
-        this._play.playAudioStream(this.mediaHelper.audioStream)
+        try{
+          await this._play.playAudioStream(this.mediaHelper.audioStream, playOptions.muted)
+          this.audioPlay_ = true;
+        }catch(error) {
+          // console.warn('NotAllowedError audio--->')
+          this.client.emit('NotAllowedError', error)
+          // let ErrorMessage = 'NotAllowedError: autoplay is not allowed in current browser, please refer to https://yunxin.163.com/autoplay-policy'
+          // throw new RtcError({
+          //   code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
+          //   message: ErrorMessage
+          // })
+          
+        }
+        
       }
     } else {
       if(playOptions.audio && this._play && this.mediaHelper && this.mediaHelper.micStream){
         this.client.adapterRef.logger.log('开始播放本地音频: ',this.stringStreamID, playOptions.audioType);
         if (playOptions.audioType === "voice"){
-          this._play.playAudioStream(this.mediaHelper.micStream)
+          await this._play.playAudioStream(this.mediaHelper.micStream, playOptions.muted)
+          this.audioPlay_ = true;
         }else if (playOptions.audioType === "music"){
-          this._play.playAudioStream(this.mediaHelper.musicStream)
+          await this._play.playAudioStream(this.mediaHelper.musicStream, playOptions.muted)
+          this.audioPlay_ = true;
         }else if (playOptions.audioType === "mixing"){
-          this._play.playAudioStream(this.mediaHelper.audioStream)
+          await this._play.playAudioStream(this.mediaHelper.audioStream, playOptions.muted)
+          this.audioPlay_ = true;
         }
       }
     }
@@ -796,8 +816,19 @@ class Stream extends EventEmitter {
         this.videoView = view;
         if(this._play && this.mediaHelper && this.mediaHelper.videoStream && this.mediaHelper.videoStream.getVideoTracks().length){
           this.client.adapterRef.logger.log('开始播放视频: ', this.stringStreamID)
-          //@ts-ignore
-          this._play.playVideoStream(this.mediaHelper.videoStream, view)
+          try{
+            //@ts-ignore
+            await this._play.playVideoStream(this.mediaHelper.videoStream, view, playOptions.muted)
+            this.videoPlay_ = true;
+          }catch(error) {
+            // let ErrorMessage = 'NotAllowedError: videoplay is not allowed in current browser, please refer to https://yunxin.163.com/autoplay-policy' 
+            // throw new RtcError({
+            //   code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
+            //   message: ErrorMessage
+            // })
+            // console.warn('NotAllowedError video--->')
+            this.client.emit('NotAllowedError', error)
+          }
         }  
       }
       if (playOptions.screen){
@@ -831,6 +862,43 @@ class Stream extends EventEmitter {
         renderMode: this.renderMode
       }, null, ' ')
     })
+  }
+
+  /**
+   * 恢复播放音视频流
+   * @function resume
+   * @memberOf Stream#
+   * @return {Promise}
+   */
+  async resume() {
+    if(!this._play){
+      return;
+    }
+    if(this.audioPlay_) {
+      if (!this.mediaHelper || !this.mediaHelper.audioStream){
+        throw new RtcError({
+          code: ErrorCode.NOT_FOUND,
+          message: 'no audioStream'
+        })
+      }
+      let option = {
+        type : 'audio'
+      }
+      this._play.resume(this.mediaHelper.audioStream, option);
+    }
+    if(this.videoPlay_) {
+      if (!this.mediaHelper || !this.mediaHelper.videoStream || !this.videoView){
+        throw new RtcError({
+          code: ErrorCode.NO_MEDIAHELPER,
+          message: 'no media helper or videoStream or this.view'
+        })
+      }
+      let option = {
+        type : 'video',
+        view: this.videoView
+      }
+      this._play.resume(this.mediaHelper.videoStream, option);
+    }
   }
 
   /**
@@ -928,15 +996,19 @@ class Stream extends EventEmitter {
     if(!this._play) return
     if (type === 'audio') {
       this._play.stopPlayAudioStream()
+      this.audioPlay_ = false;
     } else if (type === 'video') {
       this._play.stopPlayVideoStream()
+      this.videoPlay_ = false;
     } else if (type === 'screen') {
       this._play.stopPlayScreenStream()
     } else {
       if(!this.audio){
         this._play.stopPlayAudioStream()
+        this.audioPlay_ = false;
       } if (!this.video){
         this._play.stopPlayVideoStream()
+        this.videoPlay_ = false;
       } if (!this.screen){
         this._play.stopPlayScreenStream()
       }
@@ -1328,7 +1400,7 @@ class Stream extends EventEmitter {
         if (this.mediaHelper && this.mediaHelper.micTrack){
           this.mediaHelper.micTrack.enabled = true;
         }
-        this._play.playAudioStream(this.mediaHelper.audioStream)
+        this._play.playAudioStream(this.mediaHelper.audioStream, true)
       }
       this.client.apiFrequencyControl({
         name: 'unmuteAudio',
@@ -1774,7 +1846,7 @@ class Stream extends EventEmitter {
           this.mediaHelper.cameraTrack.enabled = true;
         }
         //@ts-ignore
-        this._play.playVideoStream(this.mediaHelper.videoStream, this.videoView)
+        this._play.playVideoStream(this.mediaHelper.videoStream, this.videoView, true)
         if ("width" in this.renderMode.remote.video){
           this._play.setVideoRender(this.renderMode.remote.video)
         }
