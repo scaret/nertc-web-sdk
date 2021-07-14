@@ -168,12 +168,6 @@ createStream (options:StreamOptions) {
       })
       
     }
-    if (options.audio){
-      throw new RtcError({
-        code: ErrorCode.INVALID_OPERATION,
-        message: 'createStream:screenAudio与audio只能开启一个'
-      })
-    }
   }
   
   if (client || options.client) {

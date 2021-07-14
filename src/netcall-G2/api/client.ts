@@ -292,7 +292,7 @@ class Client extends Base {
     if (this.adapterRef.connectState.curState !== 'CONNECTED') {
       this.adapterRef.logger.error('publish: 当前不在频道中，可能是没有加入频道或者是网络波动导致暂时断开连接')
       reason = 'INVALID_OPERATION'
-    } else if (!stream || (!stream.audio && !stream.video && !stream.screen)) {
+    } else if (!stream || (!stream.audio && !stream.video && !stream.screen && !stream.screenAudio)) {
       this.adapterRef.logger.error('publish: 传入的 stream 格式非法，没有媒体数据')
       reason = 'INVALID_LOCAL_STREAM'
     } else if (this._roleInfo.userRole === 1) {
@@ -302,6 +302,7 @@ class Client extends Base {
     const param = JSON.stringify({
       videoProfile: stream.videoProfile,
       audio: stream.audio,
+      screenAudio: stream.screenAudio,
       audioProfile: stream.audioProfile,
       cameraId: stream.cameraId,
       microphoneId: stream.microphoneId,

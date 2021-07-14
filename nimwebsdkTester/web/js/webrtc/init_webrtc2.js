@@ -1574,7 +1574,6 @@ $('#playScreen').on('click', () => {
   })
   rtc.localStream.open({
     type: 'screen',
-    screenAudio: $("#playScreenAudio").val() === "true",
     sourceId: getUrlVars().sourceId
   }).then(()=>{
     rtc.localStream.play(document.getElementById('local-container'))
@@ -1598,6 +1597,48 @@ $('#playScreenOff').on('click', () => {
   }).catch(err =>{
     addLog('关闭屏幕共享 失败: ' + err)
     console.log('关闭屏幕共享 失败: ', err)
+  })
+})
+/////
+$('#playScreenAudio').on('click', () => {
+  console.warn('打开屏幕共享+音频')
+  if (!rtc.localStream) {
+    addLog('当前不能进行此操作')
+    return
+  }
+
+  const screenProfile = $('#sessionConfigScreenProfile').val()
+  const screenFrameRate = $('#sessionConfigScreenFrameRate').val()
+  rtc.localStream.setScreenProfile({
+    resolution: NERTC.VIDEO_QUALITY[screenProfile],
+    frameRate: NERTC.VIDEO_FRAME_RATE[screenFrameRate]
+  })
+  rtc.localStream.open({
+    type: 'screen',
+    screenAudio: true,
+    sourceId: getUrlVars().sourceId
+  }).then(()=>{
+    rtc.localStream.play(document.getElementById('local-container'))
+    rtc.localStream.setLocalRenderMode(globalConfig.localViewConfig)
+  }).catch(err =>{
+    addLog('打开屏幕共享音频 失败: ' + err)
+    console.log('打开屏幕共享音频 失败: ', err)
+  })
+})
+$('#playScreenAudioOff').on('click', () => {
+  console.warn('关闭屏幕共享音频')
+  if (!rtc.localStream) {
+    addLog('当前不能进行此操作')
+    return
+  }
+
+  rtc.localStream.close({
+    type: 'screenAudio'
+  }).then(()=>{
+    console.log('关闭屏幕共享音频 sucess')
+  }).catch(err =>{
+    addLog('关闭屏幕共享音频 失败: ' + err)
+    console.log('关闭屏幕共享音频 失败: ', err)
   })
 })
 
