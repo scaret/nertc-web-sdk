@@ -774,7 +774,7 @@ class Stream extends EventEmitter {
       if(playOptions.audio && this._play && this.mediaHelper && this.mediaHelper.audioStream){
         this.client.adapterRef.logger.log('开始播放远端音频: ', this.stringStreamID)
         try{
-          await this._play.playAudioStream(this.mediaHelper.audioStream, playOptions.muted)
+          this._play.playAudioStream(this.mediaHelper.audioStream, playOptions.muted)
           this.audioPlay_ = true;
         }catch(error) {
           // console.warn('NotAllowedError audio--->')
@@ -792,13 +792,13 @@ class Stream extends EventEmitter {
       if(playOptions.audio && this._play && this.mediaHelper && this.mediaHelper.micStream){
         this.client.adapterRef.logger.log('开始播放本地音频: ',this.stringStreamID, playOptions.audioType);
         if (playOptions.audioType === "voice"){
-          await this._play.playAudioStream(this.mediaHelper.micStream, playOptions.muted)
+          this._play.playAudioStream(this.mediaHelper.micStream, playOptions.muted)
           this.audioPlay_ = true;
         }else if (playOptions.audioType === "music"){
-          await this._play.playAudioStream(this.mediaHelper.musicStream, playOptions.muted)
+          this._play.playAudioStream(this.mediaHelper.musicStream, playOptions.muted)
           this.audioPlay_ = true;
         }else if (playOptions.audioType === "mixing"){
-          await this._play.playAudioStream(this.mediaHelper.audioStream, playOptions.muted)
+          this._play.playAudioStream(this.mediaHelper.audioStream, playOptions.muted)
           this.audioPlay_ = true;
         }
       }
@@ -815,7 +815,7 @@ class Stream extends EventEmitter {
           this.client.adapterRef.logger.log('开始播放视频: ', this.stringStreamID)
           try{
             //@ts-ignore
-            await this._play.playVideoStream(this.mediaHelper.videoStream, view, playOptions.muted)
+            this._play.playVideoStream(this.mediaHelper.videoStream, view, playOptions.muted)
             this.videoPlay_ = true;
           }catch(error) {
             // let ErrorMessage = 'NotAllowedError: videoplay is not allowed in current browser, please refer to https://yunxin.163.com/autoplay-policy' 

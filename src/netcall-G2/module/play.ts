@@ -272,7 +272,7 @@ class Play extends EventEmitter {
     if(!ismuted){
       this.audioDom.muted = false;
     }else {
-      this.audioDom.muted = ismuted;
+      this.audioDom.muted = true;
     }
     
     this.audioDom.srcObject = stream
@@ -436,7 +436,7 @@ class Play extends EventEmitter {
       if(!ismuted){
         this.videoDom.muted = false;
       }else {
-        this.videoDom.muted = ismuted;
+        this.videoDom.muted = true;
       }
       this.videoDom.srcObject = stream
       this.adapterRef.logger.log('播放 %o 的视频频, streamId: %o, stream状态: %o', this.uid, stream.id, stream.active)
