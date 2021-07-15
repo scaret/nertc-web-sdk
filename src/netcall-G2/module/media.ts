@@ -8,7 +8,7 @@ import {checkExists, isExistOptions, checkValidInteger} from "../util/param";
 import {
   AdapterRef, AudioMixingOptions,
   GetStreamConstraints,
-  MediaHelperOptions, MediaTypeShort, MixAudioConf,AudioEffectOptions,
+  MediaHelperOptions, MediaTypeShort, MixAudioConf, AudioEffectOptions, MediaTypeAudio,
 } from "../types";
 import {emptyStreamWith} from "../util/gum";
 import RtcError from '../util/error/rtcError';
@@ -129,7 +129,10 @@ class MediaHelper extends EventEmitter {
       if (this.webAudio){
         const stream = new MediaStream;
         stream.addTrack(audioSource);
-        this.webAudio.updateStream([stream, this.screenAudioStream]);
+        this.webAudio.updateStream([
+          {stream: stream, type: 'microphone'},
+          {stream: this.screenAudioStream, type: 'screenAudio'},
+        ])
       }
       if (!this.audioRoutingEnabled){
         emptyStreamWith(this.audioStream, audioSource);
@@ -199,7 +202,10 @@ class MediaHelper extends EventEmitter {
                 })
                 this.webAudio.on('audioFilePlaybackCompleted', this._audioFilePlaybackCompletedEvent.bind(this))
               }
-              this.webAudio.updateStream([this.micStream, this.screenAudioStream]);
+              this.webAudio.updateStream([
+                {stream: this.micStream, type: 'microphone'},
+                {stream: this.screenAudioStream, type: 'screenAudio'},
+              ])
               if (!this.audioRoutingEnabled){
                 if (this.micTrack && this.screenAudioTrack){
                   this.enableAudioRouting();
@@ -245,7 +251,10 @@ class MediaHelper extends EventEmitter {
               })
               this.webAudio.on('audioFilePlaybackCompleted', this._audioFilePlaybackCompletedEvent.bind(this))
             }
-            this.webAudio.updateStream([this.micStream, this.screenAudioStream]);
+            this.webAudio.updateStream([
+              {stream: this.micStream, type: 'microphone'},
+              {stream: this.screenAudioStream, type: 'screenAudio'},
+            ])
             if (!this.audioRoutingEnabled){
               if (this.micTrack && this.screenAudioTrack){
                 this.enableAudioRouting();
@@ -322,7 +331,10 @@ class MediaHelper extends EventEmitter {
               })
               this.webAudio.on('audioFilePlaybackCompleted', this._audioFilePlaybackCompletedEvent.bind(this))
             }
-            this.webAudio.updateStream([this.micStream, this.screenAudioStream]);
+            this.webAudio.updateStream([
+              {stream: this.micStream, type: 'microphone'},
+              {stream: this.screenAudioStream, type: 'screenAudio'},
+            ])
             if (!this.audioRoutingEnabled){
               if (this.screenAudioTrack && this.micTrack){
                 this.enableAudioRouting();
@@ -418,7 +430,10 @@ class MediaHelper extends EventEmitter {
         this.micStream.addTrack(audioTrack)
         this.micTrack = audioTrack;
         if (this.webAudio){
-          this.webAudio.updateStream([this.micStream, this.screenAudioStream]);
+          this.webAudio.updateStream([
+            {stream: this.micStream, type: 'microphone'},
+            {stream: this.screenAudioStream, type: 'screenAudio'},
+          ])
         }
         if(!this.audioRoutingEnabled){
           if (this.micTrack && this.screenAudioTrack){
@@ -633,13 +648,30 @@ class MediaHelper extends EventEmitter {
    * 设置本地音频采集音量
    * @param {Number} gain 0-1
    */
-  setGain (gain:number) {
-    if (!this.micStream) {
+  setGain (gain:number, audioType?: MediaTypeAudio) {
+    if (this.webAudio) {
+      if (audioType){
+        let typeMatched = false;
+        for (let id in this.webAudio.audioIn){
+          if (this.webAudio.audioIn.hasOwnProperty(id)){
+            const audioIn = this.webAudio.audioIn[id];
+            if (audioIn.type === audioType){
+              audioIn.gainNode.gain.value = gain;
+              typeMatched = true;
+              this.adapterRef.logger.log('setGain', audioIn.id, audioType, gain);
+            }
+          }
+        }
+        if (!typeMatched){
+          this.adapterRef.logger.log('setGain:未找到类型',audioType);
+        }
+      }else{
+        this.adapterRef.logger.log('setGain', gain);
+        this.webAudio.setGain(gain)
+      }
+    }else{
       this.adapterRef.logger.log('setGain: 缺失本地音频')
       return
-    };
-    if (this.webAudio) {
-      this.webAudio.setGain(gain)
     }
   }
 

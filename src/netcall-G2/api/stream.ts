@@ -1607,7 +1607,7 @@ class Stream extends EventEmitter {
    * @param {Number} volume 要设置的麦克风采集音量。，范围为 0（静音）到 100（声音最大）
    * @return {Void}
    */
-  setCaptureVolume (volume:number) {
+  setCaptureVolume (volume:number, audioType?: "microphone"|"screenAudio") {
     let reason = null
     if (!Number.isInteger(volume)) {
       this.client.adapterRef.logger.log('volume 为 0 - 100 的整数')
@@ -1619,27 +1619,18 @@ class Stream extends EventEmitter {
     } 
     this.client.adapterRef.logger.log(`调节${this.stringStreamID}的音量大小: ${volume}`)
 
-    if (this.audio) {
-      if (!this.mediaHelper){
-        throw new RtcError({
-          code: ErrorCode.NO_MEDIAHELPER,
-          message: 'no media helper'
-        })
-      }
-      if (!this.mediaHelper.audioRoutingEnabled){
-        this.mediaHelper.enableAudioRouting();
-      }
-      this.mediaHelper.setGain(volume / 100)
-    } else {
-      this.client.adapterRef.logger.log(`没有音频流，请检查是否有发布过音频`)
-      reason = 'INVALID_OPERATION'
+    if (!this.mediaHelper.audioRoutingEnabled){
+      this.mediaHelper.enableAudioRouting();
     }
+    this.mediaHelper.setGain(volume / 100, audioType)
+    
     if (reason) {
       this.client.apiFrequencyControl({
         name: 'setCaptureVolume',
         code: -1,
         param: JSON.stringify({
           volume,
+          audioType,
           reason
         }, null, ' ')
       })
@@ -1649,6 +1640,7 @@ class Stream extends EventEmitter {
       name: 'setCaptureVolume',
       code: 0,
       param: JSON.stringify({
+        audioType,
         volume
       }, null, ' ')
     })

@@ -13,9 +13,9 @@ import { EventEmitter } from 'eventemitter3'
 import { RtcSupport } from '../util/rtcUtil/rtcSupport'
 import { AuidoMixingState } from '../constant/state'
 import {
-  AdapterRef, AudioMixingOptions,soundsConf,
+  AdapterRef, AudioMixingOptions, soundsConf,
   Logger,
-  WebAudioOptions,
+  WebAudioOptions, AudioInConfig, MediaTypeAudio,
 
 } from '../types'
 import RtcError from '../util/error/rtcError';
@@ -34,13 +34,38 @@ const supports = RtcSupport.checkWebAudio()
 
 let globalAc:AudioContext;
 
+class AudioIn{
+  audioNode: AudioNode;
+  gainNode: GainNode;
+  id: string;
+  type?: MediaTypeAudio;
+  
+  constructor(config: AudioInConfig) {
+    this.id = config.id
+    this.audioNode = config.audioNode;
+    this.gainNode = config.context.createGain();
+    this.type = config.type;
+    
+    this.audioNode.connect(this.gainNode);
+  }
+  
+  connect(audioNode: AudioNode){
+    this.gainNode.connect(audioNode);
+  }
+  
+  disconnect() {
+    this.audioNode.disconnect(this.gainNode);
+    this.gainNode.disconnect();
+  }
+}
+
 class WebAudio extends EventEmitter{
   private support:boolean;
   private gain: number;
-  private streamInputs: MediaStream[];
+  private streamInputs: { stream: MediaStream, type?: MediaTypeAudio}[];
   private logger: Logger;
   private adapterRef: AdapterRef;
-  private audioIn: {[key:string]: MediaStreamAudioSourceNode};
+  public audioIn: {[key:string]: AudioIn};
   private isAnalyze:boolean;
   private isRemote: boolean;
   private instant: number;
@@ -192,13 +217,13 @@ class WebAudio extends EventEmitter{
 
     // 多路输入
     this.streamInputs.forEach(item => {
-      tmp = addMs(item)
+      tmp = addMs(item.stream, item.type)
       if (tmp) {
-        this.audioIn[item.id] = tmp
+        this.audioIn[item.stream.id] = tmp
       }
     })
 
-    function addMs (ms:MediaStream) {
+    function addMs (ms:MediaStream, type?: MediaTypeAudio) {
       if (!/(MediaStream|LocalMediaStream)/.test(ms.constructor.toString())){
         that.logger.error("addMs:参数不够");
         return null
@@ -207,7 +232,13 @@ class WebAudio extends EventEmitter{
         that.logger.log('addMs失败');
         return null;
       }
-      let audioIn = new MediaStreamAudioSourceNode(that.context, {mediaStream: ms})
+      let config:AudioInConfig = {
+        id: ms.id,
+        context: that.context,
+        audioNode: new MediaStreamAudioSourceNode(that.context, {mediaStream: ms}),
+        type: type
+      }
+      let audioIn = new AudioIn(config);
       
       // 大坑问题！ script目前的代码是没有输出的，只作分析使用，所以source还要再连接一下下一个输出!
       /*if (that.isAnalyze && that.script) {
@@ -242,25 +273,35 @@ class WebAudio extends EventEmitter{
   }
 
   // 格式化流输入，为了不影响原始流，这里需要获取所有音频轨道，对每个轨道进行重新包裹
+  // Derek: 有必要么。。
   formatStreams() {
-    const arr:MediaStream[] = []
+    const arr:{stream: MediaStream, type?: MediaTypeAudio}[] = []
 
     // 多路输入
     this.streamInputs.map(item => {
-      item.getAudioTracks().map(track => {
-        arr.push(new MediaStream([track]))
+      item.stream.getAudioTracks().map(track => {
+        arr.push({
+          stream: new MediaStream([track]),
+          type: item.type
+        })
       })
     })
     this.streamInputs = arr
   }
 
   // 动态加入音频流进行合并输出
-  addStream(stream:MediaStream) {
+  addStream(stream:MediaStream, type?: MediaTypeAudio) {
     if (stream.getAudioTracks().length === 0 || !this.context || !this.gainFilter) {
       
       return
     }
-    var audioIn = new MediaStreamAudioSourceNode(this.context, {mediaStream: stream})
+    let config:AudioInConfig = {
+      id: stream.id,
+      context: this.context,
+      audioNode: new MediaStreamAudioSourceNode(this.context, {mediaStream: stream}),
+      type: type,
+    };
+    let audioIn = new AudioIn(config);
     if (this.isAnalyze && this.script) {
       audioIn.connect(this.script)
     }
@@ -269,17 +310,21 @@ class WebAudio extends EventEmitter{
   }
   
   // 更新流：全部替换更新
-  updateStream(streamInputs:(MediaStream|null)[]) {
+  updateStream(streamInputs: {stream: MediaStream|null, type?: MediaTypeAudio}[]) {
     if (this.audioIn) {
-      for (let i in this.audioIn) {
-        this.audioIn[i] && this.audioIn[i].disconnect(0)
-        delete this.audioIn[i]
+      for (let id in this.audioIn) {
+        if (this.audioIn.hasOwnProperty(id)){
+          const audioIn = this.audioIn[id];
+          audioIn.disconnect();
+          delete this.audioIn[id];
+        }
       }
     }
-    const streams:MediaStream[] = [];
-    streamInputs.forEach((stream)=>{
-      if (stream){
-        streams.push(stream);
+    let streams: { stream: MediaStream, type: MediaTypeAudio }[] = [];
+    streamInputs.forEach((streamInput)=>{
+      if (streamInput.stream){
+        // @ts-ignore
+        streams.push(streamInput);
       }
     })
     this.streamInputs = streams
@@ -655,14 +700,14 @@ class WebAudio extends EventEmitter{
 
     if (this.audioIn) {
       for (let i in this.audioIn) {
-        this.audioIn[i] && this.audioIn[i].disconnect(0)
+        this.audioIn[i] && this.audioIn[i].disconnect()
       }
     }
 
     this.audioIn = {}
     
     this.streamInputs.forEach(item => {
-      dropMS(item)
+      dropMS(item.stream);
     })
 
     function dropMS (mms:MediaStream) {

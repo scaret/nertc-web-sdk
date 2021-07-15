@@ -222,9 +222,10 @@ declare interface Stream {
     setAudioVolume(volume?: number): string | undefined;
     /**
      * 设置麦克风采集的音量。
-     * @param volume 要设置的麦克风采集音量。范围为 [0-100]。0 表示静音。
+     * @param volume 要设置的采集音量。范围为 [0-100]。0 表示静音。
+     * @param mediaTypeAudio 要设置的采集类型。可分开设置麦克风与屏幕共享音频。如您未使用屏幕共享音频功能，则忽略该参数。
      */
-    setCaptureVolume(volume: number): string | undefined;
+    setCaptureVolume(volume: number, mediaTypeAudio?: "microphone"|"screenAudio"): string | undefined;
     /**
      * 设置订阅流的音频输出设备。
      * 

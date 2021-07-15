@@ -273,6 +273,10 @@
             </select>
           </div>
           <div class="line">
+            <span>扬声器: </span>
+            <select id="sounder" style="width: 120px;"></select> <button id="setAudioOutput">设置</button>
+          </div>
+          <div class="line">
             <button type="button" id="initLocalStream">初始化本地流</button>
             <button type="button" id="pub">发布</button>
             <button type="button" id="unpub">停止发布</button>
@@ -420,7 +424,7 @@
           </div>
         </div>
         <p class="block-header" id="audioLevelConfig">音量设置</p>
-        <div class="part" id="part-volume" style="display: none">
+        <div class="part" id="part-volume">
           <div class="line">
             <label>操作对象(uid)</label>
             <input type="text" name="uid">
@@ -431,13 +435,19 @@
             <button id="setPlayVolume">设置</button>
           </div>
           <div class="line">
-            <span>采集音量[麦克风](0-100)：</span>
+            <span>采集音量(0-100)：</span>
             <input type="text" id="captureVolumeInput">
             <button id="setCaptureVolume">设置</button>
           </div>
           <div class="line">
-            <span>设置扬声器: </span>
-            <select id="sounder"></select> <button id="setAudioOutput">设置</button>
+            <span>采集音量
+              <select id="captureVolumeType" style="width: 90px">
+                <option value="screenAudio">screenAudio</option>
+                <option value="microphone">microphone</option>
+              </select>
+              (0-100)：</span>
+            <input type="number" step="20" id="captureVolumeTypeInput" value="100">
+            <button id="setCaptureVolumeType">设置</button>
           </div>
         </div>
         <p class="block-header">音量检测</p>
