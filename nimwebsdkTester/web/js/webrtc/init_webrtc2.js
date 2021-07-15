@@ -1448,6 +1448,22 @@ $('#setCaptureVolume').on('click', () => {
   //$('#captureVolumeInput').val(volume)
 })
 
+$('#setCaptureVolumeType').on('click', () => {
+  if (!rtc.localStream) {
+    addLog('当前不能进行此操作')
+    return
+  }
+
+  let mediaTypeAudio = $('#captureVolumeType').val();
+  let volume = $('#captureVolumeTypeInput').val()
+  volume = parseInt(volume)
+  volume = rtc.localStream.setCaptureVolume(volume, mediaTypeAudio)
+  if (volume) {
+    addLog('设置采集音频错误:' + mediaTypeAudio + " " + volume)
+  }
+  //$('#captureVolumeInput').val(volume)
+})
+
 /**
  * ----------------------------------------
  *              连接状态调试

@@ -13,9 +13,9 @@ import { EventEmitter } from 'eventemitter3'
 import { RtcSupport } from '../util/rtcUtil/rtcSupport'
 import { AuidoMixingState } from '../constant/state'
 import {
-  AdapterRef, AudioMixingOptions,soundsConf,
+  AdapterRef, AudioMixingOptions, soundsConf,
   Logger,
-  WebAudioOptions,
+  WebAudioOptions, AudioInConfig, MediaTypeAudio,
 
 } from '../types'
 import RtcError from '../util/error/rtcError';
@@ -34,13 +34,39 @@ const supports = RtcSupport.checkWebAudio()
 
 let globalAc:AudioContext;
 
+class AudioIn{
+  audioNode: AudioNode;
+  gainNode: GainNode;
+  id: string;
+  label: string;
+  type?: MediaTypeAudio;
+  
+  constructor(config: AudioInConfig) {
+    this.id = config.id;
+    this.label = config.label;
+    this.audioNode = config.audioNode;
+    this.gainNode = config.context.createGain();
+    this.type = config.type;
+    
+    this.audioNode.connect(this.gainNode);
+  }
+  
+  connect(audioNode: AudioNode){
+    this.gainNode.connect(audioNode);
+  }
+  
+  disconnect() {
+    this.audioNode.disconnect(this.gainNode);
+    this.gainNode.disconnect();
+  }
+}
+
 class WebAudio extends EventEmitter{
   private support:boolean;
   private gain: number;
-  private streamInputs: MediaStream[];
   private logger: Logger;
   private adapterRef: AdapterRef;
-  private audioIn: {[key:string]: MediaStreamAudioSourceNode};
+  public audioInArr: AudioIn[];
   private isAnalyze:boolean;
   private isRemote: boolean;
   private instant: number;
@@ -74,10 +100,9 @@ class WebAudio extends EventEmitter{
 
     // set our starting value
     this.gain = 1
-    this.streamInputs = []
     this.logger = adapterRef.logger
     this.adapterRef = adapterRef
-    this.audioIn = {}
+    this.audioInArr = []
     this.isAnalyze = isAnalyze
     this.isRemote = isRemote || false
     this.instant = 0.0
@@ -132,7 +157,6 @@ class WebAudio extends EventEmitter{
       this.initMonitor()
     }
 
-    this.formatStreams()
     this.initWebAudio()
     this.initAudioIn()
   }
@@ -183,52 +207,27 @@ class WebAudio extends EventEmitter{
   // 第三步：初始化音频输入
   initAudioIn() {
     const that = this
-    if (!this.context|| !this.gainFilter || !this.destination){
+    if (!that.context|| !that.gainFilter || !that.destination){
       this.logger.error("initAudioIn:参数不够");
       return null;
     }
-    
-    let tmp
 
-    // 多路输入
-    this.streamInputs.forEach(item => {
-      tmp = addMs(item)
-      if (tmp) {
-        this.audioIn[item.id] = tmp
-      }
-    })
-
-    function addMs (ms:MediaStream) {
-      if (!/(MediaStream|LocalMediaStream)/.test(ms.constructor.toString())){
-        that.logger.error("addMs:参数不够");
-        return null
-      }
-      if (ms.getAudioTracks().length === 0 || !that.context|| !that.gainFilter || !that.destination){
-        that.logger.log('addMs失败');
-        return null;
-      }
-      let audioIn = new MediaStreamAudioSourceNode(that.context, {mediaStream: ms})
-      
-      // 大坑问题！ script目前的代码是没有输出的，只作分析使用，所以source还要再连接一下下一个输出!
-      /*if (that.isAnalyze && that.script) {
-        audioIn.connect(that.script)
-        that.script.connect(that.gainFilter)
-      }*/
+    for (var i = 0; i < that.audioInArr.length; i++){
+      const audioIn = that.audioInArr[i];
       audioIn.connect(that.gainFilter)
-      that.audioIn[ms.id] = audioIn
-      if (that.mixAudioConf.state === AuidoMixingState.UNSTART) {
-        if (that.script && that.analyzeDestination) {
-          that.gainFilter.connect(that.script)
-          that.script.connect(that.analyzeDestination)
-        }
-        that.gainFilter.connect(that.destination)
-      }
-      return audioIn
     }
 
-    this.logger.log('WebAudio: addMs: 初始化音频 state: ', this.context.state)
-    if (this.context.state !== 'running') {
-      this.context.resume().then(() => {
+    if (that.mixAudioConf.state === AuidoMixingState.UNSTART) {
+      if (that.script && that.analyzeDestination) {
+        that.gainFilter.connect(that.script)
+        that.script.connect(that.analyzeDestination)
+      }
+      that.gainFilter.connect(that.destination)
+    }
+
+    this.logger.log('WebAudio: initAudioIn: 初始化音频 state: ', that.context.state)
+    if (that.context.state !== 'running') {
+      that.context.resume().then(() => {
         if (this.context){
           this.logger.log('WebAudio: addMs: 状态变更成功 state: ', this.context.state)
         }
@@ -240,64 +239,89 @@ class WebAudio extends EventEmitter{
       })
     }
   }
-
-  // 格式化流输入，为了不影响原始流，这里需要获取所有音频轨道，对每个轨道进行重新包裹
-  formatStreams() {
-    const arr:MediaStream[] = []
-
-    // 多路输入
-    this.streamInputs.map(item => {
-      item.getAudioTracks().map(track => {
-        arr.push(new MediaStream([track]))
-      })
-    })
-    this.streamInputs = arr
-  }
-
-  // 动态加入音频流进行合并输出
-  addStream(stream:MediaStream) {
-    if (stream.getAudioTracks().length === 0 || !this.context || !this.gainFilter) {
-      
-      return
-    }
-    var audioIn = new MediaStreamAudioSourceNode(this.context, {mediaStream: stream})
-    if (this.isAnalyze && this.script) {
-      audioIn.connect(this.script)
-    }
-    audioIn.connect(this.gainFilter)
-    this.audioIn[stream.id] = audioIn
-  }
   
-  // 更新流：全部替换更新
-  updateStream(streamInputs:(MediaStream|null)[]) {
-    if (this.audioIn) {
-      for (let i in this.audioIn) {
-        this.audioIn[i] && this.audioIn[i].disconnect(0)
-        delete this.audioIn[i]
+  // 更新流：替换ID对不上的
+  updateTracks(trackInputs: {track: MediaStreamTrack|null, type?: MediaTypeAudio}[]) {
+    // 1. 删除不再存在的AudioIn
+    for (let i = this.audioInArr.length - 1; i >=0; i--){
+      const formerAudioIn = this.audioInArr[i];
+      const matchedAudioIn = trackInputs.find((trackInput)=>{
+        return trackInput.track && formerAudioIn && trackInput.track.id === formerAudioIn.id;
+      });
+      if (!matchedAudioIn){
+        this.logger.log('updateTracks，删除', formerAudioIn.label, formerAudioIn.id);
+        this.audioInArr.splice(i, 1);
+        formerAudioIn.disconnect();
       }
     }
-    const streams:MediaStream[] = [];
-    streamInputs.forEach((stream)=>{
-      if (stream){
-        streams.push(stream);
+    // 2. 增加新的AudioIn
+    for (let j = trackInputs.length - 1; j >=0; j--){
+      const newTrackInput = trackInputs[j];
+      const matchedAudioIn = this.audioInArr.find((audioIn)=>{
+        return newTrackInput.track && newTrackInput.track.id === audioIn.id;
+      });
+      if (!matchedAudioIn && newTrackInput.track){
+        if (this.context){
+          const mediaStream = new MediaStream()
+          mediaStream.addTrack(newTrackInput.track);
+          const audioInConfig:AudioInConfig = {
+            context: this.context,
+            id: newTrackInput.track.id,
+            label: newTrackInput.track.label,
+            audioNode: new MediaStreamAudioSourceNode(this.context, {mediaStream}),
+            type: newTrackInput.type,
+          };
+          const newAudioIn = new AudioIn(audioInConfig)
+          newAudioIn.gainNode.gain.value = this.gain;
+          this.audioInArr.push(newAudioIn)          
+        }else{
+          this.adapterRef.logger.error('updateTracks：没有audioContext');
+        }
       }
-    })
-    this.streamInputs = streams
+    }
     this.initAudioIn()
   }
   
+  removeTrack(track: MediaStreamTrack){
+    for (let i = this.audioInArr.length - 1; i >=0; i--){
+      const formerAudioIn = this.audioInArr[i];
+      if (formerAudioIn.id === track.id){
+        this.logger.log('removeTrack，删除track', track);
+        this.audioInArr.splice(i, 1);
+        formerAudioIn.disconnect();
+      }
+    }
+  }
+  
   // setting
-  setGain(val:number) {
-    // check for support
-    if (!this.gainFilter) return
-    this.gainFilter.gain.value = val
-    this.gain = val
+  setGain(val:number, type?: MediaTypeAudio) {
+    for (let i = 0; i < this.audioInArr.length; i++){
+      const audioIn = this.audioInArr[i];
+      if (!type || type === audioIn.type){
+        this.adapterRef.logger.log("WebAudio.setGain", type, val, audioIn.type, audioIn.label, audioIn.id);
+        audioIn.gainNode.gain.value = val;
+      }
+    }
+    if (!type) {
+      this.gain = val
+    }
   }
   
   getGain() {
     // check for support
     if (!this.gainFilter) return
     return this.gain
+  }
+  
+  getGainMin(){
+    let minGain = 1;
+    for (let i = 0; i < this.audioInArr.length; i++){
+      const audioIn = this.audioInArr[i];
+      if (audioIn.gainNode.gain.value < minGain){
+        minGain  = audioIn.gainNode.gain.value;
+      }
+    }
+    return minGain;
   }
   
   stop() {
@@ -653,31 +677,10 @@ class WebAudio extends EventEmitter{
     this.gainFilter && this.gainFilter.disconnect(0)
     this.script && this.script.disconnect(0)
 
-    if (this.audioIn) {
-      for (let i in this.audioIn) {
-        this.audioIn[i] && this.audioIn[i].disconnect(0)
-      }
+    for (let i = 0; i < this.audioInArr.length; i++) {
+      this.audioInArr[i] && this.audioInArr[i].disconnect()
     }
-
-    this.audioIn = {}
-    
-    this.streamInputs.forEach(item => {
-      dropMS(item)
-    })
-
-    function dropMS (mms:MediaStream) {
-      if (!mms){
-        that.logger.error("dropMS:参数不够");
-        return
-      }
-      // 这里不要停止轨道!!!停止轨道相当于结束音源，所有用到这个轨道的流都无法继续了
-      // let tracks = mms.getTracks()
-      // if (!tracks || tracks.length === 0) return
-      mms.getTracks().forEach(function (track) {
-        // track.stop()
-        mms.removeTrack(track)
-      })
-    }
+    this.audioInArr = []
   }
 
   getVolumeData() {
