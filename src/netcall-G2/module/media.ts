@@ -129,9 +129,9 @@ class MediaHelper extends EventEmitter {
       if (this.webAudio){
         const stream = new MediaStream;
         stream.addTrack(audioSource);
-        this.webAudio.updateStream([
-          {stream: stream, type: 'microphone'},
-          {stream: this.screenAudioStream, type: 'screenAudio'},
+        this.webAudio.updateTracks([
+          {track: audioSource, type: 'microphone'},
+          {track: this.screenAudioTrack, type: 'screenAudio'},
         ])
       }
       if (!this.audioRoutingEnabled){
@@ -202,9 +202,9 @@ class MediaHelper extends EventEmitter {
                 })
                 this.webAudio.on('audioFilePlaybackCompleted', this._audioFilePlaybackCompletedEvent.bind(this))
               }
-              this.webAudio.updateStream([
-                {stream: this.micStream, type: 'microphone'},
-                {stream: this.screenAudioStream, type: 'screenAudio'},
+              this.webAudio.updateTracks([
+                {track: this.micTrack || this.audioSource, type: 'microphone'},
+                {track: this.screenAudioTrack, type: 'screenAudio'},
               ])
               if (!this.audioRoutingEnabled){
                 if (this.micTrack && this.screenAudioTrack){
@@ -251,9 +251,9 @@ class MediaHelper extends EventEmitter {
               })
               this.webAudio.on('audioFilePlaybackCompleted', this._audioFilePlaybackCompletedEvent.bind(this))
             }
-            this.webAudio.updateStream([
-              {stream: this.micStream, type: 'microphone'},
-              {stream: this.screenAudioStream, type: 'screenAudio'},
+            this.webAudio.updateTracks([
+              {track: this.micTrack, type: 'microphone'},
+              {track: this.screenAudioTrack, type: 'screenAudio'},
             ])
             if (!this.audioRoutingEnabled){
               if (this.micTrack && this.screenAudioTrack){
@@ -331,9 +331,9 @@ class MediaHelper extends EventEmitter {
               })
               this.webAudio.on('audioFilePlaybackCompleted', this._audioFilePlaybackCompletedEvent.bind(this))
             }
-            this.webAudio.updateStream([
-              {stream: this.micStream, type: 'microphone'},
-              {stream: this.screenAudioStream, type: 'screenAudio'},
+            this.webAudio.updateTracks([
+              {track: this.micTrack || this.audioSource, type: 'microphone'},
+              {track: this.screenAudioTrack, type: 'screenAudio'},
             ])
             if (!this.audioRoutingEnabled){
               if (this.screenAudioTrack && this.micTrack){
@@ -430,9 +430,9 @@ class MediaHelper extends EventEmitter {
         this.micStream.addTrack(audioTrack)
         this.micTrack = audioTrack;
         if (this.webAudio){
-          this.webAudio.updateStream([
-            {stream: this.micStream, type: 'microphone'},
-            {stream: this.screenAudioStream, type: 'screenAudio'},
+          this.webAudio.updateTracks([
+            {track: this.micTrack || this.audioSource, type: 'microphone'},
+            {track: this.screenAudioTrack, type: 'screenAudio'},
           ])
         }
         if(!this.audioRoutingEnabled){
@@ -585,15 +585,19 @@ class MediaHelper extends EventEmitter {
     if (kind === 'audio' && this.micStream) {
       this._stopTrack(this.micStream)
       this.micStream = null;
-      if (!this.micTrack && !this.screenAudioTrack){
+      if (this.canDisableAudioRouting()){
         this.disableAudioRouting();
+      }
+      if (!this.micTrack && !this.screenAudioTrack){
         emptyStreamWith(this.audioStream, null);
       }
     } else if (kind === 'screenAudio' && this.screenAudioStream) {
       this._stopTrack(this.screenAudioStream)
       this.screenAudioStream = null;
-      if (!this.micTrack && !this.screenAudioTrack){
+      if (this.canDisableAudioRouting()){
         this.disableAudioRouting();
+      }
+      if (!this.micTrack && !this.screenAudioTrack){
         emptyStreamWith(this.audioStream, null);
       }
     } else if (kind === 'video' && this.videoStream) {
@@ -623,9 +627,11 @@ class MediaHelper extends EventEmitter {
       stream.removeTrack(track);
       if (this.micTrack === track){
         this.micTrack = null;
+        this.webAudio?.removeTrack(track);
       }
       if (this.screenAudioTrack === track){
         this.screenAudioTrack = null;
+        this.webAudio?.removeTrack(track);
       }
       if (this.cameraTrack === track){
         this.cameraTrack = null;
@@ -650,24 +656,10 @@ class MediaHelper extends EventEmitter {
    */
   setGain (gain:number, audioType?: MediaTypeAudio) {
     if (this.webAudio) {
-      if (audioType){
-        let typeMatched = false;
-        for (let id in this.webAudio.audioIn){
-          if (this.webAudio.audioIn.hasOwnProperty(id)){
-            const audioIn = this.webAudio.audioIn[id];
-            if (audioIn.type === audioType){
-              audioIn.gainNode.gain.value = gain;
-              typeMatched = true;
-              this.adapterRef.logger.log('setGain', audioIn.id, audioType, gain);
-            }
-          }
-        }
-        if (!typeMatched){
-          this.adapterRef.logger.log('setGain:未找到类型',audioType);
-        }
-      }else{
-        this.adapterRef.logger.log('setGain', gain);
-        this.webAudio.setGain(gain)
+      this.adapterRef.logger.log('setGain', gain);
+      this.webAudio.setGain(gain, audioType)
+      if (this.canDisableAudioRouting()){
+        this.disableAudioRouting();
       }
     }else{
       this.adapterRef.logger.log('setGain: 缺失本地音频')
@@ -679,15 +671,11 @@ class MediaHelper extends EventEmitter {
     return (this.webAudio && this.webAudio.getVolumeData()) || '0.0'
   }
 
+  canDisableAudioRouting(){
 
-
-
-  /******************************* 伴音 ********************************/
-
-  _audioFilePlaybackCompletedEvent () {
     let isMixAuidoCompleted = true
-    if(!this.webAudio) return
-
+    if(!this.webAudio) return false
+    
     //判断伴音是否都已经结束了
     if (this.webAudio.mixAudioConf.state === AuidoMixingState.PLAYED || this.webAudio.mixAudioConf.state === AuidoMixingState.PAUSED) {
       isMixAuidoCompleted = false
@@ -700,8 +688,21 @@ class MediaHelper extends EventEmitter {
         return
       }
     })
+    
+    //判断音量是不是1
+    const minGain = this.webAudio.getGainMin()
+    
+    //判断麦克风和屏幕共享是不是最多只有一个
+    
+    return isMixAuidoCompleted && minGain === 1 && (this.webAudio.audioInArr.length <= 1)
+    
+  }
 
-    if (isMixAuidoCompleted) {
+
+  /******************************* 伴音 ********************************/
+
+  _audioFilePlaybackCompletedEvent () {
+    if (this.canDisableAudioRouting()) {
       this.disableAudioRouting();
     }
   }

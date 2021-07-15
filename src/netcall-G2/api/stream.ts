@@ -1096,7 +1096,7 @@ class Stream extends EventEmitter {
             if (this.mediaHelper.webAudio){
               if (
                 // 情况1：启用了本地采集音量
-                this.mediaHelper.webAudio.gainFilter && this.mediaHelper.webAudio.gainFilter.gain.value !== 1
+                this.mediaHelper.webAudio.getGainMin() !== 1
                 // 情况2：启用了混音
                 || this.mediaHelper.webAudio.mixAudioConf.state !== AuidoMixingState.UNSTART
                 // 情况3：启用了屏幕共享音频

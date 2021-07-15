@@ -871,6 +871,7 @@ export type MediaTypeAudio = "microphone"|"screenAudio"
 
 export interface AudioInConfig{
   id: string,
+  label: string,
   context: AudioContext,
   audioNode: AudioNode,
   type?: MediaTypeAudio,
