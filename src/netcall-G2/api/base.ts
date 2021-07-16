@@ -36,9 +36,6 @@ class Base extends EventEmitter {
   private sdkRef: any;
   public logStorage: any;
   constructor(options:ClientOptions) {
-    window.addEventListener('unhandledrejection', event => {
-      this.adapterRef.logger.log(event.reason)
-    })
     super();
     this._params = {
       appkey: "",

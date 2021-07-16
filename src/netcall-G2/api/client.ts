@@ -46,9 +46,7 @@ class Client extends Base {
         this.adapterRef.logger.log('离开页面之前，离开房间')
         this.leave()
       })
-      window.addEventListener('unhandledrejection', event => {
-        this.adapterRef.logger.log(event.reason)
-      })
+      
     //typescript constructor requirement
     this._roleInfo = {
       userRole: 0, // 0:主播，1：观众
