@@ -88,6 +88,9 @@ export default class WSTransport {
             this.socket_  = this.socketInUse_ = null;
             // this.socket_ = null;
           }
+        }else {
+          this.isConnected_ = false;
+          this.socket_.close();
         }
       }
 
@@ -245,7 +248,7 @@ export default class WSTransport {
         console.log('close websocket');
         this.clearReconnectionTimer();
         this.stopPingPong();
-        this.unbindSocket(this.socketInUse_);
+        this.socketInUse_ && this.unbindSocket(this.socketInUse_);
         this.isConnected_ = false;
         this.isConnecting_ = false;
         this.socketInUse_ = null;
