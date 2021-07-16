@@ -804,7 +804,7 @@ $('#joinChannel-btn').on('click', async () => {
       }
     }
     const { cid } = rtc.client.getChannelInfo()
-    $('#cid').html(`<a target="_blank" href="http://vcloud-statics.hz.netease.com/grafana/d/tYiznOXZk/sdkke-hu-duan?orgId=1&from=now%2Fw&to=now%2Fw&fullscreen&panelId=104&var-cid=${cid}&var-uid=${rtc.client.getUid()}">${cid}</a>`)
+    $('#cid').html(`${cid} <a target="_blank" href="https://qs.netease.im/qs_inner/v2/static/rtc2/roomDetailInner?cid=${cid}">QS</a> <a target="_blank" href="http://vcloud-statics.hz.netease.com/grafana/d/ujxuS1hGz/ri-zhi-shang-chuan-wen-jian-xia-zai?orgId=1&var-cid=${cid}&var-uid=">日志</a>`)
   },
   error =>{
     console.error('加入房间失败',error)
@@ -825,7 +825,6 @@ $('#leaveChannel-btn').on('click', () => {
   progress.value = 0
   window.infoWindow && window.infoWindow.close()
   window.infoWindow = null
-  $('#cid').html('')
   $("#netQuality tr:not(:first)").remove();
   currentSpeaker = {}
   rtc.succTasksList = []
