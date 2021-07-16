@@ -195,6 +195,7 @@ class MediaHelper extends EventEmitter {
               screenStream.removeTrack(screenAudioTrack);
               stream.addTrack(screenAudioTrack);
               this.screenAudioTrack = screenAudioTrack;
+              this.listenToTrackEnded(this.screenAudioTrack);
               this.screenAudioStream = stream;
               if (!this.webAudio) {
                 this.webAudio = new WebAudio({
@@ -233,11 +234,13 @@ class MediaHelper extends EventEmitter {
           return;
         }
         this.screenTrack = this.screenStream.getVideoTracks()[0];
+        this.listenToTrackEnded(this.screenTrack);
         if (audio) {
           this.micStream = await GUM.getStream({
             audio: (this.getAudioConstraints()) ? this.getAudioConstraints() : true,
           }, this.adapterRef.logger)
           this.micTrack = this.micStream.getAudioTracks()[0];
+          this.listenToTrackEnded(this.micTrack);
           this.adapterRef.instance.apiEventReport('setFunction', {
             name: 'set_mic',
             oper: '1',
@@ -314,6 +317,7 @@ class MediaHelper extends EventEmitter {
           const micTrack = stream.getAudioTracks()[0];
           if (micTrack){
             this.micTrack = micTrack;
+            this.listenToTrackEnded(this.micTrack);
             this.adapterRef.instance.apiEventReport('setFunction', {
               name: 'set_mic',
               oper: '1',
@@ -350,6 +354,7 @@ class MediaHelper extends EventEmitter {
           }
           if (cameraTrack){
             this.cameraTrack = cameraTrack;
+            this.listenToTrackEnded(this.cameraTrack);
             this.adapterRef.instance.apiEventReport('setFunction', {
               name: 'set_camera',
               oper: '1',
@@ -429,6 +434,7 @@ class MediaHelper extends EventEmitter {
         this.micStream = new MediaStream()
         this.micStream.addTrack(audioTrack)
         this.micTrack = audioTrack;
+        this.listenToTrackEnded(this.micTrack);
         if (this.webAudio){
           this.webAudio.updateTracks([
             {track: this.micTrack || this.audioSource, type: 'microphone'},
@@ -567,16 +573,19 @@ class MediaHelper extends EventEmitter {
   updateStream(kind:MediaTypeShort, track:MediaStreamTrack) {
     if (kind === 'audio') {
       this.micTrack = track;
+      this.listenToTrackEnded(this.micTrack);
       emptyStreamWith(this.audioStream, track);
       this.audioStream.addTrack(track)
     } else if (kind === 'video') {
       this.videoStream = new MediaStream()
       this.cameraTrack = track;
+      this.listenToTrackEnded(this.cameraTrack);
       this.videoStream.addTrack(track)
     } else if (kind === 'screen') {
       this.screenStream = new MediaStream()
       this.screenStream.addTrack(track)
       this.screenTrack = track;
+      this.listenToTrackEnded(this.screenTrack);
     }
   }
 
@@ -714,7 +723,7 @@ class MediaHelper extends EventEmitter {
     if (!this.mixAudioConf.audioFilePath) {
       this.adapterRef.logger.log('开始伴音: 没有找到云端文件路径')
       reason = 'INVALID_ARGUMENTS'
-    } else if (!this.micStream || !this.stream.pubStatus.audio.audio) {
+    } else if (!( this.micStream || this.screenAudioTrack) || !this.stream.pubStatus.audio.audio) {
       this.adapterRef.logger.log('开始伴音: 当前没有publish音频')
       reason = 'NOT_PUBLIST_AUDIO_YET'
     } else if (!this.webAudio || !this.webAudio.context) {
@@ -830,6 +839,36 @@ class MediaHelper extends EventEmitter {
         })
       ) 
     })
+  }
+  
+  listenToTrackEnded = (track: MediaStreamTrack|null)=>{
+    if (!track){
+      return;
+    }
+    track.addEventListener('ended', ()=>{
+      this.adapterRef.logger.log("Track ended", track.label, track.id);
+      if (this.stream !== this.adapterRef.localStream){
+        return;
+      }
+      if (track === this.micTrack || track === this.audioSource){
+        //停止的原因可能是设备拔出、取消授权等
+        this.adapterRef.logger.warn('音频轨道已停止')
+        this.adapterRef.instance.emit('audioTrackEnded')
+      }
+      if (track === this.cameraTrack){
+        //停止的原因可能是设备拔出、取消授权等
+        this.adapterRef.logger.warn('视频轨道已停止')
+        this.adapterRef.instance.emit('videoTrackEnded')
+      }
+      if (track === this.screenTrack){
+        this.adapterRef.logger.warn('屏幕共享已停止')
+        this.adapterRef.instance.emit('stopScreenSharing')
+      }
+      if (track === this.screenAudioTrack){
+        this.adapterRef.logger.warn('屏幕共享音频已停止')
+        this.adapterRef.instance.emit('stopScreenAudio')
+      }
+    });
   }
 
   /*

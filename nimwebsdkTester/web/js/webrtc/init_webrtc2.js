@@ -414,7 +414,7 @@ function initEvents() {
   rtc.client.on('stream-removed', evt => {
     var remoteStream = evt.stream;
     console.warn('收到别人停止发布的消息: ', remoteStream.streamID, 'mediaType: ', evt.mediaType)
-    addLog(`${remoteStream.streamID}停止发布${!remoteStream.audio ? '音频 和 ' :' ' }${!remoteStream.Video ? '视频' :'' }`)
+    addLog(`${remoteStream.streamID}停止发布 ` + evt.mediaType)
     
     if (!remoteStream.audio && !remoteStream.video && !remoteStream.screen) {
       delete rtc.remoteStreams[remoteStream.streamID]
@@ -508,6 +508,17 @@ function initEvents() {
     }).catch(err =>{
       addLog('关闭摄像头 失败: ' + err)
       console.log('关闭摄像头 失败: ', err)
+    })
+  })
+  rtc.client.on('stopScreenAudio', _data => {
+    console.warn("===== 屏幕共享音频轨道已停止, 主动关闭")
+    rtc.localStream.close({
+      type: 'screenAudio'
+    }).then(()=>{
+      console.log('关闭屏幕共享音频 sucess')
+    }).catch(err =>{
+      addLog('关闭屏幕共享音频 失败: ' + err)
+      console.log('关闭屏幕共享音频 失败: ', err)
     })
   })
   rtc.client.on('audioTrackEnded', _data => {
@@ -804,7 +815,7 @@ $('#joinChannel-btn').on('click', async () => {
       }
     }
     const { cid } = rtc.client.getChannelInfo()
-    $('#cid').html(`<a target="_blank" href="http://vcloud-statics.hz.netease.com/grafana/d/tYiznOXZk/sdkke-hu-duan?orgId=1&from=now%2Fw&to=now%2Fw&fullscreen&panelId=104&var-cid=${cid}&var-uid=${rtc.client.getUid()}">${cid}</a>`)
+    $('#cid').html(`${cid} <a target="_blank" href="https://qs.netease.im/qs_inner/v2/static/rtc2/roomDetailInner?cid=${cid}">QS</a> <a target="_blank" href="http://vcloud-statics.hz.netease.com/grafana/d/ujxuS1hGz/ri-zhi-shang-chuan-wen-jian-xia-zai?orgId=1&var-cid=${cid}&var-uid=">日志</a>`)
   },
   error =>{
     console.error('加入房间失败',error)
@@ -825,7 +836,6 @@ $('#leaveChannel-btn').on('click', () => {
   progress.value = 0
   window.infoWindow && window.infoWindow.close()
   window.infoWindow = null
-  $('#cid').html('')
   $("#netQuality tr:not(:first)").remove();
   currentSpeaker = {}
   rtc.succTasksList = []
@@ -1433,21 +1443,6 @@ $('#setPlayVolume').on('click', () => {
   $('#playVolumeInput').val(volume)
 })
 
-$('#setCaptureVolume').on('click', () => {
-  if (!rtc.localStream) {
-    addLog('当前不能进行此操作')
-    return
-  }
-
-  let volume = $('#captureVolumeInput').val()
-  volume = parseInt(volume)
-  volume = rtc.localStream.setCaptureVolume(volume)
-  if (volume) {
-    addLog('设置采集音频错误:' + volume)
-  }
-  //$('#captureVolumeInput').val(volume)
-})
-
 $('#setCaptureVolumeType').on('click', () => {
   if (!rtc.localStream) {
     addLog('当前不能进行此操作')
@@ -1457,7 +1452,11 @@ $('#setCaptureVolumeType').on('click', () => {
   let mediaTypeAudio = $('#captureVolumeType').val();
   let volume = $('#captureVolumeTypeInput').val()
   volume = parseInt(volume)
-  volume = rtc.localStream.setCaptureVolume(volume, mediaTypeAudio)
+  if (mediaTypeAudio){
+    volume = rtc.localStream.setCaptureVolume(volume, mediaTypeAudio)
+  }else{
+    volume = rtc.localStream.setCaptureVolume(volume)
+  }
   if (volume) {
     addLog('设置采集音频错误:' + mediaTypeAudio + " " + volume)
   }
