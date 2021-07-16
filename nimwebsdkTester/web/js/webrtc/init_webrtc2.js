@@ -414,7 +414,7 @@ function initEvents() {
   rtc.client.on('stream-removed', evt => {
     var remoteStream = evt.stream;
     console.warn('收到别人停止发布的消息: ', remoteStream.streamID, 'mediaType: ', evt.mediaType)
-    addLog(`${remoteStream.streamID}停止发布${!remoteStream.audio ? '音频 和 ' :' ' }${!remoteStream.Video ? '视频' :'' }`)
+    addLog(`${remoteStream.streamID}停止发布 ` + evt.mediaType)
     
     if (!remoteStream.audio && !remoteStream.video && !remoteStream.screen) {
       delete rtc.remoteStreams[remoteStream.streamID]
@@ -508,6 +508,17 @@ function initEvents() {
     }).catch(err =>{
       addLog('关闭摄像头 失败: ' + err)
       console.log('关闭摄像头 失败: ', err)
+    })
+  })
+  rtc.client.on('stopScreenAudio', _data => {
+    console.warn("===== 屏幕共享音频轨道已停止, 主动关闭")
+    rtc.localStream.close({
+      type: 'screenAudio'
+    }).then(()=>{
+      console.log('关闭屏幕共享音频 sucess')
+    }).catch(err =>{
+      addLog('关闭屏幕共享音频 失败: ' + err)
+      console.log('关闭屏幕共享音频 失败: ', err)
     })
   })
   rtc.client.on('audioTrackEnded', _data => {

@@ -494,6 +494,12 @@ declare interface Client{
    */
   on(event: "stopScreenSharing", callback: (evt: {
   }) => void): void;
+  
+  /**
+   * 该事件表示本地用户停止屏幕共享音频。
+   */
+  on(event: "stopScreenAudio", callback: (evt: {
+  }) => void): void;
 
   /**
    * 该事件表示 SDK 与服务器的连接状态发生了变化。

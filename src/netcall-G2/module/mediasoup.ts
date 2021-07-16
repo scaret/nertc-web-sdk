@@ -507,11 +507,6 @@ class Mediasoup extends EventEmitter {
           },
           appData: {deviceId: audioTrack.id, mediaType: 'audio'} as ProducerAppData
         });
-        this._micProducer.on('trackended', notify => {
-          //停止的原因可能是设备拔出、取消授权等
-          this.adapterRef.logger.warn('音频轨道已停止')
-          this.adapterRef.instance.emit('audioTrackEnded')
-        })
       }
     }
 
@@ -544,11 +539,6 @@ class Mediasoup extends EventEmitter {
         //@ts-ignore
         this._webcamProducer.rtpSender.senderStreams = senderStreams
       }
-      this._webcamProducer.on('trackended', notify => {
-        //停止的原因可能是设备拔出、取消授权等
-        this.adapterRef.logger.warn('视频轨道已停止')
-        this.adapterRef.instance.emit('videoTrackEnded')
-      })
       if (!this.adapterRef.state.startPubVideoTime) {
         this.adapterRef.state.startPubVideoTime = Date.now()
       }
@@ -570,10 +560,6 @@ class Mediasoup extends EventEmitter {
         },
         appData: {deviceId: screenTrack.id, mediaType: 'screenShare'} as ProducerAppData
       });
-      this._screenProducer.on('trackended', notify => {
-        this.adapterRef.logger.warn('屏幕共享已停止')
-        this.adapterRef.instance.emit('stopScreenSharing')
-      })
       if (!this.adapterRef.state.startPubScreenTime) {
         this.adapterRef.state.startPubScreenTime = Date.now()
       }
