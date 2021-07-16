@@ -36,6 +36,7 @@ import {
 import {AuidoMixingState} from "../constant/state";
 import RtcError from '../util/error/rtcError';
 import ErrorCode  from '../util/error/errorCode';
+import BigNumber from 'bignumber.js'
 
 /**
  *  请使用 {@link NERTC.createStream} 通过NERTC.createStream创建
@@ -147,7 +148,7 @@ class Stream extends EventEmitter {
   constructor (options:StreamOptions) {
     super()
     
-    if (typeof options.uid === 'string') {
+    if (typeof options.uid === 'string' || BigNumber.isBigNumber(options.uid)) {
       options.client.adapterRef.logger.log('uid是string类型')
       options.client.adapterRef.channelInfo.uidType = 'string'
     } else if (typeof options.uid === 'number') {
