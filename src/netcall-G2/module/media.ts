@@ -714,7 +714,7 @@ class MediaHelper extends EventEmitter {
     if (!this.mixAudioConf.audioFilePath) {
       this.adapterRef.logger.log('开始伴音: 没有找到云端文件路径')
       reason = 'INVALID_ARGUMENTS'
-    } else if (!this.micStream || !this.stream.pubStatus.audio.audio) {
+    } else if (!( this.micStream || this.screenAudioTrack) || !this.stream.pubStatus.audio.audio) {
       this.adapterRef.logger.log('开始伴音: 当前没有publish音频')
       reason = 'NOT_PUBLIST_AUDIO_YET'
     } else if (!this.webAudio || !this.webAudio.context) {

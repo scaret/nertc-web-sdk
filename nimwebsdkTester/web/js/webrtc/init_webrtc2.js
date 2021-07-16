@@ -1433,21 +1433,6 @@ $('#setPlayVolume').on('click', () => {
   $('#playVolumeInput').val(volume)
 })
 
-$('#setCaptureVolume').on('click', () => {
-  if (!rtc.localStream) {
-    addLog('当前不能进行此操作')
-    return
-  }
-
-  let volume = $('#captureVolumeInput').val()
-  volume = parseInt(volume)
-  volume = rtc.localStream.setCaptureVolume(volume)
-  if (volume) {
-    addLog('设置采集音频错误:' + volume)
-  }
-  //$('#captureVolumeInput').val(volume)
-})
-
 $('#setCaptureVolumeType').on('click', () => {
   if (!rtc.localStream) {
     addLog('当前不能进行此操作')
@@ -1457,7 +1442,11 @@ $('#setCaptureVolumeType').on('click', () => {
   let mediaTypeAudio = $('#captureVolumeType').val();
   let volume = $('#captureVolumeTypeInput').val()
   volume = parseInt(volume)
-  volume = rtc.localStream.setCaptureVolume(volume, mediaTypeAudio)
+  if (mediaTypeAudio){
+    volume = rtc.localStream.setCaptureVolume(volume, mediaTypeAudio)
+  }else{
+    volume = rtc.localStream.setCaptureVolume(volume)
+  }
   if (volume) {
     addLog('设置采集音频错误:' + mediaTypeAudio + " " + volume)
   }
