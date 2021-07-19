@@ -135,11 +135,11 @@ class WebAudio extends EventEmitter{
     
     if (this.context){
       // 伴音+音频输入
-      this.destination = new MediaStreamAudioDestinationNode(this.context);
+      this.destination = this.createDestination();
       // 仅有伴音，用于本地回放:localStream.play({audio: true, audioType: "music"})
-      this.musicDestination = new MediaStreamAudioDestinationNode(this.context);
+      this.musicDestination = this.createDestination();
       // 仅用于测量音量
-      this.analyzeDestination = new MediaStreamAudioDestinationNode(this.context);
+      this.analyzeDestination = this.createDestination();
     }else{
       this.destination = null;
       this.musicDestination = null;
@@ -149,6 +149,38 @@ class WebAudio extends EventEmitter{
     if (this.support) {
       this.resetMixConf()
       this.init()
+    }
+  }
+  
+  createDestination(){
+    if (this.context){
+      try{
+        return new MediaStreamAudioDestinationNode(this.context);
+      }catch(e){
+        if (e.name === "TypeError"){
+          return this.context.createMediaStreamDestination();
+        }else{
+          throw e;
+        }
+      }
+    }else{
+      throw new Error('AudioContextRequired');
+    }
+  }
+  
+  createSource(options: {mediaStream: MediaStream}){
+    if (this.context){
+      try{
+        return new MediaStreamAudioSourceNode(this.context, options);
+      }catch(e){
+        if (e.name === "TypeError"){
+          return this.context.createMediaStreamSource(options.mediaStream);
+        }else{
+          throw e;
+        }
+      }
+    }else{
+      throw new Error('AudioContextRequired');
     }
   }
   
@@ -268,7 +300,7 @@ class WebAudio extends EventEmitter{
             context: this.context,
             id: newTrackInput.track.id,
             label: newTrackInput.track.label,
-            audioNode: new MediaStreamAudioSourceNode(this.context, {mediaStream}),
+            audioNode: this.createSource({mediaStream}),
             type: newTrackInput.type,
           };
           const newAudioIn = new AudioIn(audioInConfig)
