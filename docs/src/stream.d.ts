@@ -24,7 +24,7 @@ declare interface Stream {
     /**
      *  获取音视频流 ID。
      */
-    getId(): number | null;
+    getId(): number | string | null;
     /**
      * 设置视频订阅的参数。
      * 

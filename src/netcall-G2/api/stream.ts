@@ -44,6 +44,8 @@ import BigNumber from 'bignumber.js'
  *  @name Stream
  */
 
+let localStreamCnt = 0;
+
 /**
  *  @method stream类构造函数
  *  @memberOf Stream
@@ -161,11 +163,8 @@ class Stream extends EventEmitter {
         })
       }
     } else {
-      options.client.adapterRef.logger.error('uid参数格式非法')
-      throw new RtcError({
-        code: ErrorCode.INVALID_PARAMETER,
-        message: 'uid is invalid'
-      })
+      // 允许不填uid
+      options.uid = `local_${localStreamCnt++}`;
     }
     // init for ts rule
     this.isRemote = options.isRemote;
