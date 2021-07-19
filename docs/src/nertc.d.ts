@@ -4,7 +4,7 @@
 
 import { Client } from './client';
 import { Stream } from './stream';
-import { ClientOptions, StreamOptions } from "./types";
+import { StreamOptions } from "./types";
 import {DeviceInfo} from "./browser";
 
 /**
@@ -43,8 +43,63 @@ declare namespace NERTC {
    * 该方法用于创建客户端，每次通话前调用一次即可。
    * 
    * @param options 配置参数。
+   * @param options.appkey
+   *    应用的 AppKey。可从[云信后台](https://app.yunxin.163.com/)获取。
+   * @param options.debug 是否开启 debug 模式。debug 模式下浏览器会打印 log 日志。默认为 false，即关闭状态。
+   *
+   * @example
+   * ```html
+   * <!DOCTYPE html>
+   *   <html>
+   *     <body>
+   *       <div id="localDiv" style="height: 500px;"></div>
+   *       <div id="remoteDiv" style="height: 500px;"></div>
+   *       <script src="<SDK地址>"></script>
+   *       <script>
+   * const main = async ()=>{
+   * let rtc = {};
+   * // 1. 创建client
+   * rtc.client = NERTC.createClient({appkey: "<您的appkey>", debug: true});
+   * // 2. 绑定订阅事件
+   * rtc.client.on('stream-added', (evt)=>{
+   *   rtc.client.subscribe(evt.stream);
+   * })
+   * rtc.client.on('stream-subscribed', (evt)=>{
+   *   evt.stream.play(document.getElementById('remoteDiv'));
+   * });
+   * // 3. 加入频道
+   * await rtc.client.join({
+   *   channelName: 'channel163',
+   *   uid: 123,
+   *   token: '<您的token>', // 如关闭了安全模式，则不需要该参数。
+   * });
+   * // 4. 创建localStream
+   * rtc.localStream = NERTC.createStream({
+   *   video: true,
+   *   audio: true,
+   *   client: rtc.client,
+   *   uid: 123
+   * });
+   * await rtc.localStream.init();
+   * // 5. 设置本地播放方式
+   * rtc.localStream.setLocalRenderMode({
+   *   width: 640,
+   *   height: 480
+   * })
+   * rtc.localStream.play(document.getElementById('localDiv'))
+   * // 5. 发布localStream
+   * rtc.client.publish(rtc.localStream);
+   * }
+   * main()
+   *   </script>
+   *   </body>
+   * </html>
+   ```
    */
-  function createClient(options: ClientOptions): Client;
+  function createClient(options: {
+    appkey: string;
+    debug?: boolean;
+  }): Client;
   /**
    * 该方法创建并返回音视频流对象。
    * 

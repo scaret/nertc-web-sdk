@@ -382,7 +382,7 @@ export interface StreamOptions {
    */
   microphoneId?: string;
   /**
-   * 摄像头设备 deviceId，通过 getCameras() 获取。
+   * 摄像头设备 deviceId，通过 [[NERTC.getCameras]] 获取。
    */
   cameraId?: string;
   /**
@@ -487,19 +487,6 @@ export interface ScreenProfileOptions {
    * NERTC.CHAT_VIDEO_FRAME_RATE_5、NERTC.CHAT_VIDEO_FRAME_RATE_10、NERTC.CHAT_VIDEO_FRAME_RATE_15、NERTC.CHAT_VIDEO_FRAME_RATE_20、NERTC.CHAT_VIDEO_FRAME_RATE_25
    */
   frameRate: number;
-}
-
-export interface ClientOptions {
-  /**
-   * 应用的 AppKey。
-   */
-  appkey: string;
-  /**
-   * 是否开启 debug 模式。
-   * 
-   * debug 模式下浏览器会打印 log 日志。默认为 false，即关闭状态。
-   */
-  debug?: boolean;
 }
 
 export interface LiveConfig {
