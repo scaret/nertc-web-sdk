@@ -113,18 +113,18 @@ export default class WSTransport {
       onmessage(event:any) {
         if (!this.isConnected_) return; // close was requested.
         // deal with pb data
-        const reader = event.data.stream() && event.data.stream().getReader();
+        if(event && event.data && event.data.stream()) {
+          const reader = event.data.stream().getReader();
+          if(reader) {
+            // @ts-ignore
+            reader.read().then(({done, value}) => {
+              // console.log("done--->",done);
+              // console.log("value--->",value);
+              (value[0] == 11) && this.emit(PONG, event);
+            })
+          } 
+        }
         
-        if(reader) {
-          // @ts-ignore
-          reader.read().then(({done, value}) => {
-            // console.log("done--->",done);
-            // console.log("value--->",value);
-            this.emit(PONG, event);
-          })
-        } 
-
-        // this.startPingPong();
       }
 
       isConnected() {
@@ -141,9 +141,15 @@ export default class WSTransport {
       }
 
       // send json
-      send(data:any) {
+      // send(data:any) {
+      //   if (this.isConnected_) {
+      //     this.socketInUse_.send(JSON.stringify(data));
+      //   }
+      // }
+
+      sendPing(data:any) {
         if (this.isConnected_) {
-          this.socketInUse_.send(JSON.stringify(data));
+          this.socketInUse_.send(data);
         }
       }
 
@@ -195,7 +201,7 @@ export default class WSTransport {
           if (this.pingTimeoutId_ !== -1) {
             return resolve();
           }
-          this.send(PING);
+          this.sendPing(PING);
 
           this.once(PONG, () => {
             clearTimeout(this.pingTimeoutId_);
