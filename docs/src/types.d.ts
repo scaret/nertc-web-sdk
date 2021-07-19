@@ -350,9 +350,9 @@ export interface RTMPTask {
 
 export interface StreamOptions {
   /**
-   * 用户 ID。
+   * 用户 ID，与client的id一致。
    */
-  uid: number|string;
+  uid?: number|string;
   /**
    * 是否从麦克风采集音频
    */
@@ -360,14 +360,19 @@ export interface StreamOptions {
   /**
    * 是否开启/关闭音频处理接口（3A接口)。
    * 
-   * @note 音频处理接口取决于浏览器支持情况。目前Safari不支持AGC及ANS设置。
+   * @note
+   * 音频处理接口取决于浏览器支持情况。
+   * 
+   * 目前Safari不支持AGC及ANS设置。
    * 
    * `AEC`: 是否开启声学回声消除。默认为 true。
    * * `true`：开启声学回声消除。
    * * `false`：关闭声学回声消除。
+   *
    * `AGC`: 是否开启自动增益控制。默认为 true。
    * * `true`：开启自动增益控制。
    * * `false`：关闭自动增益控制。
+   *
    * `ANS`: 是否开启自动噪声抑制。默认为 true。
    * * `true`：开启自动噪声抑制。
    * * `false`：关闭自动噪声抑制。
@@ -382,7 +387,7 @@ export interface StreamOptions {
    */
   microphoneId?: string;
   /**
-   * 摄像头设备 deviceId，通过 getCameras() 获取。
+   * 摄像头设备 deviceId，通过 [[NERTC.getCameras]] 获取。
    */
   cameraId?: string;
   /**
@@ -393,7 +398,7 @@ export interface StreamOptions {
    * 是否采集屏幕共享流。
    */
   screen?: boolean;
-/**
+  /**
    * 是否采集屏幕分享流的共享音频。
    * 
    * @since V4.3.0
@@ -406,13 +411,13 @@ export interface StreamOptions {
    * 
    * @note
    * - 该功能仅支持 Windows 和 macOS 平台 Chrome 浏览器 74 及以上版本。其中 macOS 平台的 Chrome 浏览器仅支持 Chrome 标签页（Chrome Tab）模式。
-   * - 如需使用屏幕共享背景音功能，必须将 screen 设为 true、audio 设为 false。[[Stream.setAudioProfile]] 推荐设置为 `high_quality_stereo`。
-   * - 在V4.4.0版本之前，screenAudio和audio不能同时开启。如果 screenAudio 和 audio 都设置为 true，音视频流中只会包含本地播放的背景音。
+   * - 如需使用屏幕共享背景音功能，必须将 screen 设为 true。如此时audio设为true，则输出为麦克风与屏幕共享背景音的混音。[[Stream.setAudioProfile]] 推荐设置为 `high_quality_stereo`。
+   * - 在V4.4.0版本之前，screenAudio和audio不能同时开启。
    * - 如需使用屏幕共享背景音功能，还需要在屏幕共享的弹出框中，勾选 **分享音频**（Share audio）。
    */
  screenAudio?: boolean;
   /**
-   * 和要Stream绑定的client实例对象，默认是最初使用用createClient创建的client实例（多实例场景使用）
+   * 要Stream绑定的client实例对象。默认是最初使用用createClient创建的client实例（多实例场景使用）
    */
   client?: Client;
   /**
@@ -424,13 +429,13 @@ export interface StreamOptions {
    */
   videoSource?: MediaStreamTrack;
   /**
-   * Electron 屏幕共享的数据源 ID，您可以自行获取。
+   * Electron 屏幕共享的数据源 ID，您可以参考[这篇文章](https://www.electronjs.org/docs/api/desktop-capturer)。
    */
   sourceId?: string;
   /**
   * 指定使用前置/后置摄像头来采集视频
    */
-  facingMode?: String
+  facingMode?: "user"|"environment"
 }
 
   /*
@@ -454,7 +459,7 @@ export interface SubscribeOptions {
    * 
    * 0 表示小流，1 表示大流。
    */
-  highOrLow?: number;
+  highOrLow?: 0|1;
 }
 
   /**
@@ -487,19 +492,6 @@ export interface ScreenProfileOptions {
    * NERTC.CHAT_VIDEO_FRAME_RATE_5、NERTC.CHAT_VIDEO_FRAME_RATE_10、NERTC.CHAT_VIDEO_FRAME_RATE_15、NERTC.CHAT_VIDEO_FRAME_RATE_20、NERTC.CHAT_VIDEO_FRAME_RATE_25
    */
   frameRate: number;
-}
-
-export interface ClientOptions {
-  /**
-   * 应用的 AppKey。
-   */
-  appkey: string;
-  /**
-   * 是否开启 debug 模式。
-   * 
-   * debug 模式下浏览器会打印 log 日志。默认为 false，即关闭状态。
-   */
-  debug?: boolean;
 }
 
 export interface LiveConfig {
@@ -555,7 +547,7 @@ export interface JoinOptions {
    * 
    * uid 可选。如果不指定，SDK 会自动分配一个随机 uid，您可以通过 getUid 查看，App 层必须记住该值并维护，SDK 不对该值进行维护。
    */
-  uid: number|string;
+  uid?: number|string;
   /**
    * 安全认证签名。详细信息请参考 [NERTC Token](/docs/jcyOTA0ODM/Dc4NTE4OTY)。
    * - 调试模式下：无需设置 Token。
@@ -619,31 +611,31 @@ export interface NERtcTextWatermarkConfig {
   /**
    * 字体大小。默认值为 10，相当于 144 dpi 设备上的 10 x 15 磅。
    */
-  fontSize: number;
+  fontSize?: number;
   /**
    * 字体颜色。默认为白色。
    */
-  fontColor: number;
+  fontColor?: number;
   /**
    * 水印左上角与视频画布左上角的水平距离。单位为像素（pixel）。默认为 0。
    */
-  offsetX: number;
+  offsetX?: number;
   /**
    * 水印左上角与视频画布左上角的垂直距离。单位为像素（pixel）。默认为 0。
    */
-  offsetY: number;
+  offsetY?: number;
   /**
    * 水印框内背景颜色。默认为灰色。支持透明度设置。
    */
-  wmColor: number;
+  wmColor?: number;
   /**
    * 水印框的宽度。单位为像素（pixel），默认值为 0，表示没有水印框。
    */
-  wmWidth: number;
+  wmWidth?: number;
   /**
    * 水印框的高度。单位为像素（pixel），默认值为 0，表示没有水印框。
    */
-  wmHeight: number;
+  wmHeight?: number;
 }
 /**
  * 时间戳水印设置。
@@ -654,31 +646,31 @@ export interface NERtcTimestampWatermarkConfig {
   /**
    * 字体大小。默认值为 10，相当于 144 dpi 设备上的 10 x 15 磅。
    */
-  fontSize: number;
+  fontSize?: number;
   /**
    * 字体颜色。默认为白色。
    */
-  fontColor: number;
+  fontColor?: number;
   /**
    * 水印左上角与视频画布左上角的水平距离。单位为像素（pixel）。默认为 0。
    */
-  offsetX: number;
+  offsetX?: number;
   /**
    * 水印左上角与视频画布左上角的垂直距离。单位为像素（pixel）。默认为 0。
    */
-  offsetY: number;
+  offsetY?: number;
   /**
    * 水印框内背景颜色。默认为灰色。支持透明度设置。
    */
-  wmColor: number;
+  wmColor?: number;
   /**
    * 水印框的宽度。单位为像素（pixel），默认值为 0，表示没有水印框。
    */
-  wmWidth: number;
+  wmWidth?: number;
   /**
    * 水印框的高度。单位为像素（pixel），默认值为 0，表示没有水印框。
    */
-  wmHeight: number;
+  wmHeight?: number;
 }
 /**
  * 图片水印设置参数。
@@ -693,11 +685,11 @@ export interface NERtcImageWatermarkConfig {
   /**
    * 水印图片左上角与视频画布左上角的水平距离。单位为像素（pixel），默认值为 0。
    */
-  offsetX: number;
+  offsetX?: number;
   /**
    * 水印图片左上角与视频画布左上角的垂直距离。单位为像素（pixel），默认值为 0。
    */
-  offsetY: number;
+  offsetY?: number;
   /**
    * 水印图片的宽度。单位为像素（pixel），默认值为 0 表示按原始图宽。
    */
@@ -709,11 +701,11 @@ export interface NERtcImageWatermarkConfig {
   /**
    * 播放帧率。默认 0 帧/秒，即不自动切换图片，图片单帧静态显示。
    */
-  fps: number;
+  fps?: number;
   /**
    * 是否设置循环。默认循环，设置为 false 后水印数组播放完毕后消失。
    */
-  loop: boolean;
+  loop?: boolean;
 }
 
   /**
