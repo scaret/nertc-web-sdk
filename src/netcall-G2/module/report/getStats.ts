@@ -45,8 +45,10 @@ class GetStats extends EventEmitter{
       this.browser = 'safari'
     } else if (temp.satisfies({ firefox: '>60' })){
       this.browser = 'firefox'
-    } 
-    
+    } else if (temp.getBrowser().name === "WeChat" && temp.getOS().name === "iOS"){
+      this.browser = 'safari'
+    }
+
     this.KeyTransform = {
       K: { // 单位需要换算为k的字段
         googAvailableSendBandwidth: 1,

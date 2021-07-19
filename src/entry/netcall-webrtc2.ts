@@ -159,7 +159,6 @@ createClient (options:ClientOptions) {
  */
 createStream (options:StreamOptions) {
   checkExists({tag: 'createStream:options', value: options});
-  checkExists({tag: 'createStream:options.uid', value: options.uid});
   if (options.screenAudio){
     if (!options.screen){
       throw new RtcError({

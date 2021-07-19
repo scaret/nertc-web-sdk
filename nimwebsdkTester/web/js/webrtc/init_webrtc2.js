@@ -793,6 +793,14 @@ $('#joinChannel-btn').on('click', async () => {
   }).then((obj) => {
     addLog('加入房间成功')
     console.info('加入房间...')
+    if (rtc.localStream){
+      // localStream已经初始化了
+      if ($('#autoPub').prop('checked')) {
+        publish()
+        updateLocalWatermark();
+      }
+      return;
+    }
     if( $('#enableAudio').prop('checked') || $('#enableVideo').prop('checked') || $('#enableScreen').prop('checked') ) {
       let audio = video = false
       if ($('#privateAudio').prop('checked') && $('#privateVideo').prop('checked')) {
@@ -903,7 +911,8 @@ $('#initLocalStream').on('click', () => {
 
 
 $('#pub').on('click', () => {
-  publish(rtc.client.localStream)
+  publish()
+  updateLocalWatermark()
 })
 
 $('#unpub').on('click', () => {
@@ -1041,21 +1050,7 @@ function initLocalStream(audioSource, videoSource) {
     audioSource,
     videoSource
   })
-  if (watermarks.local){
-    rtc.localStream.setCanvasWatermarkConfigs(watermarks.local);
-  }else if ($('#idWatermark').prop('checked')){
-    rtc.localStream.setCanvasWatermarkConfigs({
-      textWatermarks: [{
-        content: 'video ' + rtc.client.getUid(),
-      }],
-    });
-    rtc.localStream.setCanvasWatermarkConfigs({
-      mediaType: "screen",
-      textWatermarks: [{
-        content: 'screen ' + rtc.client.getUid(),
-      }],
-    });
-  }
+  updateLocalWatermark()
   const videoQuality = $('#sessionConfigVideoQuality').val()
   const frameRate = $('#sessionConfigVideoFrameRate').val()
   rtc.localStream.setVideoProfile({
@@ -1088,13 +1083,34 @@ function initLocalStream(audioSource, videoSource) {
       initDevices()
     // 发布
     if ($('#autoPub').prop('checked')) {
-      publish()
+      if (rtc.client.adapterRef.connectState.curState === 'CONNECTED'){
+        publish()
+        updateLocalWatermark()
+      }
     }
   }).catch(err=>{
     console.warn('音视频初始化失败: ', err)
     addLog('音视频初始化失败, 请检查设备列表')
     rtc.localStream = null
   })
+}
+
+function updateLocalWatermark(){
+  if (watermarks.local){
+    rtc.localStream.setCanvasWatermarkConfigs(watermarks.local);
+  }else if ($('#idWatermark').prop('checked')){
+    rtc.localStream.setCanvasWatermarkConfigs({
+      textWatermarks: [{
+        content: 'video ' + rtc.localStream.getId(),
+      }],
+    });
+    rtc.localStream.setCanvasWatermarkConfigs({
+      mediaType: "screen",
+      textWatermarks: [{
+        content: 'screen ' + rtc.localStream.getId(),
+      }],
+    });
+  }
 }
 
 function publish() {
