@@ -7,10 +7,8 @@ import {
   NERtcCanvasWatermarkConfig,
   MediaType,
   RenderMode,
-  ScreenProfileOptions,
   StreamOptions,
   SubscribeOptions,
-  VideoProfileOptions,
   RecordStartOptions, RecordStatus
 } from "./types";
 /**
@@ -117,7 +115,7 @@ declare interface Stream {
      * @param options 配置对象。
      * @param mediaType 媒体流类型。即指定设置的是摄像头画面还是屏幕共享画面。
      */
-    setLocalRenderMode(options: RenderMode, mediaType?: MediaType): "INVALID_ARGUMENTS" | undefined;
+    setLocalRenderMode(options: RenderMode, mediaType?: "video"|"screen"): "INVALID_ARGUMENTS" | undefined;
     /**
      * 设置远端视频画布。
      * 
@@ -125,7 +123,7 @@ declare interface Stream {
      * @param options 配置对象。
      * @param mediaType 媒体流类型。即指定设置的是摄像头画面还是屏幕共享画面。
      */
-    setRemoteRenderMode(options: RenderMode, mediaType?: MediaType): void;
+    setRemoteRenderMode(options: RenderMode, mediaType?: "video"|"screen"): void;
     /**
      * 停止音视频流。
      * 
@@ -250,11 +248,11 @@ declare interface Stream {
      * * "video": 视频输入设备
      * @param deviceId 设备的 ID，可以通过 getDevices 方法获取。获取的 ID 为 ASCII 字符，字符串长度大于 0 小于 256 字节。
      */
-    switchDevice(type: string, deviceId: string): Promise<void>;
+    switchDevice(type: "audio"|"video", deviceId: string): Promise<void>;
     /**
      * 启用视频轨道。
      * 
-     * 视频轨道默认为开启状态。如果您调用了 muteVideo，可调用本方法启用视频轨道。
+     * 视频轨道默认为开启状态。如果您调用了 [[Stream.muteVideo]]，可调用本方法启用视频轨道。
      * 
      * 对本地流启用视频轨道后远端会触发 Client.on("unmute-video") 回调。
      * 
@@ -296,10 +294,32 @@ declare interface Stream {
     hasVideo(): boolean;
 
     /**
-    * 设置视频属性。
-    * @param options 配置参数。
-    */
-    setVideoProfile(options: VideoProfileOptions): void;
+     * 设置视频属性。
+     * @example
+     * ```javascript
+     * rtc.localStream = createStream({
+     *   video: true,
+     *   audio: true,
+     *   uid: 123,
+     *   client: rtc.client
+     * });
+     * rtc.localStream.setVideoProfile({
+     *   resolution: NERTC.VIDEO_QUALITY.VIDEO_QUALITY_1080p,
+     *   frameRate: NERTC.VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_15,
+     * })
+     * await rtc.localStream.init()
+     * ```
+     */
+    setVideoProfile(options: {
+      /**
+       * 设置本端视频分辨率，详细信息请参考 [[NERTC.VIDEO_QUALITY]]。
+       */
+      resolution: number;
+      /**
+       * 设置本端视频帧率，详细信息请参考 [[NERTC.VIDEO_FRAME_RATE]]。
+       */
+      frameRate: number;
+    }): void;
       /**
      * 获取屏幕共享 flag。
      * 
@@ -321,15 +341,34 @@ declare interface Stream {
      * @note 该方法仅可对本地流调用。
      * 
      * @param profile 屏幕属性。
-    */
-    setScreenProfile(profile: ScreenProfileOptions): void;
-
-    /**
-     * 设置分辨率。
      * 
-     * @param MediaType 媒体流类型。
+     * @example
+     * ```javascript
+     * rtc.localStream = createStream({
+     *   screen: true,
+     *   uid: 456,
+     *   client: rtc.client
+     * });
+     * rtc.localStream.setScreenProfile({
+     *   resolution: NERTC.VIDEO_QUALITY.VIDEO_QUALITY_1080p,
+     *   frameRate: NERTC.VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_15,
+     * })
+     * await rtc.localStream.init()
+     * ```
+     * 
     */
-    adjustResolution(MediaType: MediaType): void;
+    setScreenProfile(profile: {
+      /**
+       * 设置本端屏幕共享分辨率。参考[[NERTC.VIDEO_QUALITY]]。
+       *
+       */
+      resolution: number;
+      /**
+       * 设置本端屏幕共享帧率。参考[[NERTC.VIDEO_FRAME_RATE]]。
+       *
+       */
+      frameRate: number;
+    }): void;
 
     /**
      * 截取指定用户的视频流画面。
@@ -337,15 +376,11 @@ declare interface Stream {
      * 截图文件保存在浏览器默认路径下。
      * 
      * @note
-     * - 本地视频流截图，需要在 Client.join 并 Client.publish 发布流成功之后调用。
+     * - v4.5.0之前，本地视频流截图，需要在 Client.join 并 Client.publish 发布流成功之后调用。
      * - 远端视频流截图，需要在  Client.subscribe 订阅远端视频流之后调用。
-     * - 同时设置文字、时间戳或图片水印时，如果不同类型的水印位置有重叠，会按照图片、文本、时间戳的顺序进行图层覆盖。
+     * - 水印不会被截图。
      */
     takeSnapshot(options: {
-      /**
-       * 用户 ID。
-       */
-      uid: number|string;
       /**
        * 截图文件名称，默认格式为 uid-1。
        */
@@ -353,7 +388,7 @@ declare interface Stream {
       /**
        * 截图的视频流类型。
        */
-      mediaType?: MediaType;
+      mediaType?: "video"|"screen";
     }): Promise<"INVALID_OPERATION" | undefined>;
 
     /**
@@ -363,9 +398,9 @@ declare interface Stream {
      */
     startMediaRecording(mediaRecordingOptions: {
       /**
-       * 流类型，即 'audio'、'video' 或 'screen'。
+       * 流类型，即 'audio'、'video' 或 'screen'。其中，`video` 或 `screen` 会带上音频。
        */
-      type: string;
+      type: 'audio'|'video'|'screen';
       /**
        * 如果之前的录制视频未下载，是否重置，默认 false。
        */
@@ -379,10 +414,10 @@ declare interface Stream {
     stopMediaRecording(options: {
 
       /**
-       * 录制 ID。可以通过 listMediaRecording 接口获取。
+       * 录制 ID。可以通过 [[Stream.listMediaRecording]] 接口获取。
        */
         recordId?: string;
-    }): Promise<unknown>;
+    }): Promise<any>;
 
     /**
      * 播放视频录制。
@@ -390,7 +425,7 @@ declare interface Stream {
      */
     playMediaRecording(options: {
       /**
-       * 录制 ID。可以通过 listMediaRecording 接口获取。
+       * 录制 ID。可以通过 [[Stream.listMediaRecording]] 接口获取。
        */
         recordId: string;
       /**
@@ -426,7 +461,7 @@ declare interface Stream {
      */
     cleanMediaRecording(options: {
       /**
-       * 录制 ID。可以通过 listMediaRecording 接口获取。
+       * 录制 ID。可以通过 [[Stream.listMediaRecording]] 接口获取。
        */
         recordId: string;
     }): Promise<void>;
@@ -437,7 +472,7 @@ declare interface Stream {
      */
     downloadMediaRecording(options: {
       /**
-       * 录制 ID。可以通过 listMediaRecording 接口获取。
+       * 录制 ID。可以通过 [[Stream.listMediaRecording]] 接口获取。
        */
         recordId: string;
     }): Promise<RecordStatus>;
@@ -631,7 +666,7 @@ declare interface Stream {
          - "Stream.setVolumeOfEffect:soundId": 参数格式错误
          - "Stream.setVolumeOfEffect:volume": 参数格式错误 
      */
-    setVolumeOfEffect (soundId: number) : Promise<unknown>
+    setVolumeOfEffect (soundId: number, volume: number) : Promise<unknown>
     /**
      * 预加载指定音效文件。
      * 

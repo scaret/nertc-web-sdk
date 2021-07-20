@@ -237,8 +237,10 @@ async function loadTokenByAppKey(){
   let appkey = $("#appkey").val();
   let AppSecret = $("#AppSecret").val();
   let uid = getUidFromDomInput();
+  console.error("uid", uid);
   let channelName = $("#channelName").val();
-  if (AppSecret && uid && channelName){
+  let safemode = $('#part-env input[name="safemode"]:checked').val() === "safe"
+  if (AppSecret && safemode && channelName){
     let Nonce = Math.ceil(Math.random() * 1e9);
     let CurTime = Math.ceil(Date.now() / 1000);
     let CheckSum = sha1(`${AppSecret}${Nonce}${CurTime}`);
@@ -722,24 +724,6 @@ $('#joinChannel-btn').on('click', async () => {
       addLog('私有化配置: 没有获取appkey，请检查设置的参数是否正确')
       return
     }
-    const safemode = $('#part-env input[name="safemode"]:checked').val()
-    if(!$("#token").val() && safemode == 'safe' && demoServer){
-      try {
-        const data = await axios.post(demoServer, `uid=${uid}&appkey=${appkey}`)
-        var d = data.data;
-        console.warn("获取token反馈结果: ", data);
-        if (d.code != 200) {
-          console.error("获取token失败");
-          addLog('获取token失败，请检查设置的参数是否正确')
-          return
-        }
-        $("#token").val(d.checksum)
-      } catch (e) {
-        console.error("获取token失败: ", e);
-        addLog('获取token失败，请检查设置的参数是否正确')
-        return
-      }
-    }
   }
   
   console.info('开始加入房间')
@@ -1038,7 +1022,7 @@ function initLocalStream(audioSource, videoSource) {
     }
   }
   rtc.localStream = NERTC.createStream({
-    uid: $('#uid').val() ? $('#uid').val() : rtc.client.getChannelInfo().uid,
+    uid: getUidFromDomInput() || rtc.client.getChannelInfo().uid,
     audio: $('#enableAudio').prop('checked'),
     audioProcessing: getAudioProcessingConfig(),
     microphoneId: $('#micro').val(),
@@ -1732,6 +1716,22 @@ $('#recordList').on('click', (_event) => {
     $('#part-record .recordId').append(`<option>${item.id} ${item.status}</option>`)
   })
 })
+
+// 播放文件
+$('#recordPlayback').on('click', async (_event) => {
+  let stream
+  let uid = $('#recordUid').val()
+  if (rtc.client.getUid() == uid || !uid) {
+    stream = rtc.localStream
+  } else {
+    stream = rtc.remoteStreams[uid]
+  }
+  $('#mediaRecordingPlayback').html('');
+  const result = await stream.playMediaRecording({
+    view: document.getElementById('mediaRecordingPlayback'),
+    recordId: getRecordId()
+  })
+})
 // 下载文件
 $('#recordDownload').on('click', async (_event) => {
   let stream
@@ -1757,6 +1757,7 @@ $('#recordClean').on('click', (_event) => {
   } else {
     stream = rtc.remoteStreams[uid]
   }
+  $("#mediaRecordingPlayback").html('')
   stream.cleanMediaRecording({
     recordId: getRecordId()
   })

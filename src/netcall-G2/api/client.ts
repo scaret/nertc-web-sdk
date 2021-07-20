@@ -991,6 +991,7 @@ class Client extends Base {
     if (localStream.streamID !== uid){
       this.adapterRef.logger.warn('localStream更换streamID', localStream.streamID, '=>', uid);
       localStream.streamID = uid;
+      localStream.stringStreamID = uid.toString();
     }
   }
 

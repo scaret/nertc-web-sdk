@@ -149,8 +149,11 @@ class Stream extends EventEmitter {
   
   constructor (options:StreamOptions) {
     super()
-    
-    if (typeof options.uid === 'string' || BigNumber.isBigNumber(options.uid)) {
+    if(!options.uid){
+      // 允许不填uid
+      options.uid = `local_${localStreamCnt++}`;
+    }
+    else if (typeof options.uid === 'string' || BigNumber.isBigNumber(options.uid)) {
       options.client.adapterRef.logger.log('uid是string类型')
       options.client.adapterRef.channelInfo.uidType = 'string'
     } else if (typeof options.uid === 'number') {
@@ -163,8 +166,11 @@ class Stream extends EventEmitter {
         })
       }
     } else {
-      // 允许不填uid
-      options.uid = `local_${localStreamCnt++}`;
+      options.client.adapterRef.logger.error('uid参数格式非法')
+      throw new RtcError({
+        code: ErrorCode.INVALID_PARAMETER,
+        message: 'uid is invalid'
+      })
     }
     // init for ts rule
     this.isRemote = options.isRemote;
@@ -989,7 +995,7 @@ class Stream extends EventEmitter {
    * @return {Void}
    */
   stop (type?:MediaTypeShort) {
-    this.client.adapterRef.logger.log('停止播放 %s 音视频流', this.stringStreamID)
+    this.client.adapterRef.logger.log('Stream.stop: 停止播放 %s %s。', this.stringStreamID, type || "音视频流")
     if(!this._play) return
     if (type === 'audio') {
       this._play.stopPlayAudioStream()
@@ -1119,21 +1125,39 @@ class Stream extends EventEmitter {
         case 'screen':
           this.client.adapterRef.logger.log(`开启${type === 'video' ? 'camera' : 'screen'}设备`)
           if (this[type]) {
-            this.client.adapterRef.logger.log('请先关闭摄像头或者屏幕共享')
-            this.client.apiFrequencyControl({
-              name: 'open',
-              code: -1,
-              param: JSON.stringify({
-                reason: '请先关闭摄像头或者屏幕共享',
-                type
-              }, null, ' ')
-            })
-            return Promise.reject(
-              new RtcError({
-                code: ErrorCode.INVALID_OPERATION,
-                message: 'please close video or screen-sharing first'
+            if (type === "video"){
+              this.client.adapterRef.logger.log('请先关闭摄像头')
+              this.client.apiFrequencyControl({
+                name: 'open',
+                code: -1,
+                param: JSON.stringify({
+                  reason: '请先关闭摄像头',
+                  type
+                }, null, ' ')
               })
-            )
+              return Promise.reject(
+                new RtcError({
+                  code: ErrorCode.INVALID_OPERATION,
+                  message: 'please close video first'
+                })
+              )
+            }else{
+              this.client.adapterRef.logger.log('请先关闭屏幕共享')
+              this.client.apiFrequencyControl({
+                name: 'open',
+                code: -1,
+                param: JSON.stringify({
+                  reason: '请先关闭屏幕共享',
+                  type
+                }, null, ' ')
+              })
+              return Promise.reject(
+                new RtcError({
+                  code: ErrorCode.INVALID_OPERATION,
+                  message: 'please close screen-sharing first'
+                })
+              )
+            }
           }
           this[type] = true
           const constraint:any = {
@@ -2223,7 +2247,7 @@ class Stream extends EventEmitter {
           message: 'no play'
         })
       }
-      await this._play.takeSnapshot(options)
+      await this._play.takeSnapshot(options, this.streamID);
       this.client.apiFrequencyControl({
         name: 'takeSnapshot',
         code: 0,

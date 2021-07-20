@@ -590,8 +590,7 @@ class Play extends EventEmitter {
   /**
   * 视频截图功能
   */
-  async takeSnapshot (options:SnapshotOptions,recordId?: string) {
-    let {uid} = options
+  async takeSnapshot (options:SnapshotOptions,streamId?: string|number) {
     let snapshotVideo = (!options.mediaType && this.videoDom) || options.mediaType === 'video';
     let snapshotScreen = (!options.mediaType && this.screenDom) || options.mediaType === 'screen';
 
@@ -605,7 +604,7 @@ class Play extends EventEmitter {
     }
     // video
     if (snapshotVideo){
-      const name = options.name || ((uid || this.adapterRef.channelInfo.uid) + '-' + this.index++);
+      const name = options.name || ((streamId || this.adapterRef.channelInfo.uid) + '-' + this.index++);
       ctx.fillStyle = '#ffffff'
       if (!this.videoDom){
         throw new RtcError({
@@ -638,7 +637,7 @@ class Play extends EventEmitter {
     }
     // screen
     if (snapshotScreen){
-      const name = options.name || ((uid || this.adapterRef.channelInfo.uid) + '-' + this.index++);
+      const name = options.name || ((streamId || this.adapterRef.channelInfo.uid) + '-' + this.index++);
       ctx.fillStyle = '#ffffff'
       if (!this.screenDom){
         throw new RtcError({

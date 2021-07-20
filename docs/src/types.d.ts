@@ -10,6 +10,8 @@ import {Client} from "./client";
  * - `CONNECTING`：建立网络连接中。
  * - `CONNECTED`：网络已连接。
  * - `DISCONNECTING`：网络连接断开中。
+ * 
+ * 参考 [[Client.getConnectionState]]
  */
 export declare type ConnectionState = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'DISCONNECTING';
 
@@ -460,38 +462,6 @@ export interface SubscribeOptions {
    * 0 表示小流，1 表示大流。
    */
   highOrLow?: 0|1;
-}
-
-  /**
-   * 视频属性配置参数。
-   */
-export interface VideoProfileOptions {
-  /**
-   * @param options.resolution 设置本端视频分辨率，详细信息请参考 [[NERTC.VIDEO_QUALITY]]。
-   */
-  resolution: number;
-  /**
-   * @param options.frameRate 设置本端视频帧率，详细信息请参考 [[NERTC.VIDEO_FRAME_RATE]]。
-   */
-  frameRate: number;
-}
-
-  /**
-   * 屏幕共享中的屏幕属性。
-   */
-export interface ScreenProfileOptions {
-  /**
-   * 设置本端屏幕共享分辨率。
-   * 
-   * NERTC.VIDEO_QUALITY_480p、NERTC.VIDEO_QUALITY_720p、NERTC.VIDEO_QUALITY_1080p
-   */
-  resolution: number;
-  /**
-   * 设置本端视频帧率。
-   * 
-   * NERTC.CHAT_VIDEO_FRAME_RATE_5、NERTC.CHAT_VIDEO_FRAME_RATE_10、NERTC.CHAT_VIDEO_FRAME_RATE_15、NERTC.CHAT_VIDEO_FRAME_RATE_20、NERTC.CHAT_VIDEO_FRAME_RATE_25
-   */
-  frameRate: number;
 }
 
 export interface LiveConfig {
