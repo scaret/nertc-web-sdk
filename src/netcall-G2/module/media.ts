@@ -101,6 +101,10 @@ class MediaHelper extends EventEmitter {
       this._stopTrack(this.screenStream)
     }
     this.screenStream = null
+    if (this.screenAudioStream){
+      this._stopTrack(this.screenAudioStream);
+    }
+    this.screenAudioStream = null
     this.mixAudioConf = {
       index: 0,
       audioBuffer: {}, //云端音频buffer数组
@@ -647,6 +651,9 @@ class MediaHelper extends EventEmitter {
       }
       if (this.screenTrack === track){
         this.screenTrack = null;
+      }
+      if (this.screenAudioTrack === track){
+        this.screenAudioTrack = null;
       }
     })
   }
