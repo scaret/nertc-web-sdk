@@ -174,6 +174,7 @@ export interface LoginEvent extends DataEvent{
   result:number;
   signal_time_elapsed:number;
   time_elapsed:number;
+  browser:String;
 }
 
 export interface ReloginEvent extends DataEvent{
