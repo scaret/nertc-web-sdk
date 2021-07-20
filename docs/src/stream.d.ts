@@ -398,9 +398,9 @@ declare interface Stream {
      */
     startMediaRecording(mediaRecordingOptions: {
       /**
-       * 流类型，即 'audio'、'video' 或 'screen'。
+       * 流类型，即 'audio'、'video' 或 'screen'。其中，`video` 或 `screen` 会带上音频。
        */
-      type: string;
+      type: 'audio'|'video'|'screen';
       /**
        * 如果之前的录制视频未下载，是否重置，默认 false。
        */
@@ -414,10 +414,10 @@ declare interface Stream {
     stopMediaRecording(options: {
 
       /**
-       * 录制 ID。可以通过 listMediaRecording 接口获取。
+       * 录制 ID。可以通过 [[Stream.listMediaRecording]] 接口获取。
        */
         recordId?: string;
-    }): Promise<unknown>;
+    }): Promise<any>;
 
     /**
      * 播放视频录制。

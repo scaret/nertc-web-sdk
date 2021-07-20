@@ -1716,6 +1716,22 @@ $('#recordList').on('click', (_event) => {
     $('#part-record .recordId').append(`<option>${item.id} ${item.status}</option>`)
   })
 })
+
+// 播放文件
+$('#recordPlayback').on('click', async (_event) => {
+  let stream
+  let uid = $('#recordUid').val()
+  if (rtc.client.getUid() == uid || !uid) {
+    stream = rtc.localStream
+  } else {
+    stream = rtc.remoteStreams[uid]
+  }
+  $('#mediaRecordingPlayback').html('');
+  const result = await stream.playMediaRecording({
+    view: document.getElementById('mediaRecordingPlayback'),
+    recordId: getRecordId()
+  })
+})
 // 下载文件
 $('#recordDownload').on('click', async (_event) => {
   let stream
@@ -1741,6 +1757,7 @@ $('#recordClean').on('click', (_event) => {
   } else {
     stream = rtc.remoteStreams[uid]
   }
+  $("#mediaRecordingPlayback").html('')
   stream.cleanMediaRecording({
     recordId: getRecordId()
   })

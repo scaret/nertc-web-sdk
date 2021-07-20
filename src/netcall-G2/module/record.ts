@@ -493,7 +493,7 @@ class Record extends EventEmitter {
     let dom = null
     if (this._status.mimeType.indexOf('audio') != -1) {
       dom = document.createElement('audio')
-    } else if (this._status.mimeType.indexOf('audio') != -1) {
+    } else if (this._status.mimeType.indexOf('video') != -1) {
       dom = document.createElement('video')
       dom.autoplay = true
     }else{
