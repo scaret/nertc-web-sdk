@@ -425,7 +425,7 @@ declare interface Stream {
      */
     playMediaRecording(options: {
       /**
-       * 录制 ID。可以通过 listMediaRecording 接口获取。
+       * 录制 ID。可以通过 [[Stream.listMediaRecording]] 接口获取。
        */
         recordId: string;
       /**
@@ -461,7 +461,7 @@ declare interface Stream {
      */
     cleanMediaRecording(options: {
       /**
-       * 录制 ID。可以通过 listMediaRecording 接口获取。
+       * 录制 ID。可以通过 [[Stream.listMediaRecording]] 接口获取。
        */
         recordId: string;
     }): Promise<void>;
@@ -472,7 +472,7 @@ declare interface Stream {
      */
     downloadMediaRecording(options: {
       /**
-       * 录制 ID。可以通过 listMediaRecording 接口获取。
+       * 录制 ID。可以通过 [[Stream.listMediaRecording]] 接口获取。
        */
         recordId: string;
     }): Promise<RecordStatus>;
@@ -666,7 +666,7 @@ declare interface Stream {
          - "Stream.setVolumeOfEffect:soundId": 参数格式错误
          - "Stream.setVolumeOfEffect:volume": 参数格式错误 
      */
-    setVolumeOfEffect (soundId: number) : Promise<unknown>
+    setVolumeOfEffect (soundId: number, volume: number) : Promise<unknown>
     /**
      * 预加载指定音效文件。
      * 
