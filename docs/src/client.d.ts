@@ -23,9 +23,26 @@ import {NetStatusItem} from "./types";
  */
 declare interface Client{
     /**
-     *  获取当前通话信息。
+     * 获取当前通话信息。
      */
-    getChannelInfo(): any;
+    getChannelInfo(): {
+      /**
+       * 频道ID，可用于服务端API调用。
+       */
+      cid: number;
+      /**
+       * 用户输入的频道名。
+       */
+      channelName: string;
+      /**
+       * 用户输入的id。当用户输入的uid为0时，则可获取服务端随机分配的uid。
+       */
+      uid: number|string;
+      /**
+       * 用户输入的token。
+       */
+      token: string;
+    };
 
     /**
      设置本地用户的媒体流优先级。
