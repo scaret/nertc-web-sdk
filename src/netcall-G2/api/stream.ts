@@ -149,8 +149,11 @@ class Stream extends EventEmitter {
   
   constructor (options:StreamOptions) {
     super()
-    
-    if (typeof options.uid === 'string' || BigNumber.isBigNumber(options.uid)) {
+    if(!options.uid){
+      // 允许不填uid
+      options.uid = `local_${localStreamCnt++}`;
+    }
+    else if (typeof options.uid === 'string' || BigNumber.isBigNumber(options.uid)) {
       options.client.adapterRef.logger.log('uid是string类型')
       options.client.adapterRef.channelInfo.uidType = 'string'
     } else if (typeof options.uid === 'number') {
@@ -163,8 +166,11 @@ class Stream extends EventEmitter {
         })
       }
     } else {
-      // 允许不填uid
-      options.uid = `local_${localStreamCnt++}`;
+      options.client.adapterRef.logger.error('uid参数格式非法')
+      throw new RtcError({
+        code: ErrorCode.INVALID_PARAMETER,
+        message: 'uid is invalid'
+      })
     }
     // init for ts rule
     this.isRemote = options.isRemote;
@@ -989,7 +995,7 @@ class Stream extends EventEmitter {
    * @return {Void}
    */
   stop (type?:MediaTypeShort) {
-    this.client.adapterRef.logger.log('停止播放 %s 音视频流', this.stringStreamID)
+    this.client.adapterRef.logger.log('Stream.stop: 停止播放 %s %s。', this.stringStreamID, type || "音视频流")
     if(!this._play) return
     if (type === 'audio') {
       this._play.stopPlayAudioStream()
