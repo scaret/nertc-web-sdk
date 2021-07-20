@@ -10,6 +10,8 @@ import {Client} from "./client";
  * - `CONNECTING`：建立网络连接中。
  * - `CONNECTED`：网络已连接。
  * - `DISCONNECTING`：网络连接断开中。
+ * 
+ * 参考 [[Client.getConnectionState]]
  */
 export declare type ConnectionState = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'DISCONNECTING';
 

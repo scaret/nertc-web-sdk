@@ -124,7 +124,7 @@ declare interface Client{
      * @param stream 指定音视频流。
      * @param highOrLow 指定大小流类型。0 表示小流，1 表示大流。
     */
-    setRemoteVideoStreamType(stream: Stream, highOrLow: number): Promise<void>;
+    setRemoteVideoStreamType(stream: Stream, highOrLow: 0|1): Promise<void>;
 
   /**
    设置用户角色。默认情况下用户以主播角色加入房间。
@@ -160,15 +160,19 @@ declare interface Client{
      + 在实时音视频通话等业务场景中，主动获取房间的网络连接状态，以此完成上层业务逻辑。
      
      SDK 与服务器的连接状态，共有以下 4 种：
-     - `DISCONNECTED`：网络连接断开。该状态表示 SDK 处于：
-        - 调用`Client.join`加入房间前的初始化阶段。
-        - 调用`Client.leave`离开房间之后。
-     - `CONNECTING`：建立网络连接中。该状态表示 SDK 处于：
-         - 调用`Client.join`之后正在与指定房间建立连接。
-         - 通话过程中，连接中断自动重连。
-     - `CONNECTED`：已连接。该状态表示用户已经成功加入房间，可以在房间内发布或订阅媒体流。
-         - `DISCONNECTING`：正在断开连接。
-         - 在调用 `Client.leave` 的时候为此状态。
+     
+     + `DISCONNECTED`：网络连接断开。该状态表示 SDK 处于：
+            1. 调用 [[Client.join]] 加入房间前的初始化阶段。
+            2. 调用 [[Client.leave]] 离开房间之后。
+
+     + `CONNECTING`：建立网络连接中。该状态表示 SDK 处于：
+         1. 调用 [[Client.join]] 之后正在与指定房间建立连接。
+         2. 通话过程中，连接中断自动重连。
+
+     + `CONNECTED`：已连接。该状态表示用户已经成功加入房间，可以在房间内发布或订阅媒体流。
+
+     + `DISCONNECTING`：正在断开连接。
+         1. 在调用 [[Client.leave]] 的时候为此状态。
      */
     getConnectionState(): ConnectionState;
 
@@ -254,7 +258,7 @@ declare interface Client{
      * 如果在 join 方法中指定了 uid，此处会返回指定的 ID; 如果未指定 uid，此处将返回云信服务器自动分配的 ID。
      * @since V4.4.0
      */
-     getUid(): number | null;
+     getUid(): number | string |null;
     /**
      * 设置房间场景。
      * 
