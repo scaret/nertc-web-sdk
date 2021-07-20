@@ -1125,21 +1125,39 @@ class Stream extends EventEmitter {
         case 'screen':
           this.client.adapterRef.logger.log(`开启${type === 'video' ? 'camera' : 'screen'}设备`)
           if (this[type]) {
-            this.client.adapterRef.logger.log('请先关闭摄像头或者屏幕共享')
-            this.client.apiFrequencyControl({
-              name: 'open',
-              code: -1,
-              param: JSON.stringify({
-                reason: '请先关闭摄像头或者屏幕共享',
-                type
-              }, null, ' ')
-            })
-            return Promise.reject(
-              new RtcError({
-                code: ErrorCode.INVALID_OPERATION,
-                message: 'please close video or screen-sharing first'
+            if (type === "video"){
+              this.client.adapterRef.logger.log('请先关闭摄像头')
+              this.client.apiFrequencyControl({
+                name: 'open',
+                code: -1,
+                param: JSON.stringify({
+                  reason: '请先关闭摄像头',
+                  type
+                }, null, ' ')
               })
-            )
+              return Promise.reject(
+                new RtcError({
+                  code: ErrorCode.INVALID_OPERATION,
+                  message: 'please close video first'
+                })
+              )
+            }else{
+              this.client.adapterRef.logger.log('请先关闭屏幕共享')
+              this.client.apiFrequencyControl({
+                name: 'open',
+                code: -1,
+                param: JSON.stringify({
+                  reason: '请先关闭屏幕共享',
+                  type
+                }, null, ' ')
+              })
+              return Promise.reject(
+                new RtcError({
+                  code: ErrorCode.INVALID_OPERATION,
+                  message: 'please close screen-sharing first'
+                })
+              )
+            }
           }
           this[type] = true
           const constraint:any = {
