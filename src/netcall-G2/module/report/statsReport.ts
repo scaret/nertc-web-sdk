@@ -127,23 +127,25 @@ class StatsReport extends EventEmitter {
   }
 
   calculateReport(result:any) {
-    // 正在通话中，远端加入其他音频、视频或屏幕分享流
-    let la = result.local.audio_ssrc ? result.local.audio_ssrc : [],
-      lv = result.local.video_ssrc ? result.local.video_ssrc : [],
-      ra = result.remote.audio_ssrc ? result.remote.audio_ssrc : [],
-      rv = result.remote.video_ssrc ? result.remote.audio_ssrc : [],
-      rs = result.remote.screen_ssrc ? result.remote.screen_ssrc : [];
-
-    if(!isEmpty(this.prevStats_)) {
-      var pla = this.prevStats_.local.audio_ssrc ? this.prevStats_.local.audio_ssrc : [],
-        plv = this.prevStats_.local.video_ssrc ? this.prevStats_.local.video_ssrc : [],
-        pra = this.prevStats_.remote.audio_ssrc ? this.prevStats_.remote.audio_ssrc : [],
-        prv = this.prevStats_.remote.video_ssrc ? this.prevStats_.remote.video_ssrc : [],
-        prs = this.prevStats_.remote.screen_ssrc ? this.prevStats_.remote.screen_ssrc : [];
-    }
     
-    // 目前只有Chrome有下列数据
+    
     if(env.IS_CHROME){
+      // chrome 浏览器 正在通话中，远端加入其他音频、视频或屏幕分享流
+      let la = result.local.audio_ssrc ? result.local.audio_ssrc : [],
+        lv = result.local.video_ssrc ? result.local.video_ssrc : [],
+        ra = result.remote.audio_ssrc ? result.remote.audio_ssrc : [],
+        rv = result.remote.video_ssrc ? result.remote.video_ssrc : [],
+        rs = result.remote.screen_ssrc ? result.remote.screen_ssrc : [];
+
+      if(!isEmpty(this.prevStats_)) {
+        var pla = this.prevStats_.local.audio_ssrc ? this.prevStats_.local.audio_ssrc : [],
+          plv = this.prevStats_.local.video_ssrc ? this.prevStats_.local.video_ssrc : [],
+          pra = this.prevStats_.remote.audio_ssrc ? this.prevStats_.remote.audio_ssrc : [],
+          prv = this.prevStats_.remote.video_ssrc ? this.prevStats_.remote.video_ssrc : [],
+          prs = this.prevStats_.remote.screen_ssrc ? this.prevStats_.remote.screen_ssrc : [];
+      }
+    
+
       if(isEmpty(this.prevStats_) || (la.length !== pla.length) || (lv.length !== plv.length) || (ra.length !== pra.length) || (rv.length !== prv.length) || (rs.length !== prs.length) ) {
         this.prevStats_ = result;
         if(Object.keys(this.prevStats_.local).length){
@@ -182,6 +184,59 @@ class StatsReport extends EventEmitter {
           }
         }
       }
+    }else if(env.IS_SAFARI) {
+      // safari 浏览器
+    let sla = result.local.audio_outbound_rtp ? result.local.audio_outbound_rtp : [],
+      slv = result.local.video_outbound_rtp ? result.local.video_outbound_rtp : [],
+      sra = result.remote.audio_inbound_rtp ? result.remote.audio_inbound_rtp : [],
+      srv = result.remote.video_inbound_rtp ? result.remote.video_inbound_rtp : [];
+
+    if(!isEmpty(this.prevStats_)) {
+      var spla = this.prevStats_.local.audio_outbound_rtp ? this.prevStats_.local.audio_outbound_rtp : [],
+        splv = this.prevStats_.local.video_outbound_rtp ? this.prevStats_.local.video_outbound_rtp : [],
+        spra = this.prevStats_.remote.audio_inbound_rtp ? this.prevStats_.remote.audio_inbound_rtp : [],
+        sprv = this.prevStats_.remote.video_inbound_rtp ? this.prevStats_.remote.video_inbound_rtp : [];
+    }
+
+      if(isEmpty(this.prevStats_) || (sla.length !== spla.length) || (slv.length !== splv.length) || (sra.length !== spra.length) || (srv.length !== sprv.length) ) {
+        this.prevStats_ = result;
+        if(Object.keys(this.prevStats_.local).length){
+          this.prevStats_.local.audio_outbound_rtp[0].bytesSentPerSecond = this.prevStats_.local.audio_outbound_rtp[0].bytesSent;
+          this.prevStats_.local.video_outbound_rtp[0].bytesSentPerSecond = this.prevStats_.local.video_outbound_rtp[0].bytesSent;
+          this.prevStats_.local.video_outbound_rtp[0].framesEncodedPerSecond = this.prevStats_.local.video_outbound_rtp[0].framesEncoded;
+        }
+        for(let item in this.prevStats_.remote){
+          if(item.indexOf('inbound_rtp') > -1) {
+            for(let i = 0; i < this.prevStats_.remote[item].length; i++){
+              this.prevStats_.remote[item][i].bytesReceivedPerSecond = this.prevStats_.remote[item][i].bytesReceived;
+              if(this.prevStats_.remote[item][i].mediaType === 'video') {
+                this.prevStats_.remote[item][i].framesDecodedPerSecond = this.prevStats_.remote[item][i].framesDecoded;
+              }
+            }
+          }
+        }
+      }else {
+        let local = result.local;
+        let prevLocal = this.prevStats_.local;
+        let remote = result.remote;
+        let prevRemote = this.prevStats_.remote;
+        if(Object.keys(local).length){
+          local.audio_outbound_rtp[0].bytesSentPerSecond = (local.audio_outbound_rtp[0].bytesSent - 0 - prevLocal.audio_outbound_rtp[0].bytesSent)/2;
+          local.video_outbound_rtp[0].bytesSentPerSecond = (local.video_outbound_rtp[0].bytesSent - 0 - prevLocal.video_outbound_rtp[0].bytesSent)/2;
+          local.video_outbound_rtp[0].framesEncodedPerSecond = (local.video_outbound_rtp[0].framesEncoded - 0 - prevLocal.video_outbound_rtp[0].framesEncoded)/2;
+        }
+        for(let item in remote){
+          if(item.indexOf('inbound_rtp') > -1) {
+            for(let i = 0; i < remote[item].length; i++){
+              remote[item][i].bytesReceivedPerSecond = (remote[item][i].bytesReceived - 0 - prevRemote[item][i].bytesReceived)/2;
+              if(this.prevStats_.remote[item][i].mediaType === 'video') {
+                remote[item][i].framesDecodedPerSecond = (remote[item][i].framesDecoded - 0 - prevRemote[item][i].framesDecoded)/2;
+              }
+            }
+          }
+        }
+      }
+
     }
     
     this.prevStats_ = result;
