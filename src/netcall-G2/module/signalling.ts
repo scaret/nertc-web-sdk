@@ -18,6 +18,7 @@ import {RTSTransport} from "./rtsTransport";
 import { parseBase64 } from "../util/crypto-ts/base64";
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
+import {platform} from "../util/platform";
 const protooClient = require('./3rd/protoo-client/')
 
 class Signalling extends EventEmitter {
@@ -728,7 +729,8 @@ class Signalling extends EventEmitter {
           result: 0,
           server_ip: this.adapterRef.channelInfo._protooUrl,
           signal_time_elapsed: webrtc2Param.startWssTime - webrtc2Param.startJoinTime,
-          time_elapsed: currentTime - webrtc2Param.startJoinTime
+          time_elapsed: currentTime - webrtc2Param.startJoinTime,
+          browser: platform.name + '-' + platform.version
         })
         if (!this.adapterRef._mediasoup){
           throw new RtcError({
@@ -846,7 +848,8 @@ class Signalling extends EventEmitter {
       result: reasonCode,
       server_ip: this.adapterRef.channelInfo._protooUrl,
       signal_time_elapsed: webrtc2Param.startWssTime - webrtc2Param.startJoinTime,
-      time_elapsed: currentTime - webrtc2Param.startJoinTime
+      time_elapsed: currentTime - webrtc2Param.startJoinTime,
+      browser: platform.name + '-' + platform.version
     })
 
     //重连时的login失败，执行else的内容

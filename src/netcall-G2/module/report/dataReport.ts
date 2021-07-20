@@ -152,7 +152,7 @@ class DataReport {
    * @param {int}  options.time long	登入时间点,NTP时间	3.4.0	是
    * @param {int}  options.signal_time_elapsed long  join过程中，完成与dispatch server之间的信令交互所花费的总时长(单位为 毫秒) 3.4.0 是
    * @param {int}  options.time_elapsed long  join 成功所花费的总时长(单位为 毫秒) 3.4.0 是
-   * 
+   * @param {String}  options.browser String 浏览器版本号 3.4.0 是
    */
   setLogin (loginEvent:LoginEvent){
   
@@ -161,6 +161,7 @@ class DataReport {
     loginEvent.platform = loginEvent.platform || 'Web';
     loginEvent.app_key = loginEvent.app_key || this.common.app_key;
     loginEvent.meeting_mode = loginEvent.meeting_mode || 1;
+    loginEvent.browser = loginEvent.browser;
     this.addEvent("login", loginEvent);
   }
 
