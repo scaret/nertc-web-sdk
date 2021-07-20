@@ -7,10 +7,8 @@ import {
   NERtcCanvasWatermarkConfig,
   MediaType,
   RenderMode,
-  ScreenProfileOptions,
   StreamOptions,
   SubscribeOptions,
-  VideoProfileOptions,
   RecordStartOptions, RecordStatus
 } from "./types";
 /**
@@ -117,7 +115,7 @@ declare interface Stream {
      * @param options 配置对象。
      * @param mediaType 媒体流类型。即指定设置的是摄像头画面还是屏幕共享画面。
      */
-    setLocalRenderMode(options: RenderMode, mediaType?: MediaType): "INVALID_ARGUMENTS" | undefined;
+    setLocalRenderMode(options: RenderMode, mediaType?: "video"|"screen"): "INVALID_ARGUMENTS" | undefined;
     /**
      * 设置远端视频画布。
      * 
@@ -125,7 +123,7 @@ declare interface Stream {
      * @param options 配置对象。
      * @param mediaType 媒体流类型。即指定设置的是摄像头画面还是屏幕共享画面。
      */
-    setRemoteRenderMode(options: RenderMode, mediaType?: MediaType): void;
+    setRemoteRenderMode(options: RenderMode, mediaType?: "video"|"screen"): void;
     /**
      * 停止音视频流。
      * 
@@ -250,11 +248,11 @@ declare interface Stream {
      * * "video": 视频输入设备
      * @param deviceId 设备的 ID，可以通过 getDevices 方法获取。获取的 ID 为 ASCII 字符，字符串长度大于 0 小于 256 字节。
      */
-    switchDevice(type: string, deviceId: string): Promise<void>;
+    switchDevice(type: "audio"|"video", deviceId: string): Promise<void>;
     /**
      * 启用视频轨道。
      * 
-     * 视频轨道默认为开启状态。如果您调用了 muteVideo，可调用本方法启用视频轨道。
+     * 视频轨道默认为开启状态。如果您调用了 [[Stream.muteVideo]]，可调用本方法启用视频轨道。
      * 
      * 对本地流启用视频轨道后远端会触发 Client.on("unmute-video") 回调。
      * 
@@ -296,10 +294,32 @@ declare interface Stream {
     hasVideo(): boolean;
 
     /**
-    * 设置视频属性。
-    * @param options 配置参数。
-    */
-    setVideoProfile(options: VideoProfileOptions): void;
+     * 设置视频属性。
+     * @example
+     * ```javascript
+     * rtc.localStream = createStream({
+     *   video: true,
+     *   audio: true,
+     *   uid: 123,
+     *   client: rtc.client
+     * });
+     * rtc.localStream.setVideoProfile({
+     *   resolution: NERTC.VIDEO_QUALITY.VIDEO_QUALITY_1080p,
+     *   frameRate: NERTC.VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_15,
+     * })
+     * await rtc.localStream.init()
+     * ```
+     */
+    setVideoProfile(options: {
+      /**
+       * 设置本端视频分辨率，详细信息请参考 [[NERTC.VIDEO_QUALITY]]。
+       */
+      resolution: number;
+      /**
+       * 设置本端视频帧率，详细信息请参考 [[NERTC.VIDEO_FRAME_RATE]]。
+       */
+      frameRate: number;
+    }): void;
       /**
      * 获取屏幕共享 flag。
      * 
@@ -321,8 +341,34 @@ declare interface Stream {
      * @note 该方法仅可对本地流调用。
      * 
      * @param profile 屏幕属性。
+     * 
+     * @example
+     * ```javascript
+     * rtc.localStream = createStream({
+     *   screen: true,
+     *   uid: 456,
+     *   client: rtc.client
+     * });
+     * rtc.localStream.setScreenProfile({
+     *   resolution: NERTC.VIDEO_QUALITY.VIDEO_QUALITY_1080p,
+     *   frameRate: NERTC.VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_15,
+     * })
+     * await rtc.localStream.init()
+     * ```
+     * 
     */
-    setScreenProfile(profile: ScreenProfileOptions): void;
+    setScreenProfile(profile: {
+      /**
+       * 设置本端屏幕共享分辨率。参考[[NERTC.VIDEO_QUALITY]]。
+       *
+       */
+      resolution: number;
+      /**
+       * 设置本端屏幕共享帧率。参考[[NERTC.VIDEO_FRAME_RATE]]。
+       *
+       */
+      frameRate: number;
+    }): void;
 
     /**
      * 设置分辨率。

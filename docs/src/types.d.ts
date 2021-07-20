@@ -464,38 +464,6 @@ export interface SubscribeOptions {
   highOrLow?: 0|1;
 }
 
-  /**
-   * 视频属性配置参数。
-   */
-export interface VideoProfileOptions {
-  /**
-   * @param options.resolution 设置本端视频分辨率，详细信息请参考 [[NERTC.VIDEO_QUALITY]]。
-   */
-  resolution: number;
-  /**
-   * @param options.frameRate 设置本端视频帧率，详细信息请参考 [[NERTC.VIDEO_FRAME_RATE]]。
-   */
-  frameRate: number;
-}
-
-  /**
-   * 屏幕共享中的屏幕属性。
-   */
-export interface ScreenProfileOptions {
-  /**
-   * 设置本端屏幕共享分辨率。
-   * 
-   * NERTC.VIDEO_QUALITY_480p、NERTC.VIDEO_QUALITY_720p、NERTC.VIDEO_QUALITY_1080p
-   */
-  resolution: number;
-  /**
-   * 设置本端视频帧率。
-   * 
-   * NERTC.CHAT_VIDEO_FRAME_RATE_5、NERTC.CHAT_VIDEO_FRAME_RATE_10、NERTC.CHAT_VIDEO_FRAME_RATE_15、NERTC.CHAT_VIDEO_FRAME_RATE_20、NERTC.CHAT_VIDEO_FRAME_RATE_25
-   */
-  frameRate: number;
-}
-
 export interface LiveConfig {
   /**
    * 互动直播开关。加入房间时此开关默认开启。
