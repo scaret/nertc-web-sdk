@@ -113,14 +113,12 @@ export default class WSTransport {
       onmessage(event:any) {
         if (!this.isConnected_) return; // close was requested.
         // deal with pb data
-        if(event && event.data && event.data.stream()) {
-          const reader = event.data.stream().getReader();
+        if(event && event.data) {
+          const reader = event.data.arrayBuffer();
           if(reader) {
-            // @ts-ignore
-            reader.read().then(({done, value}) => {
-              // console.log("done--->",done);
-              // console.log("value--->",value);
-              (value[0] == 11) && this.emit(PONG, event);
+              reader.then((buffer:any) => {
+                let value = new Uint8Array(buffer);
+                (value[0] == 11) && this.emit(PONG, event);
             })
           } 
         }
