@@ -371,27 +371,16 @@ declare interface Stream {
     }): void;
 
     /**
-     * 设置分辨率。
-     * 
-     * @param MediaType 媒体流类型。
-    */
-    adjustResolution(MediaType: MediaType): void;
-
-    /**
      * 截取指定用户的视频流画面。
      * 
      * 截图文件保存在浏览器默认路径下。
      * 
      * @note
-     * - 本地视频流截图，需要在 Client.join 并 Client.publish 发布流成功之后调用。
+     * - v4.5.0之前，本地视频流截图，需要在 Client.join 并 Client.publish 发布流成功之后调用。
      * - 远端视频流截图，需要在  Client.subscribe 订阅远端视频流之后调用。
-     * - 同时设置文字、时间戳或图片水印时，如果不同类型的水印位置有重叠，会按照图片、文本、时间戳的顺序进行图层覆盖。
+     * - 水印不会被截图。
      */
     takeSnapshot(options: {
-      /**
-       * 用户 ID。
-       */
-      uid: number|string;
       /**
        * 截图文件名称，默认格式为 uid-1。
        */
@@ -399,7 +388,7 @@ declare interface Stream {
       /**
        * 截图的视频流类型。
        */
-      mediaType?: MediaType;
+      mediaType?: "video"|"screen";
     }): Promise<"INVALID_OPERATION" | undefined>;
 
     /**

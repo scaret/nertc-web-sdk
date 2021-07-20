@@ -817,7 +817,6 @@ export interface ScreenProfileOptions{
 }
 
 export interface SnapshotOptions{
-  uid: number|string;
   name: string;
   mediaType?: MediaTypeShort;
 }

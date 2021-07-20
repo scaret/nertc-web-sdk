@@ -2229,7 +2229,7 @@ class Stream extends EventEmitter {
           message: 'no play'
         })
       }
-      await this._play.takeSnapshot(options)
+      await this._play.takeSnapshot(options, this.streamID);
       this.client.apiFrequencyControl({
         name: 'takeSnapshot',
         code: 0,
