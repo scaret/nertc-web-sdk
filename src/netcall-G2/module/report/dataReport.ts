@@ -79,7 +79,7 @@ class DataReport {
     if (event.time){
       event.time = event.time + this.time;
     }else{
-      console.warn(`addEvent:事件${eventName}没有time属性。使用当前时间戳`);
+      this.adapterRef.logger.warn(`addEvent:事件${eventName}没有time属性。使用当前时间戳`);
       event.time = Date.now();
     }
     this.eventMap[eventName] = event;
