@@ -158,6 +158,7 @@ class StatsReport extends EventEmitter {
           if(item.indexOf('ssrc') > -1) {
             for(let i = 0; i < this.prevStats_.remote[item].length; i++){
               this.prevStats_.remote[item][i].bytesReceivedPerSecond = this.prevStats_.remote[item][i].bytesReceived;
+              this.prevStats_.remote[item][i].packetsLostPerSecond = this.prevStats_.remote[item][i].packetsLost;
               if(this.prevStats_.remote[item][i].mediaType === 'video') {
                 this.prevStats_.remote[item][i].framesDecodedPerSecond = this.prevStats_.remote[item][i].framesDecoded;
               }
@@ -178,6 +179,7 @@ class StatsReport extends EventEmitter {
           if(item.indexOf('ssrc') > -1) {
             for(let i = 0; i < remote[item].length; i++){
               remote[item][i].bytesReceivedPerSecond = (remote[item][i].bytesReceived - 0 - prevRemote[item][i].bytesReceived)/2;
+              remote[item][i].packetsLostPerSecond = (remote[item][i].packetsLost - 0 - prevRemote[item][i].packetsLost)/2;
               if(this.prevStats_.remote[item][i].mediaType === 'video') {
                 remote[item][i].framesDecodedPerSecond = (remote[item][i].framesDecoded - 0 - prevRemote[item][i].framesDecoded)/2;
               }
@@ -210,6 +212,7 @@ class StatsReport extends EventEmitter {
           if(item.indexOf('inbound_rtp') > -1) {
             for(let i = 0; i < this.prevStats_.remote[item].length; i++){
               this.prevStats_.remote[item][i].bytesReceivedPerSecond = this.prevStats_.remote[item][i].bytesReceived;
+              this.prevStats_.remote[item][i].packetsLostPerSecond = this.prevStats_.remote[item][i].packetsLost;
               if(this.prevStats_.remote[item][i].mediaType === 'video') {
                 this.prevStats_.remote[item][i].framesDecodedPerSecond = this.prevStats_.remote[item][i].framesDecoded;
               }
@@ -230,6 +233,7 @@ class StatsReport extends EventEmitter {
           if(item.indexOf('inbound_rtp') > -1) {
             for(let i = 0; i < remote[item].length; i++){
               remote[item][i].bytesReceivedPerSecond = (remote[item][i].bytesReceived - 0 - prevRemote[item][i].bytesReceived)/2;
+              remote[item][i].packetsLostPerSecond = (remote[item][i].packetsLost - 0 - prevRemote[item][i].packetsLost)/2;
               if(this.prevStats_.remote[item][i].mediaType === 'video') {
                 remote[item][i].framesDecodedPerSecond = (remote[item][i].framesDecoded - 0 - prevRemote[item][i].framesDecoded)/2;
               }
