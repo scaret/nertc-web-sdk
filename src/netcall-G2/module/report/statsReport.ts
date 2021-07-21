@@ -91,7 +91,8 @@ class StatsReport extends EventEmitter {
     let checkSum = sha1(`${PROD}${timestamp}${SDK_VERSION}${platform}${sdktype}${deviceId}${salt}`);
     let url = `${wsURL}?deviceId=${deviceId}&isTest=${PROD}&sdkVer=${SDK_VERSION}&sdktype=${sdktype}&timestamp=${timestamp}&platform=${platform}&checkSum=${checkSum}`;
     this.wsTransport_ = new WSTransport({
-      url: url,      
+      url: url,
+      adapterRef: this.adapterRef
     })
     this.wsTransport_.init();
   }
@@ -99,14 +100,14 @@ class StatsReport extends EventEmitter {
   startHeartbeat() {
     if (this.heartbeat_ === -1) {
       const heartbeatInterval = 2000;
-      console.log('startHeartbeat...');
+      this.adapterRef.logger.log('startHeartbeat...');
       this.heartbeat_ = raf.setInterval(this.doHeartbeat.bind(this), heartbeatInterval);
     }
   }
 
   stopHeartbeat() {
     if (this.heartbeat_ !== -1) {
-      console.log('stopHeartbeat');
+      // this.adapterRef.logger.log('stopHeartbeat...');
       raf.clearInterval(this.heartbeat_);
       this.heartbeat_ = -1;
     }
@@ -119,7 +120,7 @@ class StatsReport extends EventEmitter {
       // console.log('data--->', reportData)
       this.wsTransport_.sendPB(reportData);
     } catch (error) {
-      // this.adapterRef.logger.error('getStats失败：' , error);
+      this.adapterRef.logger.error('getStats失败：' , error);
       console.log(error);
     }
     

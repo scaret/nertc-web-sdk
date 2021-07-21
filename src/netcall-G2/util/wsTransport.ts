@@ -3,6 +3,7 @@ import { getReconnectionTimeout } from '../util/rtcUtil/utils';
 import * as protobuf  from 'protobufjs';
 import heartbeatStats = require('../util/proto/heartbeatStats');
 import { ConsoleLogger } from 'typedoc/dist/lib/utils';
+import { AdapterRef } from "../types";
 
 const PING_PONG_INTERVAL = 10000;
 const PING_TIMEOUT = 10000;
@@ -21,6 +22,7 @@ export default class WSTransport {
     private reconnectionTimer_: any;
     private reconnectionCount_: number;
     private emitter_: any;
+    private adapterRef:AdapterRef;
     
 
     constructor(options: any){
@@ -34,9 +36,10 @@ export default class WSTransport {
         this.reconnectionTimer_ = -1;
         this.reconnectionCount_ = 0;
         this.emitter_ = new EventEmitter();
+        this.adapterRef = options.adapterRef
     }
     init() {
-        console.log(`connect to url: ${this.url_}`);
+        this.adapterRef.logger.log(`connect to url: ${this.url_}`);
         this.socket_ = new WebSocket(this.url_);
         this.bindSocket(this.socket_);
     }
@@ -62,7 +65,7 @@ export default class WSTransport {
             this.socketInUse_ = this.socket_;
         }
         const url = event.target.url;
-        console.log(` websocket[${url}] is connected`);
+        this.adapterRef.logger.log(`websocket[${url}] is connected`);
         // console.log('start ping pong');
         this.startPingPong();
     }
@@ -70,9 +73,7 @@ export default class WSTransport {
     onclose(event:any) {
         const url = event.target.url;
         const isInUse = event.target === this.socketInUse_;
-        console.log(
-          ` websocket[${url} InUse: ${isInUse}] is closed with code: ${event.code}`
-        );
+        this.adapterRef.logger.log(`websocket[${url} InUse: ${isInUse}] is closed with code: ${event.code}`);
         // only handle the close event for the socket in use
         if (event.target === this.socketInUse_) {
           // mark the wsTrasnport is disconnected
@@ -81,7 +82,7 @@ export default class WSTransport {
           if (event.wasClean && event.code === 1000) {
             // this.close();
           } else {
-            console.warn(`onclose code:${event.code} reason:${event.reason}`);
+            this.adapterRef.logger.warn(`onclose code:${event.code} reason:${event.reason}`);
             this.socketInUse_.onclose = () => {};
             // 4001 indicates that we want reconnect with new WebSocket
             this.socketInUse_.close(4001);
@@ -96,7 +97,7 @@ export default class WSTransport {
 
       onerror(event:any) {
         const url = event.target.url;
-        console.warn(`websocket[${url}] error observed`);
+        this.adapterRef.logger.warn(`websocket[${url}] error observed`);
         if (!this.isConnected_) {
           // WS connection failed at the first time
           this.reconnect()
@@ -112,17 +113,10 @@ export default class WSTransport {
 
       onmessage(event:any) {
         if (!this.isConnected_) return; // close was requested.
-        // deal with pb data
         if(event && event.data) {
-          const reader = event.data.arrayBuffer();
-          if(reader) {
-              reader.then((buffer:any) => {
-                let value = new Uint8Array(buffer);
-                (value[0] == 11) && this.emit(PONG, event);
-            })
-          } 
+          let data = JSON.parse(event.data);
+          (data.action === 11) && this.emit(PONG, event);
         }
-        
       }
 
       isConnected() {
@@ -179,7 +173,7 @@ export default class WSTransport {
             this.startPingPong();
           }, PING_PONG_INTERVAL);
         } catch (error) {
-          console.log('ping-pong failed, start reconnection');
+          this.adapterRef.logger.log('ping-pong failed, start reconnection');
           this.close();
           this.reconnect();
         }
@@ -187,7 +181,7 @@ export default class WSTransport {
       }
 
       stopPingPong() {
-        console.log('stop ping pong');
+        this.adapterRef.logger.log('stop ping pong');
         clearTimeout(this.pingTimeoutId_);
         clearTimeout(this.pingPongTimeoutId_);
         this.pingTimeoutId_ = -1;
@@ -216,7 +210,7 @@ export default class WSTransport {
 
       reconnect() {
         if(this.isConnecting_ || this.reconnectionTimer_ !== -1) {
-          console.log("websocket is reconnecting");
+          this.adapterRef.logger.log('websocket is reconnecting');
           return;
         }
         this.isConnecting_ = true;
@@ -249,7 +243,7 @@ export default class WSTransport {
       }
 
       close() {
-        console.log('close websocket');
+        this.adapterRef.logger.log('close websocket');
         this.clearReconnectionTimer();
         this.stopPingPong();
         this.socketInUse_ && this.unbindSocket(this.socketInUse_);
