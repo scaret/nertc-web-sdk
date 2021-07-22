@@ -7,9 +7,7 @@ import {
   NERtcCanvasWatermarkConfig,
   MediaType,
   RenderMode,
-  StreamOptions,
-  SubscribeOptions,
-  RecordStartOptions, RecordStatus
+  RecordStatus
 } from "./types";
 /**
  * 音视频流对象。
