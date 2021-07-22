@@ -1192,6 +1192,9 @@ class Stream extends EventEmitter {
       if (["audio", "video", "screen"].indexOf(type) > -1){
         //@ts-ignore
         this[type] = false
+        if (type === "screen" && options.screenAudio){
+          this.screenAudio = false
+        }
       }
       this.client.adapterRef.logger.log(`${type} 开启失败: `, e.message)
       this.client.apiFrequencyControl({
