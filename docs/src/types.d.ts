@@ -2,7 +2,7 @@
  * Copyright (c) 2021 NetEase, Inc.  All rights reserved.
  */
 
-import {Client} from "./client";
+import { Client } from "./client";
 
 /**
  * 网络连接状态。包括：
@@ -412,10 +412,12 @@ export interface StreamOptions {
    * - false：（默认）屏幕共享时不共享本地播放的背景音。
    * 
    * @note
-   * - 该功能仅支持 Windows 和 macOS 平台 Chrome 浏览器 74 及以上版本。其中 macOS 平台的 Chrome 浏览器仅支持 Chrome 标签页（Chrome Tab）模式。
+   * - 如需使用屏幕共享背景音功能，还需要在屏幕共享的弹出框中，勾选 **分享音频**（Share audio）。
+   * - 该功能仅支持 Windows 和 macOS 平台 Chrome 浏览器 74 及以上版本。需要注意的是:
+   *    1. macOS 平台的 Chrome 浏览器仅支持 Chrome 标签页（Chrome Tab）模式。
+   *    2. 由于系统限制，分享当前的屏幕和页面时，无法将SDK接收到的声音再通过屏幕共享分享出去。
    * - 如需使用屏幕共享背景音功能，必须将 screen 设为 true。如此时audio设为true，则输出为麦克风与屏幕共享背景音的混音。[[Stream.setAudioProfile]] 推荐设置为 `high_quality_stereo`。
    * - 在V4.4.0版本之前，screenAudio和audio不能同时开启。
-   * - 如需使用屏幕共享背景音功能，还需要在屏幕共享的弹出框中，勾选 **分享音频**（Share audio）。
    */
  screenAudio?: boolean;
   /**

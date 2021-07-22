@@ -237,7 +237,6 @@ async function loadTokenByAppKey(){
   let appkey = $("#appkey").val();
   let AppSecret = $("#AppSecret").val();
   let uid = getUidFromDomInput();
-  console.error("uid", uid);
   let channelName = $("#channelName").val();
   let safemode = $('#part-env input[name="safemode"]:checked').val() === "safe"
   if (AppSecret && safemode && channelName){
@@ -785,7 +784,7 @@ $('#joinChannel-btn').on('click', async () => {
       }
       return;
     }
-    if( $('#enableAudio').prop('checked') || $('#enableVideo').prop('checked') || $('#enableScreen').prop('checked') ) {
+    if( $('#enableAudio').prop('checked') || $('#enableVideo').prop('checked') || $('#enableScreen').prop('checked') || $('#enableScreenAudio').prop('checked') ) {
       let audio = video = false
       if ($('#privateAudio').prop('checked') && $('#privateVideo').prop('checked')) {
         audio = video = true
@@ -805,6 +804,8 @@ $('#joinChannel-btn').on('click', async () => {
       } else {
         initLocalStream()
       }
+    }else{
+      addLog("加入频道后未执行初始化本地流")
     }
     const { cid } = rtc.client.getChannelInfo()
     $('#cid').html(`${cid} <a target="_blank" href="https://qs.netease.im/qs_inner/v2/static/rtc2/roomDetailInner?cid=${cid}">QS</a> <a target="_blank" href="http://vcloud-statics.hz.netease.com/grafana/d/ujxuS1hGz/ri-zhi-shang-chuan-wen-jian-xia-zai?orgId=1&var-cid=${cid}&var-uid=">日志</a>`)
@@ -1021,7 +1022,7 @@ function initLocalStream(audioSource, videoSource) {
       addLog("Electron屏幕共享：" + sourceId)
     }
   }
-  rtc.localStream = NERTC.createStream({
+  const createStreamOptions = {
     uid: getUidFromDomInput() || rtc.client.getChannelInfo().uid,
     audio: $('#enableAudio').prop('checked'),
     audioProcessing: getAudioProcessingConfig(),
@@ -1033,7 +1034,13 @@ function initLocalStream(audioSource, videoSource) {
     sourceId: sourceId,
     audioSource,
     videoSource
-  })
+  };
+  try{
+    rtc.localStream = NERTC.createStream(createStreamOptions);
+  }catch(e){
+    addLog('初始化本地流失败' + e)
+    throw e;
+  }
   updateLocalWatermark()
   const videoQuality = $('#sessionConfigVideoQuality').val()
   const frameRate = $('#sessionConfigVideoFrameRate').val()
@@ -1250,7 +1257,7 @@ $('#muteAudio').on('click', () => {
       console.log('muteAudio 错误：', err)
     })
   } else {
-    addLog('当前不能进行此操作')
+    assertLocalStream()
   }
 })
 
@@ -1275,7 +1282,7 @@ $('#unmuteAudio').on('click', () => {
       console.log('unmuteAudio 错误：', err)
     })
   } else {
-    addLog('当前不能进行此操作')
+    assertLocalStream()
   }
 })
 
@@ -1300,7 +1307,7 @@ $('#muteVideo').on('click', () => {
       console.log('muteVideo 错误：', err)
     })
   } else {
-    addLog('当前不能进行此操作')
+    assertLocalStream()
   }
 })
 
@@ -1325,7 +1332,7 @@ $('#unmuteVideo').on('click', () => {
       console.log('unmuteVideo 错误：', err)
     })
   } else {
-    addLog('当前不能进行此操作')
+    assertLocalStream()
   }
 })
 
@@ -1351,7 +1358,7 @@ $('#muteScreen').on('click', () => {
       console.log('muteScreen 错误：', err)
     })
   } else {
-    addLog('当前不能进行此操作')
+    assertLocalStream()
   }
 })
 
@@ -1376,14 +1383,14 @@ $('#unmuteScreen').on('click', () => {
       console.log('unmuteScreen 错误：', err)
     })
   } else {
-    addLog('当前不能进行此操作')
+    assertLocalStream()
   }
 })
 
 // 设置自己的画面
 $('#setLocal').on('click', () => {
   if (!rtc.localStream) {
-    addLog('当前不能进行此操作')
+    assertLocalStream()
     return
   }
   const width = $('#localWidth').val() || 100
@@ -1445,7 +1452,7 @@ $('#setPlayVolume').on('click', () => {
 
 $('#setCaptureVolumeType').on('click', () => {
   if (!rtc.localStream) {
-    addLog('当前不能进行此操作')
+    assertLocalStream()
     return
   }
 
@@ -1501,7 +1508,7 @@ $('#setAudioOutput').on('click', () => {
 $('#playCamera').on('click', () => {
   console.warn('打开摄像头')
   if (!rtc.localStream) {
-    addLog('当前不能进行此操作')
+    assertLocalStream()
     return
   }
   const videoQuality = $('#sessionConfigVideoQuality').val()
@@ -1526,7 +1533,7 @@ $('#playCamera').on('click', () => {
 $('#playCameraOff').on('click', () => {
   console.warn('关闭摄像头')
   if (!rtc.localStream) {
-    addLog('当前不能进行此操作')
+    assertLocalStream()
     return
   }
 
@@ -1542,7 +1549,7 @@ $('#playCameraOff').on('click', () => {
 $('#playMicro').on('click', () => {
   console.warn('打开mic')
   if (!rtc.localStream) {
-    addLog('当前不能进行此操作')
+    assertLocalStream()
     return
   }
 
@@ -1560,7 +1567,7 @@ $('#playMicro').on('click', () => {
 $('#playMicroOff').on('click', () => {
   console.warn('关闭mic')
   if (!rtc.localStream) {
-    addLog('当前不能进行此操作')
+    assertLocalStream()
     return
   }
 
@@ -1577,7 +1584,7 @@ $('#playMicroOff').on('click', () => {
 $('#playScreen').on('click', () => {
   console.warn('打开屏幕共享')
   if (!rtc.localStream) {
-    addLog('当前不能进行此操作')
+    assertLocalStream()
     return
   }
 
@@ -1601,7 +1608,7 @@ $('#playScreen').on('click', () => {
 $('#playScreenOff').on('click', () => {
   console.warn('关闭屏幕共享')
   if (!rtc.localStream) {
-    addLog('当前不能进行此操作')
+    assertLocalStream()
     return
   }
 
@@ -1618,7 +1625,7 @@ $('#playScreenOff').on('click', () => {
 $('#playScreenAudio').on('click', () => {
   console.warn('打开屏幕共享+音频')
   if (!rtc.localStream) {
-    addLog('当前不能进行此操作')
+    assertLocalStream()
     return
   }
 
@@ -1643,7 +1650,7 @@ $('#playScreenAudio').on('click', () => {
 $('#playScreenAudioOff').on('click', () => {
   console.warn('关闭屏幕共享音频')
   if (!rtc.localStream) {
-    addLog('当前不能进行此操作')
+    assertLocalStream()
     return
   }
 
@@ -2539,6 +2546,13 @@ $("#toggleVConsole").click(()=>{
     vconsole = new VConsole();
   }
 })
+
+const assertLocalStream = ()=>{
+  if (!rtc.localStream){
+    addLog('当前不能执行此操作：rtc.localStream不存在');
+    throw new Error('rtc.localStream不存在')
+  }
+}
 
 /** 
  * ----------------------------------------

@@ -3,7 +3,6 @@
  */
 
 import {
-  AddTaskOptions,
   ClientExceptionEvt,
   JoinOptions,
   MediaType,

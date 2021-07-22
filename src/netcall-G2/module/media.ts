@@ -221,6 +221,7 @@ class MediaHelper extends EventEmitter {
               }
             }else{
               this.adapterRef.logger.warn('getStream screenAudio: 未获取到屏幕共享音频');
+              this.stream.screenAudio = false;
               if (this.adapterRef.instance){
                 this.adapterRef.instance.emit('error', 'screenAudioNotAllowed');
               }

@@ -5,7 +5,7 @@
 import { Client } from './client';
 import { Stream } from './stream';
 import { StreamOptions } from "./types";
-import {DeviceInfo} from "./browser";
+import { DeviceInfo } from "./browser";
 
 /**
  * NERTC 是 云信 Web SDK 中所有可调用方法的入口。
@@ -115,6 +115,10 @@ declare namespace NERTC {
   /**
    * 该方法枚举可用的媒体输入/输出设备，比如麦克风、摄像头、耳机等。
    * 
+   * 出于安全性考虑，各平台对枚举设备接口有不同的权限控制策略。例如：
+   * 1. Safari浏览器只有在当前页面执行一次[getUserMedia](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia)(也就是[[Stream.init]])之后才能够枚举设备。
+   * 2. Chrome浏览器曾经在当前页面执行过`getUserMedia`即可枚举设备。
+   * 
    * @return
    * - video：视频
    * 
@@ -204,8 +208,8 @@ declare namespace NERTC {
    * //接口使用示例
    * NERTC.getSupportedCodec().then(data => {
    *   data.forEach(item=>{
-   *     console.log(`Supported video codec: ${data.video.join(",")});
-   *     console.log(`Supported audio codec: ${data.audio.join(",")});
+   *     console.log(`Supported video codec: ${data.video.join(",")}`);
+   *     console.log(`Supported audio codec: ${data.audio.join(",")}`);
    *   })
    * })
    * ```
