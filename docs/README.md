@@ -194,3 +194,43 @@ table th:nth-of-type(2) {
 ## <span id="事件">事件</span>
 
 通过 [[Client.on]] 和 [[Stream.on]] 方法监听 [[Client]] 和 [[Stream]] 方法触发的事件。
+
+
+## <span id="错误代码">错误代码</span>
+以下为 SDK 可能抛出的错误，请参考下表进行处理
+
+错误代码| 值 | 描述
+---|---|---
+INVALID_PARAMETER | 1000 | 无效参数，可以通过 console 日志查看原因
+NOT_SUPPORT | 1001 | 浏览器不支持，请使用 SDK 支持的浏览器
+NO_SERVER_ADDRESS | 1002 | 没有找到服务器地址
+SOCKET_ERROR | 1003 | 服务器地址连接失败
+NO_SIGNALLING | 1004 | 找不到信令
+NO_STATS | 1005 | 找不到 stats 数据
+NO_MEDIASOUP | 1006 | 找不到 mediasoup 数据
+NO_MEETINGS | 1007 | 找不到 meetings 数据
+NO_LOCALSTREAM | 1008 | 找不到 localStream 数据
+INVALID_OPERATION | 1009 | 非法操作，可以通过 console 日志查看原因 
+REPEAT_JOIN | 1010 | 重复进房
+USER_NOT_IN_CHANNEL | 1011 | 本地用户不再频道中
+NOT_SUPPORTED_YET | 1012 | 当前不支持，可以通过 console 日志查看原因
+UNKNOWN_TYPE | 1013 | 未知类型，可以通过 console 日志查看原因
+NOT_ALLOWED | 1014 | 无权限，禁止操作
+STATE_ERROR | 1015 | 状态错误，可以通过 console 日志查看原因
+NO_FILE | 1016 | 找不到文件，可以通过 console 日志查看原因
+DECODE_FAILED | 1017 | 解码失败
+ADD_TASK_FAILED | 1018 | 添加推流任务失败
+DELETE_TASK_FAILED | 1019 | 删除推流任务请求失败
+UPDATE_TASKS_FAILED | 1020 | 更新推流任务失败
+RECORD_API_ERROR | 1021 | 录制接口出错
+NO_RECORDER_FOUND | 1022 | 没有进行录制
+NOT_DEFINED | 1023 | 未定义，可以通过 console 日志查看原因
+NOT_AVALIABLE | 1024 | 不可用，可以通过 console 日志查看原因
+NO_MEDIAHELPER | 1025 | 没有 mediaHelper 数据
+NO_PLAY | 1026 | 没有实例化 Play
+NO_RECORD | 1027 | 没有实例化 Record
+NOT_FOUND | 1028 | 未获取，可以通过 console 日志查看原因
+APPDATA_ERROR | 1029 | appData 错误，可以通过 console 日志查看原因
+AUTO_PLAY_NOT_ALLOWED | 1030 | 自动播放受限
+UNKNOWN | 9999 | 未知错误
+
