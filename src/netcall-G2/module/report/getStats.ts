@@ -112,7 +112,13 @@ class GetStats extends EventEmitter{
       for(let item in local){
         if(localDatasMap_.has(local[item].type)) {
           if(item.indexOf('ssrc') > -1){
-            let key = `${local[item].mediaType}_ssrc`
+            let key;
+            if( item.indexOf('audio') > 0 || item.indexOf('video') > 0) {
+              key = `${local[item].mediaType}_ssrc`
+            }else if(item.indexOf('screen') > 0) {
+              key = `screen_ssrc`
+              local[item].mediaType = 'screen'
+            }
               
             if(localDatasObj_.has(key)){
               localDatasObj_.get(key).push(local[item])
@@ -147,6 +153,8 @@ class GetStats extends EventEmitter{
             }else if(item.indexOf('screen') > 0) {
               key = `screen_${remote[item].type}`
               remote[item].mediaType = 'screen'
+            }else {
+              return;
             }
             // 判断是否已经有key了
             if(remoteDatasObj_.has(key)){
