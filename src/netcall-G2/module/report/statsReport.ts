@@ -134,6 +134,7 @@ class StatsReport extends EventEmitter {
       // chrome 浏览器 正在通话中，远端加入其他音频、视频或屏幕分享流
       let la = result.local.audio_ssrc ? result.local.audio_ssrc : [],
         lv = result.local.video_ssrc ? result.local.video_ssrc : [],
+        ls = result.local.screen_ssrc ? result.local.screen_ssrc : [],
         ra = result.remote.audio_ssrc ? result.remote.audio_ssrc : [],
         rv = result.remote.video_ssrc ? result.remote.video_ssrc : [],
         rs = result.remote.screen_ssrc ? result.remote.screen_ssrc : [];
@@ -141,18 +142,21 @@ class StatsReport extends EventEmitter {
       if(!isEmpty(this.prevStats_)) {
         var pla = this.prevStats_.local.audio_ssrc ? this.prevStats_.local.audio_ssrc : [],
           plv = this.prevStats_.local.video_ssrc ? this.prevStats_.local.video_ssrc : [],
+          pls = this.prevStats_.local.screen_ssrc ? this.prevStats_.local.screen_ssrc : [],
           pra = this.prevStats_.remote.audio_ssrc ? this.prevStats_.remote.audio_ssrc : [],
           prv = this.prevStats_.remote.video_ssrc ? this.prevStats_.remote.video_ssrc : [],
           prs = this.prevStats_.remote.screen_ssrc ? this.prevStats_.remote.screen_ssrc : [];
       }
     
 
-      if(isEmpty(this.prevStats_) || (la.length !== pla.length) || (lv.length !== plv.length) || (ra.length !== pra.length) || (rv.length !== prv.length) || (rs.length !== prs.length) ) {
+      if(isEmpty(this.prevStats_) || (la.length !== pla.length) || (lv.length !== plv.length) || (ls.length !== pls.length) || (ra.length !== pra.length) || (rv.length !== prv.length) || (rs.length !== prs.length) ) {
         this.prevStats_ = result;
         if(Object.keys(this.prevStats_.local).length){
           this.prevStats_.local.audio_ssrc[0].bytesSentPerSecond = this.prevStats_.local.audio_ssrc[0].bytesSent;
           this.prevStats_.local.video_ssrc[0].bytesSentPerSecond = this.prevStats_.local.video_ssrc[0].bytesSent;
           this.prevStats_.local.video_ssrc[0].framesEncodedPerSecond = this.prevStats_.local.video_ssrc[0].framesEncoded;
+          this.prevStats_.local.screen_ssrc && (this.prevStats_.local.screen_ssrc[0].bytesSentPerSecond = this.prevStats_.local.screen_ssrc[0].bytesSent);
+          this.prevStats_.local.screen_ssrc && (this.prevStats_.local.screen_ssrc[0].framesEncodedPerSecond = this.prevStats_.local.screen_ssrc[0].framesEncoded);
         }
         for(let item in this.prevStats_.remote){
           if(item.indexOf('ssrc') > -1) {
@@ -174,6 +178,8 @@ class StatsReport extends EventEmitter {
           local.audio_ssrc[0].bytesSentPerSecond = (local.audio_ssrc[0].bytesSent - 0 - prevLocal.audio_ssrc[0].bytesSent)/2;
           local.video_ssrc[0].bytesSentPerSecond = (local.video_ssrc[0].bytesSent - 0 - prevLocal.video_ssrc[0].bytesSent)/2;
           local.video_ssrc[0].framesEncodedPerSecond = (local.video_ssrc[0].framesEncoded - 0 - prevLocal.video_ssrc[0].framesEncoded)/2;
+          local.screen_ssrc && (local.screen_ssrc[0].bytesSentPerSecond = (local.screen_ssrc[0].bytesSent - 0 - prevLocal.screen_ssrc[0].bytesSent)/2);
+          local.screen_ssrc && (local.screen_ssrc[0].framesEncodedPerSecond = (local.screen_ssrc[0].framesEncoded - 0 - prevLocal.screen_ssrc[0].framesEncoded)/2);
         }
         for(let item in remote){
           if(item.indexOf('ssrc') > -1) {
