@@ -493,7 +493,7 @@ class FormativeStatsReport {
         const audioLevel = data[i].audioOutputLevel || data[i].audioLevel
         this._audioLevel.push({
           uid,
-          level: +audioLevel
+          level: parseInt(audioLevel) || 0,
         })
       } else if (i.indexOf('_recv_') !== -1 && i.indexOf('_video') !== -1) {
         //主流
@@ -1311,7 +1311,14 @@ let tool = {
     return function(a:any,b:any){
       var value1 = a[property];
       var value2 = b[property];
-      return value2 - value1;
+      if (value2 !== 0 && !value2){
+        // 考虑NaN或无值的情况
+        return -1;
+      }else if (value1 !== 0 && !value1){
+        return 1;
+      }else{
+        return value2 - value1;
+      }
     }
   }
 }
