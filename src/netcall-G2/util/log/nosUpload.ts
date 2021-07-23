@@ -1,27 +1,43 @@
+// @ts-nocheck
 import md5 from "md5"
-function Uploader(options){
-	'use strict';
-	var defaults = {
-        /**
-         * 请求协议类型，默认http
-         * @type {String}
-         */
-        protocol: 'https:',
+
+interface IOption {
+    urlDns: string;
+    retryCount: number;
+    timeout: number;
+    onError: (errObj: any) => void;
+    onProgress: (curFile: any) => void;
+}
+
+let localStorage: any = window.localStorage
+if (!localStorage || typeof localStorage.getItem !== 'function' || typeof localStorage.setItem !== 'function' || typeof localStorage.removeItem !== 'function') {
+	localStorage = {
+		privateObj: {},
+		setItem: function(key, value) {
+			localStorage.privateObj[key] = value
+		},
+		getItem: function(key) {
+			return localStorage.privateObj[key]
+		},
+		removeItem: function(key) {
+			delete localStorage.privateObj[key]
+		}
+	}
+}
+
+
+export function Uploader(options?: Partial<IOption>) {
+	const defaults: IOption = {
 		/**
 		 * 获取dns列表的URL
 		 * @type {String}
 		 */
-		urlDns: 'https://wanproxy-web.127.net',
-		/**
+         urlDns: 'https://wanproxy-web.127.net',
+         /**
 		 * 重试次数，默认重试2次
 		 * @type {Number}
 		 */
 		retryCount: 2,
-		/**
-		 * 添加文件Input ID
-		 * @type {String}
-		 */
-		fileInputID: 'fileInput',
 		/**
 		 * ajax超时时间
 		 * @type {Number}
@@ -44,13 +60,10 @@ function Uploader(options){
 			console.log(curFile.status);
 			console.log(curFile.progress);
 		},
-	},
-	opts,
-	service;
+	}
+	const opts: IOption = Object.assign({}, defaults, options)
 
-	opts = $.extend({}, defaults, options);
-
-	service = {
+	const service: any = {
 		/**
 		 * 接口版本号，当前支持1.0
 		 * @type {String}
@@ -91,21 +104,15 @@ function Uploader(options){
 		 * @return {void}
 		 */
 		createAjax: function() {
-	        var xmlhttp = {};
-	        if (window.XMLHttpRequest) {
-	            xmlhttp = new XMLHttpRequest();
-	        } else {
-	            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-	        }
-	        return xmlhttp;
-	    },
+	        return new XMLHttpRequest()
+	    },			
 	    /**
          * 清除本地存储
          * @param {Object} fileKey 文件标识符
          */
         clearStorage: function(bucketName, objectName, fileKey) {
             localStorage.removeItem(fileKey + '_progress');
-            localStorage.removeItem(fileKey + '_' + bucketName + '_' + objectName + '_context');
+            localStorage.removeItem(fileKey + '_' + bucketName + '_' + objectName + '_context');  
         },
         /**
 		 * 添加文件
@@ -122,7 +129,7 @@ function Uploader(options){
 		 * 				progress {Number} 上传进度（保留两位小数的百分比）
 		 * @return {void}
 		 */
-		addFile: function(file, callback) {
+		addFile: function(file: File, callback) {
 			if(file){
 				var fileKey = md5(file.name + ':' + file.size),
 	                fileObj;
@@ -136,11 +143,11 @@ function Uploader(options){
 	            };
 				if(service.uploadFile)
 					service.uploadFile = null;
-				service.uploadFile = $.extend(true, {}, fileObj);
+				service.uploadFile = Object.assign({}, fileObj)
 	            if(callback)
 	            	callback(fileObj);
-			}
-       },
+			}            
+       },		
         /**
          * 根据fileKey获取指定文件对象
          * @method getFile
@@ -148,12 +155,12 @@ function Uploader(options){
          * @return {Obejct}         文件对象
          */
         getFile: function(fileKey) {
-            var curFile;
+            var curFile;            
             if (service.uploadFile.fileKey === fileKey) {
                 curFile = service.uploadFile;
             }
             return curFile;
-        },
+        },        
 		/**
 		 * 查询DNS
 		 * @method getDNS
@@ -162,10 +169,10 @@ function Uploader(options){
 		 * 		回调函数参数包括：
 		 * 		upload： 返回最优的边缘节点列表，加速效果最好的在前面
 		 *      lbs: 返回的最优的DNS地址，后续可以使用该地址进行上传
-		 * @return {void}
+		 * @return {void} 
 		 */
-
-		getDNS: function(bucketname, callback){
+		
+        getDNS: function(bucketname, callback){
 			if(bucketname === undefined || bucketname === null || bucketname === ''){
 				bucketname = '';
 			}
@@ -177,39 +184,6 @@ function Uploader(options){
                     let centerUrl = ['https://wanproxy-web.127.net']
                     service.edgeNodeList = centerUrl;
                     callback(centerUrl, opts.urlDns);
-                // }else{
-                //     $.ajax({
-                //         type: 'get',
-                //         url: opts.urlDns,
-                //         data: {
-                //             version: service.version,
-                //             bucketname: bucketname,
-                //         },
-                //         dataType: 'json',
-                //         success: function(data, s, xhr) {
-                //             if (data.code) {
-                //                 opts.onError({
-                //                     errCode: data.Code,
-                //                     errMsg: data.Message
-                //                 });
-                //             } else {
-
-                //                 service.edgeNodeList = data.upload;
-                //                 callback(data.upload, data.lbs);
-                //             }
-                //         },
-                //         error: function(xhr, s, err) {
-                //             if(xhr.status.toString().match(/^5/) && service.gDRetryCount > 0 && service.gDRetryCount < opts.retryCount + 1){
-    	        //         		service.getDNS(bucketname, callback);
-    	        //         		service.gDRetryCount--;
-    	        //         	}
-    	        //         	else{
-    	        //         		opts.onError(xhr.responseText);
-    	        //         		service.gDRetryCount = opts.retryCount;
-    	        //         	}
-                //         }
-                //     });
-                // }
             }
 		},
 		/**
@@ -233,42 +207,77 @@ function Uploader(options){
             if (!context) {
                 return callback(0);
             }
-            $.ajax({
-                type: 'get',
-                url: param.serveIp + '/' + param.bucketName + '/' + encodeURIComponent(param.objectName) + '?uploadContext',
-                data: {
-                    version: service.version,
-                    context: context
-                },
-                dataType: 'json',
-              	beforeSend: function(xhr) {
-                	xhr.setRequestHeader('x-nos-token', param.token);
-	            },
-                success: function(data, s, xhr) {
-                    if (data.errCode) {
-                        opts.onError({
-                            errCode: data.errCode,
-                            errMsg: data.errMsg
-                        });
-                    } else {
-                        callback(data.offset);
-                    }
-                },
-                error: function(xhr, s, err) {
-                	if(xhr.status.toString().match(/^5/) && service.gORetryCount > 0 && service.gORetryCount < opts.retryCount + 1){
+			fetch(param.serveIp + '/' + param.bucketName + '/' + encodeURIComponent(param.objectName) + '?uploadContext&' + new URLSearchParams({
+				version: service.version,
+				context: context,
+			}), {
+				headers: {
+					'x-nos-token': param.token
+				}
+			})
+			.then(response => {
+				if (response.ok) {
+					return response.json()
+						.then(data => {
+							if (data.errCode) {
+								opts.onError({
+									errCode: data.errCode,
+									errMsg: data.errMsg
+								});
+							} else {
+								callback(data.offset);
+							}
+						})
+				} else {
+                	if(response.status.toString().match(/^5/) && service.gORetryCount > 0 && service.gORetryCount < opts.retryCount + 1){
                 		service.getOffset(param, callback);
                 		service.gORetryCount--;
-                	}
-                	else{
-                		opts.onError(xhr.responseText);
+					}
+					else{
+                		opts.onError(response.statusText);
                 		service.gORetryCount = opts.retryCount;
-                		if(xhr.status === 404){
+                		if(response.status === 404){
 	                        service.clearStorage(param.bucketName, param.objectName, param.fileKey);
 	                    }
-                	}
-                }
-            });
-        },
+					}
+				}
+			})
+            // $.ajax({
+            //     type: 'get',
+            //     url: param.serveIp + '/' + param.bucketName + '/' + encodeURIComponent(param.objectName) + '?uploadContext',
+            //     data: {
+            //         version: service.version,
+            //         context: 'context'
+            //     },
+            //     dataType: 'json',
+            //   	beforeSend: function(xhr) {
+            //     	xhr.setRequestHeader('x-nos-token', param.token);
+	        //     },
+            //     success: function(data, s, xhr) {
+            //         if (data.errCode) {
+            //             opts.onError({
+            //                 errCode: data.errCode,
+            //                 errMsg: data.errMsg
+            //             });
+            //         } else {
+            //             callback(data.offset);
+            //         }
+            //     },
+            //     error: function(xhr, s, err) {
+            //     	if(xhr.status.toString().match(/^5/) && service.gORetryCount > 0 && service.gORetryCount < opts.retryCount + 1){
+            //     		service.getOffset(param, callback);
+            //     		service.gORetryCount--;
+            //     	}               		
+            //     	else{
+            //     		opts.onError(xhr.responseText);
+            //     		service.gORetryCount = opts.retryCount;
+            //     		if(xhr.status === 404){
+	        //                 service.clearStorage(param.bucketName, param.objectName, param.fileKey);
+	        //             }
+            //     	}                    	
+            //     }
+            // });
+        },      
 		/**
          * 上传分片
          * @method uploadTrunk
@@ -291,7 +300,7 @@ function Uploader(options){
          * 		trunkData {Object} 分片数据
          * @return {void}
          */
-        uploadTrunk: function(param, trunkData, callback) {
+		uploadTrunk: function(param, trunkData, callback) {
             var xhr,
                 xhrParam = '',
                 curFile,
@@ -439,31 +448,6 @@ function Uploader(options){
 				xhr.send(blobSlice.call(trunkData.file, trunkData.offset, trunkData.trunkEnd));
 			}
         },
-        /**
-         * 暂停上传
-         * @method pauseUpload
-         * @return {void}
-         */
-        pauseUpload: function(){
-        	var xhr;
-        	if (!service.uploadFile) {
-        		opts.onError({
-        			errMsg: '未选择需上传的文件',
-        		});
-            } else if(!service.uploadFile.xhr) {
-            	opts.onError({
-            		errMsg: '当前文件未开始上传',
-            	});
-            } else if(service.uploadFile.status < 2){
-            	xhr = service.uploadFile.xhr;
-            	xhr.abort();
-            	$('#' + opts.fileInputID).attr("disabled", false);
-            } else {
-            	opts.onError({
-            		errMsg: '当前文件已完成上传',
-            	});
-            }
-        },
 		/**
 		 * 上传文件
 		 * @param {Object} param 参数
@@ -506,9 +490,8 @@ function Uploader(options){
 				});
 				return;
 			}
-
-			var curFile = service.uploadFile;
 			
+			var curFile = service.uploadFile;
 			service.getDNS(param.bucketName, function(edgeNodeList, lbs) {
 				if(edgeNodeList.length === 0){
 					opts.onError({
@@ -516,36 +499,34 @@ function Uploader(options){
 					});
 					return;
 				}
-				service.getOffset({
-					serveIp: edgeNodeList[0],
-					bucketName: param.bucketName,
-					objectName: param.objectName,
-					fileKey: curFile.fileKey,
-					token: param.token,
-				}, function(offset) {
-					service.uploadTrunk({
-						serveIp: edgeNodeList[0],
-						bucketName: param.bucketName,
-						objectName: param.objectName,
-						token: param.token,
-					}, {
-						file: curFile.file,
-						fileKey: curFile.fileKey,
-						offset: offset || 0,
-						trunkSize: param.trunkSize,
-						trunkEnd: (offset || 0) + param.trunkSize,
-						context: ''
-					}, function(trunkData) {
-						service.clearStorage(param.bucketName, param.objectName, trunkData.fileKey);
-						if(callback)
-							callback(curFile);
-					});
-				});
-			});	
-        },
+                service.getOffset({               
+                    serveIp: edgeNodeList[0],
+                    bucketName: param.bucketName,
+                    objectName: param.objectName,
+                    fileKey: curFile.fileKey,
+                    token: param.token,
+                }, function(offset) {
+                    service.uploadTrunk({
+                        serveIp: edgeNodeList[0],
+                        bucketName: param.bucketName,
+                        objectName: param.objectName,
+                        token: param.token,
+                    }, {
+                        file: curFile.file,
+                        fileKey: curFile.fileKey,
+                        offset: offset || 0,
+                        trunkSize: param.trunkSize,
+                        trunkEnd: (offset || 0) + param.trunkSize,
+                        context: ''
+                    }, function(trunkData) {
+                        service.clearStorage(param.bucketName, param.objectName, trunkData.fileKey);   
+                        if(callback)
+                        	callback(curFile);
+                    });
+                });
+            });            
+        },  
 	};
 
 	return service;
 }
-
-export { Uploader };
