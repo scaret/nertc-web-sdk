@@ -3,7 +3,6 @@ import {checkSumUrl, SDK_VERSION} from '../../Config';
 import LogStorage from "@netease-yunxin/log-storage";
 import { randomId } from '../../util/rtcUtil/utilsId';
 import { Uploader } from './nosUpload';
-import { createIdentifier, updateImportDeclaration } from "typescript";
 const sha1 =  require('js-sha1');
 
 
