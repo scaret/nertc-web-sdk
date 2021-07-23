@@ -45,6 +45,8 @@ syntax = "proto2";
 
      repeated video_outbound_rtp_obj video_outbound_rtp=15;
 
+     repeated screen_ssrc_obj screen_ssrc=16;
+
      message video_bwe_obj{
 
        optional string googActualEncBitrate=1;
@@ -126,6 +128,92 @@ syntax = "proto2";
 
 
      message video_ssrc_obj{
+
+       optional string googContentType=1;
+
+       optional string googFrameWidthInput=2;
+
+       optional string googFrameWidthSent=3;
+
+       optional string packetsLost=4;
+
+       optional string googRtt=5;
+
+       optional string googHasEnteredLowResolution=6;
+
+       optional string googEncodeUsagePercent=7;
+
+       optional string googCpuLimitedResolution=8;
+
+       optional string googNacksReceived=9;
+
+       optional string googBandwidthLimitedResolution=10;
+
+       optional string googFrameHeightInput=11;
+
+       optional string googAvgEncodeMs=12;
+
+       optional string googTrackId=13;
+
+       optional string googFrameRateInput=14;
+
+       optional string framesEncoded=15;
+
+       optional string codecImplementationName=16;
+
+       optional string transportId=17;
+
+       optional string mediaType=18;
+
+       optional string googFrameHeightSent=19;
+
+       optional string googFrameRateSent=20;
+
+       optional string googCodecName=21;
+
+       optional string hugeFramesSent=22;
+
+       optional string qpSum=23;
+
+       optional string googPlisReceived=24;
+
+       optional string googAdaptationChanges=25;
+
+       optional string ssrc=26;
+
+       optional string googFirsReceived=27;
+
+       optional string packetsSent=28;
+
+       optional string bytesSent=29;
+
+       optional string id=30;
+
+       optional string type=31;
+
+       optional string timestamp=32;
+
+       optional int64 localuid=33;
+
+       optional int64 remoteuid=34;
+
+       optional int64 bitsSentPerSecond=35;
+
+       optional int64 packetsSentPerSecond=36;
+
+       optional int64 sendPacketLoss=37;
+
+       optional int64 freezeTime=38;
+
+       optional int64 totalFreezeTime=39;
+
+       optional int64 bytesSentPerSecond=40;
+
+       optional int64 framesEncodedPerSecond=41;
+
+    }
+
+    message screen_ssrc_obj{
 
        optional string googContentType=1;
 
