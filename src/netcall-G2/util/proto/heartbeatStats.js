@@ -117,6 +117,11 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
             rule: "repeated",
             type: "video_outbound_rtp_obj",
             id: 15
+          },
+          screen_ssrc: {
+            rule: "repeated",
+            type: "screen_ssrc_obj",
+            id: 16
           }
         },
         nested: {
@@ -269,6 +274,174 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
             }
           },
           video_ssrc_obj: {
+            fields: {
+              googContentType: {
+                type: "string",
+                id: 1
+              },
+              googFrameWidthInput: {
+                type: "string",
+                id: 2
+              },
+              googFrameWidthSent: {
+                type: "string",
+                id: 3
+              },
+              packetsLost: {
+                type: "string",
+                id: 4
+              },
+              googRtt: {
+                type: "string",
+                id: 5
+              },
+              googHasEnteredLowResolution: {
+                type: "string",
+                id: 6
+              },
+              googEncodeUsagePercent: {
+                type: "string",
+                id: 7
+              },
+              googCpuLimitedResolution: {
+                type: "string",
+                id: 8
+              },
+              googNacksReceived: {
+                type: "string",
+                id: 9
+              },
+              googBandwidthLimitedResolution: {
+                type: "string",
+                id: 10
+              },
+              googFrameHeightInput: {
+                type: "string",
+                id: 11
+              },
+              googAvgEncodeMs: {
+                type: "string",
+                id: 12
+              },
+              googTrackId: {
+                type: "string",
+                id: 13
+              },
+              googFrameRateInput: {
+                type: "string",
+                id: 14
+              },
+              framesEncoded: {
+                type: "string",
+                id: 15
+              },
+              codecImplementationName: {
+                type: "string",
+                id: 16
+              },
+              transportId: {
+                type: "string",
+                id: 17
+              },
+              mediaType: {
+                type: "string",
+                id: 18
+              },
+              googFrameHeightSent: {
+                type: "string",
+                id: 19
+              },
+              googFrameRateSent: {
+                type: "string",
+                id: 20
+              },
+              googCodecName: {
+                type: "string",
+                id: 21
+              },
+              hugeFramesSent: {
+                type: "string",
+                id: 22
+              },
+              qpSum: {
+                type: "string",
+                id: 23
+              },
+              googPlisReceived: {
+                type: "string",
+                id: 24
+              },
+              googAdaptationChanges: {
+                type: "string",
+                id: 25
+              },
+              ssrc: {
+                type: "string",
+                id: 26
+              },
+              googFirsReceived: {
+                type: "string",
+                id: 27
+              },
+              packetsSent: {
+                type: "string",
+                id: 28
+              },
+              bytesSent: {
+                type: "string",
+                id: 29
+              },
+              id: {
+                type: "string",
+                id: 30
+              },
+              type: {
+                type: "string",
+                id: 31
+              },
+              timestamp: {
+                type: "string",
+                id: 32
+              },
+              localuid: {
+                type: "int64",
+                id: 33
+              },
+              remoteuid: {
+                type: "int64",
+                id: 34
+              },
+              bitsSentPerSecond: {
+                type: "int64",
+                id: 35
+              },
+              packetsSentPerSecond: {
+                type: "int64",
+                id: 36
+              },
+              sendPacketLoss: {
+                type: "int64",
+                id: 37
+              },
+              freezeTime: {
+                type: "int64",
+                id: 38
+              },
+              totalFreezeTime: {
+                type: "int64",
+                id: 39
+              },
+              bytesSentPerSecond: {
+                type: "int64",
+                id: 40
+              },
+              framesEncodedPerSecond: {
+                type: "int64",
+                id: 41
+              }
+            }
+          },
+          screen_ssrc_obj: {
             fields: {
               googContentType: {
                 type: "string",
