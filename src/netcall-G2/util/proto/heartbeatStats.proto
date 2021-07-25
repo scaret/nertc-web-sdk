@@ -869,6 +869,8 @@ syntax = "proto2";
 
        optional int64 framesDecodedPerSecond=41;
 
+       optional double packetsLostRate=42;
+
     }
 
 
@@ -951,6 +953,8 @@ syntax = "proto2";
        optional int64 totalFreezeTime=38;
 
        optional int64 bytesReceivedPerSecond=39;
+
+       optional double packetsLostRate=40;
 
     }
 
@@ -1265,6 +1269,10 @@ syntax = "proto2";
 
        optional string uid=32;
 
+       optional int64 bytesReceivedPerSecond=33;
+
+       optional double packetsLostRate=34;
+
     }
 
 
@@ -1328,7 +1336,13 @@ syntax = "proto2";
 
        optional int64 packetsReceivedPerSecond=29;
 
-       optional string uid=32;
+       optional string uid=30;
+
+       optional int64 bytesReceivedPerSecond=31;
+
+       optional double packetsLostRate=32;
+
+       optional int64 framesDecodedPerSecond=33;
 
     }
 
@@ -1486,6 +1500,8 @@ syntax = "proto2";
       optional int64 bytesReceivedPerSecond=40;
 
       optional int64 framesDecodedPerSecond=41;
+
+      optional double packetsLostRate=42;
 
    }
 

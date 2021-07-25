@@ -1681,6 +1681,10 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               framesDecodedPerSecond: {
                 type: "int64",
                 id: 41
+              },
+              packetsLostRate: {
+                type: "double",
+                id: 42
               }
             }
           },
@@ -1841,6 +1845,10 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               bytesReceivedPerSecond: {
                 type: "int64",
                 id: 39
+              },
+              packetsLostRate: {
+                type: "double",
+                id: 40
               }
             }
           },
@@ -2426,6 +2434,14 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
                 type: "string",
                 id: 32
               },
+              bytesReceivedPerSecond: {
+                type: "int64",
+                id: 33
+              },
+              packetsLostRate: {
+                type: "double",
+                id: 34
+              },
             }
           },
           video_inbound_rtp_obj: {
@@ -2549,6 +2565,18 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               uid: {
                 type: "string",
                 id: 30
+              },
+              bytesReceivedPerSecond: {
+                type: "int64",
+                id: 31
+              },
+              packetsLostRate: {
+                type: "double",
+                id: 32
+              },
+              framesDecodedPerSecond: {
+                type: "int64",
+                id: 33
               },
             }
           },
@@ -2845,6 +2873,10 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               framesDecodedPerSecond: {
                 type: "int64",
                 id: 41
+              },
+              packetsLostRate: {
+                type: "double",
+                id: 42
               }
             }
           },
