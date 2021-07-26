@@ -678,6 +678,8 @@ syntax = "proto2";
 
        optional int64 packetsSentPerSecond=18;
 
+       optional int64 bytesSentPerSecond=19;
+
     }
 
 
@@ -750,6 +752,8 @@ syntax = "proto2";
        optional int64 packetsSentPerSecond=33;
 
        optional int64 frameRateSent=34;
+
+       optional int64 bytesSentPerSecond=35;
 
     }
 
