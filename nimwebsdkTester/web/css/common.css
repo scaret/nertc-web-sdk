@@ -127,3 +127,20 @@ input[type="text"] {
 select {
   width: 200px;
 }
+.video-view {
+  position: relative;
+}
+.play-img {
+  position: absolute;
+  z-index: 10;
+  top: 50%;
+  transform: translate(-50%, 20%);
+  left: 50%;
+  width: 80px;
+  height: 80px;
+  /* background-image: url("../img/play.png"); */
+  background-image: url("https://netease.im/res/image/m/logo_big.png");
+  background-size: contain;
+  cursor: pointer;
+  display: none;
+}

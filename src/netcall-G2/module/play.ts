@@ -34,6 +34,7 @@ class Play extends EventEmitter {
   
   public _watermarkControl: WatermarkControl;
   public _watermarkControlScreen: WatermarkControl;
+  private autoPlayType:Number;
   constructor (options:PlayOptions) {
     super()
     this._reset()
@@ -61,6 +62,7 @@ class Play extends EventEmitter {
     this.audioSinkId = "";
     this._watermarkControl = createWatermarkControl(this.adapterRef.logger);
     this._watermarkControlScreen = createWatermarkControl(this.adapterRef.logger);
+    this.autoPlayType = 0;
   }
 
   _reset() {
@@ -233,33 +235,43 @@ class Play extends EventEmitter {
     if(!stream){
       return;
     }
-    if(option.type === 'audio'){
-      try {
-        await this.playAudioStream(stream);
-      } catch(error) {
-        this.adapterRef.logger.warn('播放 %o 的音频出现问题: %o', this.uid, error)
-        if(error.name === 'NotAllowedError') {
-          throw new RtcError({
-            code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
-            message: error.toString()
-          })
+    if(this.autoPlayType === 1){
+      if(this.audioDom) {
+        try {
+          this.audioDom.muted = false
+          await this.audioDom.play()
+          this.autoPlayType = 0
+        } catch(error) {
+          this.adapterRef.logger.warn('播放 %o 的音频出现问题: %o', this.uid, error)
+          this.autoPlayType = 1
+          if(error.name === 'NotAllowedError') {
+            throw new RtcError({
+              code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
+              message: error.toString()
+            })
+          }
         }
       }
-    }else {
-      try {
-        await this.playVideoStream(stream, option.view);
-      } catch(error) {
-        this.adapterRef && this.adapterRef.logger.warn('播放 %s 的视频出现问题: %o', this.uid, error)
-        if(error.name === 'NotAllowedError') {
-          throw new RtcError({
-            code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
-            message: error.toString()
-          })
+      
+    }
+    if(this.autoPlayType === 2){
+      if(this.videoDom) {
+        try {
+          this.videoDom.muted = false
+          await this.videoDom.play()
+          this.autoPlayType = 0
+        } catch(error) {
+          this.adapterRef && this.adapterRef.logger.warn('播放 %s 的视频出现问题: %o', this.uid, error)
+          this.autoPlayType = 2
+          if(error.name === 'NotAllowedError') {
+            throw new RtcError({
+              code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
+              message: error.toString()
+            })
+          }
         }
-
       }
     }
-
   }
 
 
@@ -291,15 +303,19 @@ class Play extends EventEmitter {
       this.adapterRef.logger.log('%o 的音频播放正常', this.uid)
     }
     try {
+      this.audioDom.muted = false;
       await this.audioDom.play()
       this.adapterRef.logger.log('播放 %o 的音频完成，当前播放状态: %o', this.uid, this.audioDom && this.audioDom.played && this.audioDom.played.length)
     } catch (error) {
       this.adapterRef.logger.warn('播放 %o 的音频出现问题: %o', this.uid, error)
+
       if(error.name === 'NotAllowedError') {
+        this.autoPlayType = 1;
         throw new RtcError({
           code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
           message: error.toString()
         })
+        
       }
     }
   }
@@ -440,11 +456,14 @@ class Play extends EventEmitter {
       }
       this.videoDom.srcObject = stream
       this.adapterRef.logger.log('播放 %o 的视频频, streamId: %o, stream状态: %o', this.uid, stream.id, stream.active)
+      
       this.videoDom.play()
       this.adapterRef.logger.log('播放 %s 的视频完成，当前播放状态: %o', this.uid, this.videoDom && this.videoDom.played && this.videoDom.played.length)
     } catch (error) {
       this.adapterRef && this.adapterRef.logger.warn('播放 %s 的视频出现问题: %o', this.uid, error)
+     
       if(error.name === 'NotAllowedError') {
+        this.autoPlayType = 2;
         throw new RtcError({
           code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
           message: error.toString()
