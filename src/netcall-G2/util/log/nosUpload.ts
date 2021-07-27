@@ -242,41 +242,6 @@ export function Uploader(options?: Partial<IOption>) {
 					}
 				}
 			})
-            // $.ajax({
-            //     type: 'get',
-            //     url: param.serveIp + '/' + param.bucketName + '/' + encodeURIComponent(param.objectName) + '?uploadContext',
-            //     data: {
-            //         version: service.version,
-            //         context: 'context'
-            //     },
-            //     dataType: 'json',
-            //   	beforeSend: function(xhr) {
-            //     	xhr.setRequestHeader('x-nos-token', param.token);
-	        //     },
-            //     success: function(data, s, xhr) {
-            //         if (data.errCode) {
-            //             opts.onError({
-            //                 errCode: data.errCode,
-            //                 errMsg: data.errMsg
-            //             });
-            //         } else {
-            //             callback(data.offset);
-            //         }
-            //     },
-            //     error: function(xhr, s, err) {
-            //     	if(xhr.status.toString().match(/^5/) && service.gORetryCount > 0 && service.gORetryCount < opts.retryCount + 1){
-            //     		service.getOffset(param, callback);
-            //     		service.gORetryCount--;
-            //     	}               		
-            //     	else{
-            //     		opts.onError(xhr.responseText);
-            //     		service.gORetryCount = opts.retryCount;
-            //     		if(xhr.status === 404){
-	        //                 service.clearStorage(param.bucketName, param.objectName, param.fileKey);
-	        //             }
-            //     	}                    	
-            //     }
-            // });
         },      
 		/**
          * 上传分片
@@ -300,13 +265,13 @@ export function Uploader(options?: Partial<IOption>) {
          * 		trunkData {Object} 分片数据
          * @return {void}
          */
-		uploadTrunk: function(param, trunkData, callback) {
+		 uploadTrunk: function(param, trunkData, callback) {
             var xhr,
                 xhrParam = '',
                 curFile,
                 context,
-                blobSlice = File.prototype.mozSlice || File.prototype.webkitSlice || File.prototype.slice;
-
+                blobSlice = File.prototype.slice;
+                
             curFile = service.getFile(trunkData.fileKey);
             context = localStorage.getItem(trunkData.fileKey + '_' + param.bucketName + '_' + param.objectName + '_context');
 
@@ -316,8 +281,8 @@ export function Uploader(options?: Partial<IOption>) {
                 xhr = service.createAjax();
                 curFile.xhr = xhr;
             };
-
-            xhr.upload.onprogress = function(e) {//上传进度处理函数
+            
+            xhr.upload.onprogress = function(e) {//上传进度处理函数            		
                 var progress = 0;
 
                 if (e.lengthComputable) {
@@ -326,15 +291,12 @@ export function Uploader(options?: Partial<IOption>) {
 
                     if (progress > 0 && progress < 1) {
                         curFile.status = 1;
-                        $('#' + opts.fileInputID).attr("disabled", true);
                     } else if (progress === 1) {
                         curFile.status = 2;
-                        $('#' + opts.fileInputID).attr("disabled", false);
                     }
                     localStorage.setItem(trunkData.fileKey + '_progress', curFile.progress);
                     opts.onProgress(curFile);
                 } else {
-                    console.log('浏览器不支持进度事件',e)
                     opts.onError({
                         errMsg: '浏览器不支持进度事件'
                     });
@@ -345,7 +307,7 @@ export function Uploader(options?: Partial<IOption>) {
                 if (xhr.readyState !== 4) {
                     return;
                 }
-
+                
                 var result;
                 try {
                     result = JSON.parse(xhr.responseText);
@@ -353,8 +315,8 @@ export function Uploader(options?: Partial<IOption>) {
 	                result = {
                         errMsg: '未知错误'
                     };
-               	}
-
+               	}                	
+               	
                 if (xhr.status === 200) {
                 	if(curFile.file.size === 0){
                 		curFile.status = 2;
@@ -362,10 +324,10 @@ export function Uploader(options?: Partial<IOption>) {
                 		opts.onProgress(curFile);
                 	};
                     localStorage.setItem(trunkData.fileKey + '_' + param.bucketName + '_' + param.objectName + '_context', result.context);
-
+                    
                     if (result.offset < trunkData.file.size) {//上传下一片
-                        service.uploadTrunk(param, $.extend({}, trunkData, {
-                            offset: result.offset,
+                        service.uploadTrunk(param, Object.assign({}, trunkData, {
+                            offset: result.offset,                              
                             trunkEnd: result.offset + trunkData.trunkSize,
                             context: context || result.context
                         }), callback);
@@ -382,7 +344,7 @@ export function Uploader(options?: Partial<IOption>) {
                 			token: param.token,
                 			fileKey: trunkData.fileKey
                 		},function(offset){
-                			service.uploadTrunk(param, $.extend({}, trunkData, {
+                			service.uploadTrunk(param, Object.assign({}, trunkData, {
                 				offset: offset,
                 				trunkEnd: offset + trunkData.trunkSize,
                             	context: localStorage.getItem(trunkData.fileKey + '_' + param.bucketName + '_' + param.objectName + '_context') || '',
@@ -392,7 +354,7 @@ export function Uploader(options?: Partial<IOption>) {
                 	} else if(service.dnsRetryCount < service.edgeNodeList.length-1){//重试边缘节点
                 		service.uTRetryCount = opts.retryCount;
                 		service.dnsRetryCount++;
-                		var param1 = $.extend({}, param, {
+                		var param1 = Object.assign({}, param, {
                 			serveIp: service.edgeNodeList[service.dnsRetryCount],
                 		});
                 		service.getOffset({
@@ -402,51 +364,38 @@ export function Uploader(options?: Partial<IOption>) {
                 			token: param1.token,
                 			fileKey: trunkData.fileKey
                 		},function(offset){
-                			service.uploadTrunk(param1, $.extend({}, trunkData, {
+                			service.uploadTrunk(param1, Object.assign({}, trunkData, {
                 				offset: offset,
                 				trunkEnd: offset + trunkData.trunkSize,
                             	context: localStorage.getItem(trunkData.fileKey + '_' + param.bucketName + '_' + param.objectName + '_context') || '',
                 			}), callback);
-                		});
+                		});	                		
                 	} else {//重试完输出错误信息
                 		service.dnsRetryCount = 0;
         				opts.onError({
 	                        errCode: result.errCode,
 	                        errMsg: result.errMsg
-	                    });
-
-	                   	$('#' + opts.fileInputID).attr("disabled", false);
+	                    }); 	
                 		service.clearStorage(param.bucketName, param.objectName, trunkData.fileKey);
                 	}
-                }else{
-                	$('#' + opts.fileInputID).attr("disabled", false);
+                } else {
 	              	if(xhr.status){
 	                    service.clearStorage(param.bucketName, param.objectName, trunkData.fileKey);
 	                    opts.onError({
 	                        errCode: result.errCode,
 	                        errMsg: result.errMsg
-		                });
+		                }); 
 	                } else {
 	               		 console.log('上传已暂停');
-	                }
+	                }                	               	               	           	                
                 }
             };
-
+            
             xhrParam = '?offset=' + trunkData.offset + '&complete=' + (trunkData.trunkEnd >= trunkData.file.size) + '&context=' + (context || trunkData.context) + '&version=' + service.version;
-            xhr.open('post', param.serveIp + '/' + param.bucketName + '/' + encodeURIComponent(param.objectName) + xhrParam);
-            xhr.timeout = opts.timeout;
+            xhr.open('post', param.serveIp + '/' + param.bucketName + '/' + encodeURIComponent(param.objectName) + xhrParam);        
             xhr.setRequestHeader('x-nos-token', param.token);
-			// 兼容windows版微信内置浏览器
-			if (navigator.userAgent.indexOf("WindowsWechat") >= 0) {
-				var reader = new FileReader();
-				reader.addEventListener("loadend", function () {
-					var slicedBlob = new Blob([reader.result]);
-					xhr.send(slicedBlob);
-				});
-				reader.readAsArrayBuffer(blobSlice.call(trunkData.file, trunkData.offset, trunkData.trunkEnd));
-			} else {
-				xhr.send(blobSlice.call(trunkData.file, trunkData.offset, trunkData.trunkEnd));
-			}
+            xhr.timeout = opts.timeout;
+            xhr.send(blobSlice.call(trunkData.file, trunkData.offset, trunkData.trunkEnd));
         },
 		/**
 		 * 上传文件
