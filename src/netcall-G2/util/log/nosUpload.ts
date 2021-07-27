@@ -1,4 +1,3 @@
-// @ts-nocheck
 import md5 from "md5"
 
 interface IOption {
@@ -13,13 +12,13 @@ let localStorage: any = window.localStorage
 if (!localStorage || typeof localStorage.getItem !== 'function' || typeof localStorage.setItem !== 'function' || typeof localStorage.removeItem !== 'function') {
 	localStorage = {
 		privateObj: {},
-		setItem: function(key, value) {
+		setItem: function(key:any, value:any) {
 			localStorage.privateObj[key] = value
 		},
-		getItem: function(key) {
+		getItem: function(key:any) {
 			return localStorage.privateObj[key]
 		},
-		removeItem: function(key) {
+		removeItem: function(key:any) {
 			delete localStorage.privateObj[key]
 		}
 	}
@@ -110,7 +109,7 @@ export function Uploader(options?: Partial<IOption>) {
          * 清除本地存储
          * @param {Object} fileKey 文件标识符
          */
-        clearStorage: function(bucketName, objectName, fileKey) {
+        clearStorage: function(bucketName:any, objectName:any, fileKey:any) {
             localStorage.removeItem(fileKey + '_progress');
             localStorage.removeItem(fileKey + '_' + bucketName + '_' + objectName + '_context');  
         },
@@ -129,7 +128,7 @@ export function Uploader(options?: Partial<IOption>) {
 		 * 				progress {Number} 上传进度（保留两位小数的百分比）
 		 * @return {void}
 		 */
-		addFile: function(file: File, callback) {
+		addFile: function(file: File, callback:any) {
 			if(file){
 				var fileKey = md5(file.name + ':' + file.size),
 	                fileObj;
@@ -154,7 +153,7 @@ export function Uploader(options?: Partial<IOption>) {
          * @param  {String} fileKey 文件名和文件大小md5值
          * @return {Obejct}         文件对象
          */
-        getFile: function(fileKey) {
+        getFile: function(fileKey:any) {
             var curFile;            
             if (service.uploadFile.fileKey === fileKey) {
                 curFile = service.uploadFile;
@@ -172,7 +171,7 @@ export function Uploader(options?: Partial<IOption>) {
 		 * @return {void} 
 		 */
 		
-        getDNS: function(bucketname, callback){
+        getDNS: function(bucketname:any, callback:any){
 			if(bucketname === undefined || bucketname === null || bucketname === ''){
 				bucketname = '';
 			}
@@ -201,7 +200,7 @@ export function Uploader(options?: Partial<IOption>) {
          * 		offset {long} 当前分片在整个对象中的起始偏移量
          * @return {void}
          */
-        getOffset: function(param, callback) {
+        getOffset: function(param:any, callback:any) {
             var context;
             context = localStorage.getItem(param.fileKey + '_' + param.bucketName + '_' + param.objectName + '_context');
             if (!context) {
@@ -265,11 +264,11 @@ export function Uploader(options?: Partial<IOption>) {
          * 		trunkData {Object} 分片数据
          * @return {void}
          */
-		 uploadTrunk: function(param, trunkData, callback) {
-            var xhr,
+		 uploadTrunk: function(param:any, trunkData:any, callback:any) {
+            var xhr:any,
                 xhrParam = '',
-                curFile,
-                context,
+                curFile:any,
+                context:any,
                 blobSlice = File.prototype.slice;
                 
             curFile = service.getFile(trunkData.fileKey);
@@ -282,7 +281,7 @@ export function Uploader(options?: Partial<IOption>) {
                 curFile.xhr = xhr;
             };
             
-            xhr.upload.onprogress = function(e) {//上传进度处理函数            		
+            xhr.upload.onprogress = function(e:any) {//上传进度处理函数            		
                 var progress = 0;
 
                 if (e.lengthComputable) {
@@ -343,7 +342,7 @@ export function Uploader(options?: Partial<IOption>) {
                 			objectName: param.objectName,
                 			token: param.token,
                 			fileKey: trunkData.fileKey
-                		},function(offset){
+                		},function(offset:any){
                 			service.uploadTrunk(param, Object.assign({}, trunkData, {
                 				offset: offset,
                 				trunkEnd: offset + trunkData.trunkSize,
@@ -363,7 +362,7 @@ export function Uploader(options?: Partial<IOption>) {
                 			objectName: param1.objectName,
                 			token: param1.token,
                 			fileKey: trunkData.fileKey
-                		},function(offset){
+                		},function(offset:any){
                 			service.uploadTrunk(param1, Object.assign({}, trunkData, {
                 				offset: offset,
                 				trunkEnd: offset + trunkData.trunkSize,
@@ -407,7 +406,7 @@ export function Uploader(options?: Partial<IOption>) {
 		 * 			token {Object} 上传凭证
 		 * @return {void}
 		 */
-        upload: function(param, callback) {
+        upload: function(param:any, callback:any) {
         	if(!param.bucketName && param.bucketName !== 0){
         		opts.onError({
 					errMsg: '桶名不能为空',
@@ -441,7 +440,7 @@ export function Uploader(options?: Partial<IOption>) {
 			}
 			
 			var curFile = service.uploadFile;
-			service.getDNS(param.bucketName, function(edgeNodeList, lbs) {
+			service.getDNS(param.bucketName, function(edgeNodeList:any, lbs:any) {
 				if(edgeNodeList.length === 0){
 					opts.onError({
 						errMsg: '暂无边缘节点',
@@ -454,7 +453,7 @@ export function Uploader(options?: Partial<IOption>) {
                     objectName: param.objectName,
                     fileKey: curFile.fileKey,
                     token: param.token,
-                }, function(offset) {
+                }, function(offset:any) {
                     service.uploadTrunk({
                         serveIp: edgeNodeList[0],
                         bucketName: param.bucketName,
@@ -467,7 +466,7 @@ export function Uploader(options?: Partial<IOption>) {
                         trunkSize: param.trunkSize,
                         trunkEnd: (offset || 0) + param.trunkSize,
                         context: ''
-                    }, function(trunkData) {
+                    }, function(trunkData:any) {
                         service.clearStorage(param.bucketName, param.objectName, trunkData.fileKey);   
                         if(callback)
                         	callback(curFile);
