@@ -1226,6 +1226,10 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               mediaType: {
                 type: "string",
                 id: 13
+              },
+              framesSentPerSecond: {
+                type: "int64",
+                id: 14
               }
             }
           },
