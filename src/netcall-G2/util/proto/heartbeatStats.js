@@ -1454,6 +1454,10 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               bytesSentPerSecond: {
                 type: "int64",
                 id: 35
+              },
+              framesEncodedPerSecond: {
+                type: "int64",
+                id: 36
               }
             }
           }
