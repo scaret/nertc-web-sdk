@@ -637,6 +637,8 @@ syntax = "proto2";
 
        optional string mediaType=13;
 
+       optional int64 framesSentPerSecond=14;
+
     }
 
 

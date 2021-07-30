@@ -152,9 +152,9 @@ class StatsReport extends EventEmitter {
       if(isEmpty(this.prevStats_) || (la.length !== pla.length) || (lv.length !== plv.length) || (ls.length !== pls.length) || (ra.length !== pra.length) || (rv.length !== prv.length) || (rs.length !== prs.length) ) {
         this.prevStats_ = result;
         if(Object.keys(this.prevStats_.local).length){
-          this.prevStats_.local.audio_ssrc[0].bytesSentPerSecond = this.prevStats_.local.audio_ssrc[0].bytesSent;
-          this.prevStats_.local.video_ssrc[0].bytesSentPerSecond = this.prevStats_.local.video_ssrc[0].bytesSent;
-          this.prevStats_.local.video_ssrc[0].framesEncodedPerSecond = this.prevStats_.local.video_ssrc[0].framesEncoded;
+          this.prevStats_.local.audio_ssrc && (this.prevStats_.local.audio_ssrc[0].bytesSentPerSecond = this.prevStats_.local.audio_ssrc[0].bytesSent);
+          this.prevStats_.local.video_ssrc && (this.prevStats_.local.video_ssrc[0].bytesSentPerSecond = this.prevStats_.local.video_ssrc[0].bytesSent);
+          this.prevStats_.local.video_ssrc && (this.prevStats_.local.video_ssrc[0].framesEncodedPerSecond = this.prevStats_.local.video_ssrc[0].framesEncoded);
           this.prevStats_.local.screen_ssrc && (this.prevStats_.local.screen_ssrc[0].bytesSentPerSecond = this.prevStats_.local.screen_ssrc[0].bytesSent);
           this.prevStats_.local.screen_ssrc && (this.prevStats_.local.screen_ssrc[0].framesEncodedPerSecond = this.prevStats_.local.screen_ssrc[0].framesEncoded);
         }
@@ -175,9 +175,9 @@ class StatsReport extends EventEmitter {
         let remote = result.remote;
         let prevRemote = this.prevStats_.remote;
         if(Object.keys(local).length){
-          local.audio_ssrc[0].bytesSentPerSecond = (local.audio_ssrc[0].bytesSent - 0 - prevLocal.audio_ssrc[0].bytesSent)/2;
-          local.video_ssrc[0].bytesSentPerSecond = (local.video_ssrc[0].bytesSent - 0 - prevLocal.video_ssrc[0].bytesSent)/2;
-          local.video_ssrc[0].framesEncodedPerSecond = (local.video_ssrc[0].framesEncoded - 0 - prevLocal.video_ssrc[0].framesEncoded)/2;
+          local.audio_ssrc && (local.audio_ssrc[0].bytesSentPerSecond = (local.audio_ssrc[0].bytesSent - 0 - prevLocal.audio_ssrc[0].bytesSent)/2);
+          local.video_ssrc && (local.video_ssrc[0].bytesSentPerSecond = (local.video_ssrc[0].bytesSent - 0 - prevLocal.video_ssrc[0].bytesSent)/2);
+          local.video_ssrc && (local.video_ssrc[0].framesEncodedPerSecond = (local.video_ssrc[0].framesEncoded - 0 - prevLocal.video_ssrc[0].framesEncoded)/2);
           local.screen_ssrc && (local.screen_ssrc[0].bytesSentPerSecond = (local.screen_ssrc[0].bytesSent - 0 - prevLocal.screen_ssrc[0].bytesSent)/2);
           local.screen_ssrc && (local.screen_ssrc[0].framesEncodedPerSecond = (local.screen_ssrc[0].framesEncoded - 0 - prevLocal.screen_ssrc[0].framesEncoded)/2);
         }
@@ -197,22 +197,30 @@ class StatsReport extends EventEmitter {
       // safari 浏览器
     let sla = result.local.audio_outbound_rtp ? result.local.audio_outbound_rtp : [],
       slv = result.local.video_outbound_rtp ? result.local.video_outbound_rtp : [],
+      // safari 13 部分数据在 video_track 中
+      slvt = result.local.video_track ? result.local.video_track : [],
       sra = result.remote.audio_inbound_rtp ? result.remote.audio_inbound_rtp : [],
-      srv = result.remote.video_inbound_rtp ? result.remote.video_inbound_rtp : [];
+      srv = result.remote.video_inbound_rtp ? result.remote.video_inbound_rtp : [],
+      srvt = result.remote.video_track ? result.remote.video_track : [];
 
     if(!isEmpty(this.prevStats_)) {
       var spla = this.prevStats_.local.audio_outbound_rtp ? this.prevStats_.local.audio_outbound_rtp : [],
         splv = this.prevStats_.local.video_outbound_rtp ? this.prevStats_.local.video_outbound_rtp : [],
+        splvt = this.prevStats_.local.video_track ? this.prevStats_.local.video_track : [],
         spra = this.prevStats_.remote.audio_inbound_rtp ? this.prevStats_.remote.audio_inbound_rtp : [],
-        sprv = this.prevStats_.remote.video_inbound_rtp ? this.prevStats_.remote.video_inbound_rtp : [];
+        sprv = this.prevStats_.remote.video_inbound_rtp ? this.prevStats_.remote.video_inbound_rtp : [],
+        sprvt = this.prevStats_.remote.video_track ? this.prevStats_.remote.video_track : [];
     }
 
-      if(isEmpty(this.prevStats_) || (sla.length !== spla.length) || (slv.length !== splv.length) || (sra.length !== spra.length) || (srv.length !== sprv.length) ) {
+      if(isEmpty(this.prevStats_) || (sla.length !== spla.length) || (slv.length !== splv.length) || (slvt.length !== splvt.length) || (sra.length !== spra.length) || (srv.length !== sprv.length) || (srvt.length !== sprvt.length) ) {
         this.prevStats_ = result;
         if(Object.keys(this.prevStats_.local).length){
-          this.prevStats_.local.audio_outbound_rtp[0].bytesSentPerSecond = this.prevStats_.local.audio_outbound_rtp[0].bytesSent;
-          this.prevStats_.local.video_outbound_rtp[0].bytesSentPerSecond = this.prevStats_.local.video_outbound_rtp[0].bytesSent;
-          this.prevStats_.local.video_outbound_rtp[0].framesEncodedPerSecond = this.prevStats_.local.video_outbound_rtp[0].framesEncoded;
+          this.prevStats_.local.audio_outbound_rtp && (this.prevStats_.local.audio_outbound_rtp[0].bytesSentPerSecond = this.prevStats_.local.audio_outbound_rtp[0].bytesSent);
+          this.prevStats_.local.video_outbound_rtp && (this.prevStats_.local.video_outbound_rtp[0].bytesSentPerSecond = this.prevStats_.local.video_outbound_rtp[0].bytesSent);
+          this.prevStats_.local.video_outbound_rtp && (this.prevStats_.local.video_outbound_rtp[0].framesEncodedPerSecond = this.prevStats_.local.video_outbound_rtp[0].framesEncoded);
+          // safari 13 的 framesPerSecond 需要计算
+          this.prevStats_.local.video_track && (this.prevStats_.local.video_track[0].framesSentPerSecond = this.prevStats_.local.video_track[0].framesSent);
+
         }
         for(let item in this.prevStats_.remote){
           if(item.indexOf('inbound_rtp') > -1) {
@@ -231,9 +239,11 @@ class StatsReport extends EventEmitter {
         let remote = result.remote;
         let prevRemote = this.prevStats_.remote;
         if(Object.keys(local).length){
-          local.audio_outbound_rtp[0].bytesSentPerSecond = (local.audio_outbound_rtp[0].bytesSent - 0 - prevLocal.audio_outbound_rtp[0].bytesSent)/2;
-          local.video_outbound_rtp[0].bytesSentPerSecond = (local.video_outbound_rtp[0].bytesSent - 0 - prevLocal.video_outbound_rtp[0].bytesSent)/2;
-          local.video_outbound_rtp[0].framesEncodedPerSecond = (local.video_outbound_rtp[0].framesEncoded - 0 - prevLocal.video_outbound_rtp[0].framesEncoded)/2;
+          local.audio_outbound_rtp && (local.audio_outbound_rtp[0].bytesSentPerSecond = (local.audio_outbound_rtp[0].bytesSent - 0 - prevLocal.audio_outbound_rtp[0].bytesSent)/2);
+          local.video_outbound_rtp && (local.video_outbound_rtp[0].bytesSentPerSecond = (local.video_outbound_rtp[0].bytesSent - 0 - prevLocal.video_outbound_rtp[0].bytesSent)/2);
+          local.video_outbound_rtp && (local.video_outbound_rtp[0].framesEncodedPerSecond = (local.video_outbound_rtp[0].framesEncoded - 0 - prevLocal.video_outbound_rtp[0].framesEncoded)/2);
+          // safari 13 的 framesPerSecond 需要计算
+          local.video_track && (local.video_track[0].framesSentPerSecond = Math.round((local.video_track[0].framesSent - 0 - prevLocal.video_track[0].framesSent)/2));
         }
         for(let item in remote){
           if(item.indexOf('inbound_rtp') > -1) {
