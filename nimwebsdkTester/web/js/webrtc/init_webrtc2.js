@@ -452,19 +452,30 @@ function initEvents() {
     remoteStream.play(document.getElementById('remote-container'), playOptions).then(()=>{
       console.log('播放对端的流成功', playOptions)
       remoteStream.setRemoteRenderMode(globalConfig.remoteViewConfig)
+      
       setTimeout(checkRemoteStramStruck, 2000)
     }).catch(err=>{
       console.log('播放对端的流失败: ', err)
     })
     // 自动播放受限
-    rtc.client.on('NotAllowedError', err => {
-      const errorCode = err.getCode();
-      if(errorCode === 1030){
-        console.log('start resume--->');
-        remoteStream.resume();
-      }
-    })
+    if(window.autoPlayStart) {
+      rtc.client.on('NotAllowedError', err => {
+        const errorCode = err.getCode();
+          const id = remoteStream.getId()
+          addView(id);
+        if(errorCode === 1030){
+          $(`#${id}-img`).show();
+            $(`#${id}-img`).on('click', async () => {
+              // console.log('start resume--->');
+              await remoteStream.resume();
+              $(`#${id}-img`).hide();
+            });
+        }
+      })
+    }
+    
   })
+  
 
   rtc.client.on('deviceAdd', _data => {
     console.warn('设备增加: ', _data)
@@ -617,6 +628,19 @@ function initEvents() {
       isRepeatability(infoWindow.succTasksList, _data.taskId) ? null : infoWindow.succTasksList.remove(_data.taskId)
     }
   })
+}
+
+function addView(id) {
+  if (!$('#' + id)[0]) {
+    $('<div/>', {
+      id,
+      class: 'video-view'
+    }).appendTo('#remote-container');
+    $('<div/>', {
+      id: `${id}-img`,
+      class: 'play-img'
+    }).appendTo(`#${id}`);
+  }
 }
 
 function initVolumeDetect() {
@@ -860,6 +884,11 @@ $('#tasks-btn').on('click', () => {
     }
   }, 1000);*/
 })
+
+$('#auto-play-btn').on('click', () => {
+  window.autoPlayStart = true;
+})
+
 
 /**
  * ----------------------------------------
