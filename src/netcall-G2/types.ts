@@ -562,7 +562,7 @@ export interface MixAudioConf{
 
 export interface soundsConf{
   soundId: number;
-  state: string, // STARTING,PLAYED,PAUSED,STOPED
+  state: 'UNSTART'|'STARTING'|'PLAYED'|'PAUSED'|'STOPED', // STARTING,PLAYED,PAUSED,STOPED
   sourceNode:AudioBufferSourceNode|null;
   gainNode: GainNode|null;
   filePath: string;

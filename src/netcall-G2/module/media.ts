@@ -1739,21 +1739,27 @@ class MediaHelper extends EventEmitter {
   async stopAllEffects () {
     this.adapterRef.logger.log(`stopAllEffects`)
     Object.values(this.mixAudioConf.sounds).forEach(item => {
-      this.stopEffect(item.soundId)
+      if (item.state === "PLAYED" || item.state === "PAUSED"){
+        this.stopEffect(item.soundId)
+      }
     })
   }
 
   async pauseAllEffects () {
     this.adapterRef.logger.log(`pauseAllEffects`)
     Object.values(this.mixAudioConf.sounds).forEach(item => {
-      this.pauseEffect(item.soundId)
+      if (item.state === "PLAYED"){
+        this.pauseEffect(item.soundId)
+      }
     })
   }
 
   async resumeAllEffects () {
     this.adapterRef.logger.log(`resumeAllEffects`)
     Object.values(this.mixAudioConf.sounds).forEach(item => {
-      this.resumeEffect(item.soundId)
+      if (item.state === "PAUSED"){
+        this.pauseEffect(item.soundId)
+      }
     })
   }
 
