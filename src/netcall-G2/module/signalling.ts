@@ -730,7 +730,7 @@ class Signalling extends EventEmitter {
           server_ip: this.adapterRef.channelInfo._protooUrl,
           signal_time_elapsed: webrtc2Param.startWssTime - webrtc2Param.startJoinTime,
           time_elapsed: currentTime - webrtc2Param.startJoinTime,
-          browser: platform.name + '-' + platform.version
+          model: platform.name + '-' + platform.version
         })
         if (!this.adapterRef._mediasoup){
           throw new RtcError({
@@ -849,7 +849,7 @@ class Signalling extends EventEmitter {
       server_ip: this.adapterRef.channelInfo._protooUrl,
       signal_time_elapsed: webrtc2Param.startWssTime - webrtc2Param.startJoinTime,
       time_elapsed: currentTime - webrtc2Param.startJoinTime,
-      browser: platform.name + '-' + platform.version
+      model: platform.name + '-' + platform.version
     })
 
     //重连时的login失败，执行else的内容
