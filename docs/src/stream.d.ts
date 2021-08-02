@@ -84,6 +84,37 @@ declare interface Stream {
      * 
      * @param view div 标签，播放画面的 dom 容器节点。
      * @param playOptions 播放的音视频选项。
+     * @example
+     * ```javascript
+     *    // 本地流
+     *    // 在await rtc.localStream.init之后
+     *    await rtc.localStream.init();
+     *    rtc.localStream.play(document.getElementById("local-video-wrapper", {
+     *      audio: false,
+     *      video: true,
+     *      screen: true,
+     *    });
+     *    rtc.localStream.setLocalRenderMode({
+     *      width: 200,
+     *      height: 200,
+     *      cut: false
+     *    });
+     *    
+     *    // 远端流
+     *    // 在stream-subscribed之后
+     *    rtc.client.on("stream-subscribed", (evt)=>{
+     *        evt.stream.play(document.getElementById("remote-video-wrapper", {
+     *          audio: true,
+     *          video: true,
+     *          screen: true,
+     *        });
+     *        evt.stream.setRemoteRenderMode({
+     *          width: 200,
+     *          height: 200
+     *          cut: false
+     *        });
+     *    })
+     * ```
      */
     play(view: HTMLElement | null, playOptions?: {
       /**
@@ -110,14 +141,19 @@ declare interface Stream {
      * 设置本地视频画布。
      * 
      * 该方法设置本地视频画布。只影响本地用户看到的视频画面，不影响远端。
+     * 
+     * 例子见[[Stream.play]]。
      * @param options 配置对象。
      * @param mediaType 媒体流类型。即指定设置的是摄像头画面还是屏幕共享画面。
+     *
      */
     setLocalRenderMode(options: RenderMode, mediaType?: "video"|"screen"): "INVALID_ARGUMENTS" | undefined;
     /**
      * 设置远端视频画布。
      * 
      * 该方法绑定远端用户和显示视图，只影响本地用户看到的视频画面。退出房间后，SDK 会清除远端用户和视图的绑定关系。
+     *
+     * 例子见[[Stream.play]]。
      * @param options 配置对象。
      * @param mediaType 媒体流类型。即指定设置的是摄像头画面还是屏幕共享画面。
      */
@@ -167,6 +203,12 @@ declare interface Stream {
     }): Promise<undefined>;
     /**
      * 关闭音视频输入设备，如麦克风、摄像头、屏幕共享，并且停止发布。
+     * 
+     * @example
+     * ```
+     *    // 例如，关闭屏幕共享
+     *    rtc.localStream.close({ type: "screen"});
+     * ```
      * @param {Object} options 配置对象
      */
     close(options: {
