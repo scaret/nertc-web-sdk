@@ -11,6 +11,7 @@ if (fs.existsSync(path.join(__dirname, '../../doc'))){
 
 try {
   const status = child_process.execSync(`typedoc --name "${title}" --tsconfig ../../tsconfig_typedoc.json`)
+  const statusEn = child_process.execSync(`typedoc --name "${title}" --tsconfig ../../tsconfig_typedoc_en.json`)
 } catch (e) {
   console.error("文档生成失败");
   console.log(e.stdout.toString('utf8'));
