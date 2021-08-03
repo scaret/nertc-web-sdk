@@ -233,24 +233,101 @@ declare interface Client{
     getTransportStats(): Promise<any>;
     /**
      * 获取本地发布流的音频统计数据。
+     * 
+     * @example
+     * ```javascript
+     * setInterval(async () => {
+     *   const localAudioStats = await rtc.client.getLocalAudioStats();
+     *   if (localAudioStats[0]){
+     *     console.log(`===== localAudioStats =====`);
+     *     console.log(`Audio CodecType: ${localAudioStats[0].CodecType}`);
+     *     console.log(`Audio MuteState: ${localAudioStats[0].MuteState}`);
+     *     console.log(`Audio RecordingLevel: ${localAudioStats[0].RecordingLevel}`);
+     *     console.log(`Audio SamplingRate: ${localAudioStats[0].SamplingRate}`);
+     *     console.log(`Audio SendBitrate: ${localAudioStats[0].SendBitrate}`);
+     *     console.log(`Audio SendLevel: ${localAudioStats[0].SendLevel}`);
+     *   }
+     * }, 1000)
+     * ```
      */
     getLocalAudioStats(): Promise<any>;
     /**
-      * 获取本地发布流的视频统计数据。
-      * 
-      * @param mediaType 媒体流类型。
-      */
-    getLocalVideoStats(mediaType?: MediaType): Promise<any>;
+     * 获取本地发布流的视频统计数据。
+     * 
+     * @param mediaType 媒体流类型。"video"为视频流，"screen"为屏幕共享流。如不填，则一起返回
+     * 
+     * @example
+     * ```javascript
+     * setInterval(async () => {
+     *   const localVideoStats = await rtc.client.getLocalVideoStats();
+     *   for (var i in localVideoStats){
+     *     let mediaType = (i === 0 ? "video" : "screen")
+     *     console.log(`===== localVideoStats ${mediaType} =====`);
+     *     console.log(`${mediaType} CaptureFrameRate: ${localVideoStats[i].CaptureFrameRate}`);
+     *     console.log(`${mediaType} CaptureResolutionHeight: ${localVideoStats[i].CaptureResolutionHeight}`);
+     *     console.log(`${mediaType} CaptureResolutionWidth: ${localVideoStats[i].CaptureResolutionWidth}`);
+     *     console.log(`${mediaType} EncodeDelay: ${localVideoStats[i].EncodeDelay}`);
+     *     console.log(`${mediaType} MuteState: ${localVideoStats[i].MuteState}`);
+     *     console.log(`${mediaType} SendBitrate: ${localVideoStats[i].SendBitrate}`);
+     *     console.log(`${mediaType} SendFrameRate: ${localVideoStats[i].SendFrameRate}`);
+     *     console.log(`${mediaType} SendResolutionHeight: ${localVideoStats[i].SendResolutionHeight}`);
+     *     console.log(`${mediaType} SendResolutionWidth: ${localVideoStats[i].SendResolutionWidth}`);
+     *     console.log(`${mediaType} TargetSendBitrate: ${localVideoStats[i].TargetSendBitrate}`);
+     *     console.log(`${mediaType} TotalDuration: ${localVideoStats[i].TotalDuration}`);
+     *     console.log(`${mediaType} TotalFreezeTime: ${localVideoStats[i].TotalFreezeTime}`);
+     *   }
+     * }, 1000)
+     * ```
+     */
+    getLocalVideoStats(mediaType?: "video"|"screen"): Promise<any>;
     /**
      * 获取远端订阅流的音频统计数据。
+     * 
+     * @example
+     * ```javascript
+     * setInterval(async () => {
+     *   const remoteAudioStatsMap = await rtc.client.getRemoteAudioStats();
+     *   for(var uid in remoteAudioStatsMap){
+     *       console.log(`Audio CodecType from ${uid}: ${remoteAudioStatsMap[uid].CodecType}`);
+     *       console.log(`Audio End2EndDelay from ${uid}: ${remoteAudioStatsMap[uid].End2EndDelay}`);
+     *       console.log(`Audio MuteState from ${uid}: ${remoteAudioStatsMap[uid].MuteState}`);
+     *       console.log(`Audio PacketLossRate from ${uid}: ${remoteAudioStatsMap[uid].PacketLossRate}`);
+     *       console.log(`Audio RecvBitrate from ${uid}: ${remoteAudioStatsMap[uid].RecvBitrate}`);
+     *       console.log(`Audio RecvLevel from ${uid}: ${remoteAudioStatsMap[uid].RecvLevel}`);
+     *       console.log(`Audio TotalFreezeTime from ${uid}: ${remoteAudioStatsMap[uid].TotalFreezeTime}`);
+     *       console.log(`Audio TotalPlayDuration from ${uid}: ${remoteAudioStatsMap[uid].TotalPlayDuration}`);
+     *       console.log(`Audio TransportDelay from ${uid}: ${remoteAudioStatsMap[uid].TransportDelay}`);
+     *   }
+     * }, 1000)
+     * ```
      */
     getRemoteAudioStats(): Promise<any>;
     /**
      * 获取远端订阅流的视频统计数据。
-      * 
-      * @param mediaType 媒体流类型。
+     * 
+     * @param mediaType 媒体流类型。"video"为视频流，"screen"为屏幕共享流。默认为"video"。
+     * @example
+     * ```javascript
+     * setInterval(async () => {
+     *   const remoteVideoStatsMap = await rtc.client.getRemoteVideoStats();
+     *    for(var uid in remoteVideoStatsMap){
+     *      console.log(`Video End2EndDelay from ${uid}: ${remoteVideoStatsMap[uid].End2EndDelay}`);
+     *      console.log(`Video MuteState from ${uid}: ${remoteVideoStatsMap[uid].MuteState}`);
+     *      console.log(`Video PacketLossRate from ${uid}: ${remoteVideoStatsMap[uid].PacketLossRate}`);
+     *      console.log(`Video RecvBitrate from ${uid}: ${remoteVideoStatsMap[uid].RecvBitrate}`);
+     *      console.log(`Video RecvResolutionHeight from ${uid}: ${remoteVideoStatsMap[uid].RecvResolutionHeight}`);
+     *      console.log(`Video RecvResolutionWidth from ${uid}: ${remoteVideoStatsMap[uid].RecvResolutionWidth}`);
+     *      console.log(`Video RenderFrameRate from ${uid}: ${remoteVideoStatsMap[uid].RenderFrameRate}`);
+     *      console.log(`Video RenderResolutionHeight from ${uid}: ${remoteVideoStatsMap[uid].RenderResolutionHeight}`);
+     *      console.log(`Video RenderResolutionWidth from ${uid}: ${remoteVideoStatsMap[uid].RenderResolutionWidth}`);
+     *      console.log(`Video TotalFreezeTime from ${uid}: ${remoteVideoStatsMap[uid].TotalFreezeTime}`);
+     *      console.log(`Video TotalPlayDuration from ${uid}: ${remoteVideoStatsMap[uid].TotalPlayDuration}`);
+     *      console.log(`Video TransportDelay from ${uid}: ${remoteVideoStatsMap[uid].TransportDelay}`);
+     *   }
+     * }, 1000)
+     * ```
      */
-    getRemoteVideoStats(mediaType?: MediaType): Promise<any>;
+    getRemoteVideoStats(mediaType?: "video"|"screen"): Promise<any>;
     /**
      * 获取本地用户 ID。
      * 
