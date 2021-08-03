@@ -839,7 +839,7 @@ class Stream extends EventEmitter {
         if(this._play && this.mediaHelper && this.mediaHelper.screenStream && this.mediaHelper.screenStream.getVideoTracks().length){
           this.client.adapterRef.logger.log('开始播放辅流: ', this.stringStreamID)
           //@ts-ignore
-          this._play.playScreenStream(this.mediaHelper.screenStream, view)
+          await this._play.playScreenStream(this.mediaHelper.screenStream, view)
         }
       }
     }
@@ -1884,7 +1884,7 @@ class Stream extends EventEmitter {
           this.mediaHelper.cameraTrack.enabled = true;
         }
         //@ts-ignore
-        this._play.playVideoStream(this.mediaHelper.videoStream, this.videoView, true)
+        await this._play.playVideoStream(this.mediaHelper.videoStream, this.videoView, true)
         if ("width" in this.renderMode.remote.video){
           this._play.setVideoRender(this.renderMode.remote.video)
         }
@@ -2004,7 +2004,7 @@ class Stream extends EventEmitter {
           this.mediaHelper.screenTrack.enabled = true;
         }
         //@ts-ignore
-        this._play.playScreenStream(this.mediaHelper.screenStream, this.screenView)
+        await this._play.playScreenStream(this.mediaHelper.screenStream, this.screenView)
         if ("width" in this.renderMode.remote.screen){
           this._play.setScreenRender(this.renderMode.remote.screen)
         }

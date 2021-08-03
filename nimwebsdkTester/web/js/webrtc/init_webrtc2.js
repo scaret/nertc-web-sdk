@@ -1088,7 +1088,7 @@ function initLocalStream(audioSource, videoSource) {
     resolution: NERTC.VIDEO_QUALITY[screenProfile],
     frameRate: NERTC.VIDEO_FRAME_RATE[screenFrameRate]
   })
-  rtc.localStream.init().then(()=>{
+  rtc.localStream.init().then(async()=>{
     const playOptions = $('#localPlayOptionsEnabled').prop('checked') ? {
       audio: $("#localPlayOptionsAudio").prop('checked'),
       audioType: $("#localPlayOptionsAudioType").val(),
@@ -1096,7 +1096,7 @@ function initLocalStream(audioSource, videoSource) {
       screen: $("#localPlayOptionsScreen").prop('checked'),
     } : null;
     
-    rtc.localStream.play(document.getElementById('local-container'), playOptions)
+    await rtc.localStream.play(document.getElementById('local-container'), playOptions)
     console.warn('音视频初始化完成，播放本地视频', playOptions);
     rtc.localStream.setLocalRenderMode(globalConfig.localViewConfig)
     if(!$('#camera').val())
@@ -1550,9 +1550,9 @@ $('#playCamera').on('click', () => {
     type: 'video',
     deviceId: $('#camera').val(),
     //facingMode: 'user'//'environment'
-  }).then(()=>{
+  }).then(async()=>{
     console.log('打开摄像头 sucess')
-    rtc.localStream.play(document.getElementById('local-container'))
+    await rtc.localStream.play(document.getElementById('local-container'))
     rtc.localStream.setLocalRenderMode(globalConfig.localViewConfig)
   }).catch(err =>{
     addLog('打开摄像头' + err)
@@ -1626,8 +1626,8 @@ $('#playScreen').on('click', () => {
   rtc.localStream.open({
     type: 'screen',
     sourceId: getUrlVars().sourceId
-  }).then(()=>{
-    rtc.localStream.play(document.getElementById('local-container'))
+  }).then(async()=>{
+    await rtc.localStream.play(document.getElementById('local-container'))
     rtc.localStream.setLocalRenderMode(globalConfig.localViewConfig)
   }).catch(err =>{
     addLog('打开屏幕共享 失败: ' + err)
@@ -1668,8 +1668,8 @@ $('#playScreenAudio').on('click', () => {
     type: 'screen',
     screenAudio: true,
     sourceId: getUrlVars().sourceId
-  }).then(()=>{
-    rtc.localStream.play(document.getElementById('local-container'))
+  }).then(async()=>{
+    await rtc.localStream.play(document.getElementById('local-container'))
     rtc.localStream.setLocalRenderMode(globalConfig.localViewConfig)
   }).catch(err =>{
     addLog('打开屏幕共享音频 失败: ' + err)
