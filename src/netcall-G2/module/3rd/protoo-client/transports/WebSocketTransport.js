@@ -1,4 +1,3 @@
-const W3CWebSocket = require('websocket').w3cwebsocket;
 const retry = require('retry');
 const Logger = require('../Logger');
 const EnhancedEventEmitter = require('../EnhancedEventEmitter');
@@ -112,13 +111,7 @@ class WebSocketTransport extends EnhancedEventEmitter
 
 			logger.debug('_runWebSocket() [currentAttempt:%s]', currentAttempt);
 
-			this._ws = new W3CWebSocket(
-				this._url,
-				WS_SUBPROTOCOL,
-				this._options.origin,
-				this._options.headers,
-				this._options.requestOptions,
-				this._options.clientConfig);
+			this._ws = new WebSocket(this._url, [WS_SUBPROTOCOL]);
 
 			this._ws.onopen = () =>
 			{
