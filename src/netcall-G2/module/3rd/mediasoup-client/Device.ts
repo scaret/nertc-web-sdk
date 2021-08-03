@@ -50,7 +50,7 @@ export function detectDevice(): BuiltinHandlerName | undefined
     const engine = browser.getEngine();
 
     // Chrome and Chromium.
-    if (browser.satisfies({ chrome: '>=74', chromium: '>=74' }))
+    if (browser.satisfies({ chrome: '>=72', chromium: '>=72' }))
     {
       return 'Chrome74';
     }
@@ -71,7 +71,7 @@ export function detectDevice(): BuiltinHandlerName | undefined
     else
     {
       logger.warn(
-        'this._detectDevice() | browser not supported [name:%s, version:%s], using Chrome74 as default',
+        'this._detectDevice() | browser not supported [name:%s, version:%s], using Chrome72 as default',
         browser.getBrowserName(), browser.getBrowserVersion());
 
       return 'Chrome74';
@@ -80,7 +80,7 @@ export function detectDevice(): BuiltinHandlerName | undefined
   // Unknown device.
   else
   {
-    logger.warn('this._detectDevice() | unknown device, using Chrome 74 as default');
+    logger.warn('this._detectDevice() | unknown device, using Chrome 72 as default');
 
     return 'Chrome74';
   }
