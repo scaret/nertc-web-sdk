@@ -38,6 +38,14 @@ var destFolderApidoc = path.join(TARGET_DIR, `${buildId}`, 'api')
 fs.emptyDirSync(destFolderApidoc)
 copy(srcFolderApidoc, destFolderApidoc)
 
+var srcFolderApidocEn = path.join(
+  __dirname,
+  `../dist/api_en/`
+)
+var destFolderApidocEn = path.join(TARGET_DIR, `${buildId}`, 'api_en')
+fs.emptyDirSync(destFolderApidocEn)
+copy(srcFolderApidocEn, destFolderApidocEn)
+
 // 搬运Electron的app文件夹
 var srcFolderElectronApp = path.join(
   __dirname,
