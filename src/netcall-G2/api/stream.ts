@@ -1420,14 +1420,24 @@ class Stream extends EventEmitter {
             message: 'media server error'
           })
         }
-          // localstream unmute
+        
+        // unmuteLocalAudio1: unmute Mediasoup
+        await this.client.adapterRef._mediasoup.unmuteAudio()
+        // unmuteLocalAudio2: unmute发送track
         const tracks = this.mediaHelper && this.mediaHelper.audioStream.getAudioTracks();
         if (tracks && tracks.length) {
           tracks.forEach((track)=>{
             track.enabled = true;
           })
         }
-        await this.client.adapterRef._mediasoup.unmuteAudio()
+        // unmuteLocalAudio3. unmute设备
+        if (this.mediaHelper.micTrack){
+          this.mediaHelper.micTrack.enabled = true;
+        }
+        // unmuteLocalAudio4. 混音的gainNode设为0（使getAudioLevel恢复）
+        if (this.mediaHelper.webAudio && this.mediaHelper.webAudio.gainFilter){
+          this.mediaHelper.webAudio.gainFilter.gain.value = 1;
+        }
         this.muteStatus.audioSend = false;
       } else {
         if (!this._play){
@@ -1485,13 +1495,22 @@ class Stream extends EventEmitter {
             message: 'media server error'
           })
         }
+        // muteLocalAudio1: mute mediasoup
         await this.client.adapterRef._mediasoup.muteAudio()
-        // localStream mute
+        // muteLocalAudio2: mute发送的track
         const tracks = this.mediaHelper && this.mediaHelper.audioStream.getAudioTracks();
         if (tracks && tracks.length) {
           tracks.forEach((track)=>{
             track.enabled = false;
           })
+        }
+        // muteLocalAudio3: mute麦克风设备track
+        if (this.mediaHelper.micTrack){
+          this.mediaHelper.micTrack.enabled = false;
+        }
+        // muteLocalAudio4: 混音的gainNode设为0（使getAudioLevel为0）
+        if (this.mediaHelper.webAudio && this.mediaHelper.webAudio.gainFilter){
+          this.mediaHelper.webAudio.gainFilter.gain.value = 0;
         }
         this.muteStatus.audioSend = true
       } else {
