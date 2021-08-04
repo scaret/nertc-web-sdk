@@ -76,6 +76,9 @@ class WebAudio extends EventEmitter{
   public mixAudioConf: {
     state: number,
     audioSource?: AudioBufferSourceNode|null,
+    /**
+     * 伴音的音量
+     */
     gainFilter?: GainNode|null,
     replace: boolean,
     cycle: number,
@@ -87,6 +90,10 @@ class WebAudio extends EventEmitter{
     setPlayStartTime: number,
     auidoMixingEnd: ((evt:Event) => void)|null,
   };
+  /**
+   * 麦克风+屏幕共享音频+伴音+音效的汇总节点
+   * 除了处理mute/unmute，不会单独设置音量
+   */
   public gainFilter?:GainNode;
   public musicDestination: MediaStreamAudioDestinationNode | null;
   public analyzeDestination: MediaStreamAudioDestinationNode | null;
@@ -335,6 +342,9 @@ class WebAudio extends EventEmitter{
       }
     }
     if (!type) {
+      // 注意，这个gain值不会设置到this.gainFilter上去。
+      // this.gainFilter只是作为所有混音输入（麦克风、伴音、音效）的汇总节点，并且处理mute的情况。
+      // 音量应该设置到每个单独的输入的gain上去。
       this.gain = val
     }
   }
@@ -437,7 +447,7 @@ class WebAudio extends EventEmitter{
     this.mixAudioConf.volume = options.volume ? options.volume / 255 : 1
     this.mixAudioConf.auidoMixingEnd = options.auidoMixingEnd
     this.mixAudioConf.audioSource.connect(this.mixAudioConf.gainFilter)
-    this.mixAudioConf.gainFilter.connect(this.destination)
+    this.mixAudioConf.gainFilter.connect(this.gainFilter)
     if (this.musicDestination){
       this.mixAudioConf.gainFilter.connect(this.musicDestination)
     }
@@ -646,7 +656,7 @@ class WebAudio extends EventEmitter{
       return 
     }
     this.logger.log('startAudioEffectMix: ', options)
-    gainNode.connect(this.destination)
+    gainNode.connect(this.gainFilter)
     if (this.musicDestination){
       gainNode.connect(this.musicDestination)
     }
