@@ -313,7 +313,8 @@ class Play extends EventEmitter {
         this.autoPlayType = 1;
         throw new RtcError({
           code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
-          message: error.toString()
+          message: error.toString(),
+          url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082'
         })
         
       }
@@ -466,7 +467,8 @@ class Play extends EventEmitter {
         this.autoPlayType = 2;
         throw new RtcError({
           code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
-          message: error.toString()
+          message: error.toString(),
+          url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082'
         })
       }
     }
