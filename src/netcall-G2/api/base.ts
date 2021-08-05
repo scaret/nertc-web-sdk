@@ -520,6 +520,7 @@ class Base extends EventEmitter {
   }
 
   /*** 用户成员uid和ssrc对应的list ***/
+  // 不支持 firefox
   getUidAndKindBySsrc(ssrc:number) {
     for (let i in this.adapterRef.uid2SscrList) {
       if(this.adapterRef.uid2SscrList[i].audio.ssrc == ssrc){

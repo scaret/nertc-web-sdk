@@ -520,7 +520,7 @@ class Mediasoup extends EventEmitter {
               message: 'localStream not found'
             })
           }
-          this._sendTransport.fillRemoteRecvSdp({
+          await this._sendTransport.fillRemoteRecvSdp({
             kind,
             appData,
             iceParameters,

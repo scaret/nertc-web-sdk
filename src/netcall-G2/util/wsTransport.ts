@@ -151,7 +151,8 @@ export default class WSTransport {
         let heartbeatMessage = root.lookupType('WebrtcStats');
         let message = heartbeatMessage.create(data);
         let buffer = heartbeatMessage.encode(message).finish();
-        let headerArray = [4,1,1,1,1,0,0,0];
+        // let headerArray = [4,1,1,1,1,0,0,0]; // 正式环境
+        let headerArray = [4,1,1,1,2,0,0,0];  // 测试环境
         let newBuffer = Uint8Array.from(headerArray.concat(Array.from(buffer)));
         // return buffer;
         return newBuffer;

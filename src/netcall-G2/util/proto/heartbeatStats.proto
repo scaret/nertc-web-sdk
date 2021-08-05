@@ -47,6 +47,8 @@ syntax = "proto2";
 
      repeated screen_ssrc_obj screen_ssrc=16;
 
+     repeated screen_outbound_rtp_obj screen_outbound_rtp=17;
+
      message video_bwe_obj{
 
        optional string googActualEncBitrate=1;
@@ -762,6 +764,51 @@ syntax = "proto2";
     }
 
 
+    message screen_outbound_rtp_obj{
+
+       optional string id=1;
+
+       optional int64 timestamp=2;
+
+       optional string type=3;
+
+       optional string kind=4;
+
+       optional string mediaType=5;
+
+       optional int64 ssrc=6;
+
+       optional int64 bytesSent=7;
+
+       optional int64 packetsSent=8;
+
+       optional double bitrateMean=9;
+
+       optional double bitrateStdDev=10;
+
+       optional int64 droppedFrames=11;
+
+       optional int64 firCount=12;
+
+       optional int64 framerateMean=13;
+
+       optional int64 framerateStdDev=14;
+
+       optional int64 framesEncoded=15;
+
+       optional int64 nackCount=16;
+
+       optional int64 pliCount=17;
+
+       optional int64 bytesSentPerSecond=18;
+
+       optional int64 framesEncodedPerSecond=19;
+
+       optional int64 packetsSentPerSecond=20;
+
+    }
+
+
   }
 
 
@@ -792,6 +839,8 @@ syntax = "proto2";
      repeated video_track_obj video_track=12;
 
      repeated screen_ssrc_obj screen_ssrc=13;
+
+     repeated screen_inbound_rtp_obj screen_inbound_rtp=14;
 
      message video_ssrc_obj{
 
@@ -1281,6 +1330,10 @@ syntax = "proto2";
 
        optional double packetsLostRate=34;
 
+       optional int64 recvPacketLoss=35;
+
+       optional string remoteuid=36;
+
     }
 
 
@@ -1351,6 +1404,68 @@ syntax = "proto2";
        optional double packetsLostRate=32;
 
        optional int64 framesDecodedPerSecond=33;
+
+       optional int64 recvPacketLoss=34;
+
+       optional string remoteuid=35;
+
+    }
+
+    message screen_inbound_rtp_obj{
+
+       optional string id=1;
+
+       optional int64 timestamp=2;
+
+       optional string type=3;
+
+       optional string kind=4;
+
+       optional string mediaType=5;
+
+       optional int64 ssrc=6;
+
+       optional int64 discardedPackets=7;
+
+       optional double jitter=8;
+
+       optional int64 packetsLost=9;
+
+       optional int64 packetsReceived=10;
+
+       optional double bitrateMean=11;
+
+       optional double bitrateStdDev=12;
+
+       optional int64 bytesReceived=13;
+
+       optional int64 firCount=14;
+
+       optional double framerateMean=15;
+
+       optional double framerateStdDev=16;
+
+       optional int64 framesDecoded=17;
+
+       optional int64 nackCount=18;
+
+       optional int64 pliCount=19;
+
+       optional string remoteId=20;
+
+       optional string targetUid=21;
+
+       optional int64 bytesReceivedPerSecond=22;
+
+       optional int64 packetsLostPerSecond=23;
+
+       optional int64 framesDecodedPerSecond=24;
+
+       optional int64 recvPacketLoss=25;
+
+       optional int64 packetsReceivedPerSecond=26;
+
+       optional string remoteuid=27;
 
     }
 
@@ -1512,6 +1627,8 @@ syntax = "proto2";
       optional double packetsLostRate=42;
 
    }
+
+   
 
 
   }
