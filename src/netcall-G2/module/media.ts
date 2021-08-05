@@ -1758,7 +1758,7 @@ class MediaHelper extends EventEmitter {
     this.adapterRef.logger.log(`resumeAllEffects`)
     Object.values(this.mixAudioConf.sounds).forEach(item => {
       if (item.state === "PAUSED"){
-        this.pauseEffect(item.soundId)
+        this.resumeEffect(item.soundId)
       }
     })
   }
