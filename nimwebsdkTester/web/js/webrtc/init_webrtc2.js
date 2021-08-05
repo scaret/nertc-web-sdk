@@ -463,7 +463,7 @@ function initEvents() {
         const errorCode = err.getCode();
           const id = remoteStream.getId()
           addView(id);
-        if(errorCode === 1030){
+        if(errorCode === 41030){
           $(`#${id}-img`).show();
             $(`#${id}-img`).on('click', async () => {
               // console.log('start resume--->');
