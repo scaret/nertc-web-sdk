@@ -77,10 +77,10 @@ const NERTC = {
      * <br>
      * 默认输出 INFO 日志等级，该日志等级包含 SDK 关键路径信息。
      *
-     * @param {LogLevel} level 日志输出等级 {@link TRTC.Logger.LogLevel LogLevel}
+     * @param {LogLevel} level 日志输出等级 {@link NERTC.Logger.LogLevel LogLevel}
      * @example
      * // 输出INFO以上日志等级
-     * TRTC.Logger.setLogLevel(TRTC.Logger.LogLevel.INFO);
+     * NERTC.Logger.setLogLevel(NERTC.Logger.LogLevel.INFO);
      */
     // setLogLevel(level:number) {
     //   log.setLogLevel(level);
