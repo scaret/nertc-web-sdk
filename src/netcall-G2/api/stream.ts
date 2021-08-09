@@ -822,6 +822,15 @@ class Stream extends EventEmitter {
           try{
             //@ts-ignore
             await this._play.playVideoStream(this.mediaHelper.videoStream, view, playOptions.muted)
+            if (this.isRemote){
+              if ("width" in this.renderMode.remote.video){
+                this._play.setVideoRender(this.renderMode.remote.video)
+              }
+            }else{
+              if ("width" in this.renderMode.local.video){
+                this._play.setVideoRender(this.renderMode.local.video)
+              }
+            }
             this.videoPlay_ = true;
           }catch(error) {
             // let ErrorMessage = 'NotAllowedError: videoplay is not allowed in current browser, please refer to https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082' 
@@ -840,6 +849,15 @@ class Stream extends EventEmitter {
           this.client.adapterRef.logger.log('开始播放辅流: ', this.stringStreamID)
           //@ts-ignore
           await this._play.playScreenStream(this.mediaHelper.screenStream, view)
+          if (this.isRemote){
+            if ("width" in this.renderMode.remote.screen){
+              this._play.setScreenRender(this.renderMode.remote.screen)
+            }
+          }else{
+            if ("width" in this.renderMode.local.screen){
+              this._play.setScreenRender(this.renderMode.local.screen)
+            }
+          }
         }
       }
     }
@@ -1006,13 +1024,13 @@ class Stream extends EventEmitter {
     } else if (type === 'screen') {
       this._play.stopPlayScreenStream()
     } else {
-      if(!this.audio){
+      if(this._play.audioDom){
         this._play.stopPlayAudioStream()
         this.audioPlay_ = false;
-      } if (!this.video){
+      } if (this._play.videoDom){
         this._play.stopPlayVideoStream()
         this.videoPlay_ = false;
-      } if (!this.screen){
+      } if (this._play.screenDom){
         this._play.stopPlayScreenStream()
       }
     }
