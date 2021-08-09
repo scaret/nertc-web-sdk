@@ -2316,6 +2316,50 @@ function getUidFromDomInput(){
   }
 }
 
+
+$("#startPlay").on("click", function(){
+  let uid = $("#stopUid").val();
+  let mediaType = $("#stopMediaType").val();
+  let stream;
+  if (!uid){
+    stream = rtc.localStream;
+  }else{
+    stream = rtc.remoteStreams[uid];
+  }
+  if (!stream){
+    addLog("播放：未找到stream" + uid);
+    return;
+  }
+  addLog("播放" + stream.getId() + " " + mediaType);
+  if (mediaType){
+    const playOptions = {audio: false, video: false, screen: false};
+    playOptions[mediaType] = true
+    stream.play(document.getElementById('manual-container'), playOptions);
+  }else{
+    stream.play(document.getElementById('manual-container'));
+  }
+});
+$("#stopPlay").on("click", function(){
+  let uid = $("#stopUid").val();
+  let mediaType = $("#stopMediaType").val();
+  let stream;
+  if (!uid){
+    stream = rtc.localStream;
+  }else{
+    stream = rtc.remoteStreams[uid];
+  }
+  if (!stream){
+    addLog("停止播放：未找到stream" + uid);
+    return;
+  }
+  addLog("停止播放" + stream.getId() + " " + mediaType);
+  if (mediaType){
+    stream.stop(mediaType);
+  }else{
+    stream.stop();
+  }
+});
+
 /**
  * ----------------------------------------
  *              水印相关

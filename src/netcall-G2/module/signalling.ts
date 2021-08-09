@@ -711,7 +711,7 @@ class Signalling extends EventEmitter {
         this.adapterRef.mediaCapability.parseRoom(response.externData.roomCapability);
         this.adapterRef.instance.emit('mediaCapabilityChange');
         await this.adapterRef._mediasoup.init()
-        if (this.adapterRef.localStream) {
+        if (this.adapterRef.localStream && this.adapterRef.instance.isPublished(this.adapterRef.localStream)) {
           this.adapterRef.logger.log('重连成功，重新publish本端流')
           this.adapterRef.instance.publish(this.adapterRef.localStream)
         } else {

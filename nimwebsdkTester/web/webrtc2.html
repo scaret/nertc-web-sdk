@@ -395,6 +395,17 @@
               播放辅流
               <input type="checkbox" id="remotePlayOptionsScreen" checked>
             </div>
+            <div class="line">
+              uid<input type="text" id="stopUid" class="input-40">
+              <select id="stopMediaType" class="input-40">
+                <option value="">默认</option>
+                <option value="audio">audio</option>
+                <option value="video">video</option>
+                <option value="screen">screen</option>
+              </select>
+              <button id="startPlay">播放</button>
+              <button id="stopPlay">停止播放</button>
+            </div>
           </div>
           <div class="part">
             <div class="line">设置自己的画面尺寸: </div>
@@ -841,6 +852,9 @@
         <div id="remote-container" class="video-container">
           <h5>其他人的画面</h5>
 
+        </div>
+        <div id="manual-container" class="video-container">
+          
         </div>
       </div>
       <div class="block3" id="statsPanel" style="display: none">

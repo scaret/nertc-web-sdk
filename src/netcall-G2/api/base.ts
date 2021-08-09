@@ -565,7 +565,7 @@ class Base extends EventEmitter {
   }
   
   isPublished(stream: Stream){
-    return stream && (stream.audio && stream.pubStatus.audio.audio) || (stream.video && stream.pubStatus.video.video) || (stream.screen && stream.pubStatus.screen.screen)
+    return stream && ((stream.audio && stream.pubStatus.audio.audio) || (stream.video && stream.pubStatus.video.video) || (stream.screen && stream.pubStatus.screen.screen))
   }
 
   isSubscribe(stream: Stream){
