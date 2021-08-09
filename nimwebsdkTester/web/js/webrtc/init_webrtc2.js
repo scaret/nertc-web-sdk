@@ -487,6 +487,7 @@ function initEvents() {
 
   rtc.client.on('active-speaker', _data => {
     //console.log("===== 当前在讲话的人：", _data.uid)
+    $("#activeSpeaker").text(`active-speaker：${_data.uid} ${_data.level}`);
     
     if (!currentSpeaker || currentSpeaker.uid != _data.uid) {
       //console.warn('currentSpeaker: ', currentSpeaker)
@@ -498,6 +499,10 @@ function initEvents() {
   
   rtc.client.on('volume-indicator', _data => {
    // console.log("===== 正在说话的远端用户及其音量：", _data)
+    $("#volume-indicator").empty();
+    for (var i = 0; i < _data.length; i++){
+      $("#volume-indicator").append(`<tr><td>${_data[i].uid}</td><td>${_data[i].level}</td></tr>`);
+    }
   })
 
   rtc.client.on('stopScreenSharing', _data => {
