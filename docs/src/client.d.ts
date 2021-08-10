@@ -417,6 +417,10 @@ declare interface Client{
      * 新增的远端流。
      */
     stream: Stream;
+    /**
+     * 远端流新增的媒体类型
+     */
+    mediaType: "audio"|"video"|"screen";
   }) => void): void;
 
 
@@ -433,19 +437,31 @@ declare interface Client{
     /**
      * 音视频轨道类型。
      */
-    mediaType: MediaType
+    mediaType: "audio"|"video"|"screen";
   }) => void): void;
 
   /**
    * 应用已删除远端音视频流。
    * 
    * 远端用户调用 [[Client.unpublish]] 方法之后，会触发此回调。
+   * 
+   * @example
+   * ```javascript
+   * rtc.client.on("stream-removed", (evt)=>{
+   *   // 远端流停止，则关闭渲染
+   *   evt.stream.stop(evt.mediaType);
+   * });
+   * ```
    */
   on(event: "stream-removed", callback: (evt: {
     /**
      * 远端流。
      */
     stream: Stream;
+    /**
+     * 远端流被关闭的媒体类型
+     */
+    mediaType: "audio"|"video"|"screen";
   }) => void): void;
 
   /**
