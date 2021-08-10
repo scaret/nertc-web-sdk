@@ -639,14 +639,14 @@ class GetStats extends EventEmitter{
       firstGap = currentItem[firstKey];
       secondKey ? secondGap = currentItem[secondKey] : null
     } else if (currentItem[firstKey] - pc.lastStats[ssrcKey][firstKey] > 0) {
-      firstGap = currentItem[firstKey] - pc.lastStats[ssrcKey][firstKey];
-      secondKey ? secondGap = currentItem[secondKey] - pc.lastStats[ssrcKey][secondKey] : null
+      firstGap = (currentItem[firstKey] - pc.lastStats[ssrcKey][firstKey])/2;
+      secondKey ? secondGap = (currentItem[secondKey] - pc.lastStats[ssrcKey][secondKey])/2 : null
     } else {
       return firstGap
     } 
 
     if (/bytes/gi.test(firstKey)) {
-      //当前的检测周期是1s
+      //当前的检测周期是2s
       firstGap = Math.round(firstGap * 8 /1000) 
     } else if (secondKey) {
       if (firstKey.indexOf('send') > -1) {
