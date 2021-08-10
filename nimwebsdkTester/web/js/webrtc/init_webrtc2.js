@@ -421,7 +421,7 @@ function initEvents() {
       delete rtc.remoteStreams[remoteStream.streamID]
       $(`#subList option[value=${remoteStream.streamID}]`).remove()
     }
-    remoteStream.stop()
+    remoteStream.stop(evt.mediaType);
   })
 
   rtc.client.on('stream-subscribed', evt => {
