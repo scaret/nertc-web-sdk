@@ -805,7 +805,7 @@ $('#joinChannel-btn').on('click', async () => {
   }).then((obj) => {
     addLog('加入房间成功')
     console.info('加入房间...')
-    if (rtc.localStream){
+    if (rtc.localStream && rtc.localStream.inited){
       // localStream已经初始化了
       if ($('#autoPub').prop('checked')) {
         publish()
