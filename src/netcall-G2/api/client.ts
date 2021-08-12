@@ -364,26 +364,23 @@ class Client extends Base {
    * @param {Stream} Stream类型
    * @returns {Promise}  
    */
-  async unpublish (stream:Stream, type=null) {
+  async unpublish (stream?:Stream) {
     checkExists({tag: 'client.unpublish:stream', value: stream});
     let reason = ''
     if (this.adapterRef.connectState.curState !== 'CONNECTED') {
       this.adapterRef.logger.error('publish: 当前不在频道中，可能是没有加入频道或者是网络波动导致暂时断开连接')
       reason = 'INVALID_OPERATION'
-    } else if (!this.isPublished(stream)) {
-      this.adapterRef.logger.error('指定的 stream 还没有发布')
-      reason = 'INVALID_LOCAL_STREAM'
-    } 
+    }
     const param = JSON.stringify({
-      videoProfile: stream.videoProfile,
-      audio: stream.audio,
-      audioProfile: stream.audioProfile,
-      cameraId: stream.cameraId,
-      microphoneId: stream.microphoneId,
-      pubStatus: stream.pubStatus,
-      renderMode: stream.renderMode,
-      screen: stream.screen,
-      screenProfile: stream.screenProfile,
+      videoProfile: stream && stream.videoProfile,
+      audio: stream && stream.audio,
+      audioProfile: stream && stream.audioProfile,
+      cameraId: stream && stream.cameraId,
+      microphoneId: stream && stream.microphoneId,
+      pubStatus: stream && stream.pubStatus,
+      renderMode: stream && stream.renderMode,
+      screen: stream && stream.screen,
+      screenProfile: stream && stream.screenProfile,
       reason
     }, null, ' ')
     if (reason) {
@@ -409,7 +406,7 @@ class Client extends Base {
       }
     }
 
-    this.adapterRef.logger.log(`开始取消发布本地 ${type ? type : '音视频'} 流`)
+    this.adapterRef.logger.log(`开始取消发布本地流`)
     try {
       if (!this.adapterRef._mediasoup){
         throw new RtcError({
@@ -424,15 +421,15 @@ class Client extends Base {
         name: 'unpublish',
         code: 0,
         param: JSON.stringify({
-          videoProfile: stream.videoProfile,
-          audio: stream.audio,
-          audioProfile: stream.audioProfile,
-          cameraId: stream.cameraId,
-          microphoneId: stream.microphoneId,
-          pubStatus: stream.pubStatus,
-          renderMode: stream.renderMode,
-          screen: stream.screen,
-          screenProfile: stream.screenProfile
+          videoProfile: stream && stream.videoProfile,
+          audio: stream && stream.audio,
+          audioProfile: stream && stream.audioProfile,
+          cameraId: stream && stream.cameraId,
+          microphoneId: stream && stream.microphoneId,
+          pubStatus: stream && stream.pubStatus,
+          renderMode: stream && stream.renderMode,
+          screen: stream && stream.screen,
+          screenProfile: stream && stream.screenProfile
         }, null, ' ')
       })
     } catch (e) {
@@ -442,15 +439,15 @@ class Client extends Base {
         code: -1,
         param: JSON.stringify({
           reason: e,
-          videoProfile: stream.videoProfile,
-          audio: stream.audio,
-          audioProfile: stream.audioProfile,
-          cameraId: stream.cameraId,
-          microphoneId: stream.microphoneId,
-          pubStatus: stream.pubStatus,
-          renderMode: stream.renderMode,
-          screen: stream.screen,
-          screenProfile: stream.screenProfile
+          videoProfile: stream && stream.videoProfile,
+          audio: stream && stream.audio,
+          audioProfile: stream && stream.audioProfile,
+          cameraId: stream && stream.cameraId,
+          microphoneId: stream && stream.microphoneId,
+          pubStatus: stream && stream.pubStatus,
+          renderMode: stream && stream.renderMode,
+          screen: stream && stream.screen,
+          screenProfile: stream && stream.screenProfile
         }, null, ' ')
       })
     }

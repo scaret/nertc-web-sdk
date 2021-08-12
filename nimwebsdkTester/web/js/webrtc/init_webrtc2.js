@@ -846,6 +846,10 @@ $('#joinChannel-btn').on('click', async () => {
   
 })
 
+$('#destroyLocalStream').on('click', () => {
+  rtc.localStream.destroy();
+})
+
 $('#leaveChannel-btn').on('click', () => {
   addLog('离开房间')
   console.info('开始离开房间...')
@@ -901,7 +905,7 @@ $('#auto-play-btn').on('click', () => {
  * ----------------------------------------
  */
 $('#initLocalStream').on('click', () => {
-  if (rtc.localStream) {
+  if (rtc.localStream && rtc.localStream.inited) {
     addLog('已经初始化过了，请勿重复操作')
     return
   }
