@@ -13,6 +13,7 @@ import {
 import BigNumber from 'bignumber.js'
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
+import {SignalGetChannelInfoResponse} from "../interfaces/SignalProtocols";
 
 /**
  * 会控相关
@@ -70,7 +71,7 @@ class Meeting extends EventEmitter {
       appkey
     })
     try{
-      const data:any = await ajax({
+      const data = await ajax({
         url, //'https://webtest.netease.im/nrtcproxy/nrtc/getChannelInfos.action'
         type: 'POST',
         contentType: 'application/x-www-form-urlencoded',
@@ -93,14 +94,14 @@ class Meeting extends EventEmitter {
           nrtcg2: 1,
           t1: T1 // 是一个毫秒级的时间戳，若填了这个，服务器会返回t1（客户端请求时间戳）、t2（服务器接收时间戳）、t3（服务器返回时间戳）
         }
-      });
+      }) as SignalGetChannelInfoResponse;
       let isUidExisted = (uid == '0' || (uid != '0' && !Boolean(uid))) ? false : true;
 
 
       this.adapterRef.logger.log('获取到房间信息: %o', data)
       if (data.code === 200) {
         this.adapterRef.channelStatus = 'join'
-        const { ips = {}, time = {} } = data
+        const { ips, time } = data
         const maxVideoQuality = (data.config && data.config.quality_level_limit) || 16
         this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.startWssTime = Date.now()
         Object.assign(this.adapterRef.channelInfo, {
@@ -121,6 +122,9 @@ class Meeting extends EventEmitter {
           sessionMode,
           appkey
         })
+        if (!this.adapterRef.channelInfo.uid){
+          this.adapterRef.logger.error("加入频道时既没有指定uid，服务端也没有返回uid");
+        }
         options.uid = options.uid ? options.uid : this.adapterRef.channelInfo.uid
         this.adapterRef.testConf.relayaddrs = ips.relayaddrs
         this.adapterRef.testConf.relaytoken = ips.relaytoken

@@ -1,6 +1,43 @@
 // 信令通道协议
 // 部分对象定义在这里是因为对象结构是被信令通道协议决定的。
 
+export interface SignalGetChannelInfoResponse{
+  code: number;
+  cname: string;
+  source: number;
+  time: {
+    t1: number;
+    t2: number;
+    t3: number;
+  };
+  ips: {
+    uid: number;
+    hostname: string[];
+    webrtc: string;
+    turnaddrs: string[][];
+    signalproxy: string[];
+    webrtcarray: string[];
+    wechatapparray: string[];
+    token: string;
+    grey: boolean;
+    config: {
+      net: {
+        record: boolean;
+        dtunnel: boolean;
+        p2p: boolean;
+      }
+    }
+    // 来自代码
+    relayaddrs: any;
+    relaytoken: any;
+  }
+  cid: number;
+  token: string;
+  // 来自代码
+  config: any;
+  desc?: string;
+}
+
 export interface SignalResBase{
   code: number,
   errMsg: string,
