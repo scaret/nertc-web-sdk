@@ -98,7 +98,7 @@ declare interface Client{
      * @param stream 需要取消发布的 Stream。
      * @param type   流类型。
      */
-    unpublish(stream: Stream, type?: null): Promise<undefined>;
+    unpublish(stream?: Stream, type?: null): Promise<undefined>;
     /**
      * 订阅远端音视频流。
      * 

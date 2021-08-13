@@ -298,18 +298,18 @@ function init() {
   initCodecOptions()
 }
 
-function initDevices() {
-  NERTC.getMicrophones().then((data) => {
+function initDevices(requestPerm) {
+  NERTC.getMicrophones(requestPerm).then((data) => {
     var info = JSON.stringify(data)
     console.log('麦克风: %o', info)
     renderDeivce($('#micro'), data)
   })
-  NERTC.getCameras().then((data) => {
+  NERTC.getCameras(requestPerm).then((data) => {
     var info = JSON.stringify(data)
     console.log('摄像头: %o', info)
     renderDeivce($('#camera'), data)
   })
-  NERTC.getDevices().then((data)=>{
+  NERTC.getDevices(requestPerm).then((data)=>{
     const sounders = data.audioOut;
     renderDeivce($("#sounder"), sounders);
   })
@@ -846,6 +846,10 @@ $('#joinChannel-btn').on('click', async () => {
   
 })
 
+$('#destroyLocalStream').on('click', () => {
+  rtc.localStream.destroy();
+})
+
 $('#leaveChannel-btn').on('click', () => {
   addLog('离开房间')
   console.info('开始离开房间...')
@@ -894,6 +898,9 @@ $('#auto-play-btn').on('click', () => {
   window.autoPlayStart = true;
 })
 
+$('#refreshDevices').on('click', () =>{
+  initDevices(true);
+})
 
 /**
  * ----------------------------------------
@@ -901,7 +908,7 @@ $('#auto-play-btn').on('click', () => {
  * ----------------------------------------
  */
 $('#initLocalStream').on('click', () => {
-  if (rtc.localStream) {
+  if (rtc.localStream && rtc.localStream.inited) {
     addLog('已经初始化过了，请勿重复操作')
     return
   }

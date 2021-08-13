@@ -201,6 +201,7 @@
           <div class="line">
             自动发布
             <input type="checkbox" id="autoPub" checked>
+            <button id="refreshDevices">刷新设备</button>
           </div>
           <div class="line">
             <label for='sessionConfigAudioProfile'>audioProfile</label>
@@ -282,9 +283,10 @@
             <select id="sounder" style="width: 120px;"></select> <button id="setAudioOutput">设置</button>
           </div>
           <div class="line">
-            <button type="button" id="initLocalStream">初始化本地流</button>
+            <button type="button" id="initLocalStream">初始化</button>
             <button type="button" id="pub">发布</button>
             <button type="button" id="unpub">停止发布</button>
+            <button type="button" id="destroyLocalStream">销毁</button>
             <!-- <button type="button" id="closeAsl">关闭ASL</button>
             <button type="button" id="openAsl">打开ASL</button> -->
           </div>

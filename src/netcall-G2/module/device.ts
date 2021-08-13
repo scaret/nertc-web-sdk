@@ -30,11 +30,16 @@ export interface DeviceInfo {
 }*/
 
 const Device = {
-  async getDevices () {
+  async getDevices (options: {
+    audioinput?: boolean,
+    videoinput?: boolean,
+    audiooutput?: boolean,
+    requestPerm?: boolean,
+  }) {
     if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
       throw new RtcError({
-        code: ErrorCode.NOT_SUPPORT, 
-        message: 'mediaDevices is not support in your browser', 
+        code: ErrorCode.NOT_SUPPORT,
+        message: 'mediaDevices is not support in your browser',
         url: 'https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/enumerateDevices'
       })
     }
@@ -43,41 +48,67 @@ const Device = {
       audioIn: [],
       audioOut: []
     };
-    await navigator.mediaDevices.enumerateDevices().then(function (devices) {
-      if (devices.length === 0) {
-        return
-      }
-      devicesCache = devices
-      devices.forEach(function (device) {
-        if (device.kind === 'videoinput') {
-          result.video.push({
-            deviceId: device.deviceId,
-            label: device.label
-              ? device.label
-              : 'camera ' + (result.video.length + 1)
-          })
-        } else if (device.kind === 'audioinput') {
-          result.audioIn.push({
-            deviceId: device.deviceId,
-            label: device.label
-              ? device.label
-              : 'microphone ' + (result.audioIn.length + 1)
-          })
-        } else if (device.kind === 'audiooutput') {
-          result.audioOut.push({
-            deviceId: device.deviceId,
-            label: device.label
-              ? device.label
-              : 'speaker ' + (result.audioOut.length + 1)
-          })
-        }
+    let devices = await navigator.mediaDevices.enumerateDevices();
+    let mediaStream:MediaStream|null = null;
+    if (options.requestPerm){
+      // 如果设备列表出现label为空，则说明没有获取音视频权限。
+      const requestAudioPerm = devices.find((device)=>{
+        return options.audioinput && device.kind == "audioinput" && !device.label;
       })
+      const requestVideoPerm = devices.find((device)=>{
+        return options.videoinput && device.kind == "videoinput" && !device.label;
+      })
+      if (requestAudioPerm || requestVideoPerm){
+        try{
+          mediaStream = await navigator.mediaDevices.getUserMedia({
+            audio: requestAudioPerm,
+            video: requestVideoPerm,
+          })
+        }catch(e){
+          console.error(e);
+        }
+      }
+    }
+    devices = await navigator.mediaDevices.enumerateDevices();
+    devicesCache = devices
+    devices.forEach(function (device) {
+      if (options.videoinput && device.kind === 'videoinput') {
+        result.video.push({
+          deviceId: device.deviceId,
+          label: device.label
+            ? device.label
+            : 'camera ' + (result.video.length + 1)
+        })
+      } else if (options.audioinput && device.kind === 'audioinput') {
+        result.audioIn.push({
+          deviceId: device.deviceId,
+          label: device.label
+            ? device.label
+            : 'microphone ' + (result.audioIn.length + 1)
+        })
+      } else if (options.audiooutput && device.kind === 'audiooutput') {
+        result.audioOut.push({
+          deviceId: device.deviceId,
+          label: device.label
+            ? device.label
+            : 'speaker ' + (result.audioOut.length + 1)
+        })
+      }
+      if (mediaStream){
+        // 回收设备权限
+        mediaStream.getTracks().forEach(track=>{
+          track.stop()
+        })
+      }
     })
     return result
   },
 
-  async getCameras () {
-    const result = await this.getDevices()
+  async getCameras (requestPerm?: boolean) {
+    const result = await this.getDevices({
+      videoinput: true,
+      requestPerm,
+    })
     if (result) {
       return result['video']
     } else {
@@ -85,8 +116,11 @@ const Device = {
     }
   },
 
-  async getMicrophones () {
-    const result = await this.getDevices()
+  async getMicrophones (requestPerm?: boolean) {
+    const result = await this.getDevices({
+      audioinput: true,
+      requestPerm,
+    })
     if (result) {
       return result['audioIn']
     } else {
@@ -94,8 +128,12 @@ const Device = {
     }
   },
 
-  async getSpeakers () {
-    const result = await this.getDevices()
+  async getSpeakers (requestPerm?: boolean) {
+    const result = await this.getDevices({
+      audioinput: true,
+      audiooutput: true,
+      requestPerm,
+    })
     if (result) {
       return result['audioOut']
     } else {
