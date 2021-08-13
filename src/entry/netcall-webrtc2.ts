@@ -202,8 +202,13 @@ createStream (options:StreamOptions) {
  *   //...
  * })
  */
-getDevices() {
-  return Device.getDevices()
+getDevices(requestPerm: boolean = false) {
+  return Device.getDevices({
+    audioinput: true,
+    audiooutput: true,
+    videoinput: true,
+    requestPerm,
+  })
 },
 /**
  * 获取可用的视频输入设备。
@@ -220,8 +225,8 @@ getDevices() {
       })
     })
  */
-getCameras() {
-  return Device.getCameras()
+getCameras(requestPerm: boolean = false) {
+  return Device.getCameras(requestPerm)
 },
 /**
  * 获取可用的音频输入设备。
@@ -229,8 +234,8 @@ getCameras() {
  * @memberOf NERTC#
  *  @returns {Promise}
  */
-getMicrophones() {
-  return Device.getMicrophones()
+getMicrophones(requestPerm: boolean = false) {
+  return Device.getMicrophones(requestPerm)
 },
 /**
  * 获取可用的音频输出设备。
@@ -238,8 +243,8 @@ getMicrophones() {
  * @memberOf NERTC#
  *  @returns {Promise}
  */
-getSpeakers() {
-  return Device.getSpeakers()
+getSpeakers(requestPerm: boolean = false) {
+  return Device.getSpeakers(requestPerm)
 },
 
 /**

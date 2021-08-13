@@ -144,7 +144,12 @@ const RtcSupport =  {
         const tmp:{[index: string]:any} = Object.assign(result, base, {
           ScreenSharing: !!screenSharing
         })
-        const devices = await Device.getDevices().catch(e => {
+        const devices = await Device.getDevices({
+          audiooutput: true,
+          audioinput: true,
+          videoinput: true,
+          requestPerm: true,
+        }).catch(e => {
           return resolve(tmp)
         })
         tmp.MicrophoneList = (devices && devices.audioIn) || []

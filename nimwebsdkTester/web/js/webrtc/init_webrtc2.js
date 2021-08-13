@@ -298,18 +298,18 @@ function init() {
   initCodecOptions()
 }
 
-function initDevices() {
-  NERTC.getMicrophones().then((data) => {
+function initDevices(requestPerm) {
+  NERTC.getMicrophones(requestPerm).then((data) => {
     var info = JSON.stringify(data)
     console.log('麦克风: %o', info)
     renderDeivce($('#micro'), data)
   })
-  NERTC.getCameras().then((data) => {
+  NERTC.getCameras(requestPerm).then((data) => {
     var info = JSON.stringify(data)
     console.log('摄像头: %o', info)
     renderDeivce($('#camera'), data)
   })
-  NERTC.getDevices().then((data)=>{
+  NERTC.getDevices(requestPerm).then((data)=>{
     const sounders = data.audioOut;
     renderDeivce($("#sounder"), sounders);
   })
@@ -898,6 +898,9 @@ $('#auto-play-btn').on('click', () => {
   window.autoPlayStart = true;
 })
 
+$('#refreshDevices').on('click', () =>{
+  initDevices(true);
+})
 
 /**
  * ----------------------------------------
