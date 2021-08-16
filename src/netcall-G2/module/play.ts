@@ -3,7 +3,7 @@ import {createWatermarkControl, WatermarkControl} from "../module/watermark";
 import {
   PlayOptions,
   AdapterRef,
-  SDKRef, SnapshotOptions, MediaTypeShort
+  SDKRef, SnapshotOptions, MediaTypeShort, RenderMode
 } from "../types"
 import RtcError from '../util/error/rtcError';
 import ErrorCode  from '../util/error/errorCode';
@@ -15,14 +15,9 @@ class Play extends EventEmitter {
   private volume:number | null;
   private index:number;
   private audioSinkId:string;
-  private videoContainerSize:{
-    width:number;
-    height: number;
-  };
-  private screenContainerSize:{
-    width:number;
-    height: number;
-  };
+  private videoRenderMode:RenderMode;
+  //实际就是Stream.renderMode.screen
+  private screenRenderMode:RenderMode;
   public videoDom: HTMLVideoElement | null;
   public screenDom: HTMLVideoElement | null;
   public audioDom: HTMLAudioElement | null;
@@ -51,13 +46,15 @@ class Play extends EventEmitter {
     this.screenView = null;
     this.volume = null;
     this.index = 0;
-    this.videoContainerSize = {
+    this.videoRenderMode = {
       width: 0,
       height:0,
+      cut: false,
     };
-    this.screenContainerSize = {
+    this.screenRenderMode = {
       width: 0,
       height:0,
+      cut: false,
     };
     this.audioSinkId = "";
     this._watermarkControl = createWatermarkControl(this.adapterRef.logger);
@@ -78,13 +75,15 @@ class Play extends EventEmitter {
     this.audioDom = null
     this.volume = null
     this.index = 0
-    this.videoContainerSize = { // 外部存在开启流之后，再设置画面大小，如果先预设一个大小的话，会导致画面跳动
+    this.videoRenderMode = { // 外部存在开启流之后，再设置画面大小，如果先预设一个大小的话，会导致画面跳动
       width: 0,
-      height: 0
+      height: 0,
+      cut: false,
     }
-    this.screenContainerSize = { // 外部存在开启流之后，再设置画面大小，如果先预设一个大小的话，会导致画面跳动
+    this.screenRenderMode = { // 外部存在开启流之后，再设置画面大小，如果先预设一个大小的话，会导致画面跳动
       width: 0,
-      height: 0
+      height: 0,
+      cut: false,
     }
 
   }
@@ -142,8 +141,8 @@ class Play extends EventEmitter {
       // 样式
       this.screenContainerDom.style.overflow = 'hidden'
       this.screenContainerDom.style.position = 'relative'
-      this.screenContainerDom.style.width = `${this.screenContainerSize.width}px`
-      this.screenContainerDom.style.height = `${this.screenContainerSize.height}px`
+      this.screenContainerDom.style.width = `${this.screenRenderMode.width}px`
+      this.screenContainerDom.style.height = `${this.screenRenderMode.height}px`
       this.screenContainerDom.style.display = 'inline-block'
     }
   }
@@ -165,6 +164,12 @@ class Play extends EventEmitter {
       this.videoDom.dataset['uid'] = "" + this.uid
       this.videoDom.autoplay = true
       this.videoDom.muted = true
+      this.videoDom.addEventListener("resize", (evt)=> {
+        if (this.videoDom === evt.target){
+          this.adapterRef.logger.info("setVideoRender on resize", this.videoDom?.width, this.videoDom?.height);
+          this.setVideoRender();
+        }
+      });
     }
   }
   
@@ -185,6 +190,12 @@ class Play extends EventEmitter {
       this.screenDom.dataset['uid'] = "" + this.uid
       this.screenDom.autoplay = true
       this.screenDom.muted = true
+      this.screenDom.addEventListener("resize", (evt)=> {
+        if (this.videoDom === evt.target){
+          this.adapterRef.logger.info("setScreenRender on resize", this.screenDom?.width, this.screenDom?.height);
+          this.setScreenRender();
+        }
+      });
     }
   }
 
@@ -431,7 +442,7 @@ class Play extends EventEmitter {
     }
   }
 
-  async playVideoStream(stream:MediaStream, view:HTMLElement, ismuted?:boolean) {
+  async playVideoStream(stream:MediaStream, view:HTMLElement) {
     if(!stream || !view) return
     this.adapterRef.logger.log(`播放视频, id: ${stream.id}, active state: ${stream.active}`)
     if (this.videoDom && this.videoDom.srcObject === stream) {
@@ -450,11 +461,6 @@ class Play extends EventEmitter {
       return
     }
     try {
-      if(!ismuted){
-        this.videoDom.muted = false;
-      }else {
-        this.videoDom.muted = true;
-      }
       this.videoDom.srcObject = stream
       this.adapterRef.logger.log('播放 %o 的视频频, streamId: %o, stream状态: %o', this.uid, stream.id, stream.active)
       
@@ -536,11 +542,18 @@ class Play extends EventEmitter {
     }
   }
 
-  setVideoRender(options = {width: 100, height: 100, cut: true}) {
+  /**
+   * @param options 可以不填，用上一次的设置来resize
+   */
+  setVideoRender(options?: RenderMode) {
     if(!this.videoDom) return
-    this.adapterRef.logger.log('setRender: uid %s, options: %s', this.uid, JSON.stringify(options, null, ' '))
-
-    this.videoContainerSize = Object.assign({}, options);
+    if (options){
+      this.adapterRef.logger.log('setVideoRender: uid %s, options: %s', this.uid, JSON.stringify(options, null, ' '))
+      this.videoRenderMode = Object.assign({}, options);
+    }else{
+      options = this.videoRenderMode
+      this.adapterRef.logger.log('setVideoRender: uid %s, existing videoRenderMode: %s', this.uid, JSON.stringify(options, null, ' '))
+    }
     // 设置外部容器
     if (this.videoContainerDom) {
       this.videoContainerDom.style.width = `${options.width}px`
@@ -568,11 +581,16 @@ class Play extends EventEmitter {
     }
   }
   
-  setScreenRender(options = {width: 100, height: 100, cut: true}) {
+  setScreenRender(options?: RenderMode) {
     if(!this.screenDom) return
-    this.adapterRef.logger.log('setScreenRender: uid %s, options: %s', this.uid, JSON.stringify(options, null, ' '))
-
-    this.screenContainerSize = options
+    if (options){
+      this.adapterRef.logger.log('setScreenRender: uid %s, options: %s', this.uid, JSON.stringify(options, null, ' '))
+      this.screenRenderMode = Object.assign({}, options);
+    }else{
+      options = this.screenRenderMode
+      this.adapterRef.logger.log('setScreenRender: uid %s, existing screenRenderMode: %s', this.uid, JSON.stringify(options, null, ' '))
+    }
+    this.screenRenderMode = options
     // 设置外部容器
     if (this.screenContainerDom){
       this.screenContainerDom.style.width = `${options.width}px`
