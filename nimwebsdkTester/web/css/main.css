@@ -29,6 +29,6 @@ meter#instant {
 color: #0f9d58;
 }
 
-.nertc-video-container{
+.nertc-video-container,.nertc-screen-container{
   border: 1px solid yellow;
 }
