@@ -442,7 +442,7 @@ class Play extends EventEmitter {
     }
   }
 
-  async playVideoStream(stream:MediaStream, view:HTMLElement, ismuted?:boolean) {
+  async playVideoStream(stream:MediaStream, view:HTMLElement) {
     if(!stream || !view) return
     this.adapterRef.logger.log(`播放视频, id: ${stream.id}, active state: ${stream.active}`)
     if (this.videoDom && this.videoDom.srcObject === stream) {
@@ -461,11 +461,6 @@ class Play extends EventEmitter {
       return
     }
     try {
-      if(!ismuted){
-        this.videoDom.muted = false;
-      }else {
-        this.videoDom.muted = true;
-      }
       this.videoDom.srcObject = stream
       this.adapterRef.logger.log('播放 %o 的视频频, streamId: %o, stream状态: %o', this.uid, stream.id, stream.active)
       

@@ -821,7 +821,7 @@ class Stream extends EventEmitter {
           this.client.adapterRef.logger.log('开始播放视频: ', this.stringStreamID)
           try{
             //@ts-ignore
-            await this._play.playVideoStream(this.mediaHelper.videoStream, view, playOptions.muted)
+            await this._play.playVideoStream(this.mediaHelper.videoStream, view)
             if (this.isRemote){
               if ("width" in this.renderMode.remote.video){
                 this._play.setVideoRender(this.renderMode.remote.video)
@@ -1921,7 +1921,7 @@ class Stream extends EventEmitter {
           this.mediaHelper.cameraTrack.enabled = true;
         }
         //@ts-ignore
-        await this._play.playVideoStream(this.mediaHelper.videoStream, this.videoView, true)
+        await this._play.playVideoStream(this.mediaHelper.videoStream, this.videoView)
         if ("width" in this.renderMode.remote.video){
           this._play.setVideoRender(this.renderMode.remote.video)
         }
