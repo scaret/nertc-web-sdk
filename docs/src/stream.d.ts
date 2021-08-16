@@ -116,7 +116,7 @@ declare interface Stream {
      *    })
      * ```
      */
-    play(view: HTMLElement | null, playOptions?: {
+    play(view: HTMLElement, playOptions?: {
       /**
        * 是否播放音频流。
        * 
@@ -133,6 +133,12 @@ declare interface Stream {
        * 是否播放辅流。
        * 
        * 默认播放辅流。
+       * 
+       * 主流和辅流可在不同画布上播放。需调用play两次，即:
+       * ```javascript
+       *   localStream.play(videoContainer, {video: true, screen: false});
+       *   localStream.play(screenContainer, {video: false, screen: true});
+       * ```
        */
       screen?: boolean;
     }): Promise<void>;
