@@ -60,6 +60,14 @@ function addLog(info) {
   debugContentNode.innerHTML = `<p>${temp}</p>` + debugContentNode.innerHTML
 }
 
+window.addEventListener('unhandledrejection', (evt)=>{
+  addLog("UNHANDLED PROMISE REJECTION:" +evt.reason)
+})
+
+window.addEventListener('error', (evt)=>{
+  addLog(evt.message)
+})
+
 window.rtc = {
   client: null,
   joined: false,
