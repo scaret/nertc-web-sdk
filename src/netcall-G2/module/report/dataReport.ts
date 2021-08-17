@@ -1,7 +1,7 @@
 import { ajax } from "../../util/ajax";
 // import * as md5 from 'md5';
 import  md5 = require('md5');
-import {SDK_VERSION} from '../../Config'
+import {BUILD, SDK_VERSION} from '../../Config'
 import {
   AdapterRef,
   DataEvent,
@@ -17,6 +17,7 @@ import {
   CommonEvent,
   HeartbeatEvent, APIEventItem,
 } from "../../types";
+import {USER_AGENT} from "../../util/rtcUtil/rtcEnvironment";
 
 let reportUrl = "https://statistic.live.126.net/statics/report/common/form";
 
@@ -162,6 +163,13 @@ class DataReport {
     loginEvent.app_key = loginEvent.app_key || this.common.app_key;
     loginEvent.meeting_mode = loginEvent.meeting_mode || 1;
     loginEvent.model = loginEvent.model;
+    loginEvent.build = BUILD;
+    loginEvent.supported_codec_send = this.adapterRef.mediaCapability.supportedCodecSend?.join(",");
+    loginEvent.supported_codec_recv = this.adapterRef.mediaCapability.supportedCodecRecv?.join(",");
+    loginEvent.preferred_codec_send = this.adapterRef.mediaCapability.preferredCodecSend.video?.join(",");
+    loginEvent.extra_info = JSON.stringify({
+      userAgent: USER_AGENT
+    })
     this.addEvent("login", loginEvent);
   }
 
