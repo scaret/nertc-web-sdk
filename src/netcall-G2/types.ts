@@ -175,6 +175,12 @@ export interface LoginEvent extends DataEvent{
   signal_time_elapsed:number;
   time_elapsed:number;
   model:String;
+  extra_info: string;
+  build: string;
+  supported_codec_send?: string;
+  supported_codec_recv?: string;
+  preferred_codec_send?: string;
+  roomCodecType?: string;
 }
 
 export interface ReloginEvent extends DataEvent{

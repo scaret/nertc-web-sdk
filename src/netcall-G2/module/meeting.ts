@@ -102,6 +102,9 @@ class Meeting extends EventEmitter {
       if (data.code === 200) {
         this.adapterRef.channelStatus = 'join'
         const { ips, time } = data
+        if (!ips || !ips.uid){
+          this.adapterRef.logger.error("加入频道时服务端未返回uid");
+        }
         const maxVideoQuality = (data.config && data.config.quality_level_limit) || 16
         this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.startWssTime = Date.now()
         Object.assign(this.adapterRef.channelInfo, {
@@ -122,9 +125,6 @@ class Meeting extends EventEmitter {
           sessionMode,
           appkey
         })
-        if (!this.adapterRef.channelInfo.uid){
-          this.adapterRef.logger.error("加入频道时既没有指定uid，服务端也没有返回uid");
-        }
         options.uid = options.uid ? options.uid : this.adapterRef.channelInfo.uid
         this.adapterRef.testConf.relayaddrs = ips.relayaddrs
         this.adapterRef.testConf.relaytoken = ips.relaytoken

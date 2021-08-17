@@ -142,7 +142,7 @@ class Client extends Base {
    * @return {Promise}
    */
   async join (options: JoinOptions) {
-    this.adapterRef.logger.warn('加入频道, options: ', JSON.stringify(options, null, ' '))
+    this.adapterRef.logger.log('加入频道, options: ', JSON.stringify(options, null, ' '))
     if (this.adapterRef.channelStatus === 'join' || this.adapterRef.channelStatus === 'connectioning') {
       return Promise.reject(
         new RtcError({

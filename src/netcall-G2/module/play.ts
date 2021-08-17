@@ -166,7 +166,7 @@ class Play extends EventEmitter {
       this.videoDom.muted = true
       this.videoDom.addEventListener("resize", (evt)=> {
         if (this.videoDom === evt.target){
-          this.adapterRef.logger.info("setVideoRender on resize", this.videoDom?.width, this.videoDom?.height);
+          this.adapterRef.logger.info("setVideoRender on resize", this.videoDom?.videoWidth, this.videoDom?.videoHeight);
           this.setVideoRender();
         }
       });
@@ -191,8 +191,8 @@ class Play extends EventEmitter {
       this.screenDom.autoplay = true
       this.screenDom.muted = true
       this.screenDom.addEventListener("resize", (evt)=> {
-        if (this.videoDom === evt.target){
-          this.adapterRef.logger.info("setScreenRender on resize", this.screenDom?.width, this.screenDom?.height);
+        if (this.screenDom === evt.target){
+          this.adapterRef.logger.info("setScreenRender on resize", this.screenDom?.videoWidth, this.screenDom?.videoHeight);
           this.setScreenRender();
         }
       });
