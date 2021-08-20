@@ -258,7 +258,7 @@ class Play extends EventEmitter {
           if(error.name === 'NotAllowedError') {
             throw new RtcError({
               code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
-              message: error.toString()
+              message: error.message
             })
           }
         }
@@ -277,7 +277,7 @@ class Play extends EventEmitter {
           if(error.name === 'NotAllowedError') {
             throw new RtcError({
               code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
-              message: error.toString()
+              message: error.message
             })
           }
         }

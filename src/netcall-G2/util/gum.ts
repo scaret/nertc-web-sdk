@@ -25,8 +25,7 @@ function getScreenStream (constraint:MediaStreamConstraints, logger:Logger = con
     logger.log('获取到屏幕共享流: ', stream.id)
     return Promise.resolve(stream)
   }).catch((e:DOMException)=>{
-    logger.error('屏幕共享获取失败: ', e)
-    return Promise.reject(e)
+    logger.error('屏幕共享获取失败: ', e.name, e.message)
   });
   return p;
 }

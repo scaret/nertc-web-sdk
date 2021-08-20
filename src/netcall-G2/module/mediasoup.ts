@@ -233,7 +233,7 @@ class Mediasoup extends EventEmitter {
             if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
               throw new RtcError({
                 code: ErrorCode.NOT_FOUND,
-                message: 'No _protoo'
+                message: 'No _protoo 1'
               })
             }
             iceParameters = await this.adapterRef._signalling._protoo.request('restartIce', { transportId: this._sendTransport.id });
@@ -319,7 +319,7 @@ class Mediasoup extends EventEmitter {
     if (!this._sendTransport){
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'No send trasnport'
+        message: 'No send trasnport 1'
       })
     }
     if(this._sendTransport.listenerCount('produce') === 0) {
@@ -329,7 +329,7 @@ class Mediasoup extends EventEmitter {
         if (!this._sendTransport){
           throw new RtcError({
             code: ErrorCode.NOT_FOUND,
-            message: 'No send trasnport'
+            message: 'No send trasnport 2'
           })
         }
         const mediaTypeShort:MediaTypeShort = (appData.mediaType == "screenShare") ? "screen" : appData.mediaType;
@@ -430,7 +430,7 @@ class Mediasoup extends EventEmitter {
           if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
             throw new RtcError({
               code: ErrorCode.NOT_FOUND,
-              message: 'No _protoo'
+              message: 'No _protoo 2'
             })
           }
           const { transportId, iceParameters, iceCandidates, dtlsParameters, producerId } = 
@@ -611,7 +611,7 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: 'No _protoo'
+          message: 'No _protoo 3'
         })
       }
       await this.adapterRef._signalling._protoo.request(
@@ -716,7 +716,7 @@ class Mediasoup extends EventEmitter {
           if (!this.adapterRef._mediasoup){
             throw new RtcError({
               code: ErrorCode.NO_MEDIASOUP,
-              message: 'media server error'
+              message: 'media server error 21'
             })
           }
           await this.destroyConsumer(remoteStream.pubStatus.audio.consumerId);
@@ -803,7 +803,7 @@ class Mediasoup extends EventEmitter {
       info.resolve(null);
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'No _protoo'
+        message: 'No _protoo 4'
       })
     }
     const consumeRes = await this.adapterRef._signalling._protoo.request('Consume', data);
@@ -1005,7 +1005,7 @@ class Mediasoup extends EventEmitter {
       info.resolve(null);
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'No _protoo'
+        message: 'No _protoo 5'
       })
     }
     const consumeRes = await this.adapterRef._signalling._protoo.request('WsConsume', data);
@@ -1062,7 +1062,7 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: 'No _protoo'
+          message: 'No _protoo 6'
         })
       }
       this.adapterRef._signalling._protoo.request(
@@ -1085,7 +1085,7 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: 'No _protoo'
+          message: 'No _protoo 7'
         })
       }
       const result = await this.adapterRef._signalling._protoo.request(
@@ -1114,7 +1114,7 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: 'No _protoo'
+          message: 'No _protoo 8'
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
@@ -1152,7 +1152,7 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: 'No _protoo'
+          message: 'No _protoo 9'
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
@@ -1191,7 +1191,7 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: 'No _protoo'
+          message: 'No _protoo 10'
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
@@ -1229,7 +1229,7 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: 'No _protoo'
+          message: 'No _protoo 11'
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
@@ -1259,7 +1259,7 @@ class Mediasoup extends EventEmitter {
     if (!this._screenProducer){
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'No _screenProducer'
+        message: 'No _screenProducer 1'
       })
     }
     this._screenProducer.pause();
@@ -1267,7 +1267,7 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: 'No _protoo'
+          message: 'No _protoo 12'
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
@@ -1297,7 +1297,7 @@ class Mediasoup extends EventEmitter {
     if (!this._screenProducer){
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'No _screenProducer'
+        message: 'No _screenProducer 2'
       })
     }
     this._screenProducer.resume();
@@ -1305,7 +1305,7 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: 'No _protoo'
+          message: 'No _protoo 13'
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
@@ -1336,7 +1336,7 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: 'No _protoo'
+          message: 'No _protoo 14'
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid

@@ -659,7 +659,7 @@ class Stream extends EventEmitter {
         })
       }
     } catch (e) {
-      this.client.adapterRef.logger.log('打开mic失败: ', e)
+      this.client.adapterRef.logger.log('打开mic失败: ', e.name, e.message)
       this.audio = false
       if (e.message && e.message.indexOf('Permission denied') > -1) {
         this.client.emit('accessDenied', 'audio')
@@ -685,7 +685,7 @@ class Stream extends EventEmitter {
         })
       }
     } catch (e) {
-      this.client.adapterRef.logger.log('打开camera失败: ', e)
+      this.client.adapterRef.logger.log('打开camera失败: ', e.name, e.message)
       this.video = false
       if (e.message && e.message.indexOf('Permission denied') > -1) {
         this.client.emit('accessDenied', 'video')
@@ -714,7 +714,7 @@ class Stream extends EventEmitter {
         })
       }
     } catch (e) {
-      this.client.adapterRef.logger.log('打开屏幕共享失败: ', e)
+      this.client.adapterRef.logger.log('打开屏幕共享失败: ', e.name, e.message)
       // this.video = false
       // if (e.message && e.message.indexOf('Permission denied') > -1) {
       //   this.client.emit('accessDenied', 'video')
@@ -1214,7 +1214,7 @@ class Stream extends EventEmitter {
           this.screenAudio = false
         }
       }
-      this.client.adapterRef.logger.log(`${type} 开启失败: `, e.message)
+      this.client.adapterRef.logger.log(`${type} 开启失败: `, e.name, e.message)
       this.client.apiFrequencyControl({
         name: 'open',
         code: -1,
@@ -1229,7 +1229,7 @@ class Stream extends EventEmitter {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.NOT_ALLOWED,
-            message: 'access denied'
+            message: e.message
           })
         )
       } else {
@@ -1435,7 +1435,7 @@ class Stream extends EventEmitter {
         if (!this.client.adapterRef._mediasoup){
           throw new RtcError({
             code: ErrorCode.NO_MEDIASOUP,
-            message: 'media server error'
+            message: 'media server error 15'
           })
         }
         
@@ -1510,7 +1510,7 @@ class Stream extends EventEmitter {
         if (!this.client.adapterRef._mediasoup){
           throw new RtcError({
             code: ErrorCode.NO_MEDIASOUP,
-            message: 'media server error'
+            message: 'media server error 16'
           })
         }
         // muteLocalAudio1: mute mediasoup
@@ -1896,7 +1896,7 @@ class Stream extends EventEmitter {
         if (!this.client.adapterRef._mediasoup){
           throw new RtcError({
             code: ErrorCode.NO_MEDIASOUP,
-            message: 'media server error'
+            message: 'media server error 17'
           })
         }
         this.client.adapterRef._mediasoup.unmuteVideo()
@@ -1959,7 +1959,7 @@ class Stream extends EventEmitter {
         if (!this.client.adapterRef._mediasoup){
           throw new RtcError({
             code: ErrorCode.NO_MEDIASOUP,
-            message: 'media server error'
+            message: 'media server error 18'
           })
         }
         // local mute
@@ -2017,7 +2017,7 @@ class Stream extends EventEmitter {
         if (!this.client.adapterRef._mediasoup){
           throw new RtcError({
             code: ErrorCode.NO_MEDIASOUP,
-            message: 'media server error'
+            message: 'media server error 19'
           })
         }
         this.client.adapterRef._mediasoup.unmuteScreen()
@@ -2079,7 +2079,7 @@ class Stream extends EventEmitter {
         if (!this.client.adapterRef._mediasoup){
           throw new RtcError({
             code: ErrorCode.NO_MEDIASOUP,
-            message: 'media server error'
+            message: 'media server error 20'
           })
         }
         // local mute
