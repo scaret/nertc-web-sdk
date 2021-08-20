@@ -354,7 +354,7 @@ class Base extends EventEmitter {
         if (!this.adapterRef._mediasoup){
           throw new RtcError({
             code: ErrorCode.NO_MEDIASOUP,
-            message: 'media server error'
+            message: 'media server error 1'
           })
         }
         this.adapterRef._mediasoup.destroyConsumer(remotStream.pubStatus.audio.consumerId)
@@ -363,7 +363,7 @@ class Base extends EventEmitter {
         if (!this.adapterRef._mediasoup){
           throw new RtcError({
             code: ErrorCode.NO_MEDIASOUP,
-            message: 'media server error'
+            message: 'media server error 2'
           })
         }
         this.adapterRef._mediasoup.destroyConsumer(remotStream.pubStatus.video.consumerId)
@@ -419,7 +419,7 @@ class Base extends EventEmitter {
     if (!this.adapterRef._mediasoup){
       throw new RtcError({
         code: ErrorCode.NO_MEDIASOUP,
-        message: 'media server error'
+        message: 'media server error 3'
       })
     }
     this.adapterRef._mediasoup.init()

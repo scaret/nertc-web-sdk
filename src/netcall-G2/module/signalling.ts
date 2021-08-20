@@ -179,7 +179,7 @@ class Signalling extends EventEmitter {
     if (!this._protoo){
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'No this._protoo'
+        message: 'No this._protoo 1'
       })
     }
     this._protoo.on('open', this.join.bind(this))
@@ -372,7 +372,7 @@ class Signalling extends EventEmitter {
         if (!this.adapterRef._mediasoup){
           throw new RtcError({
             code: ErrorCode.NO_MEDIASOUP,
-            message: 'media server error'
+            message: 'media server error 22'
           })
         }
 
@@ -463,7 +463,7 @@ class Signalling extends EventEmitter {
           if (!this.adapterRef._mediasoup){
             throw new RtcError({
               code: ErrorCode.NO_MEDIASOUP,
-              message: 'media server error'
+              message: 'media server error 23'
             })
           }
           if (this.adapterRef._mediasoup._sendTransport 
@@ -486,7 +486,7 @@ class Signalling extends EventEmitter {
           if (!this.adapterRef._mediasoup){
             throw new RtcError({
               code: ErrorCode.NO_MEDIASOUP,
-              message: 'media server error'
+              message: 'media server error 24'
             })
           }
           if (this.adapterRef._mediasoup._recvTransport) {
@@ -513,7 +513,7 @@ class Signalling extends EventEmitter {
           if (!this._protoo){
             throw new RtcError({
               code: ErrorCode.NOT_FOUND,
-              message: 'No this._protoo'
+              message: 'No this._protoo 2'
             })
           }
           this.adapterRef.logger.log('connected: ', this._protoo.connected)
@@ -659,7 +659,7 @@ class Signalling extends EventEmitter {
     if (!this._protoo){
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'No this._protoo'
+        message: 'No this._protoo 3'
       })
     }
 
@@ -704,7 +704,7 @@ class Signalling extends EventEmitter {
         if (!this.adapterRef._mediasoup){
           throw new RtcError({
             code: ErrorCode.NO_MEDIASOUP,
-            message: 'media server error'
+            message: 'media server error 25'
           })
         }
         this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities;
@@ -735,7 +735,7 @@ class Signalling extends EventEmitter {
         if (!this.adapterRef._mediasoup){
           throw new RtcError({
             code: ErrorCode.NO_MEDIASOUP,
-            message: 'media server error'
+            message: 'media server error 26'
           })
         }
         this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities;
@@ -891,7 +891,7 @@ class Signalling extends EventEmitter {
     if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'No _protoo'
+        message: 'No _protoo 15'
       })
     }
     if(this.adapterRef._signalling._protoo.connected === false) return
@@ -899,7 +899,7 @@ class Signalling extends EventEmitter {
       if (!this._protoo){
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: 'No this._protoo'
+          message: 'No this._protoo 4'
         })
       }
       const response = await this._protoo.request('Heartbeat');

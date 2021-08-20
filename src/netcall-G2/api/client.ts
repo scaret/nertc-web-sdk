@@ -213,7 +213,7 @@ class Client extends Base {
       try{
         await this.adapterRef.mediaCapability.detect();
       }catch(e){
-        this.adapterRef.logger.error('Failed to detect mediaCapability', e.name);
+        this.adapterRef.logger.error('Failed to detect mediaCapability', e.name, e.message);
       }
     }
     if (!this.adapterRef._meetings){
@@ -337,7 +337,7 @@ class Client extends Base {
       if (!this.adapterRef._mediasoup){
         throw new RtcError({
           code: ErrorCode.NO_MEDIASOUP,
-          message: 'media server error'
+          message: 'media server error 4'
         })
       }
       this.bindLocalStream(stream)
@@ -411,7 +411,7 @@ class Client extends Base {
       if (!this.adapterRef._mediasoup){
         throw new RtcError({
           code: ErrorCode.NO_MEDIASOUP,
-          message: 'media server error'
+          message: 'media server error 5'
         })
       }
       await this.adapterRef._mediasoup.destroyProduce('audio');
@@ -477,7 +477,7 @@ class Client extends Base {
     if (!this.adapterRef._mediasoup) {
       throw new RtcError({
         code: ErrorCode.NO_MEDIASOUP,
-        message: 'media server error'
+        message: 'media server error 6'
       })
     }
     try {
@@ -500,7 +500,7 @@ class Client extends Base {
           if (!this.adapterRef._mediasoup){
             throw new RtcError({
               code: ErrorCode.NO_MEDIASOUP,
-              message: 'media server error'
+              message: 'media server error 7'
             })
           }
           await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.audio.consumerId);
@@ -547,7 +547,7 @@ class Client extends Base {
           if (!this.adapterRef._mediasoup){
             throw new RtcError({
               code: ErrorCode.NO_MEDIASOUP,
-              message: 'media server error'
+              message: 'media server error 8'
             })
           }
           await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.video.consumerId);
@@ -589,7 +589,7 @@ class Client extends Base {
           if (!this.adapterRef._mediasoup){
             throw new RtcError({
               code: ErrorCode.NO_MEDIASOUP,
-              message: 'media server error'
+              message: 'media server error 9'
             })
           }
           await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.screen.consumerId);
@@ -677,7 +677,7 @@ class Client extends Base {
         if (!this.adapterRef._mediasoup){
           throw new RtcError({
             code: ErrorCode.NO_MEDIASOUP,
-            message: 'media server error'
+            message: 'media server error 10'
           })
         }
         await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.audio.consumerId);
@@ -704,7 +704,7 @@ class Client extends Base {
         if (!this.adapterRef._mediasoup){
           throw new RtcError({
             code: ErrorCode.NO_MEDIASOUP,
-            message: 'media server error'
+            message: 'media server error 11'
           })
         }
         await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.video.consumerId);
@@ -732,7 +732,7 @@ class Client extends Base {
         if (!this.adapterRef._mediasoup){
           throw new RtcError({
             code: ErrorCode.NO_MEDIASOUP,
-            message: 'media server error'
+            message: 'media server error 12'
           })
         }
         await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.screen.consumerId);
@@ -810,7 +810,7 @@ class Client extends Base {
       if (!this.adapterRef._mediasoup){
         throw new RtcError({
           code: ErrorCode.NO_MEDIASOUP,
-          message: 'media server error'
+          message: 'media server error 13'
         })
       }
       const streamId = stream.getId();
@@ -927,7 +927,7 @@ class Client extends Base {
             if (!this.adapterRef._mediasoup){
               throw new RtcError({
                 code: ErrorCode.NO_MEDIASOUP,
-                message: 'media server error'
+                message: 'media server error 14'
               })
             }
             await this.adapterRef._mediasoup.updateUserRole(userRole);
