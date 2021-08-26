@@ -278,7 +278,7 @@ class Stream extends EventEmitter {
       this.audioProfile = 'speech_low_quality'
     }
     
-    this.client.adapterRef.logger.log('创建Stream: %s', JSON.stringify({
+    this.client.adapterRef.logger.log(`创建${ this.isRemote ? "远端" : "本地" }Stream: %s`, JSON.stringify({
       streamID: this.stringStreamID,
       audio: options.audio,
       video: options.video,
