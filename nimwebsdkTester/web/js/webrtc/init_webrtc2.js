@@ -866,6 +866,10 @@ $('#destroyLocalStream').on('click', () => {
   rtc.localStream.destroy();
 })
 
+$('#destroyClient').on('click', () => {
+  rtc.client.destroy();
+})
+
 $('#leaveChannel-btn').on('click', () => {
   addLog('离开房间')
   console.info('开始离开房间...')

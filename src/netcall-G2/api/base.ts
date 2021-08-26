@@ -91,6 +91,7 @@ class Base extends EventEmitter {
       requestId: {},
       //@ts-ignore
       instance: this,
+      logger: console,
       _enableRts: false //rts是否启动的标志位
     };
     this.adapterRef.mediaCapability = new MediaCapability(this.adapterRef);
