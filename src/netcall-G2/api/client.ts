@@ -13,6 +13,7 @@ import {EncryptionMode, EncryptionModes, encryptionModeToInt} from "../module/en
 import { logController } from '../util/log/upload'
 import RtcError from '../util/error/rtcError';
 import ErrorCode  from '../util/error/errorCode';
+import { SDK_VERSION, BUILD } from "../Config";
 const BigNumber = require("bignumber.js");
 
 /**
@@ -53,6 +54,7 @@ class Client extends Base {
       audienceList: {}, // Workaround，用于处理仍然收到的观众端消息
     };
     this._init(options)
+    this.adapterRef.logger.info(`NERTC ${SDK_VERSION} ${BUILD}: 客户端创建成功。`);
     
   }
   // 初始化nrtc
