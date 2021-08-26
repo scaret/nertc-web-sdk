@@ -332,7 +332,7 @@ function initDevices(requestPerm) {
 }
 
 function renderDeivce(node, device) {
-  let html = ''
+  let html = '<option value="">默认</option>'
   device = device.devices || device
   for (var i = 0, len = device.length; i < len; i++) {
     html +=
@@ -1085,13 +1085,18 @@ function initLocalStream(audioSource, videoSource) {
     audioProcessing: getAudioProcessingConfig(),
     microphoneId: $('#micro').val(),
     video: $('#enableVideo').prop('checked'),
-    cameraId: $('#camera').val(),
     screen: $('#enableScreen').prop('checked'),
     screenAudio: $('#enableScreenAudio').prop('checked'),
     sourceId: sourceId,
     audioSource,
     videoSource
   };
+  if ($('#camera').val()){
+    createStreamOptions.cameraId = $('#camera').val();
+  }
+  if ($('#micro').val()){
+    createStreamOptions.microphoneId = $('#micro').val();
+  }
   try{
     rtc.localStream = NERTC.createStream(createStreamOptions);
   }catch(e){
