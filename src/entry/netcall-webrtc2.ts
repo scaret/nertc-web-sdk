@@ -169,6 +169,9 @@ createStream (options:StreamOptions) {
     }
   }
   
+  if (!options.client && client){
+    client.adapterRef.logger.warn('createStream: 未传入client参数。使用默认Client。')
+  }
   if (client || options.client) {
     return new Stream(Object.assign(options, {
       isRemote: false,

@@ -104,10 +104,18 @@ function loadEnv() {
   //$('#channelName').val(Math.ceil(Math.random() * 1e10))
   const channelName = window.localStorage ? window.localStorage.getItem("channelName") : "";
   $('#channelName').val(channelName)
+  $('#uid').val(Math.floor(Math.random() * 9000 + 1000));
+  
   // 读取url中配置的初始参数
   let query = _parseQuery(location.search);
   if (query) {
-    if (query.channelName) { $('#channelName').val(query.channelName); }
+    if (query.channelName)
+    {
+      $('#channelName').val(query.channelName);
+    }
+    if (query.uid){
+      $('#uid').val(query.uid);
+    }
   }
   init()
 }
@@ -324,7 +332,7 @@ function initDevices(requestPerm) {
 }
 
 function renderDeivce(node, device) {
-  let html = ''
+  let html = '<option value="">默认</option>'
   device = device.devices || device
   for (var i = 0, len = device.length; i < len; i++) {
     html +=
@@ -858,6 +866,10 @@ $('#destroyLocalStream').on('click', () => {
   rtc.localStream.destroy();
 })
 
+$('#destroyClient').on('click', () => {
+  rtc.client.destroy();
+})
+
 $('#leaveChannel-btn').on('click', () => {
   addLog('离开房间')
   console.info('开始离开房间...')
@@ -1077,13 +1089,18 @@ function initLocalStream(audioSource, videoSource) {
     audioProcessing: getAudioProcessingConfig(),
     microphoneId: $('#micro').val(),
     video: $('#enableVideo').prop('checked'),
-    cameraId: $('#camera').val(),
     screen: $('#enableScreen').prop('checked'),
     screenAudio: $('#enableScreenAudio').prop('checked'),
     sourceId: sourceId,
     audioSource,
     videoSource
   };
+  if ($('#camera').val()){
+    createStreamOptions.cameraId = $('#camera').val();
+  }
+  if ($('#micro').val()){
+    createStreamOptions.microphoneId = $('#micro').val();
+  }
   try{
     rtc.localStream = NERTC.createStream(createStreamOptions);
   }catch(e){
