@@ -866,7 +866,7 @@ $('#destroyLocalStream').on('click', () => {
   rtc.localStream.destroy();
 })
 
-$('#destroyClient').on('click', () => {
+$('#destroy-btn').on('click', () => {
   rtc.client.destroy();
 })
 
