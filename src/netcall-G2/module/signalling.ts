@@ -905,7 +905,7 @@ class Signalling extends EventEmitter {
       const response = await this._protoo.request('Heartbeat');
       //this.adapterRef.logger.log('包活信令回包: ', response)
     } catch (e) {
-      this.adapterRef.logger.error('信令包活失败')
+      this.adapterRef.logger.error('信令包活失败', e.name, e.message)
       if (this.keepAliveTimer) {
         clearInterval(this.keepAliveTimer)
         this.keepAliveTimer = null

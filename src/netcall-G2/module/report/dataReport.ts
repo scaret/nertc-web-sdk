@@ -358,7 +358,7 @@ class DataReport {
         }
       })
       .catch(err => {
-        this.adapterRef.logger.log("dataReport, send error: ", err);
+        this.adapterRef.logger.log("dataReport, send error: ", err.name, err.message, err);
         this.reset();
       });
 

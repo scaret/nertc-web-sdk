@@ -120,7 +120,7 @@ class StatsReport extends EventEmitter {
       // console.log('data--->', reportData)
       this.wsTransport_.sendPB(reportData);
     } catch (error) {
-      this.adapterRef.logger.error('getStats失败：' , error);
+      this.adapterRef.logger.error('getStats失败：' , error.name, error.message, error);
       console.log(error);
     }
     

@@ -271,7 +271,7 @@ class WebAudio extends EventEmitter{
           this.logger.log('WebAudio: addMs: 状态变更成功 state: ', this.context.state)
         }
       }).catch((error) => {
-        this.logger.log('WebAudio: addMs: 状态变更出错: ', error)
+        this.logger.log('WebAudio: addMs: 状态变更出错: ', error.name, error.message, error)
         if (this.context){
           this.context.resume();
         }

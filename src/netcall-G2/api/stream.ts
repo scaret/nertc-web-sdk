@@ -475,7 +475,7 @@ class Stream extends EventEmitter {
             } 
           });
         } catch (error) {
-          this.client.adapterRef.logger.error('failed to get remoteStats');
+          this.client.adapterRef.logger.error('failed to get remoteStats', error.name, error.message);
         }
         return stats;
       }
@@ -524,7 +524,7 @@ class Stream extends EventEmitter {
             }
           });
         } catch (error) {
-          this.client.adapterRef.logger.error('failed to get localStats');
+          this.client.adapterRef.logger.error('failed to get localStats', error.name, error.message);
         }
         return stats;
       }
@@ -1484,7 +1484,7 @@ class Stream extends EventEmitter {
         }, null, ' ')
       })
     } catch (e) {
-      this.client.adapterRef.logger.error('API调用失败：Stream:unmuteAudio' ,e, ...arguments);
+      this.client.adapterRef.logger.error('API调用失败：Stream:unmuteAudio' ,e.name, e.message, e);
       this.client.apiFrequencyControl({
         name: 'unmuteAudio',
         code: -1,
@@ -1552,7 +1552,7 @@ class Stream extends EventEmitter {
         }, null, ' ')
       })
     } catch (e) {
-      this.client.adapterRef.logger.error('API调用失败：Stream:muteAudio' ,e, ...arguments);
+      this.client.adapterRef.logger.error('API调用失败：Stream:muteAudio' ,e.name, e.message, e);
       this.client.apiFrequencyControl({
         name: 'muteAudio',
         code: -1,
@@ -1729,7 +1729,7 @@ class Stream extends EventEmitter {
             callback(e);
           }, 0);
         }
-        this.client.adapterRef.logger.error('设置输出设备失败');
+        this.client.adapterRef.logger.error('设置输出设备失败', e.name, e.message);
         throw e;
       }
       if (callback) {
@@ -1868,7 +1868,7 @@ class Stream extends EventEmitter {
         })
       }
     } catch (e) {
-      this.client.adapterRef.logger.error('API调用失败：Stream:switchDevice' ,e, ...arguments);
+      this.client.adapterRef.logger.error('API调用失败：Stream:switchDevice' ,e.name, e.message, e);
       this.inSwitchDevice = false
       if (type === "video"){
         this.client.apiFrequencyControl({
@@ -1934,7 +1934,7 @@ class Stream extends EventEmitter {
         }, null, ' ')
       })
     } catch (e) {
-      this.client.adapterRef.logger.error('API调用失败：Stream:unmuteVideo' ,e, ...arguments);
+      this.client.adapterRef.logger.error('API调用失败：Stream:unmuteVideo' ,e.name, e.message, e);
       this.client.apiFrequencyControl({
         name: 'unmuteVideo',
         code: -1,
@@ -1991,7 +1991,7 @@ class Stream extends EventEmitter {
         }, null, ' ')
       })
     } catch (e) {
-      this.client.adapterRef.logger.error('API调用失败：Stream:muteVideo' ,e, ...arguments);
+      this.client.adapterRef.logger.error('API调用失败：Stream:muteVideo' ,e.name, e.message, e);
       this.client.apiFrequencyControl({
         name: 'muteVideo',
         code: -1,
@@ -2054,7 +2054,7 @@ class Stream extends EventEmitter {
         }, null, ' ')
       })
     } catch (e) {
-      this.client.adapterRef.logger.error('API调用失败：Stream:unmuteScreen' ,e, ...arguments);
+      this.client.adapterRef.logger.error('API调用失败：Stream:unmuteScreen' ,e.name, e.message, e);
       this.client.apiFrequencyControl({
         name: 'unmuteScreen',
         code: -1,

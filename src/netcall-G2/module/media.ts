@@ -839,7 +839,7 @@ class MediaHelper extends EventEmitter {
         })
       })
     }).catch(error => {
-      this.adapterRef.logger.log('loadRemoteAudioFile 加载云端音乐失败: ', error)
+      this.adapterRef.logger.log('loadRemoteAudioFile 加载云端音乐失败: ', error.name, error.message, error)
       return Promise.reject(
         new RtcError({
           code: ErrorCode.STATE_ERROR,
@@ -1673,7 +1673,7 @@ class MediaHelper extends EventEmitter {
       //@ts-ignore
       await this.loadAudioBuffer(filePath)
     } catch (e) {
-      this.adapterRef.logger.error('preloadEffect 错误: ', e)
+      this.adapterRef.logger.error('preloadEffect 错误: ', e.name, e.message, e)
     }
   }
 

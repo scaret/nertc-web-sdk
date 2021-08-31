@@ -775,7 +775,7 @@ class Client extends Base {
         }, null, ' ')
       })
     } catch (e) {
-      this.adapterRef.logger.error('API调用失败：Client:unsubscribe' ,e, ...arguments);
+      this.adapterRef.logger.error('API调用失败：Client:unsubscribe' ,e.name, e.message, e, ...arguments);
       this.apiFrequencyControl({
         name: 'unsubscribe',
         code: -1,
@@ -843,7 +843,7 @@ class Client extends Base {
         }, null, ' ')
       })
     } catch (e) {
-      this.adapterRef.logger.error('API调用失败：Client:setRemoteVideoStreamType' ,e, ...arguments);
+      this.adapterRef.logger.error('API调用失败：Client:setRemoteVideoStreamType' ,e.name, e.message, e, ...arguments);
       this.apiFrequencyControl({
         name: 'setRemoteVideoStreamType',
         code: -1,
