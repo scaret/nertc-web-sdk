@@ -98,7 +98,7 @@ class Meeting extends EventEmitter {
       let isUidExisted = (uid == '0' || (uid != '0' && !Boolean(uid))) ? false : true;
 
 
-      this.adapterRef.logger.log('获取到房间信息: %o', data)
+      this.adapterRef.logger.log('获取到房间信息:', JSON.stringify(data))
       if (data.code === 200) {
         this.adapterRef.channelStatus = 'join'
         const { ips, time } = data
@@ -154,7 +154,7 @@ class Meeting extends EventEmitter {
         return Promise.reject(`code: ${data.code}, reason: ${data.desc}`)
       }
     } catch(e) {
-      this.adapterRef.logger.log('获取到房间失败: %o', e)
+      this.adapterRef.logger.log('获取到房间失败:', e.name, e.message, e)
       this.adapterRef.channelStatus = 'leave'
       this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
       this.adapterRef.connectState.curState = 'DISCONNECTED'
@@ -310,7 +310,7 @@ class Meeting extends EventEmitter {
           )
         }
       } catch (e) {
-        this.adapterRef.logger.error('addTasks: ', e)
+        this.adapterRef.logger.error('addTasks: ', e.name, e.message, e)
         this.adapterRef.instance.apiFrequencyControl({
           name: 'addTasks',
           code: -1,
@@ -417,7 +417,7 @@ class Meeting extends EventEmitter {
           )
         }
       } catch (e) {
-        this.adapterRef.logger.error('deleteTasks发生错误: ', e)
+        this.adapterRef.logger.error('deleteTasks发生错误: ', e.name, e.message, e)
         this.adapterRef.instance.apiFrequencyControl({
           name: 'deleteTasks',
           code: -1,
@@ -550,7 +550,7 @@ class Meeting extends EventEmitter {
           )
         }
       } catch (e) {
-        this.adapterRef.logger.error('updateTasks 发生错误: ', e)
+        this.adapterRef.logger.error('updateTasks 发生错误: ', e.name, e.message, e)
         this.adapterRef.instance.apiFrequencyControl({
           name: 'updateTasks',
           code: -1,

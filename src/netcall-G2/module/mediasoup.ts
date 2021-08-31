@@ -258,7 +258,7 @@ class Mediasoup extends EventEmitter {
       this.adapterRef.logger.error('_recvTransportConnectionstatechange：出现了_recvTransport绑定不一致的状况。');
       return;
     }
-    this.adapterRef.logger.warn('recv connection state changed to %s', connectionState);
+    this.adapterRef.logger.log('recv connection state changed to %s', connectionState);
     if (connectionState === 'failed') {
       try {
         if (this._recvTransport) {
@@ -497,7 +497,7 @@ class Mediasoup extends EventEmitter {
     } else if(stream.mediaHelper && stream.mediaHelper.audioStream) {
       const audioTrack = stream.mediaHelper.audioStream.getAudioTracks()[0]
       if (audioTrack){
-        this.adapterRef.logger.log('发布 audioTrack: ', audioTrack.id)
+        this.adapterRef.logger.log('发布 audioTrack: ', audioTrack.id, audioTrack.label)
         stream.pubStatus.audio.audio = true
         this._micProducer = await this._sendTransport.produce({
           track: audioTrack,
@@ -514,7 +514,7 @@ class Mediasoup extends EventEmitter {
       this.adapterRef.logger.log('视频已经publish，重复操作')
     } else if (stream.mediaHelper && stream.mediaHelper.videoStream) {
       const videoTrack = stream.mediaHelper.videoStream.getVideoTracks()[0]
-      this.adapterRef.logger.log('发布 videoTrack: ', videoTrack.id)
+      this.adapterRef.logger.log('发布 videoTrack: ', videoTrack.id, videoTrack.label)
       stream.pubStatus.video.video = true
       //@ts-ignore
       const codecInfo = this.adapterRef.mediaCapability.getCodecSend("video", this._sendTransport.handler._sendingRtpParametersByKind["video"]);
@@ -548,7 +548,7 @@ class Mediasoup extends EventEmitter {
       this.adapterRef.logger.log('屏幕共享已经publish，重复操作')
     } else if(stream.mediaHelper && stream.mediaHelper.screenStream) {
       const screenTrack = stream.mediaHelper.screenStream.getVideoTracks()[0]
-      this.adapterRef.logger.log('发布 screenTrack: ', screenTrack.id)
+      this.adapterRef.logger.log('发布 screenTrack: ', screenTrack.id, screenTrack.label)
       stream.pubStatus.screen.screen = true
       //@ts-ignore
       const codecInfo = this.adapterRef.mediaCapability.getCodecSend("screen", this._sendTransport.handler._sendingRtpParametersByKind["video"]);
@@ -620,7 +620,7 @@ class Mediasoup extends EventEmitter {
           producerId
         });
     } catch (error) {
-      this.adapterRef.logger.error('_destroyConsumer() | failed:%o', error);
+      this.adapterRef.logger.error('_destroyConsumer() | failed:', error.name, error.message);
     }
   }
 
@@ -725,7 +725,7 @@ class Mediasoup extends EventEmitter {
           remoteStream.stop(mediaTypeShort)
           remoteStream.pubStatus[mediaTypeShort].stopconsumerStatus = 'end'
         } catch (e) {
-          this.adapterRef.logger.error('停止之前的订阅出现错误: ', e)
+          this.adapterRef.logger.error('停止之前的订阅出现错误: ', e.name, e.message)
         }
         this.adapterRef.logger.log('停止之前的订阅完成')
       }
@@ -1041,7 +1041,7 @@ class Mediasoup extends EventEmitter {
       }
       return this.checkConsumerList(info)
     } catch (error) {
-      this.adapterRef && this.adapterRef.logger.error('"newConsumer" request failed:%o', error);
+      this.adapterRef && this.adapterRef.logger.error('"newConsumer" request failed:', error.name, error.message, error);
       this.adapterRef.logger.error('订阅 %s 的 %s 媒体失败，做容错处理: 重新建立下行连接', uid, mediaTypeShort)
       return this.adapterRef.instance.reBuildRecvTransport()
     }
@@ -1096,7 +1096,7 @@ class Mediasoup extends EventEmitter {
       this.adapterRef.logger.log('closeTransport() [停止通道反馈结果 result=%s ]', JSON.stringify(result, null, ' '));
       transport.close();
     } catch (error) {
-      this.adapterRef.logger.error('closeTransport() | failed:%o', error);
+      this.adapterRef.logger.error('closeTransport() | failed:', error.name, error.message, error);
     }
   }
 
@@ -1135,7 +1135,7 @@ class Mediasoup extends EventEmitter {
           } 
         });
     } catch (e) {
-      this.adapterRef.logger.error('muteMic() | failed: %o', e);
+      this.adapterRef.logger.error('muteMic() | failed:', e.name, e.message, e);
     }
   }
 
@@ -1173,7 +1173,7 @@ class Mediasoup extends EventEmitter {
           } 
         });
     } catch (e) {
-      this.adapterRef.logger.error('muteMic() | failed: %o', e);
+      this.adapterRef.logger.error('muteMic() | failed: ', e.name, e.message, e);
       return Promise.reject(e)
     }
   }
@@ -1212,7 +1212,7 @@ class Mediasoup extends EventEmitter {
           } 
         });
     } catch (e) {
-      this.adapterRef.logger.error('muteMic() | failed: %o', e);
+      this.adapterRef.logger.error('muteMic() | failed:', e.name, e.message, e);
     }
   }
 
@@ -1250,7 +1250,7 @@ class Mediasoup extends EventEmitter {
           } 
         });
     } catch (e) {
-      this.adapterRef.logger.error('muteMic() | failed: %o', e);
+      this.adapterRef.logger.error('muteMic() | failed:', e.name, e.message, e);
     }
   }
   
@@ -1288,7 +1288,7 @@ class Mediasoup extends EventEmitter {
           }
         });
     } catch (e) {
-      this.adapterRef.logger.error('muteScreen() | failed: %o', e);
+      this.adapterRef.logger.error('muteScreen() | failed: ', e.name, e.message, e);
     }
   }
 
@@ -1326,7 +1326,7 @@ class Mediasoup extends EventEmitter {
           }
         });
     } catch (e) {
-      this.adapterRef.logger.error('muteMic() | failed: %o', e);
+      this.adapterRef.logger.error('muteMic() | failed:', e.name, e.message, e);
     }
   }
   
@@ -1356,7 +1356,7 @@ class Mediasoup extends EventEmitter {
           }
         });
     } catch (e) {
-      this.adapterRef.logger.error('updateUserRole failed: %o', e);
+      this.adapterRef.logger.error('updateUserRole failed:', e.name, e.message, e);
       throw e;
     }
   }
