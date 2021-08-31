@@ -282,7 +282,7 @@ class Stream extends EventEmitter {
       streamID: this.stringStreamID,
       audio: options.audio,
       video: options.video,
-    }, null, ' '))
+    }))
     this.client.apiFrequencyControl({
       name: 'createStream',
       code: 0,
@@ -775,7 +775,7 @@ class Stream extends EventEmitter {
       playOptions.screen = true;
     }
     
-    this.client.adapterRef.logger.log(`音视频播放, uid: ${this.stringStreamID}, playOptions: `, JSON.stringify(playOptions, null, ' '))
+    this.client.adapterRef.logger.log(`音视频播放, uid: ${this.stringStreamID}, playOptions: `, JSON.stringify(playOptions))
     if (this.isRemote){
       if(playOptions.audio && this._play && this.mediaHelper && this.mediaHelper.audioStream){
         this.client.adapterRef.logger.log('开始播放远端音频: ', this.stringStreamID)
@@ -985,7 +985,7 @@ class Stream extends EventEmitter {
     if (!this.client || !this._play) {
       return
     } 
-    this.client.adapterRef.logger.log('设对端视频播放窗口大小: ', JSON.stringify(options, null, ' '))
+    this.client.adapterRef.logger.log('设对端视频播放窗口大小: ', JSON.stringify(options))
     // mediaType不填则都设
     if (!mediaType || mediaType === "video"){
       if (this._play){

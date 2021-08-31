@@ -98,7 +98,7 @@ class Meeting extends EventEmitter {
       let isUidExisted = (uid == '0' || (uid != '0' && !Boolean(uid))) ? false : true;
 
 
-      this.adapterRef.logger.log('获取到房间信息: %o', data)
+      this.adapterRef.logger.log('获取到房间信息:', JSON.stringify(data))
       if (data.code === 200) {
         this.adapterRef.channelStatus = 'join'
         const { ips, time } = data

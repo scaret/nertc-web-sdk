@@ -38,7 +38,7 @@ export class MediaCapability{
     let supportedCodecsSend = await getSupportedCodecs("send") || {video: [], audio: ["OPUS"]};
     this.supportedCodecRecv = supportedCodecsRecv.video;
     this.supportedCodecSend = supportedCodecsSend.video;
-    this.adapterRef.logger.log("detect supportedCodecRecv", this.supportedCodecRecv , "supportedCodecSend", this.supportedCodecSend, 'Preferred codec:', this.preferredCodecSend);
+    this.adapterRef.logger.log("detect supportedCodecRecv", JSON.stringify(this.supportedCodecRecv), "supportedCodecSend", JSON.stringify(this.supportedCodecSend), 'Preferred codec:', JSON.stringify(this.preferredCodecSend));
   }
   
   getCodecCapability(){
@@ -106,7 +106,7 @@ export class MediaCapability{
       }
     }
     if (roomSupported.codecName){
-      this.adapterRef.logger.log('MediaCapability：发送的Codec为:', roomSupported.codecName, roomSupported.codecParam);
+      this.adapterRef.logger.log('MediaCapability：发送的Codec为:', roomSupported.codecName, JSON.stringify(roomSupported.codecParam));
       return roomSupported;
     }else{
       this.adapterRef.logger.error('MediaCapability：未找到合适的发送Codec。发送的Codec使用:', roomNotSupported.codecName, roomNotSupported.codecParam);
@@ -132,7 +132,7 @@ export class MediaCapability{
         }
       }
       if (!prevVideoCodecType.length){
-        this.adapterRef.logger.log('Room videoCodecType:', this.room.videoCodecType)
+        this.adapterRef.logger.log('Room videoCodecType:', JSON.stringify(this.room.videoCodecType))
       }else{
         this.adapterRef.logger.log('Room videoCodecType发生变更。new:', this.room.videoCodecType, 'old:',prevVideoCodecType);
       }

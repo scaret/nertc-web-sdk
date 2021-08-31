@@ -2,10 +2,14 @@ import {Logger} from "../types";
 
 async function getStream (constraint:MediaStreamConstraints, logger:Logger = console) {
     
-  logger.log('getLocalStream constraint:', JSON.stringify(constraint, null, ' '))
+  logger.log('getLocalStream constraint:', JSON.stringify(constraint))
   try {
     const stream = await navigator.mediaDevices.getUserMedia(constraint)
     logger.log('获取到媒体流: ', stream.id)
+    const tracks = stream.getTracks();
+    tracks.forEach((track)=>{
+      logger.log('获取到的设备类型: ', track.kind, track.label, track.id, JSON.stringify(track.getSettings()))
+    });
     return stream
   } catch(e) {
     logger.error('媒体设备获取失败: ', e.name, e.message)

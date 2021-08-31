@@ -892,7 +892,7 @@ class MediaHelper extends EventEmitter {
         })
       );
     }
-    this.adapterRef.logger.log('startMix 开始混音: %o', this.mixAudioConf)
+    this.adapterRef.logger.log('startMix 开始混音:', JSON.stringify(this.mixAudioConf))
     if (index !== this.mixAudioConf.index) {
       this.adapterRef.logger.log('startMix: 该次伴音已经取消')
       return Promise.resolve()
@@ -1041,7 +1041,7 @@ class MediaHelper extends EventEmitter {
       playStartTime = this.webAudio.mixAudioConf.setPlayStartTime
       this.webAudio.mixAudioConf.setPlayStartTime = 0
     } else {
-      this.adapterRef.logger.log("恢复混音:", this.webAudio.mixAudioConf)
+      this.adapterRef.logger.log("恢复混音:", JSON.stringify(this.webAudio.mixAudioConf))
       this.adapterRef.logger.log('已经播放的时间: ', playedTime)
       if (playedTime > this.webAudio.mixAudioConf.totalTime) {
         playedTime = playedTime % this.webAudio.mixAudioConf.totalTime

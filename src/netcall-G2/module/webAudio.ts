@@ -325,7 +325,7 @@ class WebAudio extends EventEmitter{
     for (let i = this.audioInArr.length - 1; i >=0; i--){
       const formerAudioIn = this.audioInArr[i];
       if (formerAudioIn.id === track.id){
-        this.logger.log('removeTrack，删除track', track);
+        this.logger.log('removeTrack，删除track', track.id, track.label);
         this.audioInArr.splice(i, 1);
         formerAudioIn.disconnect();
       }
@@ -655,7 +655,7 @@ class WebAudio extends EventEmitter{
     if (!gainNode || !sourceNode) {
       return 
     }
-    this.logger.log('startAudioEffectMix: ', options)
+    this.logger.log('startAudioEffectMix: ', JSON.stringify(options))
     gainNode.connect(this.gainFilter)
     if (this.musicDestination){
       gainNode.connect(this.musicDestination)
@@ -693,7 +693,7 @@ class WebAudio extends EventEmitter{
         })
       )
     }
-    this.logger.log('stopAudioEffectMix: ', options)
+    this.logger.log('stopAudioEffectMix: ', JSON.stringify(options))
     sourceNode.onended = null
     sourceNode.disconnect(0)
     gainNode.disconnect(0)

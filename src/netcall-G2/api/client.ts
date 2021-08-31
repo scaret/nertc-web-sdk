@@ -102,7 +102,7 @@ class Client extends Base {
    */
 
   setLocalMediaPriority (options: MediaPriorityOptions) {
-    this.adapterRef.logger.log('setLocalMediaPriority, options: ', JSON.stringify(options, null, ' '))
+    this.adapterRef.logger.log('setLocalMediaPriority, options: ', JSON.stringify(options))
     if (this.adapterRef.channelStatus === 'join' || this.adapterRef.channelStatus === 'connectioning') {
       this.adapterRef.logger.error('setLocalMediaPriority: 请在加入房间前调用')
       return 'INVALID_OPERATION'
@@ -536,10 +536,10 @@ class Client extends Base {
             stream.pubStatus.video.consumerStatus = 'end'
             this.adapterRef.logger.log('subscribe() [订阅 %s 视频流完成]', stream.getId())
           } else {
-            this.adapterRef.logger.log('stream.pubStatus.video.consumerStatus: ', stream.pubStatus.video.consumerStatus)
+            this.adapterRef.logger.log('stream.pubStatus.video.consumerStatus: ', JSON.stringify(stream.pubStatus.video.consumerStatus))
           }
         } else {
-          this.adapterRef.logger.log('stream.pubStatus.video: ', stream.pubStatus.video)
+          this.adapterRef.logger.log('stream.pubStatus.video: ', JSON.stringify(stream.pubStatus.video))
         }
       } else {
         // 不应该订阅视频

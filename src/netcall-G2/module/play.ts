@@ -548,11 +548,11 @@ class Play extends EventEmitter {
   setVideoRender(options?: RenderMode) {
     if(!this.videoDom) return
     if (options){
-      this.adapterRef.logger.log('setVideoRender: uid %s, options: %s', this.uid, JSON.stringify(options, null, ' '))
+      this.adapterRef.logger.log('setVideoRender: uid %s, options: %s', this.uid, JSON.stringify(options))
       this.videoRenderMode = Object.assign({}, options);
     }else{
       options = this.videoRenderMode
-      this.adapterRef.logger.log('setVideoRender: uid %s, existing videoRenderMode: %s', this.uid, JSON.stringify(options, null, ' '))
+      this.adapterRef.logger.log('setVideoRender: uid %s, existing videoRenderMode: %s', this.uid, JSON.stringify(options))
     }
     // 设置外部容器
     if (this.videoContainerDom) {
