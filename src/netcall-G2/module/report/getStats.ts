@@ -508,10 +508,10 @@ class GetStats extends EventEmitter{
         item.uid = uidMap.get(item.id.toString()).uid
         if(item.framesSent || item.framesReceived) {
           item = this.computeData(pc, item)
-          result[`video_${item.type}_${this.adapterRef && this.adapterRef.channelInfo.uid}_${direction}_${item.uid}`] = item
+          result[`_video_${item.type}_${this.adapterRef && this.adapterRef.channelInfo.uid}_${direction}_${item.uid}`] = item
           item.mediaType = 'video'
         } else {
-          result[`audio_${item.type}_${this.adapterRef && this.adapterRef.channelInfo.uid}_${direction}_${item.uid}`] = item
+          result[`_audio_${item.type}_${this.adapterRef && this.adapterRef.channelInfo.uid}_${direction}_${item.uid}`] = item
           item.mediaType = 'audio'
         }
       } else if (item.type == 'outbound-rtp' || item.type == 'inbound-rtp') {
@@ -519,7 +519,7 @@ class GetStats extends EventEmitter{
         result[`${item.mediaType}_${item.type}_${this.adapterRef && this.adapterRef.channelInfo.uid}_${direction}_${item.uid}`] = item
       }
     })
-    //console.log('')
+    
     return result;
   }
 
