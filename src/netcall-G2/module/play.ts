@@ -253,7 +253,7 @@ class Play extends EventEmitter {
           await this.audioDom.play()
           this.autoPlayType = 0
         } catch(error) {
-          this.adapterRef.logger.warn('播放 %o 的音频出现问题: %o', this.uid, error)
+          this.adapterRef.logger.warn('播放 %o 的音频出现问题:', this.uid, error.name, error.message, error)
           this.autoPlayType = 1
           if(error.name === 'NotAllowedError') {
             throw new RtcError({
@@ -272,7 +272,7 @@ class Play extends EventEmitter {
           await this.videoDom.play()
           this.autoPlayType = 0
         } catch(error) {
-          this.adapterRef && this.adapterRef.logger.warn('播放 %s 的视频出现问题: %o', this.uid, error)
+          this.adapterRef && this.adapterRef.logger.warn('播放 %s 的视频出现问题:', this.uid, error.name, error.message, error)
           this.autoPlayType = 2
           if(error.name === 'NotAllowedError') {
             throw new RtcError({
@@ -305,7 +305,7 @@ class Play extends EventEmitter {
         await (this.audioDom as any).setSinkId(this.audioSinkId);
         this.adapterRef.logger.log('音频使用输出设备：%s', this.audioSinkId);
       } catch (e) {
-        this.adapterRef.logger.error('音频输出设备切换失败', e);
+        this.adapterRef.logger.error('音频输出设备切换失败', e.name, e.message, e);
       }
     }
     if(!stream.active) return
@@ -318,7 +318,7 @@ class Play extends EventEmitter {
       await this.audioDom.play()
       this.adapterRef.logger.log('播放 %o 的音频完成，当前播放状态: %o', this.uid, this.audioDom && this.audioDom.played && this.audioDom.played.length)
     } catch (error) {
-      this.adapterRef.logger.warn('播放 %o 的音频出现问题: %o', this.uid, error)
+      this.adapterRef.logger.warn('播放 %o 的音频出现问题: ', this.uid, error.name, error.message, error)
 
       if(error.name === 'NotAllowedError') {
         this.autoPlayType = 1;
@@ -467,7 +467,7 @@ class Play extends EventEmitter {
       this.videoDom.play()
       this.adapterRef.logger.log('播放 %s 的视频完成，当前播放状态: %o', this.uid, this.videoDom && this.videoDom.played && this.videoDom.played.length)
     } catch (error) {
-      this.adapterRef && this.adapterRef.logger.warn('播放 %s 的视频出现问题: %o', this.uid, error)
+      this.adapterRef && this.adapterRef.logger.warn('播放 %s 的视频出现问题:', this.uid, error.name, error.message, error)
      
       if(error.name === 'NotAllowedError') {
         this.autoPlayType = 2;
@@ -500,7 +500,7 @@ class Play extends EventEmitter {
       await this.screenDom.play()
       this.adapterRef.logger.log('播放 %s 的辅流，当前播放状态: %o', this.uid, this.screenDom && this.screenDom.played && this.screenDom.played.length)
     } catch (e) {
-      this.adapterRef && this.adapterRef.logger.warn('播放 %s 的辅流出现问题: %o', this.uid, e)
+      this.adapterRef && this.adapterRef.logger.warn('播放 %s 的辅流出现问题: ', this.uid, e.name, e.message, e)
     }
   }
 
@@ -562,11 +562,11 @@ class Play extends EventEmitter {
   setVideoRender(options?: RenderMode) {
     if(!this.videoDom) return
     if (options){
-      this.adapterRef.logger.log('setVideoRender: uid %s, options: %s', this.uid, JSON.stringify(options, null, ' '))
+      this.adapterRef.logger.log('setVideoRender: uid %s, options: %s', this.uid, JSON.stringify(options))
       this.videoRenderMode = Object.assign({}, options);
     }else{
       options = this.videoRenderMode
-      this.adapterRef.logger.log('setVideoRender: uid %s, existing videoRenderMode: %s', this.uid, JSON.stringify(options, null, ' '))
+      this.adapterRef.logger.log('setVideoRender: uid %s, existing videoRenderMode: %s', this.uid, JSON.stringify(options))
     }
     // 设置外部容器
     if (this.videoContainerDom) {

@@ -668,7 +668,7 @@ class Signalling extends EventEmitter {
         requestId: requestData.requestId,
         externData: requestData.externData
       }) as SignalJoinRes;
-      this.adapterRef.logger.log('Signalling:加入房间 ack ->  ', response)
+      this.adapterRef.logger.log('Signalling:加入房间 ack ->  ', JSON.stringify(response, (k, v)=>{return k === "edgeRtpCapabilities" ? null : v;}));
       if (response.code != 200) {
         this.adapterRef.logger.error(
           'Signalling: 加入房间失败, reason = %s',
@@ -749,7 +749,7 @@ class Signalling extends EventEmitter {
         await this.createRTSTransport()
         this.adapterRef.instance.emit('connected')
       }
-      this.adapterRef.logger.log('加入房间成功, 查看房间其他人的发布信息: ', response.externData.userList)
+      this.adapterRef.logger.log('加入房间成功, 查看房间其他人的发布信息: ', JSON.stringify(response.externData.userList))
       if (response.externData !== undefined && response.externData.userList && response.externData.userList.length) {
         for (const peer of response.externData.userList) {
           let uid = peer.uid
@@ -905,7 +905,7 @@ class Signalling extends EventEmitter {
       const response = await this._protoo.request('Heartbeat');
       //this.adapterRef.logger.log('包活信令回包: ', response)
     } catch (e) {
-      this.adapterRef.logger.error('信令包活失败')
+      this.adapterRef.logger.error('信令包活失败', e.name, e.message)
       if (this.keepAliveTimer) {
         clearInterval(this.keepAliveTimer)
         this.keepAliveTimer = null

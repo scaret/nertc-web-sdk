@@ -128,7 +128,7 @@ class Record extends EventEmitter {
         }, null, ' ')
       })
     } catch (e) {
-      this.adapterRef.logger.error('录制start error： ', event)
+      this.adapterRef.logger.error('录制start error： ', e.name, e.message, e);
       this.adapterRef.instance.apiFrequencyControl({
         name: 'startMediaRecording',
         code: -1,

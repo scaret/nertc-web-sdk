@@ -13,6 +13,7 @@ import { detectDevice } from "../netcall-G2/module/3rd/mediasoup-client";
 import log from '../netcall-G2/util/log/logger';
 import RtcError from '../netcall-G2/util/error/rtcError';
 import ErrorCode from '../netcall-G2/util/error/errorCode';
+import {getParameters, setParameters} from "../netcall-G2/module/parameters";
 
 /**
  * {@link NERTC} 
@@ -120,22 +121,17 @@ createClient (options:ClientOptions) {
   checkExists({tag: 'createClient:ClientOptions.appkey', value: options.appkey});
   // 需要监视的API，埋点等
   const apiList:string[] = []
-
-  if (client) {
-    return new Client(
-      Object.assign(options, {
-        apiList: apiList,
-        ref: NERTC
-      })
-    )
-  }
-  client = new Client(
+  const instance = new Client(
     Object.assign(options, {
       apiList: apiList,
       ref: NERTC
     })
   )
-  return client
+  getParameters().clients.push(instance);
+  if (!client){
+    client = instance;
+  }
+  return instance;
 },
 
 
@@ -173,10 +169,12 @@ createStream (options:StreamOptions) {
     client.adapterRef.logger.warn('createStream: 未传入client参数。使用默认Client。')
   }
   if (client || options.client) {
-    return new Stream(Object.assign(options, {
+    const localStream = new Stream(Object.assign(options, {
       isRemote: false,
       client: options.client || client
     }))
+    getParameters().localStreams.push(localStream)
+    return localStream
   } else {
     return clientNotYetUninitialized
   }
@@ -285,6 +283,11 @@ async getSupportedCodec() {
 getHandler() {
   return detectDevice()
 },
+
+getParameters: getParameters,
+
+setParameters: setParameters,
+  
 /**
  * 销毁Client对象
  * @function destroy

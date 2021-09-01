@@ -438,7 +438,7 @@ class Base extends EventEmitter {
         //@ts-ignore
         await this.subscribe(stream)
       } catch (e) {
-        this.adapterRef.logger.log('重连逻辑订阅 error: ', e)
+        this.adapterRef.logger.log('重连逻辑订阅 error: ', e, e.name, e.message)
         break
       }
       
