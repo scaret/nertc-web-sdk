@@ -505,7 +505,7 @@ class Play extends EventEmitter {
   }
 
   async stopPlayVideoStream() {
-    this.adapterRef.logger.log('停止播发视频')
+    this.adapterRef.logger.log('stopPlayVideoStream: 停止播发视频')
     if (this.videoContainerDom && this.videoDom) {
       if(this.videoContainerDom == this.videoDom.parentNode) {
         this.adapterRef.logger.log('清除 videoDom')
@@ -514,7 +514,14 @@ class Play extends EventEmitter {
         this.adapterRef.logger.log('videoContainerDom 删除子节点')
         this.videoContainerDom.removeChild(this.videoContainerDom.lastChild)
       }
-      this.videoDom = null
+      try {
+        this.videoDom.remove()
+        this.videoDom.srcObject = null
+        this.videoDom = null
+      } catch(e) {
+        this.adapterRef.logger.log('stopPlayVideoStream e: ', e)
+      }
+      
     }
     if (this.videoView && this.videoContainerDom) {
       if (this.videoView == this.videoContainerDom.parentNode) {
@@ -531,9 +538,16 @@ class Play extends EventEmitter {
   }
   
   async stopPlayScreenStream() {
+    this.adapterRef.logger.log('stopPlayVideoStream: 停止播发屏幕共享')
     if (this.screenContainerDom && this.screenDom) {
       this.screenContainerDom.removeChild(this.screenDom)
-      this.screenDom = null
+      try {
+        this.screenDom.remove()
+        this.screenDom.srcObject = null
+        this.screenDom = null
+      } catch(e) {
+        this.adapterRef.logger.log('stopPlayScreenStream e: ', e)
+      }
     }
     if (this.screenView && this.screenContainerDom) {
       this.screenView.removeChild(this.screenContainerDom)

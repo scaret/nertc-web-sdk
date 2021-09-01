@@ -51,8 +51,7 @@ class StatsReport extends EventEmitter {
       interval: 1000
     })
     this.stats.on('stats', (data, time) => {
-      // this.adapterRef.logger.log(time,'object',data, time);
-
+      //this.adapterRef.logger.log(time,'object',data, time);
       this.formativeStatsReport && this.formativeStatsReport.update(data, time)
       
     })
@@ -121,7 +120,6 @@ class StatsReport extends EventEmitter {
       this.wsTransport_.sendPB(reportData);
     } catch (error) {
       this.adapterRef.logger.error('getStats失败：' , error);
-      console.log(error);
     }
     
     
@@ -169,7 +167,7 @@ class StatsReport extends EventEmitter {
             }
           }
         }
-      }else {
+      } else {
         let local = result.local;
         let prevLocal = this.prevStats_.local;
         let remote = result.remote;
@@ -193,7 +191,7 @@ class StatsReport extends EventEmitter {
           }
         }
       }
-    }else if(env.IS_SAFARI) {
+    } else if (env.IS_SAFARI) {
       // safari 浏览器
     let sla = result.local.audio_outbound_rtp ? result.local.audio_outbound_rtp : [],
       slv = result.local.video_outbound_rtp ? result.local.video_outbound_rtp : [],
@@ -203,7 +201,7 @@ class StatsReport extends EventEmitter {
       srv = result.remote.video_inbound_rtp ? result.remote.video_inbound_rtp : [],
       srvt = result.remote.video_track ? result.remote.video_track : [];
 
-    if(!isEmpty(this.prevStats_)) {
+    if (!isEmpty(this.prevStats_)) {
       var spla = this.prevStats_.local.audio_outbound_rtp ? this.prevStats_.local.audio_outbound_rtp : [],
         splv = this.prevStats_.local.video_outbound_rtp ? this.prevStats_.local.video_outbound_rtp : [],
         splvt = this.prevStats_.local.video_track ? this.prevStats_.local.video_track : [],

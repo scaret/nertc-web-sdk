@@ -384,7 +384,6 @@ class Base extends EventEmitter {
       return item.uid !== uid
     })
     this.adapterRef.logger.log('%s 离开房间 通知用户', uid);
-    console.log('_enableRts: ', this.adapterRef._enableRts)
     if (this.adapterRef._enableRts) {
       this.adapterRef.instance.emit('rts-peer-leave', {uid});
     } else {

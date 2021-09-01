@@ -490,10 +490,10 @@ class FormativeStatsReport {
         currentData.recv.audio.nextLost = data[i].packetsLost
         currentData.recv.audio.nextPacket = data[i].packetsReceived
         downAudioList.push(data[i])
-        const audioLevel = data[i].audioOutputLevel || data[i].audioLevel
+        const audioLevel = data[i].audioOutputLevel || data[i].audioLevel //safari浏览器 audioLevel的值是 0-1 (https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-audiolevel)
         this._audioLevel.push({
           uid,
-          level: parseInt(audioLevel) || 0,
+          level: +audioLevel || 0,
         })
       } else if (i.indexOf('_recv_') !== -1 && i.indexOf('_video') !== -1) {
         //主流
@@ -694,7 +694,7 @@ class FormativeStatsReport {
         MuteState: (remoteStream && (remoteStream.muteStatus.audioSend || remoteStream.muteStatus.audioRecv)), //(remoteStream && remoteStream.audio) || (remoteStream && remoteStream.muteStatus.audio), 
         PacketLossRate: item.alr || 0,
         RecvBitrate: item.bitsReceivedPerSecond || 0,
-        RecvLevel: parseInt(item.audioOutputLevel) || parseInt(item.audioLevel) || 0,
+        RecvLevel: parseInt(item.audioOutputLevel) || +item.audioLevel || 0,
         TotalFreezeTime: item.totalFreezeTime || 0,
         TotalPlayDuration: parseInt(item.totalSamplesDuration) || 0,
         TransportDelay: parseInt(item.googCurrentDelayMs) || 0
@@ -702,7 +702,7 @@ class FormativeStatsReport {
 
       RecvBitrate = RecvBitrate + item.bitsReceivedPerSecond
       audio2.uid.push(uid)
-      audio2.a_p_volume.push(parseInt(item.audioOutputLevel || item.audioLevel) || 0)
+      audio2.a_p_volume.push(+(item.audioOutputLevel || item.audioLevel) || 0)
       audio2.a_d_nor.push(parseInt(item.googDecodingNormal) || 0)
       audio2.a_d_plc.push(parseInt(item.googDecodingPLC) || 0)
       audio2.a_d_plccng.push(parseInt(item.googDecodingPLCCNG) || 0)
@@ -1056,7 +1056,7 @@ class FormativeStatsReport {
         uid
       })
     }
-    if((audioRecvBytesDelta > 0 && audioDecodingNormalDelta > 0 && 0 === parseInt(next.audioOutputLevel || next.audioLevel))) {
+    if((audioRecvBytesDelta > 0 && audioDecodingNormalDelta > 0 && 0 === +(next.audioOutputLevel || next.audioLevel))) {
       const volume = remoteStream && remoteStream.Play && remoteStream.Play.audioDom && remoteStream.Play.audioDom.volume
       if (volume && volume > 0) {
         this.adapterRef.instance.emit('exception', {
