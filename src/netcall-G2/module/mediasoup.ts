@@ -219,6 +219,7 @@ class Mediasoup extends EventEmitter {
       return;
     }
     this.adapterRef.logger.log('send connection state changed to %s', connectionState);
+    this.emit('upstream-state-change', {connectionState});
     if (connectionState === 'failed') {
       try {
         if (this._sendTransport) {
@@ -259,6 +260,7 @@ class Mediasoup extends EventEmitter {
       return;
     }
     this.adapterRef.logger.log('recv connection state changed to %s', connectionState);
+    this.emit('downstream-state-change', {connectionState});
     if (connectionState === 'failed') {
       try {
         if (this._recvTransport) {
@@ -290,7 +292,7 @@ class Mediasoup extends EventEmitter {
     this.adapterRef.logger.warn('媒体上行传输通道连接失败')
     
     if(this.adapterRef._signalling && this.adapterRef.connectState.curState !== 'DISCONNECTING' && this.adapterRef.connectState.curState !== 'DISCONNECTED'){
-      this.adapterRef.logger.log('媒体上行传输通道连接失败，尝试整体重连')
+      this.adapterRef.logger.error('媒体上行传输通道连接失败，尝试整体重连')
       this.adapterRef.channelStatus = 'connectioning'
       this.adapterRef._signalling._reconnection()
     } else {
@@ -303,7 +305,7 @@ class Mediasoup extends EventEmitter {
   async _recvTransportConnectTimeout(){
     this.adapterRef.logger.warn('媒体下行传输通道建立失败')
     if(this.adapterRef._signalling && this.adapterRef.connectState.curState !== 'DISCONNECTING' && this.adapterRef.connectState.curState !== 'DISCONNECTED'){
-      this.adapterRef.logger.log('媒体上行传输通道连接失败，尝试整体重连')
+      this.adapterRef.logger.error('媒体下行传输通道连接失败，尝试整体重连')
       this.adapterRef.channelStatus = 'connectioning'
       this.adapterRef._signalling._reconnection()
     } else {
