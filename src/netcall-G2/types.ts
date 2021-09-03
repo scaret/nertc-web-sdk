@@ -115,6 +115,7 @@ export interface AdapterRef {
   }
   report: boolean | undefined;
   userPriority: MediaPriorityOptions;
+  proxyServer: ProxyServerOptions;
   encryption: Encryption,
 }
 
@@ -943,6 +944,14 @@ export interface AudioInConfig{
   type?: MediaTypeAudio,
 }
 
+export interface ProxyServerOptions{
+  enable: boolean;
+  type: number;
+  wsProxyArray?: string[];
+  mediaProxyArray?: string[];
+  mediaProxyToken?: string;
+}
+
 export interface MediaPriorityOptions{
   priority: number;
   preemtiveMode?: boolean;
@@ -1160,6 +1169,7 @@ export interface NeRtcServerAddresses{
   statisticsServer?: string;
   roomServer?: string;
   mediaServer?: string;
+  cloudProxyServer?: string;
 }
 
 export interface ValidStringOptions{

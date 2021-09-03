@@ -875,7 +875,8 @@ $('#joinChannel-btn').on('click', async () => {
     neRtcServerAddresses: {
       channelServer,
       statisticsServer,
-      roomServer
+      roomServer,
+      cloudProxyServer: ''
     }
   }).then((obj) => {
     addLog('加入房间成功')
@@ -2181,6 +2182,23 @@ document.body.addEventListener('click', function (e) {
 $('#allowRemoteAudioRendering').click(async ()=>{
   $("#remotePlayOptionsAudio").removeAttr("checked");
 });
+
+/**
+ * ----------------------------------------
+ *             云代理
+ * ----------------------------------------
+ */
+$('#startProxyServer-btn').click(()=>{
+  addLog('启动云代理');
+  console.log('启动云代理')
+  rtc.client.startProxyServer()
+});
+$('#stopProxyServer-btn').click(()=>{
+  addLog('关闭云代理');
+  console.log('关闭云代理')
+  rtc.client.stopProxyServer()
+});
+
 
 /**
  * ----------------------------------------

@@ -166,6 +166,22 @@ class Client extends Base {
     return this.adapterRef.channelInfo || {}
   }
 
+  
+  startProxyServer(type?: number) {
+    this.adapterRef.logger.log('startProxyServer, type: ', type)
+    if (this.adapterRef.channelStatus === 'join' || this.adapterRef.channelStatus === 'connectioning') {
+      this.adapterRef.logger.error('startProxyServer: 请在加入房间前调用')
+      return 'INVALID_OPERATION'
+    }
+    this.adapterRef.proxyServer.enable = true
+    type ? this.adapterRef.proxyServer.type = type : null
+  }
+
+  stopProxyServer(options: any) {
+    this.adapterRef.logger.log('stopProxyServer, options: ', options)
+    this.adapterRef.proxyServer.enable = false
+  }
+
   /**
    * 设置媒体优先级
    * @function setLocalMediaPriority

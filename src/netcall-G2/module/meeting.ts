@@ -1,8 +1,8 @@
 import { EventEmitter } from 'eventemitter3'
 import { ajax } from '../util/ajax'
-import {getChannelInfoUrl, SDK_VERSION, roomsTaskUrl} from '../Config'
+import {getCloudProxyInfoUrl, getChannelInfoUrl, SDK_VERSION, roomsTaskUrl} from '../Config'
 // import * as md5 from 'md5';
-import  md5 = require('md5');
+const md5 = require('md5');
 import {deepCopy} from "../util/util";
 import {
   AdapterRef, AddTaskOptions, ILogger,
@@ -67,11 +67,105 @@ class Meeting extends EventEmitter {
     // this.sdkRef = null // SDK 实例指针
   }
 
+  async getCloudProxyInfo (options:MeetingJoinChannelOptions) {
+    const {
+      appkey,
+      channelName,
+      uid,
+      token = ''
+    } = options
+
+    this.adapterRef.logger.log('getCloudProxyInfoUrl: ', getCloudProxyInfoUrl)
+    let url = getCloudProxyInfoUrl
+    if (this.adapterRef.instance._params.neRtcServerAddresses.cloudProxyServer) {
+      url = this.adapterRef.instance._params.neRtcServerAddresses.cloudProxyServer
+      this.adapterRef.logger.log('私有化配置的 cloudProxyServer: ', url)
+    }
+    let requestUid = uid
+    if (this.adapterRef.channelInfo.uidType === 'string') {
+      requestUid = new BigNumber(requestUid)
+    }
+    //@ts-ignore
+    let curtime = Date.parse(new Date())/1000
+    const md5str = appkey + "." + uid + "." + curtime
+    console.error('md5str: ', md5str)
+    console.log('md5: ', md5(md5str))
+    console.log('test: ', md5('eca23f68c66d4acfceee77c200200359.4990.1630592039'))
+    try{
+      const data = await ajax({
+        url,
+        type: 'POST',
+        //contentType: 'application/x-www-form-urlencoded',
+        data: {
+          uid: requestUid,
+          appkey,
+          channelName,
+          secureType: token ? '1' : '2', // 安全认证类型：1:安全、2:非安全
+          osType: '4', // 系统类型：1:ios、2:aos、3:pc、4:web
+          version: SDK_VERSION + '.0' || '1.0.0',
+          curtime: `${curtime}`,
+          // @ts-ignore
+          checksum: md5(appkey + "." + uid + "." + curtime),
+          proxy: '1', // 是否需要申请云代理服务，0代表不需要，1代表需要
+          needIPV6: '0' //是否需要ipv6，0不需要，1需要
+        }
+      }) as any;
+
+      this.adapterRef.logger.log('获取到云代理服务相关信息:', JSON.stringify(data))
+      if (data.code === 200) {
+        this.adapterRef.channelStatus = 'join'
+        const { wsProxyArray, mediaProxyArray, mediaProxyToken, cname } = data
+        this.adapterRef.proxyServer.wsProxyArray = wsProxyArray
+        this.adapterRef.proxyServer.mediaProxyArray = mediaProxyArray
+        this.adapterRef.proxyServer.mediaProxyToken = mediaProxyToken
+      } else {
+        this.adapterRef.channelStatus = 'leave'
+        this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
+        this.adapterRef.connectState.curState = 'DISCONNECTED'
+        this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
+        //上报getCloudProxyInfo失败事件
+        this.adapterRef.instance.apiEventReport('setGetCloudProxyInfo', {
+          channelName,
+          uid,
+          appkey,
+          token,
+          result: data.code
+        })
+        return Promise.reject(`code: ${data.code}, reason: ${data.desc}`)
+      }
+    } catch(e:any) {
+      this.adapterRef.logger.log('获取到云代理服务相关信息失败:', e.name, e.message, e)
+      this.adapterRef.channelStatus = 'leave'
+      this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
+      this.adapterRef.connectState.curState = 'DISCONNECTED'
+      this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
+      //上报getCloudProxyInfo失败事件
+      this.adapterRef.instance.apiEventReport('setGetCloudProxyInfo', {
+        channelName,
+        uid,
+        appkey,
+        token,
+        result: -1,
+        msg: e.message
+      })
+      return Promise.reject(`code: -1, reason: ${e.message}`)
+    }
+  }
+
   /**
    * 多人通话：加入房间
    * 参数 appkey, channelName, uid
    */
   async joinChannel (options:MeetingJoinChannelOptions) {
+    
+    try {
+      if(this.adapterRef.proxyServer.enable){
+        await this.getCloudProxyInfo(options)
+      }
+    } catch (e) {
+      return Promise.reject(e)
+    }
+
     const {
       appkey,
       channelName,
@@ -139,12 +233,29 @@ class Meeting extends EventEmitter {
         }
         const maxVideoQuality = (data.config && data.config.quality_level_limit) || 16
         this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.startWssTime = Date.now()
+
+        let websocketUrl = ips.webrtcarray && ips.webrtcarray.length && ips.webrtcarray[0]
+        if (websocketUrl && this.adapterRef.proxyServer.wsProxyArray) {
+          const serverIp =  ips.turnaddrs && ips.turnaddrs.length && ips.turnaddrs[0]
+          //@ts-ignore
+          const port = serverIp.split(':').length > 1 ? serverIp.split('/')[1] : ''
+          let serverurl = websocketUrl.split('/').length > 1 ? websocketUrl.split('/')[1] : ''
+          if (serverurl && port) {
+            //@ts-ignore
+            this.adapterRef.proxyServer.wsProxyArray = this.adapterRef.proxyServer.wsProxyArray.map( wsProxy => {
+              return wsProxy + '/' + serverurl
+            })
+          } else {
+            this.adapterRef.logger.error(`云代理无法获取到server地址, serverurl: ${serverurl}, port: ${port}`);
+          }
+        }
+
         Object.assign(this.adapterRef.channelInfo, {
           cid: +data.cid,
           token: data.token,
           turnToken: ips.token,
           channelName,
-          wssArr: wssArr || ips.webrtcarray || [],
+          wssArr: wssArr || this.adapterRef.proxyServer.wsProxyArray || ips.webrtcarray || [], //优先启用云代理的地址
           // 中继使用 服务器返回以下2个字段则需要走中继
           relayaddrs: ips.relayaddrs || null,
           relaytoken: ips.relaytoken || null,
@@ -158,8 +269,10 @@ class Meeting extends EventEmitter {
           appkey
         })
         options.uid = options.uid ? options.uid : this.adapterRef.channelInfo.uid
-        this.adapterRef.testConf.relayaddrs = ips.relayaddrs
-        this.adapterRef.testConf.relaytoken = ips.relaytoken
+        //优先启用云代理的地址
+        this.adapterRef.testConf.relayaddrs = this.adapterRef.proxyServer.mediaProxyArray || ips.relayaddrs
+        this.adapterRef.testConf.relaytoken = this.adapterRef.proxyServer.mediaProxyToken || ips.relaytoken
+        
         this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.token = data.token
         this.adapterRef.channelInfo.T4 = Date.now()
         let rtt = (this.adapterRef.channelInfo.T4 - time.t1) - (time.t3 - time.t2)

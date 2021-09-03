@@ -7,7 +7,8 @@ const Config:IConfig = {
   // appkey: 'a1266611da6dfb6fc59bc03df11ebdbd',
   createChannelUrl: 'https://webtest.netease.im/nrtcproxy/nrtc/createChannel.action',
   getChannelInfoUrl: 'https://webtest.netease.im/nrtcproxy/nrtc/getChannelInfos.action',
-  roomsTaskUrl: 'https://roomserver-greytest.netease.im/v2/sdk/rooms/'
+  roomsTaskUrl: 'https://roomserver-greytest.netease.im/v2/sdk/rooms/',
+  getCloudProxyInfoUrl: 'https://ap-qa-jd.netease.im/v1/g2/getCloudProxyInfo'
 }
 
 const ENV = "development";

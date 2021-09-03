@@ -154,6 +154,9 @@
         </div>
         <p class="block-header">会话类型</p>
         <div id="part-channel" class="part">
+          <button type="button" id="startProxyServer-btn">开启云代理</button>
+          <button type="button" id="stopProxyServer-btn">关闭云代理</button>
+          <br />
           <div class="line">
             房间名称：
             <input type="text" id="channelName" value="">
@@ -171,13 +174,14 @@
             <button type="button" id="joinChannel-btn">加入房间</button>
             <button type="button" id="leaveChannel-btn">离开</button>
             <button type="button" id="destroy-btn">销毁</button>
-            <br />
+
             <button type="button" id="setRoleHost-btn">设为主播</button>
             <button type="button" id="setRoleAudience-btn">设为观众</button>
             <br />
             <button type="button" id="switchCustom">切换到自定义辅流</button>
             <button type="button" id="switchScreenShare">切换到屏幕分享流</button>
             <span id="currentRole"></span>
+            
           </div>
         </div>
         <p class="block-header">推流任务</p>
