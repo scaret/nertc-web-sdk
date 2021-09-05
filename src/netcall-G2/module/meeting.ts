@@ -236,14 +236,14 @@ class Meeting extends EventEmitter {
 
         let websocketUrl = ips.webrtcarray && ips.webrtcarray.length && ips.webrtcarray[0]
         if (websocketUrl && this.adapterRef.proxyServer.wsProxyArray) {
-          const serverIp =  ips.turnaddrs && ips.turnaddrs.length && ips.turnaddrs[0]
+          const serverIp =  ips.turnaddrs && ips.turnaddrs.length && ips.turnaddrs[0][0]
           //@ts-ignore
-          const port = serverIp.split(':').length > 1 ? serverIp.split('/')[1] : ''
+          const port = serverIp.split(':').length > 1 ? serverIp.split(':')[1] : ''
           let serverurl = websocketUrl.split('/').length > 1 ? websocketUrl.split('/')[1] : ''
           if (serverurl && port) {
             //@ts-ignore
             this.adapterRef.proxyServer.wsProxyArray = this.adapterRef.proxyServer.wsProxyArray.map( wsProxy => {
-              return wsProxy + '/' + serverurl
+              return wsProxy + '/' + serverurl.split(':')[0] + ':' + port
             })
           } else {
             this.adapterRef.logger.error(`云代理无法获取到server地址, serverurl: ${serverurl}, port: ${port}`);
