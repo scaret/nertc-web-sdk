@@ -799,16 +799,18 @@ class Signalling extends EventEmitter {
               remoteStream['pubStatus'][mediaTypeShort]['mute'] = mute
               remoteStream['pubStatus'][mediaTypeShort]['simulcastEnable'] = simulcastEnable
               
+              //兼容喜欢把箭头函数transpile成ES5的客户
+              let that = this;
               setTimeout(()=>{
                 // join response中的事件应该延迟到join发生后再抛出
-                this.adapterRef.logger.log('通知房间成员发布信息: ', JSON.stringify(remoteStream.pubStatus, null, ''))
-                if (this.adapterRef._enableRts && this.adapterRef._rtsTransport) {
-                  this.adapterRef.instance.emit('rts-stream-added', {stream: remoteStream, kind: mediaTypeShort})
+                that.adapterRef.logger.log('通知房间成员发布信息: ', JSON.stringify(remoteStream.pubStatus, null, ''))
+                if (that.adapterRef._enableRts && that.adapterRef._rtsTransport) {
+                  that.adapterRef.instance.emit('rts-stream-added', {stream: remoteStream, kind: mediaTypeShort})
                 } else if (remoteStream.pubStatus.audio.audio || remoteStream.pubStatus.video.video || remoteStream.pubStatus.screen.screen) {
-                  this.adapterRef.instance.emit('stream-added', {stream: remoteStream, 'mediaType': mediaTypeShort})
+                  that.adapterRef.instance.emit('stream-added', {stream: remoteStream, 'mediaType': mediaTypeShort})
                 }
                 if (mute) {
-                  this.adapterRef.instance.emit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
+                  that.adapterRef.instance.emit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
                 }
               }, 0);
             }
