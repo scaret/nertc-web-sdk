@@ -37,6 +37,7 @@ import {AuidoMixingState} from "../constant/state";
 import RtcError from '../util/error/rtcError';
 import ErrorCode  from '../util/error/errorCode';
 import BigNumber from 'bignumber.js'
+import {getParameters} from "../module/parameters";
 
 /**
  *  请使用 {@link NERTC.createStream} 通过NERTC.createStream创建
@@ -146,6 +147,7 @@ class Stream extends EventEmitter {
   private isRemote: boolean;
   private audioPlay_: boolean;
   private videoPlay_: boolean;
+  private screenPlay_: boolean;
   
   constructor (options:StreamOptions) {
     super()
@@ -186,6 +188,7 @@ class Stream extends EventEmitter {
     this.inSwitchDevice = false;
     this.audioPlay_ = false;
     this.videoPlay_ = false;
+    this.screenPlay_ = false;
     this.pubStatus = {
       audio: {
         audio: false,
@@ -866,16 +869,23 @@ class Stream extends EventEmitter {
         this.screenView = view;
         if(this._play && this.mediaHelper && this.mediaHelper.screenStream && this.mediaHelper.screenStream.getVideoTracks().length){
           this.client.adapterRef.logger.log('开始播放辅流: ', this.stringStreamID)
-          //@ts-ignore
-          await this._play.playScreenStream(this.mediaHelper.screenStream, view)
-          if (this.isRemote){
-            if ("width" in this.renderMode.remote.screen){
-              this._play.setScreenRender(this.renderMode.remote.screen)
+          
+          try{
+            //@ts-ignore
+            await this._play.playScreenStream(this.mediaHelper.screenStream, view)
+            if (this.isRemote){
+              if ("width" in this.renderMode.remote.screen){
+                this._play.setScreenRender(this.renderMode.remote.screen)
+              }
+            }else{
+              if ("width" in this.renderMode.local.screen){
+                this._play.setScreenRender(this.renderMode.local.screen)
+              }
             }
-          }else{
-            if ("width" in this.renderMode.local.screen){
-              this._play.setScreenRender(this.renderMode.local.screen)
-            }
+            this.screenPlay_ = false;
+          }catch(error){
+            this.screenPlay_ = false;
+            this.client.emit('NotAllowedError', error)
           }
         }
       }
@@ -911,33 +921,17 @@ class Stream extends EventEmitter {
    * @return {Promise}
    */
   async resume() {
-    if(!this._play){
-      return;
-    }
-    if(this.audioPlay_) {
-      if (!this.mediaHelper || !this.mediaHelper.audioStream){
-        throw new RtcError({
-          code: ErrorCode.NOT_FOUND,
-          message: 'no audioStream'
-        })
+    if(this._play){
+      await this._play.resume();
+      if (this._play.audioDom && !this._play.audioDom.paused){
+        this.audioPlay_ = true;
       }
-      let option = {
-        type : 'audio'
+      if (this._play.videoDom && !this._play.videoDom.paused){
+        this.videoPlay_ = true;
       }
-      this._play.resume(this.mediaHelper.audioStream, option);
-    }
-    if(this.videoPlay_) {
-      if (!this.mediaHelper || !this.mediaHelper.videoStream || !this.videoView){
-        throw new RtcError({
-          code: ErrorCode.NO_MEDIAHELPER,
-          message: 'no media helper or videoStream or this.view'
-        })
+      if (this._play.screenDom && !this._play.screenDom.paused){
+        this.screenPlay_ = true;
       }
-      let option = {
-        type : 'video',
-        view: this.videoView
-      }
-      this._play.resume(this.mediaHelper.videoStream, option);
     }
   }
 
@@ -1042,6 +1036,7 @@ class Stream extends EventEmitter {
       this.videoPlay_ = false;
     } else if (type === 'screen') {
       this._play.stopPlayScreenStream()
+      this.screenPlay_ = false;
     } else {
       if(this._play.audioDom){
         this._play.stopPlayAudioStream()
@@ -1051,6 +1046,7 @@ class Stream extends EventEmitter {
         this.videoPlay_ = false;
       } if (this._play.screenDom){
         this._play.stopPlayScreenStream()
+        this.screenPlay_ = false;
       }
     }
     this.client.apiFrequencyControl({
