@@ -319,15 +319,24 @@ function initDevices(requestPerm) {
     var info = JSON.stringify(data)
     console.log('麦克风: %o', info)
     renderDeivce($('#micro'), data)
+  }).catch((e)=>{
+    addLog("====环境不支持枚举麦克风");
+    console.error(e)
   })
   NERTC.getCameras(requestPerm).then((data) => {
     var info = JSON.stringify(data)
     console.log('摄像头: %o', info)
     renderDeivce($('#camera'), data)
+  }).catch((e)=>{
+    addLog("====环境不支持枚举摄像头");
+    console.error(e)
   })
   NERTC.getDevices(requestPerm).then((data)=>{
     const sounders = data.audioOut;
     renderDeivce($("#sounder"), sounders);
+  }).catch((e)=>{
+    addLog("====环境不支持枚举扬声器");
+    console.error(e)
   })
 }
 
