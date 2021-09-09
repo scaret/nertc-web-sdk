@@ -256,7 +256,7 @@ getSpeakers(requestPerm: boolean = false) {
  */
 checkSystemRequirements() {
   var PC = window.RTCPeerConnection || window.webkitRTCPeerConnection;
-  var getUserMedia = navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
+  var getUserMedia = navigator.mediaDevices.getUserMedia;
   var webSocket = window.WebSocket;
   var isAPISupport = !!PC && !!getUserMedia && !!webSocket;
   return isAPISupport;
