@@ -89,7 +89,7 @@ declare interface Stream {
      *    // 本地流
      *    // 在await rtc.localStream.init之后
      *    await rtc.localStream.init();
-     *    rtc.localStream.play(document.getElementById("local-video-wrapper", {
+     *    rtc.localStream.play(document.getElementById("local-video-wrapper"), {
      *      audio: false,
      *      video: true,
      *      screen: true,
@@ -181,6 +181,9 @@ declare interface Stream {
     isPlaying(type: MediaType): Promise<boolean>;
     /**
      * 打开音视频输入设备，如麦克风、摄像头、屏幕共享，并且发布出去。
+     * 
+     * 代码示例可见[[Stream.switchDevice]]
+     * 
      * @param options 配置对象。
      */
     open(options: {
@@ -285,14 +288,41 @@ declare interface Stream {
     /**
      * 切换媒体输入设备。
      * 
-     * 该方法用于切换本地流的媒体输入设备，例如麦克风等音频输入设备，摄像头等视频输出设备。
+     * 该方法用于切换本地流的媒体输入设备，例如麦克风，摄像头。
      * 
-     * @note 已经发布的流，切换后不用重新发流。
+     * @note 注意
+     * 1. 已经发布的流，切换后不用重新发流。
+     * 2. 以摄像头为例，未打开摄像头时，
+     * 
+     * @example
+     * ```javascript
+     * // rtc.localStream.init() 之后
+     * if (rtc.localStream.hasVideo()){
+     *   await rtc.localStream.switchDevice({
+     *     type: "video",
+     *     deviceId: "1275f2a4df844f0bfc650f005fef5eb9415379761f4b36c3d12ca1b72948d6a8", // 通过 NERTC.getDevices() 获取
+     *   })
+     * } else {
+     *   await rtc.localStream.open({
+     *     type: "video",
+     *     deviceId: "1275f2a4df844f0bfc650f005fef5eb9415379761f4b36c3d12ca1b72948d6a8", // 通过 NERTC.getDevices() 获取
+     *   });
+     *   // 通常open后需配合播放使用
+     *   rtc.localStream.play(document.getElementById("local-video-wrapper"));
+     *   rtc.localStream.setLocalRenderMode({
+     *     width: 200,
+     *     height: 200,
+     *     cut: false
+     *   });
+     * }
+     * 
+     * ```
      * 
      * @param {String} type 设备的类型。
      * * "audio": 音频输入设备
      * * "video": 视频输入设备
      * @param deviceId 设备的 ID，可以通过 getDevices 方法获取。获取的 ID 为 ASCII 字符，字符串长度大于 0 小于 256 字节。
+     * 
      */
     switchDevice(type: "audio"|"video", deviceId: string): Promise<void>;
     /**
@@ -815,8 +845,11 @@ declare interface Stream {
      *  销毁音视频流对象。
      */
     destroy(): void;
-    
-    
+
+    on(event: "device-error", callback: (
+      type: "audio"|"video"|"screen",
+      error: any
+    ) => void): void;
 
 }
 export { Stream };
