@@ -230,9 +230,9 @@ export interface CommonEvent extends DataEvent{
 }
 
 export interface HeartbeatEvent extends DataEvent {
-  sys:string;
-  tx:string;
-  rx:string;
+  sys?:string|null;
+  tx?:string|null;
+  rx?:string|null;
 }
 
 export interface WholeStatsReportOptions{
