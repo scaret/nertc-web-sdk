@@ -1351,7 +1351,13 @@ class MediaHelper extends EventEmitter {
       this.adapterRef.logger.log('getAudioMixingPlayedTime: 当前没有开启伴音')
       return Promise.resolve()
     } 
-
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'getAudioMixingPlayedTime',
+      code: 0,
+      param: JSON.stringify({
+        playTime: this.webAudio.getAudioMixingPlayedTime()?.playedTime,
+      }, null, ' ')
+    })
     return this.webAudio.getAudioMixingPlayedTime()
   }
 
@@ -1363,6 +1369,14 @@ class MediaHelper extends EventEmitter {
       this.adapterRef.logger.log('getAudioMixingTotalTime: 当前没有开启伴音')
       return Promise.resolve()
     } 
+
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'getAudioMixingTotalTime',
+      code: 0,
+      param: JSON.stringify({
+        totalTime: this.webAudio.getAudioMixingTotalTime()?.totalTime,
+      }, null, ' ')
+    })
     return this.webAudio.getAudioMixingTotalTime()
   }
 
@@ -1483,6 +1497,12 @@ class MediaHelper extends EventEmitter {
       this.webAudio.startAudioEffectMix(this.mixAudioConf.sounds[soundId])
       this.mixAudioConf.sounds[soundId].state = 'PLAYED'
       this.mixAudioConf.sounds[soundId].startTime = Date.now()
+
+      this.adapterRef.instance.apiFrequencyControl({
+        name: 'playEffect',
+        code: 0,
+        param: JSON.stringify(options, null, ' ')
+      })
     } catch (e) {
 
     }
@@ -1512,6 +1532,12 @@ class MediaHelper extends EventEmitter {
     this.mixAudioConf.sounds[soundId].state = 'STOPED'
     this._audioFilePlaybackCompletedEvent()
     //delete this.mixAudioConf.sounds[soundId]
+
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'stopEffect',
+      code: 0,
+      param: JSON.stringify(soundId, null, ' ')
+    })
   }
 
   async pauseEffect (soundId: number) {
@@ -1578,6 +1604,12 @@ class MediaHelper extends EventEmitter {
       playedTime = playedTime % this.mixAudioConf.sounds[soundId].totalTime
     }
     this.adapterRef.logger.log("pauseEffect 暂停位置: ", playedTime)
+
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'pauseEffect',
+      code: 0,
+      param: JSON.stringify(soundId, null, ' ')
+    })
   }
 
   async resumeEffect (soundId: number) {
@@ -1647,6 +1679,12 @@ class MediaHelper extends EventEmitter {
     this.playEffect({soundId, filePath: this.mixAudioConf.sounds[soundId].filePath, cycle: this.mixAudioConf.sounds[soundId].cycle}, playedTime)
     this.mixAudioConf.sounds[soundId].state = 'PLAYED'
     this.mixAudioConf.sounds[soundId].startTime = Date.now()
+
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'resumeEffect',
+      code: 0,
+      param: JSON.stringify(soundId, null, ' ')
+    })
   }
 
   async setVolumeOfEffect (soundId: number, volume: number) {
@@ -1692,6 +1730,15 @@ class MediaHelper extends EventEmitter {
       this.adapterRef.logger.log('setVolumeOfEffect: no gainNode')
     }
     this.mixAudioConf.sounds[soundId].volume = volume
+
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'setVolumeOfEffect',
+      code: 0,
+      param: JSON.stringify({
+        soundId: soundId,
+        volume: volume
+      }, null, ' ')
+    })
   }
 
   async preloadEffect (soundId: number, filePath: string) {
@@ -1719,9 +1766,25 @@ class MediaHelper extends EventEmitter {
     try {
       //@ts-ignore
       await this.loadAudioBuffer(filePath)
+      this.adapterRef.instance.apiFrequencyControl({
+        name: 'preloadEffect',
+        code: 0,
+        param: JSON.stringify({
+          soundId: soundId,
+          filePath: filePath
+        }, null, ' ')
+      })
     } catch (e) {
       this.adapterRef.logger.error('preloadEffect 错误: ', e.name, e.message, e)
+      this.adapterRef.instance.apiFrequencyControl({
+        name: 'preloadEffect',
+        code: -1,
+        param: JSON.stringify({
+          reason: e
+        }, null, ' ')
+      })
     }
+
   }
 
   async unloadEffect (soundId: number) {
@@ -1753,6 +1816,15 @@ class MediaHelper extends EventEmitter {
     }
     delete this.mixAudioConf.audioBuffer[this.mixAudioConf.sounds[soundId].filePath]
     delete this.mixAudioConf.sounds[soundId]
+
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'unloadEffect',
+      code: 0,
+      param: JSON.stringify({
+        soundId: soundId
+      }, null, ' ')
+    })
+
   }
 
   getEffectsVolume () {
@@ -1763,6 +1835,11 @@ class MediaHelper extends EventEmitter {
         soundId: item.soundId,
         volume: item.volume
       })
+    })
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'getEffectsVolume',
+      code: 0,
+      param: JSON.stringify(result, null, 2)
     })
     return result
   }
@@ -1781,6 +1858,12 @@ class MediaHelper extends EventEmitter {
     Object.values(this.mixAudioConf.sounds).forEach(item => {
       this.setVolumeOfEffect(item.soundId, volume)
     })
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'setEffectsVolume',
+      code: 0,
+      param: JSON.stringify({volume: volume}, null, 2)
+    })
+
   }
 
   async stopAllEffects () {
@@ -1790,6 +1873,12 @@ class MediaHelper extends EventEmitter {
         this.stopEffect(item.soundId)
       }
     })
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'stopAllEffects',
+      code: 0,
+      param: JSON.stringify('stopAllEffects', null, 2)
+    })
+
   }
 
   async pauseAllEffects () {
@@ -1799,6 +1888,12 @@ class MediaHelper extends EventEmitter {
         this.pauseEffect(item.soundId)
       }
     })
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'pauseAllEffects',
+      code: 0,
+      param: JSON.stringify('pauseAllEffects', null, 2)
+    })
+
   }
 
   async resumeAllEffects () {
@@ -1808,6 +1903,12 @@ class MediaHelper extends EventEmitter {
         this.resumeEffect(item.soundId)
       }
     })
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'resumeAllEffects',
+      code: 0,
+      param: JSON.stringify('resumeAllEffects', null, 2)
+    })
+
   }
 
   loadAudioBuffer (filePath: string) {

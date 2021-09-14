@@ -237,6 +237,7 @@ class WatermarkControl extends EventEmitter{
         }
       });
     }
+
   }
   updateWatermarks(options:NERtcCanvasWatermarkConfig){
     this.clear()
@@ -505,6 +506,8 @@ class WatermarkControl extends EventEmitter{
     if (this.div){
       this.start(this.div);
     }
+
+
   }
 
   start(div:HTMLElement){

@@ -938,6 +938,7 @@ class Stream extends EventEmitter {
         this.screenPlay_ = true;
       }
     }
+
   }
 
   /**
@@ -2265,6 +2266,11 @@ class Stream extends EventEmitter {
           .catch((e:any) => {
             this.client.adapterRef.logger.error('设置video 码率失败: ', e)
           });
+        this.client.apiFrequencyControl({
+          name: 'adjustResolution',
+          code: 0,
+          param: JSON.stringify(parameters, null, 2)
+        })
       }
     }
   }
@@ -2954,9 +2960,16 @@ class Stream extends EventEmitter {
       }
       watermarkControl.checkWatermarkParams(options);
       watermarkControl.updateWatermarks(options);
+
+      this.client.apiFrequencyControl({
+        name: 'setCanvasWatermarkConfigs',
+        code: 0,
+        param: JSON.stringify(options, null, 2)
+      })
     }else{
       this.client.adapterRef.logger.error("setCanvasWatermarkConfigs：播放器未初始化");
     }
+
   };
   /**
    *  销毁实例
