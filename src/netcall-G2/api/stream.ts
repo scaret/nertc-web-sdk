@@ -1270,8 +1270,8 @@ class Stream extends EventEmitter {
    * @param {String }  options.type 媒体设备: audio/video/screen
    * @returns {Promise}
    */
-  async close (options: { type:MediaTypeShort|"screenAudio"}) {
-    let {type} = options
+  async close (options?: { type:MediaTypeShort|"screenAudio"}) {
+    let type = options ? options.type : 'all'
     let reason = null
     switch(type) {
       case 'audio': 
@@ -1387,6 +1387,14 @@ class Stream extends EventEmitter {
           await this.client.adapterRef._mediasoup.destroyProduce('screen');
         }
         break
+      case 'all':
+        this.client.adapterRef.logger.log(`Stream.close:关闭所有设备：audio ${this.audio}, video ${this.video}, screen ${this.screen}, screenAudio ${this.screenAudio}`);
+        this.audio && await this.close({type: "audio"});
+        this.video && await this.close({type: "video"});
+        this.screen && await this.close({type: "screen"});
+        this.screenAudio && await this.close({type: "screenAudio"});
+        this.client.adapterRef.logger.log(`Stream.close:关闭所有设备成功：audio ${this.audio}, video ${this.video}, screen ${this.screen}, screenAudio ${this.screenAudio}`);
+        break;
       default:
         this.client.adapterRef.logger.log('不能识别type')
         reason = 'INVALID_ARGUMENTS'
