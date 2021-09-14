@@ -607,7 +607,7 @@ class Mediasoup extends EventEmitter {
     }
 
     try {
-      this.adapterRef.logger.warn(`停止发布 destroyProduce ${kind} producerId=%o`, producerId);
+      this.adapterRef.logger.log(`停止发布 destroyProduce ${kind} producerId=%o`, producerId);
       if(!producer) return
       await producer.close();
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){

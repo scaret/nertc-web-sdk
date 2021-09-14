@@ -1828,7 +1828,7 @@ class MediaHelper extends EventEmitter {
   disableAudioRouting(){
     const audioTrack = this.micTrack || this.audioSource || this.screenAudioTrack;
     this.audioRoutingEnabled = false;
-    this.adapterRef.logger.warn('disableAudioRouting: ', audioTrack)
+    this.adapterRef.logger.log('disableAudioRouting: ', audioTrack)
     const formerTrack = this.audioStream.getAudioTracks()[0];
     if (formerTrack){
       this.audioStream.removeTrack(formerTrack);
