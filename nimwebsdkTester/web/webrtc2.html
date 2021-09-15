@@ -197,7 +197,11 @@
             自定义音频
             <input type="checkbox" id="privateAudio">
             自定义视频
-            <input type="checkbox" id="privateVideo">
+            <input type="checkbox" id="privateVideo"><br/>
+            主流小流
+            <input type="checkbox" id="videoLow" checked>
+            辅流小流
+            <input type="checkbox" id="screenLow">
           </div>
           <div class="line">
             自动发布
@@ -330,8 +334,9 @@
           <div class="line">
             订阅大小流
             <select id='subResolution'>
-              <option value='0'>小流</option>
-              <option value='1'>大流</option>
+              <option value=''>默认</option>
+              <option value='0'>大流</option>
+              <option value='1'>小流</option>
             </select>
           </div>
           <div class="line">
@@ -346,6 +351,13 @@
             <button type="button" id="unsubVideo">停止订阅视频</button>
             <button type="button" id="unsubScreen">停止订阅辅流</button>
             <button type="button" id="subUpdateResolution">订阅大小流</button>
+            <br/>
+            <select id="switchMediaType" style="width:30%">
+              <option value="video" selected>video</option>
+              <option value="screen">screen</option>
+            </select>
+            <button type="button" id="switchHigh">切换大流</button>
+            <button type="button" id="switchLow">切换小流</button>
           </div>
         </div>
 

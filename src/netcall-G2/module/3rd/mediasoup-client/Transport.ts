@@ -417,6 +417,7 @@ export class Transport extends EnhancedEventEmitter
   async produce(
     {
       track,
+      trackLow,
       encodings,
       codecOptions,
       codec,
@@ -488,9 +489,10 @@ export class Transport extends EnhancedEventEmitter
             });
         }
 
-        const { localId, rtpParameters, rtpSender, dtlsParameters, offer } = await this._handler.send(
+        const { localId, localIdLow, rtpParameters, rtpSender, rtpSenderLow, dtlsParameters, offer } = await this._handler.send(
           {
             track,
+            trackLow,
             encodings : normalizedEncodings,
             codecOptions,
             appData,
@@ -507,6 +509,8 @@ export class Transport extends EnhancedEventEmitter
             {
               kind : track.kind,
               rtpParameters,
+              track,
+              trackLow,
               appData,
               localDtlsParameters: dtlsParameters,
               offer
@@ -516,8 +520,11 @@ export class Transport extends EnhancedEventEmitter
             {
               id,
               localId,
+              localIdLow,
               rtpSender,
+              rtpSenderLow,
               track,
+              trackLow,
               rtpParameters,
               stopTracks,
               disableTrackOnPause,

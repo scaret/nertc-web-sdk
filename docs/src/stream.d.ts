@@ -42,7 +42,7 @@ declare interface Stream {
       /**
        * 订阅大流或小流。
        * 
-       * 0 表示小流，1 表示大流。
+       * 0 表示大流，1 表示小流。默认为大流。
        */
       highOrLow?: number;
     }): void;

@@ -345,6 +345,15 @@ function renderDeivce(node, device) {
   node.html(html)
 }
 
+$("#refreshDevices").on("click", async ()=>{
+  const mediaStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
+  const audioTrack = mediaStream.getAudioTracks()[0];
+  const videoTrack = mediaStream.getVideoTracks()[0];
+  audioTrack.stop();
+  videoTrack.stop();
+  initDevices()
+});
+
 // 是否显示网络回调
 window.__SHOW_STATS__ = false;
 jQuery('#js-netstats').on('change', function () {
@@ -1058,6 +1067,41 @@ $('#subUpdateResolution').on('click', () => {
   rtc.client.setRemoteVideoStreamType(remoteStream, highorlow)
 })
 
+$('#switchHigh').on('click', () => {
+  if (!rtc.remoteStreams[subList[subList.selectedIndex].value]) {
+    addLog('无法进行此操作')
+    return
+  }
+  let remoteStream = rtc.remoteStreams[subList[subList.selectedIndex].value]
+  
+  const highorlow = NERTC.STREAM_TYPE.HIGH;
+  // 0是大流，1是小流
+  const mediaType = $("#switchMediaType").val();
+  if (mediaType === "video"){
+    rtc.client.setRemoteVideoStreamType(remoteStream, highorlow)
+  }else{
+    rtc.client.setRemoteStreamType(remoteStream, highorlow, mediaType);
+  }
+})
+
+$('#switchLow').on('click', () => {
+  if (!rtc.remoteStreams[subList[subList.selectedIndex].value]) {
+    addLog('无法进行此操作')
+    return
+  }
+  let remoteStream = rtc.remoteStreams[subList[subList.selectedIndex].value]
+
+  const highorlow = NERTC.STREAM_TYPE.LOW;
+  // 0是大流，1是小流
+  const mediaType = $("#switchMediaType").val();
+  if (mediaType === "video"){
+    rtc.client.setRemoteVideoStreamType(remoteStream, highorlow)
+  }else{
+    rtc.client.setRemoteStreamType(remoteStream, highorlow, mediaType);
+  }
+})
+
+
 $('#openAsl').on('click', () => {
   rtc.client.openAslMode()
 })
@@ -1185,6 +1229,10 @@ function publish() {
     }
     rtc.client.adapterRef.mediaCapability.preferredCodecSend = preferredCodecSend;
   }
+  rtc.client.enableDualStream({
+    video: $("#videoLow").prop("checked"),
+    screen: $("#screenLow").prop("checked"),
+  })
   rtc.client.publish(rtc.localStream).then(()=>{
     addLog('本地 publish 成功')
     console.warn('本地 publish 成功')
@@ -1211,7 +1259,7 @@ function subscribe(remoteStream) {
     audio: $('#subAudio').prop('checked'),
     video: $('#subVideo').prop('checked'),
     screen: $('#subScreen').prop('checked'),
-    highOrLow: parseInt($('#subResolution').val()),
+    highOrLow: $('#subResolution').val() === "" ? undefined : parseInt($('#subResolution').val()),
   })
 
   rtc.client.subscribe(remoteStream).then(()=>{

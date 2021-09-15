@@ -14,6 +14,7 @@ import { logController } from '../util/log/upload'
 import RtcError from '../util/error/rtcError';
 import ErrorCode  from '../util/error/errorCode';
 import { SDK_VERSION, BUILD } from "../Config";
+import {STREAM_TYPE} from "../constant/videoQuality";
 const BigNumber = require("bignumber.js");
 
 /**
@@ -343,6 +344,12 @@ class Client extends Base {
         })
       }
       this.bindLocalStream(stream)
+      if (this.adapterRef.channelInfo.videoLow){
+        stream.mediaHelper.createTrackLow("video");
+      }
+      if (this.adapterRef.channelInfo.screenLow){
+        stream.mediaHelper.createTrackLow("screen");
+      }
       await this.adapterRef._mediasoup.createProduce(stream);
       this.apiFrequencyControl({
         name: 'publish',
@@ -531,7 +538,14 @@ class Client extends Base {
           if (stream.pubStatus.video.consumerStatus !== 'start') {
             this.adapterRef.logger.log('subscribe() [开始订阅 %s 视频流]', stream.getId())
             stream.pubStatus.video.consumerStatus = 'start'
-            const preferredSpatialLayer = stream.pubStatus.video.simulcastEnable ? stream.subConf.highOrLow : 0
+            // preferredSpatialLayer是从小到大的，即0是小流，1是大流
+            // API层面与声网和Native对齐，即0是大流，1是小流
+            let preferredSpatialLayer;
+            if (stream.subConf.highOrLow.video === STREAM_TYPE.LOW){
+              preferredSpatialLayer = 0;
+            }else{
+              preferredSpatialLayer = 1;
+            }
             await this.adapterRef._mediasoup.createConsumer(uid, 'video', 'video', stream.pubStatus.video.producerId, preferredSpatialLayer);
             stream.pubStatus.video.consumerStatus = 'end'
             this.adapterRef.logger.log('subscribe() [订阅 %s 视频流完成]', stream.getId())
@@ -577,7 +591,14 @@ class Client extends Base {
           if (stream.pubStatus.screen.consumerStatus !== 'start') {
             this.adapterRef.logger.log('subscribe() [开始订阅 %s 辅流]', stream.getId())
             stream.pubStatus.screen.consumerStatus = 'start'
-            const preferredSpatialLayer = stream.pubStatus.screen.simulcastEnable ? stream.subConf.highOrLow : 0
+            // preferredSpatialLayer是从小到大的，即0是小流，1是大流
+            // API层面与声网和Native对齐，即0是大流，1是小流
+            let preferredSpatialLayer;
+            if (stream.subConf.highOrLow.screen === STREAM_TYPE.LOW){
+              preferredSpatialLayer = 0;
+            }else{
+              preferredSpatialLayer = 1;
+            }
             await this.adapterRef._mediasoup.createConsumer(uid, 'video', 'screenShare', stream.pubStatus.screen.producerId, preferredSpatialLayer);
             stream.pubStatus.screen.consumerStatus = 'end'
             this.adapterRef.logger.log('subscribe() [订阅 %s 辅流完成]', stream.getId())
@@ -802,11 +823,11 @@ class Client extends Base {
    * @method setRemoteVideoStreamType
    * @memberOf Client#
    * @param {Stream} stream 参数
-   * @param {Number} highOrLow: 0是小流，1是大流
+   * @param {Number} highOrLow: 0是大流，1是小流
    * @returns {Promise}  
   */
   async setRemoteVideoStreamType (stream:Stream, highOrLow:number) {
-    this.adapterRef.logger.log(`订阅${stream.getId()}成员的${highOrLow ? '大' : '小'}流`)
+    this.adapterRef.logger.log(`订阅${stream.getId()}成员的${highOrLow ? '小' : '大'}流`, highOrLow)
 
     try {
       if (!this.adapterRef._mediasoup){
@@ -822,19 +843,7 @@ class Client extends Base {
           message: 'No stream Id'
         })
       }
-      await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.video.consumerId);
-      stream.pubStatus.video.consumerId = '';
-      if (stream.subConf.video) {
-        if (stream.pubStatus.audio.consumerStatus !== 'start') {
-          this.adapterRef.logger.log('开始订阅 %s 视频流', stream.getId())
-          stream.pubStatus.video.consumerStatus = 'start'
-          stream.subConf.highOrLow = highOrLow
-          const preferredSpatialLayer = stream.pubStatus.video.simulcastEnable ? stream.subConf.highOrLow : 0
-          await this.adapterRef._mediasoup.createConsumer(streamId, 'video', 'video', stream.pubStatus.video.producerId, preferredSpatialLayer);
-          stream.pubStatus.video.consumerStatus = 'end'
-          this.adapterRef.logger.log('订阅 %s 视频流完成', stream.getId())
-        }
-      }
+      await this.adapterRef._mediasoup.setConsumerPreferredLayer(stream, highOrLow ? 0 : 1, "video");
       this.apiFrequencyControl({
         name: 'setRemoteVideoStreamType',
         param: JSON.stringify({
@@ -855,17 +864,68 @@ class Client extends Base {
       })
     }
   }
+  
+  /**
+   * 中途更新订阅的音视频流分辨率。
+   * @method setRemoteStreamType
+   * @memberOf Client#
+   * @param {Stream} stream 参数
+   * @param {Number} highOrLow: 0是大流，1是小流
+   * @returns {Promise}
+   */
+  async setRemoteStreamType (stream:Stream, highOrLow:number, mediaType: "video"|"screen") {
+    this.adapterRef.logger.log(`setRemoteStreamType: 订阅${stream.getId()}成员的${highOrLow ? '小' : '大'}流`, mediaType, highOrLow)
+    try {
+      if (!this.adapterRef._mediasoup){
+        throw new RtcError({
+          code: ErrorCode.NO_MEDIASOUP,
+          message: 'media server error'
+        })
+      }
+      const streamId = stream.getId();
+      if (!streamId){
+        throw new RtcError({
+          code: ErrorCode.INVALID_PARAMETER,
+          message: 'No stream Id'
+        })
+      }
+      await this.adapterRef._mediasoup.setConsumerPreferredLayer(stream, highOrLow ? 0 : 1, mediaType);
+      stream.subConf.highOrLow[mediaType] = highOrLow;
+      this.apiFrequencyControl({
+        name: 'setRemoteStreamType',
+        param: JSON.stringify({
+          highOrLow: highOrLow,
+          uid: stream.stringStreamID
+        }, null, ' ')
+      })
+    } catch (e) {
+      this.adapterRef.logger.error('API调用失败：Client:setRemoteStreamType' ,e, ...arguments);
+      this.apiFrequencyControl({
+        name: 'setRemoteVideoStreamType',
+        code: -1,
+        param: JSON.stringify({
+          reason: e,
+          highOrLow: highOrLow,
+          uid: stream.stringStreamID
+        }, null, ' ')
+      })
+    }
+  }
 
   enableAudioVolumeIndicator () {
     this.adapterRef.logger.log('开启双流模式')
   }
 
-  enableDualStream () {
+  enableDualStream (dualStreamSetting: {video: boolean; screen: boolean} = {video: true, screen: false}) {
+    this.adapterRef.channelInfo.videoLow = dualStreamSetting.video;
+    this.adapterRef.channelInfo.screenLow = dualStreamSetting.screen;
     this.adapterRef.logger.log('开启双流模式')
   }
 
   disableDualStream () {
     this.adapterRef.logger.log('关闭双流模式')
+    this.adapterRef.channelInfo.videoLow = false;
+    this.adapterRef.channelInfo.screenLow = false;
   }
   
   /**

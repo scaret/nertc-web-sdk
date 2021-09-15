@@ -3,7 +3,7 @@ import * as mediasoupClient from './3rd/mediasoup-client/'
 import {
   AdapterRef,
   MediasoupManagerOptions, MediaType, MediaTypeShort,
-  ProduceConsumeInfo, ProducerAppData,
+  ProduceConsumeInfo,
   SDKRef,
   Timer, VideoCodecType
 } from "../types";
@@ -41,9 +41,19 @@ class Mediasoup extends EventEmitter {
   // senderEncodingParameter。会复用上次的senderEncodingParameter
   private senderEncodingParameter: {
     ssrcList: number[]
-    audio: {ssrc: number, dtx: boolean}|null,
-    video: {ssrc: number, rtx: {ssrc: number}}|null,
-    screen: {ssrc: number, rtx: {ssrc: number}}|null,
+    audio: {
+      high: {ssrc: number, dtx: boolean}|null,
+      // 目前未使用low
+      low: {ssrc: number, dtx: boolean}|null,
+    },
+    video: {
+      high: {ssrc: number, rtx: {ssrc: number}}|null,
+      low: {ssrc: number, rtx: {ssrc: number}}|null,
+    },
+    screen: {
+      high: {ssrc: number, rtx: {ssrc: number}}|null,
+      low: {ssrc: number, rtx: {ssrc: number}}|null,
+    }
   }
   private _probeSSrc?: string;
   public unsupportedProducers: string[];
@@ -75,9 +85,9 @@ class Mediasoup extends EventEmitter {
     this._eventQueue = []
     this.senderEncodingParameter = {
       ssrcList: [],
-      audio: null,
-      video: null,
-      screen: null,
+      audio: {high: null, low: null},
+      video: {high: null, low: null},
+      screen: {high: null, low: null},
     }
     this.unsupportedProducers = [];
     this._reset()
@@ -182,9 +192,9 @@ class Mediasoup extends EventEmitter {
       })
       this.senderEncodingParameter = {
         ssrcList: [],
-        audio: null,
-        video: null,
-        screen: null,
+        audio: {high: null, low: null},
+        video: {high: null, low: null},
+        screen: {high: null, low: null},
       };
       this._sendTransport.on('connectionstatechange', this._sendTransportConnectionstatechange.bind(this, this._sendTransport))
     }
@@ -335,6 +345,12 @@ class Mediasoup extends EventEmitter {
           })
         }
         const mediaTypeShort:MediaTypeShort = (appData.mediaType == "screenShare") ? "screen" : appData.mediaType;
+        let simulcastEnable = false;
+        if (mediaTypeShort === "video" && this.adapterRef.channelInfo.videoLow){
+          simulcastEnable = true
+        }else if (mediaTypeShort === "screen" && this.adapterRef.channelInfo.screenLow){
+          simulcastEnable = true
+        }
         const iceUfragReg = offer.sdp.match(/a=ice-ufrag:([0-9a-zA-Z#=+-_\/\\\\]+)/)
         try {
           let producerData = {
@@ -348,18 +364,19 @@ class Mediasoup extends EventEmitter {
               producerInfo  : {
                 mediaType   : appData.mediaType,
                 subStream  : appData.mediaType === 'screenShare',
-                simulcastEnable  :false,
+                simulcastEnable  : simulcastEnable,
+                spatialLayerCount : simulcastEnable ? 2 : 1,
                 mute: false, //  false
-                spatialLayer: 0, //0:low 1:high
-                temporalLayer: '' 
               }
             },
             ...appData
           };
 
           // 1. 使用原有的encoding
-          let encoding = this.senderEncodingParameter[mediaTypeShort];
-          let mLineIndex = offer.sdp.indexOf(producerData.deviceId);
+          let encoding = this.senderEncodingParameter[mediaTypeShort].high;
+          let encodingLow = this.senderEncodingParameter[mediaTypeShort].low;
+          let mLineIndex = offer.sdp.indexOf(appData.deviceId);
+          let mLineIndexLow = offer.sdp.indexOf(appData.deviceIdLow);
           if (!encoding){
             if (rtpParameters.encodings){
               // 2. 使用rtpParameter中的值
@@ -368,8 +385,15 @@ class Mediasoup extends EventEmitter {
                 // 已被其他占据，丢弃
                 encoding = null;
               }
+              if (rtpParameters.encodings[1]){
+                encodingLow = rtpParameters.encodings[1];
+                if (encodingLow && this.senderEncodingParameter.ssrcList.indexOf(encodingLow.ssrc) > -1){
+                  // 已被其他占据，丢弃
+                  encoding = null;
+                }
+              }
             }
-            if (!encoding && producerData.deviceId && mLineIndex > -1){
+            if (!encoding && appData.deviceId && mLineIndex > -1){
               // 3. 在SDP中寻找ssrc-group字段匹配
               let mLinePiece = offer.sdp.substring(mLineIndex);
               const match = mLinePiece.match(/a=ssrc-group:FID (\d+) (\d+)/);
@@ -385,6 +409,23 @@ class Mediasoup extends EventEmitter {
                 // 已被其他占据，丢弃
                 encoding = null;
               }
+              // 小流
+              if (!encodingLow && appData.deviceIdLow && mLineIndexLow > -1){
+                let mLinePieceLow = offer.sdp.substring(mLineIndexLow);
+                const match = mLinePieceLow.match(/a=ssrc-group:FID (\d+) (\d+)/);
+                if (match){
+                  encodingLow = {
+                    ssrc: parseInt(match[1]),
+                    rtx: {
+                      ssrc: parseInt(match[2])
+                    }
+                  };
+                }
+                if (encodingLow && this.senderEncodingParameter.ssrcList.indexOf(encodingLow.ssrc) > -1){
+                  // 已被其他占据，丢弃
+                  encodingLow = null;
+                }
+              }
             }
             if (!encoding){
               this.adapterRef.logger.log('使用sdp中第一个ssrc');
@@ -393,9 +434,12 @@ class Mediasoup extends EventEmitter {
                 dtx: false,
               }
             }
-            //@ts-ignore
-            this.senderEncodingParameter[mediaTypeShort] = encoding;
+            this.senderEncodingParameter[mediaTypeShort].high = encoding;
             this.senderEncodingParameter.ssrcList.push(encoding.ssrc);
+            if (encodingLow){
+              this.senderEncodingParameter[mediaTypeShort].low = encodingLow;
+              this.senderEncodingParameter.ssrcList.push(encodingLow.ssrc);
+            }
           }
           if (rtpParameters.encodings && rtpParameters.encodings[0]) {
             rtpParameters.encodings[0].ssrc = encoding.ssrc;
@@ -405,23 +449,34 @@ class Mediasoup extends EventEmitter {
               rtpParameters.encodings[0].rtx.ssrc = encoding.rtx.ssrc;
             }
           }
-          if (appData.mediaType === 'video') {
-            producerData.mediaProfile = [{
-              ssrc: encoding.ssrc,
-              res: '640*480',
-              fps: '15',
-              spatialLayer: 0,
-              maxBitrate: 1000
-            }]
+          if (encodingLow && rtpParameters.encodings && rtpParameters.encodings[1]) {
+            rtpParameters.encodings[1].ssrc = encodingLow.ssrc;
+            // @ts-ignore
+            if (rtpParameters.encodings[1].rtx && encodingLow.rtx && encodingLow.rtx) {
+              // @ts-ignore
+              rtpParameters.encodings[1].rtx.ssrc = encodingLow.rtx.ssrc;
+            }
           }
-          if (appData.mediaType === 'screenShare') {
-            producerData.mediaProfile = [{
+          if (appData.mediaType === 'video' || appData.mediaType === 'screenShare') {
+            producerData.mediaProfile = [];
+            if (encodingLow){
+              // 小流
+              producerData.mediaProfile.push({
+                ssrc: encodingLow.ssrc,
+                res: '160*160',
+                fps: '1',
+                spatialLayer: 0,
+                maxBitrate: 100
+              });
+            }
+            // 大流
+            producerData.mediaProfile.push({
               ssrc: encoding.ssrc,
               res: '640*480',
               fps: '15',
-              spatialLayer: 0,
+              spatialLayer: producerData.mediaProfile.length,
               maxBitrate: 1000
-            }]
+            });
           }
 
           if (localDtlsParameters === undefined){
@@ -503,11 +558,16 @@ class Mediasoup extends EventEmitter {
         stream.pubStatus.audio.audio = true
         this._micProducer = await this._sendTransport.produce({
           track: audioTrack,
+          trackLow: null,
           codecOptions:{
             opusStereo: true,
             opusDtx: true
           },
-          appData: {deviceId: audioTrack.id, mediaType: 'audio'} as ProducerAppData
+          appData: {
+            deviceId: audioTrack.id,
+            deviceIdLow: null,
+            mediaType: 'audio',
+          }
         });
       }
     }
@@ -522,11 +582,16 @@ class Mediasoup extends EventEmitter {
       const codecInfo = this.adapterRef.mediaCapability.getCodecSend("video", this._sendTransport.handler._sendingRtpParametersByKind["video"]);
       this._webcamProducer = await this._sendTransport.produce({
         track: videoTrack,
+        trackLow: stream.mediaHelper.cameraTrackLow,
         codec: codecInfo.codecParam,
         codecOptions:{
           videoGoogleStartBitrate: 1000
         },
-        appData: {deviceId: videoTrack.id, mediaType: 'video'} as ProducerAppData
+        appData: {
+          deviceId: videoTrack.id,
+          deviceIdLow: stream.mediaHelper.cameraTrackLow? stream.mediaHelper.cameraTrackLow.id : null,
+          mediaType: 'video',
+        }
       });
       if (this.adapterRef.encryption.encodedInsertableStreams && this._webcamProducer.rtpSender
         //@ts-ignore
@@ -556,11 +621,16 @@ class Mediasoup extends EventEmitter {
       const codecInfo = this.adapterRef.mediaCapability.getCodecSend("screen", this._sendTransport.handler._sendingRtpParametersByKind["video"]);
       this._screenProducer = await this._sendTransport.produce({
         track: screenTrack,
+        trackLow: stream.mediaHelper.screenTrackLow,
         codec: codecInfo.codecParam,
         codecOptions:{
           videoGoogleStartBitrate: 1000
         },
-        appData: {deviceId: screenTrack.id, mediaType: 'screenShare'} as ProducerAppData
+        appData: {
+          deviceId: screenTrack.id,
+          deviceIdLow: stream.mediaHelper.screenTrackLow ? stream.mediaHelper.screenTrackLow.id: null,
+          mediaType: 'screenShare'
+        }
       });
       if (!this.adapterRef.state.startPubScreenTime) {
         this.adapterRef.state.startPubScreenTime = Date.now()
@@ -639,6 +709,25 @@ class Mediasoup extends EventEmitter {
         }
       }
     })
+  }
+  
+  async setConsumerPreferredLayer(remoteStream: Stream, layer: number, mediaType: MediaTypeShort){
+    if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'No _protoo'
+      })
+    }
+    this.adapterRef.logger.log('setConsumerPreferredLayer() [切换大小流]layer：', layer, layer === 1 ? '大流' : '小流', mediaType);
+    const result = await this.adapterRef._signalling._protoo.notify(
+      'SetConsumerPreferredLayer', {
+        requestId: `${Math.ceil(Math.random() * 1e9)}`,
+        uid: remoteStream.streamID,
+        producerId: remoteStream.pubStatus[mediaType].producerId,
+        consumerId: remoteStream.pubStatus[mediaType].consumerId,
+        spatialLayer: layer
+      });
+    return result;
   }
 
   async resetConsumeRequestStatus(){

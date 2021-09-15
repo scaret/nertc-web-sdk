@@ -105,6 +105,10 @@ export const NERTC_VIDEO_QUALITY_REV = {
   [NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p]: '1920x1080'
 }
 
+export const STREAM_TYPE = {
+  HIGH: 0,
+  LOW: 1,
+}
 
 /**
  * 校验器

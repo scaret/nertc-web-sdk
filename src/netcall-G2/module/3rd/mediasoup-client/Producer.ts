@@ -13,6 +13,7 @@ import ErrorCode  from '../../../util/error/errorCode';
 export type ProducerOptions =
 {
   track?: MediaStreamTrack;
+  trackLow: MediaStreamTrack|null;
   encodings?: RtpEncodingParameters[];
   codecOptions?: ProducerCodecOptions;
   codec?: RtpCodecCapability;
@@ -21,6 +22,7 @@ export type ProducerOptions =
   zeroRtpOnPause?: boolean;
   appData: {
     deviceId: string;
+    deviceIdLow: string|null;
     mediaType: "video"|"audio"|"screenShare";
   };
 }
@@ -47,12 +49,18 @@ export class Producer extends EnhancedEventEmitter
   private readonly _id: string;
   // Local id.
   private readonly _localId: string;
+  // Local id.
+  private readonly _localIdLow: string|null;
   // Closed flag.
   private _closed = false;
   // Associated RTCRtpSender.
   private readonly _rtpSender?: RTCRtpSender;
+  // Associated RTCRtpSender.
+  private readonly _rtpSenderLow?: RTCRtpSender;
   // Local track.
   private _track: MediaStreamTrack | null;
+  // Local track.
+  private _trackLow: MediaStreamTrack | null;
   // Producer kind.
   private readonly _kind: MediaKind;
   // RTP parameters.
@@ -85,8 +93,11 @@ export class Producer extends EnhancedEventEmitter
     {
       id,
       localId,
+      localIdLow,
       rtpSender,
+      rtpSenderLow,
       track,
+      trackLow,
       rtpParameters,
       stopTracks,
       disableTrackOnPause,
@@ -96,8 +107,11 @@ export class Producer extends EnhancedEventEmitter
     {
       id: string;
       localId: string;
+      localIdLow: string|null
       rtpSender?: RTCRtpSender;
+      rtpSenderLow?: RTCRtpSender;
       track: MediaStreamTrack;
+      trackLow: MediaStreamTrack|null;
       rtpParameters: RtpParameters;
       stopTracks: boolean;
       disableTrackOnPause: boolean;
@@ -112,8 +126,11 @@ export class Producer extends EnhancedEventEmitter
 
     this._id = id;
     this._localId = localId;
+    this._localIdLow = localIdLow;
     this._rtpSender = rtpSender;
+    this._rtpSenderLow = rtpSenderLow;
     this._track = track;
+    this._trackLow = trackLow;
     this._kind = track.kind as MediaKind;
     this._rtpParameters = rtpParameters;
     this._paused = disableTrackOnPause ? !track.enabled : false;
@@ -304,9 +321,13 @@ export class Producer extends EnhancedEventEmitter
 
     this._paused = true;
 
-    if (this._track && this._disableTrackOnPause)
-    {
-      this._track.enabled = false;
+    if (this._disableTrackOnPause){
+      if (this._track){
+        this._track.enabled = false;
+      }
+      if (this._trackLow){
+        this._trackLow.enabled = false;
+      }
     }
 
     if (this._zeroRtpOnPause)
@@ -335,9 +356,13 @@ export class Producer extends EnhancedEventEmitter
 
     this._paused = false;
 
-    if (this._track && this._disableTrackOnPause)
-    {
-      this._track.enabled = true;
+    if (this._disableTrackOnPause){
+      if (this._track){
+        this._track.enabled = true;
+      }
+      if (this._trackLow){
+        this._trackLow.enabled = true;
+      }
     }
 
     if (this._zeroRtpOnPause)

@@ -307,11 +307,10 @@ export class Chrome74 extends HandlerInterface
   }
 
   async send(
-    { track, encodings, codecOptions, codec, appData }: HandlerSendOptions
+    { track, trackLow, encodings, codecOptions, codec, appData }: HandlerSendOptions
   ): Promise<HandlerSendResult>
   {
     this._assertSendDirection();
-
     logger.debug('send() [kind:%s, track.id:%s]', track.kind, track.id, encodings, appData);
 
     if (encodings && encodings.length > 1)
@@ -329,29 +328,47 @@ export class Chrome74 extends HandlerInterface
     sendingRtpParameters.codecs =
       reduceCodecs(sendingRtpParameters.codecs, codec);
     let transceiver:any = {};
+    let transceiverLow: any = {};
+    const mediaStream = new MediaStream();
     if (appData.mediaType === 'audio' && this._pc.audioSender) {
       logger.debug('audioSender更新track: ', this._pc.audioSender)
-      this._pc.audioSender.replaceTrack(track)
+      this._pc.audioSender.replaceTrack(track);
     } else if (appData.mediaType === 'video' && this._pc.videoSender) {
       logger.debug('videoSender更新track: ', this._pc.videoSender)
       this._pc.videoSender.replaceTrack(track)
+      if (this._pc.videoSenderLow && trackLow){
+        logger.debug('videoSenderLow更新track: ', this._pc.videoSenderLow)
+        this._pc.videoSenderLow.replaceTrack(trackLow)
+      }
     } else if (appData.mediaType === 'screenShare' && this._pc.screenSender) {
       logger.debug('screenSender更新track: ', this._pc.screenSender)
       this._pc.screenSender.replaceTrack(track)
+      if (this._pc.screenSenderLow && trackLow){
+        logger.debug('screenSenderLow更新track: ', this._pc.screenSenderLow)
+        this._pc.screenSenderLow.replaceTrack(track)
+      }
     } else {
-      let stream = new MediaStream();
-      stream.addTrack(track)
+      if (trackLow){
+        transceiverLow = this._pc.addTransceiver(trackLow, {
+          direction     : 'sendonly',
+          streams       : [ this._sendStream ],
+          sendEncodings : encodings
+        });
+      }
+      mediaStream.addTrack(track);
       transceiver = this._pc.addTransceiver(track, {
         direction     : 'sendonly',
-        streams       : [ this._sendStream ],
+        streams       : [ mediaStream ],
         sendEncodings : encodings
       });
       if (appData.mediaType === 'audio' && !this._pc.audioSender) {
         this._pc.audioSender = transceiver.sender
       } else if (appData.mediaType === 'video' && !this._pc.videoSender) {
         this._pc.videoSender = transceiver.sender
+        this._pc.videoSenderLow = transceiverLow.sender
       } else if (appData.mediaType === 'screenShare' && !this._pc.screenSender) {
         this._pc.screenSender = transceiver.sender
+        this._pc.screenSenderLow = transceiverLow.sender
       }
     }
     logger.debug('send() | [transceivers:%d]', this._pc.getTransceivers().length);
@@ -362,44 +379,61 @@ export class Chrome74 extends HandlerInterface
     }
     let localSdpObject = sdpTransform.parse(offer.sdp);
     let dtlsParameters:DtlsParameters|undefined = undefined;
-    let offerMediaObject;
-
+    let offerMediaObject, offerMediaObjectLow;
+    // NERTC把setLocalDescription的过程置后了。这个时候transceiver的mid还没生成，
+    // 导致这里只能猜mediaObject和transceiver的关系。
+    const mediaCandidates = localSdpObject.media.filter((mediaObject)=>{
+      const transceiver = this._mapMidTransceiver.get("" + mediaObject.mid);
+      if (mediaObject.type !== track.kind){
+        return false;
+      }else if (!transceiver || !transceiver.sender || !transceiver.sender.track){
+        return true;
+      }else if (transceiver.sender.track.id === track.id){
+        offerMediaObject = mediaObject;
+        return false
+      }else if (trackLow && transceiver.sender.track.id === trackLow.id){
+        offerMediaObjectLow = mediaObject;
+        return false
+      }else{
+        return true
+      }
+    });
+    if (!offerMediaObject){
+      offerMediaObject = mediaCandidates.pop();
+    }
+    if (trackLow && !offerMediaObjectLow){
+      offerMediaObjectLow = mediaCandidates.pop();
+    }
+    if (!offerMediaObject){
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'offerMediaObject with track id not found: ' + track.id
+      })
+    }
+    
     if (!this._transportReady)
       dtlsParameters = await this._setupTransport({ localDtlsRole: 'server', localSdpObject });
     
     // We can now get the transceiver.mid.
-    const localId = transceiver.mid;
-
+    let localId = offerMediaObject.mid;
+    if (typeof localId === "number"){
+      //sdp-transform的mid返回是number，但.d.ts中被声明为string
+      localId = "" + localId;
+    }
+    if (!localId){
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'No localId'
+      })
+    }
+    
+    let localIdLow: string|null = null;
+    if (offerMediaObjectLow){
+      localIdLow = "" + offerMediaObjectLow.mid
+    }
+    
     // Set MID.
     sendingRtpParameters.mid = localId;
-
-    //寻找 mediaSectionIdx  
-    let mediaSectionIdx = -1;
-    for(let i in localSdpObject.media){
-      if(appData.mediaType === "audio"){
-        if(localSdpObject.media[i].type === "audio"){
-          mediaSectionIdx = parseInt(i);
-          break;
-        }
-      }else if(appData.mediaType === "video"){
-        if (localSdpObject.media[i].type === "video"){
-          if (!this._pc.screenSender || !this._pc.screenSender.offerMediaObject || this._pc.screenSender.offerMediaObject.msid !== localSdpObject.media[i].msid){
-            mediaSectionIdx = parseInt(i);
-            break;
-          }
-        }
-        if (localSdpObject.media[i].type === "screenShare"){
-          if (!this._pc.videoSender || !this._pc.videoSender.offerMediaObject || this._pc.videoSender.offerMediaObject.msid !== localSdpObject.media[i].msid){
-            mediaSectionIdx = parseInt(i);
-            break;
-          }
-        }
-      }
-    }
-    if (mediaSectionIdx === -1) {
-      mediaSectionIdx = localSdpObject.media.length - 1;
-    }
-    offerMediaObject = localSdpObject.media[mediaSectionIdx];
     logger.debug('要检查M行: ', offerMediaObject)
 
     // Set RTCP CNAME.
@@ -409,8 +443,15 @@ export class Chrome74 extends HandlerInterface
     // Set RTP encodings by parsing the SDP offer if no encodings are given.
     if (!encodings)
     {
-      sendingRtpParameters.encodings =
-        sdpUnifiedPlanUtils.getRtpEncodings({ offerMediaObject });
+      sendingRtpParameters.encodings = [];
+      if (offerMediaObjectLow){
+        sendingRtpParameters.encodings = sendingRtpParameters.encodings.concat(
+          sdpUnifiedPlanUtils.getRtpEncodings({ offerMediaObject: offerMediaObjectLow })
+        )
+      }
+      sendingRtpParameters.encodings = sendingRtpParameters.encodings.concat(
+        sdpUnifiedPlanUtils.getRtpEncodings({ offerMediaObject })
+      );
     }
     // Set RTP encodings by parsing the SDP offer and complete them with given
     // one if just a single encoding has been given.
@@ -442,14 +483,7 @@ export class Chrome74 extends HandlerInterface
         sendingRtpParameters.codecs[0].mimeType.toLowerCase() === 'video/h264'
       )
     )
-    {
-      for (const encoding of sendingRtpParameters.encodings)
-      {
-        encoding.scalabilityMode = 'S1T3';
-      }
-    }
     
-    /////
     localSdpObject.media.forEach(media => {
       if (media.type === 'audio' && media.ext && media.rtcpFb) {
         media.ext = media.ext.filter((item)=>{
@@ -464,10 +498,15 @@ export class Chrome74 extends HandlerInterface
     offer.sdp = sdpTransform.write(localSdpObject)
     // Store in the map.  
     this._mapMidTransceiver.set(localId, transceiver);
+    if (localIdLow){
+      this._mapMidTransceiver.set(localIdLow, transceiverLow);
+    }
     return {
       localId,
+      localIdLow,
       rtpParameters: sendingRtpParameters,
       rtpSender: transceiver.sender,
+      rtpSenderLow: transceiverLow.sender || null,
       dtlsParameters: dtlsParameters,
       offer: offer
     };
@@ -495,8 +534,13 @@ export class Chrome74 extends HandlerInterface
     let localSdpObject = sdpTransform.parse(this._pc.localDescription.sdp);
     const mediaSectionIdx = this._remoteSdp.getNextMediaSectionIdx();
     let offerMediaObject = localSdpObject.media[mediaSectionIdx.idx];
+    let offerMediaObjectLow:any = null;
+    if (sendingRtpParameters.encodings && sendingRtpParameters.encodings.length > 1){
+      offerMediaObjectLow =  localSdpObject.media[mediaSectionIdx.idx + 1];
+    }
+
     this._remoteSdp.send({
-        offerMediaObject,
+        offerMediaObjectArr : [offerMediaObject, offerMediaObjectLow],
         reuseMid            : mediaSectionIdx.reuseMid,
         offerRtpParameters  : sendingRtpParameters,
         answerRtpParameters : sendingRemoteRtpParameters,
@@ -541,7 +585,6 @@ export class Chrome74 extends HandlerInterface
       answer.sdp = answer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=maxptime:60`)
     }
     logger.debug('fillRemoteRecvSdp() | calling pc.setRemoteDescription() [answer]: ', answer.sdp);
-    
     await this._pc.setRemoteDescription(answer);
   }
 
@@ -563,13 +606,18 @@ export class Chrome74 extends HandlerInterface
     if (kind === 'audio') {
       this._pc.audioSender.replaceTrack(null);
       //this._remoteSdp.closeMediaSection('0');  
-      //console.error('删除发送的audio track: ', this._pc.audioSender)  
     } else if (kind === 'video') {
       this._pc.videoSender.replaceTrack(null);
+      if (this._pc.videoSenderLow){
+        this._pc.videoSenderLow.track.stop();
+        this._pc.videoSenderLow.replaceTrack(null);
+      }
       //this._remoteSdp.closeMediaSection('1');  
-      //console.error('删除发送的video track: ', this._pc.videoSender)  
     } else if (kind === 'screenShare') {
       this._pc.screenSender.replaceTrack(null);
+      if (this._pc.screenSenderLow){
+        this._pc.screenSender.replaceTrack(null);
+      }
     } else {
       transceiver.sender.replaceTrack(null);
       // this._pc.removeTrack(transceiver.sender);

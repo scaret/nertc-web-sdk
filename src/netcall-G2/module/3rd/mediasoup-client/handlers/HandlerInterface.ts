@@ -41,6 +41,7 @@ export type HandlerRunOptions =
 export type HandlerSendOptions =
 {
   track: MediaStreamTrack;
+  trackLow: MediaStreamTrack|null;
   encodings?: RtpEncodingParameters[];
   codecOptions?: ProducerCodecOptions;
   codec?: RtpCodecCapability;
@@ -50,8 +51,10 @@ export type HandlerSendOptions =
 export type HandlerSendResult =
 {
   localId: string;
+  localIdLow: string|null;
   rtpParameters: RtpParameters;
   rtpSender?: RTCRtpSender;
+  rtpSenderLow?: RTCRtpSender;
   dtlsParameters?: DtlsParameters;
   offer: any;
 };
