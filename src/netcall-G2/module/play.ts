@@ -7,6 +7,7 @@ import {
 } from "../types"
 import RtcError from '../util/error/rtcError';
 import ErrorCode  from '../util/error/errorCode';
+import {getParameters} from "./parameters";
 
 class Play extends EventEmitter {
   private adapterRef:AdapterRef;
@@ -187,6 +188,40 @@ class Play extends EventEmitter {
           this.setVideoRender();
         }
       });
+      if (getParameters()["controlOnPaused"]) {
+        this.videoDom.addEventListener("pause", this.showControlIfVideoPause.bind(this))
+        this.videoDom.addEventListener("play", this.handleVideoScreenPlay.bind(this))
+        this.videoDom.addEventListener("click", this.handleVideoScreenClick.bind(this))
+      }
+    }
+  }
+  
+  showControlIfVideoPause(){
+    if (this.videoDom && this.videoDom.paused) {
+      this.adapterRef.logger.log("可能遇到了自动播放问题，展示默认控件:", this.uid, "video");
+      this.videoDom.setAttribute('controls', 'controls')
+    }
+    if (this.screenDom && this.screenDom.paused) {
+      this.adapterRef.logger.log("可能遇到了自动播放问题，展示默认控件:", this.uid, "screen");
+      this.screenDom.setAttribute('controls', 'controls')
+    }
+  }
+
+  handleVideoScreenClick(){
+    if (this.audioDom && this.audioDom.paused){
+      this.adapterRef.logger.log("侦测到视频点击，尝试恢复音频播放，:", this.uid);
+      this.audioDom.play()
+    }
+  }
+  
+  handleVideoScreenPlay(){
+    if (this.videoDom && !this.videoDom.paused && this.videoDom.hasAttribute("controls")){
+      this.adapterRef.logger.log("侦测到视频播放，隐藏默认控件:", this.uid);
+      this.videoDom.removeAttribute("controls")
+    }
+    if (this.screenDom && !this.screenDom.paused && this.screenDom.hasAttribute("controls")){
+      this.adapterRef.logger.log("侦测到辅流播放，隐藏默认控件:", this.uid);
+      this.screenDom.removeAttribute("controls")
     }
   }
   
@@ -228,6 +263,11 @@ class Play extends EventEmitter {
           this.setScreenRender();
         }
       });
+      if (getParameters()["controlOnPaused"]) {
+        this.screenDom.addEventListener("pause", this.showControlIfVideoPause.bind(this))
+        this.screenDom.addEventListener("play", this.handleVideoScreenPlay.bind(this))
+        this.screenDom.addEventListener("click", this.handleVideoScreenClick.bind(this))
+      }
     }
   }
 
@@ -274,49 +314,44 @@ class Play extends EventEmitter {
     }
   }
 
-  async resume(stream:MediaStream,option:any){
-    if(!stream){
-      return;
+  async resume(){
+    const mediaIsPaused = {
+      audio: this.audioDom && this.audioDom.paused,
+      video: this.videoDom && this.videoDom.paused,
+      screen: this.screenDom && this.screenDom.paused,
+    };
+    const promises = [];
+    if (this.audioDom && this.audioDom.paused){
+      promises.push(this.audioDom.play())
     }
-    if(this.autoPlayType === 1){
-      if(this.audioDom) {
-        try {
-          this.audioDom.muted = false
-          await this.audioDom.play()
-          this.autoPlayType = 0
-        } catch(error) {
-          this.adapterRef.logger.warn('播放 %o 的音频出现问题:', this.uid, error.name, error.message, error)
-          this.autoPlayType = 1
-          if(error.name === 'NotAllowedError') {
-            throw new RtcError({
-              code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
-              message: error.message
-            })
-          }
-        }
-      }
-      
+    if (this.videoDom && this.videoDom.paused){
+      promises.push(this.videoDom.play())
     }
-    if(this.autoPlayType === 2){
-      if(this.videoDom) {
-        try {
-          this.videoDom.muted = false
-          await this.videoDom.play()
-          this.autoPlayType = 0
-        } catch(error) {
-          this.adapterRef && this.adapterRef.logger.warn('播放 %s 的视频出现问题:', this.uid, error.name, error.message, error)
-          this.autoPlayType = 2
-          if(error.name === 'NotAllowedError') {
-            throw new RtcError({
-              code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
-              message: error.message
-            })
-          }
-        }
+    if (this.screenDom && this.screenDom.paused){
+      promises.push(this.screenDom.play())
+    }
+    try{
+      // 为什么这么写：因为同时触发play
+      await Promise.all(promises);
+    }catch(error){
+      this.adapterRef.logger.error(`恢复播放 ${this.uid} 出现问题:`, error.name, error.message);
+      if(error.name === 'NotAllowedError') {
+        throw new RtcError({
+          code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
+          message: error.message
+        })
       }
+    }
+    if(mediaIsPaused.audio){
+      this.adapterRef.logger.log(`恢复播放音频${this.audioDom && !this.audioDom.paused ? "成功": "失败"}`)
+    }
+    if(mediaIsPaused.video){
+      this.adapterRef.logger.log(`恢复播放视频${this.videoDom && !this.videoDom.paused ? "成功": "失败"}`)
+    }
+    if(mediaIsPaused.screen){
+      this.adapterRef.logger.log(`恢复播放辅流${this.screenDom && !this.screenDom.paused ? "成功": "失败"}`)
     }
   }
-
 
   async playAudioStream(stream:MediaStream, ismuted?:boolean) {
     if(!stream) return
@@ -510,6 +545,10 @@ class Play extends EventEmitter {
         })
       }
     }
+    if (this.videoDom.paused && getParameters()["controlOnPaused"]){
+      //给微信的Workaround。微信会play()执行成功但不播放
+      this.showControlIfVideoPause();
+    }
   }
 
   async playScreenStream(stream:MediaStream, view:HTMLElement) {
@@ -533,6 +572,10 @@ class Play extends EventEmitter {
       this.adapterRef.logger.log('播放 %s 的辅流，当前播放状态: %o', this.uid, this.screenDom && this.screenDom.played && this.screenDom.played.length)
     } catch (e) {
       this.adapterRef && this.adapterRef.logger.warn('播放 %s 的辅流出现问题: ', this.uid, e.name, e.message, e)
+    }
+    if (this.screenDom.paused && getParameters()["controlOnPaused"]){
+      //给微信的Workaround。微信会play()执行成功但不播放
+      this.showControlIfVideoPause();
     }
   }
 
