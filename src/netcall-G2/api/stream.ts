@@ -3,7 +3,7 @@ import { EventEmitter } from "eventemitter3";
 import {
   VIDEO_QUALITY,
   VIDEO_FRAME_RATE,
-  NERTC_VIDEO_QUALITY
+  NERTC_VIDEO_QUALITY, STREAM_TYPE
 } from "../constant/videoQuality";
 import {Play} from '../module/play'
 import {Record} from '../module/record'
@@ -219,8 +219,10 @@ class Stream extends EventEmitter {
       audio: true,
       video: true,
       screen: true,
-      highOrLow: 1,
-      resolution: 0
+      highOrLow: {
+        video: STREAM_TYPE.HIGH,
+        screen: STREAM_TYPE.HIGH,
+      },
     }
     this.subStatus = {
       audio: false,
@@ -361,8 +363,10 @@ class Stream extends EventEmitter {
       audio: true,
       video: true,
       screen: true,
-      highOrLow: 1,
-      resolution: 0
+      highOrLow: {
+        video: STREAM_TYPE.HIGH,
+        screen: STREAM_TYPE.HIGH,
+      },
     }
     this.subStatus = {
       audio: false,
@@ -555,7 +559,8 @@ class Stream extends EventEmitter {
       this.subConf.screen = conf.screen;
     }
     if (typeof conf.highOrLow === "number"){
-      this.subConf.highOrLow = conf.highOrLow;
+      this.subConf.highOrLow.video = conf.highOrLow;
+      this.subConf.highOrLow.screen = conf.highOrLow;
     }
     
     if (this.pubStatus.audio.audio && this.subConf.audio) {

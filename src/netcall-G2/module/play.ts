@@ -18,6 +18,8 @@ class Play extends EventEmitter {
   private videoRenderMode:RenderMode;
   //实际就是Stream.renderMode.screen
   private screenRenderMode:RenderMode;
+  private videoSize: {width: number, height: number} = {width: 0, height: 0};
+  private screenSize: {width: number, height: number} = {width: 0, height: 0};
   public videoDom: HTMLVideoElement | null;
   public screenDom: HTMLVideoElement | null;
   public audioDom: HTMLAudioElement | null;
@@ -164,9 +166,24 @@ class Play extends EventEmitter {
       this.videoDom.dataset['uid'] = "" + this.uid
       this.videoDom.autoplay = true
       this.videoDom.muted = true
+      this.videoSize.width = 0
+      this.videoSize.height = 0
       this.videoDom.addEventListener("resize", (evt)=> {
-        if (this.videoDom === evt.target && this.videoRenderMode.width && this.videoRenderMode.height){
-          this.adapterRef.logger.info("setVideoRender on resize", this.videoDom?.videoWidth, this.videoDom?.videoHeight);
+        // 在resize的时候重新setVideoRender，需注意：
+        // 1. 回调后可能已经stop/play过了，所以需要比较事件的target是不是videoDom
+        // 2. 即使无宽高变化也可能回调多次，所以需要记录上一次的宽高
+        if (!this.videoDom || this.videoDom !== evt.target){
+          return
+        }
+        const width = this.videoDom.videoWidth;
+        const height = this.videoDom.videoHeight
+        
+        if (this.videoRenderMode.width && this.videoRenderMode.height
+          && (width !== this.videoSize.width || height !== this.videoSize.height)
+        ){
+          this.adapterRef.logger.log(`setVideoRender on resize：uid ${this.uid}, ${this.videoSize.width}x${this.videoSize.height} => ${width}x${height}`);
+          this.videoSize.width = width;
+          this.videoSize.height = height;
           this.setVideoRender();
         }
       });
@@ -190,9 +207,24 @@ class Play extends EventEmitter {
       this.screenDom.dataset['uid'] = "" + this.uid
       this.screenDom.autoplay = true
       this.screenDom.muted = true
+      this.screenSize.width = 0
+      this.screenSize.height = 0
       this.screenDom.addEventListener("resize", (evt)=> {
-        if (this.screenDom === evt.target && this.screenRenderMode.width && this.screenRenderMode.height){
-          this.adapterRef.logger.info("setScreenRender on resize", this.screenDom?.videoWidth, this.screenDom?.videoHeight);
+        // 在resize的时候重新setScreenRender，需注意：
+        // 1. 回调后可能已经stop/play过了，所以需要比较事件的target是不是screenDom
+        // 2. 即使无宽高变化也可能回调多次，所以需要记录上一次的宽高
+        if (!this.screenDom || this.screenDom !== evt.target){
+          return
+        }
+        const width = this.screenDom.videoWidth;
+        const height = this.screenDom.videoHeight
+
+        if (this.screenRenderMode.width && this.screenRenderMode.height
+          && (width !== this.screenSize.width || height !== this.screenSize.height)
+        ){
+          this.adapterRef.logger.log(`setScreenRender on resize：uid ${this.uid}, ${this.screenSize.width}x${this.screenSize.height} => ${width}x${height}`);
+          this.screenSize.width = width;
+          this.screenSize.height = height;
           this.setScreenRender();
         }
       });
@@ -566,7 +598,7 @@ class Play extends EventEmitter {
       this.videoRenderMode = Object.assign({}, options);
     }else{
       options = this.videoRenderMode
-      this.adapterRef.logger.log('setVideoRender: uid %s, existing videoRenderMode: %s', this.uid, JSON.stringify(options))
+      this.adapterRef.logger.log(`setVideoRender: uid ${this.uid}, existing videoRenderMode: ${JSON.stringify(options)}`)
     }
     // 设置外部容器
     if (this.videoContainerDom) {
@@ -602,7 +634,7 @@ class Play extends EventEmitter {
       this.screenRenderMode = Object.assign({}, options);
     }else{
       options = this.screenRenderMode
-      this.adapterRef.logger.log('setScreenRender: uid %s, existing screenRenderMode: %s', this.uid, JSON.stringify(options, null, ' '))
+      this.adapterRef.logger.log(`setScreenRender: uid ${this.uid}, existing screenRenderMode: ${JSON.stringify(options)}`);
     }
     this.screenRenderMode = options
     // 设置外部容器

@@ -118,11 +118,6 @@ export type ConnectionState = 'DISCONNECTED'|'CONNECTING'|'CONNECTED'|'DISCONNEC
 export type MediaType = 'audio'|'video'|'screenShare';
 export type MediaTypeShort = 'audio'|'video'|'screen';
 
-export interface ProducerAppData{
-  deviceId: string;
-  mediaType: MediaType;
-}
-
 export interface NetStatusItem{
   uid: number|string;
   downlinkNetworkQuality: number;
@@ -809,8 +804,10 @@ export interface SubscribeConfig{
   audio: boolean;
   video: boolean;
   screen: boolean;
-  highOrLow: number;
-  resolution: number;
+  highOrLow: {
+    video: number;
+    screen: number;
+  }
 }
 
 export interface VideoProfileOptions{

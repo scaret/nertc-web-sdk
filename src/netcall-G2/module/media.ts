@@ -14,6 +14,7 @@ import {emptyStreamWith} from "../util/gum";
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
 import {Stream} from "../api/stream";
+import {getParameters} from "./parameters";
 class MediaHelper extends EventEmitter {
   private adapterRef: AdapterRef;
   private isLocal:boolean;
@@ -41,6 +42,8 @@ class MediaHelper extends EventEmitter {
   public videoSource:MediaStreamTrack|null;
   public screenTrack: MediaStreamTrack|null;
   public cameraTrack: MediaStreamTrack|null;
+  public screenTrackLow: MediaStreamTrack|null;
+  public cameraTrackLow: MediaStreamTrack|null;
   private mixAudioConf:MixAudioConf;
   public audioRoutingEnabled:boolean;
   
@@ -67,6 +70,8 @@ class MediaHelper extends EventEmitter {
     this.screenAudioTrack = null;
     this.screenTrack = null;
     this.cameraTrack = null;
+    this.screenTrackLow = null;
+    this.cameraTrackLow = null;
     this.audioRoutingEnabled = false;
     this.mixAudioConf = {
       index: 0,
@@ -471,6 +476,7 @@ class MediaHelper extends EventEmitter {
         }
         this.cameraStream = new MediaStream()
         this.cameraStream.addTrack(videoTrack)
+        this.cameraTrack = videoTrack
         this.videoStream = this.cameraStream
         const videoView = this.stream.videoView || (this.stream.Play && this.stream.Play.videoView)
         if (videoView) {
@@ -482,6 +488,14 @@ class MediaHelper extends EventEmitter {
         const peer = this.adapterRef.instance.getPeer('send')
         if (peer && peer.videoSender) {
           peer.videoSender.replaceTrack(videoTrack)
+          if (peer.videoSenderLow){
+            if (this.cameraTrackLow){
+              this.cameraTrackLow.stop();
+            }
+            this.createTrackLow("video");
+            this.adapterRef.logger.log('getSecondStream 切换小流', this.cameraTrackLow);
+            peer.videoSenderLow.replaceTrack(this.cameraTrackLow);
+          }
         } else {
           this.adapterRef.logger.warn('getSecondStream video: 此时未发布流')
         }
@@ -496,6 +510,32 @@ class MediaHelper extends EventEmitter {
         value: e.message
       })
       return Promise.reject(e)
+    }
+  }
+
+  createTrackLow(mediaType: "video"|"screen") {
+    if (mediaType === "video" && this.cameraTrack) {
+      const settings = this.cameraTrack.getSettings();
+      if (settings.width && settings.height) {
+        const constraintsLow = getParameters().videoLowDefaultConstraints;
+        this.adapterRef.logger.log("创建小流", mediaType, constraintsLow);
+        this.cameraTrackLow = this.cameraTrack.clone();
+        this.cameraTrackLow.applyConstraints(constraintsLow);
+        if (this.adapterRef.instance){
+          this.adapterRef.instance.emit('track-low-init', {mediaType})
+        }
+      }
+    } else if (mediaType === "screen" && this.screenTrack) {
+      const settings = this.screenTrack.getSettings();
+      if (settings.width && settings.height) {
+        const constraintsLow = getParameters().screenLowDefaultConstraints;
+        this.adapterRef.logger.log("创建小流", mediaType, constraintsLow);
+        this.screenTrackLow = this.screenTrack.clone();
+        this.screenTrackLow.applyConstraints(constraintsLow);
+        if (this.adapterRef.instance){
+          this.adapterRef.instance.emit('track-low-init', {mediaType})
+        }
+      }
     }
   }
 
@@ -649,12 +689,19 @@ class MediaHelper extends EventEmitter {
       }
       if (this.cameraTrack === track){
         this.cameraTrack = null;
+        if (this.adapterRef._mediasoup && this.cameraTrackLow){
+          this.adapterRef.logger.log('停止视频小流:', this.cameraTrackLow);
+          this.cameraTrackLow.stop();
+          this.cameraTrackLow = null;
+        }
       }
       if (this.screenTrack === track){
         this.screenTrack = null;
-      }
-      if (this.screenAudioTrack === track){
-        this.screenAudioTrack = null;
+        if (this.adapterRef._mediasoup && this.screenTrackLow){
+          this.adapterRef.logger.log('停止辅流小流:', this.screenTrackLow);
+          this.screenTrackLow.stop();
+          this.screenTrackLow = null;
+        }
       }
     })
   }

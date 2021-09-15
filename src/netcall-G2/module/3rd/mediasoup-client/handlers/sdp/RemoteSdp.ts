@@ -160,7 +160,7 @@ export class RemoteSdp
 
   send(
     {
-      offerMediaObject,
+      offerMediaObjectArr,
       reuseMid,
       offerRtpParameters,
       answerRtpParameters,
@@ -168,7 +168,7 @@ export class RemoteSdp
       extmapAllowMixed = false
     }:
     {
-      offerMediaObject: any;
+      offerMediaObjectArr: any[];
       reuseMid?: string;
       offerRtpParameters: RtpParameters;
       answerRtpParameters: RtpParameters;
@@ -177,36 +177,41 @@ export class RemoteSdp
     }
   ): void
   {
-    if(!offerMediaObject) return;
-    const mediaSection = new AnswerMediaSection(
-      {
-        iceParameters      : this._iceParameters,
-        iceCandidates      : this._iceCandidates,
-        dtlsParameters     : this._dtlsParameters,
-        plainRtpParameters : this._plainRtpParameters,
-        planB              : this._planB,
-        offerMediaObject,
-        offerRtpParameters,
-        answerRtpParameters,
-        codecOptions,
-        extmapAllowMixed
-      });
+    if(!offerMediaObjectArr.length) return;
+    offerMediaObjectArr.forEach((offerMediaObject, i)=>{
+      if (!offerMediaObject){
+        return;
+      }
+      const mediaSection = new AnswerMediaSection(
+        {
+          iceParameters      : this._iceParameters,
+          iceCandidates      : this._iceCandidates,
+          dtlsParameters     : this._dtlsParameters,
+          plainRtpParameters : this._plainRtpParameters,
+          planB              : this._planB,
+          offerMediaObject,
+          offerRtpParameters,
+          answerRtpParameters,
+          codecOptions,
+          extmapAllowMixed
+        });
 
-    // Unified-Plan with closed media section replacement.
-    if (reuseMid)
-    {
-      this._replaceMediaSection(mediaSection, reuseMid);
-    }
-    // Unified-Plan or Plan-B with different media kind.
-    else if (!this._midToIndex.has(mediaSection.mid))
-    {
-      this._addMediaSection(mediaSection);
-    }
-    // Plan-B with same media kind.
-    else
-    {
-      this._replaceMediaSection(mediaSection);
-    }
+      // Unified-Plan with closed media section replacement.
+      if (reuseMid)
+      {
+        this._replaceMediaSection(mediaSection, reuseMid);
+      }
+      // Unified-Plan or Plan-B with different media kind.
+      else if (true)
+      {
+        this._addMediaSection(mediaSection);
+      }
+      // Plan-B with same media kind.
+      else
+      {
+        this._replaceMediaSection(mediaSection);
+      }
+    });
   }
 
   receive(

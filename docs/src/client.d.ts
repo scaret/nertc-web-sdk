@@ -115,6 +115,34 @@ declare interface Client{
      */
     unsubscribe(stream: Stream): Promise<void>;
     /**
+     * 开启双流模式
+     * 
+     * 该方法在 Publish 端，即发送端，开启双流模式。该方法建议在加入频道（Client.join）后调用。
+     * 
+     * 双流为视频大流和视频小流，其中视频大流指高分辨率、高码率的视频流，视频小流指低分辨率、低码率的视频流。
+     * 
+     * 请在调用 [[Client.publish]] 之前调用该方法。
+     * 
+     * ```javascript
+     * // 加入频道后
+     * rtc.localStream = NERTC.createStream({
+     *   audio: true,
+     *   video: true,
+     *   uid: 1234,
+     *   client: rtc.client,
+     * })
+     * await rtc.localStream.init()
+     * rtc.client.enableDualStream()
+     * await rtc.client.join({
+     *   channelName: "channelName",
+     *   token: "token",
+     *   uid: 1234
+     * });
+     * ```
+     * 
+     */
+    enableDualStream(dualStreamSetting?: {video: boolean; screen: boolean}): void;
+    /**
      * 设置视频大小流。
      * 
      * 如果发送端开启了双流模式，即大小流模式，订阅端默认接收大流，您也可以在订阅端调用此方法选择接收大流还是小流。
