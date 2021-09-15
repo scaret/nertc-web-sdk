@@ -1269,18 +1269,15 @@ class FormativeStatsReport {
     if (!this.infos.uid || !this.infos.cid) return
 
       //上报G2的数据
-      // let datareport = new DataReport({
-      //     adapterRef: this.adapterRef
-      //   })
-      // datareport.setHeartbeat({
-      //   name: 'setHeartbeat',
-      //   uid: '' + this.adapterRef.channelInfo.uid,
-      //   cid: '' + this.adapterRef.channelInfo.cid,
-      //   rx: this.infos2.rx2,
-      //   tx: this.infos2.tx2,
-      //   sys: this.infos2.sys
-      // })
-      // datareport.send()
+      let datareport = new DataReport({
+          adapterRef: this.adapterRef
+        })
+      datareport.setHeartbeat({
+        name: 'setHeartbeat',
+        uid: '' + this.adapterRef.channelInfo.uid,
+        cid: '' + this.adapterRef.channelInfo.cid
+      })
+      datareport.send()
       this.clearInfoData()
       return
   }
