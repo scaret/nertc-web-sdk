@@ -1276,9 +1276,6 @@ class FormativeStatsReport {
         name: 'setHeartbeat',
         uid: '' + this.adapterRef.channelInfo.uid,
         cid: '' + this.adapterRef.channelInfo.cid
-        // rx: null,
-        // tx: null,
-        // sys: null
       })
       datareport.send()
       this.clearInfoData()
