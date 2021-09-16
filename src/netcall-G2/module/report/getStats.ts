@@ -5,6 +5,7 @@ import { EventEmitter } from "eventemitter3";
 import * as bowser from "bowser";
 import {AdapterRef, MediaTypeShort} from "../../types";
 import {platform} from "../../util/platform";
+import * as env from '../../util/rtcUtil/rtcEnvironment';
 
 class GetStats extends EventEmitter{  
   private adapterRef:AdapterRef|null;
@@ -77,6 +78,7 @@ class GetStats extends EventEmitter{
     };
     this.times = (this.times || 0) + 1;
     this.emit('stats', result, this.times);
+    // console.log('stats before revised--->', result)
     let reportData = this.reviseData(result, this.browser);
     return reportData;
   }
@@ -222,6 +224,69 @@ class GetStats extends EventEmitter{
         remoteObj[k] = v;
       }
       params.remote = remoteObj;
+    } else if(browser === 'firefox') {
+      let local = params.local;
+      let remote = params.remote;
+      let localDatasMap_ = new Map([
+        ['candidate-pair',[]],
+        ['local-candidate',[]],
+        ['outbound-rtp',[]],
+        ['remote-candidate',[]]
+      ]);
+
+      for(let item in local){
+        console.log(item)
+        if(localDatasMap_.has(local[item].type)) {
+          let key;
+          if(item.indexOf('-outbound-rtp') > -1) {
+            key = `${local[item].mediaType}_${local[item].type}`
+          }else{
+            key = `${local[item].type}`
+          }
+          
+          // 判断是否已经有key了
+          if(localDatasObj_.has(key)){
+            localDatasObj_.get(key).push(local[item])
+          } else{
+            localDatasObj_.set(key,[]);
+            localDatasObj_.get(key).push(local[item])
+          }
+        }
+      }
+      let localObj = Object.create(null);
+      for (let[k,v] of localDatasObj_) {
+        localObj[k] = v;
+      }
+      params.local = localObj;
+      let remoteDatasMap_ = new Map([
+        ['candidate-pair',[]],
+        ['inbound-rtp',[]],
+        ['local-candidate',[]],
+        ['remote-candidate',[]]
+      ]);
+      for(let item in remote){
+        if(remoteDatasMap_.has(remote[item].type)) {
+          let key;
+          if(item.indexOf('-inbound-rtp') > -1) {
+            key = `${remote[item].mediaType}_${remote[item].type}`
+          }else{
+            key = `${remote[item].type}`
+          }
+          
+          // 判断是否已经有key了
+          if(remoteDatasObj_.has(key)){
+            remoteDatasObj_.get(key).push(remote[item])
+          } else{
+            remoteDatasObj_.set(key,[]);
+            remoteDatasObj_.get(key).push(remote[item])
+          }
+        }
+      }
+      let remoteObj = Object.create(null);
+      for (let[k,v] of remoteDatasObj_) {
+        remoteObj[k] = v;
+      }
+      params.remote = remoteObj;
     }
 
     // 后端平台不支持key中的 - ，改成 _
@@ -238,6 +303,9 @@ class GetStats extends EventEmitter{
       'video_outbound-rtp': 'video_outbound_rtp',
       'audio_inbound-rtp': 'audio_inbound_rtp',
       'video_inbound-rtp': 'video_inbound_rtp',
+      // firefox
+      'screen_outbound-rtp': 'screen_outbound_rtp',
+      'screen_inbound-rtp': 'screen_inbound_rtp',
     }
     for( let key in params.local){
       // @ts-ignore
@@ -260,7 +328,13 @@ class GetStats extends EventEmitter{
     params.appkey = this.adapterRef?.channelInfo.appkey;
     params.cid = this.adapterRef?.channelInfo.cid;
     params.uid = this.adapterRef?.channelInfo.uid;
-    params.browser = platform.name + '-' + platform.version;
+    if(env.IS_EDG) {
+      params.browser = 'Edge-' + platform.version;
+    }else {
+      params.browser = platform.name + '-' + platform.version;
+    }
+    
+
     params.platform = platform.os.family;
     return params;
   }
@@ -483,10 +557,13 @@ class GetStats extends EventEmitter{
     }
 
     const nonStandardResult = await nonStandardStats()
+    const standardizedResult = await standardizedStats()
+    // console.log('safari nonstandard--->', nonStandardResult)
+    // console.log('safari standard--->', standardizedResult)
     //当前Safari标准实现的getStats和非标准的一致，先忽略
     //const standardizedResult = await standardizedStats()
-    //return Object.assign(nonStandardResult, standardizedResult)
-    return nonStandardResult
+    let assignedResult = Object.assign(nonStandardResult, standardizedResult)
+    return assignedResult
   }
 
   formatSafariNonStandardStats (pc:RTCPeerConnection, stats:{[key:string]:any}, direction:string) {
@@ -496,7 +573,7 @@ class GetStats extends EventEmitter{
       if( item.type == 'outbound-rtp' || item.type == 'inbound-rtp' ) {
         const uid = this.adapterRef ? this.adapterRef.instance.getUidAndKindBySsrc(item.ssrc).uid : 0
         uidMap.set(item.trackId, {uid: uid.toString(), ssrc:item.ssrc})
-        item.uid = uid.toString()
+        item.remoteuid = uid.toString()
         return
       }
     })
@@ -505,7 +582,8 @@ class GetStats extends EventEmitter{
       if (item.type == 'track') {
        //console.log('item: ', item)
         item.ssrc = uidMap.get(item.id.toString()).ssrc
-        item.uid = uidMap.get(item.id.toString()).uid
+        // item.uid = uidMap.get(item.id.toString()).uid
+        item.remoteuid = uidMap.get(item.id.toString()).uid
         if(item.framesSent || item.framesReceived) {
           item = this.computeData(pc, item)
           result[`_video_${item.type}_${this.adapterRef && this.adapterRef.channelInfo.uid}_${direction}_${item.uid}`] = item
@@ -552,8 +630,94 @@ class GetStats extends EventEmitter{
     return result
   }
 
-  async firefox (pc:RTCPeerConnection) {
 
+  async firefox (pc:RTCPeerConnection, direction: string) {
+
+    const nonStandardStats = async() => {
+      let stats = await pc.getStats();
+      let result:{[key:string]:any} = {};
+      stats.forEach(res => {
+        result[res.type] = res;
+      });
+      // result = this.formatFirefoxNonStandardStats(pc, result, direction);
+      return result;
+    }
+
+    const standardizedStats = async () => {
+      if(!pc.getTransceivers) return {}
+
+      let result = {};
+      const transceivers = pc.getTransceivers()
+
+      for (let i = 0; i < transceivers.length; i++) {
+        let getStats = null
+        let report = null
+        const item = transceivers[i]
+        
+        if(item.direction === 'sendonly') {
+          if (item.sender && item.sender.getStats) {
+            report = await item.sender.getStats()
+            report = this.formatFirefoxStandardizedStats(report, direction, 0, item.mid)
+            Object.assign(result, report)
+          }
+        } else if(item.direction === 'recvonly') {
+          if (item.receiver && item.receiver.getStats) {
+            report = await item.receiver.getStats()
+            report = this.formatFirefoxStandardizedStats(report, direction, 0)
+            Object.assign(result, report)
+          }
+        }
+      }
+      return result;
+    }
+
+    const nonStandardResult = await nonStandardStats()
+    const standardizedResult = await standardizedStats()
+    let assignedResult = Object.assign(nonStandardResult, standardizedResult)
+    return assignedResult
+  }
+
+
+  //转换标准getStats格式
+  formatFirefoxStandardizedStats(report:RTCStatsReport, direction:string, uid:string|number, mid?:string|null) {
+    let result: { [key:string]:any } = {}
+    
+    report.forEach(report => {
+      if(report.type == 'inbound-rtp' && this.adapterRef && this.adapterRef.instance){
+        const uidAndKindBySsrc = this.adapterRef.instance.getUidAndKindBySsrc(report.ssrc);
+        report.remoteuid = uidAndKindBySsrc.uid;
+        uid = uidAndKindBySsrc.uid;
+        if(report.kind === 'video') {
+          report.mediaType = uidAndKindBySsrc.kind ? uidAndKindBySsrc.kind : 'screen';
+        }
+      }
+      // if(report.type == 'inbound-rtp' && this.adapterRef && this.adapterRef.instance && report.kind === 'video') {
+      //   const uidAndKindBySsrc = this.adapterRef.instance.getUidAndKindBySsrc(report.ssrc);
+      //   report.remoteuid = uidAndKindBySsrc.uid;
+      //   report.mediaType = uidAndKindBySsrc.kind ? uidAndKindBySsrc.kind : 'screen';
+      // }
+    });
+
+    
+    report.forEach(report => {
+      if(report.type == 'outbound-rtp' && mid == '2') {
+        report.mediaType = 'screen';
+      }
+    })
+
+    report.forEach(report => {
+      if( 
+        report.type == 'local-candidate'
+        || report.type == 'remote-candidate'
+        || report.type == 'remote-inbound-rtp' 
+        || report.type == 'candidate-pair' 
+        ) {
+        result[`${report.type}_${this.adapterRef && this.adapterRef.channelInfo.uid}_${direction}_${uid}`] = report
+      }else if(report.type == 'outbound-rtp' || report.type == 'inbound-rtp') {
+        result[`${report.mediaType}-${report.type}_${this.adapterRef && this.adapterRef.channelInfo.uid}_${direction}_${uid}`] = report
+      }
+    })
+    return result
   }
 
   // 普通换算

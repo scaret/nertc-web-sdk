@@ -19,6 +19,7 @@ import { parseBase64 } from "../util/crypto-ts/base64";
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
 import {platform} from "../util/platform";
+import * as env from '../util/rtcUtil/rtcEnvironment';
 const protooClient = require('./3rd/protoo-client/')
 
 class Signalling extends EventEmitter {
@@ -35,6 +36,7 @@ class Signalling extends EventEmitter {
   private consumers: {[consumerId: string]: Consumer };
   private keepAliveTimer: Timer|null;
   private netStatusTimer: Timer|null;
+  public browserDevice: String;
   
   constructor (options: SignallingOptions) {
     super()
@@ -54,6 +56,11 @@ class Signalling extends EventEmitter {
     // 设置对象引用
     this.adapterRef = options.adapterRef
     this.sdkRef = options.sdkRef
+    if(env.IS_EDG){
+      this.browserDevice = 'Edge-' + platform.version
+    }else {
+      this.browserDevice = platform.name + '-' + platform.version
+    }
   }
 
   async _reset() {
@@ -730,7 +737,7 @@ class Signalling extends EventEmitter {
           server_ip: this.adapterRef.channelInfo._protooUrl,
           signal_time_elapsed: webrtc2Param.startWssTime - webrtc2Param.startJoinTime,
           time_elapsed: currentTime - webrtc2Param.startJoinTime,
-          model: platform.name + '-' + platform.version
+          model: this.browserDevice
         })
         if (!this.adapterRef._mediasoup){
           throw new RtcError({
@@ -851,7 +858,7 @@ class Signalling extends EventEmitter {
       server_ip: this.adapterRef.channelInfo._protooUrl,
       signal_time_elapsed: webrtc2Param.startWssTime - webrtc2Param.startJoinTime,
       time_elapsed: currentTime - webrtc2Param.startJoinTime,
-      model: platform.name + '-' + platform.version
+      model: this.browserDevice
     })
 
     //重连时的login失败，执行else的内容

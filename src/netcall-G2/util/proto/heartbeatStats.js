@@ -122,7 +122,12 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
             rule: "repeated",
             type: "screen_ssrc_obj",
             id: 16
-          }
+          },
+          screen_outbound_rtp: {
+            rule: "repeated",
+            type: "screen_outbound_rtp_obj",
+            id: 17
+          },
         },
         nested: {
           video_bwe_obj: {
@@ -1460,6 +1465,90 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
                 id: 36
               }
             }
+          },
+          screen_outbound_rtp_obj: {
+            fields: {
+              id: {
+                type: "string",
+                id: 1
+              },
+              timestamp: {
+                type: "int64",
+                id: 2
+              },
+              type: {
+                type: "string",
+                id: 3
+              },
+              kind: {
+                type: "string",
+                id: 4
+              },
+              mediaType: {
+                type: "string",
+                id: 5
+              },
+              ssrc: {
+                type: "int64",
+                id: 6
+              },
+              bytesSent: {
+                type: "int64",
+                id: 7
+              },
+              packetsSent: {
+                type: "int64",
+                id: 8
+              },
+              bitrateMean: {
+                type: "double",
+                id: 9
+              },
+              bitrateStdDev: {
+                type: "double",
+                id: 10
+              },
+              droppedFrames: {
+                type: "string",
+                id: 11
+              },
+              firCount: {
+                type: "string",
+                id: 12
+              },
+              framerateMean: {
+                type: "int64",
+                id: 13
+              },
+              framerateStdDev: {
+                type: "int64",
+                id: 14
+              },
+              framesEncoded: {
+                type: "int64",
+                id: 15
+              },
+              nackCount: {
+                type: "int64",
+                id: 16
+              },
+              pliCount: {
+                type: "int64",
+                id: 17
+              },
+              bytesSentPerSecond: {
+                type: "int64",
+                id: 18
+              },
+              framesEncodedPerSecond: {
+                type: "int64",
+                id: 19
+              },
+              packetsSentPerSecond: {
+                type: "int64",
+                id: 20
+              }
+            }
           }
         }
       },
@@ -1529,6 +1618,11 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
             rule: "repeated",
             type: "screen_ssrc_obj",
             id: 13
+          },
+          screen_inbound_rtp: {
+            rule: "repeated",
+            type: "screen_inbound_rtp_obj",
+            id: 14
           },
         },
         nested: {
@@ -2458,6 +2552,14 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
                 type: "double",
                 id: 34
               },
+              recvPacketLoss: {
+                type: "int64",
+                id: 35
+              },
+              remoteuid: {
+                type: "string",
+                id: 36
+              },
             }
           },
           video_inbound_rtp_obj: {
@@ -2593,6 +2695,14 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               framesDecodedPerSecond: {
                 type: "int64",
                 id: 33
+              },
+              recvPacketLoss: {
+                type: "int64",
+                id: 34
+              },
+              remoteuid: {
+                type: "string",
+                id: 35
               },
             }
           },
@@ -2896,6 +3006,118 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               }
             }
           },
+          screen_inbound_rtp_obj: {
+            fields: {
+              id: {
+                type: "string",
+                id: 1
+              },
+              timestamp: {
+                type: "int64",
+                id: 2
+              },
+              type: {
+                type: "string",
+                id: 3
+              },
+              kind: {
+                type: "string",
+                id: 4
+              },
+              mediaType: {
+                type: "string",
+                id: 5
+              },
+              ssrc: {
+                type: "string",
+                id: 6
+              },
+              discardedPackets: {
+                type: "int64",
+                id: 7
+              },
+              jitter: {
+                type: "double",
+                id: 8
+              },
+              packetsLost: {
+                type: "int64",
+                id: 9
+              },
+              packetsReceived: {
+                type: "int64",
+                id: 10
+              },
+              bitrateMean: {
+                type: "double",
+                id: 11
+              },
+              bitrateStdDev: {
+                type: "double",
+                id: 12
+              },
+              bytesReceived: {
+                type: "int64",
+                id: 13
+              },
+              firCount: {
+                type: "int64",
+                id: 14
+              },
+              framerateMean: {
+                type: "double",
+                id: 15
+              },
+              framerateStdDev: {
+                type: "double",
+                id: 16
+              },
+              framesDecoded: {
+                type: "int64",
+                id: 17
+              },
+              nackCount: {
+                type: "int64",
+                id: 18
+              },
+              pliCount: {
+                type: "int64",
+                id: 19
+              },
+              remoteId: {
+                type: "string",
+                id: 20
+              },
+              targetUid: {
+                type: "string",
+                id: 21
+              },
+              bytesReceivedPerSecond: {
+                type: "int64",
+                id: 22
+              },
+              packetsLostPerSecond: {
+                type: "int64",
+                id: 23
+              },
+              framesDecodedPerSecond: {
+                type: "int64",
+                id: 24
+              },
+              recvPacketLoss: {
+                type: "int64",
+                id: 25
+              },
+              packetsReceivedPerSecond: {
+                type: "int64",
+                id: 26
+              },
+              remoteuid: {
+                type: "string",
+                id: 27
+              },
+            }
+          }
         }
       }
     }

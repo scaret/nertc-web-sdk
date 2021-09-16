@@ -78,7 +78,19 @@ async function getSupportedCodecs(direction:"send"|"recv" =  "recv", PeerConnect
       return result;
     }else{
       // throw new Error(`direction ${direction} Not supported yet`);
-      return false;
+      const pc = new PeerConnection({});
+      let canvas:any = document.createElement('canvas');
+      canvas.getContext('2d');
+      const fakeStream = canvas.captureStream(0);
+      pc.addTrack(fakeStream.getVideoTracks()[0], fakeStream);
+      const offer = await pc.createOffer({});
+      pc.close()
+      if (!offer.sdp) {
+        // throw new Error("offer sdp is empty");
+        return false;
+      }
+      const result = getSupportedCodecFromSDP(offer.sdp);
+      return result;
     }
   }
 }
