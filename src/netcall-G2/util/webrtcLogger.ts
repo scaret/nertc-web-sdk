@@ -29,7 +29,7 @@ class Logger{
     if(options.isSavedLogs) {
       this.logHelper = new logHelper(options)
     }
-    this.supportedBrowsers = ['Chrome', 'Safari', 'Firefox'];
+    this.supportedBrowsers = ['Chrome', 'Safari', 'Firefox', 'Chrome Mobile'];
     this.cs = console;
     this.isDebug = true;
     this.setDebug(options.debug);
