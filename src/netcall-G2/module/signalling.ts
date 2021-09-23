@@ -778,6 +778,8 @@ class Signalling extends EventEmitter {
             this.adapterRef.remoteStreamMap[uid] = remoteStream
             this.adapterRef.memberMap[uid] = "" + uid;
             this.adapterRef.instance.emit('peer-online', {uid})
+          }else{
+            remoteStream.active = true;
           }
           if (peer.producerInfoList) {
             for (const peoducerInfo of peer.producerInfoList) {
@@ -804,6 +806,8 @@ class Signalling extends EventEmitter {
               remoteStream['pubStatus'][mediaTypeShort][mediaTypeShort] = true
               remoteStream['pubStatus'][mediaTypeShort]['producerId'] = producerId
               remoteStream['pubStatus'][mediaTypeShort]['mute'] = mute
+              //@ts-ignore
+              remoteStream.muteStatus[`${mediaTypeShort}Send`] = mute
               remoteStream['pubStatus'][mediaTypeShort]['simulcastEnable'] = simulcastEnable
               
               //兼容喜欢把箭头函数transpile成ES5的客户
@@ -822,6 +826,13 @@ class Signalling extends EventEmitter {
               }, 0);
             }
           } 
+        }
+        for(let uid in this.adapterRef.remoteStreamMap){
+          let remoteStream = this.adapterRef.remoteStreamMap[uid];
+          if (!remoteStream.active){
+            this.adapterRef.logger.warn(`重连期间远端流停止发布：${uid}`);
+            delete this.adapterRef.remoteStreamMap[uid];
+          }
         }
       }
       if (this._resolve) {

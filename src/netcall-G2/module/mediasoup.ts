@@ -1009,6 +1009,9 @@ class Mediasoup extends EventEmitter {
         remoteStream['pubStatus'][mediaTypeShort][mediaTypeShort] = true
         remoteStream['pubStatus'][mediaTypeShort]['consumerId'] = consumerId
         remoteStream['pubStatus'][mediaTypeShort]['producerId'] = producerId
+        if (remoteStream.getMuteStatus(mediaTypeShort).muted){
+          this.adapterRef.logger.log(`远端流处于mute状态：uid ${remoteStream.getId()}, ${mediaTypeShort}, ${JSON.stringify(remoteStream.getMuteStatus(mediaTypeShort))}`);
+        }
         if (!remoteStream.mediaHelper){
           throw new RtcError({
             code: ErrorCode.NO_MEDIAHELPER,

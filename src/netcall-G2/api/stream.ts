@@ -148,6 +148,7 @@ class Stream extends EventEmitter {
   private audioPlay_: boolean;
   private videoPlay_: boolean;
   private screenPlay_: boolean;
+  public active:boolean = true;
   
   constructor (options:StreamOptions) {
     super()
@@ -1954,11 +1955,6 @@ class Stream extends EventEmitter {
         if (this.mediaHelper && this.mediaHelper.cameraTrack){
           this.mediaHelper.cameraTrack.enabled = true;
         }
-        //@ts-ignore
-        await this._play.playVideoStream(this.mediaHelper.videoStream, this.videoView)
-        if ("width" in this.renderMode.remote.video){
-          this._play.setVideoRender(this.renderMode.remote.video)
-        }
       }
       this.client.apiFrequencyControl({
         name: 'unmuteVideo',
@@ -2010,7 +2006,6 @@ class Stream extends EventEmitter {
         if (this.mediaHelper && this.mediaHelper.cameraTrack){
           this.mediaHelper.cameraTrack.enabled = false;
         }
-        this._play.stopPlayVideoStream()
       }
       // this.client.adapterRef.instance.apiEventReport('setFunction', {
       //   name: 'set_mutevideo',
@@ -2074,11 +2069,6 @@ class Stream extends EventEmitter {
         if (this.mediaHelper && this.mediaHelper.screenTrack){
           this.mediaHelper.screenTrack.enabled = true;
         }
-        //@ts-ignore
-        await this._play.playScreenStream(this.mediaHelper.screenStream, this.screenView)
-        if ("width" in this.renderMode.remote.screen){
-          this._play.setScreenRender(this.renderMode.remote.screen)
-        }
       }
       this.client.apiFrequencyControl({
         name: 'unmuteScreen',
@@ -2129,7 +2119,6 @@ class Stream extends EventEmitter {
         if (this.mediaHelper && this.mediaHelper.screenTrack){
           this.mediaHelper.screenTrack.enabled = false;
         }
-        this._play.stopPlayScreenStream()
         this.muteStatus.screenRecv = true
       }
       this.client.apiFrequencyControl({
@@ -2781,6 +2770,17 @@ class Stream extends EventEmitter {
     }
     return this.mediaHelper.setVolumeOfEffect(soundId, volume) 
   }
+  
+   clearRemotePubStatus (){
+     let mediaTypes:MediaTypeShort[] = ["audio", "video", "screen"];
+     for (let mediaType of mediaTypes){
+       this[mediaType] = false
+       //@ts-ignore
+       this.pubStatus[mediaType][mediaType] = false
+       this.pubStatus[mediaType].producerId = ''
+       this.pubStatus[mediaType].consumerId = ''
+     }
+  }
 
   /**
    * 预加载指定音效文件
@@ -2971,6 +2971,47 @@ class Stream extends EventEmitter {
     }
 
   };
+  
+  getMuteStatus (mediaType: MediaTypeShort){
+    if (mediaType === "audio"){
+      if (this.isRemote){
+        return {
+          send: this.muteStatus.audioSend,
+          recv: this.muteStatus.audioRecv,
+          muted: this.muteStatus.audioSend || this.muteStatus.audioRecv,
+        };
+      }else{
+        return {
+          muted: this.muteStatus.audioSend,
+        }
+      }
+    } else if (mediaType === "video"){
+      if (this.isRemote){
+        return {
+          send: this.muteStatus.videoSend,
+          recv: this.muteStatus.videoRecv,
+          muted: this.muteStatus.videoSend || this.muteStatus.videoRecv,
+        };
+      }else{
+        return {
+          muted: this.muteStatus.videoSend,
+        }
+      }
+    } else {
+      if (this.isRemote){
+        return {
+          send: this.muteStatus.screenSend,
+          recv: this.muteStatus.screenRecv,
+          muted: this.muteStatus.screenSend || this.muteStatus.screenRecv,
+        };
+      }else{
+        return {
+          muted: this.muteStatus.screenSend,
+        }
+      }
+    }
+  }
+  
   /**
    *  销毁实例
    *  @method destroy

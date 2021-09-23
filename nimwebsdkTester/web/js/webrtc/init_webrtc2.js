@@ -404,7 +404,7 @@ function initEvents() {
   })
 
   rtc.client.on('unmute-video', evt => {
-    console.warn(`${evt.uid} mute自己的视频`)
+    console.warn(`${evt.uid} unmute自己的视频`)
     addLog(`${evt.uid} unmute自己的视频`)
   })
 
@@ -415,7 +415,7 @@ function initEvents() {
   })
 
   rtc.client.on('unmute-screen', evt => {
-    console.warn(`${evt.uid} mute自己的辅流`)
+    console.warn(`${evt.uid} unmute自己的辅流`)
     addLog(`${evt.uid} unmute自己的辅流`)
   })
   
