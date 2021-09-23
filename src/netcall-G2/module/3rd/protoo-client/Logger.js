@@ -6,40 +6,50 @@ class Logger
 {
 	constructor(prefix)
 	{
-		if (prefix)
-		{
-			this._debug = debug(`${APP_NAME}:${prefix}`);
-			this._warn = debug(`${APP_NAME}:WARN:${prefix}`);
-			this._error = debug(`${APP_NAME}:ERROR:${prefix}`);
+		this.prefix = prefix ? `${APP_NAME}:${prefix}` : `${APP_NAME}`;
+	}
+
+	debug()
+	{
+		var args = Array.prototype.slice.call(arguments);
+		this.formatArgs(args);
+		window.logStorage && window.logStorage.log('debug', args);
+	}
+
+	warn()
+	{
+		var args = Array.prototype.slice.call(arguments);
+		this.formatArgs(args);
+		window.logStorage && window.logStorage.log('warn', args);
+	}
+
+	error()
+	{
+		var args = Array.prototype.slice.call(arguments);
+		this.formatArgs(args);
+		window.logStorage && window.logStorage.log('error', args);
+	}
+
+	formatArgs(args) {
+		var date = new Date()
+		var dateStr = this.formatTimeUnit('' + (date.getMonth() + 1)) + '-' + this.formatTimeUnit('' + date.getDate()) + ' ' + this.formatTimeUnit('' + date.getHours()) + ':' + this.formatTimeUnit('' + date.getMinutes()) + ':' + this.formatTimeUnit('' + date.getSeconds()) + ':' + this.formatTimeUnit('' + date.getMilliseconds(), 3)
+		var prefix = `[WEBRTC LOG ${dateStr} ${this.prefix.toUpperCase()}]`;
+		args.unshift(prefix);
+
+		return args
+	}
+
+	formatTimeUnit = function (num, count) {
+		count = count || 2
+		var str = '' + num
+		while (str.length < count) {
+		  str = '0' + str
 		}
-		else
-		{
-			this._debug = debug(APP_NAME);
-			this._warn = debug(`${APP_NAME}:WARN`);
-			this._error = debug(`${APP_NAME}:ERROR`);
-		}
-
-		/* eslint-disable no-console */
-		this._debug.log = console.info.bind(console);
-		this._warn.log = console.warn.bind(console);
-		this._error.log = console.error.bind(console);
-		/* eslint-enable no-console */
+		return str
 	}
 
-	get debug()
-	{
-		return this._debug;
-	}
 
-	get warn()
-	{
-		return this._warn;
-	}
 
-	get error()
-	{
-		return this._error;
-	}
 }
 
 module.exports = Logger;

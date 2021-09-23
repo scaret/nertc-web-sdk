@@ -145,7 +145,7 @@ export interface FillRemoteRecvSdpOptions{
   audioProfile: string;
 }
 
-const logger = new Logger('Transport');
+const prefix = 'Transport';
 
 export class Transport extends EnhancedEventEmitter
 {
@@ -207,7 +207,7 @@ export class Transport extends EnhancedEventEmitter
   {
     super();
 
-    logger.debug('constructor() [id:%s, direction:%s]', id, direction);
+    Logger.debug(prefix, 'constructor() [id:%s, direction:%s]', id, direction);
 
     this._id = id;
     this._direction = direction;
@@ -328,7 +328,7 @@ export class Transport extends EnhancedEventEmitter
     if (this._closed)
       return;
 
-    logger.debug('close()');
+    Logger.debug(prefix, 'close()');
 
     this._closed = true;
 
@@ -377,7 +377,7 @@ export class Transport extends EnhancedEventEmitter
     { iceParameters: IceParameters }
   ): Promise<void>
   {
-    logger.debug('restartIce()');
+    Logger.debug(prefix, 'restartIce()');
 
     if (this._closed)
       throw new InvalidStateError('closed');
@@ -398,7 +398,7 @@ export class Transport extends EnhancedEventEmitter
     { iceServers?: RTCIceServer[] } = {}
   ): Promise<void>
   {
-    logger.debug('updateIceServers()');
+    Logger.debug(prefix, 'updateIceServers()');
 
     if (this._closed)
       throw new InvalidStateError('closed');
@@ -428,7 +428,8 @@ export class Transport extends EnhancedEventEmitter
     }: ProducerOptions
   ): Promise<Producer>
   {
-    logger.debug('produce() [track:%o]', track);
+    // Logger.debug(prefix, 'produce() [track:%o]', track);
+    Logger.debug(prefix, 'produce() track');
 
     if (!track)
       throw new TypeError('missing track');
@@ -628,7 +629,7 @@ export class Transport extends EnhancedEventEmitter
     }: ConsumerOptions
   ): Promise<Consumer>
   {
-    logger.debug('consume()');
+    Logger.debug(prefix, 'consume()');
 
     rtpParameters = utils.clone(rtpParameters, undefined);
 
@@ -692,13 +693,13 @@ export class Transport extends EnhancedEventEmitter
         //         rtpParameters : probatorRtpParameters
         //       });
         //
-        //     logger.debug('consume() | Consumer for RTP probation created');
+        //     Logger.debug(prefix, 'consume() | Consumer for RTP probation created');
         //
         //     this._probatorConsumerCreated = true;
         //   }
         //   catch (error)
         //   {
-        //     logger.error(
+        //     Logger.error(prefix, 
         //       'consume() | failed to create Consumer for RTP probation:%o',
         //       error);
         //   }
@@ -737,7 +738,7 @@ export class Transport extends EnhancedEventEmitter
       if (connectionState === this._connectionState)
         return;
 
-      logger.debug('connection state changed to %s', connectionState);
+      Logger.debug(prefix, 'connection state changed to %s', connectionState);
 
       this._connectionState = connectionState;
 
@@ -755,10 +756,10 @@ export class Transport extends EnhancedEventEmitter
       if (this._closed)
         return;
 
-      logger.warn('producer 关闭: ', producer.localId)
+      Logger.warn(prefix, 'producer 关闭: ', producer.localId)
       // @ts-ignore
       this._awaitQueue.push(async () => this._handler.stopSending(producer.localId, producer.appData.mediaType))
-        .catch((error) => logger.warn('producer.close() failed:%o', error));
+        .catch((error) => Logger.warn(prefix, 'producer.close() failed:%o', error));
     });
 
     producer.on('@replacetrack', (track, callback, errback) =>

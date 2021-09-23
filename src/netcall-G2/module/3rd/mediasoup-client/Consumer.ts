@@ -23,7 +23,7 @@ export type ConsumerOptions =
   codecOptions?: any;
 }
 
-const logger = new Logger('Consumer');
+const prefix = 'Consumer';
 
 export class Consumer extends EnhancedEventEmitter
 {
@@ -77,7 +77,7 @@ export class Consumer extends EnhancedEventEmitter
   {
     super();
 
-    logger.debug('constructor()');
+    Logger.debug(prefix, 'constructor()');
 
     this._id = id;
     this._localId = localId;
@@ -204,7 +204,7 @@ export class Consumer extends EnhancedEventEmitter
     if (this._closed)
       return;
 
-    logger.debug('close()');
+    Logger.debug(prefix, 'close()');
 
     this._closed = true;
 
@@ -224,7 +224,7 @@ export class Consumer extends EnhancedEventEmitter
     if (this._closed)
       return;
 
-    logger.debug('transportClosed()');
+    Logger.debug(prefix, 'transportClosed()');
 
     this._closed = true;
 
@@ -252,11 +252,11 @@ export class Consumer extends EnhancedEventEmitter
    */
   pause(): void
   {
-    logger.debug('pause()');
+    Logger.debug(prefix, 'pause()');
 
     if (this._closed)
     {
-      logger.error('pause() | Consumer closed');
+      Logger.error(prefix, 'pause() | Consumer closed');
 
       return;
     }
@@ -273,11 +273,11 @@ export class Consumer extends EnhancedEventEmitter
    */
   resume(): void
   {
-    logger.debug('resume()');
+    Logger.debug(prefix, 'resume()');
 
     if (this._closed)
     {
-      logger.error('resume() | Consumer closed');
+      Logger.error(prefix, 'resume() | Consumer closed');
 
       return;
     }
@@ -291,7 +291,7 @@ export class Consumer extends EnhancedEventEmitter
 
   private _onTrackEnded(): void
   {
-    logger.debug('track "ended" event, %o, %s', this.id, this.kind);
+    Logger.debug(prefix, 'track "ended" event, %o, %s', this.id, this.kind);
 
     this.safeEmit('trackended');
 
@@ -306,7 +306,7 @@ export class Consumer extends EnhancedEventEmitter
 
   private _destroyTrack(): void
   {
-    logger.warn('don not stop receiver track')
+    Logger.warn(prefix, 'don not stop receiver track')
     return
     // try
     // {
