@@ -1954,11 +1954,6 @@ class Stream extends EventEmitter {
         if (this.mediaHelper && this.mediaHelper.cameraTrack){
           this.mediaHelper.cameraTrack.enabled = true;
         }
-        //@ts-ignore
-        await this._play.playVideoStream(this.mediaHelper.videoStream, this.videoView)
-        if ("width" in this.renderMode.remote.video){
-          this._play.setVideoRender(this.renderMode.remote.video)
-        }
       }
       this.client.apiFrequencyControl({
         name: 'unmuteVideo',
@@ -2010,7 +2005,6 @@ class Stream extends EventEmitter {
         if (this.mediaHelper && this.mediaHelper.cameraTrack){
           this.mediaHelper.cameraTrack.enabled = false;
         }
-        this._play.stopPlayVideoStream()
       }
       // this.client.adapterRef.instance.apiEventReport('setFunction', {
       //   name: 'set_mutevideo',
@@ -2074,11 +2068,6 @@ class Stream extends EventEmitter {
         if (this.mediaHelper && this.mediaHelper.screenTrack){
           this.mediaHelper.screenTrack.enabled = true;
         }
-        //@ts-ignore
-        await this._play.playScreenStream(this.mediaHelper.screenStream, this.screenView)
-        if ("width" in this.renderMode.remote.screen){
-          this._play.setScreenRender(this.renderMode.remote.screen)
-        }
       }
       this.client.apiFrequencyControl({
         name: 'unmuteScreen',
@@ -2129,7 +2118,6 @@ class Stream extends EventEmitter {
         if (this.mediaHelper && this.mediaHelper.screenTrack){
           this.mediaHelper.screenTrack.enabled = false;
         }
-        this._play.stopPlayScreenStream()
         this.muteStatus.screenRecv = true
       }
       this.client.apiFrequencyControl({
