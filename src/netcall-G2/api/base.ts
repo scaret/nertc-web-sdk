@@ -248,9 +248,10 @@ class Base extends EventEmitter {
     this.adapterRef.netStatusList = [];
     for (let uid in this.adapterRef.remoteStreamMap){
       const stream = this.adapterRef.remoteStreamMap[uid];
-      stream.destroy();
+      stream.active = false;
+      stream.stop();
+      stream.clearRemotePubStatus()
     }
-    this.adapterRef.remoteStreamMap = {}
     this.adapterRef.memberMap = {}
     this.adapterRef.uid2SscrList = {}
     if(this.adapterRef._mediasoup){
@@ -369,6 +370,7 @@ class Base extends EventEmitter {
         }
         this.adapterRef._mediasoup.destroyConsumer(remotStream.pubStatus.video.consumerId)
       }
+      remotStream.active = false;
       remotStream.destroy();
       delete this.adapterRef.remoteStreamMap[uid];
       delete this.adapterRef.memberMap[uid];
