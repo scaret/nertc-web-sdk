@@ -41,7 +41,7 @@ export type ProducerCodecOptions =
   videoGoogleMinBitrate?: number;
 }
 
-const logger = new Logger('Producer');
+const prefix = 'Producer';
 
 export class Producer extends EnhancedEventEmitter
 {
@@ -122,7 +122,7 @@ export class Producer extends EnhancedEventEmitter
   {
     super();
 
-    logger.debug('constructor()', localId);
+    Logger.debug(prefix, 'constructor()', localId);
 
     this._id = id;
     this._localId = localId;
@@ -261,7 +261,7 @@ export class Producer extends EnhancedEventEmitter
     if (this._closed)
       return;
 
-    logger.debug('close()');
+    Logger.debug(prefix, 'close()');
 
     this._closed = true;
 
@@ -282,7 +282,7 @@ export class Producer extends EnhancedEventEmitter
     if (this._closed)
       return;
 
-    logger.debug('transportClosed()');
+    Logger.debug(prefix, 'transportClosed()');
 
     this._closed = true;
 
@@ -310,11 +310,11 @@ export class Producer extends EnhancedEventEmitter
    */
   pause(): void
   {
-    logger.debug('pause()');
+    Logger.debug(prefix, 'pause()');
 
     if (this._closed)
     {
-      logger.error('pause() | Producer closed');
+      Logger.error(prefix, 'pause() | Producer closed');
 
       return;
     }
@@ -345,11 +345,11 @@ export class Producer extends EnhancedEventEmitter
    */
   resume(): void
   {
-    logger.debug('resume()');
+    Logger.debug(prefix, 'resume()');
 
     if (this._closed)
     {
-      logger.error('resume() | Producer closed');
+      Logger.error(prefix, 'resume() | Producer closed');
 
       return;
     }
@@ -380,7 +380,8 @@ export class Producer extends EnhancedEventEmitter
    */
   async replaceTrack({ track }: { track: MediaStreamTrack | null }): Promise<void>
   {
-    logger.debug('replaceTrack() [track:%o]', track);
+    // Logger.debug(prefix, 'replaceTrack() [track:%o]', track);
+    Logger.debug(prefix, 'replaceTrack()');
 
     if (this._closed)
     {
@@ -402,7 +403,7 @@ export class Producer extends EnhancedEventEmitter
     // Do nothing if this is the same track as the current handled one.
     if (track === this._track)
     {
-      logger.debug('replaceTrack() | same track, ignored');
+      Logger.debug(prefix, 'replaceTrack() | same track, ignored');
 
       return;
     }
@@ -469,7 +470,7 @@ export class Producer extends EnhancedEventEmitter
 
   private _onTrackEnded(): void
   {
-    logger.debug('track "ended" event');
+    Logger.debug(prefix, 'track "ended" event');
 
     this.safeEmit('trackended');
 
@@ -490,7 +491,7 @@ export class Producer extends EnhancedEventEmitter
     if (!this._track)
       return;
 
-    logger.warn('don not stop sender track')
+    Logger.warn(prefix, 'don not stop sender track')
     return
     // try
     // {

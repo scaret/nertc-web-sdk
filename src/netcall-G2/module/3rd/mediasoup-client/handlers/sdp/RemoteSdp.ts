@@ -18,7 +18,7 @@ import { SctpParameters } from '../../SctpParameters';
 import RtcError from '../../../../../util/error/rtcError';
 import ErrorCode  from '../../../../../util/error/errorCode';
 
-const logger = new Logger('RemoteSdp');
+const prefix = 'RemoteSdp';
 
 export class RemoteSdp
 {
@@ -118,7 +118,7 @@ export class RemoteSdp
 
   updateIceParameters(iceParameters: IceParameters): void
   {
-    logger.debug(
+    Logger.debug(prefix, 
       'updateIceParameters() [iceParameters:%o]',
       iceParameters);
 
@@ -133,7 +133,7 @@ export class RemoteSdp
 
   updateDtlsRole(role: DtlsRole): void
   {
-    logger.debug('updateDtlsRole() [role:%s]', role);
+    Logger.debug(prefix, 'updateDtlsRole() [role:%s]', role);
 
     this._dtlsParameters!.role = role;
 
@@ -316,7 +316,7 @@ export class RemoteSdp
     // bundled transport, so let's avoid it.
     if (mid === this._firstMid)
     {
-      logger.debug(
+      Logger.debug(prefix, 
         'closeMediaSection() | cannot close first media section, disabling it instead [mid:%s]',
         mid);
 
