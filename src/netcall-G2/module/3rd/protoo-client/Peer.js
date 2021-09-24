@@ -128,8 +128,10 @@ class Peer extends EnhancedEventEmitter
 	async request(method, data = undefined)
 	{
 		const request = Message.createRequest(method, data);
-
-		this._logger.debug('request() [method:%s, id:%s]', method, request.id);
+		if(method != 'Heartbeat') {
+			this._logger.debug('request() [method:%s, id:%s]', method, request.id);
+		}
+		
 
 		// This may throw.
 		await this._transport.send(request);

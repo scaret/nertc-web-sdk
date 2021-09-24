@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import { Logger } from './Logger';
 
-const logger = new Logger('EnhancedEventEmitter');
+const prefix = 'EnhancedEventEmitter';
 
 export class EnhancedEventEmitter extends EventEmitter
 {
@@ -21,7 +21,7 @@ export class EnhancedEventEmitter extends EventEmitter
     }
     catch (error)
     {
-      logger.error(
+      Logger.error(prefix, 
         'safeEmit() | event listener threw an error [event:%s]:%o',
         event, error);
 
@@ -39,7 +39,7 @@ export class EnhancedEventEmitter extends EventEmitter
       }
       catch (error)
       {
-        logger.error(
+        Logger.error(prefix, 
           'safeEmitAsPromise() | event listener threw an error [event:%s]:%o',
           event, error);
 
