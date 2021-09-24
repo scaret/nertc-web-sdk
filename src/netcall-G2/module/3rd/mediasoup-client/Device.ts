@@ -13,7 +13,7 @@ import { Safari12 } from './handlers/Safari12';
 import { RtpCapabilities, MediaKind } from './RtpParameters';
 import { SctpCapabilities } from './SctpParameters';
 
-const logger = new Logger('Device');
+const prefix = 'Device';
 
 export type BuiltinHandlerName =
   | 'Chrome74'
@@ -70,7 +70,7 @@ export function detectDevice(): BuiltinHandlerName | undefined
     // Unsupported browser.
     else
     {
-      logger.warn(
+      Logger.warn(prefix, 
         'this._detectDevice() | browser not supported [name:%s, version:%s], using Chrome72 as default',
         browser.getBrowserName(), browser.getBrowserVersion());
 
@@ -80,7 +80,7 @@ export function detectDevice(): BuiltinHandlerName | undefined
   // Unknown device.
   else
   {
-    logger.warn('this._detectDevice() | unknown device, using Chrome 72 as default');
+    Logger.warn(prefix, 'this._detectDevice() | unknown device, using Chrome 72 as default');
 
     return 'Chrome74';
   }
@@ -113,12 +113,12 @@ export class Device
    */
   constructor({ handlerName, handlerFactory, Handler }: DeviceOptions = {})
   {
-    logger.debug('constructor()');
+    Logger.debug(prefix, 'constructor()');
 
     // Handle deprecated option.
     if (Handler)
     {
-      logger.warn(
+      Logger.warn(prefix, 
         'constructor() | Handler option is DEPRECATED, use handlerName or handlerFactory instead');
 
       if (typeof Handler === 'string')
@@ -142,14 +142,14 @@ export class Device
     {
       if (handlerName)
       {
-        logger.debug('constructor() | handler given: %s', handlerName);
+        Logger.debug(prefix, 'constructor() | handler given: %s', handlerName);
       }
       else
       {
         handlerName = detectDevice();
 
         if (handlerName)
-          logger.debug('constructor() | detected handler: %s', handlerName);
+          Logger.debug(prefix, 'constructor() | detected handler: %s', handlerName);
         else
           throw new UnsupportedError('device not supported');
       }
@@ -246,7 +246,7 @@ export class Device
       { routerRtpCapabilities: RtpCapabilities }
   ): Promise<void>
   {
-    logger.debug('load() [routerRtpCapabilities:%o]', routerRtpCapabilities);
+    Logger.debug(prefix, 'load() [routerRtpCapabilities:%o]', routerRtpCapabilities);
 
     routerRtpCapabilities = utils.clone(routerRtpCapabilities, undefined);
 
@@ -265,7 +265,7 @@ export class Device
 
       const nativeRtpCapabilities = await handler.getNativeRtpCapabilities();
 
-      logger.debug(
+      Logger.debug(prefix, 
         'load() | got native RTP capabilities:%o', nativeRtpCapabilities);
 
       // This may throw.
@@ -275,7 +275,7 @@ export class Device
       this._extendedRtpCapabilities = ortc.getExtendedRtpCapabilities(
         nativeRtpCapabilities, routerRtpCapabilities);
 
-      logger.debug(
+      Logger.debug(prefix, 
         'load() | got extended RTP capabilities:%o',
         this._extendedRtpCapabilities);
 
@@ -292,20 +292,20 @@ export class Device
       // This may throw.
       ortc.validateRtpCapabilities(this._recvRtpCapabilities);
 
-      logger.debug(
+      Logger.debug(prefix, 
         'load() | got receiving RTP capabilities:%o',
         this._recvRtpCapabilities);
 
       // Generate our SCTP capabilities.
       this._sctpCapabilities = await handler.getNativeSctpCapabilities();
 
-      logger.debug(
+      Logger.debug(prefix, 
         'load() | got native SCTP capabilities:%o', this._sctpCapabilities);
 
       // This may throw.
       ortc.validateSctpCapabilities(this._sctpCapabilities);
 
-      logger.debug('load() succeeded');
+      Logger.debug(prefix, 'load() succeeded');
 
       this._loaded = true;
 
@@ -357,7 +357,7 @@ export class Device
     }: TransportOptions
   ): Transport
   {
-    logger.debug('createSendTransport()');
+    Logger.debug(prefix, 'createSendTransport()');
 
     return this._createTransport(
       {
@@ -396,7 +396,7 @@ export class Device
     }: TransportOptions
   ): Transport
   {
-    logger.debug('createRecvTransport()');
+    Logger.debug(prefix, 'createRecvTransport()');
 
     return this._createTransport(
       {
