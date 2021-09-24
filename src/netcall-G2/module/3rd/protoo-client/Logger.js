@@ -13,6 +13,7 @@ class Logger
 	{
 		var args = Array.prototype.slice.call(arguments);
 		this.formatArgs(args);
+		console.debug(args);
 		window.logStorage && window.logStorage.log('debug', args);
 	}
 
@@ -20,6 +21,7 @@ class Logger
 	{
 		var args = Array.prototype.slice.call(arguments);
 		this.formatArgs(args);
+		console.warn(args);
 		window.logStorage && window.logStorage.log('warn', args);
 	}
 
@@ -27,6 +29,7 @@ class Logger
 	{
 		var args = Array.prototype.slice.call(arguments);
 		this.formatArgs(args);
+		console.error(args);
 		window.logStorage && window.logStorage.log('error', args);
 	}
 

@@ -5,6 +5,7 @@ export const Logger = {
     const prefix = option ? `${APP_NAME}:${option}` : `${APP_NAME}`;
 		var args = Array.prototype.slice.call(arguments);
 		this.formatArgs(args, prefix);
+    console.debug(args);
 		(<any>window).logStorage && (<any>window).logStorage.log('debug', args);
 
   },
@@ -13,6 +14,7 @@ export const Logger = {
     const prefix = option ? `${APP_NAME}:${option}` : `${APP_NAME}`;
 		var args = Array.prototype.slice.call(arguments);
 		this.formatArgs(args, prefix);
+    console.warn(args);
 		(<any>window).logStorage && (<any>window).logStorage.log('warn', args);
 
 	},
@@ -21,6 +23,7 @@ export const Logger = {
     const prefix = option ? `${APP_NAME}:${option}` : `${APP_NAME}`;
 		var args = Array.prototype.slice.call(arguments);
 		this.formatArgs(args, prefix);
+    console.error(args);
 		(<any>window).logStorage && (<any>window).logStorage.log('error', args);
 
 	},
