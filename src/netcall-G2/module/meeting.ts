@@ -114,10 +114,11 @@ class Meeting extends EventEmitter {
       this.adapterRef.logger.log('获取到云代理服务相关信息:', JSON.stringify(data))
       if (data.code === 200) {
         this.adapterRef.channelStatus = 'join'
-        const { wsProxyArray, mediaProxyArray, mediaProxyToken, cname } = data
+        const { wsProxyArray, mediaProxyArray, mediaProxyToken, cname, curTime, uid } = data
         this.adapterRef.proxyServer.wsProxyArray = wsProxyArray
         this.adapterRef.proxyServer.mediaProxyArray = mediaProxyArray
         this.adapterRef.proxyServer.mediaProxyToken = mediaProxyToken
+        this.adapterRef.proxyServer.credential = uid + '/' + curTime
       } else {
         this.adapterRef.channelStatus = 'leave'
         this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
@@ -257,8 +258,8 @@ class Meeting extends EventEmitter {
           channelName,
           wssArr: wssArr || this.adapterRef.proxyServer.wsProxyArray || ips.webrtcarray || [], //优先启用云代理的地址
           // 中继使用 服务器返回以下2个字段则需要走中继
-          relayaddrs: ips.relayaddrs || null,
-          relaytoken: ips.relaytoken || null,
+          relayaddrs: this.adapterRef.proxyServer.mediaProxyArray || ips.relayaddrs || null,
+          relaytoken: this.adapterRef.proxyServer.mediaProxyToken || ips.relaytoken || null,
           wssArrIndex: 0,
           maxVideoQuality,
           netDetect: false,
@@ -270,8 +271,8 @@ class Meeting extends EventEmitter {
         })
         options.uid = options.uid ? options.uid : this.adapterRef.channelInfo.uid
         //优先启用云代理的地址
-        this.adapterRef.testConf.relayaddrs = this.adapterRef.proxyServer.mediaProxyArray || ips.relayaddrs
-        this.adapterRef.testConf.relaytoken = this.adapterRef.proxyServer.mediaProxyToken || ips.relaytoken
+        // this.adapterRef.channelInfo.relayaddrs = this.adapterRef.proxyServer.mediaProxyArray || ips.relayaddrs
+        // this.adapterRef.channelInfo.relaytoken = this.adapterRef.proxyServer.mediaProxyToken || ips.relaytoken
         
         this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.token = data.token
         this.adapterRef.channelInfo.T4 = Date.now()

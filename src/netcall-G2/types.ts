@@ -950,6 +950,7 @@ export interface ProxyServerOptions{
   wsProxyArray?: string[];
   mediaProxyArray?: string[];
   mediaProxyToken?: string;
+  credential?: string;
 }
 
 export interface MediaPriorityOptions{
