@@ -196,7 +196,7 @@ table th:nth-of-type(2) {
 通过 [[Client.on]] 和 [[Stream.on]] 方法监听 [[Client]] 和 [[Stream]] 方法触发的事件。
 
 
-## <span id="错误代码">错误代码</span>
+## <span id="errorCode">错误代码</span>
 以下为 SDK 可能抛出的错误，请参考下表进行处理
 
 错误代码| 值 | 描述
