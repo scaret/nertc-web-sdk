@@ -8,6 +8,7 @@ import {
 import RtcError from '../util/error/rtcError';
 import ErrorCode  from '../util/error/errorCode';
 import {getParameters} from "./parameters";
+import {getDomInfo} from "../util/util";
 
 class Play extends EventEmitter {
   private adapterRef:AdapterRef;
@@ -179,13 +180,15 @@ class Play extends EventEmitter {
         const width = this.videoDom.videoWidth;
         const height = this.videoDom.videoHeight
         
-        if (this.videoRenderMode.width && this.videoRenderMode.height
-          && (width !== this.videoSize.width || height !== this.videoSize.height)
-        ){
-          this.adapterRef.logger.log(`setVideoRender on resize：uid ${this.uid}, ${this.videoSize.width}x${this.videoSize.height} => ${width}x${height}`);
+        if (width !== this.videoSize.width || height !== this.videoSize.height){
+          this.adapterRef.logger.log(`uid ${this.uid} 主流视频分辨率发生变化：${this.videoSize.width}x${this.videoSize.height} => ${width}x${height}`);
+          if (width > height && this.videoSize.width > this.videoSize.height || width < height && this.videoSize.width < this.videoSize.height){
+            // 未改变视频方向
+          }else{
+            this.setVideoRender();
+          }
           this.videoSize.width = width;
           this.videoSize.height = height;
-          this.setVideoRender();
         }
       });
       if (getParameters()["controlOnPaused"]) {
@@ -295,6 +298,7 @@ class Play extends EventEmitter {
       this.adapterRef.logger.log('Play: _mountVideoToDom: videoContainerDom: ', this.videoContainerDom.outerHTML)
       if (this.videoView){
         this.videoView.appendChild(this.videoContainerDom)
+        this.adapterRef.logger.log(`uid ${this.uid} 视频dom节点挂载成功。父节点：${getDomInfo(this.videoView)}`)
         this._watermarkControl.start(this.videoContainerDom);
       }
     }
@@ -511,7 +515,6 @@ class Play extends EventEmitter {
 
   async playVideoStream(stream:MediaStream, view:HTMLElement) {
     if(!stream || !view) return
-    this.adapterRef.logger.log(`播放视频, id: ${stream.id}, active state: ${stream.active}`)
     if (this.videoDom && this.videoDom.srcObject === stream) {
       this.adapterRef.logger.log(`请勿重复 ${this.uid} 播放` )
       return
@@ -528,11 +531,16 @@ class Play extends EventEmitter {
       return
     }
     try {
+      const videoTrack = stream.getVideoTracks()[0];
+      this.adapterRef.logger.log(`uid ${this.uid} 开始加载主流播放视频源：视频参数 "${videoTrack.label}",enabled ${videoTrack.enabled} , ${JSON.stringify(videoTrack.getSettings())}`)
       this.videoDom.srcObject = stream
-      this.adapterRef.logger.log('播放 %o 的视频频, streamId: %o, stream状态: %o', this.uid, stream.id, stream.active)
-      
-      this.videoDom.play()
-      this.adapterRef.logger.log('播放 %s 的视频完成，当前播放状态: %o', this.uid, this.videoDom && this.videoDom.played && this.videoDom.played.length)
+      this.videoDom.play().then(()=>{
+        this.adapterRef.logger.log(`uid ${this.uid} 成功加载主流播放视频源：当前视频实际分辨率${this.videoDom?.videoWidth}x${this.videoDom?.videoHeight}，显示宽高${this.videoDom?.offsetWidth}x${this.videoDom?.offsetHeight}`)
+        if (this.videoDom?.paused && getParameters()["controlOnPaused"]){
+          //给微信的Workaround。微信会play()执行成功但不播放
+          this.showControlIfVideoPause();
+        }
+      })
     } catch (error) {
       this.adapterRef && this.adapterRef.logger.warn('播放 %s 的视频出现问题:', this.uid, error.name, error.message, error)
      
@@ -544,10 +552,6 @@ class Play extends EventEmitter {
           url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082'
         })
       }
-    }
-    if (this.videoDom.paused && getParameters()["controlOnPaused"]){
-      //给微信的Workaround。微信会play()执行成功但不播放
-      this.showControlIfVideoPause();
     }
   }
 
@@ -566,16 +570,18 @@ class Play extends EventEmitter {
       return
     }
     try {
+      const videoTrack = stream.getVideoTracks()[0];
+      this.adapterRef.logger.log(`开始加载辅流播放视频源：uid ${this.uid} 视频参数 "${videoTrack.label}",enabled ${videoTrack.enabled} , ${JSON.stringify(videoTrack.getSettings())}`)
       this.screenDom.srcObject = stream
-      this.adapterRef.logger.log('播放 %o 的辅流, streamId: %o, stream状态: %o', this.uid, stream.id, stream.active)
-      await this.screenDom.play()
-      this.adapterRef.logger.log('播放 %s 的辅流，当前播放状态: %o', this.uid, this.screenDom && this.screenDom.played && this.screenDom.played.length)
+      this.screenDom.play().then(()=>{
+        this.adapterRef.logger.log(`成功加载辅流播放视频源：uid ${this.uid} 当前视频实际分辨率${this.screenDom?.videoWidth}x${this.screenDom?.videoHeight}，显示宽高${this.screenDom?.offsetWidth}x${this.screenDom?.offsetHeight}`)
+        if (this.screenDom?.paused && getParameters()["controlOnPaused"]){
+          //给微信的Workaround。微信会play()执行成功但不播放
+          this.showControlIfVideoPause();
+        }
+      })
     } catch (e) {
       this.adapterRef && this.adapterRef.logger.warn('播放 %s 的辅流出现问题: ', this.uid, e.name, e.message, e)
-    }
-    if (this.screenDom.paused && getParameters()["controlOnPaused"]){
-      //给微信的Workaround。微信会play()执行成功但不播放
-      this.showControlIfVideoPause();
     }
   }
 
@@ -637,11 +643,11 @@ class Play extends EventEmitter {
   setVideoRender(options?: RenderMode) {
     if(!this.videoDom) return
     if (options){
-      this.adapterRef.logger.log('setVideoRender: uid %s, options: %s', this.uid, JSON.stringify(options))
+      this.adapterRef.logger.log(`uid ${this.uid} setVideoRender options: ${JSON.stringify(options)}`)
       this.videoRenderMode = Object.assign({}, options);
     }else{
       options = this.videoRenderMode
-      this.adapterRef.logger.log(`setVideoRender: uid ${this.uid}, existing videoRenderMode: ${JSON.stringify(options)}`)
+      this.adapterRef.logger.log(`uid ${this.uid} setVideoRender: existing videoRenderMode: ${JSON.stringify(options)}`)
     }
     // 设置外部容器
     if (this.videoContainerDom) {

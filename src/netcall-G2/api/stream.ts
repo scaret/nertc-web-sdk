@@ -803,7 +803,7 @@ class Stream extends EventEmitter {
       playOptions.screen = true;
     }
     
-    this.client.adapterRef.logger.log(`音视频播放, uid: ${this.stringStreamID}, playOptions: `, JSON.stringify(playOptions))
+    this.client.adapterRef.logger.log(`uid ${this.stringStreamID} Stream.play::`, JSON.stringify(playOptions))
     if (this.isRemote){
       if(playOptions.audio && this._play && this.mediaHelper && this.mediaHelper.audioStream){
         this.client.adapterRef.logger.log('开始播放远端音频: ', this.stringStreamID)
@@ -846,7 +846,7 @@ class Stream extends EventEmitter {
       if (playOptions.video){
         this.videoView = view;
         if(this._play && this.mediaHelper && this.mediaHelper.videoStream && this.mediaHelper.videoStream.getVideoTracks().length){
-          this.client.adapterRef.logger.log('开始播放视频: ', this.stringStreamID)
+          this.client.adapterRef.logger.log(`uid ${this.stringStreamID} 开始启动视频播放 主流 ${this.isRemote ? "远端": "本地"}`);
           try{
             //@ts-ignore
             await this._play.playVideoStream(this.mediaHelper.videoStream, view)
@@ -962,7 +962,7 @@ class Stream extends EventEmitter {
       })
       return 'INVALID_ARGUMENTS'
     }
-    this.client.adapterRef.logger.log('设置本地视频播放窗口大小: ', JSON.stringify(options, null, ' '), mediaType)
+    this.client.adapterRef.logger.log(`uid ${this.stringStreamID} 设置本地视频播放窗口大小: `, mediaType || "video+screen", JSON.stringify(options))
     // mediaType不填则都设
     if (!mediaType || mediaType === "video"){
       if (this._play){
@@ -1005,7 +1005,7 @@ class Stream extends EventEmitter {
     if (!this.client || !this._play) {
       return
     } 
-    this.client.adapterRef.logger.log('设对端视频播放窗口大小: ', JSON.stringify(options))
+    this.client.adapterRef.logger.log(`uid ${this.stringStreamID} 设置远端视频播放窗口大小: `, mediaType || "video+screen", JSON.stringify(options))
     // mediaType不填则都设
     if (!mediaType || mediaType === "video"){
       if (this._play){

@@ -1,5 +1,5 @@
 
-const deepCopy = (param: Object)=>{
+export function deepCopy(param: Object){
    var result = Array.isArray(param) ? [] : {};
     for (var key in param) {
       if (param.hasOwnProperty(key)) {
@@ -16,6 +16,16 @@ const deepCopy = (param: Object)=>{
     return result;
 }
 
-export {
-  deepCopy
+export function getDomInfo(elem: HTMLElement){
+  let info = elem.tagName;
+  if (elem.id){
+    info += "#" + elem.id;
+  }
+  if (elem.className){
+    info += "." + elem.className
+  }
+  if (elem.offsetWidth || elem.offsetHeight){
+    info += ` ${elem.offsetWidth}x${elem.offsetHeight}`
+  }
+  return info;
 }
