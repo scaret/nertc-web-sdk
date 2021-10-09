@@ -14,6 +14,7 @@ import {emptyStreamWith} from "../util/gum";
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
 import {Stream} from "../api/stream";
+import {getParameters} from "./parameters";
 class MediaHelper extends EventEmitter {
   private adapterRef: AdapterRef;
   private isLocal:boolean;
@@ -637,6 +638,10 @@ class MediaHelper extends EventEmitter {
     const tracks = stream.getTracks()
     if (!tracks || tracks.length === 0) return
     tracks.forEach(track => {
+      const globalTrackId = getParameters().mediaTracks.findIndex((mediaTrack)=>{
+        return track === mediaTrack;
+      })
+      this.adapterRef.logger.log(`Stopping track TRACK#${globalTrackId} ${track.id}, ${track.label}, ${track.readyState}`);
       track.stop()
       stream.removeTrack(track);
       if (this.micTrack === track){
