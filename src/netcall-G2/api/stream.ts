@@ -1134,6 +1134,23 @@ class Stream extends EventEmitter {
       switch(type) {
         case 'audio': 
           this.client.adapterRef.logger.log('开启mic设备')
+          if (this.mediaHelper.micTrack){
+            this.client.adapterRef.logger.warn('请先关闭麦克风')
+            this.client.apiFrequencyControl({
+              name: 'open',
+              code: -1,
+              param: JSON.stringify({
+                reason: '请先关闭麦克风',
+                type
+              }, null, ' ')
+            })
+            return Promise.reject(
+              new RtcError({
+                code: ErrorCode.INVALID_OPERATION,
+                message: 'please close mic first'
+              })
+            )
+          }
           this.audio = true
           if(this.mediaHelper){
             if (this.mediaHelper.webAudio){
@@ -1163,7 +1180,7 @@ class Stream extends EventEmitter {
           this.client.adapterRef.logger.log(`开启${type === 'video' ? 'camera' : 'screen'}设备`)
           if (this[type]) {
             if (type === "video"){
-              this.client.adapterRef.logger.log('请先关闭摄像头')
+              this.client.adapterRef.logger.warn('请先关闭摄像头')
               this.client.apiFrequencyControl({
                 name: 'open',
                 code: -1,
@@ -1179,7 +1196,7 @@ class Stream extends EventEmitter {
                 })
               )
             }else{
-              this.client.adapterRef.logger.log('请先关闭屏幕共享')
+              this.client.adapterRef.logger.warn('请先关闭屏幕共享')
               this.client.apiFrequencyControl({
                 name: 'open',
                 code: -1,
@@ -1195,6 +1212,23 @@ class Stream extends EventEmitter {
                 })
               )
             }
+          }
+          if (options.screenAudio && this.mediaHelper.screenAudioTrack){
+            this.client.adapterRef.logger.warn('请先关闭屏幕共享音频')
+            this.client.apiFrequencyControl({
+              name: 'open',
+              code: -1,
+              param: JSON.stringify({
+                reason: '请先关闭屏幕共享音频',
+                type
+              }, null, ' ')
+            })
+            return Promise.reject(
+              new RtcError({
+                code: ErrorCode.INVALID_OPERATION,
+                message: 'please close screenAudio first'
+              })
+            )
           }
           this[type] = true
           const constraint:any = {

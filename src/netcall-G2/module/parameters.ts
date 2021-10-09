@@ -4,11 +4,13 @@ import {Client} from "../api/client";
 import {Stream} from "../api/stream";
 
 interface IParameters{
+  mediaTracks: MediaStreamTrack[],
   clients: Client[];
   localStreams: Stream[],
 }
 
 let parameters:IParameters = {
+  mediaTracks: [],
   clients: [],
   localStreams: []
 }
