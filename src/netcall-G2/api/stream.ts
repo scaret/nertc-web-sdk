@@ -1492,7 +1492,7 @@ class Stream extends EventEmitter {
       if (!this.isRemote) {
         if (!this.client.adapterRef._mediasoup){
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASOUP,
+            code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 15'
           })
         }
@@ -1567,7 +1567,7 @@ class Stream extends EventEmitter {
       if (!this.isRemote) {
         if (!this.client.adapterRef._mediasoup){
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASOUP,
+            code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 16'
           })
         }
@@ -1953,7 +1953,7 @@ class Stream extends EventEmitter {
       if (!this.isRemote) {
         if (!this.client.adapterRef._mediasoup){
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASOUP,
+            code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 17'
           })
         }
@@ -2016,7 +2016,7 @@ class Stream extends EventEmitter {
       if (!this.isRemote) {
         if (!this.client.adapterRef._mediasoup){
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASOUP,
+            code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 18'
           })
         }
@@ -2074,7 +2074,7 @@ class Stream extends EventEmitter {
       if (!this.isRemote) {
         if (!this.client.adapterRef._mediasoup){
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASOUP,
+            code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 19'
           })
         }
@@ -2136,7 +2136,7 @@ class Stream extends EventEmitter {
       if (!this.isRemote) {
         if (!this.client.adapterRef._mediasoup){
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASOUP,
+            code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 20'
           })
         }
