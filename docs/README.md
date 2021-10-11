@@ -207,7 +207,7 @@ NO_SERVER_ADDRESS | 41002 | 没有找到服务器地址
 SOCKET_ERROR | 41003 | 服务器地址连接失败
 NO_SIGNALLING | 41004 | 找不到信令
 NO_STATS | 41005 | 找不到 stats 数据
-NO_MEDIASOUP | 41006 | 找不到 mediasoup 数据
+NO_MEDIASERVER | 41006 | 找不到 media server 数据
 NO_MEETINGS | 41007 | 找不到 meetings 数据
 NO_LOCALSTREAM | 41008 | 找不到 localStream 数据
 INVALID_OPERATION | 41009 | 非法操作，可以通过 console 日志查看原因 

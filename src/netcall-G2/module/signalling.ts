@@ -371,7 +371,7 @@ class Signalling extends EventEmitter {
 
         if (!this.adapterRef._mediasoup){
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASOUP,
+            code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 22'
           })
         }
@@ -462,7 +462,7 @@ class Signalling extends EventEmitter {
             code, errMsg, transportId);
           if (!this.adapterRef._mediasoup){
             throw new RtcError({
-              code: ErrorCode.NO_MEDIASOUP,
+              code: ErrorCode.NO_MEDIASERVER,
               message: 'media server error 23'
             })
           }
@@ -485,7 +485,7 @@ class Signalling extends EventEmitter {
             code, errMsg, consumerId, producerId);
           if (!this.adapterRef._mediasoup){
             throw new RtcError({
-              code: ErrorCode.NO_MEDIASOUP,
+              code: ErrorCode.NO_MEDIASERVER,
               message: 'media server error 24'
             })
           }
@@ -703,7 +703,7 @@ class Signalling extends EventEmitter {
         this.adapterRef.instance.resetChannel()
         if (!this.adapterRef._mediasoup){
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASOUP,
+            code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 25'
           })
         }
@@ -734,7 +734,7 @@ class Signalling extends EventEmitter {
         })
         if (!this.adapterRef._mediasoup){
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASOUP,
+            code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 26'
           })
         }

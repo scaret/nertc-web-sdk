@@ -338,7 +338,7 @@ class Client extends Base {
     try {
       if (!this.adapterRef._mediasoup){
         throw new RtcError({
-          code: ErrorCode.NO_MEDIASOUP,
+          code: ErrorCode.NO_MEDIASERVER,
           message: 'media server error 4'
         })
       }
@@ -412,7 +412,7 @@ class Client extends Base {
     try {
       if (!this.adapterRef._mediasoup){
         throw new RtcError({
-          code: ErrorCode.NO_MEDIASOUP,
+          code: ErrorCode.NO_MEDIASERVER,
           message: 'media server error 5'
         })
       }
@@ -478,7 +478,7 @@ class Client extends Base {
     }
     if (!this.adapterRef._mediasoup) {
       throw new RtcError({
-        code: ErrorCode.NO_MEDIASOUP,
+        code: ErrorCode.NO_MEDIASERVER,
         message: 'media server error 6'
       })
     }
@@ -501,7 +501,7 @@ class Client extends Base {
           stream.pubStatus.audio.stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup){
             throw new RtcError({
-              code: ErrorCode.NO_MEDIASOUP,
+              code: ErrorCode.NO_MEDIASERVER,
               message: 'media server error 7'
             })
           }
@@ -548,7 +548,7 @@ class Client extends Base {
           stream.pubStatus.video.stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup){
             throw new RtcError({
-              code: ErrorCode.NO_MEDIASOUP,
+              code: ErrorCode.NO_MEDIASERVER,
               message: 'media server error 8'
             })
           }
@@ -590,7 +590,7 @@ class Client extends Base {
           stream.pubStatus.screen.stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup){
             throw new RtcError({
-              code: ErrorCode.NO_MEDIASOUP,
+              code: ErrorCode.NO_MEDIASERVER,
               message: 'media server error 9'
             })
           }
@@ -678,7 +678,7 @@ class Client extends Base {
         stream.pubStatus.audio.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup){
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASOUP,
+            code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 10'
           })
         }
@@ -705,7 +705,7 @@ class Client extends Base {
         stream.pubStatus.video.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup){
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASOUP,
+            code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 11'
           })
         }
@@ -733,7 +733,7 @@ class Client extends Base {
         stream.pubStatus.screen.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup){
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASOUP,
+            code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 12'
           })
         }
@@ -811,7 +811,7 @@ class Client extends Base {
     try {
       if (!this.adapterRef._mediasoup){
         throw new RtcError({
-          code: ErrorCode.NO_MEDIASOUP,
+          code: ErrorCode.NO_MEDIASERVER,
           message: 'media server error 13'
         })
       }
@@ -928,7 +928,7 @@ class Client extends Base {
             }
             if (!this.adapterRef._mediasoup){
               throw new RtcError({
-                code: ErrorCode.NO_MEDIASOUP,
+                code: ErrorCode.NO_MEDIASERVER,
                 message: 'media server error 14'
               })
             }
