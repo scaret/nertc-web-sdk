@@ -10,7 +10,7 @@ import { NETWORK_STATUS } from '../netcall-G2/constant/networkStatus';
 import { checkExists, checkValidInteger } from "../netcall-G2/util/param";
 import { getSupportedCodecs } from "../netcall-G2/util/rtcUtil/codec";
 import { detectDevice } from "../netcall-G2/module/3rd/mediasoup-client";
-import log from '../netcall-G2/util/log/logger';
+import log, {loglevels} from '../netcall-G2/util/log/logger';
 import RtcError from '../netcall-G2/util/error/rtcError';
 import ErrorCode from '../netcall-G2/util/error/errorCode';
 import {getParameters, setParameters} from "../netcall-G2/module/parameters";
@@ -41,51 +41,20 @@ let client:Client|null;
 const NERTC = {
 
   Logger: {
-    /**
-     * 日志输出等级
-     * @readonly
-     * @enum {number}
-     */
-    // LogLevel: {
-    //   /**
-    //    * 输出所有日志
-    //    */
-    //   TRACE: 0,
-    //   /**
-    //    * 输出 DEBUG、INFO、WARN、ERROR 等级日志
-    //    */
-    //   DEBUG: 1,
-    //   /**
-    //    * 输出 INFO、WARN、ERROR 等级日志
-    //    */
-    //   INFO: 2,
-    //   /**
-    //    * 输出 WARN、ERROR 等级日志
-    //    */
-    //   WARN: 3,
-    //   /**
-    //    * 输出 ERROR 等级日志
-    //    */
-    //   ERROR: 4,
-    //   /**
-    //    * 不输出任何日志
-    //    */
-    //   NONE: 5
-    // },
+    
+    DEBUG: 0,
+    
+    INFO: 1,
 
-    /**
-     * 设置日志输出等级
-     * <br>
-     * 默认输出 INFO 日志等级，该日志等级包含 SDK 关键路径信息。
-     *
-     * @param {LogLevel} level 日志输出等级 {@link NERTC.Logger.LogLevel LogLevel}
-     * @example
-     * // 输出INFO以上日志等级
-     * NERTC.Logger.setLogLevel(NERTC.Logger.LogLevel.INFO);
-     */
-    // setLogLevel(level:number) {
-    //   log.setLogLevel(level);
-    // },
+    WARNING: 2,
+    
+    ERROR: 3,
+    
+    NONE: 4,
+    
+    setLogLevel(level:loglevels) {
+      log.setLogLevel(level);
+    },
 
     /**
      * 打开日志上传

@@ -562,6 +562,16 @@
             <button type="button" id="disconnectWS">断开WebSocket</button>
             <button type="button" id="toggleVConsole">打开vconsole</button>
           </div>
+          <div class="line">
+            <select style="width: 33%" id="loglevel">
+              <option value="DEBUG" selected>DEBUG</option>
+              <option value="INFO">INFO</option>
+              <option value="WARN">WARN</option>
+              <option value="ERROR">ERROR</option>
+              <option value="NONE">NONE</option>
+            </select>
+            <button id="setLogLevel">设置日志级别</button>
+          </div>
         </div>
 
         <p class="block-header">远端音量</p>

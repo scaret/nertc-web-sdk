@@ -35,6 +35,69 @@ declare namespace NERTC {
      * @since V4.4.0
      */
     function disableLogUpload(): void;
+    
+    /**
+     * 日志级别。
+     * 见[[NERTC.Logger.setLogLevel]]
+     */
+    enum loglevels {
+      DEBUG = 0,
+      INFO = 1,
+      WARNING = 2,
+      ERROR = 3,
+      NONE = 4,
+    }
+
+    /**
+     * 设置日志级别。日志级别由低至高为:
+     * * DEBUG
+     * * INFO （默认）
+     * * WARNING
+     * * ERROR
+     * * NONE
+     *
+     * 
+     * @example
+     * ```javascript
+     *  // 查看更多日志
+     *  NERTC.Logger.setLogLevel(NERTC.Logger.DEBUG)
+     *  rtc.client = NERTC.createClient({appkey: "<您的appkey>", debug: true});
+     * ```
+     *
+     * @since V4.6.0
+     */
+    function setLogLevel(loglevel: loglevels): void;
+
+    /**
+     * 日志级别。
+     * 见[[NERTC.Logger.setLogLevel]]
+     */
+    const DEBUG: loglevels.DEBUG;
+
+    /**
+     * 日志级别。
+     * 见[[NERTC.Logger.setLogLevel]]
+     */
+    const INFO: loglevels.INFO;
+
+    /**
+     * 日志级别。
+     * 见[[NERTC.Logger.setLogLevel]]
+     */
+    const WARNING: loglevels.WARNING;
+    
+    /**
+     * 日志级别。
+     * 见[[NERTC.Logger.setLogLevel]]
+     */
+    const ERROR: loglevels.ERROR;
+    
+    /**
+     * 日志级别。
+     * 见[[NERTC.Logger.setLogLevel]]
+     */
+    const NONE: loglevels.NONE;
+
 
   }
   /**
