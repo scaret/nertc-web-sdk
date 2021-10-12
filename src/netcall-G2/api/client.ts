@@ -1197,7 +1197,7 @@ class Client extends Base {
         })
       );
     }
-    this.adapterRef.logger.log('增加互动直播推流任务, options: ', options)
+    this.adapterRef.logger.log('增加互动直播推流任务, options: ', JSON.stringify(options))
     if (!this.adapterRef._meetings){
       throw new RtcError({
         code: ErrorCode.NO_MEETINGS,

@@ -295,13 +295,13 @@ export class Safari12 extends HandlerInterface
       reduceCodecs(sendingRtpParameters.codecs, codec);
     let transceiver:any = {};
     if (appData.mediaType === 'audio' && this._pc.audioSender) {
-      Logger.warn(prefix, 'audioSender更新track: ', this._pc.audioSender)
+      Logger.warn(prefix, 'audioSender更新track: ', this._pc.audioSender.track, "=>", track)
       this._pc.audioSender.replaceTrack(track)
     } else if (appData.mediaType === 'video' && this._pc.videoSender) {
-      Logger.warn(prefix, 'videoSender更新track: ', this._pc.videoSender)
+      Logger.warn(prefix, 'videoSender更新track: ', this._pc.videoSender.track, "=>", track)
       this._pc.videoSender.replaceTrack(track)
     } else if (appData.mediaType === 'screenShare' && this._pc.screenSender) {
-      Logger.warn(prefix, 'screenSender更新track: ', this._pc.screenSender)
+      Logger.warn(prefix, 'screenSender更新track: ', this._pc.screenSender.track, "=>", track)
       this._pc.screenSender.replaceTrack(track)
     } else {
       let stream = new MediaStream();
