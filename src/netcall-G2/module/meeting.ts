@@ -246,7 +246,7 @@ class Meeting extends EventEmitter {
     for (let i=0; i < rtmpTasks.length; i++) {
       rtmpTasks[i].hostUid = requestUid
       rtmpTasks[i].version = 1
-      this.adapterRef.logger.log('rtmpTask: ', rtmpTasks[i])
+      this.adapterRef.logger.log('rtmpTask: ', JSON.stringify(rtmpTasks[i]))
       const layout = rtmpTasks[i].layout
       layout.users.forEach(user=>{
         if (typeof user.uid === 'string') {
