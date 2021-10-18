@@ -15,6 +15,7 @@ import {
 import {platform} from "../../util/platform";
 import RtcError from '../../util/error/rtcError';
 import ErrorCode  from '../../util/error/errorCode';
+import * as env from '../../util/rtcUtil/rtcEnvironment';
 
 let url = 'https://statistic.live.126.net/statistic/realtime/sdkinfo'
 type UIDTYPE = number | string;
@@ -362,7 +363,13 @@ class FormativeStatsReport {
     }
     for (let i in data) {
       //let uid = parseInt(i.split('_')[3] || "");
-      let uid = i.split('_')[3] || ""
+      let uid;
+      if(env.IS_SAFARI){
+        uid = i.split('_')[5] || ""
+      }else {
+        uid = i.split('_')[3] || ""
+      }
+      
       if (uid === '0'){
         // send
         //uid = parseInt(i.split('_')[1] || "");
