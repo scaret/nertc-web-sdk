@@ -497,7 +497,14 @@ class FormativeStatsReport {
         currentData.recv.audio.nextLost = data[i].packetsLost
         currentData.recv.audio.nextPacket = data[i].packetsReceived
         downAudioList.push(data[i])
-        const audioLevel = data[i].audioOutputLevel || data[i].audioLevel //safari浏览器 audioLevel的值是 0-1 (https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-audiolevel)
+        let audioLevel:number = 0;
+        if (data[i].audioOutputLevel >= 0){
+          // Chrome， 0-32767
+          audioLevel = data[i].audioOutputLevel;
+        }else if (data[i].audioLevel >= 0){
+          // Safari， 0-1，正好与Chrome呈线性关系
+          audioLevel = Math.floor(data[i].audioLevel * 32768);
+        }
         this._audioLevel.push({
           uid,
           level: +audioLevel || 0,
