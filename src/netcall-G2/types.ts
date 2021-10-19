@@ -747,6 +747,7 @@ export interface Client{
   adapterRef: AdapterRef;
   apiFrequencyControl: (event:any)=>void;
   emit:(eventName: string, eventData?:any)=>void
+  safeEmit:(eventName: string, eventData?:any)=>void
   _roleInfo: {
     userRole: number;
     audienceList: {[uid in UIDTYPE]: boolean}

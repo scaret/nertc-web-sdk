@@ -20,6 +20,7 @@ import {Encryption} from "../module/encryption";
 import { logController } from "../util/log/upload";
 import RtcError from '../util/error/rtcError';
 import ErrorCode  from '../util/error/errorCode';
+import {getParameters} from "../module/parameters";
 
 /**
  * 基础框架
@@ -35,6 +36,7 @@ class Base extends EventEmitter {
   public adapterRef:AdapterRef;
   private sdkRef: any;
   public logStorage: any;
+  public transportRebuildCnt: number = 0;
   constructor(options:ClientOptions) {
     super();
     this._params = {
@@ -389,7 +391,7 @@ class Base extends EventEmitter {
     if (this.adapterRef._enableRts) {
       this.adapterRef.instance.emit('rts-peer-leave', {uid});
     } else {
-      this.adapterRef.instance.emit('peer-leave', {uid});
+      this.adapterRef.instance.safeEmit('peer-leave', {uid});
     }
   }
 
@@ -417,7 +419,12 @@ class Base extends EventEmitter {
 
   //重新建立下行连接
   async reBuildRecvTransport() {
-    this.adapterRef.logger.warn('下行通道异常，重新建立')
+    this.transportRebuildCnt++;
+    if (this.transportRebuildCnt >= getParameters().maxTransportRebuildCnt){
+      this.adapterRef.logger.error(`reBuildRecvTransport 达到最大重连次数：${this.transportRebuildCnt}`)
+      return;
+    }
+    this.adapterRef.logger.warn(`下行通道异常，重新建立 #${this.transportRebuildCnt}`)
     if (!this.adapterRef._mediasoup){
       throw new RtcError({
         code: ErrorCode.NO_MEDIASERVER,

@@ -22,6 +22,9 @@ interface IParameters{
 
   // 恢复播放时，是否隐藏video控件的默认控制选项
   hideControlOnResume: boolean,
+  
+  // 最大PeerConnection重连次数
+  maxTransportRebuildCnt: number,
 }
 
 let parameters:IParameters = {
@@ -32,6 +35,7 @@ let parameters:IParameters = {
   screenLowDefaultConstraints: {width: 160},
   controlOnPaused: true,
   hideControlOnResume: true,
+  maxTransportRebuildCnt: 50,
 }
 
 // 注意：getParameters和setParameters是一些私有全局变量，仅用于调试和私有接口，不用于正常业务
