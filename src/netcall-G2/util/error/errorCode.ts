@@ -38,7 +38,7 @@ const ErrorCode = {
      * 找不到 mediasoup 数据
      *
      */
-    NO_MEDIASOUP: 41006,
+    NO_MEDIASERVER: 41006,
     /*
      * 找不到 meetings 数据
      *

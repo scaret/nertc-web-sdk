@@ -531,7 +531,13 @@ class Play extends EventEmitter {
       this.videoDom.srcObject = stream
       this.adapterRef.logger.log('播放 %o 的视频频, streamId: %o, stream状态: %o', this.uid, stream.id, stream.active)
       
-      this.videoDom.play()
+      this.videoDom.play().catch((e)=>{
+        if (e.name === "AbortError"){
+          // The play() request was interrupted by a new load request. https://goo.gl/LdLk22
+        }else{
+          console.error(e);
+        }
+      })
       this.adapterRef.logger.log('播放 %s 的视频完成，当前播放状态: %o', this.uid, this.videoDom && this.videoDom.played && this.videoDom.played.length)
     } catch (error) {
       this.adapterRef && this.adapterRef.logger.warn('播放 %s 的视频出现问题:', this.uid, error.name, error.message, error)

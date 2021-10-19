@@ -5,6 +5,7 @@ import {Stream} from "../api/stream";
 
 interface IParameters{
   
+  mediaTracks: MediaStreamTrack[],
   // 储存了通过createClient创建的客户端
   clients: Client[];
   
@@ -24,6 +25,7 @@ interface IParameters{
 }
 
 let parameters:IParameters = {
+  mediaTracks: [],
   clients: [],
   localStreams: [],
   videoLowDefaultConstraints: {width: 160},

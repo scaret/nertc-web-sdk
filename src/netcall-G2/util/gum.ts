@@ -1,4 +1,5 @@
 import {Logger} from "../types";
+import {getParameters} from "../module/parameters";
 
 async function getStream (constraint:MediaStreamConstraints, logger:Logger = console) {
     
@@ -8,7 +9,8 @@ async function getStream (constraint:MediaStreamConstraints, logger:Logger = con
     logger.log('获取到媒体流: ', stream.id)
     const tracks = stream.getTracks();
     tracks.forEach((track)=>{
-      logger.log('获取到的设备类型: ', track.kind, track.label, track.id, JSON.stringify(track.getSettings()))
+      getParameters().mediaTracks.push(track);
+      logger.log(`获取到的设备类型: TRACK#${getParameters().mediaTracks.length - 1}`, track.kind, track.label, track.id, JSON.stringify(track.getSettings()))
     });
     return stream
   } catch(e) {
@@ -27,6 +29,11 @@ function getScreenStream (constraint:MediaStreamConstraints, logger:Logger = con
   const p = navigator.mediaDevices.getDisplayMedia(constraint);
   p.then((stream:MediaStream)=>{
     logger.log('获取到屏幕共享流: ', stream.id)
+    const tracks = stream.getTracks();
+    tracks.forEach((track)=>{
+      getParameters().mediaTracks.push(track);
+      logger.log(`获取到的屏幕共享设备类型: TRACK#${getParameters().mediaTracks.length - 1}`, track.kind, track.label, track.id, JSON.stringify(track.getSettings()))
+    });
     return Promise.resolve(stream)
   }).catch((e:DOMException)=>{
     logger.error('屏幕共享获取失败: ', e.name, e.message)

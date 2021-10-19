@@ -395,9 +395,15 @@ class WebAudio extends EventEmitter{
    */
 
   resetMixConf() {
+    this.mixAudioConf.audioSource?.disconnect(0)
+    this.mixAudioConf.gainFilter?.disconnect(0)
     if (this.mixAudioConf.replace) {
       this.logger.log('伴音停止了，恢复mic')
       if (this.gainFilter && this.destination){
+        for (var i = 0; i < this.audioInArr.length; i++){
+          const audioIn = this.audioInArr[i];
+          audioIn.gainNode.connect(this.gainFilter)
+        }
         if (this.script && this.analyzeDestination) {
           this.gainFilter.connect(this.script)
           this.script.connect(this.analyzeDestination)
@@ -452,8 +458,11 @@ class WebAudio extends EventEmitter{
       this.mixAudioConf.gainFilter.connect(this.musicDestination)
     }
     if (options.replace) {
-      this.gainFilter.disconnect(0)
-      this.instant = 0.0
+      // 将audioIn全部断开
+      for (var i = 0; i < this.audioInArr.length; i++){
+        const audioIn = this.audioInArr[i];
+        audioIn.gainNode.disconnect(this.gainFilter)
+      }
     }
     this.mixAudioConf.audioSource.onended = event => {
       this.audioEnd(event)
