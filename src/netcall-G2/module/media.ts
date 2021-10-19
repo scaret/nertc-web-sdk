@@ -912,20 +912,20 @@ class MediaHelper extends EventEmitter {
       if (track === this.micTrack || track === this.audioSource){
         //停止的原因可能是设备拔出、取消授权等
         this.adapterRef.logger.warn('音频轨道已停止')
-        this.adapterRef.instance.emit('audioTrackEnded')
+        this.adapterRef.instance.safeEmit('audioTrackEnded')
       }
       if (track === this.cameraTrack){
         //停止的原因可能是设备拔出、取消授权等
         this.adapterRef.logger.warn('视频轨道已停止')
-        this.adapterRef.instance.emit('videoTrackEnded')
+        this.adapterRef.instance.safeEmit('videoTrackEnded')
       }
       if (track === this.screenTrack){
         this.adapterRef.logger.warn('屏幕共享已停止')
-        this.adapterRef.instance.emit('stopScreenSharing')
+        this.adapterRef.instance.safeEmit('stopScreenSharing')
       }
       if (track === this.screenAudioTrack){
         this.adapterRef.logger.warn('屏幕共享音频已停止')
-        this.adapterRef.instance.emit('stopScreenAudio')
+        this.adapterRef.instance.safeEmit('stopScreenAudio')
       }
     });
   }

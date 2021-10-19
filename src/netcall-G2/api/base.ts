@@ -389,7 +389,7 @@ class Base extends EventEmitter {
     if (this.adapterRef._enableRts) {
       this.adapterRef.instance.emit('rts-peer-leave', {uid});
     } else {
-      this.adapterRef.instance.emit('peer-leave', {uid});
+      this.adapterRef.instance.safeEmit('peer-leave', {uid});
     }
   }
 

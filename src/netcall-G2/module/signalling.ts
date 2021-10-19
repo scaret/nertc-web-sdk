@@ -127,7 +127,7 @@ class Signalling extends EventEmitter {
     if (this._reconnectionTimer) return
     this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
     this.adapterRef.connectState.curState = 'CONNECTING'
-    this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
+    this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
     this._unbindEvent()
     if (this._protoo) {
       await this._protoo.close()
@@ -246,7 +246,7 @@ class Signalling extends EventEmitter {
           this.adapterRef.memberMap[uid] = uid;
         }
         this.adapterRef.instance._roleInfo.audienceList[uid] = false;
-        this.adapterRef.instance.emit('peer-online', {uid})
+        this.adapterRef.instance.safeEmit('peer-online', {uid})
         break
       }
       case 'OnPeerLeave': {
@@ -330,10 +330,10 @@ class Signalling extends EventEmitter {
         if (this.adapterRef._enableRts && this.adapterRef._rtsTransport) {
           this.adapterRef.instance.emit('rts-stream-added', {stream: remoteStream, kind: mediaType})
         } else {
-          this.adapterRef.instance.emit('stream-added', {stream: remoteStream, 'mediaType': mediaTypeShort})
+          this.adapterRef.instance.safeEmit('stream-added', {stream: remoteStream, 'mediaType': mediaTypeShort})
         }
         if (mute) {
-          this.adapterRef.instance.emit(`mute-${mediaTypeShort}`, {uid})
+          this.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {uid})
         }
         break
       }
@@ -433,7 +433,7 @@ class Signalling extends EventEmitter {
         if (this.adapterRef._enableRts) {
           this.adapterRef.instance.emit('rts-stream-removed', {stream: remoteStream})
         } else {
-          this.adapterRef.instance.emit('stream-removed', {stream: remoteStream, 'mediaType': mediaTypeShort})
+          this.adapterRef.instance.safeEmit('stream-removed', {stream: remoteStream, 'mediaType': mediaTypeShort})
         }
         break
       }
@@ -454,7 +454,7 @@ class Signalling extends EventEmitter {
 
         // TODO fixme
         // @ts-ignore
-        this.adapterRef.instance.emit('stream-removed', {stream: remoteStream})
+        // this.adapterRef.instance.safeEmit('stream-removed', {stream: remoteStream})
         break
       }
       case 'consumerResumed': {
@@ -556,11 +556,11 @@ class Signalling extends EventEmitter {
           this._handleUserRoleNotify(notification.data.externData)
         } else if (type === 'RtmpTaskStatus') {
           this.adapterRef.logger.log('RtmpTaskStatus变更: ', JSON.stringify(data, null, ''))
-          this.adapterRef.instance.emit('rtmp-state', data)
+          this.adapterRef.instance.safeEmit('rtmp-state', data)
         } else if (type === 'MediaCapability') {
           this.adapterRef.logger.error('MediaCapability房间能力变更: ', JSON.stringify(data, null, ''))
           this.adapterRef.mediaCapability.parseRoom(data);
-          this.adapterRef.instance.emit('mediaCapabilityChange');
+          this.adapterRef.instance.safeEmit('mediaCapabilityChange');
           if (this.adapterRef._mediasoup && this.adapterRef.mediaCapability.room.videoCodecType && this.adapterRef.localStream){
             //@ts-ignore
             const targetCodecVideo = this.adapterRef.mediaCapability.getCodecSend("video", this.adapterRef._mediasoup._sendTransport.handler._sendingRtpParametersByKind["video"]);
@@ -751,7 +751,7 @@ class Signalling extends EventEmitter {
         await this.adapterRef._mediasoup.init()
       }
           
-      this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
+      this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
       if (this.adapterRef._enableRts) {
         await this.createRTSTransport()
         this.adapterRef.instance.emit('connected')
@@ -777,7 +777,7 @@ class Signalling extends EventEmitter {
             })
             this.adapterRef.remoteStreamMap[uid] = remoteStream
             this.adapterRef.memberMap[uid] = "" + uid;
-            this.adapterRef.instance.emit('peer-online', {uid})
+            this.adapterRef.instance.safeEmit('peer-online', {uid})
           }else{
             remoteStream.active = true;
           }
@@ -818,10 +818,10 @@ class Signalling extends EventEmitter {
                 if (that.adapterRef._enableRts && that.adapterRef._rtsTransport) {
                   that.adapterRef.instance.emit('rts-stream-added', {stream: remoteStream, kind: mediaTypeShort})
                 } else if (remoteStream.pubStatus.audio.audio || remoteStream.pubStatus.video.video || remoteStream.pubStatus.screen.screen) {
-                  that.adapterRef.instance.emit('stream-added', {stream: remoteStream, 'mediaType': mediaTypeShort})
+                  that.adapterRef.instance.safeEmit('stream-added', {stream: remoteStream, 'mediaType': mediaTypeShort})
                 }
                 if (mute) {
-                  that.adapterRef.instance.emit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
+                  that.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
                 }
               }, 0);
             }
@@ -851,10 +851,10 @@ class Signalling extends EventEmitter {
     this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
     this.adapterRef.connectState.curState = 'DISCONNECTED'
     this.adapterRef.channelStatus = 'init'
-    this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
+    this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
 
     if (reasonCode === 4009){
-      this.adapterRef.instance.emit("crypt-error", {cryptType: this.adapterRef.encryption.encryptionMode});
+      this.adapterRef.instance.safeEmit("crypt-error", {cryptType: this.adapterRef.encryption.encryptionMode});
     }
     
     //上报login事件
@@ -903,7 +903,7 @@ class Signalling extends EventEmitter {
       this.netStatusTimer = null
     }
     this.netStatusTimer = setInterval(()=>{
-      this.adapterRef.instance.emit('network-quality', this.adapterRef.netStatusList)
+      this.adapterRef.instance.safeEmit('network-quality', this.adapterRef.netStatusList)
     }, 2000)
   }
 
@@ -1152,23 +1152,23 @@ class Signalling extends EventEmitter {
       if (stream.pubStatus.audio.producerId === producerId) {
         stream.muteStatus.audioSend = mute
         if (mute) {
-          this.adapterRef.instance.emit('mute-audio', {uid: stream.getId()})
+          this.adapterRef.instance.safeEmit('mute-audio', {uid: stream.getId()})
         } else {
-          this.adapterRef.instance.emit('unmute-audio', {uid: stream.getId()})
+          this.adapterRef.instance.safeEmit('unmute-audio', {uid: stream.getId()})
         }
       } else if (stream.pubStatus.video.producerId === producerId) {
         stream.muteStatus.videoSend = mute
         if (mute) {
-          this.adapterRef.instance.emit('mute-video', {uid: stream.getId()})
+          this.adapterRef.instance.safeEmit('mute-video', {uid: stream.getId()})
         } else {
-          this.adapterRef.instance.emit('unmute-video', {uid: stream.getId()})
+          this.adapterRef.instance.safeEmit('unmute-video', {uid: stream.getId()})
         }
       } else if (stream.pubStatus.screen.producerId === producerId) {
         stream.muteStatus.screenSend = mute
         if (mute) {
-          this.adapterRef.instance.emit('mute-screen', {uid: stream.getId()})
+          this.adapterRef.instance.safeEmit('mute-screen', {uid: stream.getId()})
         } else {
-          this.adapterRef.instance.emit('unmute-screen', {uid: stream.getId()})
+          this.adapterRef.instance.safeEmit('unmute-screen', {uid: stream.getId()})
         }
       }
     })
@@ -1191,7 +1191,7 @@ class Signalling extends EventEmitter {
     }
     if (uid && userRole === 0) {
       //观众变为主播，照抄 onPeerJoin 逻辑
-      this.adapterRef.instance.emit('peer-online', {uid: uid})
+      this.adapterRef.instance.safeEmit('peer-online', {uid: uid})
       this.adapterRef.instance._roleInfo.audienceList[uid] = false;
     }
   }
@@ -1213,7 +1213,7 @@ class Signalling extends EventEmitter {
       this.adapterRef.logger.warn('房间被关闭')
       this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason = 30207
       this.adapterRef.instance.leave()
-      this.adapterRef.instance.emit('channel-closed', {
+      this.adapterRef.instance.safeEmit('channel-closed', {
       })
     } else if (reason == 2) {
       this.adapterRef.logger.warn(`${uid}被提出房间`)
@@ -1221,7 +1221,7 @@ class Signalling extends EventEmitter {
         this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason = 30206
         this.adapterRef.instance.leave()
       }
-      this.adapterRef.instance.emit('client-banned', {
+      this.adapterRef.instance.safeEmit('client-banned', {
         uid
       })
     }

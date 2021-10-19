@@ -629,11 +629,11 @@ class FormativeStatsReport {
 
     this._audioLevel.sort(tool.compare('level'))
     if (this._audioLevel.length > 0 && this._audioLevel[0].level > 0) {
-      this.adapterRef.instance.emit('active-speaker', this._audioLevel[0])
+      this.adapterRef.instance.safeEmit('active-speaker', this._audioLevel[0])
     } 
     
     if (time % 2 === 0) {
-      this.adapterRef.instance.emit('volume-indicator', this._audioLevel)
+      this.adapterRef.instance.safeEmit('volume-indicator', this._audioLevel)
       // 更新上行信息
       this.updateTxMediaInfo(upAudioList, upVideoList, upScreenList);
       // 更新下行信息

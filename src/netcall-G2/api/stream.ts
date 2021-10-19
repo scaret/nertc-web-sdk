@@ -676,11 +676,11 @@ class Stream extends EventEmitter {
         // Chrome的提示是：Permission Denied. Permission Denied by system
         && e.message.indexOf('ermission') > -1
         && e.message.indexOf('denied') > -1 ) {
-        this.client.emit('accessDenied', 'audio')
+        this.client.safeEmit('accessDenied', 'audio')
       } else if (e.message && e.message.indexOf('not found') > -1) {
-        this.client.emit('notFound', 'audio')
+        this.client.safeEmit('notFound', 'audio')
       } else {
-        this.client.emit('deviceError', 'audio')
+        this.client.safeEmit('deviceError', 'audio')
       }
       this.emit('device-error', {type: 'audio', error: e});
     }
@@ -708,13 +708,13 @@ class Stream extends EventEmitter {
         // Chrome的提示是：Permission Denied. Permission Denied by system
         && e.message.indexOf('ermission') > -1
         && e.message.indexOf('denied') > -1 ) {
-        this.client.emit('accessDenied', 'video')
+        this.client.safeEmit('accessDenied', 'video')
       } else if (e.message && e.message.indexOf('not found') > -1) {
-        this.client.emit('notFound', 'video')
+        this.client.safeEmit('notFound', 'video')
       } else if (e.message && e.message.indexOf('not start video source') > -1) {
-        this.client.emit('beOccupied', 'video')
+        this.client.safeEmit('beOccupied', 'video')
       } else {
-        this.client.emit('deviceError', 'video')
+        this.client.safeEmit('deviceError', 'video')
       }
       this.emit('device-error', {type: 'video', error: e});
     }
@@ -744,13 +744,13 @@ class Stream extends EventEmitter {
         && e.message.indexOf('ermission') > -1
         && e.message.indexOf('denied') > -1
       ) {
-        this.client.emit('accessDenied', 'screen')
+        this.client.safeEmit('accessDenied', 'screen')
       }else if (e.message && e.message.indexOf('not found') > -1) {
-        this.client.emit('notFound', 'screen')
+        this.client.safeEmit('notFound', 'screen')
       } else if (e.message && e.message.indexOf('not start video source') > -1) {
-        this.client.emit('beOccupied', 'screen')
+        this.client.safeEmit('beOccupied', 'screen')
       } else {
-        this.client.emit('deviceError', 'screen')
+        this.client.safeEmit('deviceError', 'screen')
       }
       this.emit('device-error', {type: 'screen', error: e});
     }
@@ -1286,7 +1286,7 @@ class Stream extends EventEmitter {
         // Chrome的提示是：Permission Denied. Permission Denied by system
         && e.message.indexOf('ermission') > -1
         && e.message.indexOf('denied') > -1 ) {
-        this.client.emit('accessDenied', type)
+        this.client.safeEmit('accessDenied', type)
         return Promise.reject(
           new RtcError({
             code: ErrorCode.NOT_ALLOWED,
