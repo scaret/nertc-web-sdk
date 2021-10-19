@@ -582,8 +582,7 @@ class GetStats extends EventEmitter{
       if (item.type == 'track') {
        //console.log('item: ', item)
         item.ssrc = uidMap.get(item.id.toString()).ssrc
-        // item.uid = uidMap.get(item.id.toString()).uid
-        item.remoteuid = uidMap.get(item.id.toString()).uid
+        item.remoteuid = item.uid = uidMap.get(item.id.toString()).uid
         if(item.framesSent || item.framesReceived) {
           item = this.computeData(pc, item)
           result[`_video_${item.type}_${this.adapterRef && this.adapterRef.channelInfo.uid}_${direction}_${item.uid}`] = item

@@ -629,6 +629,7 @@ class FormativeStatsReport {
 
     this._audioLevel.sort(tool.compare('level'))
     if (this._audioLevel.length > 0 && this._audioLevel[0].level > 0) {
+      // Firefox 获取不到audioLevel, 没有active-speaker探测能力
       this.adapterRef.instance.safeEmit('active-speaker', this._audioLevel[0])
     } 
     
