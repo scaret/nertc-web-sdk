@@ -806,7 +806,7 @@ class Mediasoup extends EventEmitter {
           remoteStream.pubStatus[mediaTypeShort].stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup){
             throw new RtcError({
-              code: ErrorCode.NO_MEDIASOUP,
+              code: ErrorCode.NO_MEDIASERVER,
               message: 'media server error 21'
             })
           }

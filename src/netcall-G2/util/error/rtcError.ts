@@ -15,7 +15,7 @@ class RtcError extends Error {
     private message_:any;
     private extraCode_:any;
     constructor(options:any) {
-        let defaultUrl = 'https://yunxin.163.com/errorcode'; // TODO： 增加错误码文档页面
+        let defaultUrl = 'https://dev.yunxin.163.com/docs/interface/NERTC_SDK/Latest/Web/api/index.html#errorCode';
         let url = options.url ? options.url : defaultUrl;
         super(
             options.message +

@@ -331,17 +331,17 @@ export class Chrome74 extends HandlerInterface
     let transceiverLow: any = {};
     const mediaStream = new MediaStream();
     if (appData.mediaType === 'audio' && this._pc.audioSender) {
-      Logger.debug(prefix, 'audioSender更新track: ', this._pc.audioSender)
-      this._pc.audioSender.replaceTrack(track);
+      Logger.debug(prefix, 'audioSender更新track: ', this._pc.audioSender.track, "=>", track)
+      this._pc.audioSender.replaceTrack(track)
     } else if (appData.mediaType === 'video' && this._pc.videoSender) {
-      Logger.debug(prefix, 'videoSender更新track: ', this._pc.videoSender)
+      Logger.debug(prefix, 'videoSender更新track: ', this._pc.videoSender.track, "=>", track)
       this._pc.videoSender.replaceTrack(track)
       if (this._pc.videoSenderLow && trackLow){
         Logger.debug(prefix, 'videoSenderLow更新track: ', this._pc.videoSenderLow)
         this._pc.videoSenderLow.replaceTrack(trackLow)
       }
     } else if (appData.mediaType === 'screenShare' && this._pc.screenSender) {
-      Logger.debug(prefix, 'screenSender更新track: ', this._pc.screenSender)
+      Logger.debug(prefix, 'screenSender更新track: ', this._pc.screenSender.track, "=>", track)
       this._pc.screenSender.replaceTrack(track)
       if (this._pc.screenSenderLow && trackLow){
         Logger.debug(prefix, 'screenSenderLow更新track: ', this._pc.screenSenderLow)

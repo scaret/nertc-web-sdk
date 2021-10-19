@@ -11,6 +11,7 @@ import { SctpParameters } from './SctpParameters';
 import {RtpParameters} from "./RtpParameters";
 import RtcError from '../../../util/error/rtcError';
 import ErrorCode  from '../../../util/error/errorCode';
+import {getParameters} from "../../parameters";
 
 interface InternalTransportOptions extends TransportOptions
 {
@@ -429,7 +430,7 @@ export class Transport extends EnhancedEventEmitter
   ): Promise<Producer>
   {
     // Logger.debug(prefix, 'produce() [track:%o]', track);
-    Logger.debug(prefix, 'produce() track');
+    Logger.debug(prefix, 'produce()');
 
     if (!track)
       throw new TypeError('missing track');
@@ -556,7 +557,13 @@ export class Transport extends EnhancedEventEmitter
       {
         if (stopTracks)
         {
-          try { track.stop(); }
+          try {
+            const globalTrackId = getParameters().mediaTracks.findIndex((mediaTrack)=>{
+              return track === mediaTrack;
+            })
+            Logger.warn(`Stopping track TRACK#${globalTrackId} ${track.id}, ${track.label}, ${track.readyState}`);
+            track.stop();
+          }
           catch (error2) {}
         }
 

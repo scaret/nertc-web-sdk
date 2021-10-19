@@ -355,7 +355,7 @@ class Base extends EventEmitter {
       if (remotStream.pubStatus.audio) {
         if (!this.adapterRef._mediasoup){
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASOUP,
+            code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 1'
           })
         }
@@ -364,7 +364,7 @@ class Base extends EventEmitter {
       if (remotStream.pubStatus.video) {
         if (!this.adapterRef._mediasoup){
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASOUP,
+            code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 2'
           })
         }
@@ -420,7 +420,7 @@ class Base extends EventEmitter {
     this.adapterRef.logger.warn('下行通道异常，重新建立')
     if (!this.adapterRef._mediasoup){
       throw new RtcError({
-        code: ErrorCode.NO_MEDIASOUP,
+        code: ErrorCode.NO_MEDIASERVER,
         message: 'media server error 3'
       })
     }
