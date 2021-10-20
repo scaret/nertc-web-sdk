@@ -1,3 +1,6 @@
+import {getParameters} from "../../parameters";
+import {loglevels} from "../../../util/log/logger";
+
 const APP_NAME = 'mediasoup-client';
 
 export const Logger = {
@@ -5,7 +8,9 @@ export const Logger = {
     const prefix = option ? `${APP_NAME}:${option}` : `${APP_NAME}`;
 		var args = Array.prototype.slice.call(arguments);
 		this.formatArgs(args, prefix);
-    console.debug.apply(console, args);
+    if (getParameters().logLevel <= loglevels.DEBUG){
+      console.debug.apply(console, args);
+    }
 		(<any>window).logStorage && (<any>window).logStorage.log('debug', args);
 
   },
@@ -14,7 +19,9 @@ export const Logger = {
     const prefix = option ? `${APP_NAME}:${option}` : `${APP_NAME}`;
 		var args = Array.prototype.slice.call(arguments);
 		this.formatArgs(args, prefix);
-    console.warn.apply(console, args);
+    if (getParameters().logLevel <= loglevels.WARNING){
+      console.warn.apply(console, args);
+    }
 		(<any>window).logStorage && (<any>window).logStorage.log('warn', args);
 
 	},
@@ -23,7 +30,9 @@ export const Logger = {
     const prefix = option ? `${APP_NAME}:${option}` : `${APP_NAME}`;
 		var args = Array.prototype.slice.call(arguments);
 		this.formatArgs(args, prefix);
-    console.error.apply(console, args);
+    if (getParameters().logLevel <= loglevels.ERROR){
+      console.error.apply(console, args);
+    }
 		(<any>window).logStorage && (<any>window).logStorage.log('error', args);
 
 	},

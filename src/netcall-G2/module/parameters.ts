@@ -2,6 +2,7 @@
 
 import {Client} from "../api/client";
 import {Stream} from "../api/stream";
+import {loglevels} from "../util/log/logger";
 
 interface IParameters{
   
@@ -25,6 +26,7 @@ interface IParameters{
   
   // 最大PeerConnection重连次数
   maxTransportRebuildCnt: number,
+  logLevel: loglevels,
 }
 
 let parameters:IParameters = {
@@ -36,6 +38,7 @@ let parameters:IParameters = {
   controlOnPaused: true,
   hideControlOnResume: true,
   maxTransportRebuildCnt: 50,
+  logLevel: loglevels.INFO,
 }
 
 // 注意：getParameters和setParameters是一些私有全局变量，仅用于调试和私有接口，不用于正常业务

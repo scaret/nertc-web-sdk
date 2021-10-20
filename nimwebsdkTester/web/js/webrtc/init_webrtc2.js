@@ -133,6 +133,11 @@ $('#clearLocalStorage').on('click', () => {
   window.location.reload();
 })
 
+$('#setLogLevel').on('click', ()=>{
+  const level = $("#loglevel").val();
+  NERTC.Logger.setLogLevel(NERTC.Logger[level])
+})
+
 $('#privatizationConfig').on('click', () => {
   var objFile = document.getElementById("privatizationConfigFildId");
   if(objFile.value == "") {
@@ -302,12 +307,12 @@ function init() {
   const appkey = $('#appkey').val()
   // loadTokenByAppKey();
   const chrome = $('#part-env input[name="screen-type"]:checked').val()
+  NERTC.Logger.enableLogUpload();
   rtc.client = NERTC.createClient({
     appkey,
     debug: true,
     //report: false
   })
-  NERTC.Logger.enableLogUpload();
   initDevices()
   initEvents()
   initVolumeDetect()
