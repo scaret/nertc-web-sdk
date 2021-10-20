@@ -1,7 +1,7 @@
 
 import { Base } from './base'
 import {AddTaskOptions, ClientOptions, MediaPriorityOptions, JoinOptions, LocalVideoStats, MediaTypeShort, RTMPTask, Client as IClient} from "../types";
-import {Stream} from "./stream";
+import {LocalStream} from "./localStream";
 import {checkExists, checkValidInteger, checkValidString} from "../util/param";
 import {
   ReportParamEnableEncryption,
@@ -15,6 +15,7 @@ import RtcError from '../util/error/rtcError';
 import ErrorCode  from '../util/error/errorCode';
 import { SDK_VERSION, BUILD } from "../Config";
 import {STREAM_TYPE} from "../constant/videoQuality";
+import {RemoteStream} from "./remoteStream";
 const BigNumber = require("bignumber.js");
 
 /**
@@ -297,7 +298,7 @@ class Client extends Base {
    * @param {Stream} Stream类型
    * @returns {Promise}  
    */
-  async publish (stream:Stream) {
+  async publish (stream:LocalStream) {
     checkExists({tag: 'client.publish:stream', value: stream});
     let reason = ''
     if (this.adapterRef.connectState.curState !== 'CONNECTED') {
@@ -383,7 +384,7 @@ class Client extends Base {
    * @param {Stream} Stream类型
    * @returns {Promise}  
    */
-  async unpublish (stream?:Stream) {
+  async unpublish (stream?:LocalStream) {
     checkExists({tag: 'client.unpublish:stream', value: stream});
     let reason = ''
     if (this.adapterRef.connectState.curState !== 'CONNECTED') {
@@ -479,11 +480,11 @@ class Client extends Base {
    * @param {Stream} Stream类型
    * @returns {Promise}  
    */
-  async subscribe (stream:Stream) {
+  async subscribe (stream:RemoteStream) {
     return this.subscribeRts(stream) 
   }
 
-  async subscribeRts (stream:Stream) {
+  async subscribeRts (stream:RemoteStream) {
     checkExists({tag: 'client.subscribe:stream', value: stream});
     this.adapterRef.logger.log(`subscribe() [订阅远端: ${stream.stringStreamID}]`)
     const uid = stream.getId()
@@ -649,17 +650,12 @@ class Client extends Base {
         code: 0,
         param: JSON.stringify({
           reason: '',
-          videoProfile: stream.videoProfile,
           audio: stream.audio,
-          audioProfile: stream.audioProfile,
-          cameraId: stream.cameraId,
           subStatus: stream.subStatus,
-          microphoneId: stream.microphoneId,
           subConf: stream.subConf,
           pubStatus: stream.pubStatus,
           renderMode: stream.renderMode,
           screen: stream.screen,
-          screenProfile: stream.screenProfile
         }, null, ' ')
       })
     } catch (e) {
@@ -673,17 +669,12 @@ class Client extends Base {
         code: -1,
         param: JSON.stringify({
           reason: e,
-          videoProfile: stream.videoProfile,
           audio: stream.audio,
-          audioProfile: stream.audioProfile,
-          cameraId: stream.cameraId,
           subStatus: stream.subStatus,
-          microphoneId: stream.microphoneId,
           subConf: stream.subConf,
           pubStatus: stream.pubStatus,
           renderMode: stream.renderMode,
           screen: stream.screen,
-          screenProfile: stream.screenProfile
         }, null, ' ')
       })
     }
@@ -696,11 +687,11 @@ class Client extends Base {
    * @param {Stream} Stream类型
    * @returns {Promise}  
    */
-  async unsubscribe (stream:Stream) {
+  async unsubscribe (stream:RemoteStream) {
     return this.unsubscribeRts(stream)
   }
 
-  async unsubscribeRts (stream:Stream) {
+  async unsubscribeRts (stream:RemoteStream) {
     checkExists({tag: 'client.unsubscribe:stream', value: stream});
     this.adapterRef.logger.log('取消订阅远端音视频流: ', stream)
     try {
@@ -792,17 +783,12 @@ class Client extends Base {
         code: 0,
         param: JSON.stringify({
           reason: '',
-          videoProfile: stream.videoProfile,
           audio: stream.audio,
-          audioProfile: stream.audioProfile,
-          cameraId: stream.cameraId,
           subStatus: stream.subStatus,
-          microphoneId: stream.microphoneId,
           subConf: stream.subConf,
           pubStatus: stream.pubStatus,
           renderMode: stream.renderMode,
           screen: stream.screen,
-          screenProfile: stream.screenProfile
         }, null, ' ')
       })
     } catch (e) {
@@ -812,17 +798,12 @@ class Client extends Base {
         code: -1,
         param: JSON.stringify({
           reason: e,
-          videoProfile: stream.videoProfile,
           audio: stream.audio,
-          audioProfile: stream.audioProfile,
-          cameraId: stream.cameraId,
           subStatus: stream.subStatus,
-          microphoneId: stream.microphoneId,
           subConf: stream.subConf,
           pubStatus: stream.pubStatus,
           renderMode: stream.renderMode,
           screen: stream.screen,
-          screenProfile: stream.screenProfile
         }, null, ' ')
       })
     }
@@ -836,7 +817,7 @@ class Client extends Base {
    * @param {Number} highOrLow: 0是大流，1是小流
    * @returns {Promise}  
   */
-  async setRemoteVideoStreamType (stream:Stream, highOrLow:number) {
+  async setRemoteVideoStreamType (stream:RemoteStream, highOrLow:number) {
     this.adapterRef.logger.log(`uid ${stream.getId()} 订阅成员的${highOrLow ? '小' : '大'}流`, highOrLow)
 
     try {
@@ -883,7 +864,7 @@ class Client extends Base {
    * @param {Number} highOrLow: 0是大流，1是小流
    * @returns {Promise}
    */
-  async setRemoteStreamType (stream:Stream, highOrLow:number, mediaType: "video"|"screen") {
+  async setRemoteStreamType (stream:RemoteStream, highOrLow:number, mediaType: "video"|"screen") {
     this.adapterRef.logger.log(`setRemoteStreamType: 订阅${stream.getId()}成员的${highOrLow ? '小' : '大'}流`, mediaType, highOrLow)
     try {
       if (!this.adapterRef._mediasoup){
@@ -1053,7 +1034,7 @@ class Client extends Base {
   /**
    * 绑定localStream对象。多次绑定无副作用
    */
-  bindLocalStream(localStream: Stream){
+  bindLocalStream(localStream: LocalStream){
     this.adapterRef.localStream = localStream
     localStream.client = <IClient>this;
     const uid = this.getUid();

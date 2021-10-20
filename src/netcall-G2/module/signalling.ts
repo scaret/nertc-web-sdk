@@ -1,5 +1,5 @@
 import { EventEmitter } from 'eventemitter3'
-import { Stream } from '../api/stream'
+import { RemoteStream } from '../api/remoteStream'
 import { RtcSystem } from '../util/rtcUtil/rtcSystem'
 import BigNumber from 'bignumber.js'
 import {ENGINE_VERSION} from '../Config/index'
@@ -234,8 +234,7 @@ class Signalling extends EventEmitter {
 
         let remoteStream = this.adapterRef.remoteStreamMap[uid]
         if (!remoteStream) {
-          remoteStream = new Stream({
-            isRemote: true,
+          remoteStream = new RemoteStream({
             uid,
             audio: false,
             video: false,
@@ -300,8 +299,7 @@ class Signalling extends EventEmitter {
         }
         let remoteStream = this.adapterRef.remoteStreamMap[uid]
         if (!remoteStream) {
-          remoteStream = new Stream({
-            isRemote: true,
+          remoteStream = new RemoteStream({
             uid,
             audio: mediaTypeShort === 'audio',
             video: mediaTypeShort === 'video',
@@ -767,8 +765,7 @@ class Signalling extends EventEmitter {
           }
           let remoteStream = this.adapterRef.remoteStreamMap[uid]
           if (!remoteStream) {
-            remoteStream = new Stream({
-              isRemote: true,
+            remoteStream = new RemoteStream({
               uid: uid,
               audio: false,
               video: false,

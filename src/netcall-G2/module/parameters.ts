@@ -1,8 +1,8 @@
 // 注意：getParameters和setParameters是一些私有全局变量，仅用于调试和私有接口，不用于正常业务
 
 import {Client} from "../api/client";
-import {Stream} from "../api/stream";
 import {loglevels} from "../util/log/logger";
+import {LocalStream} from "../api/localStream";
 
 interface IParameters{
   
@@ -11,7 +11,7 @@ interface IParameters{
   clients: Client[];
   
   // 存储了通过createStream创建的客户端
-  localStreams: Stream[],
+  localStreams: LocalStream[],
   
   // 主流开开启小流时的视频采集参数
   videoLowDefaultConstraints: MediaTrackConstraints,

@@ -1021,7 +1021,7 @@ class FormativeStatsReport {
     if (!prev || !next) {
       return
     }
-    const muteStatus = this.adapterRef.localStream && (this.adapterRef.localStream.muteStatus.videoSend || this.adapterRef.localStream.muteStatus.videoRecv)
+    const muteStatus = this.adapterRef.localStream && (this.adapterRef.localStream.muteStatus.videoSend)
     const pubStatus = this.adapterRef.localStream && this.adapterRef.localStream.pubStatus.video.video
     if (muteStatus === true || pubStatus === false) {
       return
