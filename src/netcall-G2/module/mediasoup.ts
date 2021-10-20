@@ -9,11 +9,12 @@ import {
 } from "../types";
 import {Consumer, Device, Producer, Transport} from "./3rd/mediasoup-client/types";
 import {Peer} from "./3rd/protoo-client";
-import {Stream} from "../api/stream";
+import {LocalStream} from "../api/localStream";
 import {waitForEvent} from "../util/waitForEvent";
 import BigNumber from 'bignumber.js';
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
+import {RemoteStream} from "../api/remoteStream";
 
 class Mediasoup extends EventEmitter {
   private adapterRef:AdapterRef;
@@ -325,7 +326,7 @@ class Mediasoup extends EventEmitter {
     }
   }
 
-  async createProduce (stream:Stream) {
+  async createProduce (stream:LocalStream) {
     this.adapterRef.logger.log('发布音视频: ', stream.getId())
     //this._sendTransport.removeListener()
     if (!this._sendTransport){
@@ -711,7 +712,7 @@ class Mediasoup extends EventEmitter {
     })
   }
   
-  async setConsumerPreferredLayer(remoteStream: Stream, layer: number, mediaType: MediaTypeShort){
+  async setConsumerPreferredLayer(remoteStream: RemoteStream, layer: number, mediaType: MediaTypeShort){
     if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,

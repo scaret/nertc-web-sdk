@@ -1804,9 +1804,11 @@ function getRecordId() {
 $('#recordVideo').on('click', async (_event) => {
   let stream
   let uid = $('#recordUid').val()
-  if (rtc.client.getUid() == uid || !uid) {
+  if ((rtc.client.getUid() == uid) || !uid) {
+    console.log("录制本地");
     stream = rtc.localStream
   } else {
+    console.log("录制远端");
     stream = rtc.remoteStreams[uid]
     if (!stream) {
       console.warn('请检查uid是否正确')

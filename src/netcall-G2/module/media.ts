@@ -13,12 +13,12 @@ import {
 import {emptyStreamWith} from "../util/gum";
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
-import {Stream} from "../api/stream";
 import {getParameters} from "./parameters";
+import {LocalStream} from "../api/localStream";
+import {RemoteStream} from "../api/remoteStream";
 class MediaHelper extends EventEmitter {
   private adapterRef: AdapterRef;
-  private isLocal:boolean;
-  stream: Stream;
+  stream: LocalStream|RemoteStream;
   micStream: MediaStream|null;
   screenAudioStream: MediaStream|null;
   // audioStream对localStream而言是PeerConnection发送的MediaStream，
@@ -51,7 +51,6 @@ class MediaHelper extends EventEmitter {
     super()
     // 设置对象引用
     this.adapterRef = options.adapterRef
-    this.isLocal = options.isLocal
     this.stream = options.stream;
     this.micStream = null;
     this.screenAudioStream = null;
@@ -160,7 +159,7 @@ class MediaHelper extends EventEmitter {
 
     try {
       if (screen) {
-        if (!this.isLocal){
+        if (this.stream.isRemote){
           this.adapterRef.logger.error('getStream: 远端流不能够调用getStream');
           return;
         }
@@ -279,8 +278,9 @@ class MediaHelper extends EventEmitter {
           }
         }
       } else if (audio || video) {
-        if (!this.isLocal){
+        if (this.stream.isRemote){
           this.adapterRef.logger.error('MediaHelper.getStream:远端流不能调用getStream');
+          return;
         }
         const {height, width, frameRate} = this.convert(this.stream.videoProfile)
         let config:MediaStreamConstraints = {
@@ -422,6 +422,9 @@ class MediaHelper extends EventEmitter {
           message: 'audio/video is invalid'
         })
       )
+    }
+    if (this.stream.isRemote){
+      throw new Error('getSecondStream:远端用户不能调用getSecondStream');
     }
 
     try {
@@ -577,7 +580,7 @@ class MediaHelper extends EventEmitter {
   }
 
   getAudioConstraints() {
-    if (!this.isLocal){
+    if (this.stream.isRemote){
       this.adapterRef.instance.logger.error('Remote Stream dont have audio constraints');
       return;
     }
@@ -672,7 +675,7 @@ class MediaHelper extends EventEmitter {
 
   _stopTrack (stream:MediaStream) {
     if (!stream) return
-    if (!this.isLocal) return
+    if (this.stream.isRemote) return
     this.adapterRef.logger.log('清除stream: ', stream.id)
     const tracks = stream.getTracks()
     if (!tracks || tracks.length === 0) return

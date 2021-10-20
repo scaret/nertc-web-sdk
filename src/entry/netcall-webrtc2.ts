@@ -1,8 +1,8 @@
 import { Client } from '../netcall-G2/api/client'
-import { Stream } from '../netcall-G2/api/stream'
+import { LocalStream } from '../netcall-G2/api/localStream'
 import { Device } from '../netcall-G2/module/device'
 import { clientNotYetUninitialized } from '../netcall-G2/constant/ErrorCode'
-import { ClientOptions, StreamOptions } from "../netcall-G2/types";
+import { ClientOptions, LocalStreamOptions } from "../netcall-G2/types";
 import { BUILD, SDK_VERSION as VERSION, ENV } from "../netcall-G2/Config";
 import {VIDEO_FRAME_RATE, NERTC_VIDEO_QUALITY as VIDEO_QUALITY, STREAM_TYPE} from "../netcall-G2/constant/videoQuality";
 import { LIVE_STREAM_AUDIO_SAMPLE_RATE, LIVE_STREAM_AUDIO_CODEC_PROFILE } from "../netcall-G2/constant/liveStream";
@@ -122,7 +122,7 @@ createClient (options:ClientOptions) {
  *  @param {client} [options.client] 和要Stream绑定的client实例对象，默认是最初使用用createClient创建的client实例（多实例场景使用）
  *  @returns {Stream}  Stream对象
  */
-createStream (options:StreamOptions) {
+createStream (options:LocalStreamOptions) {
   checkExists({tag: 'createStream:options', value: options});
   if (options.screenAudio){
     if (!options.screen){
@@ -138,7 +138,7 @@ createStream (options:StreamOptions) {
     client.adapterRef.logger.warn('createStream: 未传入client参数。使用默认Client。')
   }
   if (client || options.client) {
-    const localStream = new Stream(Object.assign(options, {
+    const localStream = new LocalStream(Object.assign(options, {
       isRemote: false,
       client: options.client || client
     }))

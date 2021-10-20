@@ -13,7 +13,6 @@ import {
   ClientOptions, JoinChannelRequestParam4WebRTC2,
   LiveConfig, MediaTypeShort, RecordConfig
 } from "../types";
-import {Stream} from "./stream";
 import {MediaCapability} from "../module/mediaCapability";
 import {getSupportedCodecs} from "../util/rtcUtil/codec";
 import {Encryption} from "../module/encryption";
@@ -21,6 +20,8 @@ import { logController } from "../util/log/upload";
 import RtcError from '../util/error/rtcError';
 import ErrorCode  from '../util/error/errorCode';
 import {getParameters} from "../module/parameters";
+import {RemoteStream} from "./remoteStream";
+import {LocalStream} from "./localStream";
 
 /**
  * 基础框架
@@ -455,7 +456,7 @@ class Base extends EventEmitter {
     }
   }
 
-  async rtsRequestKeyFrame(stream:Stream) {
+  async rtsRequestKeyFrame(stream:RemoteStream) {
     this.adapterRef.logger.log('请求关键帧: ', stream.pubStatus.video.consumerId)
     if (this.adapterRef._signalling) {
       await this.adapterRef._signalling.rtsRequestKeyFrame(stream.pubStatus.video.consumerId);
@@ -574,11 +575,11 @@ class Base extends EventEmitter {
     }
   }
   
-  isPublished(stream: Stream){
+  isPublished(stream: LocalStream){
     return stream && ((stream.audio && stream.pubStatus.audio.audio) || (stream.video && stream.pubStatus.video.video) || (stream.screen && stream.pubStatus.screen.screen))
   }
 
-  isSubscribe(stream: Stream){
+  isSubscribe(stream: RemoteStream){
     return stream && (stream.subStatus.audio || stream.subStatus.video)
   }
 

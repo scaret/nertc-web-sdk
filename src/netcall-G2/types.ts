@@ -1,5 +1,4 @@
 import {MediaHelper} from "./module/media";
-import {Stream} from "./api/stream";
 import {Mediasoup} from "./module/mediasoup";
 import {Signalling} from "./module/signalling";
 import {RTSTransport} from "./module/rtsTransport";
@@ -8,6 +7,8 @@ import {StatsReport} from "./module/report/statsReport";
 import {MediaCapability} from "./module/mediaCapability";
 import {Encryption} from "./module/encryption";
 import BigNumber from 'bignumber.js'
+import {RemoteStream} from "./api/remoteStream";
+import {LocalStream} from "./api/localStream";
 
 type UIDTYPE = number | string;
 
@@ -78,9 +79,9 @@ export interface AdapterRef {
     [uid in UIDTYPE]: MediaStats
   } 
   remoteStreamMap: {
-    [uid in UIDTYPE]: Stream
+    [uid in UIDTYPE]: RemoteStream
   } 
-  localStream: Stream|null;
+  localStream: LocalStream|null;
   localAudioStats: {
     [uid in UIDTYPE]: LocalAudioStats
   } 
@@ -587,8 +588,7 @@ export interface AudioEffectOptions{
 export interface MediaHelperOptions{
   adapterRef: AdapterRef;
   uid: number|string;
-  isLocal: boolean;
-  stream: Stream;
+  stream: LocalStream|RemoteStream;
 }
 
 export interface GetStreamConstraints{
@@ -726,21 +726,29 @@ export interface AudioProcessingOptions{
   AGC?: boolean;
 }
 
-export interface StreamOptions{
-  isRemote: boolean;
+
+export interface LocalStreamOptions{
   uid: number|string;
   audio: boolean;
   audioProcessing?: AudioProcessingOptions;
-  microphoneId?: '';
-  cameraId?: '';
-  sourceId?: '';
-  facingMode?: '';
+  microphoneId?: string;
+  cameraId?: string;
+  sourceId?: string;
+  facingMode?: VideoFacingModeEnum;
   video: boolean;
   screen: boolean;
   screenAudio?: boolean;
   client: Client;
   audioSource?: MediaStreamTrack|null;
   videoSource?: MediaStreamTrack|null;
+}
+
+export interface RemoteStreamOptions{
+  uid: number|string;
+  audio: boolean;
+  video: boolean;
+  screen: boolean;
+  client: Client;
 }
 
 export interface Client{
@@ -752,7 +760,7 @@ export interface Client{
     userRole: number;
     audienceList: {[uid in UIDTYPE]: boolean}
   }
-  publish: (stream: Stream)=>void
+  publish: (stream: LocalStream)=>void
   apiEventReport: (eventName: string, eventData: any)=>void
   getPeer: (sendOrRecv: 'send'|'recv')=>any
   leave: ()=>any
