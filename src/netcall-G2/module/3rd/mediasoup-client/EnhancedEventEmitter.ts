@@ -21,7 +21,9 @@ export class EnhancedEventEmitter extends EventEmitter
     }
     catch (error)
     {
-      Logger.error(prefix, 'safeEmit() | event listener threw an error [event:%s]:%o', event, error);
+      Logger.error(prefix, 
+        'safeEmit() | event listener threw an error [event:%s]:%o',
+        event, error);
 
       return Boolean(numListeners);
     }
@@ -37,7 +39,7 @@ export class EnhancedEventEmitter extends EventEmitter
       }
       catch (error)
       {
-        Logger.error(prefix,
+        Logger.error(prefix, 
           'safeEmitAsPromise() | event listener threw an error [event:%s]:%o',
           event, error);
 

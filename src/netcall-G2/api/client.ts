@@ -58,6 +58,16 @@ class Client extends Base {
     this.adapterRef.logger.info(`NERTC ${SDK_VERSION} ${BUILD}: 客户端创建成功。`);
     
   }
+  
+  safeEmit (eventName:string, ...args: any[]){
+    // 对客户抛出的事件请使用这个函数
+    try{
+      this.emit(eventName, ...args);
+    }catch(e){
+      this.adapterRef.logger.error(`Error on event ${eventName}: ${e.name} ${e.message}`, e.stack);
+    }
+  }
+  
   // 初始化nrtc
   _init (options:ClientOptions) {
     const { appkey = '', token } = options
@@ -182,7 +192,7 @@ class Client extends Base {
 
     this.adapterRef.connectState.curState = 'CONNECTING'
     this.adapterRef.connectState.prevState = 'DISCONNECTED'
-    this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
+    this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
     if (options.token){
       this._params.token = options.token;
     }
@@ -243,7 +253,7 @@ class Client extends Base {
     }
     this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
     this.adapterRef.connectState.curState = 'DISCONNECTING'
-    this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
+    this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
     this.setEndSessionTime()
     if (this.adapterRef._meetings) {
       this.adapterRef._meetings.leaveChannel()
@@ -273,7 +283,7 @@ class Client extends Base {
     }
     this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
     this.adapterRef.connectState.curState = 'DISCONNECTING'
-    this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
+    this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
     this.setEndSessionTime()
     if (this.adapterRef._meetings) {
       this.adapterRef._meetings.leaveChannel()
@@ -339,7 +349,7 @@ class Client extends Base {
     try {
       if (!this.adapterRef._mediasoup){
         throw new RtcError({
-          code: ErrorCode.NO_MEDIASOUP,
+          code: ErrorCode.NO_MEDIASERVER,
           message: 'media server error 4'
         })
       }
@@ -419,7 +429,7 @@ class Client extends Base {
     try {
       if (!this.adapterRef._mediasoup){
         throw new RtcError({
-          code: ErrorCode.NO_MEDIASOUP,
+          code: ErrorCode.NO_MEDIASERVER,
           message: 'media server error 5'
         })
       }
@@ -485,7 +495,7 @@ class Client extends Base {
     }
     if (!this.adapterRef._mediasoup) {
       throw new RtcError({
-        code: ErrorCode.NO_MEDIASOUP,
+        code: ErrorCode.NO_MEDIASERVER,
         message: 'media server error 6'
       })
     }
@@ -508,7 +518,7 @@ class Client extends Base {
           stream.pubStatus.audio.stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup){
             throw new RtcError({
-              code: ErrorCode.NO_MEDIASOUP,
+              code: ErrorCode.NO_MEDIASERVER,
               message: 'media server error 7'
             })
           }
@@ -562,7 +572,7 @@ class Client extends Base {
           stream.pubStatus.video.stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup){
             throw new RtcError({
-              code: ErrorCode.NO_MEDIASOUP,
+              code: ErrorCode.NO_MEDIASERVER,
               message: 'media server error 8'
             })
           }
@@ -611,7 +621,7 @@ class Client extends Base {
           stream.pubStatus.screen.stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup){
             throw new RtcError({
-              code: ErrorCode.NO_MEDIASOUP,
+              code: ErrorCode.NO_MEDIASERVER,
               message: 'media server error 9'
             })
           }
@@ -699,7 +709,7 @@ class Client extends Base {
         stream.pubStatus.audio.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup){
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASOUP,
+            code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 10'
           })
         }
@@ -726,7 +736,7 @@ class Client extends Base {
         stream.pubStatus.video.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup){
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASOUP,
+            code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 11'
           })
         }
@@ -754,7 +764,7 @@ class Client extends Base {
         stream.pubStatus.screen.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup){
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASOUP,
+            code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 12'
           })
         }
@@ -832,7 +842,7 @@ class Client extends Base {
     try {
       if (!this.adapterRef._mediasoup){
         throw new RtcError({
-          code: ErrorCode.NO_MEDIASOUP,
+          code: ErrorCode.NO_MEDIASERVER,
           message: 'media server error 13'
         })
       }
@@ -878,8 +888,8 @@ class Client extends Base {
     try {
       if (!this.adapterRef._mediasoup){
         throw new RtcError({
-          code: ErrorCode.NO_MEDIASOUP,
-          message: 'media server error'
+          code: ErrorCode.NO_MEDIASERVER,
+          message: 'media server error 27'
         })
       }
       const streamId = stream.getId();
@@ -988,7 +998,7 @@ class Client extends Base {
             }
             if (!this.adapterRef._mediasoup){
               throw new RtcError({
-                code: ErrorCode.NO_MEDIASOUP,
+                code: ErrorCode.NO_MEDIASERVER,
                 message: 'media server error 14'
               })
             }
@@ -996,14 +1006,14 @@ class Client extends Base {
             if (this._roleInfo.userRole !== userRole) {
               this._roleInfo.userRole = userRole;
               this.adapterRef.logger.info(`setClientRole：本地用户${localUser} 设置角色为 ${role}`);
-              this.emit('client-role-changed', {role: role});
+              this.safeEmit('client-role-changed', {role: role});
             }
             break;
           case "DISCONNECTED":
             if (this._roleInfo.userRole !== userRole) {
               this._roleInfo.userRole = userRole;
               this.adapterRef.logger.info(`setClientRole：本地用户${localUser}设置角色为 ${role}`);
-              this.emit('client-role-changed', {role: role});
+              this.safeEmit('client-role-changed', {role: role});
             }
             break;
           default:
@@ -1257,7 +1267,7 @@ class Client extends Base {
         })
       );
     }
-    this.adapterRef.logger.log('增加互动直播推流任务, options: ', options)
+    this.adapterRef.logger.log('增加互动直播推流任务, options: ', JSON.stringify(options))
     if (!this.adapterRef._meetings){
       throw new RtcError({
         code: ErrorCode.NO_MEETINGS,

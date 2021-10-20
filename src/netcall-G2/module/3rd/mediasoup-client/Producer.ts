@@ -9,6 +9,7 @@ import {
 } from './RtpParameters';
 import RtcError from '../../../util/error/rtcError';
 import ErrorCode  from '../../../util/error/errorCode';
+import {getParameters} from "../../parameters";
 
 export type ProducerOptions =
 {
@@ -380,7 +381,6 @@ export class Producer extends EnhancedEventEmitter
    */
   async replaceTrack({ track }: { track: MediaStreamTrack | null }): Promise<void>
   {
-    // Logger.debug(prefix, 'replaceTrack() [track:%o]', track);
     Logger.debug(prefix, 'replaceTrack()');
 
     if (this._closed)
@@ -389,7 +389,13 @@ export class Producer extends EnhancedEventEmitter
       // track.
       if (track && this._stopTracks)
       {
-        try { track.stop(); }
+        try {
+          const globalTrackId = getParameters().mediaTracks.findIndex((mediaTrack)=>{
+            return track === mediaTrack;
+          })
+          Logger.warn(`Stopping track TRACK#${globalTrackId} ${track.id}, ${track.label}, ${track.readyState}`);
+          track.stop(); 
+        }
         catch (error) {}
       }
 

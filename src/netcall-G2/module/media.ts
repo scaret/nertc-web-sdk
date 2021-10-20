@@ -677,6 +677,10 @@ class MediaHelper extends EventEmitter {
     const tracks = stream.getTracks()
     if (!tracks || tracks.length === 0) return
     tracks.forEach(track => {
+      const globalTrackId = getParameters().mediaTracks.findIndex((mediaTrack)=>{
+        return track === mediaTrack;
+      })
+      this.adapterRef.logger.log(`Stopping track TRACK#${globalTrackId} ${track.id}, ${track.label}, ${track.readyState}`);
       track.stop()
       stream.removeTrack(track);
       if (this.micTrack === track){
@@ -689,7 +693,7 @@ class MediaHelper extends EventEmitter {
       }
       if (this.cameraTrack === track){
         this.cameraTrack = null;
-        if (this.adapterRef._mediasoup && this.cameraTrackLow){
+        if (this.cameraTrackLow){
           this.adapterRef.logger.log('停止视频小流:', this.cameraTrackLow);
           this.cameraTrackLow.stop();
           this.cameraTrackLow = null;
@@ -697,7 +701,7 @@ class MediaHelper extends EventEmitter {
       }
       if (this.screenTrack === track){
         this.screenTrack = null;
-        if (this.adapterRef._mediasoup && this.screenTrackLow){
+        if (this.screenTrackLow){
           this.adapterRef.logger.log('停止辅流小流:', this.screenTrackLow);
           this.screenTrackLow.stop();
           this.screenTrackLow = null;
@@ -908,20 +912,20 @@ class MediaHelper extends EventEmitter {
       if (track === this.micTrack || track === this.audioSource){
         //停止的原因可能是设备拔出、取消授权等
         this.adapterRef.logger.warn('音频轨道已停止')
-        this.adapterRef.instance.emit('audioTrackEnded')
+        this.adapterRef.instance.safeEmit('audioTrackEnded')
       }
       if (track === this.cameraTrack){
         //停止的原因可能是设备拔出、取消授权等
         this.adapterRef.logger.warn('视频轨道已停止')
-        this.adapterRef.instance.emit('videoTrackEnded')
+        this.adapterRef.instance.safeEmit('videoTrackEnded')
       }
       if (track === this.screenTrack){
         this.adapterRef.logger.warn('屏幕共享已停止')
-        this.adapterRef.instance.emit('stopScreenSharing')
+        this.adapterRef.instance.safeEmit('stopScreenSharing')
       }
       if (track === this.screenAudioTrack){
         this.adapterRef.logger.warn('屏幕共享音频已停止')
-        this.adapterRef.instance.emit('stopScreenAudio')
+        this.adapterRef.instance.safeEmit('stopScreenAudio')
       }
     });
   }

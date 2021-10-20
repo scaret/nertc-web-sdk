@@ -676,11 +676,11 @@ class Stream extends EventEmitter {
         // Chrome的提示是：Permission Denied. Permission Denied by system
         && e.message.indexOf('ermission') > -1
         && e.message.indexOf('denied') > -1 ) {
-        this.client.emit('accessDenied', 'audio')
+        this.client.safeEmit('accessDenied', 'audio')
       } else if (e.message && e.message.indexOf('not found') > -1) {
-        this.client.emit('notFound', 'audio')
+        this.client.safeEmit('notFound', 'audio')
       } else {
-        this.client.emit('deviceError', 'audio')
+        this.client.safeEmit('deviceError', 'audio')
       }
       this.emit('device-error', {type: 'audio', error: e});
     }
@@ -708,13 +708,13 @@ class Stream extends EventEmitter {
         // Chrome的提示是：Permission Denied. Permission Denied by system
         && e.message.indexOf('ermission') > -1
         && e.message.indexOf('denied') > -1 ) {
-        this.client.emit('accessDenied', 'video')
+        this.client.safeEmit('accessDenied', 'video')
       } else if (e.message && e.message.indexOf('not found') > -1) {
-        this.client.emit('notFound', 'video')
+        this.client.safeEmit('notFound', 'video')
       } else if (e.message && e.message.indexOf('not start video source') > -1) {
-        this.client.emit('beOccupied', 'video')
+        this.client.safeEmit('beOccupied', 'video')
       } else {
-        this.client.emit('deviceError', 'video')
+        this.client.safeEmit('deviceError', 'video')
       }
       this.emit('device-error', {type: 'video', error: e});
     }
@@ -744,13 +744,13 @@ class Stream extends EventEmitter {
         && e.message.indexOf('ermission') > -1
         && e.message.indexOf('denied') > -1
       ) {
-        this.client.emit('accessDenied', 'screen')
+        this.client.safeEmit('accessDenied', 'screen')
       }else if (e.message && e.message.indexOf('not found') > -1) {
-        this.client.emit('notFound', 'screen')
+        this.client.safeEmit('notFound', 'screen')
       } else if (e.message && e.message.indexOf('not start video source') > -1) {
-        this.client.emit('beOccupied', 'screen')
+        this.client.safeEmit('beOccupied', 'screen')
       } else {
-        this.client.emit('deviceError', 'screen')
+        this.client.safeEmit('deviceError', 'screen')
       }
       this.emit('device-error', {type: 'screen', error: e});
     }
@@ -1137,6 +1137,23 @@ class Stream extends EventEmitter {
       switch(type) {
         case 'audio': 
           this.client.adapterRef.logger.log('开启mic设备')
+          if (this.mediaHelper.micTrack){
+            this.client.adapterRef.logger.warn('请先关闭麦克风')
+            this.client.apiFrequencyControl({
+              name: 'open',
+              code: -1,
+              param: JSON.stringify({
+                reason: '请先关闭麦克风',
+                type
+              }, null, ' ')
+            })
+            return Promise.reject(
+              new RtcError({
+                code: ErrorCode.INVALID_OPERATION,
+                message: 'please close mic first'
+              })
+            )
+          }
           this.audio = true
           if(this.mediaHelper){
             if (this.mediaHelper.webAudio){
@@ -1166,7 +1183,7 @@ class Stream extends EventEmitter {
           this.client.adapterRef.logger.log(`开启${type === 'video' ? 'camera' : 'screen'}设备`)
           if (this[type]) {
             if (type === "video"){
-              this.client.adapterRef.logger.log('请先关闭摄像头')
+              this.client.adapterRef.logger.warn('请先关闭摄像头')
               this.client.apiFrequencyControl({
                 name: 'open',
                 code: -1,
@@ -1182,7 +1199,7 @@ class Stream extends EventEmitter {
                 })
               )
             }else{
-              this.client.adapterRef.logger.log('请先关闭屏幕共享')
+              this.client.adapterRef.logger.warn('请先关闭屏幕共享')
               this.client.apiFrequencyControl({
                 name: 'open',
                 code: -1,
@@ -1198,6 +1215,23 @@ class Stream extends EventEmitter {
                 })
               )
             }
+          }
+          if (options.screenAudio && this.mediaHelper.screenAudioTrack){
+            this.client.adapterRef.logger.warn('请先关闭屏幕共享音频')
+            this.client.apiFrequencyControl({
+              name: 'open',
+              code: -1,
+              param: JSON.stringify({
+                reason: '请先关闭屏幕共享音频',
+                type
+              }, null, ' ')
+            })
+            return Promise.reject(
+              new RtcError({
+                code: ErrorCode.INVALID_OPERATION,
+                message: 'please close screenAudio first'
+              })
+            )
           }
           this[type] = true
           const constraint:any = {
@@ -1252,7 +1286,7 @@ class Stream extends EventEmitter {
         // Chrome的提示是：Permission Denied. Permission Denied by system
         && e.message.indexOf('ermission') > -1
         && e.message.indexOf('denied') > -1 ) {
-        this.client.emit('accessDenied', type)
+        this.client.safeEmit('accessDenied', type)
         return Promise.reject(
           new RtcError({
             code: ErrorCode.NOT_ALLOWED,
@@ -1469,7 +1503,7 @@ class Stream extends EventEmitter {
       if (!this.isRemote) {
         if (!this.client.adapterRef._mediasoup){
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASOUP,
+            code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 15'
           })
         }
@@ -1544,7 +1578,7 @@ class Stream extends EventEmitter {
       if (!this.isRemote) {
         if (!this.client.adapterRef._mediasoup){
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASOUP,
+            code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 16'
           })
         }
@@ -1930,7 +1964,7 @@ class Stream extends EventEmitter {
       if (!this.isRemote) {
         if (!this.client.adapterRef._mediasoup){
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASOUP,
+            code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 17'
           })
         }
@@ -1988,7 +2022,7 @@ class Stream extends EventEmitter {
       if (!this.isRemote) {
         if (!this.client.adapterRef._mediasoup){
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASOUP,
+            code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 18'
           })
         }
@@ -2045,7 +2079,7 @@ class Stream extends EventEmitter {
       if (!this.isRemote) {
         if (!this.client.adapterRef._mediasoup){
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASOUP,
+            code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 19'
           })
         }
@@ -2102,7 +2136,7 @@ class Stream extends EventEmitter {
       if (!this.isRemote) {
         if (!this.client.adapterRef._mediasoup){
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASOUP,
+            code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 20'
           })
         }

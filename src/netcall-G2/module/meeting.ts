@@ -141,7 +141,7 @@ class Meeting extends EventEmitter {
         this.adapterRef.channelStatus = 'leave'
         this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
         this.adapterRef.connectState.curState = 'DISCONNECTED'
-        this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
+        this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
         //上报login失败事件
         this.adapterRef.instance.apiEventReport('setLogin', {
           a_record: joinChannelRecordConfig.recordAudio,
@@ -158,7 +158,7 @@ class Meeting extends EventEmitter {
       this.adapterRef.channelStatus = 'leave'
       this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
       this.adapterRef.connectState.curState = 'DISCONNECTED'
-      this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
+      this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
       //上报login失败事件
       this.adapterRef.instance.apiEventReport('setLogin', {
         a_record: joinChannelRecordConfig.recordAudio,
@@ -189,7 +189,7 @@ class Meeting extends EventEmitter {
       this.adapterRef.channelStatus = 'leave'
       this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
       this.adapterRef.connectState.curState = 'DISCONNECTED'
-      this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
+      this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
       return this.adapterRef.instance.stopSession()
     })
     
@@ -246,7 +246,7 @@ class Meeting extends EventEmitter {
     for (let i=0; i < rtmpTasks.length; i++) {
       rtmpTasks[i].hostUid = requestUid
       rtmpTasks[i].version = 1
-      this.adapterRef.logger.log('rtmpTask: ', rtmpTasks[i])
+      this.adapterRef.logger.log('rtmpTask: ', JSON.stringify(rtmpTasks[i]))
       const layout = rtmpTasks[i].layout
       layout.users.forEach(user=>{
         if (typeof user.uid === 'string') {

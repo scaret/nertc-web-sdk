@@ -296,17 +296,17 @@ export class Safari12 extends HandlerInterface
     let transceiverLow: any = {};
     const mediaStream = new MediaStream();
     if (appData.mediaType === 'audio' && this._pc.audioSender) {
-      Logger.debug(prefix, 'audioSender更新track: ', this._pc.audioSender)
-      this._pc.audioSender.replaceTrack(track);
+      Logger.warn(prefix, 'audioSender更新track: ', this._pc.audioSender.track, "=>", track)
+      this._pc.audioSender.replaceTrack(track)
     } else if (appData.mediaType === 'video' && this._pc.videoSender) {
-      Logger.debug(prefix, 'videoSender更新track: ', this._pc.videoSender)
+      Logger.warn(prefix, 'videoSender更新track: ', this._pc.videoSender.track, "=>", track)
       this._pc.videoSender.replaceTrack(track)
       if (this._pc.videoSenderLow && trackLow){
         Logger.debug(prefix, 'videoSenderLow更新track: ', this._pc.videoSenderLow)
         this._pc.videoSenderLow.replaceTrack(trackLow)
       }
     } else if (appData.mediaType === 'screenShare' && this._pc.screenSender) {
-      Logger.debug(prefix, 'screenSender更新track: ', this._pc.screenSender)
+      Logger.warn(prefix, 'screenSender更新track: ', this._pc.screenSender.track, "=>", track)
       this._pc.screenSender.replaceTrack(track)
       if (this._pc.screenSenderLow && trackLow){
         Logger.debug(prefix, 'screenSenderLow更新track: ', this._pc.screenSenderLow)
@@ -336,8 +336,14 @@ export class Safari12 extends HandlerInterface
         this._pc.screenSenderLow = transceiverLow.sender
       }
     }
+    if (appData.mediaType === 'audio' && !this._pc.audioSender) {
+      this._pc.audioSender = transceiver.sender
+    } else if (appData.mediaType === 'video' && !this._pc.videoSender) {
+      this._pc.videoSender = transceiver.sender
+    } else if (appData.mediaType === 'screenShare' && !this._pc.screenSender) {
+      this._pc.screenSender = transceiver.sender
+    }
     Logger.debug(prefix, 'send() | [transceivers:%d]', this._pc.getTransceivers().length);
-
     let offer = await this._pc.createOffer();
     if (offer.sdp.indexOf(`a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#`) < 0) {
       offer.sdp = offer.sdp.replace(/a=ice-ufrag:([0-9a-zA-Z=+-_\/\\\\]+)/g, `a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#send`)
@@ -378,7 +384,6 @@ export class Safari12 extends HandlerInterface
 
     if (!this._transportReady)
       dtlsParameters = await this._setupTransport({ localDtlsRole: 'server', localSdpObject });
-    
     // We can now get the transceiver.mid.
     let localId = offerMediaObject.mid;
     if (typeof localId === "number"){

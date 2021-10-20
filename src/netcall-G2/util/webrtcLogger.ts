@@ -1,11 +1,8 @@
 import {platform} from "./platform";
 import {logHelper} from "./logHelper";
-import {
-  AdapterRef,
-  LoggerDebugOptions,
-  LoggerOptions,
-} from "../types";
-import * as loglevel from 'loglevel';
+import {AdapterRef, LoggerDebugOptions, LoggerOptions,} from "../types";
+import {getParameters} from "../module/parameters";
+import {loglevels} from "./log/logger";
 
 
 class Logger{
@@ -58,7 +55,9 @@ class Logger{
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
     }
-    logger._log('debug', args);
+    if(getParameters().logLevel <= loglevels.DEBUG){
+      logger._log('debug', args);
+    }
     (<any>window).logStorage && (<any>window).logStorage.log('debug', args);
     // loglevel.debug(arguments);
   }
@@ -74,7 +73,9 @@ class Logger{
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
     }
-    logger._log('log', args);
+    if(getParameters().logLevel <= loglevels.INFO){
+      logger._log('log', args);
+    }
     //  loglevel.trace(args);
     (<any>window).logStorage && (<any>window).logStorage.log('log', args);
   }
@@ -90,7 +91,9 @@ class Logger{
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
     }
-    logger._log('info', args);
+    if(getParameters().logLevel <= loglevels.INFO) {
+      logger._log('info', args);
+    }
     // loglevel.info(arguments);
     (<any>window).logStorage && (<any>window).logStorage.log('info', args);
     
@@ -107,7 +110,9 @@ class Logger{
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
     }
-    logger._log('warn', args);
+    if(getParameters().logLevel <= loglevels.WARNING) {
+      logger._log('warn', args);
+    }
     // loglevel.warn(arguments);
     (<any>window).logStorage && (<any>window).logStorage.log('warn', args);
   }
@@ -123,7 +128,10 @@ class Logger{
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
     }
-    logger._log('error', args);
+
+    if(getParameters().logLevel <= loglevels.ERROR) {
+      logger._log('error', args);
+    }
     // loglevel.error(arguments);
     (<any>window).logStorage && (<any>window).logStorage.log('error', args);
   }

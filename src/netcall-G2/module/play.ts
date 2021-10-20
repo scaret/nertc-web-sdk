@@ -540,6 +540,12 @@ class Play extends EventEmitter {
           //给微信的Workaround。微信会play()执行成功但不播放
           this.showControlIfVideoPause();
         }
+      }).catch((e)=>{
+        if (e.name === "AbortError"){
+          // The play() request was interrupted by a new load request. https://goo.gl/LdLk22
+        }else{
+          console.error(e);
+        }
       })
     } catch (error) {
       this.adapterRef && this.adapterRef.logger.warn('播放 %s 的视频出现问题:', this.uid, error.name, error.message, error)

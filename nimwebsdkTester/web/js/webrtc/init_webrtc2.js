@@ -133,6 +133,11 @@ $('#clearLocalStorage').on('click', () => {
   window.location.reload();
 })
 
+$('#setLogLevel').on('click', ()=>{
+  const level = $("#loglevel").val();
+  NERTC.Logger.setLogLevel(NERTC.Logger[level])
+})
+
 $('#privatizationConfig').on('click', () => {
   var objFile = document.getElementById("privatizationConfigFildId");
   if(objFile.value == "") {
@@ -302,12 +307,12 @@ function init() {
   const appkey = $('#appkey').val()
   // loadTokenByAppKey();
   const chrome = $('#part-env input[name="screen-type"]:checked').val()
+  NERTC.Logger.enableLogUpload();
   rtc.client = NERTC.createClient({
     appkey,
     debug: true,
     //report: false
   })
-  NERTC.Logger.enableLogUpload();
   initDevices()
   initEvents()
   initVolumeDetect()
@@ -847,17 +852,26 @@ $('#joinChannel-btn').on('click', async () => {
       } else if ($('#privateVideo').prop('checked')) {
         video = true
       }
-      if (audio || video) {
-        navigator.mediaDevices.getUserMedia(
-          {audio, video}
-        ).then(mediaStream => {
-          rtc.videoSource = mediaStream.getVideoTracks().length && mediaStream.getVideoTracks()[0];
-          rtc.audioSource = mediaStream.getAudioTracks().length && mediaStream.getAudioTracks()[0];
-          initLocalStream(rtc.audioSource, rtc.videoSource)
-        })
-      } else {
-        initLocalStream()
+      
+      if (audio){
+        rtc.audioSource = fakeMediaDevices.getFakeMedia({audio: true}).getTracks()[0];
+      }else{
+        if (rtc.audioSource){
+          rtc.audioSource.stop()
+          rtc.audioSource = null
+        }
       }
+      
+      if (video){
+        rtc.videoSource = fakeMediaDevices.getFakeMedia({video: {width: 1024, height: 768}, content: "自定义主流"}).getTracks()[0];
+      }else{
+        if (rtc.videoSource){
+          rtc.videoSource.stop()
+          rtc.videoSource = null
+        }
+      }
+
+      initLocalStream(rtc.audioSource, rtc.videoSource)
     }else{
       addLog("加入频道后未执行初始化本地流")
     }
@@ -896,10 +910,10 @@ $('#leaveChannel-btn').on('click', () => {
   rtc.succTasksList = []
   rtc.failTasksList = []
   if (rtc.audioSource) {
-    rtc.audioSource.map(track=>{track.stop()})
+    rtc.audioSource.stop()
   } 
   if (rtc.videoSource) {
-    rtc.videoSource.map(track=>{track.stop()})
+    rtc.videoSource.stop()
   }
   watermarks = {local: null, remote: {}};
 })

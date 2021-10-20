@@ -2,9 +2,11 @@
 
 import {Client} from "../api/client";
 import {Stream} from "../api/stream";
+import {loglevels} from "../util/log/logger";
 
 interface IParameters{
   
+  mediaTracks: MediaStreamTrack[],
   // 储存了通过createClient创建的客户端
   clients: Client[];
   
@@ -21,15 +23,22 @@ interface IParameters{
 
   // 恢复播放时，是否隐藏video控件的默认控制选项
   hideControlOnResume: boolean,
+  
+  // 最大PeerConnection重连次数
+  maxTransportRebuildCnt: number,
+  logLevel: loglevels,
 }
 
 let parameters:IParameters = {
+  mediaTracks: [],
   clients: [],
   localStreams: [],
   videoLowDefaultConstraints: {width: 160},
   screenLowDefaultConstraints: {width: 160},
   controlOnPaused: true,
   hideControlOnResume: true,
+  maxTransportRebuildCnt: 50,
+  logLevel: loglevels.INFO,
 }
 
 // 注意：getParameters和setParameters是一些私有全局变量，仅用于调试和私有接口，不用于正常业务

@@ -1,3 +1,6 @@
+import {getParameters} from "../../parameters";
+import {loglevels} from "../../../util/log/logger";
+
 const debug = require('debug');
 
 const APP_NAME = 'protoo-client';
@@ -13,7 +16,9 @@ class Logger
 	{
 		var args = Array.prototype.slice.call(arguments);
 		this.formatArgs(args);
-		console.debug(args);
+    if (getParameters().logLevel <= loglevels.DEBUG){
+      console.debug.apply(console, args);
+    }
 		window.logStorage && window.logStorage.log('debug', args);
 	}
 
@@ -21,7 +26,9 @@ class Logger
 	{
 		var args = Array.prototype.slice.call(arguments);
 		this.formatArgs(args);
-		console.warn(args);
+    if (getParameters().logLevel <= loglevels.WARNING){
+      console.warn.apply(console, args);
+    }
 		window.logStorage && window.logStorage.log('warn', args);
 	}
 
@@ -29,7 +36,9 @@ class Logger
 	{
 		var args = Array.prototype.slice.call(arguments);
 		this.formatArgs(args);
-		console.error(args);
+    if (getParameters().logLevel <= loglevels.ERROR){
+      console.error.apply(console, args);
+    }
 		window.logStorage && window.logStorage.log('error', args);
 	}
 

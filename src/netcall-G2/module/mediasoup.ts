@@ -806,7 +806,7 @@ class Mediasoup extends EventEmitter {
           remoteStream.pubStatus[mediaTypeShort].stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup){
             throw new RtcError({
-              code: ErrorCode.NO_MEDIASOUP,
+              code: ErrorCode.NO_MEDIASERVER,
               message: 'media server error 21'
             })
           }
@@ -1019,7 +1019,7 @@ class Mediasoup extends EventEmitter {
           })
         }
         remoteStream.mediaHelper.updateStream(mediaTypeShort, consumer.track)
-        this.adapterRef.instance.emit('stream-subscribed', {stream: remoteStream, 'mediaType': mediaTypeShort})
+        this.adapterRef.instance.safeEmit('stream-subscribed', {stream: remoteStream, 'mediaType': mediaTypeShort})
       } else {
         this.adapterRef.logger.log('该次consume状态错误： ', JSON.stringify(remoteStream['pubStatus'], null, ''))
       }
