@@ -693,7 +693,7 @@ class MediaHelper extends EventEmitter {
       }
       if (this.cameraTrack === track){
         this.cameraTrack = null;
-        if (this.adapterRef._mediasoup && this.cameraTrackLow){
+        if (this.cameraTrackLow){
           this.adapterRef.logger.log('停止视频小流:', this.cameraTrackLow);
           this.cameraTrackLow.stop();
           this.cameraTrackLow = null;
@@ -701,7 +701,7 @@ class MediaHelper extends EventEmitter {
       }
       if (this.screenTrack === track){
         this.screenTrack = null;
-        if (this.adapterRef._mediasoup && this.screenTrackLow){
+        if (this.screenTrackLow){
           this.adapterRef.logger.log('停止辅流小流:', this.screenTrackLow);
           this.screenTrackLow.stop();
           this.screenTrackLow = null;
