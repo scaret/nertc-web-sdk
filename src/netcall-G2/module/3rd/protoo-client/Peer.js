@@ -327,7 +327,7 @@ class Peer extends EnhancedEventEmitter
 		if (!sent)
 		{
 			logger.error(
-				'received response does not match any sent request [id:%s]', response.id);
+				'received response does not match any sent request', response.id, response);
 
 			return;
 		}

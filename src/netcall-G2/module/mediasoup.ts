@@ -719,7 +719,7 @@ class Mediasoup extends EventEmitter {
       })
     }
     this.adapterRef.logger.log('setConsumerPreferredLayer() [切换大小流]layer：', layer, layer === 1 ? '大流' : '小流', mediaType);
-    const result = await this.adapterRef._signalling._protoo.notify(
+    const result = await this.adapterRef._signalling._protoo.request(
       'SetConsumerPreferredLayer', {
         requestId: `${Math.ceil(Math.random() * 1e9)}`,
         uid: remoteStream.streamID,
