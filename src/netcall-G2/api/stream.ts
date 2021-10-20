@@ -806,7 +806,7 @@ class Stream extends EventEmitter {
     this.client.adapterRef.logger.log(`uid ${this.stringStreamID} Stream.play::`, JSON.stringify(playOptions))
     if (this.isRemote){
       if(playOptions.audio && this._play && this.mediaHelper && this.mediaHelper.audioStream){
-        this.client.adapterRef.logger.log('开始播放远端音频: ', this.stringStreamID)
+        this.client.adapterRef.logger.log(`uid ${this.stringStreamID} 开始播放远端音频`)
         try{
           await this._play.playAudioStream(this.mediaHelper.audioStream, playOptions.muted)
           this.audioPlay_ = true;
@@ -824,7 +824,7 @@ class Stream extends EventEmitter {
       }
     } else {
       if(playOptions.audio && this._play && this.mediaHelper && this.mediaHelper.micStream){
-        this.client.adapterRef.logger.log('开始播放本地音频: ',this.stringStreamID, playOptions.audioType);
+        this.client.adapterRef.logger.log(`uid ${this.stringStreamID} 开始播放本地音频: `, playOptions.audioType);
         if (playOptions.audioType === "voice"){
           this._play.playAudioStream(this.mediaHelper.micStream, playOptions.muted)
           this.audioPlay_ = true;
@@ -874,8 +874,7 @@ class Stream extends EventEmitter {
       if (playOptions.screen){
         this.screenView = view;
         if(this._play && this.mediaHelper && this.mediaHelper.screenStream && this.mediaHelper.screenStream.getVideoTracks().length){
-          this.client.adapterRef.logger.log('开始播放辅流: ', this.stringStreamID)
-          
+          this.client.adapterRef.logger.log(`uid ${this.stringStreamID} 开始启动视频播放 辅流 ${this.isRemote ? "远端": "本地"}`);
           try{
             //@ts-ignore
             await this._play.playScreenStream(this.mediaHelper.screenStream, view)
@@ -1033,7 +1032,7 @@ class Stream extends EventEmitter {
    * @return {Void}
    */
   stop (type?:MediaTypeShort) {
-    this.client.adapterRef.logger.log('Stream.stop: 停止播放 %s %s。', this.stringStreamID, type || "音视频流")
+    this.client.adapterRef.logger.log(`uid ${this.stringStreamID} Stream.stop: 停止播放 ${type || "音视频流"}`)
     if(!this._play) return
     if (type === 'audio') {
       this._play.stopPlayAudioStream()
@@ -3069,7 +3068,7 @@ class Stream extends EventEmitter {
         screenProfile: this.screenProfile
       }, null, ' ')
     })
-    this.client.adapterRef.logger.log('销毁 Stream 实例: ', this.stringStreamID)
+    this.client.adapterRef.logger.log(`uid ${this.stringStreamID} 销毁 Stream 实例`)
     this.stop()
     this._reset()
   }

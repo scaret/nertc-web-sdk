@@ -837,7 +837,7 @@ class Client extends Base {
    * @returns {Promise}  
   */
   async setRemoteVideoStreamType (stream:Stream, highOrLow:number) {
-    this.adapterRef.logger.log(`订阅${stream.getId()}成员的${highOrLow ? '小' : '大'}流`, highOrLow)
+    this.adapterRef.logger.log(`uid ${stream.getId()} 订阅成员的${highOrLow ? '小' : '大'}流`, highOrLow)
 
     try {
       if (!this.adapterRef._mediasoup){

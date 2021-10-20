@@ -16,7 +16,10 @@ export function deepCopy(param: Object){
     return result;
 }
 
-export function getDomInfo(elem: HTMLElement){
+export function getDomInfo(elem: HTMLElement|null){
+  if (!elem){
+    return "" + elem
+  }
   let info = elem.tagName;
   if (elem.id){
     info += "#" + elem.id;

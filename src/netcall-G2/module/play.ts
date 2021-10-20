@@ -181,7 +181,7 @@ class Play extends EventEmitter {
         const height = this.videoDom.videoHeight
         
         if (width !== this.videoSize.width || height !== this.videoSize.height){
-          this.adapterRef.logger.log(`uid ${this.uid} 主流视频分辨率发生变化：${this.videoSize.width}x${this.videoSize.height} => ${width}x${height}`);
+          this.adapterRef.logger.log(`uid ${this.uid} 主流视频分辨率发生变化：${this.videoSize.width}x${this.videoSize.height} => ${width}x${height}。当前父节点：${getDomInfo(this.videoView)}`);
           if (width > height && this.videoSize.width > this.videoSize.height || width < height && this.videoSize.width < this.videoSize.height){
             // 未改变视频方向
           }else{
@@ -257,13 +257,15 @@ class Play extends EventEmitter {
         const width = this.screenDom.videoWidth;
         const height = this.screenDom.videoHeight
 
-        if (this.screenRenderMode.width && this.screenRenderMode.height
-          && (width !== this.screenSize.width || height !== this.screenSize.height)
-        ){
-          this.adapterRef.logger.log(`setScreenRender on resize：uid ${this.uid}, ${this.screenSize.width}x${this.screenSize.height} => ${width}x${height}`);
+        if (width !== this.screenSize.width || height !== this.screenSize.height){
+          this.adapterRef.logger.log(`uid ${this.uid} 辅流视频分辨率发生变化：${this.screenSize.width}x${this.screenSize.height} => ${width}x${height}`);
+          if (width > height && this.screenSize.width > this.screenSize.height || width < height && this.screenSize.width < this.screenSize.height){
+            // 未改变视频方向
+          }else{
+            this.setScreenRender();
+          }
           this.screenSize.width = width;
           this.screenSize.height = height;
-          this.setScreenRender();
         }
       });
       if (getParameters()["controlOnPaused"]) {
@@ -298,7 +300,7 @@ class Play extends EventEmitter {
       this.adapterRef.logger.log('Play: _mountVideoToDom: videoContainerDom: ', this.videoContainerDom.outerHTML)
       if (this.videoView){
         this.videoView.appendChild(this.videoContainerDom)
-        this.adapterRef.logger.log(`uid ${this.uid} 视频dom节点挂载成功。父节点：${getDomInfo(this.videoView)}`)
+        this.adapterRef.logger.log(`uid ${this.uid} 视频主流dom节点挂载成功。父节点：${getDomInfo(this.videoView)}`)
         this._watermarkControl.start(this.videoContainerDom);
       }
     }
@@ -313,6 +315,7 @@ class Play extends EventEmitter {
       this.adapterRef.logger.log('Play: _mountScreenToDom: screenContainerDom: ', this.screenContainerDom.outerHTML)
       if (this.screenView){
         this.screenView.appendChild(this.screenContainerDom)
+        this.adapterRef.logger.log(`uid ${this.uid} 视频辅流dom节点挂载成功。父节点：${getDomInfo(this.screenView)}`)
         this._watermarkControlScreen.start(this.screenContainerDom);
       }
     }
@@ -359,7 +362,6 @@ class Play extends EventEmitter {
 
   async playAudioStream(stream:MediaStream, ismuted?:boolean) {
     if(!stream) return
-    this.adapterRef.logger.log(`播放音频, id: ${stream.id}, active state: ${stream.active}`)
     if (!this.audioDom) {
       this.audioDom = document.createElement('audio')
     }
@@ -370,11 +372,11 @@ class Play extends EventEmitter {
     }
     
     this.audioDom.srcObject = stream
-    this.adapterRef.logger.log('播放 %o 的音频, streamId: %o, stream状态: %o', this.uid, stream.id, stream.active)
     if (this.audioSinkId) {
       try {
+        this.adapterRef.logger.log(`uid ${this.uid} 音频尝试使用输出设备`, this.audioSinkId);
         await (this.audioDom as any).setSinkId(this.audioSinkId);
-        this.adapterRef.logger.log('音频使用输出设备：%s', this.audioSinkId);
+        this.adapterRef.logger.log(`uid ${this.uid} 音频使用输出设备成功`, this.audioSinkId);
       } catch (e) {
         this.adapterRef.logger.error('音频输出设备切换失败', e.name, e.message, e);
       }
@@ -382,12 +384,12 @@ class Play extends EventEmitter {
     if(!stream.active) return
     const isPlaying = await this.isPlayAudioStream()
     if (isPlaying) {
-      this.adapterRef.logger.log('%o 的音频播放正常', this.uid)
+      this.adapterRef.logger.log(`uid ${this.uid} 音频播放正常`)
     }
     try {
       this.audioDom.muted = false;
       await this.audioDom.play()
-      this.adapterRef.logger.log('播放 %o 的音频完成，当前播放状态: %o', this.uid, this.audioDom && this.audioDom.played && this.audioDom.played.length)
+      this.adapterRef.logger.log(`uid ${this.uid} 播放音频完成，当前播放状态: %o`, this.audioDom && this.audioDom.played && this.audioDom.played.length)
     } catch (error) {
       this.adapterRef.logger.warn('播放 %o 的音频出现问题: ', this.uid, error.name, error.message, error)
 
@@ -532,7 +534,11 @@ class Play extends EventEmitter {
     }
     try {
       const videoTrack = stream.getVideoTracks()[0];
-      this.adapterRef.logger.log(`uid ${this.uid} 开始加载主流播放视频源：视频参数 "${videoTrack.label}",enabled ${videoTrack.enabled} , ${JSON.stringify(videoTrack.getSettings())}`)
+      if (videoTrack){
+        this.adapterRef.logger.log(`uid ${this.uid} 开始加载主流播放视频源：视频参数 "${videoTrack.label}",enabled ${videoTrack.enabled} , ${JSON.stringify(videoTrack.getSettings())}`)
+      }else{
+        this.adapterRef.logger.error(`uid ${this.uid} 加载主流播放视频源失败：没有视频源`)
+      }
       this.videoDom.srcObject = stream
       this.videoDom.play().then(()=>{
         this.adapterRef.logger.log(`uid ${this.uid} 成功加载主流播放视频源：当前视频实际分辨率${this.videoDom?.videoWidth}x${this.videoDom?.videoHeight}，显示宽高${this.videoDom?.offsetWidth}x${this.videoDom?.offsetHeight}`)
@@ -577,10 +583,14 @@ class Play extends EventEmitter {
     }
     try {
       const videoTrack = stream.getVideoTracks()[0];
-      this.adapterRef.logger.log(`开始加载辅流播放视频源：uid ${this.uid} 视频参数 "${videoTrack.label}",enabled ${videoTrack.enabled} , ${JSON.stringify(videoTrack.getSettings())}`)
+      if (videoTrack){
+        this.adapterRef.logger.log(`uid ${this.uid} 开始加载辅流播放视频源：视频参数 "${videoTrack.label}",enabled ${videoTrack.enabled} , ${JSON.stringify(videoTrack.getSettings())}`)
+      }else{
+        this.adapterRef.logger.error(`uid ${this.uid} 加载主流播放视频源失败：没有视频源`)
+      }
       this.screenDom.srcObject = stream
       this.screenDom.play().then(()=>{
-        this.adapterRef.logger.log(`成功加载辅流播放视频源：uid ${this.uid} 当前视频实际分辨率${this.screenDom?.videoWidth}x${this.screenDom?.videoHeight}，显示宽高${this.screenDom?.offsetWidth}x${this.screenDom?.offsetHeight}`)
+        this.adapterRef.logger.log(`uid ${this.uid} 成功加载辅流播放视频源：当前视频实际分辨率${this.screenDom?.videoWidth}x${this.screenDom?.videoHeight}，显示宽高${this.screenDom?.offsetWidth}x${this.screenDom?.offsetHeight}`)
         if (this.screenDom?.paused && getParameters()["controlOnPaused"]){
           //给微信的Workaround。微信会play()执行成功但不播放
           this.showControlIfVideoPause();
@@ -592,13 +602,13 @@ class Play extends EventEmitter {
   }
 
   async stopPlayVideoStream() {
-    this.adapterRef.logger.log('stopPlayVideoStream: 停止播发视频')
+    this.adapterRef.logger.log(`uid ${this.uid} stopPlayVideoStream 停止播发视频`)
     if (this.videoContainerDom && this.videoDom) {
       if(this.videoContainerDom == this.videoDom.parentNode) {
-        this.adapterRef.logger.log('清除 videoDom')
+        this.adapterRef.logger.log(`uid ${this.uid} 清除 videoDom`)
         this.videoContainerDom.removeChild(this.videoDom)
       } else if(this.videoContainerDom.lastChild){
-        this.adapterRef.logger.log('videoContainerDom 删除子节点')
+        this.adapterRef.logger.log(`uid ${this.uid} videoContainerDom 删除子节点`)
         this.videoContainerDom.removeChild(this.videoContainerDom.lastChild)
       }
       try {
@@ -625,7 +635,7 @@ class Play extends EventEmitter {
   }
   
   async stopPlayScreenStream() {
-    this.adapterRef.logger.log('stopPlayVideoStream: 停止播发屏幕共享')
+    this.adapterRef.logger.log(`uid ${this.uid} stopPlayScreenStream: 停止播发屏幕共享`)
     if (this.screenContainerDom && this.screenDom) {
       this.screenContainerDom.removeChild(this.screenDom)
       try {
@@ -633,7 +643,7 @@ class Play extends EventEmitter {
         this.screenDom.srcObject = null
         this.screenDom = null
       } catch(e) {
-        this.adapterRef.logger.log('stopPlayScreenStream e: ', e)
+        this.adapterRef.logger.log(`uid ${this.uid} stopPlayScreenStream: 停止播发屏幕共享`, e.name, e.message);
       }
     }
     if (this.screenView && this.screenContainerDom) {
