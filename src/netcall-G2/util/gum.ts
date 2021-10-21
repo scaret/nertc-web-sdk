@@ -1,8 +1,7 @@
-import {Logger} from "../types";
+import {ILogger} from "../types";
 import {getParameters} from "../module/parameters";
 
-async function getStream (constraint:MediaStreamConstraints, logger:Logger = console) {
-    
+async function getStream (constraint:MediaStreamConstraints, logger:ILogger) {
   logger.log('getLocalStream constraint:', JSON.stringify(constraint))
   try {
     const stream = await navigator.mediaDevices.getUserMedia(constraint)
@@ -21,7 +20,7 @@ async function getStream (constraint:MediaStreamConstraints, logger:Logger = con
   }
 }
 
-function getScreenStream (constraint:MediaStreamConstraints, logger:Logger = console) {
+function getScreenStream (constraint:MediaStreamConstraints, logger:ILogger) {
   logger.log('getScreenStream constraint:', JSON.stringify(constraint, null, ' '))
   //@ts-ignore
   const getDisplayMedia = navigator.getDisplayMedia || navigator.mediaDevices.getDisplayMedia

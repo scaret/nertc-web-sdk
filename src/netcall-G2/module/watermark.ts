@@ -1,7 +1,7 @@
 import { EventEmitter } from 'eventemitter3'
 import dateformat from 'dateformat'
 import {
-  Logger,
+  ILogger,
   NERtcCanvasWatermarkConfig, NERtcImageWatermarkConfig,
   NERtcTextWatermarkConfig,
   NERtcTimestampWatermarkConfig,
@@ -35,8 +35,8 @@ class WatermarkControl extends EventEmitter{
   private settings:{
     defaultStyle: {[key:string]: string};
   }
-  private logger: Logger;
-  constructor(logger:Logger) {
+  private logger: ILogger;
+  constructor(logger:ILogger) {
     super();
     this.logger = logger;
     this.settings = {
@@ -626,7 +626,7 @@ class WatermarkManager{
 
 const watermarkManager = new WatermarkManager();
 
-function createWatermarkControl(logger:Logger){
+function createWatermarkControl(logger:ILogger){
   const control = new WatermarkControl(logger);
   watermarkManager.controls.push(control);
   return control;
