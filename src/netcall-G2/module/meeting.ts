@@ -401,7 +401,7 @@ class Meeting extends EventEmitter {
           })
           return Promise.resolve()
         } else {
-          this.adapterRef.logger.log('删除推流任务请求失败: %o', data)
+          this.adapterRef.logger.log('删除推流任务请求失败:', JSON.stringify(data))
           this.adapterRef.instance.apiFrequencyControl({
             name: 'deleteTasks',
             code: data.code,
@@ -528,7 +528,7 @@ class Meeting extends EventEmitter {
           })
           return Promise.resolve()
         } else {
-          this.adapterRef.logger.log('更新推流任务失败： %o', data)
+          this.adapterRef.logger.log('更新推流任务失败：', JSON.stringify(data))
           this.adapterRef.instance.apiFrequencyControl({
             name: 'updateTasks',
             code: data.code,

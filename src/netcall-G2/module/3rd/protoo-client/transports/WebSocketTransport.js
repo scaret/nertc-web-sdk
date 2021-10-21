@@ -87,7 +87,7 @@ class WebSocketTransport extends EnhancedEventEmitter
 		}
 		catch (error)
 		{
-			logger.warn('send() failed:%o', error);
+			logger.warn('send() failed:', error.name, error.message);
 
 			throw error;
 		}

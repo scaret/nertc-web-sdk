@@ -14,7 +14,7 @@ import {
   StreamPlayOptions,
   SubscribeConfig,
   SubscribeOptions,
-  RemoteStreamOptions,
+  RemoteStreamOptions, ILogger,
 } from "../types";
 import {MediaHelper} from "../module/media";
 import {isExistOptions} from "../util/param";
@@ -26,6 +26,8 @@ import {
 import RtcError from '../util/error/rtcError';
 import ErrorCode  from '../util/error/errorCode';
 import BigNumber from 'bignumber.js'
+
+let remoteStreamCnt = 0;
 
 class RemoteStream extends EventEmitter {
   public streamID:number|string;
@@ -65,15 +67,23 @@ class RemoteStream extends EventEmitter {
   private videoPlay_: boolean;
   private screenPlay_: boolean;
   public active:boolean = true;
-  
+  public logger: ILogger;
+  remoteStreamId : number;
   constructor (options:RemoteStreamOptions) {
     super()
+    this.remoteStreamId = remoteStreamCnt++;
+    this.streamID = options.uid
+    this.stringStreamID = this.streamID.toString()
+    this.logger = options.client.adapterRef.logger.getChild(()=>{
+      let tag = `remote${this.remoteStreamId}#${this.stringStreamID}`;
+      return tag
+    })
 
     if (typeof options.uid === 'string' || BigNumber.isBigNumber(options.uid)) {
-      options.client.adapterRef.logger.log('uid是string类型')
+      this.logger.log('uid是string类型')
       options.client.adapterRef.channelInfo.uidType = 'string'
     } else if (typeof options.uid === 'number') {
-      options.client.adapterRef.logger.log('uid是number类型')
+      this.logger.log('uid是number类型')
       options.client.adapterRef.channelInfo.uidType = 'number'
       if(options.uid > Number.MAX_SAFE_INTEGER){
         throw new RtcError({
@@ -82,7 +92,7 @@ class RemoteStream extends EventEmitter {
         })
       }
     } else {
-      options.client.adapterRef.logger.error('uid参数格式非法')
+      this.logger.error('uid参数格式非法')
       throw new RtcError({
         code: ErrorCode.INVALID_PARAMETER,
         message: 'uid is invalid'
@@ -166,9 +176,7 @@ class RemoteStream extends EventEmitter {
       stream: this,
     });
     this._play = new Play({
-      sdkRef: this.client,
-      adapterRef: this.client.adapterRef,
-      uid: this.client.adapterRef.channelInfo.uidType === 'string' ? this.stringStreamID : this.streamID
+      stream: this,
     })
     this._record = new Record({
       sdkRef: this.client,
@@ -177,7 +185,7 @@ class RemoteStream extends EventEmitter {
       media: this.mediaHelper
     })
     
-    this.client.adapterRef.logger.log(`创建远端Stream: %s`, JSON.stringify({
+    this.logger.log(`创建远端Stream: `, JSON.stringify({
       streamID: this.stringStreamID,
       audio: options.audio,
       video: options.video,
@@ -280,7 +288,7 @@ class RemoteStream extends EventEmitter {
   }
  
   getId () {
-    //this.client.adapterRef.logger.log('获取音视频流 ID: ', this.streamID)
+    this.logger.log('获取音视频流 ID: ', this.streamID)
     if (this.client.adapterRef.channelInfo.uidType === 'string') {
       return this.stringStreamID
     }
@@ -289,7 +297,7 @@ class RemoteStream extends EventEmitter {
 
   async getStats() {
     let remotePc = this.client.adapterRef && this.client.adapterRef._mediasoup && this.client.adapterRef._mediasoup._recvTransport && this.client.adapterRef._mediasoup._recvTransport._handler._pc;
-    this.client.adapterRef.logger.log(`获取音视频连接数据, uid: ${this.stringStreamID}`);
+    this.logger.log(`获取音视频连接数据, uid: ${this.stringStreamID}`);
     if(remotePc){
       const stats = {
         accessDelay: "0",
@@ -338,7 +346,7 @@ class RemoteStream extends EventEmitter {
           } 
         });
       } catch (error) {
-        this.client.adapterRef.logger.error('failed to get remoteStats', error.name, error.message);
+        this.logger.error('failed to get remoteStats', error.name, error.message);
       }
       return stats;
     }
@@ -355,7 +363,7 @@ class RemoteStream extends EventEmitter {
    * @returns {Null}  
   */
   setSubscribeConfig (conf:SubscribeOptions) {
-    this.client.adapterRef.logger.log('设置订阅规则：%o ', JSON.stringify(conf, null, ' '))
+    this.logger.log('设置订阅规则：', JSON.stringify(conf))
     if (typeof conf.audio === "boolean"){
       this.subConf.audio = conf.audio;
     }
@@ -391,7 +399,7 @@ class RemoteStream extends EventEmitter {
       this.subConf.screen = false
     }
 
-    this.client.adapterRef.logger.log('订阅规则：%o ', JSON.stringify(this.subConf, null, ' '))
+    this.logger.log('订阅规则：', JSON.stringify(this.subConf))
     this.client.apiFrequencyControl({
       name: 'setSubscribeConfig',
       code: 0,
@@ -467,9 +475,9 @@ class RemoteStream extends EventEmitter {
       playOptions.screen = true;
     }
     
-    this.client.adapterRef.logger.log(`uid ${this.stringStreamID} Stream.play::`, JSON.stringify(playOptions))
+    this.logger.log(`uid ${this.stringStreamID} Stream.play::`, JSON.stringify(playOptions))
     if(playOptions.audio && this._play && this.mediaHelper && this.mediaHelper.audioStream){
-      this.client.adapterRef.logger.log(`uid ${this.stringStreamID} 开始播放远端音频`)
+      this.logger.log(`uid ${this.stringStreamID} 开始播放远端音频`)
       try{
         await this._play.playAudioStream(this.mediaHelper.audioStream, playOptions.muted)
         this.audioPlay_ = true;
@@ -487,7 +495,7 @@ class RemoteStream extends EventEmitter {
       if (playOptions.video){
         this.videoView = view;
         if(this._play && this.mediaHelper && this.mediaHelper.videoStream && this.mediaHelper.videoStream.getVideoTracks().length){
-          this.client.adapterRef.logger.log(`uid ${this.stringStreamID} 开始启动视频播放 主流 远端`);
+          this.logger.log(`uid ${this.stringStreamID} 开始启动视频播放 主流 远端`);
           try{
             //@ts-ignore
             await this._play.playVideoStream(this.mediaHelper.videoStream, view)
@@ -509,7 +517,7 @@ class RemoteStream extends EventEmitter {
       if (playOptions.screen){
         this.screenView = view;
         if(this._play && this.mediaHelper && this.mediaHelper.screenStream && this.mediaHelper.screenStream.getVideoTracks().length){
-          this.client.adapterRef.logger.log(`uid ${this.stringStreamID} 开始启动视频播放 辅流 远端`);
+          this.logger.log(`uid ${this.stringStreamID} 开始启动视频播放 辅流 远端`);
           try{
             //@ts-ignore
             await this._play.playScreenStream(this.mediaHelper.screenStream, view)
@@ -571,7 +579,7 @@ class RemoteStream extends EventEmitter {
    */
   setRemoteRenderMode (options:RenderMode, mediaType?:MediaTypeShort) {
     if (!options || !(options.width - 0) || !(options.height - 0)) {
-      this.client.adapterRef.logger.warn('setRemoteRenderMode 参数错误')
+      this.logger.warn('setRemoteRenderMode 参数错误')
       this.client.apiFrequencyControl({
         name: 'setRemoteRenderMode',
         code: -1,
@@ -581,7 +589,7 @@ class RemoteStream extends EventEmitter {
     if (!this.client || !this._play) {
       return
     } 
-    this.client.adapterRef.logger.log(`uid ${this.stringStreamID} 设置远端视频播放窗口大小: `, mediaType || "video+screen", JSON.stringify(options))
+    this.logger.log(`uid ${this.stringStreamID} 设置远端视频播放窗口大小: `, mediaType || "video+screen", JSON.stringify(options))
     // mediaType不填则都设
     if (!mediaType || mediaType === "video"){
       if (this._play){
@@ -609,7 +617,7 @@ class RemoteStream extends EventEmitter {
    * @return {Void}
    */
   stop (type?:MediaTypeShort) {
-    this.client.adapterRef.logger.log(`uid ${this.stringStreamID} Stream.stop: 停止播放 ${type || "音视频流"}`)
+    this.logger.log(`uid ${this.stringStreamID} Stream.stop: 停止播放 ${type || "音视频流"}`)
     if(!this._play) return
     if (type === 'audio') {
       this._play.stopPlayAudioStream()
@@ -662,7 +670,7 @@ class RemoteStream extends EventEmitter {
     }else if (type === 'screen') {
       isPlaying = await this._play.isPlayScreenStream()
     } else {
-      this.client.adapterRef.logger.warn('isPlaying: unknown type')
+      this.logger.warn('isPlaying: unknown type')
       return Promise.reject(
         new RtcError({
           code: ErrorCode.UNKNOWN_TYPE,
@@ -670,7 +678,7 @@ class RemoteStream extends EventEmitter {
         })
       )
     }
-    this.client.adapterRef.logger.log(`检查${this.stringStreamID}的${type}播放状态: ${isPlaying}`)
+    this.logger.log(`检查${this.stringStreamID}的${type}播放状态: ${isPlaying}`)
     return isPlaying
   }
 
@@ -681,7 +689,7 @@ class RemoteStream extends EventEmitter {
    * @return {Promise}
    */
   async unmuteAudio () {
-    this.client.adapterRef.logger.log('启用音频轨道: ', this.stringStreamID)
+    this.logger.log('启用音频轨道: ', this.stringStreamID)
     try {
       if (!this._play){
         throw new RtcError({
@@ -708,7 +716,7 @@ class RemoteStream extends EventEmitter {
         }, null, ' ')
       })
     } catch (e) {
-      this.client.adapterRef.logger.error('API调用失败：Stream:unmuteAudio' ,e.name, e.message, e);
+      this.logger.error('API调用失败：Stream:unmuteAudio' ,e.name, e.message, e);
       this.client.apiFrequencyControl({
         name: 'unmuteAudio',
         code: -1,
@@ -727,7 +735,7 @@ class RemoteStream extends EventEmitter {
    * @return {Promise}
    */
   async muteAudio () {
-    this.client.adapterRef.logger.log('禁用音频轨道: ', this.stringStreamID)
+    this.logger.log('禁用音频轨道: ', this.stringStreamID)
 
     try {
       if (!this._play){
@@ -749,7 +757,7 @@ class RemoteStream extends EventEmitter {
         }, null, ' ')
       })
     } catch (e) {
-      this.client.adapterRef.logger.error('API调用失败：Stream:muteAudio' ,e.name, e.message, e);
+      this.logger.error('API调用失败：Stream:muteAudio' ,e.name, e.message, e);
       this.client.apiFrequencyControl({
         name: 'muteAudio',
         code: -1,
@@ -785,7 +793,7 @@ class RemoteStream extends EventEmitter {
   setAudioVolume (volume = 100) {
     let reason = null
     if (!Number.isInteger(volume)) {
-      this.client.adapterRef.logger.log('volume 为 0 - 100 的整数')
+      this.logger.log('volume 为 0 - 100 的整数')
       reason = 'INVALID_ARGUMENTS'
     } else if (volume < 0) {
       volume = 0
@@ -794,7 +802,7 @@ class RemoteStream extends EventEmitter {
     } else {
       volume = volume * 2.55
     }
-    this.client.adapterRef.logger.log(`调节${this.stringStreamID}的音量大小: ${volume}`)
+    this.logger.log(`调节${this.stringStreamID}的音量大小: ${volume}`)
 
     if (this.audio) {
       if (!this._play){
@@ -805,7 +813,7 @@ class RemoteStream extends EventEmitter {
       }
       this._play.setPlayVolume(volume)
     } else {
-      this.client.adapterRef.logger.log(`没有音频流，请检查是否有发布过音频`)
+      this.logger.log(`没有音频流，请检查是否有发布过音频`)
       reason = 'INVALID_OPERATION'
     }
     if (reason) {
@@ -847,7 +855,7 @@ class RemoteStream extends EventEmitter {
             callback(e);
           }, 0);
         }
-        this.client.adapterRef.logger.error('设置输出设备失败', e.name, e.message);
+        this.logger.error('设置输出设备失败', e.name, e.message);
         throw e;
       }
       if (callback) {
@@ -863,7 +871,7 @@ class RemoteStream extends EventEmitter {
    * @return {Promise}
    */
   async unmuteVideo () {
-    this.client.adapterRef.logger.log(`启用 ${this.stringStreamID} 的视频轨道`)
+    this.logger.log(`启用 ${this.stringStreamID} 的视频轨道`)
     try {
       if (!this._play){
         throw new RtcError({
@@ -890,7 +898,7 @@ class RemoteStream extends EventEmitter {
         }, null, ' ')
       })
     } catch (e) {
-      this.client.adapterRef.logger.error('API调用失败：Stream:unmuteVideo' ,e.name, e.message, e);
+      this.logger.error('API调用失败：Stream:unmuteVideo' ,e.name, e.message, e);
       this.client.apiFrequencyControl({
         name: 'unmuteVideo',
         code: -1,
@@ -909,7 +917,7 @@ class RemoteStream extends EventEmitter {
    * @return {Promise}
    */
   async muteVideo () {
-    this.client.adapterRef.logger.log(`禁用 ${this.stringStreamID} 的视频轨道`)
+    this.logger.log(`禁用 ${this.stringStreamID} 的视频轨道`)
     try {
       if (!this._play){
         throw new RtcError({
@@ -929,7 +937,7 @@ class RemoteStream extends EventEmitter {
         }, null, ' ')
       })
     } catch (e) {
-      this.client.adapterRef.logger.error('API调用失败：Stream:muteVideo' ,e.name, e.message, e);
+      this.logger.error('API调用失败：Stream:muteVideo' ,e.name, e.message, e);
       this.client.apiFrequencyControl({
         name: 'muteVideo',
         code: -1,
@@ -949,7 +957,7 @@ class RemoteStream extends EventEmitter {
    */
   
   async unmuteScreen () {
-    this.client.adapterRef.logger.log(`启用 ${this.stringStreamID} 的视频轨道`)
+    this.logger.log(`启用 ${this.stringStreamID} 的视频轨道`)
     try {
       if (!this._play){
         throw new RtcError({
@@ -975,7 +983,7 @@ class RemoteStream extends EventEmitter {
         }, null, ' ')
       })
     } catch (e) {
-      this.client.adapterRef.logger.error('API调用失败：Stream:unmuteScreen' ,e.name, e.message, e);
+      this.logger.error('API调用失败：Stream:unmuteScreen' ,e.name, e.message, e);
       this.client.apiFrequencyControl({
         name: 'unmuteScreen',
         code: -1,
@@ -994,7 +1002,7 @@ class RemoteStream extends EventEmitter {
    * @return {Promise}
    */
   async muteScreen () {
-    this.client.adapterRef.logger.log(`禁用 ${this.stringStreamID} 的视频轨道`)
+    this.logger.log(`禁用 ${this.stringStreamID} 的视频轨道`)
     try {
       if (!this._play){
         throw new RtcError({
@@ -1014,7 +1022,7 @@ class RemoteStream extends EventEmitter {
         }, null, ' ')
       })
     } catch (e) {
-      this.client.adapterRef.logger.error('API调用失败：Stream:muteScreen' ,e, ...arguments);
+      this.logger.error('API调用失败：Stream:muteScreen' ,e, ...arguments);
       this.client.apiFrequencyControl({
         name: 'muteScreen',
         code: -1,
@@ -1032,7 +1040,7 @@ class RemoteStream extends EventEmitter {
    * @return {Boolean}
    */
   hasVideo () {
-    this.client.adapterRef.logger.log('获取视频 flag')
+    this.logger.log('获取视频 flag')
     if (this.video && this.mediaHelper && this.mediaHelper.videoStream){
       return true;
     }else{
@@ -1071,7 +1079,7 @@ class RemoteStream extends EventEmitter {
         param: JSON.stringify(options, null, ' ')
       })
     } else {
-      this.client.adapterRef.logger.log(`没有视频流，请检查是否有 订阅 过视频`)
+      this.logger.log(`没有视频流，请检查是否有 订阅 过视频`)
       this.client.apiFrequencyControl({
         name: 'takeSnapshot',
         code: -1,
@@ -1119,7 +1127,7 @@ class RemoteStream extends EventEmitter {
         break;
     }
     if (streams.length === 0) {
-      this.client.adapterRef.logger.log('没有没发现要录制的媒体流')
+      this.logger.log('没有没发现要录制的媒体流')
       return 
     }
     if (!this._record || !this.streamID || !streams){
@@ -1262,7 +1270,7 @@ class RemoteStream extends EventEmitter {
         }
       }
       if (!watermarkControl){
-        this.client.adapterRef.logger.error("setCanvasWatermarkConfigs：播放器未初始化", options.mediaType);
+        this.logger.error("setCanvasWatermarkConfigs：播放器未初始化", options.mediaType);
         return;
       }
 
@@ -1272,14 +1280,14 @@ class RemoteStream extends EventEmitter {
         IMAGE: 4,
       };
       if (options.textWatermarks && options.textWatermarks.length > LIMITS.TEXT){
-        this.client.adapterRef.logger.error(`目前的文字水印数量：${options.textWatermarks.length}。允许的数量：${LIMITS.TEXT}`);
+        this.logger.error(`目前的文字水印数量：${options.textWatermarks.length}。允许的数量：${LIMITS.TEXT}`);
           throw new RtcError({
             code: ErrorCode.INVALID_PARAMETER,
             message: 'watermark exceeds limit'
           })
       }
       if (options.imageWatermarks && options.imageWatermarks.length > LIMITS.IMAGE){
-        this.client.adapterRef.logger.error(`目前的图片水印数量：${options.imageWatermarks.length}。允许的数量：${LIMITS.IMAGE}`);
+        this.logger.error(`目前的图片水印数量：${options.imageWatermarks.length}。允许的数量：${LIMITS.IMAGE}`);
         throw new RtcError({
           code: ErrorCode.INVALID_PARAMETER,
           message: 'watermark exceeds limit'
@@ -1294,7 +1302,7 @@ class RemoteStream extends EventEmitter {
         param: JSON.stringify(options, null, 2)
       })
     }else{
-      this.client.adapterRef.logger.error("setCanvasWatermarkConfigs：播放器未初始化");
+      this.logger.error("setCanvasWatermarkConfigs：播放器未初始化");
     }
   };
   
@@ -1337,7 +1345,7 @@ class RemoteStream extends EventEmitter {
         screen: this.screen,
       }, null, ' ')
     })
-    this.client.adapterRef.logger.log(`uid ${this.stringStreamID} 销毁 Stream 实例`)
+    this.logger.log(`uid ${this.stringStreamID} 销毁 Stream 实例`)
     this.stop()
     this._reset()
   }

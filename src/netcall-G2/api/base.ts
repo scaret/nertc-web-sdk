@@ -11,7 +11,7 @@ import {
   AdapterRef,
   APIFrequencyControlOptions, NeRtcServerAddresses,
   ClientOptions, JoinChannelRequestParam4WebRTC2,
-  LiveConfig, MediaTypeShort, RecordConfig
+  MediaTypeShort, ILogger
 } from "../types";
 import {MediaCapability} from "../module/mediaCapability";
 import {getSupportedCodecs} from "../util/rtcUtil/codec";
@@ -22,6 +22,9 @@ import ErrorCode  from '../util/error/errorCode';
 import {getParameters} from "../module/parameters";
 import {RemoteStream} from "./remoteStream";
 import {LocalStream} from "./localStream";
+import {Client} from "./client"
+
+let clientCnt = 0;
 
 /**
  * 基础框架
@@ -38,12 +41,15 @@ class Base extends EventEmitter {
   private sdkRef: any;
   public logStorage: any;
   public transportRebuildCnt: number = 0;
+  public clientId: number;
+  protected logger: ILogger;
   constructor(options:ClientOptions) {
     super();
     this._params = {
       appkey: "",
       mode: 'rtc'
     };
+    this.clientId = clientCnt++;
     //typescript成员初始化
     this.adapterRef = {// adapter对象内部成员与方法挂载的引用
       channelInfo: {
@@ -62,11 +68,27 @@ class Base extends EventEmitter {
     this.adapterRef.mediaCapability = new MediaCapability(this.adapterRef);
     this.adapterRef.encryption = new Encryption(this.adapterRef),
     this._reset();
-    this.adapterRef.logger = new Logger({
-      adapterRef: this.adapterRef,
+    this.logger = new Logger({
       debug: options.debug,
-      prefix: "WEBRTC"
+      prefix: "NERTC",
+      tagGen: ()=>{
+        let tag = "client" + (this.clientId || "");
+        //@ts-ignore
+        const client:Client = this;
+        const uid = client.getUid()
+        if (uid){
+          tag += "#" + uid;
+        }
+        if (this.adapterRef.connectState.curState !== "CONNECTED"){
+          tag += " " + this.adapterRef.connectState.curState;
+        }
+        if (client.destroyed){
+          tag += " DESTROYED";
+        }
+        return tag
+      }
     });
+    this.adapterRef.logger = this.logger;
     //@ts-ignore
     window.debugG2 = options.debug ? true : false
     this.adapterRef.testConf = {}; //内部测试配置
@@ -77,7 +99,7 @@ class Base extends EventEmitter {
       this.adapterRef.report = options.report
     }
   }
-
+  
   _reset() {
     this.sdkRef = null; // SDK对象的this指针
     this.adapterRef = {// adapter对象内部成员与方法挂载的引用
@@ -94,7 +116,7 @@ class Base extends EventEmitter {
       requestId: {},
       //@ts-ignore
       instance: this,
-      logger: console,
+      logger: this.logger,
       _enableRts: false //rts是否启动的标志位
     };
     this.adapterRef.mediaCapability = new MediaCapability(this.adapterRef);
@@ -263,10 +285,10 @@ class Base extends EventEmitter {
   }
 
   startSession() {
-    this.adapterRef.logger.log('开始音视频会话')
+    this.logger.log('开始音视频会话')
     let { wssArr, cid } = this.adapterRef.channelInfo
     if (!wssArr || wssArr.length === 0) {
-      this.adapterRef.logger.error('没有找到服务器地址')
+      this.logger.error('没有找到服务器地址')
       this.adapterRef.channelStatus = 'leave'
       return Promise.reject(
         new RtcError({
@@ -277,7 +299,7 @@ class Base extends EventEmitter {
     }
 
     if (!cid) {
-      this.adapterRef.logger.error('服务器没有分配cid')
+      this.logger.error('服务器没有分配cid')
       this.adapterRef.channelStatus = 'leave'
       return Promise.reject(
         new RtcError({
@@ -286,9 +308,9 @@ class Base extends EventEmitter {
         })
       )
     }
-    this.adapterRef.logger.log('开始连接服务器: %s, url: %o', this.adapterRef.channelInfo.wssArrIndex, wssArr)
+    this.logger.log(`开始连接服务器: ${this.adapterRef.channelInfo.wssArrIndex}, url:`, wssArr)
     if (this.adapterRef.channelInfo.wssArrIndex >= wssArr.length) {
-      this.adapterRef.logger.error('所有的服务器地址都连接失败')
+      this.logger.error('所有的服务器地址都连接失败')
       this.adapterRef.channelInfo.wssArrIndex = 0
       this.adapterRef.channelStatus = 'leave'
       return Promise.reject(
@@ -326,7 +348,7 @@ class Base extends EventEmitter {
       return Promise.resolve()
     });
     p.catch(e => {
-      this.adapterRef.logger.warn('startSession error: ', e)
+      this.logger.warn('startSession error: ', e)
       if (e === 'timeout') {
         this.adapterRef.channelInfo.wssArrIndex++
         return this.startSession()
@@ -339,7 +361,7 @@ class Base extends EventEmitter {
   }
 
   stopSession() {
-    this.adapterRef.logger.log('开始清除音视频会话')
+    this.logger.log('开始清除音视频会话')
     this._destroyModule();
     this.adapterRef.localStream && this.adapterRef.localStream.destroy()
     Object.values(this.adapterRef.remoteStreamMap).forEach(stream => {
@@ -352,7 +374,7 @@ class Base extends EventEmitter {
   }
 
   async clearMember(uid: number | string) {
-    this.adapterRef.logger.log('%s 离开房间', uid);
+    this.logger.log(`${uid}离开房间`);
     const remotStream = this.adapterRef.remoteStreamMap[uid];
     if (remotStream) {
       if (remotStream.pubStatus.audio) {
@@ -388,7 +410,7 @@ class Base extends EventEmitter {
     this.adapterRef.netStatusList = this.adapterRef.netStatusList.filter((item, index, list)=>{
       return item.uid !== uid
     })
-    this.adapterRef.logger.log('%s 离开房间 通知用户', uid);
+    this.logger.log(`${uid} 离开房间 通知用户`);
     if (this.adapterRef._enableRts) {
       this.adapterRef.instance.emit('rts-peer-leave', {uid});
     } else {
@@ -404,7 +426,7 @@ class Base extends EventEmitter {
   // 设置通话结束时间
   setEndSessionTime() {
     if (!this.adapterRef.state.startSessionTime) {
-      this.adapterRef.logger.log(
+      this.logger.log(
         "AbstractAdapter: setEndSessionTime: startSessionTime为空"
       );
       return;
@@ -422,10 +444,10 @@ class Base extends EventEmitter {
   async reBuildRecvTransport() {
     this.transportRebuildCnt++;
     if (this.transportRebuildCnt >= getParameters().maxTransportRebuildCnt){
-      this.adapterRef.logger.error(`reBuildRecvTransport 达到最大重连次数：${this.transportRebuildCnt}`)
+      this.logger.error(`reBuildRecvTransport 达到最大重连次数：${this.transportRebuildCnt}`)
       return;
     }
-    this.adapterRef.logger.warn(`下行通道异常，重新建立 #${this.transportRebuildCnt}`)
+    this.logger.warn(`下行通道异常，重新建立 #${this.transportRebuildCnt}`)
     if (!this.adapterRef._mediasoup){
       throw new RtcError({
         code: ErrorCode.NO_MEDIASERVER,
@@ -433,8 +455,8 @@ class Base extends EventEmitter {
       })
     }
     this.adapterRef._mediasoup.init()
-    this.adapterRef.logger.log('下行通道异常, remoteStreamMap', this.adapterRef.remoteStreamMap)
-    this.adapterRef.logger.log('this._eventQueue: ', this.adapterRef._mediasoup._eventQueue)
+    this.logger.log('下行通道异常, remoteStreamMap', this.adapterRef.remoteStreamMap)
+    this.logger.log('this._eventQueue: ', this.adapterRef._mediasoup._eventQueue)
     for (const streamId in this.adapterRef.remoteStreamMap) {
       const stream = this.adapterRef.remoteStreamMap[streamId];
       stream.pubStatus.audio.consumerStatus = 'init'
@@ -443,21 +465,21 @@ class Base extends EventEmitter {
       stream.pubStatus.audio.consumerId = ""
       stream.pubStatus.video.consumerId = ""
       stream.pubStatus.screen.consumerId = ""
-      this.adapterRef.logger.log('重连逻辑订阅 start：', stream.stringStreamID)
+      this.logger.log('重连逻辑订阅 start：', stream.stringStreamID)
       try {
         //@ts-ignore
         await this.subscribe(stream)
       } catch (e) {
-        this.adapterRef.logger.log('重连逻辑订阅 error: ', e, e.name, e.message)
+        this.logger.log('重连逻辑订阅 error: ', e, e.name, e.message)
         break
       }
       
-      this.adapterRef.logger.log('重连逻辑订阅 over: ', stream.stringStreamID)
+      this.logger.log('重连逻辑订阅 over: ', stream.stringStreamID)
     }
   }
 
   async rtsRequestKeyFrame(stream:RemoteStream) {
-    this.adapterRef.logger.log('请求关键帧: ', stream.pubStatus.video.consumerId)
+    this.logger.log('请求关键帧: ', stream.pubStatus.video.consumerId)
     if (this.adapterRef._signalling) {
       await this.adapterRef._signalling.rtsRequestKeyFrame(stream.pubStatus.video.consumerId);
     }
@@ -596,7 +618,7 @@ class Base extends EventEmitter {
   }
 
   destroy() {
-    this.adapterRef.logger.log("base: destroy!");
+    this.logger.log("base: destroy!");
     this._reset();
   }
 }

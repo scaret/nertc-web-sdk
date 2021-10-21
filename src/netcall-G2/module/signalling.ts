@@ -103,14 +103,14 @@ class Signalling extends EventEmitter {
   }
 
   async _connection() {
-    this.adapterRef.logger.log('Signalling _connection, times: %o', this._times)
+    this.adapterRef.logger.log('Signalling _connection, times:', this._times)
     this._unbindEvent()
     if (this._protoo) {
       await this._protoo.close()
       this._protoo = null
     }
     if(this._times < 3){
-      this.adapterRef.logger.warn('Signalling 第%s次重连', ++this._times)
+      this.adapterRef.logger.warn(`Signalling 第${++this._times}次重连`)
       this.init(this.adapterRef.channelInfo._protooUrl, true)
     } else {
       this.adapterRef.logger.warn('Signalling 3次重连结束')
@@ -120,7 +120,7 @@ class Signalling extends EventEmitter {
   }
 
   async _reconnection() {
-    this.adapterRef.logger.log('Signalling _reconnection, times: %o', this._times)
+    this.adapterRef.logger.log('Signalling _reconnection, times:', this._times)
     /*if (this.adapterRef.channelStatus === 'connectioning') {
       return
     }*/
@@ -142,11 +142,11 @@ class Signalling extends EventEmitter {
     }
     
     if(this._times < 3){
-      this.adapterRef.logger.warn('Signalling 第%s次重连', ++this._times)
+      this.adapterRef.logger.warn(`Signalling 第${++this._times}次重连`)
       this._timeOut = 2000 * this._times
       this.init(this.adapterRef.channelInfo._protooUrl, true, true)
     } else {
-      this.adapterRef.logger.warn('Signalling  url: %s, 当前服务器地址重连结束, 尝试下一个服务器地址', this.adapterRef.channelInfo._protooUrl)
+      this.adapterRef.logger.warn(`Signalling  url: ${this.adapterRef.channelInfo._protooUrl}, 当前服务器地址重连结束, 尝试下一个服务器地址`)
       if (++this.adapterRef.channelInfo.wssArrIndex >= this.adapterRef.channelInfo.wssArr.length) {
         this.adapterRef.logger.error('所有的服务器地址都连接失败, 主动离开房间')
         this.adapterRef.channelInfo.wssArrIndex = 0
@@ -157,13 +157,13 @@ class Signalling extends EventEmitter {
       const url = this.adapterRef.channelInfo.wssArr[this.adapterRef.channelInfo.wssArrIndex]
       this._timeOut = 2000
       this._times = 0
-      this.adapterRef.logger.warn('Signalling 第%s次重连', ++this._times)
+      this.adapterRef.logger.warn(`Signalling 第${++this._times}次重连`)
       this.init(url, true, true)
     }
   }
 
   _init(url:string) {
-    this.adapterRef.logger.log('Signalling: init url=%o',  url)
+    this.adapterRef.logger.log('Signalling: init url=',  url)
     this.adapterRef.channelInfo._protooUrl = url
     this._url = `wss://${url}&cid=${this.adapterRef.channelInfo.cid}&uid=${this.adapterRef.channelInfo.uid}`
     this.adapterRef.logger.log('连接的url: ', this._url)
@@ -213,7 +213,7 @@ class Signalling extends EventEmitter {
     switch (notification.method) {
       case 'OnPeerJoin': {
         const { requestId, externData } = notification.data;
-        this.adapterRef.logger.log('收到OnPeerJoin成员加入消息 uid = %o', externData.uid);
+        this.adapterRef.logger.log('收到OnPeerJoin成员加入消息 uid =', externData.uid);
         /*if (typeof externData.uid === 'string') {
           this.adapterRef.logger.log('对端uid是string类型')
           this.adapterRef.channelInfo.uidType = 'string'
@@ -250,7 +250,7 @@ class Signalling extends EventEmitter {
       }
       case 'OnPeerLeave': {
         const { requestId, externData } = notification.data;
-        this.adapterRef.logger.log('OnPeerLeave externData = %o', externData);
+        this.adapterRef.logger.log('OnPeerLeave externData =', externData);
         if (externData.userList) {
           externData.userList.forEach((item:any) =>{
             let uid = item.uid
@@ -268,7 +268,7 @@ class Signalling extends EventEmitter {
       }
       case 'OnNewProducer': {
         const { requestId, externData } = notification.data;
-        this.adapterRef.logger.log('收到OnNewProducer发布消息 externData = %o', JSON.stringify(externData.producerInfo, null, ' '))
+        this.adapterRef.logger.log('收到OnNewProducer发布消息 externData =', JSON.stringify(externData.producerInfo))
         let {
           uid,
           producerId,
@@ -347,7 +347,7 @@ class Signalling extends EventEmitter {
           uid = new BigNumber(uid)
           uid = uid.toString()
         }
-        this.adapterRef.logger.log('收到OnProducerClose消息 code = %d, errMsg = %s, uid = %s, mediaType = %s, producerId: %s', code, errMsg, uid, mediaType, producerId);
+        this.adapterRef.logger.log(`收到OnProducerClose消息 code = ${code}, errMsg = ${errMsg}, uid = ${uid}, mediaType = ${mediaType}, producerId: ${producerId}`);
         let mediaTypeShort:MediaTypeShort;
         switch (mediaType){
           case "video":
@@ -437,8 +437,7 @@ class Signalling extends EventEmitter {
       }
       case 'OnConsumerClose': {
         const { requestId, code, errMsg, consumerId, producerId } = notification.data;
-          this.adapterRef.logger.log('chence OnConsumerClose code = %d errMsg = %s producerId = %s', 
-            code, errMsg, producerId);
+        this.adapterRef.logger.log(`chence OnConsumerClose code = ${code} errMsg = ${errMsg} producerId = ${producerId}`);
         const consumer = this.consumers[consumerId];
         if (!consumer)
             break;
@@ -463,8 +462,7 @@ class Signalling extends EventEmitter {
       }
       case 'OnTransportClose': {
         const { requestId, code, errMsg, transportId } = notification.data;
-          this.adapterRef.logger.warn('chence OnTransportClose: code = %d, errMsg = %s, transportId = %s', 
-            code, errMsg, transportId);
+          this.adapterRef.logger.warn(`chence OnTransportClose: code = ${code}, errMsg = ${errMsg}, transportId = ${transportId}`);
           if (!this.adapterRef._mediasoup){
             throw new RtcError({
               code: ErrorCode.NO_MEDIASERVER,
@@ -486,8 +484,7 @@ class Signalling extends EventEmitter {
       }
       case 'OnConsumerClose': {
         const { requestId, code, errMsg, consumerId, producerId } = notification.data;
-          this.adapterRef.logger.warn('chence OnConsumerClose: code = %d, errMsg = %s consumerId = %s, producerId = %s', 
-            code, errMsg, consumerId, producerId);
+          this.adapterRef.logger.warn(`chence OnConsumerClose: code = ${code}, errMsg = ${errMsg} consumerId = ${consumerId}, producerId = ${producerId}`);
           if (!this.adapterRef._mediasoup){
             throw new RtcError({
               code: ErrorCode.NO_MEDIASERVER,
@@ -508,8 +505,7 @@ class Signalling extends EventEmitter {
       }
       case 'OnSignalRestart': {
         const { requestId, code, errMsg } = notification.data;
-          this.adapterRef.logger.warn('chence OnSignalRestart code = %d errMsg = %s', 
-            code, errMsg);
+          this.adapterRef.logger.warn(`chence OnSignalRestart code = ${code} errMsg = ${errMsg}`);
           this.adapterRef.logger.warn('服务器信令进程crash，重连')
           this.adapterRef.channelStatus = 'connectioning'
           this.adapterRef.instance.apiEventReport('setDisconnect', {
@@ -587,7 +583,7 @@ class Signalling extends EventEmitter {
         } else if (type === "Ability"){
           this._handleAbility(notification.data.externData.data);
         } else {
-          this.adapterRef.logger.error('收到OnUserData通知消息 type = %s, data: %o', type, data)
+          this.adapterRef.logger.error(`收到OnUserData通知消息 type = ${type}, data: `, data)
         }
       }
     }
@@ -676,7 +672,7 @@ class Signalling extends EventEmitter {
       this.adapterRef.logger.log('Signalling:加入房间 ack ->  ', JSON.stringify(response, (k, v)=>{return k === "edgeRtpCapabilities" ? null : v;}));
       if (response.code != 200) {
         this.adapterRef.logger.error(
-          'Signalling: 加入房间失败, reason = %s',
+          'Signalling: 加入房间失败, reason = ',
           response.errMsg
         )
         const errMsg = response.externData ? response.externData.errMsg : response.errMsg
@@ -973,7 +969,7 @@ class Signalling extends EventEmitter {
         this.adapterRef.logger.error(`createWsTrasnport failed, code: ${code}, reason: ${errMsg}`)
       }
     } catch (e) {
-      this.adapterRef.logger.error('createRTSTransport failed: %o', e);
+      this.adapterRef.logger.error('createRTSTransport failed:', e.name, e.message);
       throw e;
     }
   }
@@ -1001,7 +997,7 @@ class Signalling extends EventEmitter {
         this.adapterRef.logger.error(`RTS 关键帧请求失败, code: ${code}, reason: ${errMsg}`)
       }
     } catch (e) {
-      this.adapterRef.logger.error('rtsRequestKeyFrame failed: %o', e);
+      this.adapterRef.logger.error('rtsRequestKeyFrame failed:', e);
       throw e;
     }
   }

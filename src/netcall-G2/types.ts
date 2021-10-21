@@ -87,7 +87,7 @@ export interface AdapterRef {
   } 
   localVideoStats: [LocalVideoStats];
   localScreenStats: [LocalVideoStats];
-  logger:Logger;
+  logger:ILogger;
   logStorage:LogStorage;
   testConf: {
     ForwardedAddr?:string;
@@ -125,11 +125,12 @@ export interface NetStatusItem{
   uplinkNetworkQuality: number;
 }
 
-export interface Logger{
+export interface ILogger{
   log: (...msg:any)=>void
   info: (...msg:any)=>void
   warn: (...msg:any)=>void
   error: (...msg:any)=>void
+  getChild: (tagGen: ()=>string)=>ILogger;
 }
 
 export interface LogStorage{
@@ -480,9 +481,7 @@ export interface SDKRef{
 }
 
 export interface PlayOptions{
-  adapterRef:AdapterRef;
-  sdkRef: SDKRef;
-  uid: number|string;
+  stream: LocalStream|RemoteStream;
 }
 
 export interface LoggerHelperOptions{
@@ -521,8 +520,8 @@ export interface LoggerOptions{
   logFunc?: {
     [name:string]: ()=>void
   };
-  adapterRef: AdapterRef;
   logStorage?:any;
+  tagGen?: ()=>string
 }
 
 export interface StatsReportOptions{
@@ -531,7 +530,7 @@ export interface StatsReportOptions{
 }
 
 export interface WebAudioOptions{
-  adapterRef: AdapterRef;
+  logger: ILogger;
   isAnalyze?: boolean;
   isRemote?: boolean;
 }
