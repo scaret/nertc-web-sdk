@@ -1,10 +1,9 @@
 import { EventEmitter } from 'eventemitter3'
 import {
-  AdapterRef,
+  AdapterRef, ILogger,
   RecordInitOptions,
   RecordStartOptions,
   RecordStatus,
-  SDKRef
 } from "../types";
 import {MediaHelper} from "./media";
 import RtcError from '../util/error/rtcError';
@@ -14,36 +13,37 @@ import ErrorCode from '../util/error/errorCode';
  * 媒体录制（音频混音录制/视频录制）
  */
 class Record extends EventEmitter {
-  private _status:RecordStatus;
-  private sdkRef:SDKRef;
+  private _status:RecordStatus = {
+    recordedChunks: [], // recordedChunks
+    isRecording: false, // 录音标志位
+    stream: null, // 录制媒体流
+    option: null, // 开启录制配置参数
+    contentTypes: [], // 媒体内容类型
+    mimeType: '', // 媒体mime类型
+    audioController: null, // webaudio对象，负责混音处理
+    opStream: null, // 待操作的可变更媒体流
+    state: 'init', // 录制状态： init | started | stopped
+    timer: null, // 打印日志定时器
+    fileName: null, // 录制保存的文件对象名
+    recordId: 0, // 录制id
+    recordStatus: 'init', // 录制状态
+    recordUrl: null,
+    startTime: null,
+    endTime: null
+  };
   private adapterRef:AdapterRef;
   private uid:number|string;
   private _media:MediaHelper|null;
-  private _recorder:MediaRecorder|null;
+  private _recorder:MediaRecorder|null = null;
+  private logger: ILogger;
   constructor (options:RecordInitOptions) {
     super()
-    this._status = {
-      recordedChunks: [], // recordedChunks
-      isRecording: false, // 录音标志位
-      stream: null, // 录制媒体流
-      option: null, // 开启录制配置参数
-      contentTypes: [], // 媒体内容类型
-      mimeType: '', // 媒体mime类型
-      audioController: null, // webaudio对象，负责混音处理
-      opStream: null, // 待操作的可变更媒体流
-      state: 'init', // 录制状态： init | started | stopped
-      timer: null, // 打印日志定时器
-      fileName: null, // 录制保存的文件对象名
-      recordId: 0, // 录制id
-      recordStatus: 'init', // 录制状态
-      recordUrl: null,
-      startTime: null,
-      endTime: null
-    };
-    this._recorder = null;
+    this.logger = options.logger.getChild(()=>{
+      let tag = `recorder ${this._status.recordStatus}`;
+      return tag
+    })
     this._reset() // 初始化属性
     // 设置传入参数
-    this.sdkRef = options.sdkRef
     this.adapterRef = options.adapterRef
     this.uid = options.uid
     this._media = options.media
@@ -59,25 +59,25 @@ class Record extends EventEmitter {
    */
   async start (option:RecordStartOptions) {
     const {stream = null, uid = '0', type = 'video', reset = false } = option
-    this.adapterRef.logger.log('开始本地录制: ', JSON.stringify(option, null, ''))
+    this.logger.log('开始本地录制: ', JSON.stringify(option, null, ''))
     let reason = null;
     if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) {
-      this.adapterRef.logger.log('浏览器不支持本地录制')
+      this.logger.log('浏览器不支持本地录制')
       reason = 'RecordBrowserNotSupport'
     }
 
     if (this._status.isRecording) {
-      this.adapterRef.logger.log('当前正在录制中')
+      this.logger.log('当前正在录制中')
       reason = 'RecordInRecording'
     }
 
     if (this._status.recordUrl && this._status.recordStatus !== 'downloaded') {
       if (option.reset) {
-        this.adapterRef.logger.warn('MediaRecordHelper: start: 存在未下载视频，强制清除...')
+        this.logger.warn('MediaRecordHelper: start: 存在未下载视频，强制清除...')
         // 当同步接口使用
         await this.clean()
       } else {
-        this.adapterRef.logger.log(`MediaRecordHelper: start : 请先下载或重置上一段录制文件`)
+        this.logger.log(`MediaRecordHelper: start : 请先下载或重置上一段录制文件`)
         reason = 'RecordFileExsit'
       }
     }
@@ -128,7 +128,7 @@ class Record extends EventEmitter {
         }, null, ' ')
       })
     } catch (e) {
-      this.adapterRef.logger.error('录制start error： ', e.name, e.message, e);
+      this.logger.error('录制start error： ', e.name, e.message, e);
       this.adapterRef.instance.apiFrequencyControl({
         name: 'startMediaRecording',
         code: -1,
@@ -154,11 +154,11 @@ class Record extends EventEmitter {
   stop (options?:{isUser?: boolean}) {
     let reason = null
     if (!this._status.isRecording || !this._recorder) {
-      this.adapterRef.logger.log('当前没有进行录制')
+      this.logger.log('当前没有进行录制')
       reason = 'RecordNotExist'
     }
     if (this._recorder && this._status.state !== 'started') {
-      this.adapterRef.logger.warn(`MediaRecordHelper: record stopping when ${this._recorder.state}`)
+      this.logger.warn(`MediaRecordHelper: record stopping when ${this._recorder.state}`)
       reason = 'RecordStateError' 
     }
     if (reason) {
@@ -214,7 +214,7 @@ class Record extends EventEmitter {
           reason: 'RecordStateError'
         }, null, ' ')
       })
-      this.adapterRef.logger.warn(`MediaRecordHelper: record stopping when ${this._recorder && this._recorder.state}`)
+      this.logger.warn(`MediaRecordHelper: record stopping when ${this._recorder && this._recorder.state}`)
       return Promise.resolve()
     }
     this.adapterRef.instance.apiFrequencyControl({
@@ -233,7 +233,7 @@ class Record extends EventEmitter {
   download (isUser=true) {
     return Promise.resolve().then(() => {
       if (this._status.isRecording) {
-        this.adapterRef.logger.log('MediaRecordHelper: download: 正在录制中，立即停止...')
+        this.logger.log('MediaRecordHelper: download: 正在录制中，立即停止...')
         return this.stop({isUser: false})
       }
       return Promise.resolve()
@@ -247,7 +247,7 @@ class Record extends EventEmitter {
         a.click()
         this._status.recordStatus = 'downloaded'
       } else {
-        this.adapterRef.logger.log(`MediaRecordHelper: download: cannot download media without url ...`)
+        this.logger.log(`MediaRecordHelper: download: cannot download media without url ...`)
       }
       if (isUser) {
         this.adapterRef.instance.apiFrequencyControl({
@@ -396,7 +396,7 @@ class Record extends EventEmitter {
       })
 
       if (opStream.getTracks().length === 0) {
-        this.adapterRef.logger.error(`_format: No tracks available`)
+        this.logger.error(`_format: No tracks available`)
         return resolve(opStream);
       }
 
@@ -434,7 +434,7 @@ class Record extends EventEmitter {
     let recorder = (this._recorder = new MediaRecorder(this._status.opStream, options))
     recorder.ondataavailable = this._onDataAvailable.bind(this)
     recorder.onstop = () => {
-      this.adapterRef.logger.log(`MediaRecordHelper: _start: record stop automatically ...`)
+      this.logger.log(`MediaRecordHelper: _start: record stop automatically ...`)
       this._onStop();
     }
     if (this._status.recordUrl) {
@@ -460,7 +460,7 @@ class Record extends EventEmitter {
   _startTimer () {
     if (this._status.timer) return
     this._status.timer = setInterval(() => {
-      this.adapterRef.logger.log(`MediaRecordHelper: startTimer: ${new Date().toLocaleString()} --> MediaRecorder status: ${this._recorder && this._recorder.state}`)
+      this.logger.log(`MediaRecordHelper: startTimer: ${new Date().toLocaleString()} --> MediaRecorder status: ${this._recorder && this._recorder.state}`)
     }, 5000)
   }
   /**
@@ -468,7 +468,7 @@ class Record extends EventEmitter {
    * @return {[null]}
    */
   _onStop (resolve?: (data:any)=>void) {
-    this.adapterRef.logger.log('MediaRecordHelper: _onStop: record stoped !!!')
+    this.logger.log('MediaRecordHelper: _onStop: record stoped !!!')
     this._clearTimer()
     this._status.recordStatus = 'stopped'
     this._status.isRecording = false;
@@ -558,11 +558,11 @@ class Record extends EventEmitter {
    */
   _onDataAvailable (event:BlobEvent) {
     this._status.recordStatus = 'recording'
-    this.adapterRef.logger.log('MediaRecordHelper: ondataavailable: data received')
+    this.logger.log('MediaRecordHelper: ondataavailable: data received')
     if (event.data.size > 0) {
       this._status.recordedChunks.push(event.data)
     } else {
-      this.adapterRef.logger.warn('MediaRecordHelper: ondataavailable: no data')
+      this.logger.warn('MediaRecordHelper: ondataavailable: no data')
       this.stop()
       return
     }

@@ -179,7 +179,7 @@ class RemoteStream extends EventEmitter {
       stream: this,
     })
     this._record = new Record({
-      sdkRef: this.client,
+      logger: this.logger,
       adapterRef: this.client.adapterRef,
       uid: this.client.adapterRef.channelInfo.uidType === 'string' ? this.stringStreamID : this.streamID,
       media: this.mediaHelper

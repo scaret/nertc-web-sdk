@@ -65,9 +65,6 @@ class Base extends EventEmitter {
       report: true
     };
   
-    this.adapterRef.mediaCapability = new MediaCapability(this.adapterRef);
-    this.adapterRef.encryption = new Encryption(this.adapterRef),
-    this._reset();
     this.logger = new Logger({
       debug: options.debug,
       prefix: "NERTC",
@@ -89,6 +86,9 @@ class Base extends EventEmitter {
       }
     });
     this.adapterRef.logger = this.logger;
+    this._reset();
+    this.adapterRef.encryption = new Encryption(this.adapterRef)
+
     //@ts-ignore
     window.debugG2 = options.debug ? true : false
     this.adapterRef.testConf = {}; //内部测试配置
@@ -139,15 +139,15 @@ class Base extends EventEmitter {
     }
     if (!this.adapterRef._signalling) {
       this.adapterRef._signalling = new Signalling({
-        sdkRef: this.sdkRef,
-        adapterRef: this.adapterRef
+        adapterRef: this.adapterRef,
+        logger: this.logger,
       })
     }
 
     if (!this.adapterRef._mediasoup) {
       this.adapterRef._mediasoup = new Mediasoup({
-        sdkRef: this.sdkRef,
-        adapterRef: this.adapterRef
+        adapterRef: this.adapterRef,
+        logger: this.logger,
       })
     }
 

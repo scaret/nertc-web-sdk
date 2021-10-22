@@ -221,7 +221,7 @@ class LocalStream extends EventEmitter {
       stream: this,
     })
     this._record = new Record({
-      sdkRef: this.client,
+      logger: this.logger,
       adapterRef: this.client.adapterRef,
       uid: this.client.adapterRef.channelInfo.uidType === 'string' ? this.stringStreamID : this.streamID,
       media: this.mediaHelper
@@ -2252,7 +2252,6 @@ class LocalStream extends EventEmitter {
    * @return {Object}
    */
   getAudioMixingCurrentPosition () {
-    this.logger.log('获取伴音播放进度')
     if (!this.mediaHelper){
       throw new RtcError({
         code: ErrorCode.NO_MEDIAHELPER,

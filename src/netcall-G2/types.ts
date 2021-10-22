@@ -605,7 +605,7 @@ export interface GetStreamConstraints{
 }
 
 export interface RecordInitOptions{
-  sdkRef: SDKRef;
+  logger: ILogger;
   adapterRef: AdapterRef;
   uid:number|string;
   media:MediaHelper;
@@ -650,7 +650,7 @@ export interface MeetingJoinChannelOptions{
   channelName: string;
   uid: number|string|BigNumber;
   wssArr?: string[]|null;
-  sessionMode?: string;
+  sessionMode?: "meeting";
   joinChannelRecordConfig: RecordConfig;
   joinChannelLiveConfig: LiveConfig;
   token?:string;
@@ -706,7 +706,7 @@ export interface RTMPTask{
 
 export interface MediasoupManagerOptions{
   adapterRef: AdapterRef;
-  sdkRef: SDKRef;
+  logger: ILogger;
 }
 
 export interface ProduceConsumeInfo{
@@ -840,7 +840,7 @@ export interface MediaRecordingOptions{
 
 export interface SignallingOptions{
   adapterRef: AdapterRef;
-  sdkRef: SDKRef;
+  logger: ILogger;
 }
 
 export interface ClientOptions{

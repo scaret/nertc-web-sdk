@@ -54,7 +54,21 @@ class MediaHelper extends EventEmitter {
     this.adapterRef = options.adapterRef
     this.stream = options.stream;
     this.logger = options.stream.logger.getChild(()=>{
-      let tag = "media";
+      let tag = "mediaHelper";
+      if (this.audioRoutingEnabled){
+        tag += " WebAudio"
+      }
+      if (this.webAudio){
+        if (this.webAudio.context){
+          if (this.webAudio.context.state !== "running"){
+            tag += " " + this.webAudio.context.state
+          }
+        }
+        if (this.webAudio.mixAudioConf.state !== AuidoMixingState.UNSTART){
+          tag += " " + this.webAudio?.mixAudioConf.state;
+        } 
+      }
+      
       if (this.stream.mediaHelper !== this){
         tag += "DETACHED";
       }
