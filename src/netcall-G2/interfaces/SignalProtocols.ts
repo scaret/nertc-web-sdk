@@ -1,6 +1,8 @@
 // 信令通道协议
 // 部分对象定义在这里是因为对象结构是被信令通道协议决定的。
 
+import {PlatformType} from "../types";
+
 export interface SignalGetChannelInfoResponse{
   code: number;
   cname: string;
@@ -92,6 +94,7 @@ export interface SignalJoinRes extends SignalResBase{
       record: boolean;
       rtpCapabilities: any;
       hostName: string;
+      platformType: PlatformType;
       producerInfoList: {
         producerId: string;
         mediaType: string;

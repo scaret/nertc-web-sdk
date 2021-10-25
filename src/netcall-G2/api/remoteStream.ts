@@ -1,20 +1,21 @@
-
-import { EventEmitter } from "eventemitter3";
-import { STREAM_TYPE } from "../constant/videoQuality";
+import {EventEmitter} from "eventemitter3";
+import {STREAM_TYPE} from "../constant/videoQuality";
 import {Play} from '../module/play'
 import {Record} from '../module/record'
 import {
   Client,
+  ILogger,
   MediaRecordingOptions,
-  NERtcCanvasWatermarkConfig,
   MediaTypeShort,
+  NERtcCanvasWatermarkConfig,
+  PlatformType, PlatformTypeMap,
   PubStatus,
+  RemoteStreamOptions,
   RenderMode,
   SnapshotOptions,
   StreamPlayOptions,
   SubscribeConfig,
   SubscribeOptions,
-  RemoteStreamOptions, ILogger,
 } from "../types";
 import {MediaHelper} from "../module/media";
 import {isExistOptions} from "../util/param";
@@ -24,7 +25,7 @@ import {
   ReportParamSubscribeRemoteSubStreamVideo,
 } from "../interfaces/ApiReportParam";
 import RtcError from '../util/error/rtcError';
-import ErrorCode  from '../util/error/errorCode';
+import ErrorCode from '../util/error/errorCode';
 import BigNumber from 'bignumber.js'
 
 let remoteStreamCnt = 0;
@@ -49,7 +50,36 @@ class RemoteStream extends EventEmitter {
   };
   private consumerId: string|null;
   private producerId: string|null;
-  public pubStatus:PubStatus;
+  public platformType: PlatformType = PlatformType.unknown;
+  public pubStatus:PubStatus = {
+    audio: {
+      audio: false,
+      producerId: '',
+      consumerId: '',
+      consumerStatus: 'init',
+      stopconsumerStatus: 'init',
+      mute: false,
+      simulcastEnable: false,
+    },
+    video: {
+      video: false,
+      producerId: '',
+      consumerId: '',
+      consumerStatus: 'init',
+      stopconsumerStatus: 'init',
+      mute: false,
+      simulcastEnable: false,
+    },
+    screen: {
+      screen: false,
+      producerId: '',
+      consumerId: '',
+      consumerStatus: 'init',
+      stopconsumerStatus: 'init',
+      mute: false,
+      simulcastEnable: false,
+    }
+  };
   subConf: SubscribeConfig;
   public subStatus: { audio: boolean; video: boolean; screen: boolean };
   public muteStatus: {
@@ -74,8 +104,31 @@ class RemoteStream extends EventEmitter {
     this.remoteStreamId = remoteStreamCnt++;
     this.streamID = options.uid
     this.stringStreamID = this.streamID.toString()
+    this.platformType = options.platformType;
     this.logger = options.client.adapterRef.logger.getChild(()=>{
-      let tag = `remote${this.remoteStreamId}#${this.stringStreamID}`;
+      let tag = `remote#${this.stringStreamID}`;
+      if (PlatformTypeMap[this.platformType]){
+        tag += " " + PlatformTypeMap[this.platformType]
+      }
+      tag += this.remoteStreamId
+      if (this.pubStatus.audio.consumerId){
+        tag += "M";
+      }else if (this.pubStatus.audio.producerId){
+        tag += "m";
+      }
+      if (this.pubStatus.video.consumerId){
+        tag += "C";
+      }else if (this.pubStatus.video.producerId){
+        tag += "c";
+      }
+      if (this.pubStatus.screen.consumerId){
+        tag += "S";
+      }else if (this.pubStatus.screen.producerId){
+        tag += "s";
+      }
+      if (options.client.adapterRef.remoteStreamMap[this.streamID] !== this){
+        tag += " DETACHED"
+      }
       return tag
     })
 
@@ -108,35 +161,6 @@ class RemoteStream extends EventEmitter {
     this.audioPlay_ = false;
     this.videoPlay_ = false;
     this.screenPlay_ = false;
-    this.pubStatus = {
-      audio: {
-        audio: false,
-        producerId: '',
-        consumerId: '',
-        consumerStatus: 'init',
-        stopconsumerStatus: 'init',
-        mute: false,
-        simulcastEnable: false,
-      },
-      video: {
-        video: false,
-        producerId: '',
-        consumerId: '',
-        consumerStatus: 'init',
-        stopconsumerStatus: 'init',
-        mute: false,
-        simulcastEnable: false,
-      },
-      screen: {
-        screen: false,
-        producerId: '',
-        consumerId: '',
-        consumerStatus: 'init',
-        stopconsumerStatus: 'init',
-        mute: false,
-        simulcastEnable: false,
-      }
-    }
     this.subConf = {
       audio: true,
       video: true,

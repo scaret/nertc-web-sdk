@@ -748,6 +748,27 @@ export interface RemoteStreamOptions{
   video: boolean;
   screen: boolean;
   client: Client;
+  platformType: PlatformType;
+}
+
+export const PlatformTypeMap = { 
+  '-1': "unknown",
+  1: "aos",
+  2: "ios",
+  4: "pc",
+  8: "winphone",
+  9: "mac",
+  16: "web",
+}
+
+export enum PlatformType{
+  "unknown" = -1,
+  "aos" = 1,
+  "ios"= 2,
+  "pc"= 4,
+  "winphone"= 8,
+  "mac"= 9,
+  "web"= 16,
 }
 
 export interface Client{

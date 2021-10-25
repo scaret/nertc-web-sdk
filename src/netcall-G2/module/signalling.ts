@@ -233,6 +233,7 @@ class Signalling extends EventEmitter {
             video: false,
             screen: false,
             client: this.adapterRef.instance,
+            platformType: externData.platformType
           })
           this.adapterRef.remoteStreamMap[uid] = remoteStream
           this.adapterRef.memberMap[uid] = uid;
@@ -298,6 +299,7 @@ class Signalling extends EventEmitter {
             video: mediaTypeShort === 'video',
             screen: mediaTypeShort === 'screen',
             client: this.adapterRef.instance,
+            platformType: externData.platformType,
           })
           this.adapterRef.remoteStreamMap[uid] = remoteStream
           this.adapterRef.memberMap[uid] = uid;
@@ -760,6 +762,7 @@ class Signalling extends EventEmitter {
               video: false,
               screen: false,
               client: this.adapterRef.instance,
+              platformType: peer.platformType,
             })
             this.adapterRef.remoteStreamMap[uid] = remoteStream
             this.adapterRef.memberMap[uid] = "" + uid;
