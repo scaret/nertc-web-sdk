@@ -11,7 +11,7 @@
  */
 import { EventEmitter } from 'eventemitter3'
 import { RtcSupport } from '../util/rtcUtil/rtcSupport'
-import { AuidoMixingState } from '../constant/state'
+import {AuidoMixingState, MIXING_STATES} from '../constant/state'
 import {
   AdapterRef, AudioMixingOptions, soundsConf,
   ILogger,
@@ -73,7 +73,7 @@ class WebAudio extends EventEmitter{
   private clip: number;
   private script?: ScriptProcessorNode;
   public mixAudioConf: {
-    state: number,
+    state: MIXING_STATES,
     audioSource?: AudioBufferSourceNode|null,
     /**
      * 伴音的音量
@@ -539,7 +539,7 @@ class WebAudio extends EventEmitter{
         })
       )
     }
-    this.logger.log('停止混音, isFinished: ', isFinished)
+    this.logger.log('开始停止混音, isFinished: ', isFinished)
     this.mixAudioConf.audioSource.onended = null
     this.mixAudioConf.audioSource.disconnect(0)
     this.mixAudioConf.gainFilter.disconnect(0)
@@ -548,6 +548,7 @@ class WebAudio extends EventEmitter{
     if (isFinished) {
       this.resetMixConf()
     }
+    this.logger.log('混音已停止')
     return Promise.resolve()
   }
 

@@ -42,8 +42,12 @@ class Play extends EventEmitter {
     this.stream = options.stream
     this.logger = options.stream.logger.getChild(()=>{
       let tag = "player";
+      if (this.audioDom?.paused){
+        tag += " audio_paused"
+      }
+      
       if (this.stream._play !== this){
-        tag += "DETACHED"
+        tag += " DETACHED"
       }
       return tag
     });

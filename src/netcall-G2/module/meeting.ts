@@ -5,7 +5,7 @@ import {getChannelInfoUrl, SDK_VERSION, roomsTaskUrl} from '../Config'
 import  md5 = require('md5');
 import {deepCopy} from "../util/util";
 import {
-  AdapterRef, AddTaskOptions,
+  AdapterRef, AddTaskOptions, ILogger,
   MeetingJoinChannelOptions,
   MeetingOptions, RTMPTask,
   SDKRef
@@ -21,6 +21,18 @@ import {SignalGetChannelInfoResponse} from "../interfaces/SignalProtocols";
 class Meeting extends EventEmitter {
   private sdkRef:SDKRef;
   private adapterRef:AdapterRef;
+  private logger: ILogger;
+  private info: { // 目前仅用于日志打印
+    turn: boolean;
+    relay: boolean;
+    forward: boolean;
+    secure: boolean;
+  } = {
+    turn: true,
+    relay: false,
+    forward: false,
+    secure: true,
+  }
   constructor (options: MeetingOptions) {
     super()
 
@@ -29,6 +41,25 @@ class Meeting extends EventEmitter {
     // 设置对象引用
     this.adapterRef = options.adapterRef
     this.sdkRef = options.sdkRef
+    this.logger = options.adapterRef.logger.getChild(()=>{
+      let tag = "meeting";
+      if (!this.info.secure){
+        tag += " INSECURE";
+      }
+      if (this.info.forward){
+        tag += " FORWARD"
+      }
+      if (!this.info.turn){
+        tag += " NOTURN"
+      }
+      if (options.adapterRef.instance?._params?.neRtcServerAddresses?.channelServer){
+        tag += " PRIVATE"
+      }
+      if (options.adapterRef._meetings !== this){
+        tag += " DETACHED"
+      }
+      return tag
+    })
   }
 
   _reset () {
@@ -54,12 +85,12 @@ class Meeting extends EventEmitter {
 
     let T1 = Date.now()
     let curtime = +new Date()
-    this.adapterRef.logger.log('getChannelInfoUrl: ', getChannelInfoUrl)
+    this.logger.log('getChannelInfoUrl: ', getChannelInfoUrl)
     let url = getChannelInfoUrl
     if (this.adapterRef.instance._params.neRtcServerAddresses.channelServer) {
       //url = getChannelInfoUrl.replace(/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+\.?/, this.adapterRef.instance._params.neRtcServerAddresses.channelServer)
       url = this.adapterRef.instance._params.neRtcServerAddresses.channelServer
-      this.adapterRef.logger.log('私有化配置的 getChannelInfoUrl: ', url)
+      this.logger.log('私有化配置的 getChannelInfoUrl: ', url)
     }
     let requestUid = uid
     if (this.adapterRef.channelInfo.uidType === 'string') {
@@ -97,13 +128,14 @@ class Meeting extends EventEmitter {
       }) as SignalGetChannelInfoResponse;
       let isUidExisted = (uid == '0' || (uid != '0' && !Boolean(uid))) ? false : true;
 
-
-      this.adapterRef.logger.log('获取到房间信息:', JSON.stringify(data))
+      this.info.secure = !!token;
+      this.info.forward = !!this.adapterRef.testConf.ForwardedAddr
+      this.logger.log('获取到房间信息:', JSON.stringify(data))
       if (data.code === 200) {
         this.adapterRef.channelStatus = 'join'
         const { ips, time } = data
         if (!ips || !ips.uid){
-          this.adapterRef.logger.error("加入频道时服务端未返回uid");
+          this.logger.error("加入频道时服务端未返回uid");
         }
         const maxVideoQuality = (data.config && data.config.quality_level_limit) || 16
         this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.startWssTime = Date.now()
@@ -135,9 +167,13 @@ class Meeting extends EventEmitter {
         this.adapterRef.instance.setSessionConfig(Object.assign({
           maxVideoQuality
         }, joinChannelLiveConfig, joinChannelRecordConfig))
+        this.info.relay = ips.relayaddrs && ips.relayaddrs.length > 0
+        this.info.turn = ips.turnaddrs && ips.turnaddrs.length > 0
+        this.logger.log(`开始建立会话`);
         // 会话建立
         return this.adapterRef.instance.startSession()
       } else {
+        this.logger.error(`无法加入房间`);
         this.adapterRef.channelStatus = 'leave'
         this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
         this.adapterRef.connectState.curState = 'DISCONNECTED'
@@ -154,7 +190,7 @@ class Meeting extends EventEmitter {
         return Promise.reject(`code: ${data.code}, reason: ${data.desc}`)
       }
     } catch(e) {
-      this.adapterRef.logger.log('获取到房间失败:', e.name, e.message, e)
+      this.logger.log('获取到房间失败:', e.name, e.message, e)
       this.adapterRef.channelStatus = 'leave'
       this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
       this.adapterRef.connectState.curState = 'DISCONNECTED'
@@ -214,7 +250,7 @@ class Meeting extends EventEmitter {
           taskId: rtmpTasks.length ? rtmpTasks[0].taskId : ''
         }, null, '')
       })
-      this.adapterRef.logger.error('请先加入房间')
+      this.logger.error('请先加入房间')
       return Promise.reject(
         new RtcError({
           code: ErrorCode.INVALID_OPERATION,
@@ -222,7 +258,7 @@ class Meeting extends EventEmitter {
         })
       )
     } else if (!rtmpTasks || !Array.isArray(rtmpTasks) || !rtmpTasks.length){
-      this.adapterRef.logger.error('添加推流任务失败: 参数格式错误，rtmpTasks为空，或者该数组长度为空')
+      this.logger.error('添加推流任务失败: 参数格式错误，rtmpTasks为空，或者该数组长度为空')
       return Promise.reject(
         new RtcError({
           code: ErrorCode.INVALID_PARAMETER,
@@ -231,11 +267,11 @@ class Meeting extends EventEmitter {
       )
     }
     let url = roomsTaskUrl
-    this.adapterRef.logger.log('roomsTaskUrl: ', roomsTaskUrl)
+    this.logger.log('roomsTaskUrl: ', roomsTaskUrl)
     if (this.adapterRef.instance._params.neRtcServerAddresses.roomServer) {
       //url = roomsTaskUrl.replace(/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+\.?/, this.adapterRef.instance._params.neRtcServerAddresses.roomServer)
       url = this.adapterRef.instance._params.neRtcServerAddresses.roomServer
-      this.adapterRef.logger.log('私有化配置的 roomsTaskUrl: ', url)
+      this.logger.log('私有化配置的 roomsTaskUrl: ', url)
     }
     url = `${url}${this.adapterRef.channelInfo.cid}/tasks`
     let requestUid = this.adapterRef.channelInfo.uid
@@ -246,7 +282,7 @@ class Meeting extends EventEmitter {
     for (let i=0; i < rtmpTasks.length; i++) {
       rtmpTasks[i].hostUid = requestUid
       rtmpTasks[i].version = 1
-      this.adapterRef.logger.log('rtmpTask: ', JSON.stringify(rtmpTasks[i]))
+      this.logger.log('rtmpTask: ', JSON.stringify(rtmpTasks[i]))
       const layout = rtmpTasks[i].layout
       layout.users.forEach(user=>{
         if (typeof user.uid === 'string') {
@@ -273,7 +309,7 @@ class Meeting extends EventEmitter {
           }
         })
         if (data.code === 200) {
-          this.adapterRef.logger.log('添加推流任务完成')
+          this.logger.log('添加推流任务完成')
           this.adapterRef.instance.apiFrequencyControl({
             name: 'addTasks',
             code: 0,
@@ -288,7 +324,7 @@ class Meeting extends EventEmitter {
             }, null, ' ')
           })
         } else {
-          this.adapterRef.logger.error('添加推流任务失败: ', data)
+          this.logger.error('添加推流任务失败: ', data)
           this.adapterRef.instance.apiFrequencyControl({
             name: 'addTasks',
             code: data.code,
@@ -310,7 +346,7 @@ class Meeting extends EventEmitter {
           )
         }
       } catch (e) {
-        this.adapterRef.logger.error('addTasks: ', e.name, e.message, e)
+        this.logger.error('addTasks: ', e.name, e.message, e)
         this.adapterRef.instance.apiFrequencyControl({
           name: 'addTasks',
           code: -1,
@@ -350,7 +386,7 @@ class Meeting extends EventEmitter {
           taskId: taskIds.length ? taskIds[0] : ''
         }, null, ' ')
       })
-      this.adapterRef.logger.error('请先加入房间')
+      this.logger.error('请先加入房间')
       return Promise.reject(
         new RtcError({
           code: ErrorCode.INVALID_OPERATION,
@@ -358,7 +394,7 @@ class Meeting extends EventEmitter {
         })
       )
     } else if (!taskIds || !Array.isArray(taskIds) || !taskIds.length){
-      this.adapterRef.logger.error('删除推流任务失败: 参数格式错误，taskIds为空，或者该数组长度为空')
+      this.logger.error('删除推流任务失败: 参数格式错误，taskIds为空，或者该数组长度为空')
       return Promise.reject(
         new RtcError({
           code: ErrorCode.INVALID_PARAMETER,
@@ -368,16 +404,16 @@ class Meeting extends EventEmitter {
     }
     
     let url = roomsTaskUrl
-    this.adapterRef.logger.log('roomsTaskUrl: ', roomsTaskUrl)
+    this.logger.log('roomsTaskUrl: ', roomsTaskUrl)
     if (this.adapterRef.instance._params.neRtcServerAddresses.roomServer) {
       //url = roomsTaskUrl.replace(/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+\.?/, this.adapterRef.instance._params.neRtcServerAddresses.roomServer)
       url = this.adapterRef.instance._params.neRtcServerAddresses.roomServer
-      this.adapterRef.logger.log('私有化配置的 roomsTaskUrl: ', url)
+      this.logger.log('私有化配置的 roomsTaskUrl: ', url)
     }
 
     url = `${url}${this.adapterRef.channelInfo.cid}/tasks/delete`
     for (let i=0; i < taskIds.length; i++) {
-      this.adapterRef.logger.log('deleteTasks: ', taskIds[i])
+      this.logger.log('deleteTasks: ', taskIds[i])
       try {
         const data:any = await ajax({
           url, 
@@ -391,7 +427,7 @@ class Meeting extends EventEmitter {
           }
         })
         if (data.code === 200) {
-          this.adapterRef.logger.log('删除推流任务完成')
+          this.logger.log('删除推流任务完成')
           this.adapterRef.instance.apiFrequencyControl({
             name: 'deleteTasks',
             code: 0,
@@ -401,7 +437,7 @@ class Meeting extends EventEmitter {
           })
           return Promise.resolve()
         } else {
-          this.adapterRef.logger.log('删除推流任务请求失败:', JSON.stringify(data))
+          this.logger.log('删除推流任务请求失败:', JSON.stringify(data))
           this.adapterRef.instance.apiFrequencyControl({
             name: 'deleteTasks',
             code: data.code,
@@ -417,7 +453,7 @@ class Meeting extends EventEmitter {
           )
         }
       } catch (e) {
-        this.adapterRef.logger.error('deleteTasks发生错误: ', e.name, e.message, e)
+        this.logger.error('deleteTasks发生错误: ', e.name, e.message, e)
         this.adapterRef.instance.apiFrequencyControl({
           name: 'deleteTasks',
           code: -1,
@@ -456,7 +492,7 @@ class Meeting extends EventEmitter {
           taskId: rtmpTasks.length ? rtmpTasks[0].taskId : ''
         }, null, ' ')
       })
-      this.adapterRef.logger.error('请先加入房间')
+      this.logger.error('请先加入房间')
       return Promise.reject(
         new RtcError({
           code: ErrorCode.INVALID_OPERATION,
@@ -464,7 +500,7 @@ class Meeting extends EventEmitter {
         })
       )
     } else if (!rtmpTasks || !Array.isArray(rtmpTasks) || !rtmpTasks.length){
-      this.adapterRef.logger.error('更新推流任务失败: 参数格式错误，rtmpTasks为空，或者该数组长度为空')
+      this.logger.error('更新推流任务失败: 参数格式错误，rtmpTasks为空，或者该数组长度为空')
       return Promise.reject(
         new RtcError({
           code: ErrorCode.INVALID_PARAMETER,
@@ -474,11 +510,11 @@ class Meeting extends EventEmitter {
     }
 
     let url = roomsTaskUrl
-    this.adapterRef.logger.log('roomsTaskUrl: ', roomsTaskUrl)
+    this.logger.log('roomsTaskUrl: ', roomsTaskUrl)
     if (this.adapterRef.instance._params.neRtcServerAddresses.roomServer) {
       //url = roomsTaskUrl.replace(/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+\.?/, this.adapterRef.instance._params.neRtcServerAddresses.roomServer)
       url = this.adapterRef.instance._params.neRtcServerAddresses.roomServer
-      this.adapterRef.logger.log('私有化配置的 roomsTaskUrl: ', url)
+      this.logger.log('私有化配置的 roomsTaskUrl: ', url)
     }
     url = `${url}${this.adapterRef.channelInfo.cid}/task/update`
     let requestUid = this.adapterRef.channelInfo.uid
@@ -512,7 +548,7 @@ class Meeting extends EventEmitter {
           }
         })
         if (data.code === 200) {
-          this.adapterRef.logger.log('更新推流任务完成')
+          this.logger.log('更新推流任务完成')
           this.adapterRef.instance.apiFrequencyControl({
             name: 'updateTasks',
             code: 0,
@@ -528,7 +564,7 @@ class Meeting extends EventEmitter {
           })
           return Promise.resolve()
         } else {
-          this.adapterRef.logger.log('更新推流任务失败：', JSON.stringify(data))
+          this.logger.log('更新推流任务失败：', JSON.stringify(data))
           this.adapterRef.instance.apiFrequencyControl({
             name: 'updateTasks',
             code: data.code,
@@ -550,7 +586,7 @@ class Meeting extends EventEmitter {
           )
         }
       } catch (e) {
-        this.adapterRef.logger.error('updateTasks 发生错误: ', e.name, e.message, e)
+        this.logger.error('updateTasks 发生错误: ', e.name, e.message, e)
         this.adapterRef.instance.apiFrequencyControl({
           name: 'updateTasks',
           code: -1,
@@ -576,7 +612,7 @@ class Meeting extends EventEmitter {
   }
 
   destroy() {
-    this.adapterRef.logger.log('清除 meeting')
+    this.logger.log('清除 meeting')
     this._reset()
   }
 }

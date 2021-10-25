@@ -1,9 +1,8 @@
 import {SignalRoomCapability, VideoCodecInt2Str, VideoCodecStr2Int} from "../interfaces/SignalProtocols";
-import {AdapterRef, VideoCodecType} from "../types";
+import {AdapterRef, ILogger, VideoCodecType} from "../types";
 import {getSupportedCodecs, VideoCodecList} from "../util/rtcUtil/codec";
 
 export class MediaCapability{
-  public adapterRef: AdapterRef;
 
   // 表示本地支持的解码类型
   public supportedCodecRecv: VideoCodecType[] | null;
@@ -19,9 +18,22 @@ export class MediaCapability{
     // 表示房间内支持的编码类型
     videoCodecType: VideoCodecType[];
   }
+  private logger: ILogger;
   
   constructor(adapterRef: AdapterRef) {
-    this.adapterRef = adapterRef;
+    this.logger = adapterRef.logger.getChild(()=>{
+      let tag = `codec${this.room.videoCodecType.join(",")}`;
+      if (
+        !this.supportedCodecSend || this.supportedCodecSend.length !== 2
+      || !this.supportedCodecRecv || this.supportedCodecRecv.length !== 2
+      ){
+        tag += `/${this.supportedCodecSend}/${this.supportedCodecRecv}`
+      }
+      if (adapterRef.mediaCapability !== this){
+        tag += " DETACHED";
+      }
+      return tag;
+    });
     this.supportedCodecRecv = null;
     this.supportedCodecSend = null;
     this.preferredCodecSend = {
@@ -38,7 +50,7 @@ export class MediaCapability{
     let supportedCodecsSend = await getSupportedCodecs("send") || {video: [], audio: ["OPUS"]};
     this.supportedCodecRecv = supportedCodecsRecv.video;
     this.supportedCodecSend = supportedCodecsSend.video;
-    this.adapterRef.logger.log("detect supportedCodecRecv", JSON.stringify(this.supportedCodecRecv), "supportedCodecSend", JSON.stringify(this.supportedCodecSend), 'Preferred codec:', JSON.stringify(this.preferredCodecSend));
+    this.logger.log("detect supportedCodecRecv", JSON.stringify(this.supportedCodecRecv), "supportedCodecSend", JSON.stringify(this.supportedCodecSend), 'Preferred codec:', JSON.stringify(this.preferredCodecSend));
   }
   
   getCodecCapability(){
@@ -52,7 +64,7 @@ export class MediaCapability{
       }
       return supportedCodec;
     }else{
-      this.adapterRef.logger.error('getCodecCapability: call detect first');
+      this.logger.error('getCodecCapability: call detect first');
       return [];
     }
   }
@@ -64,11 +76,11 @@ export class MediaCapability{
       if (VideoCodecStr2Int[codec] > -1){
         mediaCapabilitySet[256].push(VideoCodecStr2Int[codec])
       }else{
-        this.adapterRef.logger.error('MediaCapability:Unknown VideoCodecStr2Int', codec);
+        this.logger.error('MediaCapability:Unknown VideoCodecStr2Int', codec);
       }
     }
     if (mediaCapabilitySet[256].length === 0){
-      this.adapterRef.logger.error('MediaCapability:No Local Suitable codec available');
+      this.logger.error('MediaCapability:No Local Suitable codec available');
     }
     const str = JSON.stringify(mediaCapabilitySet);
     return str;
@@ -106,10 +118,10 @@ export class MediaCapability{
       }
     }
     if (roomSupported.codecName){
-      this.adapterRef.logger.log('MediaCapability：发送的Codec为:', roomSupported.codecName, JSON.stringify(roomSupported.codecParam));
+      this.logger.log('MediaCapability：发送的Codec为:', roomSupported.codecName, JSON.stringify(roomSupported.codecParam));
       return roomSupported;
     }else{
-      this.adapterRef.logger.error('MediaCapability：未找到合适的发送Codec。发送的Codec使用:', roomNotSupported.codecName, roomNotSupported.codecParam);
+      this.logger.error('MediaCapability：未找到合适的发送Codec。发送的Codec使用:', roomNotSupported.codecName, roomNotSupported.codecParam);
       return roomNotSupported;
     }
   }
@@ -128,13 +140,13 @@ export class MediaCapability{
         if (codecType){
           this.room.videoCodecType.push(codecType);
         }else{
-          this.adapterRef.logger.error('Unknown Video Codec Type', num, signalRoomCapability)
+          this.logger.error('Unknown Video Codec Type', num, signalRoomCapability)
         }
       }
       if (!prevVideoCodecType.length){
-        this.adapterRef.logger.log('Room videoCodecType:', JSON.stringify(this.room.videoCodecType))
+        this.logger.log('Room videoCodecType:', JSON.stringify(this.room.videoCodecType))
       }else{
-        this.adapterRef.logger.log('Room videoCodecType发生变更。new:', this.room.videoCodecType, 'old:',prevVideoCodecType);
+        this.logger.log('Room videoCodecType发生变更。new:', this.room.videoCodecType, 'old:',prevVideoCodecType);
       }
     }
   }
