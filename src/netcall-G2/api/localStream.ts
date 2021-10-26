@@ -34,6 +34,7 @@ import RtcError from '../util/error/rtcError';
 import ErrorCode  from '../util/error/errorCode';
 import BigNumber from 'bignumber.js'
 import {ILogger} from "../types";
+import { isHttpProtocol } from '../util/rtcUtil/rtcSupport'
 
 /**
  *  请使用 {@link NERTC.createStream} 通过NERTC.createStream创建
@@ -413,6 +414,9 @@ class LocalStream extends EventEmitter {
    * @return {Promise}
    */
   async init () {
+    if(!!isHttpProtocol()){
+      this.logger.warn('The current protocol is HTTP')
+    }
     this.state = "INITING"
     this.logger.log('初始化音视频流对象')
     this.client.adapterRef.localStream = this
