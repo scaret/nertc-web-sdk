@@ -16,6 +16,7 @@ import ErrorCode from '../util/error/errorCode';
 import {getParameters} from "./parameters";
 import {LocalStream} from "../api/localStream";
 import {RemoteStream} from "../api/remoteStream";
+import {Device} from "./device";
 class MediaHelper extends EventEmitter {
   private adapterRef: AdapterRef;
   stream: LocalStream|RemoteStream;
@@ -32,6 +33,10 @@ class MediaHelper extends EventEmitter {
   public musicStream: MediaStream;
   public audioSource: MediaStreamTrack|null;
   public micTrack: MediaStreamTrack|null;
+  // Chrome为default设备做音频切换的时候，已有的track的label不会更新
+  public deviceInfo: {
+    mic: {label: string, groupId?: string, deviceId?: string},
+  } = {mic: {label: ""}};
   public screenAudioTrack: MediaStreamTrack|null;
   public webAudio: WebAudio|null;
   public audioConstraint: {audio: MediaTrackConstraints}|null;
@@ -88,6 +93,7 @@ class MediaHelper extends EventEmitter {
     this.videoSource = null;
     this.screenTrack = null;
     this.micTrack = null;
+    this.deviceInfo = {mic: {label: ""}};
     this.screenAudioTrack = null;
     this.screenTrack = null;
     this.cameraTrack = null;
@@ -99,6 +105,26 @@ class MediaHelper extends EventEmitter {
       audioBuffer: {}, //云端音频buffer数组
       sounds: {}
     };
+    Device.on("recording-device-changed", (evt)=>{
+      if (this.micTrack){
+        if (this.deviceInfo.mic.deviceId === evt.device.deviceId){
+          if (evt.state === "INACTIVE"){
+            this.logger.error("当前使用的麦克风设备被移除，需重新启用设备", evt.device)
+            this.stream.emit('recording-device-changed', evt);
+          } else {
+            let device = Device.deviceHistory.audioIn.find(d=>{
+              d.groupId === this.deviceInfo.mic.groupId
+            });
+            if (!device){
+              this.logger.error(`当前麦克风已由【${this.deviceInfo.mic.label}】切换至【${evt.device.label}】，可能会影响通话质量`)
+              this.deviceInfo.mic.label = evt.device.label;
+              this.deviceInfo.mic.groupId = evt.device.groupId;
+              this.stream.emit('recording-device-changed', evt);              
+            }
+          }
+        }
+      }
+    })
   }
   
 
@@ -271,6 +297,11 @@ class MediaHelper extends EventEmitter {
             audio: (this.getAudioConstraints()) ? this.getAudioConstraints() : true,
           }, this.logger)
           this.micTrack = this.micStream.getAudioTracks()[0];
+          const micSettings = this.micTrack.getSettings();
+          this.deviceInfo.mic.label = this.micTrack.label;
+          this.deviceInfo.mic.deviceId = micSettings.deviceId
+          this.deviceInfo.mic.groupId = micSettings.groupId;
+          
           this.listenToTrackEnded(this.micTrack);
           this.adapterRef.instance.apiEventReport('setFunction', {
             name: 'set_mic',
@@ -349,6 +380,10 @@ class MediaHelper extends EventEmitter {
           const micTrack = stream.getAudioTracks()[0];
           if (micTrack){
             this.micTrack = micTrack;
+            const micSettings = micTrack.getSettings()
+            this.deviceInfo.mic.label = this.micTrack.label;
+            this.deviceInfo.mic.deviceId = micSettings.deviceId
+            this.deviceInfo.mic.groupId = micSettings.groupId;
             this.listenToTrackEnded(this.micTrack);
             this.adapterRef.instance.apiEventReport('setFunction', {
               name: 'set_mic',
@@ -468,6 +503,11 @@ class MediaHelper extends EventEmitter {
         this.micStream = new MediaStream()
         this.micStream.addTrack(audioTrack)
         this.micTrack = audioTrack;
+        const micSettings = audioTrack.getSettings();
+        this.deviceInfo.mic.label = this.micTrack.label;
+        this.deviceInfo.mic.deviceId = micSettings.deviceId
+        this.deviceInfo.mic.groupId = micSettings.groupId;
+
         this.listenToTrackEnded(this.micTrack);
         if (this.webAudio){
           this.webAudio.updateTracks([
@@ -641,6 +681,10 @@ class MediaHelper extends EventEmitter {
   updateStream(kind:MediaTypeShort, track:MediaStreamTrack) {
     if (kind === 'audio') {
       this.micTrack = track;
+      const micSettings = track.getSettings()
+      this.deviceInfo.mic.label = this.micTrack.label;
+      this.deviceInfo.mic.deviceId = micSettings.deviceId;
+      this.deviceInfo.mic.groupId = micSettings.groupId;
       this.listenToTrackEnded(this.micTrack);
       emptyStreamWith(this.audioStream, track);
       this.audioStream.addTrack(track)
@@ -708,6 +752,7 @@ class MediaHelper extends EventEmitter {
       stream.removeTrack(track);
       if (this.micTrack === track){
         this.micTrack = null;
+        this.deviceInfo.mic = {label: ""};
         this.webAudio?.removeTrack(track);
       }
       if (this.screenAudioTrack === track){

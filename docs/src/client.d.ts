@@ -14,6 +14,7 @@ import {
 import { Stream } from "./stream";
 import {ConnectionState} from "./types";
 import {NetStatusItem} from "./types";
+import {DeviceInfo} from "./browser";
 
 /**
  * Client 接口提供音视频通话的核心功能，例如加入房间、发布和订阅音视频流等。
@@ -740,6 +741,56 @@ declare interface Client{
     mediaType: "audio"|"video"
   ) => void): void;
 
+  /**
+   * 该回调通知应用有音频输入设备被添加、更改或移除。
+   * * `ACTIVE`: 新增设备
+   * * `INACTIVE`: 设备被移除
+   * * `CHANGED`: 设备更改
+   * 
+   * 注意：在Chrome浏览器上，部分蓝牙设备关闭后，Chrome会将默认输入设备切换为其他麦克风，此时可能遇到声音异常，需重启设备。
+   * 
+   * @example
+   * ```javascript
+   * rtc.client.on("recording-device-changed", async evt=>{
+   *   console.log("麦克风设备变更", evt.state, evt.device.label);
+   *   if (evt.state === "CHANGED" && evt.device.deviceId === "default"){
+   *     console.error("默认麦克风自动切换，如遇到声音异常，需重启设备", evt.device.label);
+   *     // await rtc.localStream.close({type: "audio"})
+   *     // await rtc.localStream.open({type: "audio"})
+   *   }
+   * })
+   * ```
+   */
+  on(event: "recording-device-changed", callback: (
+    state: "ACTIVE"|"INACTIVE"|"CHANGED",
+    device: DeviceInfo,
+  ) => void): void;
+
+  /**
+   * 该回调通知应用有视频输入设备被添加、更改或移除。
+   * * `ACTIVE`: 新增设备
+   * * `INACTIVE`: 设备被移除
+   * * `CHANGED`: 设备更改
+   *
+   */
+  on(event: "camera-changed", callback: (
+    state: "ACTIVE"|"INACTIVE"|"CHANGED",
+    device: DeviceInfo,
+  ) => void): void;
+
+  /**
+   * 该回调通知应用有音频输出设备被添加、更改或移除。
+   * * `ACTIVE`: 新增设备
+   * * `INACTIVE`: 设备被移除
+   * * `CHANGED`: 设备更改
+   * 
+   * 注意：目前仅Chrome浏览器支持扬声器枚举与选择。
+   * 
+   */
+  on(event: "playout-device-changed", callback: (
+    state: "ACTIVE"|"INACTIVE"|"CHANGED",
+    device: DeviceInfo,
+  ) => void): void;
 
 }
 export { Client };

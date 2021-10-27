@@ -23,6 +23,9 @@ interface IParameters{
 
   // 恢复播放时，是否隐藏video控件的默认控制选项
   hideControlOnResume: boolean,
+
+  // 覆盖声网的设备枚举
+  forceListenDeviceChange: boolean,
   
   // 最大PeerConnection重连次数
   maxTransportRebuildCnt: number,
@@ -39,6 +42,7 @@ let parameters:IParameters = {
   hideControlOnResume: true,
   maxTransportRebuildCnt: 50,
   logLevel: loglevels.INFO,
+  forceListenDeviceChange: true,
 }
 
 // 注意：getParameters和setParameters是一些私有全局变量，仅用于调试和私有接口，不用于正常业务
