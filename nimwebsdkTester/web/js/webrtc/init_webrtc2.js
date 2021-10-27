@@ -2649,6 +2649,9 @@ $("#closeWatermarkPanel").on("click", function (){
 $("#sdkVersion").text(NERTC.VERSION);
 $("#sdkBuild").text(NERTC.BUILD);
 $("#systemRequirement").text(`WebRTC:${NERTC.checkSystemRequirements() ? "支持": "不支持"}； 适配器:${NERTC.getHandler()}`);
+if (!NERTC.checkSystemRequirements()){
+  alert("浏览器环境缺失部分WebRTC基础功能。（是否没有开启HTTPS？）")
+}
 if (NERTC.getSupportedCodec){
   NERTC.getSupportedCodec().then((data)=>{
     $("#systemRequirement").append(`<br/>视频编码：${data.video.join(",")}；音频编码：${data.audio.join(",")}`)
