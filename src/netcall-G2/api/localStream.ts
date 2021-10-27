@@ -2523,6 +2523,23 @@ class LocalStream extends EventEmitter {
   }
 
   /**
+   * 获取音效文件时长
+   * @function getAudioEffectsDuration
+   * @memberOf Stream#
+   * @return {Object}
+   */
+   getAudioEffectsDuration () {
+    this.logger.log('获取音效总时长')
+    if (!this.mediaHelper){
+      throw new RtcError({
+        code: ErrorCode.NO_MEDIAHELPER,
+        message: 'no media helper'
+      })
+    }
+    return this.mediaHelper.getAudioEffectsTotalTime() 
+  }
+
+  /**
    * 设置画布水印
    * @function setCanvasWatermarkConfigs
    * @memberOf Stream#

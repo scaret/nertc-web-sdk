@@ -2066,6 +2066,10 @@ for (i = 1; i < 4; i++ ) {
         soundId: Number($(`#soundId${num}`).val())
       }).then(res=>{
         console.log('音效文件播放成功: ', $(`#path${num}`).val())
+        res = rtc.localStream.getAudioEffectsDuration()
+        console.log('获取音效文件总时长成功：', res)
+        totalTime = res.totalTime
+        console.log('音效文件总时长--->: ', formatSeconds(totalTime))
       }).catch(err=>{
         console.error('播放音效文件 %s 失败: %o', $(`#path${num}`).val(), err)
       })

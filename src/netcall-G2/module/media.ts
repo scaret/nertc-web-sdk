@@ -1983,6 +1983,26 @@ class MediaHelper extends EventEmitter {
 
   }
 
+  getAudioEffectsTotalTime() {
+    if (!this.webAudio || !this.webAudio.context) {
+      this.logger.log('startAudioMixing: 不支持伴音功能')
+      return Promise.resolve()
+    } else if (!this.webAudio.mixAudioConf || !this.webAudio.mixAudioConf.audioSource) {
+      this.logger.log('getAudioMixingTotalTime: 当前没有开启伴音')
+      return Promise.resolve()
+    } 
+
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'getAudioMixingTotalTime',
+      code: 0,
+      param: JSON.stringify({
+        totalTime: this.webAudio.getAudioMixingTotalTime()?.totalTime,
+      }, null, ' ')
+    })
+    return this.webAudio.getAudioMixingTotalTime()
+
+  }
+
   loadAudioBuffer (filePath: string) {
     return ajax({
       url: filePath,

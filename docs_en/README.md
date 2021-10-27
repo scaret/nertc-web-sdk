@@ -158,7 +158,7 @@ table th:nth-of-type(2) {
 [[Stream.adjustAudioMixingVolume]] | 调节音乐文件播放音量。
 [[Stream.getAudioMixingDuration]] | 获取音乐文件的总长度。
 [[Stream.getAudioMixingCurrentPosition]] | 获取音乐文件当前播放进度。
-[[Stream.setAudioMixingPosition]] | 获取音乐文件当前播放进度。
+[[Stream.setAudioMixingPosition]] | 设置音乐文件当前播放进度。
 
 
 ### <span id="播放音效文件">播放音效文件</span>
