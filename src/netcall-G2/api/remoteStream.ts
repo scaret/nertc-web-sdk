@@ -500,7 +500,7 @@ class RemoteStream extends EventEmitter {
     }
     
     this.logger.log(`uid ${this.stringStreamID} Stream.play::`, JSON.stringify(playOptions))
-    if(playOptions.audio && this._play && this.mediaHelper && this.mediaHelper.audioStream){
+    if(playOptions.audio && this._play && this.mediaHelper && this.mediaHelper.audioStream.getTracks().length){
       this.logger.log(`uid ${this.stringStreamID} 开始播放远端音频`)
       try{
         await this._play.playAudioStream(this.mediaHelper.audioStream, playOptions.muted)
