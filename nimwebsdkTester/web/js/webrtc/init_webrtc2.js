@@ -350,15 +350,6 @@ function renderDeivce(node, device) {
   node.html(html)
 }
 
-$("#refreshDevices").on("click", async ()=>{
-  const mediaStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
-  const audioTrack = mediaStream.getAudioTracks()[0];
-  const videoTrack = mediaStream.getVideoTracks()[0];
-  audioTrack.stop();
-  videoTrack.stop();
-  initDevices()
-});
-
 // 是否显示网络回调
 window.__SHOW_STATS__ = false;
 jQuery('#js-netstats').on('change', function () {
@@ -636,7 +627,34 @@ function initEvents() {
     div.firstElementChild.firstElementChild.lastElementChild.innerText = ` ${_data.curState} `
   })
 
-
+  rtc.client.on("recording-device-changed", evt=>{
+    console.log(`【${evt.state}】recording-device-changed ${evt.device.label}`, evt);
+    if (evt.state === "ACTIVE" || evt.state === "CHANGED"){
+      if (evt.device.deviceId === "default" || evt.device.deviceId === ""){
+        addLog(`默认麦克风已切换为【${evt.device.label}】`)
+      }
+    }
+  })
+  
+  rtc.client.on("camera-changed", evt=>{
+    console.log(`【${evt.state}】camera-changed ${evt.device.label}`, evt);
+    if (evt.state === "ACTIVE" || evt.state === "CHANGED"){
+      if (evt.device.deviceId === "default" || evt.device.deviceId === ""){
+        // 经测试，Chrome并没有deviceId为default的摄像头。所以并不会走入这段逻辑
+        addLog(`默认摄像头已切换为【${evt.device.label}】`)
+      }
+    }
+  })
+  
+  rtc.client.on("playout-device-changed", evt=>{
+    console.log(`【${evt.state}】playout-device-changed ${evt.device.label}`, evt);
+    if (evt.state === "ACTIVE" || evt.state === "CHANGED"){
+      if (evt.device.deviceId === "default" || evt.device.deviceId === ""){
+        addLog(`默认扬声器已切换为【${evt.device.label}】`)
+      }
+    }
+  })
+  
   rtc.client.on('client-role-changed', evt => {
     addLog(`client-role-changed ${evt.role}`);
     $("#currentRole").text(evt.role);
@@ -1617,14 +1635,14 @@ $('#disconnectWS').on('click', () => {
 $('#setAudioOutput').on('click', () => {
   const uid = $('#part-volume input[name="uid"]').val()
   const deviceId = $('#sounder').val();
-  const remoteStream = rtc.remoteStreams[uid]
-  if (!remoteStream) {
+  const stream = uid ? rtc.remoteStreams[uid] : rtc.localStream;
+  if (!stream) {
     console.warn('请检查uid是否正确')
     addLog('请检查uid是否正确')
     return
   }
   addLog('设置音频输出设备:' + uid + " " + deviceId);
-  remoteStream.setAudioOutput(deviceId);
+  stream.setAudioOutput(deviceId);
   
 });
 
@@ -2631,6 +2649,9 @@ $("#closeWatermarkPanel").on("click", function (){
 $("#sdkVersion").text(NERTC.VERSION);
 $("#sdkBuild").text(NERTC.BUILD);
 $("#systemRequirement").text(`WebRTC:${NERTC.checkSystemRequirements() ? "支持": "不支持"}； 适配器:${NERTC.getHandler()}`);
+if (!NERTC.checkSystemRequirements()){
+  alert("浏览器环境缺失部分WebRTC基础功能。（是否没有开启HTTPS？）")
+}
 if (NERTC.getSupportedCodec){
   NERTC.getSupportedCodec().then((data)=>{
     $("#systemRequirement").append(`<br/>视频编码：${data.video.join(",")}；音频编码：${data.audio.join(",")}`)

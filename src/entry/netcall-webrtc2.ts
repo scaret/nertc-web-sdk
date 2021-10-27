@@ -148,7 +148,8 @@ createStream (options:LocalStreamOptions) {
     return clientNotYetUninitialized
   }
 },
-
+  
+Device: Device,
 
 /**
  * 该方法枚举可用的媒体输入/输出设备，比如麦克风、摄像头、耳机等。

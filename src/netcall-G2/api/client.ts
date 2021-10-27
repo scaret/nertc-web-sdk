@@ -16,6 +16,7 @@ import ErrorCode  from '../util/error/errorCode';
 import { SDK_VERSION, BUILD } from "../Config";
 import {STREAM_TYPE} from "../constant/videoQuality";
 import {RemoteStream} from "./remoteStream";
+import {Device} from "../module/device";
 const BigNumber = require("bignumber.js");
 
 /**
@@ -84,6 +85,24 @@ class Client extends Base {
       userRole: 0, // 0:主播，1：观众
       audienceList: {}, // Workaround，用于处理仍然收到的观众端消息
     };
+    if (!Device.deviceInited){
+      Device.startDeviceChangeDetection();
+    }
+    Device.on('recording-device-changed', (evt)=>{
+      if (!this.destroyed){
+        this.safeEmit("recording-device-changed", evt);
+      }
+    })
+    Device.on('camera-changed', (evt)=>{
+      if (!this.destroyed){
+        this.safeEmit("camera-changed", evt);
+      }
+    })
+    Device.on('playout-device-changed', (evt)=>{
+      if (!this.destroyed){
+        this.safeEmit("playout-device-changed", evt);
+      }
+    })
   }
 
   getUid() {

@@ -235,7 +235,6 @@ class GetStats extends EventEmitter{
       ]);
 
       for(let item in local){
-        console.log(item)
         if(localDatasMap_.has(local[item].type)) {
           let key;
           if(item.indexOf('-outbound-rtp') > -1) {
