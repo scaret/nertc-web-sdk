@@ -281,6 +281,7 @@ declare interface Stream {
      * @note
      * - 在播放订阅流之前或之后都可以调用该方法。
      * - 目前只有 Chrome 浏览器支持该方法。
+     * - [由于Chrome的限制](https://groups.google.com/g/discuss-webrtc/c/vrw44ZGE0gs/m/2YJ6yUEjBgAJ)，所有远端流会共享同一个音频输出设备。
      * 
      * @param deviceId 设备的 ID，可以通过 getDevices 方法获取。获取的 ID 为 ASCII 字符，字符串长度大于 0 小于 256 字节。
      */

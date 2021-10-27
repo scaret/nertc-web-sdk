@@ -381,7 +381,7 @@ class Play extends EventEmitter {
     }
     
     this.audioDom.srcObject = stream
-    if (this.audioSinkId) {
+    if (this.audioSinkId && stream.getAudioTracks().length) {
       try {
         this.logger.log(`音频尝试使用输出设备`, this.audioSinkId);
         await (this.audioDom as any).setSinkId(this.audioSinkId);
@@ -740,7 +740,7 @@ class Play extends EventEmitter {
   
   async setAudioOutput (audioSinkId:string) {
     this.audioSinkId = audioSinkId;
-    if (this.audioDom) {
+    if (this.audioDom?.srcObject && (this.audioDom?.srcObject as MediaStream).getAudioTracks().length) {
       await (this.audioDom as any).setSinkId(audioSinkId);
       this.logger.log('设置通话音频输出设备成功')
     }
