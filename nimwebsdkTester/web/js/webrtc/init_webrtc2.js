@@ -475,7 +475,7 @@ function initEvents() {
     })
     // 自动播放受限
     if(window.autoPlayStart) {
-      rtc.client.on('notAllowedError', err => {
+      rtc.client.on('NotAllowedError', err => {
         const errorCode = err.getCode();
         const id = remoteStream.getId()
         addView(id);

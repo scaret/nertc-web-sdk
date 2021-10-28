@@ -148,8 +148,8 @@ declare interface Stream {
      * 
      * @example
      * ```javascript
-     *    // 在监听到 notAllowedError (自动播放受限)之后调用 resume 可以恢复播放
-     *    rtc.client.on('notAllowedError', err => {
+     *    // 在监听到 NotAllowedError (自动播放受限)之后调用 resume 可以恢复播放
+     *    rtc.client.on('NotAllowedError', err => {
      *      const errorCode = err.getCode();
      *      if(errorCode === 41030){
      *        await remoteStream.resume();

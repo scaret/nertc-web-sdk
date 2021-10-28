@@ -718,13 +718,13 @@ declare interface Client{
    * 
    * @example
    * ```javascript
-   * rtc.client.on("notAllowedError", (evt)=>{
+   * rtc.client.on("NotAllowedError", (evt)=>{
    *   // 获取错误码
    *   const erroCode = evt.getCode();
    * });
    * ```
    */
-  on(event: "notAllowedError", callback: (
+  on(event: "NotAllowedError", callback: (
     evt: {
       /**
       * 错误码

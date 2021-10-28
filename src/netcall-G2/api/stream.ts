@@ -803,9 +803,8 @@ class Stream extends EventEmitter {
           this.audioPlay_ = true;
         }catch(error) {
           this.audioPlay_ = false;
-          this.client.emit('notAllowedError', error)
-          this.client.emit('NotAllowedError', error) // 兼容临时版本客户
-          // let ErrorMessage = 'notAllowedError: autoplay is not allowed in current browser, please refer to https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082'
+          this.client.emit('NotAllowedError', error)
+          // let ErrorMessage = 'NotAllowedError: autoplay is not allowed in current browser, please refer to https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082'
           // throw new RtcError({
           //   code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
           //   message: ErrorMessage
@@ -853,14 +852,13 @@ class Stream extends EventEmitter {
             }
             this.videoPlay_ = true;
           }catch(error) {
-            // let ErrorMessage = 'notAllowedError: videoplay is not allowed in current browser, please refer to https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082' 
+            // let ErrorMessage = 'NotAllowedError: videoplay is not allowed in current browser, please refer to https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082' 
             // throw new RtcError({
             //   code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
             //   message: ErrorMessage
             // })
             this.videoPlay_ = false;
-            this.client.emit('notAllowedError', error)
-            this.client.emit('NotAllowedError', error) // 兼容临时版本客户
+            this.client.emit('NotAllowedError', error)
           }
         }  
       }
