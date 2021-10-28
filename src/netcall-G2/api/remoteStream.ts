@@ -507,7 +507,8 @@ class RemoteStream extends EventEmitter {
         this.audioPlay_ = true;
       }catch(error) {
         this.audioPlay_ = false;
-        this.client.emit('NotAllowedError', error)
+        this.client.emit('notAllowedError', error)
+        this.client.emit('NotAllowedError', error) // 兼容临时版本客户
       }
     }
 
@@ -534,7 +535,8 @@ class RemoteStream extends EventEmitter {
             //   message: ErrorMessage
             // })
             this.videoPlay_ = false;
-            this.client.emit('NotAllowedError', error)
+            this.client.emit('notAllowedError', error)
+            this.client.emit('NotAllowedError', error) // 兼容临时版本客户
           }
         }  
       }
@@ -551,7 +553,8 @@ class RemoteStream extends EventEmitter {
             this.screenPlay_ = false;
           }catch(error){
             this.screenPlay_ = false;
-            this.client.emit('NotAllowedError', error)
+            this.client.emit('notAllowedError', error)
+            this.client.emit('NotAllowedError', error) // 兼容临时版本客户
           }
         }
       }

@@ -742,6 +742,26 @@ declare interface Client{
   ) => void): void;
 
   /**
+   * 浏览器自动播放受限
+   * 
+   * @example
+   * ```javascript
+   * rtc.client.on("notAllowedError", (evt)=>{
+   *   // 获取错误码
+   *   const erroCode = evt.getCode();
+   * });
+   * ```
+   */
+   on(event: "notAllowedError", callback: (
+    evt: {
+      /**
+      * 错误码
+      */
+      erroCode: Number
+    }
+    ) => void): void;
+
+  /**
    * 该回调通知应用有音频输入设备被添加、更改或移除。
    * * `ACTIVE`: 新增设备
    * * `INACTIVE`: 设备被移除
