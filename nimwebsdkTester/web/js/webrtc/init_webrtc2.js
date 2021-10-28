@@ -477,8 +477,8 @@ function initEvents() {
     if(window.autoPlayStart) {
       rtc.client.on('NotAllowedError', err => {
         const errorCode = err.getCode();
-        const id = remoteStream.getId()
-        addView(id);
+          const id = remoteStream.getId()
+          addView(id);
         if(errorCode === 41030){
           $(`#${id}-img`).show();
             $(`#${id}-img`).on('click', async () => {
