@@ -712,6 +712,27 @@ declare interface Client{
     mediaType: "audio"|"video"
   ) => void): void;
 
+  
+  /**
+   * 浏览器自动播放受限
+   * 
+   * @example
+   * ```javascript
+   * rtc.client.on("NotAllowedError", (evt)=>{
+   *   // 获取错误码
+   *   const erroCode = evt.getCode();
+   * });
+   * ```
+   */
+  on(event: "NotAllowedError", callback: (
+    evt: {
+      /**
+      * 错误码
+      */
+      erroCode: Number
+    }
+    ) => void): void;
+
 
 }
 export { Client };
