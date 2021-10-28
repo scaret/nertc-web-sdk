@@ -144,6 +144,22 @@ declare interface Stream {
     }): Promise<void>;
 
     /**
+     * 监测到自动播放受限后，重新播放音视频流。
+     * 
+     * @example
+     * ```javascript
+     *    // 在监听到 notAllowedError (自动播放受限)之后调用 resume 可以恢复播放
+     *    rtc.client.on('notAllowedError', err => {
+     *      const errorCode = err.getCode();
+     *      if(errorCode === 41030){
+     *        await remoteStream.resume();
+     *      }
+     *     })
+     * ```
+     */
+    resume()
+
+    /**
      * 设置本地视频画布。
      * 
      * 该方法设置本地视频画布。只影响本地用户看到的视频画面，不影响远端。
