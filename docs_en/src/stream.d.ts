@@ -797,6 +797,44 @@ declare interface Stream {
      * @return {Promise}
      */
      resumeAllEffects(): Promise<unknown>
+
+
+
+     /**
+     * 播放指定音效文件。
+     * - 支持的音效文件类型包括 MP3，AAC 等浏览器支持的其他音频格式。仅支持在线 URL。
+     * - playEffect 与 startAudioMixing 方法的区别在于，该方法更适合播放较小的音效文件，且支持同时播放多个音效。
+     * @since V4.3.0
+     * @note
+     *    - 请在 publish 音频之后调用该方法。
+     *    - 您可以多次调用该方法，通过传入不同的音效文件的 soundId 和 filePath，同时播放多个音效文件，实现音效叠加。为获得最佳用户体验，建议同时播放的音效文件不超过 3 个。
+     * 
+     * @return 可能返回的错误码：
+         - ""BROWSER_NOT_SUPPORT: 不支持的浏览器类型。
+         - "INVALID_OPERATION"：非法操作，详细原因请查看日志，通常为状态错误。
+         - "No MediaHelper": localStream 没有 init() 初始化，无法使用音效功能。 
+         - "Stream.playEffect:soundId"：soundId 参数格式错误。
+         - "Stream.playEffect:filePath"：filePath 参数格式错误。
+         - "Stream.playEffect:cycle"：cycle 参数格式错误。
+     */
+         getAudioEffectsDuration (options: {
+          /**
+           * 必选。指定在线音效文件的 URL地址。
+           * 
+           * 支持的音效文件类型包括 MP3，AAC 等浏览器支持的其他音频格式。
+           */
+          filePath: string;
+          /**
+           * 可选，指定音效文件循环播放的次数。默认值为 1，即播放 1 次。
+           */
+          cycle: number;
+          /**
+           * 必选，指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+           * 
+           * 如果您已通过 preloadEffect 将音效加载至内存，确保 playEffect 的 soundID 与 preloadEffect 设置的 soundID 相同。
+           */
+          soundId: number;
+        }) : Promise<unknown> 
     /**
      * 添加视频画布水印。
      * 

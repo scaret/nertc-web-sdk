@@ -2528,7 +2528,7 @@ class LocalStream extends EventEmitter {
    * @memberOf Stream#
    * @return {Object}
    */
-   getAudioEffectsDuration () {
+   getAudioEffectsDuration (options: AudioEffectOptions) {
     this.logger.log('获取音效总时长')
     if (!this.mediaHelper){
       throw new RtcError({
@@ -2536,7 +2536,24 @@ class LocalStream extends EventEmitter {
         message: 'no media helper'
       })
     }
-    return this.mediaHelper.getAudioEffectsTotalTime() 
+    return this.mediaHelper.getAudioEffectsTotalTime(options);
+  }
+
+  /**
+   * 获取音效文件播放进度
+   * @function getAudioEffectsCurrentPosition
+   * @memberOf Stream#
+   * @memberOf Stream#
+   * @return {Object}
+   */
+   getAudioEffectsCurrentPosition (options: AudioEffectOptions) {
+    if (!this.mediaHelper){
+      throw new RtcError({
+        code: ErrorCode.NO_MEDIAHELPER,
+        message: 'no media helper'
+      })
+    }
+    return this.mediaHelper.getAudioEffectsPlayedTime(options) 
   }
 
   /**
