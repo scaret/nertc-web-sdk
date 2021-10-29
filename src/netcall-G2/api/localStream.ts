@@ -632,7 +632,8 @@ class LocalStream extends EventEmitter {
             //   message: ErrorMessage
             // })
             this.videoPlay_ = false;
-            this.client.emit('NotAllowedError', error)
+            this.client.emit('notAllowedError', error)
+            this.client.emit('NotAllowedError', error) // 兼容临时版本客户
           }
         }  
       }
@@ -649,7 +650,8 @@ class LocalStream extends EventEmitter {
             this.screenPlay_ = false;
           }catch(error){
             this.screenPlay_ = false;
-            this.client.emit('NotAllowedError', error)
+            this.client.emit('notAllowedError', error)
+            this.client.emit('NotAllowedError', error) // 兼容临时版本客户
           }
         }
       }

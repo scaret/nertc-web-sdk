@@ -351,7 +351,7 @@ class Play extends EventEmitter {
       await Promise.all(promises);
     }catch(error){
       this.logger.error(`恢复播放 出现问题:`, error.name, error.message);
-      if(error.name === 'NotAllowedError') {
+      if(error.name === 'notAllowedError' || error.name === 'NotAllowedError') { // 兼容临时版本客户
         throw new RtcError({
           code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
           message: error.message
@@ -402,7 +402,7 @@ class Play extends EventEmitter {
     } catch (error) {
       this.logger.warn('播放音频出现问题: ', error.name, error.message, error)
 
-      if(error.name === 'NotAllowedError') {
+      if(error.name === 'notAllowedError' || error.name === 'NotAllowedError') { // 兼容临时版本客户
         this.autoPlayType = 1;
         throw new RtcError({
           code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
@@ -565,7 +565,7 @@ class Play extends EventEmitter {
     } catch (error) {
       this.logger.warn('播放视频出现问题:', error.name, error.message, error)
      
-      if(error.name === 'NotAllowedError') {
+      if(error.name === 'notAllowedError' || error.name === 'NotAllowedError') { // 兼容临时版本客户
         this.autoPlayType = 2;
         throw new RtcError({
           code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
