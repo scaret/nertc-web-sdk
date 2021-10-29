@@ -885,6 +885,9 @@ class LocalStream extends EventEmitter {
             }
             const constraint = {audio: true, audioDeviceId: deviceId};
             await this.mediaHelper.getStream(constraint);
+            if (deviceId){
+              this.microphoneId = deviceId;
+            }
             if (this.client.adapterRef && this.client.adapterRef.connectState.curState === "CONNECTED"){
               this.logger.log('Stream.open:开始发布', constraint);
               await this.client.publish(this)
@@ -960,6 +963,11 @@ class LocalStream extends EventEmitter {
             this.screenAudio = true
           }
           await this.mediaHelper.getStream(constraint);
+          if (deviceId){
+            if (type === "video"){
+              this.cameraId = deviceId
+            }
+          }
           if (this.client.adapterRef && this.client.adapterRef.connectState.curState === "CONNECTED"){
             this.logger.log('Stream.open:开始发布', constraint);
             await this.client.publish(this)
