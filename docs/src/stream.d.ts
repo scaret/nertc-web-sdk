@@ -157,7 +157,7 @@ declare interface Stream {
      *     })
      * ```
      */
-    resume()
+    resume(): Promise<void>;
 
     /**
      * 设置本地视频画布。
