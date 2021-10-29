@@ -850,6 +850,54 @@ declare interface Stream {
      * @return {Promise}
      */
      resumeAllEffects(): Promise<unknown>
+
+     /**
+     * 获取指定音效文件时长。
+     * 该方法获取音效时长，单位为毫秒。请在房间内调用该方法。
+     * 
+     * @return 方法调用成功返回音效文件时长，单位为毫秒（ms）。
+     */
+      getAudioEffectsDuration (options: {
+        /**
+         * 必选。指定在线音效文件的 URL地址。
+         * 
+         * 支持的音效文件类型包括 MP3，AAC 等浏览器支持的其他音频格式。
+         */
+        filePath: string;
+        /**
+         * 可选，指定音效文件循环播放的次数。默认值为 1，即播放 1 次。
+         */
+        cycle: number;
+        /**
+         * 必选，指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+         * 
+         */
+        soundId: number;
+      }) : Promise<unknown> 
+      /**
+       * 获取音效文件当前播放进度。
+       * 
+       * 该方法获取当前音效播放进度，单位为毫秒。请在房间内调用该方法。
+       * 
+       * @returns 方法调用成功返回音效文件播放进度。
+       */
+      getAudioEffectsCurrentPosition (options: {
+        /**
+         * 必选。指定在线音效文件的 URL地址。
+         * 
+         * 支持的音效文件类型包括 MP3，AAC 等浏览器支持的其他音频格式。
+         */
+        filePath: string;
+        /**
+         * 可选，指定音效文件循环播放的次数。默认值为 1，即播放 1 次。
+         */
+        cycle: number;
+        /**
+         * 必选，指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+         * 
+         */
+        soundId: number;
+      }) : Promise<unknown> 
     /**
      * 添加视频画布水印。
      * 
