@@ -2052,13 +2052,27 @@ $('#snapshot').click(function(event) {
 
 /**
  * 音效文件一
- */
-
+ */ 
+ 
+  let audioEffectsPlayTimer = null
+  let isAudioEffectsTotalTime = 0
+  let isAudioEffectsEnd = false
+  let isAudioEffectsPuase = false
 for (i = 1; i < 4; i++ ) {
-
+  let audioEffectsProgressInfo = document.querySelector(`#audioEffects${i} .value`);
+    let audioEffectsProgress = document.querySelector(`#audioEffects${i} progress`);
+    
+    
+    clearInterval(audioEffectsPlayTimer);
+    isAudioEffectsEnd = false;
+    isAudioEffectsPuase = false;
+  
   $(`#playEffect${i}`).click(function(event){
     var num = event.target.id.match(/\d/)[0]
     console.info('开启音效文件:  ', $(`#path${num}`).val())
+    let audioEffectsFileName = $(`#path${num}`).val();
+    audioEffectsProgressInfo.innerText = audioEffectsFileName;
+
     if (rtc.localStream) {
       rtc.localStream.playEffect({
         filePath: $(`#path${num}`).val(), 
@@ -2066,15 +2080,46 @@ for (i = 1; i < 4; i++ ) {
         soundId: Number($(`#soundId${num}`).val())
       }).then(res=>{
         console.log('音效文件播放成功: ', $(`#path${num}`).val())
+        isAudioEffectsTotalTime = rtc.localStream.getAudioEffectsDuration({
+          filePath: $(`#path${num}`).val(),
+          soundId: Number($(`#soundId${num}`).val())
+        })
+        console.log('获取音效文件总时长成功：', isAudioEffectsTotalTime)
+        audioEffectsProgressInfo.innerText = audioEffectsFileName + '00 : 00' + ' / ' + formatSeconds(isAudioEffectsTotalTime);
+        audioEffectsProgress.value = 0;
+        audioEffectsPlayTimer = setInterval(playAuidoEffects, 500,{
+          filePath: $(`#path${num}`).val(),
+          soundId: Number($(`#soundId${num}`).val()),
+          audioEffectsFileName,
+        });
+        // console.log('音效文件总时长--->: ', formatSeconds(isAudioEffectsTotalTime))
       }).catch(err=>{
         console.error('播放音效文件 %s 失败: %o', $(`#path${num}`).val(), err)
       })
-    } 
+    }
+
+    
   })
+  function playAuidoEffects(options){
+    if (isAudioEffectsEnd) {
+      console.log('播放结束')
+      clearInterval(audioEffectsPlayTimer)
+      audioEffectsPlayTimer = null
+      audioEffectsProgress.value = 100
+      audioEffectsProgressInfo.innerText = options.audioEffectsFileName + '   ' + formatSeconds(isAudioEffectsTotalTime) + ' / ' + formatSeconds(isAudioEffectsTotalTime)
+      return
+    }
+    res = rtc.localStream.getAudioEffectsCurrentPosition(options)
+    audioEffectsProgress.value = res.playedTime/isAudioEffectsTotalTime * 100
+    audioEffectsProgressInfo.innerText = options.audioEffectsFileName + '   ' + formatSeconds(res.playedTime) + ' / ' + formatSeconds(isAudioEffectsTotalTime)
+  }
 
   $(`#stopEffect${i}`).click(function(event){
     var num = event.target.id.match(/\d/)[0]
     console.info('停止音效文件:  ', $(`#soundId${num}`).val())
+    let audioEffectsFileName = $(`#path${num}`).val();
+    isAudioEffectsEnd = true;
+    clearInterval(audioEffectsPlayTimer);
     if (rtc.localStream) {
       rtc.localStream.stopEffect(Number($(`#soundId${num}`).val()))
       .then(res=>{
@@ -2087,7 +2132,10 @@ for (i = 1; i < 4; i++ ) {
 
   $(`#pauseEffect${i}`).click(function(event){
     var num = event.target.id.match(/\d/)[0]
-    console.info('暂停音效文件:  ', $(`#soundId${num}`).val())
+    console.info('暂停音效文件:  ', $(`#soundId${num}`).val());
+    let audioEffectsFileName = $(`#path${num}`).val();
+    isAudioEffectsPuase = true;
+    clearInterval(audioEffectsPlayTimer);
     if (rtc.localStream) {
       rtc.localStream.pauseEffect(Number($(`#soundId${num}`).val()))
       .then(res=>{
@@ -2101,10 +2149,18 @@ for (i = 1; i < 4; i++ ) {
   $(`#resumeEffect${i}`).click(function(event){
     var num = event.target.id.match(/\d/)[0]
    console.info('恢复音效文件1:  ', $(`#soundId${num}`).val())
+   let audioEffectsFileName = $(`#path${num}`).val();
+   isAudioEffectsPuase = false;
     if (rtc.localStream) {
       rtc.localStream.resumeEffect(Number($(`#soundId${num}`).val()))
       .then(res=>{
         console.log('恢复文件播放成功: ', $(`#path${num}`).val())
+        
+        playTimer = setInterval(playAuidoEffects, 500, {
+          filePath: $(`#path${num}`).val(),
+          soundId: Number($(`#soundId${num}`).val()),
+          audioEffectsFileName
+        })
       }).catch(err=>{
         console.error('恢复音效文件 %s 失败: %o', $(`#path${num}`).val(), err)
       })

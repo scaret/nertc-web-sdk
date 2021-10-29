@@ -1983,6 +1983,60 @@ class MediaHelper extends EventEmitter {
 
   }
 
+  getAudioEffectsTotalTime(options: AudioEffectOptions) {
+    const {soundId, filePath, cycle = 1} = options
+    if (!this.mixAudioConf || JSON.stringify(this.mixAudioConf.sounds) === '{}') {
+      this.logger.log('getAudioEffectsTotalTime: 当前没有音效文件')
+      return Promise.resolve()
+    }
+    this._initSoundIfNotExists(soundId, filePath);
+    let totalTime;
+    if(this.mixAudioConf.sounds[soundId].state === 'PLAYED'){
+      totalTime = this.mixAudioConf.sounds[soundId].totalTime;
+    }
+
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'getAudioMixingTotalTime',
+      code: 0,
+      param: JSON.stringify({
+        totalTime: totalTime,
+      }, null, ' ')
+    })
+    return totalTime;
+  }
+
+  getAudioEffectsPlayedTime(options: AudioEffectOptions) { // TODO
+    const {soundId, filePath, cycle = 1} = options
+    if (!this.mixAudioConf || JSON.stringify(this.mixAudioConf.sounds) === '{}') {
+      this.logger.log('getAudioEffectsTotalTime: 当前没有音效文件')
+      return Promise.resolve()
+    }
+    this._initSoundIfNotExists(soundId, filePath);
+
+    let currentTime = Date.now();
+    if (this.mixAudioConf.sounds[soundId].state == 'PAUSED') {
+      this.logger.log('当前是暂停状态')
+      currentTime = this.mixAudioConf.sounds[soundId].pauseTime
+    }
+    let playedTime = (currentTime - this.mixAudioConf.sounds[soundId].startTime) / 1000 + this.mixAudioConf.sounds[soundId].playStartTime
+    //this.logger.log('已经播放的时间: ', playedTime)
+    if (playedTime > this.mixAudioConf.sounds[soundId].totalTime) {
+      playedTime = playedTime % this.mixAudioConf.sounds[soundId].totalTime
+    }
+    //this.logger.log("当前播放进度:", playedTime)
+
+    
+
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'getAudioMixingPlayedTime',
+      code: 0,
+      param: JSON.stringify({
+        playTime: playedTime
+      }, null, ' ')
+    })
+    return {playedTime: playedTime}
+  }
+
   loadAudioBuffer (filePath: string) {
     return ajax({
       url: filePath,
