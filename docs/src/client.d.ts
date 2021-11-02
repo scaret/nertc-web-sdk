@@ -791,6 +791,12 @@ declare interface Client{
     state: "ACTIVE"|"INACTIVE"|"CHANGED",
     device: DeviceInfo,
   ) => void): void;
+  
+  /**
+   * 该回调可以取消监听事件。
+   *
+   */
+  off(event: string, callback: any): void;
 
 }
 export { Client };

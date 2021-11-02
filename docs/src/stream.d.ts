@@ -285,7 +285,7 @@ declare interface Stream {
      * 
      * @param deviceId 设备的 ID，可以通过 getDevices 方法获取。获取的 ID 为 ASCII 字符，字符串长度大于 0 小于 256 字节。
      */
-    setAudioOutput(deviceId: string, callback: (err: any) => void): Promise<void>;
+    setAudioOutput(deviceId: string, callback?: (err: any) => void): Promise<void>;
     /**
      * 切换媒体输入设备。
      * 
