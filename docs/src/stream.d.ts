@@ -300,7 +300,7 @@ declare interface Stream {
      * 
      * @param deviceId 设备的 ID，可以通过 getDevices 方法获取。获取的 ID 为 ASCII 字符，字符串长度大于 0 小于 256 字节。
      */
-    setAudioOutput(deviceId: string, callback: (err: any) => void): Promise<void>;
+    setAudioOutput(deviceId: string, callback?: (err: any) => void): Promise<void>;
     /**
      * 切换媒体输入设备。
      * 
@@ -314,10 +314,7 @@ declare interface Stream {
      * ```javascript
      * // rtc.localStream.init() 之后
      * if (rtc.localStream.hasVideo()){
-     *   await rtc.localStream.switchDevice({
-     *     type: "video",
-     *     deviceId: "1275f2a4df844f0bfc650f005fef5eb9415379761f4b36c3d12ca1b72948d6a8", // 通过 NERTC.getDevices() 获取
-     *   })
+     *   await rtc.localStream.switchDevice("video", "1275f2a4df844f0bfc650f005fef5eb9415379761f4b36c3d12ca1b72948d6a8") // 通过 NERTC.getDevices() 获取
      * } else {
      *   await rtc.localStream.open({
      *     type: "video",
