@@ -126,6 +126,8 @@ syntax = "proto2";
 
        optional int64 bytesSentPerSecond=25;
 
+       optional int64 alr=26;
+
     }
 
 
@@ -213,6 +215,22 @@ syntax = "proto2";
 
        optional int64 framesEncodedPerSecond=41;
 
+       optional string googActualEncBitrate=42;
+
+       optional string googAvailableSendBandwidth=43;
+
+       optional string googRetransmitBitrate=44;
+
+       optional string googAvailableReceiveBandwidth=45;
+
+       optional string googTargetEncBitrate=46;
+
+       optional string googBucketDelay=47;
+
+       optional string googTransmitBitrate=48;
+
+       optional int64 vlr=49;
+
     }
 
     message screen_ssrc_obj{
@@ -299,6 +317,23 @@ syntax = "proto2";
 
        optional int64 framesEncodedPerSecond=41;
 
+       optional string googActualEncBitrate=42;
+
+       optional string googAvailableSendBandwidth=43;
+
+       optional string googRetransmitBitrate=44;
+
+       optional string googAvailableReceiveBandwidth=45;
+
+       optional string googTargetEncBitrate=46;
+
+       optional string googBucketDelay=47;
+
+       optional string googTransmitBitrate=48;
+
+       optional int64 vlr=49;
+
+
     }
 
 
@@ -319,6 +354,8 @@ syntax = "proto2";
        optional int64 height=7;
 
        optional int64 framesPerSecond=8;
+
+       optional int64 frames=9;
 
     }
 
@@ -365,6 +402,14 @@ syntax = "proto2";
 
        optional int64 consentRequestsSent=20;
 
+       optional int64 lastPacketReceivedTimestamp=21;
+
+       optional int64 lastPacketSentTimestamp=22;
+
+       optional bool readable=23;
+
+       optional bool selected=24;
+
     }
 
 
@@ -394,6 +439,8 @@ syntax = "proto2";
 
        optional bool deleted=12;
 
+       optional string address=13;
+
     }
 
 
@@ -420,6 +467,8 @@ syntax = "proto2";
        optional int64 priority=10;
 
        optional bool deleted=11;
+
+       optional string address=12;
 
     }
 
@@ -525,6 +574,34 @@ syntax = "proto2";
 
        optional string encoderImplementation=34;
 
+       optional string contentType=35;
+
+       optional double bitrateMean=36;
+
+       optional double bitrateStdDev=37;
+
+       optional int64 droppedFrames=38;
+
+       optional double framerateMean=39;
+
+       optional double framerateStdDev=40;
+
+       repeated quality_limitation_durations_obj quality_limitation_durations=41;
+
+       message quality_limitation_durations_obj {
+
+           optional int64 other=1;
+
+           optional int64 cpu=2;
+
+           optional int64 bandwidth=3;
+
+           optional int64 none=4;
+
+
+       }
+
+
     }
 
 
@@ -551,6 +628,12 @@ syntax = "proto2";
        optional string localId=10;
 
        optional double roundTripTime=11;
+
+       optional double fractionLost=12;
+
+       optional double totalRoundTripTime=13;
+
+       optional double roundTripTimeMeasurements=14;
 
     }
 
@@ -608,6 +691,10 @@ syntax = "proto2";
 
        optional string mediaType=8;
 
+       optional int64 ssrc=9;
+
+       optional string uid=10;
+
     }
 
 
@@ -640,6 +727,8 @@ syntax = "proto2";
        optional string mediaType=13;
 
        optional int64 framesSentPerSecond=14;
+
+       optional string uid=15;
 
     }
 
@@ -684,6 +773,13 @@ syntax = "proto2";
 
        optional int64 bytesSentPerSecond=19;
 
+       optional int64 nackCount=20;
+
+       optional bool isRemote=21;
+
+       optional int64 qpSum=22;
+
+       optional string uid=23;
     }
 
 
@@ -761,6 +857,20 @@ syntax = "proto2";
 
        optional int64 framesEncodedPerSecond=36;
 
+       optional int64 bitrateMean=37;
+
+       optional int64 bitrateStdDev=38;
+
+       optional int64 droppedFrames=39;
+
+       optional int64 framerateMean=40;
+
+       optional int64 framerateStdDev=41;
+
+       optional bool isRemote=42;
+
+       optional string uid=43;
+
     }
 
 
@@ -805,6 +915,8 @@ syntax = "proto2";
        optional int64 framesEncodedPerSecond=19;
 
        optional int64 packetsSentPerSecond=20;
+
+       optional string remoteId=21;
 
     }
 
@@ -1013,6 +1125,10 @@ syntax = "proto2";
 
        optional double packetsLostRate=40;
 
+       optional double packetsLostPerSecond=41;
+
+       optional double alr=42;
+
     }
 
 
@@ -1058,6 +1174,14 @@ syntax = "proto2";
 
        optional int64 consentRequestsSent=20;
 
+       optional int64 lastPacketReceivedTimestamp=21;
+
+       optional int64 lastPacketSentTimestamp=22;
+
+       optional bool readable=23;
+
+       optional bool selected=24;
+
     }
 
 
@@ -1084,6 +1208,8 @@ syntax = "proto2";
        optional int64 priority=10;
 
        optional bool deleted=11;
+
+       optional string address=12;
 
     }
 
@@ -1113,6 +1239,8 @@ syntax = "proto2";
        optional int64 priority=11;
 
        optional bool deleted=12;
+
+       optional string address=13;
 
     }
 
@@ -1179,6 +1307,18 @@ syntax = "proto2";
 
        optional int64 estimatedPlayoutTimestamp=30;
 
+       optional string decoderImplementation=31;
+
+       optional int64 discardedPackets=32;
+
+       optional int64 bitrateMean=33;
+
+       optional int64 bitrateStdDev=34;
+
+       optional int64 framerateMean=35;
+
+       optional int64 framerateStdDev=36;
+
     }
 
 
@@ -1221,6 +1361,16 @@ syntax = "proto2";
        optional int64 insertedSamplesForDeceleration=18;
 
        optional int64 removedSamplesForAcceleration=19;
+
+       optional int64 frameWidth=20;
+
+       optional int64 frameHeight=21;
+
+       optional int64 framesReceived=22;
+
+       optional int64 framesDecoded=23;
+
+       optional int64 framesDropped=24;
 
     }
 
@@ -1334,6 +1484,12 @@ syntax = "proto2";
 
        optional string remoteuid=36;
 
+       optional bool isRemote=37;
+
+       optional int64 packetsLostPerSecond=38;
+
+       optional int64 qpSum=39;
+
     }
 
 
@@ -1403,11 +1559,15 @@ syntax = "proto2";
 
        optional double packetsLostRate=32;
 
-       optional int64 framesDecodedPerSecond=33;
+       optional double framesDecodedPerSecond=33;
 
        optional int64 recvPacketLoss=34;
 
        optional string remoteuid=35;
+
+       optional bool isRemote=36;
+
+       optional int64 qpSum=37;
 
     }
 
@@ -1492,6 +1652,10 @@ syntax = "proto2";
 
        optional string mediaType=10;
 
+       optional int64 ssrc=11;
+
+       optional string uid=12;
+
     }
 
 
@@ -1536,6 +1700,8 @@ syntax = "proto2";
        optional int64 ssrc=19;
 
        optional string mediaType=20;
+
+       optional string uid=21;
 
     }
 
@@ -1626,9 +1792,11 @@ syntax = "proto2";
 
       optional double packetsLostRate=42;
 
-   }
+      optional double packetsLostPerSecond=43;
 
-   
+      optional int64 vlr=44;
+
+   }
 
 
   }

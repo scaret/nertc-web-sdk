@@ -43,37 +43,37 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
     nested: {
       local_obj: {
         fields: {
-          video_bwe: {
+          videoBwe: {
             rule: "repeated",
             type: "video_bwe_obj",
             id: 1
           },
-          audio_ssrc: {
+          audioSsrc: {
             rule: "repeated",
             type: "audio_ssrc_obj",
             id: 2
           },
-          video_ssrc: {
+          videoSsrc: {
             rule: "repeated",
             type: "video_ssrc_obj",
             id: 3
           },
-          media_source: {
+          mediaSource: {
             rule: "repeated",
             type: "media_source_obj",
             id: 4
           },
-          candidate_pair: {
+          candidatePair: {
             rule: "repeated",
             type: "candidate_pair_obj",
             id: 5
           },
-          local_candidate: {
+          localCandidate: {
             rule: "repeated",
             type: "local_candidate_obj",
             id: 6
           },
-          remote_candidate: {
+          remoteCandidate: {
             rule: "repeated",
             type: "remote_candidate_obj",
             id: 7
@@ -83,12 +83,12 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
             type: "track_obj",
             id: 8
           },
-          outbound_rtp: {
+          outboundRtp: {
             rule: "repeated",
             type: "outbound_rtp_obj",
             id: 9
           },
-          remote_inbound_rtp: {
+          remoteInboundRtp: {
             rule: "repeated",
             type: "remote_inbound_rtp_obj",
             id: 10
@@ -98,36 +98,36 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
             type: "transport_obj",
             id: 11
           },
-          audio_track: {
+          audioTrack: {
             rule: "repeated",
             type: "audio_track_obj",
             id: 12
           },
-          video_track: {
+          videoTrack: {
             rule: "repeated",
             type: "video_track_obj",
             id: 13
           },
-          audio_outbound_rtp: {
+          audioOutboundRtp: {
             rule: "repeated",
             type: "audio_outbound_rtp_obj",
             id: 14
           },
-          video_outbound_rtp: {
+          videoOutboundRtp: {
             rule: "repeated",
             type: "video_outbound_rtp_obj",
             id: 15
           },
-          screen_ssrc: {
+          screenSsrc: {
             rule: "repeated",
             type: "screen_ssrc_obj",
             id: 16
           },
-          screen_outbound_rtp: {
+          screenOutboundRtp: {
             rule: "repeated",
             type: "screen_outbound_rtp_obj",
             id: 17
-          },
+          }
         },
         nested: {
           video_bwe_obj: {
@@ -275,6 +275,10 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               bytesSentPerSecond: {
                 type: "int64",
                 id: 25
+              },
+              alr: {
+                type: "int64",
+                id: 26
               }
             }
           },
@@ -443,6 +447,38 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               framesEncodedPerSecond: {
                 type: "int64",
                 id: 41
+              },
+              googActualEncBitrate: {
+                type: "string",
+                id: 42
+              },
+              googAvailableSendBandwidth: {
+                type: "string",
+                id: 43
+              },
+              googRetransmitBitrate: {
+                type: "string",
+                id: 44
+              },
+              googAvailableReceiveBandwidth: {
+                type: "string",
+                id: 45
+              },
+              googTargetEncBitrate: {
+                type: "string",
+                id: 46
+              },
+              googBucketDelay: {
+                type: "string",
+                id: 47
+              },
+              googTransmitBitrate: {
+                type: "string",
+                id: 48
+              },
+              vlr: {
+                type: "int64",
+                id: 49
               }
             }
           },
@@ -611,6 +647,38 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               framesEncodedPerSecond: {
                 type: "int64",
                 id: 41
+              },
+              googActualEncBitrate: {
+                type: "string",
+                id: 42
+              },
+              googAvailableSendBandwidth: {
+                type: "string",
+                id: 43
+              },
+              googRetransmitBitrate: {
+                type: "string",
+                id: 44
+              },
+              googAvailableReceiveBandwidth: {
+                type: "string",
+                id: 45
+              },
+              googTargetEncBitrate: {
+                type: "string",
+                id: 46
+              },
+              googBucketDelay: {
+                type: "string",
+                id: 47
+              },
+              googTransmitBitrate: {
+                type: "string",
+                id: 48
+              },
+              vlr: {
+                type: "int64",
+                id: 49
               }
             }
           },
@@ -647,6 +715,10 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               framesPerSecond: {
                 type: "int64",
                 id: 8
+              },
+              frames: {
+                type: "int64",
+                id: 9
               }
             }
           },
@@ -731,6 +803,22 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               consentRequestsSent: {
                 type: "int64",
                 id: 20
+              },
+              lastPacketReceivedTimestamp: {
+                type: "int64",
+                id: 21
+              },
+              lastPacketSentTimestamp: {
+                type: "int64",
+                id: 22
+              },
+              readable: {
+                type: "bool",
+                id: 23
+              },
+              selected: {
+                type: "bool",
+                id: 24
               }
             }
           },
@@ -783,6 +871,10 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               deleted: {
                 type: "bool",
                 id: 12
+              },
+              address: {
+                type: "string",
+                id: 13
               }
             }
           },
@@ -831,6 +923,10 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               deleted: {
                 type: "bool",
                 id: 11
+              },
+              address: {
+                type: "string",
+                id: 12
               }
             }
           },
@@ -1027,6 +1123,57 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               encoderImplementation: {
                 type: "string",
                 id: 34
+              },
+              contentType: {
+                type: "string",
+                id: 35
+              },
+              bitrateMean: {
+                type: "double",
+                id: 36
+              },
+              bitrateStdDev: {
+                type: "double",
+                id: 37
+              },
+              droppedFrames: {
+                type: "int64",
+                id: 38
+              },
+              framerateMean: {
+                type: "double",
+                id: 39
+              },
+              framerateStdDev: {
+                type: "double",
+                id: 40
+              },
+              qualityLimitationDurations: {
+                rule: "repeated",
+                type: "quality_limitation_durations_obj",
+                id: 41
+              }
+            },
+            nested: {
+              quality_limitation_durations_obj: {
+                fields: {
+                  other: {
+                    type: "int64",
+                    id: 1
+                  },
+                  cpu: {
+                    type: "int64",
+                    id: 2
+                  },
+                  bandwidth: {
+                    type: "int64",
+                    id: 3
+                  },
+                  none: {
+                    type: "int64",
+                    id: 4
+                  }
+                }
               }
             }
           },
@@ -1075,6 +1222,18 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               roundTripTime: {
                 type: "double",
                 id: 11
+              },
+              fractionLost: {
+                type: "double",
+                id: 12
+              },
+              totalRoundTripTime: {
+                type: "double",
+                id: 13
+              },
+              roundTripTimeMeasurements: {
+                type: "double",
+                id: 14
               }
             }
           },
@@ -1175,6 +1334,14 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               mediaType: {
                 type: "string",
                 id: 8
+              },
+              ssrc: {
+                type: "int64",
+                id: 9
+              },
+              uid: {
+                type: "string",
+                id: 10
               }
             }
           },
@@ -1235,6 +1402,10 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               framesSentPerSecond: {
                 type: "int64",
                 id: 14
+              },
+              uid: {
+                type: "string",
+                id: 15
               }
             }
           },
@@ -1315,6 +1486,22 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               bytesSentPerSecond: {
                 type: "int64",
                 id: 19
+              },
+              nackCount: {
+                type: "int64",
+                id: 20
+              },
+              isRemote: {
+                type: "bool",
+                id: 21
+              },
+              qpSum: {
+                type: "int64",
+                id: 22
+              },
+              uid: {
+                type: "string",
+                id: 23
               }
             }
           },
@@ -1463,6 +1650,34 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               framesEncodedPerSecond: {
                 type: "int64",
                 id: 36
+              },
+              bitrateMean: {
+                type: "int64",
+                id: 37
+              },
+              bitrateStdDev: {
+                type: "int64",
+                id: 38
+              },
+              droppedFrames: {
+                type: "int64",
+                id: 39
+              },
+              framerateMean: {
+                type: "int64",
+                id: 40
+              },
+              framerateStdDev: {
+                type: "int64",
+                id: 41
+              },
+              isRemote: {
+                type: "bool",
+                id: 42
+              },
+              uid: {
+                type: "string",
+                id: 43
               }
             }
           },
@@ -1509,11 +1724,11 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
                 id: 10
               },
               droppedFrames: {
-                type: "string",
+                type: "int64",
                 id: 11
               },
               firCount: {
-                type: "string",
+                type: "int64",
                 id: 12
               },
               framerateMean: {
@@ -1547,6 +1762,10 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               packetsSentPerSecond: {
                 type: "int64",
                 id: 20
+              },
+              remoteId: {
+                type: "string",
+                id: 21
               }
             }
           }
@@ -1554,32 +1773,32 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
       },
       remote_obj: {
         fields: {
-          video_ssrc: {
+          videoSsrc: {
             rule: "repeated",
             type: "video_ssrc_obj",
             id: 1
           },
-          audio_ssrc: {
+          audioSsrc: {
             rule: "repeated",
             type: "audio_ssrc_obj",
             id: 2
           },
-          candidate_pair: {
+          candidatePair: {
             rule: "repeated",
             type: "candidate_pair_obj",
             id: 3
           },
-          remote_candidate: {
+          remoteCandidate: {
             rule: "repeated",
             type: "remote_candidate_obj",
             id: 4
           },
-          local_candidate: {
+          localCandidate: {
             rule: "repeated",
             type: "local_candidate_obj",
             id: 5
           },
-          inbound_rtp: {
+          inboundRtp: {
             rule: "repeated",
             type: "inbound_rtp_obj",
             id: 6
@@ -1594,36 +1813,36 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
             type: "transport_obj",
             id: 8
           },
-          audio_inbound_rtp: {
+          audioInboundRtp: {
             rule: "repeated",
             type: "audio_inbound_rtp_obj",
             id: 9
           },
-          video_inbound_rtp: {
+          videoInboundRtp: {
             rule: "repeated",
             type: "video_inbound_rtp_obj",
             id: 10
           },
-          audio_track: {
+          audioTrack: {
             rule: "repeated",
             type: "audio_track_obj",
             id: 11
           },
-          video_track: {
+          videoTrack: {
             rule: "repeated",
             type: "video_track_obj",
             id: 12
           },
-          screen_ssrc: {
+          screenSsrc: {
             rule: "repeated",
             type: "screen_ssrc_obj",
             id: 13
           },
-          screen_inbound_rtp: {
+          screenInboundRtp: {
             rule: "repeated",
             type: "screen_inbound_rtp_obj",
             id: 14
-          },
+          }
         },
         nested: {
           video_ssrc_obj: {
@@ -1959,6 +2178,14 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               packetsLostRate: {
                 type: "double",
                 id: 40
+              },
+              packetsLostPerSecond: {
+                type: "double",
+                id: 41
+              },
+              alr: {
+                type: "double",
+                id: 42
               }
             }
           },
@@ -2043,6 +2270,22 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               consentRequestsSent: {
                 type: "int64",
                 id: 20
+              },
+              lastPacketReceivedTimestamp: {
+                type: "int64",
+                id: 21
+              },
+              lastPacketSentTimestamp: {
+                type: "int64",
+                id: 22
+              },
+              readable: {
+                type: "bool",
+                id: 23
+              },
+              selected: {
+                type: "bool",
+                id: 24
               }
             }
           },
@@ -2091,6 +2334,10 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               deleted: {
                 type: "bool",
                 id: 11
+              },
+              address: {
+                type: "string",
+                id: 12
               }
             }
           },
@@ -2143,6 +2390,10 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               deleted: {
                 type: "bool",
                 id: 12
+              },
+              address: {
+                type: "string",
+                id: 13
               }
             }
           },
@@ -2267,6 +2518,30 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               estimatedPlayoutTimestamp: {
                 type: "int64",
                 id: 30
+              },
+              decoderImplementation: {
+                type: "string",
+                id: 31
+              },
+              discardedPackets: {
+                type: "int64",
+                id: 32
+              },
+              bitrateMean: {
+                type: "int64",
+                id: 33
+              },
+              bitrateStdDev: {
+                type: "int64",
+                id: 34
+              },
+              framerateMean: {
+                type: "int64",
+                id: 35
+              },
+              framerateStdDev: {
+                type: "int64",
+                id: 36
               }
             }
           },
@@ -2347,6 +2622,26 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               removedSamplesForAcceleration: {
                 type: "int64",
                 id: 19
+              },
+              frameWidth: {
+                type: "int64",
+                id: 20
+              },
+              frameHeight: {
+                type: "int64",
+                id: 21
+              },
+              framesReceived: {
+                type: "int64",
+                id: 22
+              },
+              framesDecoded: {
+                type: "int64",
+                id: 23
+              },
+              framesDropped: {
+                type: "int64",
+                id: 24
               }
             }
           },
@@ -2560,6 +2855,18 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
                 type: "string",
                 id: 36
               },
+              isRemote: {
+                type: "bool",
+                id: 37
+              },
+              packetsLostPerSecond: {
+                type: "int64",
+                id: 38
+              },
+              qpSum: {
+                type: "int64",
+                id: 39
+              }
             }
           },
           video_inbound_rtp_obj: {
@@ -2693,7 +3000,7 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
                 id: 32
               },
               framesDecodedPerSecond: {
-                type: "int64",
+                type: "double",
                 id: 33
               },
               recvPacketLoss: {
@@ -2704,6 +3011,126 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
                 type: "string",
                 id: 35
               },
+              isRemote: {
+                type: "bool",
+                id: 36
+              },
+              qpSum: {
+                type: "int64",
+                id: 37
+              }
+            }
+          },
+          screen_inbound_rtp_obj: {
+            fields: {
+              id: {
+                type: "string",
+                id: 1
+              },
+              timestamp: {
+                type: "int64",
+                id: 2
+              },
+              type: {
+                type: "string",
+                id: 3
+              },
+              kind: {
+                type: "string",
+                id: 4
+              },
+              mediaType: {
+                type: "string",
+                id: 5
+              },
+              ssrc: {
+                type: "int64",
+                id: 6
+              },
+              discardedPackets: {
+                type: "int64",
+                id: 7
+              },
+              jitter: {
+                type: "double",
+                id: 8
+              },
+              packetsLost: {
+                type: "int64",
+                id: 9
+              },
+              packetsReceived: {
+                type: "int64",
+                id: 10
+              },
+              bitrateMean: {
+                type: "double",
+                id: 11
+              },
+              bitrateStdDev: {
+                type: "double",
+                id: 12
+              },
+              bytesReceived: {
+                type: "int64",
+                id: 13
+              },
+              firCount: {
+                type: "int64",
+                id: 14
+              },
+              framerateMean: {
+                type: "double",
+                id: 15
+              },
+              framerateStdDev: {
+                type: "double",
+                id: 16
+              },
+              framesDecoded: {
+                type: "int64",
+                id: 17
+              },
+              nackCount: {
+                type: "int64",
+                id: 18
+              },
+              pliCount: {
+                type: "int64",
+                id: 19
+              },
+              remoteId: {
+                type: "string",
+                id: 20
+              },
+              targetUid: {
+                type: "string",
+                id: 21
+              },
+              bytesReceivedPerSecond: {
+                type: "int64",
+                id: 22
+              },
+              packetsLostPerSecond: {
+                type: "int64",
+                id: 23
+              },
+              framesDecodedPerSecond: {
+                type: "int64",
+                id: 24
+              },
+              recvPacketLoss: {
+                type: "int64",
+                id: 25
+              },
+              packetsReceivedPerSecond: {
+                type: "int64",
+                id: 26
+              },
+              remoteuid: {
+                type: "string",
+                id: 27
+              }
             }
           },
           audio_track_obj: {
@@ -2747,6 +3174,14 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               mediaType: {
                 type: "string",
                 id: 10
+              },
+              ssrc: {
+                type: "int64",
+                id: 11
+              },
+              uid: {
+                type: "string",
+                id: 12
               }
             }
           },
@@ -2831,6 +3266,10 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               mediaType: {
                 type: "string",
                 id: 20
+              },
+              uid: {
+                type: "string",
+                id: 21
               }
             }
           },
@@ -3003,119 +3442,15 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
               packetsLostRate: {
                 type: "double",
                 id: 42
-              }
-            }
-          },
-          screen_inbound_rtp_obj: {
-            fields: {
-              id: {
-                type: "string",
-                id: 1
-              },
-              timestamp: {
-                type: "int64",
-                id: 2
-              },
-              type: {
-                type: "string",
-                id: 3
-              },
-              kind: {
-                type: "string",
-                id: 4
-              },
-              mediaType: {
-                type: "string",
-                id: 5
-              },
-              ssrc: {
-                type: "string",
-                id: 6
-              },
-              discardedPackets: {
-                type: "int64",
-                id: 7
-              },
-              jitter: {
-                type: "double",
-                id: 8
-              },
-              packetsLost: {
-                type: "int64",
-                id: 9
-              },
-              packetsReceived: {
-                type: "int64",
-                id: 10
-              },
-              bitrateMean: {
-                type: "double",
-                id: 11
-              },
-              bitrateStdDev: {
-                type: "double",
-                id: 12
-              },
-              bytesReceived: {
-                type: "int64",
-                id: 13
-              },
-              firCount: {
-                type: "int64",
-                id: 14
-              },
-              framerateMean: {
-                type: "double",
-                id: 15
-              },
-              framerateStdDev: {
-                type: "double",
-                id: 16
-              },
-              framesDecoded: {
-                type: "int64",
-                id: 17
-              },
-              nackCount: {
-                type: "int64",
-                id: 18
-              },
-              pliCount: {
-                type: "int64",
-                id: 19
-              },
-              remoteId: {
-                type: "string",
-                id: 20
-              },
-              targetUid: {
-                type: "string",
-                id: 21
-              },
-              bytesReceivedPerSecond: {
-                type: "int64",
-                id: 22
               },
               packetsLostPerSecond: {
+                type: "double",
+                id: 43
+              },
+              vlr: {
                 type: "int64",
-                id: 23
-              },
-              framesDecodedPerSecond: {
-                type: "int64",
-                id: 24
-              },
-              recvPacketLoss: {
-                type: "int64",
-                id: 25
-              },
-              packetsReceivedPerSecond: {
-                type: "int64",
-                id: 26
-              },
-              remoteuid: {
-                type: "string",
-                id: 27
-              },
+                id: 44
+              }
             }
           }
         }

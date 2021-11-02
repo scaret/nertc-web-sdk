@@ -73,6 +73,14 @@ class Client extends Base {
   
   // 初始化nrtc
   _init (options:ClientOptions) {
+    this.initWebSocket();
+    // let checkSum = sha1(`${wsParams.PROD}${wsParams.timestamp}${SDK_VERSION}${wsParams.platform}${wsParams.sdktype}${wsParams.deviceId}${wsParams.salt}`);
+    // let url = `${wsParams.wsURL}?deviceId=${wsParams.deviceId}&isTest=${wsParams.PROD}&sdkVer=${SDK_VERSION}&sdktype=${wsParams.sdktype}&timestamp=${wsParams.timestamp}&platform=${wsParams.platform}&checkSum=${checkSum}`;
+    // (<any>window).wsTransport = new WSTransport({
+    //   url: url,
+    //   adapterRef: this.adapterRef
+    // });
+    // (<any>window).wsTransport.init();
     const { appkey = '', token } = options
     if (!appkey) {
       this.logger.error('Client: init error: 请传入appkey')
@@ -280,20 +288,20 @@ class Client extends Base {
       this.adapterRef._meetings.leaveChannel()
     }
     // invoke uploadLog() if uploadLogEnabled is true
-    if(Number(sessionStorage.getItem('uploadLogEnabled'))) {
-      this.upLoadParam = {
-        uploadAppkey: this.adapterRef.channelInfo.appkey,
-        uploadUid: this.adapterRef.channelInfo.uid,
-        uploadCid: this.adapterRef.channelInfo.cid
-      }
-      setTimeout(this.startUpload, 3000, this.upLoadParam);
-    }
+    // if(Number(sessionStorage.getItem('uploadLogEnabled'))) {
+    //   this.upLoadParam = {
+    //     uploadAppkey: this.adapterRef.channelInfo.appkey,
+    //     uploadUid: this.adapterRef.channelInfo.uid,
+    //     uploadCid: this.adapterRef.channelInfo.cid
+    //   }
+    //   setTimeout(this.startUpload, 3000, this.upLoadParam);
+    // }
 
   }
 
-  startUpload(upLoadParam:any) {
-    logController.startUploadLog(upLoadParam);
-  }
+  // startUpload(upLoadParam:any) {
+  //   logController.startUploadLog(upLoadParam);
+  // }
 
 
   async leaveRts () {

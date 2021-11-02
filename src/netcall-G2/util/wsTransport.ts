@@ -4,6 +4,7 @@ import * as protobuf  from 'protobufjs';
 import heartbeatStats = require('../util/proto/heartbeatStats');
 import { ConsoleLogger } from 'typedoc/dist/lib/utils';
 import { AdapterRef } from "../types";
+import { uint8ArrayToHex } from 'sm4-128-ecb';
 
 const PING_PONG_INTERVAL = 10000;
 const PING_TIMEOUT = 10000;
@@ -145,14 +146,32 @@ export default class WSTransport {
         }
       }
 
+      sendLog(data:Object) {
+        if (this.isConnected_) {
+          let headerArray = [5,1,1,1,2,0,0,0];
+          let param = {
+            uid: this.adapterRef.channelInfo.uid,
+            cid: this.adapterRef.channelInfo.cid,
+            time: new Date().getTime(),
+            data
+          }
+          const encoder = new TextEncoder()
+          const view = encoder.encode(JSON.stringify(param))
+          // let logData = new Blob([JSON.stringify(headerArray.concat(Array.from(data)), null, 2)], {type : 'application/json'});
+          let logData = Uint8Array.from(headerArray.concat(Array.from(view)));
+
+          // console.log('--->',logData);
+          this.socket_.send(logData);
+        }
+      }
       createPBMessage(data: any) {
         // convert json data to protocol-buffer
         let root = protobuf.Root.fromJSON(heartbeatStats);
         let heartbeatMessage = root.lookupType('WebrtcStats');
         let message = heartbeatMessage.create(data);
         let buffer = heartbeatMessage.encode(message).finish();
-        // let headerArray = [4,1,1,1,1,0,0,0]; // 正式环境
-        let headerArray = [4,1,1,1,2,0,0,0];  // 测试环境
+        let headerArray = [4,1,1,1,1,0,0,0]; // 正式环境
+        // let headerArray = [4,1,1,1,2,0,0,0];  // 测试环境
         let newBuffer = Uint8Array.from(headerArray.concat(Array.from(buffer)));
         // return buffer;
         return newBuffer;

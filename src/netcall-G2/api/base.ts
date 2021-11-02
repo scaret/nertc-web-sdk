@@ -16,7 +16,7 @@ import {
 import {MediaCapability} from "../module/mediaCapability";
 import {getSupportedCodecs} from "../util/rtcUtil/codec";
 import {Encryption} from "../module/encryption";
-import { logController } from "../util/log/upload";
+// import { logController } from "../util/log/upload";
 import RtcError from '../util/error/rtcError';
 import ErrorCode  from '../util/error/errorCode';
 import {getParameters} from "../module/parameters";
@@ -59,7 +59,7 @@ class Base extends EventEmitter {
       apiEvent: {},
       apiEvents: {},
       requestId: {},
-      logController: logController,
+      // logController: logController,
       //@ts-ignore
       instance: this,
       report: true
@@ -151,12 +151,18 @@ class Base extends EventEmitter {
       })
     }
 
+    
+  }
+
+  initWebSocket() {
     // 原始以及处理过的 stats 数据上报
     if (!this.adapterRef._statsReport) {
       this.adapterRef._statsReport = new StatsReport({
         sdkRef: this.sdkRef,
         adapterRef: this.adapterRef
-      })
+      });
+      this.adapterRef._statsReport.start();
+      this.adapterRef._statsReport.startHeartbeat();
     }
   }
 
@@ -335,6 +341,10 @@ class Base extends EventEmitter {
       wssArr.splice(this.adapterRef.channelInfo.wssArrIndex, 1)
       wssArr.unshift(connectUrl)
       this.adapterRef.channelInfo.wssArrIndex = 0
+
+      // 开始上报format数据
+      
+
       if (!this.adapterRef._statsReport){
         return Promise.reject(
           new RtcError({
@@ -343,8 +353,10 @@ class Base extends EventEmitter {
           })
         )
       }
-      this.adapterRef._statsReport.start()
-      this.adapterRef._statsReport.startHeartbeat()
+      this.adapterRef._statsReport.statsStart();
+      // 此时开始getstats
+      // this.adapterRef._statsReport.start()
+      // this.adapterRef._statsReport.startHeartbeat()
       return Promise.resolve()
     });
     p.catch(e => {
