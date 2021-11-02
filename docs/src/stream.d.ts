@@ -314,10 +314,7 @@ declare interface Stream {
      * ```javascript
      * // rtc.localStream.init() 之后
      * if (rtc.localStream.hasVideo()){
-     *   await rtc.localStream.switchDevice({
-     *     type: "video",
-     *     deviceId: "1275f2a4df844f0bfc650f005fef5eb9415379761f4b36c3d12ca1b72948d6a8", // 通过 NERTC.getDevices() 获取
-     *   })
+     *   await rtc.localStream.switchDevice("video", "1275f2a4df844f0bfc650f005fef5eb9415379761f4b36c3d12ca1b72948d6a8") // 通过 NERTC.getDevices() 获取
      * } else {
      *   await rtc.localStream.open({
      *     type: "video",
