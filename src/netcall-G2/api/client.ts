@@ -325,7 +325,9 @@ class Client extends Base {
       this._params.neRtcServerAddresses = {
         channelServer: options.neRtcServerAddresses.channelServer || '',
         statisticsServer: options.neRtcServerAddresses.statisticsServer || '',
-        roomServer: options.neRtcServerAddresses.roomServer || ''
+        roomServer: options.neRtcServerAddresses.roomServer || '',
+        webSocketProxyServer: options.neRtcServerAddresses.webSocketProxyServer || '',
+        mediaProxyServer: options.neRtcServerAddresses.mediaProxyServer || ''
       }
     }
     

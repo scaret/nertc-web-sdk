@@ -47,6 +47,8 @@ let privatizationConfig = null
   "nosLbsServer":"https://yunxinent-demo.netease.im/lbs/noslbs-https.jsp",
   "nosUploadSever":"https://yunxinent-demo.netease.im",
   "nosTokenServer":"https://yunxinent-demo.netease.im/report/sdklog/getToken",
+  "webSocketProxyServer":"www.testg2proxy.com",
+   "mediaProxyServer":"59.111.58.216:3478",
   "useIPv6":false
 }*/
 
@@ -784,7 +786,7 @@ $('#joinChannel-btn').on('click', async () => {
   const priority = +($('#priority').val())
   const isPreemptive = $('#isPreemptive').prop('checked')   
 
-  let channelServer=null; statisticsServer=null; roomServer=null; demoServer=null;appkey=null
+  let channelServer=null; statisticsServer=null; roomServer=null; demoServer=null;appkey=null;webSocketProxyServer=null;mediaProxyServer=null
   if (privatizationConfig) {
     if ($('#configUrl').val()) {
       try {
@@ -813,7 +815,10 @@ $('#joinChannel-btn').on('click', async () => {
       statisticsServer = $('#statisticsServer').val() || privatizationConfig.statisticsServer
       roomServer = $('#roomServer').val() || privatizationConfig.roomServer
       demoServer = $('#demoServer').val() || privatizationConfig.demoServer
+      webSocketProxyServer = privatizationConfig.webSocketProxyServer
+      mediaProxyServer =  privatizationConfig.mediaProxyServer
     }
+
     if (appkey) {
       $('#appkey').val(appkey)
       $('#privatizationAppkey').val(appkey)
@@ -821,6 +826,9 @@ $('#joinChannel-btn').on('click', async () => {
       $('#statisticsServer').val(statisticsServer)
       $('#roomServer').val(roomServer)
       $('#demoServer').val(demoServer)
+      const proxyServer =  rtc.client.adapterRef.proxyServer
+      init()
+      rtc.client.adapterRef.proxyServer = proxyServer
     } else {
       console.error("私有化配置: 没有获取appkey");
       addLog('私有化配置: 没有获取appkey，请检查设置的参数是否正确')
@@ -876,7 +884,9 @@ $('#joinChannel-btn').on('click', async () => {
       channelServer,
       statisticsServer,
       roomServer,
-      cloudProxyServer: ''
+      cloudProxyServer: '',
+      webSocketProxyServer,
+      mediaProxyServer,
     }
   }).then((obj) => {
     addLog('加入房间成功')

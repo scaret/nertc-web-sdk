@@ -1171,6 +1171,8 @@ export interface NeRtcServerAddresses{
   roomServer?: string;
   mediaServer?: string;
   cloudProxyServer?: string;
+  webSocketProxyServer?: string;
+  mediaProxyServer?: string;
 }
 
 export interface ValidStringOptions{

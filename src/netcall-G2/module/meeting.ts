@@ -88,9 +88,6 @@ class Meeting extends EventEmitter {
     //@ts-ignore
     let curtime = Date.parse(new Date())/1000
     const md5str = appkey + "." + uid + "." + curtime
-    console.error('md5str: ', md5str)
-    console.log('md5: ', md5(md5str))
-    console.log('test: ', md5('eca23f68c66d4acfceee77c200200359.4990.1630592039'))
     try{
       const data = await ajax({
         url,
@@ -115,10 +112,23 @@ class Meeting extends EventEmitter {
       if (data.code === 200) {
         this.adapterRef.channelStatus = 'join'
         const { wsProxyArray, mediaProxyArray, mediaProxyToken, cname, curTime, uid } = data
-        this.adapterRef.proxyServer.wsProxyArray = wsProxyArray
-        this.adapterRef.proxyServer.mediaProxyArray = mediaProxyArray
-        this.adapterRef.proxyServer.mediaProxyToken = mediaProxyToken
-        this.adapterRef.proxyServer.credential = uid + '/' + curTime
+        if (this.adapterRef.instance._params.neRtcServerAddresses.webSocketProxyServer) {
+          this.adapterRef.logger.warn('获取到云代理私有化 webSocketProxyServer:', this.adapterRef.instance._params.neRtcServerAddresses.webSocketProxyServer)
+          this.adapterRef.proxyServer.wsProxyArray = [this.adapterRef.instance._params.neRtcServerAddresses.webSocketProxyServer]
+        } else {
+          this.adapterRef.proxyServer.wsProxyArray = wsProxyArray
+        }
+        
+        if (this.adapterRef.instance._params.neRtcServerAddresses.mediaProxyServer) {
+          this.adapterRef.logger.warn('获取到云代理私有化 mediaProxyServer:', this.adapterRef.instance._params.neRtcServerAddresses.mediaProxyServer)
+          this.adapterRef.proxyServer.mediaProxyArray = [this.adapterRef.instance._params.neRtcServerAddresses.mediaProxyServer]
+          this.adapterRef.proxyServer.mediaProxyToken = 'netease'
+          this.adapterRef.proxyServer.credential = 'netease'
+        } else {
+          this.adapterRef.proxyServer.mediaProxyArray = mediaProxyArray
+          this.adapterRef.proxyServer.mediaProxyToken = mediaProxyToken
+          this.adapterRef.proxyServer.credential = uid + '/' + curTime
+        }
       } else {
         this.adapterRef.channelStatus = 'leave'
         this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
@@ -239,8 +249,12 @@ class Meeting extends EventEmitter {
         if (websocketUrl && this.adapterRef.proxyServer.wsProxyArray) {
           const serverIp =  ips.turnaddrs && ips.turnaddrs.length && ips.turnaddrs[0][0]
           //@ts-ignore
-          const port = serverIp.split(':').length > 1 ? serverIp.split(':')[1] : ''
+          let port = serverIp.split(':').length > 1 ? serverIp.split(':')[1] : ''
           let serverurl = websocketUrl.split('/').length > 1 ? websocketUrl.split('/')[1] : ''
+          if(this.adapterRef.instance._params.neRtcServerAddresses.webSocketProxyServer){
+            port = serverurl.split(':')[1]
+          }
+
           if (serverurl && port) {
             //@ts-ignore
             this.adapterRef.proxyServer.wsProxyArray = this.adapterRef.proxyServer.wsProxyArray.map( wsProxy => {
