@@ -172,7 +172,7 @@ export class RemoteSdp
       reuseMid?: string;
       offerRtpParameters: RtpParameters;
       answerRtpParameters: RtpParameters;
-      codecOptions?: ProducerCodecOptions;
+      codecOptions?: ProducerCodecOptions[];
       extmapAllowMixed? : boolean;
     }
   ): void
@@ -192,7 +192,7 @@ export class RemoteSdp
           offerMediaObject,
           offerRtpParameters,
           answerRtpParameters,
-          codecOptions,
+          codecOptions: codecOptions? codecOptions[i] : undefined,
           extmapAllowMixed
         });
 

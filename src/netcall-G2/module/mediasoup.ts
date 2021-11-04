@@ -6,7 +6,7 @@ import {
   ProduceConsumeInfo,
   Timer, VideoCodecType
 } from "../types";
-import {Consumer, Device, Producer, Transport} from "./3rd/mediasoup-client/types";
+import {Consumer, Device, Producer, ProducerCodecOptions, Transport} from "./3rd/mediasoup-client/types";
 import {Peer} from "./3rd/protoo-client";
 import {LocalStream} from "../api/localStream";
 import {waitForEvent} from "../util/waitForEvent";
@@ -14,6 +14,7 @@ import BigNumber from 'bignumber.js';
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
 import {RemoteStream} from "../api/remoteStream";
+import {getParameters} from "./parameters";
 
 class Mediasoup extends EventEmitter {
   private adapterRef:AdapterRef;
@@ -518,6 +519,23 @@ class Mediasoup extends EventEmitter {
               message: 'localStream not found'
             })
           }
+          let codecOptions: ProducerCodecOptions[] = [];
+          if (appData.mediaType === "audio"){
+            codecOptions.push(Object.assign({}, getParameters().codecOptions.audio));
+          }else if (appData.mediaType === "video"){
+            if (rtpParameters.encodings.length >= 2){
+              // 小流，需与Encodings顺序保持一致
+              codecOptions.push(Object.assign({}, getParameters().codecOptions.video.low));
+            }
+            codecOptions.push(Object.assign({}, getParameters().codecOptions.video.high));
+          }else if (appData.mediaType === "screenShare"){
+            if (rtpParameters.encodings.length >= 2){
+              // 小流，需与Encodings顺序保持一致
+              codecOptions.push(Object.assign({}, getParameters().codecOptions.screen.low));
+            }
+            codecOptions.push(Object.assign({}, getParameters().codecOptions.screen.high));
+          }
+          this.logger.log(`codecOptions for producer ${appData.mediaType}: ${JSON.stringify(codecOptions)}`)
           await this._sendTransport.fillRemoteRecvSdp({
             kind,
             appData,
@@ -526,12 +544,7 @@ class Mediasoup extends EventEmitter {
             dtlsParameters,
             sctpParameters: undefined,
             sendingRtpParameters: rtpParameters,
-            codecOptions: kind === 'audio' ? {
-                opusStereo: 1,
-                opusDtx: 1
-              } : {
-                videoGoogleStartBitrate: 1000
-              },
+            codecOptions,
             offer,
             codec: codecInfo.codecParam,
             audioProfile: this.adapterRef.localStream.audioProfile
