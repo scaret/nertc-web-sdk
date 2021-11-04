@@ -44,7 +44,8 @@ interface IParameters{
       low: ProducerCodecOptions,
     },
   },
-  
+  // 屏幕共享时是否跳转到被共享页面
+  screenFocus: boolean,
 }
 
 let parameters:IParameters = {
@@ -79,7 +80,8 @@ let parameters:IParameters = {
         videoGoogleStartBitrate: 500,
       },
     },
-  }
+  },
+  screenFocus: false,
 }
 
 // 注意：getParameters和setParameters是一些私有全局变量，仅用于调试和私有接口，不用于正常业务

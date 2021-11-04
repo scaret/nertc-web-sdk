@@ -32,6 +32,16 @@ function getScreenStream (constraint:MediaStreamConstraints, logger:ILogger) {
     tracks.forEach((track)=>{
       getParameters().mediaTracks.push(track);
       logger.log(`获取到的屏幕共享设备类型: TRACK#${getParameters().mediaTracks.length - 1}`, track.kind, track.label, track.id, JSON.stringify(track.getSettings()))
+      if (track.kind === "video" && getParameters().screenFocus){
+        // @ts-ignore
+        if (track.focus){
+          logger.log("屏幕共享不跳转到被共享页面")
+          // @ts-ignore
+          track.focus("no-focus-change");
+        }else{
+          logger.warn("当前浏览器不支持屏幕共享跳转控制")
+        }
+      }
     });
     return Promise.resolve(stream)
   }).catch((e:DOMException)=>{
