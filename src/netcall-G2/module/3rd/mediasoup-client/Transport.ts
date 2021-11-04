@@ -5,7 +5,7 @@ import { UnsupportedError, InvalidStateError } from './errors';
 import * as utils from './utils';
 import * as ortc from './ortc';
 import { HandlerFactory, HandlerInterface } from './handlers/HandlerInterface';
-import { Producer, ProducerOptions } from './Producer';
+import {Producer, ProducerCodecOptions, ProducerOptions} from './Producer';
 import { Consumer, ConsumerOptions } from './Consumer';
 import { SctpParameters } from './SctpParameters';
 import {RtpParameters} from "./RtpParameters";
@@ -140,7 +140,7 @@ export interface FillRemoteRecvSdpOptions{
   dtlsParameters: DtlsParameters;
   sctpParameters?: SctpParameters;
   sendingRtpParameters: RtpParameters;
-  codecOptions: any;
+  codecOptions: ProducerCodecOptions[];
   offer: RTCSessionDescription;
   codec: any;
   audioProfile: string;

@@ -3,6 +3,7 @@
 import {Client} from "../api/client";
 import {loglevels} from "../util/log/logger";
 import {LocalStream} from "../api/localStream";
+import {ProducerCodecOptions} from "./3rd/mediasoup-client/Producer";
 
 interface IParameters{
   
@@ -30,6 +31,20 @@ interface IParameters{
   // 最大PeerConnection重连次数
   maxTransportRebuildCnt: number,
   logLevel: loglevels,
+  
+  // mediasoup中的编码选项
+  codecOptions: {
+    audio: ProducerCodecOptions,
+    video: {
+      high: ProducerCodecOptions,
+      low: ProducerCodecOptions,
+    },
+    screen: {
+      high: ProducerCodecOptions,
+      low: ProducerCodecOptions,
+    },
+  },
+  
 }
 
 let parameters:IParameters = {
@@ -43,6 +58,28 @@ let parameters:IParameters = {
   maxTransportRebuildCnt: 50,
   logLevel: loglevels.INFO,
   forceListenDeviceChange: true,
+  codecOptions: {
+    audio: {
+      opusStereo: true,
+      opusDtx: true
+    },
+    video: {
+      high: {
+        videoGoogleStartBitrate: 1000,
+      },
+      low: {
+        videoGoogleStartBitrate: 500,
+      },
+    },
+    screen: {
+      high: {
+        videoGoogleStartBitrate: 2000,
+      },
+      low: {
+        videoGoogleStartBitrate: 500,
+      },
+    },
+  }
 }
 
 // 注意：getParameters和setParameters是一些私有全局变量，仅用于调试和私有接口，不用于正常业务
