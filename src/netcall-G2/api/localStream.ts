@@ -3,8 +3,7 @@ import { EventEmitter } from "eventemitter3";
 import {
   VIDEO_QUALITY,
   VIDEO_FRAME_RATE,
-  NERTC_VIDEO_QUALITY,
-} from "../constant/videoQuality";
+  NERTC_VIDEO_QUALITY} from "../constant/videoQuality";
 import {Play} from '../module/play'
 import {Record} from '../module/record'
 import {
@@ -19,7 +18,7 @@ import {
   SnapshotOptions,
   LocalStreamOptions, StreamPlayOptions,
   VideoProfileOptions,
-  AudioEffectOptions
+  AudioEffectOptions, EncodingParameters
 } from "../types";
 import {MediaHelper} from "../module/media";
 import {checkExists, isExistOptions, checkValidInteger} from "../util/param";
@@ -96,20 +95,16 @@ class LocalStream extends EventEmitter {
   public audioProfile:string;
   public videoProfile: {
     frameRate: number;
-    videoBW: number;
     resolution: number;
   } = {
     frameRate: VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_NORMAL, //15
-    videoBW: 500,
     resolution: NERTC_VIDEO_QUALITY.VIDEO_QUALITY_480p // 640*480
   };
   public screenProfile:{
     frameRate: number;
-    videoBW: number;
     resolution: number;
   } = {
     frameRate: VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_5, //5
-    videoBW: 1000,
     resolution: NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p // 1920*1080
   };
   private state:"UNINIT"|"INITING"|"INITED" = "UNINIT";
@@ -260,13 +255,11 @@ class LocalStream extends EventEmitter {
     this.state = "UNINIT";
     this.videoProfile = {
       frameRate: VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_NORMAL, //15
-      videoBW: 500,
       resolution: NERTC_VIDEO_QUALITY.VIDEO_QUALITY_480p // 640*480
     }
     this.audioProfile = 'speech_low_quality'
     this.screenProfile = {
       frameRate: VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_5, //5
-      videoBW: 1000,
       resolution: NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p // 1920*1080
     }
     this.audio = false
@@ -1820,8 +1813,11 @@ class LocalStream extends EventEmitter {
    * @returns {Null}  
   */
   setVideoProfile (options:VideoProfileOptions) {
-    this.logger.log('设置视频属性: ', JSON.stringify(options, null, ' '))
+    this.logger.log(`setVideoProfile: ${JSON.stringify(options)}`)
     Object.assign(this.videoProfile, options)
+    this.mediaHelper.captureConfig.video.high = this.mediaHelper.convert(this.videoProfile);
+    this.mediaHelper.encoderConfig.video.high.maxBitrate = this.getVideoBW()
+    this.logger.log(`setVideoProfile:视频采集参数 ${JSON.stringify(this.mediaHelper.captureConfig.video.high)} 编码参数 ${JSON.stringify(this.mediaHelper.encoderConfig.video.high)}`)
     this.client.adapterRef.channelInfo.sessionConfig.maxVideoQuality = VIDEO_QUALITY.CHAT_VIDEO_QUALITY_1080P
     this.client.adapterRef.channelInfo.sessionConfig.videoQuality = this.videoProfile.resolution
     this.client.adapterRef.channelInfo.sessionConfig.videoFrameRate = this.videoProfile.frameRate
@@ -1832,9 +1828,27 @@ class LocalStream extends EventEmitter {
     })
   }
 
-
-  setVideoEncoderConfiguration () {
-    this.logger.log('自定义视频编码配置')
+  setVideoEncoderConfiguration (options: {
+    mediaType: "video"|"screen",
+    streamType: "high"|"low",
+    maxBitrate: number,
+  }) {
+    options.mediaType = options.mediaType || "video";
+    options.streamType = options.streamType || "high";
+    this.logger.log('自定义视频编码配置', options);
+    if (!this.mediaHelper.encoderConfig[options.mediaType] || !this.mediaHelper.encoderConfig[options.mediaType][options.streamType]){
+      this.logger.error('无法识别的媒体类型：', options.mediaType, options.streamType);
+    }else{
+      if (options.maxBitrate){
+        this.mediaHelper.encoderConfig[options.mediaType][options.streamType].maxBitrate = options.maxBitrate;
+      }else{
+        this.logger.error('未设定maxBitrate。保留目前的值：', options.mediaType, options.streamType, this.mediaHelper.encoderConfig[options.mediaType][options.streamType].maxBitrate);
+      }
+    }
+    if (this.getSender(options.mediaType, options.streamType)){
+      // 如果当前正在发送，则直接应用最新码率
+      this.applyEncoderConfig(options.mediaType, options.streamType)
+    }
   }
 
   setBeautyEffectOptions () {
@@ -1859,8 +1873,11 @@ class LocalStream extends EventEmitter {
    * @returns {Void}  
   */
   setScreenProfile (profile: ScreenProfileOptions) {
-    this.logger.log('设置屏幕共享中的屏幕属性: ', profile)
+    this.logger.log(`setScreenProfile: ${JSON.stringify(profile)}`)
     Object.assign(this.screenProfile, profile)
+    this.mediaHelper.captureConfig.screen.high = this.mediaHelper.convert(this.screenProfile)
+    this.mediaHelper.encoderConfig.screen.high.maxBitrate = this.getScreenBW()
+    this.logger.log(`setScreenProfile:屏幕共享采集参数 ${JSON.stringify(this.mediaHelper.captureConfig.screen.high)} 编码参数 ${JSON.stringify(this.mediaHelper.encoderConfig.screen.high)}`)
     this.client.adapterRef.channelInfo.sessionConfig.screenQuality = profile
     this.client.apiFrequencyControl({
       name: 'setScreenProfile',
@@ -1869,53 +1886,42 @@ class LocalStream extends EventEmitter {
     })
   }
 
-
-  adjustResolution (mediaTypeShort: MediaTypeShort) {
-
-    if ( 'RTCRtpSender' in window && 'setParameters' in window.RTCRtpSender.prototype) {
-      const peer = this.client.adapterRef._mediasoup && this.client.adapterRef._mediasoup._sendTransport && this.client.adapterRef._mediasoup._sendTransport.handler._pc
-      if (peer){
-        let sender, maxbitrate;
-        if (mediaTypeShort === "video"){
-          sender = peer.videoSender;
-          maxbitrate = this.getVideoBW();
-        }else if (mediaTypeShort === "screen"){
-          sender = peer.screenSender;
-          maxbitrate = this.getScreenBW();
-        }
-        if (!maxbitrate){
-          return;
-        }
-        if (!sender){
-          throw new RtcError({
-            code: ErrorCode.UNKNOWN_TYPE,
-            message: '`Unknown media type ${mediaTypeShort}`'
-          })
-        }
-        const parameters = (sender.getParameters() as RTCRtpSendParameters);
-        if (!parameters) {
-          this.logger.error("No Parameter");
-          return;
-        }
-        if (parameters.encodings && parameters.encodings.length) {
-          parameters.encodings[0].maxBitrate = maxbitrate;
-        }else{
-          this.logger.warn('Stream.adjustResolution: 无encodings选项', parameters)
-        }
-        this.logger.warn('设置video 码率: ', parameters)
-        sender.setParameters(parameters)
-          .then(() => {
-            this.logger.log('设置video 码率成功')
-          })
-          .catch((e:any) => {
-            this.logger.error('设置video 码率失败: ', e)
-          });
-        this.client.apiFrequencyControl({
-          name: 'adjustResolution',
-          code: 0,
-          param: JSON.stringify(parameters, null, 2)
-        })
+  getSender (mediaTypeShort: "video"|"screen", streamType: "high"|"low"){
+    const peer = this.client.adapterRef._mediasoup && this.client.adapterRef._mediasoup._sendTransport && this.client.adapterRef._mediasoup._sendTransport.handler._pc
+    let sender = null;
+    if (peer) {
+      if (mediaTypeShort === "video") {
+        sender = (streamType === "high" ? peer.videoSender : peer.videoSenderLow)
+      } else if (mediaTypeShort === "screen") {
+        sender = (streamType === "high" ? peer.screenSender : peer.screenSenderLow)
       }
+    }
+    return sender || null;
+  }
+
+  applyEncoderConfig (mediaTypeShort: "video"|"screen", streamType: "high"|"low") {
+    let maxBitrate = this.mediaHelper.encoderConfig[mediaTypeShort][streamType].maxBitrate;
+    if (!maxBitrate){
+      return;
+    }
+    let sender = this.getSender(mediaTypeShort, streamType);
+    if (!sender){
+      this.logger.error("localStream.applyEncoderConfig: cannot find sender for ", mediaTypeShort, streamType);
+      return;
+    }
+    const parameters = (sender.getParameters() as RTCRtpSendParameters);
+    if (parameters.encodings && parameters.encodings.length) {
+      let maxBitrateHistory = parameters.encodings[0].maxBitrate;
+      parameters.encodings[0].maxBitrate = maxBitrate;
+      sender.setParameters(parameters)
+        .then(() => {
+          this.logger.log(`最大编码码率：${mediaTypeShort} ${streamType} ${maxBitrateHistory ? maxBitrateHistory + "=>" : ""}${maxBitrate}`);
+        })
+        .catch((e:any) => {
+          this.logger.error(`应用最大编码码率失败：${mediaTypeShort} ${streamType} ${maxBitrate}`, parameters, e.name, e.message, e);
+        });
+    }else{
+      this.logger.warn('localStream.applyEncoderConfig: 无encodings选项', parameters)
     }
   }
 

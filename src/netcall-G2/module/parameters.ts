@@ -6,8 +6,11 @@ import {LocalStream} from "../api/localStream";
 import {ProducerCodecOptions} from "./3rd/mediasoup-client/Producer";
 
 interface IParameters{
-  
-  mediaTracks: MediaStreamTrack[],
+
+  tracks: {
+    audio: (MediaStreamTrack|null)[],
+    video: (MediaStreamTrack|null)[],
+  },
   // 储存了通过createClient创建的客户端
   clients: Client[];
   
@@ -49,11 +52,14 @@ interface IParameters{
 }
 
 let parameters:IParameters = {
-  mediaTracks: [],
+  tracks: {
+    audio: [],
+    video: [],
+  },
   clients: [],
   localStreams: [],
-  videoLowDefaultConstraints: {width: 160},
-  screenLowDefaultConstraints: {width: 160},
+  videoLowDefaultConstraints: {width: {max: 320}, height: {max: 180}},
+  screenLowDefaultConstraints: {width: {max: 320}, height: {max: 180}},
   controlOnPaused: true,
   hideControlOnResume: true,
   maxTransportRebuildCnt: 50,

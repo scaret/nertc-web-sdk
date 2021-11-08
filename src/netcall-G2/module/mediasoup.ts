@@ -549,9 +549,12 @@ class Mediasoup extends EventEmitter {
             codec: codecInfo.codecParam,
             audioProfile: this.adapterRef.localStream.audioProfile
           });
-
-          if (kind === 'video') {
-            this.adapterRef.localStream.adjustResolution(mediaTypeShort)
+          
+          if (mediaTypeShort === "video" || mediaTypeShort === "screen"){
+            this.adapterRef.localStream.applyEncoderConfig(mediaTypeShort, "high")
+            if (rtpParameters.encodings.length >= 2){
+              this.adapterRef.localStream.applyEncoderConfig(mediaTypeShort, "low")
+            }
           }
           callback({ id: producerId });
         } catch (error) {

@@ -616,6 +616,7 @@ export class Chrome74 extends HandlerInterface
     } else if (kind === 'screenShare') {
       this._pc.screenSender.replaceTrack(null);
       if (this._pc.screenSenderLow){
+        this._pc.screenSender.track.stop();
         this._pc.screenSender.replaceTrack(null);
       }
     } else {

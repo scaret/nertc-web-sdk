@@ -849,6 +849,10 @@ export interface ScreenProfileOptions{
   frameRate: number;
 }
 
+export interface EncodingParameters{
+  maxBitrate?: number;
+}
+
 export interface SnapshotOptions{
   name: string;
   mediaType?: MediaTypeShort;

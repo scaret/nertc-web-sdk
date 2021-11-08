@@ -376,10 +376,14 @@ class Client extends Base {
       }
       this.bindLocalStream(stream)
       if (this.adapterRef.channelInfo.videoLow){
-        stream.mediaHelper.createTrackLow("video");
+        if (!stream.mediaHelper.cameraTrackLow || stream.mediaHelper.cameraTrackLow.readyState === "ended"){
+          stream.mediaHelper.createTrackLow("video");
+        }
       }
       if (this.adapterRef.channelInfo.screenLow){
-        stream.mediaHelper.createTrackLow("screen");
+        if (!stream.mediaHelper.screenTrackLow || stream.mediaHelper.screenTrackLow.readyState === "ended"){
+          stream.mediaHelper.createTrackLow("screen");
+        }
       }
       await this.adapterRef._mediasoup.createProduce(stream);
       this.apiFrequencyControl({

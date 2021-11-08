@@ -217,6 +217,89 @@ $('#watermark').on('click', () => {
   }
 })
 
+
+$('#trackStatus').on('click', () => {
+  //音视频输入轨道状态
+  $("#part-track").toggle()
+})
+
+setInterval(()=>{
+  const transceivers = rtc.client?.adapterRef?._mediasoup?._sendTransport?.handler?._pc?.getTransceivers() || []
+  NERTC.getParameters().tracks.audio.forEach((track, index)=>{
+    if (track){
+      const trackId = `track_status_${track.id}`
+      let content = "";
+      const transceiver = transceivers.find((t =>{
+        return t?.sender?.track?.id === track.id;
+      }))
+      if (transceiver){
+        content += "mid" + transceiver.mid;
+      }
+      content += `#${index}`;
+      
+      if (!track.enabled){
+        content += " disabled";
+      }
+      if (track.muted){
+        content += " muted";
+      }
+      if (track?.constructor?.name !== "MediaStreamTrack"){
+        content += " [" + track?.constructor?.name + "]"
+      }
+      content += ` ${track.label}`;
+      if (track.readyState === "ended"){
+        content = `<del>${content}</del>`
+      }
+      if ($("#" + trackId).length === 0){
+        $("#audioTrackStatus").append(`<li id="${trackId}">${content}</li>`)
+        $("#" + trackId).attr("title", content);
+      }else if($("#" + trackId).html() !== content){
+        $("#" + trackId).html(content)
+        $("#" + trackId).attr("title", content);
+      }
+    }
+  })
+  NERTC.getParameters().tracks.video.forEach((track, index)=>{
+    if (track){
+      const trackId = `track_status_${track.id}`
+      let content = "";
+      const transceiver = transceivers.find((t =>{
+        return t?.sender?.track?.id === track.id;
+      }))
+      if (transceiver){
+        content += "mid" + transceiver.mid;
+      }
+      
+      const settings = track.getSettings();
+      content += `#${index}`;
+      if (!track.enabled){
+        content += " disabled";
+      }
+      if (track.muted){
+        content += " muted";
+      }
+      if (settings.width || settings.height || settings.frameRate) {
+        content += ` ${parseInt(settings.width)}x${parseInt(settings.height)}x${parseInt(settings.frameRate)}`
+      }
+      if (track?.constructor?.name !== "MediaStreamTrack"){
+        content += " [" + track?.constructor?.name + "]"
+      }
+      content += ` ${track.label}`;
+      if (track.readyState === "ended"){
+        content = `<del>${content}</del>`
+      }
+      if ($("#" + trackId).length === 0){
+        $("#videoTrackStatus").append(`<li id="${trackId}">${content}</li>`)
+        $("#" + trackId).attr("title", content);
+      }else if($("#" + trackId).html() !== content){
+        $("#" + trackId).html(content)
+        $("#" + trackId).attr("title", content);
+      }
+    }
+  })
+}, 1000)
+
+
 $('#clientRecord').on('click', () => {
   //客户端录制相关模块
   if ($("#part-record").css("display") == 'none') {
@@ -629,6 +712,7 @@ function initEvents() {
 
   rtc.client.on("recording-device-changed", evt=>{
     console.log(`【${evt.state}】recording-device-changed ${evt.device.label}`, evt);
+    addLog(`【${evt.state}】recording-device-changed ${evt.device.label}`);
     if (evt.state === "ACTIVE" || evt.state === "CHANGED"){
       if (evt.device.deviceId === "default" || evt.device.deviceId === ""){
         addLog(`默认麦克风已切换为【${evt.device.label}】`)
@@ -638,6 +722,7 @@ function initEvents() {
   
   rtc.client.on("camera-changed", evt=>{
     console.log(`【${evt.state}】camera-changed ${evt.device.label}`, evt);
+    addLog(`【${evt.state}】camera-changed ${evt.device.label}`);
     if (evt.state === "ACTIVE" || evt.state === "CHANGED"){
       if (evt.device.deviceId === "default" || evt.device.deviceId === ""){
         // 经测试，Chrome并没有deviceId为default的摄像头。所以并不会走入这段逻辑
@@ -648,6 +733,7 @@ function initEvents() {
   
   rtc.client.on("playout-device-changed", evt=>{
     console.log(`【${evt.state}】playout-device-changed ${evt.device.label}`, evt);
+    addLog(`【${evt.state}】playout-device-changed ${evt.device.label}`);
     if (evt.state === "ACTIVE" || evt.state === "CHANGED"){
       if (evt.device.deviceId === "default" || evt.device.deviceId === ""){
         addLog(`默认扬声器已切换为【${evt.device.label}】`)

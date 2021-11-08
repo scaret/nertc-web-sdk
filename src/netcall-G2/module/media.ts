@@ -8,15 +8,16 @@ import {checkExists, isExistOptions, checkValidInteger} from "../util/param";
 import {
   AdapterRef, AudioMixingOptions,
   GetStreamConstraints,
-  MediaHelperOptions, MediaTypeShort, MixAudioConf, AudioEffectOptions, MediaTypeAudio, ILogger,
+  MediaHelperOptions, MediaTypeShort, MixAudioConf, AudioEffectOptions, MediaTypeAudio, ILogger, EncodingParameters,
 } from "../types";
-import {emptyStreamWith} from "../util/gum";
+import {emptyStreamWith, watchTrack} from "../util/gum";
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
 import {getParameters} from "./parameters";
 import {LocalStream} from "../api/localStream";
 import {RemoteStream} from "../api/remoteStream";
 import {Device} from "./device";
+import {Logger} from "./3rd/mediasoup-client/Logger";
 class MediaHelper extends EventEmitter {
   private adapterRef: AdapterRef;
   stream: LocalStream|RemoteStream;
@@ -51,6 +52,28 @@ class MediaHelper extends EventEmitter {
   public cameraTrackLow: MediaStreamTrack|null;
   private mixAudioConf:MixAudioConf;
   public audioRoutingEnabled:boolean;
+  public encoderConfig: {
+    video: {high: EncodingParameters, low: EncodingParameters},
+    screen: {high: EncodingParameters, low: EncodingParameters},
+  } = {
+    video: {high: {maxBitrate: 300000}, low: {maxBitrate: 100000}},
+    screen: {high: {maxBitrate: 400000}, low: {maxBitrate: 200000}},
+  }
+  public captureConfig: {
+    video: {
+      high: {width: number, height: number, frameRate: number},
+    },
+    screen: {
+      high: {width: number, height: number, frameRate: number},
+    },
+  } = {
+    video: {
+      high: {width: 640, height: 360, frameRate: 15},
+    },
+    screen: {
+      high: {width: 640, height: 360, frameRate: 15},
+    },
+  }
   private logger: ILogger;
   
   constructor (options:MediaHelperOptions) {
@@ -182,6 +205,7 @@ class MediaHelper extends EventEmitter {
       return
     }
     if (audioSource) {
+      watchTrack(audioSource);
       if (this.webAudio){
         const stream = new MediaStream;
         stream.addTrack(audioSource);
@@ -199,6 +223,7 @@ class MediaHelper extends EventEmitter {
     }
 
     if (videoSource) {
+      watchTrack(videoSource);
       this.videoStream = new MediaStream()
       this.videoStream.addTrack(videoSource)
       video = false
@@ -211,7 +236,7 @@ class MediaHelper extends EventEmitter {
           this.logger.error('getStream: 远端流不能够调用getStream');
           return;
         }
-        const {width, height, frameRate} = this.convert(this.stream.screenProfile)
+        const {width, height, frameRate} = this.captureConfig.screen.high
         
         if (sourceId) {
           this.screenStream = await GUM.getStream({
@@ -335,7 +360,7 @@ class MediaHelper extends EventEmitter {
           this.logger.error('MediaHelper.getStream:远端流不能调用getStream');
           return;
         }
-        const {height, width, frameRate} = this.convert(this.stream.videoProfile)
+        const {height, width, frameRate} = this.captureConfig.video.high
         let config:MediaStreamConstraints = {
           audio: (audio && this.getAudioConstraints()) ? this.getAudioConstraints() : audio,
           video: video ? {
@@ -584,6 +609,7 @@ class MediaHelper extends EventEmitter {
         this.logger.log("创建小流", mediaType, constraintsLow);
         this.cameraTrackLow = this.cameraTrack.clone();
         this.cameraTrackLow.applyConstraints(constraintsLow);
+        watchTrack(this.cameraTrackLow);
         if (this.adapterRef.instance){
           this.adapterRef.instance.emit('track-low-init', {mediaType})
         }
@@ -595,6 +621,7 @@ class MediaHelper extends EventEmitter {
         this.logger.log("创建小流", mediaType, constraintsLow);
         this.screenTrackLow = this.screenTrack.clone();
         this.screenTrackLow.applyConstraints(constraintsLow);
+        watchTrack(this.screenTrackLow);
         if (this.adapterRef.instance){
           this.adapterRef.instance.emit('track-low-init', {mediaType})
         }
@@ -744,10 +771,17 @@ class MediaHelper extends EventEmitter {
     const tracks = stream.getTracks()
     if (!tracks || tracks.length === 0) return
     tracks.forEach(track => {
-      const globalTrackId = getParameters().mediaTracks.findIndex((mediaTrack)=>{
-        return track === mediaTrack;
-      })
-      this.logger.log(`Stopping track TRACK#${globalTrackId} ${track.id}, ${track.label}, ${track.readyState}`);
+      if (track.kind === "audio"){
+        const globalTrackId = getParameters().tracks.audio.findIndex((mediaTrack)=>{
+          return track === mediaTrack;
+        })
+        Logger.warn(`Stopping AUDIOTRACK#${globalTrackId} ${track.id}, ${track.label}, ${track.readyState}`);
+      }else{
+        const globalTrackId = getParameters().tracks.video.findIndex((mediaTrack)=>{
+          return track === mediaTrack;
+        })
+        Logger.warn(`Stopping VIDEOTRACK#${globalTrackId} ${track.id}, ${track.label}, ${track.readyState}`);
+      }
       track.stop()
       stream.removeTrack(track);
       if (this.micTrack === track){
@@ -2125,6 +2159,7 @@ class MediaHelper extends EventEmitter {
         this.logger.info('updateAudioSender: 替换当前_micProducer的track', audioTrack.label);
         //@ts-ignore
         this.adapterRef._mediasoup._micProducer._rtpSender.replaceTrack(audioTrack);
+        watchTrack(audioTrack);
       }
       else if (this.adapterRef._mediasoup._sendTransport && this.adapterRef._mediasoup._sendTransport.handler && this.adapterRef._mediasoup._sendTransport.handler._pc){
         //@ts-ignore
@@ -2134,6 +2169,7 @@ class MediaHelper extends EventEmitter {
           if (sender.track && sender.track.kind === "audio"){
             this.logger.info('updateAudioSender: 替换audioSender', sender.track.label);
             sender.replaceTrack(audioTrack);
+            watchTrack(audioTrack);
           }
         }
       }
