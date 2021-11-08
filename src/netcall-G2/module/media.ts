@@ -8,7 +8,7 @@ import {checkExists, isExistOptions, checkValidInteger} from "../util/param";
 import {
   AdapterRef, AudioMixingOptions,
   GetStreamConstraints,
-  MediaHelperOptions, MediaTypeShort, MixAudioConf, AudioEffectOptions, MediaTypeAudio, ILogger,
+  MediaHelperOptions, MediaTypeShort, MixAudioConf, AudioEffectOptions, MediaTypeAudio, ILogger, EncodingParameters,
 } from "../types";
 import {emptyStreamWith} from "../util/gum";
 import RtcError from '../util/error/rtcError';
@@ -51,6 +51,28 @@ class MediaHelper extends EventEmitter {
   public cameraTrackLow: MediaStreamTrack|null;
   private mixAudioConf:MixAudioConf;
   public audioRoutingEnabled:boolean;
+  public encoderConfig: {
+    video: {high: EncodingParameters, low: EncodingParameters},
+    screen: {high: EncodingParameters, low: EncodingParameters},
+  } = {
+    video: {high: {maxBitrate: 300000}, low: {maxBitrate: 100000}},
+    screen: {high: {maxBitrate: 400000}, low: {maxBitrate: 200000}},
+  }
+  public captureConfig: {
+    video: {
+      high: {width: number, height: number, frameRate: number},
+    },
+    screen: {
+      high: {width: number, height: number, frameRate: number},
+    },
+  } = {
+    video: {
+      high: {width: 640, height: 360, frameRate: 15},
+    },
+    screen: {
+      high: {width: 640, height: 360, frameRate: 15},
+    },
+  }
   private logger: ILogger;
   
   constructor (options:MediaHelperOptions) {
@@ -211,7 +233,7 @@ class MediaHelper extends EventEmitter {
           this.logger.error('getStream: 远端流不能够调用getStream');
           return;
         }
-        const {width, height, frameRate} = this.convert(this.stream.screenProfile)
+        const {width, height, frameRate} = this.captureConfig.screen.high
         
         if (sourceId) {
           this.screenStream = await GUM.getStream({
@@ -335,7 +357,7 @@ class MediaHelper extends EventEmitter {
           this.logger.error('MediaHelper.getStream:远端流不能调用getStream');
           return;
         }
-        const {height, width, frameRate} = this.convert(this.stream.videoProfile)
+        const {height, width, frameRate} = this.captureConfig.video.high
         let config:MediaStreamConstraints = {
           audio: (audio && this.getAudioConstraints()) ? this.getAudioConstraints() : audio,
           video: video ? {
