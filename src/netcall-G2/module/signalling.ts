@@ -666,11 +666,11 @@ class Signalling extends EventEmitter {
       }) as SignalJoinRes;
       this.logger.log('Signalling:加入房间 ack ->  ', JSON.stringify(response, (k, v)=>{return k === "edgeRtpCapabilities" ? null : v;}));
       if (response.code != 200) {
+        const errMsg = response.externData ? response.externData.errMsg : response.errMsg
         this.logger.error(
           'Signalling: 加入房间失败, reason = ',
-          response.errMsg
+          errMsg
         )
-        const errMsg = response.externData ? response.externData.errMsg : response.errMsg
         this._joinFailed(response.code, errMsg)
         return
       }
