@@ -712,6 +712,7 @@ function initEvents() {
 
   rtc.client.on("recording-device-changed", evt=>{
     console.log(`【${evt.state}】recording-device-changed ${evt.device.label}`, evt);
+    addLog(`【${evt.state}】recording-device-changed ${evt.device.label}`);
     if (evt.state === "ACTIVE" || evt.state === "CHANGED"){
       if (evt.device.deviceId === "default" || evt.device.deviceId === ""){
         addLog(`默认麦克风已切换为【${evt.device.label}】`)
@@ -721,6 +722,7 @@ function initEvents() {
   
   rtc.client.on("camera-changed", evt=>{
     console.log(`【${evt.state}】camera-changed ${evt.device.label}`, evt);
+    addLog(`【${evt.state}】camera-changed ${evt.device.label}`);
     if (evt.state === "ACTIVE" || evt.state === "CHANGED"){
       if (evt.device.deviceId === "default" || evt.device.deviceId === ""){
         // 经测试，Chrome并没有deviceId为default的摄像头。所以并不会走入这段逻辑
@@ -731,6 +733,7 @@ function initEvents() {
   
   rtc.client.on("playout-device-changed", evt=>{
     console.log(`【${evt.state}】playout-device-changed ${evt.device.label}`, evt);
+    addLog(`【${evt.state}】playout-device-changed ${evt.device.label}`);
     if (evt.state === "ACTIVE" || evt.state === "CHANGED"){
       if (evt.device.deviceId === "default" || evt.device.deviceId === ""){
         addLog(`默认扬声器已切换为【${evt.device.label}】`)
