@@ -558,10 +558,17 @@ export class Transport extends EnhancedEventEmitter
         if (stopTracks)
         {
           try {
-            const globalTrackId = getParameters().mediaTracks.findIndex((mediaTrack)=>{
-              return track === mediaTrack;
-            })
-            Logger.warn(`Stopping track TRACK#${globalTrackId} ${track.id}, ${track.label}, ${track.readyState}`);
+            if (track.kind === "audio"){
+              const globalTrackId = getParameters().tracks.audio.findIndex((mediaTrack)=>{
+                return track === mediaTrack;
+              })
+              Logger.warn(`Stopping AUDIOTRACK#${globalTrackId} ${track.id}, ${track.label}, ${track.readyState}`);
+            }else{
+              const globalTrackId = getParameters().tracks.video.findIndex((mediaTrack)=>{
+                return track === mediaTrack;
+              })
+              Logger.warn(`Stopping VIDEOTRACK#${globalTrackId} ${track.id}, ${track.label}, ${track.readyState}`);
+            }
             track.stop();
           }
           catch (error2) {}
