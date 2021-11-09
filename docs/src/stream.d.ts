@@ -185,6 +185,21 @@ declare interface Stream {
      * 
      * 该方法用于停止播放 Stream.play 播放的音视频流。
      * @param mediaType 媒体流类型。即指定设置的是摄像头画面还是屏幕共享画面。
+     * @example
+     * ```javascript
+     * // 对于本地流，在 rtc.localStream.play() 后
+     * rtc.localStream.stop("video") //停止播放视频
+     * // 或者
+     * rtc.localStream.stop() //停止播放音频+视频+屏幕共享
+     * 
+     * // 对于远端流，在 stream-removed 后
+     * rtc.client.on("stream-removed", (evt)=>{
+     *   console.log("远端移除了媒体类型：", evt.mediaType)
+     *   evt.stream.stop(evt.mediaType)
+     * })
+     * 
+     * ```
+     * 
      */
     stop(type?: MediaType): void;
     /**
@@ -300,6 +315,14 @@ declare interface Stream {
      * - [由于Chrome的限制](https://groups.google.com/g/discuss-webrtc/c/vrw44ZGE0gs/m/2YJ6yUEjBgAJ)，所有远端流会共享同一个音频输出设备。
      * 
      * @param deviceId 设备的 ID，可以通过 getDevices 方法获取。获取的 ID 为 ASCII 字符，字符串长度大于 0 小于 256 字节。
+     * 
+     * @example
+     * ```javascript
+     * const audioOutputDevice = (await NERTC.getSpeakers())[0]
+     * console.log("设置扬声器为", audioOutputDevice.label, audioOutputDevice.deviceId)
+     * remoteStream.setAudioOutput(audioOutputDevice.deviceId)
+     * ```
+     * 
      */
     setAudioOutput(deviceId: string, callback?: (err: any) => void): Promise<void>;
     /**
@@ -315,10 +338,7 @@ declare interface Stream {
      * ```javascript
      * // rtc.localStream.init() 之后
      * if (rtc.localStream.hasVideo()){
-     *   await rtc.localStream.switchDevice({
-     *     type: "video",
-     *     deviceId: "1275f2a4df844f0bfc650f005fef5eb9415379761f4b36c3d12ca1b72948d6a8", // 通过 NERTC.getDevices() 获取
-     *   })
+     *   await rtc.localStream.switchDevice("video", "1275f2a4df844f0bfc650f005fef5eb9415379761f4b36c3d12ca1b72948d6a8") // 通过 NERTC.getDevices() 获取
      * } else {
      *   await rtc.localStream.open({
      *     type: "video",

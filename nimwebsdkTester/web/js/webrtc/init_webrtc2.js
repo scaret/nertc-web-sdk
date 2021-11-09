@@ -153,10 +153,18 @@ $('#privatizationConfig').on('click', () => {
   }else{
     var reader = new FileReader();//新建一个FileReader
     reader.readAsText(files[0], "UTF-8");//读取文件 
-    reader.onload = function(evt){ //读取完文件之后会回来这里
+    reader.onload = async function(evt){ //读取完文件之后会回来这里
       var fileString = evt.target.result; // 读取文件内容
       //console.log(fileString)
       privatizationConfig = JSON.parse(fileString)
+      if (privatizationConfig.appkey) {
+        $('#appkey').val(privatizationConfig.appkey)
+        init()
+      }else {
+        console.error("私有化配置: 没有获取appkey");
+        addLog('私有化配置: 没有获取appkey，请检查设置的参数是否正确')
+        return
+      }
     }
   }
 })
@@ -880,13 +888,13 @@ $('#joinChannel-btn').on('click', async () => {
       $('#statisticsServer').val(statisticsServer)
       $('#roomServer').val(roomServer)
       $('#demoServer').val(demoServer)
-      init()
     } else {
       console.error("私有化配置: 没有获取appkey");
       addLog('私有化配置: 没有获取appkey，请检查设置的参数是否正确')
       return
     }
   }
+  
   
   console.info('开始加入房间')
   rtc.client.setLocalMediaPriority({
