@@ -1,11 +1,8 @@
 import {platform} from "./platform";
 import {logHelper} from "./logHelper";
-import {
-  AdapterRef,
-  LoggerDebugOptions,
-  LoggerOptions,
-} from "../types";
-import * as loglevel from 'loglevel';
+import {LoggerDebugOptions, LoggerOptions} from "../types";
+import {getParameters} from "../module/parameters";
+import {loglevels} from "./log/logger";
 
 
 class Logger{
@@ -17,12 +14,14 @@ class Logger{
   private supportedBrowsers: string[];
   private cs:Console;
   private isDebug: boolean;
-  public adapterRef: AdapterRef;
+  private parent?: Logger;
+  private tagGen?: ()=>string;
   constructor(options:LoggerOptions) {
     this.options = options;
     this.api = 'log';
     this.style = 'color:#1cb977;';
     this.prefix = options.prefix || ''
+    this.tagGen = options.tagGen
     if (typeof options.debug === "object" && options.debug.style) {
       this.style = options.debug.style
     }
@@ -33,7 +32,14 @@ class Logger{
     this.cs = console;
     this.isDebug = true;
     this.setDebug(options.debug);
-    this.adapterRef = options.adapterRef;
+  }
+
+  getChild(tagGenerator: ()=>string){
+    const newOptions = Object.assign({}, this.options);
+    const newLogger = new Logger(newOptions);
+    newLogger.tagGen = tagGenerator;
+    newLogger.parent = this;
+    return newLogger
   }
   
   setDebug(debug?: boolean|LoggerDebugOptions){
@@ -58,7 +64,9 @@ class Logger{
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
     }
-    logger._log('debug', args);
+    if(getParameters().logLevel <= loglevels.DEBUG){
+      logger._log('debug', args);
+    }
     (<any>window).logStorage && (<any>window).logStorage.log('debug', args);
     // loglevel.debug(arguments);
   }
@@ -74,7 +82,9 @@ class Logger{
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
     }
-    logger._log('log', args);
+    if(getParameters().logLevel <= loglevels.INFO){
+      logger._log('log', args);
+    }
     //  loglevel.trace(args);
     (<any>window).logStorage && (<any>window).logStorage.log('log', args);
   }
@@ -90,7 +100,9 @@ class Logger{
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
     }
-    logger._log('info', args);
+    if(getParameters().logLevel <= loglevels.INFO) {
+      logger._log('info', args);
+    }
     // loglevel.info(arguments);
     (<any>window).logStorage && (<any>window).logStorage.log('info', args);
     
@@ -107,7 +119,9 @@ class Logger{
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
     }
-    logger._log('warn', args);
+    if(getParameters().logLevel <= loglevels.WARNING) {
+      logger._log('warn', args);
+    }
     // loglevel.warn(arguments);
     (<any>window).logStorage && (<any>window).logStorage.log('warn', args);
   }
@@ -123,7 +137,10 @@ class Logger{
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
     }
-    logger._log('error', args);
+
+    if(getParameters().logLevel <= loglevels.ERROR) {
+      logger._log('error', args);
+    }
     // loglevel.error(arguments);
     (<any>window).logStorage && (<any>window).logStorage.log('error', args);
   }
@@ -184,15 +201,23 @@ class Logger{
   }
 
   formatArgs(args:any[]) {
-    const logger = this
     var date = new Date()
     var dateStr = formatTimeUnit('' + (date.getMonth() + 1)) + '-' + formatTimeUnit('' + date.getDate()) + ' ' + formatTimeUnit('' + date.getHours()) + ':' + formatTimeUnit('' + date.getMinutes()) + ':' + formatTimeUnit('' + date.getSeconds()) + ':' + formatTimeUnit('' + date.getMilliseconds(), 3)
-    var prefix = `[WEBRTC LOG ${dateStr} ${logger.prefix.toUpperCase()}]  `
-    if (typeof args[0] === "string") {
-      args[0] = prefix + args[0]
-    } else {
-      args.splice(0, 0, prefix)
+    let logger:Logger = this
+    let prefix = "";
+    for (let i = 0; i < 3; i++){
+      // 最多上溯3层tag
+      if (logger.tagGen){
+        prefix = `[${logger.tagGen()}]` + prefix;
+      }
+      if (logger.parent){
+        logger = logger.parent;
+      }else{
+        break;
+      }
     }
+    prefix = `[${this.prefix} ${dateStr}]${prefix}`;
+    args.splice(0, 0, prefix)
     args.forEach(function (arg, index) {
       if (typeof arg === "object") {
         args[index] = simpleClone(arg)

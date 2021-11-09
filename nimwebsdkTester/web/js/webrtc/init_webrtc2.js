@@ -133,6 +133,11 @@ $('#clearLocalStorage').on('click', () => {
   window.location.reload();
 })
 
+$('#setLogLevel').on('click', ()=>{
+  const level = $("#loglevel").val();
+  NERTC.Logger.setLogLevel(NERTC.Logger[level])
+})
+
 $('#privatizationConfig').on('click', () => {
   var objFile = document.getElementById("privatizationConfigFildId");
   if(objFile.value == "") {
@@ -219,6 +224,89 @@ $('#watermark').on('click', () => {
     $("#watermarkFeature2").css("display", 'none')
   }
 })
+
+
+$('#trackStatus').on('click', () => {
+  //音视频输入轨道状态
+  $("#part-track").toggle()
+})
+
+setInterval(()=>{
+  const transceivers = rtc.client?.adapterRef?._mediasoup?._sendTransport?.handler?._pc?.getTransceivers() || []
+  NERTC.getParameters().tracks.audio.forEach((track, index)=>{
+    if (track){
+      const trackId = `track_status_${track.id}`
+      let content = "";
+      const transceiver = transceivers.find((t =>{
+        return t?.sender?.track?.id === track.id;
+      }))
+      if (transceiver){
+        content += "mid" + transceiver.mid;
+      }
+      content += `#${index}`;
+      
+      if (!track.enabled){
+        content += " disabled";
+      }
+      if (track.muted){
+        content += " muted";
+      }
+      if (track?.constructor?.name !== "MediaStreamTrack"){
+        content += " [" + track?.constructor?.name + "]"
+      }
+      content += ` ${track.label}`;
+      if (track.readyState === "ended"){
+        content = `<del>${content}</del>`
+      }
+      if ($("#" + trackId).length === 0){
+        $("#audioTrackStatus").append(`<li id="${trackId}">${content}</li>`)
+        $("#" + trackId).attr("title", content);
+      }else if($("#" + trackId).html() !== content){
+        $("#" + trackId).html(content)
+        $("#" + trackId).attr("title", content);
+      }
+    }
+  })
+  NERTC.getParameters().tracks.video.forEach((track, index)=>{
+    if (track){
+      const trackId = `track_status_${track.id}`
+      let content = "";
+      const transceiver = transceivers.find((t =>{
+        return t?.sender?.track?.id === track.id;
+      }))
+      if (transceiver){
+        content += "mid" + transceiver.mid;
+      }
+      
+      const settings = track.getSettings();
+      content += `#${index}`;
+      if (!track.enabled){
+        content += " disabled";
+      }
+      if (track.muted){
+        content += " muted";
+      }
+      if (settings.width || settings.height || settings.frameRate) {
+        content += ` ${parseInt(settings.width)}x${parseInt(settings.height)}x${parseInt(settings.frameRate)}`
+      }
+      if (track?.constructor?.name !== "MediaStreamTrack"){
+        content += " [" + track?.constructor?.name + "]"
+      }
+      content += ` ${track.label}`;
+      if (track.readyState === "ended"){
+        content = `<del>${content}</del>`
+      }
+      if ($("#" + trackId).length === 0){
+        $("#videoTrackStatus").append(`<li id="${trackId}">${content}</li>`)
+        $("#" + trackId).attr("title", content);
+      }else if($("#" + trackId).html() !== content){
+        $("#" + trackId).html(content)
+        $("#" + trackId).attr("title", content);
+      }
+    }
+  })
+}, 1000)
+
 
 $('#clientRecord').on('click', () => {
   //客户端录制相关模块
@@ -310,12 +398,12 @@ function init() {
   const appkey = $('#appkey').val()
   // loadTokenByAppKey();
   const chrome = $('#part-env input[name="screen-type"]:checked').val()
+  NERTC.Logger.enableLogUpload();
   rtc.client = NERTC.createClient({
     appkey,
     debug: true,
     //report: false
   })
-  NERTC.Logger.enableLogUpload();
   initDevices()
   initEvents()
   initVolumeDetect()
@@ -403,7 +491,7 @@ function initEvents() {
   })
 
   rtc.client.on('unmute-video', evt => {
-    console.warn(`${evt.uid} mute自己的视频`)
+    console.warn(`${evt.uid} unmute自己的视频`)
     addLog(`${evt.uid} unmute自己的视频`)
   })
 
@@ -414,7 +502,7 @@ function initEvents() {
   })
 
   rtc.client.on('unmute-screen', evt => {
-    console.warn(`${evt.uid} mute自己的辅流`)
+    console.warn(`${evt.uid} unmute自己的辅流`)
     addLog(`${evt.uid} unmute自己的辅流`)
   })
   
@@ -483,10 +571,10 @@ function initEvents() {
     })
     // 自动播放受限
     if(window.autoPlayStart) {
-      rtc.client.on('NotAllowedError', err => {
+      rtc.client.on('notAllowedError', err => {
         const errorCode = err.getCode();
-          const id = remoteStream.getId()
-          addView(id);
+        const id = remoteStream.getId()
+        addView(id);
         if(errorCode === 41030){
           $(`#${id}-img`).show();
             $(`#${id}-img`).on('click', async () => {
@@ -630,7 +718,37 @@ function initEvents() {
     div.firstElementChild.firstElementChild.lastElementChild.innerText = ` ${_data.curState} `
   })
 
-
+  rtc.client.on("recording-device-changed", evt=>{
+    console.log(`【${evt.state}】recording-device-changed ${evt.device.label}`, evt);
+    addLog(`【${evt.state}】recording-device-changed ${evt.device.label}`);
+    if (evt.state === "ACTIVE" || evt.state === "CHANGED"){
+      if (evt.device.deviceId === "default" || evt.device.deviceId === ""){
+        addLog(`默认麦克风已切换为【${evt.device.label}】`)
+      }
+    }
+  })
+  
+  rtc.client.on("camera-changed", evt=>{
+    console.log(`【${evt.state}】camera-changed ${evt.device.label}`, evt);
+    addLog(`【${evt.state}】camera-changed ${evt.device.label}`);
+    if (evt.state === "ACTIVE" || evt.state === "CHANGED"){
+      if (evt.device.deviceId === "default" || evt.device.deviceId === ""){
+        // 经测试，Chrome并没有deviceId为default的摄像头。所以并不会走入这段逻辑
+        addLog(`默认摄像头已切换为【${evt.device.label}】`)
+      }
+    }
+  })
+  
+  rtc.client.on("playout-device-changed", evt=>{
+    console.log(`【${evt.state}】playout-device-changed ${evt.device.label}`, evt);
+    addLog(`【${evt.state}】playout-device-changed ${evt.device.label}`);
+    if (evt.state === "ACTIVE" || evt.state === "CHANGED"){
+      if (evt.device.deviceId === "default" || evt.device.deviceId === ""){
+        addLog(`默认扬声器已切换为【${evt.device.label}】`)
+      }
+    }
+  })
+  
   rtc.client.on('client-role-changed', evt => {
     addLog(`client-role-changed ${evt.role}`);
     $("#currentRole").text(evt.role);
@@ -1075,6 +1193,41 @@ $('#subUpdateResolution').on('click', () => {
   rtc.client.setRemoteVideoStreamType(remoteStream, highorlow)
 })
 
+$('#switchHigh').on('click', () => {
+  if (!rtc.remoteStreams[subList[subList.selectedIndex].value]) {
+    addLog('无法进行此操作')
+    return
+  }
+  let remoteStream = rtc.remoteStreams[subList[subList.selectedIndex].value]
+  
+  const highorlow = NERTC.STREAM_TYPE.HIGH;
+  // 0是大流，1是小流
+  const mediaType = $("#switchMediaType").val();
+  if (mediaType === "video"){
+    rtc.client.setRemoteVideoStreamType(remoteStream, highorlow)
+  }else{
+    rtc.client.setRemoteStreamType(remoteStream, highorlow, mediaType);
+  }
+})
+
+$('#switchLow').on('click', () => {
+  if (!rtc.remoteStreams[subList[subList.selectedIndex].value]) {
+    addLog('无法进行此操作')
+    return
+  }
+  let remoteStream = rtc.remoteStreams[subList[subList.selectedIndex].value]
+
+  const highorlow = NERTC.STREAM_TYPE.LOW;
+  // 0是大流，1是小流
+  const mediaType = $("#switchMediaType").val();
+  if (mediaType === "video"){
+    rtc.client.setRemoteVideoStreamType(remoteStream, highorlow)
+  }else{
+    rtc.client.setRemoteStreamType(remoteStream, highorlow, mediaType);
+  }
+})
+
+
 $('#openAsl').on('click', () => {
   rtc.client.openAslMode()
 })
@@ -1202,6 +1355,10 @@ function publish() {
     }
     rtc.client.adapterRef.mediaCapability.preferredCodecSend = preferredCodecSend;
   }
+  rtc.client.enableDualStream({
+    video: $("#videoLow").prop("checked"),
+    screen: $("#screenLow").prop("checked"),
+  })
   rtc.client.publish(rtc.localStream).then(()=>{
     addLog('本地 publish 成功')
     console.warn('本地 publish 成功')
@@ -1228,7 +1385,7 @@ function subscribe(remoteStream) {
     audio: $('#subAudio').prop('checked'),
     video: $('#subVideo').prop('checked'),
     screen: $('#subScreen').prop('checked'),
-    highOrLow: parseInt($('#subResolution').val()),
+    highOrLow: $('#subResolution').val() === "" ? undefined : parseInt($('#subResolution').val()),
   })
 
   rtc.client.subscribe(remoteStream).then(()=>{
@@ -1572,14 +1729,14 @@ $('#disconnectWS').on('click', () => {
 $('#setAudioOutput').on('click', () => {
   const uid = $('#part-volume input[name="uid"]').val()
   const deviceId = $('#sounder').val();
-  const remoteStream = rtc.remoteStreams[uid]
-  if (!remoteStream) {
+  const stream = uid ? rtc.remoteStreams[uid] : rtc.localStream;
+  if (!stream) {
     console.warn('请检查uid是否正确')
     addLog('请检查uid是否正确')
     return
   }
   addLog('设置音频输出设备:' + uid + " " + deviceId);
-  remoteStream.setAudioOutput(deviceId);
+  stream.setAudioOutput(deviceId);
   
 });
 
@@ -1759,9 +1916,11 @@ function getRecordId() {
 $('#recordVideo').on('click', async (_event) => {
   let stream
   let uid = $('#recordUid').val()
-  if (rtc.client.getUid() == uid || !uid) {
+  if ((rtc.client.getUid() == uid) || !uid) {
+    console.log("录制本地");
     stream = rtc.localStream
   } else {
+    console.log("录制远端");
     stream = rtc.remoteStreams[uid]
     if (!stream) {
       console.warn('请检查uid是否正确')
@@ -1987,13 +2146,27 @@ $('#snapshot').click(function(event) {
 
 /**
  * 音效文件一
- */
-
+ */ 
+ 
+  let audioEffectsPlayTimer = null
+  let isAudioEffectsTotalTime = 0
+  let isAudioEffectsEnd = false
+  let isAudioEffectsPuase = false
 for (i = 1; i < 4; i++ ) {
-
+  let audioEffectsProgressInfo = document.querySelector(`#audioEffects${i} .value`);
+    let audioEffectsProgress = document.querySelector(`#audioEffects${i} progress`);
+    
+    
+    clearInterval(audioEffectsPlayTimer);
+    isAudioEffectsEnd = false;
+    isAudioEffectsPuase = false;
+  
   $(`#playEffect${i}`).click(function(event){
     var num = event.target.id.match(/\d/)[0]
     console.info('开启音效文件:  ', $(`#path${num}`).val())
+    let audioEffectsFileName = $(`#path${num}`).val();
+    audioEffectsProgressInfo.innerText = audioEffectsFileName;
+
     if (rtc.localStream) {
       rtc.localStream.playEffect({
         filePath: $(`#path${num}`).val(), 
@@ -2001,15 +2174,46 @@ for (i = 1; i < 4; i++ ) {
         soundId: Number($(`#soundId${num}`).val())
       }).then(res=>{
         console.log('音效文件播放成功: ', $(`#path${num}`).val())
+        isAudioEffectsTotalTime = rtc.localStream.getAudioEffectsDuration({
+          filePath: $(`#path${num}`).val(),
+          soundId: Number($(`#soundId${num}`).val())
+        })
+        console.log('获取音效文件总时长成功：', isAudioEffectsTotalTime)
+        audioEffectsProgressInfo.innerText = audioEffectsFileName + '00 : 00' + ' / ' + formatSeconds(isAudioEffectsTotalTime);
+        audioEffectsProgress.value = 0;
+        audioEffectsPlayTimer = setInterval(playAuidoEffects, 500,{
+          filePath: $(`#path${num}`).val(),
+          soundId: Number($(`#soundId${num}`).val()),
+          audioEffectsFileName,
+        });
+        // console.log('音效文件总时长--->: ', formatSeconds(isAudioEffectsTotalTime))
       }).catch(err=>{
         console.error('播放音效文件 %s 失败: %o', $(`#path${num}`).val(), err)
       })
-    } 
+    }
+
+    
   })
+  function playAuidoEffects(options){
+    if (isAudioEffectsEnd) {
+      console.log('播放结束')
+      clearInterval(audioEffectsPlayTimer)
+      audioEffectsPlayTimer = null
+      audioEffectsProgress.value = 100
+      audioEffectsProgressInfo.innerText = options.audioEffectsFileName + '   ' + formatSeconds(isAudioEffectsTotalTime) + ' / ' + formatSeconds(isAudioEffectsTotalTime)
+      return
+    }
+    res = rtc.localStream.getAudioEffectsCurrentPosition(options)
+    audioEffectsProgress.value = res.playedTime/isAudioEffectsTotalTime * 100
+    audioEffectsProgressInfo.innerText = options.audioEffectsFileName + '   ' + formatSeconds(res.playedTime) + ' / ' + formatSeconds(isAudioEffectsTotalTime)
+  }
 
   $(`#stopEffect${i}`).click(function(event){
     var num = event.target.id.match(/\d/)[0]
     console.info('停止音效文件:  ', $(`#soundId${num}`).val())
+    let audioEffectsFileName = $(`#path${num}`).val();
+    isAudioEffectsEnd = true;
+    clearInterval(audioEffectsPlayTimer);
     if (rtc.localStream) {
       rtc.localStream.stopEffect(Number($(`#soundId${num}`).val()))
       .then(res=>{
@@ -2022,7 +2226,10 @@ for (i = 1; i < 4; i++ ) {
 
   $(`#pauseEffect${i}`).click(function(event){
     var num = event.target.id.match(/\d/)[0]
-    console.info('暂停音效文件:  ', $(`#soundId${num}`).val())
+    console.info('暂停音效文件:  ', $(`#soundId${num}`).val());
+    let audioEffectsFileName = $(`#path${num}`).val();
+    isAudioEffectsPuase = true;
+    clearInterval(audioEffectsPlayTimer);
     if (rtc.localStream) {
       rtc.localStream.pauseEffect(Number($(`#soundId${num}`).val()))
       .then(res=>{
@@ -2036,10 +2243,18 @@ for (i = 1; i < 4; i++ ) {
   $(`#resumeEffect${i}`).click(function(event){
     var num = event.target.id.match(/\d/)[0]
    console.info('恢复音效文件1:  ', $(`#soundId${num}`).val())
+   let audioEffectsFileName = $(`#path${num}`).val();
+   isAudioEffectsPuase = false;
     if (rtc.localStream) {
       rtc.localStream.resumeEffect(Number($(`#soundId${num}`).val()))
       .then(res=>{
         console.log('恢复文件播放成功: ', $(`#path${num}`).val())
+        
+        playTimer = setInterval(playAuidoEffects, 500, {
+          filePath: $(`#path${num}`).val(),
+          soundId: Number($(`#soundId${num}`).val()),
+          audioEffectsFileName
+        })
       }).catch(err=>{
         console.error('恢复音效文件 %s 失败: %o', $(`#path${num}`).val(), err)
       })

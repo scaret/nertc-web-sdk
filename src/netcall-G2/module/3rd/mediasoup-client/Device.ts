@@ -9,6 +9,7 @@ import * as ortc from './ortc';
 import { Transport, TransportOptions, CanProduceByKind } from './Transport';
 import { HandlerFactory, HandlerInterface } from './handlers/HandlerInterface';
 import { Chrome74 } from './handlers/Chrome74';
+import { Firefox60 } from './handlers/Firefox60';
 import { Safari12 } from './handlers/Safari12';
 import { RtpCapabilities, MediaKind } from './RtpParameters';
 import { SctpCapabilities } from './SctpParameters';
@@ -18,6 +19,7 @@ const prefix = 'Device';
 export type BuiltinHandlerName =
   | 'Chrome74'
   | 'Safari12'
+  | 'Firefox60'
 
 export type DeviceOptions =
   {
@@ -54,6 +56,11 @@ export function detectDevice(): BuiltinHandlerName | undefined
     {
       return 'Chrome74';
     }
+    // Firefox.
+		else if (browser.satisfies({ firefox: '>=60' }))
+		{
+			return 'Firefox60';
+		}
     // Safari with Unified-Plan support enabled.
     else if (
       browser.satisfies({ safari: '>=12.0' }) &&
@@ -162,6 +169,9 @@ export class Device
         case 'Safari12':
           this._handlerFactory = Safari12.createFactory();
           break;
+        case 'Firefox60':
+					this._handlerFactory = Firefox60.createFactory();
+					break;
         default:
           console.error(`unknown handlerName "${handlerName}, using Chrome 74 as default"`);
           this._handlerFactory = Chrome74.createFactory();

@@ -1,17 +1,22 @@
-import {Logger} from "../types";
+import {ILogger} from "../types";
 import {getParameters} from "../module/parameters";
+import {Logger} from "./webrtcLogger";
 
-async function getStream (constraint:MediaStreamConstraints, logger:Logger = console) {
-    
+const logger:ILogger = new Logger({
+  debug: true,
+  prefix: "NERTC",
+  tagGen: ()=>{
+    return "[GUM]"
+  }
+});
+
+async function getStream (constraint:MediaStreamConstraints, logger:ILogger) {
   logger.log('getLocalStream constraint:', JSON.stringify(constraint))
   try {
     const stream = await navigator.mediaDevices.getUserMedia(constraint)
     logger.log('获取到媒体流: ', stream.id)
     const tracks = stream.getTracks();
-    tracks.forEach((track)=>{
-      getParameters().mediaTracks.push(track);
-      logger.log(`获取到的设备类型: TRACK#${getParameters().mediaTracks.length - 1}`, track.kind, track.label, track.id, JSON.stringify(track.getSettings()))
-    });
+    tracks.forEach(watchTrack);
     return stream
   } catch(e) {
     logger.error('媒体设备获取失败: ', e.name, e.message)
@@ -21,7 +26,7 @@ async function getStream (constraint:MediaStreamConstraints, logger:Logger = con
   }
 }
 
-function getScreenStream (constraint:MediaStreamConstraints, logger:Logger = console) {
+function getScreenStream (constraint:MediaStreamConstraints, logger:ILogger) {
   logger.log('getScreenStream constraint:', JSON.stringify(constraint, null, ' '))
   //@ts-ignore
   const getDisplayMedia = navigator.getDisplayMedia || navigator.mediaDevices.getDisplayMedia
@@ -31,14 +36,57 @@ function getScreenStream (constraint:MediaStreamConstraints, logger:Logger = con
     logger.log('获取到屏幕共享流: ', stream.id)
     const tracks = stream.getTracks();
     tracks.forEach((track)=>{
-      getParameters().mediaTracks.push(track);
-      logger.log(`获取到的屏幕共享设备类型: TRACK#${getParameters().mediaTracks.length - 1}`, track.kind, track.label, track.id, JSON.stringify(track.getSettings()))
+      watchTrack(track);
+      if (track.kind === "video" && getParameters().screenFocus){
+        // @ts-ignore
+        if (track.focus){
+          logger.log("屏幕共享不跳转到被共享页面")
+          // @ts-ignore
+          track.focus("no-focus-change");
+        }else{
+          logger.warn("当前浏览器不支持屏幕共享跳转控制")
+        }
+      }
     });
     return Promise.resolve(stream)
   }).catch((e:DOMException)=>{
     logger.error('屏幕共享获取失败: ', e.name, e.message)
   });
   return p;
+}
+
+export function watchTrack(track: MediaStreamTrack|null){
+  if (track){
+    if (track.readyState === "ended"){
+      logger.error("注意：输入的track已经停止：", track);
+    }
+    if (track.kind === "audio"){
+      const globalAudioTracks = getParameters().tracks.audio;
+      logger.log(`获取到的设备类型: AUDIOTRACK#${globalAudioTracks.length}`, track.kind, track.label, track.id, JSON.stringify(track.getSettings()))
+      const t = globalAudioTracks.findIndex((historyTrack)=>{
+        return track === historyTrack;
+      })
+      if (t > -1){
+        logger.warn(`注意：AUDIOTRACK#${globalAudioTracks.length} 与 AUDIOTRACK#${t} 相同`);
+        globalAudioTracks.push(null);
+      }else{
+        globalAudioTracks.push(track);
+      }
+    }
+    else{
+      const globalVideoTracks = getParameters().tracks.video;
+      logger.log(`获取到的设备类型: VIDEOTRACK#${globalVideoTracks.length}`, track.kind, track.label, track.id, JSON.stringify(track.getSettings()))
+      const t = globalVideoTracks.findIndex((historyTrack)=>{
+        return track === historyTrack;
+      })
+      if (t > -1){
+        logger.warn(`注意：AUDIOTRACK#${globalVideoTracks.length} 与 VIDEOTRACK#${t} 相同`);
+        globalVideoTracks.push(null);
+      }else{
+        globalVideoTracks.push(track);
+      }
+    }
+  }
 }
 
 function emptyStreamWith(stream:MediaStream, withTrack: MediaStreamTrack|null){

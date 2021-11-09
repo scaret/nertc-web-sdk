@@ -131,7 +131,6 @@ class Peer extends EnhancedEventEmitter
 		if(method != 'Heartbeat') {
 			this._logger.debug('request() [method:%s, id:%s]', method, request.id);
 		}
-		
 
 		// This may throw.
 		await this._transport.send(request);
@@ -328,7 +327,7 @@ class Peer extends EnhancedEventEmitter
 		if (!sent)
 		{
 			logger.error(
-				'received response does not match any sent request [id:%s]', response.id);
+				'received response does not match any sent request', response.id, response);
 
 			return;
 		}

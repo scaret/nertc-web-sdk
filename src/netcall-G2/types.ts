@@ -1,5 +1,4 @@
 import {MediaHelper} from "./module/media";
-import {Stream} from "./api/stream";
 import {Mediasoup} from "./module/mediasoup";
 import {Signalling} from "./module/signalling";
 import {RTSTransport} from "./module/rtsTransport";
@@ -8,6 +7,8 @@ import {StatsReport} from "./module/report/statsReport";
 import {MediaCapability} from "./module/mediaCapability";
 import {Encryption} from "./module/encryption";
 import BigNumber from 'bignumber.js'
+import {RemoteStream} from "./api/remoteStream";
+import {LocalStream} from "./api/localStream";
 
 type UIDTYPE = number | string;
 
@@ -78,15 +79,15 @@ export interface AdapterRef {
     [uid in UIDTYPE]: MediaStats
   } 
   remoteStreamMap: {
-    [uid in UIDTYPE]: Stream
+    [uid in UIDTYPE]: RemoteStream
   } 
-  localStream: Stream|null;
+  localStream: LocalStream|null;
   localAudioStats: {
     [uid in UIDTYPE]: LocalAudioStats
   } 
   localVideoStats: [LocalVideoStats];
   localScreenStats: [LocalVideoStats];
-  logger:Logger;
+  logger:ILogger;
   logStorage:LogStorage;
   testConf: {
     ForwardedAddr?:string;
@@ -118,22 +119,18 @@ export type ConnectionState = 'DISCONNECTED'|'CONNECTING'|'CONNECTED'|'DISCONNEC
 export type MediaType = 'audio'|'video'|'screenShare';
 export type MediaTypeShort = 'audio'|'video'|'screen';
 
-export interface ProducerAppData{
-  deviceId: string;
-  mediaType: MediaType;
-}
-
 export interface NetStatusItem{
   uid: number|string;
   downlinkNetworkQuality: number;
   uplinkNetworkQuality: number;
 }
 
-export interface Logger{
+export interface ILogger{
   log: (...msg:any)=>void
   info: (...msg:any)=>void
   warn: (...msg:any)=>void
   error: (...msg:any)=>void
+  getChild: (tagGen: ()=>string)=>ILogger;
 }
 
 export interface LogStorage{
@@ -484,9 +481,7 @@ export interface SDKRef{
 }
 
 export interface PlayOptions{
-  adapterRef:AdapterRef;
-  sdkRef: SDKRef;
-  uid: number|string;
+  stream: LocalStream|RemoteStream;
 }
 
 export interface LoggerHelperOptions{
@@ -525,8 +520,8 @@ export interface LoggerOptions{
   logFunc?: {
     [name:string]: ()=>void
   };
-  adapterRef: AdapterRef;
   logStorage?:any;
+  tagGen?: ()=>string
 }
 
 export interface StatsReportOptions{
@@ -535,7 +530,7 @@ export interface StatsReportOptions{
 }
 
 export interface WebAudioOptions{
-  adapterRef: AdapterRef;
+  logger: ILogger;
   isAnalyze?: boolean;
   isRemote?: boolean;
 }
@@ -592,8 +587,7 @@ export interface AudioEffectOptions{
 export interface MediaHelperOptions{
   adapterRef: AdapterRef;
   uid: number|string;
-  isLocal: boolean;
-  stream: Stream;
+  stream: LocalStream|RemoteStream;
 }
 
 export interface GetStreamConstraints{
@@ -611,7 +605,7 @@ export interface GetStreamConstraints{
 }
 
 export interface RecordInitOptions{
-  sdkRef: SDKRef;
+  logger: ILogger;
   adapterRef: AdapterRef;
   uid:number|string;
   media:MediaHelper;
@@ -656,7 +650,7 @@ export interface MeetingJoinChannelOptions{
   channelName: string;
   uid: number|string|BigNumber;
   wssArr?: string[]|null;
-  sessionMode?: string;
+  sessionMode?: "meeting";
   joinChannelRecordConfig: RecordConfig;
   joinChannelLiveConfig: LiveConfig;
   token?:string;
@@ -712,7 +706,7 @@ export interface RTMPTask{
 
 export interface MediasoupManagerOptions{
   adapterRef: AdapterRef;
-  sdkRef: SDKRef;
+  logger: ILogger;
 }
 
 export interface ProduceConsumeInfo{
@@ -731,15 +725,15 @@ export interface AudioProcessingOptions{
   AGC?: boolean;
 }
 
-export interface StreamOptions{
-  isRemote: boolean;
+
+export interface LocalStreamOptions{
   uid: number|string;
   audio: boolean;
   audioProcessing?: AudioProcessingOptions;
-  microphoneId?: '';
-  cameraId?: '';
-  sourceId?: '';
-  facingMode?: '';
+  microphoneId?: string;
+  cameraId?: string;
+  sourceId?: string;
+  facingMode?: VideoFacingModeEnum;
   video: boolean;
   screen: boolean;
   screenAudio?: boolean;
@@ -748,15 +742,45 @@ export interface StreamOptions{
   videoSource?: MediaStreamTrack|null;
 }
 
+export interface RemoteStreamOptions{
+  uid: number|string;
+  audio: boolean;
+  video: boolean;
+  screen: boolean;
+  client: Client;
+  platformType: PlatformType;
+}
+
+export const PlatformTypeMap = { 
+  '-1': "unknown",
+  1: "aos",
+  2: "ios",
+  4: "pc",
+  8: "winphone",
+  9: "mac",
+  16: "web",
+}
+
+export enum PlatformType{
+  "unknown" = -1,
+  "aos" = 1,
+  "ios"= 2,
+  "pc"= 4,
+  "winphone"= 8,
+  "mac"= 9,
+  "web"= 16,
+}
+
 export interface Client{
   adapterRef: AdapterRef;
   apiFrequencyControl: (event:any)=>void;
   emit:(eventName: string, eventData?:any)=>void
+  safeEmit:(eventName: string, eventData?:any)=>void
   _roleInfo: {
     userRole: number;
     audienceList: {[uid in UIDTYPE]: boolean}
   }
-  publish: (stream: Stream)=>void
+  publish: (stream: LocalStream)=>void
   apiEventReport: (eventName: string, eventData: any)=>void
   getPeer: (sendOrRecv: 'send'|'recv')=>any
   leave: ()=>any
@@ -809,8 +833,10 @@ export interface SubscribeConfig{
   audio: boolean;
   video: boolean;
   screen: boolean;
-  highOrLow: number;
-  resolution: number;
+  highOrLow: {
+    video: number;
+    screen: number;
+  }
 }
 
 export interface VideoProfileOptions{
@@ -821,6 +847,10 @@ export interface VideoProfileOptions{
 export interface ScreenProfileOptions{
   resolution: number;
   frameRate: number;
+}
+
+export interface EncodingParameters{
+  maxBitrate?: number;
 }
 
 export interface SnapshotOptions{
@@ -835,7 +865,7 @@ export interface MediaRecordingOptions{
 
 export interface SignallingOptions{
   adapterRef: AdapterRef;
-  sdkRef: SDKRef;
+  logger: ILogger;
 }
 
 export interface ClientOptions{

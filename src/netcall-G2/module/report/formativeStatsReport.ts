@@ -497,7 +497,14 @@ class FormativeStatsReport {
         currentData.recv.audio.nextLost = data[i].packetsLost
         currentData.recv.audio.nextPacket = data[i].packetsReceived
         downAudioList.push(data[i])
-        const audioLevel = data[i].audioOutputLevel || data[i].audioLevel //safari浏览器 audioLevel的值是 0-1 (https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-audiolevel)
+        let audioLevel:number = 0;
+        if (data[i].audioOutputLevel >= 0){
+          // Chrome， 0-32767
+          audioLevel = data[i].audioOutputLevel;
+        }else if (data[i].audioLevel >= 0){
+          // Safari， 0-1，正好与Chrome呈线性关系
+          audioLevel = Math.floor(data[i].audioLevel * 32768);
+        }
         this._audioLevel.push({
           uid,
           level: +audioLevel || 0,
@@ -622,11 +629,12 @@ class FormativeStatsReport {
 
     this._audioLevel.sort(tool.compare('level'))
     if (this._audioLevel.length > 0 && this._audioLevel[0].level > 0) {
-      this.adapterRef.instance.emit('active-speaker', this._audioLevel[0])
+      // Firefox 获取不到audioLevel, 没有active-speaker探测能力
+      this.adapterRef.instance.safeEmit('active-speaker', this._audioLevel[0])
     } 
     
     if (time % 2 === 0) {
-      this.adapterRef.instance.emit('volume-indicator', this._audioLevel)
+      this.adapterRef.instance.safeEmit('volume-indicator', this._audioLevel)
       // 更新上行信息
       this.updateTxMediaInfo(upAudioList, upVideoList, upScreenList);
       // 更新下行信息
@@ -1013,7 +1021,7 @@ class FormativeStatsReport {
     if (!prev || !next) {
       return
     }
-    const muteStatus = this.adapterRef.localStream && (this.adapterRef.localStream.muteStatus.videoSend || this.adapterRef.localStream.muteStatus.videoRecv)
+    const muteStatus = this.adapterRef.localStream && (this.adapterRef.localStream.muteStatus.videoSend)
     const pubStatus = this.adapterRef.localStream && this.adapterRef.localStream.pubStatus.video.video
     if (muteStatus === true || pubStatus === false) {
       return

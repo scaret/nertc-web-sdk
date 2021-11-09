@@ -269,3 +269,15 @@ export const checkRTCCompatibility = async function() {
     // }
     return checkResult;
 }
+// 是否本地环境 file, localhost, ip 地址
+const IS_LOCAL =
+  location.protocol === 'file:' ||
+  location.hostname === 'localhost' ||
+  /^\d+\.\d+\.\d+\.\d+$/.test(location.hostname);
+
+export const isHttpProtocol = function() {
+  if(location.protocol === 'http:' && !IS_LOCAL) {
+    return true;
+  }
+  return false;
+}

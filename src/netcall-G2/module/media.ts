@@ -8,17 +8,19 @@ import {checkExists, isExistOptions, checkValidInteger} from "../util/param";
 import {
   AdapterRef, AudioMixingOptions,
   GetStreamConstraints,
-  MediaHelperOptions, MediaTypeShort, MixAudioConf, AudioEffectOptions, MediaTypeAudio,
+  MediaHelperOptions, MediaTypeShort, MixAudioConf, AudioEffectOptions, MediaTypeAudio, ILogger, EncodingParameters,
 } from "../types";
-import {emptyStreamWith} from "../util/gum";
+import {emptyStreamWith, watchTrack} from "../util/gum";
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
-import {Stream} from "../api/stream";
 import {getParameters} from "./parameters";
+import {LocalStream} from "../api/localStream";
+import {RemoteStream} from "../api/remoteStream";
+import {Device} from "./device";
+import {Logger} from "./3rd/mediasoup-client/Logger";
 class MediaHelper extends EventEmitter {
   private adapterRef: AdapterRef;
-  private isLocal:boolean;
-  stream: Stream;
+  stream: LocalStream|RemoteStream;
   micStream: MediaStream|null;
   screenAudioStream: MediaStream|null;
   // audioStream对localStream而言是PeerConnection发送的MediaStream，
@@ -32,6 +34,10 @@ class MediaHelper extends EventEmitter {
   public musicStream: MediaStream;
   public audioSource: MediaStreamTrack|null;
   public micTrack: MediaStreamTrack|null;
+  // Chrome为default设备做音频切换的时候，已有的track的label不会更新
+  public deviceInfo: {
+    mic: {label: string, groupId?: string, deviceId?: string},
+  } = {mic: {label: ""}};
   public screenAudioTrack: MediaStreamTrack|null;
   public webAudio: WebAudio|null;
   public audioConstraint: {audio: MediaTrackConstraints}|null;
@@ -42,15 +48,60 @@ class MediaHelper extends EventEmitter {
   public videoSource:MediaStreamTrack|null;
   public screenTrack: MediaStreamTrack|null;
   public cameraTrack: MediaStreamTrack|null;
+  public screenTrackLow: MediaStreamTrack|null;
+  public cameraTrackLow: MediaStreamTrack|null;
   private mixAudioConf:MixAudioConf;
   public audioRoutingEnabled:boolean;
+  public encoderConfig: {
+    video: {high: EncodingParameters, low: EncodingParameters},
+    screen: {high: EncodingParameters, low: EncodingParameters},
+  } = {
+    video: {high: {maxBitrate: 300000}, low: {maxBitrate: 100000}},
+    screen: {high: {maxBitrate: 400000}, low: {maxBitrate: 200000}},
+  }
+  public captureConfig: {
+    video: {
+      high: {width: number, height: number, frameRate: number},
+    },
+    screen: {
+      high: {width: number, height: number, frameRate: number},
+    },
+  } = {
+    video: {
+      high: {width: 640, height: 360, frameRate: 15},
+    },
+    screen: {
+      high: {width: 640, height: 360, frameRate: 15},
+    },
+  }
+  private logger: ILogger;
   
   constructor (options:MediaHelperOptions) {
     super()
     // 设置对象引用
     this.adapterRef = options.adapterRef
-    this.isLocal = options.isLocal
     this.stream = options.stream;
+    this.logger = options.stream.logger.getChild(()=>{
+      let tag = "mediaHelper";
+      if (this.audioRoutingEnabled){
+        tag += " WebAudio"
+      }
+      if (this.webAudio){
+        if (this.webAudio.context){
+          if (this.webAudio.context.state !== "running"){
+            tag += " " + this.webAudio.context.state
+          }
+        }
+        if (this.webAudio.mixAudioConf.state !== AuidoMixingState.UNSTART){
+          tag += " " + this.webAudio?.mixAudioConf.state;
+        } 
+      }
+      
+      if (this.stream.mediaHelper !== this){
+        tag += "DETACHED";
+      }
+      return tag
+    })
     this.micStream = null;
     this.screenAudioStream = null;
     this.audioStream = new MediaStream();
@@ -65,15 +116,38 @@ class MediaHelper extends EventEmitter {
     this.videoSource = null;
     this.screenTrack = null;
     this.micTrack = null;
+    this.deviceInfo = {mic: {label: ""}};
     this.screenAudioTrack = null;
     this.screenTrack = null;
     this.cameraTrack = null;
+    this.screenTrackLow = null;
+    this.cameraTrackLow = null;
     this.audioRoutingEnabled = false;
     this.mixAudioConf = {
       index: 0,
       audioBuffer: {}, //云端音频buffer数组
       sounds: {}
     };
+    Device.on("recording-device-changed", (evt)=>{
+      if (this.micTrack){
+        if (this.deviceInfo.mic.deviceId === evt.device.deviceId){
+          if (evt.state === "INACTIVE"){
+            this.logger.error("当前使用的麦克风设备被移除，需重新启用设备", evt.device)
+            this.stream.emit('recording-device-changed', evt);
+          } else {
+            let device = Device.deviceHistory.audioIn.find(d=>{
+              d.groupId === this.deviceInfo.mic.groupId
+            });
+            if (!device){
+              this.logger.error(`当前麦克风已由【${this.deviceInfo.mic.label}】切换至【${evt.device.label}】，可能会影响通话质量`)
+              this.deviceInfo.mic.label = evt.device.label;
+              this.deviceInfo.mic.groupId = evt.device.groupId;
+              this.stream.emit('recording-device-changed', evt);              
+            }
+          }
+        }
+      }
+    })
   }
   
 
@@ -127,10 +201,11 @@ class MediaHelper extends EventEmitter {
       deviceId = ''
     } = constraint
     if(!audio && !video && !screen){
-      this.adapterRef.logger.error('getStream: 必须指定媒体类型')
+      this.logger.error('getStream: 必须指定媒体类型')
       return
     }
     if (audioSource) {
+      watchTrack(audioSource);
       if (this.webAudio){
         const stream = new MediaStream;
         stream.addTrack(audioSource);
@@ -148,6 +223,7 @@ class MediaHelper extends EventEmitter {
     }
 
     if (videoSource) {
+      watchTrack(videoSource);
       this.videoStream = new MediaStream()
       this.videoStream.addTrack(videoSource)
       video = false
@@ -156,11 +232,11 @@ class MediaHelper extends EventEmitter {
 
     try {
       if (screen) {
-        if (!this.isLocal){
-          this.adapterRef.logger.error('getStream: 远端流不能够调用getStream');
+        if (this.stream.isRemote){
+          this.logger.error('getStream: 远端流不能够调用getStream');
           return;
         }
-        const {width, height, frameRate} = this.convert(this.stream.screenProfile)
+        const {width, height, frameRate} = this.captureConfig.screen.high
         
         if (sourceId) {
           this.screenStream = await GUM.getStream({
@@ -175,7 +251,7 @@ class MediaHelper extends EventEmitter {
                 chromeMediaSourceId: sourceId
               }
             }
-          }, this.adapterRef.logger)
+          }, this.logger)
         } else {
           let screenStream = await GUM.getScreenStream({
             video:{
@@ -191,7 +267,7 @@ class MediaHelper extends EventEmitter {
               }
             },
             audio: (constraint.screenAudio && this.getAudioConstraints()) ? this.getAudioConstraints() : constraint.screenAudio,
-          }, this.adapterRef.logger)
+          }, this.logger)
           this.screenStream = screenStream;
           if (constraint.screenAudio) {
             const screenAudioTrack = screenStream.getAudioTracks()[0];
@@ -204,7 +280,7 @@ class MediaHelper extends EventEmitter {
               this.screenAudioStream = stream;
               if (!this.webAudio) {
                 this.webAudio = new WebAudio({
-                  adapterRef: this.adapterRef,
+                  logger: this.logger,
                 })
                 this.webAudio.on('audioFilePlaybackCompleted', this._audioFilePlaybackCompletedEvent.bind(this))
               }
@@ -221,7 +297,7 @@ class MediaHelper extends EventEmitter {
                 }
               }
             }else{
-              this.adapterRef.logger.warn('getStream screenAudio: 未获取到屏幕共享音频');
+              this.logger.warn('getStream screenAudio: 未获取到屏幕共享音频');
               this.stream.screenAudio = false;
               if (this.adapterRef.instance){
                 this.adapterRef.instance.emit('error', 'screenAudioNotAllowed');
@@ -236,7 +312,7 @@ class MediaHelper extends EventEmitter {
           value: 'success'
         })
         if (!this.screenStream){
-          this.adapterRef.logger.error('getStream: 未获取到screenStream');
+          this.logger.error('getStream: 未获取到screenStream');
           return;
         }
         this.screenTrack = this.screenStream.getVideoTracks()[0];
@@ -244,8 +320,13 @@ class MediaHelper extends EventEmitter {
         if (audio) {
           this.micStream = await GUM.getStream({
             audio: (this.getAudioConstraints()) ? this.getAudioConstraints() : true,
-          }, this.adapterRef.logger)
+          }, this.logger)
           this.micTrack = this.micStream.getAudioTracks()[0];
+          const micSettings = this.micTrack.getSettings();
+          this.deviceInfo.mic.label = this.micTrack.label;
+          this.deviceInfo.mic.deviceId = micSettings.deviceId
+          this.deviceInfo.mic.groupId = micSettings.groupId;
+          
           this.listenToTrackEnded(this.micTrack);
           this.adapterRef.instance.apiEventReport('setFunction', {
             name: 'set_mic',
@@ -256,7 +337,7 @@ class MediaHelper extends EventEmitter {
           if (navigator.userAgent.indexOf('Chrome') > -1 && !RtcSystem.h5()) {
             if (!this.webAudio) {
               this.webAudio = new WebAudio({
-                adapterRef: this.adapterRef,
+                logger: this.logger,
               })
               this.webAudio.on('audioFilePlaybackCompleted', this._audioFilePlaybackCompletedEvent.bind(this))
             }
@@ -275,10 +356,11 @@ class MediaHelper extends EventEmitter {
           }
         }
       } else if (audio || video) {
-        if (!this.isLocal){
-          this.adapterRef.logger.error('MediaHelper.getStream:远端流不能调用getStream');
+        if (this.stream.isRemote){
+          this.logger.error('MediaHelper.getStream:远端流不能调用getStream');
+          return;
         }
-        const {height, width, frameRate} = this.convert(this.stream.videoProfile)
+        const {height, width, frameRate} = this.captureConfig.video.high
         let config:MediaStreamConstraints = {
           audio: (audio && this.getAudioConstraints()) ? this.getAudioConstraints() : audio,
           video: video ? {
@@ -315,7 +397,7 @@ class MediaHelper extends EventEmitter {
         }
         
 
-        const stream = await GUM.getStream(config, this.adapterRef.logger)
+        const stream = await GUM.getStream(config, this.logger)
         if (constraint.screen) {
           this.screenStream = stream
         } else {
@@ -323,6 +405,10 @@ class MediaHelper extends EventEmitter {
           const micTrack = stream.getAudioTracks()[0];
           if (micTrack){
             this.micTrack = micTrack;
+            const micSettings = micTrack.getSettings()
+            this.deviceInfo.mic.label = this.micTrack.label;
+            this.deviceInfo.mic.deviceId = micSettings.deviceId
+            this.deviceInfo.mic.groupId = micSettings.groupId;
             this.listenToTrackEnded(this.micTrack);
             this.adapterRef.instance.apiEventReport('setFunction', {
               name: 'set_mic',
@@ -337,7 +423,7 @@ class MediaHelper extends EventEmitter {
 
             if (!this.webAudio) {
               this.webAudio = new WebAudio({
-                adapterRef: this.adapterRef,
+                logger: this.logger,
               })
               this.webAudio.on('audioFilePlaybackCompleted', this._audioFilePlaybackCompletedEvent.bind(this))
             }
@@ -377,8 +463,7 @@ class MediaHelper extends EventEmitter {
       }
       return
     } catch (e){
-      const logger = this.adapterRef.logger || console
-      logger.error('getStream error: %o', e.message)
+      this.logger.error('getStream error:', e.name, e.message)
       if (audio) {
         this.adapterRef.instance.apiEventReport('setFunction', {
           name: 'set_mic',
@@ -411,7 +496,7 @@ class MediaHelper extends EventEmitter {
       video = false,
     } = constraint
     if(!audio && !video){
-      this.adapterRef.logger.error('getSecondStream:必须指定一个参数');
+      this.logger.error('getSecondStream:必须指定一个参数');
       return Promise.reject(
         new RtcError({
           code: ErrorCode.INVALID_OPERATION,
@@ -419,10 +504,13 @@ class MediaHelper extends EventEmitter {
         })
       )
     }
+    if (this.stream.isRemote){
+      throw new Error('getSecondStream:远端用户不能调用getSecondStream');
+    }
 
     try {
-      const stream = await GUM.getStream(constraint, this.adapterRef.logger)
-      this.adapterRef.logger.log('获取到stream: ', stream.id)
+      const stream = await GUM.getStream(constraint, this.logger)
+      this.logger.log('获取到stream: ', stream.id)
       const audioTrack = stream.getAudioTracks().length && stream.getAudioTracks()[0]
       const videoTrack = stream.getVideoTracks().length && stream.getVideoTracks()[0]
       if (audioTrack) {
@@ -440,6 +528,11 @@ class MediaHelper extends EventEmitter {
         this.micStream = new MediaStream()
         this.micStream.addTrack(audioTrack)
         this.micTrack = audioTrack;
+        const micSettings = audioTrack.getSettings();
+        this.deviceInfo.mic.label = this.micTrack.label;
+        this.deviceInfo.mic.deviceId = micSettings.deviceId
+        this.deviceInfo.mic.groupId = micSettings.groupId;
+
         this.listenToTrackEnded(this.micTrack);
         if (this.webAudio){
           this.webAudio.updateTracks([
@@ -472,6 +565,7 @@ class MediaHelper extends EventEmitter {
         }
         this.cameraStream = new MediaStream()
         this.cameraStream.addTrack(videoTrack)
+        this.cameraTrack = videoTrack
         this.videoStream = this.cameraStream
         const videoView = this.stream.videoView || (this.stream.Play && this.stream.Play.videoView)
         if (videoView) {
@@ -483,13 +577,20 @@ class MediaHelper extends EventEmitter {
         const peer = this.adapterRef.instance.getPeer('send')
         if (peer && peer.videoSender) {
           peer.videoSender.replaceTrack(videoTrack)
+          if (peer.videoSenderLow){
+            if (this.cameraTrackLow){
+              this.cameraTrackLow.stop();
+            }
+            this.createTrackLow("video");
+            this.logger.log('getSecondStream 切换小流', this.cameraTrackLow);
+            peer.videoSenderLow.replaceTrack(this.cameraTrackLow);
+          }
         } else {
-          this.adapterRef.logger.warn('getSecondStream video: 此时未发布流')
+          this.logger.warn('getSecondStream video: 此时未发布流')
         }
       }
     } catch (e){
-      const logger = this.adapterRef.logger || console
-      logger.error('getStream error: %o', e.message)
+      this.logger.error('getStream error', e.message)
       const name = audio ? 'set_mic' : 'set_camera'
       this.adapterRef.instance.apiEventReport('setFunction', {
         name,
@@ -497,6 +598,34 @@ class MediaHelper extends EventEmitter {
         value: e.message
       })
       return Promise.reject(e)
+    }
+  }
+
+  createTrackLow(mediaType: "video"|"screen") {
+    if (mediaType === "video" && this.cameraTrack) {
+      const settings = this.cameraTrack.getSettings();
+      if (settings.width && settings.height) {
+        const constraintsLow = getParameters().videoLowDefaultConstraints;
+        this.logger.log("创建小流", mediaType, constraintsLow);
+        this.cameraTrackLow = this.cameraTrack.clone();
+        this.cameraTrackLow.applyConstraints(constraintsLow);
+        watchTrack(this.cameraTrackLow);
+        if (this.adapterRef.instance){
+          this.adapterRef.instance.emit('track-low-init', {mediaType})
+        }
+      }
+    } else if (mediaType === "screen" && this.screenTrack) {
+      const settings = this.screenTrack.getSettings();
+      if (settings.width && settings.height) {
+        const constraintsLow = getParameters().screenLowDefaultConstraints;
+        this.logger.log("创建小流", mediaType, constraintsLow);
+        this.screenTrackLow = this.screenTrack.clone();
+        this.screenTrackLow.applyConstraints(constraintsLow);
+        watchTrack(this.screenTrackLow);
+        if (this.adapterRef.instance){
+          this.adapterRef.instance.emit('track-low-init', {mediaType})
+        }
+      }
     }
   }
 
@@ -538,7 +667,7 @@ class MediaHelper extends EventEmitter {
   }
 
   getAudioConstraints() {
-    if (!this.isLocal){
+    if (this.stream.isRemote){
       this.adapterRef.instance.logger.error('Remote Stream dont have audio constraints');
       return;
     }
@@ -579,6 +708,10 @@ class MediaHelper extends EventEmitter {
   updateStream(kind:MediaTypeShort, track:MediaStreamTrack) {
     if (kind === 'audio') {
       this.micTrack = track;
+      const micSettings = track.getSettings()
+      this.deviceInfo.mic.label = this.micTrack.label;
+      this.deviceInfo.mic.deviceId = micSettings.deviceId;
+      this.deviceInfo.mic.groupId = micSettings.groupId;
       this.listenToTrackEnded(this.micTrack);
       emptyStreamWith(this.audioStream, track);
       this.audioStream.addTrack(track)
@@ -633,19 +766,27 @@ class MediaHelper extends EventEmitter {
 
   _stopTrack (stream:MediaStream) {
     if (!stream) return
-    if (!this.isLocal) return
-    this.adapterRef.logger.log('清除stream: ', stream.id)
+    if (this.stream.isRemote) return
+    this.logger.log('清除stream: ', stream.id)
     const tracks = stream.getTracks()
     if (!tracks || tracks.length === 0) return
     tracks.forEach(track => {
-      const globalTrackId = getParameters().mediaTracks.findIndex((mediaTrack)=>{
-        return track === mediaTrack;
-      })
-      this.adapterRef.logger.log(`Stopping track TRACK#${globalTrackId} ${track.id}, ${track.label}, ${track.readyState}`);
+      if (track.kind === "audio"){
+        const globalTrackId = getParameters().tracks.audio.findIndex((mediaTrack)=>{
+          return track === mediaTrack;
+        })
+        Logger.warn(`Stopping AUDIOTRACK#${globalTrackId} ${track.id}, ${track.label}, ${track.readyState}`);
+      }else{
+        const globalTrackId = getParameters().tracks.video.findIndex((mediaTrack)=>{
+          return track === mediaTrack;
+        })
+        Logger.warn(`Stopping VIDEOTRACK#${globalTrackId} ${track.id}, ${track.label}, ${track.readyState}`);
+      }
       track.stop()
       stream.removeTrack(track);
       if (this.micTrack === track){
         this.micTrack = null;
+        this.deviceInfo.mic = {label: ""};
         this.webAudio?.removeTrack(track);
       }
       if (this.screenAudioTrack === track){
@@ -654,12 +795,19 @@ class MediaHelper extends EventEmitter {
       }
       if (this.cameraTrack === track){
         this.cameraTrack = null;
+        if (this.cameraTrackLow){
+          this.logger.log('停止视频小流:', this.cameraTrackLow);
+          this.cameraTrackLow.stop();
+          this.cameraTrackLow = null;
+        }
       }
       if (this.screenTrack === track){
         this.screenTrack = null;
-      }
-      if (this.screenAudioTrack === track){
-        this.screenAudioTrack = null;
+        if (this.screenTrackLow){
+          this.logger.log('停止辅流小流:', this.screenTrackLow);
+          this.screenTrackLow.stop();
+          this.screenTrackLow = null;
+        }
       }
     })
   }
@@ -678,13 +826,13 @@ class MediaHelper extends EventEmitter {
    */
   setGain (gain:number, audioType?: MediaTypeAudio) {
     if (this.webAudio) {
-      this.adapterRef.logger.log('setGain', gain);
+      this.logger.log('setGain', gain);
       this.webAudio.setGain(gain, audioType)
       if (this.canDisableAudioRouting()){
         this.disableAudioRouting();
       }
     }else{
-      this.adapterRef.logger.log('setGain: 缺失本地音频')
+      this.logger.log('setGain: 缺失本地音频')
       return
     }
   }
@@ -730,17 +878,17 @@ class MediaHelper extends EventEmitter {
   }
 
   startAudioMixing (options:AudioMixingOptions) {
-    this.adapterRef.logger.log(`开始伴音: %s`, JSON.stringify(options, null, ' '))
+    this.logger.log(`开始伴音:`, JSON.stringify(options, null, ' '))
     Object.assign(this.mixAudioConf, options)
     let reason = null
     if (!this.mixAudioConf.audioFilePath) {
-      this.adapterRef.logger.log('开始伴音: 没有找到云端文件路径')
+      this.logger.log('开始伴音: 没有找到云端文件路径')
       reason = 'INVALID_ARGUMENTS'
     } else if (!( this.micStream || this.screenAudioTrack) || !this.stream.pubStatus.audio.audio) {
-      this.adapterRef.logger.log('开始伴音: 当前没有publish音频')
+      this.logger.log('开始伴音: 当前没有publish音频')
       reason = 'NOT_PUBLIST_AUDIO_YET'
     } else if (!this.webAudio || !this.webAudio.context) {
-      this.adapterRef.logger.log('开始伴音: 不支持伴音功能')
+      this.logger.log('开始伴音: 不支持伴音功能')
       reason = 'BROWSER_NOT_SUPPORT'
     }
 
@@ -778,17 +926,17 @@ class MediaHelper extends EventEmitter {
 
     if (this.webAudio){
       if (this.webAudio.mixAudioConf && this.webAudio.mixAudioConf.audioSource && this.webAudio.mixAudioConf.state === AuidoMixingState.PLAYED) {
-        this.adapterRef.logger.log('startAudioMixing: 当前已经开启伴音，先关闭之前的伴音')
+        this.logger.log('startAudioMixing: 当前已经开启伴音，先关闭之前的伴音')
         this.stopAudioMixing()
       }
 
       this.webAudio.mixAudioConf.state === AuidoMixingState.STARTING
     }
     if (this.mixAudioConf.audioFilePath && this.mixAudioConf.audioBuffer[this.mixAudioConf.audioFilePath]) {
-      this.adapterRef.logger.log('开始伴音, 已经加载过云端音乐')
+      this.logger.log('开始伴音, 已经加载过云端音乐')
       return this.startMix(this.mixAudioConf.index)
     } else {
-      this.adapterRef.logger.log('开始伴音, 先加载云端音乐')
+      this.logger.log('开始伴音, 先加载云端音乐')
       return this.loadRemoteAudioFile(this.mixAudioConf.index)
     }
     
@@ -799,7 +947,7 @@ class MediaHelper extends EventEmitter {
    */
   loadRemoteAudioFile (index: number) {
     if (!this.mixAudioConf.audioFilePath){
-      this.adapterRef.logger.error('audioFilePath未设置')
+      this.logger.error('audioFilePath未设置')
       return;
     }
     return ajax({
@@ -807,7 +955,7 @@ class MediaHelper extends EventEmitter {
       type: 'GET',
       dataType: 'arraybuffer'
     }).then(data => {
-      this.adapterRef.logger.log("loadRemoteAudioFile 加载云端音乐成功")
+      this.logger.log("loadRemoteAudioFile 加载云端音乐成功")
       return new Promise((resolve, reject) => {
         if (!this.webAudio || !this.webAudio.context){
           reject(
@@ -819,7 +967,7 @@ class MediaHelper extends EventEmitter {
           return;
         }
         this.webAudio.context.decodeAudioData(data as ArrayBuffer, buffer => {
-          this.adapterRef.logger.log("loadRemoteAudioFile 云端音乐解码成功")
+          this.logger.log("loadRemoteAudioFile 云端音乐解码成功")
           if (!this.mixAudioConf.audioFilePath){
             reject(
               new RtcError({
@@ -834,7 +982,7 @@ class MediaHelper extends EventEmitter {
             resolve(res);
           })
         }, e => {
-          this.adapterRef.logger.log("loadRemoteAudioFile 云端音乐解码失败：", e)
+          this.logger.log("loadRemoteAudioFile 云端音乐解码失败：", e)
           reject(
             new RtcError({
               code: ErrorCode.STATE_ERROR,
@@ -844,7 +992,7 @@ class MediaHelper extends EventEmitter {
         })
       })
     }).catch(error => {
-      this.adapterRef.logger.log('loadRemoteAudioFile 加载云端音乐失败: ', error.name, error.message, error)
+      this.logger.log('loadRemoteAudioFile 加载云端音乐失败: ', error.name, error.message, error)
       return Promise.reject(
         new RtcError({
           code: ErrorCode.STATE_ERROR,
@@ -859,27 +1007,27 @@ class MediaHelper extends EventEmitter {
       return;
     }
     track.addEventListener('ended', ()=>{
-      this.adapterRef.logger.log("Track ended", track.label, track.id);
+      this.logger.log("Track ended", track.label, track.id);
       if (this.stream !== this.adapterRef.localStream){
         return;
       }
       if (track === this.micTrack || track === this.audioSource){
         //停止的原因可能是设备拔出、取消授权等
-        this.adapterRef.logger.warn('音频轨道已停止')
-        this.adapterRef.instance.emit('audioTrackEnded')
+        this.logger.warn('音频轨道已停止')
+        this.adapterRef.instance.safeEmit('audioTrackEnded')
       }
       if (track === this.cameraTrack){
         //停止的原因可能是设备拔出、取消授权等
-        this.adapterRef.logger.warn('视频轨道已停止')
-        this.adapterRef.instance.emit('videoTrackEnded')
+        this.logger.warn('视频轨道已停止')
+        this.adapterRef.instance.safeEmit('videoTrackEnded')
       }
       if (track === this.screenTrack){
-        this.adapterRef.logger.warn('屏幕共享已停止')
-        this.adapterRef.instance.emit('stopScreenSharing')
+        this.logger.warn('屏幕共享已停止')
+        this.adapterRef.instance.safeEmit('stopScreenSharing')
       }
       if (track === this.screenAudioTrack){
-        this.adapterRef.logger.warn('屏幕共享音频已停止')
-        this.adapterRef.instance.emit('stopScreenAudio')
+        this.logger.warn('屏幕共享音频已停止')
+        this.adapterRef.instance.safeEmit('stopScreenAudio')
       }
     });
   }
@@ -889,7 +1037,7 @@ class MediaHelper extends EventEmitter {
    */
   startMix (index:number) {
     if (!this.webAudio){
-      this.adapterRef.logger.error('startMix:参数错误')
+      this.logger.error('startMix:参数错误')
       return Promise.reject(
         new RtcError({
           code: ErrorCode.INVALID_PARAMETER,
@@ -897,9 +1045,9 @@ class MediaHelper extends EventEmitter {
         })
       );
     }
-    this.adapterRef.logger.log('startMix 开始混音:', JSON.stringify(this.mixAudioConf))
+    this.logger.log('startMix 开始混音:', JSON.stringify(this.mixAudioConf))
     if (index !== this.mixAudioConf.index) {
-      this.adapterRef.logger.log('startMix: 该次伴音已经取消')
+      this.logger.log('startMix: 该次伴音已经取消')
       return Promise.resolve()
     }
     if (!this.audioRoutingEnabled){
@@ -931,13 +1079,13 @@ class MediaHelper extends EventEmitter {
   pauseAudioMixing () {
     let reason = null
     if (!this.webAudio || !this.webAudio.context) {
-      this.adapterRef.logger.log('pauseAudioMixing: 不支持伴音功能')
+      this.logger.log('pauseAudioMixing: 不支持伴音功能')
       reason = 'BROWSER_NOT_SUPPORT'
     } else if (!this.webAudio.mixAudioConf || !this.webAudio.mixAudioConf.audioSource || this.webAudio.mixAudioConf.state === AuidoMixingState.PAUSED) {
-      this.adapterRef.logger.log('pauseAudioMixing: 已经暂停')
+      this.logger.log('pauseAudioMixing: 已经暂停')
       reason = 'PAUSED'
     } else if (!this.webAudio.mixAudioConf || !this.webAudio.mixAudioConf.audioSource || this.webAudio.mixAudioConf.state !== AuidoMixingState.PLAYED) {
-      this.adapterRef.logger.log('pauseAudioMixing: 当前没有开启伴音')
+      this.logger.log('pauseAudioMixing: 当前没有开启伴音')
       reason = 'NOT_PLAY'
     }
     if(reason){
@@ -986,13 +1134,13 @@ class MediaHelper extends EventEmitter {
 
     let reason = null
     if (!this.webAudio || !this.webAudio.context) {
-      this.adapterRef.logger.log('resumeAudioMixing: 不支持伴音功能')
+      this.logger.log('resumeAudioMixing: 不支持伴音功能')
       reason = 'BROWSER_NOT_SUPPORT'
     } else if (!this.webAudio.mixAudioConf || !this.webAudio.mixAudioConf.audioSource) {
-      this.adapterRef.logger.log('resumeAudioMixing: 当前没有开启伴音')
+      this.logger.log('resumeAudioMixing: 当前没有开启伴音')
       reason = 'NOT_OPEN'
     } else if (this.webAudio.mixAudioConf.state !== AuidoMixingState.PAUSED) {
-      this.adapterRef.logger.log('resumeAudioMixing: 当前没有暂停伴音')
+      this.logger.log('resumeAudioMixing: 当前没有暂停伴音')
       reason = 'NOT_PAUSED'
     }
     if(reason){
@@ -1037,23 +1185,23 @@ class MediaHelper extends EventEmitter {
     let { audioFilePath = '', loopback = false, replace = false, cycle = 0, playStartTime = 0, auidoMixingEnd = null } = this.mixAudioConf
     let playedTime = (this.webAudio.mixAudioConf.pauseTime - this.webAudio.mixAudioConf.startTime) / 1000 + this.webAudio.mixAudioConf.playStartTime
     if (playedTime > this.webAudio.mixAudioConf.totalTime) {
-      this.adapterRef.logger.log('播发过的圈数 playedCycle: ', Math.floor(playedTime / this.webAudio.mixAudioConf.totalTime))
+      this.logger.log('播发过的圈数 playedCycle: ', Math.floor(playedTime / this.webAudio.mixAudioConf.totalTime))
       cycle = cycle - Math.floor(playedTime / this.webAudio.mixAudioConf.totalTime)
       this.mixAudioConf.cycle = cycle
     }
     if (this.webAudio.mixAudioConf.setPlayStartTime) {
-      this.adapterRef.logger.log("暂停期间，用户设置混音播发时间: ", this.webAudio.mixAudioConf.setPlayStartTime)
+      this.logger.log("暂停期间，用户设置混音播发时间: ", this.webAudio.mixAudioConf.setPlayStartTime)
       playStartTime = this.webAudio.mixAudioConf.setPlayStartTime
       this.webAudio.mixAudioConf.setPlayStartTime = 0
     } else {
-      this.adapterRef.logger.log("恢复混音:", JSON.stringify(this.webAudio.mixAudioConf))
-      this.adapterRef.logger.log('已经播放的时间: ', playedTime)
+      this.logger.log("恢复混音:", JSON.stringify(this.webAudio.mixAudioConf))
+      this.logger.log('已经播放的时间: ', playedTime)
       if (playedTime > this.webAudio.mixAudioConf.totalTime) {
         playedTime = playedTime % this.webAudio.mixAudioConf.totalTime
       }
       playStartTime = playedTime
     }
-    this.adapterRef.logger.log('回复重置的时间点：', playStartTime)
+    this.logger.log('回复重置的时间点：', playStartTime)
     return this.webAudio.resumeAudioMixing({
       buffer: this.mixAudioConf.audioBuffer[audioFilePath],
       loopback,
@@ -1071,10 +1219,10 @@ class MediaHelper extends EventEmitter {
 
     let reason = null
     if (!this.webAudio || !this.webAudio.context) {
-      this.adapterRef.logger.log('stopAudioMixing: 不支持伴音功能')
+      this.logger.log('stopAudioMixing: 不支持伴音功能')
       reason = 'BROWSER_NOT_SUPPORT'
     } else if (!this.webAudio.mixAudioConf || !this.webAudio.mixAudioConf.audioSource) {
-      this.adapterRef.logger.log('stopAudioMixing: 当前没有开启伴音')
+      this.logger.log('stopAudioMixing: 当前没有开启伴音')
       reason = 'NOT_OPEN'
     } 
     if(reason){
@@ -1124,19 +1272,19 @@ class MediaHelper extends EventEmitter {
   setAudioMixingVolume (volume:number) {
     let reason = null
     if (!this.webAudio || !this.webAudio.context) {
-      this.adapterRef.logger.log('setAudioMixingVolume: 不支持伴音功能')
+      this.logger.log('setAudioMixingVolume: 不支持伴音功能')
       reason = 'BROWSER_NOT_SUPPORT'
     } else if (!this.webAudio.mixAudioConf || !this.webAudio.mixAudioConf.audioSource) {
-      this.adapterRef.logger.log('setAudioMixingVolume: 当前没有开启伴音')
+      this.logger.log('setAudioMixingVolume: 当前没有开启伴音')
       reason = 'NOT_OPEN'
     } else if (!Number.isInteger(volume)) {
-      this.adapterRef.logger.log('setAudioMixingVolume: volume不是整数')
+      this.logger.log('setAudioMixingVolume: volume不是整数')
       reason = 'INVALID_ARGUMENTS'
     } else if (volume < 0) {
-      this.adapterRef.logger.log('setAudioMixingVolume: volume范围（0 - 255）')
+      this.logger.log('setAudioMixingVolume: volume范围（0 - 255）')
       reason = 'INVALID_ARGUMENTS'
     } else if (volume > 255) {
-      this.adapterRef.logger.log('setAudioMixingVolume: volume范围（0 - 255）')
+      this.logger.log('setAudioMixingVolume: volume范围（0 - 255）')
       reason = 'INVALID_ARGUMENTS'
     } 
     if(reason){
@@ -1184,20 +1332,20 @@ class MediaHelper extends EventEmitter {
   setAudioMixingPlayTime (playTime:number) {
     let reason = null
     if (!this.webAudio || !this.webAudio.context) {
-      this.adapterRef.logger.log('setAudioMixingPlayTime: 不支持伴音功能')
+      this.logger.log('setAudioMixingPlayTime: 不支持伴音功能')
       reason = 'BROWSER_NOT_SUPPORT'
     } else if (!this.webAudio.mixAudioConf || !this.webAudio.mixAudioConf.audioSource) {
-      this.adapterRef.logger.log('setAudioMixingPlayTime: 当前没有开启伴音')
+      this.logger.log('setAudioMixingPlayTime: 当前没有开启伴音')
      reason = 'INVALID_ARGUMENTS'
     } else if (playTime < 0) {
-      this.adapterRef.logger.log('setAudioMixingPlayTime: playStartTime小于0')
+      this.logger.log('setAudioMixingPlayTime: playStartTime小于0')
       reason = 'INVALID_ARGUMENTS'
     } else if (playTime >= this.webAudio.mixAudioConf.totalTime) {
-      this.adapterRef.logger.log('setAudioMixingPlayTime: playStartTime大于音频文件总时长了')
+      this.logger.log('setAudioMixingPlayTime: playStartTime大于音频文件总时长了')
       reason = 'INVALID_ARGUMENTS'
     } else if (this.webAudio.mixAudioConf.state === AuidoMixingState.PAUSED) {
       this.webAudio.mixAudioConf.setPlayStartTime = playTime
-      this.adapterRef.logger.log('setAudioMixingPlayTime: 当前正在暂停，记录设置的播发位置，在恢复伴音时，跳转到此次设置的播放位置')
+      this.logger.log('setAudioMixingPlayTime: 当前正在暂停，记录设置的播发位置，在恢复伴音时，跳转到此次设置的播放位置')
       return Promise.resolve()
     }
     if(reason){
@@ -1249,16 +1397,16 @@ class MediaHelper extends EventEmitter {
           }
           this.mixAudioConf.playStartTime = playTime
           let { audioFilePath = '', loopback = false, replace = false, cycle = 0, playStartTime = 0, auidoMixingEnd = null } = this.mixAudioConf
-          this.adapterRef.logger.log("设置混音的播放位置:", this.webAudio.mixAudioConf)
+          this.logger.log("设置混音的播放位置:", this.webAudio.mixAudioConf)
           let currentTime = Date.now()
           let playedTime = (currentTime - this.webAudio.mixAudioConf.startTime) / 1000 + this.webAudio.mixAudioConf.playStartTime
-          this.adapterRef.logger.log('已经播放的时间: ', playedTime)
+          this.logger.log('已经播放的时间: ', playedTime)
           if (playedTime > this.webAudio.mixAudioConf.totalTime) {
-            this.adapterRef.logger.log('播发过的圈数 playedCycle: ', Math.floor(playedTime / this.webAudio.mixAudioConf.totalTime))
+            this.logger.log('播发过的圈数 playedCycle: ', Math.floor(playedTime / this.webAudio.mixAudioConf.totalTime))
             cycle = cycle - Math.floor(playedTime / this.webAudio.mixAudioConf.totalTime)
             this.mixAudioConf.cycle = cycle
           }
-          this.adapterRef.logger.log('setAudioMixingPlayTime, playTime: %s, cycle: %s', playTime, cycle)
+          this.logger.log(`setAudioMixingPlayTime, playTime: ${playTime}, cycle: ${cycle}`)
           this.webAudio.setAudioMixingPlayTime({
             buffer: this.mixAudioConf.audioBuffer[audioFilePath],
             loopback: loopback,
@@ -1303,24 +1451,38 @@ class MediaHelper extends EventEmitter {
 
   getAudioMixingPlayedTime () {
     if (!this.webAudio || !this.webAudio.context) {
-      this.adapterRef.logger.log('getAudioMixingPlayedTime: 不支持伴音功能')
+      this.logger.log('getAudioMixingPlayedTime: 不支持伴音功能')
       return Promise.resolve()
     } else if (!this.webAudio.mixAudioConf || !this.webAudio.mixAudioConf.audioSource) {
-      this.adapterRef.logger.log('getAudioMixingPlayedTime: 当前没有开启伴音')
+      this.logger.log('getAudioMixingPlayedTime: 当前没有开启伴音')
       return Promise.resolve()
     } 
-
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'getAudioMixingPlayedTime',
+      code: 0,
+      param: JSON.stringify({
+        playTime: this.webAudio.getAudioMixingPlayedTime()?.playedTime,
+      }, null, ' ')
+    })
     return this.webAudio.getAudioMixingPlayedTime()
   }
 
   getAudioMixingTotalTime () {
     if (!this.webAudio || !this.webAudio.context) {
-      this.adapterRef.logger.log('startAudioMixing: 不支持伴音功能')
+      this.logger.log('startAudioMixing: 不支持伴音功能')
       return Promise.resolve()
     } else if (!this.webAudio.mixAudioConf || !this.webAudio.mixAudioConf.audioSource) {
-      this.adapterRef.logger.log('getAudioMixingTotalTime: 当前没有开启伴音')
+      this.logger.log('getAudioMixingTotalTime: 当前没有开启伴音')
       return Promise.resolve()
     } 
+
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'getAudioMixingTotalTime',
+      code: 0,
+      param: JSON.stringify({
+        totalTime: this.webAudio.getAudioMixingTotalTime()?.totalTime,
+      }, null, ' ')
+    })
     return this.webAudio.getAudioMixingTotalTime()
   }
 
@@ -1390,7 +1552,7 @@ class MediaHelper extends EventEmitter {
     }
 
     if (!this.webAudio || !this.webAudio.context) {
-      this.adapterRef.logger.log('playEffect: 浏览器不支持')
+      this.logger.log('playEffect: 浏览器不支持')
       return Promise.reject(
         new RtcError({
           code: ErrorCode.NOT_SUPPORT,
@@ -1398,7 +1560,7 @@ class MediaHelper extends EventEmitter {
         })
       )
     } else if (this.mixAudioConf.sounds[soundId] && (this.mixAudioConf.sounds[soundId].state === 'STARTING' || this.mixAudioConf.sounds[soundId].state === 'PLAYED' || this.mixAudioConf.sounds[soundId].state === 'PAUSED')) {
-      this.adapterRef.logger.log(`pauseEffect: 该音效文件正处于: ${this.mixAudioConf.sounds[soundId].state} 状态`)
+      this.logger.log(`pauseEffect: 该音效文件正处于: ${this.mixAudioConf.sounds[soundId].state} 状态`)
       if (playStartTime === undefined) {
         return Promise.reject(
           new RtcError({
@@ -1411,9 +1573,9 @@ class MediaHelper extends EventEmitter {
     this.mixAudioConf.sounds[soundId].state = 'STARTING'
 
     if (this.mixAudioConf.audioBuffer[filePath]) {
-      this.adapterRef.logger.log('playEffect: 已经 load 音效文件')
+      this.logger.log('playEffect: 已经 load 音效文件')
     } else {
-      this.adapterRef.logger.log('playEffect, 先 load 音效文件')
+      this.logger.log('playEffect, 先 load 音效文件')
       await this.preloadEffect(soundId, filePath)
     }
 
@@ -1441,6 +1603,12 @@ class MediaHelper extends EventEmitter {
       this.webAudio.startAudioEffectMix(this.mixAudioConf.sounds[soundId])
       this.mixAudioConf.sounds[soundId].state = 'PLAYED'
       this.mixAudioConf.sounds[soundId].startTime = Date.now()
+
+      this.adapterRef.instance.apiFrequencyControl({
+        name: 'playEffect',
+        code: 0,
+        param: JSON.stringify(options, null, ' ')
+      })
     } catch (e) {
 
     }
@@ -1457,7 +1625,7 @@ class MediaHelper extends EventEmitter {
 
     let reason = null
     if (!this.webAudio || !this.webAudio.context) {
-      this.adapterRef.logger.log('stopEffect: 浏览器不支持')
+      this.logger.log('stopEffect: 浏览器不支持')
       return Promise.reject(
         new RtcError({
           code: ErrorCode.NOT_SUPPORT,
@@ -1470,6 +1638,12 @@ class MediaHelper extends EventEmitter {
     this.mixAudioConf.sounds[soundId].state = 'STOPED'
     this._audioFilePlaybackCompletedEvent()
     //delete this.mixAudioConf.sounds[soundId]
+
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'stopEffect',
+      code: 0,
+      param: JSON.stringify(soundId, null, ' ')
+    })
   }
 
   async pauseEffect (soundId: number) {
@@ -1482,16 +1656,16 @@ class MediaHelper extends EventEmitter {
     }
     let reason = null
     if (!this.mixAudioConf.sounds[soundId]) {
-      this.adapterRef.logger.log('pauseEffect: 没有该音效文件')
+      this.logger.log('pauseEffect: 没有该音效文件')
       reason = 'SOUND_NOT_EXISTS'
     } if (!this.webAudio || !this.webAudio.context) {
-      this.adapterRef.logger.log('pauseEffect: 不支持音效功能')
+      this.logger.log('pauseEffect: 不支持音效功能')
       reason = 'BROWSER_NOT_SUPPORT'
     } else if (this.mixAudioConf.sounds[soundId].state === 'PAUSED') {
-      this.adapterRef.logger.log('pauseEffect: 已经暂停')
+      this.logger.log('pauseEffect: 已经暂停')
       reason = 'PAUSED'
     } else if (this.mixAudioConf.sounds[soundId].state !== 'PLAYED') {
-      this.adapterRef.logger.log('pauseEffect: 当前没有开启该音效')
+      this.logger.log('pauseEffect: 当前没有开启该音效')
       reason = 'NOT_PLAYED'
     }
     if (reason) {
@@ -1531,11 +1705,17 @@ class MediaHelper extends EventEmitter {
     this.mixAudioConf.sounds[soundId].pauseTime = Date.now()
     this.mixAudioConf.sounds[soundId].state = 'PAUSED'
     let playedTime = (this.mixAudioConf.sounds[soundId].pauseTime - this.mixAudioConf.sounds[soundId].startTime) / 1000 + this.mixAudioConf.sounds[soundId].playStartTime
-    this.adapterRef.logger.log('pauseEffect 已经播放的时间: ', playedTime)
+    this.logger.log('pauseEffect 已经播放的时间: ', playedTime)
     if (playedTime > this.mixAudioConf.sounds[soundId].totalTime) {
       playedTime = playedTime % this.mixAudioConf.sounds[soundId].totalTime
     }
-    this.adapterRef.logger.log("pauseEffect 暂停位置: ", playedTime)
+    this.logger.log("pauseEffect 暂停位置: ", playedTime)
+
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'pauseEffect',
+      code: 0,
+      param: JSON.stringify(soundId, null, ' ')
+    })
   }
 
   async resumeEffect (soundId: number) {
@@ -1548,13 +1728,13 @@ class MediaHelper extends EventEmitter {
     }
     let reason = null
     if (!this.mixAudioConf.sounds[soundId]) {
-      this.adapterRef.logger.log('resumeEffect: 没有该音效文件')
+      this.logger.log('resumeEffect: 没有该音效文件')
       reason = 'SOUND_NOT_EXISTS'
     } if (!this.webAudio || !this.webAudio.context) {
-      this.adapterRef.logger.log('resumeEffect: 不支持音效功能')
+      this.logger.log('resumeEffect: 不支持音效功能')
       reason = 'BROWSER_NOT_SUPPORT'
     } else if (this.mixAudioConf.sounds[soundId].state !== 'PAUSED') {
-      this.adapterRef.logger.log('resumeEffect: 当前没有暂停该音效文件')
+      this.logger.log('resumeEffect: 当前没有暂停该音效文件')
       reason = 'NOT_PAUSED'
     }
     if (reason) {
@@ -1583,10 +1763,10 @@ class MediaHelper extends EventEmitter {
     }
     if(!this.webAudio) return
     let playedTime = (this.mixAudioConf.sounds[soundId].pauseTime - this.mixAudioConf.sounds[soundId].startTime) / 1000 + this.mixAudioConf.sounds[soundId].playStartTime
-    this.adapterRef.logger.log('resumeEffect 已经播放的时间: ', playedTime)
+    this.logger.log('resumeEffect 已经播放的时间: ', playedTime)
     if (playedTime > this.mixAudioConf.sounds[soundId].totalTime) {
       const cyclePlayed = Math.floor(playedTime / this.mixAudioConf.sounds[soundId].totalTime)
-      this.adapterRef.logger.log('播发过的圈数 playedCycle: ', cyclePlayed)
+      this.logger.log('播发过的圈数 playedCycle: ', cyclePlayed)
       playedTime = playedTime % this.mixAudioConf.sounds[soundId].totalTime
       this.mixAudioConf.sounds[soundId].cycle = this.mixAudioConf.sounds[soundId].cycle - cyclePlayed
     }
@@ -1600,11 +1780,17 @@ class MediaHelper extends EventEmitter {
       playedTime = playedTime % this.mixAudioConf.sounds[soundId].totalTime
     }
     this.mixAudioConf.sounds[soundId].playStartTime = playedTime
-    this.adapterRef.logger.log('resumeEffect 回复重置的时间点：', playedTime)
+    this.logger.log('resumeEffect 回复重置的时间点：', playedTime)
     //this.webAudio.startAudioEffectMix(this.mixAudioConf.sounds[soundId])
     this.playEffect({soundId, filePath: this.mixAudioConf.sounds[soundId].filePath, cycle: this.mixAudioConf.sounds[soundId].cycle}, playedTime)
     this.mixAudioConf.sounds[soundId].state = 'PLAYED'
     this.mixAudioConf.sounds[soundId].startTime = Date.now()
+
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'resumeEffect',
+      code: 0,
+      param: JSON.stringify(soundId, null, ' ')
+    })
   }
 
   async setVolumeOfEffect (soundId: number, volume: number) {
@@ -1627,11 +1813,11 @@ class MediaHelper extends EventEmitter {
       checkValidInteger(volumeCheck);
     }
 
-    this.adapterRef.logger.log(`setVolumeOfEffect 设置 ${soundId} 音效文件的音量: ${volume}`)
+    this.logger.log(`setVolumeOfEffect 设置 ${soundId} 音效文件的音量: ${volume}`)
     this._initSoundIfNotExists(soundId)
     let reason = null
     if (!this.webAudio || !this.webAudio.context) {
-      this.adapterRef.logger.log('setVolumeOfEffect: 不支持音效功能')
+      this.logger.log('setVolumeOfEffect: 不支持音效功能')
       reason = 'BROWSER_NOT_SUPPORT'
     } 
     if (reason) {
@@ -1647,9 +1833,18 @@ class MediaHelper extends EventEmitter {
       //@ts-ignore
       this.mixAudioConf.sounds[soundId].gainNode.gain.value = volume/100
     } else {
-      this.adapterRef.logger.log('setVolumeOfEffect: no gainNode')
+      this.logger.log('setVolumeOfEffect: no gainNode')
     }
     this.mixAudioConf.sounds[soundId].volume = volume
+
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'setVolumeOfEffect',
+      code: 0,
+      param: JSON.stringify({
+        soundId: soundId,
+        volume: volume
+      }, null, ' ')
+    })
   }
 
   async preloadEffect (soundId: number, filePath: string) {
@@ -1665,21 +1860,37 @@ class MediaHelper extends EventEmitter {
     if (isExistOptions(soundIdCheck).result){
       checkValidInteger(soundIdCheck);
     }
-    this.adapterRef.logger.log(`preloadEffect 设置soundId: ${soundId}, 音效文件的filePath: ${filePath}`)
+    this.logger.log(`preloadEffect 设置soundId: ${soundId}, 音效文件的filePath: ${filePath}`)
     this._initSoundIfNotExists(soundId, filePath)
     if (!this.audioRoutingEnabled){
       this.enableAudioRouting();
     }
     if (this.mixAudioConf.audioBuffer[filePath]) {
-      this.adapterRef.logger.log('preloadEffect: 已经 load 音效文件')
+      this.logger.log('preloadEffect: 已经 load 音效文件')
       return
     }
     try {
       //@ts-ignore
       await this.loadAudioBuffer(filePath)
+      this.adapterRef.instance.apiFrequencyControl({
+        name: 'preloadEffect',
+        code: 0,
+        param: JSON.stringify({
+          soundId: soundId,
+          filePath: filePath
+        }, null, ' ')
+      })
     } catch (e) {
-      this.adapterRef.logger.error('preloadEffect 错误: ', e.name, e.message, e)
+      this.logger.error('preloadEffect 错误: ', e.name, e.message, e)
+      this.adapterRef.instance.apiFrequencyControl({
+        name: 'preloadEffect',
+        code: -1,
+        param: JSON.stringify({
+          reason: e
+        }, null, ' ')
+      })
     }
+
   }
 
   async unloadEffect (soundId: number) {
@@ -1691,9 +1902,9 @@ class MediaHelper extends EventEmitter {
     if (isExistOptions(soundIdCheck).result){
       checkValidInteger(soundIdCheck);
     }
-    this.adapterRef.logger.log(`unloadEffect： ${soundId} 音效文件`)
+    this.logger.log(`unloadEffect： ${soundId} 音效文件`)
     if (!this.mixAudioConf.sounds[soundId]) {
-      this.adapterRef.logger.log('unloadEffect: 没有该音效文件')
+      this.logger.log('unloadEffect: 没有该音效文件')
       return Promise.reject(
         new RtcError({
           code: ErrorCode.NO_FILE,
@@ -1701,7 +1912,7 @@ class MediaHelper extends EventEmitter {
         })
       )
     } else if (this.mixAudioConf.sounds[soundId].state !== 'UNSTART' && this.mixAudioConf.sounds[soundId].state !== 'STOPED') {
-      this.adapterRef.logger.log('unloadEffect: 该音效文件已经播放，请使用 stopEffect 方法')
+      this.logger.log('unloadEffect: 该音效文件已经播放，请使用 stopEffect 方法')
       return Promise.reject(
         new RtcError({
           code: ErrorCode.INVALID_OPERATION,
@@ -1711,16 +1922,30 @@ class MediaHelper extends EventEmitter {
     }
     delete this.mixAudioConf.audioBuffer[this.mixAudioConf.sounds[soundId].filePath]
     delete this.mixAudioConf.sounds[soundId]
+
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'unloadEffect',
+      code: 0,
+      param: JSON.stringify({
+        soundId: soundId
+      }, null, ' ')
+    })
+
   }
 
   getEffectsVolume () {
-    this.adapterRef.logger.log(`getEffectsVolume`)
+    this.logger.log(`getEffectsVolume`)
     const result = new Array()
     Object.values(this.mixAudioConf.sounds).forEach(item => {
       result.push({
         soundId: item.soundId,
         volume: item.volume
       })
+    })
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'getEffectsVolume',
+      code: 0,
+      param: JSON.stringify(result, null, 2)
     })
     return result
   }
@@ -1735,37 +1960,115 @@ class MediaHelper extends EventEmitter {
     if (isExistOptions(volumeCheck).result){
       checkValidInteger(volumeCheck);
     }
-    this.adapterRef.logger.log(`setEffectsVolume, 设置音量: ${volume}`)
+    this.logger.log(`setEffectsVolume, 设置音量: ${volume}`)
     Object.values(this.mixAudioConf.sounds).forEach(item => {
       this.setVolumeOfEffect(item.soundId, volume)
     })
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'setEffectsVolume',
+      code: 0,
+      param: JSON.stringify({volume: volume}, null, 2)
+    })
+
   }
 
   async stopAllEffects () {
-    this.adapterRef.logger.log(`stopAllEffects`)
+    this.logger.log(`stopAllEffects`)
     Object.values(this.mixAudioConf.sounds).forEach(item => {
       if (item.state === "PLAYED" || item.state === "PAUSED"){
         this.stopEffect(item.soundId)
       }
     })
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'stopAllEffects',
+      code: 0,
+      param: JSON.stringify('stopAllEffects', null, 2)
+    })
+
   }
 
   async pauseAllEffects () {
-    this.adapterRef.logger.log(`pauseAllEffects`)
+    this.logger.log(`pauseAllEffects`)
     Object.values(this.mixAudioConf.sounds).forEach(item => {
       if (item.state === "PLAYED"){
         this.pauseEffect(item.soundId)
       }
     })
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'pauseAllEffects',
+      code: 0,
+      param: JSON.stringify('pauseAllEffects', null, 2)
+    })
+
   }
 
   async resumeAllEffects () {
-    this.adapterRef.logger.log(`resumeAllEffects`)
+    this.logger.log(`resumeAllEffects`)
     Object.values(this.mixAudioConf.sounds).forEach(item => {
       if (item.state === "PAUSED"){
         this.resumeEffect(item.soundId)
       }
     })
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'resumeAllEffects',
+      code: 0,
+      param: JSON.stringify('resumeAllEffects', null, 2)
+    })
+
+  }
+
+  getAudioEffectsTotalTime(options: AudioEffectOptions) {
+    const {soundId, filePath, cycle = 1} = options
+    if (!this.mixAudioConf || JSON.stringify(this.mixAudioConf.sounds) === '{}') {
+      this.logger.log('getAudioEffectsTotalTime: 当前没有音效文件')
+      return Promise.resolve()
+    }
+    this._initSoundIfNotExists(soundId, filePath);
+    let totalTime;
+    if(this.mixAudioConf.sounds[soundId].state === 'PLAYED'){
+      totalTime = this.mixAudioConf.sounds[soundId].totalTime;
+    }
+
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'getAudioMixingTotalTime',
+      code: 0,
+      param: JSON.stringify({
+        totalTime: totalTime,
+      }, null, ' ')
+    })
+    return totalTime;
+  }
+
+  getAudioEffectsPlayedTime(options: AudioEffectOptions) { // TODO
+    const {soundId, filePath, cycle = 1} = options
+    if (!this.mixAudioConf || JSON.stringify(this.mixAudioConf.sounds) === '{}') {
+      this.logger.log('getAudioEffectsTotalTime: 当前没有音效文件')
+      return Promise.resolve()
+    }
+    this._initSoundIfNotExists(soundId, filePath);
+
+    let currentTime = Date.now();
+    if (this.mixAudioConf.sounds[soundId].state == 'PAUSED') {
+      this.logger.log('当前是暂停状态')
+      currentTime = this.mixAudioConf.sounds[soundId].pauseTime
+    }
+    let playedTime = (currentTime - this.mixAudioConf.sounds[soundId].startTime) / 1000 + this.mixAudioConf.sounds[soundId].playStartTime
+    //this.logger.log('已经播放的时间: ', playedTime)
+    if (playedTime > this.mixAudioConf.sounds[soundId].totalTime) {
+      playedTime = playedTime % this.mixAudioConf.sounds[soundId].totalTime
+    }
+    //this.logger.log("当前播放进度:", playedTime)
+
+    
+
+    this.adapterRef.instance.apiFrequencyControl({
+      name: 'getAudioMixingPlayedTime',
+      code: 0,
+      param: JSON.stringify({
+        playTime: playedTime
+      }, null, ' ')
+    })
+    return {playedTime: playedTime}
   }
 
   loadAudioBuffer (filePath: string) {
@@ -1774,7 +2077,7 @@ class MediaHelper extends EventEmitter {
       type: 'GET',
       dataType: 'arraybuffer'
     }).then(data => {
-      this.adapterRef.logger.log("loadAudioBuffer 加载 audio file 成功")
+      this.logger.log("loadAudioBuffer 加载 audio file 成功")
       return new Promise((resolve, reject) => {
         if (!this.webAudio || !this.webAudio.context){
           reject(
@@ -1786,11 +2089,11 @@ class MediaHelper extends EventEmitter {
           return;
         }
         this.webAudio.context.decodeAudioData(data as ArrayBuffer, buffer => {
-          this.adapterRef.logger.log("loadAudioBuffer audio file 解码成功")
+          this.logger.log("loadAudioBuffer audio file 解码成功")
           this.mixAudioConf.audioBuffer[filePath] = buffer;
           resolve(buffer)
         }, e => {
-          this.adapterRef.logger.log("loadRemoteAudioFile 云端音乐解码失败：", e)
+          this.logger.log("loadRemoteAudioFile 云端音乐解码失败：", e)
           reject(
             new RtcError({
               code: ErrorCode.DECODE_FAILED,
@@ -1800,7 +2103,7 @@ class MediaHelper extends EventEmitter {
         })
       })
     }).catch(error => {
-      this.adapterRef.logger.log('loadRemoteAudioFile 加载云端音乐失败: ', error)
+      this.logger.log('loadRemoteAudioFile 加载云端音乐失败: ', error)
       return Promise.reject(
         new RtcError({
           code: ErrorCode.STATE_ERROR,
@@ -1816,7 +2119,7 @@ class MediaHelper extends EventEmitter {
       this.audioRoutingEnabled = true;
       const outputStream = this.webAudio.destination.stream;
       const destinationTrack = outputStream.getAudioTracks()[0];
-      this.adapterRef.logger.log('enableAudioRouting: ', destinationTrack.label)
+      this.logger.log('enableAudioRouting: ', destinationTrack.label)
       const formerTrack = this.audioStream.getAudioTracks()[0];
       if (formerTrack){
         this.audioStream.removeTrack(formerTrack);
@@ -1826,14 +2129,14 @@ class MediaHelper extends EventEmitter {
       this.audioStream.addTrack(destinationTrack);
       this.updateAudioSender(destinationTrack);
     }else{
-      this.adapterRef.logger.log('enableAudioRouting: 已替换为Destination');
+      this.logger.log('enableAudioRouting: 已替换为Destination');
     }
   }
   
   disableAudioRouting(){
     const audioTrack = this.micTrack || this.audioSource || this.screenAudioTrack;
     this.audioRoutingEnabled = false;
-    this.adapterRef.logger.warn('disableAudioRouting: ', audioTrack)
+    this.logger.log('disableAudioRouting: ', audioTrack)
     const formerTrack = this.audioStream.getAudioTracks()[0];
     if (formerTrack){
       this.audioStream.removeTrack(formerTrack);
@@ -1853,9 +2156,10 @@ class MediaHelper extends EventEmitter {
       this.adapterRef._mediasoup._micProducer){
       //@ts-ignore
       if (this.adapterRef._mediasoup._micProducer && this.adapterRef._mediasoup._micProducer._rtpSender){
-        this.adapterRef.logger.info('updateAudioSender: 替换当前_micProducer的track', audioTrack.label);
+        this.logger.info('updateAudioSender: 替换当前_micProducer的track', audioTrack.label);
         //@ts-ignore
         this.adapterRef._mediasoup._micProducer._rtpSender.replaceTrack(audioTrack);
+        watchTrack(audioTrack);
       }
       else if (this.adapterRef._mediasoup._sendTransport && this.adapterRef._mediasoup._sendTransport.handler && this.adapterRef._mediasoup._sendTransport.handler._pc){
         //@ts-ignore
@@ -1863,8 +2167,9 @@ class MediaHelper extends EventEmitter {
         for (var i in senders){
           const sender = senders[i];
           if (sender.track && sender.track.kind === "audio"){
-            this.adapterRef.logger.info('updateAudioSender: 替换audioSender', sender.track.label);
+            this.logger.info('updateAudioSender: 替换audioSender', sender.track.label);
             sender.replaceTrack(audioTrack);
+            watchTrack(audioTrack);
           }
         }
       }
@@ -1872,7 +2177,7 @@ class MediaHelper extends EventEmitter {
   }
 
   destroy() {
-    this.adapterRef.logger.log('清除 meida')
+    this.logger.log('清除 meida')
     this._reset()
   }
 }

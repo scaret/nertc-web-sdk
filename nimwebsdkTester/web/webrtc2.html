@@ -197,7 +197,11 @@
             自定义音频
             <input type="checkbox" id="privateAudio">
             自定义视频
-            <input type="checkbox" id="privateVideo">
+            <input type="checkbox" id="privateVideo"><br/>
+            主流小流
+            <input type="checkbox" id="videoLow" checked>
+            辅流小流
+            <input type="checkbox" id="screenLow">
           </div>
           <div class="line">
             自动发布
@@ -330,8 +334,9 @@
           <div class="line">
             订阅大小流
             <select id='subResolution'>
-              <option value='0'>小流</option>
-              <option value='1'>大流</option>
+              <option value=''>默认</option>
+              <option value='0'>大流</option>
+              <option value='1'>小流</option>
             </select>
           </div>
           <div class="line">
@@ -346,6 +351,13 @@
             <button type="button" id="unsubVideo">停止订阅视频</button>
             <button type="button" id="unsubScreen">停止订阅辅流</button>
             <button type="button" id="subUpdateResolution">订阅大小流</button>
+            <br/>
+            <select id="switchMediaType" style="width:30%">
+              <option value="video" selected>video</option>
+              <option value="screen">screen</option>
+            </select>
+            <button type="button" id="switchHigh">切换大流</button>
+            <button type="button" id="switchLow">切换小流</button>
           </div>
         </div>
 
@@ -550,6 +562,16 @@
             <button type="button" id="disconnectWS">断开WebSocket</button>
             <button type="button" id="toggleVConsole">打开vconsole</button>
           </div>
+          <div class="line">
+            <select style="width: 33%" id="loglevel">
+              <option value="DEBUG" selected>DEBUG</option>
+              <option value="INFO">INFO</option>
+              <option value="WARN">WARN</option>
+              <option value="ERROR">ERROR</option>
+              <option value="NONE">NONE</option>
+            </select>
+            <button id="setLogLevel">设置日志级别</button>
+          </div>
         </div>
 
         <p class="block-header">远端音量</p>
@@ -673,6 +695,12 @@
               <button id="preloadEffect1">preload</button>
               <button id="unloadEffect1">unload</button>
             </div>
+            <div class="line">
+              <div id="audioEffects1">
+                <div class="value"></div>
+                <progress value="0" max="100"></progress>
+              </div>
+            </div>
           </div>
 
           <div class="part">
@@ -704,6 +732,12 @@
               <button id="preloadEffect2">preload</button>
               <button id="unloadEffect2">unload</button>
             </div>
+            <div class="line">
+              <div id="audioEffects2">
+                <div class="value"></div>
+                <progress value="0" max="100"></progress>
+              </div>
+            </div>
           </div>
 
           <div class="part">
@@ -732,6 +766,12 @@
               <button id="resumeEffect3">resume</button>
               <button id="preloadEffect3">preload</button>
               <button id="unloadEffect3">unload</button>
+            </div>
+            <div class="line">
+              <div id="audioEffects3">
+                <div class="value"></div>
+                <progress value="0" max="100"></progress>
+              </div>
             </div>
           </div>
 
@@ -834,6 +874,15 @@
           </div>
         </div>
 
+        <p class="block-header" id="trackStatus">track状态</p>
+        <div class="part" id="part-track" style="max-width: 350px; overflow: hidden; white-space: nowrap;">
+          <div class="line">
+            音频
+            <ul id="audioTrackStatus"></ul>
+            视频
+            <ul id="videoTrackStatus"></ul>
+          </div>
+        </div>
 
 
         <p class="block-header">检查视频卡顿</p>

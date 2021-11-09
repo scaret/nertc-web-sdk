@@ -28,11 +28,11 @@ import {MediaSection} from "./sdp/MediaSection";
 import RtcError from '../../../../util/error/rtcError';
 import ErrorCode  from '../../../../util/error/errorCode';
 
-const prefix = 'Chrome74';
+const prefix = 'Firefox60';
 
 const SCTP_NUM_STREAMS = { OS: 1024, MIS: 1024 };
 
-export class Chrome74 extends HandlerInterface
+export class Firefox60 extends HandlerInterface
 {
   // Handler direction.
   private _direction?: 'send' | 'recv';
@@ -60,7 +60,7 @@ export class Chrome74 extends HandlerInterface
    */
   static createFactory(): HandlerFactory
   {
-    return (): Chrome74 => new Chrome74();
+    return (): Firefox60 => new Firefox60();
   }
 
   constructor()
@@ -70,7 +70,7 @@ export class Chrome74 extends HandlerInterface
 
   get name(): string
   {
-    return 'Chrome74';
+    return 'Firefox60';
   }
 
   close(): void
@@ -311,6 +311,7 @@ export class Chrome74 extends HandlerInterface
   ): Promise<HandlerSendResult>
   {
     this._assertSendDirection();
+
     Logger.debug(prefix, 'send() [kind:%s, track.id:%s]', track.kind, track.id, encodings, appData);
 
     if (encodings && encodings.length > 1)
@@ -331,17 +332,17 @@ export class Chrome74 extends HandlerInterface
     let transceiverLow: any = {};
     const mediaStream = new MediaStream();
     if (appData.mediaType === 'audio' && this._pc.audioSender) {
-      Logger.debug(prefix, 'audioSender更新track: ', this._pc.audioSender.track, "=>", track)
+      Logger.debug(prefix, 'audioSender更新track: ', this._pc.audioSender)
       this._pc.audioSender.replaceTrack(track)
     } else if (appData.mediaType === 'video' && this._pc.videoSender) {
-      Logger.debug(prefix, 'videoSender更新track: ', this._pc.videoSender.track, "=>", track)
+      Logger.debug(prefix, 'videoSender更新track: ', this._pc.videoSender)
       this._pc.videoSender.replaceTrack(track)
       if (this._pc.videoSenderLow && trackLow){
         Logger.debug(prefix, 'videoSenderLow更新track: ', this._pc.videoSenderLow)
         this._pc.videoSenderLow.replaceTrack(trackLow)
       }
     } else if (appData.mediaType === 'screenShare' && this._pc.screenSender) {
-      Logger.debug(prefix, 'screenSender更新track: ', this._pc.screenSender.track, "=>", track)
+      Logger.debug(prefix, 'screenSender更新track: ', this._pc.screenSender)
       this._pc.screenSender.replaceTrack(track)
       if (this._pc.screenSenderLow && trackLow){
         Logger.debug(prefix, 'screenSenderLow更新track: ', this._pc.screenSenderLow)
@@ -410,7 +411,7 @@ export class Chrome74 extends HandlerInterface
         message: 'offerMediaObject with track id not found: ' + track.id
       })
     }
-    
+
     if (!this._transportReady)
       dtlsParameters = await this._setupTransport({ localDtlsRole: 'server', localSdpObject });
     
@@ -538,7 +539,6 @@ export class Chrome74 extends HandlerInterface
     if (sendingRtpParameters.encodings && sendingRtpParameters.encodings.length > 1){
       offerMediaObjectLow =  localSdpObject.media[mediaSectionIdx.idx + 1];
     }
-
     this._remoteSdp.send({
         offerMediaObjectArr : [offerMediaObject, offerMediaObjectLow],
         reuseMid            : mediaSectionIdx.reuseMid,
@@ -585,6 +585,7 @@ export class Chrome74 extends HandlerInterface
       answer.sdp = answer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=maxptime:60`)
     }
     Logger.debug(prefix, 'fillRemoteRecvSdp() | calling pc.setRemoteDescription() [answer]: ', answer.sdp);
+    
     await this._pc.setRemoteDescription(answer);
   }
 
@@ -616,7 +617,6 @@ export class Chrome74 extends HandlerInterface
     } else if (kind === 'screenShare') {
       this._pc.screenSender.replaceTrack(null);
       if (this._pc.screenSenderLow){
-        this._pc.screenSender.track.stop();
         this._pc.screenSender.replaceTrack(null);
       }
     } else {

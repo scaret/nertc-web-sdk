@@ -3,21 +3,24 @@ import {createWatermarkControl, WatermarkControl} from "../module/watermark";
 import {
   PlayOptions,
   AdapterRef,
-  SDKRef, SnapshotOptions, MediaTypeShort, RenderMode
+  SDKRef, SnapshotOptions, MediaTypeShort, RenderMode, ILogger
 } from "../types"
 import RtcError from '../util/error/rtcError';
 import ErrorCode  from '../util/error/errorCode';
+import {getParameters} from "./parameters";
+import {getDomInfo} from "../util/util";
+import {LocalStream} from "../api/localStream";
+import {RemoteStream} from "../api/remoteStream";
 
 class Play extends EventEmitter {
-  private adapterRef:AdapterRef;
-  private sdkRef:SDKRef | null;
-  private uid:number|string;
   private volume:number | null;
   private index:number;
   private audioSinkId:string;
   private videoRenderMode:RenderMode;
   //实际就是Stream.renderMode.screen
   private screenRenderMode:RenderMode;
+  private videoSize: {width: number, height: number} = {width: 0, height: 0};
+  private screenSize: {width: number, height: number} = {width: 0, height: 0};
   public videoDom: HTMLVideoElement | null;
   public screenDom: HTMLVideoElement | null;
   public audioDom: HTMLAudioElement | null;
@@ -30,13 +33,24 @@ class Play extends EventEmitter {
   public _watermarkControl: WatermarkControl;
   public _watermarkControlScreen: WatermarkControl;
   private autoPlayType:Number;
+  private stream: LocalStream | RemoteStream;
+  private logger: ILogger
   constructor (options:PlayOptions) {
     super()
     this._reset()
     // 设置对象引用
-    this.adapterRef = options.adapterRef
-    this.sdkRef = options.sdkRef
-    this.uid = options.uid
+    this.stream = options.stream
+    this.logger = options.stream.logger.getChild(()=>{
+      let tag = "player";
+      if (this.audioDom?.paused){
+        tag += " audio_paused"
+      }
+      
+      if (this.stream._play !== this){
+        tag += " DETACHED"
+      }
+      return tag
+    });
     this.videoDom = null;
     this.screenDom = null;
     this.audioDom = null;
@@ -57,15 +71,14 @@ class Play extends EventEmitter {
       cut: false,
     };
     this.audioSinkId = "";
-    this._watermarkControl = createWatermarkControl(this.adapterRef.logger);
-    this._watermarkControlScreen = createWatermarkControl(this.adapterRef.logger);
+    this._watermarkControl = createWatermarkControl(this.logger);
+    this._watermarkControlScreen = createWatermarkControl(this.logger);
     this.autoPlayType = 0;
   }
 
   _reset() {
     // TODO recover
     // this.adapterRef = null // adapter层的成员属性与方法引用
-    this.sdkRef = null // SDK 实例指针
     this.videoDom = null
     this.screenDom = null
     this.videoContainerDom = null
@@ -94,11 +107,11 @@ class Play extends EventEmitter {
     if (this.videoDom){
       if (this.videoContainerDom){
         if (this.videoContainerDom == this.videoDom.parentNode){
-          this.adapterRef.logger.log('Play: _initVideoNode: 节点已挂载，请勿重复挂载')
+          this.logger.log('Play: _initVideoNode: 节点已挂载，请勿重复挂载')
           return
         }else{
           this.videoContainerDom.appendChild(this.videoDom)
-          this.adapterRef.logger.log('Play: _initVideoNode, videoContainerDom: ', this.videoContainerDom.outerHTML)
+          this.logger.log('Play: _initVideoNode, videoContainerDom: ', this.videoContainerDom.outerHTML)
         }
       }
     }
@@ -110,11 +123,11 @@ class Play extends EventEmitter {
     if (this.screenDom){
       if (this.screenContainerDom){
         if (this.screenContainerDom == this.screenDom.parentNode){
-          this.adapterRef.logger.log('Play: _initscreenNode: 节点已挂载，请勿重复挂载')
+          this.logger.log('Play: _initscreenNode: 节点已挂载，请勿重复挂载')
           return
         }else{
           this.screenContainerDom.appendChild(this.screenDom)
-          this.adapterRef.logger.log('Play: _initscreenNode, screenContainerDom: ', this.screenContainerDom.outerHTML)
+          this.logger.log('Play: _initscreenNode, screenContainerDom: ', this.screenContainerDom.outerHTML)
         }
       }
     }
@@ -161,15 +174,66 @@ class Play extends EventEmitter {
       this.videoDom.setAttribute('playsinline', 'playsinline')
       this.videoDom.setAttribute('webkit-playsinline', 'webkit-playsinline')
       this.videoDom.preload = 'auto'
-      this.videoDom.dataset['uid'] = "" + this.uid
+      this.videoDom.dataset['uid'] = "" + this.stream.getId()
       this.videoDom.autoplay = true
       this.videoDom.muted = true
+      this.videoSize.width = 0
+      this.videoSize.height = 0
       this.videoDom.addEventListener("resize", (evt)=> {
-        if (this.videoDom === evt.target && this.videoRenderMode.width && this.videoRenderMode.height){
-          this.adapterRef.logger.info("setVideoRender on resize", this.videoDom?.videoWidth, this.videoDom?.videoHeight);
-          this.setVideoRender();
+        // 在resize的时候重新setVideoRender，需注意：
+        // 1. 回调后可能已经stop/play过了，所以需要比较事件的target是不是videoDom
+        // 2. 即使无宽高变化也可能回调多次，所以需要记录上一次的宽高
+        if (!this.videoDom || this.videoDom !== evt.target){
+          return
+        }
+        const width = this.videoDom.videoWidth;
+        const height = this.videoDom.videoHeight
+        
+        if (width !== this.videoSize.width || height !== this.videoSize.height){
+          this.logger.log(`主流视频分辨率发生变化：${this.videoSize.width}x${this.videoSize.height} => ${width}x${height}。当前父节点：${getDomInfo(this.videoView)}`);
+          if (width > height && this.videoSize.width > this.videoSize.height || width < height && this.videoSize.width < this.videoSize.height){
+            // 未改变视频方向
+          }else{
+            this.setVideoRender();
+          }
+          this.videoSize.width = width;
+          this.videoSize.height = height;
         }
       });
+      if (getParameters()["controlOnPaused"]) {
+        this.videoDom.addEventListener("pause", this.showControlIfVideoPause.bind(this))
+        this.videoDom.addEventListener("play", this.handleVideoScreenPlay.bind(this))
+        this.videoDom.addEventListener("click", this.handleVideoScreenClick.bind(this))
+      }
+    }
+  }
+  
+  showControlIfVideoPause(){
+    if (this.videoDom && this.videoDom.paused) {
+      this.logger.log("可能遇到了自动播放问题，展示默认控件:", "video");
+      this.videoDom.setAttribute('controls', 'controls')
+    }
+    if (this.screenDom && this.screenDom.paused) {
+      this.logger.log("可能遇到了自动播放问题，展示默认控件:", "screen");
+      this.screenDom.setAttribute('controls', 'controls')
+    }
+  }
+
+  handleVideoScreenClick(){
+    if (this.audioDom && this.audioDom.paused){
+      this.logger.log("侦测到视频点击，尝试恢复音频播放");
+      this.audioDom.play()
+    }
+  }
+  
+  handleVideoScreenPlay(){
+    if (this.videoDom && !this.videoDom.paused && this.videoDom.hasAttribute("controls")){
+      this.logger.log("侦测到视频播放，隐藏默认控件:");
+      this.videoDom.removeAttribute("controls")
+    }
+    if (this.screenDom && !this.screenDom.paused && this.screenDom.hasAttribute("controls")){
+      this.logger.log("侦测到辅流播放，隐藏默认控件:");
+      this.screenDom.removeAttribute("controls")
     }
   }
   
@@ -187,15 +251,37 @@ class Play extends EventEmitter {
       this.screenDom.setAttribute('playsinline', 'playsinline')
       this.screenDom.setAttribute('webkit-playsinline', 'webkit-playsinline')
       this.screenDom.preload = 'auto'
-      this.screenDom.dataset['uid'] = "" + this.uid
+      this.screenDom.dataset['uid'] = "" + this.stream.getId()
       this.screenDom.autoplay = true
       this.screenDom.muted = true
+      this.screenSize.width = 0
+      this.screenSize.height = 0
       this.screenDom.addEventListener("resize", (evt)=> {
-        if (this.screenDom === evt.target && this.screenRenderMode.width && this.screenRenderMode.height){
-          this.adapterRef.logger.info("setScreenRender on resize", this.screenDom?.videoWidth, this.screenDom?.videoHeight);
-          this.setScreenRender();
+        // 在resize的时候重新setScreenRender，需注意：
+        // 1. 回调后可能已经stop/play过了，所以需要比较事件的target是不是screenDom
+        // 2. 即使无宽高变化也可能回调多次，所以需要记录上一次的宽高
+        if (!this.screenDom || this.screenDom !== evt.target){
+          return
+        }
+        const width = this.screenDom.videoWidth;
+        const height = this.screenDom.videoHeight
+
+        if (width !== this.screenSize.width || height !== this.screenSize.height){
+          this.logger.log(`辅流视频分辨率发生变化：${this.screenSize.width}x${this.screenSize.height} => ${width}x${height}`);
+          if (width > height && this.screenSize.width > this.screenSize.height || width < height && this.screenSize.width < this.screenSize.height){
+            // 未改变视频方向
+          }else{
+            this.setScreenRender();
+          }
+          this.screenSize.width = width;
+          this.screenSize.height = height;
         }
       });
+      if (getParameters()["controlOnPaused"]) {
+        this.screenDom.addEventListener("pause", this.showControlIfVideoPause.bind(this))
+        this.screenDom.addEventListener("play", this.handleVideoScreenPlay.bind(this))
+        this.screenDom.addEventListener("click", this.handleVideoScreenClick.bind(this))
+      }
     }
   }
 
@@ -204,7 +290,7 @@ class Play extends EventEmitter {
     const length = this.videoView.children.length
     for (var i = length - 1; i >= 0; i--) {
       if (this.videoView.children[i].outerHTML.indexOf('data-uid=')){
-        this.adapterRef.logger.log('删除多余的节点: ', this.videoView.children[i].outerHTML)
+        this.logger.log('删除多余的节点: ', this.videoView.children[i].outerHTML)
         this.videoView.removeChild(this.videoView.children[i])
       }
     }
@@ -213,16 +299,17 @@ class Play extends EventEmitter {
   _mountVideoToDom () {
     if (this.videoContainerDom){
       if (this.videoView == this.videoContainerDom.parentNode) {
-        this.adapterRef.logger.log('Play: _mountVideoToDom: 节点已挂载，请勿重复挂载')
+        this.logger.log('Play: _mountVideoToDom: 节点已挂载，请勿重复挂载')
         return
       }
       /*if (this.videoView && this.videoView.children) {
-        this.adapterRef.logger.log('出现多余的dom节点')
+        this.logger.log('出现多余的dom节点')
         this._removeUselessDom()
       }*/
-      this.adapterRef.logger.log('Play: _mountVideoToDom: videoContainerDom: ', this.videoContainerDom.outerHTML)
+      this.logger.log('Play: _mountVideoToDom: videoContainerDom: ', this.videoContainerDom.outerHTML)
       if (this.videoView){
         this.videoView.appendChild(this.videoContainerDom)
+        this.logger.log(`视频主流dom节点挂载成功。父节点：${getDomInfo(this.videoView)}`)
         this._watermarkControl.start(this.videoContainerDom);
       }
     }
@@ -231,64 +318,59 @@ class Play extends EventEmitter {
   _mountScreenToDom () {
     if (this.screenContainerDom){
       if (this.screenView == this.screenContainerDom.parentNode) {
-        this.adapterRef.logger.log('Play: _mountScreenToDom: 节点已挂载，请勿重复挂载')
+        this.logger.log('Play: _mountScreenToDom: 节点已挂载，请勿重复挂载')
         return
       }
-      this.adapterRef.logger.log('Play: _mountScreenToDom: screenContainerDom: ', this.screenContainerDom.outerHTML)
+      this.logger.log('Play: _mountScreenToDom: screenContainerDom: ', this.screenContainerDom.outerHTML)
       if (this.screenView){
         this.screenView.appendChild(this.screenContainerDom)
+        this.logger.log(`视频辅流dom节点挂载成功。父节点：${getDomInfo(this.screenView)}`)
         this._watermarkControlScreen.start(this.screenContainerDom);
       }
     }
   }
 
-  async resume(stream:MediaStream,option:any){
-    if(!stream){
-      return;
+  async resume(){
+    const mediaIsPaused = {
+      audio: this.audioDom && this.audioDom.paused,
+      video: this.videoDom && this.videoDom.paused,
+      screen: this.screenDom && this.screenDom.paused,
+    };
+    const promises = [];
+    if (this.audioDom && this.audioDom.paused){
+      promises.push(this.audioDom.play())
     }
-    if(this.autoPlayType === 1){
-      if(this.audioDom) {
-        try {
-          this.audioDom.muted = false
-          await this.audioDom.play()
-          this.autoPlayType = 0
-        } catch(error) {
-          this.adapterRef.logger.warn('播放 %o 的音频出现问题:', this.uid, error.name, error.message, error)
-          this.autoPlayType = 1
-          if(error.name === 'NotAllowedError') {
-            throw new RtcError({
-              code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
-              message: error.message
-            })
-          }
-        }
-      }
-      
+    if (this.videoDom && this.videoDom.paused){
+      promises.push(this.videoDom.play())
     }
-    if(this.autoPlayType === 2){
-      if(this.videoDom) {
-        try {
-          this.videoDom.muted = false
-          await this.videoDom.play()
-          this.autoPlayType = 0
-        } catch(error) {
-          this.adapterRef && this.adapterRef.logger.warn('播放 %s 的视频出现问题:', this.uid, error.name, error.message, error)
-          this.autoPlayType = 2
-          if(error.name === 'NotAllowedError') {
-            throw new RtcError({
-              code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
-              message: error.message
-            })
-          }
-        }
+    if (this.screenDom && this.screenDom.paused){
+      promises.push(this.screenDom.play())
+    }
+    try{
+      // 为什么这么写：因为同时触发play
+      await Promise.all(promises);
+    }catch(error){
+      this.logger.error(`恢复播放 出现问题:`, error.name, error.message);
+      if(error.name === 'notAllowedError' || error.name === 'NotAllowedError') { // 兼容临时版本客户
+        throw new RtcError({
+          code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
+          message: error.message
+        })
       }
+    }
+    if(mediaIsPaused.audio){
+      this.logger.log(`恢复播放音频${this.audioDom && !this.audioDom.paused ? "成功": "失败"}`)
+    }
+    if(mediaIsPaused.video){
+      this.logger.log(`恢复播放视频${this.videoDom && !this.videoDom.paused ? "成功": "失败"}`)
+    }
+    if(mediaIsPaused.screen){
+      this.logger.log(`恢复播放辅流${this.screenDom && !this.screenDom.paused ? "成功": "失败"}`)
     }
   }
 
-
   async playAudioStream(stream:MediaStream, ismuted?:boolean) {
     if(!stream) return
-    this.adapterRef.logger.log(`播放音频, id: ${stream.id}, active state: ${stream.active}`)
     if (!this.audioDom) {
       this.audioDom = document.createElement('audio')
     }
@@ -299,28 +381,28 @@ class Play extends EventEmitter {
     }
     
     this.audioDom.srcObject = stream
-    this.adapterRef.logger.log('播放 %o 的音频, streamId: %o, stream状态: %o', this.uid, stream.id, stream.active)
-    if (this.audioSinkId) {
+    if (this.audioSinkId && stream.getAudioTracks().length) {
       try {
+        this.logger.log(`音频尝试使用输出设备`, this.audioSinkId);
         await (this.audioDom as any).setSinkId(this.audioSinkId);
-        this.adapterRef.logger.log('音频使用输出设备：%s', this.audioSinkId);
+        this.logger.log(`音频使用输出设备成功`, this.audioSinkId);
       } catch (e) {
-        this.adapterRef.logger.error('音频输出设备切换失败', e.name, e.message, e);
+        this.logger.error('音频输出设备切换失败', e.name, e.message, e);
       }
     }
     if(!stream.active) return
     const isPlaying = await this.isPlayAudioStream()
     if (isPlaying) {
-      this.adapterRef.logger.log('%o 的音频播放正常', this.uid)
+      this.logger.log(`音频播放正常`)
     }
     try {
       this.audioDom.muted = false;
       await this.audioDom.play()
-      this.adapterRef.logger.log('播放 %o 的音频完成，当前播放状态: %o', this.uid, this.audioDom && this.audioDom.played && this.audioDom.played.length)
+      this.logger.log(`播放音频完成，当前播放状态:`, this.audioDom && this.audioDom.played && this.audioDom.played.length)
     } catch (error) {
-      this.adapterRef.logger.warn('播放 %o 的音频出现问题: ', this.uid, error.name, error.message, error)
+      this.logger.warn('播放音频出现问题: ', error.name, error.message, error)
 
-      if(error.name === 'NotAllowedError') {
+      if(error.name === 'notAllowedError' || error.name === 'NotAllowedError') { // 兼容临时版本客户
         this.autoPlayType = 1;
         throw new RtcError({
           code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
@@ -371,12 +453,12 @@ class Play extends EventEmitter {
     if (!firstTimeRanges) {
       return false;
     }
-    this.adapterRef.logger.log('firstTimeRanges: ', firstTimeRanges)
+    this.logger.log('firstTimeRanges: ', firstTimeRanges)
     const secondTimeRanges  = await getTimeRanges(500)
     if (!secondTimeRanges) {
       return false;
     }
-    this.adapterRef.logger.log('secondTimeRanges: ', secondTimeRanges)
+    this.logger.log('secondTimeRanges: ', secondTimeRanges)
     return secondTimeRanges > firstTimeRanges
   }
 
@@ -444,38 +526,46 @@ class Play extends EventEmitter {
 
   async playVideoStream(stream:MediaStream, view:HTMLElement) {
     if(!stream || !view) return
-    this.adapterRef.logger.log(`播放视频, id: ${stream.id}, active state: ${stream.active}`)
     if (this.videoDom && this.videoDom.srcObject === stream) {
-      this.adapterRef.logger.log(`请勿重复 ${this.uid} 播放` )
+      this.logger.log(`请勿重复 播放` )
       return
     }
     this.videoView = view
     this._initNodeVideo()
     this._mountVideoToDom()
     if (!this.videoDom){
-      this.adapterRef.logger.error(`没有视频源`);
+      this.logger.error(`没有视频源`);
       return;
     }
     if (this.videoDom.srcObject === stream) {
-      this.adapterRef.logger.log(`请勿重复 ${this.uid} 播放` )
+      this.logger.log(`请勿重复 播放` )
       return
     }
     try {
+      const videoTrack = stream.getVideoTracks()[0];
+      if (videoTrack){
+        this.logger.log(`开始加载主流播放视频源：视频参数 "${videoTrack.label}",enabled ${videoTrack.enabled} , ${JSON.stringify(videoTrack.getSettings())}`)
+      }else{
+        this.logger.error(`加载主流播放视频源失败：没有视频源`)
+      }
       this.videoDom.srcObject = stream
-      this.adapterRef.logger.log('播放 %o 的视频频, streamId: %o, stream状态: %o', this.uid, stream.id, stream.active)
-      
-      this.videoDom.play().catch((e)=>{
+      this.videoDom.play().then(()=>{
+        this.logger.log(`成功加载主流播放视频源：当前视频实际分辨率${this.videoDom?.videoWidth}x${this.videoDom?.videoHeight}，显示宽高${this.videoDom?.offsetWidth}x${this.videoDom?.offsetHeight}`)
+        if (this.videoDom?.paused && getParameters()["controlOnPaused"]){
+          //给微信的Workaround。微信会play()执行成功但不播放
+          this.showControlIfVideoPause();
+        }
+      }).catch((e)=>{
         if (e.name === "AbortError"){
           // The play() request was interrupted by a new load request. https://goo.gl/LdLk22
         }else{
           console.error(e);
         }
       })
-      this.adapterRef.logger.log('播放 %s 的视频完成，当前播放状态: %o', this.uid, this.videoDom && this.videoDom.played && this.videoDom.played.length)
     } catch (error) {
-      this.adapterRef && this.adapterRef.logger.warn('播放 %s 的视频出现问题:', this.uid, error.name, error.message, error)
+      this.logger.warn('播放视频出现问题:', error.name, error.message, error)
      
-      if(error.name === 'NotAllowedError') {
+      if(error.name === 'notAllowedError' || error.name === 'NotAllowedError') { // 兼容临时版本客户
         this.autoPlayType = 2;
         throw new RtcError({
           code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
@@ -488,36 +578,46 @@ class Play extends EventEmitter {
 
   async playScreenStream(stream:MediaStream, view:HTMLElement) {
     if(!stream || !view) return
-    this.adapterRef.logger.log(`播放辅流视频, id: ${stream.id}, active state: ${stream.active}`)
+    this.logger.log(`播放辅流视频, id: ${stream.id}, active state: ${stream.active}`)
     this.screenView = view
     this._initNodeScreen()
     this._mountScreenToDom()
     if (!this.screenDom){
-      this.adapterRef.logger.error(`辅流没有视频源`);
+      this.logger.error(`辅流没有视频源`);
       return;
     }
     if (this.screenDom.srcObject === stream) {
-      this.adapterRef.logger.log(`请勿重复 ${this.uid} 播放` )
+      this.logger.log(`请勿重复 播放` )
       return
     }
     try {
+      const videoTrack = stream.getVideoTracks()[0];
+      if (videoTrack){
+        this.logger.log(`开始加载辅流播放视频源：视频参数 "${videoTrack.label}",enabled ${videoTrack.enabled} , ${JSON.stringify(videoTrack.getSettings())}`)
+      }else{
+        this.logger.error(`加载主流播放视频源失败：没有视频源`)
+      }
       this.screenDom.srcObject = stream
-      this.adapterRef.logger.log('播放 %o 的辅流, streamId: %o, stream状态: %o', this.uid, stream.id, stream.active)
-      await this.screenDom.play()
-      this.adapterRef.logger.log('播放 %s 的辅流，当前播放状态: %o', this.uid, this.screenDom && this.screenDom.played && this.screenDom.played.length)
+      this.screenDom.play().then(()=>{
+        this.logger.log(`成功加载辅流播放视频源：当前视频实际分辨率${this.screenDom?.videoWidth}x${this.screenDom?.videoHeight}，显示宽高${this.screenDom?.offsetWidth}x${this.screenDom?.offsetHeight}`)
+        if (this.screenDom?.paused && getParameters()["controlOnPaused"]){
+          //给微信的Workaround。微信会play()执行成功但不播放
+          this.showControlIfVideoPause();
+        }
+      })
     } catch (e) {
-      this.adapterRef && this.adapterRef.logger.warn('播放 %s 的辅流出现问题: ', this.uid, e.name, e.message, e)
+      this.logger.warn('播放辅流出现问题: ', e.name, e.message, e)
     }
   }
 
   async stopPlayVideoStream() {
-    this.adapterRef.logger.log('stopPlayVideoStream: 停止播发视频')
+    this.logger.log(`stopPlayVideoStream 停止播发视频`)
     if (this.videoContainerDom && this.videoDom) {
       if(this.videoContainerDom == this.videoDom.parentNode) {
-        this.adapterRef.logger.log('清除 videoDom')
+        this.logger.log(`清除 videoDom`)
         this.videoContainerDom.removeChild(this.videoDom)
       } else if(this.videoContainerDom.lastChild){
-        this.adapterRef.logger.log('videoContainerDom 删除子节点')
+        this.logger.log(`videoContainerDom 删除子节点`)
         this.videoContainerDom.removeChild(this.videoContainerDom.lastChild)
       }
       try {
@@ -525,16 +625,16 @@ class Play extends EventEmitter {
         this.videoDom.srcObject = null
         this.videoDom = null
       } catch(e) {
-        this.adapterRef.logger.log('stopPlayVideoStream e: ', e)
+        this.logger.log('stopPlayVideoStream e: ', e)
       }
       
     }
     if (this.videoView && this.videoContainerDom) {
       if (this.videoView == this.videoContainerDom.parentNode) {
-        this.adapterRef.logger.log('清除 videoContainerDom')
+        this.logger.log('清除 videoContainerDom')
         this.videoView.removeChild(this.videoContainerDom)
       } else if(this.videoView.lastChild){
-        this.adapterRef.logger.log('videoView 删除子节点')
+        this.logger.log('videoView 删除子节点')
         this.videoView.removeChild(this.videoView.lastChild)
         this.videoView.innerHTML = ''
       }
@@ -544,7 +644,7 @@ class Play extends EventEmitter {
   }
   
   async stopPlayScreenStream() {
-    this.adapterRef.logger.log('stopPlayVideoStream: 停止播发屏幕共享')
+    this.logger.log(`stopPlayScreenStream: 停止播发屏幕共享`)
     if (this.screenContainerDom && this.screenDom) {
       this.screenContainerDom.removeChild(this.screenDom)
       try {
@@ -552,7 +652,7 @@ class Play extends EventEmitter {
         this.screenDom.srcObject = null
         this.screenDom = null
       } catch(e) {
-        this.adapterRef.logger.log('stopPlayScreenStream e: ', e)
+        this.logger.log(`stopPlayScreenStream: 停止播发屏幕共享`, e.name, e.message);
       }
     }
     if (this.screenView && this.screenContainerDom) {
@@ -568,18 +668,18 @@ class Play extends EventEmitter {
   setVideoRender(options?: RenderMode) {
     if(!this.videoDom) return
     if (options){
-      this.adapterRef.logger.log('setVideoRender: uid %s, options: %s', this.uid, JSON.stringify(options))
+      this.logger.log(`setVideoRender options: ${JSON.stringify(options)}`)
       this.videoRenderMode = Object.assign({}, options);
     }else{
       options = this.videoRenderMode
-      this.adapterRef.logger.log('setVideoRender: uid %s, existing videoRenderMode: %s', this.uid, JSON.stringify(options))
+      this.logger.log(`setVideoRender: existing videoRenderMode: ${JSON.stringify(options)}`)
     }
     // 设置外部容器
     if (this.videoContainerDom) {
       this.videoContainerDom.style.width = `${options.width}px`
       this.videoContainerDom.style.height = `${options.height}px`
     } else {
-      this.adapterRef.logger.error('未找到videoContainerDom');
+      this.logger.error('未找到videoContainerDom');
     }
     // 是否裁剪
     if (!options.cut) {
@@ -604,11 +704,11 @@ class Play extends EventEmitter {
   setScreenRender(options?: RenderMode) {
     if(!this.screenDom) return
     if (options){
-      this.adapterRef.logger.log('setScreenRender: uid %s, options: %s', this.uid, JSON.stringify(options, null, ' '))
+      this.logger.log('setScreenRender: options: ', JSON.stringify(options, null, ' '))
       this.screenRenderMode = Object.assign({}, options);
     }else{
       options = this.screenRenderMode
-      this.adapterRef.logger.log('setScreenRender: uid %s, existing screenRenderMode: %s', this.uid, JSON.stringify(options, null, ' '))
+      this.logger.log(`setScreenRender, existing screenRenderMode: ${JSON.stringify(options)}`);
     }
     this.screenRenderMode = options
     // 设置外部容器
@@ -616,7 +716,7 @@ class Play extends EventEmitter {
       this.screenContainerDom.style.width = `${options.width}px`
       this.screenContainerDom.style.height = `${options.height}px`
     }else{
-      this.adapterRef.logger.error('未找到screenContainerDom');
+      this.logger.error('未找到screenContainerDom');
     }
     // 是否裁剪
     if (!options.cut) {
@@ -640,9 +740,9 @@ class Play extends EventEmitter {
   
   async setAudioOutput (audioSinkId:string) {
     this.audioSinkId = audioSinkId;
-    if (this.audioDom) {
+    if (this.audioDom?.srcObject && (this.audioDom?.srcObject as MediaStream).getAudioTracks().length) {
       await (this.audioDom as any).setSinkId(audioSinkId);
-      this.adapterRef.logger.log('设置通话音频输出设备成功')
+      this.logger.log('设置通话音频输出设备成功')
     }
   }
 
@@ -663,7 +763,7 @@ class Play extends EventEmitter {
     }
     // video
     if (snapshotVideo){
-      const name = options.name || ((streamId || this.adapterRef.channelInfo.uid) + '-' + this.index++);
+      const name = options.name || ((streamId || this.stream.getId()) + '-' + this.index++);
       ctx.fillStyle = '#ffffff'
       if (!this.videoDom){
         throw new RtcError({
@@ -677,9 +777,9 @@ class Play extends EventEmitter {
       ctx.drawImage(this.videoDom, 0, 0, this.videoDom.videoWidth, this.videoDom.videoHeight, 0, 0, this.videoDom.videoWidth, this.videoDom.videoHeight)
       const fileUrl = await new Promise((resolve, reject)=>{
         canvas.toBlob(blob => {
-          this.adapterRef.logger.log('takeSnapshot, 获取到截图的blob: ', blob)
+          this.logger.log('takeSnapshot, 获取到截图的blob: ', blob)
           let url = URL.createObjectURL(blob)
-          this.adapterRef.logger.log('截图的url: ', url)
+          this.logger.log('截图的url: ', url)
           let a = document.createElement('a')
           document.body.appendChild(a)
           a.style.display = 'none'
@@ -696,7 +796,7 @@ class Play extends EventEmitter {
     }
     // screen
     if (snapshotScreen){
-      const name = options.name || ((streamId || this.adapterRef.channelInfo.uid) + '-' + this.index++);
+      const name = options.name || ((streamId || this.stream.getId()) + '-' + this.index++);
       ctx.fillStyle = '#ffffff'
       if (!this.screenDom){
         throw new RtcError({
@@ -710,9 +810,9 @@ class Play extends EventEmitter {
       ctx.drawImage(this.screenDom, 0, 0, this.screenDom.videoWidth, this.screenDom.videoHeight, 0, 0, this.screenDom.videoWidth, this.screenDom.videoHeight)
       const fileUrl = await new Promise((resolve, reject)=>{
         canvas.toBlob(blob => {
-          this.adapterRef.logger.log('takeSnapshot, 获取到截图的blob: ', blob)
+          this.logger.log('takeSnapshot, 获取到截图的blob: ', blob)
           let url = URL.createObjectURL(blob)
-          this.adapterRef.logger.log('截图的url: ', url)
+          this.logger.log('截图的url: ', url)
           let a = document.createElement('a')
           document.body.appendChild(a)
           a.style.display = 'none'

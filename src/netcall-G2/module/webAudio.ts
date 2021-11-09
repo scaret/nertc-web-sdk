@@ -11,10 +11,10 @@
  */
 import { EventEmitter } from 'eventemitter3'
 import { RtcSupport } from '../util/rtcUtil/rtcSupport'
-import { AuidoMixingState } from '../constant/state'
+import {AuidoMixingState, MIXING_STATES} from '../constant/state'
 import {
   AdapterRef, AudioMixingOptions, soundsConf,
-  Logger,
+  ILogger,
   WebAudioOptions, AudioInConfig, MediaTypeAudio,
 
 } from '../types'
@@ -64,8 +64,7 @@ class AudioIn{
 class WebAudio extends EventEmitter{
   private support:boolean;
   private gain: number;
-  private logger: Logger;
-  private adapterRef: AdapterRef;
+  private logger: ILogger;
   public audioInArr: AudioIn[];
   private isAnalyze:boolean;
   private isRemote: boolean;
@@ -74,7 +73,7 @@ class WebAudio extends EventEmitter{
   private clip: number;
   private script?: ScriptProcessorNode;
   public mixAudioConf: {
-    state: number,
+    state: MIXING_STATES,
     audioSource?: AudioBufferSourceNode|null,
     /**
      * 伴音的音量
@@ -102,13 +101,12 @@ class WebAudio extends EventEmitter{
   
   constructor(option: WebAudioOptions) {
     super()
-    const { adapterRef, isAnalyze=true, isRemote = false } = option
+    const { logger, isAnalyze=true, isRemote = false } = option
     this.support = supports.WebAudio && supports.MediaStream
 
     // set our starting value
     this.gain = 1
-    this.logger = adapterRef.logger
-    this.adapterRef = adapterRef
+    this.logger = logger
     this.audioInArr = []
     this.isAnalyze = isAnalyze
     this.isRemote = isRemote || false
@@ -314,7 +312,7 @@ class WebAudio extends EventEmitter{
           newAudioIn.gainNode.gain.value = this.gain;
           this.audioInArr.push(newAudioIn)          
         }else{
-          this.adapterRef.logger.error('updateTracks：没有audioContext');
+          this.logger.error('updateTracks：没有audioContext');
         }
       }
     }
@@ -337,7 +335,7 @@ class WebAudio extends EventEmitter{
     for (let i = 0; i < this.audioInArr.length; i++){
       const audioIn = this.audioInArr[i];
       if (!type || type === audioIn.type){
-        this.adapterRef.logger.log("WebAudio.setGain", type, val, audioIn.type, audioIn.label, audioIn.id);
+        this.logger.log("WebAudio.setGain", type, val, audioIn.type, audioIn.label, audioIn.id);
         audioIn.gainNode.gain.value = val;
       }
     }
@@ -425,7 +423,7 @@ class WebAudio extends EventEmitter{
       setPlayStartTime: 0,
       auidoMixingEnd: null
     }
-    if (this.gainFilter && this.gainFilter.gain.value === 1 && this.adapterRef.localStream && this.adapterRef.localStream.mediaHelper){
+    if (this.gainFilter && this.gainFilter.gain.value === 1){
       // Hack：应该抛出事件，让mediaHelper执行。
       //this.adapterRef.localStream.mediaHelper.disableAudioRouting();
       this.emit('audioFilePlaybackCompleted')
@@ -443,7 +441,7 @@ class WebAudio extends EventEmitter{
       )
     }
     
-    this.logger.log('开始混音: %s', JSON.stringify(options, null, ' '))
+    this.logger.log('开始混音: ', JSON.stringify(options))
     this.mixAudioConf.audioSource = this.context.createBufferSource()
     this.mixAudioConf.gainFilter = this.context.createGain()
     this.mixAudioConf.audioSource.buffer = options.buffer
@@ -471,7 +469,7 @@ class WebAudio extends EventEmitter{
     if (this.mixAudioConf.playStartTime < 0 || this.mixAudioConf.playStartTime >= this.mixAudioConf.totalTime) {
       this.mixAudioConf.playStartTime = 0
     }
-    this.logger.log('设置音量: %s', this.mixAudioConf.volume)
+    this.logger.log('设置音量:', this.mixAudioConf.volume)
     this.mixAudioConf.gainFilter.gain.value = this.mixAudioConf.volume
     if (options.loopback && options.cycle > 1) {
       this.mixAudioConf.audioSource.loop = options.loopback
@@ -541,7 +539,7 @@ class WebAudio extends EventEmitter{
         })
       )
     }
-    this.logger.log('停止混音, isFinished: ', isFinished)
+    this.logger.log('开始停止混音, isFinished: ', isFinished)
     this.mixAudioConf.audioSource.onended = null
     this.mixAudioConf.audioSource.disconnect(0)
     this.mixAudioConf.gainFilter.disconnect(0)
@@ -550,6 +548,7 @@ class WebAudio extends EventEmitter{
     if (isFinished) {
       this.resetMixConf()
     }
+    this.logger.log('混音已停止')
     return Promise.resolve()
   }
 
@@ -719,7 +718,7 @@ class WebAudio extends EventEmitter{
 
   destroy() {
     const that = this;
-    this.adapterRef.logger.log('AudioContext 清除')
+    this.logger.log('AudioContext 清除')
     this.instant = 0.0
     this.slow = 0.0
     this.clip = 0.0

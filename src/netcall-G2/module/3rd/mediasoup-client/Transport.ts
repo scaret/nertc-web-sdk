@@ -5,7 +5,7 @@ import { UnsupportedError, InvalidStateError } from './errors';
 import * as utils from './utils';
 import * as ortc from './ortc';
 import { HandlerFactory, HandlerInterface } from './handlers/HandlerInterface';
-import { Producer, ProducerOptions } from './Producer';
+import {Producer, ProducerCodecOptions, ProducerOptions} from './Producer';
 import { Consumer, ConsumerOptions } from './Consumer';
 import { SctpParameters } from './SctpParameters';
 import {RtpParameters} from "./RtpParameters";
@@ -140,7 +140,7 @@ export interface FillRemoteRecvSdpOptions{
   dtlsParameters: DtlsParameters;
   sctpParameters?: SctpParameters;
   sendingRtpParameters: RtpParameters;
-  codecOptions: any;
+  codecOptions: ProducerCodecOptions[];
   offer: RTCSessionDescription;
   codec: any;
   audioProfile: string;
@@ -418,6 +418,7 @@ export class Transport extends EnhancedEventEmitter
   async produce(
     {
       track,
+      trackLow,
       encodings,
       codecOptions,
       codec,
@@ -428,6 +429,7 @@ export class Transport extends EnhancedEventEmitter
     }: ProducerOptions
   ): Promise<Producer>
   {
+    // Logger.debug(prefix, 'produce() [track:%o]', track);
     Logger.debug(prefix, 'produce()');
 
     if (!track)
@@ -489,9 +491,10 @@ export class Transport extends EnhancedEventEmitter
             });
         }
 
-        const { localId, rtpParameters, rtpSender, dtlsParameters, offer } = await this._handler.send(
+        const { localId, localIdLow, rtpParameters, rtpSender, rtpSenderLow, dtlsParameters, offer } = await this._handler.send(
           {
             track,
+            trackLow,
             encodings : normalizedEncodings,
             codecOptions,
             appData,
@@ -508,6 +511,8 @@ export class Transport extends EnhancedEventEmitter
             {
               kind : track.kind,
               rtpParameters,
+              track,
+              trackLow,
               appData,
               localDtlsParameters: dtlsParameters,
               offer
@@ -517,8 +522,11 @@ export class Transport extends EnhancedEventEmitter
             {
               id,
               localId,
+              localIdLow,
               rtpSender,
+              rtpSenderLow,
               track,
+              trackLow,
               rtpParameters,
               stopTracks,
               disableTrackOnPause,
@@ -550,10 +558,17 @@ export class Transport extends EnhancedEventEmitter
         if (stopTracks)
         {
           try {
-            const globalTrackId = getParameters().mediaTracks.findIndex((mediaTrack)=>{
-              return track === mediaTrack;
-            })
-            Logger.warn(`Stopping track TRACK#${globalTrackId} ${track.id}, ${track.label}, ${track.readyState}`);
+            if (track.kind === "audio"){
+              const globalTrackId = getParameters().tracks.audio.findIndex((mediaTrack)=>{
+                return track === mediaTrack;
+              })
+              Logger.warn(`Stopping AUDIOTRACK#${globalTrackId} ${track.id}, ${track.label}, ${track.readyState}`);
+            }else{
+              const globalTrackId = getParameters().tracks.video.findIndex((mediaTrack)=>{
+                return track === mediaTrack;
+              })
+              Logger.warn(`Stopping VIDEOTRACK#${globalTrackId} ${track.id}, ${track.label}, ${track.readyState}`);
+            }
             track.stop();
           }
           catch (error2) {}

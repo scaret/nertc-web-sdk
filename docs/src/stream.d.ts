@@ -42,7 +42,7 @@ declare interface Stream {
       /**
        * 订阅大流或小流。
        * 
-       * 0 表示小流，1 表示大流。
+       * 0 表示大流，1 表示小流。默认为大流。
        */
       highOrLow?: number;
     }): void;
@@ -148,8 +148,8 @@ declare interface Stream {
      * 
      * @example
      * ```javascript
-     *    // 在监听到 NotAllowedError (自动播放受限)之后调用 resume 可以恢复播放
-     *    rtc.client.on('NotAllowedError', err => {
+     *    // 在监听到 notAllowedError (自动播放受限)之后调用 resume 可以恢复播放
+     *    rtc.client.on('notAllowedError', err => {
      *      const errorCode = err.getCode();
      *      if(errorCode === 41030){
      *        await remoteStream.resume();
@@ -157,7 +157,7 @@ declare interface Stream {
      *     })
      * ```
      */
-    resume(): Promise<void>;
+     resume(): Promise<void>;
 
     /**
      * 设置本地视频画布。
@@ -312,6 +312,7 @@ declare interface Stream {
      * @note
      * - 在播放订阅流之前或之后都可以调用该方法。
      * - 目前只有 Chrome 浏览器支持该方法。
+     * - [由于Chrome的限制](https://groups.google.com/g/discuss-webrtc/c/vrw44ZGE0gs/m/2YJ6yUEjBgAJ)，所有远端流会共享同一个音频输出设备。
      * 
      * @param deviceId 设备的 ID，可以通过 getDevices 方法获取。获取的 ID 为 ASCII 字符，字符串长度大于 0 小于 256 字节。
      * 
@@ -869,6 +870,54 @@ declare interface Stream {
      * @return {Promise}
      */
      resumeAllEffects(): Promise<unknown>
+
+     /**
+     * 获取指定音效文件时长。
+     * 该方法获取音效时长，单位为毫秒。请在房间内调用该方法。
+     * 
+     * @return 方法调用成功返回音效文件时长，单位为毫秒（ms）。
+     */
+      getAudioEffectsDuration (options: {
+        /**
+         * 必选。指定在线音效文件的 URL地址。
+         * 
+         * 支持的音效文件类型包括 MP3，AAC 等浏览器支持的其他音频格式。
+         */
+        filePath: string;
+        /**
+         * 可选，指定音效文件循环播放的次数。默认值为 1，即播放 1 次。
+         */
+        cycle: number;
+        /**
+         * 必选，指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+         * 
+         */
+        soundId: number;
+      }) : Promise<unknown> 
+      /**
+       * 获取音效文件当前播放进度。
+       * 
+       * 该方法获取当前音效播放进度，单位为毫秒。请在房间内调用该方法。
+       * 
+       * @returns 方法调用成功返回音效文件播放进度。
+       */
+      getAudioEffectsCurrentPosition (options: {
+        /**
+         * 必选。指定在线音效文件的 URL地址。
+         * 
+         * 支持的音效文件类型包括 MP3，AAC 等浏览器支持的其他音频格式。
+         */
+        filePath: string;
+        /**
+         * 可选，指定音效文件循环播放的次数。默认值为 1，即播放 1 次。
+         */
+        cycle: number;
+        /**
+         * 必选，指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+         * 
+         */
+        soundId: number;
+      }) : Promise<unknown> 
     /**
      * 添加视频画布水印。
      * 

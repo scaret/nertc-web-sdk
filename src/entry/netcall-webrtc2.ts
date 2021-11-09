@@ -1,16 +1,16 @@
 import { Client } from '../netcall-G2/api/client'
-import { Stream } from '../netcall-G2/api/stream'
+import { LocalStream } from '../netcall-G2/api/localStream'
 import { Device } from '../netcall-G2/module/device'
 import { clientNotYetUninitialized } from '../netcall-G2/constant/ErrorCode'
-import { ClientOptions, StreamOptions } from "../netcall-G2/types";
+import { ClientOptions, LocalStreamOptions } from "../netcall-G2/types";
 import { BUILD, SDK_VERSION as VERSION, ENV } from "../netcall-G2/Config";
-import { VIDEO_FRAME_RATE, NERTC_VIDEO_QUALITY as VIDEO_QUALITY } from "../netcall-G2/constant/videoQuality";
+import {VIDEO_FRAME_RATE, NERTC_VIDEO_QUALITY as VIDEO_QUALITY, STREAM_TYPE} from "../netcall-G2/constant/videoQuality";
 import { LIVE_STREAM_AUDIO_SAMPLE_RATE, LIVE_STREAM_AUDIO_CODEC_PROFILE } from "../netcall-G2/constant/liveStream";
 import { NETWORK_STATUS } from '../netcall-G2/constant/networkStatus';
 import { checkExists, checkValidInteger } from "../netcall-G2/util/param";
 import { getSupportedCodecs } from "../netcall-G2/util/rtcUtil/codec";
 import { detectDevice } from "../netcall-G2/module/3rd/mediasoup-client";
-import log from '../netcall-G2/util/log/logger';
+import log, {loglevels} from '../netcall-G2/util/log/logger';
 import RtcError from '../netcall-G2/util/error/rtcError';
 import ErrorCode from '../netcall-G2/util/error/errorCode';
 import {getParameters, setParameters} from "../netcall-G2/module/parameters";
@@ -41,51 +41,20 @@ let client:Client|null;
 const NERTC = {
 
   Logger: {
-    /**
-     * 日志输出等级
-     * @readonly
-     * @enum {number}
-     */
-    // LogLevel: {
-    //   /**
-    //    * 输出所有日志
-    //    */
-    //   TRACE: 0,
-    //   /**
-    //    * 输出 DEBUG、INFO、WARN、ERROR 等级日志
-    //    */
-    //   DEBUG: 1,
-    //   /**
-    //    * 输出 INFO、WARN、ERROR 等级日志
-    //    */
-    //   INFO: 2,
-    //   /**
-    //    * 输出 WARN、ERROR 等级日志
-    //    */
-    //   WARN: 3,
-    //   /**
-    //    * 输出 ERROR 等级日志
-    //    */
-    //   ERROR: 4,
-    //   /**
-    //    * 不输出任何日志
-    //    */
-    //   NONE: 5
-    // },
+    
+    DEBUG: 0,
+    
+    INFO: 1,
 
-    /**
-     * 设置日志输出等级
-     * <br>
-     * 默认输出 INFO 日志等级，该日志等级包含 SDK 关键路径信息。
-     *
-     * @param {LogLevel} level 日志输出等级 {@link NERTC.Logger.LogLevel LogLevel}
-     * @example
-     * // 输出INFO以上日志等级
-     * NERTC.Logger.setLogLevel(NERTC.Logger.LogLevel.INFO);
-     */
-    // setLogLevel(level:number) {
-    //   log.setLogLevel(level);
-    // },
+    WARNING: 2,
+    
+    ERROR: 3,
+    
+    NONE: 4,
+    
+    setLogLevel(level:loglevels) {
+      log.setLogLevel(level);
+    },
 
     /**
      * 打开日志上传
@@ -153,7 +122,7 @@ createClient (options:ClientOptions) {
  *  @param {client} [options.client] 和要Stream绑定的client实例对象，默认是最初使用用createClient创建的client实例（多实例场景使用）
  *  @returns {Stream}  Stream对象
  */
-createStream (options:StreamOptions) {
+createStream (options:LocalStreamOptions) {
   checkExists({tag: 'createStream:options', value: options});
   if (options.screenAudio){
     if (!options.screen){
@@ -169,7 +138,7 @@ createStream (options:StreamOptions) {
     client.adapterRef.logger.warn('createStream: 未传入client参数。使用默认Client。')
   }
   if (client || options.client) {
-    const localStream = new Stream(Object.assign(options, {
+    const localStream = new LocalStream(Object.assign(options, {
       isRemote: false,
       client: options.client || client
     }))
@@ -179,7 +148,8 @@ createStream (options:StreamOptions) {
     return clientNotYetUninitialized
   }
 },
-
+  
+Device: Device,
 
 /**
  * 该方法枚举可用的媒体输入/输出设备，比如麦克风、摄像头、耳机等。
@@ -256,7 +226,7 @@ getSpeakers(requestPerm: boolean = false) {
  */
 checkSystemRequirements() {
   var PC = window.RTCPeerConnection || window.webkitRTCPeerConnection;
-  var getUserMedia = navigator.mediaDevices.getUserMedia;
+  var getUserMedia = navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
   var webSocket = window.WebSocket;
   var isAPISupport = !!PC && !!getUserMedia && !!webSocket;
   return isAPISupport;
@@ -321,6 +291,7 @@ LIVE_STREAM_AUDIO_SAMPLE_RATE,
 VIDEO_FRAME_RATE,
 VIDEO_QUALITY,
 NETWORK_STATUS,
+STREAM_TYPE,
 VERSION,
 BUILD,
 ENV,
