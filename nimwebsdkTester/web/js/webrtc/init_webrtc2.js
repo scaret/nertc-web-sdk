@@ -148,10 +148,18 @@ $('#privatizationConfig').on('click', () => {
   }else{
     var reader = new FileReader();//新建一个FileReader
     reader.readAsText(files[0], "UTF-8");//读取文件 
-    reader.onload = function(evt){ //读取完文件之后会回来这里
+    reader.onload = async function(evt){ //读取完文件之后会回来这里
       var fileString = evt.target.result; // 读取文件内容
       //console.log(fileString)
       privatizationConfig = JSON.parse(fileString)
+      if (privatizationConfig.appkey) {
+        $('#appkey').val(privatizationConfig.appkey)
+        init()
+      }else {
+        console.error("私有化配置: 没有获取appkey");
+        addLog('私有化配置: 没有获取appkey，请检查设置的参数是否正确')
+        return
+      }
     }
   }
 })
@@ -762,13 +770,13 @@ $('#joinChannel-btn').on('click', async () => {
       $('#statisticsServer').val(statisticsServer)
       $('#roomServer').val(roomServer)
       $('#demoServer').val(demoServer)
-      init()
     } else {
       console.error("私有化配置: 没有获取appkey");
       addLog('私有化配置: 没有获取appkey，请检查设置的参数是否正确')
       return
     }
   }
+  
   
   console.info('开始加入房间')
   rtc.client.setLocalMediaPriority({
@@ -2576,6 +2584,9 @@ $("#closeWatermarkPanel").on("click", function (){
 $("#sdkVersion").text(NERTC.VERSION);
 $("#sdkBuild").text(NERTC.BUILD);
 $("#systemRequirement").text(`WebRTC:${NERTC.checkSystemRequirements() ? "支持": "不支持"}； 适配器:${NERTC.getHandler()}`);
+if (!NERTC.checkSystemRequirements()){
+  alert("浏览器环境缺失部分WebRTC基础功能。（是否没有开启HTTPS？）")
+}
 if (NERTC.getSupportedCodec){
   NERTC.getSupportedCodec().then((data)=>{
     $("#systemRequirement").append(`<br/>视频编码：${data.video.join(",")}；音频编码：${data.audio.join(",")}`)
