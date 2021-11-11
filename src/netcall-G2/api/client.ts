@@ -375,17 +375,7 @@ class Client extends Base {
         })
       }
       this.bindLocalStream(stream)
-      if (this.adapterRef.channelInfo.videoLow){
-        if (!stream.mediaHelper.cameraTrackLow || stream.mediaHelper.cameraTrackLow.readyState === "ended"){
-          stream.mediaHelper.createTrackLow("video");
-        }
-      }
-      if (this.adapterRef.channelInfo.screenLow){
-        if (!stream.mediaHelper.screenTrackLow || stream.mediaHelper.screenTrackLow.readyState === "ended"){
-          stream.mediaHelper.createTrackLow("screen");
-        }
-      }
-      await this.adapterRef._mediasoup.createProduce(stream);
+      await this.adapterRef._mediasoup.createProduce(stream, "all");
       this.apiFrequencyControl({
         name: 'publish',
         code: 0,
@@ -859,6 +849,7 @@ class Client extends Base {
         })
       }
       await this.adapterRef._mediasoup.setConsumerPreferredLayer(stream, highOrLow ? 0 : 1, "video");
+      stream.subConf.highOrLow.video = highOrLow;
       this.apiFrequencyControl({
         name: 'setRemoteVideoStreamType',
         param: JSON.stringify({

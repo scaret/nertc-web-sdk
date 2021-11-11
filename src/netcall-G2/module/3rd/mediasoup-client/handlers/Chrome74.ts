@@ -345,7 +345,7 @@ export class Chrome74 extends HandlerInterface
       this._pc.screenSender.replaceTrack(track)
       if (this._pc.screenSenderLow && trackLow){
         Logger.debug(prefix, 'screenSenderLow更新track: ', this._pc.screenSenderLow)
-        this._pc.screenSenderLow.replaceTrack(track)
+        this._pc.screenSenderLow.replaceTrack(trackLow)
       }
     } else {
       if (trackLow){
@@ -609,15 +609,15 @@ export class Chrome74 extends HandlerInterface
     } else if (kind === 'video') {
       this._pc.videoSender.replaceTrack(null);
       if (this._pc.videoSenderLow){
-        this._pc.videoSenderLow.track.stop();
+        this._pc.videoSenderLow.track?.stop();
         this._pc.videoSenderLow.replaceTrack(null);
       }
       //this._remoteSdp.closeMediaSection('1');  
     } else if (kind === 'screenShare') {
       this._pc.screenSender.replaceTrack(null);
       if (this._pc.screenSenderLow){
-        this._pc.screenSender.track.stop();
-        this._pc.screenSender.replaceTrack(null);
+        this._pc.screenSenderLow.track?.stop();
+        this._pc.screenSenderLow.replaceTrack(null);
       }
     } else {
       transceiver.sender.replaceTrack(null);
