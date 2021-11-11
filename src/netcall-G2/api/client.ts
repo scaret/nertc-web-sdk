@@ -177,9 +177,11 @@ class Client extends Base {
     type ? this.adapterRef.proxyServer.type = type : null
   }
 
-  stopProxyServer(options: any) {
-    this.adapterRef.logger.log('stopProxyServer, options: ', options)
-    this.adapterRef.proxyServer.enable = false
+  stopProxyServer() {
+    this.adapterRef.logger.log('stopProxyServer')
+    if(this.adapterRef.proxyServer){
+      this.adapterRef.proxyServer.enable = false
+    } 
   }
 
   /**
