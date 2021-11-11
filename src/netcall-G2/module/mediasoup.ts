@@ -324,8 +324,8 @@ class Mediasoup extends EventEmitter {
     }
   }
 
-  async createProduce (stream:LocalStream) {
-    this.loggerSend.log('发布音视频: ', stream.getId())
+  async createProduce (stream:LocalStream, mediaType: "all"|"audio"|"video"|"screen") {
+    this.loggerSend.log('发布音视频: ', stream.getId(), mediaType)
     //this._sendTransport.removeListener()
     if (!this._sendTransport){
       throw new RtcError({
@@ -333,6 +333,8 @@ class Mediasoup extends EventEmitter {
         message: 'No send trasnport 1'
       })
     }
+    
+    // STARTOF produceCallback
     if(this._sendTransport.listenerCount('produce') === 0) {
       this._sendTransport.on(
         'produce', async ({ kind, rtpParameters, appData, localDtlsParameters, offer }, callback, errback) => {
@@ -562,92 +564,109 @@ class Mediasoup extends EventEmitter {
         }
       });
     }
-
-    if (stream.mediaHelper && stream.mediaHelper.audioStream && this._micProducer) {
-      this.loggerSend.log('音频已经publish，重复操作')
-    } else if(stream.mediaHelper && stream.mediaHelper.audioStream) {
-      const audioTrack = stream.mediaHelper.audioStream.getAudioTracks()[0]
-      if (audioTrack){
-        this.loggerSend.log('发布 audioTrack: ', audioTrack.id, audioTrack.label)
-        stream.pubStatus.audio.audio = true
-        this._micProducer = await this._sendTransport.produce({
-          track: audioTrack,
-          trackLow: null,
+    // ENDOF produceCallback
+    
+    if (mediaType === "audio" || mediaType === "all"){
+      if (this._micProducer) {
+        this.loggerSend.log('音频已经publish，跳过')
+      } else {
+        const audioTrack = stream.mediaHelper.audio.audioStream.getAudioTracks()[0]
+        if (audioTrack){
+          this.loggerSend.log('发布 audioTrack: ', audioTrack.id, audioTrack.label)
+          stream.pubStatus.audio.audio = true
+          this._micProducer = await this._sendTransport.produce({
+            track: audioTrack,
+            trackLow: null,
+            codecOptions:{
+              opusStereo: true,
+              opusDtx: true
+            },
+            appData: {
+              deviceId: audioTrack.id,
+              deviceIdLow: null,
+              mediaType: 'audio',
+            }
+          });
+        }
+      }
+    }
+    
+    if (mediaType === "video" || mediaType === "all"){
+      if (this._webcamProducer) {
+        this.loggerSend.log('视频已经publish，跳过')
+      } else if (stream.mediaHelper.video.videoStream.getVideoTracks().length) {
+        if (this.adapterRef.channelInfo.videoLow){
+          if (!stream.mediaHelper.video.videoTrackLow || stream.mediaHelper.video.videoTrackLow.readyState === "ended"){
+            stream.mediaHelper.createTrackLow("video");
+          }
+        }
+        const videoTrack = stream.mediaHelper.video.videoStream.getVideoTracks()[0]
+        this.loggerSend.log('发布 videoTrack: ', videoTrack.id, videoTrack.label)
+        stream.pubStatus.video.video = true
+        //@ts-ignore
+        const codecInfo = this.adapterRef.mediaCapability.getCodecSend("video", this._sendTransport.handler._sendingRtpParametersByKind["video"]);
+        this._webcamProducer = await this._sendTransport.produce({
+          track: videoTrack,
+          trackLow: stream.mediaHelper.video.videoTrackLow,
+          codec: codecInfo.codecParam,
           codecOptions:{
-            opusStereo: true,
-            opusDtx: true
+            videoGoogleStartBitrate: 1000
           },
           appData: {
-            deviceId: audioTrack.id,
-            deviceIdLow: null,
-            mediaType: 'audio',
+            deviceId: videoTrack.id,
+            deviceIdLow: stream.mediaHelper.video.videoTrackLow? stream.mediaHelper.video.videoTrackLow.id : null,
+            mediaType: 'video',
           }
         });
+        if (this.adapterRef.encryption.encodedInsertableStreams && this._webcamProducer.rtpSender
+          //@ts-ignore
+          && !this._webcamProducer.rtpSender.senderStreams){
+          this.loggerSend.log("发送端开始解密", this.adapterRef.encryption.encryptionMode);
+          //@ts-ignore
+          const senderStreams = this._webcamProducer.rtpSender.createEncodedStreams()
+          const transformStream = new TransformStream({
+            transform: this.adapterRef.encryption.encodeFunctionH264.bind(this.adapterRef.encryption),
+          });
+          senderStreams.readable.pipeThrough(transformStream).pipeTo(senderStreams.writable);
+          //@ts-ignore
+          this._webcamProducer.rtpSender.senderStreams = senderStreams
+        }
+        if (!this.adapterRef.state.startPubVideoTime) {
+          this.adapterRef.state.startPubVideoTime = Date.now()
+        }
       }
     }
 
-    if (stream.mediaHelper && stream.mediaHelper.videoStream && this._webcamProducer) {
-      this.loggerSend.log('视频已经publish，重复操作')
-    } else if (stream.mediaHelper && stream.mediaHelper.videoStream) {
-      const videoTrack = stream.mediaHelper.videoStream.getVideoTracks()[0]
-      this.loggerSend.log('发布 videoTrack: ', videoTrack.id, videoTrack.label)
-      stream.pubStatus.video.video = true
-      //@ts-ignore
-      const codecInfo = this.adapterRef.mediaCapability.getCodecSend("video", this._sendTransport.handler._sendingRtpParametersByKind["video"]);
-      this._webcamProducer = await this._sendTransport.produce({
-        track: videoTrack,
-        trackLow: stream.mediaHelper.cameraTrackLow,
-        codec: codecInfo.codecParam,
-        codecOptions:{
-          videoGoogleStartBitrate: 1000
-        },
-        appData: {
-          deviceId: videoTrack.id,
-          deviceIdLow: stream.mediaHelper.cameraTrackLow? stream.mediaHelper.cameraTrackLow.id : null,
-          mediaType: 'video',
+    if (mediaType === "screen" || mediaType === "all"){
+      if (this._screenProducer) {
+        this.loggerSend.log('屏幕共享已经publish，跳过')
+      } else if(stream.mediaHelper.screen.screenVideoStream.getVideoTracks().length) {
+        if (this.adapterRef.channelInfo.screenLow){
+          if (!stream.mediaHelper.screen.screenVideoTrackLow || stream.mediaHelper.screen.screenVideoTrackLow.readyState === "ended"){
+            stream.mediaHelper.createTrackLow("screen");
+          }
         }
-      });
-      if (this.adapterRef.encryption.encodedInsertableStreams && this._webcamProducer.rtpSender
+        const screenTrack = stream.mediaHelper.screen.screenVideoStream.getVideoTracks()[0]
+        this.loggerSend.log('发布 screenTrack: ', screenTrack.id, screenTrack.label)
+        stream.pubStatus.screen.screen = true
         //@ts-ignore
-        && !this._webcamProducer.rtpSender.senderStreams){
-        this.loggerSend.log("发送端开始解密", this.adapterRef.encryption.encryptionMode);
-        //@ts-ignore
-        const senderStreams = this._webcamProducer.rtpSender.createEncodedStreams()
-        const transformStream = new TransformStream({
-          transform: this.adapterRef.encryption.encodeFunctionH264.bind(this.adapterRef.encryption),
+        const codecInfo = this.adapterRef.mediaCapability.getCodecSend("screen", this._sendTransport.handler._sendingRtpParametersByKind["video"]);
+        this._screenProducer = await this._sendTransport.produce({
+          track: screenTrack,
+          trackLow: stream.mediaHelper.screen.screenVideoTrackLow,
+          codec: codecInfo.codecParam,
+          codecOptions:{
+            videoGoogleStartBitrate: 1000
+          },
+          appData: {
+            deviceId: screenTrack.id,
+            deviceIdLow: stream.mediaHelper.screen.screenVideoTrackLow ? stream.mediaHelper.screen.screenVideoTrackLow.id: null,
+            mediaType: 'screenShare'
+          }
         });
-        senderStreams.readable.pipeThrough(transformStream).pipeTo(senderStreams.writable);
-        //@ts-ignore
-        this._webcamProducer.rtpSender.senderStreams = senderStreams
-      }
-      if (!this.adapterRef.state.startPubVideoTime) {
-        this.adapterRef.state.startPubVideoTime = Date.now()
-      }
-    }
-
-    if (stream.mediaHelper && stream.mediaHelper.screenStream && this._screenProducer) {
-      this.loggerSend.log('屏幕共享已经publish，重复操作')
-    } else if(stream.mediaHelper && stream.mediaHelper.screenStream) {
-      const screenTrack = stream.mediaHelper.screenStream.getVideoTracks()[0]
-      this.loggerSend.log('发布 screenTrack: ', screenTrack.id, screenTrack.label)
-      stream.pubStatus.screen.screen = true
-      //@ts-ignore
-      const codecInfo = this.adapterRef.mediaCapability.getCodecSend("screen", this._sendTransport.handler._sendingRtpParametersByKind["video"]);
-      this._screenProducer = await this._sendTransport.produce({
-        track: screenTrack,
-        trackLow: stream.mediaHelper.screenTrackLow,
-        codec: codecInfo.codecParam,
-        codecOptions:{
-          videoGoogleStartBitrate: 1000
-        },
-        appData: {
-          deviceId: screenTrack.id,
-          deviceIdLow: stream.mediaHelper.screenTrackLow ? stream.mediaHelper.screenTrackLow.id: null,
-          mediaType: 'screenShare'
+        if (!this.adapterRef.state.startPubScreenTime) {
+          this.adapterRef.state.startPubScreenTime = Date.now()
         }
-      });
-      if (!this.adapterRef.state.startPubScreenTime) {
-        this.adapterRef.state.startPubScreenTime = Date.now()
       }
     }
   }
@@ -1025,6 +1044,14 @@ class Mediasoup extends EventEmitter {
         remoteStream['pubStatus'][mediaTypeShort]['producerId'] = producerId
         if (remoteStream.getMuteStatus(mediaTypeShort).muted){
           this.loggerRecv.log(`远端流处于mute状态：uid ${remoteStream.getId()}, ${mediaTypeShort}, ${JSON.stringify(remoteStream.getMuteStatus(mediaTypeShort))}`);
+          const muteStatus = remoteStream.getMuteStatus(mediaTypeShort);
+          if (muteStatus.send){
+            this.loggerRecv.log(`远端流把自己mute了：uid ${remoteStream.getId()}, ${mediaTypeShort}, ${JSON.stringify(muteStatus)}`);
+          }
+          if (muteStatus.recv){
+            this.loggerRecv.log(`本端把远端流mute了：uid ${remoteStream.getId()}, ${mediaTypeShort}, ${JSON.stringify(muteStatus)}`);
+            consumer.track.enabled = false
+          }
         }
         if (!remoteStream.mediaHelper){
           throw new RtcError({

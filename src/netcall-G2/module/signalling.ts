@@ -390,20 +390,16 @@ class Signalling extends EventEmitter {
         remoteStream.pubStatus[mediaTypeShort].producerId = ''
         const data = this.adapterRef._statsReport && this.adapterRef._statsReport.formativeStatsReport && this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
         if (mediaTypeShort === 'audio') {
-          if (remoteStream.mediaHelper){
-            remoteStream.mediaHelper.micTrack = null;
-            emptyStreamWith(remoteStream.mediaHelper.audioStream, null);
-          }
+          remoteStream.mediaHelper.audio.micTrack = null;
+          emptyStreamWith(remoteStream.mediaHelper.audio.audioStream, null);
           delete this.adapterRef.remoteAudioStats[uid];
           if (data) {
             data.recvFirstAudioFrame = false
             data.recvFirstAudioPackage = false
           }
         } else if (mediaTypeShort === 'video') {
-          if (remoteStream.mediaHelper){
-            remoteStream.mediaHelper.cameraTrack = null;
-            remoteStream.mediaHelper.videoStream = null;
-          }
+          remoteStream.mediaHelper.video.cameraTrack = null;
+          emptyStreamWith(remoteStream.mediaHelper.video.videoStream, null)
           delete this.adapterRef.remoteVideoStats[uid];
           if (data) {
             data.recvFirstVideoFrame = false
@@ -411,10 +407,8 @@ class Signalling extends EventEmitter {
             data.videoTotalPlayDuration = 0
           }
         }else if (mediaTypeShort === 'screen'){
-          if (remoteStream.mediaHelper){
-            remoteStream.mediaHelper.screenTrack = null;
-            remoteStream.mediaHelper.screenStream = null;
-          }
+          remoteStream.mediaHelper.screen.screenVideoTrack = null;
+          emptyStreamWith(remoteStream.mediaHelper.screen.screenVideoStream, null)
           delete this.adapterRef.remoteScreenStats[uid];
           if (data) {
             data.recvFirstScreenFrame = false

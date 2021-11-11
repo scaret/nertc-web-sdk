@@ -184,24 +184,30 @@
         <p class="block-header">发布配置相关</p>
         <div class="part">
           <div class="line">
-            启用音频
-            <input type="checkbox" id="enableAudio" checked>
-            启用视频
-            <input type="checkbox" id="enableVideo" checked>
-            <br />
-            启用屏幕共享
-            <input type="checkbox" id="enableScreen">
-            启用屏幕共享背景音
-            <input type="checkbox" id="enableScreenAudio">
-            <br />
-            自定义音频
-            <input type="checkbox" id="privateAudio">
-            自定义视频
-            <input type="checkbox" id="privateVideo"><br/>
-            主流小流
-            <input type="checkbox" id="videoLow" checked>
-            辅流小流
-            <input type="checkbox" id="screenLow">
+            音频
+            <label><input type="radio" name="enableAudio" value="source">自定义</label>
+            <label><input type="radio" name="enableAudio" value="yes" checked>开</label>
+            <label><input type="radio" name="enableAudio" value="">关</label>
+          </div>
+          <div class="line">
+            视频
+            <label><input type="radio" name="enableVideo" value="source">自定义</label>
+            <label><input type="radio" name="enableVideo" value="yes" checked>开</label>
+            <label><input type="radio" name="enableVideo" value="">关</label>
+            <label><input type="checkbox" id="videoLow" checked>大小流</label>
+          </div>
+          <div class="line">
+            辅流
+            <label><input type="radio" name="enableScreen" value="source">自定义</label>
+            <label><input type="radio" name="enableScreen" value="yes">开</label>
+            <label><input type="radio" name="enableScreen" value="" checked>关</label>
+            <label><input type="checkbox" id="screenLow" checked>大小流</label>
+          </div>
+          <div class="line">
+            辅音
+            <label><input type="radio" name="enableScreenAudio" value="source">自定义</label>
+            <label><input type="radio" name="enableScreenAudio" value="yes">开</label>
+            <label><input type="radio" name="enableScreenAudio" value="" checked>关</label>
           </div>
           <div class="line">
             自动发布
@@ -332,11 +338,15 @@
 
           </div>
           <div class="line">
-            订阅大小流
-            <select id='subResolution'>
-              <option value=''>默认</option>
-              <option value='0'>大流</option>
-              <option value='1'>小流</option>
+            <select id='subResolutionVideo' style="width: 49%">
+              <option value=''>主流大小流</option>
+              <option value='high'>主流订阅大流</option>
+              <option value='low'>主流订阅小流</option>
+            </select>
+            <select id='subResolutionScreen' style="width: 49%">
+              <option value=''>辅流大小流</option>
+              <option value='high'>辅流订阅大流</option>
+              <option value='low'>辅流订阅小流</option>
             </select>
           </div>
           <div class="line">
@@ -494,23 +504,27 @@
         <p class="block-header">设备相关</p>
         <div class="part">
           <div class="line">
-            麦克风：
+            音频
+            <button id="playMicroSource" class="close">自定义</button>
             <button id="playMicro" class="close">打开</button>
             <button id="playMicroOff" class="close">关闭</button>
           </div>
           <div class="line">
-            摄像头：
+            视频
+            <button id="playCameraSource" class="close">自定义</button>
             <button id="playCamera" class="close">打开</button>
             <button id="playCameraOff" class="close">关闭</button>
           </div>
           <div class="line">
-            屏幕共享：
+            辅流
+            <button id="playScreenSource" class="close">自定义</button>
             <button id="playScreen" class="close">打开</button>
             <button id="playScreenOff" class="close">关闭</button>
           </div>
           <div class="line">
-            屏幕共享音频：
-            <button id="playScreenAudio" class="close">打开</button>
+            辅音
+            <button id="playScreenAudioSource" class="close">自定义</button>
+            <button id="playScreenAudio" class="close">双开</button>
             <button id="playScreenAudioOff" class="close">关闭</button>
           </div>
           <div class="line">
@@ -874,10 +888,10 @@
           </div>
         </div>
 
-        <p class="block-header" id="trackStatus">track状态</p>
+        <p class="block-header" id="trackStatus">采集状态</p>
         <div class="part" id="part-track" style="max-width: 350px; overflow: hidden; white-space: nowrap;">
           <div class="line">
-            音频
+            音频 <span id="audioStatus"></span>
             <ul id="audioTrackStatus"></ul>
             视频
             <ul id="videoTrackStatus"></ul>

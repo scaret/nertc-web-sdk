@@ -600,6 +600,8 @@ export interface GetStreamConstraints{
   facingMode?: string;
   audioSource?: MediaStreamTrack|null;
   videoSource?: MediaStreamTrack|null;
+  screenVideoSource?: MediaStreamTrack|null;
+  screenAudioSource?: MediaStreamTrack|null;
   deviceId?: string;
   screenAudio?: boolean;
 }
@@ -740,6 +742,8 @@ export interface LocalStreamOptions{
   client: Client;
   audioSource?: MediaStreamTrack|null;
   videoSource?: MediaStreamTrack|null;
+  screenAudioSource?: MediaStreamTrack|null;
+  screenVideoSource?: MediaStreamTrack|null;
 }
 
 export interface RemoteStreamOptions{
@@ -824,8 +828,8 @@ export interface PubStatus{
 
 export interface SubscribeOptions{
   audio?: boolean;
-  video?: boolean;
-  screen?: boolean;
+  video?: boolean|"high"|"low";
+  screen?: boolean|"high"|"low";
   highOrLow?: number;
 }
 

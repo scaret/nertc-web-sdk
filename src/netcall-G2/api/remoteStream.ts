@@ -388,18 +388,30 @@ class RemoteStream extends EventEmitter {
   */
   setSubscribeConfig (conf:SubscribeOptions) {
     this.logger.log('设置订阅规则：', JSON.stringify(conf))
+    if (typeof conf.highOrLow === "number"){
+      this.subConf.highOrLow.video = conf.highOrLow;
+      this.subConf.highOrLow.screen = conf.highOrLow;
+    }
     if (typeof conf.audio === "boolean"){
       this.subConf.audio = conf.audio;
     }
     if (typeof conf.video === "boolean"){
       this.subConf.video = conf.video;
+    }else if (conf.video === "high"){
+      this.subConf.video = true;
+      this.subConf.highOrLow.video = STREAM_TYPE.HIGH;
+    }else if (conf.video === "low"){
+      this.subConf.video = true;
+      this.subConf.highOrLow.video = STREAM_TYPE.LOW;
     }
     if (typeof conf.screen === "boolean"){
       this.subConf.screen = conf.screen;
-    }
-    if (typeof conf.highOrLow === "number"){
-      this.subConf.highOrLow.video = conf.highOrLow;
-      this.subConf.highOrLow.screen = conf.highOrLow;
+    }else if (conf.screen === "high"){
+      this.subConf.screen = true;
+      this.subConf.highOrLow.screen = STREAM_TYPE.HIGH;
+    }else if (conf.screen === "low"){
+      this.subConf.screen = true;
+      this.subConf.highOrLow.screen = STREAM_TYPE.LOW;
     }
     
     if (this.pubStatus.audio.audio && this.subConf.audio) {
@@ -443,16 +455,12 @@ class RemoteStream extends EventEmitter {
   }
 
   getAudioStream(){
-    if (this.mediaHelper){
-      this.client.apiFrequencyControl({
-        name: 'setExternalAudioRender',
-        code: 0,
-        param: JSON.stringify({} as ReportParamSetExternalAudioRender, null, ' ')
-      })
-      return this.mediaHelper.audioStream;
-    }else{
-      return null;
-    }
+    this.client.apiFrequencyControl({
+      name: 'setExternalAudioRender',
+      code: 0,
+      param: JSON.stringify({} as ReportParamSetExternalAudioRender, null, ' ')
+    })
+    return this.mediaHelper.audio.audioStream;
   }
   
   /**
@@ -462,11 +470,7 @@ class RemoteStream extends EventEmitter {
    * @return {MediaStreamTrack}
    */
   getAudioTrack () {
-    if (this.mediaHelper){
-      return this.mediaHelper.micTrack || this.mediaHelper.audioSource || null;
-    }else{
-      return null;
-    }
+    return this.mediaHelper.audio.audioStream.getAudioTracks()[0] || null;
   }
 
   /**
@@ -476,9 +480,7 @@ class RemoteStream extends EventEmitter {
    * @return {MediaStreamTrack}
    */
   getVideoTrack () {
-    if (this.mediaHelper){
-      return this.mediaHelper.cameraTrack || this.mediaHelper.screenTrack || this.mediaHelper.videoSource;
-    }
+    return this.mediaHelper.video.videoStream.getVideoTracks()[0] || null;
   }
 
   /**
@@ -488,7 +490,7 @@ class RemoteStream extends EventEmitter {
    * @param {div} view div标签，播放画面的dom容器节点
    * @return {Promise}
    */
-  async play (view:HTMLElement|String|null|undefined, playOptions:StreamPlayOptions = {}) {
+  async play (viewInput:HTMLElement|String|null|undefined, playOptions:StreamPlayOptions = {}) {
     if (!isExistOptions({tag: 'Stream.playOptions.audio', value: playOptions.audio}).result){
       playOptions.audio = true;
     }
@@ -500,10 +502,10 @@ class RemoteStream extends EventEmitter {
     }
     
     this.logger.log(`uid ${this.stringStreamID} Stream.play::`, JSON.stringify(playOptions))
-    if(playOptions.audio && this._play && this.mediaHelper && this.mediaHelper.audioStream.getTracks().length){
+    if(playOptions.audio && this._play && this.mediaHelper.audio.audioStream.getTracks().length){
       this.logger.log(`uid ${this.stringStreamID} 开始播放远端音频`)
       try{
-        await this._play.playAudioStream(this.mediaHelper.audioStream, playOptions.muted)
+        await this._play.playAudioStream(this.mediaHelper.audio.audioStream, playOptions.muted)
         this.audioPlay_ = true;
       }catch(error) {
         this.audioPlay_ = false;
@@ -512,18 +514,22 @@ class RemoteStream extends EventEmitter {
       }
     }
 
-    if (typeof view === "string") {
-      view = document.getElementById(view)
+    let view:HTMLElement|null;
+    if (typeof viewInput === "string") {
+      view = document.getElementById(viewInput)
+    }else if (viewInput){
+      view = viewInput as HTMLElement
+    }else{
+      view = null
     }
 
     if (view){
       if (playOptions.video){
         this.videoView = view;
-        if(this._play && this.mediaHelper && this.mediaHelper.videoStream && this.mediaHelper.videoStream.getVideoTracks().length){
+        if(this._play && this.mediaHelper.video.videoStream.getVideoTracks().length){
           this.logger.log(`uid ${this.stringStreamID} 开始启动视频播放 主流 远端`);
           try{
-            //@ts-ignore
-            await this._play.playVideoStream(this.mediaHelper.videoStream, view)
+            await this._play.playVideoStream(this.mediaHelper.video.videoStream, view)
             if ("width" in this.renderMode.remote.video){
               this._play.setVideoRender(this.renderMode.remote.video)
             }
@@ -542,11 +548,10 @@ class RemoteStream extends EventEmitter {
       }
       if (playOptions.screen){
         this.screenView = view;
-        if(this._play && this.mediaHelper && this.mediaHelper.screenStream && this.mediaHelper.screenStream.getVideoTracks().length){
+        if(this._play && this.mediaHelper && this.mediaHelper.screen.screenVideoStream.getVideoTracks().length){
           this.logger.log(`uid ${this.stringStreamID} 开始启动视频播放 辅流 远端`);
           try{
-            //@ts-ignore
-            await this._play.playScreenStream(this.mediaHelper.screenStream, view)
+            await this._play.playScreenStream(this.mediaHelper.screen.screenVideoStream, view)
             if ("width" in this.renderMode.remote.screen){
               this._play.setScreenRender(this.renderMode.remote.screen)
             }
@@ -724,17 +729,9 @@ class RemoteStream extends EventEmitter {
           message: 'no play'
         })
       }
-      if (!this.mediaHelper || !this.mediaHelper.audioStream){
-        throw new RtcError({
-          code: ErrorCode.NOT_FOUND,
-          message: 'no audioStream'
-        })
-      }
       this.muteStatus.audioRecv = false;
-      if (this.mediaHelper && this.mediaHelper.micTrack){
-        this.mediaHelper.micTrack.enabled = true;
-      }
-      this._play.playAudioStream(this.mediaHelper.audioStream, true)
+      this.mediaHelper.audio.audioStream.getAudioTracks().length && (this.mediaHelper.audio.audioStream.getAudioTracks()[0].enabled = false)
+      this._play.playAudioStream(this.mediaHelper.audio.audioStream, true)
       this.client.apiFrequencyControl({
         name: 'unmuteAudio',
         code: 0,
@@ -772,8 +769,8 @@ class RemoteStream extends EventEmitter {
         })
       }
       this.muteStatus.audioRecv = true
-      if (this.mediaHelper && this.mediaHelper.micTrack){
-        this.mediaHelper.micTrack.enabled = false;
+      if (this.mediaHelper.audio.audioStream.getAudioTracks().length){
+        this.mediaHelper.audio.audioStream.getAudioTracks()[0].enabled = false;
       }
       this._play.stopPlayAudioStream()
       this.client.apiFrequencyControl({
@@ -803,11 +800,7 @@ class RemoteStream extends EventEmitter {
    * @return {Boolean}
    */
   hasAudio () {
-    if (this.audio && this.mediaHelper && this.mediaHelper.micStream){
-      return true;
-    }else{
-      return false;
-    }
+    return this.mediaHelper.audio.audioStream.getAudioTracks().length > 0
   }
 
   /**
@@ -906,16 +899,16 @@ class RemoteStream extends EventEmitter {
           message: 'no play'
         })
       }
-      if (!this.mediaHelper || !this.mediaHelper.videoStream || !this.videoView){
+      if (!this.videoView){
         throw new RtcError({
           code: ErrorCode.NO_MEDIAHELPER,
-          message: 'no media helper or videoStream or this.view'
+          message: 'no this.view'
         })
       }
 
       this.muteStatus.videoRecv = false
-      if (this.mediaHelper && this.mediaHelper.cameraTrack){
-        this.mediaHelper.cameraTrack.enabled = true;
+      if (this.mediaHelper && this.mediaHelper.video.cameraTrack){
+        this.mediaHelper.video.cameraTrack.enabled = true;
       }
       this.client.apiFrequencyControl({
         name: 'unmuteVideo',
@@ -953,8 +946,8 @@ class RemoteStream extends EventEmitter {
         })
       }
       this.muteStatus.videoRecv = true
-      if (this.mediaHelper && this.mediaHelper.cameraTrack){
-        this.mediaHelper.cameraTrack.enabled = false;
+      if (this.mediaHelper && this.mediaHelper.video.cameraTrack){
+        this.mediaHelper.video.cameraTrack.enabled = false;
       }
       this.client.apiFrequencyControl({
         name: 'muteVideo',
@@ -992,15 +985,15 @@ class RemoteStream extends EventEmitter {
           message: 'no play'
         })
       }
-      if (!this.mediaHelper || !this.mediaHelper.screenStream || !this.screenView){
+      if (!this.screenView){
         throw new RtcError({
           code: ErrorCode.NO_MEDIAHELPER,
-          message: 'no media helper or screenStream or this.view'
+          message: 'no this.screenView'
         })
       }
       this.muteStatus.screenRecv = false
-      if (this.mediaHelper && this.mediaHelper.screenTrack){
-        this.mediaHelper.screenTrack.enabled = true;
+      if (this.mediaHelper && this.mediaHelper.screen.screenVideoTrack){
+        this.mediaHelper.screen.screenVideoTrack.enabled = true;
       }
       this.client.apiFrequencyControl({
         name: 'unmuteScreen',
@@ -1037,8 +1030,8 @@ class RemoteStream extends EventEmitter {
           message: 'no play'
         })
       }
-      if (this.mediaHelper && this.mediaHelper.screenTrack){
-        this.mediaHelper.screenTrack.enabled = false;
+      if (this.mediaHelper && this.mediaHelper.screen.screenVideoTrack){
+        this.mediaHelper.screen.screenVideoTrack.enabled = false;
       }
       this.muteStatus.screenRecv = true
       this.client.apiFrequencyControl({
@@ -1068,19 +1061,11 @@ class RemoteStream extends EventEmitter {
    */
   hasVideo () {
     this.logger.log('获取视频 flag')
-    if (this.video && this.mediaHelper && this.mediaHelper.videoStream){
-      return true;
-    }else{
-      return false;
-    }
+    this.mediaHelper.video.videoStream.getVideoTracks().length > 0
   }
 
   hasScreen () {
-    if (this.screen && this.mediaHelper && this.mediaHelper.screenStream){
-      return true
-    }else{
-      return false
-    }
+    this.mediaHelper.screen.screenVideoStream.getVideoTracks().length > 0
   }
   
   /**
@@ -1141,16 +1126,16 @@ class RemoteStream extends EventEmitter {
     }
     switch (options.type) {
       case 'screen':
-        this.mediaHelper.screenStream && streams.push(this.mediaHelper.screenStream)
-        this.mediaHelper.audioStream && streams.push(this.mediaHelper.audioStream)
+        streams.push(this.mediaHelper.screen.screenVideoStream)
+        streams.push(this.mediaHelper.audio.audioStream)
         break;
       case 'camera':
       case 'video':
-        this.mediaHelper.videoStream && streams.push(this.mediaHelper.videoStream)
-        this.mediaHelper.audioStream && streams.push(this.mediaHelper.audioStream)
+        streams.push(this.mediaHelper.video.videoStream)
+        streams.push(this.mediaHelper.audio.audioStream)
         break
       case 'audio':
-        this.mediaHelper.audioStream && streams.push(this.mediaHelper.audioStream)
+        streams.push(this.mediaHelper.audio.audioStream)
         break;
     }
     if (streams.length === 0) {

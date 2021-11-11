@@ -310,7 +310,7 @@ export class Safari12 extends HandlerInterface
       this._pc.screenSender.replaceTrack(track)
       if (this._pc.screenSenderLow && trackLow){
         Logger.debug(prefix, 'screenSenderLow更新track: ', this._pc.screenSenderLow)
-        this._pc.screenSenderLow.replaceTrack(track)
+        this._pc.screenSenderLow.replaceTrack(trackLow)
       }
     } else {
       if (trackLow){
@@ -582,7 +582,7 @@ export class Safari12 extends HandlerInterface
       Logger.debug(prefix, '删除发送的audio track: ', this._pc.audioSender)
     } else if (kind === 'video') {
       if (this._pc.videoSenderLow){
-        this._pc.videoSenderLow.track.stop();
+        this._pc.videoSenderLow.track?.stop();
         this._pc.videoSenderLow.replaceTrack(null);
       }
       this._pc.videoSender.replaceTrack(null);
@@ -591,7 +591,8 @@ export class Safari12 extends HandlerInterface
     } else if (kind === 'screenShare') {
       this._pc.screenSender.replaceTrack(null);
       if (this._pc.screenSenderLow){
-        this._pc.screenSender.replaceTrack(null);
+        this._pc.screenSenderLow.track?.stop()
+        this._pc.screenSenderLow.replaceTrack(null);
       }
       //this._remoteSdp.closeMediaSection('1');
       Logger.debug(prefix, '删除发送的screen track: ', this._pc.screenSender)

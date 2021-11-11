@@ -80,7 +80,9 @@ window.rtc = {
   failTasksList: [],
   confTaskList: [],
   videoSource: null,
-  audioSource: null
+  audioSource: null,
+  screenVideoSource: null,
+  screenAudioSource: null,
 }
 
 /** 
@@ -231,18 +233,32 @@ $('#trackStatus').on('click', () => {
   $("#part-track").toggle()
 })
 
+// 更新采集状态
 setInterval(()=>{
+  let audioInfo = "";
+  if (rtc.localStream){
+    audioInfo += `数量：${rtc.localStream?.mediaHelper.getAudioInputTracks().length}`
+    if (rtc.localStream?.mediaHelper.audio.audioRoutingEnabled) {
+      audioInfo += " 混音中"
+    }
+    const sender = rtc.localStream.getSender("audio", "high")
+    if (sender?.track){
+      audioInfo += " 发布中"
+    }
+  }
+  $("#audioStatus").text(audioInfo)
+  
   const transceivers = rtc.client?.adapterRef?._mediasoup?._sendTransport?.handler?._pc?.getTransceivers() || []
   NERTC.getParameters().tracks.audio.forEach((track, index)=>{
     if (track){
-      const trackId = `track_status_${track.id}`
+      const trackId = "track_status_" + track.id.split(/\W/).join("")
       let content = "";
-      const transceiver = transceivers.find((t =>{
+      const matchedTransceivers = transceivers.filter((t =>{
         return t?.sender?.track?.id === track.id;
       }))
-      if (transceiver){
-        content += "mid" + transceiver.mid;
-      }
+      content += matchedTransceivers.map((transceiver)=>{
+        return "mid" + transceiver.mid
+      }).join("");
       content += `#${index}`;
       
       if (!track.enabled){
@@ -269,14 +285,14 @@ setInterval(()=>{
   })
   NERTC.getParameters().tracks.video.forEach((track, index)=>{
     if (track){
-      const trackId = `track_status_${track.id}`
+      const trackId = "track_status_" + track.id.split(/\W/).join("")
       let content = "";
-      const transceiver = transceivers.find((t =>{
+      const matchedTransceivers = transceivers.filter((t =>{
         return t?.sender?.track?.id === track.id;
       }))
-      if (transceiver){
-        content += "mid" + transceiver.mid;
-      }
+      content += matchedTransceivers.map((transceiver)=>{
+        return "mid" + transceiver.mid;
+      }).join("")
       
       const settings = track.getSettings();
       content += `#${index}`;
@@ -955,35 +971,13 @@ $('#joinChannel-btn').on('click', async () => {
       }
       return;
     }
-    if( $('#enableAudio').prop('checked') || $('#enableVideo').prop('checked') || $('#enableScreen').prop('checked') || $('#enableScreenAudio').prop('checked') ) {
-      let audio = video = false
-      if ($('#privateAudio').prop('checked') && $('#privateVideo').prop('checked')) {
-        audio = video = true
-      } else if ($('#privateAudio').prop('checked')) {
-        audio = true
-      } else if ($('#privateVideo').prop('checked')) {
-        video = true
-      }
-      
-      if (audio){
-        rtc.audioSource = fakeMediaDevices.getFakeMedia({audio: true}).getTracks()[0];
-      }else{
-        if (rtc.audioSource){
-          rtc.audioSource.stop()
-          rtc.audioSource = null
-        }
-      }
-      
-      if (video){
-        rtc.videoSource = fakeMediaDevices.getFakeMedia({video: {width: 1024, height: 768}, content: "自定义主流"}).getTracks()[0];
-      }else{
-        if (rtc.videoSource){
-          rtc.videoSource.stop()
-          rtc.videoSource = null
-        }
-      }
 
-      initLocalStream(rtc.audioSource, rtc.videoSource)
+    const enableAudio = $('input[name="enableAudio"]:checked').val();
+    const enableVideo = $('input[name="enableVideo"]:checked').val();
+    const enableScreen = $('input[name="enableScreen"]:checked').val();
+    const enableScreenAudio = $('input[name="enableScreenAudio"]:checked').val();
+    if (enableAudio || enableVideo || enableScreen || enableScreenAudio){
+      initLocalStream()
     }else{
       addLog("加入频道后未执行初始化本地流")
     }
@@ -1067,27 +1061,8 @@ $('#initLocalStream').on('click', () => {
     addLog('已经初始化过了，请勿重复操作')
     return
   }
-  if( $('#enableAudio').prop('checked') || $('#enableVideo').prop('checked') || $('#enableScreen').prop('checked') ) {
-    let audio = video = false
-      if ($('#privateAudio').prop('checked') && $('#privateVideo').prop('checked')) {
-        audio = video = true
-      } else if ($('#privateAudio').prop('checked')) {
-        audio = true
-      } else if ($('#privateVideo').prop('checked')) {
-        video = true
-      }
-      if (audio || video) {
-        navigator.mediaDevices.getUserMedia(
-          {audio, video}
-        ).then(mediaStream => {
-          rtc.videoSource = mediaStream.getVideoTracks().length && mediaStream.getVideoTracks()[0];
-          rtc.audioSource = mediaStream.getAudioTracks().length && mediaStream.getAudioTracks()[0];
-          initLocalStream(rtc.audioSource, rtc.videoSource)
-        })
-      } else {
-        initLocalStream()
-      }
-  }
+  
+  initLocalStream()
 })
 
 
@@ -1245,7 +1220,53 @@ $('#enableCodecHacking').on('change', ()=>{
   }
 });
 
-function initLocalStream(audioSource, videoSource) {
+function getVideoSource(mediaType){
+  let defaultStr = "1920x1080x15"
+  const optionsStr = prompt(`自定义 ${mediaType} 配置 宽x高x帧率`, "1920x1080x15") || defaultStr
+  const matches = optionsStr.match(/(\d+)x(\d+)x(\d+)/);
+  if (!matches){
+    addLog("自定义视频 ：无法匹配字符串" + optionsStr)
+    return
+  }
+  let videoConstraint = {
+    width: matches[1],
+    height: matches[2],
+    frameRate: matches[3],
+    content: `${mediaType} ${optionsStr}`
+  }
+  let videoSource = fakeMediaDevices.getFakeMedia({video: videoConstraint}).video.track
+  return videoSource
+}
+
+function getAudioSource(mediaType){
+  let defaultStr;
+  if (mediaType === "audio"){
+    defaultStr = "1x1x0";
+  } else if (mediaType === "screenAudio"){
+    defaultStr = "2x1x0";
+  }else{
+    defaultStr = "3x1x0"
+  }
+  const optionsStr = prompt("自定义音频配置 【声音ID(1-3)】x【音量0-1】x【噪音(0-1)】", defaultStr) || defaultStr
+  const matches = optionsStr.match(/(.+)x(.+)x(.+)/);
+  const BUILTIN_AB = [null, "brysj", "bbdbbjyy", "mmdmmjwp"];
+  const audioConstraint = {
+    mono :{
+      data: BUILTIN_AB[matches[1]],
+      loop: true,
+      gain: parseFloat(matches[2]),
+    },
+    channelCount: 1,
+  }
+  if (parseFloat(matches[3]) > 0.01){
+    audioConstraint.mono.noise = {gain: parseFloat(matches[3])}
+  }
+  console.log("自定义音频配置", mediaType, defaultStr, audioConstraint);
+  const audioSource = fakeMediaDevices.getFakeMedia({audio: audioConstraint}).audio.track;
+  return audioSource;
+}
+
+function initLocalStream() {
   let sourceId = "";
   if ($("#enableScreen").prop("checked")){
     sourceId = getUrlVars().sourceId;
@@ -1253,17 +1274,60 @@ function initLocalStream(audioSource, videoSource) {
       addLog("Electron屏幕共享：" + sourceId)
     }
   }
+
+  const enableAudio = $('input[name="enableAudio"]:checked').val()
+  const audio = !!enableAudio;
+  let audioSource;
+  if (enableAudio === "source"){
+    rtc.audioSource = rtc.audioSource?.readyState === "live" ? rtc.audioSource : getAudioSource("audio")
+    audioSource = rtc.audioSource
+  }else{
+    audioSource = null
+  }
+  
+  const enableVideo = $('input[name="enableVideo"]:checked').val()
+  const video = !!enableVideo;
+  let videoSource;
+  if (enableVideo === "source"){
+    rtc.videoSource = rtc.videoSource?.readyState === "live" ? rtc.videoSource :getVideoSource("video")
+    videoSource = rtc.videoSource;
+  }else{
+    videoSource = null
+  }
+  
+  const enableScreen = $('input[name="enableScreen"]:checked').val()
+  const screen = !!enableScreen;
+  let screenVideoSource;
+  if (enableScreen === "source"){
+    rtc.screenVideoSource = rtc.screenVideoSource?.readyState === "live" ? rtc.screenVideoSource :getVideoSource("screen")
+    screenVideoSource = rtc.screenVideoSource;
+  }else{
+    screenVideoSource = null
+  }
+
+  const enableScreenAudio = $('input[name="enableScreenAudio"]:checked').val()
+  const screenAudio = !!enableScreenAudio;
+  let screenAudioSource;
+  if (enableScreenAudio === "source"){
+    rtc.screenAudioSource = rtc.screenAudioSource?.readyState === "live" ? rtc.screenAudioSource : getAudioSource("screenAudio")
+    screenAudioSource = rtc.screenAudioSource
+  }else{
+    screenAudioSource = null
+  }
+  
   const createStreamOptions = {
     uid: getUidFromDomInput() || rtc.client.getChannelInfo().uid,
-    audio: $('#enableAudio').prop('checked'),
+    audio,
     audioProcessing: getAudioProcessingConfig(),
     microphoneId: $('#micro').val(),
-    video: $('#enableVideo').prop('checked'),
-    screen: $('#enableScreen').prop('checked'),
-    screenAudio: $('#enableScreenAudio').prop('checked'),
+    video,
+    screen,
+    screenAudio,
     sourceId: sourceId,
     audioSource,
-    videoSource
+    videoSource,
+    screenAudioSource,
+    screenVideoSource,
   };
   if ($('#camera').val()){
     createStreamOptions.cameraId = $('#camera').val();
@@ -1287,7 +1351,7 @@ function initLocalStream(audioSource, videoSource) {
 
   const audioProfile = $('#sessionConfigAudioProfile').val();
   if (audioProfile){
-    rtc.localStream.setAudioProfile($('#sessionConfigAudioProfile').val())
+    rtc.localStream.setAudioProfile(audioProfile)
   }
   const screenProfile = $('#sessionConfigScreenProfile').val()
   const screenFrameRate = $('#sessionConfigScreenFrameRate').val()
@@ -1302,7 +1366,7 @@ function initLocalStream(audioSource, videoSource) {
       video: $("#localPlayOptionsVideo").prop('checked'),
       screen: $("#localPlayOptionsScreen").prop('checked'),
     } : null;
-    
+
     await rtc.localStream.play(document.getElementById('local-container'), playOptions)
     console.warn('音视频初始化完成，播放本地视频', playOptions);
     rtc.localStream.setLocalRenderMode(globalConfig.localViewConfig)
@@ -1381,12 +1445,18 @@ function unpublish(type=null) {
 }
 
 function subscribe(remoteStream) {
-  remoteStream.setSubscribeConfig({
+  let subscribeConfig = {
     audio: $('#subAudio').prop('checked'),
     video: $('#subVideo').prop('checked'),
     screen: $('#subScreen').prop('checked'),
-    highOrLow: $('#subResolution').val() === "" ? undefined : parseInt($('#subResolution').val()),
-  })
+  }
+  if (subscribeConfig.video && $("#subResolutionVideo").val()){
+    subscribeConfig.video = $("#subResolutionVideo").val();
+  }
+  if (subscribeConfig.screen && $("#subResolutionScreen").val()){
+    subscribeConfig.screen = $("#subResolutionScreen").val();
+  }
+  remoteStream.setSubscribeConfig(subscribeConfig)
 
   rtc.client.subscribe(remoteStream).then(()=>{
     console.log('本地 subscribe 成功')
@@ -1745,6 +1815,25 @@ $('#setAudioOutput').on('click', () => {
  *              设备开关逻辑
  * ----------------------------------------
  */
+$('#playCameraSource').on('click', () => {
+  console.warn('打开自定义摄像头')
+  if (!rtc.localStream) {
+    assertLocalStream()
+    return
+  }
+  rtc.videoSource = rtc.videoSource?.readyState === "live" ? rtc.videoSource : getVideoSource("video")
+  rtc.localStream.open({
+    type: 'video',
+    videoSource: rtc.videoSource,
+  }).then(async()=>{
+    console.log('打开摄像头 sucess')
+    await rtc.localStream.play(document.getElementById('local-container'))
+    rtc.localStream.setLocalRenderMode(globalConfig.localViewConfig)
+  }).catch(err =>{
+    addLog('打开摄像头' + err)
+    console.log('打开摄像头 失败: ', err)
+  })
+})
 $('#playCamera').on('click', () => {
   console.warn('打开摄像头')
   if (!rtc.localStream) {
@@ -1786,6 +1875,29 @@ $('#playCameraOff').on('click', () => {
     console.log('关闭摄像头 失败: ', err)
   })
 })
+
+$('#playMicroSource').on('click', () => {
+  console.warn('打开自定义音频')
+  if (!rtc.localStream) {
+    assertLocalStream()
+    return
+  }
+  if ($('#sessionConfigAudioProfile').val()){
+    rtc.localStream.setAudioProfile($('#sessionConfigAudioProfile').val())
+  }
+  rtc.audioSource = rtc.audioSource?.readyState === "live" ? rtc.audioSource : getAudioSource("audio")
+  let openOptions = {
+    type: 'audio',
+    audioSource: rtc.audioSource,
+  }
+  console.log("openOptions", openOptions)
+  rtc.localStream.open(openOptions).then(()=>{
+    console.log('打开自定义音频成功')
+  }).catch(err =>{
+    addLog('打开自定义音频 失败: ' + err)
+    console.log('打开自定义音频 失败: ', err)
+  })
+})
 $('#playMicro').on('click', () => {
   console.warn('打开mic')
   if (!rtc.localStream) {
@@ -1819,6 +1931,28 @@ $('#playMicroOff').on('click', () => {
   }).catch(err =>{
     addLog('关闭mic 失败: ' + err)
     console.log('关闭mic 失败: ', err)
+  })
+})
+
+$('#playScreenSource').on('click', () => {
+  console.warn('打开自定义辅流')
+  if (!rtc.localStream) {
+    assertLocalStream()
+    return
+  }
+  rtc.screenVideoSource = rtc.screenVideoSource?.readyState === "live" ? rtc.screenVideoSource :getVideoSource("screen")
+  let openOptions = {
+    type: 'screen',
+    screenVideoSource: rtc.screenVideoSource,
+  }
+  console.log("openOptions", openOptions)
+  rtc.localStream.open(openOptions).then(async ()=>{
+    console.log('打开自定义辅流成功')
+    await rtc.localStream.play(document.getElementById('local-container'))
+    rtc.localStream.setLocalRenderMode(globalConfig.localViewConfig)
+  }).catch(err =>{
+    addLog('打开自定义辅流 失败: ' + err)
+    console.log('打开自定义辅流 失败: ', err)
   })
 })
 $('#playScreen').on('click', () => {
@@ -1862,6 +1996,32 @@ $('#playScreenOff').on('click', () => {
   })
 })
 /////
+
+$('#playScreenAudioSource').on('click', () => {
+  console.warn('打开自定义辅流音频')
+  if (!rtc.localStream) {
+    assertLocalStream()
+    return
+  }
+  const audioProfile = $('#sessionConfigAudioProfile').val();
+  if (audioProfile){
+    rtc.localStream.setAudioProfile(audioProfile)
+  }
+  rtc.screenAudioSource = rtc.screenAudioSource?.readyState === "live" ? rtc.screenAudioSource : getAudioSource("screenAudio")
+  let openOptions = {
+    type: 'screenAudio',
+    screenAudioSource: rtc.screenAudioSource,
+  }
+  console.log("openOptions", openOptions)
+  rtc.localStream.open(openOptions).then(async ()=>{
+    console.log('打开自定义辅流音频成功')
+    await rtc.localStream.play(document.getElementById('local-container'))
+    rtc.localStream.setLocalRenderMode(globalConfig.localViewConfig)
+  }).catch(err =>{
+    addLog('打开自定义辅流音频 失败: ' + err)
+    console.log('打开自定义辅流音频 失败: ', err)
+  })
+})
 $('#playScreenAudio').on('click', () => {
   console.warn('打开屏幕共享+音频')
   if (!rtc.localStream) {
