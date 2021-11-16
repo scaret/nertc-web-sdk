@@ -139,6 +139,7 @@ class LocalStream extends EventEmitter {
   public active:boolean = true;
   public logger:ILogger;
   public localStreamId: number;
+  public destroyed:boolean = false;
   
   constructor (options:LocalStreamOptions) {
     super()
@@ -170,6 +171,9 @@ class LocalStream extends EventEmitter {
       }
       if (this.state === "INITED" && this.client && this.client.adapterRef.localStream !== this){
         tag += " DETACHED";
+      }
+      if (this.destroyed){
+        tag += " DESTROYED"
       }
       return tag
     })
@@ -2708,6 +2712,7 @@ class LocalStream extends EventEmitter {
     this.logger.log(`uid ${this.stringStreamID} 销毁 Stream 实例`)
     this.stop()
     this._reset()
+    this.destroyed = true;
   }
 }
 
