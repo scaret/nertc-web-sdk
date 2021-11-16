@@ -8,6 +8,8 @@ import {
 import {MediaHelper} from "./media";
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
+import {LocalStream} from "../api/localStream";
+import {RemoteStream} from "../api/remoteStream";
 
 /**
  * 媒体录制（音频混音录制/视频录制）
@@ -31,9 +33,7 @@ class Record extends EventEmitter {
     startTime: null,
     endTime: null
   };
-  private adapterRef:AdapterRef;
-  private uid:number|string;
-  private _media:MediaHelper|null;
+  private stream: LocalStream|RemoteStream;
   private _recorder:MediaRecorder|null = null;
   private logger: ILogger;
   constructor (options:RecordInitOptions) {
@@ -44,9 +44,7 @@ class Record extends EventEmitter {
     })
     this._reset() // 初始化属性
     // 设置传入参数
-    this.adapterRef = options.adapterRef
-    this.uid = options.uid
-    this._media = options.media
+    this.stream = options.stream
   }
   /**
    * [开始录制]
@@ -82,7 +80,7 @@ class Record extends EventEmitter {
       }
     }
     if (reason) {
-      this.adapterRef.instance.apiFrequencyControl({
+      this.stream.client.apiFrequencyControl({
         name: 'startMediaRecording',
         code: -1,
         param: JSON.stringify({
@@ -118,7 +116,7 @@ class Record extends EventEmitter {
     try {
       await this._format()
       await this._start()
-      this.adapterRef.instance.apiFrequencyControl({
+      this.stream.client.apiFrequencyControl({
         name: 'startMediaRecording',
         code: 0,
         param: JSON.stringify({
@@ -129,7 +127,7 @@ class Record extends EventEmitter {
       })
     } catch (e) {
       this.logger.error('录制start error： ', e.name, e.message, e);
-      this.adapterRef.instance.apiFrequencyControl({
+      this.stream.client.apiFrequencyControl({
         name: 'startMediaRecording',
         code: -1,
         param: JSON.stringify({
@@ -165,7 +163,7 @@ class Record extends EventEmitter {
       if(options && options.isUser === false) {
 
       } else {
-        this.adapterRef.instance.apiFrequencyControl({
+        this.stream.client.apiFrequencyControl({
           name: 'stopMediaRecording',
           code: -1,
           param: ''
@@ -191,7 +189,7 @@ class Record extends EventEmitter {
       // 默认文件名
       this._recorder.stop()
       if (options && options.isUser){
-        this.adapterRef.instance.apiFrequencyControl({
+        this.stream.client.apiFrequencyControl({
           name: 'stopMediaRecording',
           code: -1,
           param: ''
@@ -207,7 +205,7 @@ class Record extends EventEmitter {
    */
   play (div:HTMLElement) {
     if (this._status.state !== 'stopped') {
-      this.adapterRef.instance.apiFrequencyControl({
+      this.stream.client.apiFrequencyControl({
         name: 'playMediaRecording',
         code: -1,
         param: JSON.stringify({
@@ -217,7 +215,7 @@ class Record extends EventEmitter {
       this.logger.warn(`MediaRecordHelper: record stopping when ${this._recorder && this._recorder.state}`)
       return Promise.resolve()
     }
-    this.adapterRef.instance.apiFrequencyControl({
+    this.stream.client.apiFrequencyControl({
       name: 'playMediaRecording',
       code: 0,
       param: JSON.stringify({
@@ -250,7 +248,7 @@ class Record extends EventEmitter {
         this.logger.log(`MediaRecordHelper: download: cannot download media without url ...`)
       }
       if (isUser) {
-        this.adapterRef.instance.apiFrequencyControl({
+        this.stream.client.apiFrequencyControl({
           name: 'downloadMediaRecording',
           code: 0,
           param: ''
@@ -264,7 +262,7 @@ class Record extends EventEmitter {
    * 清空录制文件
    */
   async clean () {
-    this.adapterRef.instance.apiFrequencyControl({
+    this.stream.client.apiFrequencyControl({
       name: 'cleanMediaRecording',
       code: 0,
       param: ''
@@ -587,7 +585,7 @@ class Record extends EventEmitter {
       startTime: this._status.startTime,
       endTime: this._status.endTime
     }, this._status.option)
-    this.adapterRef.instance.apiFrequencyControl({
+    this.stream.client.apiFrequencyControl({
       name: 'listMediaRecording',
       code: 0,
       param: ''

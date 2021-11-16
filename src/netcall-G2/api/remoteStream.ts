@@ -195,8 +195,6 @@ class RemoteStream extends EventEmitter {
     this.screen = options.screen || false
     this.client = options.client
     this.mediaHelper = new MediaHelper({
-      adapterRef: this.client.adapterRef,
-      uid: options.uid,
       stream: this,
     });
     this._play = new Play({
@@ -204,9 +202,7 @@ class RemoteStream extends EventEmitter {
     })
     this._record = new Record({
       logger: this.logger,
-      adapterRef: this.client.adapterRef,
-      uid: this.client.adapterRef.channelInfo.uidType === 'string' ? this.stringStreamID : this.streamID,
-      media: this.mediaHelper
+      stream: this,
     })
     
     this.logger.log(`创建远端Stream: `, JSON.stringify({
@@ -1337,6 +1333,14 @@ class RemoteStream extends EventEmitter {
         recv: this.muteStatus.screenRecv,
         muted: this.muteStatus.screenSend || this.muteStatus.screenRecv,
       };
+    }
+  }
+  
+  getAdapterRef(){
+    if (this.client.adapterRef.remoteStreamMap[this.streamID] === this){
+      return this.client.adapterRef;
+    }else{
+      return null;
     }
   }
   

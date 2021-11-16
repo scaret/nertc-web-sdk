@@ -55,7 +55,7 @@ export class Producer extends EnhancedEventEmitter
   // Closed flag.
   private _closed = false;
   // Associated RTCRtpSender.
-  private readonly _rtpSender?: RTCRtpSender;
+  public readonly _rtpSender?: RTCRtpSender;
   // Associated RTCRtpSender.
   private readonly _rtpSenderLow?: RTCRtpSender;
   // Local track.

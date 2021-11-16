@@ -218,8 +218,6 @@ class LocalStream extends EventEmitter {
     this.screenAudioSource = options.screenAudioSource || null
     this.screenVideoSource = options.screenVideoSource || null
     this.mediaHelper = new MediaHelper({
-      adapterRef: this.client.adapterRef,
-      uid: options.uid,
       stream: this,
     });
     this._play = new Play({
@@ -227,9 +225,7 @@ class LocalStream extends EventEmitter {
     })
     this._record = new Record({
       logger: this.logger,
-      adapterRef: this.client.adapterRef,
-      uid: this.client.adapterRef.channelInfo.uidType === 'string' ? this.stringStreamID : this.streamID,
-      media: this.mediaHelper
+      stream: this,
     })
     if (this.client._params && this.client._params.mode === 'live') {
       this.audioProfile = 'music_standard'
@@ -256,6 +252,15 @@ class LocalStream extends EventEmitter {
         screenProfile: this.screenProfile
       }, null, ' ')
     })
+  }
+  
+  getAdapterRef(){
+    // 仅当localStream在发布时才会返回adapterRef
+    if (this.client.adapterRef.localStream === this){
+      return this.client.adapterRef;
+    }else{
+      return null
+    }
   }
 
   _reset () {
@@ -345,7 +350,7 @@ class LocalStream extends EventEmitter {
    */
 
   async getStats() {
-    let localPc = this.client.adapterRef && this.client.adapterRef._mediasoup && this.client.adapterRef._mediasoup._sendTransport && this.client.adapterRef._mediasoup._sendTransport._handler._pc;
+    let localPc = this.getAdapterRef()?._mediasoup?._sendTransport?._handler._pc;
     this.logger.log(`获取音视频连接数据, uid: ${this.stringStreamID}`);
     if (localPc) {
       const stats = {
@@ -421,7 +426,6 @@ class LocalStream extends EventEmitter {
     }
     this.state = "INITING"
     this.logger.log('初始化音视频流对象')
-    this.client.adapterRef.localStream = this
     //设置分辨率和码率
     this.client.adapterRef.channelInfo.sessionConfig.maxVideoQuality = NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p
     if (this.videoProfile){
@@ -890,11 +894,13 @@ class LocalStream extends EventEmitter {
             if (deviceId){
               this.microphoneId = deviceId;
             }
-            if (this.client.adapterRef && this.client.adapterRef.connectState.curState === "CONNECTED"){
+            if (!this.getAdapterRef()){
+              this.logger.log('Stream.open:localStream未发布，无需发布', type, constraint);
+            } else if (this.client.adapterRef.connectState.curState !== "CONNECTED"){
+              this.logger.log('Stream.open:client不在频道中，无需发布。', constraint);
+            }else{
               this.logger.log('Stream.open:开始发布', constraint);
               await this.client.adapterRef._mediasoup?.createProduce(this, "audio")
-            }else{
-              this.logger.log('Stream.open:client不在频道中，无需发布。', constraint);
             }
           }
           break
@@ -925,11 +931,13 @@ class LocalStream extends EventEmitter {
           if(this.mediaHelper){
             const constraint = {screenAudio: true, screenAudioSource};
             await this.mediaHelper.getStream(constraint);
-            if (this.client.adapterRef?.connectState.curState === "CONNECTED"){
+            if (!this.getAdapterRef()){
+              this.logger.log('Stream.open:localStream未发布，无需发布', type, constraint);
+            } else if (this.client.adapterRef.connectState.curState !== "CONNECTED"){
+              this.logger.log('Stream.open:client不在频道中，无需发布。', constraint);
+            }else{
               this.logger.log('Stream.open:开始发布', constraint);
               await this.client.adapterRef._mediasoup?.createProduce(this, "audio")
-            }else{
-              this.logger.log('Stream.open:client不在频道中，无需发布。', constraint);
             }
           }
           break
@@ -1010,14 +1018,16 @@ class LocalStream extends EventEmitter {
               this.cameraId = deviceId
             }
           }
-          if (this.client.adapterRef && this.client.adapterRef.connectState.curState === "CONNECTED"){
+          if (!this.getAdapterRef()){
+            this.logger.log('Stream.open:localStream未发布，无需发布', type, constraint);
+          } else if (this.client.adapterRef.connectState.curState !== "CONNECTED"){
+            this.logger.log('Stream.open:client不在频道中，无需发布。', constraint);
+          }else{
             this.logger.log('Stream.open:开始发布', constraint);
             await this.client.adapterRef._mediasoup?.createProduce(this, type)
             if (options.screenAudio){
               await this.client.adapterRef._mediasoup?.createProduce(this, "audio")
             }
-          }else{
-            this.logger.log('Stream.open:client不在频道中，无需发布。', constraint);
           }
           break
         default:
@@ -1094,12 +1104,12 @@ class LocalStream extends EventEmitter {
             message: 'no media helper'
           })
         }
-        if (this.client.adapterRef && this.client.adapterRef._mediasoup){
+        if (this.getAdapterRef()){
           if (this.mediaHelper.getAudioInputTracks().length > 0){
             this.logger.log('Stream.close:关闭音频，保留发布：', type);
           }else{
             this.logger.log('Stream.close:停止发布音频');
-            await this.client.adapterRef._mediasoup.destroyProduce('audio');
+            await this.client.adapterRef._mediasoup?.destroyProduce('audio');
           }
         }else{
           this.logger.log('Stream.close:未发布音频，无需停止发布');
@@ -1121,12 +1131,12 @@ class LocalStream extends EventEmitter {
             message: 'no media helper'
           })
         }
-        if (this.client.adapterRef && this.client.adapterRef._mediasoup){
+        if (this.getAdapterRef()){
           if (this.mediaHelper.getAudioInputTracks().length > 0){
             this.logger.log('Stream.close:关闭音频，保留发布：', type);
           }else{
             this.logger.log('Stream.close:停止发布音频');
-            await this.client.adapterRef._mediasoup.destroyProduce('audio');
+            await this.client.adapterRef._mediasoup?.destroyProduce('audio');
           }
         }else{
           this.logger.log('Stream.close:未发布音频，无需停止发布');
@@ -1155,11 +1165,11 @@ class LocalStream extends EventEmitter {
           })
         }
         this._play.stopPlayVideoStream()
-        if (!this.client.adapterRef._mediasoup){
+        if (!this.getAdapterRef()){
           this.logger.log('Stream.close:未发布视频，无需停止发布');
         }else{
           this.logger.log('Stream.close:停止发布视频');
-          await this.client.adapterRef._mediasoup.destroyProduce('video');
+          await this.client.adapterRef._mediasoup?.destroyProduce('video');
         }
         break
       case 'screen':
@@ -1184,11 +1194,11 @@ class LocalStream extends EventEmitter {
           })
         }
         this._play.stopPlayScreenStream()
-        if (!this.client.adapterRef._mediasoup){
+        if (!this.getAdapterRef()){
           this.logger.log('Stream.close:未发布辅流，无需停止发布');
         }else{
           this.logger.log('Stream.close:停止发布辅流');
-          await this.client.adapterRef._mediasoup.destroyProduce('screen');
+          await this.client.adapterRef._mediasoup?.destroyProduce('screen');
         }
         break
       case 'all':
@@ -1267,15 +1277,10 @@ class LocalStream extends EventEmitter {
   async unmuteAudio () {
     this.logger.log('启用音频轨道: ', this.stringStreamID)
     try {
-      if (!this.client.adapterRef._mediasoup){
-        throw new RtcError({
-          code: ErrorCode.NO_MEDIASERVER,
-          message: 'media server error 15'
-        })
+      if (this.getAdapterRef()){
+        // unmuteLocalAudio1: unmute Mediasoup
+        await this.client.adapterRef._mediasoup?.unmuteAudio()
       }
-      
-      // unmuteLocalAudio1: unmute Mediasoup
-      await this.client.adapterRef._mediasoup.unmuteAudio()
       // unmuteLocalAudio2: unmute发送track
       const tracks = this.mediaHelper.audio.audioStream.getAudioTracks();
       if (tracks && tracks.length) {
@@ -1284,11 +1289,12 @@ class LocalStream extends EventEmitter {
         })
       }
       // unmuteLocalAudio3. unmute设备
-      if (this.mediaHelper.audio.micTrack){
-        this.mediaHelper.audio.micTrack.enabled = true;
-      }
+      this.mediaHelper.getAudioInputTracks().forEach((track)=>{
+        track.enabled = true;
+      })
+      
       // unmuteLocalAudio4. 混音的gainNode设为0（使getAudioLevel恢复）
-      if (this.mediaHelper.audio.webAudio && this.mediaHelper.audio.webAudio.gainFilter){
+      if (this.mediaHelper.audio.webAudio?.gainFilter){
         this.mediaHelper.audio.webAudio.gainFilter.gain.value = 1;
       }
       this.muteStatus.audioSend = false;
@@ -1322,14 +1328,10 @@ class LocalStream extends EventEmitter {
     this.logger.log('禁用音频轨道: ', this.stringStreamID)
 
     try {
-      if (!this.client.adapterRef._mediasoup){
-        throw new RtcError({
-          code: ErrorCode.NO_MEDIASERVER,
-          message: 'media server error 16'
-        })
-      }
       // muteLocalAudio1: mute mediasoup
-      await this.client.adapterRef._mediasoup.muteAudio()
+      if (this.getAdapterRef()){
+        await this.client.adapterRef._mediasoup?.muteAudio()
+      }
       // muteLocalAudio2: mute发送的track
       const tracks = this.mediaHelper.audio.audioStream.getAudioTracks();
       if (tracks && tracks.length) {
@@ -1338,11 +1340,11 @@ class LocalStream extends EventEmitter {
         })
       }
       // muteLocalAudio3: mute麦克风设备track
-      if (this.mediaHelper.audio.micTrack){
-        this.mediaHelper.audio.micTrack.enabled = false;
-      }
+      this.mediaHelper.getAudioInputTracks().forEach(track=>{
+        track.enabled = false;
+      })
       // muteLocalAudio4: 混音的gainNode设为0（使getAudioLevel为0）
-      if (this.mediaHelper.audio.webAudio && this.mediaHelper.audio.webAudio.gainFilter){
+      if (this.mediaHelper.audio.webAudio?.gainFilter){
         this.mediaHelper.audio.webAudio.gainFilter.gain.value = 0;
       }
       this.muteStatus.audioSend = true
@@ -1690,14 +1692,15 @@ class LocalStream extends EventEmitter {
   async unmuteVideo () {
     this.logger.log(`启用 ${this.stringStreamID} 的视频轨道`)
     try {
-      if (!this.client.adapterRef._mediasoup){
-        throw new RtcError({
-          code: ErrorCode.NO_MEDIASERVER,
-          message: 'media server error 17'
-        })
+      if (this.getAdapterRef()){
+        this.client.adapterRef._mediasoup?.unmuteVideo()
       }
-      this.client.adapterRef._mediasoup.unmuteVideo()
-      // local unmute
+      if (this.mediaHelper.video.videoSource){
+        this.mediaHelper.video.videoSource.enabled = true
+      }
+      if (this.mediaHelper.video.cameraTrack){
+        this.mediaHelper.video.cameraTrack.enabled = true
+      }
       this.muteStatus.videoSend = false
       this.client.apiFrequencyControl({
         name: 'unmuteVideo',
@@ -1728,14 +1731,15 @@ class LocalStream extends EventEmitter {
   async muteVideo () {
     this.logger.log(`禁用 ${this.stringStreamID} 的视频轨道`)
     try {
-      if (!this.client.adapterRef._mediasoup){
-        throw new RtcError({
-          code: ErrorCode.NO_MEDIASERVER,
-          message: 'media server error 18'
-        })
+      if (this.getAdapterRef()){
+        await this.client.adapterRef._mediasoup?.muteVideo()
       }
-      // local mute
-      await this.client.adapterRef._mediasoup.muteVideo()
+      if (this.mediaHelper.video.videoSource){
+        this.mediaHelper.video.videoSource.enabled = false
+      }
+      if (this.mediaHelper.video.cameraTrack){
+        this.mediaHelper.video.cameraTrack.enabled = false
+      }
       this.muteStatus.videoSend = true
       this.client.apiFrequencyControl({
         name: 'muteVideo',
@@ -1767,13 +1771,15 @@ class LocalStream extends EventEmitter {
   async unmuteScreen () {
     this.logger.log(`启用 ${this.stringStreamID} 的视频轨道`)
     try {
-      if (!this.client.adapterRef._mediasoup){
-        throw new RtcError({
-          code: ErrorCode.NO_MEDIASERVER,
-          message: 'media server error 19'
-        })
+      if (this.getAdapterRef()){
+        this.client.adapterRef._mediasoup?.unmuteScreen()
       }
-      this.client.adapterRef._mediasoup.unmuteScreen()
+      if (this.mediaHelper.screen.screenVideoTrack){
+        this.mediaHelper.screen.screenVideoTrack.enabled = true
+      }
+      if (this.mediaHelper.screen.screenVideoSource){
+        this.mediaHelper.screen.screenVideoSource.enabled = true
+      }
       // local unmute
       this.muteStatus.screenSend = false
       this.client.apiFrequencyControl({
@@ -1803,16 +1809,18 @@ class LocalStream extends EventEmitter {
    * @return {Promise}
    */
   async muteScreen () {
-    this.logger.log(`禁用 ${this.stringStreamID} 的视频轨道`)
+    this.logger.log(`禁用 ${this.stringStreamID} 的辅流轨道`)
     try {
-      if (!this.client.adapterRef._mediasoup){
-        throw new RtcError({
-          code: ErrorCode.NO_MEDIASERVER,
-          message: 'media server error 20'
-        })
-      }
       // local mute
-      await this.client.adapterRef._mediasoup.muteScreen()
+      if (this.getAdapterRef()){
+        await this.client.adapterRef._mediasoup?.muteScreen()
+      }
+      if (this.mediaHelper.screen.screenVideoSource){
+        this.mediaHelper.screen.screenVideoSource.enabled = false
+      }
+      if (this.mediaHelper.screen.screenVideoTrack){
+        this.mediaHelper.screen.screenVideoTrack.enabled = false
+      }
       this.muteStatus.screenSend = true
       this.client.apiFrequencyControl({
         name: 'muteScreen',
@@ -1924,7 +1932,7 @@ class LocalStream extends EventEmitter {
   }
 
   getSender (mediaTypeShort: "audio"|"video"|"screen", streamType: "high"|"low"){
-    const peer = this.client.adapterRef._mediasoup && this.client.adapterRef._mediasoup._sendTransport && this.client.adapterRef._mediasoup._sendTransport.handler._pc
+    const peer = this.getAdapterRef()?._mediasoup?._sendTransport?.handler._pc
     let sender = null;
     if (peer) {
       if (mediaTypeShort === "audio") {

@@ -19,7 +19,6 @@ import {RemoteStream} from "../api/remoteStream";
 import {Device} from "./device";
 import {Logger} from "./3rd/mediasoup-client/Logger";
 class MediaHelper extends EventEmitter {
-  private adapterRef: AdapterRef;
   stream: LocalStream|RemoteStream;
   public audio: {
     //****************** 以下为音频主流 ***************************************
@@ -115,7 +114,6 @@ class MediaHelper extends EventEmitter {
   constructor (options:MediaHelperOptions) {
     super()
     // 设置对象引用
-    this.adapterRef = options.adapterRef
     this.stream = options.stream;
     this.logger = options.stream.logger.getChild(()=>{
       let tag = "mediaHelper";
@@ -386,14 +384,12 @@ class MediaHelper extends EventEmitter {
             }else{
               this.logger.warn('getStream screenAudio: 未获取到屏幕共享音频');
               this.stream.screenAudio = false;
-              if (this.adapterRef.instance){
-                this.adapterRef.instance.emit('error', 'screenAudioNotAllowed');
-              }
+              this.stream.client.emit('error', 'screenAudioNotAllowed');
             }
           }
         }
         
-        this.adapterRef.instance.apiEventReport('setFunction', {
+        this.stream.client.apiEventReport('setFunction', {
           name: 'set_screen',
           oper: '1',
           value: 'success'
@@ -418,7 +414,7 @@ class MediaHelper extends EventEmitter {
           this.audio.deviceInfo.mic.label = this.audio.micTrack.label;
           this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
           this.audio.deviceInfo.mic.groupId = micSettings.groupId;
-          this.adapterRef.instance.apiEventReport('setFunction', {
+          this.stream.client.apiEventReport('setFunction', {
             name: 'set_mic',
             oper: '1',
             value: 'success'
@@ -489,7 +485,7 @@ class MediaHelper extends EventEmitter {
           this.audio.deviceInfo.mic.label = this.audio.micTrack.label;
           this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
           this.audio.deviceInfo.mic.groupId = micSettings.groupId;
-          this.adapterRef.instance.apiEventReport('setFunction', {
+          this.stream.client.apiEventReport('setFunction', {
             name: 'set_mic',
             oper: '1',
             value: 'success'
@@ -502,7 +498,7 @@ class MediaHelper extends EventEmitter {
           this.video.cameraTrack = cameraTrack;
           emptyStreamWith(this.video.videoStream, cameraTrack);
           this.listenToTrackEnded(this.video.cameraTrack);
-          this.adapterRef.instance.apiEventReport('setFunction', {
+          this.stream.client.apiEventReport('setFunction', {
             name: 'set_camera',
             oper: '1',
             value: 'success'
@@ -515,21 +511,21 @@ class MediaHelper extends EventEmitter {
     } catch (e){
       this.logger.error('getStream error:', e.name, e.message)
       if (audio) {
-        this.adapterRef.instance.apiEventReport('setFunction', {
+        this.stream.client.apiEventReport('setFunction', {
           name: 'set_mic',
           oper: '1',
           value: e.message
         })
       } 
       if (video) {
-        this.adapterRef.instance.apiEventReport('setFunction', {
+        this.stream.client.apiEventReport('setFunction', {
           name: 'set_camera',
           oper: '1',
           value: e.message
         })
       } 
       if (screen) {
-        this.adapterRef.instance.apiEventReport('setFunction', {
+        this.stream.client.apiEventReport('setFunction', {
           name: 'set_screen',
           oper: '1',
           value: e.message
@@ -584,7 +580,7 @@ class MediaHelper extends EventEmitter {
         this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
         this.audio.deviceInfo.mic.groupId = micSettings.groupId;
 
-        this.adapterRef.instance.apiEventReport('setFunction', {
+        this.stream.client.apiEventReport('setFunction', {
           name: 'set_mic',
           oper: '1',
           value: 'success'
@@ -599,7 +595,7 @@ class MediaHelper extends EventEmitter {
         this._stopTrack(this.video.videoStream)
         emptyStreamWith(this.video.videoStream, this.video.cameraTrack);
         
-        this.adapterRef.instance.apiEventReport('setFunction', {
+        this.stream.client.apiEventReport('setFunction', {
           name: 'set_camera',
           oper: '1',
           value: 'success'
@@ -628,7 +624,7 @@ class MediaHelper extends EventEmitter {
     } catch (e){
       this.logger.error('getStream error', e.message)
       const name = audio ? 'set_mic' : 'set_camera'
-      this.adapterRef.instance.apiEventReport('setFunction', {
+      this.stream.client.apiEventReport('setFunction', {
         name,
         oper: '1',
         value: e.message
@@ -651,8 +647,8 @@ class MediaHelper extends EventEmitter {
         this.video.videoTrackLow = trackHigh.clone();
         this.video.videoTrackLow.applyConstraints(constraintsLow);
         watchTrack(this.video.videoTrackLow);
-        if (this.adapterRef.instance){
-          this.adapterRef.instance.emit('track-low-init', {mediaType})
+        if (this.stream.client){
+          this.stream.client.emit('track-low-init', {mediaType})
         }
       }
     } else if (mediaType === "screen") {
@@ -668,8 +664,8 @@ class MediaHelper extends EventEmitter {
         this.screen.screenVideoTrackLow = trackHigh.clone();
         this.screen.screenVideoTrackLow.applyConstraints(constraintsLow);
         watchTrack(this.screen.screenVideoTrackLow);
-        if (this.adapterRef.instance){
-          this.adapterRef.instance.emit('track-low-init', {mediaType})
+        if (this.stream.client){
+          this.stream.client.emit('track-low-init', {mediaType})
         }
       }
     }
@@ -714,7 +710,7 @@ class MediaHelper extends EventEmitter {
 
   getAudioConstraints() {
     if (this.stream.isRemote){
-      this.adapterRef.instance.logger.error('Remote Stream dont have audio constraints');
+      this.logger.error('Remote Stream dont have audio constraints');
       return;
     }
     const audioProcessing = this.stream.audioProcessing;
@@ -794,7 +790,7 @@ class MediaHelper extends EventEmitter {
       this.screen.screenVideoTrack?.stop()
       emptyStreamWith(this.screen.screenVideoStream, null)
     }
-    this.adapterRef.instance.apiEventReport('setFunction', {
+    this.stream.client.apiEventReport('setFunction', {
       name: type,
       oper: '0',
       value: 'success'
@@ -931,7 +927,7 @@ class MediaHelper extends EventEmitter {
     }
 
     if (reason) {
-      this.adapterRef.instance.apiFrequencyControl({
+      this.stream.client.apiFrequencyControl({
         name: 'startAudioMixing',
         code: -1,
         param: JSON.stringify(Object.assign(this.audio.mixAudioConf, {
@@ -1046,26 +1042,26 @@ class MediaHelper extends EventEmitter {
     }
     track.addEventListener('ended', ()=>{
       this.logger.log("Track ended", track.label, track.id);
-      if (this.stream !== this.adapterRef.localStream){
+      if (this.stream !== this.stream.client.adapterRef.localStream){
         return;
       }
       if (track === this.audio.micTrack || track === this.audio.audioSource){
         //停止的原因可能是设备拔出、取消授权等
         this.logger.warn('音频轨道已停止')
-        this.adapterRef.instance.safeEmit('audioTrackEnded')
+        this.stream.client.safeEmit('audioTrackEnded')
       }
       if (track === this.video.cameraTrack || track === this.video.videoSource){
         //停止的原因可能是设备拔出、取消授权等
         this.logger.warn('视频轨道已停止')
-        this.adapterRef.instance.safeEmit('videoTrackEnded')
+        this.stream.client.safeEmit('videoTrackEnded')
       }
       if (track === this.screen.screenVideoTrack){
         this.logger.warn('屏幕共享已停止')
-        this.adapterRef.instance.safeEmit('stopScreenSharing')
+        this.stream.client.safeEmit('stopScreenSharing')
       }
       if (track === this.screenAudio.screenAudioTrack){
         this.logger.warn('屏幕共享音频已停止')
-        this.adapterRef.instance.safeEmit('stopScreenAudio')
+        this.stream.client.safeEmit('stopScreenAudio')
       }
     });
   }
@@ -1127,7 +1123,7 @@ class MediaHelper extends EventEmitter {
       reason = 'NOT_PLAY'
     }
     if(reason){
-      this.adapterRef.instance.apiFrequencyControl({
+      this.stream.client.apiFrequencyControl({
         name: 'pauseAudioMixing',
         code: -1,
         param: JSON.stringify(Object.assign(this.audio.mixAudioConf, {
@@ -1157,7 +1153,7 @@ class MediaHelper extends EventEmitter {
         )
       }
     }
-    this.adapterRef.instance.apiFrequencyControl({
+    this.stream.client.apiFrequencyControl({
       name: 'pauseAudioMixing',
       code: 0,
       param: JSON.stringify(this.audio.mixAudioConf, null, ' ')
@@ -1182,7 +1178,7 @@ class MediaHelper extends EventEmitter {
       reason = 'NOT_PAUSED'
     }
     if(reason){
-      this.adapterRef.instance.apiFrequencyControl({
+      this.stream.client.apiFrequencyControl({
         name: 'resumeAudioMixing',
         code: -1,
         param: JSON.stringify(Object.assign(this.audio.mixAudioConf, {
@@ -1212,7 +1208,7 @@ class MediaHelper extends EventEmitter {
         )
       }
     }
-    this.adapterRef.instance.apiFrequencyControl({
+    this.stream.client.apiFrequencyControl({
       name: 'resumeAudioMixing',
       code: 0,
       param: JSON.stringify(this.audio.mixAudioConf, null, ' ')
@@ -1264,7 +1260,7 @@ class MediaHelper extends EventEmitter {
       reason = 'NOT_OPEN'
     } 
     if(reason){
-      this.adapterRef.instance.apiFrequencyControl({
+      this.stream.client.apiFrequencyControl({
         name: 'stopAudioMixing',
         code: -1,
         param: JSON.stringify(Object.assign(this.audio.mixAudioConf, {
@@ -1287,7 +1283,7 @@ class MediaHelper extends EventEmitter {
         )
       }
     }
-    this.adapterRef.instance.apiFrequencyControl({
+    this.stream.client.apiFrequencyControl({
       name: 'stopAudioMixing',
       code: 0,
       param: JSON.stringify(this.audio.mixAudioConf, null, ' ')
@@ -1326,7 +1322,7 @@ class MediaHelper extends EventEmitter {
       reason = 'INVALID_ARGUMENTS'
     } 
     if(reason){
-      this.adapterRef.instance.apiFrequencyControl({
+      this.stream.client.apiFrequencyControl({
         name: 'adjustAudioMixingVolume',
         code: -1,
         param: JSON.stringify(Object.assign(this.audio.mixAudioConf, {
@@ -1357,7 +1353,7 @@ class MediaHelper extends EventEmitter {
         )
       }
     }
-    this.adapterRef.instance.apiFrequencyControl({
+    this.stream.client.apiFrequencyControl({
       name: 'adjustAudioMixingVolume',
       code: 0,
       param: JSON.stringify({
@@ -1387,7 +1383,7 @@ class MediaHelper extends EventEmitter {
       return Promise.resolve()
     }
     if(reason){
-      this.adapterRef.instance.apiFrequencyControl({
+      this.stream.client.apiFrequencyControl({
         name: 'setAudioMixingPosition',
         code: -1,
         param: JSON.stringify({
@@ -1453,7 +1449,7 @@ class MediaHelper extends EventEmitter {
             playStartTime: playStartTime,
             auidoMixingEnd: auidoMixingEnd
           }).then(res => {
-            this.adapterRef.instance.apiFrequencyControl({
+            this.stream.client.apiFrequencyControl({
               name: 'setAudioMixingPosition',
               code: 0,
               param: JSON.stringify({
@@ -1462,7 +1458,7 @@ class MediaHelper extends EventEmitter {
             })
             resolve(res);
           }).catch(err => {
-            this.adapterRef.instance.apiFrequencyControl({
+            this.stream.client.apiFrequencyControl({
               name: 'setAudioMixingPosition',
               code: -1,
               param: JSON.stringify({
@@ -1474,7 +1470,7 @@ class MediaHelper extends EventEmitter {
           })
         })
         .catch(err => {
-          this.adapterRef.instance.apiFrequencyControl({
+          this.stream.client.apiFrequencyControl({
             name: 'setAudioMixingPosition',
             code: -1,
             param: JSON.stringify({
@@ -1495,7 +1491,7 @@ class MediaHelper extends EventEmitter {
       this.logger.log('getAudioMixingPlayedTime: 当前没有开启伴音')
       return Promise.resolve()
     } 
-    this.adapterRef.instance.apiFrequencyControl({
+    this.stream.client.apiFrequencyControl({
       name: 'getAudioMixingPlayedTime',
       code: 0,
       param: JSON.stringify({
@@ -1514,7 +1510,7 @@ class MediaHelper extends EventEmitter {
       return Promise.resolve()
     } 
 
-    this.adapterRef.instance.apiFrequencyControl({
+    this.stream.client.apiFrequencyControl({
       name: 'getAudioMixingTotalTime',
       code: 0,
       param: JSON.stringify({
@@ -1619,16 +1615,12 @@ class MediaHelper extends EventEmitter {
 
     try {
       const result = this.audio.webAudio.createAudioBufferSource(this.audio.mixAudioConf.audioBuffer[filePath])
-      //@ts-ignore
       this.audio.mixAudioConf.sounds[soundId].sourceNode = result.sourceNode
-      //@ts-ignore
       if(result && result.sourceNode){
-        //@ts-ignore
-        result.sourceNode.onended = onended = event => {
+        result.sourceNode.onended = event => {
           this.stopEffect(soundId)
         }
       }
-      //@ts-ignore
       this.audio.mixAudioConf.sounds[soundId].gainNode = result.gainNode
       this.audio.mixAudioConf.sounds[soundId].totalTime = this.audio.mixAudioConf.audioBuffer[filePath] && this.audio.mixAudioConf.audioBuffer[filePath].duration
       this.audio.mixAudioConf.sounds[soundId].cycle = cycle
@@ -1642,7 +1634,7 @@ class MediaHelper extends EventEmitter {
       this.audio.mixAudioConf.sounds[soundId].state = 'PLAYED'
       this.audio.mixAudioConf.sounds[soundId].startTime = Date.now()
 
-      this.adapterRef.instance.apiFrequencyControl({
+      this.stream.client.apiFrequencyControl({
         name: 'playEffect',
         code: 0,
         param: JSON.stringify(options, null, ' ')
@@ -1677,7 +1669,7 @@ class MediaHelper extends EventEmitter {
     this._audioFilePlaybackCompletedEvent()
     //delete this.audio.mixAudioConf.sounds[soundId]
 
-    this.adapterRef.instance.apiFrequencyControl({
+    this.stream.client.apiFrequencyControl({
       name: 'stopEffect',
       code: 0,
       param: JSON.stringify(soundId, null, ' ')
@@ -1749,7 +1741,7 @@ class MediaHelper extends EventEmitter {
     }
     this.logger.log("pauseEffect 暂停位置: ", playedTime)
 
-    this.adapterRef.instance.apiFrequencyControl({
+    this.stream.client.apiFrequencyControl({
       name: 'pauseEffect',
       code: 0,
       param: JSON.stringify(soundId, null, ' ')
@@ -1824,7 +1816,7 @@ class MediaHelper extends EventEmitter {
     this.audio.mixAudioConf.sounds[soundId].state = 'PLAYED'
     this.audio.mixAudioConf.sounds[soundId].startTime = Date.now()
 
-    this.adapterRef.instance.apiFrequencyControl({
+    this.stream.client.apiFrequencyControl({
       name: 'resumeEffect',
       code: 0,
       param: JSON.stringify(soundId, null, ' ')
@@ -1866,16 +1858,15 @@ class MediaHelper extends EventEmitter {
         })
       )
     }
-    //@ts-ignore
-    if (this.audio.mixAudioConf.sounds[soundId].gainNode && this.audio.mixAudioConf.sounds[soundId].gainNode.gain) {
-      //@ts-ignore
-      this.audio.mixAudioConf.sounds[soundId].gainNode.gain.value = volume/100
+    const gainNode = this.audio.mixAudioConf.sounds[soundId]?.gainNode
+    if (gainNode) {
+      gainNode.gain.value = volume/100
     } else {
       this.logger.log('setVolumeOfEffect: no gainNode')
     }
     this.audio.mixAudioConf.sounds[soundId].volume = volume
 
-    this.adapterRef.instance.apiFrequencyControl({
+    this.stream.client.apiFrequencyControl({
       name: 'setVolumeOfEffect',
       code: 0,
       param: JSON.stringify({
@@ -1908,9 +1899,8 @@ class MediaHelper extends EventEmitter {
       return
     }
     try {
-      //@ts-ignore
       await this.loadAudioBuffer(filePath)
-      this.adapterRef.instance.apiFrequencyControl({
+      this.stream.client.apiFrequencyControl({
         name: 'preloadEffect',
         code: 0,
         param: JSON.stringify({
@@ -1920,7 +1910,7 @@ class MediaHelper extends EventEmitter {
       })
     } catch (e) {
       this.logger.error('preloadEffect 错误: ', e.name, e.message, e)
-      this.adapterRef.instance.apiFrequencyControl({
+      this.stream.client.apiFrequencyControl({
         name: 'preloadEffect',
         code: -1,
         param: JSON.stringify({
@@ -1961,7 +1951,7 @@ class MediaHelper extends EventEmitter {
     delete this.audio.mixAudioConf.audioBuffer[this.audio.mixAudioConf.sounds[soundId].filePath]
     delete this.audio.mixAudioConf.sounds[soundId]
 
-    this.adapterRef.instance.apiFrequencyControl({
+    this.stream.client.apiFrequencyControl({
       name: 'unloadEffect',
       code: 0,
       param: JSON.stringify({
@@ -1980,7 +1970,7 @@ class MediaHelper extends EventEmitter {
         volume: item.volume
       })
     })
-    this.adapterRef.instance.apiFrequencyControl({
+    this.stream.client.apiFrequencyControl({
       name: 'getEffectsVolume',
       code: 0,
       param: JSON.stringify(result, null, 2)
@@ -2002,7 +1992,7 @@ class MediaHelper extends EventEmitter {
     Object.values(this.audio.mixAudioConf.sounds).forEach(item => {
       this.setVolumeOfEffect(item.soundId, volume)
     })
-    this.adapterRef.instance.apiFrequencyControl({
+    this.stream.client.apiFrequencyControl({
       name: 'setEffectsVolume',
       code: 0,
       param: JSON.stringify({volume: volume}, null, 2)
@@ -2017,7 +2007,7 @@ class MediaHelper extends EventEmitter {
         this.stopEffect(item.soundId)
       }
     })
-    this.adapterRef.instance.apiFrequencyControl({
+    this.stream.client.apiFrequencyControl({
       name: 'stopAllEffects',
       code: 0,
       param: JSON.stringify('stopAllEffects', null, 2)
@@ -2032,7 +2022,7 @@ class MediaHelper extends EventEmitter {
         this.pauseEffect(item.soundId)
       }
     })
-    this.adapterRef.instance.apiFrequencyControl({
+    this.stream.client.apiFrequencyControl({
       name: 'pauseAllEffects',
       code: 0,
       param: JSON.stringify('pauseAllEffects', null, 2)
@@ -2047,7 +2037,7 @@ class MediaHelper extends EventEmitter {
         this.resumeEffect(item.soundId)
       }
     })
-    this.adapterRef.instance.apiFrequencyControl({
+    this.stream.client.apiFrequencyControl({
       name: 'resumeAllEffects',
       code: 0,
       param: JSON.stringify('resumeAllEffects', null, 2)
@@ -2067,7 +2057,7 @@ class MediaHelper extends EventEmitter {
       totalTime = this.audio.mixAudioConf.sounds[soundId].totalTime;
     }
 
-    this.adapterRef.instance.apiFrequencyControl({
+    this.stream.client.apiFrequencyControl({
       name: 'getAudioMixingTotalTime',
       code: 0,
       param: JSON.stringify({
@@ -2099,7 +2089,7 @@ class MediaHelper extends EventEmitter {
 
     
 
-    this.adapterRef.instance.apiFrequencyControl({
+    this.stream.client.apiFrequencyControl({
       name: 'getAudioMixingPlayedTime',
       code: 0,
       param: JSON.stringify({
@@ -2210,22 +2200,20 @@ class MediaHelper extends EventEmitter {
     if (this.stream.isRemote){
       throw new Error("updateAudioSender only for localStream")
     }
-    if (this.adapterRef._mediasoup &&
-      this.adapterRef._mediasoup._micProducer){
-      //@ts-ignore
-      if (this.adapterRef._mediasoup._micProducer && this.adapterRef._mediasoup._micProducer._rtpSender){
+    if (this.stream.getAdapterRef()?._mediasoup?._micProducer){
+      if (this.stream.getAdapterRef()?._mediasoup?._micProducer?._rtpSender){
         this.logger.info('updateAudioSender: 替换当前_micProducer的track', audioTrack.label);
-        //@ts-ignore
-        this.adapterRef._mediasoup._micProducer._rtpSender.replaceTrack(audioTrack);
+        this.stream.getAdapterRef()?._mediasoup?._micProducer?._rtpSender?.replaceTrack(audioTrack);
       }
-      else if (this.adapterRef._mediasoup._sendTransport && this.adapterRef._mediasoup._sendTransport.handler && this.adapterRef._mediasoup._sendTransport.handler._pc){
-        //@ts-ignore
-        const senders = this.adapterRef._mediasoup._sendTransport.handler._pc.getSenders();
-        for (var i in senders){
-          const sender = senders[i];
-          if (sender.track && sender.track.kind === "audio"){
-            this.logger.info('updateAudioSender: 替换audioSender', sender.track.label);
-            sender.replaceTrack(audioTrack);
+      else if (this.stream.getAdapterRef()?._mediasoup?._sendTransport?.handler?._pc){
+        const senders = this.stream.getAdapterRef()?._mediasoup?._sendTransport?.handler._pc.getSenders();
+        if (senders){
+          for (var i in senders){
+            const sender = senders[i];
+            if (sender?.track?.kind === "audio"){
+              this.logger.info('updateAudioSender: 替换audioSender', sender.track.label);
+              sender.replaceTrack(audioTrack);
+            }
           }
         }
       }

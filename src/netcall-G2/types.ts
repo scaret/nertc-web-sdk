@@ -81,6 +81,7 @@ export interface AdapterRef {
   remoteStreamMap: {
     [uid in UIDTYPE]: RemoteStream
   } 
+  // 未发布localStream时，该值指向null
   localStream: LocalStream|null;
   localAudioStats: {
     [uid in UIDTYPE]: LocalAudioStats
@@ -585,8 +586,6 @@ export interface AudioEffectOptions{
 
 
 export interface MediaHelperOptions{
-  adapterRef: AdapterRef;
-  uid: number|string;
   stream: LocalStream|RemoteStream;
 }
 
@@ -608,9 +607,7 @@ export interface GetStreamConstraints{
 
 export interface RecordInitOptions{
   logger: ILogger;
-  adapterRef: AdapterRef;
-  uid:number|string;
-  media:MediaHelper;
+  stream: LocalStream|RemoteStream;
 }
 
 export interface RecordStatus{

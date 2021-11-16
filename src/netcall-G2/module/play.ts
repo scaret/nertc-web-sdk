@@ -2,8 +2,7 @@ import { EventEmitter } from 'eventemitter3'
 import {createWatermarkControl, WatermarkControl} from "../module/watermark";
 import {
   PlayOptions,
-  AdapterRef,
-  SDKRef, SnapshotOptions, MediaTypeShort, RenderMode, ILogger
+  SnapshotOptions, RenderMode, ILogger
 } from "../types"
 import RtcError from '../util/error/rtcError';
 import ErrorCode  from '../util/error/errorCode';
@@ -77,8 +76,6 @@ class Play extends EventEmitter {
   }
 
   _reset() {
-    // TODO recover
-    // this.adapterRef = null // adapter层的成员属性与方法引用
     this.videoDom = null
     this.screenDom = null
     this.videoContainerDom = null
