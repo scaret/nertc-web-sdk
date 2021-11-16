@@ -2488,7 +2488,8 @@ function playAuido(){
 
   res = rtc.localStream.getAudioMixingCurrentPosition()
   if (res.code) return 
-  progress.value = res.playedTime/totalTime * 100
+  !res.playedTime && clearInterval(playTimer);
+  progress.value = !!res.playedTime && res.playedTime/totalTime * 100
   progressInfo.innerText = fileName + formatSeconds(res.playedTime) + ' / ' + formatSeconds(totalTime)
 }
 

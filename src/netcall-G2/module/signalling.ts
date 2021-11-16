@@ -582,6 +582,59 @@ class Signalling extends EventEmitter {
           }
         } else if (type === "Ability"){
           this._handleAbility(notification.data.externData.data);
+        } else if (type === 'ChangeRight') {
+          data.audioRight > 0 && ((<any>window).isAudioBanned = (data.audioRight === 1) ? true : false); // 服务器禁用音频: 1 禁用   2 取消禁用  0 无需处理
+          data.videoRight > 0 && ((<any>window).isVideoBanned = (data.videoRight === 1) ? true : false); // 服务器禁用视频: 1 禁用   2 取消禁用  0 无需处理
+          if((<any>window).isAudioBanned){
+            this.adapterRef.instance.apiEventReport('setFunction', {
+              name: 'set_mediaRightChange',
+              oper: '1',
+              value: 'audioBanned'
+            })
+            
+            if(!this.adapterRef.localStream){
+              return;
+            }
+            // 判断音频设备有没有开启
+            let isAudioOn = this.adapterRef._mediasoup && this.adapterRef._mediasoup._sendTransport && this.adapterRef._mediasoup._sendTransport.handler._pc.audioSender && this.adapterRef._mediasoup._sendTransport.handler._pc.audioSender.track;
+            // 关掉所有音频相关
+            (!!isAudioOn) && this.adapterRef.localStream.close({type: "audio"});
+            
+            this.adapterRef.localStream.stopAllEffects(); // 关掉所有音效
+            let localAudio = this.adapterRef.localStream.mediaHelper.audio;
+            if(!!localAudio.webAudio 
+              && !!localAudio.webAudio.context 
+              && !!localAudio.webAudio.mixAudioConf 
+              && !!localAudio.webAudio.mixAudioConf.audioSource) {
+              // 关掉伴音
+              this.adapterRef.localStream.stopAudioMixing();
+            }
+          }else {
+            this.adapterRef.instance.apiEventReport('setFunction', {
+              name: 'set_mediaRightChange',
+              oper: '0',
+              value: 'audioNotBanned'
+            })
+          }
+          if((<any>window).isVideoBanned){
+            this.adapterRef.instance.apiEventReport('setFunction', {
+              name: 'set_mediaRightChange',
+              oper: '1',
+              value: 'videoBanned'
+            })
+            // 判断 video/screen 有没有开启
+            let isVideoOn = this.adapterRef._mediasoup && this.adapterRef._mediasoup._sendTransport && this.adapterRef._mediasoup._sendTransport.handler._pc.videoSender && this.adapterRef._mediasoup._sendTransport.handler._pc.videoSender.track;
+            let isScreenOn = this.adapterRef._mediasoup && this.adapterRef._mediasoup._sendTransport && this.adapterRef._mediasoup._sendTransport.handler._pc.screenSender && this.adapterRef._mediasoup._sendTransport.handler._pc.screenSender.track;
+            // 关掉所有视频相关 (辅流跟随视频流同步禁止)
+            (!!isVideoOn) && this.adapterRef.localStream?.close({type: "video"});
+            (!!isScreenOn) && this.adapterRef.localStream?.close({type: "screen"});
+          }else {
+            this.adapterRef.instance.apiEventReport('setFunction', {
+              name: 'set_mediaRightChange',
+              oper: '0',
+              value: 'videoNotBanned'
+            })
+          }
         } else {
           this.logger.error(`收到OnUserData通知消息 type = ${type}, data: `, data)
         }
@@ -686,6 +739,37 @@ class Signalling extends EventEmitter {
           this.logger.log(`重置重连次数: ${this._times} => 0`)
           this._times = 0
         }
+      }
+
+      (<any>window).isAudioBanned = (response.externData.audioRight === 1) ? true : false; // 服务器禁用音频: 1 禁用   0 和 2 取消禁用  
+      (<any>window).isVideoBanned = (response.externData.videoRight === 1) ? true : false; // 服务器禁用视频: 1 禁用   0 和 2 取消禁用
+
+      if((<any>window).isAudioBanned) {
+        this.adapterRef.instance.apiEventReport('setFunction', {
+          name: 'set_mediaRightChange',
+          oper: '1',
+          value: 'audioBanned when join'
+        })
+      }else {
+        this.adapterRef.instance.apiEventReport('setFunction', {
+          name: 'set_mediaRightChange',
+          oper: '0',
+          value: 'audioNotBanned when join'
+        })
+      }
+
+      if((<any>window).isVideoBanned) {
+        this.adapterRef.instance.apiEventReport('setFunction', {
+          name: 'set_mediaRightChange',
+          oper: '1',
+          value: 'videoBanned when join'
+        })
+      }else {
+        this.adapterRef.instance.apiEventReport('setFunction', {
+          name: 'set_mediaRightChange',
+          oper: '0',
+          value: 'videoNotBanned when join'
+        })
       }
 
       if (this._reconnectionTimer) {

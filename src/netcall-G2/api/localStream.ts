@@ -890,10 +890,43 @@ class LocalStream extends EventEmitter {
         })
       );
     }
+    // 服务器禁言
+    if((<any>window).isAudioBanned) {
+      const reason = `服务器禁止发送音频流`;
+      this.logger.error(reason);
+      this.client.apiFrequencyControl({
+        name: 'open',
+        code: -1,
+        param: JSON.stringify({
+          reason: reason,
+          type
+        }, null, ' ')
+      });
+    }
+    if((<any>window).isVideoBanned) {
+      const reason = `服务器禁止发送视频流`;
+      this.logger.error(reason);
+      this.client.apiFrequencyControl({
+        name: 'open',
+        code: -1,
+        param: JSON.stringify({
+          reason: reason,
+          type
+        }, null, ' ')
+      });
+    }
     
     try {
       switch(type) {
         case 'audio':
+          if((<any>window).isAudioBanned){
+            return Promise.reject(
+              new RtcError({
+                code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+                message: 'audio is banned by server'
+              })
+            );
+          }
           this.logger.log(`open(): 开启 ${audioSource ? audioSource.label : "mic设备"}`);
           if (this.mediaHelper.audio.micTrack || this.mediaHelper.audio.audioSource){
             this.logger.warn('请先关闭麦克风')
@@ -931,6 +964,14 @@ class LocalStream extends EventEmitter {
           }
           break
         case 'screenAudio':
+          if((<any>window).isAudioBanned){
+            return Promise.reject(
+              new RtcError({
+                code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+                message: 'audio is banned by server'
+              })
+            );
+          }
           if (!screenAudioSource){
             this.logger.error(`open(): 不允许单独开启屏幕共享音频功能。`);
             return;
@@ -970,6 +1011,14 @@ class LocalStream extends EventEmitter {
           break
         case 'video':
         case 'screen':
+          if((<any>window).isVideoBanned){
+            return Promise.reject(
+              new RtcError({
+                code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+                message: 'video is banned by server'
+              })
+            );
+          }
           this.logger.log(`开启${type === 'video' ? 'camera' : 'screen'}设备`)
           if (this[type]) {
             if (type === "video"){
@@ -1338,7 +1387,7 @@ class LocalStream extends EventEmitter {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.INVALID_OPERATION,
-            message: 'screen-sharing si not open'
+            message: 'screen-sharing is not open'
           })
         )
       }else if(reason === 'INVALID_ARGUMENTS'){
@@ -2288,6 +2337,14 @@ class LocalStream extends EventEmitter {
    * @returns {Promise}
    */
   startAudioMixing (options:AudioMixingOptions) {
+    if((<any>window).isAudioBanned){
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+          message: 'audio is banned by server'
+        })
+      );
+    }
     this.logger.log('开始伴音')
     return this.mediaHelper.startAudioMixing(options) 
   }
@@ -2397,6 +2454,14 @@ class LocalStream extends EventEmitter {
    * @returns {Promise}
    */
    async playEffect (options:AudioEffectOptions) {
+    if((<any>window).isAudioBanned){
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+          message: 'audio is banned by server'
+        })
+      );
+    }
     this.logger.log('开始播放音效: ', JSON.stringify(options, null, ' '))
     return this.mediaHelper.playEffect(options) 
   }
