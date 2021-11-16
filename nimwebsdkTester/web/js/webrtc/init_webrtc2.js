@@ -976,7 +976,16 @@ $('#joinChannel-btn').on('click', async () => {
     const enableVideo = $('input[name="enableVideo"]:checked').val();
     const enableScreen = $('input[name="enableScreen"]:checked').val();
     const enableScreenAudio = $('input[name="enableScreenAudio"]:checked').val();
-    if (enableAudio || enableVideo || enableScreen || enableScreenAudio){
+    if (rtc.localStream && !rtc.localStream.destroyed){
+      addLog("已有localStream，不重复创建")
+      // 发布
+      if ($('#autoPub').prop('checked')) {
+        if (rtc.client.adapterRef.connectState.curState === 'CONNECTED'){
+          publish()
+          updateLocalWatermark()
+        }
+      }
+    }else if (enableAudio || enableVideo || enableScreen || enableScreenAudio){
       initLocalStream()
     }else{
       addLog("加入频道后未执行初始化本地流")

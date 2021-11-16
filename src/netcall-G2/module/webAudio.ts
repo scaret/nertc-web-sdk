@@ -424,8 +424,6 @@ class WebAudio extends EventEmitter{
       auidoMixingEnd: null
     }
     if (this.gainFilter && this.gainFilter.gain.value === 1){
-      // Hack：应该抛出事件，让mediaHelper执行。
-      //this.adapterRef.localStream.mediaHelper.disableAudioRouting();
       this.emit('audioFilePlaybackCompleted')
     }
   }
@@ -630,7 +628,10 @@ class WebAudio extends EventEmitter{
   createAudioBufferSource (buffer: AudioBuffer) {
     if (!this.context || !this.destination || !this.gainFilter){
       this.logger.error("initMonitor:参数不够");
-      return {}
+      throw new RtcError({
+        code: ErrorCode.INVALID_PARAMETER,
+        message: 'createAudioBufferSource: invalid parameter'
+      })
     }
     const sourceNode =  this.context.createBufferSource()
     sourceNode.buffer = buffer
