@@ -21,6 +21,7 @@ import {reduceCodecs} from "../../../../util/rtcUtil/codec";
 import {getMediaSecionIdx} from "../../../../util/getMediaSecionIdx";
 import RtcError from '../../../../util/error/rtcError';
 import ErrorCode  from '../../../../util/error/errorCode';
+import {canShimVideoOrientation, shimVideoOrientation} from "../../../../util/rtcUtil/shimVideoOrientation";
 
 const prefix = 'Safari12';
 
@@ -490,6 +491,10 @@ export class Safari12 extends HandlerInterface
         answer.sdp = answer.sdp.replace(/a=fmtp:111 ([0-9=;a-zA-Z]*)/, 'a=fmtp:111 minptime=10;useinbandfec=1;' + profile)
       }
       answer.sdp = answer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=maxptime:60`)
+    }
+    // 规避问题：https://bugs.webkit.org/show_bug.cgi?id=232006
+    if (canShimVideoOrientation(offer, answer)){
+      shimVideoOrientation(offer, answer)
     }
     Logger.debug(prefix, 'fillRemoteRecvSdp() | calling pc.setRemoteDescription() [answer:%o]', answer.sdp);
     await this._pc.setRemoteDescription(answer);

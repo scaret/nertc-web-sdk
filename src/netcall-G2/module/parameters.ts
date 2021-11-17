@@ -4,12 +4,14 @@ import {Client} from "../api/client";
 import {Stream} from "../api/stream";
 
 interface IParameters{
+  shimVideoOrientation: "never"|"ios151"|"allsafari",
   mediaTracks: MediaStreamTrack[],
   clients: Client[];
   localStreams: Stream[],
 }
 
 let parameters:IParameters = {
+  shimVideoOrientation: "ios151",
   mediaTracks: [],
   clients: [],
   localStreams: []
