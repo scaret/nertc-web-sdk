@@ -48,6 +48,10 @@ class GetStats extends EventEmitter{
       this.browser = 'firefox'
     } else if (temp.getBrowser().name === "WeChat" && temp.getOS().name === "iOS"){
       this.browser = 'safari'
+    } else if (temp.getBrowser().name === "QQ Browser" && temp.getOS().name === "iOS") {
+      this.browser = 'safari'
+    } else if (temp.getBrowser().name === "QQ Browser" && temp.getOS().name === "Android") {
+      this.browser = 'chrome'
     }
 
     this.KeyTransform = {
