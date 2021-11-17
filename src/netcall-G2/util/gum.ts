@@ -1,6 +1,7 @@
 import {ILogger} from "../types";
 import {getParameters} from "../module/parameters";
 import {Logger} from "./webrtcLogger";
+import {Device} from "../module/device";
 
 const logger:ILogger = new Logger({
   debug: true,
@@ -26,13 +27,12 @@ async function getStream (constraint:MediaStreamConstraints, logger:ILogger) {
   }
 }
 
-function getScreenStream (constraint:MediaStreamConstraints, logger:ILogger) {
+async function getScreenStream (constraint:MediaStreamConstraints, logger:ILogger) {
   logger.log('getScreenStream constraint:', JSON.stringify(constraint, null, ' '))
   //@ts-ignore
   const getDisplayMedia = navigator.getDisplayMedia || navigator.mediaDevices.getDisplayMedia
-  //@ts-ignore
-  const p = navigator.mediaDevices.getDisplayMedia(constraint);
-  p.then((stream:MediaStream)=>{
+  // STARTOF handleDisplayMedia
+  const handleDisplayMedia = (stream:MediaStream)=>{
     logger.log('获取到屏幕共享流: ', stream.id)
     const tracks = stream.getTracks();
     tracks.forEach((track)=>{
@@ -49,10 +49,36 @@ function getScreenStream (constraint:MediaStreamConstraints, logger:ILogger) {
       }
     });
     return Promise.resolve(stream)
-  }).catch((e:DOMException)=>{
-    logger.error('屏幕共享获取失败: ', e.name, e.message)
-  });
-  return p;
+  }
+  // ENDOF handleDisplayMedia
+  
+  
+  let mediaStream:MediaStream;
+  try{
+    //@ts-ignore
+    mediaStream = await navigator.mediaDevices.getDisplayMedia(constraint);
+  }catch(e){
+    if (e?.message?.indexOf("user gesture") > -1 && Device.onUserGestureNeeded){
+      logger.warn("荧幕共享获取中断，需要手势触发。")
+      Device.onUserGestureNeeded(e);
+      try{
+        mediaStream = await new Promise((resolve, reject)=> {
+          Device.once('user-gesture-fired', () => {
+            // @ts-ignore
+            navigator.mediaDevices.getDisplayMedia(constraint).then(resolve).catch(reject);
+          })
+        })
+      }catch(e){
+        logger.error('第二次屏幕共享获取失败: ', e.name, e.message)
+        throw e
+      }
+    }else{
+      logger.error('屏幕共享获取失败: ', e.name, e.message)
+      throw e;
+    }
+  }
+  handleDisplayMedia(mediaStream);
+  return mediaStream
 }
 
 export function watchTrack(track: MediaStreamTrack|null){

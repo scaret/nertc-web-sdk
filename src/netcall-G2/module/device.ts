@@ -26,6 +26,9 @@ class DeviceManager extends EventEmitter {
   } = {audioIn: [], video: [], audioOut: []};
   private logger: ILogger;
   private handleDeviceChange: ()=>any
+  private userGestureUI: HTMLElement|null = null
+  public onUserGestureNeeded: ((e: Error)=>any)|null = null
+  
   constructor() {
     super();
     this.logger = new Logger({
@@ -37,6 +40,7 @@ class DeviceManager extends EventEmitter {
       }
     });
     this.handleDeviceChange = this.detectDeviceChange.bind(this);
+    this.onUserGestureNeeded = this.defaultHandleUserGestureNeeded.bind(this)
   }
   async getDevices (options: {
     audioinput?: boolean,
@@ -339,6 +343,27 @@ class DeviceManager extends EventEmitter {
     this.hasPerm.audioIn = false;
     this.hasPerm.video = false;
     this.hasPerm.audioOut = false;
+  }
+
+  defaultHandleUserGestureNeeded(e: {name: string, message: string}){
+    if (!this.userGestureUI){
+      this.userGestureUI = document.createElement("div")
+      this.userGestureUI.style.fontSize = "20px";
+      this.userGestureUI.style.position = "fixed";
+      this.userGestureUI.style.background = "yellow";
+      this.userGestureUI.style.margin = "auto";
+      this.userGestureUI.style.width = "100%";
+      this.userGestureUI.style.top = "0";
+      this.userGestureUI.onclick = ()=>{
+        if (this.userGestureUI){
+          this.userGestureUI.parentNode?.removeChild(this.userGestureUI)
+        }
+        this.emit("user-gesture-fired")
+      }
+    }
+    this.userGestureUI.style.display = "block";
+    this.userGestureUI.innerHTML = `由于浏览器限制，该操作需手势触发。<br/>点击此处以继续<br/>详细信息：${e.name}<br/>${e.message}`
+    document.body.appendChild(this.userGestureUI)
   }
 
   clean() {
