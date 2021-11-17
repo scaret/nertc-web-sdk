@@ -58,6 +58,8 @@ table th:nth-of-type(2) {
 [[Client.setRemoteVideoStreamType]] | 动态更新订阅视频的分辨率。
 [[Client.getConnectionState]]|主动获取网络连接状态。
 [[Client.getUid]]|获取本地用户 ID。
+[[Client.startProxyServer]]|开启云代理。
+[[Client.stopProxyServer]]|关闭云代理。
 
 
 ### <span id="旁路推流管理">旁路推流管理</span>
