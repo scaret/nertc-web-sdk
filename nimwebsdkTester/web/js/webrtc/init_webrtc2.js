@@ -349,15 +349,28 @@ $('input[name="mode"]').on('click', () => {
 })
 
 $("#sdkEnv").text(NERTC.ENV);
+
+let envStr = ""
 switch(NERTC.ENV){
   case "development":
   case "test":
     $("#test-env").prop("checked", true);
+    envStr += "测试";
+    if (window.location.href.indexOf("G2%20dev") > -1){
+      envStr += `&nbsp;&nbsp;&nbsp;&nbsp;<small><a style="color:blue" href="${window.location.href.replace("G2%20dev", "G2%20prod")}">切换为线上</a></small>`
+    }
     break;
   case "production":
     $("#online-env").prop("checked", true);
+    envStr += "线上";
+    if (window.location.href.indexOf("G2%20prod") > -1){
+      envStr += ` &nbsp;&nbsp;&nbsp;&nbsp;<a style="color:blue" href="${window.location.href.replace("G2%20prod", "G2%20dev")}">切换为测试</a>`
+    }
     break;
+  default:
+    envStr += "未知"
 }
+$("#env").html(envStr);
 loadEnv()
 
 async function loadTokenByAppKey(){
