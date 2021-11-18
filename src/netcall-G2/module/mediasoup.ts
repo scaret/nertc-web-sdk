@@ -14,7 +14,6 @@ import {waitForEvent} from "../util/waitForEvent";
 import BigNumber from 'bignumber.js';
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
-import {canShimCanvas, shimCanvas} from "../util/rtcUtil/shimCanvas";
 
 class Mediasoup extends EventEmitter {
   private adapterRef:AdapterRef;

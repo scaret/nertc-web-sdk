@@ -43,13 +43,24 @@ export function shimCanvas(trackInput: MediaStreamTrack){
     // @ts-ignore
     const stream = canvasElem.captureStream(frameRate);
     const canvasTrack = stream.getVideoTracks()[0];
+    Object.defineProperty(canvasTrack, "enabled", {
+      get() {
+        return trackInput.enabled;
+      },
+      set(enabled: boolean){
+        console.warn("Delegate cameraTrack enabled", enabled);
+        trackInput.enabled = enabled;
+      }
+    })
     const timer = setInterval(()=>{
       if (videoElem.paused){
         console.log("play");
         videoElem.play()
       }else if (canvasTrack.readyState === "ended"){
-        console.warn("canvasTrack已停止，回收videoTrack中");
-        trackInput.stop()
+        if (trackInput.readyState === "live"){
+          console.warn("canvasTrack已停止，回收videoTrack中");
+          trackInput.stop()
+        }
         clearInterval(timer)
         document.body.removeChild(videoElem)
       }else{
