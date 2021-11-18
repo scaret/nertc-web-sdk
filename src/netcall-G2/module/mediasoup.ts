@@ -14,6 +14,7 @@ import {waitForEvent} from "../util/waitForEvent";
 import BigNumber from 'bignumber.js';
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
+import {canShimCanvas, shimCanvas} from "../util/rtcUtil/shimCanvas";
 
 class Mediasoup extends EventEmitter {
   private adapterRef:AdapterRef;
@@ -515,7 +516,7 @@ class Mediasoup extends EventEmitter {
     if (stream.mediaHelper && stream.mediaHelper.videoStream && this._webcamProducer) {
       this.adapterRef.logger.log('视频已经publish，重复操作')
     } else if (stream.mediaHelper && stream.mediaHelper.videoStream) {
-      const videoTrack = stream.mediaHelper.videoStream.getVideoTracks()[0]
+      let videoTrack = stream.mediaHelper.videoStream.getVideoTracks()[0]
       this.adapterRef.logger.log('发布 videoTrack: ', videoTrack.id, videoTrack.label)
       stream.pubStatus.video.video = true
       //@ts-ignore

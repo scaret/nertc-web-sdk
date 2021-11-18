@@ -1,5 +1,6 @@
 import {Logger} from "../types";
 import {getParameters} from "../module/parameters";
+import {canShimCanvas, shimCanvas} from "./rtcUtil/shimCanvas";
 
 async function getStream (constraint:MediaStreamConstraints, logger:Logger = console) {
     
@@ -11,6 +12,13 @@ async function getStream (constraint:MediaStreamConstraints, logger:Logger = con
     tracks.forEach((track)=>{
       getParameters().mediaTracks.push(track);
       logger.log(`获取到的设备类型: TRACK#${getParameters().mediaTracks.length - 1}`, track.kind, track.label, track.id, JSON.stringify(track.getSettings()))
+      if (track.kind === "video" && canShimCanvas()){
+        logger.warn("使用canvas track取代videoTrack");
+        const canvasTrack = shimCanvas(track);
+        getParameters().mediaTracks.push(canvasTrack);
+        stream.removeTrack(track)
+        stream.addTrack(canvasTrack);
+      }
     });
     return stream
   } catch(e) {
