@@ -91,12 +91,13 @@ window.rtc = {
  * ----------------------------------------
 */
 // 获取大白测试页环境
+const localStoragePrefix = "G2-" + window.location.pathname.split(/[^a-zA-Z0-9]+/g).join("-") + "_";
 function loadEnv() {
   const env = globalConfig.env = $('#part-env input[name="env"]:checked').val()
-  if (window.localStorage && window.localStorage.getItem(`appkey-${env}`)){
-    $('#appkey').val(window.localStorage.getItem(`appkey-${env}`))
-    if (window.localStorage.getItem(`AppSecret-${env}`)){
-      $('#AppSecret').val(window.localStorage.getItem(`AppSecret-${env}`))
+  if (window.localStorage && window.localStorage.getItem(`${localStoragePrefix}appkey-${env}`)){
+    $('#appkey').val(window.localStorage.getItem(`${localStoragePrefix}appkey-${env}`))
+    if (window.localStorage.getItem(`${localStoragePrefix}AppSecret-${env}`)){
+      $('#AppSecret').val(window.localStorage.getItem(`${localStoragePrefix}AppSecret-${env}`))
     }
   }else{
     $('#appkey').val(WEBRTC2_ENV[env].appkey)
@@ -104,7 +105,7 @@ function loadEnv() {
   }
   // $('#uid').val('111111111111111111')
   //$('#channelName').val(Math.ceil(Math.random() * 1e10))
-  const channelName = window.localStorage ? window.localStorage.getItem("channelName") : "";
+  const channelName = window.localStorage ? window.localStorage.getItem(`${localStoragePrefix}channelName`) : "";
   $('#channelName').val(channelName)
   $('#uid').val(Math.floor(Math.random() * 9000 + 1000));
   
@@ -349,15 +350,28 @@ $('input[name="mode"]').on('click', () => {
 })
 
 $("#sdkEnv").text(NERTC.ENV);
+
+let envStr = ""
 switch(NERTC.ENV){
   case "development":
   case "test":
     $("#test-env").prop("checked", true);
+    envStr += "测试";
+    if (window.location.href.indexOf("G2%20dev") > -1){
+      envStr += `&nbsp;&nbsp;&nbsp;&nbsp;<small><a style="color:blue" href="${window.location.href.replace("G2%20dev", "G2%20prod")}">切换为线上</a></small>`
+    }
     break;
   case "production":
     $("#online-env").prop("checked", true);
+    envStr += "线上";
+    if (window.location.href.indexOf("G2%20prod") > -1){
+      envStr += ` &nbsp;&nbsp;&nbsp;&nbsp;<a style="color:blue" href="${window.location.href.replace("G2%20prod", "G2%20dev")}">切换为测试</a>`
+    }
     break;
+  default:
+    envStr += "未知"
 }
+$("#env").html(envStr);
 loadEnv()
 
 async function loadTokenByAppKey(){
@@ -850,9 +864,9 @@ $('#joinChannel-btn').on('click', async () => {
   await loadTokenByAppKey();
   const channelName = $('#channelName').val()
   if (window.localStorage){
-    window.localStorage.setItem("channelName", channelName);
-    window.localStorage.setItem(`appkey-${globalConfig.env}`, $("#appkey").val());
-    window.localStorage.setItem(`AppSecret-${globalConfig.env}`, $("#AppSecret").val());
+    window.localStorage.setItem(`${localStoragePrefix}channelName`, channelName);
+    window.localStorage.setItem(`${localStoragePrefix}appkey-${globalConfig.env}`, $("#appkey").val());
+    window.localStorage.setItem(`${localStoragePrefix}AppSecret-${globalConfig.env}`, $("#AppSecret").val());
   }
   const uid = getUidFromDomInput()
   // 实时音录制
