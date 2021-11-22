@@ -12,6 +12,8 @@ interface IParameters{
     video: (MediaStreamTrack|null)[],
   },
   // 储存了通过createClient创建的客户端
+  shimVideoOrientation: "never"|"ios151"|"allsafari",
+  shimCanvas: "never"|"ios151"|"always",
   clients: Client[];
   
   // 存储了通过createStream创建的客户端
@@ -56,6 +58,8 @@ let parameters:IParameters = {
     audio: [],
     video: [],
   },
+  shimVideoOrientation: "never",
+  shimCanvas: "ios151",
   clients: [],
   localStreams: [],
   videoLowDefaultConstraints: {width: {max: 320}, height: {max: 180}},
