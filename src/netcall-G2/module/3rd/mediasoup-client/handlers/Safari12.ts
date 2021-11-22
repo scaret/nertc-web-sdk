@@ -21,6 +21,7 @@ import {reduceCodecs} from "../../../../util/rtcUtil/codec";
 import {getMediaSecionIdx} from "../../../../util/getMediaSecionIdx";
 import RtcError from '../../../../util/error/rtcError';
 import ErrorCode  from '../../../../util/error/errorCode';
+import {canShimVideoOrientation, shimVideoOrientation} from "../../../../util/rtcUtil/shimVideoOrientation";
 
 const prefix = 'Safari12';
 
@@ -559,10 +560,9 @@ export class Safari12 extends HandlerInterface
       }
       answer.sdp = answer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=maxptime:60`)
     }
-    const marker = "a=extmap:4 ";
-    if (answer.sdp.indexOf("3gpp:video-orientation") === -1 && answer.sdp.indexOf(marker) > -1){
-      Logger.debug(prefix, "Shimming for ios 15.1");
-      answer.sdp = answer.sdp.split(marker).join("a=extmap:13 urn:3gpp:video-orientation\r\n" + marker)
+    // 规避问题：https://bugs.webkit.org/show_bug.cgi?id=232006
+    if (canShimVideoOrientation(offer, answer)){
+      shimVideoOrientation(offer, answer)
     }
     Logger.debug(prefix, 'fillRemoteRecvSdp() | calling pc.setRemoteDescription() [answer:%o]', answer.sdp);
     await this._pc.setRemoteDescription(answer);

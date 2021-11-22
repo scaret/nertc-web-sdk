@@ -2,6 +2,7 @@ import {ILogger} from "../types";
 import {getParameters} from "../module/parameters";
 import {Logger} from "./webrtcLogger";
 import {Device} from "../module/device";
+import {canShimCanvas, shimCanvas} from "./rtcUtil/shimCanvas";
 
 const logger:ILogger = new Logger({
   debug: true,
@@ -17,7 +18,16 @@ async function getStream (constraint:MediaStreamConstraints, logger:ILogger) {
     const stream = await navigator.mediaDevices.getUserMedia(constraint)
     logger.log('获取到媒体流: ', stream.id)
     const tracks = stream.getTracks();
-    tracks.forEach(watchTrack);
+    tracks.forEach((track)=>{
+      watchTrack(track);
+      if (track.kind === "video" && canShimCanvas()){
+        logger.warn("使用canvas track取代videoTrack", track.label);
+        const canvasTrack = shimCanvas(track);
+        watchTrack(canvasTrack);
+        stream.removeTrack(track)
+        stream.addTrack(canvasTrack);
+      }
+    });
     return stream
   } catch(e) {
     logger.error('媒体设备获取失败: ', e.name, e.message)
