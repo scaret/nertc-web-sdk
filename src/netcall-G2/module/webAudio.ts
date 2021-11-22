@@ -56,7 +56,11 @@ class AudioIn{
   }
   
   disconnect() {
-    this.audioNode.disconnect(this.gainNode);
+    try{
+      this.audioNode.disconnect(this.gainNode);
+    }catch(e){
+      // continue
+    }
     this.gainNode.disconnect();
   }
 }
@@ -457,7 +461,16 @@ class WebAudio extends EventEmitter{
       // 将audioIn全部断开
       for (var i = 0; i < this.audioInArr.length; i++){
         const audioIn = this.audioInArr[i];
-        audioIn.gainNode.disconnect(this.gainFilter)
+        try{
+          audioIn.gainNode.disconnect(this.gainFilter)
+          this.logger.log(`已断开音频：【${audioIn.label}】`)
+        }catch(e){
+          if (e.name === "InvalidAccessError"){
+            this.logger.log(`音频断开前未连接：【${audioIn.label}】`)
+          }else{
+            this.logger.error(`无法断开音频:【${audioIn.label}】${e.name}`, e.message)
+          }
+        }
       }
     }
     this.mixAudioConf.audioSource.onended = event => {
