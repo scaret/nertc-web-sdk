@@ -504,9 +504,18 @@ declare interface Client{
   }) => void): void;
 
   /**
-   * 该事件会返回当前房间内的用户及音量。
+   * 该事件会返回当前房间内除自己以外的用户的音量。
+   * @example
+   * ```javascript
+   * rtc.client.on("volume-indicator", (userList)=>{
+   *   // 远端流停止，则关闭渲染
+   *   userList.forEach((user)=>{
+   *     console.log(`用户 ${user.uid} 音量 ${user.level}`)
+   *   })
+   * });
+   * ```
    */
-  on(event: "volume-indicator", callback: (evt: {
+  on(event: "volume-indicator", callback: (userList: {
     /**
      * 用户 ID。
      */
@@ -515,7 +524,7 @@ declare interface Client{
      * 用户音量。
      */
     level: number;
-  }) => void): void;
+  }[]) => void): void;
 
   /**
    * 该事件表示有远端用户或主播加入房间。
