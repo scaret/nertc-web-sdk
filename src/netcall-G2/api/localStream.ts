@@ -1958,19 +1958,20 @@ class LocalStream extends EventEmitter {
       return;
     }
     const parameters = (sender.getParameters() as RTCRtpSendParameters);
-    if (parameters.encodings && parameters.encodings.length) {
-      let maxBitrateHistory = parameters.encodings[0].maxBitrate;
-      parameters.encodings[0].maxBitrate = maxBitrate;
-      sender.setParameters(parameters)
-        .then(() => {
-          this.logger.log(`最大编码码率：${mediaTypeShort} ${streamType} ${maxBitrateHistory ? maxBitrateHistory + "=>" : ""}${maxBitrate}`);
-        })
-        .catch((e:any) => {
-          this.logger.error(`应用最大编码码率失败：${mediaTypeShort} ${streamType} ${maxBitrate}`, parameters, e.name, e.message, e);
-        });
+    let maxBitrateHistory:number|undefined = undefined;
+    if (!parameters.encodings || !parameters.encodings.length){
+      parameters.encodings = [{maxBitrate}] as RTCRtpEncodingParameters[]
     }else{
-      this.logger.warn('localStream.applyEncoderConfig: 无encodings选项', parameters)
+      maxBitrateHistory = parameters.encodings[0].maxBitrate;
+      parameters.encodings[0].maxBitrate = maxBitrate;
     }
+    sender.setParameters(parameters)
+      .then(() => {
+        this.logger.log(`最大编码码率：${mediaTypeShort} ${streamType} ${maxBitrateHistory ? maxBitrateHistory + "=>" : ""}${maxBitrate}`);
+      })
+      .catch((e:any) => {
+        this.logger.error(`应用最大编码码率失败：${mediaTypeShort} ${streamType} ${maxBitrate}`, parameters, e.name, e.message, e);
+      });
   }
 
   getVideoBW(){

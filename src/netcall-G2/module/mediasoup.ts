@@ -86,7 +86,7 @@ class Mediasoup extends EventEmitter {
       if (!this._recvTransport){
         tag += " UNINIT"
       }else if (this._recvTransport._handler?._pc?.connectionState !== "connected"){
-        tag += " " + this._recvTransport._handler?._pc?.connectionState
+        tag += " " + (this._recvTransport._handler?._pc?.connectionState || "NOTRANSPORT")
       }
       if (this.adapterRef._mediasoup !== this){
         tag += " DETACHED"
@@ -597,7 +597,7 @@ class Mediasoup extends EventEmitter {
       } else if (stream.mediaHelper.video.videoStream.getVideoTracks().length) {
         if (this.adapterRef.channelInfo.videoLow){
           if (!stream.mediaHelper.video.videoTrackLow || stream.mediaHelper.video.videoTrackLow.readyState === "ended"){
-            stream.mediaHelper.createTrackLow("video");
+            await stream.mediaHelper.createTrackLow("video");
           }
         }
         const videoTrack = stream.mediaHelper.video.videoStream.getVideoTracks()[0]
@@ -643,7 +643,7 @@ class Mediasoup extends EventEmitter {
       } else if(stream.mediaHelper.screen.screenVideoStream.getVideoTracks().length) {
         if (this.adapterRef.channelInfo.screenLow){
           if (!stream.mediaHelper.screen.screenVideoTrackLow || stream.mediaHelper.screen.screenVideoTrackLow.readyState === "ended"){
-            stream.mediaHelper.createTrackLow("screen");
+            await stream.mediaHelper.createTrackLow("screen");
           }
         }
         const screenTrack = stream.mediaHelper.screen.screenVideoStream.getVideoTracks()[0]

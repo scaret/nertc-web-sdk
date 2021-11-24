@@ -618,6 +618,9 @@ function initEvents() {
     
   })
   
+  rtc.client.on('track-low-init-fail', (evt)=>{
+    addLog("创建小流失败 " + evt.mediaType)
+  })
 
   rtc.client.on('deviceAdd', _data => {
     console.warn('设备增加: ', _data)
