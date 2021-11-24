@@ -616,7 +616,7 @@ class MediaHelper extends EventEmitter {
         const videoSenderLow = this.stream.getSender("video", "high");
         this.video.videoTrackLow?.stop()
         if (videoSenderLow?.track?.readyState === "live"){
-          this.createTrackLow("video");
+          await this.createTrackLow("video");
           this.logger.log('getSecondStream 切换小流', this.video.videoTrackLow);
           videoSenderLow.replaceTrack(this.video.videoTrackLow);
         }
@@ -633,42 +633,50 @@ class MediaHelper extends EventEmitter {
     }
   }
 
-  createTrackLow(mediaType: "video"|"screen") {
-    if (mediaType === "video") {
+  async createTrackLow(mediaType: "video"|"screen") :Promise<MediaStreamTrack|null> {
+    let constraintsLow, trackHigh;
+    if (mediaType === "video"){
+      constraintsLow = getParameters().videoLowDefaultConstraints;
       // trackHigh可能来自于摄像头或自定义视频
-      let trackHigh = this.video.videoStream.getVideoTracks()[0];
-      if (trackHigh?.readyState !== "live"){
-        return
-      }
-      const settings = trackHigh.getSettings();
-      if (settings.width && settings.height) {
-        const constraintsLow = getParameters().videoLowDefaultConstraints;
-        this.logger.log("创建小流", mediaType, constraintsLow);
-        this.video.videoTrackLow = trackHigh.clone();
-        this.video.videoTrackLow.applyConstraints(constraintsLow);
-        watchTrack(this.video.videoTrackLow);
-        if (this.stream.client){
-          this.stream.client.emit('track-low-init', {mediaType})
-        }
-      }
-    } else if (mediaType === "screen") {
-      // trackHigh可能来自于屏幕共享视频或自定义屏幕共享视频
-      let trackHigh = this.screen.screenVideoStream.getVideoTracks()[0];
-      if (trackHigh?.readyState !== "live"){
-        return
-      }
-      const settings = trackHigh.getSettings();
-      if (settings.width && settings.height) {
-        const constraintsLow = getParameters().screenLowDefaultConstraints;
-        this.logger.log("创建小流", mediaType, constraintsLow);
-        this.screen.screenVideoTrackLow = trackHigh.clone();
-        this.screen.screenVideoTrackLow.applyConstraints(constraintsLow);
-        watchTrack(this.screen.screenVideoTrackLow);
-        if (this.stream.client){
-          this.stream.client.emit('track-low-init', {mediaType})
-        }
-      }
+      trackHigh = this.video.videoStream.getVideoTracks()[0];
+    }else{
+      constraintsLow = getParameters().screenLowDefaultConstraints;
     }
+
+    if (trackHigh?.readyState !== "live"){
+      this.logger.error(`创建小流失败：大流已在停止状态`, trackHigh?.label)
+      this.stream.client.safeEmit('track-low-init-fail', {mediaType})
+      return null
+    }
+    this.logger.log("创建小流", mediaType, trackHigh.label, constraintsLow);
+    const videoTrackLow = trackHigh.clone();
+    const settings = trackHigh.getSettings();
+    if (settings.width && settings.height) {
+      try{
+        await videoTrackLow.applyConstraints(constraintsLow);
+      }catch(e){
+        this.logger.warn(`创建小流：无法应用配置。小流与大流使用一样的分辨率。${settings.width}x${settings.height}。${JSON.stringify(constraintsLow)} ${e.name} ${e.message}`)
+      }
+      const settingsHigh2 = trackHigh.getSettings();
+      if (settingsHigh2.width !== settings.width || settingsHigh2.height !== settings.height){
+        this.logger.warn(`创建小流：applyConstraints影响了大流宽高。${settings.width}x${settings.height} => ${settingsHigh2.width}x${settingsHigh2.height}。回滚大流配置，小流与大流使用一样的分辨率。`)
+        await trackHigh.applyConstraints(settings);
+        await videoTrackLow.applyConstraints(settings);
+      }else{
+        const settingsLow = videoTrackLow.getSettings();
+        this.logger.log(`创建小流成功。大流宽高：${settings.width}x${settings.height} 小流宽高：${settingsLow.width}x${settingsLow.height}`)
+      }
+    }else{
+      this.logger.warn(`创建小流：无法获取原始视频宽高。大流和小流使用同样的分辨率。${JSON.stringify(settings)}`)
+    }
+    watchTrack(videoTrackLow);
+    if (mediaType === "video"){
+      this.video.videoTrackLow = videoTrackLow;
+    }else{
+      this.screen.screenVideoTrackLow = videoTrackLow;
+    }
+    this.stream.client.safeEmit('track-low-init-success', {mediaType})
+    return videoTrackLow;
   }
 
   convert({resolution = 4, frameRate = 0}){
