@@ -11,14 +11,14 @@ import {
 } from "../../types";
 // import { platform } from "../../util/platform";
 import { SDK_VERSION } from '../../Config'
-import { randomId } from '../../util/rtcUtil/utilsId';
+import { generateUUID } from '../../util/rtcUtil/utilsId';
 import isEmpty from "../../util/rtcUtil/isEmpty";
 const sha1 =  require('js-sha1');
 
 const wsURL = 'wss://statistic.live.126.net/lps-websocket/websocket/collect';
 const DEV = 1; // 测试
 const PROD = 0; // 线上
-const deviceId = randomId();
+const deviceId = generateUUID();
 const platform = 'web';
 const sdktype = 'webrtc';
 const timestamp = new Date().getTime();
@@ -32,6 +32,7 @@ class StatsReport extends EventEmitter {
   private wsTransport_:any;
   private prevStats_: any;
   public formativeStatsReport: FormativeStatsReport|null;
+  public isStartGetStats: boolean;
   
   constructor (options:StatsReportOptions) {
     super()
@@ -44,6 +45,7 @@ class StatsReport extends EventEmitter {
     this.adapterRef = options.adapterRef
     this.prevStats_ = {}
     this.appKey = this.adapterRef.instance._params.appkey || (this.adapterRef.channelInfo && this.adapterRef.channelInfo.appKey) || ''
+    this.isStartGetStats = false;
 
     // 初始化stats数据统计 
     this.stats = new GetStats({
@@ -83,13 +85,19 @@ class StatsReport extends EventEmitter {
     this.formativeStatsReport && this.formativeStatsReport.stop()
   }
 
-  start () {
+  statsStart() {
     if (this.formativeStatsReport) {
+      this.isStartGetStats = true;
       this.formativeStatsReport.start()
     }
+    
+  }
+
+  start () {
+    
     let checkSum = sha1(`${PROD}${timestamp}${SDK_VERSION}${platform}${sdktype}${deviceId}${salt}`);
     let url = `${wsURL}?deviceId=${deviceId}&isTest=${PROD}&sdkVer=${SDK_VERSION}&sdktype=${sdktype}&timestamp=${timestamp}&platform=${platform}&checkSum=${checkSum}`;
-    this.wsTransport_ = new WSTransport({
+    this.wsTransport_ = (<any>window).wsTransport = new WSTransport({
       url: url,
       adapterRef: this.adapterRef
     })
@@ -114,10 +122,12 @@ class StatsReport extends EventEmitter {
 
   async doHeartbeat() {
     try {
-      let data = await this.stats?.getAllStats();
-      let reportData = this.calculateReport(data);
-      // console.log('data--->', reportData)
-      this.wsTransport_.sendPB(reportData);
+      if(this.isStartGetStats) { // 数据上报部分
+        let data = await this.stats?.getAllStats();
+        let reportData = this.calculateReport(data);
+        // console.log('data--->', reportData)
+        this.wsTransport_.sendPB(reportData);
+      }
     } catch (error) {
       this.adapterRef.logger.error('getStats失败：' , error);
     }

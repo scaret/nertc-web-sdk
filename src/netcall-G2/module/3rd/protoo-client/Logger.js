@@ -19,7 +19,8 @@ class Logger
     if (getParameters().logLevel <= loglevels.DEBUG){
       console.debug.apply(console, args);
     }
-		window.logStorage && window.logStorage.log('debug', args);
+		// window.logStorage && window.logStorage.log('debug', args);
+		window.logUpload && window.wsTransport && window.wsTransport.sendLog(args);
 	}
 
 	warn()
@@ -29,7 +30,8 @@ class Logger
     if (getParameters().logLevel <= loglevels.WARNING){
       console.warn.apply(console, args);
     }
-		window.logStorage && window.logStorage.log('warn', args);
+		// window.logStorage && window.logStorage.log('warn', args);
+		window.logUpload && window.wsTransport && window.wsTransport.sendLog(args);
 	}
 
 	error()
@@ -39,7 +41,8 @@ class Logger
     if (getParameters().logLevel <= loglevels.ERROR){
       console.error.apply(console, args);
     }
-		window.logStorage && window.logStorage.log('error', args);
+		// window.logStorage && window.logStorage.log('error', args);
+		window.logUpload && window.wsTransport && window.wsTransport.sendLog(args);
 	}
 
 	formatArgs(args) {

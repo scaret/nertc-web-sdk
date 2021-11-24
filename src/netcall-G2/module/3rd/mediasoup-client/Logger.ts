@@ -11,7 +11,8 @@ export const Logger = {
     if (getParameters().logLevel <= loglevels.DEBUG){
       console.debug.apply(console, args);
     }
-		(<any>window).logStorage && (<any>window).logStorage.log('debug', args);
+		// (<any>window).logStorage && (<any>window).logStorage.log('debug', args);
+    (<any>window).logUpload && (<any>window).wsTransport.sendLog(args);
 
   },
 
@@ -22,7 +23,8 @@ export const Logger = {
     if (getParameters().logLevel <= loglevels.WARNING){
       console.warn.apply(console, args);
     }
-		(<any>window).logStorage && (<any>window).logStorage.log('warn', args);
+		// (<any>window).logStorage && (<any>window).logStorage.log('warn', args);
+    (<any>window).logUpload && (<any>window).wsTransport.sendLog(args);
 
 	},
 
@@ -33,7 +35,8 @@ export const Logger = {
     if (getParameters().logLevel <= loglevels.ERROR){
       console.error.apply(console, args);
     }
-		(<any>window).logStorage && (<any>window).logStorage.log('error', args);
+		// (<any>window).logStorage && (<any>window).logStorage.log('error', args);
+    (<any>window).logUpload && (<any>window).wsTransport.sendLog(args);
 
 	},
   
