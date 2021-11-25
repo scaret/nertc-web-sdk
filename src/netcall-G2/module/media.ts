@@ -161,53 +161,53 @@ class MediaHelper extends EventEmitter {
 
   _reset() {
     this.stopAllEffects()
-    if(this.audio.webAudio){
-      this.audio.webAudio.off('audioFilePlaybackCompleted')
-      this.audio.webAudio.destroy()
-    }
-    this.audio.webAudio = null
-    this.audio.micConstraint = null
-    this.audio.audioRoutingEnabled = false;
-    if (this.audio.micTrack){
-      this.audio.micTrack.stop();
-      this.audio.micTrack = null;
+    if (!this.stream.isRemote){
+      if(this.audio.webAudio){
+        this.audio.webAudio.off('audioFilePlaybackCompleted')
+        this.audio.webAudio.destroy()
+      }
+      this.audio.webAudio = null
+      this.audio.micConstraint = null
+      this.audio.audioRoutingEnabled = false;
+      if (this.audio.micTrack){
+        this.audio.micTrack.stop();
+        this.audio.micTrack = null;
+      }
+      if (this.video.videoTrackLow){
+        this.video.videoTrackLow.stop();
+        this.video.videoTrackLow = null;
+      }
+      this.video.videoSource = null;
+      if (this.video.cameraTrack){
+        this.video.cameraTrack.stop();
+        this.video.cameraTrack = null;
+      }
+      if (this.screen.screenVideoTrack){
+        this.screen.screenVideoTrack.stop();
+        this.screen.screenVideoTrack = null;
+      }
+      if (this.screen.screenVideoTrackLow){
+        this.screen.screenVideoTrackLow.stop();
+        this.screen.screenVideoTrackLow = null;
+      }
+      this.video.cameraConstraint = {video: {}}
+      if (this.screenAudio.screenAudioTrack){
+        this.screenAudio.screenAudioTrack.stop()
+        this.screenAudio.screenAudioTrack = null
+      }
+      this.audio.mixAudioConf = {
+        index: 0,
+        audioBuffer: {}, //云端音频buffer数组
+        sounds: {}
+      };
     }
     emptyStreamWith(this.audio.audioStream, null);
     emptyStreamWith(this.audio.musicStream, null);
     emptyStreamWith(this.audio.micStream, null);
     emptyStreamWith(this.screenAudio.screenAudioStream, null);
-
-    if (this.video.videoTrackLow){
-      this.video.videoTrackLow.stop();
-      this.video.videoTrackLow = null;
-    }
-    this.video.videoSource = null;
-    if (this.video.cameraTrack){
-      this.video.cameraTrack.stop();
-      this.video.cameraTrack = null;
-    }
     emptyStreamWith(this.video.videoStream, null);
-    if (this.screen.screenVideoTrack){
-      this.screen.screenVideoTrack.stop();
-      this.screen.screenVideoTrack = null;
-    }
-    if (this.screen.screenVideoTrackLow){
-      this.screen.screenVideoTrackLow.stop();
-      this.screen.screenVideoTrackLow = null;
-    }
     emptyStreamWith(this.screen.screenVideoStream, null);
-    this.video.cameraConstraint = {video: {}}
-
-    if (this.screenAudio.screenAudioTrack){
-      this.screenAudio.screenAudioTrack.stop()
-      this.screenAudio.screenAudioTrack = null
-    }
     emptyStreamWith(this.screenAudio.screenAudioStream, null);
-    this.audio.mixAudioConf = {
-      index: 0,
-      audioBuffer: {}, //云端音频buffer数组
-      sounds: {}
-    };
   }
   
   updateWebAudio() {
