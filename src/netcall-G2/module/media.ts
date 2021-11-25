@@ -641,6 +641,8 @@ class MediaHelper extends EventEmitter {
       trackHigh = this.video.videoStream.getVideoTracks()[0];
     }else{
       constraintsLow = JSON.parse(JSON.stringify(getParameters().screenLowDefaultConstraints));
+      // trackHigh可能来自于摄像头或自定义视频
+      trackHigh = this.screen.screenVideoStream.getVideoTracks()[0];
     }
 
     if (trackHigh?.readyState !== "live"){
