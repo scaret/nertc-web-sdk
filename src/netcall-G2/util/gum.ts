@@ -20,12 +20,16 @@ async function getStream (constraint:MediaStreamConstraints, logger:ILogger) {
     const tracks = stream.getTracks();
     tracks.forEach((track)=>{
       watchTrack(track);
-      if (track.kind === "video" && canShimCanvas()){
-        logger.warn("使用canvas track取代videoTrack", track.label);
-        const canvasTrack = shimCanvas(track);
-        watchTrack(canvasTrack);
-        stream.removeTrack(track)
-        stream.addTrack(canvasTrack);
+      if (track.kind === "video"){
+        // @ts-ignore
+        track.contentHint = getParameters().contentHint.video;
+        if (canShimCanvas()){
+          logger.warn("使用canvas track取代videoTrack", track.label);
+          const canvasTrack = shimCanvas(track);
+          watchTrack(canvasTrack);
+          stream.removeTrack(track)
+          stream.addTrack(canvasTrack);
+        }
       }
     });
     return stream
@@ -47,14 +51,18 @@ async function getScreenStream (constraint:MediaStreamConstraints, logger:ILogge
     const tracks = stream.getTracks();
     tracks.forEach((track)=>{
       watchTrack(track);
-      if (track.kind === "video" && getParameters().screenFocus){
+      if (track.kind === "video"){
         // @ts-ignore
-        if (track.focus){
-          logger.log("屏幕共享不跳转到被共享页面")
+        track.contentHint = getParameters().contentHint.screen;
+        if (getParameters().screenFocus){
           // @ts-ignore
-          track.focus("no-focus-change");
-        }else{
-          logger.warn("当前浏览器不支持屏幕共享跳转控制")
+          if (track.focus){
+            logger.log("屏幕共享不跳转到被共享页面")
+            // @ts-ignore
+            track.focus("no-focus-change");
+          }else{
+            logger.warn("当前浏览器不支持屏幕共享跳转控制")
+          }
         }
       }
     });
