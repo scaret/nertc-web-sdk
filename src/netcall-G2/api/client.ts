@@ -184,6 +184,9 @@ class Client extends Base {
    * @return {Promise}
    */
   async join (options: JoinOptions) {
+    if(!this.adapterRef._statsReport){
+      this.initWebSocket();
+    }
     this.logger.log('加入频道, options: ', JSON.stringify(options, null, ' '))
     if (this.adapterRef.channelStatus === 'join' || this.adapterRef.channelStatus === 'connectioning') {
       return Promise.reject(
