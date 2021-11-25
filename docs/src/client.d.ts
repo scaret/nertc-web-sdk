@@ -440,6 +440,19 @@ declare interface Client{
 
   /**
    * 远端用户发布了音视频流。
+   *
+   * * 通常收到该事件后需要订阅音视频，即调用 [[Stream.setSubscribeConfig]] 和 [[Client.subscribe]]
+   * * 该事件会为每一个音频或视频单独触发一次。`evt.mediaType`标识了具体的媒体类型。
+   * * 与该事件相反的事件为 Client.on("stream-removed")
+   * * 更完整的例子见[[NERTC.createClient]]
+   * @example
+   * ```javascript
+   * rtc.client.on("stream-added", (evt)=>{
+   *   console.log(`远端${evt.stream.getId()}发布了 ${evt.mediaType} 流`)
+   *   rtc.client.subscribe(evt.stream)
+   * });
+   * ```
+   * 
    */
   on(event: "stream-added", callback: (evt: {
     /**
@@ -456,7 +469,25 @@ declare interface Client{
   /**
    * 应用已接收远端音视频流。
    * 
-   * 远端用户发布的一路音视频轨道被订阅之后，会触发此回调。
+   * * 通常收到该事件后需要播放远端音视频。即调用 [[Stream.setRemoteRenderMode]] 和 [[Stream.play]]
+   * * 该事件会为每一个音频或视频单独触发一次。`evt.mediaType`标识了具体的媒体类型。
+   * * 更完整的例子见[[NERTC.createClient]]
+   * @example
+   * ```javascript
+   *    rtc.client.on("stream-subscribed", (evt)=>{
+   *        evt.stream.play(document.getElementById("remote-video-wrapper", {
+   *          audio: true,
+   *          video: true,
+   *          screen: true,
+   *        });
+   *        evt.stream.setRemoteRenderMode({
+   *          width: 200,
+   *          height: 200
+   *          cut: false
+   *        });
+   *    })
+   * ```
+   * 
    */
   on(event: "stream-subscribed", callback: (evt: {
     /**

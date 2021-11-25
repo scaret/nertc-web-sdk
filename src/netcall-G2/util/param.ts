@@ -1,4 +1,10 @@
-import {ValidIntegerOptions, ExistsOptions, ValidFloatOptions, ValidStringOptions} from "../types";
+import {
+  ValidIntegerOptions,
+  ExistsOptions,
+  ValidFloatOptions,
+  ValidStringOptions,
+  ValidBooleanOptions
+} from "../types";
 import RtcError from '../util/error/rtcError';
 import ErrorCode  from '../util/error/errorCode';
 
@@ -37,6 +43,31 @@ const checkValidInteger = (param: ValidIntegerOptions)=>{
   }
 }
 
+
+const isValidBoolean = (param: ValidBooleanOptions)=>{
+  if (typeof param.value !== "boolean"){
+    return {
+      result: false,
+      msg: `参数不是布尔类型`
+    }
+  }else{
+    return {
+      result: true
+    }
+  }
+}
+
+const checkValidBoolean = (param: ValidBooleanOptions)=>{
+  const data = isValidBoolean(param);
+  if (data.result){
+    return;
+  }else{
+    throw new RtcError({
+      code: ErrorCode.INVALID_PARAMETER,
+      message: `参数错误 ${param.tag}:${data.msg}`
+    })
+  }
+}
 
 const isValidString = (param: ValidStringOptions)=>{
   if (typeof param.value !== "string"){
@@ -138,6 +169,7 @@ export {
   checkValidInteger,
   checkValidFloat,
   checkValidString,
+  checkValidBoolean,
   
   isExistOptions,
   checkExists,
