@@ -634,13 +634,13 @@ class MediaHelper extends EventEmitter {
   }
 
   async createTrackLow(mediaType: "video"|"screen") :Promise<MediaStreamTrack|null> {
-    let constraintsLow, trackHigh;
+    let constraintsLow:MediaTrackConstraints, trackHigh;
     if (mediaType === "video"){
-      constraintsLow = getParameters().videoLowDefaultConstraints;
+      constraintsLow = JSON.parse(JSON.stringify(getParameters().videoLowDefaultConstraints));
       // trackHigh可能来自于摄像头或自定义视频
       trackHigh = this.video.videoStream.getVideoTracks()[0];
     }else{
-      constraintsLow = getParameters().screenLowDefaultConstraints;
+      constraintsLow = JSON.parse(JSON.stringify(getParameters().screenLowDefaultConstraints));
     }
 
     if (trackHigh?.readyState !== "live"){
@@ -653,6 +653,7 @@ class MediaHelper extends EventEmitter {
     const settings = trackHigh.getSettings();
     if (settings.width && settings.height) {
       try{
+        constraintsLow.aspectRatio = settings.width / settings.height
         await videoTrackLow.applyConstraints(constraintsLow);
       }catch(e){
         this.logger.warn(`创建小流：无法应用配置。小流与大流使用一样的分辨率。${settings.width}x${settings.height}。${JSON.stringify(constraintsLow)} ${e.name} ${e.message}`)
