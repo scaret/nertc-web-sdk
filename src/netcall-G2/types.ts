@@ -1138,6 +1138,11 @@ export interface ValidIntegerOptions{
   max?: number;
 }
 
+export interface ValidBooleanOptions{
+  tag: string;
+  value: any;
+}
+
 export interface ValidFloatOptions{
   tag: string;
   value: any;

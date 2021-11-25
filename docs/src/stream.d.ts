@@ -594,15 +594,31 @@ declare interface Stream {
      * 
      * 该方法指定在线音频文件和麦克风采集的音频流进行混音或替换，即用音频文件替换麦克风采集的音频流。
      * 
-     * @note 请在加入房间并启动麦克风之后使用该方法。
+     * @note 请在 [[Client.publish]] 之后使用该方法。
      * 
      * @param options 混音设置。
+     *
+     * @example
+     * ```javascript
+     * // await rtc.client.publish(rtc.localStream)
+     * rtc.localStream.startAudioMixing({
+     *   audioFilePath: $("#audioFilePath").val(), 
+     *   loopback: true,
+     *   replace: false,
+     *   cycle: 0,
+     *   playStartTime: 0,
+     *   volume: 255,
+     *   auidoMixingEnd: () => {console.log("ended")},
+     * })
+     * ```
+     * 
      */
     startAudioMixing(options: {
       /**
        * 必选，在线音乐文件的 URL 地址。
        * 
        * @note 目前仅支持在线音频文件，格式一般为 MP3 等浏览器支持的音频文件类型。
+       * 
        */
       audioFilePath: string;
       /**

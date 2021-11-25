@@ -2,7 +2,7 @@
 import { Base } from './base'
 import {AddTaskOptions, ClientOptions, MediaPriorityOptions, JoinOptions, LocalVideoStats, MediaTypeShort, RTMPTask, Client as IClient} from "../types";
 import {LocalStream} from "./localStream";
-import {checkExists, checkValidInteger, checkValidString} from "../util/param";
+import {checkExists, checkValidBoolean, checkValidInteger, checkValidString} from "../util/param";
 import {
   ReportParamEnableEncryption,
   ReportParamGetConnectionState,
@@ -198,6 +198,16 @@ class Client extends Base {
     }
     if(!options.channelName){
       throw new RtcError({code: ErrorCode.INVALID_PARAMETER, message:'请填写房间名称'})
+    }
+    if (options.joinChannelRecordConfig){
+      checkValidBoolean({
+        tag: "joinOptions.joinChannelRecordConfig.recordAudio should be boolean",
+        value: options.joinChannelRecordConfig.recordAudio,
+      })
+      checkValidBoolean({
+        tag: "joinOptions.joinChannelRecordConfig.recordVideo should be boolean",
+        value: options.joinChannelRecordConfig.recordVideo,
+      })
     }
     if (typeof options.uid === 'string') {
       this.logger.log('uid是string类型')

@@ -523,8 +523,8 @@ class Play extends EventEmitter {
 
   async playVideoStream(stream:MediaStream, view:HTMLElement) {
     if(!stream || !view) return
-    if (this.videoDom && this.videoDom.srcObject === stream) {
-      this.logger.log(`请勿重复 播放` )
+    if (this.videoDom?.srcObject === stream) {
+      this.logger.log(`playVideoStream：跳过重复的播放请求`);
       return
     }
     this.videoView = view
@@ -533,10 +533,6 @@ class Play extends EventEmitter {
     if (!this.videoDom){
       this.logger.error(`没有视频源`);
       return;
-    }
-    if (this.videoDom.srcObject === stream) {
-      this.logger.log(`请勿重复 播放` )
-      return
     }
     try {
       const videoTrack = stream.getVideoTracks()[0];
@@ -575,6 +571,10 @@ class Play extends EventEmitter {
 
   async playScreenStream(stream:MediaStream, view:HTMLElement) {
     if(!stream || !view) return
+    if (this.screenDom?.srcObject === stream) {
+      this.logger.log(`playScreenStream：跳过重复的播放请求`);
+      return
+    }
     this.logger.log(`播放辅流视频, id: ${stream.id}, active state: ${stream.active}`)
     this.screenView = view
     this._initNodeScreen()
@@ -582,10 +582,6 @@ class Play extends EventEmitter {
     if (!this.screenDom){
       this.logger.error(`辅流没有视频源`);
       return;
-    }
-    if (this.screenDom.srcObject === stream) {
-      this.logger.log(`请勿重复 播放` )
-      return
     }
     try {
       const videoTrack = stream.getVideoTracks()[0];
