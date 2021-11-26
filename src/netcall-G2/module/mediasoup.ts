@@ -587,6 +587,7 @@ class Mediasoup extends EventEmitter {
               mediaType: 'audio',
             }
           });
+          this.watchProducerState(this._micProducer, "_micProducer");
         }
       }
     }
@@ -618,6 +619,7 @@ class Mediasoup extends EventEmitter {
             mediaType: 'video',
           }
         });
+        this.watchProducerState(this._webcamProducer, "_webcamProducer");
         if (this.adapterRef.encryption.encodedInsertableStreams && this._webcamProducer.rtpSender
           //@ts-ignore
           && !this._webcamProducer.rtpSender.senderStreams){
@@ -664,10 +666,40 @@ class Mediasoup extends EventEmitter {
             mediaType: 'screenShare'
           }
         });
+        this.watchProducerState(this._screenProducer, "_screenProducer");
         if (!this.adapterRef.state.startPubScreenTime) {
           this.adapterRef.state.startPubScreenTime = Date.now()
         }
       }
+    }
+  }
+  
+  watchProducerState(producer: Producer, tag: string){
+    if (producer.rtpSender?.transport){
+      const senderTransport = producer.rtpSender.transport
+      switch (senderTransport.state){
+        case "failed":
+          this.logger.error(`Producer state ${tag} ${senderTransport.state}`);
+          break
+        case "connected":
+        case "new":
+        case "connecting":
+        default:
+          this.logger.log(`Producer state ${tag} ${senderTransport.state}`);
+          producer.rtpSender.transport.addEventListener("statechange", ()=>{
+            switch (senderTransport.state) {
+              case "failed":
+                this.logger.error(`Producer state changed: ${tag} ${senderTransport.state}`);
+                break
+              case "connected":
+              case "new":
+              case "connecting":
+                this.logger.log(`Producer state changed: ${tag} ${senderTransport.state}`);
+            }
+          });
+      }
+    }else{
+      this.logger.log(`Producer state: transport is null`);
     }
   }
 
