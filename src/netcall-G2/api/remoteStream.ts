@@ -725,9 +725,9 @@ class RemoteStream extends EventEmitter {
           message: 'no play'
         })
       }
-      this.muteStatus.audioRecv = false;
-      this.mediaHelper.audio.audioStream.getAudioTracks().length && (this.mediaHelper.audio.audioStream.getAudioTracks()[0].enabled = false)
-      this._play.playAudioStream(this.mediaHelper.audio.audioStream, true)
+      this.muteStatus.audioRecv = true;
+      this.mediaHelper.audio.audioStream.getAudioTracks().length && (this.mediaHelper.audio.audioStream.getAudioTracks()[0].enabled = true)
+      this._play.playAudioStream(this.mediaHelper.audio.audioStream, false)
       this.client.apiFrequencyControl({
         name: 'unmuteAudio',
         code: 0,
