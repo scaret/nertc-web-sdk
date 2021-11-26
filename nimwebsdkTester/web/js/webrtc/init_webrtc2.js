@@ -2654,7 +2654,7 @@ function updateAudioMixingStatus(){
 setInterval(updateAudioMixingStatus, 1000);
 
 function updateLogUploadStatus(){
-  const uploadLogEnabled = sessionStorage.getItem('uploadLogEnabled')
+  const uploadLogEnabled = window.logUpload;
   $("#logUploadEnabled").text(uploadLogEnabled);
 }
 
