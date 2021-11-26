@@ -290,86 +290,78 @@ class Base extends EventEmitter {
     }
   }
 
-  startSession() {
-    this.logger.log('开始音视频会话')
+  async startSession(retry: number = 0) {
+    if(retry === 0){
+      this.logger.log(`开始音视频会话`)
+    }else{
+      this.logger.log(`开始音视频会话：第${retry}次`)
+    }
     let { wssArr, cid } = this.adapterRef.channelInfo
     if (!wssArr || wssArr.length === 0) {
-      this.logger.error('没有找到服务器地址')
+      this.logger.error(`没有找到服务器地址: ${JSON.stringify(this.adapterRef.channelInfo)}`)
       this.adapterRef.channelStatus = 'leave'
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.NO_SERVER_ADDRESS,
-          message: 'no server address'
-        })
-      )
+      throw new RtcError({
+        code: ErrorCode.NO_SERVER_ADDRESS,
+        message: 'no server address'
+      })
     }
 
     if (!cid) {
       this.logger.error('服务器没有分配cid')
       this.adapterRef.channelStatus = 'leave'
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.INVALID_PARAMETER,
-          message: 'no cid'
-        })
-      )
+      throw new RtcError({
+        code: ErrorCode.INVALID_PARAMETER,
+        message: 'no cid'
+      })
     }
     this.logger.log(`开始连接服务器: ${this.adapterRef.channelInfo.wssArrIndex}, url:`, wssArr)
     if (this.adapterRef.channelInfo.wssArrIndex >= wssArr.length) {
       this.logger.error('所有的服务器地址都连接失败')
       this.adapterRef.channelInfo.wssArrIndex = 0
       this.adapterRef.channelStatus = 'leave'
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.SOCKET_ERROR,
-          message: 'socket error'
-        })
-      )
+      throw new RtcError({
+        code: ErrorCode.SOCKET_ERROR,
+        message: 'socket error'
+      })
     }
-    const url = wssArr[this.adapterRef.channelInfo.wssArrIndex]
+    let url = wssArr[this.adapterRef.channelInfo.wssArrIndex]
     if (!this.adapterRef._signalling){
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.NO_SIGNALLING,
-          message: 'signalling error'
-        })
-      )
+      throw new RtcError({
+        code: ErrorCode.NO_SIGNALLING,
+        message: 'signalling error'
+      })
     }
-    const p =  this.adapterRef._signalling.init(url).then(()=>{
-      //将连接成功的url放置到列表的首部，方便后续的重连逻辑
-      const connectUrl = wssArr[this.adapterRef.channelInfo.wssArrIndex]
-      wssArr.splice(this.adapterRef.channelInfo.wssArrIndex, 1)
-      wssArr.unshift(connectUrl)
-      this.adapterRef.channelInfo.wssArrIndex = 0
-
-      // 开始上报format数据
-      
-
-      if (!this.adapterRef._statsReport){
-        return Promise.reject(
-          new RtcError({
-            code: ErrorCode.NO_STATS,
-            message: 'no stats'
-          })
-        )
-      }
-      this.adapterRef._statsReport.statsStart();
-      // 此时开始getstats
-      // this.adapterRef._statsReport.start()
-      // this.adapterRef._statsReport.startHeartbeat()
-      return Promise.resolve()
-    });
-    p.catch(e => {
+    try{
+      await this.adapterRef._signalling.init(url)
+    }catch(e){
       this.logger.warn('startSession error: ', e)
       if (e === 'timeout') {
         this.adapterRef.channelInfo.wssArrIndex++
-        return this.startSession()
+        // 递归
+        await this.startSession(retry+1)
+        return
       } else {
         this.adapterRef.channelStatus = 'leave'
-        return Promise.reject(e)
+        throw e
       }
-    })
-    return p;
+    }
+    //将连接成功的url放置到列表的首部，方便后续的重连逻辑
+    const connectUrl = wssArr[this.adapterRef.channelInfo.wssArrIndex]
+    wssArr.splice(this.adapterRef.channelInfo.wssArrIndex, 1)
+    wssArr.unshift(connectUrl)
+    this.adapterRef.channelInfo.wssArrIndex = 0
+
+    // 开始上报format数据
+    if (!this.adapterRef._statsReport){
+      throw new RtcError({
+        code: ErrorCode.NO_STATS,
+        message: 'no stats'
+      })
+    }
+    this.adapterRef._statsReport.statsStart();
+    // 此时开始getstats
+    // this.adapterRef._statsReport.start()
+    // this.adapterRef._statsReport.startHeartbeat()
   }
 
   stopSession() {
