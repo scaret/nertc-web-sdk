@@ -308,7 +308,6 @@ class RemoteStream extends EventEmitter {
   }
  
   getId () {
-    this.logger.log('获取音视频流 ID: ', this.streamID)
     if (this.client.adapterRef.channelInfo.uidType === 'string') {
       return this.stringStreamID
     }

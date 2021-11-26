@@ -18,6 +18,7 @@ import {LocalStream} from "../api/localStream";
 import {RemoteStream} from "../api/remoteStream";
 import {Device} from "./device";
 import {Logger} from "./3rd/mediasoup-client/Logger";
+import {platform} from "../util/platform";
 class MediaHelper extends EventEmitter {
   stream: LocalStream|RemoteStream;
   public audio: {
@@ -653,7 +654,10 @@ class MediaHelper extends EventEmitter {
     this.logger.log("创建小流", mediaType, trackHigh.label, constraintsLow);
     const videoTrackLow = trackHigh.clone();
     const settings = trackHigh.getSettings();
-    if (settings.width && settings.height) {
+    if (mediaType === "screen" && platform.name === "Safari"){
+      this.logger.log(`创建小流：${mediaType} + ${platform.name} 使用与大流一样的分辨率 ${settings.width}x${settings.height}`)
+    }
+    else if (settings.width && settings.height) {
       try{
         constraintsLow.aspectRatio = settings.width / settings.height
         await videoTrackLow.applyConstraints(constraintsLow);
