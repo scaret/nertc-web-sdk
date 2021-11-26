@@ -1041,12 +1041,6 @@ $('#leaveChannel-btn').on('click', () => {
   currentSpeaker = {}
   rtc.succTasksList = []
   rtc.failTasksList = []
-  if (rtc.audioSource) {
-    rtc.audioSource.stop()
-  } 
-  if (rtc.videoSource) {
-    rtc.videoSource.stop()
-  }
   watermarks = {local: null, remote: {}};
 })
 
