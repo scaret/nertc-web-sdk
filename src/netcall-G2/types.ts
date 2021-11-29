@@ -608,6 +608,11 @@ export interface GetStreamConstraints{
   screenAudio?: boolean;
 }
 
+export interface ScreenSource{
+  screenVideoSource?: MediaStreamTrack|null;
+  screenAudioSource?: MediaStreamTrack|null;
+}
+
 export interface RecordInitOptions{
   logger: ILogger;
   stream: LocalStream|RemoteStream;

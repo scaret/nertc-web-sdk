@@ -1109,6 +1109,84 @@ class LocalStream extends EventEmitter {
     }
   }
 
+
+  /**
+   * 切换自定义辅流和屏幕共享流
+   * @function switchScreenStream
+   * @memberOf Stream#
+   * @param {Object} option
+   * @param {String} type  辅流类型，"screen": 屏幕共享，"custom": 自定义辅流
+   * @param {MeidaTrack} option.screenVideoSource  自定义辅流的 screenTrack
+   * @param {Boolean} option.screenAudio 是否开启屏幕共享声音
+   * @return {Promise}
+   */
+   async switchScreenStream(option:{screenVideoSource:MediaStreamTrack|null, screenAudio:Boolean}) {
+    const peer = this.client.adapterRef.instance.getPeer('send');
+    let localScreenStream_ = this.client.adapterRef.localStream?.mediaHelper.screenStream;
+    let localtrack = localScreenStream_?.getVideoTracks()[0];
+    if (peer && peer.screenSender) {
+      let screenVideoTrack;
+      if(option.screenVideoSource) {
+        if(localtrack) {
+          this.mediaHelper.listenToTrackEnded(localtrack);
+          localtrack.stop()
+          localScreenStream_?.removeTrack(localtrack as any);
+        }
+        screenVideoTrack = option.screenVideoSource;
+        this.client.adapterRef.logger.log('switchScreenStream: 切换到自定义辅流');
+        this.client.adapterRef.instance.apiEventReport('setFunction', {
+          name: 'switch_to_custom_screen',
+          oper: '1',
+          value: 'success'
+        });
+      }else {
+        let screenSource = await this.mediaHelper.getScreenSource({
+          facingMode: this.facingMode,
+          screen: this.screen,
+          screenAudio: this.screenAudio,
+        })
+        if(localtrack) {
+          this.mediaHelper.listenToTrackEnded(localtrack);
+          localtrack.stop()
+          localScreenStream_?.removeTrack(localtrack as any);
+        }
+        screenVideoTrack = screenSource.getVideoTracks()[0];
+        this.client.adapterRef.logger.log('switchScreenStream: 切换到屏幕共享流');
+        this.client.adapterRef.instance.apiEventReport('setFunction', {
+          name: 'switch_to_screen',
+          oper: '1',
+          value: 'success'
+        });
+      }
+      localScreenStream_?.addTrack(screenVideoTrack as any);
+      
+      // peer.screenSender.replaceTrack(screenVideoTrack)
+      if(this.client.adapterRef._mediasoup){
+        //@ts-ignore
+        this.client.adapterRef._mediasoup?._screenProducer?._track = screenVideoTrack
+      }
+      this.mediaHelper.listenToTrackEnded(screenVideoTrack);
+      peer.screenSender.replaceTrack(screenVideoTrack)
+      
+    } else {
+      this.client.adapterRef.logger.warn('switchScreenStream: 此时未发布流')
+    }
+
+    this.client.adapterRef.logger.log('switchScreenStream: 切换辅流成功');
+    let screenType = option.screenVideoSource ? 'customScreen' : 'screen';
+    this.client.apiFrequencyControl({
+      name: 'switchScreenStream',
+      code: 0,
+      param: JSON.stringify({
+        type: screenType
+      }, null, ' ')
+    })
+  }
+
+
+
+
+
   /**
    * 关闭音视频输入设备，如麦克风、摄像头、屏幕共享，并且停止发布
    * @function close

@@ -1161,6 +1161,17 @@ function getAudioSource(mediaType){
   return audioSource;
 }
 
+$('#switchCustom').on('click', () => {
+  var videoTrack = $('#canvas')[0].captureStream(30).getVideoTracks()[0]
+  rtc.localStream.switchScreenStream({screenVideoSource:videoTrack});
+})
+
+
+$('#switchScreenShare').on('click', () => {
+  rtc.localStream.switchScreenStream({screenAudio:true});
+})
+
+
 function initLocalStream() {
   let sourceId = "";
   if ($("#enableScreen").prop("checked")){
