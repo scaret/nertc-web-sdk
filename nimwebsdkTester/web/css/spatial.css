@@ -1,0 +1,30 @@
+.spatial-container{
+  border: 1px solid #bfbfbf;
+  position: relative;
+}
+.localUser{
+  border-top: 1px solid #bfbfbf;
+  border-left: 1px solid #bfbfbf;
+  position: absolute;
+  background: #eeeeee;
+}
+.remoteUser{
+  border: 1px solid #bfbfbf;
+  position: absolute;
+}
+
+.remote-audio,.remote-video,.remote-screen{
+  display: none;
+}
+.stream-added{
+  color: green;
+  display: inline-block;
+}
+
+.stream-subscribed{
+  background: yellow;
+  display: inline-block;
+}
+
+.remote-video-container{
+}

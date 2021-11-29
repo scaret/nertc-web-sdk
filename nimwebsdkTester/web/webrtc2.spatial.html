@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>空间音频测试页</title>
+  <link rel="icon" href="data:,">
+  <script src="./js/lib/jquery.min.js"></script>
+  <script src="./js/lib/jquery-ui.js"></script>
+  <link rel="stylesheet" href="./css/spatial.css">
+</head>
+
+<body>
+<h1>空间音频</h1>
+<div>
+  <label>
+    appkey<input type="text" id="appid" value="eca23f68c66d4acfceee77c200200359">
+  </label>
+  <label>
+    channelName<input type="text" id="channelName" value="derek1222">
+  </label>
+  <label>
+    uid<input type="text" id="uid" value=""> 
+  </label>
+  <label>
+    <input type="checkbox" checked id="subAudio">audio
+  </label>
+  <label>
+    <input type="checkbox" checked id="subVideo">video
+  </label>
+  <label>
+    <input type="checkbox" checked id="subScreen">screen
+  </label>
+  <button id="join">Join</button>
+</div>
+<div class="spatial-container">
+
+  <div class="localUser">
+    <ul>
+      <li>本页面为空间音频的demo。请戴上双耳耳机。</li>
+      <li>请先通过 <a id="dabaiurl" target="_blank">[大白页]</a> 加入同名频道，产生发送端。</li>
+      <li>拖动格子越靠近中心则该远端声音越大。</li>
+      <li>拖动格子越靠左则左耳声音越大。拖动格子在中心区域附近效果比较明显。</li>
+      <li>拖动格子左上角离开灰色区域则取消订阅。</li>
+    </ul>
+  </div>
+  <div class="center" style="position: absolute">+</div>
+  
+</div>
+
+<script src="./js/lib/vconsole.min.js"></script>
+<script src="./js/lib/graph.js"></script>
+<script src="./js/lib/common.js"></script>
+<script src="./js/lib/sha1.min.js"></script>
+<script src="./js/lib/axios.min.js"></script>
+<script src="./js/lib/fakeMediaDevices.js"></script>
+<script src="./js/nim/NIM_Web_NERTC.js"></script>
+<script src="./js/webrtc/init_spatial.js"></script>
+</body>
+
+</html>

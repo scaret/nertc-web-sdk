@@ -1,6 +1,16 @@
 
 import { Base } from './base'
-import {AddTaskOptions, ClientOptions, MediaPriorityOptions, JoinOptions, LocalVideoStats, MediaTypeShort, RTMPTask, Client as IClient} from "../types";
+import {
+  AddTaskOptions,
+  ClientOptions,
+  MediaPriorityOptions,
+  JoinOptions,
+  LocalVideoStats,
+  MediaTypeShort,
+  RTMPTask,
+  Client as IClient,
+  SpatialInitOptions
+} from "../types";
 import {LocalStream} from "./localStream";
 import {checkExists, checkValidBoolean, checkValidInteger, checkValidString} from "../util/param";
 import {
@@ -17,6 +27,9 @@ import { SDK_VERSION, BUILD } from "../Config";
 import {STREAM_TYPE} from "../constant/videoQuality";
 import {RemoteStream} from "./remoteStream";
 import {Device} from "../module/device";
+import {OperationQueue} from "../util/OperationQueue";
+import {SpatialManager} from "./spatialManager";
+import {getAudioContext} from "../module/webAudio";
 const BigNumber = require("bignumber.js");
 
 /**
@@ -39,9 +52,13 @@ class Client extends Base {
   public _roleInfo: { userRole: number; audienceList: {} };
   public upLoadParam:any;
   public destroyed: boolean = false;
+  public operationQueue: OperationQueue;
+  private onJoinFinish: (() => void)|null = null;
+  public spatialManager : SpatialManager|null = null;
   constructor (options:ClientOptions) {
     super(options)
 
+    this.operationQueue = new OperationQueue(this.logger)
     /**
      * 页面卸载时销毁
      * 火狐使用pagehide 触发时发现websocket已经断开 导致不能发送登出信令 对端表现为刷新端没有退出
@@ -111,6 +128,18 @@ class Client extends Base {
         this.safeEmit("playout-device-changed", evt);
       }
     })
+    
+    const handleJoinFinish = ()=>{
+      // 表示又用户调用的api层面的加入成功/失败，不算重连之类的。
+      if (this.onJoinFinish){
+        this.onJoinFinish()
+        this.onJoinFinish = null
+      }else{
+        this.logger.error('孤立的join完成回调')
+      }
+    }
+    this.on('pairing-join-success', handleJoinFinish);
+    this.on('pairing-join-error', handleJoinFinish);
   }
 
   getUid() {
@@ -188,14 +217,6 @@ class Client extends Base {
       this.initWebSocket();
     }
     this.logger.log('加入频道, options: ', JSON.stringify(options, null, ' '))
-    if (this.adapterRef.channelStatus === 'join' || this.adapterRef.channelStatus === 'connectioning') {
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.REPEAT_JOIN,
-          message: 'repeatedly join'
-        })
-      )
-    }
     if(!options.channelName){
       throw new RtcError({code: ErrorCode.INVALID_PARAMETER, message:'请填写房间名称'})
     }
@@ -232,9 +253,29 @@ class Client extends Base {
       )
     }
 
+    this.emit('pairing-join-start')
+    // join行为排队
+    this.onJoinFinish = await this.operationQueue.enqueue({
+      caller: this as IClient,
+      method: "join",
+      options,
+    })
+    if (this.adapterRef.channelStatus === 'join' || this.adapterRef.channelStatus === 'connectioning') {
+      this.emit('pairing-join-error')
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.REPEAT_JOIN,
+          message: 'repeatedly join'
+        })
+      )
+    }
+    //正式开始join行为
     this.adapterRef.connectState.curState = 'CONNECTING'
     this.adapterRef.connectState.prevState = 'DISCONNECTED'
     this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
+    if (options.spatial){
+      this.initSpatialManager(options.spatial)
+    }
     if (options.token){
       this._params.token = options.token;
     }
@@ -272,12 +313,20 @@ class Client extends Base {
       }
     }
     if (!this.adapterRef._meetings){
+      this.emit('pairing-join-error')
       throw new RtcError({
         code: ErrorCode.NO_MEETINGS,
         message: 'meetings error'
       })
     }
-    return this.adapterRef._meetings.joinChannel(this._params.JoinChannelRequestParam4WebRTC2);
+    try{
+      const joinResult = await this.adapterRef._meetings.joinChannel(this._params.JoinChannelRequestParam4WebRTC2)
+      this.emit('pairing-join-success')
+      return joinResult
+    }catch(e){
+      this.emit('pairing-join-error')
+      throw e;
+    }
   }
 
   /**
@@ -288,6 +337,11 @@ class Client extends Base {
    * @return {null}
    */
   async leave () {
+    const onLeaveFinish = await this.operationQueue.enqueue({
+      caller: this as IClient,
+      method: 'leave',
+      options: null,
+    })
     this.logger.log('离开频道')
     if (this.adapterRef.channelStatus !== 'join' && this.adapterRef.channelStatus !== 'connectioning') {
       this.logger.log(' 状态: ', this.adapterRef.channelStatus)
@@ -298,7 +352,9 @@ class Client extends Base {
     this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
     this.setEndSessionTime()
     if (this.adapterRef._meetings) {
-      this.adapterRef._meetings.leaveChannel()
+      this.adapterRef._meetings.leaveChannel().then(onLeaveFinish)
+    }else{
+      onLeaveFinish()
     }
     // invoke uploadLog() if uploadLogEnabled is true
     // if(Number(sessionStorage.getItem('uploadLogEnabled'))) {
@@ -337,10 +393,19 @@ class Client extends Base {
    * @method publish
    * @memberOf Client#
    * @param {Stream} Stream类型
-   * @returns {Promise}  
+   * @returns {Promise}
    */
   async publish (stream:LocalStream) {
     checkExists({tag: 'client.publish:stream', value: stream});
+    await this.doPublish(stream);
+  }
+
+  async doPublish (stream:LocalStream) {
+    const onPublishFinish = await this.operationQueue.enqueue({
+      caller: this as IClient,
+      method: 'publish',
+      options: stream,
+    })
     let reason = ''
     if (this.adapterRef.connectState.curState !== 'CONNECTED') {
       this.logger.error('publish: 当前不在频道中，可能是没有加入频道或者是网络波动导致暂时断开连接')
@@ -372,6 +437,7 @@ class Client extends Base {
         param
       })
       if(reason === 'INVALID_OPERATION') {
+        onPublishFinish()
         return Promise.reject(
           new RtcError({
             code: ErrorCode.INVALID_OPERATION,
@@ -379,6 +445,7 @@ class Client extends Base {
           })
         )
       }else if(reason === 'INVALID_LOCAL_STREAM') {
+        onPublishFinish()
         return Promise.reject(
           new RtcError({
             code: ErrorCode.NO_LOCALSTREAM,
@@ -390,6 +457,7 @@ class Client extends Base {
     
     try {
       if (!this.adapterRef._mediasoup){
+        onPublishFinish()
         throw new RtcError({
           code: ErrorCode.NO_MEDIASERVER,
           message: 'media server error 4'
@@ -397,6 +465,7 @@ class Client extends Base {
       }
       this.bindLocalStream(stream)
       await this.adapterRef._mediasoup.createProduce(stream, "all");
+      onPublishFinish()
       this.apiFrequencyControl({
         name: 'publish',
         code: 0,
@@ -404,6 +473,7 @@ class Client extends Base {
       })
     } catch (e) {
       this.logger.error('API调用失败：Client:publish' ,e.name, e.message, e.stack, ...arguments);
+      onPublishFinish()
       this.apiFrequencyControl({
         name: 'publish',
         code: -1,
@@ -421,6 +491,11 @@ class Client extends Base {
    */
   async unpublish (stream?:LocalStream) {
     checkExists({tag: 'client.unpublish:stream', value: stream});
+    const onUnpublishFinish = await this.operationQueue.enqueue({
+      caller: this as IClient,
+      method: 'unpublish',
+      options: null,
+    })
     let reason = ''
     if (this.adapterRef.connectState.curState !== 'CONNECTED') {
       this.logger.error('publish: 当前不在频道中，可能是没有加入频道或者是网络波动导致暂时断开连接')
@@ -487,8 +562,10 @@ class Client extends Base {
           screenProfile: stream && stream.screenProfile
         }, null, ' ')
       })
+      onUnpublishFinish()
     } catch (e) {
       this.logger.error('API调用失败：Client:unpublish' ,e, ...arguments);
+      onUnpublishFinish()
       this.apiFrequencyControl({
         name: 'unpublish',
         code: -1,
@@ -516,12 +593,16 @@ class Client extends Base {
    * @returns {Promise}  
    */
   async subscribe (stream:RemoteStream) {
-    return this.subscribeRts(stream) 
+    if (this.spatialManager){
+      this.logger.warn(`subscribe() 已开启空间音频，跳过用户订阅步骤`);
+    }else{
+      checkExists({tag: 'client.subscribe:stream', value: stream});
+      this.logger.log(`subscribe() [订阅远端: ${stream.stringStreamID}]`)
+      return this.doSubscribe(stream)
+    }
   }
 
-  async subscribeRts (stream:RemoteStream) {
-    checkExists({tag: 'client.subscribe:stream', value: stream});
-    this.logger.log(`subscribe() [订阅远端: ${stream.stringStreamID}]`)
+  async doSubscribe (stream:RemoteStream) {
     const uid = stream.getId()
     if (!uid) {
       throw new RtcError({
@@ -558,7 +639,7 @@ class Client extends Base {
               message: 'media server error 7'
             })
           }
-          await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.audio.consumerId);
+          await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.audio.consumerId, stream, 'audio');
           this.adapterRef.instance.removeSsrc(stream.getId(), 'audio')
           stream.pubStatus.audio.consumerId = '';
           stream.stop('audio')
@@ -612,7 +693,7 @@ class Client extends Base {
               message: 'media server error 8'
             })
           }
-          await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.video.consumerId);
+          await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.video.consumerId, stream, 'video');
           this.adapterRef.instance.removeSsrc(stream.getId(), 'video')
           stream.pubStatus.video.consumerId = '';
           stream.stop('video')
@@ -661,7 +742,7 @@ class Client extends Base {
               message: 'media server error 9'
             })
           }
-          await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.screen.consumerId);
+          await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.screen.consumerId, stream, 'screen');
           this.adapterRef.instance.removeSsrc(stream.getId(), 'screen')
           stream.pubStatus.screen.consumerId = '';
           stream.stop('screen')
@@ -723,11 +804,11 @@ class Client extends Base {
    * @returns {Promise}  
    */
   async unsubscribe (stream:RemoteStream) {
-    return this.unsubscribeRts(stream)
+    checkExists({tag: 'client.unsubscribe:stream', value: stream});
+    return this.doUnsubscribe(stream)
   }
 
-  async unsubscribeRts (stream:RemoteStream) {
-    checkExists({tag: 'client.unsubscribe:stream', value: stream});
+  async doUnsubscribe (stream:RemoteStream) {
     this.logger.log('取消订阅远端音视频流: ', stream)
     try {
       if (stream.pubStatus.audio.consumerId && stream.pubStatus.audio.stopconsumerStatus !== 'start') {
@@ -739,7 +820,7 @@ class Client extends Base {
             message: 'media server error 10'
           })
         }
-        await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.audio.consumerId);
+        await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.audio.consumerId, stream, 'audio');
         this.adapterRef.instance.removeSsrc(stream.getId(), 'audio')
         stream.pubStatus.audio.consumerId = '';
         stream.stop('audio')
@@ -766,7 +847,7 @@ class Client extends Base {
             message: 'media server error 11'
           })
         }
-        await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.video.consumerId);
+        await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.video.consumerId, stream, 'video');
         this.adapterRef.instance.removeSsrc(stream.getId(), 'video')
         stream.pubStatus.video.consumerId = '';
         stream.stop('video')
@@ -794,7 +875,7 @@ class Client extends Base {
             message: 'media server error 12'
           })
         }
-        await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.screen.consumerId);
+        await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.screen.consumerId, stream, 'screen');
         this.adapterRef.instance.removeSsrc(stream.getId(), 'screen')
         stream.pubStatus.screen.consumerId = '';
         stream.stop('screen')
@@ -1072,7 +1153,7 @@ class Client extends Base {
    */
   bindLocalStream(localStream: LocalStream){
     this.adapterRef.localStream = localStream
-    localStream.client = <IClient>this;
+    localStream.client = this as IClient;
     const uid = this.getUid();
     if (localStream.streamID !== uid){
       this.logger.warn('localStream更换streamID', localStream.streamID, '=>', uid);
@@ -1386,7 +1467,23 @@ class Client extends Base {
     this.logger.log('设置加密密钥');
     this.adapterRef.encryption.setEncryptionSecret(encryptionSecret);
   }
-  
+
+  initSpatialManager(options: SpatialInitOptions) {
+    if (!this.spatialManager){
+      const context = getAudioContext();
+      if (!context) {
+        this.logger.error("当前环境不支持WebAudio");
+        return;
+      }
+      this.spatialManager = new SpatialManager({
+        client: this as IClient,
+        options,
+        context
+      })
+    }
+    this.spatialManager.init()
+    this.spatialManager.play()
+  }
   /**
    *  销毁实例
    *  @method destroy

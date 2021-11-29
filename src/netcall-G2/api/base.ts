@@ -1,9 +1,7 @@
 import { EventEmitter } from "eventemitter3";
 import {Meeting} from '../module/meeting'
-import {MediaHelper} from '../module/media'
 import {Signalling} from '../module/signalling'
 import {Mediasoup} from '../module/mediasoup'
-import {RTSTransport} from '../module/rtsTransport'
 import {StatsReport} from '../module/report/statsReport'
 import {DataReport} from '../module/report/dataReport'
 import {Logger} from "../util/webrtcLogger";
@@ -11,7 +9,7 @@ import {
   AdapterRef,
   APIFrequencyControlOptions, NeRtcServerAddresses,
   ClientOptions, JoinChannelRequestParam4WebRTC2,
-  MediaTypeShort, ILogger
+  MediaTypeShort, ILogger, MediaSubStatus
 } from "../types";
 import {MediaCapability} from "../module/mediaCapability";
 import {getSupportedCodecs} from "../util/rtcUtil/codec";
@@ -22,7 +20,7 @@ import ErrorCode  from '../util/error/errorCode';
 import {getParameters} from "../module/parameters";
 import {RemoteStream} from "./remoteStream";
 import {LocalStream} from "./localStream";
-import {Client} from "./client"
+import {Client as ICLient} from "../types"
 
 let clientCnt = 0;
 
@@ -50,7 +48,7 @@ class Base extends EventEmitter {
       mode: 'rtc'
     };
     this.clientId = clientCnt++;
-    //typescript成员初始化
+    // @ts-ignore typescript成员初始化
     this.adapterRef = {// adapter对象内部成员与方法挂载的引用
       channelInfo: {
         sessionConfig: {}
@@ -60,8 +58,7 @@ class Base extends EventEmitter {
       apiEvents: {},
       requestId: {},
       // logController: logController,
-      //@ts-ignore
-      instance: this,
+      instance: this as unknown as ICLient,
       report: true
     };
   
@@ -381,23 +378,14 @@ class Base extends EventEmitter {
     this.logger.log(`${uid}离开房间`);
     const remotStream = this.adapterRef.remoteStreamMap[uid];
     if (remotStream) {
-      if (remotStream.pubStatus.audio) {
-        if (!this.adapterRef._mediasoup){
-          throw new RtcError({
-            code: ErrorCode.NO_MEDIASERVER,
-            message: 'media server error 1'
-          })
-        }
-        this.adapterRef._mediasoup.destroyConsumer(remotStream.pubStatus.audio.consumerId)
+      if (remotStream.pubStatus.audio.consumerId) {
+        await this.adapterRef._mediasoup?.destroyConsumer(remotStream.pubStatus.audio.consumerId, remotStream, 'audio');
       }
-      if (remotStream.pubStatus.video) {
-        if (!this.adapterRef._mediasoup){
-          throw new RtcError({
-            code: ErrorCode.NO_MEDIASERVER,
-            message: 'media server error 2'
-          })
-        }
-        this.adapterRef._mediasoup.destroyConsumer(remotStream.pubStatus.video.consumerId)
+      if (remotStream.pubStatus.video.consumerId) {
+        await this.adapterRef._mediasoup?.destroyConsumer(remotStream.pubStatus.video.consumerId, remotStream, 'video')
+      }
+      if (remotStream.pubStatus.screen.consumerId) {
+        await this.adapterRef._mediasoup?.destroyConsumer(remotStream.pubStatus.screen.consumerId, remotStream, 'screen')
       }
       remotStream.active = false;
       remotStream.destroy();
@@ -458,6 +446,7 @@ class Base extends EventEmitter {
         message: 'media server error 3'
       })
     }
+    this.emit('pairing-reBuildRecvTransport-start');
     this.adapterRef._mediasoup.init()
     this.logger.log('下行通道异常, remoteStreamMap', this.adapterRef.remoteStreamMap)
     this.logger.log('this._eventQueue: ', this.adapterRef._mediasoup._eventQueue)
@@ -471,13 +460,13 @@ class Base extends EventEmitter {
       stream.pubStatus.screen.consumerId = ""
       this.logger.log('重连逻辑订阅 start：', stream.stringStreamID)
       try {
-        //@ts-ignore
-        await this.subscribe(stream)
+        await (this as unknown as ICLient).doSubscribe(stream)
+        this.emit('pairing-reBuildRecvTransport-success');
       } catch (e) {
         this.logger.log('重连逻辑订阅 error: ', e, e.name, e.message)
+        this.emit('pairing-reBuildRecvTransport-error');
         break
       }
-      
       this.logger.log('重连逻辑订阅 over: ', stream.stringStreamID)
     }
   }
@@ -602,11 +591,29 @@ class Base extends EventEmitter {
   }
   
   isPublished(stream: LocalStream){
-    return stream && ((stream.audio && stream.pubStatus.audio.audio) || (stream.video && stream.pubStatus.video.video) || (stream.screen && stream.pubStatus.screen.screen))
+    return stream
+      && this.adapterRef.localStream === stream
+      && ((stream.audio && stream.pubStatus.audio.audio) || (stream.video && stream.pubStatus.video.video) || (stream.screen && stream.pubStatus.screen.screen))
   }
 
-  isSubscribe(stream: RemoteStream){
-    return stream && (stream.subStatus.audio || stream.subStatus.video)
+  getSubStatus(stream: RemoteStream) : MediaSubStatus{
+    const mediaTypeList:MediaTypeShort[] = ["audio", "video", "screen"]
+    for (let mediaType of mediaTypeList){
+      if (stream.pubStatus[mediaType].stopconsumerStatus === "start"){
+        return "unsubscribing"
+      }
+    }
+    for (let mediaType of mediaTypeList){
+      if (stream.pubStatus[mediaType].consumerStatus === "start"){
+        return "subscribing"
+      }
+    }
+    for (let mediaType of mediaTypeList){
+      if (stream.pubStatus[mediaType].consumerId){
+        return "subscribed"
+      }
+    }
+    return "unsubscribed"
   }
 
   getPeer(sendOrRecv:string){

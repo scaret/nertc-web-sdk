@@ -18,7 +18,7 @@ import {
   SnapshotOptions,
   LocalStreamOptions, StreamPlayOptions,
   VideoProfileOptions,
-  AudioEffectOptions, EncodingParameters, GetStreamConstraints
+  AudioEffectOptions, EncodingParameters, GetStreamConstraints, Client as IClient
 } from "../types";
 import {MediaHelper} from "../module/media";
 import {checkExists, isExistOptions, checkValidInteger} from "../util/param";
@@ -43,6 +43,22 @@ import {emptyStreamWith, watchTrack} from "../util/gum";
  */
 
 let localStreamCnt = 0;
+
+export interface LocalStreamOpenOptions{
+  type: MediaTypeShort|"screenAudio",
+    deviceId?: string,
+    sourceId?: string,
+    facingMode?: string,
+    screenAudio?: boolean,
+    audioSource?: MediaStreamTrack,
+    videoSource?: MediaStreamTrack,
+    screenAudioSource?: MediaStreamTrack,
+    screenVideoSource?: MediaStreamTrack,
+}
+
+export interface LocalStreamCloseOptions{
+  type:MediaTypeShort|"screenAudio"|"all"
+}
 
 /**
  *  @method stream类构造函数
@@ -834,18 +850,13 @@ class LocalStream extends EventEmitter {
    + "environment"：后置摄像头
    * @returns {Promise}
    */
-  async open (options:{
-    type: MediaTypeShort|"screenAudio",
-    deviceId?: string,
-    sourceId?: string,
-    facingMode?: string,
-    screenAudio?: boolean,
-    audioSource?: MediaStreamTrack,
-    videoSource?: MediaStreamTrack,
-    screenAudioSource?: MediaStreamTrack,
-    screenVideoSource?: MediaStreamTrack,
-  }) {
+  async open (options:LocalStreamOpenOptions) {
     let {type, deviceId, sourceId, facingMode, screenAudio, audioSource, videoSource, screenAudioSource, screenVideoSource} = options
+    const onOpenFinished = await this.client.operationQueue.enqueue({
+      caller: this,
+      method: 'open',
+      options: options,
+    })
     if (this.client._roleInfo.userRole === 1) {
       const reason = `观众不允许打开设备`;
       this.logger.error(reason);
@@ -857,6 +868,7 @@ class LocalStream extends EventEmitter {
           type
         }, null, ' ')
       });
+      onOpenFinished()
       return Promise.reject(
         new RtcError({
           code: ErrorCode.INVALID_OPERATION,
@@ -879,6 +891,7 @@ class LocalStream extends EventEmitter {
                 type
               }, null, ' ')
             })
+            onOpenFinished()
             return Promise.reject(
               new RtcError({
                 code: ErrorCode.INVALID_OPERATION,
@@ -919,6 +932,7 @@ class LocalStream extends EventEmitter {
                 type
               }, null, ' ')
             })
+            onOpenFinished()
             return Promise.reject(
               new RtcError({
                 code: ErrorCode.INVALID_OPERATION,
@@ -954,6 +968,7 @@ class LocalStream extends EventEmitter {
                   type
                 }, null, ' ')
               })
+              onOpenFinished()
               return Promise.reject(
                 new RtcError({
                   code: ErrorCode.INVALID_OPERATION,
@@ -970,6 +985,7 @@ class LocalStream extends EventEmitter {
                   type
                 }, null, ' ')
               })
+              onOpenFinished()
               return Promise.reject(
                 new RtcError({
                   code: ErrorCode.INVALID_OPERATION,
@@ -990,6 +1006,7 @@ class LocalStream extends EventEmitter {
                 type
               }, null, ' ')
             })
+            onOpenFinished()
             return Promise.reject(
               new RtcError({
                 code: ErrorCode.INVALID_OPERATION,
@@ -1032,6 +1049,7 @@ class LocalStream extends EventEmitter {
         default:
           this.logger.error('非法参数')
       }
+      onOpenFinished()
       this.client.apiFrequencyControl({
         name: 'open',
         code: 0,
@@ -1063,6 +1081,7 @@ class LocalStream extends EventEmitter {
         && e.message.indexOf('ermission') > -1
         && e.message.indexOf('denied') > -1 ) {
         this.client.safeEmit('accessDenied', type)
+        onOpenFinished()
         return Promise.reject(
           new RtcError({
             code: ErrorCode.NOT_ALLOWED,
@@ -1070,6 +1089,7 @@ class LocalStream extends EventEmitter {
           })
         )
       } else {
+        onOpenFinished()
         return Promise.reject(e)
       }
     }
@@ -1083,8 +1103,16 @@ class LocalStream extends EventEmitter {
    * @param {String }  options.type 媒体设备: audio/video/screen
    * @returns {Promise}
    */
-  async close (options?: { type:MediaTypeShort|"screenAudio"}) {
-    let type = options ? options.type : 'all'
+  async close (options?: LocalStreamCloseOptions) {
+    if (!options){
+      options = {type: 'all'}
+    }
+    const onCloseFinished = await this.client.operationQueue.enqueue({
+      caller: this,
+      method: 'close',
+      options: options,
+    })
+    let type = options.type
     let reason = null
     switch(type) {
       case 'audio': 
@@ -1098,6 +1126,7 @@ class LocalStream extends EventEmitter {
         if (this.mediaHelper){
           this.mediaHelper.stopStream('audio')
         }else{
+          onCloseFinished()
           throw new RtcError({
             code: ErrorCode.NO_MEDIAHELPER,
             message: 'no media helper'
@@ -1125,6 +1154,7 @@ class LocalStream extends EventEmitter {
         if (this.mediaHelper){
           this.mediaHelper.stopStream('screenAudio')
         }else{
+          onCloseFinished()
           throw new RtcError({
             code: ErrorCode.NO_MEDIAHELPER,
             message: 'no media helper'
@@ -1152,12 +1182,14 @@ class LocalStream extends EventEmitter {
         if (this.mediaHelper){
           this.mediaHelper.stopStream('video')
         }else{
+          onCloseFinished()
           throw new RtcError({
             code: ErrorCode.NO_MEDIAHELPER,
             message: 'no media helper'
           })
         }
         if (!this._play){
+          onCloseFinished()
           throw new RtcError({
             code: ErrorCode.NO_PLAY,
             message: 'no play'
@@ -1180,6 +1212,7 @@ class LocalStream extends EventEmitter {
         }
         this.screen = false
         if (!this.mediaHelper){
+          onCloseFinished()
           throw new RtcError({
             code: ErrorCode.NO_MEDIAHELPER,
             message: 'no media helper'
@@ -1211,59 +1244,64 @@ class LocalStream extends EventEmitter {
       default:
         this.logger.log('不能识别type')
         reason = 'INVALID_ARGUMENTS'
-      if (reason) {
-        this.client.apiFrequencyControl({
-          name: 'close',
-          code: -1,
-          param: JSON.stringify({
-            reason,
-            audio: this.audio,
-            video: this.video,
-            screen: this.screen,
-          }, null, ' ')
-        })
-        if(reason === 'NOT_OPEN_MIC_YET') {
-          return Promise.reject(
-            new RtcError({
-              code: ErrorCode.INVALID_OPERATION,
-              message: 'mic is not open'
-            })
-          )
-        }else if(reason === 'NOT_OPEN_CAMERA_YET'){
-          return Promise.reject(
-            new RtcError({
-              code: ErrorCode.INVALID_OPERATION,
-              message: 'camera is not open'
-            })
-          )
-        }else if(reason === 'NOT_OPEN_SCREEN_YET'){
-          return Promise.reject(
-            new RtcError({
-              code: ErrorCode.INVALID_OPERATION,
-              message: 'screen-sharing si not open'
-            })
-          )
-        }else if(reason === 'INVALID_ARGUMENTS'){
-          return Promise.reject(
-            new RtcError({
-              code: ErrorCode.INVALID_OPERATION,
-              message: 'unknown type'
-            })
-          )
-        }
-      } else {
-        this.client.apiFrequencyControl({
-          name: 'close',
-          code: 0,
-          param: JSON.stringify({
-            reason,
-            audio: this.audio,
-            video: this.video,
-            screen: this.screen,
-          }, null, ' ')
-        })
-        return
+    }
+    if (reason) {
+      this.client.apiFrequencyControl({
+        name: 'close',
+        code: -1,
+        param: JSON.stringify({
+          reason,
+          audio: this.audio,
+          video: this.video,
+          screen: this.screen,
+        }, null, ' ')
+      })
+      if(reason === 'NOT_OPEN_MIC_YET') {
+        onCloseFinished()
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_OPERATION,
+            message: 'mic is not open'
+          })
+        )
+      }else if(reason === 'NOT_OPEN_CAMERA_YET'){
+        onCloseFinished()
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_OPERATION,
+            message: 'camera is not open'
+          })
+        )
+      }else if(reason === 'NOT_OPEN_SCREEN_YET'){
+        onCloseFinished()
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_OPERATION,
+            message: 'screen-sharing si not open'
+          })
+        )
+      }else if(reason === 'INVALID_ARGUMENTS'){
+        onCloseFinished()
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_OPERATION,
+            message: 'unknown type'
+          })
+        )
       }
+    } else {
+      onCloseFinished()
+      this.client.apiFrequencyControl({
+        name: 'close',
+        code: 0,
+        param: JSON.stringify({
+          reason,
+          audio: this.audio,
+          video: this.video,
+          screen: this.screen,
+        }, null, ' ')
+      })
+      return
     }
   }
 

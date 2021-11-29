@@ -9,6 +9,9 @@ import {Encryption} from "./module/encryption";
 import BigNumber from 'bignumber.js'
 import {RemoteStream} from "./api/remoteStream";
 import {LocalStream} from "./api/localStream";
+import {SpatialManager} from "./api/spatialManager";
+import {OperationQueue} from "./util/OperationQueue";
+import {UploadLog} from "./util/log/upload";
 
 type UIDTYPE = number | string;
 
@@ -781,7 +784,8 @@ export interface Client{
     userRole: number;
     audienceList: {[uid in UIDTYPE]: boolean}
   }
-  publish: (stream: LocalStream)=>void
+  spatialManager: SpatialManager|null;
+  operationQueue: OperationQueue
   apiEventReport: (eventName: string, eventData: any)=>void
   getPeer: (sendOrRecv: 'send'|'recv')=>any
   leave: ()=>any
@@ -790,15 +794,31 @@ export interface Client{
   _params: any
   setSessionConfig: any
   getUidAndKindBySsrc: (ssrc:number)=>{uid:number|string;kind: MediaTypeShort}
-  [key:string]: any
+  removeSsrc: (uid:number|string, kind?:MediaTypeShort) => void
+  stopSession: ()=>void
+  startSession: ()=>void
+  on: (eventName: string, listener: (evt: any)=>void)=>void
+  isPublished: (stream: LocalStream) => boolean
+  getSubStatus: (stream: RemoteStream) => MediaSubStatus
+  clearMember: (uid: number | string) => void
+  resetChannel: ()=>void
+  // 注：当前接口不应存在只有用户调用的方法，以避免SDK内部调用。
+  // 例如，开启空间音频时禁止用户Subscribe，此时SDK内部应调用doSubscribe。
+  doSubscribe: (stream: RemoteStream)=>Promise<void>
+  doUnsubscribe: (stream: RemoteStream)=>void
+  doPublish: (stream: LocalStream)=>void
 }
+
+export type ConsumerStatus = "init"|"start"|"end"
+
+export type MediaSubStatus = "unsubscribed"|"subscribing"|"subscribed"|"unsubscribing"
 
 export interface PubStatus{
   audio: {
     audio: boolean;
     producerId: string;
     consumerId: string;
-    consumerStatus: string;
+    consumerStatus: ConsumerStatus;
     stopconsumerStatus: string;
     mute: boolean;
     simulcastEnable: boolean;
@@ -923,10 +943,19 @@ export type VideoCodecType = "H264"|"VP8";
 
 export type AudioCodecType = "OPUS";
 
+export interface SpatialInitOptions {
+  subConfig: {
+    audio: boolean;
+    video: boolean;
+    screen: boolean;
+  }
+}
+
 export interface JoinOptions{
   channelName: string;
   uid: number|string;
   token: string;
+  spatial?: SpatialInitOptions;
   wssArr?: string[]|null;
   joinChannelLiveConfig?: LiveConfig;
   joinChannelRecordConfig?: RecordConfig;
