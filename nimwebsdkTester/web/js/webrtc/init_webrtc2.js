@@ -234,8 +234,11 @@ $('#trackStatus').on('click', () => {
   $("#part-track").toggle()
 })
 
+const historyStats = {
+  
+}
 // 更新采集状态
-setInterval(()=>{
+const captureTimer = setInterval(async ()=>{
   let audioInfo = "";
   if (rtc.localStream){
     audioInfo += `数量：${rtc.localStream?.mediaHelper.getAudioInputTracks().length}`
@@ -322,6 +325,59 @@ setInterval(()=>{
       }
     }
   })
+  if (rtc.client?.adapterRef?._mediasoup?._recvTransport?._handler?._pc){
+    const transceivers = rtc.client.adapterRef._mediasoup._recvTransport._handler._pc.getTransceivers()
+    let html = "";
+    for (let i = 0; i < transceivers.length; i++){
+      const transceiver = transceivers[i];
+      let li = "#" + transceiver.mid
+      const receiver = transceiver.receiver
+      if (receiver.track){
+        li += " " + receiver.track.kind;
+        if (receiver.track.kind === "video"){
+          const settings = receiver.track.getSettings();
+          if (settings.width || settings.height){
+            li += ` ${settings.width}x${settings.height}`
+          }
+        }
+        if (receiver.track.enabled === false){
+          li += " disabled"
+        }
+        if (receiver.track.muted){
+          li += " muted"
+        }
+        if (receiver.track.readyState !== "live"){
+          li += " " + receiver.track.readyState
+        }
+        const statsNow = await receiver.getStats();
+        historyStats[receiver.track.id] = statsNow
+        statsNow.forEach((item)=>{
+          const itemHistory = historyStats[item.id]
+          historyStats[item.id] = JSON.parse(JSON.stringify(item))
+          if (item.type === "inbound-rtp"){
+            // li += " ssrc " + item.ssrc
+            if (itemHistory){
+              // 计算码率
+              if (item.type === "inbound-rtp") {
+                // console.error("item.bytesReceived", item.bytesReceived, item.timestamp);
+                const bitrate = Math.floor(8 * (item.bytesReceived - itemHistory.bytesReceived) / (item.timestamp - itemHistory.timestamp))
+                li += " " + bitrate + "kbps"
+              }
+            }
+          }
+        })
+      }
+      if (receiver.transport){
+        if (receiver.transport.state !== "connected"){
+          li += " " + receiver.transport.state
+        }
+      }else{
+        li += " NOTRANSPORT"
+      }
+      html += `<li>${li}</li>`
+    }
+    $("#receiverStatus").html(html)
+  }
 }, 1000)
 
 
@@ -481,6 +537,10 @@ jQuery('#js-netstats').on('change', function () {
 
 
 function initEvents() {
+  if (typeof bindEventParing !== "undefined"){
+    bindEventParing()
+  }
+  
   rtc.client.on('peer-online', evt => {
     console.warn(`${evt.uid} 加入房间`)
     addLog(`${evt.uid} 加入房间`)

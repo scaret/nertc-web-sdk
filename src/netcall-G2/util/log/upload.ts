@@ -145,5 +145,6 @@ class UploadLog  {
 
 const logController = new UploadLog()
 export {
-    logController
+  logController,
+  UploadLog,
 }

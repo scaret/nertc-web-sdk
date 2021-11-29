@@ -757,11 +757,12 @@ class Mediasoup extends EventEmitter {
           producerId
         });
     } catch (error) {
-      this.loggerSend.error('_destroyConsumer() | failed:', error.name, error.message);
+      this.loggerSend.error('_destroyProducer() | failed:', error.name, error.message);
     }
   }
 
   async createConsumer(uid:number|string, kind:'audio'|'video',mediaType: MediaType, id:string, preferredSpatialLayer:number = 0){
+    this.adapterRef.instance.emit('pairing-createConsumer-start')
     return new Promise((resolve, reject)=>{
       this._eventQueue.push({uid, kind, id, mediaType, preferredSpatialLayer, resolve, reject});
       if (this._eventQueue.length > 1) {
@@ -842,6 +843,7 @@ class Mediasoup extends EventEmitter {
     this.loggerRecv.log(`开始订阅 ${uid} 的 ${mediaTypeShort} 媒体: ${id} 大小流: `, preferredSpatialLayer)
 
     if (!id) {
+      this.adapterRef.instance.emit('pairing-createConsumer-error')
       return this.checkConsumerList(info)
     } /*else if (this.unsupportedProducers.indexOf(id) > -1){
       this.loggerRecv.warn("跳过不支持的Producer", id)
@@ -852,6 +854,7 @@ class Mediasoup extends EventEmitter {
     //@ts-ignore
     if (!remoteStream || !remoteStream.pubStatus[mediaTypeShort][mediaTypeShort] || !remoteStream.pubStatus[mediaTypeShort].producerId) {
       //this._eventQueue = this._eventQueue.filter((item)=>{item.uid != uid })
+      this.adapterRef.instance.emit('pairing-createConsumer-error')
       return this.checkConsumerList(info)
     }
 
@@ -864,6 +867,7 @@ class Mediasoup extends EventEmitter {
 
       if (isPlaying) {
         this.loggerRecv.log('当前播放正常，直接返回')
+        this.adapterRef.instance.emit('pairing-createConsumer-skip')
         return this.checkConsumerList(info)
       } else if (remoteStream.pubStatus[mediaTypeShort].stopconsumerStatus !== 'start') {
         this.loggerRecv.log('先停止之前的订阅')
@@ -875,7 +879,7 @@ class Mediasoup extends EventEmitter {
               message: 'media server error 21'
             })
           }
-          await this.destroyConsumer(remoteStream.pubStatus.audio.consumerId);
+          await this.destroyConsumer(remoteStream.pubStatus.audio.consumerId, null, null);
           this.adapterRef.instance.removeSsrc(remoteStream.getId(), mediaTypeShort)
           remoteStream.pubStatus[mediaTypeShort].consumerId = '';
           remoteStream.stop(mediaTypeShort)
@@ -883,7 +887,6 @@ class Mediasoup extends EventEmitter {
         } catch (e) {
           this.loggerRecv.error('停止之前的订阅出现错误: ', e.name, e.message)
         }
-        this.loggerRecv.log('停止之前的订阅完成')
       }
     }
 
@@ -898,6 +901,7 @@ class Mediasoup extends EventEmitter {
       await waitForEvent(this, 'transportReady', 3000);
     }
     if (!this._recvTransport) {
+      this.adapterRef.instance.emit('pairing-createConsumer-error')
       info.resolve(null);
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
@@ -964,7 +968,11 @@ class Mediasoup extends EventEmitter {
     }
     const consumeRes = await this.adapterRef._signalling._protoo.request('Consume', data);
     let { transportId, iceParameters, iceCandidates, dtlsParameters, probeSSrc, rtpParameters, producerId, consumerId, code, errMsg } = consumeRes;
-    this.loggerRecv.log(`consume反馈结果: code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
+    if (code === 200){
+      this.loggerRecv.log(`consume反馈结果: code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
+    }else{
+      this.loggerRecv.error(`consume请求失败: code: ${code} uid: ${uid}, errMsg: ${errMsg}`, consumeRes);
+    }
     if (!this._recvTransport) {
       this.loggerRecv.error(`transport undefined，直接返回`)
       return
@@ -990,7 +998,13 @@ class Mediasoup extends EventEmitter {
         this.loggerRecv.log('当前的 producerId：', remoteStream.pubStatus[mediaTypeShort].producerId)
         if (remoteStream.pubStatus[mediaTypeShort].producerId && id != remoteStream.pubStatus[mediaTypeShort].producerId) {
           this.loggerRecv.log('此前的订阅已经失效，重新订阅')
-          this.adapterRef.instance.subscribe(remoteStream)
+          this.adapterRef.instance.doSubscribe(remoteStream).then(()=>{
+            this.adapterRef.instance.emit('pairing-createConsumer-success')
+          }).catch(()=>{
+            this.adapterRef.instance.emit('pairing-createConsumer-error')
+          })
+        }else{
+          this.adapterRef.instance.emit('pairing-createConsumer-skip')
         }
         return this.checkConsumerList(info)
         /*if (code === 800) {
@@ -1092,8 +1106,10 @@ class Mediasoup extends EventEmitter {
           })
         }
         remoteStream.mediaHelper.updateStream(mediaTypeShort, consumer.track)
+        this.adapterRef.instance.emit('pairing-createConsumer-success')
         this.adapterRef.instance.safeEmit('stream-subscribed', {stream: remoteStream, 'mediaType': mediaTypeShort})
       } else {
+        this.adapterRef.instance.emit('pairing-createConsumer-error')
         this.loggerRecv.log('该次consume状态错误： ', JSON.stringify(remoteStream['pubStatus'], null, ''))
       }
       return this.checkConsumerList(info)
@@ -1133,16 +1149,19 @@ class Mediasoup extends EventEmitter {
     }
 
     if (!id) {
+      this.adapterRef.instance.emit('pairing-createConsumer-error')
       return this.checkConsumerList(info)
     }
     let remoteStream = this.adapterRef.remoteStreamMap[uid]
     //@ts-ignore
     if (!remoteStream || !remoteStream.pubStatus[mediaTypeShort][mediaTypeShort] || !remoteStream.pubStatus[mediaTypeShort].producerId) {
       //this._eventQueue = this._eventQueue.filter((item)=>{item.uid != uid })
+      this.adapterRef.instance.emit('pairing-createConsumer-error')
       return this.checkConsumerList(info)
     }
     if (remoteStream['pubStatus'][mediaTypeShort]['consumerId']) {
       this.loggerRecv.log('已经订阅过，返回')
+      this.adapterRef.instance.emit('pairing-createConsumer-skip')
       return this.checkConsumerList(info)
     }
     const data = {
@@ -1203,8 +1222,10 @@ class Mediasoup extends EventEmitter {
         remoteStream['pubStatus'][mediaTypeShort][mediaTypeShort] = true
         remoteStream['pubStatus'][mediaTypeShort]['consumerId'] = consumerId
         remoteStream['pubStatus'][mediaTypeShort]['producerId'] = producerId
+        this.adapterRef.instance.emit('pairing-createConsumer-success')
       } else {
         this.loggerRecv.log('该次consume状态错误： ', JSON.stringify(remoteStream['pubStatus'], null, ''))
+        this.adapterRef.instance.emit('pairing-createConsumer-error')
       }
       return this.checkConsumerList(info)
     } catch (error) {
@@ -1214,7 +1235,7 @@ class Mediasoup extends EventEmitter {
     }
   }
 
-  async destroyConsumer (consumerId:string) {
+  async destroyConsumer (consumerId:string, remoteStream: RemoteStream|null, mediaType: MediaTypeShort|null) {
     if(!consumerId) return
     try {
       this.loggerRecv.log('停止订阅 destroyConsumer consumerId=', consumerId);
@@ -1226,19 +1247,20 @@ class Mediasoup extends EventEmitter {
       }
       const consumer = this._consumers[consumerId];
       if(!consumer) return
-      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
-        throw new RtcError({
-          code: ErrorCode.NOT_FOUND,
-          message: 'No _protoo 6'
-        })
+      try{
+        await this.adapterRef._signalling?._protoo?.request(
+          'CloseConsumer', {
+            requestId: `${Math.ceil(Math.random() * 1e9)}`,
+            consumerId,
+            producerId: consumer.producerId,
+          })
+        await consumer.close();
+        if (remoteStream && mediaType){
+          this.adapterRef.instance.safeEmit('stream-unsubscribed', {stream: remoteStream, mediaType})
+        }
+      }catch(e){
+        this.logger.error("CloseConsumer失败", e.name, e.message, e)
       }
-      this.adapterRef._signalling._protoo.request(
-        'CloseConsumer', { 
-          requestId: `${Math.ceil(Math.random() * 1e9)}`, 
-          consumerId, 
-          producerId: consumer.producerId,
-        });
-      consumer.close();
       delete this._consumers[consumerId];
     } catch (error) {
       this.loggerRecv.error('destroyConsumer() | failed:', error.name, error.message, error.stack);

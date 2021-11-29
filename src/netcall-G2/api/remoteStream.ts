@@ -99,6 +99,7 @@ class RemoteStream extends EventEmitter {
   public active:boolean = true;
   public logger: ILogger;
   remoteStreamId : number;
+  public spatialPosition: {x: number, y: number} = {x: 0, y: 0}
   constructor (options:RemoteStreamOptions) {
     super()
     this.remoteStreamId = remoteStreamCnt++;
@@ -310,8 +311,9 @@ class RemoteStream extends EventEmitter {
   getId () {
     if (this.client.adapterRef.channelInfo.uidType === 'string') {
       return this.stringStreamID
+    }else{
+      return this.streamID
     }
-    return this.streamID 
   }
 
   async getStats() {
@@ -498,14 +500,18 @@ class RemoteStream extends EventEmitter {
     
     this.logger.log(`uid ${this.stringStreamID} Stream.play::`, JSON.stringify(playOptions))
     if(playOptions.audio && this._play && this.mediaHelper.audio.audioStream.getTracks().length){
-      this.logger.log(`uid ${this.stringStreamID} 开始播放远端音频`)
-      try{
-        await this._play.playAudioStream(this.mediaHelper.audio.audioStream, playOptions.muted)
-        this.audioPlay_ = true;
-      }catch(error) {
-        this.audioPlay_ = false;
-        this.client.emit('notAllowedError', error)
-        this.client.emit('NotAllowedError', error) // 兼容临时版本客户
+      if (this.client.spatialManager){
+        this.logger.log(`启用了空间音频，跳过本地音频播放。`)
+      }else{
+        this.logger.log(`uid ${this.stringStreamID} 开始播放远端音频`)
+        try{
+          await this._play.playAudioStream(this.mediaHelper.audio.audioStream, playOptions.muted)
+          this.audioPlay_ = true;
+        }catch(error) {
+          this.audioPlay_ = false;
+          this.client.emit('notAllowedError', error)
+          this.client.emit('NotAllowedError', error) // 兼容临时版本客户
+        }
       }
     }
 

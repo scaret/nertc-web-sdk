@@ -896,9 +896,20 @@
             视频
             <ul id="videoTrackStatus"></ul>
           </div>
+          <div class="line">
+            下行状态
+            <ul id="receiverStatus"></ul>
+          </div>
         </div>
 
-
+        <p class="block-header">事件对立</p>
+        <div class="part">
+          <div class="line" id="eventPairingLong">
+          </div>
+          <div class="line" id="eventPairingShort">
+          </div>
+        </div>
+        
         <p class="block-header">检查视频卡顿</p>
         <div class="part">
           <canvas id="struckCanvas"></canvas>
@@ -954,6 +965,7 @@
   <script src="./js/lib/axios.min.js"></script>
   <script src="./js/lib/parseQuery.js"></script>
   <script src="./js/webrtc/config.js"></script>
+  <script src="./js/webrtc/event_pairing.js"></script>
   <script src="./js/webrtc/init_webrtc2.js"></script>
 </body>
 

@@ -65,6 +65,18 @@ class AudioIn{
   }
 }
 
+export function getAudioContext(){
+  if (globalAc){
+    return globalAc;
+  }else if (supports.WebAudio && supports.MediaStream)
+  {
+    globalAc = new window.AudioContext()
+    return globalAc;
+  }else{
+    return null;
+  }
+}
+
 class WebAudio extends EventEmitter{
   private support:boolean;
   private gain: number;
@@ -132,15 +144,7 @@ class WebAudio extends EventEmitter{
       auidoMixingEnd: null
     };
     
-    if (globalAc){
-      this.context = globalAc;
-    }else if (supports.WebAudio && supports.MediaStream)
-    {
-      globalAc = new window.AudioContext()
-      this.context = globalAc;
-    }else{
-      this.context = null;
-    }
+    this.context = getAudioContext();
     
     if (this.context){
       // 伴音+音频输入
