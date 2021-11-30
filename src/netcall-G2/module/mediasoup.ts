@@ -18,7 +18,7 @@ import {getParameters} from "./parameters";
 
 class Mediasoup extends EventEmitter {
   private adapterRef:AdapterRef;
-  private _consumers: {[consumerId: string]: any}|null = null;
+  private _consumers: {[consumerId: string]: any} = {};
   private _timeout: number = 30 * 1000;
   public _edgeRtpCapabilities: any|null = null;
   private _mediasoupDevice:Device|null = null;
@@ -114,7 +114,7 @@ class Mediasoup extends EventEmitter {
     this._webcamProducerId = null
     this._screenProducer = null
     this._screenProducerId = null
-    this._consumers = null
+    this._consumers = {}
 
     if (this._sendTransportTimeoutTimer) {
       clearTimeout(this._sendTransportTimeoutTimer)
@@ -1073,9 +1073,6 @@ class Mediasoup extends EventEmitter {
         //@ts-ignore
         consumer.rtpReceiver.receiverStreams = receiverStreams;
       }
-      if(!this._consumers) {
-        this._consumers = {}
-      }
       this._consumers[consumer.id] = consumer;
 
       consumer.on('transportclose', () => {
@@ -1208,12 +1205,8 @@ class Mediasoup extends EventEmitter {
         return
       } 
 
-      if(!this._consumers) {
-        this._consumers = {}
-      }
       this._consumers[consumerId] = {producerId, close: function(){ return Promise.resolve() }}
-
-
+      
       this.loggerRecv.log('订阅consume完成 peerId =', peerId);
       remoteStream = this.adapterRef.remoteStreamMap[uid]
       if (remoteStream && remoteStream['pubStatus'][mediaTypeShort]['producerId']) {
@@ -1238,15 +1231,14 @@ class Mediasoup extends EventEmitter {
   async destroyConsumer (consumerId:string, remoteStream: RemoteStream|null, mediaType: MediaTypeShort|null) {
     if(!consumerId) return
     try {
-      this.loggerRecv.log('停止订阅 destroyConsumer consumerId=', consumerId);
-      if (!this._consumers){
-        throw new RtcError({
-          code: ErrorCode.NOT_FOUND,
-          message: 'No _consumers'
-        })
-      }
       const consumer = this._consumers[consumerId];
-      if(!consumer) return
+      if(!consumer){
+        this.loggerRecv.log('跳过停止订阅 destroyConsumer consumerId=', consumerId, remoteStream?.streamID);
+        return
+      }else{
+        this.loggerRecv.log('停止订阅 destroyConsumer consumerId=', consumerId, remoteStream?.streamID);
+      }
+      delete this._consumers[consumerId];
       try{
         await this.adapterRef._signalling?._protoo?.request(
           'CloseConsumer', {
@@ -1261,7 +1253,6 @@ class Mediasoup extends EventEmitter {
       }catch(e){
         this.logger.error("CloseConsumer失败", e.name, e.message, e)
       }
-      delete this._consumers[consumerId];
     } catch (error) {
       this.loggerRecv.error('destroyConsumer() | failed:', error.name, error.message, error.stack);
     }
