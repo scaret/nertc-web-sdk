@@ -99,7 +99,8 @@ export interface AdapterRef {
     relayaddrs?: string;
     relaytoken?: string;
   };
-  channelStatus: string;
+  // connectioning其实是reconnecting
+  channelStatus: "init"|"leave"|"join"|"connectioning";
   _signalling: Signalling|null;
   _rtsTransport: RTSTransport|null;
   connectState:{
