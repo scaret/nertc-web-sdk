@@ -65,16 +65,16 @@ const bindEventParing = ()=>{
   for (let i in eventList){
     const eventInfo = eventList[i];
     for(let eventName in eventInfo.eventsPlus){
-      console.log("listen to eventsPlus" + eventName)
-      rtc.client.on(eventName, ()=>{
+      rtc.client.on(eventName, function(){
         eventInfo.eventsPlus[eventName]++
+        console.log("事件计数/正：", eventName, eventInfo.eventsPlus[eventName], ...arguments)
         updateEventName()
       })
     }
     for(let eventName in eventInfo.eventsMinus){
-      console.log("listen to eventsMinus" + eventName)
-      rtc.client.on(eventName, ()=>{
+      rtc.client.on(eventName, function(){
         eventInfo.eventsMinus[eventName]++
+        console.log("事件计数/反：", eventName, eventInfo.eventsMinus[eventName], ...arguments)
         updateEventName()
       })
     }
@@ -108,6 +108,9 @@ const updateEventName = ()=>{
       htmlLong += `<tr class="${eventInfo.highlight ? "highlight" : ""}" title="${title}"><td>${eventInfo.text}</td><td>${eventsPlusTotal - eventsMinusTotal}</td><td>${eventsPlusTotal}</td><td>${eventsMinusTotal}</td></tr>`
     }else{
       htmlShort += `<tr class="${eventInfo.highlight ? "highlight" : ""}" title="${title}"><td>${eventInfo.text}</td><td>${eventsPlusTotal - eventsMinusTotal}</td><td>${eventsPlusTotal}</td><td>${eventsMinusTotal}</td></tr>`
+    }
+    if(eventInfo.highlight){
+      $("#eventParingTitle").addClass("highlight")
     }
   }
   htmlLong += "</table>"

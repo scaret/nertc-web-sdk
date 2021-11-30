@@ -97,11 +97,11 @@
             日志上传是否开启: <span id="logUploadEnabled"></span><br/>
             <span id="systemRequirement"></span>
           </div>
-        </div>
-        <button type="button" id='config'>参数配置</button>
-        <button type="button" id='uploadLog'>启动上传日志</button>
-        <button type="button" id='disableUploadLog'>关闭上传日志</button>
-        <div class="line">
+          <div class="line">
+            <button type="button" id='config'>参数配置</button>
+            <button type="button" id='uploadLog'>启动上传日志</button>
+            <button type="button" id='disableUploadLog'>关闭上传日志</button>
+          </div>
         </div>
 
         <div id='sessionConf' style="display: none">
@@ -304,19 +304,22 @@
         </div>
 
         <p class="block-header">加密相关</p>
-        <div class="line">
-          <select id="encryptionMode" style="width: 40%;">
-            <option value="none">none</option>
-            <option value="sm4-128-ecb" selected>sm4-128-ecb</option>
-            <option value="encoded-transform-sm4-128-ecb">encoded-transform-sm4-128-ecb</option>
-          </select>
-          <button type="button" id="setEncryptionMode">设置encryptionMode</button>
+        <div class="part">
+          <div class="line">
+            <select id="encryptionMode" style="width: 40%;">
+              <option value="none">none</option>
+              <option value="sm4-128-ecb" selected>sm4-128-ecb</option>
+              <option value="encoded-transform-sm4-128-ecb">encoded-transform-sm4-128-ecb</option>
+            </select>
+            <button type="button" id="setEncryptionMode">设置encryptionMode</button>
+          </div>
+          <div class="line">
+            <input id="encryptionSecret" cols="16" placeholder="encryptionSecret" value="qawq1QSAq1基本">
+            <button type="button" id="setEncryptionSecret">设置encryptionSecret</button>
+          </div>
         </div>
 
-        <div class="line">
-          <input id="encryptionSecret" cols="16" placeholder="encryptionSecret" value="qawq1QSAq1基本">
-          <button type="button" id="setEncryptionSecret">设置encryptionSecret</button>
-        </div>
+        
         <p class="block-header">订阅配置相关</p>
         <div class="part" id="sub-part">
           <!--
@@ -589,15 +592,17 @@
         </div>
 
         <p class="block-header">远端音量</p>
-        <div class="line">
-          <label id="activeSpeaker"></label>
-          <table id="volume-indicator" border="1"></table>
+        <div class="part">
+          <div class="line">
+            <label id="activeSpeaker"></label>
+            <table id="volume-indicator" border="1"></table>
+          </div>
         </div>
       </div>
       <div class="block">
 
         <p class="block-header" id="clientRecord">客户端录制相关</p>
-        <div class="part" id="part-record" style="display: none">
+        <div class="part hide" id="part-record">
           <div class="line">
             视频录制：<br />
             <label>操作对象(账号或UID)，不填录本地</label><input type="text" id="recordUid"><br />
@@ -628,7 +633,7 @@
         </div>
 
         <p class="block-header" id="audioMixing">伴音功能</p>
-        <div class="part" id='audioMixingFeature' style="display: none">
+        <div class="part hide" id='audioMixingFeature'>
           <div class="line">
             云端音乐文件地址：
             <input type="text" id="audioFilePath">
@@ -677,9 +682,7 @@
         </div>
 
         <p class="block-header" id="audioEffect">音效功能</p>
-        <div class="part" id='audioEffectFeature' style="display: none">
-
-          <div class="part">
+        <div class="part hide" id='audioEffectFeature'>
             <div class="line">
               音效文件 #1
               <select id="path1" style="width:32%">
@@ -715,9 +718,6 @@
                 <progress value="0" max="100"></progress>
               </div>
             </div>
-          </div>
-
-          <div class="part">
             <div class="line">
               音效文件 #2
               <select id="path2" style="width:32%">
@@ -752,9 +752,6 @@
                 <progress value="0" max="100"></progress>
               </div>
             </div>
-          </div>
-
-          <div class="part">
             <div class="line">
               音效文件 #3
               <select id="path3" style="width:32%">
@@ -787,9 +784,6 @@
                 <progress value="0" max="100"></progress>
               </div>
             </div>
-          </div>
-
-          <div class="part">
             <div class="line">
               setEffectsVolume:
               <input type="number" rows="10" value="100" max="100" min="0" step="10" data-panel-id="1" id="volumeAll"
@@ -801,14 +795,11 @@
               <button id="stopAllEffects">stopAllEffects</button>
               <button id="pauseAllEffects">pauseAllEffects</button>
               <button id="resumeAllEffects">resumeAllEffects</button>
-
             </div>
-          </div>
-
         </div>
 
         <p class="block-header" id="watermark">水印功能</p>
-        <div class="part" id='watermarkFeature1' style="display: none">
+        <div class="part hide" id='watermarkFeature1'>
           <div class="line">
             ID水印
             <input type="checkbox" id="idWatermark" checked>
@@ -823,8 +814,6 @@
               <option value="screen">辅流</option>
             </select>
           </div>
-        </div>
-        <div class="part" id='watermarkFeature2' style="display: none">
           <div class="line">
             <label>
               类型type <select id='watermarkType'>
@@ -889,21 +878,31 @@
         </div>
 
         <p class="block-header" id="trackStatus">采集状态</p>
-        <div class="part" id="part-track" style="max-width: 350px; overflow: hidden; white-space: nowrap;">
+        <div class="part hide" id="part-track" style="max-width: 350px; overflow: hidden; white-space: nowrap;">
           <div class="line">
             音频 <span id="audioStatus"></span>
             <ul id="audioTrackStatus"></ul>
             视频
             <ul id="videoTrackStatus"></ul>
           </div>
+        </div>
+
+        <p class="block-header" id="upstreamStatus">上行状态 <span id="upstreamBitrate"></span></p>
+        <div class="part hide" id="part-upstream" style="max-width: 350px; overflow: hidden; white-space: nowrap;">
           <div class="line">
-            下行状态
-            <ul id="receiverStatus"></ul>
+            <ul id="senderStatus"></ul>
           </div>
         </div>
 
-        <p class="block-header">事件对立</p>
-        <div class="part">
+        <p class="block-header" id="downstreamStatus">下行状态 <span id="downstreamBitrate"></span></p>
+        <div class="part hide" id="part-downstream" style="max-width: 350px; overflow: hidden; white-space: nowrap;">
+          <div class="line">
+            <ul id="receiverStatus"></ul>
+          </div>
+        </div>
+        
+        <p class="block-header" id="eventParingTitle">事件对立</p>
+        <div class="part hide">
           <div class="line" id="eventPairingLong">
           </div>
           <div class="line" id="eventPairingShort">
@@ -939,7 +938,7 @@
           
         </div>
       </div>
-      <div class="block3" id="statsPanel" style="display: none">
+      <div class="block3 hide" id="statsPanel">
       </div>
     </div>
   </div>
@@ -966,6 +965,7 @@
   <script src="./js/lib/parseQuery.js"></script>
   <script src="./js/webrtc/config.js"></script>
   <script src="./js/webrtc/event_pairing.js"></script>
+  <script src="./js/webrtc/transceiver_info.js"></script>
   <script src="./js/webrtc/init_webrtc2.js"></script>
 </body>
 

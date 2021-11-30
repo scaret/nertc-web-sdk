@@ -36,3 +36,7 @@ color: #0f9d58;
 .highlight{
   background: yellow;
 }
+
+.hide{
+  display: none;
+}
