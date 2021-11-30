@@ -61,7 +61,15 @@ class Mediasoup extends EventEmitter {
     screen: {high: null, low: null},
   };
   private _probeSSrc?: string;
-  public unsupportedProducers: string[] = [];
+  public unsupportedProducers: {
+    [producerId: string]: {
+        producerId: string,
+        code: number,
+        uid: string|number,
+        mediaType: MediaTypeShort,
+        errMsg: string
+    }
+  } = {};
   private logger: ILogger;
   private loggerSend: ILogger;
   private loggerRecv: ILogger;
@@ -820,7 +828,8 @@ class Mediasoup extends EventEmitter {
     }
   }
 
-  checkConsumerList (info:ProduceConsumeInfo) {
+  // 返回值是个标记，以防_createConsumer某个分支忘记调用checkConsumerList
+  checkConsumerList (info:ProduceConsumeInfo): "checkConsumerList" {
     this._eventQueue.shift()
     info.resolve(null);
     this.loggerRecv.log('查看事件队列, _eventQueue: ', this._eventQueue.length)
@@ -833,11 +842,11 @@ class Mediasoup extends EventEmitter {
       } else {
         this._createConsumer(this._eventQueue[0])
       }
-      return;
     }
+    return "checkConsumerList";
   }
 
-  async _createConsumer(info:ProduceConsumeInfo) {
+  async _createConsumer(info:ProduceConsumeInfo): Promise<"checkConsumerList"> {
     const {uid, kind, mediaType, id, preferredSpatialLayer = 0} = info;
     const mediaTypeShort = (mediaType === 'screenShare' ? 'screen' : mediaType);
     this.loggerRecv.log(`开始订阅 ${uid} 的 ${mediaTypeShort} 媒体: ${id} 大小流: `, preferredSpatialLayer)
@@ -845,10 +854,10 @@ class Mediasoup extends EventEmitter {
     if (!id) {
       this.adapterRef.instance.emit('pairing-createConsumer-error')
       return this.checkConsumerList(info)
-    } /*else if (this.unsupportedProducers.indexOf(id) > -1){
-      this.loggerRecv.warn("跳过不支持的Producer", id)
-      return
-    }*/
+    } else if (this.unsupportedProducers[id]){
+      this.loggerRecv.warn("_createConsumer: 跳过不支持的Producer", id, JSON.stringify(this.unsupportedProducers[id]))
+      return this.checkConsumerList(info)
+    }
 
     const remoteStream = this.adapterRef.remoteStreamMap[uid]
     //@ts-ignore
@@ -916,7 +925,9 @@ class Mediasoup extends EventEmitter {
     }
     const prepareRes = 
       await this._recvTransport.prepareLocalSdp(kind, this._edgeRtpCapabilities, uid);
-    if(!this.adapterRef || this.adapterRef.connectState.curState == 'DISCONNECTING' || this.adapterRef.connectState.curState == 'DISCONNECTED') return
+    if(!this.adapterRef || this.adapterRef.connectState.curState == 'DISCONNECTING' || this.adapterRef.connectState.curState == 'DISCONNECTED'){
+      this.checkConsumerList(info)
+    }
     this.loggerRecv.log('获取本地sdp，mid =', prepareRes.mid);
     let { rtpCapabilities, offer, iceUfragReg} = prepareRes;
     let mid:number|string|undefined = prepareRes.mid;
@@ -971,11 +982,19 @@ class Mediasoup extends EventEmitter {
     if (code === 200){
       this.loggerRecv.log(`consume反馈结果: code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
     }else{
-      this.loggerRecv.error(`consume请求失败: code: ${code} uid: ${uid}, errMsg: ${errMsg}`, consumeRes);
+      this.loggerRecv.error(`consume请求失败，将Producer拉入黑名单:  uid: ${uid}, mediaType: ${mediaTypeShort}, producerId ${data.producerId} code: ${code}, errMsg: ${errMsg}`, consumeRes);
+      this.unsupportedProducers[data.producerId] = {
+        producerId: consumeRes.producerId,
+        code: code,
+        uid: uid,
+        mediaType: mediaTypeShort,
+        errMsg: errMsg,
+      };
+      return this.checkConsumerList(info);
     }
     if (!this._recvTransport) {
       this.loggerRecv.error(`transport undefined，直接返回`)
-      return
+      return this.checkConsumerList(info)
     }
     try {
       const peerId = consumeRes.uid
@@ -1007,12 +1026,6 @@ class Mediasoup extends EventEmitter {
           this.adapterRef.instance.emit('pairing-createConsumer-skip')
         }
         return this.checkConsumerList(info)
-        /*if (code === 800) {
-          // FIXME：当无法接收一个Producer时，应该回退而不是重建整个下行链路。
-          this.loggerRecv.error('800错误：无法建立连接。将Producer拉入黑名单：', consumeRes.producerId);
-          this.unsupportedProducers.push(consumeRes.producerId);
-        }
-        return*/
 
         /*this.loggerRecv.warn('订阅 %s 的 %s 媒体失败, errcode: %s, reason: %s ，做容错处理: 重新建立下行连接', uid, kind, code, errMsg)
         if (this._recvTransport) {
@@ -1120,6 +1133,7 @@ class Mediasoup extends EventEmitter {
       }
       this._recvTransport = null
       this.adapterRef.instance.reBuildRecvTransport()
+      return this.checkConsumerList(info)
     }
   }
 
