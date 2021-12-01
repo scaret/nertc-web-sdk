@@ -160,6 +160,12 @@ const ErrorCode = {
      *
      */
     AUTO_PLAY_NOT_ALLOWED: 41030,
+  
+    /*
+     * 没有媒体
+     *
+     */
+    NO_MEDIA: 41031,
     /*
      * 未知错误
      *

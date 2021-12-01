@@ -364,7 +364,13 @@ class Base extends EventEmitter {
   stopSession() {
     this.logger.log('开始清除音视频会话')
     this._destroyModule();
-    this.adapterRef.localStream && this.adapterRef.localStream.destroy()
+    if (this.adapterRef.localStream){
+      if (getParameters().keepLocalstreamOnLeave){
+        this.logger.log("当前模式下离开频道不会销毁localStream")
+      }else{
+        this.adapterRef.localStream.destroy()
+      }
+    }
     Object.values(this.adapterRef.remoteStreamMap).forEach(stream => {
       stream.destroy()
     })

@@ -25,6 +25,10 @@ type OperationArgs = {
   caller: LocalStream,
   method: "close",
   options: LocalStreamCloseOptions,
+}|{
+  caller: LocalStream,
+  method: "init",
+  options: null,
 }
 
 interface QueueElem{
@@ -41,6 +45,7 @@ type callMeWhenFinished = ()=>void
 export class OperationQueue{
   cnt: number = 0;
   current: QueueElem|null = null
+  history: QueueElem|null = null
   queue: QueueElem[] = []
   logger: ILogger
   constructor(logger: ILogger) {
@@ -48,6 +53,8 @@ export class OperationQueue{
       let tag = "oper"
       if (this.current){
         tag += ` ${this.current.args.method}#${this.current.id}`
+      }else if (this.history){
+        tag += ` ${this.history.args.method}#${this.history.id} FINISHED`
       }
       this.queue.forEach((queueElem)=>{
         tag += `|${queueElem.args.method}#${queueElem.id}`
@@ -57,6 +64,7 @@ export class OperationQueue{
     setInterval(()=>{
       if (this.current && Date.now() - this.current.enqueueTs > 5000){
         this.logger.error(`当前操作已执行了${Date.now() - this.current.enqueueTs}ms，放开锁限制：${this.current.args.method}#${this.current.id}`)
+        this.history = this.current
         this.current = null
         this.fire("timer")
       }
@@ -76,6 +84,8 @@ export class OperationQueue{
       })
       if (!this.current){
         this.fire("instant")
+      }else{
+        this.logger.log(`操作等位中，目前有其他操作。前面还有${this.queue.length}位：${args.method}#${this.cnt}。参数：`, args.options)
       }
     })
   }
@@ -83,17 +93,19 @@ export class OperationQueue{
     if (!this.current){
       const elem = this.queue.shift();
       if (elem){
+        this.history = this.current
         this.current = elem;
         if (source === "instant"){
-          this.logger.log(`开始执行操作${elem.args.method}#${elem.id}。参数：`, elem.args.options)
+          this.logger.log(`开始执行操作：${elem.args.method}。参数：`, elem.args.options)
         }else{
-          this.logger.log(`开始执行队列中的操作${elem.args.method}#${elem.id}，等待时间：${Date.now() - elem.enqueueTs}ms。参数：`, elem.args.options)
+          this.logger.log(`开始执行队列中的操作：${elem.args.method}#${elem.id}，等待时间：${Date.now() - elem.enqueueTs}ms。参数：`, elem.args.options)
         }
         elem.startTs = Date.now();
         elem.resolve(()=>{
           if (this.current === elem){
+            this.history = this.current
             this.current = null
-            this.logger.log(`操作${elem.args.method}#${elem.id}执行完毕。花费 ${elem.startTs ? Date.now() - elem.startTs : null}ms`)
+            this.logger.log(`执行操作结束：${elem.args.method}。花费 ${elem.startTs ? Date.now() - elem.startTs : null}ms`)
             this.fire("functionEnd")
           }else{
             this.logger.error(`操作收到多次返回：${elem.args.method}#${elem.id}。花费 ${elem.startTs ? Date.now() - elem.startTs : null}ms`)

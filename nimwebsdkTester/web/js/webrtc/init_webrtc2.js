@@ -874,7 +874,7 @@ $('#joinChannel-btn').on('click', async () => {
           updateLocalWatermark()
         }
       }
-    }else if (enableAudio || enableVideo || enableScreen || enableScreenAudio){
+    }else if (enableAudio || enableVideo || enableScreen || enableScreenAudio || NERTC.getParameters().allowEmptyMedia){
       initLocalStream()
     }else{
       addLog("加入频道后未执行初始化本地流")
@@ -902,7 +902,6 @@ $('#leaveChannel-btn').on('click', () => {
   console.info('开始离开房间...')
   window.rtc.client.leave()
   rtc.remoteStreams.length = 0
-  rtc.localStream = null
   subList.length = 0
   clearInterval(playTimer)
   progressInfo.innerText = fileName + '00 : 00' + ' / ' + formatSeconds(totalTime)

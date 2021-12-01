@@ -30,6 +30,7 @@ import {Device} from "../module/device";
 import {OperationQueue} from "../util/OperationQueue";
 import {SpatialManager} from "./spatialManager";
 import {getAudioContext} from "../module/webAudio";
+import {getParameters} from "../module/parameters";
 const BigNumber = require("bignumber.js");
 
 /**
@@ -213,9 +214,6 @@ class Client extends Base {
    * @return {Promise}
    */
   async join (options: JoinOptions) {
-    if(!this.adapterRef._statsReport){
-      this.initWebSocket();
-    }
     this.logger.log('加入频道, options: ', JSON.stringify(options, null, ' '))
     if(!options.channelName){
       throw new RtcError({code: ErrorCode.INVALID_PARAMETER, message:'请填写房间名称'})
@@ -253,13 +251,16 @@ class Client extends Base {
       )
     }
 
-    this.emit('pairing-join-start')
     // join行为排队
     this.onJoinFinish = await this.operationQueue.enqueue({
       caller: this as IClient,
       method: "join",
       options,
     })
+    this.emit('pairing-join-start')
+    if(!this.adapterRef._statsReport){
+      this.initWebSocket();
+    }
     if (this.adapterRef.channelStatus === 'join' || this.adapterRef.channelStatus === 'connectioning') {
       this.emit('pairing-join-error')
       return Promise.reject(
@@ -411,8 +412,12 @@ class Client extends Base {
       this.logger.error('publish: 当前不在频道中，可能是没有加入频道或者是网络波动导致暂时断开连接')
       reason = 'INVALID_OPERATION'
     } else if (!stream || (!stream.audio && !stream.video && !stream.screen && !stream.screenAudio)) {
-      this.logger.error('publish: 传入的 stream 格式非法，没有媒体数据')
-      reason = 'INVALID_LOCAL_STREAM'
+      if(stream && getParameters().allowEmptyMedia){
+        this.logger.log('publish: 当前模式允许发布没有媒体流的localStream')
+      }else{
+        this.logger.error('publish: 传入的 stream 格式非法，没有媒体数据')
+        reason = 'INVALID_LOCAL_STREAM'
+      }
     } else if (this._roleInfo.userRole === 1) {
       this.logger.error(`publish：观众禁止Publish，请先使用setClientRole设为主播`);
       reason = 'INVALID_OPERATION'
