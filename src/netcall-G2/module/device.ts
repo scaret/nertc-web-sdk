@@ -32,8 +32,6 @@ class DeviceManager extends EventEmitter {
   constructor() {
     super();
     this.logger = new Logger({
-      debug: true,
-      prefix: "NERTC",
       tagGen: ()=>{
         let tag = `Device m${this.deviceHistory.audioIn.length}c${this.deviceHistory.video.length}s${this.deviceHistory.audioOut.length}`;
         return tag

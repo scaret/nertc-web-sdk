@@ -21,6 +21,7 @@ import {getParameters} from "../module/parameters";
 import {RemoteStream} from "./remoteStream";
 import {LocalStream} from "./localStream";
 import {Client as ICLient} from "../types"
+import logger, {loglevels} from "../util/log/logger";
 
 let clientCnt = 0;
 
@@ -62,9 +63,14 @@ class Base extends EventEmitter {
       report: true
     };
   
+    if (options.debug === true){
+      logger.setLogLevel(loglevels.DEBUG)
+    }else if (options.debug === false){
+      if (getParameters().logLevel <= loglevels.WARNING){
+        logger.setLogLevel(loglevels.WARNING)
+      }
+    }
     this.logger = new Logger({
-      debug: options.debug,
-      prefix: "NERTC",
       tagGen: ()=>{
         let tag = "client" + (this.clientId || "");
         //@ts-ignore

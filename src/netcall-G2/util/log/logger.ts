@@ -1,6 +1,6 @@
 import * as loglevel from 'loglevel';
 // import { logController } from '../log/upload'
-import {getParameters, setParameters} from "../../module/parameters";
+import {getParameters} from "../../module/parameters";
 // sessionStorage.setItem('uploadLogEnabled', '0');
 
 // 与声网对齐
@@ -23,10 +23,10 @@ export const loglevelMap = {
 
 const logger = {
     setLogLevel(level:loglevels) {
-      const params = getParameters();
-      loglevel.info(`NERTC LogLevel was changed: ${loglevelMap[params.logLevel]} => ${loglevelMap[level]}`);
-      params.logLevel = level;
-      setParameters(params);
+      if (getParameters().logLevel !== level){
+        loglevel.info(`NERTC LogLevel was changed: ${loglevelMap[getParameters().logLevel]} => ${loglevelMap[level]}`);
+        getParameters().logLevel = level;
+      }
     },
     enableLogUpload() {
         // if(!Number(sessionStorage.getItem('uploadLogEnabled'))){

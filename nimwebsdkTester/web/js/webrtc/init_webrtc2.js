@@ -299,9 +299,13 @@ function init() {
   NERTC.Logger.enableLogUpload();
   rtc.client = NERTC.createClient({
     appkey,
-    debug: true,
+    // debug: true,
     //report: false
   })
+  rtc.client.logger.error("rtc.client.logger.error");
+  rtc.client.logger.warn("rtc.client.logger.warn");
+  rtc.client.logger.log("rtc.client.logger.log");
+  rtc.client.logger.debug("rtc.client.logger.debug");
   initDevices()
   initEvents()
   initVolumeDetect()
