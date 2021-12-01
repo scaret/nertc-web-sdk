@@ -13,7 +13,7 @@ import { detectDevice } from "../netcall-G2/module/3rd/mediasoup-client";
 import log, {loglevels} from '../netcall-G2/util/log/logger';
 import RtcError from '../netcall-G2/util/error/rtcError';
 import ErrorCode from '../netcall-G2/util/error/errorCode';
-import {getParameters, setParameters} from "../netcall-G2/module/parameters";
+import {getParameters} from "../netcall-G2/module/parameters";
 
 /**
  * {@link NERTC} 
@@ -255,8 +255,6 @@ getHandler() {
 },
 
 getParameters: getParameters,
-
-setParameters: setParameters,
   
 /**
  * 销毁Client对象

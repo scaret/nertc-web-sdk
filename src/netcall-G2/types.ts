@@ -131,6 +131,7 @@ export interface NetStatusItem{
 }
 
 export interface ILogger{
+  debug: (...msg:any)=>void
   log: (...msg:any)=>void
   info: (...msg:any)=>void
   warn: (...msg:any)=>void
@@ -511,8 +512,6 @@ export interface LoggerDebugOptions{
 }
 
 export interface LoggerOptions{
-  debug?: boolean | LoggerDebugOptions;
-  prefix:string;
   isSavedLogs?:boolean;
   useTimestamps?:boolean;
   useLocalStorage?:boolean;
@@ -892,7 +891,7 @@ export interface SignallingOptions{
 
 export interface ClientOptions{
   appkey: string;
-  debug: boolean | LoggerDebugOptions;
+  debug?: boolean;
   report: boolean | undefined;
   token?: string;
   ref: any;

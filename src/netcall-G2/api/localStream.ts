@@ -35,6 +35,7 @@ import BigNumber from 'bignumber.js'
 import {ILogger} from "../types";
 import { isHttpProtocol } from '../util/rtcUtil/rtcSupport'
 import {emptyStreamWith, watchTrack} from "../util/gum";
+import {getParameters} from "../module/parameters";
 
 /**
  *  请使用 {@link NERTC.createStream} 通过NERTC.createStream创建
@@ -439,6 +440,14 @@ class LocalStream extends EventEmitter {
     if(!!isHttpProtocol()){
       this.logger.warn('The current protocol is HTTP')
     }
+    // localStream.init行为排队
+    const onInitFinished = await this.client.operationQueue.enqueue({
+      caller: this,
+      method: "init",
+      options: null,
+    })
+    let initErr:any = null
+    
     this.state = "INITING"
     this.logger.log('初始化音视频流对象')
     //设置分辨率和码率
@@ -465,12 +474,6 @@ class LocalStream extends EventEmitter {
     })
     
     try {
-      if (!this.mediaHelper){
-        throw new RtcError({
-          code: ErrorCode.NO_MEDIAHELPER,
-          message: 'no media helper'
-        })
-      }
       if (this.audio){
         await this.mediaHelper.getStream({
           audio: this.audio,
@@ -480,6 +483,7 @@ class LocalStream extends EventEmitter {
       }
     } catch (e) {
       this.logger.log('打开mic失败: ', e.name, e.message)
+      initErr = e;
       this.audio = false
       if (e.message
         // 为什么这样写：
@@ -497,12 +501,6 @@ class LocalStream extends EventEmitter {
     }
 
     try {
-      if (!this.mediaHelper){
-        throw new RtcError({
-          code: ErrorCode.NO_MEDIAHELPER,
-          message: 'no media helper'
-        })
-      }
       if (this.video){
         await this.mediaHelper.getStream({
           video: this.video,
@@ -512,6 +510,7 @@ class LocalStream extends EventEmitter {
       }
     } catch (e) {
       this.logger.log('打开camera失败: ', e.name, e.message)
+      initErr = e
       this.video = false
       if (e.message
         // 为什么这样写：
@@ -531,12 +530,6 @@ class LocalStream extends EventEmitter {
     }
 
     try {
-      if (!this.mediaHelper){
-        throw new RtcError({
-          code: ErrorCode.NO_MEDIAHELPER,
-          message: 'no media helper'
-        })
-      }
       if (this.screen){
         const constraints = {
           sourceId: this.sourceId,
@@ -550,6 +543,7 @@ class LocalStream extends EventEmitter {
       }
     } catch (e) {
       this.logger.log('打开屏幕共享失败: ', e.name, e.message)
+      initErr = e
       this.screen = true
       if (e.message
         // 为什么这样写：
@@ -568,7 +562,27 @@ class LocalStream extends EventEmitter {
       }
       this.emit('device-error', {type: 'screen', error: e});
     }
-    this.state = "INITED"
+    if (this.audio||this.video||this.screen){
+      this.state = "INITED"
+    } else if (initErr) {
+      this.state = "UNINIT";
+      this.logger.error("localStream.init失败:", initErr.name, initErr.message, initErr);
+      throw initErr;
+    } else {
+      if (getParameters().allowEmptyMedia){
+        this.logger.log("当前模式下localStream允许初始化时无任何音视频");
+        this.state = "INITED"
+      }else{
+        this.state = "UNINIT";
+        this.logger.error("localStream不允许初始化时无任何音视频");
+        onInitFinished()
+        throw new RtcError({
+          code: ErrorCode.NO_MEDIA,
+          messsage: "localStream不允许初始化时无任何音视频",
+        })
+      }
+    }
+    onInitFinished()
   }
   
   /**
@@ -995,7 +1009,7 @@ class LocalStream extends EventEmitter {
             }
           }
           if (options.screenAudio &&
-            this.mediaHelper.screenAudio.screenAudioTrack || this.mediaHelper.screenAudio.screenAudioSource
+            (this.mediaHelper.screenAudio.screenAudioTrack || this.mediaHelper.screenAudio.screenAudioSource)
           ){
             this.logger.warn('请先关闭屏幕共享音频')
             this.client.apiFrequencyControl({
@@ -1123,15 +1137,7 @@ class LocalStream extends EventEmitter {
           break
         }
         this.audio = false
-        if (this.mediaHelper){
-          this.mediaHelper.stopStream('audio')
-        }else{
-          onCloseFinished()
-          throw new RtcError({
-            code: ErrorCode.NO_MEDIAHELPER,
-            message: 'no media helper'
-          })
-        }
+        this.mediaHelper.stopStream('audio')
         if (this.getAdapterRef()){
           if (this.mediaHelper.getAudioInputTracks().length > 0){
             this.logger.log('Stream.close:关闭音频，保留发布：', type);
@@ -1151,15 +1157,7 @@ class LocalStream extends EventEmitter {
           break
         }
         this.screenAudio = false
-        if (this.mediaHelper){
-          this.mediaHelper.stopStream('screenAudio')
-        }else{
-          onCloseFinished()
-          throw new RtcError({
-            code: ErrorCode.NO_MEDIAHELPER,
-            message: 'no media helper'
-          })
-        }
+        this.mediaHelper.stopStream('screenAudio')
         if (this.getAdapterRef()){
           if (this.mediaHelper.getAudioInputTracks().length > 0){
             this.logger.log('Stream.close:关闭音频，保留发布：', type);
@@ -1179,15 +1177,7 @@ class LocalStream extends EventEmitter {
           break
         }
         this.video = false
-        if (this.mediaHelper){
-          this.mediaHelper.stopStream('video')
-        }else{
-          onCloseFinished()
-          throw new RtcError({
-            code: ErrorCode.NO_MEDIAHELPER,
-            message: 'no media helper'
-          })
-        }
+        this.mediaHelper.stopStream('video')
         if (!this._play){
           onCloseFinished()
           throw new RtcError({
@@ -1211,13 +1201,6 @@ class LocalStream extends EventEmitter {
           break
         }
         this.screen = false
-        if (!this.mediaHelper){
-          onCloseFinished()
-          throw new RtcError({
-            code: ErrorCode.NO_MEDIAHELPER,
-            message: 'no media helper'
-          })
-        }
         this.mediaHelper.stopStream('screen')
         if (!this._play){
           throw new RtcError({
@@ -1422,12 +1405,6 @@ class LocalStream extends EventEmitter {
    * @return {volume}
    */
   getAudioLevel () {
-    if (!this.mediaHelper){
-      throw new RtcError({
-        code: ErrorCode.NO_MEDIAHELPER,
-        message: 'no media helper'
-      })
-    }
     return this.mediaHelper.getGain()
   }
 
@@ -1622,12 +1599,6 @@ class LocalStream extends EventEmitter {
         )
       }
       //constraint = {...this.mediaHelper.audio.micConstraint, ...{audio: {deviceId: {exact: deviceId}}}}
-      if (!this.mediaHelper){
-        throw new RtcError({
-          code: ErrorCode.NO_MEDIAHELPER,
-          message: 'no media helper'
-        })
-      }
       if(this.mediaHelper.audio.micConstraint && this.mediaHelper.audio.micConstraint.audio){
         this.mediaHelper.audio.micConstraint.audio.deviceId = {exact: deviceId}
       } else if(this.mediaHelper.audio.micConstraint){
@@ -1673,12 +1644,6 @@ class LocalStream extends EventEmitter {
         )
       }
       //constraint = {...this.mediaHelper.video.cameraConstraint, ...{video: {deviceId: {exact: deviceId}}}}
-      if (!this.mediaHelper){
-        throw new RtcError({
-          code: ErrorCode.NO_MEDIAHELPER,
-          message: 'no media helper'
-        })
-      }
       if(this.mediaHelper.video.cameraConstraint && this.mediaHelper.video.cameraConstraint.video){
         this.mediaHelper.video.cameraConstraint.video.deviceId = {exact: deviceId}
         constraint = this.mediaHelper.video.cameraConstraint
@@ -2096,12 +2061,6 @@ class LocalStream extends EventEmitter {
    */
   async startMediaRecording (options: MediaRecordingOptions) {
     const streams = []
-    if (!this.mediaHelper){
-      throw new RtcError({
-        code: ErrorCode.NO_MEDIAHELPER,
-        message: 'no media helper'
-      })
-    }
     switch (options.type) {
       case 'screen':
         streams.push(this.mediaHelper.screen.screenVideoStream)
@@ -2252,12 +2211,6 @@ class LocalStream extends EventEmitter {
    */
   startAudioMixing (options:AudioMixingOptions) {
     this.logger.log('开始伴音')
-    if (!this.mediaHelper){
-      throw new RtcError({
-        code: ErrorCode.NO_MEDIAHELPER,
-        message: 'no media helper'
-      })
-    }
     return this.mediaHelper.startAudioMixing(options) 
   }
 
@@ -2269,12 +2222,6 @@ class LocalStream extends EventEmitter {
    */
   stopAudioMixing () {
     this.logger.log('停止伴音')
-    if (!this.mediaHelper){
-      throw new RtcError({
-        code: ErrorCode.NO_MEDIAHELPER,
-        message: 'no media helper'
-      })
-    }
     return this.mediaHelper.stopAudioMixing() 
   }
 
@@ -2286,12 +2233,6 @@ class LocalStream extends EventEmitter {
    */
   pauseAudioMixing () {
     this.logger.log('暂停伴音')
-    if (!this.mediaHelper){
-      throw new RtcError({
-        code: ErrorCode.NO_MEDIAHELPER,
-        message: 'no media helper'
-      })
-    }
     return this.mediaHelper.pauseAudioMixing() 
   }
 
@@ -2303,12 +2244,6 @@ class LocalStream extends EventEmitter {
    */
   resumeAudioMixing () {
     this.logger.log('恢复伴音')
-    if (!this.mediaHelper){
-      throw new RtcError({
-        code: ErrorCode.NO_MEDIAHELPER,
-        message: 'no media helper'
-      })
-    }
     return this.mediaHelper.resumeAudioMixing() 
   }
 
@@ -2321,12 +2256,6 @@ class LocalStream extends EventEmitter {
    */
   adjustAudioMixingVolume (volume:number) {
     this.logger.log('调节伴音音量:', volume)
-    if (!this.mediaHelper){
-      throw new RtcError({
-        code: ErrorCode.NO_MEDIAHELPER,
-        message: 'no media helper'
-      })
-    }
     return this.mediaHelper.setAudioMixingVolume(volume) 
   }
 
@@ -2338,12 +2267,6 @@ class LocalStream extends EventEmitter {
    */
   getAudioMixingDuration () {
     this.logger.log('获取伴音总时长')
-    if (!this.mediaHelper){
-      throw new RtcError({
-        code: ErrorCode.NO_MEDIAHELPER,
-        message: 'no media helper'
-      })
-    }
     return this.mediaHelper.getAudioMixingTotalTime() 
   }
 
@@ -2356,12 +2279,6 @@ class LocalStream extends EventEmitter {
    * @return {Object}
    */
   getAudioMixingCurrentPosition () {
-    if (!this.mediaHelper){
-      throw new RtcError({
-        code: ErrorCode.NO_MEDIAHELPER,
-        message: 'no media helper'
-      })
-    }
     return this.mediaHelper.getAudioMixingPlayedTime() 
   }
 
@@ -2374,12 +2291,6 @@ class LocalStream extends EventEmitter {
    */
   setAudioMixingPosition (playStartTime: number) {
     this.logger.log('设置伴音音频文件的播放位置:', playStartTime)
-    if (!this.mediaHelper){
-      throw new RtcError({
-        code: ErrorCode.NO_MEDIAHELPER,
-        message: 'no media helper'
-      })
-    }
     return this.mediaHelper.setAudioMixingPlayTime(playStartTime) 
   }
 
@@ -2409,12 +2320,6 @@ class LocalStream extends EventEmitter {
    */
    async playEffect (options:AudioEffectOptions) {
     this.logger.log('开始播放音效: ', JSON.stringify(options, null, ' '))
-    if (!this.mediaHelper) {
-      throw new RtcError({
-        code: ErrorCode.NO_MEDIAHELPER,
-        message: 'no media helper'
-      })
-    }
     return this.mediaHelper.playEffect(options) 
   }
 
@@ -2427,12 +2332,6 @@ class LocalStream extends EventEmitter {
    */
   async stopEffect (soundId: number) {
     this.logger.log('停止播放音效: ', soundId)
-    if (!this.mediaHelper) {
-      throw new RtcError({
-        code: ErrorCode.NO_MEDIAHELPER,
-        message: 'no media helper'
-      })
-    }
     return this.mediaHelper.stopEffect(soundId) 
   }
 
@@ -2445,12 +2344,6 @@ class LocalStream extends EventEmitter {
    */
    async pauseEffect (soundId: number) {
     this.logger.log('暂停播放音效：', soundId)
-    if (!this.mediaHelper) {
-      throw new RtcError({
-        code: ErrorCode.NO_MEDIAHELPER,
-        message: 'no media helper'
-      })
-    }
     return this.mediaHelper.pauseEffect(soundId) 
   }
 
@@ -2463,12 +2356,6 @@ class LocalStream extends EventEmitter {
    */
    async resumeEffect (soundId: number) {
     this.logger.log('恢复播放音效文件: ', soundId)
-    if (!this.mediaHelper) {
-      throw new RtcError({
-        code: ErrorCode.NO_MEDIAHELPER,
-        message: 'no media helper'
-      })
-    }
     return this.mediaHelper.resumeEffect(soundId) 
   }
 
@@ -2483,12 +2370,6 @@ class LocalStream extends EventEmitter {
    */
    async setVolumeOfEffect (soundId: number, volume: number) {
     this.logger.log(`调节 ${soundId} 音效文件音量为: ${volume}`)
-    if (!this.mediaHelper) {
-      throw new RtcError({
-        code: ErrorCode.NO_MEDIAHELPER,
-        message: 'no media helper'
-      })
-    }
     return this.mediaHelper.setVolumeOfEffect(soundId, volume) 
   }
 
@@ -2503,12 +2384,6 @@ class LocalStream extends EventEmitter {
    */
    async preloadEffect (soundId: number, filePath: string) {
     this.logger.log(`预加载 ${soundId} 音效文件地址: ${filePath}`)
-    if (!this.mediaHelper){
-      throw new RtcError({
-        code: ErrorCode.NO_MEDIAHELPER,
-        message: 'no media helper'
-      })
-    }
     return this.mediaHelper.preloadEffect(soundId, filePath) 
   }
 
@@ -2522,12 +2397,6 @@ class LocalStream extends EventEmitter {
    */
    async unloadEffect (soundId: number) {
     this.logger.log(`释放指定音效文件 ${soundId}`)
-    if (!this.mediaHelper){
-      throw new RtcError({
-        code: ErrorCode.NO_MEDIAHELPER,
-        message: 'no media helper'
-      })
-    }
     return this.mediaHelper.unloadEffect(soundId) 
   }
 
@@ -2542,12 +2411,6 @@ class LocalStream extends EventEmitter {
    */
    getEffectsVolume () {
     this.logger.log('获取所有音效文件播放音量')
-    if (!this.mediaHelper){
-      throw new RtcError({
-        code: ErrorCode.NO_MEDIAHELPER,
-        message: 'no media helper'
-      })
-    }
     return this.mediaHelper.getEffectsVolume() 
   }
 
@@ -2560,12 +2423,6 @@ class LocalStream extends EventEmitter {
    */
    setEffectsVolume (volume: number) {
     this.logger.log('设置所有音效文件播放音量:', volume)
-    if (!this.mediaHelper){
-      throw new RtcError({
-        code: ErrorCode.NO_MEDIAHELPER,
-        message: 'no media helper'
-      })
-    }
     return this.mediaHelper.setEffectsVolume(volume) 
   }
 
@@ -2577,12 +2434,6 @@ class LocalStream extends EventEmitter {
    */
    async stopAllEffects () {
     this.logger.log('停止播放所有音效文件')
-    if (!this.mediaHelper){
-      throw new RtcError({
-        code: ErrorCode.NO_MEDIAHELPER,
-        message: 'no media helper'
-      })
-    }
     return this.mediaHelper.stopAllEffects() 
   }
 
@@ -2594,12 +2445,6 @@ class LocalStream extends EventEmitter {
    */
    async pauseAllEffects () {
     this.logger.log('暂停播放所有音效文件')
-    if (!this.mediaHelper){
-      throw new RtcError({
-        code: ErrorCode.NO_MEDIAHELPER,
-        message: 'no media helper'
-      })
-    }
     return this.mediaHelper.pauseAllEffects() 
   }
 
@@ -2611,12 +2456,6 @@ class LocalStream extends EventEmitter {
    */
    async resumeAllEffects () {
     this.logger.log('恢复播放所有音效文件')
-    if (!this.mediaHelper){
-      throw new RtcError({
-        code: ErrorCode.NO_MEDIAHELPER,
-        message: 'no media helper'
-      })
-    }
     return this.mediaHelper.resumeAllEffects() 
   }
 
@@ -2628,12 +2467,6 @@ class LocalStream extends EventEmitter {
    */
    getAudioEffectsDuration (options: AudioEffectOptions) {
     this.logger.log('获取音效总时长')
-    if (!this.mediaHelper){
-      throw new RtcError({
-        code: ErrorCode.NO_MEDIAHELPER,
-        message: 'no media helper'
-      })
-    }
     return this.mediaHelper.getAudioEffectsTotalTime(options);
   }
 
@@ -2645,12 +2478,6 @@ class LocalStream extends EventEmitter {
    * @return {Object}
    */
    getAudioEffectsCurrentPosition (options: AudioEffectOptions) {
-    if (!this.mediaHelper){
-      throw new RtcError({
-        code: ErrorCode.NO_MEDIAHELPER,
-        message: 'no media helper'
-      })
-    }
     return this.mediaHelper.getAudioEffectsPlayedTime(options) 
   }
 

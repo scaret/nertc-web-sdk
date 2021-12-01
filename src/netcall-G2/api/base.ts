@@ -21,6 +21,7 @@ import {getParameters} from "../module/parameters";
 import {RemoteStream} from "./remoteStream";
 import {LocalStream} from "./localStream";
 import {Client as ICLient} from "../types"
+import logger, {loglevels} from "../util/log/logger";
 
 let clientCnt = 0;
 
@@ -62,9 +63,14 @@ class Base extends EventEmitter {
       report: true
     };
   
+    if (options.debug === true){
+      logger.setLogLevel(loglevels.DEBUG)
+    }else if (options.debug === false){
+      if (getParameters().logLevel <= loglevels.WARNING){
+        logger.setLogLevel(loglevels.WARNING)
+      }
+    }
     this.logger = new Logger({
-      debug: options.debug,
-      prefix: "NERTC",
       tagGen: ()=>{
         let tag = "client" + (this.clientId || "");
         //@ts-ignore
@@ -364,7 +370,13 @@ class Base extends EventEmitter {
   stopSession() {
     this.logger.log('开始清除音视频会话')
     this._destroyModule();
-    this.adapterRef.localStream && this.adapterRef.localStream.destroy()
+    if (this.adapterRef.localStream){
+      if (getParameters().keepLocalstreamOnLeave){
+        this.logger.log("当前模式下离开频道不会销毁localStream")
+      }else{
+        this.adapterRef.localStream.destroy()
+      }
+    }
     Object.values(this.adapterRef.remoteStreamMap).forEach(stream => {
       stream.destroy()
     })
@@ -378,14 +390,16 @@ class Base extends EventEmitter {
     this.logger.log(`${uid}离开房间`);
     const remotStream = this.adapterRef.remoteStreamMap[uid];
     if (remotStream) {
-      if (remotStream.pubStatus.audio.consumerId) {
-        await this.adapterRef._mediasoup?.destroyConsumer(remotStream.pubStatus.audio.consumerId, remotStream, 'audio');
+      const mediaTypeList:MediaTypeShort[] = ["audio", "video", "screen"]
+      for (let mediaType of mediaTypeList){
+        if (remotStream.pubStatus[mediaType].producerId){
+          this.adapterRef.instance.safeEmit('stream-removed', {stream: remotStream, 'mediaType': mediaType, reason: "onPeerLeave"})
+        }
       }
-      if (remotStream.pubStatus.video.consumerId) {
-        await this.adapterRef._mediasoup?.destroyConsumer(remotStream.pubStatus.video.consumerId, remotStream, 'video')
-      }
-      if (remotStream.pubStatus.screen.consumerId) {
-        await this.adapterRef._mediasoup?.destroyConsumer(remotStream.pubStatus.screen.consumerId, remotStream, 'screen')
+      for (let mediaType of mediaTypeList){
+        if (remotStream.pubStatus[mediaType].consumerId) {
+          await this.adapterRef._mediasoup?.destroyConsumer(remotStream.pubStatus[mediaType].consumerId, remotStream, mediaType);
+        }
       }
       remotStream.active = false;
       remotStream.destroy();

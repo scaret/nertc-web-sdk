@@ -56,6 +56,7 @@ declare namespace NERTC {
      * * ERROR
      * * NONE
      *
+     * 注意，在[[NERTC.createClient]]时，`debug: true`实际上将日志级别设置为了`DEBUG`, `debug: false`实际上将日志级别设置为了`WARNING`。
      * 
      * @example
      * ```javascript
@@ -108,7 +109,10 @@ declare namespace NERTC {
    * @param options 配置参数。
    * @param options.appkey
    *    应用的 AppKey。可从[云信后台](https://app.yunxin.163.com/)获取。
-   * @param options.debug 是否开启 debug 模式。debug 模式下浏览器会打印 log 日志。默认为 false，即关闭状态。
+   * @param options.debug 是否开启 debug 模式。
+   * * debug 为`true`时，浏览器会打印所有日志，即日志级别为`DEBUG`。
+   * * debug为`false`时，浏览器会打印警告及错误日志，即日志级别为`WARNING`。
+   * * 默认的日志级别为`INFO`。要关闭所有日志，应调用`NERTC.Logger.setLogLevel(NERTC.Logger.NONE)`。见[[NERTC.Logger.setLogLevel]]
    *
    * @example
    * ```html

@@ -299,9 +299,13 @@ function init() {
   NERTC.Logger.enableLogUpload();
   rtc.client = NERTC.createClient({
     appkey,
-    debug: true,
+    // debug: true,
     //report: false
   })
+  rtc.client.logger.error("rtc.client.logger.error");
+  rtc.client.logger.warn("rtc.client.logger.warn");
+  rtc.client.logger.log("rtc.client.logger.log");
+  rtc.client.logger.debug("rtc.client.logger.debug");
   initDevices()
   initEvents()
   initVolumeDetect()
@@ -874,7 +878,7 @@ $('#joinChannel-btn').on('click', async () => {
           updateLocalWatermark()
         }
       }
-    }else if (enableAudio || enableVideo || enableScreen || enableScreenAudio){
+    }else if (enableAudio || enableVideo || enableScreen || enableScreenAudio || NERTC.getParameters().allowEmptyMedia){
       initLocalStream()
     }else{
       addLog("加入频道后未执行初始化本地流")
@@ -902,7 +906,6 @@ $('#leaveChannel-btn').on('click', () => {
   console.info('开始离开房间...')
   window.rtc.client.leave()
   rtc.remoteStreams.length = 0
-  rtc.localStream = null
   subList.length = 0
   clearInterval(playTimer)
   progressInfo.innerText = fileName + '00 : 00' + ' / ' + formatSeconds(totalTime)

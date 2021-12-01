@@ -57,6 +57,10 @@ interface IParameters{
   },
   // 屏幕共享时是否跳转到被共享页面
   screenFocus: boolean,
+  // 是否允许localStream啥都不开
+  allowEmptyMedia: boolean,
+  // leave时是否销毁localStream
+  keepLocalstreamOnLeave: boolean,
 }
 
 let parameters:IParameters = {
@@ -102,19 +106,11 @@ let parameters:IParameters = {
     },
   },
   screenFocus: false,
+  allowEmptyMedia: false,
+  keepLocalstreamOnLeave: false,
 }
 
-// 注意：getParameters和setParameters是一些私有全局变量，仅用于调试和私有接口，不用于正常业务
-const getParameters = ()=>{
+// 注意：getParameters是一些私有全局变量，仅用于调试和私有接口，不用于正常业务
+export const getParameters = ()=>{
   return parameters
-}
-
-// 注意：getParameters和setParameters是一些私有全局变量，仅用于调试和私有接口，不用于正常业务
-const setParameters = (params: IParameters)=>{
-  Object.assign(parameters, params);
-}
-
-export {
-  getParameters,
-  setParameters,
 }

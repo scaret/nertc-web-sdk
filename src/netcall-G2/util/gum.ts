@@ -5,10 +5,8 @@ import {Device} from "../module/device";
 import {canShimCanvas, shimCanvas} from "./rtcUtil/shimCanvas";
 
 const logger:ILogger = new Logger({
-  debug: true,
-  prefix: "NERTC",
   tagGen: ()=>{
-    return "[GUM]"
+    return "GUM"
   }
 });
 

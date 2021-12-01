@@ -13,25 +13,19 @@ class Logger{
   private logHelper?:logHelper;
   private supportedBrowsers: string[];
   private cs:Console;
-  private isDebug: boolean;
   private parent?: Logger;
   private tagGen?: ()=>string;
   constructor(options:LoggerOptions) {
     this.options = options;
     this.api = 'log';
     this.style = 'color:#1cb977;';
-    this.prefix = options.prefix || ''
+    this.prefix = 'NERTC'
     this.tagGen = options.tagGen
-    if (typeof options.debug === "object" && options.debug.style) {
-      this.style = options.debug.style
-    }
     if(options.isSavedLogs) {
       this.logHelper = new logHelper(options)
     }
     this.supportedBrowsers = ['Chrome', 'Safari', 'Firefox', 'Chrome Mobile'];
     this.cs = console;
-    this.isDebug = true;
-    this.setDebug(options.debug);
   }
 
   getChild(tagGenerator: ()=>string){
@@ -42,28 +36,14 @@ class Logger{
     return newLogger
   }
   
-  setDebug(debug?: boolean|LoggerDebugOptions){
-    if (typeof debug === "boolean"){
-      this.isDebug = debug;
-    }else{
-      this.isDebug = true;
-      if (debug && debug.style){
-        this.style = debug.style;
-      }
-    }
-  }
-  
   debug(){
     var logger = this;
-    if (!this.isDebug){
-      return;
-    }
     this.logHelper && this.logHelper.log(arguments)
     var args = logger.formatArgs([].slice.call(arguments, 0))
-    if (this.supportedBrowsers.indexOf(platform.name) !== -1 && typeof args[0] === "string") {
-      args[0] = '%c' + args[0]
-      args.splice(1, 0, logger.style)
-    }
+    // if (this.supportedBrowsers.indexOf(platform.name) !== -1 && typeof args[0] === "string") {
+    //   args[0] = '%c' + args[0]
+    //   args.splice(1, 0, logger.style)
+    // }
     if(getParameters().logLevel <= loglevels.DEBUG){
       logger._log('debug', args);
     }
@@ -74,9 +54,6 @@ class Logger{
   
   log(){
     var logger = this;
-    if (!this.isDebug){
-      return;
-    }
     this.logHelper && this.logHelper.log(arguments)
     var args = logger.formatArgs([].slice.call(arguments, 0))
     if (this.supportedBrowsers.indexOf(platform.name) !== -1 && typeof args[0] === "string") {
@@ -93,9 +70,6 @@ class Logger{
   
   info(){
     var logger = this;
-    if (!this.isDebug){
-      return;
-    }
     this.logHelper && this.logHelper.log(arguments)
     var args = logger.formatArgs([].slice.call(arguments, 0))
     if (this.supportedBrowsers.indexOf(platform.name) !== -1 && typeof args[0] === "string") {
@@ -113,9 +87,6 @@ class Logger{
   
   warn(){
     var logger = this;
-    if (!this.isDebug){
-      return;
-    }
     this.logHelper && this.logHelper.log(arguments)
     var args = logger.formatArgs([].slice.call(arguments, 0))
     if (this.supportedBrowsers.indexOf(platform.name) !== -1 && typeof args[0] === "string") {
@@ -132,9 +103,6 @@ class Logger{
   
   error(){
     var logger = this;
-    if (!this.isDebug){
-      return;
-    }
     this.logHelper && this.logHelper.log(arguments)
     var args = logger.formatArgs([].slice.call(arguments, 0))
     if (this.supportedBrowsers.indexOf(platform.name) !== -1 && typeof args[0] === "string") {
