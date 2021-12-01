@@ -205,198 +205,10 @@ $('#audioMixing').on('click', () => {
   }
 })
 
-$('#audioEffect').on('click', () => {
-  //音效功能模块
-  if ($("#audioEffectFeature").css("display") == 'none') {
-    $("#audioEffectFeature").css("display", 'block')
-  } else {
-    $("#audioEffectFeature").css("display", 'none')
-  }
-})
-
-$('#watermark').on('click', () => {
-  //水印功能模块
-  if ($("#watermarkFeature1").css("display") == 'none') {
-    $("#watermarkFeature1").css("display", 'block')
-  } else {
-    $("#watermarkFeature1").css("display", 'none')
-  }
-  if ($("#watermarkFeature2").css("display") == 'none') {
-    $("#watermarkFeature2").css("display", 'block')
-  } else {
-    $("#watermarkFeature2").css("display", 'none')
-  }
-})
-
 
 $('#trackStatus').on('click', () => {
   //音视频输入轨道状态
   $("#part-track").toggle()
-})
-
-const historyStats = {
-  
-}
-// 更新采集状态
-const captureTimer = setInterval(async ()=>{
-  let audioInfo = "";
-  if (rtc.localStream){
-    audioInfo += `数量：${rtc.localStream?.mediaHelper.getAudioInputTracks().length}`
-    if (rtc.localStream?.mediaHelper.audio.audioRoutingEnabled) {
-      audioInfo += " 混音中"
-    }
-    const sender = rtc.localStream.getSender("audio", "high")
-    if (sender?.track){
-      audioInfo += " 发布中"
-    }
-  }
-  $("#audioStatus").text(audioInfo)
-  
-  const transceivers = rtc.client?.adapterRef?._mediasoup?._sendTransport?.handler?._pc?.getTransceivers() || []
-  NERTC.getParameters().tracks.audio.forEach((track, index)=>{
-    if (track){
-      const trackId = "track_status_" + track.id.split(/\W/).join("")
-      let content = "";
-      const matchedTransceivers = transceivers.filter((t =>{
-        return t?.sender?.track?.id === track.id;
-      }))
-      content += matchedTransceivers.map((transceiver)=>{
-        return "mid" + transceiver.mid
-      }).join("");
-      content += `#${index}`;
-      
-      if (!track.enabled){
-        content += " disabled";
-      }
-      if (track.muted){
-        content += " muted";
-      }
-      if (track?.constructor?.name !== "MediaStreamTrack"){
-        content += " [" + track?.constructor?.name + "]"
-      }
-      content += ` ${track.label}`;
-      if (track.readyState === "ended"){
-        content = `<del>${content}</del>`
-      }
-      if ($("#" + trackId).length === 0){
-        $("#audioTrackStatus").append(`<li id="${trackId}">${content}</li>`)
-        $("#" + trackId).attr("title", content);
-      }else if($("#" + trackId).html() !== content){
-        $("#" + trackId).html(content)
-        $("#" + trackId).attr("title", content);
-      }
-    }
-  })
-  NERTC.getParameters().tracks.video.forEach((track, index)=>{
-    if (track){
-      const trackId = "track_status_" + track.id.split(/\W/).join("")
-      let content = "";
-      const matchedTransceivers = transceivers.filter((t =>{
-        return t?.sender?.track?.id === track.id;
-      }))
-      content += matchedTransceivers.map((transceiver)=>{
-        return "mid" + transceiver.mid;
-      }).join("")
-      
-      const settings = track.getSettings();
-      content += `#${index}`;
-      if (!track.enabled){
-        content += " disabled";
-      }
-      if (track.muted){
-        content += " muted";
-      }
-      if (settings.width || settings.height || settings.frameRate) {
-        content += ` ${parseInt(settings.width)}x${parseInt(settings.height)}x${parseInt(settings.frameRate)}`
-      }
-      if (track?.constructor?.name !== "MediaStreamTrack"){
-        content += " [" + track?.constructor?.name + "]"
-      }
-      content += ` ${track.label}`;
-      if (track.readyState === "ended"){
-        content = `<del>${content}</del>`
-      }
-      if ($("#" + trackId).length === 0){
-        $("#videoTrackStatus").append(`<li id="${trackId}">${content}</li>`)
-        $("#" + trackId).attr("title", content);
-      }else if($("#" + trackId).html() !== content){
-        $("#" + trackId).html(content)
-        $("#" + trackId).attr("title", content);
-      }
-    }
-  })
-  if (rtc.client?.adapterRef?._mediasoup?._recvTransport?._handler?._pc){
-    const transceivers = rtc.client.adapterRef._mediasoup._recvTransport._handler._pc.getTransceivers()
-    let html = "";
-    for (let i = 0; i < transceivers.length; i++){
-      const transceiver = transceivers[i];
-      let li = "#" + transceiver.mid
-      const receiver = transceiver.receiver
-      if (receiver.track){
-        li += " " + receiver.track.kind;
-        if (receiver.track.kind === "video"){
-          const settings = receiver.track.getSettings();
-          if (settings.width || settings.height){
-            li += ` ${settings.width}x${settings.height}`
-          }
-        }
-        if (receiver.track.enabled === false){
-          li += " disabled"
-        }
-        if (receiver.track.muted){
-          li += " muted"
-        }
-        if (receiver.track.readyState !== "live"){
-          li += " " + receiver.track.readyState
-        }
-        const statsNow = await receiver.getStats();
-        historyStats[receiver.track.id] = statsNow
-        statsNow.forEach((item)=>{
-          const itemHistory = historyStats[item.id]
-          historyStats[item.id] = JSON.parse(JSON.stringify(item))
-          if (item.type === "inbound-rtp"){
-            // li += " ssrc " + item.ssrc
-            if (itemHistory){
-              // 计算码率
-              if (item.type === "inbound-rtp") {
-                // console.error("item.bytesReceived", item.bytesReceived, item.timestamp);
-                const bitrate = Math.floor(8 * (item.bytesReceived - itemHistory.bytesReceived) / (item.timestamp - itemHistory.timestamp))
-                li += " " + bitrate + "kbps"
-              }
-            }
-          }
-        })
-      }
-      if (receiver.transport){
-        if (receiver.transport.state !== "connected"){
-          li += " " + receiver.transport.state
-        }
-      }else{
-        li += " NOTRANSPORT"
-      }
-      html += `<li>${li}</li>`
-    }
-    $("#receiverStatus").html(html)
-  }
-}, 1000)
-
-
-$('#clientRecord').on('click', () => {
-  //客户端录制相关模块
-  if ($("#part-record").css("display") == 'none') {
-    $("#part-record").css("display", 'block')
-  } else {
-    $("#part-record").css("display", 'none')
-  }
-})
-
-$('#audioLevelConfig').on('click', () => {
-  //音量设置模块
-  if ($("#part-volume").css("display") == 'none') {
-    $("#part-volume").css("display", 'block')
-  } else {
-    $("#part-volume").css("display", 'none')
-  }
 })
 
 $('input[name="mode"]').on('click', () => {
@@ -2250,6 +2062,10 @@ $('#recordClean').on('click', (_event) => {
   stream.cleanMediaRecording({
     recordId: getRecordId()
   })
+})
+
+$(".block-header").on("click", function (evt){
+  $(this).next(".part").toggleClass("hide")
 })
 
 /** 

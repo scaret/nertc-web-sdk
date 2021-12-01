@@ -499,7 +499,6 @@ class Signalling extends EventEmitter {
         const { requestId, code, errMsg } = notification.data;
           this.logger.warn(`chence OnSignalRestart code = ${code} errMsg = ${errMsg}`);
           this.logger.warn('服务器信令进程crash，重连')
-          this.adapterRef.channelStatus = 'connectioning'
           this.adapterRef.instance.apiEventReport('setDisconnect', {
               reason: 'OnSignalRestart' 
             })
@@ -509,10 +508,19 @@ class Signalling extends EventEmitter {
               message: 'No this._protoo 2'
             })
           }
-          this.logger.log('connected: ', this._protoo.connected)
           if (this._protoo.connected) {
+            this.logger.log('OnSignalRestart即将在3秒后执行重连')
             setTimeout(()=>{
-              this.join() //OnSignalRestart会导致冲突，临时方案，3.9.0彻底解决
+              if (this.adapterRef.channelStatus === 'join'){
+                this.logger.log('OnSignalRestart执行重连')
+                this.adapterRef.channelStatus = 'connectioning'
+                this.adapterRef.instance.emit('pairing-websocket-reconnection-start')
+                // derek: 为什么这里调this.join不调this._reconnection?不懂但是不敢改。
+                // 见https://g.hz.netease.com/yunxin/nertc-web-sdk/-/blob/8bb8690d0f2862de34d009f4d7e1012618719088/src/netcall-G2/module/signalling.ts#L398
+                this.join()
+              }else{
+                this.logger.log('OnSignalRestart取消重连。channelStatus：', this.adapterRef.channelStatus)
+              }
             }, 3 * 1000)
           } else {
             this._reconnection()
@@ -687,10 +695,10 @@ class Signalling extends EventEmitter {
       this.logger.log('Signalling:加入房间成功')
       this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
       this.adapterRef.connectState.curState = 'CONNECTED'
-      this.adapterRef.channelStatus == 'join'
       
       if (this.adapterRef.channelStatus === 'connectioning') {
         this.logger.log('重连成功，清除之前的媒体的通道')
+        this.adapterRef.channelStatus = 'join'
         this.adapterRef.instance.apiEventReport('setRelogin', {
           a_record: this.adapterRef.channelInfo.sessionConfig.recordAudio,
           v_record: this.adapterRef.channelInfo.sessionConfig.recordVideo,
@@ -871,7 +879,7 @@ class Signalling extends EventEmitter {
     })
 
     //重连时的login失败，执行else的内容
-    if (this._reject && this.adapterRef.channelStatus !== 'connectioning') {
+    if (this._reject) {
       this.logger.error('加入房间失败, 反馈通知')
       this._reject(errMsg)
       this._resolve = null
