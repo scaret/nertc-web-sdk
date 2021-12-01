@@ -384,14 +384,16 @@ class Base extends EventEmitter {
     this.logger.log(`${uid}离开房间`);
     const remotStream = this.adapterRef.remoteStreamMap[uid];
     if (remotStream) {
-      if (remotStream.pubStatus.audio.consumerId) {
-        await this.adapterRef._mediasoup?.destroyConsumer(remotStream.pubStatus.audio.consumerId, remotStream, 'audio');
+      const mediaTypeList:MediaTypeShort[] = ["audio", "video", "screen"]
+      for (let mediaType of mediaTypeList){
+        if (remotStream.pubStatus[mediaType].producerId){
+          this.adapterRef.instance.safeEmit('stream-removed', {stream: remotStream, 'mediaType': mediaType, reason: "onPeerLeave"})
+        }
       }
-      if (remotStream.pubStatus.video.consumerId) {
-        await this.adapterRef._mediasoup?.destroyConsumer(remotStream.pubStatus.video.consumerId, remotStream, 'video')
-      }
-      if (remotStream.pubStatus.screen.consumerId) {
-        await this.adapterRef._mediasoup?.destroyConsumer(remotStream.pubStatus.screen.consumerId, remotStream, 'screen')
+      for (let mediaType of mediaTypeList){
+        if (remotStream.pubStatus[mediaType].consumerId) {
+          await this.adapterRef._mediasoup?.destroyConsumer(remotStream.pubStatus[mediaType].consumerId, remotStream, mediaType);
+        }
       }
       remotStream.active = false;
       remotStream.destroy();
