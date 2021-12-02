@@ -227,5 +227,29 @@ const captureTimer = setInterval(async ()=>{
     $("#receiverStatus").html(html)
     $("#downstreamBitrate").text(downstreamBitrate + "kbps");
   }
+
+  // 订阅状态
+  if (rtc.client?.adapterRef.remoteStreamMap){
+    let html = "";
+    for (let uid in rtc.client.adapterRef.remoteStreamMap){
+      const remoteStream = rtc.client.adapterRef.remoteStreamMap[uid];
+      let li = `remote#${remoteStream.getId()}<ul>`
+      for (let mediaType of ["audio", "video", "screen"]){
+        li += `<li>${mediaType}`
+        if (!remoteStream.pubStatus[mediaType].producerId){
+          li += ` 未发布`
+        }
+        const subStatus = rtc.client.getSubStatus(remoteStream, mediaType)
+        if (subStatus.subscribable){
+          li += " 可订阅"
+        }
+        li += " " + subStatus.status
+        li += "</li>"
+      }
+      li += "</ul>"
+      html += `<li>${li}</li>`
+    }
+    $("#subStatus").html(html)
+  }
 }, 1000)
 

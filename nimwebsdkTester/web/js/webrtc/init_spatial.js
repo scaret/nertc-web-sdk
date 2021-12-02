@@ -77,6 +77,13 @@ const bindEvents = ()=>{
     remote.dom.children(".remote-" + evt.mediaType).addClass("stream-added");
   });
 
+  rtc.client.on("stream-removed", function(evt){
+    let remote = rtc.remotes[evt.stream.getId()]
+    if (remote){
+      remote.dom.children(".remote-" + evt.mediaType).removeClass("stream-added");
+    }
+  });
+  
   rtc.client.on("stream-subscribed", function(evt){
     const remote = createRemoteIfNotExist(evt)
     remote.dom.children(".remote-" + evt.mediaType).addClass("stream-subscribed");
@@ -89,7 +96,6 @@ const bindEvents = ()=>{
 
   rtc.client.on("stream-unsubscribed", (evt)=>{
     const uid = evt.stream.streamID;
-    console.log("stream-unsubscribed", uid, evt.mediaType);
     let remote = rtc.remotes[uid]
     if (remote){
       remote.dom.children(".remote-" + evt.mediaType).removeClass("stream-subscribed")
@@ -100,7 +106,6 @@ const bindEvents = ()=>{
     const uid = evt.uid;
     let remote = rtc.remotes[uid]
     if (remote){
-      remote.dom.children(".remote-" + evt.mediaType).removeClass("stream-added stream-subscribed")
       remote.dom.children(".remote-info").text(`${uid} OFFLINE`)
     }
   });
@@ -109,7 +114,7 @@ const bindEvents = ()=>{
 async function joinChannel(){
   rtc.client = NERTC.createClient({
     appkey: $("#appid").val(),
-    debug: true,
+    // debug: true,
   })
   bindEvents()
   await rtc.client.join({

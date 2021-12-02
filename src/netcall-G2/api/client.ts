@@ -9,7 +9,7 @@ import {
   MediaTypeShort,
   RTMPTask,
   Client as IClient,
-  SpatialInitOptions
+  SpatialInitOptions, MediaSubStatus
 } from "../types";
 import {LocalStream} from "./localStream";
 import {checkExists, checkValidBoolean, checkValidInteger, checkValidString} from "../util/param";
@@ -590,6 +590,44 @@ class Client extends Base {
     }
   }
 
+  getSubStatus(stream: RemoteStream, mediaType: MediaTypeShort|"all"){
+    let result:MediaSubStatus = {status: "unsubscribed", subscribable: false};
+    if (mediaType === "all"){
+      const info = [
+        this.getSubStatus(stream, "audio"),
+        this.getSubStatus(stream, "video"),
+        this.getSubStatus(stream,"screen"),
+      ];
+      if (info.find(status => status.status === "unsubscribing")){
+        result.status = "unsubscribing"
+      }
+      else if (info.find(status => status.status === "subscribing")){
+        result.status = "subscribing"
+      }
+      if (info.find(status => status.status === "subscribed")){
+        result.status = "subscribed"
+      }
+      if (result.status === "subscribed" || result.status === "unsubscribed"){
+        if (info.find(status => status.subscribable)){
+          result.subscribable = true
+        }
+      }
+    }
+    else if (stream.pubStatus[mediaType].stopconsumerStatus === "start"){
+      result.status = "unsubscribing"
+    }else if (stream.pubStatus[mediaType].consumerStatus === "start"){
+      result.status = "subscribing"
+    }else if (stream.pubStatus[mediaType].consumerId) {
+      result.status = "subscribed"
+    }else{
+      // 可订阅 = 未订阅+有远端+订阅设置打开
+      if (result.status === "unsubscribed" && stream.pubStatus[mediaType].producerId && stream.subConf[mediaType]){
+        result.subscribable = true
+      }
+    }
+    return result
+  }
+  
   /**
    * 订阅远端音视频流
    * @method subscribe

@@ -799,7 +799,7 @@ export interface Client{
   startSession: ()=>void
   on: (eventName: string, listener: (evt: any)=>void)=>void
   isPublished: (stream: LocalStream) => boolean
-  getSubStatus: (stream: RemoteStream) => MediaSubStatus
+  getSubStatus: (stream: RemoteStream, mediaType: MediaTypeShort|"all") => MediaSubStatus
   clearMember: (uid: number | string) => void
   resetChannel: ()=>void
   // 注：当前接口不应存在只有用户调用的方法，以避免SDK内部调用。
@@ -811,7 +811,11 @@ export interface Client{
 
 export type ConsumerStatus = "init"|"start"|"end"
 
-export type MediaSubStatus = "unsubscribed"|"subscribing"|"subscribed"|"unsubscribing"
+export type MediaSubStatus = {
+  status: "unsubscribed"|"subscribing"|"subscribed"|"unsubscribing",
+  //有尚未订阅的远端，且当前可以订阅
+  subscribable: boolean,
+}
 
 export interface PubStatus{
   audio: {

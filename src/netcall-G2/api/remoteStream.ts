@@ -31,8 +31,8 @@ import BigNumber from 'bignumber.js'
 let remoteStreamCnt = 0;
 
 class RemoteStream extends EventEmitter {
-  public streamID:number|string;
-  public stringStreamID:string;
+  public readonly streamID:number|string;
+  public readonly stringStreamID:string;
   public audio: boolean;
   public video: boolean;
   public screen: boolean;
@@ -223,8 +223,9 @@ class RemoteStream extends EventEmitter {
   }
 
   _reset () {
-    this.streamID = ''
-    this.stringStreamID = ''
+    // 即使remoteStream销毁了，也不要删除streamId属性，这样用户能够通过getId知道谁销毁了
+    // this.streamID = ''
+    // this.stringStreamID = ''
     this.audio = false
     this.video = false
     this.screen = false
