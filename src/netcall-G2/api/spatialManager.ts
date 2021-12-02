@@ -103,37 +103,14 @@ export class SpatialManager {
       remote.position.x = position.x
       remote.position.y = position.y
     }else{
+      const subStatus = this.client.getSubStatus(remoteStream, "all")
       if (this.shouldSubscribe(uid)) {
-        if (this.client.getSubStatus(remoteStream) === "subscribing"){
-          // 界内+订阅中，仅更新位置
+        if (!subStatus.subscribable){
+          // 界内+没有可订阅，仅更新位置
           if (remote.position.x === position.x && remote.position.y === position.y){
             return;
           }
-          this.logger.log(`[订阅中 ${uid}]更新remoteStream位置: (${remote.position.x}, ${remote.position.y}) => (${position.x}, ${position.y})`);
-          remote.position.x = position.x
-          remote.position.y = position.y
-          if (remote.audioNodes) {
-            remote.audioNodes.pannerNode.positionX.value = position.x;
-            remote.audioNodes.pannerNode.positionY.value = position.y;
-          }
-        }else if (this.client.getSubStatus(remoteStream) === "unsubscribing"){
-          // 界内+取消订阅中，仅更新位置
-          if (remote.position.x === position.x && remote.position.y === position.y){
-            return;
-          }
-          this.logger.log(`[取消订阅中 ${uid}]更新remoteStream位置: (${remote.position.x}, ${remote.position.y}) => (${position.x}, ${position.y})`);
-          remote.position.x = position.x
-          remote.position.y = position.y
-          if (remote.audioNodes) {
-            remote.audioNodes.pannerNode.positionX.value = position.x;
-            remote.audioNodes.pannerNode.positionY.value = position.y;
-          }
-        }else if (this.client.getSubStatus(remoteStream) === "subscribed"){
-          // 界内+已订阅，仅更新位置
-          if (remote.position.x === position.x && remote.position.y === position.y){
-            return;
-          }
-          this.logger.log(`[已订阅 ${uid}]更新remoteStream位置: (${remote.position.x}, ${remote.position.y}) => (${position.x}, ${position.y})`);
+          this.logger.log(`[remote#${uid} status:${subStatus.status}]界内，即将更新remoteStream位置: (${remote.position.x}, ${remote.position.y}) => (${position.x}, ${position.y})`);
           remote.position.x = position.x
           remote.position.y = position.y
           if (remote.audioNodes) {
@@ -141,48 +118,27 @@ export class SpatialManager {
             remote.audioNodes.pannerNode.positionY.value = position.y;
           }
         }else{
-          // 界内+未订阅，订阅
-          this.logger.log(`[未订阅 ${uid}]remoteStream位置界内，订阅: (${remote.position.x}, ${remote.position.y}) => (${position.x}, ${position.y})`);
+          // 界内+有未订阅，订阅
+          this.logger.log(`[remote#${uid} status:${subStatus.status}]界内，【即将订阅】: (${remote.position.x}, ${remote.position.y}) => (${position.x}, ${position.y})`);
           remote.position.x = position.x
           remote.position.y = position.y
           await this.client.doSubscribe(remoteStream);
           this.updatePosition(uid, remote.position)
         }
       }else{
-        if (this.client.getSubStatus(remoteStream) === "subscribing"){
-          // 界外+订阅中，仅更新位置
-          if (remote.position.x === position.x && remote.position.y === position.y){
-            return;
-          }
-          this.logger.log(`[订阅中 ${uid}]更新remoteStream位置:  (${remote.position.x}, ${remote.position.y}) => (${position.x}, ${position.y})`);
-          remote.position.x = position.x
-          remote.position.y = position.y
-          if (remote.audioNodes) {
-            remote.audioNodes.pannerNode.positionX.value = position.x;
-            remote.audioNodes.pannerNode.positionY.value = position.y;
-          }
-        } else if (this.client.getSubStatus(remoteStream) === "unsubscribing"){
-          // 界外+取消订阅中，仅更新位置
-          if (remote.position.x === position.x && remote.position.y === position.y){
-            return;
-          }
-          this.logger.log(`[取消订阅中 ${uid}]更新remoteStream位置:  (${remote.position.x}, ${remote.position.y}) => (${position.x}, ${position.y})`);
-          remote.position.x = position.x
-          remote.position.y = position.y
-          if (remote.audioNodes) {
-            remote.audioNodes.pannerNode.positionX.value = position.x;
-            remote.audioNodes.pannerNode.positionY.value = position.y;
-          }
-        }else if (this.client.getSubStatus(remoteStream) === "subscribed"){
+        if (subStatus.status === "subscribed"){
           // 界外+已订阅，取消订阅
-          this.logger.log(`[已订阅 ${uid}]remoteStream位置出界，取消订阅:  (${remote.position.x}, ${remote.position.y}) => (${position.x}, ${position.y})`);
+          this.logger.log(`[remote#${uid} status:${subStatus.status}]界外，【即将取消订阅】:  (${remote.position.x}, ${remote.position.y}) => (${position.x}, ${position.y})`);
           remote.position.x = position.x
           remote.position.y = position.y
           await this.client.doUnsubscribe(remoteStream);
           this.updatePosition(uid, remote.position)
         }else{
-          // 界外+未订阅，仅更新位置
-          this.logger.log(`[未订阅 ${uid}]更新remoteStream位置: (${remote.position.x}, ${remote.position.y}) => (${position.x}, ${position.y})`);
+          // 界外+非已订阅，仅更新位置
+          if (remote.position.x === position.x && remote.position.y === position.y){
+            return;
+          }
+          this.logger.log(`[remote#${uid} status:${subStatus.status}]界外，即将更新remoteStream位置:  (${remote.position.x}, ${remote.position.y}) => (${position.x}, ${position.y})`);
           remote.position.x = position.x
           remote.position.y = position.y
           if (remote.audioNodes) {
@@ -244,10 +200,7 @@ export class SpatialManager {
     });
   }
   play(){
-    console.error("play")
     this.elem.controls = true;
-    document.body.appendChild(this.elem);
-    document.body.appendChild(this.fakeElem);
     if (this.context.state === "suspended"){
       if (Device.onUserGestureNeeded){
         Device.onUserGestureNeeded(new Error("恢复AudioContext"));

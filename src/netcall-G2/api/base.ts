@@ -610,26 +610,6 @@ class Base extends EventEmitter {
       && ((stream.audio && stream.pubStatus.audio.audio) || (stream.video && stream.pubStatus.video.video) || (stream.screen && stream.pubStatus.screen.screen))
   }
 
-  getSubStatus(stream: RemoteStream) : MediaSubStatus{
-    const mediaTypeList:MediaTypeShort[] = ["audio", "video", "screen"]
-    for (let mediaType of mediaTypeList){
-      if (stream.pubStatus[mediaType].stopconsumerStatus === "start"){
-        return "unsubscribing"
-      }
-    }
-    for (let mediaType of mediaTypeList){
-      if (stream.pubStatus[mediaType].consumerStatus === "start"){
-        return "subscribing"
-      }
-    }
-    for (let mediaType of mediaTypeList){
-      if (stream.pubStatus[mediaType].consumerId){
-        return "subscribed"
-      }
-    }
-    return "unsubscribed"
-  }
-
   getPeer(sendOrRecv:string){
     if (!this.adapterRef._mediasoup) { 
       return null
