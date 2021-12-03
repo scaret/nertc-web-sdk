@@ -1702,6 +1702,15 @@ class LocalStream extends EventEmitter {
       this.inSwitchDevice = true
     }
     if (type === 'audio') {
+      // server ban
+      if((<any>window).isAudioBanned) {
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+            message: 'audio is banned by server'
+          })
+        );
+      }
       if (deviceId === this.microphoneId) {
         this.logger.log(`切换相同的麦克风设备，不处理`)
         this.inSwitchDevice = false
@@ -1737,6 +1746,16 @@ class LocalStream extends EventEmitter {
       constraint = this.mediaHelper.audio.micConstraint
       this.microphoneId = deviceId
     } else if (type === 'video') {
+      // server ban
+      if((<any>window).isVideoBanned){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+            message: 'video is banned by server'
+          })
+        );
+      }
+
       if (deviceId === this.cameraId) {
         this.logger.log(`切换相同的摄像头设备，不处理`)
         this.inSwitchDevice = false
