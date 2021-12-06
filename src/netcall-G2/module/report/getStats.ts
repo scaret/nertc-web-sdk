@@ -426,7 +426,7 @@ class GetStats extends EventEmitter{
   }
 
   //转换非标准getStats格式
-  async formatChromeNonStandardStats (pc:RTCPeerConnection, stats:{[key:string]:any}, direction:string) {
+  formatChromeNonStandardStats (pc:RTCPeerConnection, stats:{[key:string]:any}, direction:string) {
     const tmp:any = {};
     Object.values(stats).forEach(item => {
       // 过滤googleTrack
@@ -464,10 +464,7 @@ class GetStats extends EventEmitter{
         mediaTypeShort = item.mediaType;
       }
       if(!targetUid && direction === 'recv') return tmp;
-      item.id = `ssrc_${this.adapterRef.channelInfo.uid}_${direction}_${
-        direction === 'recv' ? targetUid : 0
-      }_${mediaTypeShort}`;
-
+      item.id = this.stringifyItemId("ssrc", direction, direction === 'recv' ? "" + targetUid : "0", mediaTypeShort, uidAndKindBySsrc.streamType)
       item.localuid = this.adapterRef.channelInfo.uid;
       item.remoteuid = targetUid;
 
@@ -481,6 +478,31 @@ class GetStats extends EventEmitter{
     });
     return tmp;
   }
+  
+  stringifyItemId(type: RTCStatsType|"ssrc", direction: string, remoteUid: string, mediaType:MediaTypeShort, streamType: "high"|"low"){
+    const id = `${type}_${this.adapterRef?.channelInfo.uid}_${direction}_${
+      direction === 'recv' ? remoteUid : 0
+    }_${mediaType}_${streamType}`;
+    return id;
+  }
+  
+  parseItemId(id: string){
+    const match = id.match(/([a-z\-])+_\d+_([a-z]+)_(\d+)_([a-z]+)_([a-z]+)/)
+    if (match){
+      const result = {
+        type: match[1],
+        direction: match[2],
+        remoteUid: match[3],
+        mediaType: match[4],
+        streamType: match[5],
+      }
+      return result
+    }else{
+      return null
+    }
+  }
+  
+  
 
   //转换标准getStats格式
   formatChromeStandardizedStats(report:RTCStatsReport, direction:string, uid:string|number) {

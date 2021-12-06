@@ -348,6 +348,13 @@ export class Chrome74 extends HandlerInterface
         this._pc.screenSenderLow.replaceTrack(trackLow)
       }
     } else {
+      mediaStream.addTrack(track);
+      //P2P上行的ssrc顺序：大流在前，小流在后
+      transceiver = this._pc.addTransceiver(track, {
+        direction     : 'sendonly',
+        streams       : [ mediaStream ],
+        sendEncodings : encodings
+      });
       if (trackLow){
         transceiverLow = this._pc.addTransceiver(trackLow, {
           direction     : 'sendonly',
@@ -355,12 +362,6 @@ export class Chrome74 extends HandlerInterface
           sendEncodings : encodings
         });
       }
-      mediaStream.addTrack(track);
-      transceiver = this._pc.addTransceiver(track, {
-        direction     : 'sendonly',
-        streams       : [ mediaStream ],
-        sendEncodings : encodings
-      });
       if (appData.mediaType === 'audio' && !this._pc.audioSender) {
         this._pc.audioSender = transceiver.sender
       } else if (appData.mediaType === 'video' && !this._pc.videoSender) {
