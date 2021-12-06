@@ -39,7 +39,7 @@ class Mediasoup extends EventEmitter {
   public _eventQueue: ProduceConsumeInfo[] = [];
   public _protoo: Peer|null = null;
   // senderEncodingParameter。会复用上次的senderEncodingParameter
-  private senderEncodingParameter: {
+  public senderEncodingParameter: {
     ssrcList: number[]
     audio: {
       high: {ssrc: number, dtx: boolean}|null,
@@ -448,23 +448,14 @@ class Mediasoup extends EventEmitter {
             if (encodingLow){
               this.senderEncodingParameter[mediaTypeShort].low = encodingLow;
               this.senderEncodingParameter.ssrcList.push(encodingLow.ssrc);
+            }else{
+              this.senderEncodingParameter[mediaTypeShort].low = null;
             }
           }
-          if (rtpParameters.encodings && rtpParameters.encodings[0]) {
-            rtpParameters.encodings[0].ssrc = encoding.ssrc;
-            // @ts-ignore
-            if (rtpParameters.encodings[0].rtx && encoding.rtx && encoding.rtx) {
-              // @ts-ignore
-              rtpParameters.encodings[0].rtx.ssrc = encoding.rtx.ssrc;
-            }
-          }
-          if (encodingLow && rtpParameters.encodings && rtpParameters.encodings[1]) {
-            rtpParameters.encodings[1].ssrc = encodingLow.ssrc;
-            // @ts-ignore
-            if (rtpParameters.encodings[1].rtx && encodingLow.rtx && encodingLow.rtx) {
-              // @ts-ignore
-              rtpParameters.encodings[1].rtx.ssrc = encodingLow.rtx.ssrc;
-            }
+          // 服务端协议：小流在前，大流在后
+          rtpParameters.encodings = [this.senderEncodingParameter[mediaTypeShort].high]
+          if (this.senderEncodingParameter[mediaTypeShort].low){
+            rtpParameters.encodings.unshift(this.senderEncodingParameter[mediaTypeShort].low)
           }
           if (appData.mediaType === 'video' || appData.mediaType === 'screenShare') {
             producerData.mediaProfile = [];

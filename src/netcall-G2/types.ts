@@ -793,7 +793,7 @@ export interface Client{
   reBuildRecvTransport: ()=>any
   _params: any
   setSessionConfig: any
-  getUidAndKindBySsrc: (ssrc:number)=>{uid:number|string;kind: MediaTypeShort}
+  getUidAndKindBySsrc: (ssrc:number)=>{uid:number|string;kind: MediaTypeShort, streamType:"high"|"low"}
   removeSsrc: (uid:number|string, kind?:MediaTypeShort) => void
   stopSession: ()=>void
   startSession: ()=>void

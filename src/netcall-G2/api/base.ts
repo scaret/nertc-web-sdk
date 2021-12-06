@@ -561,16 +561,31 @@ class Base extends EventEmitter {
   /*** 用户成员uid和ssrc对应的list ***/
   // 不支持 firefox
   getUidAndKindBySsrc(ssrc:number) {
-    for (let i in this.adapterRef.uid2SscrList) {
-      if(this.adapterRef.uid2SscrList[i].audio.ssrc == ssrc){
-        return {uid: i, kind: 'audio'}
-      } else if(this.adapterRef.uid2SscrList[i].video && this.adapterRef.uid2SscrList[i].video.ssrc == ssrc){
-        return {uid: i, kind: 'video'}
-      } else if(this.adapterRef.uid2SscrList[i].screen && this.adapterRef.uid2SscrList[i].screen.ssrc == ssrc){
-        return {uid: i, kind: 'screen'}
+    // 发送端
+    const mediaTypeList:MediaTypeShort[] = ["audio", "video", "screen"]
+    const streamTypeList: ("high"|"low")[] = ["high", "low"]
+    for (let mediaType of mediaTypeList){
+      for (let streamType of streamTypeList){
+        if (this.adapterRef._mediasoup?.senderEncodingParameter[mediaType][streamType]?.ssrc === ssrc){
+          return {
+            uid: 0,
+            kind: mediaType,
+            streamType: streamType
+          }
+        }
       }
     }
-    return {uid: 0, kind: ''}
+    // 接收端是没有大小流的，统一填写大流
+    for (let i in this.adapterRef.uid2SscrList) {
+      if(this.adapterRef.uid2SscrList[i].audio.ssrc == ssrc){
+        return {uid: i, kind: 'audio', streamType: "high"}
+      } else if(this.adapterRef.uid2SscrList[i].video && this.adapterRef.uid2SscrList[i].video.ssrc == ssrc){
+        return {uid: i, kind: 'video', streamType: "high"}
+      } else if(this.adapterRef.uid2SscrList[i].screen && this.adapterRef.uid2SscrList[i].screen.ssrc == ssrc){
+        return {uid: i, kind: 'screen', streamType: "high"}
+      }
+    }
+    return {uid: 0, kind: '', streamType: "high"}
   }
 
   getSsrcByUidAndKind (uid:number|string, kind:MediaTypeShort) {
