@@ -166,6 +166,13 @@ const ErrorCode = {
      *
      */
     NO_MEDIA: 41031,
+
+    /*
+     * 被服务器禁言
+     *
+     */
+    MEDIA_OPEN_BANNED_BY_SERVER: 41032,
+
     /*
      * 未知错误
      *

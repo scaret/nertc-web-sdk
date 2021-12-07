@@ -86,6 +86,8 @@ export interface SignalJoinRes extends SignalResBase{
     cid: number;
     appid: string;
     record: boolean;
+    audioRight: number;
+    videoRight: number;
     roomCapability: SignalRoomCapability;
     userList: {
       uid: number|string;
