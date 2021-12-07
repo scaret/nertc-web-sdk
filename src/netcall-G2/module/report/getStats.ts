@@ -479,27 +479,53 @@ class GetStats extends EventEmitter{
     return tmp;
   }
   
+  // 组装和解析stats项。当前仅用于ssrc
   stringifyItemId(type: RTCStatsType|"ssrc", direction: string, remoteUid: string, mediaType:MediaTypeShort, streamType: "high"|"low"){
-    const id = `${type}_${this.adapterRef?.channelInfo.uid}_${direction}_${
-      direction === 'recv' ? remoteUid : 0
-    }_${mediaType}_${streamType}`;
+    let id;
+    if (direction === "send"){
+      if (streamType === "high"){
+        id = `${type}_${this.adapterRef?.channelInfo.uid}_send_0_${mediaType}`;
+      }else{
+        id = `${type}_${this.adapterRef?.channelInfo.uid}_send_0_${mediaType}_${streamType}`;
+      }
+    }else{
+      id = `${type}_${this.adapterRef?.channelInfo.uid}_${direction}_${remoteUid}_${mediaType}`;
+    }
     return id;
   }
   
   parseItemId(id: string){
-    const match = id.match(/([a-z\-])+_\d+_([a-z]+)_(\d+)_([a-z]+)_([a-z]+)/)
-    if (match){
-      const result = {
-        type: match[1],
-        direction: match[2],
-        remoteUid: match[3],
-        mediaType: match[4],
-        streamType: match[5],
+    const matchSendHigh = id.match(/([a-zA-Z\-])+_\d+_send_0_([a-zA-Z]+)/)
+    const matchSendLow  = id.match(/([a-zA-Z\-])+_\d+_send_0_([a-zA-Z]+)_([a-zA-Z]+)/)
+    const matchRecv     = id.match(/([a-zA-Z\-])+_\d+_recv_(\d+)_([a-zA-Z]+)/)
+    let result
+    if (matchSendHigh){
+      result = {
+        type: matchSendHigh[1],
+        direction: "send",
+        remoteUid: "0",
+        mediaType: matchSendHigh[2],
+        streamType: "high",
       }
-      return result
+    } else if (matchSendLow){
+      result = {
+        type: matchSendLow[1],
+        direction: "send",
+        remoteUid: "0",
+        mediaType: matchSendLow[2],
+        streamType: matchSendLow[3],
+      }
+    } else if (matchRecv){
+      result = {
+        type: matchRecv[1],
+        direction: "recv",
+        remoteUid: matchRecv[2],
+        mediaType: matchRecv[3],
+      }
     }else{
-      return null
+      result = null
     }
+    return result
   }
   
   
