@@ -616,6 +616,7 @@ class MediaHelper extends EventEmitter {
         }
         const videoSenderLow = this.stream.getSender("video", "high");
         this.video.videoTrackLow?.stop()
+        this.video.videoTrackLow = null
         if (videoSenderLow?.track?.readyState === "live"){
           await this.createTrackLow("video");
           this.logger.log('getSecondStream 切换小流', this.video.videoTrackLow);
@@ -790,6 +791,7 @@ class MediaHelper extends EventEmitter {
       }
     } else if (kind === 'screenAudio') {
       this.screenAudio.screenAudioTrack?.stop();
+      this.screenAudio.screenAudioTrack = null;
       this.screenAudio.screenAudioSource = null;
       emptyStreamWith(this.screenAudio.screenAudioStream, null);
       this.updateWebAudio();
@@ -799,10 +801,12 @@ class MediaHelper extends EventEmitter {
     } else if (kind === 'video') {
       type = 'set_camera'
       this.video.cameraTrack?.stop()
+      this.video.cameraTrack = null
       emptyStreamWith(this.video.videoStream, null);
     } else if (kind === 'screen') {
       type = 'set_screen'
       this.screen.screenVideoTrack?.stop()
+      this.screen.screenVideoTrack = null
       emptyStreamWith(this.screen.screenVideoStream, null)
     }
     this.stream.client.apiEventReport('setFunction', {
