@@ -527,6 +527,7 @@ function initEvents() {
   })
 
   rtc.client.on('stopScreenSharing', _data => {
+    addLog("===== 屏幕共享已停止, 主动关闭")
     console.warn("===== 屏幕共享已停止, 主动关闭")
     rtc.localStream.close({
       type: 'screen'
@@ -538,6 +539,7 @@ function initEvents() {
     })
   })
   rtc.client.on('videoTrackEnded', _data => {
+    addLog("===== 视频轨道已停止, 主动关闭")
     console.warn("===== 视频轨道已停止, 主动关闭")
     rtc.localStream.close({
       type: 'video'
@@ -549,6 +551,7 @@ function initEvents() {
     })
   })
   rtc.client.on('stopScreenAudio', _data => {
+    addLog("===== 屏幕共享音频轨道已停止, 主动关闭")
     console.warn("===== 屏幕共享音频轨道已停止, 主动关闭")
     rtc.localStream.close({
       type: 'screenAudio'
@@ -560,6 +563,7 @@ function initEvents() {
     })
   })
   rtc.client.on('audioTrackEnded', _data => {
+    addLog("===== 音频轨道已停止, 主动关闭")
     console.warn("===== 音频轨道已停止, 主动关闭")
     rtc.localStream.close({
       type: 'audio',
@@ -1162,8 +1166,8 @@ function getAudioSource(mediaType){
 }
 
 $('#switchCustom').on('click', () => {
-  var videoTrack = $('#canvas')[0].captureStream(30).getVideoTracks()[0]
-  rtc.localStream.switchScreenStream({screenVideoSource:videoTrack});
+  rtc.screenVideoSource = rtc.screenVideoSource?.readyState === "live" ? rtc.screenVideoSource :getVideoSource("screen")
+  rtc.localStream.switchScreenStream({screenVideoSource:rtc.screenVideoSource});
 })
 
 

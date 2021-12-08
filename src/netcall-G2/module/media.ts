@@ -21,7 +21,6 @@ import {Logger} from "./3rd/mediasoup-client/Logger";
 import {platform} from "../util/platform";
 class MediaHelper extends EventEmitter {
   stream: LocalStream|RemoteStream;
-  public screenStream: MediaStream|null;
   public audio: {
     //****************** 以下为音频主流 ***************************************
     // stream对localStream而言是PeerConnection发送的MediaStream，
@@ -117,7 +116,6 @@ class MediaHelper extends EventEmitter {
     super()
     // 设置对象引用
     this.stream = options.stream;
-    this.screenStream = null;
     this.logger = options.stream.logger.getChild(()=>{
       let tag = "mediaHelper";
       if (this.audio.audioRoutingEnabled){
@@ -244,15 +242,9 @@ class MediaHelper extends EventEmitter {
           max: frameRate
         }
       },
-      audio: (constraint.screenAudio && this.getAudioConstraints()) ? this.getAudioConstraints() : constraint.screenAudio,
     }, this.logger)
-    if(this.stream._play?.screenDom) {
-      this.stream._play.screenDom.srcObject = screenStream;
-    }
-    this.screenStream = screenStream;
     return screenStream;
   }
-
 
   async getStream(constraint:GetStreamConstraints) {
     let {
@@ -1101,7 +1093,11 @@ class MediaHelper extends EventEmitter {
         this.stream.client.safeEmit('videoTrackEnded')
       }
       // 分别处理 Chrome 共享屏幕中的“整个屏幕”、“窗口”、“Chrome标签页”
-      if (track === this.screen.screenVideoTrack || (track.label.indexOf('screen') > -1) || (track.label.indexOf('window') > -1) || (track.label.indexOf('web-') > -1)){
+      if (track === this.screen.screenVideoTrack ||
+          track === this.screen.screenVideoSource ||
+        (track.label.indexOf('screen') > -1) || 
+        (track.label.indexOf('window') > -1) ||
+        (track.label.indexOf('web-') > -1)){
         this.logger.warn('屏幕共享已停止')
         this.stream.client.safeEmit('stopScreenSharing')
       }

@@ -1120,65 +1120,51 @@ class LocalStream extends EventEmitter {
    * @param {Boolean} option.screenAudio 是否开启屏幕共享声音
    * @return {Promise}
    */
-   async switchScreenStream(option:{screenVideoSource:MediaStreamTrack|null, screenAudio:Boolean}) {
-    const peer = this.client.adapterRef.instance.getPeer('send');
-    let localScreenStream_ = this.client.adapterRef.localStream?.mediaHelper.screenStream;
-    let localtrack = localScreenStream_?.getVideoTracks()[0];
-    if (peer && peer.screenSender) {
-      let screenVideoTrack;
-      if(option.screenVideoSource) {
-        if(localtrack) {
-          this.mediaHelper.listenToTrackEnded(localtrack);
-          localtrack.stop()
-          localScreenStream_?.removeTrack(localtrack as any);
-        }
-        screenVideoTrack = option.screenVideoSource;
-        this.client.adapterRef.logger.log('switchScreenStream: 切换到自定义辅流');
-        this.client.adapterRef.instance.apiEventReport('setFunction', {
-          name: 'switch_to_custom_screen',
-          oper: '1',
-          value: 'success'
-        });
-      }else {
-        let screenSource = await this.mediaHelper.getScreenSource({
-          facingMode: this.facingMode,
-          screen: this.screen,
-          screenAudio: this.screenAudio,
-        })
-        if(localtrack) {
-          this.mediaHelper.listenToTrackEnded(localtrack);
-          localtrack.stop()
-          localScreenStream_?.removeTrack(localtrack as any);
-        }
-        screenVideoTrack = screenSource.getVideoTracks()[0];
-        this.client.adapterRef.logger.log('switchScreenStream: 切换到屏幕共享流');
-        this.client.adapterRef.instance.apiEventReport('setFunction', {
-          name: 'switch_to_screen',
-          oper: '1',
-          value: 'success'
-        });
-      }
-      localScreenStream_?.addTrack(screenVideoTrack as any);
-      
-      // peer.screenSender.replaceTrack(screenVideoTrack)
-      if(this.client.adapterRef._mediasoup){
-        //@ts-ignore
-        this.client.adapterRef._mediasoup?._screenProducer?._track = screenVideoTrack
-      }
-      this.mediaHelper.listenToTrackEnded(screenVideoTrack);
-      peer.screenSender.replaceTrack(screenVideoTrack)
-      
-    } else {
-      this.client.adapterRef.logger.warn('switchScreenStream: 此时未发布流')
+  async switchScreenStream(option:{screenVideoSource:MediaStreamTrack|null}) {
+    let newTrack:MediaStreamTrack|null = null
+    let external = false;
+    let replaceResult:any = null
+    let reason = "";
+    if(option.screenVideoSource?.kind === "video") {
+      newTrack = option.screenVideoSource;
+      external = true;
+    }else {
+      let screenSourceStream = await this.mediaHelper.getScreenSource({
+        screen: this.screen,
+      })
+      newTrack = screenSourceStream.getVideoTracks()[0];
     }
-
-    this.client.adapterRef.logger.log('switchScreenStream: 切换辅流成功');
-    let screenType = option.screenVideoSource ? 'customScreen' : 'screen';
+    if (newTrack){
+      replaceResult = await this.replaceTrack({
+        mediaType: "screen",
+        track: newTrack,
+        external,
+      })
+      if (replaceResult){
+        this.client.adapterRef.logger.log(`switchScreenStream: 已从 ${replaceResult.external ? "自定义辅流": "屏幕共享"} 切换到 ${external ? "自定义辅流": "屏幕共享"}`);
+        if (!replaceResult.external){
+          replaceResult.oldTrack.stop()
+        }
+        replaceResult.oldTrackLow?.stop()
+      }else{
+        reason = "当前没有screen流"
+        this.client.adapterRef.logger.error(`switchScreenStream: 无法切换到${external ? "自定义辅流": "屏幕共享"}: ${reason}`);
+      }
+    }else{
+      reason = "无法获得新的screenVideoTrack"
+      this.client.adapterRef.logger.error(`switchScreenStream: `, reason);
+    }
+    this.client.adapterRef.instance.apiEventReport('setFunction', {
+      name: 'switch_to_custom_screen',
+      oper: '1',
+      value: reason || "success"
+    });
     this.client.apiFrequencyControl({
       name: 'switchScreenStream',
-      code: 0,
+      code: reason ? -1 : 0,
       param: JSON.stringify({
-        type: screenType
+        external,
+        reason
       }, null, ' ')
     })
   }
@@ -1977,6 +1963,82 @@ class LocalStream extends EventEmitter {
     if (this.getSender(options.mediaType, options.streamType)){
       // 如果当前正在发送，则直接应用最新码率
       this.applyEncoderConfig(options.mediaType, options.streamType)
+    }
+  }
+  
+  async replaceTrack(options: {
+    mediaType: "video"|"screen",
+    track: MediaStreamTrack,
+    external: boolean,
+  }){
+    // replaceTrack不会主动关掉原来的track，包括大小流
+    let oldTrack;
+    let oldTrackLow;
+    let external = false; // 被替换的流是否是外部流
+    if (options.mediaType === "screen"){
+      if (this.mediaHelper.screen.screenVideoTrack){
+        oldTrack = this.mediaHelper.screen.screenVideoTrack;
+        this.mediaHelper.screen.screenVideoTrack = null
+      }else if (this.mediaHelper.screen.screenVideoSource){
+        external = true
+        oldTrack = this.mediaHelper.screen.screenVideoSource;
+        this.mediaHelper.screen.screenVideoSource = null
+      }
+      if (oldTrack){
+        if (options.external){
+          this.mediaHelper.screen.screenVideoSource = options.track;
+        }else{
+          this.mediaHelper.screen.screenVideoTrack = options.track;
+        }
+        emptyStreamWith(this.mediaHelper.screen.screenVideoStream, options.track);
+        oldTrackLow = this.mediaHelper.screen.screenVideoTrackLow;
+        this.mediaHelper.screen.screenVideoTrackLow = null
+      }
+    }else if (options.mediaType === "video"){
+      if (this.mediaHelper.video.cameraTrack){
+        oldTrack = this.mediaHelper.video.cameraTrack;
+        this.mediaHelper.video.cameraTrack = null;
+      }else if (this.mediaHelper.video.videoSource){
+        external = true
+        oldTrack = this.mediaHelper.video.videoSource;
+        this.mediaHelper.video.videoSource = null;
+      }
+      if (oldTrack){
+        if (options.external){
+          this.mediaHelper.video.cameraTrack = options.track;
+        }else{
+          this.mediaHelper.video.videoSource = options.track;
+        }
+        emptyStreamWith(this.mediaHelper.video.videoStream, options.track);
+        oldTrackLow = this.mediaHelper.video.videoTrackLow;
+        this.mediaHelper.video.videoTrackLow = null
+      }
+    }
+    if (oldTrack){
+      this.logger.log(`replaceTrack ${options.mediaType} dual:${!!oldTrackLow}【external: ${external} ${oldTrack.label}】=>【external: ${options.external} ${options.track.label}】`)
+      watchTrack(options.track)
+      this.mediaHelper.listenToTrackEnded(options.track);
+    }else{
+      this.logger.error(`replaceTrack ${options.mediaType} 当前没有可替换的流`)
+      return null
+    }
+    const sender = this.getSender(options.mediaType, "high")
+    const senderLow = this.getSender(options.mediaType, "low")
+    if (sender){
+      sender.replaceTrack(options.track)
+      this.logger.log(`replaceTrack ${options.mediaType} 成功替换上行`)
+    }
+    if (senderLow && oldTrackLow){
+      const newTrackLow = await this.mediaHelper.createTrackLow(options.mediaType)
+      if (newTrackLow){
+        senderLow.replaceTrack(newTrackLow);
+        this.logger.log(`replaceTrack ${options.mediaType} 成功替换上行小流`)
+      }
+    }
+    return {
+      oldTrack,
+      oldTrackLow,
+      external,
     }
   }
 

@@ -45,6 +45,8 @@ const captureTimer = setInterval(async ()=>{
       content += ` ${track.label}`;
       if (track.readyState === "ended"){
         content = `<del>${content}</del>`
+      }else{
+        content = `<span onclick="stopTrack('${track.id}')">[拔出]</span>` + content
       }
       if ($("#" + trackId).length === 0){
         $("#audioTrackStatus").append(`<li id="${trackId}">${content}</li>`)
@@ -83,6 +85,8 @@ const captureTimer = setInterval(async ()=>{
       content += ` ${track.label}`;
       if (track.readyState === "ended"){
         content = `<del>${content}</del>`
+      }else{
+        content = `<span onclick="stopTrack('${track.id}')">[拔出]</span>` + content
       }
       if ($("#" + trackId).length === 0){
         $("#videoTrackStatus").append(`<li id="${trackId}">${content}</li>`)
@@ -253,3 +257,10 @@ const captureTimer = setInterval(async ()=>{
   }
 }, 1000)
 
+const stopTrack = function(trackId){
+  const tracks = [].concat(NERTC.getParameters().tracks.audio, NERTC.getParameters().tracks.video)
+  const track = tracks.find((t)=>{return t.id === trackId})
+  console.warn("模拟拔出设备：", trackId, track);
+  track.stop()
+  track.dispatchEvent(new Event("ended"))
+}
