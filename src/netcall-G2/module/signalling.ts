@@ -345,7 +345,13 @@ class Signalling extends EventEmitter {
           uid = new BigNumber(uid)
           uid = uid.toString()
         }
-        this.logger.log(`收到OnProducerClose消息 code = ${code}, errMsg = ${errMsg}, uid = ${uid}, mediaType = ${mediaType}, producerId: ${producerId}`);
+        let remoteStream = this.adapterRef.remoteStreamMap[uid]
+        if (remoteStream){
+          this.logger.log(`收到OnProducerClose消息 code = ${code}, errMsg = ${errMsg}, uid = ${uid}, mediaType = ${mediaType}, producerId: ${producerId}`);
+        }else{
+          this.logger.warn(`收到OnProducerClose消息，但是当前没有该Producer： code = ${code}, errMsg = ${errMsg}, uid = ${uid}, mediaType = ${mediaType}, producerId: ${producerId}`);
+          return;
+        }
         let mediaTypeShort:MediaTypeShort;
         switch (mediaType){
           case "video":
@@ -363,8 +369,6 @@ class Signalling extends EventEmitter {
               message: `Unrecognized mediaType ${mediaType}`
             })
         }
-        let remoteStream = this.adapterRef.remoteStreamMap[uid]
-        if(!remoteStream) return
         
         if (remoteStream.pubStatus[mediaTypeShort].producerId !== producerId) {
           this.logger.log('该 producerId 已经无效，不处理')

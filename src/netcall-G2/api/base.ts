@@ -396,6 +396,12 @@ class Base extends EventEmitter {
           this.adapterRef.instance.safeEmit('stream-removed', {stream: remotStream, 'mediaType': mediaType, reason: "onPeerLeave"})
         }
       }
+      // 为什么需要先移除remoteStream再destroyConsumer：因为可能会先收到onPeerLeave再收到onProducerClose，在destroyConsumer期间产生竞争。
+      delete this.adapterRef.remoteStreamMap[uid];
+      delete this.adapterRef.memberMap[uid];
+      delete this.adapterRef.remoteAudioStats[uid];
+      delete this.adapterRef.remoteVideoStats[uid];
+      delete this.adapterRef.remoteScreenStats[uid];
       for (let mediaType of mediaTypeList){
         if (remotStream.pubStatus[mediaType].consumerId) {
           await this.adapterRef._mediasoup?.destroyConsumer(remotStream.pubStatus[mediaType].consumerId, remotStream, mediaType);
@@ -403,11 +409,6 @@ class Base extends EventEmitter {
       }
       remotStream.active = false;
       remotStream.destroy();
-      delete this.adapterRef.remoteStreamMap[uid];
-      delete this.adapterRef.memberMap[uid];
-      delete this.adapterRef.remoteAudioStats[uid];
-      delete this.adapterRef.remoteVideoStats[uid];
-      delete this.adapterRef.remoteScreenStats[uid];
       const data = this.adapterRef._statsReport && this.adapterRef._statsReport.formativeStatsReport && this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData
       if (data && data[uid]) {
         delete data[uid]
