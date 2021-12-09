@@ -351,6 +351,7 @@ class DeviceManager extends EventEmitter {
       this.userGestureUI.style.background = "yellow";
       this.userGestureUI.style.margin = "auto";
       this.userGestureUI.style.width = "100%";
+      this.userGestureUI.style.zIndex = "9999";
       this.userGestureUI.style.top = "0";
       this.userGestureUI.onclick = ()=>{
         if (this.userGestureUI){
