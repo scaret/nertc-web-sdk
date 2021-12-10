@@ -302,10 +302,6 @@ function init() {
     // debug: true,
     //report: false
   })
-  rtc.client.logger.error("rtc.client.logger.error");
-  rtc.client.logger.warn("rtc.client.logger.warn");
-  rtc.client.logger.log("rtc.client.logger.log");
-  rtc.client.logger.debug("rtc.client.logger.debug");
   initDevices()
   initEvents()
   initVolumeDetect()
@@ -2436,7 +2432,7 @@ $('#resumeAllEffects').click(function(){
  * ----------------------------------------
  */
 
-$('#audioFilePath').val('auido/大头儿子小头爸爸.mp3') //'auido/nico - love mail.mp3' 'auido/大头儿子小头爸爸.mp3'
+$('#audioFilePath').val('https://yunxin-g2-assets.oss-cn-hangzhou.aliyuncs.com/web/auido/大头儿子小头爸爸.mp3') //'auido/nico - love mail.mp3' 'auido/大头儿子小头爸爸.mp3'
 const progress = document.querySelector('#auidoMixing progress');
 const progressInfo = document.querySelector('#auidoMixing .value');
 let fileName = $("#audioFilePath").val().split('/')[1].split('.')[0] + ' :                  '
