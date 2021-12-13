@@ -36,6 +36,15 @@ class Signalling extends EventEmitter {
   private netStatusTimer: Timer|null = null;
   public browserDevice: String;
   private logger: ILogger;
+  public reconnectionControl:{
+    blocker: any,
+    pausers: ((info: any)=>void)[],
+    resumers: ((info: any)=>void)[],
+  } = {
+    blocker: null,
+    pausers: [],
+    resumers: [],
+  }
   
   constructor (options: SignallingOptions) {
     super()
@@ -114,6 +123,17 @@ class Signalling extends EventEmitter {
   }
 
   async _reconnection() {
+    if (this.reconnectionControl.pausers.length){
+      this.logger.log(`重连过程暂停`);
+      this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
+      this.adapterRef.connectState.curState = 'PAUSED'
+      this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
+      this.reconnectionControl.pausers.forEach((resolve)=> resolve({reason: "reconnection-start"}))
+      this.reconnectionControl.pausers = []
+      await new Promise((resolve)=>{
+        this.reconnectionControl.blocker = resolve;
+      })
+    }
     this.logger.log('Signalling _reconnection, times:', this._times)
     /*if (this.adapterRef.channelStatus === 'connectioning') {
       return
@@ -933,6 +953,10 @@ class Signalling extends EventEmitter {
       }else{
         // 重连成功
         this.adapterRef.instance.emit('pairing-websocket-reconnection-success');
+        if (this.reconnectionControl.resumers.length){
+          this.reconnectionControl.resumers.forEach((resolve)=> resolve({reason: "reconnection-success"}))
+          this.reconnectionControl.resumers = []
+        }
       }
       this.doSendKeepAliveTask()
     } catch (e) {

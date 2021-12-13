@@ -42,6 +42,8 @@ class WebSocketTransport extends EnhancedEventEmitter
 		// @type {WebSocket}
 		this._ws = null;
 
+		this.skipReconnection = false;
+    
 		// Run the WebSocket.
 		this._runWebSocket();
 	}
@@ -154,7 +156,7 @@ class WebSocketTransport extends EnhancedEventEmitter
 
 						this.safeEmit('disconnected');
 
-						if (this._closed)
+						if (this._closed || this.skipReconnection)
 							return;
 
 						this._runWebSocket();

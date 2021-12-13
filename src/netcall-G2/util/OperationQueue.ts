@@ -37,7 +37,8 @@ interface QueueElem{
   startTs?: number,
   args: OperationArgs,
   resolve: any,
-  reject: any
+  reject: any,
+  status: "pending"|"live"|"finished"|"timeout",
 }
 
 type callMeWhenFinished = ()=>void
@@ -63,7 +64,13 @@ export class OperationQueue{
     })
     setInterval(()=>{
       if (this.current && Date.now() - this.current.enqueueTs > 5000){
-        this.logger.error(`当前操作已执行了${Date.now() - this.current.enqueueTs}ms，放开锁限制：${this.current.args.method}#${this.current.id}`)
+        if (this.queue.length){
+          const nextElem = this.queue[0];
+          this.logger.error(`当前操作已执行了${Date.now() - this.current.enqueueTs}ms，放开锁限制：${this.current.args.method}#${this.current.id}。即将进行下一个操作：${nextElem.args.method}#${nextElem.id}`)
+        }else{
+          this.logger.log(`当前操作已执行了${Date.now() - this.current.enqueueTs}ms，放开锁限制：${this.current.args.method}#${this.current.id}`)
+        }
+        this.current.status = "timeout"
         this.history = this.current
         this.current = null
         this.fire("timer")
@@ -81,6 +88,7 @@ export class OperationQueue{
         args,
         resolve,
         reject,
+        status: "pending",
       })
       if (!this.current){
         this.fire("instant")
@@ -95,6 +103,7 @@ export class OperationQueue{
       if (elem){
         this.history = this.current
         this.current = elem;
+        this.current.status = "live"
         if (source === "instant"){
           this.logger.log(`开始执行操作：${elem.args.method}。参数：`, elem.args.options)
         }else{
@@ -103,12 +112,17 @@ export class OperationQueue{
         elem.startTs = Date.now();
         elem.resolve(()=>{
           if (this.current === elem){
+            this.current.status = "finished"
             this.history = this.current
             this.current = null
             this.logger.log(`执行操作结束：${elem.args.method}。花费 ${elem.startTs ? Date.now() - elem.startTs : null}ms`)
             this.fire("functionEnd")
           }else{
-            this.logger.error(`操作收到多次返回：${elem.args.method}#${elem.id}。花费 ${elem.startTs ? Date.now() - elem.startTs : null}ms`)
+            if (elem.status === "timeout"){
+              this.logger.log(`执行操作结束：${elem.args.method}。花费 ${elem.startTs ? Date.now() - elem.startTs : null}ms。该操作超时，但未阻塞执行队列。`)
+            }else{
+              this.logger.error(`操作收到多次返回：${elem.args.method}#${elem.id}。花费 ${elem.startTs ? Date.now() - elem.startTs : null}ms`)
+            }
           }
         });
       }
