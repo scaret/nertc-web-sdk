@@ -2950,6 +2950,16 @@ $("#setEncryptionSecret").click(()=>{
   addLog("setEncryptionSecret " + encryptionSecret)
 })
 
+$("#pauseReconnection").on("click", async ()=>{
+  const info = await rtc.client.pauseReconnection();
+  addLog("===暂停重连" + info?.reason)
+})
+
+$("#resumeReconnection").on("click", async ()=>{
+  const info = await rtc.client.resumeReconnection();
+  addLog("===恢复重连" + info?.reason)
+})
+
 let urlParams = new URLSearchParams(window.location.search);
 let vconsole = null
 $(document).ready(()=>{

@@ -1510,6 +1510,41 @@ class Client extends Base {
     this.logger.log('设置加密密钥');
     this.adapterRef.encryption.setEncryptionSecret(encryptionSecret);
   }
+  
+  async pauseReconnection(){
+    this.logger.log("pauseReconnection：下一次重连行为会被暂停，直到调用resumeReconnection()方法")
+    const info = await new Promise(resolve=>{
+      if (this.adapterRef._signalling){
+        this.adapterRef._signalling.reconnectionControl.pausers.push(resolve)
+        // @ts-ignore
+        this.adapterRef._signalling._protoo._transport.skipReconnection = true
+      }
+    })
+    this.logger.log(`pauseReconnection：重连已被暂停：${JSON.stringify(info)}`)
+    return info;
+  }
+  
+  async resumeReconnection(){
+    if (this.adapterRef._signalling){
+      if (this.adapterRef._signalling.reconnectionControl.blocker){
+        this.logger.log("resumeReconnection：即将恢复重连过程")
+        this.adapterRef._signalling.reconnectionControl.blocker()
+        this.adapterRef._signalling.reconnectionControl.pausers.forEach((resolve)=>resolve({reason: "reconnection-resume"}))
+        this.adapterRef._signalling.reconnectionControl.pausers = []
+      }else if (this.adapterRef._signalling.reconnectionControl.pausers.length){
+        this.logger.log("resumeReconnection：取消之前的 pauseReconnection 操作。")
+        this.adapterRef._signalling.reconnectionControl.pausers.forEach((resolve)=>resolve({reason: "cancelled"}))
+        this.adapterRef._signalling.reconnectionControl.pausers = []
+      }else{
+        this.logger.warn("resumeReconnection：未发现pauseReconnection操作")
+      }
+      const info = await new Promise((resolve)=>{
+        this.adapterRef._signalling?.reconnectionControl.resumers.push(resolve)
+      })
+      this.logger.log(`resumeReconnection：恢复重连成功${JSON.stringify(info)}`)
+      return info
+    }
+  }
 
   initSpatialManager(options: SpatialInitOptions) {
     if (!this.spatialManager){

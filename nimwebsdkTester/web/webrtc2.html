@@ -578,8 +578,6 @@
           </div>
 
           <div class="line">
-            <button type="button" id="getConnectionState">获取连接状态</button>
-            <button type="button" id="disconnectWS">断开WebSocket</button>
             <button type="button" id="toggleVConsole">打开vconsole</button>
           </div>
           <div class="line">
@@ -594,6 +592,18 @@
           </div>
         </div>
 
+        <p class="block-header">信令状态与重连</p>
+        <div class="part">
+          <div class="line">
+            <button type="button" id="getConnectionState">获取连接状态</button>
+            <button type="button" id="disconnectWS">断开WebSocket</button>
+          </div>
+          <div class="line">
+            <button id="pauseReconnection">暂停下次重连</button>
+            <button id="resumeReconnection">恢复重连</button>
+          </div>
+        </div>
+        
         <p class="block-header">远端音量</p>
         <div class="part">
           <div class="line">
