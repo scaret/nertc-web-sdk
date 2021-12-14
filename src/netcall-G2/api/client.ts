@@ -408,10 +408,7 @@ class Client extends Base {
       options: stream,
     })
     let reason = ''
-    if (this.adapterRef.connectState.curState !== 'CONNECTED') {
-      this.logger.error('publish: 当前不在频道中，可能是没有加入频道或者是网络波动导致暂时断开连接')
-      reason = 'INVALID_OPERATION'
-    } else if (!stream || (!stream.audio && !stream.video && !stream.screen && !stream.screenAudio)) {
+    if (!stream || (!stream.audio && !stream.video && !stream.screen && !stream.screenAudio)) {
       if(stream && getParameters().allowEmptyMedia){
         this.logger.log('publish: 当前模式允许发布没有媒体流的localStream')
       }else{
@@ -420,6 +417,14 @@ class Client extends Base {
       }
     } else if (this._roleInfo.userRole === 1) {
       this.logger.error(`publish：观众禁止Publish，请先使用setClientRole设为主播`);
+      reason = 'INVALID_OPERATION'
+    } else if (this.adapterRef.connectState.curState === 'CONNECTING') {
+      this.logger.error('publish: 当前正在连接，将在连接成功后发布媒体流')
+      reason = 'PUBLISH_ON_CONNECTING'
+      this.bindLocalStream(stream)
+    }
+    else if (this.adapterRef.connectState.curState !== 'CONNECTED') {
+      this.logger.error('publish: 当前不在频道中，可能是没有加入频道或者是网络波动导致暂时断开连接')
       reason = 'INVALID_OPERATION'
     }
     const param = JSON.stringify({
@@ -457,6 +462,9 @@ class Client extends Base {
             message: 'no localStream'
           })
         )
+      }else{
+        onPublishFinish()
+        return
       }
     }
     
@@ -502,8 +510,13 @@ class Client extends Base {
       options: null,
     })
     let reason = ''
-    if (this.adapterRef.connectState.curState !== 'CONNECTED') {
-      this.logger.error('publish: 当前不在频道中，可能是没有加入频道或者是网络波动导致暂时断开连接')
+    if (this.adapterRef.connectState.curState === 'CONNECTING') {
+      this.logger.error('unpublish: 当前正在连接，连接成功后将不再发送媒体流')
+      reason = 'UNPUBLISH_ON_CONNECTING'
+      this.adapterRef.localStream = null
+    }
+    else if (this.adapterRef.connectState.curState !== 'CONNECTED') {
+      this.logger.error('unpublish: 当前不在频道中，可能是没有加入频道或者是网络波动导致暂时断开连接')
       reason = 'INVALID_OPERATION'
     }
     const param = JSON.stringify({
@@ -520,11 +533,12 @@ class Client extends Base {
     }, null, ' ')
     if (reason) {
       this.apiFrequencyControl({
-        name: 'publish',
+        name: 'unpublish',
         code: -1,
         param
       })
       if(reason === 'INVALID_OPERATION') {
+        onUnpublishFinish()
         return Promise.reject(
           new RtcError({
             code: ErrorCode.INVALID_OPERATION,
@@ -532,12 +546,16 @@ class Client extends Base {
           })
         )
       }else if (reason === 'INVALID_LOCAL_STREAM') {
+        onUnpublishFinish()
         return Promise.reject(
           new RtcError({
             code: ErrorCode.NO_LOCALSTREAM,
             message: 'no localStream'
           })
         )
+      }else{
+        onUnpublishFinish()
+        return
       }
     }
 
@@ -552,6 +570,7 @@ class Client extends Base {
       await this.adapterRef._mediasoup.destroyProduce('audio');
       await this.adapterRef._mediasoup.destroyProduce('video');
       await this.adapterRef._mediasoup.destroyProduce('screen');
+      this.adapterRef.localStream = null;
       this.apiFrequencyControl({
         name: 'unpublish',
         code: 0,
@@ -1516,8 +1535,6 @@ class Client extends Base {
     const info = await new Promise(resolve=>{
       if (this.adapterRef._signalling){
         this.adapterRef._signalling.reconnectionControl.pausers.push(resolve)
-        // @ts-ignore
-        this.adapterRef._signalling._protoo._transport.skipReconnection = true
       }
     })
     this.logger.log(`pauseReconnection：重连已被暂停：${JSON.stringify(info)}`)
