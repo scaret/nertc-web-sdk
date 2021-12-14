@@ -743,18 +743,18 @@ class Mediasoup extends EventEmitter {
     try {
       this.loggerSend.log(`停止发布 destroyProduce ${kind} producerId=`, producerId);
       if(!producer) return
-      await producer.close();
-      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
-        throw new RtcError({
-          code: ErrorCode.NOT_FOUND,
-          message: 'No _protoo 3'
-        })
-      }
-      await this.adapterRef._signalling._protoo.request(
-        'CloseProducer', { 
-          requestId: `${Math.ceil(Math.random() * 1e9)}`, 
-          producerId
+      producer.close();
+      if (!this.adapterRef._signalling?._protoo){
+        this.logger.warn(`destroyProduce：当前信令中断，不发信令包`, kind, producerId)
+      }else{
+        this.adapterRef._signalling._protoo.request(
+          'CloseProducer', {
+            requestId: `${Math.ceil(Math.random() * 1e9)}`,
+            producerId
+          }).catch((e)=>{
+            this.logger.error(`destroyProduce Failed:`, e.name, e.stack, e)
         });
+      }
     } catch (error) {
       this.loggerSend.error('_destroyProducer() | failed:', error.name, error.message);
     }

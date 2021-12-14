@@ -255,6 +255,53 @@ const captureTimer = setInterval(async ()=>{
     }
     $("#subStatus").html(html)
   }
+  
+  if (rtc.client.adapterRef._mediasoup){
+    let targetPubStatus = ""
+    if (rtc.client.adapterRef.localStream){
+      targetPubStatus += "发布"
+      if (rtc.client.adapterRef.localStream !== rtc.localStream){
+        targetPubStatus += "!当前发布流异常"
+      }
+    }else{
+      targetPubStatus += "不发布"
+    }
+    if (rtc.client.adapterRef.connectState.curState !== 'CONNECTED'){
+      targetPubStatus += ` ${rtc.client.adapterRef.connectState.curState}`
+    }
+    if ($('#targetPubStatus').text() !== targetPubStatus){
+      $('#targetPubStatus').text(targetPubStatus)
+    }
+    let currentPubStatus = ""
+    let highlight = false
+    if (rtc.client.adapterRef._mediasoup._micProducerId){
+      currentPubStatus += "音频"
+      if (rtc.client.adapterRef.localStream?.pubStatus.audio.audio !== !!rtc.client.adapterRef._mediasoup._micProducerId){
+        highlight = true
+      }
+    }
+    if (rtc.client.adapterRef._mediasoup._webcamProducerId){
+      currentPubStatus += " 视频"
+      if (rtc.client.adapterRef.localStream?.pubStatus.video.video !== !!rtc.client.adapterRef._mediasoup._webcamProducerId){
+        highlight = true
+      }
+    }
+    if (rtc.client.adapterRef._mediasoup._screenProducerId){
+      currentPubStatus += " 屏幕共享"
+      if (rtc.client.adapterRef.localStream?.pubStatus.screen.screen !== !!rtc.client.adapterRef._mediasoup._screenProducerId){
+        highlight = true
+      }
+    }
+    if (highlight){
+      $('#currentPubStatus').addClass("highlight")
+    }else{
+      $('#currentPubStatus').removeClass("highlight")
+    }
+    if ($('#currentPubStatus').html() !== currentPubStatus){
+      $('#currentPubStatus').text(currentPubStatus)
+    }
+  }
+
 }, 1000)
 
 const stopTrack = function(trackId){

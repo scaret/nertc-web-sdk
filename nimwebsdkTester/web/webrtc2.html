@@ -893,19 +893,22 @@
           </div>
         </div>
 
-        <p class="block-header" id="trackStatus">采集状态</p>
-        <div class="part hide" id="part-track" style="max-width: 350px; overflow: hidden; white-space: nowrap;">
+        <p class="block-header" id="upstreamStatus">采集/上行状态 <span id="upstreamBitrate"></span></p>
+        <div class="part hide" id="part-upstream" style="max-width: 350px; overflow: hidden; white-space: nowrap;">
           <div class="line">
+            目标发布状态：<span id="targetPubStatus"></span>
+            <br/>
+            实际发布状态：<span id="currentPubStatus"></span>
+          </div>
+          <div class="line">
+            <h2>Track列表</h2>
             音频 <span id="audioStatus"></span>
             <ul id="audioTrackStatus"></ul>
             视频
             <ul id="videoTrackStatus"></ul>
           </div>
-        </div>
-
-        <p class="block-header" id="upstreamStatus">上行状态 <span id="upstreamBitrate"></span></p>
-        <div class="part hide" id="part-upstream" style="max-width: 350px; overflow: hidden; white-space: nowrap;">
           <div class="line">
+            <h2>Sender列表</h2>
             <ul id="senderStatus"></ul>
           </div>
         </div>
@@ -984,8 +987,8 @@
 
   <script src="./js/nim/NIM_Web_NERTC.js"></script>
   <script src="./js/webrtc/config.js"></script>
-  <script src="./js/webrtc/event_pairing.js"></script>
-  <script src="./js/webrtc/transceiver_info.js"></script>
+  <script src="./js/webrtc/init_event_pairing.js"></script>
+  <script src="./js/webrtc/init_transceiver_info.js"></script>
   <script src="./js/webrtc/init_webrtc2.js"></script>
 
 </body>

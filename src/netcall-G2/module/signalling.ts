@@ -19,6 +19,7 @@ import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
 import {platform} from "../util/platform";
 import * as env from '../util/rtcUtil/rtcEnvironment';
+import {getParameters} from "./parameters";
 const protooClient = require('./3rd/protoo-client/')
 
 class Signalling extends EventEmitter {
@@ -123,17 +124,6 @@ class Signalling extends EventEmitter {
   }
 
   async _reconnection() {
-    if (this.reconnectionControl.pausers.length){
-      this.logger.log(`重连过程暂停`);
-      this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
-      this.adapterRef.connectState.curState = 'PAUSED'
-      this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
-      this.reconnectionControl.pausers.forEach((resolve)=> resolve({reason: "reconnection-start"}))
-      this.reconnectionControl.pausers = []
-      await new Promise((resolve)=>{
-        this.reconnectionControl.blocker = resolve;
-      })
-    }
     this.logger.log('Signalling _reconnection, times:', this._times)
     /*if (this.adapterRef.channelStatus === 'connectioning') {
       return
@@ -148,6 +138,16 @@ class Signalling extends EventEmitter {
       await this._protoo.close()
       this._protoo = null
     }
+    
+    if (this.reconnectionControl.pausers.length){
+      this.logger.log(`重连过程暂停`);
+      this.reconnectionControl.pausers.forEach((resolve)=> resolve({reason: "reconnection-start"}))
+      this.reconnectionControl.pausers = []
+      await new Promise((resolve)=>{
+        this.reconnectionControl.blocker = resolve;
+      })
+    }
+    
     for (let uid in this.adapterRef.remoteStreamMap){
       const remoteStream = this.adapterRef.remoteStreamMap[uid];
       if (remoteStream._play){
@@ -828,11 +828,18 @@ class Signalling extends EventEmitter {
         this.adapterRef.mediaCapability.parseRoom(response.externData.roomCapability);
         this.adapterRef.instance.emit('mediaCapabilityChange');
         await this.adapterRef._mediasoup.init()
-        if (this.adapterRef.localStream && this.adapterRef.instance.isPublished(this.adapterRef.localStream)) {
-          this.logger.log('重连成功，重新publish本端流')
-          this.adapterRef.instance.doPublish(this.adapterRef.localStream)
+        if (this.adapterRef.localStream) {
+          if (this.adapterRef.localStream.audio || this.adapterRef.localStream.video
+            || this.adapterRef.localStream.screen || this.adapterRef.localStream.screenAudio
+            || getParameters().allowEmptyMedia
+          ){
+            this.logger.log(`重连成功，重新publish本端流:audio ${this.adapterRef.localStream.hasAudio()} video ${this.adapterRef.localStream.hasVideo()} screen ${this.adapterRef.localStream.hasScreen()}`)
+            this.adapterRef.instance.doPublish(this.adapterRef.localStream)
+          }else{
+            this.logger.log(`重连成功，当前没有媒体流，无需发布`)
+          }
         } else {
-          this.logger.log('重连成功')
+          this.logger.log('重连成功，当前在未发布状态，无需发布')
         }
       } else {
         const webrtc2Param = this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2
@@ -1027,20 +1034,8 @@ class Signalling extends EventEmitter {
   }
 
   async doSendKeepAlive () {
-    if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
-      throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'No _protoo 15'
-      })
-    }
-    if(this.adapterRef._signalling._protoo.connected === false) return
+    if(!this._protoo?.connected) return
     try {
-      if (!this._protoo){
-        throw new RtcError({
-          code: ErrorCode.NOT_FOUND,
-          message: 'No this._protoo 4'
-        })
-      }
       const response = await this._protoo.request('Heartbeat');
       //this.logger.log('包活信令回包: ', response)
     } catch (e) {
