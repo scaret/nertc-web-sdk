@@ -51,8 +51,18 @@ class Signalling extends EventEmitter {
     super()
     this.logger = options.logger.getChild(()=>{
       let tag = "signal"
+      if (!this._protoo){
+        tag += " PROTOO_UNINIT"
+      }else{
+        if (this._protoo.id){
+          tag += "#" + this._protoo.id
+        }
+        if(!this._protoo.connected){
+          tag += "!connected"
+        }
+      }
       if (options.adapterRef._signalling !== this){
-        tag += "DETACHED";
+        tag += " DETACHED";
       }
       return tag
     })
@@ -534,8 +544,12 @@ class Signalling extends EventEmitter {
           }
           if (this._protoo.connected) {
             this.logger.log('OnSignalRestart即将在3秒后执行重连')
+            const _protoo = this._protoo;
             setTimeout(()=>{
-              if (this.adapterRef.channelStatus === 'join'){
+              if (_protoo !== this._protoo){
+                this.logger.log(`OnSignalRestart取消重连: 连接已被覆盖 ${_protoo.id}=>${this._protoo?.id}`)
+              }
+              else if (this.adapterRef.channelStatus === 'join'){
                 this.logger.log('OnSignalRestart执行重连')
                 this.adapterRef.channelStatus = 'connectioning'
                 this.adapterRef.instance.emit('pairing-websocket-reconnection-start')

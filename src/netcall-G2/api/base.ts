@@ -374,7 +374,15 @@ class Base extends EventEmitter {
       if (getParameters().keepLocalstreamOnLeave){
         this.logger.log("当前模式下离开频道不会销毁localStream")
       }else{
-        this.adapterRef.localStream.destroy()
+        const localStreams = getParameters().localStreams.filter((stream)=>{
+          return stream.client === (this as unknown as ICLient) && !stream.destroyed;
+        })
+        if (localStreams.length){
+          this.logger.log(`即将销毁${localStreams.length}个localStream`);
+          localStreams.forEach((stream)=>{
+            stream.destroy()
+          })
+        }
       }
     }
     Object.values(this.adapterRef.remoteStreamMap).forEach(stream => {

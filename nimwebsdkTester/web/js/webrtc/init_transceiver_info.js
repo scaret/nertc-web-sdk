@@ -39,6 +39,15 @@ const captureTimer = setInterval(async ()=>{
       if (track.muted){
         content += " muted";
       }
+      const settings = track.getSettings();
+      if (settings.autoGainControl){
+        content+= " AGC"
+      }if (settings.noiseSuppression){
+        content+= " ANS"
+      }if (settings.echoCancellation){
+        content+= " AEC"
+      }
+      
       if (track?.constructor?.name !== "MediaStreamTrack"){
         content += " [" + track?.constructor?.name + "]"
       }

@@ -4,6 +4,8 @@ const Message = require('./Message');
 
 const logger = new Logger('Peer');
 
+let id = 0;
+
 class Peer extends EnhancedEventEmitter
 {
 	/**
@@ -25,6 +27,8 @@ class Peer extends EnhancedEventEmitter
 		// Closed flag.
 		// @type {Boolean}
 		this._closed = false;
+    
+    this.id = id++;
 
 		// Transport.
 		// @type {protoo.Transport}

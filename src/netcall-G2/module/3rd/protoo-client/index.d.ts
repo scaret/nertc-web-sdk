@@ -47,6 +47,8 @@ export class WebSocketTransport {
 export class Peer {
   constructor(transport: WebSocketTransport);
 
+  id: number;
+  
   data: any;
 
   readonly closed: boolean;
