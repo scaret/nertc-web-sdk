@@ -473,8 +473,12 @@ class Base extends EventEmitter {
     this.adapterRef._mediasoup.init()
     this.logger.log('下行通道异常, remoteStreamMap', this.adapterRef.remoteStreamMap)
     this.logger.log('this._eventQueue: ', this.adapterRef._mediasoup._eventQueue)
+    let hasError = false;
     for (const streamId in this.adapterRef.remoteStreamMap) {
       const stream = this.adapterRef.remoteStreamMap[streamId];
+      if (!stream){
+        continue
+      }
       stream.pubStatus.audio.consumerStatus = 'init'
       stream.pubStatus.video.consumerStatus = 'init'
       stream.pubStatus.screen.consumerStatus = 'init'
@@ -484,13 +488,16 @@ class Base extends EventEmitter {
       this.logger.log('重连逻辑订阅 start：', stream.stringStreamID)
       try {
         await (this as unknown as ICLient).doSubscribe(stream)
-        this.emit('pairing-reBuildRecvTransport-success');
       } catch (e) {
-        this.logger.log('重连逻辑订阅 error: ', e, e.name, e.message)
+        this.logger.error('重连逻辑订阅 error: ', e, e.name, e.message)
+        hasError = true
         this.emit('pairing-reBuildRecvTransport-error');
         break
       }
       this.logger.log('重连逻辑订阅 over: ', stream.stringStreamID)
+    }
+    if(!hasError){
+      this.emit('pairing-reBuildRecvTransport-success');
     }
   }
 
