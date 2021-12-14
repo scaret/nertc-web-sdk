@@ -1258,6 +1258,9 @@ class RemoteStream extends EventEmitter {
        this.pubStatus[mediaType][mediaType] = false
        this.pubStatus[mediaType].producerId = ''
        this.pubStatus[mediaType].consumerId = ''
+
+       this.pubStatus[mediaType].consumerStatus = "init"
+       this.pubStatus[mediaType].stopconsumerStatus = "init"
      }
   }
   /**
