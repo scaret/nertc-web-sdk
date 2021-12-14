@@ -205,12 +205,6 @@ $('#audioMixing').on('click', () => {
   }
 })
 
-
-$('#trackStatus').on('click', () => {
-  //音视频输入轨道状态
-  $("#part-track").toggle()
-})
-
 $('input[name="mode"]').on('click', () => {
   const mode = $('#part-env input[name="mode"]:checked').val()
   console.log('频道模式: ', mode)
