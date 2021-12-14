@@ -172,6 +172,22 @@ $('#privatizationConfig').on('click', () => {
   }
 })
 
+const USER_AGENT = (window.navigator && window.navigator.userAgent) || '';
+const IS_XWEB = /XWEB\/\d+/i.test(USER_AGENT);
+const IS_TBS = /TBS\/\d+/i.test(USER_AGENT);
+let wechatBrowser;
+let WBBox = document.getElementById('wechatBrowserBox');
+if(IS_XWEB){
+  wechatBrowser = 'XWEB';
+  WBBox.style.display = 'block';
+}else if(IS_TBS){
+  wechatBrowser = 'TBS';
+  WBBox.style.display = 'block';
+}else{
+  wechatBrowser = '';
+}
+$('#wechatBrowser').html(`${wechatBrowser}`);
+
 /**
  * ----------------------------------------
  *             demo页面模块隐藏
