@@ -31,6 +31,7 @@ import {OperationQueue} from "../util/OperationQueue";
 import {SpatialManager} from "./spatialManager";
 import {getAudioContext} from "../module/webAudio";
 import {getParameters} from "../module/parameters";
+import * as env from '../util/rtcUtil/rtcEnvironment';
 const BigNumber = require("bignumber.js");
 
 /**
@@ -68,6 +69,11 @@ class Client extends Base {
       window.addEventListener('pagehide', () => {
         this.logger.log('离开页面之前，离开房间')
         this.leave()
+      })
+      let self = this;
+      env.IS_FIREFOX && (window.onbeforeunload = function(){
+        self.logger.log('刷新页面之前，离开房间')
+        self.leave();
       })
       
     //typescript constructor requirement
