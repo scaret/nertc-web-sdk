@@ -995,6 +995,12 @@ class MediaHelper extends EventEmitter {
       }
     }
 
+    this.stream.client.apiFrequencyControl({
+      name: 'startAudioMixing',
+      code: 0,
+      param: JSON.stringify(this.audio.mixAudioConf, null, ' ')
+    })
+
     if (this.audio.webAudio){
       if (this.audio.webAudio.mixAudioConf && this.audio.webAudio.mixAudioConf.audioSource && this.audio.webAudio.mixAudioConf.state === AuidoMixingState.PLAYED) {
         this.logger.log('startAudioMixing: 当前已经开启伴音，先关闭之前的伴音')
