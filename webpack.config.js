@@ -124,6 +124,7 @@ let configWebrtcG2 = merge(config, {
     NERTC: './src/entry/netcall-webrtc2'
   },
   output: {
+    devtoolNamespace: 'nertc',
     path: path.join(cwd, './dist/lib/', webrtcG2Version, nodeEnv),
     filename: genFileName('', webrtcG2Version),
     library: '[name]',
