@@ -193,35 +193,34 @@ export const isScreenShareSupport = function() {
   }
 };
 
-// 支持 chrome 72+ 浏览器，桌面版 safari 12+ 浏览器，移动端 safari 13+ 浏览器，firefox 浏览器（M56+）, edge浏览器（M80+）
+// 支持 chrome 74+ 浏览器. 桌面版 safari 12+ 浏览器, 移动端 safari 13+ 浏览器. firefox 浏览器(M66+), edge浏览器(M80+), 微信内嵌网页、ios端 qq 浏览器、安卓 qq 浏览器(chrome 内核)
 export const isBrowserSupported = function() {
-  const MIN_FIREFOX_VERSION = 56;
+  const MIN_FIREFOX_VERSION = 66;
   const MIN_EDG_VERSION = 80;
-  const MIN_CHROME_VERSION = 72;
+  const MIN_CHROME_VERSION = 74;
   const MIN_MAC_SAFARI_VERSION = 12;
   const MIN_IOS_SAFARI_VERSION = 13;
-  // 目前仅支持chrome 72+ 浏览器，桌面版 safari 12+ 浏览器，移动端 safari 13+ 浏览器，微信内嵌网页
-  if (!(env.IS_CHROME || env.IS_SAFARI || env.IS_TBS || env.IS_XWEB )) {
+  const MIN_IOS_WECHAT_VERSION = 6.5;
+  
+  if (env.IS_CHROME && (env.CHROME_MAJOR_VERSION as any) >= MIN_CHROME_VERSION) {
+    return true;
+  }else if (env.IS_MAC_SAFARI && (env.SAFARI_MAJOR_VERSION as any) >= MIN_MAC_SAFARI_VERSION ) {
+    return true;
+  }else if (env.IS_IOS_SAFARI && (env.SAFARI_MAJOR_VERSION as any) >= MIN_IOS_SAFARI_VERSION ) {
+    return true;
+  }else if (env.IS_EDG && (env.EDG_MAJOR_VERSION as any) >= MIN_EDG_VERSION) {
+    return true;
+  }else if (env.IS_FIREFOX && (env.FIREFOX_MAJOR_VERSION as any) >= MIN_FIREFOX_VERSION ) {
+    return true;
+  }else if (env.IS_IOS && env.IS_MQQB ) { // ios qq
+    return true;
+  }else if (env.IS_IOS && env.IS_WECHAT && (env.WECHAT_VERSION as any) >=  MIN_IOS_WECHAT_VERSION) { // ios wechat && wechat 6.5+
+    return true;
+  }else if (env.IS_ANDROID && (env.IS_TBS || env.IS_XWEB) ) { // android wechat TBS & XWEB
+    return true;
+  }else {
     return false;
   }
-  if (env.IS_CHROME && (env.CHROME_MAJOR_VERSION as any) < MIN_CHROME_VERSION) {
-    return false;
-  }
-
-  if (env.IS_MAC_SAFARI && (env.SAFARI_MAJOR_VERSION as any) < MIN_MAC_SAFARI_VERSION ) {
-    return false;
-  }
-
-  if (env.IS_IOS_SAFARI && (env.SAFARI_MAJOR_VERSION as any) < MIN_IOS_SAFARI_VERSION ) {
-    return false;
-  }
-  // if (env.IS_EDG && env.EDG_VERSION? < MIN_EDG_VERSION) {
-  //   return false;
-  // }
-  // if (env.IS_FIREFOX && env.FIREFOX_VERSION < MIN_FIREFOX_VERSION) {
-  //   return false;
-  // }
-  return true;
 };
 
 // compatibility check

@@ -14,6 +14,7 @@ import log, {loglevels} from '../netcall-G2/util/log/logger';
 import RtcError from '../netcall-G2/util/error/rtcError';
 import ErrorCode from '../netcall-G2/util/error/errorCode';
 import {getParameters} from "../netcall-G2/module/parameters";
+import { isBrowserSupported } from '../netcall-G2/util/rtcUtil/rtcSupport'
 
 /**
  * {@link NERTC} 
@@ -225,10 +226,12 @@ getSpeakers(requestPerm: boolean = false) {
  * 
  */
 checkSystemRequirements() {
-  var PC = window.RTCPeerConnection || window.webkitRTCPeerConnection;
-  var getUserMedia = navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
-  var webSocket = window.WebSocket;
-  var isAPISupport = !!PC && !!getUserMedia && !!webSocket;
+  let PC = window.RTCPeerConnection || (window as any).mozRTCPeerConnection || (window as any).webkitRTCPeerConnection;
+  let getUserMedia = navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
+  let webSocket = window.WebSocket;
+  let isBrowserSupport = isBrowserSupported();
+  let isAPISupport = !!PC && !!getUserMedia && !!webSocket && !!isBrowserSupport;
+  
   return isAPISupport;
 },
 /**
