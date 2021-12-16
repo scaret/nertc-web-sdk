@@ -193,11 +193,11 @@ export const isScreenShareSupport = function() {
   }
 };
 
-// 支持 chrome 74+ 浏览器. 桌面版 safari 12+ 浏览器, 移动端 safari 13+ 浏览器. firefox 浏览器(M66+), edge浏览器(M80+), 微信内嵌网页、ios端 qq 浏览器、安卓 qq 浏览器(chrome 内核)
+// 支持 chrome 72+ 浏览器. 桌面版 safari 12+ 浏览器, 移动端 safari 13+ 浏览器. firefox 浏览器(M66+), edge浏览器(M80+), 微信内嵌网页、ios端 qq 浏览器、安卓 qq 浏览器(chrome 内核)
 export const isBrowserSupported = function() {
   const MIN_FIREFOX_VERSION = 66;
   const MIN_EDG_VERSION = 80;
-  const MIN_CHROME_VERSION = 74;
+  const MIN_CHROME_VERSION = 72;
   const MIN_MAC_SAFARI_VERSION = 12;
   const MIN_IOS_SAFARI_VERSION = 13;
   const MIN_IOS_WECHAT_VERSION = 6.5;
