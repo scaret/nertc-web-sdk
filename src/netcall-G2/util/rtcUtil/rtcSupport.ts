@@ -201,12 +201,13 @@ export const isBrowserSupported = function() {
   const MIN_MAC_SAFARI_VERSION = 12;
   const MIN_IOS_SAFARI_VERSION = 13;
   const MIN_IOS_WECHAT_VERSION = 6.5;
+  const MIN_IOS_WECHAT_PULL_PUSH_VERSION = 14.3;
   
   if (env.IS_CHROME && (env.CHROME_MAJOR_VERSION as any) >= MIN_CHROME_VERSION) {
     return true;
   }else if (env.IS_MAC_SAFARI && (env.SAFARI_MAJOR_VERSION as any) >= MIN_MAC_SAFARI_VERSION ) {
     return true;
-  }else if (env.IS_IOS_SAFARI && (env.SAFARI_MAJOR_VERSION as any) >= MIN_IOS_SAFARI_VERSION ) {
+  }else if (env.IS_IOS_SAFARI && (env.SAFARI_MAJOR_VERSION as any) >= MIN_IOS_SAFARI_VERSION && !!env.IS_WECHAT) {
     return true;
   }else if (env.IS_EDG && (env.EDG_MAJOR_VERSION as any) >= MIN_EDG_VERSION) {
     return true;
@@ -214,7 +215,7 @@ export const isBrowserSupported = function() {
     return true;
   }else if (env.IS_IOS && env.IS_MQQB ) { // ios qq
     return true;
-  }else if (env.IS_IOS && env.IS_WECHAT && (env.WECHAT_VERSION as any) >=  MIN_IOS_WECHAT_VERSION) { // ios wechat && wechat 6.5+
+  }else if (env.IS_IOS && (env.IOS_VERSION as any) >= MIN_IOS_WECHAT_PULL_PUSH_VERSION && env.IS_WECHAT && (env.WECHAT_VERSION as any) >=  MIN_IOS_WECHAT_VERSION) { // ios 14.3+ && wechat 6.5+
     return true;
   }else if (env.IS_ANDROID && (env.IS_TBS || env.IS_XWEB) ) { // android wechat TBS & XWEB
     return true;

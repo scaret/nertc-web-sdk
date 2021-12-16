@@ -7,10 +7,9 @@ export const IS_IOS = IS_IPHONE || IS_IPAD || IS_IPOD;
 export const IOS_VERSION =
   IS_IOS &&
   (function() {
-    const match = USER_AGENT.match(/OS (\d+)_/i);
-
-    if (match && match[1]) {
-      return match[1];
+    const match = USER_AGENT.match(/\b[0-9]+_[0-9]+(?:_[0-9]+)?\b/)||[''];
+    if (match && match[0]) {
+        return parseFloat(match[0].replace(/_/g,'.'));
     }
     return null;
   })();
