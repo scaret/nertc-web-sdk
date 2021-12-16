@@ -188,6 +188,10 @@ if(IS_XWEB){
 }
 $('#wechatBrowser').html(`${wechatBrowser}`);
 
+$('#isSupported').html(`${NERTC.checkSystemRequirements()}`);
+// $('#userAgent').html(`${navigator.userAgent}`);
+
+
 /**
  * ----------------------------------------
  *             demo页面模块隐藏

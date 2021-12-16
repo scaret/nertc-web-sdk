@@ -155,7 +155,7 @@ export const WECHAT_VERSION =
   (function() {
     var match = USER_AGENT.match(/MicroMessenger\/(\d+)/i);
     if (match && match[1]) {
-      return match[1];
+      return parseFloat(match[1]);
     }
   })();
 
