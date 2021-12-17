@@ -135,8 +135,8 @@ class WebSocketTransport extends EnhancedEventEmitter
 					'WebSocket "close" event [wasClean:%s, code:%s, reason:"%s"]',
 					event.wasClean, event.code, event.reason);
 
-				// Don't retry if code is 4000 (closed by the server).
-				if (event.code !== 4000)
+				// 删除逻辑： Don't retry if code is 4000 (closed by the server). https://g.hz.netease.com/yunxin/nertc-web-sdk/-/merge_requests/369
+				if (true || event.code !== 4000)
 				{
 					// If it was not connected, try again.
 					if (!wasConnected)
@@ -164,7 +164,8 @@ class WebSocketTransport extends EnhancedEventEmitter
 						return;
 					}
 				}
-
+        
+        
 				this._closed = true;
 
 				// Emit 'close' event.
