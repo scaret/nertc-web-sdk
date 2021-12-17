@@ -66,15 +66,18 @@ class Client extends Base {
      * 火狐使用pagehide 触发时发现websocket已经断开 导致不能发送登出信令 对端表现为刷新端没有退出
      * 注意：移动端safair不识别beforeunload事件
      */
-      window.addEventListener('pagehide', () => {
-        this.logger.log('离开页面之前，离开房间')
+    window.addEventListener('pagehide', () => {
+        if (this.adapterRef.channelStatus === 'join' || this.adapterRef.channelStatus === 'connectioning') {
+          this.logger.warn(`收到 pagehide 事件，当前状态：${this.adapterRef.channelStatus}，即将离开房间`);
+          this.leave()
+        }
+      })
+    window.addEventListener('beforeunload', () => {
+      if (this.adapterRef.channelStatus === 'join' || this.adapterRef.channelStatus === 'connectioning') {
+        this.logger.warn(`收到 beforeunload 事件，当前状态：${this.adapterRef.channelStatus}，即将离开房间`);
         this.leave()
-      })
-      let self = this;
-      env.IS_FIREFOX && (window.onbeforeunload = function(){
-        self.logger.log('刷新页面之前，离开房间')
-        self.leave();
-      })
+      }
+    })
       
     //typescript constructor requirement
     this._roleInfo = {
