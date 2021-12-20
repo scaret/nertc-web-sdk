@@ -81,8 +81,16 @@ class Mediasoup extends EventEmitter {
       let tag = 'MediaSend';
       if (!this._sendTransport){
         tag += " UNINIT"
-      }else if (this._sendTransport._handler?._pc?.connectionState !== "connected"){
-        tag += " " + this._sendTransport._handler?._pc?.connectionState
+      }else if (this._sendTransport._handler?._pc){
+        const pc = this._sendTransport._handler._pc
+        if (!pc.connectionState || pc.connectionState !== "connected"){
+          tag += " " + pc.connectionState;
+        }
+        if (pc.signalingState !== "stable"){
+          tag += " " + pc.signalingState;
+        }
+      }else{
+        tag += " NOTRANSPORT";
       }
       if (this.adapterRef._mediasoup !== this){
         tag += " DETACHED"
@@ -93,8 +101,16 @@ class Mediasoup extends EventEmitter {
       let tag = 'MediaRecv';
       if (!this._recvTransport){
         tag += " UNINIT"
-      }else if (this._recvTransport._handler?._pc?.connectionState !== "connected"){
-        tag += " " + (this._recvTransport._handler?._pc?.connectionState || "NOTRANSPORT")
+      }else if (this._recvTransport._handler?._pc){
+        const pc = this._recvTransport._handler._pc
+        if (!pc.connectionState || pc.connectionState !== "connected"){
+          tag += " " + pc.connectionState;
+        }
+        if (pc.signalingState !== "stable"){
+          tag += " " + pc.signalingState;
+        }
+      }else{
+        tag += " NOTRANSPORT";
       }
       if (this.adapterRef._mediasoup !== this){
         tag += " DETACHED"
