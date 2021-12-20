@@ -61,6 +61,14 @@ interface IParameters{
   allowEmptyMedia: boolean,
   // leave时是否销毁localStream
   keepLocalstreamOnLeave: boolean,
+  // Join行为重试时的第一次退避时间
+  joinFirstTimeout: number,
+  // Join行为允许的最大尝试次数
+  joinMaxRetry: number,
+  // 重连行为允许的第一次退避时间
+  reconnectionFirstTimeout: number,
+  // 重连行为允许的最大尝试次数（每个服务器）
+  reconnectionMaxRetry: number,
 }
 
 let parameters:IParameters = {
@@ -108,6 +116,10 @@ let parameters:IParameters = {
   screenFocus: false,
   allowEmptyMedia: false,
   keepLocalstreamOnLeave: false,
+  joinFirstTimeout: 2000,
+  joinMaxRetry: 3,
+  reconnectionFirstTimeout: 2000,
+  reconnectionMaxRetry: 3,
 }
 
 // 注意：getParameters是一些私有全局变量，仅用于调试和私有接口，不用于正常业务

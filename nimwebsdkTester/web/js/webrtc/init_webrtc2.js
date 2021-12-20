@@ -3000,6 +3000,12 @@ const assertLocalStream = ()=>{
   }
 }
 
+$("#setReconnectionMaxRetry").on("click", ()=>{
+  const reconnectionMaxRetry = parseInt($("#reconnectionMaxRetry").val())
+  addLog(`[调试]设置断线重连次数：${NERTC.getParameters().reconnectionMaxRetry} => ${reconnectionMaxRetry}`)
+  NERTC.getParameters().reconnectionMaxRetry = reconnectionMaxRetry
+})
+
 /** 
  * ----------------------------------------
  *              工具类函数
