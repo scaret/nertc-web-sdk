@@ -28,7 +28,6 @@ class Signalling extends EventEmitter {
   public _protoo: Peer|null = null;
   private _times: number = 0;
   private _url: string|null = null;
-  private _timeOut: number = 2 * 1000;
   private _reconnectionTimeout: number = 30 * 1000;
   private _resolve: ((data:any)=>void)|null = null;
   private _reject: ((data:any)=>void)|null = null;
@@ -75,6 +74,17 @@ class Signalling extends EventEmitter {
       this.browserDevice = platform.name + '-' + platform.version
     }
   }
+  
+  getTimeOut(type: "join"|"reconnection"){
+    const times = this._times;
+    let timeout;
+    if (type === "join"){
+      timeout = getParameters().joinFirstTimeout + 2000 * Math.max(times - 1, 0)
+    }else{
+      timeout = getParameters().reconnectionFirstTimeout + 2000 * Math.max(times - 1, 0)
+    }
+    return timeout
+  }
 
   async _reset() {
     if (this._reconnectionTimer) {
@@ -82,7 +92,6 @@ class Signalling extends EventEmitter {
     }
     this._reconnectionTimer = null
     this._times = 0
-    this._timeOut = 2 * 1000
     this._destroyProtoo()
     this._reconnectionTimeout = 30 * 1000
     this._resolve = null
@@ -109,15 +118,16 @@ class Signalling extends EventEmitter {
         } else {
           this._connection()
         }
-      }, this._timeOut)
+      }, this.getTimeOut(isReconnectMeeting ? "reconnection" : "join"))
     })
   }
 
   async _connection() {
     this.logger.log('Signalling _connection, times:', this._times)
     this._destroyProtoo()
-    if(this._times < 3){
-      this.logger.warn(`Signalling 第${++this._times}次重连`)
+    if(this._times < getParameters().joinMaxRetry){
+      ++this._times
+      this.logger.warn(`Signalling加入频道: 第 ${this.adapterRef.channelInfo.wssArrIndex + 1}/${this.adapterRef.channelInfo.wssArr.length} 台服务器，第 ${this._times}/${getParameters().joinMaxRetry} 次尝试。服务器地址：${this.adapterRef.channelInfo._protooUrl}。等待时间：${this.getTimeOut("join")} 毫秒`)
       this.init(this.adapterRef.channelInfo._protooUrl, true)
     } else {
       this.logger.warn('Signalling 3次重连结束')
@@ -155,9 +165,9 @@ class Signalling extends EventEmitter {
       }
     }
     
-    if(this._times < 3){
-      this.logger.warn(`Signalling 第${++this._times}次重连`)
-      this._timeOut = 2000 * this._times
+    if(this._times < getParameters().reconnectionMaxRetry){
+      ++this._times
+      this.logger.warn(`Signalling断线重连: 第 ${this.adapterRef.channelInfo.wssArrIndex + 1}/${this.adapterRef.channelInfo.wssArr.length} 台服务器，第 ${this._times}/${getParameters().reconnectionMaxRetry} 次尝试。服务器地址：${this.adapterRef.channelInfo._protooUrl}。等待时间：${this.getTimeOut("reconnection")} 毫秒`)
       this.init(this.adapterRef.channelInfo._protooUrl, true, true)
     } else {
       this.logger.warn(`Signalling  url: ${this.adapterRef.channelInfo._protooUrl}, 当前服务器地址重连结束, 尝试下一个服务器地址`)
@@ -170,9 +180,8 @@ class Signalling extends EventEmitter {
         return
       }
       const url = this.adapterRef.channelInfo.wssArr[this.adapterRef.channelInfo.wssArrIndex]
-      this._timeOut = 2000
-      this._times = 0
-      this.logger.warn(`Signalling 第${++this._times}次重连`)
+      this._times = 1
+      this.logger.warn(`Signalling 开始连接第 ${this.adapterRef.channelInfo.wssArrIndex + 1}/${this.adapterRef.channelInfo.wssArr.length} 台服务器：${url}`)
       this.init(url, true, true)
     }
   }
