@@ -807,8 +807,10 @@ declare interface Client{
    * * `INACTIVE`: 设备被移除
    * * `CHANGED`: 设备更改
    * 
-   * 注意：在Chrome浏览器上，部分蓝牙设备关闭后，Chrome会将默认输入设备切换为其他麦克风，此时可能遇到声音异常，需重启设备。
-   * 
+   * 注意：
+   * 1. 在Chrome浏览器上，部分蓝牙设备关闭后，Chrome会将默认输入设备切换为其他麦克风，此时可能遇到声音异常，需重启设备。
+   * 2. Firefox不支持设备检测
+   *
    * @example
    * ```javascript
    * rtc.client.on("recording-device-changed", async evt=>{
@@ -832,6 +834,7 @@ declare interface Client{
    * * `INACTIVE`: 设备被移除
    * * `CHANGED`: 设备更改
    *
+   * 注：Firefox不支持设备检测
    */
   on(event: "camera-changed", callback: (
     state: "ACTIVE"|"INACTIVE"|"CHANGED",
