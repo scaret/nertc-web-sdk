@@ -848,7 +848,7 @@ $('#joinChannel-btn').on('click', async () => {
     channelName,
     uid: uid,
     token: $("#token").val(),
-    wssArr: $('#isGetwayAddrConf').prop('checked') ? [$('#isGetwayAddrConf').prop('checked') && $('#getwayAddr').val()] : null,
+    wssArr: $('#isGetwayAddrConf').prop('checked') ? $('#getwayAddr').val().split(",") : null,
     joinChannelRecordConfig: {
       isHostSpeaker,
       recordAudio,

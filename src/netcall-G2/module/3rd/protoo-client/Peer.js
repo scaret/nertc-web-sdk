@@ -40,7 +40,9 @@ class Peer extends EnhancedEventEmitter
 
 		// Custom data object.
 		// @type {Object}
-		this._data = {};
+		this._data = {
+      createTs: Date.now(),
+    };
 
 		// Map of pending sent request objects indexed by request id.
 		// @type {Map<Number, Object>}
@@ -146,6 +148,7 @@ class Peer extends EnhancedEventEmitter
 			{
 				id      : request.id,
 				method  : request.method,
+        startTs : Date.now(),
 				resolve : (data2) =>
 				{
 					if (!this._sents.delete(request.id))
@@ -173,7 +176,12 @@ class Peer extends EnhancedEventEmitter
 				close : () =>
 				{
 					clearTimeout(sent.timer);
-					pReject(new Error('peer closed'));
+          let err = new Error();
+          err.name = 'peer closed'
+          if (sent.method) {
+            err.message = `向edge的 ${sent.method} 请求被取消：连接 #${this.id} 已被关闭。连接建立时间：${this._data.openTs - this._data.createTs}ms, 请求时间：${Date.now() - sent.startTs}ms`
+          }
+          pReject(err);
 				}
 			};
 
@@ -228,6 +236,8 @@ class Peer extends EnhancedEventEmitter
 
 			this._connected = true;
 
+      this._data.openTs = Date.now()
+      
 			this.safeEmit('open');
 		});
 

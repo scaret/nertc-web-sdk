@@ -81,12 +81,9 @@ class Signalling extends EventEmitter {
       clearTimeout(this._reconnectionTimer)
     }
     this._reconnectionTimer = null
-    if (this._protoo) {
-      await this._protoo.close()
-    }
-    this._protoo = null
     this._times = 0
     this._timeOut = 2 * 1000
+    this._destroyProtoo()
     this._reconnectionTimeout = 30 * 1000
     this._resolve = null
     this._reject = null
@@ -118,11 +115,7 @@ class Signalling extends EventEmitter {
 
   async _connection() {
     this.logger.log('Signalling _connection, times:', this._times)
-    this._unbindEvent()
-    if (this._protoo) {
-      await this._protoo.close()
-      this._protoo = null
-    }
+    this._destroyProtoo()
     if(this._times < 3){
       this.logger.warn(`Signalling 第${++this._times}次重连`)
       this.init(this.adapterRef.channelInfo._protooUrl, true)
@@ -143,11 +136,7 @@ class Signalling extends EventEmitter {
     this.adapterRef.connectState.curState = 'CONNECTING'
     this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
     this.adapterRef.instance.emit('pairing-websocket-reconnection-start');
-    this._unbindEvent()
-    if (this._protoo) {
-      await this._protoo.close()
-      this._protoo = null
-    }
+    this._destroyProtoo()
     
     if (this.reconnectionControl.pausers.length){
       this.logger.log(`重连过程暂停`);
@@ -189,9 +178,12 @@ class Signalling extends EventEmitter {
   }
 
   _init(url:string) {
+    if (url.indexOf("?") === -1){
+      url += "?"
+    }
     this.logger.log('Signalling: init url=',  url)
     this.adapterRef.channelInfo._protooUrl = url
-    this._url = `wss://${url}&cid=${this.adapterRef.channelInfo.cid}&uid=${this.adapterRef.channelInfo.uid}`
+    this._url = `${url.indexOf('://') === -1 ? "wss://" : ""}${url}&cid=${this.adapterRef.channelInfo.cid}&uid=${this.adapterRef.channelInfo.uid}`
     this.logger.log('连接的url: ', this._url)
     const protooTransport = new protooClient.WebSocketTransport(this._url, {
 
@@ -222,13 +214,19 @@ class Signalling extends EventEmitter {
     this._protoo.on('disconnected', this._handleDisconnected.bind(this))
   }
 
-  _unbindEvent() {
-    if(!this._protoo) return
-    this._protoo.removeListener('open', this.join.bind(this))
-    this._protoo.removeListener('failed', this._handleFailed.bind(this))
-    this._protoo.removeListener('notification', this._handleMessage.bind(this))
-    this._protoo.removeListener('close', this._handleClose.bind(this))
-    this._protoo.removeListener('disconnected', this._handleDisconnected.bind(this))
+  //原来叫_unbindEvent
+  _destroyProtoo() {
+    if (this._protoo){
+      this._protoo.removeAllListeners()
+      try{
+        if (this._protoo){
+          this._protoo.close()
+        }
+      }catch(e){
+        // this.logger.error('无法关闭：', e)
+      }
+      this._protoo = null
+    }
   }
 
   async _handleMessage (notification:ProtooNotification) {
@@ -745,7 +743,7 @@ class Signalling extends EventEmitter {
       }
     }
 
-    this.logger.log('Signalling: edge连接成功，加入房间 -> ', JSON.stringify(requestData, null, ''))
+    this.logger.log('Signalling: 向edge的WebSocket连接已打开，开始放送Join请求 -> ', JSON.stringify(requestData, null, ''))
     if (!this._protoo){
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
@@ -754,10 +752,21 @@ class Signalling extends EventEmitter {
     }
 
     try {
-      const response = await this._protoo.request('Join', {
-        requestId: requestData.requestId,
-        externData: requestData.externData
-      }) as SignalJoinRes;
+      let response
+      let thisProtoo = this._protoo
+      try{
+        response = await this._protoo.request('Join', {
+          requestId: requestData.requestId,
+          externData: requestData.externData
+        }) as SignalJoinRes;
+      }catch(e){
+        if (thisProtoo !== this._protoo){
+          this.logger.warn(`过期的信令通道消息：【${e.name}】`, e.message)
+          return;
+        }else{
+          throw e;
+        }
+      }
       this.logger.log('Signalling:加入房间 ack ->  ', JSON.stringify(response, (k, v)=>{return k === "edgeRtpCapabilities" ? null : v;}));
       if (response.code != 200) {
         const errMsg = response.externData ? response.externData.errMsg : response.errMsg
@@ -1024,6 +1033,13 @@ class Signalling extends EventEmitter {
       this.adapterRef.channelStatus = 'leave'
       this.adapterRef.instance.stopSession()
     } else {
+      switch (errMsg){
+        case "room not found":
+          this.logger.error('网络重连时，加入房间失败，主动离开。重连失败原因：', errMsg, '，这通常是因为房间内其他人都已离开，房间关闭引起的')
+          break
+        default:
+          this.logger.error('网络重连时，加入房间失败，主动离开。重连失败原因：', errMsg)
+      }
       this.logger.error('网络重连时，加入房间失败，主动离开。重连失败原因：', errMsg)
       this.adapterRef.instance.emit('error', 'RELOGIN_ERROR')
       this.adapterRef.instance.leave()
@@ -1357,7 +1373,7 @@ class Signalling extends EventEmitter {
 
   destroy() {
     this.logger.log('清除 Signalling')
-    this._unbindEvent()
+    this._destroyProtoo()
     this._reset()
   }
 }
