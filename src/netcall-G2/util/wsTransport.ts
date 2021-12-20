@@ -2,9 +2,7 @@ import { EventEmitter } from 'eventemitter3';
 import { getReconnectionTimeout } from '../util/rtcUtil/utils';
 import * as protobuf  from 'protobufjs';
 import heartbeatStats = require('../util/proto/heartbeatStats');
-import { ConsoleLogger } from 'typedoc/dist/lib/utils';
 import {AdapterRef, ILogger} from "../types";
-import { uint8ArrayToHex } from 'sm4-128-ecb';
 
 const PING_PONG_INTERVAL = 10000;
 const PING_TIMEOUT = 10000;
@@ -15,7 +13,6 @@ const PONG = 11;
 export default class WSTransport {
     private url_: string;
     private socket_: any;
-    private socketInUse_: any;
     private isConnected_: boolean;
     private isConnecting_: boolean;
     private pingPongTimeoutId_: any;
@@ -25,12 +22,10 @@ export default class WSTransport {
     private emitter_: any;
     private adapterRef:AdapterRef;
     private logger: ILogger;
-    
 
     constructor(options: any){
         this.url_ = options.url;
         this.socket_ = null;
-        this.socketInUse_ = null;
         this.isConnected_ = false;
         this.isConnecting_ = false;
         this.pingPongTimeoutId_ = -1;
@@ -67,9 +62,6 @@ export default class WSTransport {
         if (this.isConnected_) return;
         this.isConnected_ = true;
         this.isConnecting_ = false;
-        // if (event.target === this.socket_) {
-            // this.socketInUse_ = this.socket_;
-        // }
         const url = event.target.url;
         this.logger.log(`websocket[${url}] is connected`);
         this.startPingPong();
@@ -77,7 +69,6 @@ export default class WSTransport {
 
     onclose(event:any) {
         const url = event.target.url;
-        // const isInUse = event.target === this.socketInUse_;
         const isInUse = event.target === this.socket_;
         this.logger.log(`websocket[${url} InUse: ${isInUse}] is closed with code: ${event.code}`);
         // only handle the close event for the socket in use
@@ -85,14 +76,15 @@ export default class WSTransport {
           this.isConnected_ = false;
           // 1000 is considered as normal close
           if (event.wasClean && event.code === 1000) {
-            // this.close();
+            this.close();
           } else {
             this.logger.warn(`onclose code:${event.code} reason:${event.reason}`);
             this.socket_.onclose = () => {};
             // 4001 indicates that we want reconnect with new WebSocket
             this.socket_.close(4001);
-            this.socket_  = this.socket_ = null;
-            // this.socket_ = null;
+            this.socket_ = null;
+            // 非正常关闭 需要重连
+            this.reconnect();
           }
         }else {
           this.isConnected_ = false;
@@ -119,9 +111,9 @@ export default class WSTransport {
       onmessage(event:any) {
         if (!this.isConnected_) return; // close was requested.
         if(event && event.data) {
-          
           let data = JSON.parse(event.data);
           (data.action === 11) && this.emit(PONG, event);
+          this.clearReconnectionTimer();
         }
       }
 
@@ -134,20 +126,19 @@ export default class WSTransport {
         if (this.isConnected_) {
           const sendMessage = this.createPBMessage(data);
           // console.log('sendMessage--->', sendMessage);
-          this.socket_.send(sendMessage);
+          if(this.socket_.readyState === 1){
+            this.socket_.send(sendMessage);
+          }
+          
         }
       }
 
-      // send json
-      // send(data:any) {
-      //   if (this.isConnected_) {
-      //     this.socketInUse_.send(JSON.stringify(data));
-      //   }
-      // }
-
       sendPing(data:any) {
         if (this.isConnected_) {
-          this.socket_.send(data);
+          if(this.socket_.readyState === 1){
+            this.socket_.send(data);
+          }
+          
         }
       }
 
@@ -162,13 +153,15 @@ export default class WSTransport {
           }
           const encoder = new TextEncoder()
           const view = encoder.encode(JSON.stringify(param))
-          // let logData = new Blob([JSON.stringify(headerArray.concat(Array.from(data)), null, 2)], {type : 'application/json'});
           let logData = Uint8Array.from(headerArray.concat(Array.from(view)));
-
           // console.log('--->',logData);
-          this.socket_.send(logData);
+          if(this.socket_.readyState === 1){
+            this.socket_.send(logData);
+          }
+          
         }
       }
+
       createPBMessage(data: any) {
         // convert json data to protocol-buffer
         let root = protobuf.Root.fromJSON(heartbeatStats);
@@ -178,7 +171,6 @@ export default class WSTransport {
         let headerArray = [4,1,1,1,1,0,0,0]; // 正式环境
         // let headerArray = [4,1,1,1,2,0,0,0];  // 测试环境
         let newBuffer = Uint8Array.from(headerArray.concat(Array.from(buffer)));
-        // return buffer;
         return newBuffer;
       }
 
@@ -194,7 +186,7 @@ export default class WSTransport {
           }, PING_PONG_INTERVAL);
         } catch (error) {
           this.logger.log('ping-pong failed, start reconnection');
-          this.close();
+          this.clearSocket();
           this.reconnect();
         }
 
@@ -206,7 +198,6 @@ export default class WSTransport {
         clearTimeout(this.pingPongTimeoutId_);
         this.pingTimeoutId_ = -1;
         this.pingPongTimeoutId_ = -1;
-        // this.socket_ && this.socket_.close(4002);
       }
 
       ping() {
@@ -239,11 +230,16 @@ export default class WSTransport {
 
         this.socket_ = new WebSocket(this.url_);
         this.bindSocket(this.socket_);
+        
         const RECONNECTION_TIMEOUT = getReconnectionTimeout(this.reconnectionCount_);
         this.reconnectionTimer_ = setTimeout(() => {
           this.isConnecting_ = false;
           this.clearReconnectionTimer();
-          this.reconnect() 
+
+          this.unbindSocket(this.socket_);
+          this.socket_ = null;
+
+          this.reconnect();
         }, RECONNECTION_TIMEOUT)
 
       }
@@ -262,14 +258,18 @@ export default class WSTransport {
       emit(event:any, handler:any, context?:any) {
         this.emitter_.emit(event, handler, context);
       }
+      
+      clearSocket() {
+        this.socket_ && this.unbindSocket(this.socket_);
+        this.isConnected_ = false;
+        this.isConnecting_ = false;
+        this.socket_ = null;
+      }
 
       close() {
         this.logger.log('close websocket');
         this.clearReconnectionTimer();
         this.stopPingPong();
-        this.socket_ && this.unbindSocket(this.socket_);
-        this.isConnected_ = false;
-        this.isConnecting_ = false;
-        this.socket_ = null;
+        this.clearSocket();
       }
 }

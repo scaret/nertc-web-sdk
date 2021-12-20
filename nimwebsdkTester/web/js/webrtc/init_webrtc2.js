@@ -918,6 +918,7 @@ $('#destroy-btn').on('click', () => {
 $('#leaveChannel-btn').on('click', () => {
   addLog('离开房间')
   console.info('开始离开房间...')
+  clearInterval(audioEffectsPlayTimer);
   window.rtc.client.leave()
   rtc.remoteStreams.length = 0
   subList.length = 0
