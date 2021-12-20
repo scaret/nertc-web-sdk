@@ -136,8 +136,13 @@ $('#clearLocalStorage').on('click', () => {
   window.location.reload();
 })
 
+const defaultLogLevel = window.localStorage.getItem(`defaultLogLevel`) || "DEBUG";
+NERTC.Logger.setLogLevel(NERTC.Logger[defaultLogLevel])
+$('#loglevel').val(defaultLogLevel);
+
 $('#setLogLevel').on('click', ()=>{
   const level = $("#loglevel").val();
+  window.localStorage.setItem(`defaultLogLevel`, level);
   NERTC.Logger.setLogLevel(NERTC.Logger[level])
 })
 
