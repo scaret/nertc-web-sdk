@@ -76,4 +76,6 @@ export class Peer {
   on(evt: 'notification', handler: (notif: ProtooNotification) => any): void;
 
   removeListener: (evt: any, listener: (...args:any)=>void)=>void;
+
+  removeAllListeners: ()=>void
 }
