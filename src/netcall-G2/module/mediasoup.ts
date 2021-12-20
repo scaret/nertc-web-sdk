@@ -1003,6 +1003,16 @@ class Mediasoup extends EventEmitter {
       this.loggerRecv.error(`transport undefined，直接返回`)
       return this.checkConsumerList(info)
     }
+    if (id != remoteStream.pubStatus[mediaTypeShort].producerId){
+      this.loggerRecv.warn(`收到consumeRes后Producer已经更新。触发重建下行。uid: ${remoteStream.streamID} mediaType: ${mediaTypeShort} ProducerId: ${id} => ${remoteStream.pubStatus[mediaTypeShort].producerId} ，Consume结果忽略：`, consumeRes);
+      this.resetConsumeRequestStatus()
+      if (this._recvTransport) {
+        await this.closeTransport(this._recvTransport);
+      }
+      this._recvTransport = null
+      this.adapterRef.instance.reBuildRecvTransport()
+      return this.checkConsumerList(info);
+    }
     try {
       const peerId = consumeRes.uid
 
