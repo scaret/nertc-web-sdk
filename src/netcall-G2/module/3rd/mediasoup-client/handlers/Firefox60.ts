@@ -918,6 +918,8 @@ export class Firefox60 extends HandlerInterface
     const answer = { type: 'answer', sdp: this._remoteSdp.getSdp() };
     Logger.debug(prefix, 'receive() | calling pc.setRemoteDescription() [answer]: ', answer.sdp);
     if (this._pc.signalingState === 'stable') {
+      // Firefox需要在setLocalDescription前必须有个createOffer
+      const offer2 = await this._pc.createOffer()
       await this._pc.setLocalDescription(offer);
       Logger.debug(prefix, 'receive() | calling pc.setLocalDescription()');
     }
