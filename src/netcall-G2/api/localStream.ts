@@ -145,10 +145,14 @@ class LocalStream extends EventEmitter {
   public muteStatus: {
     // localStream只有send
     // remoteStream的send表示发送端的mute状态，recv表示接收端的mute状态
-    audioSend: boolean;
-    videoSend: boolean;
-    screenSend: boolean;
-  } = {audioSend: false, videoSend: false, screenSend: false};
+    audio: {send: boolean};
+    video: {send: boolean};
+    screen: {send: boolean};
+  } = {
+    audio: {send: false},
+    video: {send: false},
+    screen: {send: false},
+  }
   public isRemote: false = false;
   private audioPlay_: boolean = false;
   private videoPlay_: boolean = false;
@@ -318,9 +322,9 @@ class LocalStream extends EventEmitter {
     }
 
     this.muteStatus = {
-      audioSend: false,
-      videoSend: false,
-      screenSend: false,
+      audio: {send: false},
+      video: {send: false},
+      screen: {send: false},
     }
     this.renderMode = {
       local: {video: {}, screen: {}}
@@ -1431,7 +1435,7 @@ class LocalStream extends EventEmitter {
       if (this.mediaHelper.audio.webAudio?.gainFilter){
         this.mediaHelper.audio.webAudio.gainFilter.gain.value = 1;
       }
-      this.muteStatus.audioSend = false;
+      this.muteStatus.audio.send = false;
       this.client.apiFrequencyControl({
         name: 'unmuteAudio',
         code: 0,
@@ -1481,7 +1485,7 @@ class LocalStream extends EventEmitter {
       if (this.mediaHelper.audio.webAudio?.gainFilter){
         this.mediaHelper.audio.webAudio.gainFilter.gain.value = 0;
       }
-      this.muteStatus.audioSend = true
+      this.muteStatus.audio.send = true
       this.client.apiFrequencyControl({
         name: 'muteAudio',
         code: 0,
@@ -1836,7 +1840,7 @@ class LocalStream extends EventEmitter {
       if (this.mediaHelper.video.cameraTrack){
         this.mediaHelper.video.cameraTrack.enabled = true
       }
-      this.muteStatus.videoSend = false
+      this.muteStatus.video.send = false
       this.client.apiFrequencyControl({
         name: 'unmuteVideo',
         code: 0,
@@ -1875,7 +1879,7 @@ class LocalStream extends EventEmitter {
       if (this.mediaHelper.video.cameraTrack){
         this.mediaHelper.video.cameraTrack.enabled = false
       }
-      this.muteStatus.videoSend = true
+      this.muteStatus.video.send = true
       this.client.apiFrequencyControl({
         name: 'muteVideo',
         code: 0,
@@ -1916,7 +1920,7 @@ class LocalStream extends EventEmitter {
         this.mediaHelper.screen.screenVideoSource.enabled = true
       }
       // local unmute
-      this.muteStatus.screenSend = false
+      this.muteStatus.screen.send = false
       this.client.apiFrequencyControl({
         name: 'unmuteScreen',
         code: 0,
@@ -1956,7 +1960,7 @@ class LocalStream extends EventEmitter {
       if (this.mediaHelper.screen.screenVideoTrack){
         this.mediaHelper.screen.screenVideoTrack.enabled = false
       }
-      this.muteStatus.screenSend = true
+      this.muteStatus.screen.send = true
       this.client.apiFrequencyControl({
         name: 'muteScreen',
         code: 0,
@@ -2771,15 +2775,15 @@ class LocalStream extends EventEmitter {
   getMuteStatus (mediaType: MediaTypeShort){
     if (mediaType === "audio"){
       return {
-        muted: this.muteStatus.audioSend,
+        muted: this.muteStatus.audio.send,
       }
     } else if (mediaType === "video"){
       return {
-        muted: this.muteStatus.videoSend,
+        muted: this.muteStatus.video.send,
       }
     } else {
       return {
-        muted: this.muteStatus.screenSend,
+        muted: this.muteStatus.screen.send,
       }
     }
   }

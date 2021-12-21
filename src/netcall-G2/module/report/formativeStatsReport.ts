@@ -706,7 +706,7 @@ class FormativeStatsReport {
       this.adapterRef.remoteAudioStats[uid] = {
         CodecType: 'Opus',
         End2EndDelay: (parseInt(item.googCurrentDelayMs) || 0) + (parseInt(item.googJitterBufferMs) || 0),
-        MuteState: (remoteStream && (remoteStream.muteStatus.audioSend || remoteStream.muteStatus.audioRecv)), //(remoteStream && remoteStream.audio) || (remoteStream && remoteStream.muteStatus.audio), 
+        MuteState: remoteStream && (remoteStream.muteStatus.audio.send || remoteStream.muteStatus.audio.recv),
         PacketLossRate: item.alr || 0,
         RecvBitrate: item.bitsReceivedPerSecond || 0,
         RecvLevel: parseInt(item.audioOutputLevel) || +item.audioLevel || 0,
@@ -745,7 +745,7 @@ class FormativeStatsReport {
         LayerType: 1,
         CodecName: item.googCodecName,
         End2EndDelay: (parseInt(item.googCurrentDelayMs) || 0) + (parseInt(item.googJitterBufferMs) || 0) + (parseInt(item.googRenderDelayMs) || 0),
-        MuteState: (remoteStream && (remoteStream.muteStatus.videoSend || remoteStream.muteStatus.videoRecv)), //(remoteStream && remoteStream.video) || (remoteStream && remoteStream.muteStatus.video),
+        MuteState: (remoteStream && (remoteStream.muteStatus.video.send || remoteStream.muteStatus.video.recv)),
         PacketLossRate: item.vlr || 0,
         RecvBitrate: item.bitsReceivedPerSecond || 0,
         RecvResolutionHeight: parseInt(item.googFrameHeightReceived) || 0,
@@ -788,7 +788,7 @@ class FormativeStatsReport {
         LayerType: 2,
         CodecName: item.googCodecName,
         End2EndDelay: (parseInt(item.googCurrentDelayMs) || 0) + (parseInt(item.googJitterBufferMs) || 0) + (parseInt(item.googRenderDelayMs) || 0),
-        MuteState: (remoteStream && (remoteStream.muteStatus.screenSend || remoteStream.muteStatus.screenRecv)), //(remoteStream && remoteStream.screen) || (remoteStream && remoteStream.muteStatus.screen),
+        MuteState: (remoteStream && (remoteStream.muteStatus.screen.send || remoteStream.muteStatus.screen.recv)), //(remoteStream && remoteStream.screen) || (remoteStream && remoteStream.muteStatus.screen),
         PacketLossRate: item.vlr || 0,
         RecvBitrate: item.bitsReceivedPerSecond || 0,
         RecvResolutionHeight: parseInt(item.googFrameHeightReceived) || 0,
@@ -904,7 +904,7 @@ class FormativeStatsReport {
     }
     this.adapterRef.localAudioStats[0] = {
       CodecType: 'Opus',
-      MuteState: this.adapterRef.localStream.muteStatus.audioSend,
+      MuteState: this.adapterRef.localStream.muteStatus.audio.send,
       RecordingLevel: result.a_volume,
       SamplingRate: SamplingRate,
       SendBitrate: result.real_a_kbps_n,
@@ -918,7 +918,7 @@ class FormativeStatsReport {
       CaptureResolutionHeight: parseInt(upVideoList[0] && upVideoList[0].googFrameHeightInput) || 0,
       CaptureResolutionWidth: parseInt(upVideoList[0] && upVideoList[0].googFrameWidthInput) || 0,
       EncodeDelay: parseInt(upVideoList[0] && upVideoList[0].googAvgEncodeMs) || 0,
-      MuteState: this.adapterRef.localStream.muteStatus.videoSend,
+      MuteState: this.adapterRef.localStream.muteStatus.video.send,
       SendBitrate: result.real_v_kbps_n,
       SendFrameRate: result.v_fps,
       SendResolutionHeight: parseInt(upVideoList[0] && upVideoList[0].googFrameHeightSent) || 0,
@@ -935,7 +935,7 @@ class FormativeStatsReport {
       CaptureResolutionHeight: parseInt(upScreenList[0] && upScreenList[0].googFrameHeightInput) || 0,
       CaptureResolutionWidth: parseInt(upScreenList[0] && upScreenList[0].googFrameWidthInput) || 0,
       EncodeDelay: parseInt(upScreenList[0] && upScreenList[0].googAvgEncodeMs) || 0,
-      MuteState: this.adapterRef.localStream.muteStatus.screenSend,
+      MuteState: this.adapterRef.localStream.muteStatus.screen.send,
       SendBitrate: result.real_s_kbps_n,
       SendFrameRate: result.s_fps,
       SendResolutionHeight: parseInt(upScreenList[0] && upScreenList[0].googFrameHeightSent) || 0,
@@ -993,8 +993,8 @@ class FormativeStatsReport {
     /*this.adapterRef.logger.warn('当前节点 audio next.audioInputLevel: ', next.audioInputLevel)
      this.adapterRef.logger.warn('前一周期 audio prev.bytesSent: ', prev.bytesSent)
      this.adapterRef.logger.warn('当前节点 audio next.bytesSent: ', next.bytesSent)*/
-    const muteStatus = this.adapterRef.localStream && this.adapterRef.localStream.muteStatus.audioSend
-    const pubStatus = this.adapterRef.localStream && this.adapterRef.localStream.pubStatus.audio.audio
+    const muteStatus = this.adapterRef.localStream?.muteStatus.audio.send
+    const pubStatus = this.adapterRef.localStream?.pubStatus.audio.audio
     if (muteStatus === true || pubStatus === false) {
       return
     }
@@ -1021,8 +1021,8 @@ class FormativeStatsReport {
     if (!prev || !next) {
       return
     }
-    const muteStatus = this.adapterRef.localStream && (this.adapterRef.localStream.muteStatus.videoSend)
-    const pubStatus = this.adapterRef.localStream && this.adapterRef.localStream.pubStatus.video.video
+    const muteStatus = this.adapterRef.localStream?.muteStatus.video.send
+    const pubStatus = this.adapterRef.localStream?.pubStatus.video.video
     if (muteStatus === true || pubStatus === false) {
       return
     }
@@ -1052,7 +1052,7 @@ class FormativeStatsReport {
       return
     }
     const remoteStream = this.adapterRef.remoteStreamMap[uid]
-    const muteStatus = remoteStream && (remoteStream.muteStatus.audioSend || remoteStream.muteStatus.audioRecv)
+    const muteStatus = remoteStream && (remoteStream.muteStatus.audio.send || remoteStream.muteStatus.audio.recv)
     if (remoteStream && muteStatus) {
       return
     }
@@ -1088,7 +1088,7 @@ class FormativeStatsReport {
       return
     }
     const remoteStream = this.adapterRef.remoteStreamMap[uid]
-    const muteStatus = remoteStream && (remoteStream.muteStatus.videoSend || remoteStream.muteStatus.videoRecv)
+    const muteStatus = remoteStream && (remoteStream.muteStatus.video.send || remoteStream.muteStatus.video.recv)
     if (remoteStream && muteStatus) {
       return
     }
@@ -1110,7 +1110,7 @@ class FormativeStatsReport {
       return
     }
     const remoteStream = this.adapterRef.remoteStreamMap[uid]
-    const muteStatus = remoteStream && (remoteStream.muteStatus.screenSend || remoteStream.muteStatus.screenSend)
+    const muteStatus = remoteStream && (remoteStream.muteStatus.screen.send || remoteStream.muteStatus.screen.recv)
     if (remoteStream && muteStatus) {
       return
     }

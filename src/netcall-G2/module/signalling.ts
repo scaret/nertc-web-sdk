@@ -955,8 +955,7 @@ class Signalling extends EventEmitter {
               remoteStream['pubStatus'][mediaTypeShort][mediaTypeShort] = true
               remoteStream['pubStatus'][mediaTypeShort]['producerId'] = producerId
               remoteStream['pubStatus'][mediaTypeShort]['mute'] = mute
-              //@ts-ignore
-              remoteStream.muteStatus[`${mediaTypeShort}Send`] = mute
+              remoteStream['muteStatus'][mediaTypeShort].send = mute
               remoteStream['pubStatus'][mediaTypeShort]['simulcastEnable'] = simulcastEnable
               
               //兼容喜欢把箭头函数transpile成ES5的客户
@@ -1302,28 +1301,17 @@ class Signalling extends EventEmitter {
     const producerId = data.producerId;
     const mute = data.mute;
     Object.values(this.adapterRef.remoteStreamMap).forEach(stream => {
-      if (stream.pubStatus.audio.producerId === producerId) {
-        stream.muteStatus.audioSend = mute
-        if (mute) {
-          this.adapterRef.instance.safeEmit('mute-audio', {uid: stream.getId()})
-        } else {
-          this.adapterRef.instance.safeEmit('unmute-audio', {uid: stream.getId()})
+      const mediaTypeList:MediaTypeShort[] = ["audio", "video", "screen"]
+      mediaTypeList.forEach((mediaTypeShort)=>{
+        if (stream.pubStatus[mediaTypeShort].producerId === producerId){
+          stream.muteStatus[mediaTypeShort].send = mute
+          if (mute) {
+            this.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {uid: stream.getId()})
+          } else {
+            this.adapterRef.instance.safeEmit(`unmute-${mediaTypeShort}`, {uid: stream.getId()})
+          }
         }
-      } else if (stream.pubStatus.video.producerId === producerId) {
-        stream.muteStatus.videoSend = mute
-        if (mute) {
-          this.adapterRef.instance.safeEmit('mute-video', {uid: stream.getId()})
-        } else {
-          this.adapterRef.instance.safeEmit('unmute-video', {uid: stream.getId()})
-        }
-      } else if (stream.pubStatus.screen.producerId === producerId) {
-        stream.muteStatus.screenSend = mute
-        if (mute) {
-          this.adapterRef.instance.safeEmit('mute-screen', {uid: stream.getId()})
-        } else {
-          this.adapterRef.instance.safeEmit('unmute-screen', {uid: stream.getId()})
-        }
-      }
+      })
     })
   }
 

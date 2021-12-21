@@ -1571,6 +1571,27 @@ class Client extends Base {
       return info
     }
   }
+  
+  refreshRemoteEvents(){
+    // 供网易会议使用
+    // 将频道内的peer-online/stream-added/mute消息重新发一遍
+    for (let uid in this.adapterRef.remoteStreamMap){
+      const remoteStream = this.adapterRef.remoteStreamMap[uid]
+      this.logger.warn('refreshRemoteEvents peer-online', uid)
+      this.safeEmit('peer-online', {uid: uid})
+      const MediaTypeList:MediaTypeShort[] = ["audio", "video", "screen"];
+      MediaTypeList.forEach((mediaTypeShort)=>{
+        if (remoteStream.pubStatus[mediaTypeShort].producerId){
+          this.logger.warn('refreshRemoteEvents stream-added', uid, mediaTypeShort)
+          this.safeEmit('stream-added', {stream: remoteStream, mediaType: mediaTypeShort})
+          if (remoteStream.muteStatus[mediaTypeShort].send){
+            this.logger.warn(`refreshRemoteEvents mute-${mediaTypeShort}`, uid, mediaTypeShort)
+            this.safeEmit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
+          }
+        }
+      })
+    }
+  }
 
   initSpatialManager(options: SpatialInitOptions) {
     if (!this.spatialManager){
