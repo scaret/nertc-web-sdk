@@ -246,18 +246,23 @@ const captureTimer = setInterval(async ()=>{
     let html = "";
     for (let uid in rtc.client.adapterRef.remoteStreamMap){
       const remoteStream = rtc.client.adapterRef.remoteStreamMap[uid];
-      let li = `remote#${remoteStream.getId()}<ul>`
+      let li = `${NERTC.PlatformTypeMap[remoteStream.platformType]}#${remoteStream.getId()}<ul>`
       for (let mediaType of ["audio", "video", "screen"]){
-        li += `<li>${mediaType}`
+        let li2 = `<li>${mediaType}`
         if (!remoteStream.pubStatus[mediaType].producerId){
-          li += ` 未发布`
+          li2 += ` 未发布`
         }
         const subStatus = rtc.client.getSubStatus(remoteStream, mediaType)
         if (subStatus.subscribable){
-          li += " 可订阅"
+          li2 += " 可订阅"
         }
-        li += " " + subStatus.status
-        li += "</li>"
+        li2 += " " + subStatus.status
+        li2 += "</li>"
+        if (li2.match(/ 未发布 unsubscribed/)){
+          // 不打印
+        }else{
+          li += li2
+        }
       }
       li += "</ul>"
       html += `<li>${li}</li>`

@@ -81,16 +81,25 @@ class RemoteStream extends EventEmitter {
     }
   };
   subConf: SubscribeConfig;
-  public subStatus: { audio: boolean; video: boolean; screen: boolean };
+  public subStatus: {
+    audio: boolean;
+    video: boolean;
+    screen: boolean
+  } = {
+    audio: false,
+    video: false,
+    screen: false
+  };
   public muteStatus: {
     // localStream只有send
     // remoteStream的send表示发送端的mute状态，recv表示接收端的mute状态
-    audioSend: boolean;
-    videoSend: boolean;
-    screenSend: boolean;
-    audioRecv: boolean;
-    videoRecv: boolean;
-    screenRecv: boolean;
+    audio: {send: boolean, recv: boolean};
+    video: {send: boolean, recv: boolean};
+    screen: {send: boolean, recv: boolean};
+  } = {
+    audio: {send: false, recv: false},
+    video: {send: false, recv: false},
+    screen: {send: false, recv: false},
   };
   public isRemote: true = true;
   private audioPlay_: boolean;
@@ -170,19 +179,6 @@ class RemoteStream extends EventEmitter {
         video: STREAM_TYPE.HIGH,
         screen: STREAM_TYPE.HIGH,
       },
-    }
-    this.subStatus = {
-      audio: false,
-      video: false,
-      screen: false,
-    }
-    this.muteStatus = {
-      audioSend: false,
-      videoSend: false,
-      screenSend: false,
-      audioRecv: false,
-      videoRecv: false,
-      screenRecv: false,
     }
     this.renderMode = {
       remote: {video: {}, screen: {}}
@@ -278,12 +274,9 @@ class RemoteStream extends EventEmitter {
       screen: false,
     }
     this.muteStatus = {
-      audioSend: false,
-      videoSend: false,
-      screenSend: false,
-      audioRecv: false,
-      videoRecv: false,
-      screenRecv: false,
+      audio: {send: false, recv: false},
+      video: {send: false, recv: false},
+      screen: {send: false, recv: false},
     }
     this.renderMode = {
       remote: {video: {}, screen: {}}
@@ -731,7 +724,7 @@ class RemoteStream extends EventEmitter {
           message: 'no play'
         })
       }
-      this.muteStatus.audioRecv = true;
+      this.muteStatus.audio.recv = true;
       this.mediaHelper.audio.audioStream.getAudioTracks().length && (this.mediaHelper.audio.audioStream.getAudioTracks()[0].enabled = true)
       this._play.playAudioStream(this.mediaHelper.audio.audioStream, false)
       this.client.apiFrequencyControl({
@@ -770,7 +763,7 @@ class RemoteStream extends EventEmitter {
           message: 'no play'
         })
       }
-      this.muteStatus.audioRecv = true
+      this.muteStatus.audio.recv = true
       if (this.mediaHelper.audio.audioStream.getAudioTracks().length){
         this.mediaHelper.audio.audioStream.getAudioTracks()[0].enabled = false;
       }
@@ -908,7 +901,7 @@ class RemoteStream extends EventEmitter {
         })
       }
 
-      this.muteStatus.videoRecv = false
+      this.muteStatus.video.recv = false
       if (this.mediaHelper && this.mediaHelper.video.cameraTrack){
         this.mediaHelper.video.cameraTrack.enabled = true;
       }
@@ -947,7 +940,7 @@ class RemoteStream extends EventEmitter {
           message: 'no play'
         })
       }
-      this.muteStatus.videoRecv = true
+      this.muteStatus.video.recv = true
       if (this.mediaHelper && this.mediaHelper.video.cameraTrack){
         this.mediaHelper.video.cameraTrack.enabled = false;
       }
@@ -993,7 +986,7 @@ class RemoteStream extends EventEmitter {
           message: 'no this.screenView'
         })
       }
-      this.muteStatus.screenRecv = false
+      this.muteStatus.screen.recv = false
       if (this.mediaHelper && this.mediaHelper.screen.screenVideoTrack){
         this.mediaHelper.screen.screenVideoTrack.enabled = true;
       }
@@ -1035,7 +1028,7 @@ class RemoteStream extends EventEmitter {
       if (this.mediaHelper && this.mediaHelper.screen.screenVideoTrack){
         this.mediaHelper.screen.screenVideoTrack.enabled = false;
       }
-      this.muteStatus.screenRecv = true
+      this.muteStatus.screen.recv = true
       this.client.apiFrequencyControl({
         name: 'muteScreen',
         code: 0,
@@ -1326,21 +1319,21 @@ class RemoteStream extends EventEmitter {
   getMuteStatus (mediaType: MediaTypeShort){
     if (mediaType === "audio"){
       return {
-        send: this.muteStatus.audioSend,
-        recv: this.muteStatus.audioRecv,
-        muted: this.muteStatus.audioSend || this.muteStatus.audioRecv,
+        send: this.muteStatus.audio.send,
+        recv: this.muteStatus.audio.recv,
+        muted: this.muteStatus.audio.send || this.muteStatus.audio.recv,
       };
     } else if (mediaType === "video"){
       return {
-        send: this.muteStatus.videoSend,
-        recv: this.muteStatus.videoRecv,
-        muted: this.muteStatus.videoSend || this.muteStatus.videoRecv,
+        send: this.muteStatus.video.send,
+        recv: this.muteStatus.video.recv,
+        muted: this.muteStatus.video.send || this.muteStatus.video.recv,
       };
     } else {
       return {
-        send: this.muteStatus.screenSend,
-        recv: this.muteStatus.screenRecv,
-        muted: this.muteStatus.screenSend || this.muteStatus.screenRecv,
+        send: this.muteStatus.screen.send,
+        recv: this.muteStatus.screen.recv,
+        muted: this.muteStatus.screen.send || this.muteStatus.screen.recv,
       };
     }
   }
