@@ -2,7 +2,7 @@ import { Client } from '../netcall-G2/api/client'
 import { LocalStream } from '../netcall-G2/api/localStream'
 import { Device } from '../netcall-G2/module/device'
 import { clientNotYetUninitialized } from '../netcall-G2/constant/ErrorCode'
-import { ClientOptions, LocalStreamOptions } from "../netcall-G2/types";
+import { ClientOptions, LocalStreamOptions, PlatformTypeMap } from "../netcall-G2/types";
 import { BUILD, SDK_VERSION as VERSION, ENV } from "../netcall-G2/Config";
 import {VIDEO_FRAME_RATE, NERTC_VIDEO_QUALITY as VIDEO_QUALITY, STREAM_TYPE} from "../netcall-G2/constant/videoQuality";
 import { LIVE_STREAM_AUDIO_SAMPLE_RATE, LIVE_STREAM_AUDIO_CODEC_PROFILE } from "../netcall-G2/constant/liveStream";
@@ -275,6 +275,8 @@ destroy(parameterClient?: Client){
     client = null
   }
 },
+
+PlatformTypeMap: PlatformTypeMap,
 
 CHAT_VIDEO_FRAME_RATE_NORMAL : VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_NORMAL,
 CHAT_VIDEO_FRAME_RATE_5 : VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_5,
