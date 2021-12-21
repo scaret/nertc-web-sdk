@@ -1,5 +1,6 @@
 import {getParameters} from "../../parameters";
 import {loglevels} from "../../../util/log/logger";
+import {updateLogIndex} from "../../../util/webrtcLogger";
 
 const APP_NAME = 'mediasoup-client';
 
@@ -57,7 +58,7 @@ export const Logger = {
   formatArgs(args:any[], param?:any) {
     let date = new Date()
     let dateStr = this.formatTimeUnit('' + (date.getMonth() + 1)) + '-' + this.formatTimeUnit('' + date.getDate()) + ' ' + this.formatTimeUnit('' + date.getHours()) + ':' + this.formatTimeUnit('' + date.getMinutes()) + ':' + this.formatTimeUnit('' + date.getSeconds()) + ':' + this.formatTimeUnit('' + date.getMilliseconds(), 3)
-    let prefix = `[WEBRTC LOG ${dateStr} ${param.toUpperCase()}]  `
+    let prefix = `[NERTC:${updateLogIndex()} ${dateStr} ${param.toUpperCase()}]  `
     for (let i = args.length - 1; i >= 0; i--){
       args[i] = this.formatSingleArg(args[i])
     }

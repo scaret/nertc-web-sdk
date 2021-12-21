@@ -4,8 +4,14 @@ import {LoggerDebugOptions, LoggerOptions} from "../types";
 import {getParameters} from "../module/parameters";
 import {loglevels} from "./log/logger";
 
+let logIndex = 0
 
-class Logger{
+export function updateLogIndex(){
+  logIndex++
+  return ("" + logIndex).padStart(4, "0");
+}
+
+export class Logger{
   private options:LoggerOptions;
   private api:string;
   private style:string;
@@ -189,7 +195,7 @@ class Logger{
         break;
       }
     }
-    prefix = `[${this.prefix} ${dateStr}]${prefix}`;
+    prefix = `[${this.prefix}:${updateLogIndex()} ${dateStr}]${prefix}`;
     args.splice(0, 0, prefix)
     args.forEach(function (arg, index) {
       if (typeof arg === "object") {
@@ -225,8 +231,4 @@ function simpleClone (obj:any) {
     return value
   })
   return JSON.parse(strObj)
-}
-
-export {
-  Logger
 }
