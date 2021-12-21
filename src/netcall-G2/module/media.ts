@@ -159,6 +159,18 @@ class MediaHelper extends EventEmitter {
     })
   }
   
+  assertLive () {
+    if (!this.stream.isRemote){
+      if (this.stream.destroyed){
+        this._reset()
+        let err = new RtcError({
+          code: ErrorCode.INVALID_OPERATION,
+          message: '本地流已经被销毁'
+        })
+        throw err
+      }
+    }
+  }
 
   _reset() {
     this.stopAllEffects()
@@ -527,6 +539,7 @@ class MediaHelper extends EventEmitter {
           }
         }
       }
+      this.assertLive()
     } catch (e){
       this.logger.error('getStream error:', e.name, e.message)
       if (audio) {
