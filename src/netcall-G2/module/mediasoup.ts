@@ -83,7 +83,7 @@ class Mediasoup extends EventEmitter {
         tag += " UNINIT"
       }else if (this._sendTransport._handler?._pc){
         const pc = this._sendTransport._handler._pc
-        if (!pc.connectionState || pc.connectionState !== "connected"){
+        if (pc.connectionState && pc.connectionState !== "connected"){
           tag += " " + pc.connectionState;
         }
         if (pc.signalingState !== "stable"){
@@ -103,7 +103,7 @@ class Mediasoup extends EventEmitter {
         tag += " UNINIT"
       }else if (this._recvTransport._handler?._pc){
         const pc = this._recvTransport._handler._pc
-        if (!pc.connectionState || pc.connectionState !== "connected"){
+        if (pc.connectionState && pc.connectionState !== "connected"){
           tag += " " + pc.connectionState;
         }
         if (pc.signalingState !== "stable"){
