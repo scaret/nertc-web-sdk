@@ -799,12 +799,24 @@ class MediaHelper extends EventEmitter {
     if (kind === 'audio') {
       this.audio.micTrack = track;
       emptyStreamWith(this.audio.audioStream, track);
+      // Safari：即使前后属性相同，也需要重新设一遍srcObject
+      if (this.stream._play?.audioDom){
+        this.stream._play.audioDom.srcObject = this.audio.audioStream
+      }
     } else if (kind === 'video') {
       this.video.cameraTrack = track;
       emptyStreamWith(this.video.videoStream, track)
+      // Safari：即使前后属性相同，也需要重新设一遍srcObject
+      if (this.stream._play?.videoDom){
+        this.stream._play.videoDom.srcObject = this.video.videoStream
+      }
     } else if (kind === 'screen') {
       this.screen.screenVideoTrack = track;
       emptyStreamWith(this.screen.screenVideoStream, track)
+      // Safari：即使前后属性相同，也需要重新设一遍srcObject
+      if (this.stream._play?.screenDom){
+        this.stream._play.screenDom.srcObject = this.screen.screenVideoStream
+      }
     }
   }
 
