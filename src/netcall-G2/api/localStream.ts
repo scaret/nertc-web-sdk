@@ -1376,12 +1376,12 @@ class LocalStream extends EventEmitter {
             message: 'screen-sharing is not open'
           })
         )
-      }else if(reason === 'INVALID_ARGUMENTS'){
+      }else{
         onCloseFinished()
         return Promise.reject(
           new RtcError({
             code: ErrorCode.INVALID_OPERATION,
-            message: 'unknown type'
+            message: reason
           })
         )
       }
@@ -1395,6 +1395,7 @@ class LocalStream extends EventEmitter {
           audio: this.audio,
           video: this.video,
           screen: this.screen,
+          screenAudio: this.screenAudio,
         }, null, ' ')
       })
       return
