@@ -236,7 +236,7 @@ export default class WSTransport {
           this.isConnecting_ = false;
           this.clearReconnectionTimer();
 
-          this.unbindSocket(this.socket_);
+          this.socket_ && this.unbindSocket(this.socket_);
           this.socket_ = null;
 
           this.reconnect();
