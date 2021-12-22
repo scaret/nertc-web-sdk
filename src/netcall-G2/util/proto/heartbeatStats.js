@@ -43,37 +43,37 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
     nested: {
       local_obj: {
         fields: {
-          videoBwe: {
+          video_bwe: {
             rule: "repeated",
             type: "video_bwe_obj",
             id: 1
           },
-          audioSsrc: {
+          audio_ssrc: {
             rule: "repeated",
             type: "audio_ssrc_obj",
             id: 2
           },
-          videoSsrc: {
+          video_ssrc: {
             rule: "repeated",
             type: "video_ssrc_obj",
             id: 3
           },
-          mediaSource: {
+          media_source: {
             rule: "repeated",
             type: "media_source_obj",
             id: 4
           },
-          candidatePair: {
+          candidate_pair: {
             rule: "repeated",
             type: "candidate_pair_obj",
             id: 5
           },
-          localCandidate: {
+          local_candidate: {
             rule: "repeated",
             type: "local_candidate_obj",
             id: 6
           },
-          remoteCandidate: {
+          remote_candidate: {
             rule: "repeated",
             type: "remote_candidate_obj",
             id: 7
@@ -83,12 +83,12 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
             type: "track_obj",
             id: 8
           },
-          outboundRtp: {
+          outbound_rtp: {
             rule: "repeated",
             type: "outbound_rtp_obj",
             id: 9
           },
-          remoteInboundRtp: {
+          remote_inbound_rtp: {
             rule: "repeated",
             type: "remote_inbound_rtp_obj",
             id: 10
@@ -98,32 +98,32 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
             type: "transport_obj",
             id: 11
           },
-          audioTrack: {
+          audio_track: {
             rule: "repeated",
             type: "audio_track_obj",
             id: 12
           },
-          videoTrack: {
+          video_track: {
             rule: "repeated",
             type: "video_track_obj",
             id: 13
           },
-          audioOutboundRtp: {
+          audio_outbound_rtp: {
             rule: "repeated",
             type: "audio_outbound_rtp_obj",
             id: 14
           },
-          videoOutboundRtp: {
+          video_outbound_rtp: {
             rule: "repeated",
             type: "video_outbound_rtp_obj",
             id: 15
           },
-          screenSsrc: {
+          screen_ssrc: {
             rule: "repeated",
             type: "screen_ssrc_obj",
             id: 16
           },
-          screenOutboundRtp: {
+          screen_outbound_rtp: {
             rule: "repeated",
             type: "screen_outbound_rtp_obj",
             id: 17
@@ -1148,7 +1148,7 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
                 type: "double",
                 id: 40
               },
-              qualityLimitationDurations: {
+              quality_limitation_durations: {
                 rule: "repeated",
                 type: "quality_limitation_durations_obj",
                 id: 41
@@ -1773,32 +1773,32 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
       },
       remote_obj: {
         fields: {
-          videoSsrc: {
+          video_ssrc: {
             rule: "repeated",
             type: "video_ssrc_obj",
             id: 1
           },
-          audioSsrc: {
+          audio_ssrc: {
             rule: "repeated",
             type: "audio_ssrc_obj",
             id: 2
           },
-          candidatePair: {
+          candidate_pair: {
             rule: "repeated",
             type: "candidate_pair_obj",
             id: 3
           },
-          remoteCandidate: {
+          remote_candidate: {
             rule: "repeated",
             type: "remote_candidate_obj",
             id: 4
           },
-          localCandidate: {
+          local_candidate: {
             rule: "repeated",
             type: "local_candidate_obj",
             id: 5
           },
-          inboundRtp: {
+          inbound_rtp: {
             rule: "repeated",
             type: "inbound_rtp_obj",
             id: 6
@@ -1813,32 +1813,32 @@ var $root = ($protobuf.roots["default"] || ($protobuf.roots["default"] = new $pr
             type: "transport_obj",
             id: 8
           },
-          audioInboundRtp: {
+          audio_inbound_rtp: {
             rule: "repeated",
             type: "audio_inbound_rtp_obj",
             id: 9
           },
-          videoInboundRtp: {
+          video_inbound_rtp: {
             rule: "repeated",
             type: "video_inbound_rtp_obj",
             id: 10
           },
-          audioTrack: {
+          audio_track: {
             rule: "repeated",
             type: "audio_track_obj",
             id: 11
           },
-          videoTrack: {
+          video_track: {
             rule: "repeated",
             type: "video_track_obj",
             id: 12
           },
-          screenSsrc: {
+          screen_ssrc: {
             rule: "repeated",
             type: "screen_ssrc_obj",
             id: 13
           },
-          screenInboundRtp: {
+          screen_inbound_rtp: {
             rule: "repeated",
             type: "screen_inbound_rtp_obj",
             id: 14
