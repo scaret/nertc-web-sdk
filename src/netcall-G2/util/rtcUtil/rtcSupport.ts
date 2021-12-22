@@ -207,7 +207,7 @@ export const isBrowserSupported = function() {
     return true;
   }else if (env.IS_MAC_SAFARI && (env.SAFARI_MAJOR_VERSION as any) >= MIN_MAC_SAFARI_VERSION ) {
     return true;
-  }else if (env.IS_IOS_SAFARI && (env.SAFARI_MAJOR_VERSION as any) >= MIN_IOS_SAFARI_VERSION && !!env.IS_WECHAT) {
+  }else if (env.IS_IOS_SAFARI && (env.SAFARI_MAJOR_VERSION as any) >= MIN_IOS_SAFARI_VERSION && !env.IS_WECHAT) {
     return true;
   }else if (env.IS_EDG && (env.EDG_MAJOR_VERSION as any) >= MIN_EDG_VERSION) {
     return true;
