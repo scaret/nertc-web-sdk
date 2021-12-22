@@ -3,6 +3,21 @@
 const historyStats = {
 
 }
+
+let sendStatsFilter = {
+  selected: "all",
+  filters: {
+    all: 0,
+  },
+}
+
+let recvStatsFilter = {
+  selected: "all",
+  filters: {
+    all: 0,
+  },
+}
+
 const captureTimer = setInterval(async ()=>{
   if (!rtc.client){
     return
@@ -175,6 +190,31 @@ const captureTimer = setInterval(async ()=>{
     }
     $("#senderStatus").html(html)
     $("#upstreamBitrate").text(upstreamBitrate + "kbps");
+    
+    let htmlSendstats = ""
+    const stats = await rtc.client.adapterRef._mediasoup._sendTransport._handler._pc.getStats()
+    sendStatsFilter.filters = {all: 0}
+    stats.forEach((report, i)=>{
+      sendStatsFilter.filters.all++;
+      if (sendStatsFilter.filters[report.type]){
+        sendStatsFilter.filters[report.type]++
+      }else{
+        sendStatsFilter.filters[report.type] = 1
+      }
+      if (sendStatsFilter.selected !== "all" && sendStatsFilter.selected !== report.type){
+        return
+      }
+      htmlSendstats += `<br/><h3>${report.id}</h3>`
+      for (let key in report){
+        htmlSendstats += `${key}:${report[key]}<br/>`
+      }
+    })
+    let sendStatsFilterListHtml = ''
+    Object.keys(sendStatsFilter.filters).forEach((key)=>{
+      sendStatsFilterListHtml += `<input class="sendStatsFilter" type="button" data-key="${key}" value="${key}(${sendStatsFilter.filters[key]})">`
+    })
+    $('#sendStatsFilterList').html(sendStatsFilterListHtml)
+    $("#sendGetStats").html(htmlSendstats)
   }
   
   // 下行状态
@@ -239,6 +279,32 @@ const captureTimer = setInterval(async ()=>{
     }
     $("#receiverStatus").html(html)
     $("#downstreamBitrate").text(downstreamBitrate + "kbps");
+
+
+    let htmlRecvstats = ""
+    const stats = await rtc.client.adapterRef._mediasoup._recvTransport._handler._pc.getStats()
+    recvStatsFilter.filters = {all: 0}
+    stats.forEach((report, i)=>{
+      recvStatsFilter.filters.all++;
+      if (recvStatsFilter.filters[report.type]){
+        recvStatsFilter.filters[report.type]++
+      }else{
+        recvStatsFilter.filters[report.type] = 1
+      }
+      if (recvStatsFilter.selected !== "all" && recvStatsFilter.selected !== report.type){
+        return
+      }
+      htmlRecvstats += `<br/><h3>${report.id}</h3>`
+      for (let key in report){
+        htmlRecvstats += `${key}:${report[key]}<br/>`
+      }
+    })
+    let recvStatsFilterListHtml = ''
+    Object.keys(recvStatsFilter.filters).forEach((key)=>{
+      recvStatsFilterListHtml += `<input class="recvStatsFilter" type="button" data-key="${key}" value="${key}(${recvStatsFilter.filters[key]})">`
+    })
+    $('#recvStatsFilterList').html(recvStatsFilterListHtml)
+    $("#recvGetStats").html(htmlRecvstats)
   }
 
   // 订阅状态
@@ -325,3 +391,11 @@ const stopTrack = function(trackId){
   track.stop()
   track.dispatchEvent(new Event("ended"))
 }
+
+$("#sendStatsFilterList").on("click", ".sendStatsFilter",function(){
+  sendStatsFilter.selected = $(this).attr("data-key")
+})
+
+$("#recvStatsFilterList").on("click", ".recvStatsFilter",function(){
+  recvStatsFilter.selected = $(this).attr("data-key")
+})
