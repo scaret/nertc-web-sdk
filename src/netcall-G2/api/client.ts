@@ -1609,6 +1609,11 @@ class Client extends Base {
     this.spatialManager.init()
     this.spatialManager.play()
   }
+
+  syncUserList() {
+    // 提供给智慧树客户 获取远端用户列表
+    return this.adapterRef.memberMap;
+  }
   /**
    *  销毁实例
    *  @method destroy
