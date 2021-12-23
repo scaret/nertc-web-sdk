@@ -14,6 +14,8 @@ const DEFAULT_RETRY_OPTIONS =
 
 const logger = new Logger('WebSocketTransport');
 
+let wsId = 0
+
 class WebSocketTransport extends EnhancedEventEmitter
 {
 	/**
@@ -42,6 +44,8 @@ class WebSocketTransport extends EnhancedEventEmitter
 		// @type {WebSocket}
 		this._ws = null;
 
+    this.wsid = 0;
+    
 		this.skipReconnection = false;
     
 		// Run the WebSocket.
@@ -115,6 +119,9 @@ class WebSocketTransport extends EnhancedEventEmitter
 
 			this._ws = new WebSocket(this._url, [WS_SUBPROTOCOL]);
 
+      wsId++
+      this.wsid = wsId
+      
 			this._ws.onopen = () =>
 			{
 				if (this._closed)
