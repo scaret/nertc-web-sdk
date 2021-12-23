@@ -54,7 +54,7 @@ class Signalling extends EventEmitter {
         tag += " PROTOO_UNINIT"
       }else{
         if (this._protoo.id){
-          tag += "#" + this._protoo.id
+          tag += "#" + this._protoo.id + "_" + this._protoo._transport?.wsid
         }
         if(!this._protoo.connected){
           tag += "!connected"
@@ -220,12 +220,13 @@ class Signalling extends EventEmitter {
     this._protoo.on('failed', this._handleFailed.bind(this))
     this._protoo.on('notification', this._handleMessage.bind(this))
     this._protoo.on('close', this._handleClose.bind(this))
-    this._protoo.on('disconnected', this._handleDisconnected.bind(this))
+    this._protoo.on('disconnected', this._handleDisconnected.bind(this, this._protoo))
   }
 
   //原来叫_unbindEvent
   _destroyProtoo() {
     if (this._protoo){
+      this.logger.debug(`信令通道#${this._protoo.id}_${this._protoo._transport?.wsid} 被主动关闭。`)
       this._protoo.removeAllListeners()
       try{
         if (this._protoo){
@@ -554,7 +555,7 @@ class Signalling extends EventEmitter {
             const _protoo = this._protoo;
             setTimeout(()=>{
               if (_protoo !== this._protoo){
-                this.logger.log(`OnSignalRestart取消重连: 连接已被覆盖 ${_protoo.id}=>${this._protoo?.id}`)
+                this.logger.log(`OnSignalRestart取消重连: 连接已被覆盖 ${_protoo.id}_${_protoo._transport?.wsid}=>${this._protoo?.id}_${this._protoo?._transport?.wsid}`)
               }
               else if (this.adapterRef.channelStatus === 'join'){
                 this.logger.log('OnSignalRestart执行重连')
@@ -695,14 +696,23 @@ class Signalling extends EventEmitter {
     
   }
   
-  _handleDisconnected () {
+  _handleDisconnected (_protoo: Peer) {
     this.logger.log('Signalling:_handleDisconnected')
     this.logger.log('Signalling:_handleClose')
-    this.adapterRef.channelStatus = 'connectioning'
+    if (this._reconnectionTimer && (this.adapterRef.channelStatus === 'connectioning' || this.adapterRef.channelStatus === 'join')){
+      if (_protoo.closed){
+        this.logger.warn(`信令通道#${_protoo.id}_${_protoo._transport?.wsid} 在建立过程中被关闭。当前正在重连中，等待下次重连过程。`)
+      }else{
+        this.logger.warn(`信令通道#${_protoo.id}_${_protoo._transport?.wsid} 在建立过程中被关闭。信令通道会自动重试。连接地址：${_protoo._transport?._url}`)
+      }
+    }else{
+      this.logger.warn(`信令通道#${_protoo.id}_${_protoo._transport?.wsid} 收到关闭信号，即将开始重连过程。`);
+      this.adapterRef.channelStatus = 'connectioning'
+      this._reconnection()
+    }
     this.adapterRef.instance.apiEventReport('setDisconnect', {
       reason: '2' //ws中断
     })
-    this._reconnection()
   }
 
   async join () {

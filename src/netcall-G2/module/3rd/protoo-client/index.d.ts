@@ -37,8 +37,12 @@ export class WebSocketTransport {
     },
   );
 
+  readonly wsid: number;
+  
   readonly closed: boolean;
 
+  readonly _url: string|null;
+  
   close(): void;
 
   send(message: any): Promise<void>;
@@ -48,6 +52,8 @@ export class Peer {
   constructor(transport: WebSocketTransport);
 
   id: number;
+  
+  _transport: WebSocketTransport|null;
   
   data: any;
 
