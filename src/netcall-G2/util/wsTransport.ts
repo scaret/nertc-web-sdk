@@ -12,7 +12,7 @@ const PING = uintPing;
 const PONG = 11;
 export default class WSTransport {
     private url_: string;
-    private socket_: any;
+    private socket_: WebSocket|null;
     private isConnected_: boolean;
     private isConnecting_: boolean;
     private pingPongTimeoutId_: any;
@@ -72,7 +72,7 @@ export default class WSTransport {
         const isInUse = event.target === this.socket_;
         this.logger.log(`websocket[${url} InUse: ${isInUse}] is closed with code: ${event.code}`);
         // only handle the close event for the socket in use
-        if (event.target === this.socket_) {
+        if (this.socket_ && event.target === this.socket_) {
           this.isConnected_ = false;
           // 1000 is considered as normal close
           if (event.wasClean && event.code === 1000) {
@@ -87,8 +87,7 @@ export default class WSTransport {
             this.reconnect();
           }
         }else {
-          this.isConnected_ = false;
-          this.socket_.close();
+          // 收到的onclose事件并不是当前的socket的事件。忽略该事件
         }
       }
 
@@ -126,7 +125,7 @@ export default class WSTransport {
         if (this.isConnected_) {
           const sendMessage = this.createPBMessage(data);
           // console.log('sendMessage--->', sendMessage);
-          if(this.socket_.readyState === 1){
+          if(this.socket_?.readyState === 1){
             this.socket_.send(sendMessage);
           }
           
@@ -135,7 +134,7 @@ export default class WSTransport {
 
       sendPing(data:any) {
         if (this.isConnected_) {
-          if(this.socket_.readyState === 1){
+          if(this.socket_?.readyState === 1){
             this.socket_.send(data);
           }
           
@@ -155,7 +154,7 @@ export default class WSTransport {
           const view = encoder.encode(JSON.stringify(param))
           let logData = Uint8Array.from(headerArray.concat(Array.from(view)));
           // console.log('--->',logData);
-          if(this.socket_.readyState === 1){
+          if(this.socket_?.readyState === 1){
             this.socket_.send(logData);
           }
           
