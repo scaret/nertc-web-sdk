@@ -1,7 +1,6 @@
 
 import { EventEmitter } from "eventemitter3";
 import {
-  VIDEO_QUALITY,
   VIDEO_FRAME_RATE,
   NERTC_VIDEO_QUALITY} from "../constant/videoQuality";
 import {Play} from '../module/play'
@@ -2001,12 +2000,11 @@ class LocalStream extends EventEmitter {
    * @returns {Null}  
   */
   setVideoProfile (options:VideoProfileOptions) {
-    this.logger.log(`setVideoProfile: ${JSON.stringify(options)}`)
     Object.assign(this.videoProfile, options)
     this.mediaHelper.video.captureConfig.high = this.mediaHelper.convert(this.videoProfile);
     this.mediaHelper.video.encoderConfig.high.maxBitrate = this.getVideoBW()
-    this.logger.log(`setVideoProfile:视频采集参数 ${JSON.stringify(this.mediaHelper.video.captureConfig.high)} 编码参数 ${JSON.stringify(this.mediaHelper.video.encoderConfig.high)}`)
-    this.client.adapterRef.channelInfo.sessionConfig.maxVideoQuality = VIDEO_QUALITY.CHAT_VIDEO_QUALITY_1080P
+    this.logger.log(`setVideoProfile ${JSON.stringify(options)} 视频采集参数 ${JSON.stringify(this.mediaHelper.video.captureConfig.high)} 编码参数 ${JSON.stringify(this.mediaHelper.video.encoderConfig.high)}`)
+    this.client.adapterRef.channelInfo.sessionConfig.maxVideoQuality = NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p
     this.client.adapterRef.channelInfo.sessionConfig.videoQuality = this.videoProfile.resolution
     this.client.adapterRef.channelInfo.sessionConfig.videoFrameRate = this.videoProfile.frameRate
     this.client.apiFrequencyControl({
@@ -2133,11 +2131,10 @@ class LocalStream extends EventEmitter {
    * @returns {Void}  
   */
   setScreenProfile (profile: ScreenProfileOptions) {
-    this.logger.log(`setScreenProfile: ${JSON.stringify(profile)}`)
     Object.assign(this.screenProfile, profile)
     this.mediaHelper.screen.captureConfig.high = this.mediaHelper.convert(this.screenProfile)
     this.mediaHelper.screen.encoderConfig.high.maxBitrate = this.getScreenBW()
-    this.logger.log(`setScreenProfile:屏幕共享采集参数 ${JSON.stringify(this.mediaHelper.screen.captureConfig.high)} 编码参数 ${JSON.stringify(this.mediaHelper.screen.encoderConfig.high)}`)
+    this.logger.log(`setScreenProfile ${JSON.stringify(profile)} 屏幕共享采集参数 ${JSON.stringify(this.mediaHelper.screen.captureConfig.high)} 编码参数 ${JSON.stringify(this.mediaHelper.screen.encoderConfig.high)}`)
     this.client.adapterRef.channelInfo.sessionConfig.screenQuality = profile
     this.client.apiFrequencyControl({
       name: 'setScreenProfile',

@@ -1,50 +1,4 @@
 /**
- * 视频分辨率设置
- */
-export const VIDEO_QUALITY = {
-  /**
-   * 视频默认分辨率 640x480
-   */
-  CHAT_VIDEO_QUALITY_NORMAL: 0,
-
-  /**
-   * 视频低分辨率 176x144
-   */
-  CHAT_VIDEO_QUALITY_LOW: 1,
-
-  /**
-   * 视频中分辨率 352x288
-   */
-  CHAT_VIDEO_QUALITY_MEDIUM: 2,
-
-  /**
-   * 视频高分辨率 480x360
-   */
-  CHAT_VIDEO_QUALITY_HIGH: 3,
-
-  /**
-   *视频480p分辨率 640x480
-   */
-  CHAT_VIDEO_QUALITY_480P: 4,
-
-  /**
-   * 视频540P分辨率 960x540
-   */
-  CHAT_VIDEO_QUALITY_540P: 5,
-
-  /**
-   * 视频720P分辨率 1080x720
-   */
-  CHAT_VIDEO_QUALITY_720P: 6,
-
-  /**
-   * 视频720P分辨率 1920x1080
-   */
-  CHAT_VIDEO_QUALITY_1080P: 7
-}
-
-
-/**
  * 视频帧率设置
  */
 export const VIDEO_FRAME_RATE = {
@@ -87,17 +41,6 @@ export const NERTC_VIDEO_QUALITY = {
   VIDEO_QUALITY_1080p: 16
 }
 
-export const VIDEO_QUALITY_REV = {
-  [VIDEO_QUALITY.CHAT_VIDEO_QUALITY_NORMAL]: '640x480',
-  [VIDEO_QUALITY.CHAT_VIDEO_QUALITY_LOW]: '176x144',
-  [VIDEO_QUALITY.CHAT_VIDEO_QUALITY_MEDIUM]: '352x288',
-  [VIDEO_QUALITY.CHAT_VIDEO_QUALITY_HIGH]: '480x360',
-  [VIDEO_QUALITY.CHAT_VIDEO_QUALITY_480P]: '640x480',
-  [VIDEO_QUALITY.CHAT_VIDEO_QUALITY_540P]: '960x540',
-  [VIDEO_QUALITY.CHAT_VIDEO_QUALITY_720P]: '1280x720',
-  [VIDEO_QUALITY.CHAT_VIDEO_QUALITY_1080P]: '1920x1080',
-}
-
 export const NERTC_VIDEO_QUALITY_REV = {
   [NERTC_VIDEO_QUALITY.VIDEO_QUALITY_180p]: '320x180',
   [NERTC_VIDEO_QUALITY.VIDEO_QUALITY_480p]: '640x480',
@@ -108,20 +51,4 @@ export const NERTC_VIDEO_QUALITY_REV = {
 export const STREAM_TYPE = {
   HIGH: 0,
   LOW: 1,
-}
-
-/**
- * 校验器
- *
- * @param {Number} value 待校验值
- */
-export function validateVideoQuality (value:number) {
-  const keys = Object.keys(VIDEO_QUALITY)
-  let valid = false
-  for (let key in keys) {
-    if (VIDEO_QUALITY[key as keyof typeof VIDEO_QUALITY] === value) {
-      valid = true
-    }
-  }
-  return valid
 }
