@@ -509,6 +509,7 @@ class LocalStream extends EventEmitter {
           video: this.video,
           videoSource: this.videoSource,
           videoDeviceId: this.cameraId,
+          facingMode: this.facingMode,
         })
       }
     } catch (e) {
@@ -536,7 +537,6 @@ class LocalStream extends EventEmitter {
       if (this.screen){
         const constraints = {
           sourceId: this.sourceId,
-          facingMode: this.facingMode,
           screen: this.screen,
           screenVideoSource: this.screenVideoSource,
           screenAudio: this.screenAudio,
