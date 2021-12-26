@@ -896,6 +896,16 @@ export interface SnapshotOptions{
 export interface MediaRecordingOptions{
   type: string;
   reset: boolean;
+  recorder?: 'local' | 'all';
+  recordConfig?: ClientRecordConfig
+}
+
+export interface ClientRecordConfig{
+  recordVideoWidth: number;
+  recordVideoHeight: number;
+  recordVideoFrame: number;
+  recordFileName: string;
+  recordSize: number;
 }
 
 export interface SignallingOptions{
@@ -1225,4 +1235,9 @@ export interface RTSTransportOptions{
   port: number;
   transportId: string;
   adapterRef: AdapterRef;
+}
+
+
+export interface FormatMediaOptions{
+  logger: ILogger;
 }

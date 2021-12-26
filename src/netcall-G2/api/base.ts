@@ -6,6 +6,7 @@ import {StatsReport} from '../module/report/statsReport'
 import {DataReport} from '../module/report/dataReport'
 import {Logger} from "../util/webrtcLogger";
 import {
+  Timer,
   AdapterRef,
   APIFrequencyControlOptions, NeRtcServerAddresses,
   ClientOptions, JoinChannelRequestParam4WebRTC2,
@@ -19,6 +20,8 @@ import ErrorCode  from '../util/error/errorCode';
 import {getParameters} from "../module/parameters";
 import {RemoteStream} from "./remoteStream";
 import {LocalStream} from "./localStream";
+import {FormatMedia} from "../util/rtcUtil/formatMedia"
+import {Record} from '../module/record'
 import {Client as ICLient} from "../types"
 import logger, {loglevels} from "../util/log/logger";
 
@@ -34,6 +37,10 @@ class Base extends EventEmitter {
     token?: string;
     JoinChannelRequestParam4WebRTC2?: JoinChannelRequestParam4WebRTC2
     neRtcServerAddresses?: NeRtcServerAddresses
+  }
+  public recordManager : {
+    record: Record|null,
+    formatMedia: FormatMedia|null;
   }
   public adapterRef:AdapterRef;
   private sdkRef: any;
@@ -88,6 +95,10 @@ class Base extends EventEmitter {
       }
     });
     this.adapterRef.logger = this.logger;
+    this.recordManager = {
+      record: null,
+      formatMedia: null
+    }
     this._reset();
     this.adapterRef.encryption = new Encryption(this.adapterRef)
 
@@ -216,6 +227,15 @@ class Base extends EventEmitter {
       this.adapterRef.netStatusTimer = null
     }
 
+    if (this._recordManager.canvasTimer) {
+      clearInterval(this._recordManager.canvasTimer)
+      this._recordManager.canvasTimer = null
+    }
+    if (this._recordManager.record) {
+      this._recordManager.record.destroy()
+      this._recordManager.record = null
+    }
+    this._recordManager.canvas = null
     this.adapterRef.uid2SscrList = {}
 
     // 状态类变量
