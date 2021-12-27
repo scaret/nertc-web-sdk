@@ -14,7 +14,7 @@ export function updateLogIndex(){
 export class Logger{
   private options:LoggerOptions;
   private api:string;
-  private style:string;
+  private style:string = 'color:#1cb977;';
   private prefix:string;
   private logHelper?:logHelper;
   private supportedBrowsers: string[];
@@ -24,13 +24,12 @@ export class Logger{
   constructor(options:LoggerOptions) {
     this.options = options;
     this.api = 'log';
-    this.style = 'color:#1cb977;';
     this.prefix = 'NERTC'
     this.tagGen = options.tagGen
     if(options.isSavedLogs) {
       this.logHelper = new logHelper(options)
     }
-    this.supportedBrowsers = ['Chrome', 'Safari', 'Firefox', 'Chrome Mobile'];
+    this.supportedBrowsers = ['Chrome', 'Safari', 'Firefox', 'Chrome Mobile', 'Electron'];
     this.cs = console;
   }
 
@@ -65,6 +64,14 @@ export class Logger{
     if (this.supportedBrowsers.indexOf(platform.name) !== -1 && typeof args[0] === "string") {
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
+      for (let i = 2; i < args.length; i++){
+        if (typeof args[i] === "string"){
+          args[0] += "%c" + args[i]
+          args[i] = ""
+        }else{
+          break;
+        }
+      }
     }
     if(getParameters().logLevel <= loglevels.INFO){
       logger._log('log', args);
@@ -162,12 +169,14 @@ export class Logger{
   // use this form to skip drop_console of uglify
   chrome(func:string, args:any[]) {
     let name = platform.name;
-    if (this.supportedBrowsers.indexOf(name) !== -1) {
+    //@ts-ignore
+    if (this.cs[func]){
       //@ts-ignore
       this.cs[func].apply(this.cs, args)
-    } else {
-      //@ts-ignore
-      logger.ie(func, args)
+    }else if (this.cs.log){
+      this.cs.log.apply(this.cs, args)
+    }else{
+      this.ie(func, args)
     }
   }
 

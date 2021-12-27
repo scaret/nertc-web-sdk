@@ -1263,6 +1263,9 @@ function initLocalStream() {
   if ($('#camera').val()){
     createStreamOptions.cameraId = $('#camera').val();
   }
+  if ($('#cameraFacingMode').val()){
+    createStreamOptions.facingMode = $('#cameraFacingMode').val();
+  }
   if ($('#micro').val()){
     createStreamOptions.microphoneId = $('#micro').val();
   }
@@ -1780,7 +1783,7 @@ $('#playCamera').on('click', () => {
   rtc.localStream.open({
     type: 'video',
     deviceId: $('#camera').val(),
-    //facingMode: 'user'//'environment'
+    facingMode: $('#cameraFacingMode').val(),
   }).then(async()=>{
     console.log('打开摄像头 sucess')
     await rtc.localStream.play(document.getElementById('local-container'))
