@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf8">
+    <link rel="icon" href="data:,">
+    <meta name="viewport" content="width=700">
+  </head>
+  <body>
+    <label>房间ID(CID)<input type="text" id="cid" value="" disabled></label><br/>
+    <label>自己的ID<input type="text" id="pusherUid" value=""></label><button id="push-btn">推流</button><span id="pusherState"></span><br/>
+    <label>对方的ID<input type="text" id="pullerUid" value=""></label><button id="pull-btn">拉流</button><span id="pullerState"></span><br/>
+    <video id="pusherPlayer" controls autoplay playsinline muted></video>
+    <video id="pullerPlayer" controls autoplay playsinline></video>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script>
+      const urlSearchParams = new URLSearchParams(window.location.search);
+      const params = Object.fromEntries(urlSearchParams.entries());
+      let cid = params.cid
+      const prepareEnv = async ()=>{
+        let pusherUid = Math.floor(Math.random() * 9000) + 1000
+        if (!cid){
+          cid = Math.floor(Math.random() * 90000000) + 10000000
+          window.location.href = window.location.href + (window.location.href.indexOf("?") > -1 ? `&cid=${cid}` : `?cid=${cid}`)
+        }else{
+          document.getElementById("cid").value = cid
+          document.getElementById("pusherUid").value = pusherUid
+        }
+      }
+
+      let senderPC = null
+      let receiverPC = null
+      let mediaStream = null
+      // let endpoint = `http://localhost:3388/proxy/edge/server` // 本地代理
+      // let endpoint = `http://localhost:3388/v1/edge/server`    // 本地测试
+      // let endpoint = `/v1/edge/server` // 测试服
+      let endpoint = `https://59-111-239-249.netease.im/v1/edge/server` // HTTPS服务端
+      
+      const doPush = async ()=>{
+        const pusherUid = document.getElementById("pusherUid").value;
+        const pullerUid = document.getElementById("pullerUid").value;
+        senderPC = new RTCPeerConnection();
+        senderPC.onnegotiationneeded = async function(){
+          console.log("onnegotiationneeded")
+          let offer = await senderPC.createOffer()
+          await senderPC.setLocalDescription(offer)
+          console.debug(offer.sdp)
+          console.log("PUSHER START POST")
+          const requestId = Date.now();
+          const resp = await axios.post(`${endpoint}/cid/${cid}/push/request?requestId=${requestId}`, {
+            uid: parseInt(pusherUid),
+            dstUid: parseInt(pullerUid),
+            requestId: "" + Date.now(),
+            type: 'offer',
+            sdp: offer.sdp,
+          })
+          console.log("PUSHER POST RESPONSE", resp)
+          const data = typeof resp.data === "string" ? JSON.parse(resp.data) : resp.data;
+          if (data?.sdp){
+            console.debug(data.sdp)
+            const answer = new RTCSessionDescription({
+              type: 'answer',
+              sdp: data.sdp
+            })
+            senderPC.setRemoteDescription(answer)
+            if (data.candidates){
+              data.candidates.forEach((candiateObj)=>{
+                const candidate = new RTCIceCandidate(candiateObj)
+                senderPC.addIceCandidate(candidate)
+              })
+            }
+            document.getElementById("pusherPlayer").srcObject = mediaStream
+          }else{
+            document.getElementById("pusherState").innerText = JSON.stringify(data)
+          }
+        }
+        senderPC.onsignalingstatechange = (evt)=>{
+          document.getElementById("pusherState").innerText = senderPC.signalingState
+        }
+        mediaStream = await navigator.mediaDevices.getUserMedia({audio: true, video: true})
+        mediaStream.getAudioTracks().forEach((track)=>{
+          senderPC.addTrack(track)
+        })
+        mediaStream.getVideoTracks().forEach((track)=>{
+          senderPC.addTrack(track)
+        })
+      }
+
+      const doPull = async ()=>{
+        const pusherUid = document.getElementById("pusherUid").value;
+        const pullerUid = document.getElementById("pullerUid").value;
+        receiverPC = new RTCPeerConnection();
+        receiverPC.onnegotiationneeded = async function(){
+          console.log("receiverPC.onnegotiationneeded")
+          let offer = await receiverPC.createOffer()
+          await receiverPC.setLocalDescription(offer)
+          console.log(`receiverPC START POST uid ${pullerUid} distUid ${pusherUid}`)
+          const requestId = Date.now();
+          const resp = await axios.post(`${endpoint}/cid/${cid}/pull/request?requestId=${requestId}`, {
+            uid: parseInt(pusherUid),
+            dstUid: parseInt(pullerUid),
+            requestId: "" + Date.now(),
+            type: 'offer',
+            sdp: offer.sdp,
+          })
+          console.log("receiverPC POST RESPONSE", resp)
+          const data = typeof resp.data === "string" ? JSON.parse(resp.data) : resp.data;
+          if (data?.sdp){
+            const answer = new RTCSessionDescription({
+              type: 'answer',
+              sdp: data.sdp
+            })
+            receiverPC.setRemoteDescription(answer)
+            if (data.candidates){
+              data.candidates.forEach((candiateObj)=>{
+                const candidate = new RTCIceCandidate(candiateObj)
+                receiverPC.addIceCandidate(candidate)
+              })
+            }
+          }else{
+            document.getElementById("pullerState").innerText = JSON.stringify(data)
+          }
+        }
+        receiverPC.onsignalingstatechange = (evt)=>{
+          console.log("receiverPC.onsignalingstatechange", evt)
+          document.getElementById("pullerState").innerHTML = receiverPC.signalingState
+        }
+        receiverPC.ontrack = function(evt){
+          console.log("receiverPC.ontrack", evt.track)
+          let stream = document.getElementById("pullerPlayer").srcObject
+          if (!stream){
+            stream = new MediaStream;
+          }
+          stream.addTrack(evt.track)
+          evt.track.onended = function(){
+            stream.removeTrack(evt.track)
+          }
+          document.getElementById("pullerPlayer").srcObject = stream
+        }
+        receiverPC.addTransceiver("audio")
+        receiverPC.addTransceiver("video")
+      }
+      const main = async ()=>{
+        await prepareEnv()
+        document.getElementById('push-btn').onclick = doPush
+        document.getElementById('pull-btn').onclick = doPull
+      }
+      main()
+    </script>
+  </body>
+</html>
