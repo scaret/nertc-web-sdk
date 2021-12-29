@@ -1,0 +1,18 @@
+{
+  "name": "stateless-test-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "stateless-test-server.js",
+  "scripts": {
+    "stateless-test-server": "node stateless-test-server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.19.1",
+    "cors": "^2.8.5",
+    "request": "^2.88.2",
+    "wrtc": "^0.4.7"
+  }
+}
