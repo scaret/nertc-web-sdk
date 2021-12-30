@@ -6,7 +6,7 @@ import {
   sm4_setkey_dec,
   SM4Ctx,
 } from "sm4-128-ecb";
-import {AdapterRef} from "../types";
+import {AdapterRef, MediaTypeShort} from "../types";
 import RtcError from '../util/error/rtcError';
 import ErrorCode  from '../util/error/errorCode';
 
@@ -20,12 +20,17 @@ const EncryptionModes = {
   // 'sm2-128-ecb': 1, 暂时不支持
 }
 
-function encryptionModeToInt(encryptionMode: string){
-  if (encryptionMode === "none" || encryptionMode === "sm4-128-ecb"){
+function encryptionModeToInt(encryptionMode: string) {
+  if (encryptionMode === "none" || encryptionMode === "sm4-128-ecb") {
     return EncryptionModes[encryptionMode];
-  }else{
+  } else {
     return undefined;
   }
+}
+
+interface RTCEncodedAudioFrame{
+  timestamp: number;
+  data: ArrayBuffer;
 }
 
 interface RTCEncodedVideoFrame{
@@ -47,6 +52,24 @@ class Encryption extends EventEmitter {
   public encCtx: SM4Ctx;
   public decCtx: SM4Ctx;
   public adapterRef: AdapterRef;
+  public info:{
+    // 用于encodedTransform
+    upstream: {
+      audio: {high: {index: number}, low: {index: number}},
+      video: {high: {index: number}, low: {index: number}},
+      screen: {high: {index: number}, low: {index: number}},
+    },
+    downstream: {
+      [uid: string]: {audio: {index: number}, video: {index: number}, screen: {index: number}, },
+    }
+  } = {
+    upstream: {
+      audio: {high: {index: 0}, low: {index: 0}},
+      video: {high: {index: 0}, low: {index: 0}},
+      screen: {high: {index: 0}, low: {index: 0}},
+    },
+    downstream: {},
+  }
   constructor(adapterRef: AdapterRef) {
     super();
     this.encryptionMode = 'none';
@@ -69,6 +92,32 @@ class Encryption extends EventEmitter {
     if (this.encryptionMode === "encoded-transform-sm4-128-ecb"){
       this.initSm4();
     }
+  }
+  handleUpstreamTransform(mediaType:MediaTypeShort, streamType: "high"|"low", encodedFrame:RTCEncodedVideoFrame|RTCEncodedAudioFrame, controller:TransformStreamDefaultController){
+    this.info.upstream[mediaType][streamType].index++
+    if (this.info.upstream[mediaType][streamType].index === 1){
+      this.adapterRef.logger.log("生成第一帧上行自定义加密（明文）。长度:", encodedFrame.data.byteLength, mediaType, streamType);
+    }
+    this.adapterRef.instance.safeEmit('sender-transform', {
+      uid: this.adapterRef.channelInfo.uid,
+      mediaType,
+      encodedFrame,
+      controller,
+    })
+  }
+  handleDownstreamTransform(uid: number|string, mediaType:MediaTypeShort, encodedFrame:RTCEncodedVideoFrame, controller:TransformStreamDefaultController){
+    let info = this.info.downstream[uid] || {audio: {index: 0}, video: {index: 0}, screen: {index: 0}}
+    this.info.downstream[uid] = info;
+    info[mediaType].index++
+    if (info[mediaType].index === 1){
+      this.adapterRef.logger.log("收到第一帧下行自定义加密（密文）。长度:", encodedFrame.data.byteLength, mediaType);
+    }
+    this.adapterRef.instance.safeEmit('receiver-transform', {
+      uid,
+      mediaType,
+      encodedFrame,
+      controller,
+    })
   }
   initSm4(){
     if (this.encryptionSecret){

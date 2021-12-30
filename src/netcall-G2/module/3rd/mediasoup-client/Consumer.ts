@@ -48,6 +48,10 @@ export class Consumer extends EnhancedEventEmitter
   // Observer instance.
   protected readonly _observer = new EnhancedEventEmitter();
 
+  public receiverStreams: any;
+  
+  public transformStream: any;
+  
   /**
    * @emits transportclose
    * @emits trackended

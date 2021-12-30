@@ -57,7 +57,7 @@ export class Producer extends EnhancedEventEmitter
   // Associated RTCRtpSender.
   public readonly _rtpSender?: RTCRtpSender;
   // Associated RTCRtpSender.
-  private readonly _rtpSenderLow?: RTCRtpSender;
+  public readonly _rtpSenderLow?: RTCRtpSender;
   // Local track.
   private _track: MediaStreamTrack | null;
   // Local track.
@@ -81,6 +81,15 @@ export class Producer extends EnhancedEventEmitter
   // Observer instance.
   protected readonly _observer = new EnhancedEventEmitter();
 
+  public high: {
+    senderStreams?: any;
+    transformStream?: any;
+  } = {};
+  
+  public low: {
+    senderStreams?: any;
+    transformStream?: any;
+  } = {};
   /**
    * @emits transportclose
    * @emits trackended

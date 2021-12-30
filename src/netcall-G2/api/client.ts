@@ -449,6 +449,37 @@ class Client extends Base {
     }
   }
 
+  enableCustomTransform(enable?: boolean){
+    let errMsg: string = ""
+    if (this.adapterRef.connectState.curState !== 'DISCONNECTED'){
+      errMsg = 'enableCustomTransform必须在加入频道前调用'
+    // @ts-ignore
+    }else if (typeof window.TransformStream !== "function") {
+      errMsg = '浏览器不支持自定义加解密: 未找到TransformStream'
+    }
+    // @ts-ignore
+    else if (typeof window.RTCRtpReceiver?.prototype.createEncodedStreams !== "function"){
+      errMsg = '浏览器不支持自定义加解密: 未找到createEncodedStreams'
+    }else if (this.adapterRef.encryption.encryptionMode !== "none"){
+      errMsg = '自定义加密功能与国密加密功能不兼容'
+    }
+    if (errMsg){
+      this.logger.error(errMsg);
+      throw new RtcError({
+        code: ErrorCode.NOT_SUPPORT,
+        message: errMsg
+      })
+    }else{
+      if (enable === false){
+        this.adapterRef.encryption.encodedInsertableStreams = false
+        this.logger.log('已关闭自定义加解密')
+      }else{
+        this.adapterRef.encryption.encodedInsertableStreams = true
+        this.logger.log('已开启自定义加解密')
+      }
+    }
+  }
+
   /**
    * 发布视频
    * @method publish

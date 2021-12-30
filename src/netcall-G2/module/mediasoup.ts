@@ -351,8 +351,8 @@ class Mediasoup extends EventEmitter {
     }
   }
 
-  async createProduce (stream:LocalStream, mediaType: "all"|"audio"|"video"|"screen") {
-    this.loggerSend.log('发布音视频: ', stream.getId(), mediaType)
+  async createProduce (stream:LocalStream, mediaTypeInput: "all"|"audio"|"video"|"screen") {
+    this.loggerSend.log('发布音视频: ', stream.getId(), mediaTypeInput)
     //this._sendTransport.removeListener()
     if (!this._sendTransport){
       throw new RtcError({
@@ -584,7 +584,8 @@ class Mediasoup extends EventEmitter {
     }
     // ENDOF produceCallback
     
-    if (mediaType === "audio" || mediaType === "all"){
+    if (mediaTypeInput === "audio" || mediaTypeInput === "all"){
+      const mediaType = "audio";
       if (this._micProducer) {
         this.loggerSend.log('音频已经publish，跳过')
       } else {
@@ -606,11 +607,15 @@ class Mediasoup extends EventEmitter {
             }
           });
           this.watchProducerState(this._micProducer, "_micProducer");
+          if (this.adapterRef.encryption.encodedInsertableStreams){
+            this.enableSendTransform(this._micProducer, "audio")
+          }
         }
       }
     }
     
-    if (mediaType === "video" || mediaType === "all"){
+    if (mediaTypeInput === "video" || mediaTypeInput === "all"){
+      const mediaType = "video";
       if (this._webcamProducer) {
         this.loggerSend.log('视频已经publish，跳过')
       } else if (stream.mediaHelper.video.videoStream.getVideoTracks().length) {
@@ -645,18 +650,8 @@ class Mediasoup extends EventEmitter {
           }
         });
         this.watchProducerState(this._webcamProducer, "_webcamProducer");
-        if (this.adapterRef.encryption.encodedInsertableStreams && this._webcamProducer.rtpSender
-          //@ts-ignore
-          && !this._webcamProducer.rtpSender.senderStreams){
-          this.loggerSend.log("发送端开始解密", this.adapterRef.encryption.encryptionMode);
-          //@ts-ignore
-          const senderStreams = this._webcamProducer.rtpSender.createEncodedStreams()
-          const transformStream = new TransformStream({
-            transform: this.adapterRef.encryption.encodeFunctionH264.bind(this.adapterRef.encryption),
-          });
-          senderStreams.readable.pipeThrough(transformStream).pipeTo(senderStreams.writable);
-          //@ts-ignore
-          this._webcamProducer.rtpSender.senderStreams = senderStreams
+        if (this.adapterRef.encryption.encodedInsertableStreams){
+          this.enableSendTransform(this._webcamProducer, "video")
         }
         if (!this.adapterRef.state.startPubVideoTime) {
           this.adapterRef.state.startPubVideoTime = Date.now()
@@ -664,7 +659,8 @@ class Mediasoup extends EventEmitter {
       }
     }
 
-    if (mediaType === "screen" || mediaType === "all"){
+    if (mediaTypeInput === "screen" || mediaTypeInput === "all"){
+      const mediaType = "screen";
       if (this._screenProducer) {
         this.loggerSend.log('屏幕共享已经publish，跳过')
       } else if(stream.mediaHelper.screen.screenVideoStream.getVideoTracks().length) {
@@ -699,10 +695,67 @@ class Mediasoup extends EventEmitter {
           }
         });
         this.watchProducerState(this._screenProducer, "_screenProducer");
+        if (this.adapterRef.encryption.encodedInsertableStreams){
+          this.enableSendTransform(this._screenProducer, "screen")
+        }
         if (!this.adapterRef.state.startPubScreenTime) {
           this.adapterRef.state.startPubScreenTime = Date.now()
         }
       }
+    }
+  }
+  
+  enableSendTransform(producer: Producer, mediaType: MediaTypeShort){
+    //大流
+    if (!producer._rtpSender){
+      this.logger.error(`enableSendTransform 失败：未发现rtpSender`)
+    }else if (producer.high.senderStreams){
+      this.logger.debug("enableSendTransform: 已有senderStreams", mediaType)
+    }else{
+      this.loggerSend.warn("发送端启用自定义加密", mediaType, "high");
+      // @ts-ignore
+      const senderStreams = producer._rtpSender.createEncodedStreams()
+      const transformStream = new TransformStream({
+        transform: this.adapterRef.encryption.handleUpstreamTransform.bind(this.adapterRef.encryption, mediaType, "high"),
+      });
+      senderStreams.readable.pipeThrough(transformStream).pipeTo(senderStreams.writable);
+      producer.high.senderStreams = senderStreams
+      producer.high.transformStream = transformStream
+    }
+
+    //小流
+    if (!producer._rtpSenderLow){
+      // this.logger.error(`enableSendTransform：未发现_rtpSenderLow`, mediaType)
+    }else if (producer.low.senderStreams){
+      this.logger.debug("enableSendTransform: 已有senderStreams", mediaType, "low")
+    }else{
+      this.loggerSend.warn("发送端启用自定义加密", mediaType, "low");
+      // @ts-ignore
+      const senderStreams = producer._rtpSenderLow.createEncodedStreams()
+      const transformStream = new TransformStream({
+        transform: this.adapterRef.encryption.handleUpstreamTransform.bind(this.adapterRef.encryption, mediaType, "low"),
+      });
+      senderStreams.readable.pipeThrough(transformStream).pipeTo(senderStreams.writable);
+      producer.low.senderStreams = senderStreams
+      producer.low.transformStream = transformStream
+    }
+  }
+  
+  enableRecvTransform(consumer: Consumer, uid: string|number, mediaType: MediaTypeShort){
+    if (consumer.receiverStreams){
+      this.logger.log("enableRecvTransform:已有receiverStreams", uid, mediaType);
+    }else{
+      this.loggerRecv.log("接收端开始解密", this.adapterRef.encryption.encryptionMode);
+      //@ts-ignore
+      const receiverStreams = consumer.rtpReceiver.createEncodedStreams()
+      const transformStream = new TransformStream({
+        transform: this.adapterRef.encryption.handleDownstreamTransform.bind(this.adapterRef.encryption, uid, mediaType),
+      });
+      receiverStreams.readable
+        .pipeThrough(transformStream)
+        .pipeTo(receiverStreams.writable);
+      consumer.receiverStreams = receiverStreams;
+      consumer.transformStream = transformStream;
     }
   }
   
@@ -1104,21 +1157,8 @@ class Mediasoup extends EventEmitter {
         sctpParameters: undefined,
         probeSSrc: this._probeSSrc
       });
-      if (this.adapterRef.encryption.encodedInsertableStreams && mediaTypeShort === "video"
-        //@ts-ignore
-       && !consumer.rtpReceiver.receiverStreams
-      ){
-        this.loggerRecv.log("接收端开始解密", this.adapterRef.encryption.encryptionMode);
-        //@ts-ignore
-        const receiverStreams = consumer.rtpReceiver.createEncodedStreams()
-        const transformStream = new TransformStream({
-          transform: this.adapterRef.encryption.decodeFunctionH264.bind(this.adapterRef.encryption),
-        });
-        receiverStreams.readable
-          .pipeThrough(transformStream)
-          .pipeTo(receiverStreams.writable);
-        //@ts-ignore
-        consumer.rtpReceiver.receiverStreams = receiverStreams;
+      if (this.adapterRef.encryption.encodedInsertableStreams){
+        this.enableRecvTransform(consumer, uid, mediaTypeShort)
       }
       this._consumers[consumer.id] = consumer;
 
