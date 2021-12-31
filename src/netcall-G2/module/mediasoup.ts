@@ -608,7 +608,9 @@ class Mediasoup extends EventEmitter {
           });
           this.watchProducerState(this._micProducer, "_micProducer");
           if (this.adapterRef.encryption.encodedInsertableStreams){
-            this.enableSendTransform(this._micProducer, "audio")
+            if (this._micProducer._rtpSender){
+              this.enableSendTransform(this._micProducer._rtpSender, "audio", "high")
+            }
           }
         }
       }
@@ -651,7 +653,12 @@ class Mediasoup extends EventEmitter {
         });
         this.watchProducerState(this._webcamProducer, "_webcamProducer");
         if (this.adapterRef.encryption.encodedInsertableStreams){
-          this.enableSendTransform(this._webcamProducer, "video")
+          if (this._webcamProducer._rtpSender){
+            this.enableSendTransform(this._webcamProducer._rtpSender, "video", "high")
+          }
+          if (this._webcamProducer._rtpSenderLow){
+            this.enableSendTransform(this._webcamProducer._rtpSenderLow, "video", "low")
+          }
         }
         if (!this.adapterRef.state.startPubVideoTime) {
           this.adapterRef.state.startPubVideoTime = Date.now()
@@ -696,7 +703,12 @@ class Mediasoup extends EventEmitter {
         });
         this.watchProducerState(this._screenProducer, "_screenProducer");
         if (this.adapterRef.encryption.encodedInsertableStreams){
-          this.enableSendTransform(this._screenProducer, "screen")
+          if (this._screenProducer._rtpSender){
+            this.enableSendTransform(this._screenProducer._rtpSender, "screen", "high")
+          }
+          if (this._screenProducer._rtpSenderLow){
+            this.enableSendTransform(this._screenProducer._rtpSenderLow, "screen", "low")
+          }
         }
         if (!this.adapterRef.state.startPubScreenTime) {
           this.adapterRef.state.startPubScreenTime = Date.now()
@@ -705,57 +717,45 @@ class Mediasoup extends EventEmitter {
     }
   }
   
-  enableSendTransform(producer: Producer, mediaType: MediaTypeShort){
-    //大流
-    if (!producer._rtpSender){
-      this.logger.error(`enableSendTransform 失败：未发现rtpSender`)
-    }else if (producer.high.senderStreams){
-      this.logger.debug("enableSendTransform: 已有senderStreams", mediaType)
-    }else{
-      this.loggerSend.warn("发送端启用自定义加密", mediaType, "high");
-      // @ts-ignore
-      const senderStreams = producer._rtpSender.createEncodedStreams()
-      const transformStream = new TransformStream({
-        transform: this.adapterRef.encryption.handleUpstreamTransform.bind(this.adapterRef.encryption, mediaType, "high"),
-      });
-      senderStreams.readable.pipeThrough(transformStream).pipeTo(senderStreams.writable);
-      producer.high.senderStreams = senderStreams
-      producer.high.transformStream = transformStream
-    }
-
-    //小流
-    if (!producer._rtpSenderLow){
-      // this.logger.error(`enableSendTransform：未发现_rtpSenderLow`, mediaType)
-    }else if (producer.low.senderStreams){
-      this.logger.debug("enableSendTransform: 已有senderStreams", mediaType, "low")
-    }else{
-      this.loggerSend.warn("发送端启用自定义加密", mediaType, "low");
-      // @ts-ignore
-      const senderStreams = producer._rtpSenderLow.createEncodedStreams()
-      const transformStream = new TransformStream({
-        transform: this.adapterRef.encryption.handleUpstreamTransform.bind(this.adapterRef.encryption, mediaType, "low"),
-      });
-      senderStreams.readable.pipeThrough(transformStream).pipeTo(senderStreams.writable);
-      producer.low.senderStreams = senderStreams
-      producer.low.transformStream = transformStream
+  enableSendTransform(sender: RTCRtpSender, mediaType: MediaTypeShort, streamType: "high"|"low"){
+    const senderInfo = this._sendTransport?.send.find((r)=> r.sender === sender);
+    if (!senderInfo){
+      this.loggerRecv.error("未找到匹配的Sender", mediaType, streamType)
+    }else {
+      if (!senderInfo.encodedStreams) {
+        // @ts-ignore
+        const encodedStreams = sender.createEncodedStreams()
+        const transformStream = new TransformStream({
+          transform: this.adapterRef.encryption.handleUpstreamTransform.bind(this.adapterRef.encryption, senderInfo),
+        });
+        encodedStreams.readable.pipeThrough(transformStream).pipeTo(encodedStreams.writable);
+        senderInfo.encodedStreams = encodedStreams
+        senderInfo.transformStream = transformStream
+        this.loggerRecv.log(`发送端自定义加密，成功启动。 ${senderInfo.mediaType} ${senderInfo}`)
+      } else {
+        this.loggerRecv.log(`发送端自定义加密，复用之前的通道。 ${senderInfo.mediaType} ${senderInfo}`)
+      }
     }
   }
   
-  enableRecvTransform(consumer: Consumer, uid: string|number, mediaType: MediaTypeShort){
-    if (consumer.receiverStreams){
-      this.logger.log("enableRecvTransform:已有receiverStreams", uid, mediaType);
+  enableRecvTransform(receiver: RTCRtpReceiver, uid: string|number, mediaType: MediaTypeShort){
+    const receiverInfo = this._recvTransport?.recv.find((r)=> r.receiver === receiver);
+    if (!receiverInfo){
+      this.loggerRecv.error("未找到匹配的Receiver", uid, mediaType)
     }else{
-      this.loggerRecv.log("接收端开始解密", this.adapterRef.encryption.encryptionMode);
-      //@ts-ignore
-      const receiverStreams = consumer.rtpReceiver.createEncodedStreams()
-      const transformStream = new TransformStream({
-        transform: this.adapterRef.encryption.handleDownstreamTransform.bind(this.adapterRef.encryption, uid, mediaType),
-      });
-      receiverStreams.readable
-        .pipeThrough(transformStream)
-        .pipeTo(receiverStreams.writable);
-      consumer.receiverStreams = receiverStreams;
-      consumer.transformStream = transformStream;
+      if (!receiverInfo.encodedStreams){
+        // @ts-ignore
+        const encodedStreams = receiver.createEncodedStreams()
+        const transformStream = new TransformStream({
+          transform: this.adapterRef.encryption.handleDownstreamTransform.bind(this.adapterRef.encryption, receiverInfo),
+        });
+        encodedStreams.readable.pipeThrough(transformStream).pipeTo(encodedStreams.writable);
+        receiverInfo.encodedStreams = encodedStreams
+        receiverInfo.transformStream = transformStream
+        this.loggerRecv.log(`接收端自定义解密，成功启动。uid:${receiverInfo.uid}, mediaType: ${receiverInfo.mediaType}`)
+      }else{
+        this.loggerRecv.log(`接收端自定义解密，复用之前的通道。uid:${receiverInfo.uid}, mediaType: ${receiverInfo.mediaType}`)
+      }
     }
   }
   
@@ -1147,6 +1147,8 @@ class Mediasoup extends EventEmitter {
         id: consumerId,
         producerId,
         kind,
+        mediaType: mediaTypeShort,
+        uid: uid || peerId,
         rtpParameters,
         codecOptions,
         appData: { ...appData, peerId, remoteUid: uid }, // Trick.
@@ -1157,8 +1159,8 @@ class Mediasoup extends EventEmitter {
         sctpParameters: undefined,
         probeSSrc: this._probeSSrc
       });
-      if (this.adapterRef.encryption.encodedInsertableStreams){
-        this.enableRecvTransform(consumer, uid, mediaTypeShort)
+      if (this.adapterRef.encryption.encodedInsertableStreams && consumer.rtpReceiver){
+        this.enableRecvTransform(consumer.rtpReceiver, uid, mediaTypeShort)
       }
       this._consumers[consumer.id] = consumer;
 

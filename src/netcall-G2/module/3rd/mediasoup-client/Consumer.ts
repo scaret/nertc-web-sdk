@@ -6,12 +6,15 @@ import {DtlsParameters, IceCandidate, IceParameters} from "./Transport";
 import {SctpParameters} from "./SctpParameters";
 import RtcError from '../../../util/error/rtcError';
 import ErrorCode  from '../../../util/error/errorCode';
+import {MediaTypeShort} from "../../../types";
 
 export type ConsumerOptions =
 {
   id?: string;
   producerId?: string;
   kind?: 'audio' | 'video';
+  mediaType: MediaTypeShort;
+  uid: number|string;
   rtpParameters: RtpParameters;
   probeSSrc?: string;
   offer: RTCSessionDescription,
@@ -47,10 +50,6 @@ export class Consumer extends EnhancedEventEmitter
   private readonly _appData: any;
   // Observer instance.
   protected readonly _observer = new EnhancedEventEmitter();
-
-  public receiverStreams: any;
-  
-  public transformStream: any;
   
   /**
    * @emits transportclose

@@ -12,6 +12,8 @@ import {RtpParameters} from "./RtpParameters";
 import RtcError from '../../../util/error/rtcError';
 import ErrorCode  from '../../../util/error/errorCode';
 import {getParameters} from "../../parameters";
+import {MediaTypeShort} from "../../../types";
+import {EncodedStreams} from "../../encryption";
 
 interface InternalTransportOptions extends TransportOptions
 {
@@ -33,6 +35,26 @@ export type TransportOptions =
   additionalSettings?: any;
   proprietaryConstraints?: any;
   appData?: any;
+}
+
+export interface SenderInfo{
+  sender: RTCRtpSender;
+  encodedStreams?: EncodedStreams;
+  transformStream?: TransformStream;
+  index: number;
+  mediaType: MediaTypeShort;
+  streamType: "high"|"low";
+  localId: string;
+}
+
+export interface ReceiverInfo{
+  index: number;
+  receiver: RTCRtpReceiver;
+  encodedStreams?: EncodedStreams;
+  transformStream?: TransformStream;
+  uid: number|string;
+  mediaType: MediaTypeShort;
+  localId: string;
 }
 
 export type CanProduceByKind =
@@ -180,6 +202,9 @@ export class Transport extends EnhancedEventEmitter
   // Observer instance.
   protected readonly _observer = new EnhancedEventEmitter();
   private _recvRtpCapabilities: any;
+
+  public send: SenderInfo[] = [];
+  public recv: ReceiverInfo[] = [];
 
   /**
    * @emits connect - (transportLocalParameters: any, callback: Function, errback: Function)
@@ -501,6 +526,21 @@ export class Transport extends EnhancedEventEmitter
             codec
           });
 
+        if (rtpSender){
+          this.updateSenderInfo(
+            rtpSender,
+            appData.mediaType === "screenShare" ? "screen" : appData.mediaType,
+            "high",
+            localId)
+        }
+        if (rtpSenderLow && localIdLow){
+          this.updateSenderInfo(
+            rtpSenderLow,
+            appData.mediaType === "screenShare" ? "screen" : appData.mediaType,
+            "low",
+            localIdLow,
+          )
+        }
         try
         {
           // This will fill rtpParameters's missing fields with default values.
@@ -623,7 +663,56 @@ export class Transport extends EnhancedEventEmitter
       throw error;
     }
   }
-
+  
+  updateSenderInfo(sender: RTCRtpSender, mediaType: MediaTypeShort, streamType:"high"|"low", localId: string){
+    let record = this.send.find((r)=>{
+      return r.sender === sender;
+    })
+    if (!record){
+      record = {
+        sender,
+        mediaType,
+        streamType,
+        localId,
+        index: 0,
+      }
+      this.send.unshift(record)
+    }else{
+      if (record.mediaType !== mediaType || record.streamType || streamType || record.localId !== localId){
+        Logger.debug(prefix, `Sender Change. mediaType:${record.mediaType} => ${mediaType}, StreamType: ${record.streamType} => ${streamType}, LocalId: ${record.localId} => ${localId} index: ${record.index}`)
+        record.mediaType = mediaType;
+        record.streamType = streamType;
+        record.localId = localId;
+        record.index = 0;
+      }
+    }
+    return record
+  }
+  updateReceiverInfo(receiver: RTCRtpReceiver, uid: number|string, mediaType: MediaTypeShort, localId: string){
+    let record = this.recv.find((r)=>{
+      return r.receiver === receiver;
+    })
+    if (!record){
+      record = {
+        receiver,
+        uid,
+        mediaType,
+        localId,
+        index: 0,
+      }
+      this.recv.unshift(record)
+    }else{
+      if (record.uid !== uid || record.mediaType !== mediaType || record.localId !== localId){
+        Logger.debug(prefix, `Receiver Change. uid:${record.uid} => ${uid}, mediaType:${record.mediaType} => ${mediaType} localId: ${record.localId} => ${localId} index: ${record.index}`)
+        record.uid = uid;
+        record.mediaType = mediaType;
+        record.localId = localId;
+        record.index = 0;
+      }
+    }
+    return record
+  }
+  
   /**
    * Create a Consumer to consume a remote Producer.
    */
@@ -632,6 +721,8 @@ export class Transport extends EnhancedEventEmitter
       id,
       producerId,
       kind,
+      uid,
+      mediaType,
       rtpParameters,
       appData = {},
       offer,
@@ -676,6 +767,14 @@ export class Transport extends EnhancedEventEmitter
         const { localId, rtpReceiver, track } = await this._handler.receive({ iceParameters, iceCandidates, dtlsParameters, sctpParameters,
           trackId: id, kind, rtpParameters, offer, probeSSrc, remoteUid: appData.remoteUid, extendedRtpCapabilities: this._extendedRtpCapabilities});
         
+        if (rtpReceiver){
+          this.updateReceiverInfo(
+            rtpReceiver,
+            uid,
+            mediaType,
+            localId,
+          );
+        }
         const consumer = new Consumer(
           {
             id,

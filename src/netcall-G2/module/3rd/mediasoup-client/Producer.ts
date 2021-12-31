@@ -81,15 +81,6 @@ export class Producer extends EnhancedEventEmitter
   // Observer instance.
   protected readonly _observer = new EnhancedEventEmitter();
 
-  public high: {
-    senderStreams?: any;
-    transformStream?: any;
-  } = {};
-  
-  public low: {
-    senderStreams?: any;
-    transformStream?: any;
-  } = {};
   /**
    * @emits transportclose
    * @emits trackended

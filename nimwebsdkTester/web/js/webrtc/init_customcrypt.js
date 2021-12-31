@@ -17,20 +17,24 @@ function initRC4(){
 }
 
 function encodeFunctionRC4(mediaType, encodedFrame, controller){
-  const u8Arr1 = new Uint8Array(encodedFrame.data);
-  const h264Index = findCryptIndexH264(u8Arr1);
-  const shiftStart = mediaType === "audio" ? 0: Math.max(h264Index, 0)
-  const encrypted = SM4.rc4_encrypt(u8Arr1, rc4_secret, {shiftStart: shiftStart});
-  encodedFrame.data = encrypted.buffer;
+  if (encodedFrame.data.length){
+    const u8Arr1 = new Uint8Array(encodedFrame.data);
+    const h264Index = findCryptIndexH264(u8Arr1);
+    const shiftStart = mediaType === "audio" ? 0: Math.max(h264Index, 0)
+    const encrypted = SM4.rc4_encrypt(u8Arr1, rc4_secret, {shiftStart: shiftStart});
+    encodedFrame.data = encrypted.buffer;
+  }
   controller.enqueue(encodedFrame);
 }
 
 function decodeFunctionRC4(mediaType, encodedFrame, controller){
-  const u8Arr1 = new Uint8Array(encodedFrame.data);
-  const h264Index = findCryptIndexH264(u8Arr1);
-  const shiftStart = mediaType === "audio" ? 0: Math.max(h264Index, 0)
-  const encrypted = SM4.rc4_decrypt(u8Arr1, rc4_secret, {shiftStart: shiftStart});
-  encodedFrame.data = encrypted.buffer;
+  if (encodedFrame.data.length){
+    const u8Arr1 = new Uint8Array(encodedFrame.data);
+    const h264Index = findCryptIndexH264(u8Arr1);
+    const shiftStart = mediaType === "audio" ? 0: Math.max(h264Index, 0)
+    const encrypted = SM4.rc4_decrypt(u8Arr1, rc4_secret, {shiftStart: shiftStart});
+    encodedFrame.data = encrypted.buffer;
+  }
   controller.enqueue(encodedFrame);
 }
 //ENDOF 自定义加密：RC4
