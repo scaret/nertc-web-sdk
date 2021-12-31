@@ -758,7 +758,7 @@ class Signalling extends EventEmitter {
     let gmEnable;
     if (!this.adapterRef.encryption.encryptionSecret) {
       gmEnable = false;
-    } else if (this.adapterRef.encryption.encryptionMode === "none" || this.adapterRef.encryption.encryptionMode === "encoded-transform-sm4-128-ecb"){
+    } else if (this.adapterRef.encryption.encryptionMode === "none"){
       gmEnable = false;
     } else {
       gmEnable = true;
