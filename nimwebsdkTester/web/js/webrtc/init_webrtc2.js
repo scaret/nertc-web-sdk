@@ -2130,6 +2130,59 @@ $('#playScreenAudioOff').on('click', () => {
 
 /** 
  * ----------------------------------------
+ *              金融私有化录制逻辑
+ * ----------------------------------------
+ */
+// 开始录制
+$('#recordVideoPro').on('click', async (_event) => {
+  console.log('金融私有化录制: 开始录制')
+  const result = await rtc.client.startMediaRecording({
+    recorder: $('#part-record-pro input[name="recordType"]:checked').val(),
+    recordConfig: {
+      recordType: $('#part-record-pro input[name="recordMediaType"]:checked').val(),
+      recordName: $('#recordName').val(),
+      recordVideoWidth: $('#recordVideoWidth').val(),
+      recordVideoHeight: $('#recordVideoHeight').val(),
+      recordVideoFrame: $('#recordVideoFrame').val(),
+    }
+  })
+})
+
+// 结束录制
+$('#recordVideoEndPro').on('click', async (_event) => {
+  console.log('金融私有化录制: 结束录制')
+  try{
+    await rtc.client.stopMediaRecording()
+  }catch(e) {
+    console.error(e)
+    addLog(e.message)
+  }
+  
+})
+
+// 下载文件
+$('#recordDownloadPro').on('click', async (_event) => {
+  console.log('金融私有化录制: 下载文件')
+  try{
+    await rtc.client.downloadMediaRecording()
+  }catch(e) {
+    console.error(e)
+    addLog(e.message)
+  }
+})
+// 清理文件
+$('#recordCleanPro').on('click', (_event) => {
+  console.log('金融私有化录制: 清理文件')
+  try{
+    await rtc.client.cleanMediaRecording()
+  }catch(e) {
+    console.error(e)
+    addLog(e.message)
+  }
+})
+
+/** 
+ * ----------------------------------------
  *              本地录制逻辑
  * ----------------------------------------
  */

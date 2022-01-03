@@ -240,6 +240,7 @@ class Record extends EventEmitter {
       }
       return Promise.resolve()
     }).then(() => {
+      console.warn('下载录制： ', this._status)
       if (this._status.recordUrl) {
         const a = document.createElement('a')
         document.body.appendChild(a)

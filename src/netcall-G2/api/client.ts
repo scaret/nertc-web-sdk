@@ -1770,7 +1770,7 @@ class Client extends Base {
     if (!this.recordManager.record){
       throw new RtcError({
         code: ErrorCode.NO_RECORD,
-        message: 'no record'
+        message: '操作非法：没有开始录制'
       })
     }
     //FIXME
@@ -1784,7 +1784,7 @@ class Client extends Base {
     if (!this.recordManager.record){
       throw new RtcError({
         code: ErrorCode.NO_RECORD,
-        message: 'no record'
+        message: '操作非法：没有开始录制'
       })
     }
     return this.recordManager.record.clean()
@@ -1796,7 +1796,7 @@ class Client extends Base {
     if (!this.recordManager.record){
       throw new RtcError({
         code: ErrorCode.NO_RECORD,
-        message: 'no record'
+        message: '操作非法：没有开始录制'
       })
     }
     return this.recordManager.record.download()
