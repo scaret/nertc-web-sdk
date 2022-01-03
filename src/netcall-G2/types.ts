@@ -646,6 +646,7 @@ export interface RecordStartOptions{
   stream: MediaStream|MediaStream[];
   uid: number|string;
   type: string;
+  recordName?: string;
   reset: boolean;
 }
 
@@ -894,17 +895,20 @@ export interface SnapshotOptions{
 }
 
 export interface MediaRecordingOptions{
-  type: string;
+  type:string;
   reset: boolean;
+}
+export interface ClientMediaRecordingOptions{
   recorder?: 'local' | 'all';
   recordConfig?: ClientRecordConfig
 }
 
 export interface ClientRecordConfig{
+  recordType: 'audio' | 'video';
+  recordName?: string;
   recordVideoWidth: number;
   recordVideoHeight: number;
   recordVideoFrame: number;
-  recordFileName: string;
   recordSize: number;
 }
 

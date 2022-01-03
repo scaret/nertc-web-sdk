@@ -55,7 +55,7 @@ class Record extends EventEmitter {
    * @return {[type]}               [Promise]
    */
   async start (option:RecordStartOptions) {
-    const {stream = null, uid = '0', type = 'video', reset = false } = option
+    const {stream = null, uid = '0', type = 'video', reset = false, recordName } = option
     this.logger.log('开始本地录制: ', JSON.stringify(option, null, ''))
     let reason = null;
     if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) {
@@ -94,7 +94,7 @@ class Record extends EventEmitter {
     
     this._status.stream = stream
     this._status.option = option
-    this._status.fileName = `${this._status.option.uid}--${this._getTimeStamp()}--${this._status.option.type || 'video'}`
+    this._status.fileName = recordName || `${this._status.option.uid}--${this._getTimeStamp()}--${this._status.option.type || 'video'}`
     this._status.startTime = this._getTimeStamp()
     // 不是音频就是视频
     let contentTypes = [
@@ -459,7 +459,7 @@ class Record extends EventEmitter {
     // 启用日志打印
     this._clearTimer()
     this._startTimer()
-    return Promise.resolve(this._status.option)
+    return Promise.resolve(this._status.recordId)
   }
 
   /**

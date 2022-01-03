@@ -8,7 +8,6 @@ import { Timer, FormatMediaOptions, ClientRecordConfig, ILogger } from '../../ty
 class FormatMedia extends EventEmitter{
   private audioContext: AudioContext| null;
   public destination: MediaStreamAudioDestinationNode|null;
-  private outputAudioStream: MediaStream|null;
   private audioStreams: AudioNode[];
   private canvas: HTMLCanvasElement|null;
   private canvasContext: CanvasRenderingContext2D|null;
@@ -19,7 +18,6 @@ class FormatMedia extends EventEmitter{
     this.logger = options.logger
     this.audioContext = null
     this.destination = null
-    this.outputAudioStream = null
     this.audioStreams = []
     this.canvas = null
     this.canvasContext = null
@@ -35,8 +33,7 @@ class FormatMedia extends EventEmitter{
       }
       this.destination = this.audioContext.createMediaStreamDestination();
       await this.initAudioIn(streams);
-      return this.destination.stream
-      return 
+      return this.destination.stream 
     } catch(e) {
       this.logger.error('媒体设备获取失败: ', e.name, e.message)
       return Promise.reject(e)
@@ -106,11 +103,11 @@ class FormatMedia extends EventEmitter{
     const recordVideoHeight = config?.recordVideoHeight || 360
     const recordVideoFrame = config?.recordVideoFrame || 15
 
-    if (this.canvas) {
+    if (!this.canvas) {
       this.canvas = document.createElement('canvas')
       this.canvas.width = recordVideoWidth
       this.canvas.height = recordVideoHeight
-      this.canvasContext = this.canvas.getContext('2d')
+      this.canvasContext = this.canvas.getContext('2d') 
     }
     if (this.canvasTimer) {
       clearInterval(this.canvasTimer)
@@ -157,6 +154,8 @@ class FormatMedia extends EventEmitter{
           break;  
       }
     }, Math.floor(1000 / recordVideoFrame))
+    //@ts-ignore
+    return this.canvas.captureStream()
   }
 
   async stopFormatVideo () {

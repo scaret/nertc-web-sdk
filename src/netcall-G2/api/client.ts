@@ -11,7 +11,7 @@ import {
   Client as IClient,
   SpatialInitOptions, 
   MediaSubStatus,
-  MediaRecordingOptions,
+  ClientMediaRecordingOptions,
   ClientRecordConfig
 } from "../types";
 import {LocalStream} from "./localStream";
@@ -1681,17 +1681,16 @@ class Client extends Base {
    * ************************ 客户端录制相关 *****************************
    */
   /**
-   * 开启单人视频录制
+   * 开始录制
    * @function startMediaRecording
    * @memberOf Stream#
    * @param {Object} param 参数对象
-   * @param {String} param.type 如果是自己流录制，'audio','video'或'screen'
-   * @param {Boolean} param.reset 如果之前的录制视频未下载，是否重置，默认false
+   * @param {String} param.recordConfig 录制设置的参数
    * @param {recorder} param.recorder ['local': 录制自己，'all': 录制本地和远端]
    * @returns {Promise} 包含recordId值，用于下载等操作
    */
-  async startMediaRecording (options: MediaRecordingOptions) {
-    const {type, recorder, reset, recordConfig} = options
+  async startMediaRecording (options: ClientMediaRecordingOptions) {
+    const {recorder, recordConfig} = options
     if(!this.adapterRef.localStream) {
       return
     }
@@ -1720,76 +1719,45 @@ class Client extends Base {
 
     const audioStream = await this.recordManager.formatMedia.formatAudio(audioStreams)
 
-    const videoStreams = []
-    if (type === 'video') {
-      if (this.adapterRef.localStream.mediaHelper.video.videoStream.getVideoTracks().length){
-        videoStreams.push(this.adapterRef.localStream.Play?.videoView)
-      } else if (this.adapterRef.localStream.mediaHelper.screen.screenVideoStream.getVideoTracks().length){
-        videoStreams.push(this.adapterRef.localStream.mediaHelper.screen.screenVideoStream)
+    const videoDoms = []
+    if (recordConfig?.recordType === 'video') {
+      if (this.adapterRef.localStream.Play?.videoDom){
+        videoDoms.push(this.adapterRef.localStream.Play?.videoDom)
+      }
+      if (this.adapterRef.localStream.Play?.screenDom){
+        videoDoms.push(this.adapterRef.localStream.Play?.screenDom)
       }
 
       if (recorder === 'all' && this.adapterRef.remoteStreamMap) {
         for (var uid in this.adapterRef.remoteStreamMap){
           const remoteStream = this.adapterRef.remoteStreamMap[uid];
-          if (remoteStream.mediaHelper.video.videoStream.getVideoTracks().length){
-            videoStreams.push(remoteStream.mediaHelper.video.videoStream)
-          } else if (remoteStream.mediaHelper.screen.screenVideoStream.getVideoTracks().length){
-            videoStreams.push(remoteStream.mediaHelper.screen.screenVideoStream)
+          if (remoteStream.Play?.videoDom){
+            videoDoms.push(remoteStream.Play?.videoDom)
+          }
+          if (remoteStream.Play?.screenDom){
+            videoDoms.push(remoteStream.Play?.screenDom)
           }
         }
       }
 
-      if (videoStreams.length <= 2 && videoStreams.length > 0) {
+      if (videoDoms.length <= 2 && videoDoms.length > 0) {
 
       }
-
-
     }
-    
+    const videoStream = await this.recordManager.formatMedia.formatVideo(videoDoms, recordConfig)
 
-
-
-    if (recorder && recordConfig) {
-      streams = <[MediaStream]>this.getRecoredStream(type, recorder, recordConfig)
-    } else {
-      switch (type) {
-        case 'screen':
-          streams.push(this.mediaHelper.screen.screenVideoStream)
-          streams.push(this.mediaHelper.audio.audioStream)
-          break;
-        case 'camera':
-        case 'video':
-          streams.push(this.mediaHelper.video.videoStream)
-          streams.push(this.mediaHelper.audio.audioStream)
-          break
-        case 'audio':
-          // 音频则为混音
-          streams.push(this.mediaHelper.audio.audioStream);
-          if (this.client.adapterRef.remoteStreamMap){
-            for (var uid in this.client.adapterRef.remoteStreamMap){
-              const remoteStream = this.client.adapterRef.remoteStreamMap[uid];
-              streams.push(remoteStream.mediaHelper.audio.audioStream);
-            }
-          }
-      }
-    }
-    
+    const streams = []
+    streams.push(audioStream, videoStream)
     if (streams.length === 0) {
       this.logger.log('没有没发现要录制的媒体流')
       return 
     }
-    if (!this._record || !this.streamID || !streams){
-      throw new RtcError({
-        code: ErrorCode.INVALID_PARAMETER,
-        message: 'startMediaRecording: invalid parameter'
-      })
-    }
 
-
-    return this._record && this._record.start({
-      uid: this.client.adapterRef.channelInfo.uidType === 'string' ? this.stringStreamID : this.streamID,
-      type: type,
-      reset: reset,
+    return this.recordManager.record.start({
+      uid: '',
+      type: recordConfig?.recordType || 'video',
+      recordName: recordConfig?.recordName,
+      reset: true,
       stream: streams
     })
 
@@ -1797,95 +1765,41 @@ class Client extends Base {
   }
   /**
    * 结束视频录制
-   * @function stopMediaRecording
-   * @memberOf Stream#
-   * @param {Object} options 参数对象
-   * @param {String} options.recordId 录制id，可以通过listMediaRecording接口获取
-   * @returns {Promise}
    */
   stopMediaRecording (options: {recordId?: string}) {
-    if (!this._record){
+    if (!this.recordManager.record){
       throw new RtcError({
         code: ErrorCode.NO_RECORD,
         message: 'no record'
       })
     }
     //FIXME
-    return this._record.stop({})
+    return this.recordManager.record.stop({})
   }
 
   /**
-   * 播放视频录制
-   * @function playMediaRecording
-   * @memberOf Stream#
-   * @param {Object} options 参数对象
-   * @param {String} options.recordId 录制id，可以通过listMediaRecording接口获取
-   * @param {Element} options.view 音频或者视频画面待渲染的DOM节点，如div、span等非流媒体节点
-   * @returns {Promise}
-   */
-  playMediaRecording (options:{recordId: string; view: HTMLElement}) {
-    if (!this._record){
-      throw new RtcError({
-        code: ErrorCode.NO_RECORD,
-        message: 'no record'
-      })
-    }
-    return this._record.play(options.view)
-  }
-  /**
-   * 枚举录制的音视频
-   * @function listMediaRecording
-   * @memberOf Stream#
-   * @returns {Array}
-   */
-  listMediaRecording () {
-    let list = []
-    if (!this._record){
-      throw new RtcError({
-        code: ErrorCode.NO_RECORD,
-        message: 'no record'
-      })
-    }
-    const recordStatus = this._record.getRecordStatus();
-    if (recordStatus.status !== "init") {
-      list.push(recordStatus);
-    }
-    return list
-  }
-  /**
    * 清除录制的音视频
-   * @function cleanMediaRecording
-   * @memberOf Stream#
-   * @param {Object} options 参数对象
-   * @param {String} options.recordId 录制id，可以通过listMediaRecording接口获取
-   * @returns {Promise}
    */
-  cleanMediaRecording (options: {recordId: string}) {
-    if (!this._record){
+  cleanMediaRecording () {
+    if (!this.recordManager.record){
       throw new RtcError({
         code: ErrorCode.NO_RECORD,
         message: 'no record'
       })
     }
-    return this._record.clean()
+    return this.recordManager.record.clean()
   }
   /**
    * 下载录制的音视频
-   * @function downloadMediaRecording
-   * @memberOf Stream#
-   * @param {Object} param 参数对象
-   * @param {Object} options 参数对象
-   * @param {String} options.recordId 录制id，可以通过listMediaRecording接口获取
- * @returns {Promise}
    */
-  downloadMediaRecording (options: {recordId: string}) {
-    if (!this._record){
+  downloadMediaRecording () {
+    if (!this.recordManager.record){
       throw new RtcError({
         code: ErrorCode.NO_RECORD,
         message: 'no record'
       })
     }
-    return this._record.download()
+    return this.recordManager.record.download()
   }
 
   

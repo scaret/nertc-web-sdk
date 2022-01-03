@@ -207,6 +207,16 @@ class Base extends EventEmitter {
       this.adapterRef._statsReport.destroy()
       this.adapterRef._statsReport = null
     }
+
+    if (this.recordManager.formatMedia) {
+      this.recordManager.formatMedia.destroy()
+      this.recordManager.formatMedia = null
+    }
+
+    if (this.recordManager.record) {
+      this.recordManager.record.destroy()
+      this.recordManager.record = null
+    }
   }
 
   _resetState() {
@@ -226,16 +236,6 @@ class Base extends EventEmitter {
       clearInterval(this.adapterRef.netStatusTimer)
       this.adapterRef.netStatusTimer = null
     }
-
-    if (this._recordManager.canvasTimer) {
-      clearInterval(this._recordManager.canvasTimer)
-      this._recordManager.canvasTimer = null
-    }
-    if (this._recordManager.record) {
-      this._recordManager.record.destroy()
-      this._recordManager.record = null
-    }
-    this._recordManager.canvas = null
     this.adapterRef.uid2SscrList = {}
 
     // 状态类变量
