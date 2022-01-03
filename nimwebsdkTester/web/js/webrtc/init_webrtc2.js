@@ -2171,7 +2171,7 @@ $('#recordDownloadPro').on('click', async (_event) => {
   }
 })
 // 清理文件
-$('#recordCleanPro').on('click', (_event) => {
+$('#recordCleanPro').on('click', async (_event) => {
   console.log('金融私有化录制: 清理文件')
   try{
     await rtc.client.cleanMediaRecording()

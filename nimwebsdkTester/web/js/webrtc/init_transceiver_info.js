@@ -19,7 +19,7 @@ let recvStatsFilter = {
 }
 
 const captureTimer = setInterval(async ()=>{
-  if (!rtc.client){
+  if (!rtc || !rtc.client){
     return
   }
   let audioInfo = "";
