@@ -345,7 +345,7 @@
               <option value="" selected>关闭</option>
               <option value="rc4">自定义加密：rc4，密钥⬆️</option>
               <option value="sm4-128-ecb">自定义加密：使用sm4-128-ecb，密钥⬆️</option>
-              <option value="invert">测试：使用取反</option>
+              <option value="extra-info">测试：端到端延时</option>
             </select>
             <button type="button" id="setTransform">设置自定义加密</button>
           </div>
@@ -923,6 +923,14 @@
           </div>
         </div>
 
+        <p class="block-header">对时<span id="timesync-info"></span></p>
+        <div class="part hide">
+          <label>
+            补足端到端时钟差：
+            <input type="text" id="timesync-value" value="">毫秒
+            <button id="timesync-btn">确定</button>
+          </label>
+        </div>
         <p class="block-header" id="upstreamStatus">采集/上行状态 <span id="upstreamBitrate"></span></p>
         <div class="part hide" id="part-upstream" style="max-width: 350px; overflow: hidden; white-space: nowrap;">
           <div class="line">
@@ -1037,8 +1045,8 @@
   <script src="./js/nim/NIM_Web_NERTC.js"></script>
   <script src="./js/webrtc/config.js"></script>
   <script src="./js/webrtc/init_event_pairing.js"></script>
-  <script src="./js/webrtc/init_transceiver_info.js"></script>
   <script src="./js/webrtc/init_customcrypt.js"></script>
+  <script src="./js/webrtc/init_transceiver_info.js"></script>
   <script src="./js/webrtc/init_webrtc2.js"></script>
 
 </body>

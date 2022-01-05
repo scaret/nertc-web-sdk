@@ -731,9 +731,9 @@ class Mediasoup extends EventEmitter {
         encodedStreams.readable.pipeThrough(transformStream).pipeTo(encodedStreams.writable);
         senderInfo.encodedStreams = encodedStreams
         senderInfo.transformStream = transformStream
-        this.loggerRecv.log(`发送端自定义加密，成功启动。 ${senderInfo.mediaType} ${senderInfo}`)
+        this.loggerRecv.log(`发送端自定义加密，成功启动。 ${senderInfo.mediaType} ${senderInfo.streamType}`)
       } else {
-        this.loggerRecv.log(`发送端自定义加密，复用之前的通道。 ${senderInfo.mediaType} ${senderInfo}`)
+        this.loggerRecv.log(`发送端自定义加密，复用之前的通道。 ${senderInfo.mediaType} ${senderInfo.streamType}`)
       }
     }
   }

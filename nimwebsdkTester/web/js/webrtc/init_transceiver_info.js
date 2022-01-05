@@ -323,6 +323,21 @@ const captureTimer = setInterval(async ()=>{
           li2 += " 可订阅"
         }
         li2 += " " + subStatus.status
+        const now = Date.now() + (timesyncMs || 0)
+        const recentFramesRecv = window.framesRecv && window.framesRecv[uid] && window.framesRecv[uid][mediaType].filter((extraInfo)=>{
+          return now - extraInfo.recvTs < 3000
+        })
+        if (recentFramesRecv && recentFramesRecv.length){
+          li2 += " " + recentFramesRecv[recentFramesRecv.length - 1].streamType
+          let delaySum = 0;
+          recentFramesRecv.forEach((extraInfo)=>{
+            delaySum += extraInfo.recvTs - extraInfo.ts
+          })
+          let delayMean = (delaySum / recentFramesRecv.length)
+          li2 += " 端到端延迟：" + delayMean + "毫秒"
+        }else{
+          // console.error(window.framesRecv[uid], uid, mediaType);
+        }
         li2 += "</li>"
         if (li2.match(/ 未发布 unsubscribed/)){
           // 不打印

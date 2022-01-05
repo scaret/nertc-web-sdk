@@ -1,6 +1,6 @@
 function findCryptIndexH264(data){
   for (let i = 3; i < data.length; i++){
-    if (data[i] === 0x61|| data[i] === 0x65 && data[i - 1] === 0x01 && data[i - 2] === 0x00 && data[i - 3] === 0x00){
+    if ((data[i] === 0x61|| data[i] === 0x65) && data[i - 1] === 0x01 && data[i - 2] === 0x00 && data[i - 3] === 0x00){
       // 低四位为1为p帧，低四位为5为i帧。算法待改进
       return i+1;
     }
@@ -16,7 +16,7 @@ function initRC4(){
   addLog("初始化自定义加密：rc4。密钥：" + rc4_secret)
 }
 
-function encodeFunctionRC4(mediaType, encodedFrame, controller){
+function encodeFunctionRC4({mediaType, encodedFrame, controller}){
   if (encodedFrame.data.length){
     const u8Arr1 = new Uint8Array(encodedFrame.data);
     const h264Index = findCryptIndexH264(u8Arr1);
@@ -27,7 +27,7 @@ function encodeFunctionRC4(mediaType, encodedFrame, controller){
   controller.enqueue(encodedFrame);
 }
 
-function decodeFunctionRC4(mediaType, encodedFrame, controller){
+function decodeFunctionRC4({mediaType, encodedFrame, controller}){
   if (encodedFrame.data.length){
     const u8Arr1 = new Uint8Array(encodedFrame.data);
     const h264Index = findCryptIndexH264(u8Arr1);
@@ -54,7 +54,7 @@ function initSm4(){
   addLog("初始化自定义加密：sm4-128-ecb。密钥：" + secret)
 }
 
-function encodeFunctionSM4(mediaType, encodedFrame, controller){
+function encodeFunctionSM4({mediaType, encodedFrame, controller}){
   const u8Arr1 = new Uint8Array(encodedFrame.data);
   const h264Index = findCryptIndexH264(u8Arr1);
   const shiftStart = mediaType === "audio" ? 0: Math.max(h264Index, 0)
@@ -67,7 +67,7 @@ function encodeFunctionSM4(mediaType, encodedFrame, controller){
   controller.enqueue(encodedFrame);
 }
 
-function decodeFunctionSM4(mediaType, encodedFrame, controller){
+function decodeFunctionSM4({mediaType, encodedFrame, controller}){
   const u8Arr1 = new Uint8Array(encodedFrame.data);
   const h264Index = this.findCryptIndexH264(u8Arr1);
   const shiftStart = mediaType === "audio" ? 0: Math.max(h264Index, 0)
@@ -92,43 +92,129 @@ function decodeFunctionSM4(mediaType, encodedFrame, controller){
 //ENDOF 自定义加密：SM4-128-ecb
 
 
-//STARTOF 取反
-function encodeFunctionInvert(mediaType, encodedFrame, controller){
+//STARTOF extraInfo
+const textEncoderCustomCrypt = new TextEncoder();
+const textDecoderCustomCrypt = new TextDecoder();
+const frameIndex = {
+  audio: {
+    high: 0,
+  },
+  video: {
+    high: 0,
+    low: 0,
+  },
+  screen: {
+    high: 0,
+    low: 0,
+  },
+}
+
+window.framesRecv = {
+  // [uid]: {[mediaType]: extraInfo[]} 最多100
+}
+
+function encodeFunctionExtraInfo({mediaType, encodedFrame, controller, streamType}){
   const u8Arr1 = new Uint8Array(encodedFrame.data);
   const h264Index = findCryptIndexH264(u8Arr1);
   const shiftStart = mediaType === "audio" ? 0: Math.max(h264Index, 0)
-  // console.error(`encodeFunctionInvert shiftStart ${shiftStart}/${u8Arr1.length}`)
-  for (let i = shiftStart; i < u8Arr1.length; i++){
-    u8Arr1[i] = 255 - u8Arr1[i];
+  // console.error(`encodeFunctionExtraInfo shiftStart ${shiftStart}/${u8Arr1.length}`, mediaType, encodedFrame.timestamp);
+  const extraInfo = {
+    ts: Date.now() + (window.timesyncMs || 0),
+    streamType: streamType,
   }
-  encodedFrame.data = u8Arr1.buffer;
+  frameIndex[mediaType][streamType] += 1
+  extraInfo.frameIndex = frameIndex[mediaType][streamType]
+  // console.log("extraInfo", extraInfo)
+  // 不要超过256个字符
+  const extraInfoStr = JSON.stringify(extraInfo)
+  const extraInfoU8Arr = textEncoderCustomCrypt.encode( extraInfoStr + "ab")
+  if (extraInfoStr.length > 255){
+    console.error("extraInfo过长", extraInfoStr)
+  }
+  extraInfoU8Arr[extraInfoU8Arr.length - 1] = 88
+  extraInfoU8Arr[extraInfoU8Arr.length - 2] = extraInfoStr.length
+  const u8ArrOut = new Uint8Array(u8Arr1.length + extraInfoU8Arr.length)
+  
+  for (let i = 0; i < u8Arr1.length; i++){
+    u8ArrOut[i] = u8Arr1[i];
+    // if (i < shiftStart){
+    //   u8ArrOut[i] = u8Arr1[i];
+    // }else{
+    //   u8ArrOut[i] = 255 - u8Arr1[i];
+    // }
+  }
+  for (let i = 0; i < extraInfoU8Arr.length; i++){
+    u8ArrOut[u8ArrOut.length - i - 1] = extraInfoU8Arr[extraInfoU8Arr.length - i - 1]
+  }
+  encodedFrame.data = u8ArrOut.buffer;
   controller.enqueue(encodedFrame);
 }
 
-function decodeFunctionInvert(mediaType, encodedFrame, controller){
-  const u8Arr1 = new Uint8Array(encodedFrame.data.length);
+function decodeFunctionExtraInfo({mediaType, encodedFrame, controller, uid}){
+  const u8Arr1 = new Uint8Array(encodedFrame.data);
   const h264Index = findCryptIndexH264(u8Arr1);
   const shiftStart = mediaType === "audio" ? 0: Math.max(h264Index, 0)
-  // console.error(`decodeFunctionInvert shiftStart ${shiftStart}/${u8Arr1.length}`)
-  for (let i = shiftStart; i < u8Arr1.length; i++){
-    u8Arr1[i] = 255 - u8Arr1[i];
+  // console.error(`decodeFunctionExtraInfo shiftStart ${shiftStart}/${u8Arr1.length}`, mediaType, encodedFrame.timestamp);
+  if (u8Arr1[u8Arr1.length - 1] === 88) {
+    const extraInfoLength = u8Arr1[u8Arr1.length - 2]
+    const extraInfoStr = textDecoderCustomCrypt.decode(u8Arr1.subarray(u8Arr1.length - 2 - extraInfoLength, u8Arr1.length - 2))
+    const extraInfo = JSON.parse(extraInfoStr, null, 2)
+    // console.error("接收帧长", extraInfo.frameIndex, u8Arr1.length - 2 - extraInfoStr.length)
+    extraInfo.recvTs = Date.now() + (window.timesyncMs || 0)
+    extraInfo.type = encodedFrame.type
+    if (!framesRecv[uid]){
+      framesRecv[uid] = {audio: [], video: [], screen: []}
+    }
+    const lastExtraInfo = framesRecv[uid][mediaType][framesRecv[uid][mediaType].length - 1]
+    if (lastExtraInfo && lastExtraInfo.frameIndex){
+      if (lastExtraInfo.streamType !== extraInfo.streamType){
+        console.error("大小流切换。uid: ", uid, mediaType, lastExtraInfo.streamType, "=>", extraInfo.streamType)
+        framesRecv[uid][mediaType] = []
+      }else{
+        for (let i = 0; i < framesRecv[uid][mediaType].length; i++){
+          const historyExtraInfo = framesRecv[uid][mediaType][i];
+          if (historyExtraInfo.frameIndex === extraInfo.frameIndex){
+            console.error("收到重复帧。uid：", uid, mediaType, extraInfo.streamType, "帧序号：", extraInfo.frameIndex, "帧长：", encodedFrame.data.byteLength, encodedFrame.type, extraInfo)
+            extraInfo.dulplicated = true;
+            break;
+          }
+        }
+      }
+    }
+    if (!extraInfo.dulplicated){
+      framesRecv[uid][mediaType].push(extraInfo)
+    }
+    if (framesRecv[uid][mediaType].length > 100){
+      framesRecv[uid][mediaType].shift()
+    }
+    const u8ArrOut = new Uint8Array(u8Arr1.length - 2 - extraInfoLength);
+    for (let i = 0; i < u8ArrOut.length; i++){
+      u8ArrOut[i] = u8Arr1[i];
+      // if (i < shiftStart){
+      //   u8ArrOut[i] = u8Arr1[i];
+      // }else{
+      //   u8ArrOut[i] = 255 - u8Arr1[i];
+      // }
+    }
+    encodedFrame.data = u8ArrOut.buffer;
+    controller.enqueue(encodedFrame);
+  }else {
+    console.error("检测到未知帧", mediaType, u8Arr1)
   }
-  encodedFrame.data = u8Arr1.buffer;
-  controller.enqueue(encodedFrame);
 }
-//ENDOF 取反
+//ENDOF extraInfo
 
 // 基于window.customTransform
 const processSenderTransform = function(evt){
   switch(window.customTransform){
     case "rc4":
-      encodeFunctionRC4(evt.mediaType, evt.encodedFrame, evt.controller)
+      encodeFunctionRC4(evt)
       break;
     case "sm4-128-ecb":
-      encodeFunctionSM4(evt.mediaType, evt.encodedFrame, evt.controller)
+      encodeFunctionSM4(evt)
       break;
-    case "invert":
-      encodeFunctionInvert(evt.mediaType, evt.encodedFrame, evt.controller)
+    case "extra-info":
+      encodeFunctionExtraInfo(evt)
       break;
     default:
       //不处理
@@ -140,13 +226,13 @@ const processReceiverTransform = function (evt){
   // console.error("window.customTransform", window.customTransform)
   switch(window.customTransform){
     case "rc4":
-      decodeFunctionRC4(evt.mediaType, evt.encodedFrame, evt.controller)
+      decodeFunctionRC4(evt)
       break;
     case "sm4-128-ecb":
-      decodeFunctionSM4(evt.mediaType, evt.encodedFrame, evt.controller)
+      decodeFunctionSM4(evt)
       break;
-    case "invert":
-      decodeFunctionInvert(evt.mediaType, evt.encodedFrame, evt.controller)
+    case "extra-info":
+      decodeFunctionExtraInfo(evt)
       break;
     default:
       //不处理

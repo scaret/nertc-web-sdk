@@ -957,6 +957,17 @@ $('#destroy-btn').on('click', () => {
   rtc.client.destroy();
 })
 
+window.timesyncMs = parseInt(window.localStorage.getItem(`${localStoragePrefix}timesync-${env}`)) || 0
+if (timesyncMs){
+  $("#timesync-info").text(` ${timesyncMs}毫秒`)
+}
+$('#timesync-btn').on('click', ()=>{
+  const value = parseInt($('#timesync-value').val())
+  timesyncMs = value
+  $("#timesync-info").text(` ${timesyncMs}毫秒`)
+  window.localStorage.setItem(`${localStoragePrefix}timesync-${env}`, value)
+})
+
 window.customTransform = ""
 $('#setTransform').on('click', () => {
   let customTransform = $("#customTransform").val()
