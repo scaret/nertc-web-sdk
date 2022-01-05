@@ -652,13 +652,11 @@ class Signalling extends EventEmitter {
             if(!this.adapterRef.localStream){
               return;
             }
-            // 判断音频设备有没有开启
-            let isAudioOn = this.adapterRef._mediasoup && this.adapterRef._mediasoup._sendTransport && this.adapterRef._mediasoup._sendTransport.handler._pc.audioSender && this.adapterRef._mediasoup._sendTransport.handler._pc.audioSender.track;
+            let isAudioOn = this.adapterRef.localStream.audio;
+            let isScreenAudioOn = this.adapterRef.localStream.screenAudio;
             // 关掉所有音频相关
-            if(!!isAudioOn) {
-              this.adapterRef.localStream.close({type: "audio"});
-              this.adapterRef.localStream.close({type: "screenAudio"});
-            }
+            (!!isAudioOn) && this.adapterRef.localStream.close({type: "audio"});
+            (!!isScreenAudioOn) && this.adapterRef.localStream.close({type: "screenAudio"});
             
             this.adapterRef.localStream.stopAllEffects(); // 关掉所有音效
             let localAudio = this.adapterRef.localStream.mediaHelper.audio;
@@ -676,18 +674,20 @@ class Signalling extends EventEmitter {
               value: 'isAudioBanned: false'
             })
           }
+          if(!this.adapterRef.localStream){
+            return;
+          }
           if((<any>window).isVideoBanned){
             this.adapterRef.instance.apiEventReport('setFunction', {
               name: 'set_mediaRightChange',
               oper: '1',
               value: 'isVideoBanned: true'
             })
-            // 判断 video/screen 有没有开启
-            let isVideoOn = this.adapterRef._mediasoup && this.adapterRef._mediasoup._sendTransport && this.adapterRef._mediasoup._sendTransport.handler._pc.videoSender && this.adapterRef._mediasoup._sendTransport.handler._pc.videoSender.track;
-            let isScreenOn = this.adapterRef._mediasoup && this.adapterRef._mediasoup._sendTransport && this.adapterRef._mediasoup._sendTransport.handler._pc.screenSender && this.adapterRef._mediasoup._sendTransport.handler._pc.screenSender.track;
+            let isVideoOn = this.adapterRef.localStream.video;
+            let isScreenOn = this.adapterRef.localStream.screen;
             // 关掉所有视频相关 (辅流跟随视频流同步禁止)
-            (!!isVideoOn) && this.adapterRef.localStream?.close({type: "video"});
-            (!!isScreenOn) && this.adapterRef.localStream?.close({type: "screen"});
+            (!!isVideoOn) && this.adapterRef.localStream.close({type: "video"});
+            (!!isScreenOn) && this.adapterRef.localStream.close({type: "screen"});
           }else {
             this.adapterRef.instance.apiEventReport('setFunction', {
               name: 'set_mediaRightChange',
