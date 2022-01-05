@@ -695,12 +695,20 @@ class LocalStream extends EventEmitter {
       }
     }
     if (playOptions.audio){
-      const param:ReportParamEnableEarback = {
-        enable: true
+      let param:ReportParamEnableEarback;
+      if((<any>window).isAudioBanned) {
+        param = {
+          enable: false
+        }
+      }else {
+        param = {
+          enable: true
+        }
       }
+       
       this.client.apiFrequencyControl({
         name: 'enableEarback',
-        code: 0,
+        code: param.enable ? 0 : 1,
         param: JSON.stringify(param, null, ' ')
       })
     }
