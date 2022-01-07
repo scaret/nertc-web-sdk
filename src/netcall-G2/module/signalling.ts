@@ -646,7 +646,7 @@ class Signalling extends EventEmitter {
             this.adapterRef.instance.apiEventReport('setFunction', {
               name: 'set_mediaRightChange',
               oper: '1',
-              value: 'isAudioBanned: true'
+              isAudioBanned: true
             })
             
             if(!this.adapterRef.localStream){
@@ -671,7 +671,7 @@ class Signalling extends EventEmitter {
             this.adapterRef.instance.apiEventReport('setFunction', {
               name: 'set_mediaRightChange',
               oper: '0',
-              value: 'isAudioBanned: false'
+              isAudioBanned: false
             })
           }
           if(!this.adapterRef.localStream){
@@ -681,7 +681,7 @@ class Signalling extends EventEmitter {
             this.adapterRef.instance.apiEventReport('setFunction', {
               name: 'set_mediaRightChange',
               oper: '1',
-              value: 'isVideoBanned: true'
+              isVideoBanned: true
             })
             let isVideoOn = this.adapterRef.localStream.video;
             let isScreenOn = this.adapterRef.localStream.screen;
@@ -692,7 +692,7 @@ class Signalling extends EventEmitter {
             this.adapterRef.instance.apiEventReport('setFunction', {
               name: 'set_mediaRightChange',
               oper: '0',
-              value: 'isVideoBanned: false'
+              isVideoBanned: false
             })
           }
         } else {
@@ -837,13 +837,13 @@ class Signalling extends EventEmitter {
         this.adapterRef.instance.apiEventReport('setFunction', {
           name: 'set_mediaRightChange',
           oper: '1',
-          value: 'isAudioBanned: true'
+          isAudioBanned: true
         })
       }else {
         this.adapterRef.instance.apiEventReport('setFunction', {
           name: 'set_mediaRightChange',
           oper: '0',
-          value: 'isAudioBanned: false'
+          isAudioBanned: false
         })
       }
 
@@ -851,13 +851,13 @@ class Signalling extends EventEmitter {
         this.adapterRef.instance.apiEventReport('setFunction', {
           name: 'set_mediaRightChange',
           oper: '1',
-          value: 'isVideoBanned: true'
+          isVideoBanned: true
         })
       }else {
         this.adapterRef.instance.apiEventReport('setFunction', {
           name: 'set_mediaRightChange',
           oper: '0',
-          value: 'isVideoBanned: false'
+          isVideoBanned: false
         })
       }
 
