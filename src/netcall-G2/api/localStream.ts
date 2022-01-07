@@ -459,6 +459,36 @@ class LocalStream extends EventEmitter {
       this.client.adapterRef.channelInfo.sessionConfig.videoQuality = this.videoProfile.resolution
       this.client.adapterRef.channelInfo.sessionConfig.videoFrameRate = this.videoProfile.frameRate
     }
+    if((<any>window).isAudioBanned && (<any>window).isVideoBanned) {
+      return;
+    }
+    if((<any>window).isAudioBanned) {
+      const reason = `服务器禁止发送音频流`;
+      this.logger.error(reason);
+      this.client.apiFrequencyControl({
+        name: 'open',
+        code: -1,
+        param: JSON.stringify({
+          reason: reason,
+        }, null, ' ')
+      });
+      this.audio = false;
+      this.screenAudio = false;
+    }
+    
+    if((<any>window).isVideoBanned) {
+      const reason = `服务器禁止发送视频流`;
+      this.logger.error(reason);
+      this.client.apiFrequencyControl({
+        name: 'open',
+        code: -1,
+        param: JSON.stringify({
+          reason: reason,
+        }, null, ' ')
+      });
+      this.video = false;
+      this.screen = false;
+    }
     this.client.apiFrequencyControl({
       name: 'init',
       code: 0,
