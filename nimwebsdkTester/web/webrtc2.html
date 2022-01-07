@@ -97,14 +97,14 @@
             <input type="text" id="turnAddr" value='turn:223.252.198.177:3478?transport=tcp'>
             是否使用：<input type="checkbox" id="isTurnAddrConf"/>
           </div> -->
-          <div class="line">
-            CID: <span id="cid"></span>
-          </div>
-          <div class="line">
+          <div class="line" id="envInfo">
+            CID: <span id="cid"></span><br/>
+            <br/>
             版本号: <span id="sdkVersion"></span> 环境: <span id="sdkEnv"></span><br>
             提交号: <span id="sdkBuild"></span><br />
             日志上传是否开启: <span id="logUploadEnabled"></span><br/>
             <span id="systemRequirement"></span>
+            <input type="button" id="copyEnvInfo" value="复制到剪贴板">
           </div>
           <div class="line">
             <button type="button" id='config'>参数配置</button>

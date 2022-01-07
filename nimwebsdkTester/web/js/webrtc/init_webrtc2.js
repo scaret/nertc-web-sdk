@@ -907,8 +907,8 @@ $('#joinChannel-btn').on('click', async () => {
     }else{
       addLog("加入频道后未执行初始化本地流")
     }
-    const { cid } = rtc.client.getChannelInfo()
-    $('#cid').html(`${cid} <a target="_blank" href="https://qs.netease.im/qs_inner/v2/static/rtc2/roomDetailInner?cid=${cid}">QS</a> <a target="_blank" href="http://vcloud-statics.hz.netease.com/grafana/d/ujxuS1hGz/ri-zhi-shang-chuan-wen-jian-xia-zai?orgId=1&var-cid=${cid}&var-uid=">日志</a>`)
+    const channelInfo = rtc.client.getChannelInfo()
+    $('#cid').html(`${channelInfo.cid} <a target="_blank" href="https://qs.netease.im/qs_inner/v2/static/rtc2/roomDetailInner?cid=${channelInfo.cid}&uids=${channelInfo.uid}">QS</a> <a target="_blank" href="http://logsearch.hz.netease.com/vcloud_elk_ssd_online/app/kibana#/discover?_g=(refreshInterval:(pause:!t,value:0),time:(from:now-30d,mode:quick,to:now))&_a=(columns:!(data,cid),filters:!(('$state':(store:appState),meta:(alias:!n,disabled:!f,index:'7b3a5610-064a-11ec-8095-fd4b2e7241e4',key:TAG,negate:!f,params:(query:web_console_test,type:phrase),type:phrase,value:web_console_test),query:(match:(TAG:(query:web_console_test,type:phrase)))),('$state':(store:appState),meta:(alias:!n,disabled:!f,index:'7b3a5610-064a-11ec-8095-fd4b2e7241e4',key:cid,negate:!f,params:(query:'${channelInfo.cid}',type:phrase),type:phrase,value:'${channelInfo.cid}'),query:(match:(cid:(query:'${channelInfo.cid}',type:phrase)))),('$state':(store:appState),meta:(alias:!n,disabled:!f,index:'7b3a5610-064a-11ec-8095-fd4b2e7241e4',key:uid,negate:!f,params:(query:'${channelInfo.uid}',type:phrase),type:phrase,value:'${channelInfo.uid}'),query:(match:(uid:(query:'${channelInfo.uid}',type:phrase))))),index:'7b3a5610-064a-11ec-8095-fd4b2e7241e4',interval:auto,query:(language:lucene,query:''),sort:!('@timestamp',asc))">日志</a>`)
   },
   error =>{
     console.error('加入房间失败',error)
@@ -2901,6 +2901,28 @@ $("#systemRequirement").text(`WebRTC:${NERTC.checkSystemRequirements() ? "支持
 if (!NERTC.checkSystemRequirements()){
   alert("浏览器环境缺失部分WebRTC基础功能。（是否没有开启HTTPS？）")
 }
+
+$("#copyEnvInfo").on('click', async function(){
+  let text = $("#envInfo").text().replace(/\n[ ]*/g, "\n")
+  text += "\n页面地址: " + window.location.href;
+  text += "\nUserAgent: " + navigator.userAgent;
+  if (rtc.client){
+    const channelInfo = rtc.client.getChannelInfo()
+    text += `\nappkey: ${channelInfo.appkey}`
+    text += `\nuid: ${channelInfo.uid}`
+    text += `\nchannelName: ${channelInfo.channelName}`
+    text += `\n服务端地址: ${channelInfo._protooUrl}`
+    if (channelInfo.cid){
+      text += `\ncid: ${channelInfo.cid}`
+      text += `\nQS地址：\nhttps://qs.netease.im/qs_inner/v2/static/rtc2/roomDetailInner?cid=${channelInfo.cid}&uids=${channelInfo.uid}`
+      text += `\n日志上传地址：\nhttp://logsearch.hz.netease.com/vcloud_elk_ssd_online/app/kibana#/discover?_g=(refreshInterval:(pause:!t,value:0),time:(from:now-30d,mode:quick,to:now))&_a=(columns:!(data,cid),filters:!(('$state':(store:appState),meta:(alias:!n,disabled:!f,index:'7b3a5610-064a-11ec-8095-fd4b2e7241e4',key:TAG,negate:!f,params:(query:web_console_test,type:phrase),type:phrase,value:web_console_test),query:(match:(TAG:(query:web_console_test,type:phrase)))),('$state':(store:appState),meta:(alias:!n,disabled:!f,index:'7b3a5610-064a-11ec-8095-fd4b2e7241e4',key:cid,negate:!f,params:(query:'${channelInfo.cid}',type:phrase),type:phrase,value:'${channelInfo.cid}'),query:(match:(cid:(query:'${channelInfo.cid}',type:phrase)))),('$state':(store:appState),meta:(alias:!n,disabled:!f,index:'7b3a5610-064a-11ec-8095-fd4b2e7241e4',key:uid,negate:!f,params:(query:'${channelInfo.uid}',type:phrase),type:phrase,value:'${channelInfo.uid}'),query:(match:(uid:(query:'${channelInfo.uid}',type:phrase))))),index:'7b3a5610-064a-11ec-8095-fd4b2e7241e4',interval:auto,query:(language:lucene,query:''),sort:!('@timestamp',asc))`
+    }
+  }
+  await navigator.clipboard.writeText(text);
+  console.log(`环境信息已复制到剪贴板\n${text}`);
+  addLog('环境信息已复制到剪贴板')
+});
+
 if (NERTC.getSupportedCodec){
   NERTC.getSupportedCodec().then((data)=>{
     $("#systemRequirement").append(`<br/>视频编码：${data.video.join(",")}；音频编码：${data.audio.join(",")}`)
