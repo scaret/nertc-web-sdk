@@ -943,7 +943,6 @@ class LocalStream extends EventEmitter {
           type
         }, null, ' ')
       });
-      options.screenAudio = false;
     }
     if((<any>window).isVideoBanned) {
       const reason = `服务器禁止发送视频流`;
