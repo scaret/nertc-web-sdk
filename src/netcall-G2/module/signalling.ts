@@ -820,9 +820,18 @@ class Signalling extends EventEmitter {
           this._times = 0
         }
       }
+      // 服务器禁用音视频: 1 禁用   0 和 2 取消禁用
+      if(response.externData.audioRight === 1){
+        (<any>window).isAudioBanned = true;
+      }else {
+        (<any>window).isAudioBanned = false;
+      }
 
-      (<any>window).isAudioBanned = (response.externData.audioRight === 1) ? true : false; // 服务器禁用音频: 1 禁用   0 和 2 取消禁用  
-      (<any>window).isVideoBanned = (response.externData.videoRight === 1) ? true : false; // 服务器禁用视频: 1 禁用   0 和 2 取消禁用
+      if(response.externData.videoRight === 1){
+        (<any>window).isVideoBanned = true;
+      }else {
+        (<any>window).isVideoBanned = false;
+      }
 
       if((<any>window).isAudioBanned) {
         this.adapterRef.instance.apiEventReport('setFunction', {
