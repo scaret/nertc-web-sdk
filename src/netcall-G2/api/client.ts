@@ -1589,6 +1589,14 @@ class Client extends Base {
       tag: 'Valid encryptionModes are: ' + Object.keys(EncryptionModes).join(','),
       value: encryptionModeToInt(encryptionMode),
     })
+    if (this.adapterRef.encryption.encodedInsertableStreams){
+      const errMsg = '自定义加密功能与国密加密功能不兼容'
+      this.logger.error(errMsg);
+      throw new RtcError({
+        code: ErrorCode.NOT_SUPPORT,
+        message: errMsg
+      })
+    }
     this.logger.log('设置加密模式：', encryptionMode);
     this.adapterRef.encryption.setEncryptionMode(encryptionMode);
     const param:ReportParamEnableEncryption = {

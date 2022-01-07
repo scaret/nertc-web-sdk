@@ -12,7 +12,7 @@ function findCryptIndexH264(data){
 let rc4_secret = null
 function initRC4(){
   const textEncoder = new TextEncoder();
-  rc4_secret = textEncoder.encode($("#encryptionSecret").val())
+  rc4_secret = textEncoder.encode($("#customEncryptionSecret").val())
   addLog("初始化自定义加密：rc4。密钥：" + rc4_secret)
 }
 
