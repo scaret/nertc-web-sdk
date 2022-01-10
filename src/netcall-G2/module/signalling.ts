@@ -1326,7 +1326,10 @@ class Signalling extends EventEmitter {
       }
     })
     let result = newList.concat(networkQuality)
-    result = result.filter((item) => { return this.adapterRef.instance._roleInfo.audienceList[item.uid] !== true; }); // http://jira.netease.com/browse/NRTCG2-6269
+    result = result.filter((item) => {
+      // https://jira.netease.com/browse/NRTCG2-6269
+      return this.adapterRef.memberMap[item.uid] || item.uid == this.adapterRef.channelInfo.uid; 
+    });
     this.adapterRef.netStatusList = result
   }
 
@@ -1366,6 +1369,19 @@ class Signalling extends EventEmitter {
     if (uid && userRole === 0) {
       //观众变为主播，照抄 onPeerJoin 逻辑
       this.adapterRef.instance.safeEmit('peer-online', {uid: uid})
+      let remoteStream = this.adapterRef.remoteStreamMap[uid]
+      if (!remoteStream) {
+        remoteStream = new RemoteStream({
+          uid,
+          audio: false,
+          video: false,
+          screen: false,
+          client: this.adapterRef.instance,
+          platformType: externData.platformType
+        })
+        this.adapterRef.remoteStreamMap[uid] = remoteStream
+        this.adapterRef.memberMap[uid] = uid;
+      }
       this.adapterRef.instance._roleInfo.audienceList[uid] = false;
     }
   }
