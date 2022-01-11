@@ -429,7 +429,14 @@ class Record extends EventEmitter {
         })
       )
     }
-    let recorder = (this._recorder = new MediaRecorder(this._status.opStream, options))
+    const audioTracks = this._status.opStream.getAudioTracks();
+    let audioRecordStream;
+    if (audioTracks.length > 1){
+      audioRecordStream = new MediaStream([audioTracks[0]])
+    }else{
+      audioRecordStream = this._status.opStream
+    }
+    let recorder = (this._recorder = new MediaRecorder(audioRecordStream, options))
     recorder.ondataavailable = this._onDataAvailable.bind(this)
     recorder.onstop = () => {
       this.logger.log(`MediaRecordHelper: _start: record stop automatically ...`)
