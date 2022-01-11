@@ -166,6 +166,24 @@ class Client extends Base {
     return this.adapterRef.channelInfo || {}
   }
 
+  
+  startProxyServer(type?: number) {
+    this.adapterRef.logger.log('startProxyServer, type: ', type)
+    if (this.adapterRef.channelStatus === 'join' || this.adapterRef.channelStatus === 'connectioning') {
+      this.adapterRef.logger.error('startProxyServer: 请在加入房间前调用')
+      return 'INVALID_OPERATION'
+    }
+    this.adapterRef.proxyServer.enable = true
+    type ? this.adapterRef.proxyServer.type = type : null
+  }
+
+  stopProxyServer() {
+    this.adapterRef.logger.log('stopProxyServer')
+    if(this.adapterRef.proxyServer){
+      this.adapterRef.proxyServer.enable = false
+    } 
+  }
+
   /**
    * 设置媒体优先级
    * @function setLocalMediaPriority
@@ -309,7 +327,9 @@ class Client extends Base {
       this._params.neRtcServerAddresses = {
         channelServer: options.neRtcServerAddresses.channelServer || '',
         statisticsServer: options.neRtcServerAddresses.statisticsServer || '',
-        roomServer: options.neRtcServerAddresses.roomServer || ''
+        roomServer: options.neRtcServerAddresses.roomServer || '',
+        webSocketProxyServer: options.neRtcServerAddresses.webSocketProxyServer || '',
+        mediaProxyServer: options.neRtcServerAddresses.mediaProxyServer || ''
       }
     }
     

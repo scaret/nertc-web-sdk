@@ -180,7 +180,7 @@ class Mediasoup extends EventEmitter {
       this.adapterRef.channelInfo.relayaddrs.forEach( (item: string) => {
         iceServers.push({
           urls: 'turn:' + item, // + '?transport=udp',
-          credential: this.adapterRef.channelInfo.uid + '/' + this.adapterRef.channelInfo.cid,
+          credential: this.adapterRef.proxyServer.credential || this.adapterRef.channelInfo.uid + '/' + this.adapterRef.channelInfo.cid,
           username: this.adapterRef.channelInfo.relaytoken
         })
       })

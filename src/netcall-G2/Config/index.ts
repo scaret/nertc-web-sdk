@@ -8,6 +8,7 @@ export interface IConfig{
   createChannelUrl:string;
   getChannelInfoUrl:string;
   roomsTaskUrl:string;
+  getCloudProxyInfoUrl: string; 
 }
 
 //Env Specific configs
@@ -17,6 +18,7 @@ const checkSumUrl = Config.checkSumUrl;
 const createChannelUrl = Config.createChannelUrl;
 const getChannelInfoUrl = Config.getChannelInfoUrl;
 const roomsTaskUrl = Config.roomsTaskUrl;
+const getCloudProxyInfoUrl = Config.getCloudProxyInfoUrl;
 
 export {
   SDK_VERSION,
@@ -28,5 +30,5 @@ export {
   createChannelUrl,
   getChannelInfoUrl,
   roomsTaskUrl,
-  
+  getCloudProxyInfoUrl
 };

@@ -113,6 +113,10 @@ class Base extends EventEmitter {
         priority: 100, 
         preemtiveMode: false
       },
+      proxyServer: {
+        enable: false,
+        type: 3
+      },
       //webrtc G2 API上报频控
       apiEvent: {},
       apiEvents: {},
