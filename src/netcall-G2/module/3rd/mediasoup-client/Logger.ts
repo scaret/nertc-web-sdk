@@ -8,7 +8,7 @@ export const Logger = {
   debug(option?:any, ...args:any[]) {
     const prefix = option ? `${APP_NAME}:${option}` : `${APP_NAME}`;
 		var args = Array.prototype.slice.call(arguments);
-		this.formatArgs(args, prefix);
+		this.formatArgs("DEBUG", args, prefix);
     if (getParameters().logLevel <= loglevels.DEBUG){
       console.debug.apply(console, args);
     }
@@ -20,7 +20,7 @@ export const Logger = {
   warn(option?:any, ...args:any[]) {
     const prefix = option ? `${APP_NAME}:${option}` : `${APP_NAME}`;
 		var args = Array.prototype.slice.call(arguments);
-		this.formatArgs(args, prefix);
+		this.formatArgs("WARN", args, prefix);
     if (getParameters().logLevel <= loglevels.WARNING){
       console.warn.apply(console, args);
     }
@@ -32,7 +32,7 @@ export const Logger = {
 	error(option?:any, ...args:any[]) {
     const prefix = option ? `${APP_NAME}:${option}` : `${APP_NAME}`;
 		var args = Array.prototype.slice.call(arguments);
-		this.formatArgs(args, prefix);
+		this.formatArgs("ERROR", args, prefix);
     if (getParameters().logLevel <= loglevels.ERROR){
       console.error.apply(console, args);
     }
@@ -55,10 +55,10 @@ export const Logger = {
     }
   },
 
-  formatArgs(args:any[], param?:any) {
+  formatArgs(logLevel: "DEBUG"|"WARN"|"ERROR", args:any[], param?:any) {
     let date = new Date()
     let dateStr = this.formatTimeUnit('' + (date.getMonth() + 1)) + '-' + this.formatTimeUnit('' + date.getDate()) + ' ' + this.formatTimeUnit('' + date.getHours()) + ':' + this.formatTimeUnit('' + date.getMinutes()) + ':' + this.formatTimeUnit('' + date.getSeconds()) + ':' + this.formatTimeUnit('' + date.getMilliseconds(), 3)
-    let prefix = `[NERTC:${updateLogIndex()} ${dateStr} ${param.toUpperCase()}]  `
+    let prefix = `[NERTC:${logLevel}:${updateLogIndex()} ${dateStr} ${param.toUpperCase()}]  `
     for (let i = args.length - 1; i >= 0; i--){
       args[i] = this.formatSingleArg(args[i])
     }

@@ -1,5 +1,6 @@
 import {getParameters} from "../../parameters";
 import {loglevels} from "../../../util/log/logger";
+import {updateLogIndex} from "../../../util/webrtcLogger";
 
 const debug = require('debug');
 
@@ -48,7 +49,7 @@ class Logger
 	formatArgs(args) {
 		var date = new Date()
 		var dateStr = this.formatTimeUnit('' + (date.getMonth() + 1)) + '-' + this.formatTimeUnit('' + date.getDate()) + ' ' + this.formatTimeUnit('' + date.getHours()) + ':' + this.formatTimeUnit('' + date.getMinutes()) + ':' + this.formatTimeUnit('' + date.getSeconds()) + ':' + this.formatTimeUnit('' + date.getMilliseconds(), 3)
-		var prefix = `[WEBRTC LOG ${dateStr} ${this.prefix.toUpperCase()}]`;
+		var prefix = `[NERTC:LOG:${updateLogIndex()} ${dateStr} ${this.prefix.toUpperCase()}]`;
 		args.unshift(prefix);
 
 		return args

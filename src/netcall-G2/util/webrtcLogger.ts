@@ -15,7 +15,6 @@ export class Logger{
   private options:LoggerOptions;
   private api:string;
   private style:string = 'color:#1cb977;';
-  private prefix:string;
   private logHelper?:logHelper;
   private supportedBrowsers: string[];
   private cs:Console;
@@ -24,7 +23,6 @@ export class Logger{
   constructor(options:LoggerOptions) {
     this.options = options;
     this.api = 'log';
-    this.prefix = 'NERTC'
     this.tagGen = options.tagGen
     if(options.isSavedLogs) {
       this.logHelper = new logHelper(options)
@@ -44,7 +42,7 @@ export class Logger{
   debug(){
     var logger = this;
     this.logHelper && this.logHelper.log(arguments)
-    var args = logger.formatArgs([].slice.call(arguments, 0))
+    var args = logger.formatArgs("DEBUG", [].slice.call(arguments, 0))
     // if (this.supportedBrowsers.indexOf(platform.name) !== -1 && typeof args[0] === "string") {
     //   args[0] = '%c' + args[0]
     //   args.splice(1, 0, logger.style)
@@ -60,7 +58,7 @@ export class Logger{
   log(){
     var logger = this;
     this.logHelper && this.logHelper.log(arguments)
-    var args = logger.formatArgs([].slice.call(arguments, 0))
+    var args = logger.formatArgs("LOG", [].slice.call(arguments, 0))
     if (this.supportedBrowsers.indexOf(platform.name) !== -1 && typeof args[0] === "string") {
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
@@ -84,7 +82,7 @@ export class Logger{
   info(){
     var logger = this;
     this.logHelper && this.logHelper.log(arguments)
-    var args = logger.formatArgs([].slice.call(arguments, 0))
+    var args = logger.formatArgs("INFO", [].slice.call(arguments, 0))
     if (this.supportedBrowsers.indexOf(platform.name) !== -1 && typeof args[0] === "string") {
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
@@ -101,7 +99,7 @@ export class Logger{
   warn(){
     var logger = this;
     this.logHelper && this.logHelper.log(arguments)
-    var args = logger.formatArgs([].slice.call(arguments, 0))
+    var args = logger.formatArgs("WARN", [].slice.call(arguments, 0))
     if (this.supportedBrowsers.indexOf(platform.name) !== -1 && typeof args[0] === "string") {
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
@@ -117,7 +115,7 @@ export class Logger{
   error(){
     var logger = this;
     this.logHelper && this.logHelper.log(arguments)
-    var args = logger.formatArgs([].slice.call(arguments, 0))
+    var args = logger.formatArgs("ERROR", [].slice.call(arguments, 0))
     if (this.supportedBrowsers.indexOf(platform.name) !== -1 && typeof args[0] === "string") {
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
@@ -188,7 +186,7 @@ export class Logger{
     })
   }
 
-  formatArgs(args:any[]) {
+  formatArgs(logLevel: "DEBUG"|"LOG"|"INFO"|"WARN"|"ERROR", args:any[]) {
     var date = new Date()
     var dateStr = formatTimeUnit('' + (date.getMonth() + 1)) + '-' + formatTimeUnit('' + date.getDate()) + ' ' + formatTimeUnit('' + date.getHours()) + ':' + formatTimeUnit('' + date.getMinutes()) + ':' + formatTimeUnit('' + date.getSeconds()) + ':' + formatTimeUnit('' + date.getMilliseconds(), 3)
     let logger:Logger = this
@@ -204,7 +202,7 @@ export class Logger{
         break;
       }
     }
-    prefix = `[${this.prefix}:${updateLogIndex()} ${dateStr}]${prefix}`;
+    prefix = `[NERTC:${logLevel}:${updateLogIndex()} ${dateStr}]${prefix}`;
     args.splice(0, 0, prefix)
     args.forEach(function (arg, index) {
       if (typeof arg === "object") {
