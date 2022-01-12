@@ -22,6 +22,9 @@ export default class WSTransport {
     private emitter_: any;
     private adapterRef:AdapterRef;
     private logger: ILogger;
+    private lastLogTime: number = 0;
+    private cachedLogs :{time: number, data: Object}[] = [];
+    private textEncoder = new TextEncoder();
 
     constructor(options: any){
         this.url_ = options.url;
@@ -142,22 +145,35 @@ export default class WSTransport {
       }
 
       sendLog(data:Object) {
-        if (this.isConnected_) {
-          let headerArray = [5,1,1,1,2,0,0,0];
-          let param = {
-            uid: this.adapterRef.channelInfo.uid,
-            cid: this.adapterRef.channelInfo.cid,
-            time: new Date().getTime(),
-            data
+        // 日志上报最多缓存50条日志
+        // 有cid后才会上报（不然无法索引）
+        // time属性至少比上一条+1毫秒，这样kibana的日志排序才正确。
+        const time = Math.max(this.lastLogTime + 1, Date.now())
+        this.lastLogTime = time;
+        this.cachedLogs.push({
+          time,
+          data
+        })
+        if (this.cachedLogs.length > 50){
+          this.cachedLogs.shift()
+        }
+        if (this.isConnected_ && this.socket_?.readyState === 1 && this.adapterRef.channelInfo?.cid) {
+          const cachedLogs = this.cachedLogs;
+          this.cachedLogs = []
+          for (let cachedlogParam of cachedLogs){
+            const param = Object.assign({
+              uid: this.adapterRef.channelInfo.uid,
+              cid: this.adapterRef.channelInfo.cid,
+            }, cachedlogParam)
+            try{
+              const view = this.textEncoder.encode(JSON.stringify(param))
+              let headerArray = [5,1,1,1,2,0,0,0];
+              let logData = Uint8Array.from(headerArray.concat(Array.from(view)));
+              this.socket_.send(logData);
+            }catch(e){
+              // console.error("无法发送日志", paramSend.data);
+            }
           }
-          const encoder = new TextEncoder()
-          const view = encoder.encode(JSON.stringify(param))
-          let logData = Uint8Array.from(headerArray.concat(Array.from(view)));
-          // console.log('--->',logData);
-          if(this.socket_?.readyState === 1){
-            this.socket_.send(logData);
-          }
-          
         }
       }
 

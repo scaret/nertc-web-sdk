@@ -1,6 +1,7 @@
 import {getParameters} from "../../parameters";
 import {loglevels} from "../../../util/log/logger";
 import {updateLogIndex} from "../../../util/webrtcLogger";
+import {formatSingleArg} from "../../../util/util";
 
 const APP_NAME = 'mediasoup-client';
 
@@ -40,27 +41,13 @@ export const Logger = {
     (<any>window).logUpload && (<any>window).wsTransport.sendLog(args);
 
 	},
-  
-  formatSingleArg(arg:any) : any {
-    if (arg instanceof RTCRtpSender){
-      const sender = arg as RTCRtpSender
-      const formatted = `[RTCRtpSender track: ${this.formatSingleArg(sender.track)}]`
-      return formatted
-    } else if (arg instanceof MediaStreamTrack){
-      const track = arg as MediaStreamTrack;
-      const formatted = `[MediaStreamTrack kind:${track.kind} label:${track.label} readyState:${track.readyState} id: ${track.id} enabled:${track.enabled} muted: ${track.muted}]`
-      return formatted
-    }else{
-      return arg;
-    }
-  },
 
   formatArgs(logLevel: "DEBUG"|"WARN"|"ERROR", args:any[], param?:any) {
     let date = new Date()
     let dateStr = this.formatTimeUnit('' + (date.getMonth() + 1)) + '-' + this.formatTimeUnit('' + date.getDate()) + ' ' + this.formatTimeUnit('' + date.getHours()) + ':' + this.formatTimeUnit('' + date.getMinutes()) + ':' + this.formatTimeUnit('' + date.getSeconds()) + ':' + this.formatTimeUnit('' + date.getMilliseconds(), 3)
     let prefix = `[NERTC:${logLevel}:${updateLogIndex()} ${dateStr} ${param.toUpperCase()}]  `
     for (let i = args.length - 1; i >= 0; i--){
-      args[i] = this.formatSingleArg(args[i])
+      args[i] = formatSingleArg(args[i])
     }
     args.unshift(prefix);
     return args

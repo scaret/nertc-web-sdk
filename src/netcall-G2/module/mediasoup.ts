@@ -615,6 +615,13 @@ class Mediasoup extends EventEmitter {
           if (!stream.mediaHelper.video.videoTrackLow || stream.mediaHelper.video.videoTrackLow.readyState === "ended"){
             await stream.mediaHelper.createTrackLow("video");
           }
+        }else{
+          // 不发布小流。此处如果发现上次有小流，则将小流回收。
+          if (stream.mediaHelper.video.videoTrackLow?.readyState === "live"){
+            stream.mediaHelper.video.videoTrackLow.stop()
+          }
+          stream.mediaHelper.video.videoTrackLow = null
+          this.senderEncodingParameter.video.low = null
         }
         const videoTrack = stream.mediaHelper.video.videoStream.getVideoTracks()[0]
         this.loggerSend.log('发布 videoTrack: ', videoTrack.id, videoTrack.label)
@@ -662,6 +669,13 @@ class Mediasoup extends EventEmitter {
           if (!stream.mediaHelper.screen.screenVideoTrackLow || stream.mediaHelper.screen.screenVideoTrackLow.readyState === "ended"){
             await stream.mediaHelper.createTrackLow("screen");
           }
+        }else{
+          // 不发布小流。此处如果发现上次有小流，则将小流回收。
+          if (stream.mediaHelper.screen.screenVideoTrackLow?.readyState === "live"){
+            stream.mediaHelper.screen.screenVideoTrackLow.stop()
+          }
+          stream.mediaHelper.screen.screenVideoTrackLow = null
+          this.senderEncodingParameter.screen.low = null
         }
         const screenTrack = stream.mediaHelper.screen.screenVideoStream.getVideoTracks()[0]
         this.loggerSend.log('发布 screenTrack: ', screenTrack.id, screenTrack.label)
