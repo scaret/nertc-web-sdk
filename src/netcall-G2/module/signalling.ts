@@ -642,13 +642,43 @@ class Signalling extends EventEmitter {
             (<any>window).isVideoBanned = false;
           }
 
-          if((<any>window).isAudioBanned){
+          if((<any>window).isAudioBanned && (<any>window).isVideoBanned) {
             this.adapterRef.instance.apiEventReport('setFunction', {
               name: 'set_mediaRightChange',
               oper: '1',
-              isAudioBanned: true
+              isAudioBanned: true,
+              isVideoBanned: true
             })
-            
+          }
+    
+          if(!(<any>window).isAudioBanned && (<any>window).isVideoBanned) {
+            this.adapterRef.instance.apiEventReport('setFunction', {
+              name: 'set_mediaRightChange',
+              oper: '1',
+              isAudioBanned: false,
+              isVideoBanned: true
+            })
+          }
+    
+          if((<any>window).isAudioBanned && !(<any>window).isVideoBanned) {
+            this.adapterRef.instance.apiEventReport('setFunction', {
+              name: 'set_mediaRightChange',
+              oper: '1',
+              isAudioBanned: true,
+              isVideoBanned: false
+            })
+          }
+    
+          if(!(<any>window).isAudioBanned && !(<any>window).isVideoBanned) {
+            this.adapterRef.instance.apiEventReport('setFunction', {
+              name: 'set_mediaRightChange',
+              oper: '1',
+              isAudioBanned: false,
+              isVideoBanned: false
+            })
+          }
+
+          if((<any>window).isAudioBanned){
             if(!this.adapterRef.localStream){
               return;
             }
@@ -667,33 +697,16 @@ class Signalling extends EventEmitter {
               // 关掉伴音
               this.adapterRef.localStream.stopAudioMixing();
             }
-          }else {
-            this.adapterRef.instance.apiEventReport('setFunction', {
-              name: 'set_mediaRightChange',
-              oper: '0',
-              isAudioBanned: false
-            })
           }
           if(!this.adapterRef.localStream){
             return;
           }
           if((<any>window).isVideoBanned){
-            this.adapterRef.instance.apiEventReport('setFunction', {
-              name: 'set_mediaRightChange',
-              oper: '1',
-              isVideoBanned: true
-            })
             let isVideoOn = this.adapterRef.localStream.video;
             let isScreenOn = this.adapterRef.localStream.screen;
             // 关掉所有视频相关 (辅流跟随视频流同步禁止)
             (!!isVideoOn) && this.adapterRef.localStream.close({type: "video"});
             (!!isScreenOn) && this.adapterRef.localStream.close({type: "screen"});
-          }else {
-            this.adapterRef.instance.apiEventReport('setFunction', {
-              name: 'set_mediaRightChange',
-              oper: '0',
-              isVideoBanned: false
-            })
           }
         } else {
           this.logger.error(`收到OnUserData通知消息 type = ${type}, data: `, data)
@@ -833,30 +846,38 @@ class Signalling extends EventEmitter {
         (<any>window).isVideoBanned = false;
       }
 
-      if((<any>window).isAudioBanned) {
+      if((<any>window).isAudioBanned && (<any>window).isVideoBanned) {
         this.adapterRef.instance.apiEventReport('setFunction', {
           name: 'set_mediaRightChange',
           oper: '1',
-          isAudioBanned: true
-        })
-      }else {
-        this.adapterRef.instance.apiEventReport('setFunction', {
-          name: 'set_mediaRightChange',
-          oper: '0',
-          isAudioBanned: false
+          isAudioBanned: true,
+          isVideoBanned: true
         })
       }
 
-      if((<any>window).isVideoBanned) {
+      if(!(<any>window).isAudioBanned && (<any>window).isVideoBanned) {
         this.adapterRef.instance.apiEventReport('setFunction', {
           name: 'set_mediaRightChange',
           oper: '1',
+          isAudioBanned: false,
           isVideoBanned: true
         })
-      }else {
+      }
+
+      if((<any>window).isAudioBanned && !(<any>window).isVideoBanned) {
         this.adapterRef.instance.apiEventReport('setFunction', {
           name: 'set_mediaRightChange',
-          oper: '0',
+          oper: '1',
+          isAudioBanned: true,
+          isVideoBanned: false
+        })
+      }
+
+      if(!(<any>window).isAudioBanned && !(<any>window).isVideoBanned) {
+        this.adapterRef.instance.apiEventReport('setFunction', {
+          name: 'set_mediaRightChange',
+          oper: '1',
+          isAudioBanned: false,
           isVideoBanned: false
         })
       }
