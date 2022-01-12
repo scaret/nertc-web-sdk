@@ -161,7 +161,7 @@ class Record extends EventEmitter {
     }
     if (reason) {
       if(options && options.isUser === false) {
-
+        
       } else {
         this.stream.client.apiFrequencyControl({
           name: 'stopMediaRecording',
@@ -188,6 +188,11 @@ class Record extends EventEmitter {
       }
       // 默认文件名
       this._recorder.stop()
+      this.stream.client.apiFrequencyControl({
+        name: 'stopMediaRecording',
+        code: 0,
+        param: ''
+      })
       if (options && options.isUser){
         this.stream.client.apiFrequencyControl({
           name: 'stopMediaRecording',
