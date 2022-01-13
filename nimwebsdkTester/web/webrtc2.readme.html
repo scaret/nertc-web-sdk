@@ -22,6 +22,55 @@
   4. 双击图标
 </pre>
 
+  <h1>3. 改进日志上传查看体验</h1>
+  <pre>
+      1. 将这个超链接拖拽到书签栏： <a id="logBookmark" href="javascript: alert('Hi')">日志上传打印</a>
+      2. 用Chrome打开一个 Kibana 日志页面，按【option+Command+I】打开Console。
+      3. 点击刚刚拖拽上去的书签。点击后，Kibana 日志会转化到Chrome的Console内。
+</pre>
+  
+<script id="printLogScript" type="text">
+var logIndex = 0;
+var logHeadStart = 0;
+var lostLogCnt = 0;
+$(".kbnDocTableCell__dataField").each(function(){
+  const $elem = $(this);
+  const text = $elem.text();
+  let textArr;
+  try{
+    textArr = JSON.parse(text);
+    const matches = textArr[0].match(/NERTC:([A-Z]+):(\d+)/);
+    if (!matches){
+      console.log.apply(console, textArr);
+    }else{
+      const currentIndex = parseInt(matches[2]);
+      const type = matches[1].toLowerCase();
+      if (logIndex === 0){
+        logHeadStart = currentIndex;
+      }
+      else if (logIndex + 1 !== currentIndex){
+        console.error(`缺失日志条数：`, currentIndex - logIndex - 1);
+        lostLogCnt += Math.max(currentIndex - logIndex - 1, 1);
+      }
+      logIndex = currentIndex;
+      console[type].apply(console, textArr);
+    }
+  }catch(e){
+    if("" + parseInt(text) === text){
+      return;
+    }else{
+      console.error("无法识别的日志格式：", text);
+    }
+  }
+});
+console.log(`========== 本页日志起始序号：${logHeadStart}  共缺少日志条数：${lostLogCnt} ===========`);
+</script>
+<script>
+  const scriptText = document.getElementById("printLogScript").innerHTML.replace(/\n/g, "")
+  document.getElementById("logBookmark").href = `javascript: ` + scriptText
+  console.log(scriptText)
+</script>
+
 </body>
 
 </html>
