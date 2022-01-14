@@ -356,7 +356,7 @@ export interface StreamOptions {
    */
   uid?: number|string;
   /**
-   * 是否从麦克风采集音频
+   * 是否打开音频。如使用自采集（audioSource），则应将audio设为true。
    */
   audio: boolean;
   /**
@@ -393,15 +393,15 @@ export interface StreamOptions {
    */
   cameraId?: string;
   /**
-   * 是否从摄像头采集视频。
+   * 是否打开视频。如使用自采集（videoSource），则应将video设为true。
    */
   video: boolean;
   /**
-   * 是否采集屏幕共享流。
+   * 是否采集屏幕共享流。如使用自采集（screenVideoSource），则应将 screen 设为true。
    */
   screen?: boolean;
   /**
-   * 是否采集屏幕分享流的共享音频。
+   * 是否采集屏幕分享流的共享音频。如使用自采集（screenAudioSource），则应将 screenAudio 设为true。
    * 
    * @since V4.3.0
    * 
@@ -425,13 +425,24 @@ export interface StreamOptions {
    */
   client?: Client;
   /**
-   * 自定义的音频的track
+   * 自定义的音频的track。开启后应将 audio 置为 true 。
    */
   audioSource?: MediaStreamTrack;
   /**
-   * 自定义的视频的track
+   * 自定义的视频的track。开启后应将 video 置为 true 。
    */
   videoSource?: MediaStreamTrack;
+  /**
+   * 自定义屏幕共享音频的Track。开启后应将 screenAudio 置为 true 。
+   * 
+   * @since V4.6.0
+   */
+  screenAudioSource?: MediaStreamTrack;
+  /**
+   * 自定义屏幕共享视频的视频的Track。开启后应将 screenVideo 置为true 。
+   * @since V4.6.0
+   */
+  screenVideoSource?: MediaStreamTrack;
   /**
    * Electron 屏幕共享的数据源 ID，您可以参考[这篇文章](https://www.electronjs.org/docs/api/desktop-capturer)。
    */
