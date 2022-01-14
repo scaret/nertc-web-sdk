@@ -525,6 +525,11 @@ declare interface Client{
    * 应用已删除远端音视频流。
    * 
    * 远端用户调用 [[Client.unpublish]] 方法之后，会触发此回调。
+   *
+   * 注意：
+   * * 该事件会为远端音频和视频分别触发一次。
+   * * 如需确认远端离开，可参考 `peer-leave` 事件。
+   * * 收到`stream-removed`时，如果调用不带参数的`evt.stream.stop()`，会同时关闭音视频渲染。这通常不是预期行为。
    * 
    * @example
    * ```javascript
