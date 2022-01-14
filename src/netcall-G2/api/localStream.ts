@@ -135,7 +135,13 @@ class LocalStream extends EventEmitter {
       screen: RenderMode|{},
     },
   } = { local: {video: {}, screen: {}},};
-  private inSwitchDevice: boolean = false;
+  private inSwitchDevice: {
+    audio: boolean;
+    video: boolean;
+  } = {
+    audio: false,
+    video: false,
+  };
   public pubStatus: {
     audio: {audio: boolean},
     video: {video: boolean},
@@ -307,7 +313,10 @@ class LocalStream extends EventEmitter {
     this.videoView = null
     this.screenView = null
     this.renderMode = {local: {video: {}, screen: {}}}
-    this.inSwitchDevice = false
+    this.inSwitchDevice = {
+      audio: false,
+      video: false,
+    }
     this.pubStatus = {
       audio: {
         audio: false,
@@ -1716,19 +1725,19 @@ class LocalStream extends EventEmitter {
    * @param {String} deviceId 设备的 ID,可以通过 getDevices 方法获取。获取的 ID 为 ASCII 字符，字符串长度大于 0 小于 256 字节。
    * @return {Promise}
    */
-  async switchDevice (type:string, deviceId:string) {
+  async switchDevice (type:"audio"|"video", deviceId:string) {
     this.logger.log(`切换媒体输入设备: ${type}, deviceId: ${deviceId}`)
     let constraint = {}
-    if (this.inSwitchDevice) {
-      this.logger.log(`正在切换中，重复`)
+    if (this.inSwitchDevice[type]) {
+      this.logger.error(`switchDevice：正在切换中，重复`, type)
       return Promise.reject(
         new RtcError({
           code: ErrorCode.INVALID_OPERATION,
-          message: 'switching...'
+          message: 'switching ' + type
         })
       )
     } else {
-      this.inSwitchDevice = true
+      this.inSwitchDevice[type] = true
     }
     if (type === 'audio') {
       // server ban
@@ -1742,11 +1751,11 @@ class LocalStream extends EventEmitter {
       }
       if (deviceId === this.microphoneId) {
         this.logger.log(`切换相同的麦克风设备，不处理`)
-        this.inSwitchDevice = false
+        this.inSwitchDevice[type] = false
         return Promise.resolve()
       } else if(!this.hasAudio()) {
         this.logger.log(`当前没有开启音频输入设备，无法切换`)
-        this.inSwitchDevice = false
+        this.inSwitchDevice[type] = false
         return Promise.reject(
           new RtcError({
             code: ErrorCode.INVALID_OPERATION,
@@ -1755,7 +1764,7 @@ class LocalStream extends EventEmitter {
         )
       } else if(this.audioSource) {
         this.logger.log(`自定义音频输入不支持，无法切换`)
-        this.inSwitchDevice = false
+        this.inSwitchDevice[type] = false
         return Promise.reject(
           new RtcError({
             code: ErrorCode.INVALID_OPERATION,
@@ -1787,11 +1796,11 @@ class LocalStream extends EventEmitter {
 
       if (deviceId === this.cameraId) {
         this.logger.log(`切换相同的摄像头设备，不处理`)
-        this.inSwitchDevice = false
+        this.inSwitchDevice[type] = false
         return Promise.resolve()
       } else if(!this.hasVideo()) {
         this.logger.log(`当前没有开启视频输入设备，无法切换`)
-        this.inSwitchDevice = false
+        this.inSwitchDevice[type] = false
         this.client.apiFrequencyControl({
           name: 'switchCamera',
           code: -1,
@@ -1805,7 +1814,7 @@ class LocalStream extends EventEmitter {
         )
       } else if(this.videoSource) {
         this.logger.log(`自定义视频输入不支持，无法切换`)
-        this.inSwitchDevice = false
+        this.inSwitchDevice[type] = false
         this.client.apiFrequencyControl({
           name: 'switchCamera',
           code: -1,
@@ -1825,18 +1834,17 @@ class LocalStream extends EventEmitter {
       }
       this.cameraId = deviceId
     } else {
-      this.logger.log(`unknown type`)
-      this.inSwitchDevice = false
+      this.logger.error(`switchDevice: unknown type ${type}`)
       return Promise.reject(
         new RtcError({
           code: ErrorCode.INVALID_OPERATION,
-          message: 'unknown type'
+          message: `switchDevice: unknown type ${type}`,
         })
       )
     }
     try {
       await this.mediaHelper.getSecondStream(constraint)
-      this.inSwitchDevice = false
+      this.inSwitchDevice[type] = false
       if (type === "video"){
         this.client.apiFrequencyControl({
           name: 'switchCamera',
@@ -1846,7 +1854,7 @@ class LocalStream extends EventEmitter {
       }
     } catch (e) {
       this.logger.error('API调用失败：Stream:switchDevice' ,e.name, e.message, e);
-      this.inSwitchDevice = false
+      this.inSwitchDevice[type] = false
       if (type === "video"){
         this.client.apiFrequencyControl({
           name: 'switchCamera',
