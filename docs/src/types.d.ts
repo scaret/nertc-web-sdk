@@ -425,13 +425,24 @@ export interface StreamOptions {
    */
   client?: Client;
   /**
-   * 自定义的音频的track
+   * 自定义的音频的track。开启后应将 audio 置为 true 。
    */
   audioSource?: MediaStreamTrack;
   /**
-   * 自定义的视频的track
+   * 自定义的视频的track。开启后应将 video 置为 true 。
    */
   videoSource?: MediaStreamTrack;
+  /**
+   * 自定义屏幕共享音频的Track。开启后应将 screenAudio 置为 true 。
+   * 
+   * @since V4.6.0
+   */
+  screenAudioSource?: MediaStreamTrack;
+  /**
+   * 自定义屏幕共享视频的视频的Track。开启后应将 screenVideo 置为true 。
+   * @since V4.6.0
+   */
+  screenVideoSource?: MediaStreamTrack;
   /**
    * Electron 屏幕共享的数据源 ID，您可以参考[这篇文章](https://www.electronjs.org/docs/api/desktop-capturer)。
    */

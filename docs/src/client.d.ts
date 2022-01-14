@@ -162,6 +162,7 @@ declare interface Client{
      * });
      * ```
      * 
+     * @since V4.6.0
      */
     enableDualStream(dualStreamSetting?: {video: boolean; screen: boolean}): void;
     /**

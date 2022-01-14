@@ -240,6 +240,30 @@ declare interface Stream {
        * 在V4.4.0之前，麦克风和屏幕共享音频不能同时开启。
        */
       screenAudio?: boolean;
+      /**
+       * 自定义音频的track。type 为 audio 时生效。
+       * 
+       * @since V4.6.0
+       */
+      audioSource?: MediaStreamTrack;
+      /**
+       * 自定义视频的track。type 为 video 时生效。
+       * 
+       * @since V4.6.0
+       */
+      videoSource?: MediaStreamTrack;
+      /**
+       * 自定义屏幕共享视频的track。type 为 screen 时生效。
+       * 
+       * @since V4.6.0 
+       */
+      screenVideoSource?: MediaStreamTrack;
+      /**
+       * 自定义屏幕共享音频的track。type 为 screen 且 screenAudio 为 true 时生效。
+       * 
+       * @since V4.6.0
+       */
+      screenAudioSource?: MediaStreamTrack;
     }): Promise<undefined>;
     /**
      * 关闭音视频输入设备，如麦克风、摄像头、屏幕共享，并且停止发布。
