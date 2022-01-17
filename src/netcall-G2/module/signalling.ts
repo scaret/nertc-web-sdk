@@ -1130,11 +1130,12 @@ class Signalling extends EventEmitter {
 
   async doSendKeepAlive () {
     if(!this._protoo?.connected) return
+    const transportId = `#${this._protoo.id}_${this._protoo._transport?.wsid}`
     try {
       const response = await this._protoo.request('Heartbeat');
       //this.logger.log('包活信令回包: ', response)
     } catch (e) {
-      this.logger.error('信令包活失败', e.name, e.message)
+      this.logger.error("信令包保活失败", transportId, e.name, e.message)
       if (this.keepAliveTimer) {
         clearInterval(this.keepAliveTimer)
         this.keepAliveTimer = null
@@ -1282,6 +1283,7 @@ class Signalling extends EventEmitter {
         //uid: parseInt(uidString, 16),
         downlinkNetworkQuality: parseInt(serverToClientNetStatusString, 16),
         uplinkNetworkQuality: parseInt(clientToServerNetStatusString, 16),
+        receiveTs: Date.now(),
       };
       networkQuality.push(item)
       str = str.substr(22 + extLen)
