@@ -57,6 +57,7 @@ class Client extends Base {
   public operationQueue: OperationQueue;
   private onJoinFinish: (() => void)|null = null;
   public spatialManager : SpatialManager|null = null;
+  private handlePageUnload: (evt?: any) => void;
   constructor (options:ClientOptions) {
     super(options)
 
@@ -66,18 +67,17 @@ class Client extends Base {
      * 火狐使用pagehide 触发时发现websocket已经断开 导致不能发送登出信令 对端表现为刷新端没有退出
      * 注意：移动端safair不识别beforeunload事件
      */
-    window.addEventListener('pagehide', () => {
-        if (this.adapterRef.channelStatus === 'join' || this.adapterRef.channelStatus === 'connectioning') {
-          this.logger.warn(`收到 pagehide 事件，当前状态：${this.adapterRef.channelStatus}，即将离开房间`);
-          this.leave()
-        }
-      })
-    window.addEventListener('beforeunload', () => {
+    this.handlePageUnload = (evt?: any) => {
       if (this.adapterRef.channelStatus === 'join' || this.adapterRef.channelStatus === 'connectioning') {
-        this.logger.warn(`收到 beforeunload 事件，当前状态：${this.adapterRef.channelStatus}，即将离开房间`);
+        this.logger.warn(`收到 ${evt?.type} 事件，当前状态：${this.adapterRef.channelStatus}，即将离开房间`);
         this.leave()
       }
-    })
+    }
+    
+    if (getParameters().leaveOnUnload){
+      window.addEventListener('pagehide', this.handlePageUnload)
+      window.addEventListener('beforeunload', this.handlePageUnload)
+    }
       
     //typescript constructor requirement
     this._roleInfo = {
