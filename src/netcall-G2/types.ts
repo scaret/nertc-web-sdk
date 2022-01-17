@@ -130,6 +130,7 @@ export interface NetStatusItem{
   uid: number|string;
   downlinkNetworkQuality: number;
   uplinkNetworkQuality: number;
+  receiveTs: number;
 }
 
 export interface ILogger{
