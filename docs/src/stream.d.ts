@@ -971,6 +971,12 @@ declare interface Stream {
      */
     destroy(): void;
 
+  /**
+   * 设备错误。
+   * 1. 只有本地流才会有"device-error"回调
+   * 2. 通常应该使用`Client`上的回调 `Client.on("deviceError")`。Client上有更丰富设备错误类型。只有当应用需要不止一个本地流，需要严格
+   * 区分哪个本地流的设备出现设备问题时，才会用到这个回调。
+   */
     on(event: "device-error", callback: (
       type: "audio"|"video"|"screen",
       error: any

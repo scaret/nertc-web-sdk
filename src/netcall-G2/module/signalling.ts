@@ -144,6 +144,7 @@ class Signalling extends EventEmitter {
     if (this._reconnectionTimer) return
     this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
     this.adapterRef.connectState.curState = 'CONNECTING'
+    this.adapterRef.connectState.reconnecting = true
     this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
     this.adapterRef.instance.emit('pairing-websocket-reconnection-start');
     this._destroyProtoo()
@@ -889,6 +890,7 @@ class Signalling extends EventEmitter {
       this.logger.log('Signalling:加入房间成功')
       this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
       this.adapterRef.connectState.curState = 'CONNECTED'
+      this.adapterRef.connectState.reconnecting = false
       
       if (this.adapterRef.channelStatus === 'connectioning') {
         this.logger.log('重连成功，清除之前的媒体的通道')
@@ -1060,6 +1062,7 @@ class Signalling extends EventEmitter {
   _joinFailed (reasonCode:string|undefined|number, errMsg: string|undefined) {
     this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
     this.adapterRef.connectState.curState = 'DISCONNECTED'
+    this.adapterRef.connectState.reconnecting = false
     this.adapterRef.channelStatus = 'init'
     this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
 
