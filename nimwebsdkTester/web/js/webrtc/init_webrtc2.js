@@ -3065,6 +3065,31 @@ $("#setReconnectionMaxRetry").on("click", ()=>{
   NERTC.getParameters().joinMaxRetry = reconnectionMaxRetry
 })
 
+
+const handleOnBeforeUnload = function(evt){
+  addLog("handleOnBeforeUnload")
+  // 经测试，以下文字并不会在chrome中展示（但是不重要）
+  return "您确认离开当前页面吗？（点否rtc.client不调用leave）"
+}
+
+const handleOnPageHide = function(evt){
+  if (rtc.client){
+    addLog("handleOnPageHide")
+    rtc.client.handlePageUnload(evt)
+  }
+}
+
+$("#confirmOnRefresh").on("click", ()=>{
+  addLog("取消默认的页面卸载逻辑")
+  NERTC.getParameters().leaveOnUnload = false
+  if (rtc.client){
+    window.removeEventListener("pagehide", rtc.client.handlePageUnload)
+    window.removeEventListener("beforeunload", rtc.client.handlePageUnload)
+  }
+  window.onbeforeunload = handleOnBeforeUnload;
+  window.onpagehide = handleOnPageHide
+})
+
 /** 
  * ----------------------------------------
  *              工具类函数

@@ -69,6 +69,8 @@ interface IParameters{
   reconnectionFirstTimeout: number,
   // 重连行为允许的最大尝试次数（每个服务器）
   reconnectionMaxRetry: number,
+  // 页面卸载时是否自动调用leave
+  leaveOnUnload: boolean,
 }
 
 let parameters:IParameters = {
@@ -120,6 +122,7 @@ let parameters:IParameters = {
   joinMaxRetry: 3,
   reconnectionFirstTimeout: 2000,
   reconnectionMaxRetry: 3,
+  leaveOnUnload: true,
 }
 
 // 注意：getParameters是一些私有全局变量，仅用于调试和私有接口，不用于正常业务
