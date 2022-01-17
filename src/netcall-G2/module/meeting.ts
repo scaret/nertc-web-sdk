@@ -132,6 +132,7 @@ class Meeting extends EventEmitter {
         this.adapterRef.channelStatus = 'leave'
         this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
         this.adapterRef.connectState.curState = 'DISCONNECTED'
+        this.adapterRef.connectState.reconnecting = false
         this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
         //上报getCloudProxyInfo失败事件
         this.adapterRef.instance.apiEventReport('setGetCloudProxyInfo', {
@@ -148,6 +149,7 @@ class Meeting extends EventEmitter {
       this.adapterRef.channelStatus = 'leave'
       this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
       this.adapterRef.connectState.curState = 'DISCONNECTED'
+      this.adapterRef.connectState.reconnecting = false
       this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
       //上报getCloudProxyInfo失败事件
       this.adapterRef.instance.apiEventReport('setGetCloudProxyInfo', {
@@ -304,6 +306,7 @@ class Meeting extends EventEmitter {
         this.adapterRef.channelStatus = 'leave'
         this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
         this.adapterRef.connectState.curState = 'DISCONNECTED'
+        this.adapterRef.connectState.reconnecting = false
         this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
         //上报login失败事件
         this.adapterRef.instance.apiEventReport('setLogin', {
@@ -321,6 +324,7 @@ class Meeting extends EventEmitter {
       this.adapterRef.channelStatus = 'leave'
       this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
       this.adapterRef.connectState.curState = 'DISCONNECTED'
+      this.adapterRef.connectState.reconnecting = false
       this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
       //上报login失败事件
       this.adapterRef.instance.apiEventReport('setLogin', {
@@ -352,6 +356,7 @@ class Meeting extends EventEmitter {
       this.adapterRef.channelStatus = 'leave'
       this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
       this.adapterRef.connectState.curState = 'DISCONNECTED'
+      this.adapterRef.connectState.reconnecting = false
       this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
       return this.adapterRef.instance.stopSession()
     })

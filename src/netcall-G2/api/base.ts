@@ -205,7 +205,8 @@ class Base extends EventEmitter {
     this.adapterRef.channelStatus = 'init'
     this.adapterRef.connectState = {
       prevState: 'DISCONNECTED',
-      curState: 'DISCONNECTED'
+      curState: 'DISCONNECTED',
+      reconnecting: false,
     }
     this.adapterRef.networkQuality = {};
     this.adapterRef.localStream = null;
