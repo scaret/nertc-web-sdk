@@ -128,6 +128,14 @@ class Meeting extends EventEmitter {
           this.adapterRef.proxyServer.mediaProxyToken = mediaProxyToken
           this.adapterRef.proxyServer.credential = uid + '/' + curTime
         }
+        this.adapterRef.instance.apiEventReport('setGetCloudProxyInfo', {
+          channelName,
+          uid,
+          appkey,
+          token,
+          result: 200,
+          msg: ''
+        })
       } else {
         this.adapterRef.channelStatus = 'leave'
         this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
