@@ -3,6 +3,7 @@ import {logHelper} from "./logHelper";
 import {LoggerDebugOptions, LoggerOptions} from "../types";
 import {getParameters} from "../module/parameters";
 import {loglevels} from "./log/logger";
+import {formatSingleArg} from "./util";
 
 let logIndex = 0
 
@@ -205,8 +206,11 @@ export class Logger{
     prefix = `[NERTC:${logLevel}:${updateLogIndex()} ${dateStr}]${prefix}`;
     args.splice(0, 0, prefix)
     args.forEach(function (arg, index) {
+      arg = formatSingleArg(arg);
       if (typeof arg === "object") {
         args[index] = simpleClone(arg)
+      }else{
+        args[index] = arg
       }
     })
     return args

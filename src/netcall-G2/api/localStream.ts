@@ -1749,7 +1749,8 @@ class LocalStream extends EventEmitter {
           })
         );
       }
-      if (deviceId === this.microphoneId) {
+      const micTrack = this.mediaHelper.audio.micTrack
+      if (micTrack?.readyState === "live" && micTrack?.getSettings().deviceId === deviceId) {
         this.logger.log(`切换相同的麦克风设备，不处理`)
         this.inSwitchDevice[type] = false
         return Promise.resolve()
@@ -1794,7 +1795,8 @@ class LocalStream extends EventEmitter {
         );
       }
 
-      if (deviceId === this.cameraId) {
+      const cameraTrack = this.mediaHelper.video.cameraTrack
+      if (cameraTrack?.readyState === "live" && cameraTrack?.getSettings().deviceId === deviceId) {
         this.logger.log(`切换相同的摄像头设备，不处理`)
         this.inSwitchDevice[type] = false
         return Promise.resolve()

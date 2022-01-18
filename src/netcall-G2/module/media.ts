@@ -645,10 +645,11 @@ class MediaHelper extends EventEmitter {
         } else {
           this.logger.warn('getSecondStream video: 此时未发布流')
         }
-        const videoSenderLow = this.stream.getSender("video", "high");
+        const videoSenderLow = this.stream.getSender("video", "low");
+        const historyVideoTrackLow = this.video.videoTrackLow;
         this.video.videoTrackLow?.stop()
         this.video.videoTrackLow = null
-        if (videoSenderLow?.track?.readyState === "live"){
+        if (videoSenderLow?.track === historyVideoTrackLow){
           await this.createTrackLow("video");
           this.logger.log('getSecondStream 切换小流', this.video.videoTrackLow);
           videoSenderLow.replaceTrack(this.video.videoTrackLow);
