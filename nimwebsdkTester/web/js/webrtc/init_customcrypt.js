@@ -1,11 +1,34 @@
+const naluTypes = {
+  7: "SPS",
+  8: "PPS",
+  5: "IFrame",
+  1: "PFrame",
+}
+
+let customEncryptionOffset = 2;
+
 function findCryptIndexH264(data){
+  const result = {
+    frames: [],
+    pos: -1
+  };
   for (let i = 3; i < data.length; i++){
-    if ((data[i] === 0x61|| data[i] === 0x65) && data[i - 1] === 0x01 && data[i - 2] === 0x00 && data[i - 3] === 0x00){
+    if (data[i - 1] === 0x01 && data[i - 2] === 0x00 && data[i - 3] === 0x00){
       // 低四位为1为p帧，低四位为5为i帧。算法待改进
-      return i+1;
+      // https://zhuanlan.zhihu.com/p/281176576
+      // https://stackoverflow.com/questions/24884827/possible-locations-for-sequence-picture-parameter-sets-for-h-264-stream/24890903#24890903
+      let frameTypeInt = data[i] & 0x1f;
+      let frameType = naluTypes[frameTypeInt] || "nalu_" + frameTypeInt
+      result.frames.push({
+        pos: i,
+        frameType
+      });
+      if (frameType === "IFrame" || frameType === "PFrame"){
+        result.pos = i + customEncryptionOffset
+      }
     }
   }
-  return -1;
+  return result;
 }
 
 //STARTOF 自定义加密：RC4
@@ -13,13 +36,18 @@ let rc4_secret = null
 function initRC4(){
   const textEncoder = new TextEncoder();
   rc4_secret = textEncoder.encode($("#customEncryptionSecret").val())
+  customEncryptionOffset = parseInt($("#customEncryptionOffset").val())
   addLog("初始化自定义加密：rc4。密钥：" + rc4_secret)
 }
 
 function encodeFunctionRC4({mediaType, encodedFrame, controller}){
   if (encodedFrame.data.length){
     const u8Arr1 = new Uint8Array(encodedFrame.data);
-    const h264Index = findCryptIndexH264(u8Arr1);
+    const info = findCryptIndexH264(u8Arr1)
+    // if (mediaType === "video"){
+      // console.log("encodeFunctionRC4", encodedFrame.type, info.frames.map((frame)=>{return frame.frameType}).join() ,info);
+    // }
+    const h264Index = info.pos;
     const shiftStart = mediaType === "audio" ? 0: Math.max(h264Index, 0)
     const encrypted = SM4.rc4_encrypt(u8Arr1, rc4_secret, {shiftStart: shiftStart});
     encodedFrame.data = encrypted.buffer;
@@ -30,7 +58,11 @@ function encodeFunctionRC4({mediaType, encodedFrame, controller}){
 function decodeFunctionRC4({mediaType, encodedFrame, controller}){
   if (encodedFrame.data.length){
     const u8Arr1 = new Uint8Array(encodedFrame.data);
-    const h264Index = findCryptIndexH264(u8Arr1);
+    const info = findCryptIndexH264(u8Arr1)
+    // if (mediaType === "video"){
+    //   console.log("decodeFunctionRC4", encodedFrame.type, encodedFrame.data.byteLength ,info.frames.map((frame)=>{return frame.frameType}).join() ,info);
+    // }
+    const h264Index = info.pos;
     const shiftStart = mediaType === "audio" ? 0: Math.max(h264Index, 0)
     const encrypted = SM4.rc4_decrypt(u8Arr1, rc4_secret, {shiftStart: shiftStart});
     encodedFrame.data = encrypted.buffer;
@@ -47,7 +79,8 @@ function initSm4(){
   encCtx = new SM4.SM4Ctx();
   decCtx = new SM4.SM4Ctx();
   const textEncoder = new TextEncoder();
-  let secret = textEncoder.encode($("#encryptionSecret").val())
+  let secret = textEncoder.encode($("#customEncryptionSecret").val())
+  customEncryptionOffset = parseInt($("#customEncryptionOffset").val())
   // ECB模式其实无状态
   SM4.sm4_setkey_enc(encCtx, secret);
   SM4.sm4_setkey_dec(decCtx, secret);
@@ -56,7 +89,7 @@ function initSm4(){
 
 function encodeFunctionSM4({mediaType, encodedFrame, controller}){
   const u8Arr1 = new Uint8Array(encodedFrame.data);
-  const h264Index = findCryptIndexH264(u8Arr1);
+  const h264Index = findCryptIndexH264(u8Arr1).pos;
   const shiftStart = mediaType === "audio" ? 0: Math.max(h264Index, 0)
   const encrypted = SM4.sm4_crypt_ecb(encCtx, u8Arr1.subarray(shiftStart), {shiftStart: shiftStart});
   for (let i = 0; i < shiftStart; i++){
@@ -69,7 +102,7 @@ function encodeFunctionSM4({mediaType, encodedFrame, controller}){
 
 function decodeFunctionSM4({mediaType, encodedFrame, controller}){
   const u8Arr1 = new Uint8Array(encodedFrame.data);
-  const h264Index = this.findCryptIndexH264(u8Arr1);
+  const h264Index = this.findCryptIndexH264(u8Arr1).pos;
   const shiftStart = mediaType === "audio" ? 0: Math.max(h264Index, 0)
   // console.error("shiftStart", shiftStart, "u8Arr1.buffer.byteLength", u8Arr1.buffer.byteLength)
   if ((u8Arr1.buffer.byteLength - shiftStart) % 16 !== 0){
@@ -115,7 +148,7 @@ window.framesRecv = {
 
 function encodeFunctionExtraInfo({mediaType, encodedFrame, controller, streamType}){
   const u8Arr1 = new Uint8Array(encodedFrame.data);
-  const h264Index = findCryptIndexH264(u8Arr1);
+  const h264Index = findCryptIndexH264(u8Arr1).pos;
   const shiftStart = mediaType === "audio" ? 0: Math.max(h264Index, 0)
   // console.error(`encodeFunctionExtraInfo shiftStart ${shiftStart}/${u8Arr1.length}`, mediaType, encodedFrame.timestamp);
   const extraInfo = {
@@ -152,7 +185,7 @@ function encodeFunctionExtraInfo({mediaType, encodedFrame, controller, streamTyp
 
 function decodeFunctionExtraInfo({mediaType, encodedFrame, controller, uid}){
   const u8Arr1 = new Uint8Array(encodedFrame.data);
-  const h264Index = findCryptIndexH264(u8Arr1);
+  const h264Index = findCryptIndexH264(u8Arr1).pos;
   const shiftStart = mediaType === "audio" ? 0: Math.max(h264Index, 0)
   // console.error(`decodeFunctionExtraInfo shiftStart ${shiftStart}/${u8Arr1.length}`, mediaType, encodedFrame.timestamp);
   if (u8Arr1[u8Arr1.length - 1] === 88) {

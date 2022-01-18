@@ -328,7 +328,7 @@
         </div>
 
         <p class="block-header">国密加密</p>
-        <div class="part">
+        <div class="part hide">
           <div class="line">
             <select id="encryptionMode" style="width: 40%;">
               <option value="none" selected>none</option>
@@ -345,7 +345,10 @@
         <p class="block-header">自定义加密</p>
         <div class="part">
           <div class="line">
-            密钥：<input id="customEncryptionSecret" cols="16" placeholder="encryptionSecret" value="qwerty">
+            密钥：<input id="customEncryptionSecret" cols="16" placeholder="encryptionSecret" value="I_AM_A_KEY">
+          </div>
+          <div class="line">
+            H264帧头偏移(勿改)：<input style="width:20%" id="customEncryptionOffset" cols="2" placeholder="服务器需求，勿改" value="2">
           </div>
           <div class="line">
             <select id="customTransform" style="width: 40%">
