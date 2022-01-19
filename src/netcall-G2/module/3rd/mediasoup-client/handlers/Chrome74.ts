@@ -27,6 +27,7 @@ import {reduceCodecs} from "../../../../util/rtcUtil/codec";
 import {MediaSection} from "./sdp/MediaSection";
 import RtcError from '../../../../util/error/rtcError';
 import ErrorCode  from '../../../../util/error/errorCode';
+import {getParameters} from "../../../parameters";
 
 const prefix = 'Chrome74';
 
@@ -187,7 +188,7 @@ export class Chrome74 extends HandlerInterface
       sdpSemantics       : 'unified-plan',
       // ...additionalSettings
     };
-    if (appData.encodedInsertableStreams){
+    if (appData.encodedInsertableStreams || getParameters().forceEncodedInsertableStreams){
       pcConfig.encodedInsertableStreams = true;
     }
     this._pc = new (RTCPeerConnection as any)(

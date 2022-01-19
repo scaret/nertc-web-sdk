@@ -244,6 +244,37 @@ function decodeFunctionExtraInfo({mediaType, encodedFrame, controller, uid}){
 }
 //ENDOF extraInfo
 
+// STARTOF transparent
+function initTransparent(customTransform){
+  customEncryptionOffset = parseInt($("#customEncryptionOffset").val())
+  printRecvVideoFrame = $("#printRecvVideoFrame").is(":checked")
+  if (customTransform === "transparentWithFlagOn"){
+    addLog(customTransform + "模式不会进行加解密，数据直接送入编码器/解码器")
+  } else {
+    addLog(customTransform + "模式只能进入未开启自定义加密的房间")
+  }
+}
+
+function encodeFunctionTransparent({mediaType, encodedFrame, controller, streamType}){
+  const u8Arr1 = new Uint8Array(encodedFrame.data);
+  const info = findCryptIndexH264(u8Arr1);
+  // if (mediaType === "video" && printRecvVideoFrame){
+  //   console.log(`encodeFunctionTransparent （加密前）帧类型 ${encodedFrame.type} 帧长度 ${encodedFrame.data.byteLength} H264帧类型`, info.frames.map((frame)=>{return frame.frameType}).join() ,info, "前100字节帧内容", u8Arr1.slice(0, 100));
+  // }
+  controller.enqueue(encodedFrame);
+}
+
+function decodeFunctionTransparent({mediaType, encodedFrame, controller, uid}){
+  console.log("decodeFunctionTransparent", ...arguments)
+  const u8Arr1 = new Uint8Array(encodedFrame.data);
+  const info = findCryptIndexH264(u8Arr1);
+  if (mediaType === "video" && printRecvVideoFrame){
+    console.log(`encodeFunctionTransparent （加密前）帧类型 ${encodedFrame.type} 帧长度 ${encodedFrame.data.byteLength} H264帧类型`, info.frames.map((frame)=>{return frame.frameType}).join() ,info, "前100字节帧内容", u8Arr1.slice(0, 100));
+  }
+  controller.enqueue(encodedFrame);
+}
+//ENDOF transparent
+
 // 基于window.customTransform
 const processSenderTransform = function(evt){
   switch(window.customTransform){
@@ -255,6 +286,12 @@ const processSenderTransform = function(evt){
       break;
     case "extra-info":
       encodeFunctionExtraInfo(evt)
+      break;
+    case "transparentWithFlagOn":
+      encodeFunctionTransparent(evt)
+      break;
+    case "transparentWithFlagOff":
+      encodeFunctionTransparent(evt)
       break;
     default:
       //不处理
@@ -273,6 +310,12 @@ const processReceiverTransform = function (evt){
       break;
     case "extra-info":
       decodeFunctionExtraInfo(evt)
+      break;
+    case "transparentWithFlagOn":
+      decodeFunctionTransparent(evt)
+      break;
+    case "transparentWithFlagOff":
+      decodeFunctionTransparent(evt)
       break;
     default:
       //不处理

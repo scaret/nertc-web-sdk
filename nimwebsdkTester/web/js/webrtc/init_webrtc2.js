@@ -971,7 +971,13 @@ $('#timesync-btn').on('click', ()=>{
 window.customTransform = ""
 $('#setTransform').on('click', () => {
   let customTransform = $("#customTransform").val()
-  rtc.client.enableCustomTransform(!!customTransform)
+  if (customTransform === "transparentWithFlagOff"){
+    // 该模式下不开启CustomTransform
+    rtc.client.enableCustomTransform(false)
+    NERTC.getParameters().forceEncodedInsertableStreams = true
+  }else{
+    rtc.client.enableCustomTransform(!!customTransform)
+  }
   window.customTransform = customTransform
   if (!customTransform){
     addLog("已关闭自定义加密")
@@ -979,6 +985,8 @@ $('#setTransform').on('click', () => {
     initRC4()
   }else if (customTransform === "sm4-128-ecb"){
     initSm4()
+  } else if (customTransform === "transparentWithFlagOn" || customTransform === "transparentWithFlagOff"){
+    initTransparent(customTransform)
   }else{
     addLog("初始化自定义加密：" + customTransform)
   }

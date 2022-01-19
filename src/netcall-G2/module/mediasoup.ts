@@ -607,7 +607,7 @@ class Mediasoup extends EventEmitter {
             }
           });
           this.watchProducerState(this._micProducer, "_micProducer");
-          if (this.adapterRef.encryption.encodedInsertableStreams){
+          if (this.adapterRef.encryption.encodedInsertableStreams || getParameters().forceEncodedInsertableStreams){
             if (this._micProducer._rtpSender){
               this.enableSendTransform(this._micProducer._rtpSender, "audio", "high")
             }
@@ -652,7 +652,7 @@ class Mediasoup extends EventEmitter {
           }
         });
         this.watchProducerState(this._webcamProducer, "_webcamProducer");
-        if (this.adapterRef.encryption.encodedInsertableStreams){
+        if (this.adapterRef.encryption.encodedInsertableStreams || getParameters().forceEncodedInsertableStreams){
           if (this._webcamProducer._rtpSender){
             this.enableSendTransform(this._webcamProducer._rtpSender, "video", "high")
           }
@@ -702,7 +702,7 @@ class Mediasoup extends EventEmitter {
           }
         });
         this.watchProducerState(this._screenProducer, "_screenProducer");
-        if (this.adapterRef.encryption.encodedInsertableStreams){
+        if (this.adapterRef.encryption.encodedInsertableStreams || getParameters().forceEncodedInsertableStreams){
           if (this._screenProducer._rtpSender){
             this.enableSendTransform(this._screenProducer._rtpSender, "screen", "high")
           }
@@ -1159,7 +1159,7 @@ class Mediasoup extends EventEmitter {
         sctpParameters: undefined,
         probeSSrc: this._probeSSrc
       });
-      if (this.adapterRef.encryption.encodedInsertableStreams && consumer.rtpReceiver){
+      if ((this.adapterRef.encryption.encodedInsertableStreams || getParameters().forceEncodedInsertableStreams) && consumer.rtpReceiver){
         this.enableRecvTransform(consumer.rtpReceiver, uid, mediaTypeShort)
       }
       this._consumers[consumer.id] = consumer;
