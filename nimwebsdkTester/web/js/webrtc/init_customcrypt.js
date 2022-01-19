@@ -7,6 +7,7 @@ const naluTypes = {
 
 let customEncryptionOffset = 2;
 let printRecvVideoFrame = false;
+let printEncodedVideoFrame = false;
 
 function findCryptIndexH264(data){
   const result = {
@@ -37,8 +38,7 @@ let rc4_secret = null
 function initRC4(){
   const textEncoder = new TextEncoder();
   rc4_secret = textEncoder.encode($("#customEncryptionSecret").val())
-  customEncryptionOffset = parseInt($("#customEncryptionOffset").val())
-  printRecvVideoFrame = $("#printRecvVideoFrame").is(":checked")
+
   console.log("rc4_secret", rc4_secret)
   let rc4_secret_hex = [];
   for (let i = 0; i < rc4_secret.length; i++){
@@ -66,9 +66,6 @@ function decodeFunctionRC4({mediaType, encodedFrame, controller}){
   if (encodedFrame.data.length){
     const u8Arr1 = new Uint8Array(encodedFrame.data);
     const info = findCryptIndexH264(u8Arr1)
-    if (mediaType === "video" && printRecvVideoFrame){
-      console.log(`decodeFunctionRC4 （解密前）收到帧类型 ${encodedFrame.type} 帧长度 ${encodedFrame.data.byteLength} H264帧类型`, info.frames.map((frame)=>{return frame.frameType}).join() ,info, "前100字节帧内容", u8Arr1.slice(0, 100));
-    }
     const h264Index = info.pos;
     const shiftStart = mediaType === "audio" ? 0: Math.max(h264Index, 0)
     const encrypted = SM4.rc4_decrypt(u8Arr1, rc4_secret, {shiftStart: shiftStart});
@@ -246,8 +243,6 @@ function decodeFunctionExtraInfo({mediaType, encodedFrame, controller, uid}){
 
 // STARTOF transparent
 function initTransparent(customTransform){
-  customEncryptionOffset = parseInt($("#customEncryptionOffset").val())
-  printRecvVideoFrame = $("#printRecvVideoFrame").is(":checked")
   if (customTransform === "transparentWithFlagOn"){
     addLog(customTransform + "模式不会进行加解密，数据直接送入编码器/解码器")
   } else {
@@ -256,27 +251,41 @@ function initTransparent(customTransform){
 }
 
 function encodeFunctionTransparent({mediaType, encodedFrame, controller, streamType}){
-  const u8Arr1 = new Uint8Array(encodedFrame.data);
-  const info = findCryptIndexH264(u8Arr1);
-  // if (mediaType === "video" && printRecvVideoFrame){
-  //   console.log(`encodeFunctionTransparent （加密前）帧类型 ${encodedFrame.type} 帧长度 ${encodedFrame.data.byteLength} H264帧类型`, info.frames.map((frame)=>{return frame.frameType}).join() ,info, "前100字节帧内容", u8Arr1.slice(0, 100));
-  // }
   controller.enqueue(encodedFrame);
 }
 
 function decodeFunctionTransparent({mediaType, encodedFrame, controller, uid}){
-  console.log("decodeFunctionTransparent", ...arguments)
-  const u8Arr1 = new Uint8Array(encodedFrame.data);
-  const info = findCryptIndexH264(u8Arr1);
-  if (mediaType === "video" && printRecvVideoFrame){
-    console.log(`encodeFunctionTransparent （加密前）帧类型 ${encodedFrame.type} 帧长度 ${encodedFrame.data.byteLength} H264帧类型`, info.frames.map((frame)=>{return frame.frameType}).join() ,info, "前100字节帧内容", u8Arr1.slice(0, 100));
-  }
   controller.enqueue(encodedFrame);
 }
 //ENDOF transparent
 
+//STARTOF 加解密通用方法
+function printInfoBeforeDecrypt(evt){
+  if ((evt.mediaType === "video" || evt.mediaType === "screen") && printRecvVideoFrame){
+    const u8Arr1 = new Uint8Array(evt.encodedFrame.data);
+    const info = findCryptIndexH264(u8Arr1);
+    console.log(`（解密前）uid ${evt.uid}，媒体类型 ${evt.mediaType}，帧类型 ${evt.encodedFrame.type}，帧长度 ${evt.encodedFrame.data.byteLength}，H264帧类型`, info.frames.map((frame)=>{return frame.frameType}).join(), "，前100字节帧内容", u8Arr1.slice(0, 100));
+  }
+}
+function printInfoBeforeEncrypt(evt){
+  if ((evt.mediaType === "video" || evt.mediaType === "screen") && printEncodedVideoFrame){
+    const u8Arr1 = new Uint8Array(evt.encodedFrame.data);
+    const info = findCryptIndexH264(u8Arr1);
+    console.log(`（加密前）媒体类型 ${evt.mediaType}，大小流 ${evt.streamType}，帧类型 ${evt.encodedFrame.type}，帧长度 ${evt.encodedFrame.data.byteLength}，H264帧类型`, info.frames.map((frame)=>{return frame.frameType}).join(), "，前100字节帧内容", u8Arr1.slice(0, 100));
+  }
+}
+function initCustomEncrypt(){
+  customEncryptionOffset = parseInt($("#customEncryptionOffset").val())
+  printRecvVideoFrame = $("#printRecvVideoFrame").is(":checked")
+  console.log("printRecvVideoFrame:", printRecvVideoFrame)
+  printEncodedVideoFrame = $("#printEncodedVideoFrame").is(":checked")
+  console.log("printEncodedVideoFrame:", printEncodedVideoFrame)
+}
+//ENDOF 加解密通用方法
+
 // 基于window.customTransform
 const processSenderTransform = function(evt){
+  printInfoBeforeEncrypt(evt)
   switch(window.customTransform){
     case "rc4":
       encodeFunctionRC4(evt)
@@ -301,6 +310,7 @@ const processSenderTransform = function(evt){
 
 const processReceiverTransform = function (evt){
   // console.error("window.customTransform", window.customTransform)
+  printInfoBeforeDecrypt(evt)
   switch(window.customTransform){
     case "rc4":
       decodeFunctionRC4(evt)

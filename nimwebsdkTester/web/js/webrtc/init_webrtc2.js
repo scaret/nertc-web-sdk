@@ -979,6 +979,7 @@ $('#setTransform').on('click', () => {
     rtc.client.enableCustomTransform(!!customTransform)
   }
   window.customTransform = customTransform
+  initCustomEncrypt()
   if (!customTransform){
     addLog("已关闭自定义加密")
   }else if (customTransform === "rc4"){
