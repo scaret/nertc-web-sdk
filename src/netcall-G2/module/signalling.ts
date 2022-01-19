@@ -599,7 +599,7 @@ class Signalling extends EventEmitter {
           this.logger.log('RtmpTaskStatus变更: ', JSON.stringify(data, null, ''))
           this.adapterRef.instance.safeEmit('rtmp-state', data)
         } else if (type === 'MediaCapability') {
-          this.logger.error('MediaCapability房间能力变更: ', JSON.stringify(data, null, ''))
+          this.logger.warn('MediaCapability房间能力变更: ', JSON.stringify(data, null, ''))
           this.adapterRef.mediaCapability.parseRoom(data);
           this.adapterRef.instance.safeEmit('mediaCapabilityChange');
           if (this.adapterRef._mediasoup && this.adapterRef.mediaCapability.room.videoCodecType && this.adapterRef.localStream){
@@ -609,7 +609,7 @@ class Signalling extends EventEmitter {
             const targetCodecScreen = this.adapterRef.mediaCapability.getCodecSend("screen", this.adapterRef._mediasoup._sendTransport.handler._sendingRtpParametersByKind["video"]);
             const switchVideoCodec = this.adapterRef._mediasoup._webcamProducerCodec && this.adapterRef._mediasoup._webcamProducerCodec !== targetCodecVideo.codecName;
             if (switchVideoCodec){
-              this.logger.error(`将视频的Codec切走：`, this.adapterRef._mediasoup._webcamProducerCodec, "=>", targetCodecVideo.codecName);
+              this.logger.warn(`将视频的Codec切走：`, this.adapterRef._mediasoup._webcamProducerCodec, "=>", targetCodecVideo.codecName);
             }
             const switchScreenCodec = this.adapterRef._mediasoup._screenProducerCodec && this.adapterRef._mediasoup._screenProducerCodec !== targetCodecVideo.codecName;
             if (switchScreenCodec){

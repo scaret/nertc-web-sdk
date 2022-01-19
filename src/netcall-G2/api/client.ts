@@ -145,7 +145,7 @@ class Client extends Base {
         this.onJoinFinish()
         this.onJoinFinish = null
       }else{
-        this.logger.error('孤立的join完成回调')
+        this.logger.debug('孤立的join完成回调')
       }
     }
     this.on('pairing-join-success', handleJoinFinish);

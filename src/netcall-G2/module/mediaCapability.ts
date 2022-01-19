@@ -80,7 +80,7 @@ export class MediaCapability{
       }
     }
     if (mediaCapabilitySet[256].length === 0){
-      this.logger.error('MediaCapability:No Local Suitable codec available');
+      this.logger.warn('MediaCapability:No Local Suitable codec available');
     }
     const str = JSON.stringify(mediaCapabilitySet);
     return str;
@@ -121,7 +121,7 @@ export class MediaCapability{
       this.logger.log('MediaCapability：发送的Codec为:', roomSupported.codecName, JSON.stringify(roomSupported.codecParam));
       return roomSupported;
     }else{
-      this.logger.error('MediaCapability：未找到合适的发送Codec。发送的Codec使用:', roomNotSupported.codecName, roomNotSupported.codecParam);
+      this.logger.warn('MediaCapability：未找到合适的发送Codec。发送的Codec使用:', roomNotSupported.codecName, roomNotSupported.codecParam);
       return roomNotSupported;
     }
   }
