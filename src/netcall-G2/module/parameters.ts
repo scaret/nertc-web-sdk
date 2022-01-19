@@ -77,6 +77,8 @@ interface IParameters{
   h264Wait: number,
   // 强行开启encodedInsertableStreams
   forceEncodedInsertableStreams: boolean,
+  // 强行将向服务端上报的customEncryption flag设为false
+  forceCustomEncryptionOff: boolean,
 }
 
 let parameters:IParameters = {
@@ -132,6 +134,7 @@ let parameters:IParameters = {
   trustOnOnline: false,
   h264Wait: 1000,
   forceEncodedInsertableStreams: false,
+  forceCustomEncryptionOff: false,
 }
 
 // 注意：getParameters是一些私有全局变量，仅用于调试和私有接口，不用于正常业务

@@ -971,12 +971,10 @@ $('#timesync-btn').on('click', ()=>{
 window.customTransform = ""
 $('#setTransform').on('click', () => {
   let customTransform = $("#customTransform").val()
+  rtc.client.enableCustomTransform(!!customTransform)
   if (customTransform === "transparentWithFlagOff"){
-    // 该模式下不开启CustomTransform
-    rtc.client.enableCustomTransform(false)
-    NERTC.getParameters().forceEncodedInsertableStreams = true
-  }else{
-    rtc.client.enableCustomTransform(!!customTransform)
+    // 该模式下向服务端上报的 customEncryption 字端为false
+    NERTC.getParameters().forceCustomEncryptionOff = true
   }
   window.customTransform = customTransform
   initCustomEncrypt()

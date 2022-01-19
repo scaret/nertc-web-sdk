@@ -188,7 +188,7 @@ export class Chrome74 extends HandlerInterface
       sdpSemantics       : 'unified-plan',
       // ...additionalSettings
     };
-    if (appData.encodedInsertableStreams || getParameters().forceEncodedInsertableStreams){
+    if (appData.encodedInsertableStreams){
       pcConfig.encodedInsertableStreams = true;
     }
     this._pc = new (RTCPeerConnection as any)(

@@ -796,7 +796,7 @@ class Signalling extends EventEmitter {
         gmEnable: gmEnable,
         gmMode: encryptionModeToInt(this.adapterRef.encryption.encryptionMode),
         gmKey: this.adapterRef.encryption.encryptionSecret,
-        customEncryption: this.adapterRef.encryption.encodedInsertableStreams,
+        customEncryption: getParameters().forceCustomEncryptionOff ? false : this.adapterRef.encryption.encodedInsertableStreams,
         userPriority: this.adapterRef.userPriority
       }
     }
