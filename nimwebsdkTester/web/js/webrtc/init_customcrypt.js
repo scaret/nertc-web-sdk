@@ -6,6 +6,7 @@ const naluTypes = {
 }
 
 let customEncryptionOffset = 2;
+let printRecvVideoFrame = false;
 
 function findCryptIndexH264(data){
   const result = {
@@ -37,7 +38,13 @@ function initRC4(){
   const textEncoder = new TextEncoder();
   rc4_secret = textEncoder.encode($("#customEncryptionSecret").val())
   customEncryptionOffset = parseInt($("#customEncryptionOffset").val())
-  addLog("初始化自定义加密：rc4。密钥：" + rc4_secret)
+  printRecvVideoFrame = $("#printRecvVideoFrame").is(":checked")
+  console.log("rc4_secret", rc4_secret)
+  let rc4_secret_hex = [];
+  for (let i = 0; i < rc4_secret.length; i++){
+    rc4_secret_hex.push(rc4_secret[i].toString(16))
+  }
+  addLog("初始化自定义加密：rc4。密钥（十六进制）：" + rc4_secret_hex.join(" "))
 }
 
 function encodeFunctionRC4({mediaType, encodedFrame, controller}){
@@ -59,9 +66,9 @@ function decodeFunctionRC4({mediaType, encodedFrame, controller}){
   if (encodedFrame.data.length){
     const u8Arr1 = new Uint8Array(encodedFrame.data);
     const info = findCryptIndexH264(u8Arr1)
-    // if (mediaType === "video"){
-    //   console.log("decodeFunctionRC4", encodedFrame.type, encodedFrame.data.byteLength ,info.frames.map((frame)=>{return frame.frameType}).join() ,info);
-    // }
+    if (mediaType === "video" && printRecvVideoFrame){
+      console.log(`decodeFunctionRC4 （解密前）收到帧类型 ${encodedFrame.type} 帧长度 ${encodedFrame.data.byteLength} H264帧类型`, info.frames.map((frame)=>{return frame.frameType}).join() ,info, "前100字节帧内容", u8Arr1.slice(0, 100));
+    }
     const h264Index = info.pos;
     const shiftStart = mediaType === "audio" ? 0: Math.max(h264Index, 0)
     const encrypted = SM4.rc4_decrypt(u8Arr1, rc4_secret, {shiftStart: shiftStart});
