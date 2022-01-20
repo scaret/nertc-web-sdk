@@ -323,28 +323,31 @@ class Mediasoup extends EventEmitter {
 
   async _sendTransportConnectTimeout(){
     this.loggerSend.warn('媒体上行传输通道连接失败')
-    
-    if(this.adapterRef._signalling && this.adapterRef.connectState.curState !== 'DISCONNECTING' && this.adapterRef.connectState.curState !== 'DISCONNECTED'){
-      this.loggerSend.error('媒体上行传输通道连接失败，尝试整体重连')
-      this.adapterRef.channelStatus = 'connectioning'
-      this.adapterRef._signalling._reconnection()
-    } else {
-      this.loggerSend.error('媒体上行传输通道建立失败，抛错错误')
-      this.adapterRef.instance.emit('error', 'SOCKET_ERROR')
-      this.adapterRef.instance.leave()
+    if (this.adapterRef._signalling){
+      if(this.adapterRef.connectState.curState === 'CONNECTED'){
+        this.loggerSend.error('媒体上行传输通道连接失败，尝试整体重连')
+        this.adapterRef.channelStatus = 'connectioning'
+        this.adapterRef._signalling._reconnection()
+      } else {
+        this.loggerSend.error('媒体上行传输通道建立失败，抛错错误')
+        this.adapterRef.instance.emit('error', 'SOCKET_ERROR')
+        // this.adapterRef.instance.leave()
+      }
     }
   }
 
   async _recvTransportConnectTimeout(){
     this.loggerRecv.warn('媒体下行传输通道建立失败')
-    if(this.adapterRef._signalling && this.adapterRef.connectState.curState !== 'DISCONNECTING' && this.adapterRef.connectState.curState !== 'DISCONNECTED'){
-      this.loggerRecv.error('媒体下行传输通道连接失败，尝试整体重连')
-      this.adapterRef.channelStatus = 'connectioning'
-      this.adapterRef._signalling._reconnection()
-    } else {
-      this.loggerRecv.error('媒体下行传输通道建立失败，抛错错误')
-      this.adapterRef.instance.emit('error', 'SOCKET_ERROR')
-      this.adapterRef.instance.leave()
+    if (this.adapterRef._signalling){
+      if (this.adapterRef.connectState.curState === 'CONNECTED'){
+        this.loggerRecv.error('媒体下行传输通道连接失败，尝试整体重连')
+        this.adapterRef.channelStatus = 'connectioning'
+        this.adapterRef._signalling._reconnection()
+      }else{
+        this.loggerRecv.error('媒体下行传输通道建立失败，抛错错误')
+        this.adapterRef.instance.emit('error', 'SOCKET_ERROR')
+        // this.adapterRef.instance.leave()
+      }
     }
   }
 
