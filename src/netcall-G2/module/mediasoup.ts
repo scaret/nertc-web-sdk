@@ -999,6 +999,16 @@ class Mediasoup extends EventEmitter {
       })
     }
     const consumeRes = await this.adapterRef._signalling._protoo.request('Consume', data);
+    if (id != remoteStream.pubStatus[mediaTypeShort].producerId){
+      this.loggerRecv.warn(`收到consumeRes后Producer已经更新。触发重建下行。uid: ${remoteStream.streamID} mediaType: ${mediaTypeShort} ProducerId: ${id} => ${remoteStream.pubStatus[mediaTypeShort].producerId} ，Consume结果忽略：`, consumeRes);
+      this.resetConsumeRequestStatus()
+      if (this._recvTransport) {
+        await this.closeTransport(this._recvTransport);
+      }
+      this._recvTransport = null
+      this.adapterRef.instance.reBuildRecvTransport()
+      return this.checkConsumerList(info);
+    }
     let { transportId, iceParameters, iceCandidates, dtlsParameters, probeSSrc, rtpParameters, producerId, consumerId, code, errMsg } = consumeRes;
     if (code === 200){
       this.loggerRecv.log(`consume反馈结果: code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
@@ -1016,16 +1026,6 @@ class Mediasoup extends EventEmitter {
     if (!this._recvTransport) {
       this.loggerRecv.error(`transport undefined，直接返回`)
       return this.checkConsumerList(info)
-    }
-    if (id != remoteStream.pubStatus[mediaTypeShort].producerId){
-      this.loggerRecv.warn(`收到consumeRes后Producer已经更新。触发重建下行。uid: ${remoteStream.streamID} mediaType: ${mediaTypeShort} ProducerId: ${id} => ${remoteStream.pubStatus[mediaTypeShort].producerId} ，Consume结果忽略：`, consumeRes);
-      this.resetConsumeRequestStatus()
-      if (this._recvTransport) {
-        await this.closeTransport(this._recvTransport);
-      }
-      this._recvTransport = null
-      this.adapterRef.instance.reBuildRecvTransport()
-      return this.checkConsumerList(info);
     }
     try {
       const peerId = consumeRes.uid
