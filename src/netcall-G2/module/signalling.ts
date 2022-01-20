@@ -33,7 +33,6 @@ class Signalling extends EventEmitter {
   private _reject: ((data:any)=>void)|null = null;
   private consumers: {[consumerId: string]: Consumer } = {};
   private keepAliveTimer: Timer|null = null;
-  private netStatusTimer: Timer|null = null;
   public browserDevice: String;
   private logger: ILogger;
   public reconnectionControl:{
@@ -148,6 +147,15 @@ class Signalling extends EventEmitter {
     this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
     this.adapterRef.instance.emit('pairing-websocket-reconnection-start');
     this._destroyProtoo()
+
+    if (this.adapterRef.connectState.prevState === "CONNECTED"){
+      // 更新上下行状态为unknown，因为此时服务端无法下发上下行状态
+      this.adapterRef.netStatusList.forEach((netStatus)=>{
+        netStatus.uplinkNetworkQuality = 0
+        netStatus.downlinkNetworkQuality = 0
+      })
+      this.adapterRef.instance.safeEmit('network-quality', this.adapterRef.netStatusList)
+    }
     
     if (this.reconnectionControl.pausers.length){
       this.logger.log(`重连过程暂停`);
@@ -1119,13 +1127,6 @@ class Signalling extends EventEmitter {
     this.keepAliveTimer = setInterval(() => {
       this.doSendKeepAlive()
     }, 6 * 1000)
-    if (this.netStatusTimer) {
-      clearInterval(this.netStatusTimer)
-      this.netStatusTimer = null
-    }
-    this.netStatusTimer = setInterval(()=>{
-      this.adapterRef.instance.safeEmit('network-quality', this.adapterRef.netStatusList)
-    }, 2000)
   }
 
   async doSendKeepAlive () {
@@ -1139,10 +1140,6 @@ class Signalling extends EventEmitter {
       if (this.keepAliveTimer) {
         clearInterval(this.keepAliveTimer)
         this.keepAliveTimer = null
-      }
-      if (this.netStatusTimer) {
-        clearInterval(this.netStatusTimer)
-        this.netStatusTimer = null
       }
     }
   }
@@ -1232,10 +1229,6 @@ class Signalling extends EventEmitter {
     if (this.keepAliveTimer) {
       clearInterval(this.keepAliveTimer)
       this.keepAliveTimer = null
-    }
-    if (this.netStatusTimer) {
-      clearInterval(this.netStatusTimer)
-      this.netStatusTimer = null
     }
     if(!this._protoo || !this._protoo.connected) return
 
@@ -1357,6 +1350,7 @@ class Signalling extends EventEmitter {
       return this.adapterRef.memberMap[item.uid] || item.uid == this.adapterRef.channelInfo.uid; 
     });
     this.adapterRef.netStatusList = result
+    this.adapterRef.instance.safeEmit('network-quality', this.adapterRef.netStatusList)
   }
 
   _handleMuteNotify (data: {producerId: string, mute: boolean}) {
