@@ -38,7 +38,7 @@ export function formatSingleArg(arg:any) : any {
   }
 }
 
-export function makePrintable(param: any, maxLevel: number){
+export function makePrintable(param: any, maxLevel: number, cachedObj: any[] = []){
   if (typeof param !== "object" || !param?.hasOwnProperty){
     return param
   }
@@ -55,13 +55,18 @@ export function makePrintable(param: any, maxLevel: number){
       } else if (["adapterRef", "sdkRef", "logger", "_events"].indexOf(key) > -1){
         // result[key] = "<" + key + ">"
       } else if (val && typeof val === 'object') {
-        if (maxLevel >= 1){
-          result[key] = makePrintable(val, maxLevel - 1);
-        } else {
-          if (val?.toString){
-            result[key] = val.toString()
-          }else{
-            result[key] = typeof val
+        if (cachedObj.indexOf(val) > -1){
+          result[key] = "[Circular obj]"
+        }else{
+          cachedObj.push(result[key])
+          if (maxLevel >= 1){
+            result[key] = makePrintable(val, maxLevel - 1, cachedObj);
+          } else {
+            if (val?.toString){
+              result[key] = val.toString()
+            }else{
+              result[key] = typeof val
+            }
           }
         }
       } else {
