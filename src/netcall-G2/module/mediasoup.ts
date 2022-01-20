@@ -323,28 +323,31 @@ class Mediasoup extends EventEmitter {
 
   async _sendTransportConnectTimeout(){
     this.loggerSend.warn('媒体上行传输通道连接失败')
-    
-    if(this.adapterRef._signalling && this.adapterRef.connectState.curState !== 'DISCONNECTING' && this.adapterRef.connectState.curState !== 'DISCONNECTED'){
-      this.loggerSend.error('媒体上行传输通道连接失败，尝试整体重连')
-      this.adapterRef.channelStatus = 'connectioning'
-      this.adapterRef._signalling._reconnection()
-    } else {
-      this.loggerSend.error('媒体上行传输通道建立失败，抛错错误')
-      this.adapterRef.instance.emit('error', 'SOCKET_ERROR')
-      this.adapterRef.instance.leave()
+    if (this.adapterRef._signalling){
+      if(this.adapterRef.connectState.curState === 'CONNECTED'){
+        this.loggerSend.error('媒体上行传输通道连接失败，尝试整体重连')
+        this.adapterRef.channelStatus = 'connectioning'
+        this.adapterRef._signalling._reconnection()
+      } else {
+        this.loggerSend.error('媒体上行传输通道建立失败，抛错错误')
+        this.adapterRef.instance.emit('error', 'SOCKET_ERROR')
+        // this.adapterRef.instance.leave()
+      }
     }
   }
 
   async _recvTransportConnectTimeout(){
     this.loggerRecv.warn('媒体下行传输通道建立失败')
-    if(this.adapterRef._signalling && this.adapterRef.connectState.curState !== 'DISCONNECTING' && this.adapterRef.connectState.curState !== 'DISCONNECTED'){
-      this.loggerRecv.error('媒体下行传输通道连接失败，尝试整体重连')
-      this.adapterRef.channelStatus = 'connectioning'
-      this.adapterRef._signalling._reconnection()
-    } else {
-      this.loggerRecv.error('媒体下行传输通道建立失败，抛错错误')
-      this.adapterRef.instance.emit('error', 'SOCKET_ERROR')
-      this.adapterRef.instance.leave()
+    if (this.adapterRef._signalling){
+      if (this.adapterRef.connectState.curState === 'CONNECTED'){
+        this.loggerRecv.error('媒体下行传输通道连接失败，尝试整体重连')
+        this.adapterRef.channelStatus = 'connectioning'
+        this.adapterRef._signalling._reconnection()
+      }else{
+        this.loggerRecv.error('媒体下行传输通道建立失败，抛错错误')
+        this.adapterRef.instance.emit('error', 'SOCKET_ERROR')
+        // this.adapterRef.instance.leave()
+      }
     }
   }
 
@@ -999,6 +1002,16 @@ class Mediasoup extends EventEmitter {
       })
     }
     const consumeRes = await this.adapterRef._signalling._protoo.request('Consume', data);
+    if (id != remoteStream.pubStatus[mediaTypeShort].producerId){
+      this.loggerRecv.warn(`收到consumeRes后Producer已经更新。触发重建下行。uid: ${remoteStream.streamID} mediaType: ${mediaTypeShort} ProducerId: ${id} => ${remoteStream.pubStatus[mediaTypeShort].producerId} ，Consume结果忽略：`, consumeRes);
+      this.resetConsumeRequestStatus()
+      if (this._recvTransport) {
+        await this.closeTransport(this._recvTransport);
+      }
+      this._recvTransport = null
+      this.adapterRef.instance.reBuildRecvTransport()
+      return this.checkConsumerList(info);
+    }
     let { transportId, iceParameters, iceCandidates, dtlsParameters, probeSSrc, rtpParameters, producerId, consumerId, code, errMsg } = consumeRes;
     if (code === 200){
       this.loggerRecv.log(`consume反馈结果: code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
@@ -1016,16 +1029,6 @@ class Mediasoup extends EventEmitter {
     if (!this._recvTransport) {
       this.loggerRecv.error(`transport undefined，直接返回`)
       return this.checkConsumerList(info)
-    }
-    if (id != remoteStream.pubStatus[mediaTypeShort].producerId){
-      this.loggerRecv.warn(`收到consumeRes后Producer已经更新。触发重建下行。uid: ${remoteStream.streamID} mediaType: ${mediaTypeShort} ProducerId: ${id} => ${remoteStream.pubStatus[mediaTypeShort].producerId} ，Consume结果忽略：`, consumeRes);
-      this.resetConsumeRequestStatus()
-      if (this._recvTransport) {
-        await this.closeTransport(this._recvTransport);
-      }
-      this._recvTransport = null
-      this.adapterRef.instance.reBuildRecvTransport()
-      return this.checkConsumerList(info);
     }
     try {
       const peerId = consumeRes.uid

@@ -58,6 +58,7 @@ class Client extends Base {
   private onJoinFinish: (() => void)|null = null;
   public spatialManager : SpatialManager|null = null;
   private handlePageUnload: (evt?: any) => void;
+  private handleOnOnlineOffline: (evt?: any) => void;
   constructor (options:ClientOptions) {
     super(options)
 
@@ -73,10 +74,38 @@ class Client extends Base {
         this.leave()
       }
     }
+    this.handleOnOnlineOffline = (evt?: any) =>{
+      // 测试功能：重连依赖 window.ononline 和 window.onoffline 事件，更快发现断开和连上
+      if (evt?.type === "online"){
+        if (this.adapterRef.connectState.curState === "CONNECTING"){
+          //正在重连
+          this.logger.warn("侦测到网络恢复，恢复重连过程");
+          this.resumeReconnection()
+        }else{
+          this.logger.warn("侦测到网络恢复");
+        }
+      }else if (evt?.type === "offline"){
+        if (this.adapterRef.connectState.curState === "CONNECTED"){
+          //还没发现网络断开 / 正在重连
+          this.logger.warn("侦测到网络断开，主动断开连接");
+          this.pauseReconnection()
+          this.adapterRef._mediasoup?._sendTransport?.close()
+          this.adapterRef._mediasoup?._recvTransport?.close()
+          this.adapterRef.channelStatus = "connectioning"
+          this.adapterRef._signalling?._reconnection()
+        }else{
+          this.logger.warn("侦测到网络断开");
+        }
+      }
+    }
     
     if (getParameters().leaveOnUnload){
       window.addEventListener('pagehide', this.handlePageUnload)
       window.addEventListener('beforeunload', this.handlePageUnload)
+    }
+    if (getParameters().trustOnOnline){
+      window.addEventListener('online', this.handleOnOnlineOffline)
+      window.addEventListener('offline', this.handleOnOnlineOffline)
     }
       
     //typescript constructor requirement

@@ -71,6 +71,8 @@ interface IParameters{
   reconnectionMaxRetry: number,
   // 页面卸载时是否自动调用leave
   leaveOnUnload: boolean,
+  // 信任 window.ononline 和 window.onoffline回调
+  trustOnOnline: boolean
 }
 
 let parameters:IParameters = {
@@ -123,6 +125,7 @@ let parameters:IParameters = {
   reconnectionFirstTimeout: 2000,
   reconnectionMaxRetry: 3,
   leaveOnUnload: true,
+  trustOnOnline: false,
 }
 
 // 注意：getParameters是一些私有全局变量，仅用于调试和私有接口，不用于正常业务

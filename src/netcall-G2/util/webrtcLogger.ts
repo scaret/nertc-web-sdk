@@ -228,18 +228,29 @@ var formatTimeUnit = function (num:string, count?:number) {
   return str
 }
 
-function simpleClone (obj:any) {
-  var cache:any[] = []
-  var strObj = JSON.stringify(obj, function (key, value) {
-    if (typeof value === 'object' && value !== null) {
-      if (cache.indexOf(value) !== -1) {
-        // Circular reference found, discard key
-        return
+function simpleClone (obj:any, cache: any[] = []) {
+  obj = formatSingleArg(obj)
+  if (!obj || typeof obj !== "object"){
+    return obj
+  }
+  let clonedObj = {};
+  for (let key in obj){
+    // 有些来自Object.create(null)的方法没有 obj.hasOwnProperty属性
+    if (!obj.hasOwnProperty || obj.hasOwnProperty(key)) {
+      if (obj[key] && typeof obj[key] === "object"){
+        if (cache.indexOf(obj[key]) !== -1){
+          // @ts-ignore
+          clonedObj[key] = "[Circular obj]"
+        }else{
+          cache.push(obj[key])
+          // @ts-ignore
+          clonedObj[key] = simpleClone(obj[key], cache)
+        }
+      }else{
+        // @ts-ignore
+        clonedObj[key] = obj[key]
       }
-      // Store value in our collection
-      cache.push(value)
     }
-    return value
-  })
-  return JSON.parse(strObj)
+  }
+  return clonedObj
 }
