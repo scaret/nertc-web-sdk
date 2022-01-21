@@ -5,7 +5,7 @@ const naluTypes = {
   1: "PFrame",
 }
 
-let customEncryptionOffset = 2;
+let customEncryptionOffset = 3;
 let printRecvVideoFrame = false;
 let printEncodedVideoFrame = false;
 
