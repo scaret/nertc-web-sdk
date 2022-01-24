@@ -200,9 +200,6 @@ class Signalling extends EventEmitter {
       url += "?"
     }
     this.logger.log('Signalling: init url=',  url)
-    if(url.includes('cloudproxyshanghai.netease.im')){
-      url = 'cloudproxyshanghai000.netease.im/?ip=59.111.242.188:8080'
-    }
     this.adapterRef.channelInfo._protooUrl = url
     this._url = `${url.indexOf('://') === -1 ? "wss://" : ""}${url}&cid=${this.adapterRef.channelInfo.cid}&uid=${this.adapterRef.channelInfo.uid}`
     this.logger.log('连接的url: ', this._url)
