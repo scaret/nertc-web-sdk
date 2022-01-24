@@ -12,20 +12,25 @@ let printEncodedVideoFrame = false;
 function findCryptIndexH264(data){
   const result = {
     frames: [],
+    // pos表示第一个I帧或P帧的nalu type的位置+offset
     pos: -1
   };
-  for (let i = 3; i < data.length; i++){
-    if (data[i - 1] === 0x01 && data[i - 2] === 0x00 && data[i - 3] === 0x00){
+  for (let i = 4; i < data.length; i++){
+    if (data[i - 1] === 0x01 && data[i - 2] === 0x00 && data[i - 3] === 0x00 && data[i - 4] === 0x00){
       // 低四位为1为p帧，低四位为5为i帧。算法待改进
       // https://zhuanlan.zhihu.com/p/281176576
       // https://stackoverflow.com/questions/24884827/possible-locations-for-sequence-picture-parameter-sets-for-h-264-stream/24890903#24890903
       let frameTypeInt = data[i] & 0x1f;
       let frameType = naluTypes[frameTypeInt] || "nalu_" + frameTypeInt
+      if (result.frames.length){
+        //不包含这位
+        result.frames[result.frames.length - 1].posEnd = i - 4
+      }
       result.frames.push({
         pos: i,
         frameType
       });
-      if (frameType === "IFrame" || frameType === "PFrame"){
+      if (result.pos === -1 && (frameType === "IFrame" || frameType === "PFrame")){
         result.pos = i + customEncryptionOffset
       }
     }
@@ -51,13 +56,17 @@ function encodeFunctionRC4({mediaType, encodedFrame, controller}){
   if (encodedFrame.data.length){
     const u8Arr1 = new Uint8Array(encodedFrame.data);
     const info = findCryptIndexH264(u8Arr1)
-    // if (mediaType === "video"){
-      // console.log("encodeFunctionRC4", encodedFrame.type, info.frames.map((frame)=>{return frame.frameType}).join() ,info);
-    // }
     const h264Index = info.pos;
-    const shiftStart = mediaType === "audio" ? 0: Math.max(h264Index, 0)
-    const encrypted = SM4.rc4_encrypt(u8Arr1, rc4_secret, {shiftStart: shiftStart});
-    encodedFrame.data = encrypted.buffer;
+    if (mediaType === "audio" || h264Index <= 0){
+      SM4.rc4_encrypt(u8Arr1, rc4_secret, {shiftStart: 0});
+    }else{
+      info.frames.forEach((frameInfo)=>{
+        if (frameInfo.frameType === "IFrame" || frameInfo.frameType === "PFrame")
+          SM4.rc4_encrypt(u8Arr1, rc4_secret, {
+            shiftStart: frameInfo.pos + customEncryptionOffset, end: frameInfo.posEnd
+          });
+      })
+    }
   }
   controller.enqueue(encodedFrame);
 }
@@ -67,9 +76,16 @@ function decodeFunctionRC4({mediaType, encodedFrame, controller}){
     const u8Arr1 = new Uint8Array(encodedFrame.data);
     const info = findCryptIndexH264(u8Arr1)
     const h264Index = info.pos;
-    const shiftStart = mediaType === "audio" ? 0: Math.max(h264Index, 0)
-    const encrypted = SM4.rc4_decrypt(u8Arr1, rc4_secret, {shiftStart: shiftStart});
-    encodedFrame.data = encrypted.buffer;
+    if (mediaType === "audio" || h264Index <= 0){
+      SM4.rc4_decrypt(u8Arr1, rc4_secret, {shiftStart: 0});
+    }else{
+      info.frames.forEach((frameInfo)=>{
+        if (frameInfo.frameType === "IFrame" || frameInfo.frameType === "PFrame")
+        SM4.rc4_decrypt(u8Arr1, rc4_secret, {
+          shiftStart: frameInfo.pos + customEncryptionOffset, end: frameInfo.posEnd
+        });
+      })
+    }
   }
   controller.enqueue(encodedFrame);
 }
