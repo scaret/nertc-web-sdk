@@ -1158,7 +1158,11 @@ class Mediasoup extends EventEmitter {
       }
       return this.checkConsumerList(info)
     } catch (error) {
-      this.adapterRef && this.loggerRecv.error('"newConsumer" request failed:', error.name, error.message);
+      this.adapterRef && this.loggerRecv.error(`订阅 ${uid} 的 ${kind} 媒体失败, error name: ${error.name}, error.message: ${error.message}`);
+      if (error.name === 'peer closed') {
+        this.loggerRecv.log('订阅 ${uid} 的 ${kind} 媒体失败，信令通道已经销毁，忽略改成请求')
+        return this.checkConsumerList(info)
+      }
       this.loggerRecv.error(`订阅 ${uid} 的 ${kind} 媒体失败，做容错处理: 重新建立下行连接`)
       
       this.resetConsumeRequestStatus()

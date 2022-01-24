@@ -122,6 +122,14 @@ class Peer extends EnhancedEventEmitter
 		//this.safeEmit('close');
 	}
 
+	clear() {
+		for (const sent of this._sents.values())
+		{
+			sent.close();
+		}
+		this._sents.clear()
+	}
+
 	/**
 	 * Send a protoo request to the server-side Room.
 	 *
