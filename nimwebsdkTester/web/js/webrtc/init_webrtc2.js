@@ -1170,7 +1170,10 @@ function getVideoSource(mediaType){
   }else{
     videoConstraint.type = "background"
     const bgImg = new Image()
-    bgImg.src = "../../../img/koala.jpg"
+    const pathParts = window.location.pathname.split("/")
+    pathParts.pop()
+    const src = pathParts.join("/") + "/img/koala.jpg"
+    bgImg.src = src
     videoConstraint.bgImg = bgImg
   }
   let videoSource = fakeMediaDevices.getFakeMedia({video: videoConstraint}).video.track
