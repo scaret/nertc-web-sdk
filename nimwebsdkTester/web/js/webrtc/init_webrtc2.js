@@ -1152,9 +1152,9 @@ $('#enableCodecHacking').on('change', ()=>{
 });
 
 function getVideoSource(mediaType){
-  let defaultStr = "1920x1080x15"
-  const optionsStr = prompt(`自定义 ${mediaType} 配置 宽x高x帧率`, "1920x1080x15") || defaultStr
-  const matches = optionsStr.match(/(\d+)x(\d+)x(\d+)/);
+  let defaultStr = "1920x1080x15x1"
+  const optionsStr = prompt(`自定义 ${mediaType} 配置 宽x高x帧率x类型`, defaultStr) || defaultStr
+  const matches = optionsStr.match(/(\d+)x(\d+)x(\d+)x(\d+)/);
   if (!matches){
     addLog("自定义视频 ：无法匹配字符串" + optionsStr)
     return
@@ -1164,6 +1164,14 @@ function getVideoSource(mediaType){
     height: matches[2],
     frameRate: matches[3],
     content: `${mediaType} ${optionsStr}`
+  }
+  if (matches[4] === "1"){
+    videoConstraint.type = "clock"
+  }else{
+    videoConstraint.type = "background"
+    const bgImg = new Image()
+    bgImg.src = "../../../img/koala.jpg"
+    videoConstraint.bgImg = bgImg
   }
   let videoSource = fakeMediaDevices.getFakeMedia({video: videoConstraint}).video.track
   return videoSource
