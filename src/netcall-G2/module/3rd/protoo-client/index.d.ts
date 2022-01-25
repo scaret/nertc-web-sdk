@@ -62,6 +62,8 @@ export class Peer {
 
   request(method: string, data?: any): Promise<any>;
 
+  clear(): void;
+
   notify(method: string, data?: any): Promise<any>;
 
   close(): void;

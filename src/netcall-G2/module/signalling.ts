@@ -203,6 +203,8 @@ class Signalling extends EventEmitter {
     this.adapterRef.channelInfo._protooUrl = url
     this._url = `${url.indexOf('://') === -1 ? "wss://" : ""}${url}&cid=${this.adapterRef.channelInfo.cid}&uid=${this.adapterRef.channelInfo.uid}`
     this.logger.log('连接的url: ', this._url)
+
+
     const protooTransport = new protooClient.WebSocketTransport(this._url, {
 
       retry: {
@@ -565,15 +567,14 @@ class Signalling extends EventEmitter {
             setTimeout(()=>{
               if (_protoo !== this._protoo){
                 this.logger.log(`OnSignalRestart取消重连: 连接已被覆盖 ${_protoo.id}_${_protoo._transport?.wsid}=>${this._protoo?.id}_${this._protoo?._transport?.wsid}`)
-              }
-              else if (this.adapterRef.channelStatus === 'join'){
+              } else if (this.adapterRef.channelStatus === 'join'){
                 this.logger.log('OnSignalRestart执行重连')
                 this.adapterRef.channelStatus = 'connectioning'
                 this.adapterRef.instance.emit('pairing-websocket-reconnection-start')
                 // derek: 为什么这里调this.join不调this._reconnection?不懂但是不敢改。
                 // 见https://g.hz.netease.com/yunxin/nertc-web-sdk/-/blob/8bb8690d0f2862de34d009f4d7e1012618719088/src/netcall-G2/module/signalling.ts#L398
                 this.join()
-              }else{
+              } else {
                 this.logger.log('OnSignalRestart取消重连。channelStatus：', this.adapterRef.channelStatus)
               }
             }, 3 * 1000)
@@ -735,13 +736,13 @@ class Signalling extends EventEmitter {
   _handleDisconnected (_protoo: Peer) {
     this.logger.log('Signalling:_handleDisconnected')
     this.logger.log('Signalling:_handleClose')
-    if (this._reconnectionTimer && (this.adapterRef.channelStatus === 'connectioning' || this.adapterRef.channelStatus === 'join')){
+    if (this._reconnectionTimer && (this.adapterRef.channelStatus === 'connectioning' || this.adapterRef.channelStatus === 'join')) {
       if (_protoo.closed){
         this.logger.warn(`信令通道#${_protoo.id}_${_protoo._transport?.wsid} 在建立过程中被关闭。当前正在重连中，等待下次重连过程。`)
-      }else{
+      } else {
         this.logger.warn(`信令通道#${_protoo.id}_${_protoo._transport?.wsid} 在建立过程中被关闭。信令通道会自动重试。连接地址：${_protoo._transport?._url}`)
       }
-    }else{
+    } else {
       this.logger.warn(`信令通道#${_protoo.id}_${_protoo._transport?.wsid} 收到关闭信号，即将开始重连过程。`);
       this.adapterRef.channelStatus = 'connectioning'
       this._reconnection()
@@ -753,12 +754,13 @@ class Signalling extends EventEmitter {
 
   async join () {
     
+
     let gmEnable;
-    if (!this.adapterRef.encryption.encryptionSecret){
+    if (!this.adapterRef.encryption.encryptionSecret) {
       gmEnable = false;
-    }else if (this.adapterRef.encryption.encryptionMode === "none" || this.adapterRef.encryption.encryptionMode === "encoded-transform-sm4-128-ecb"){
+    } else if (this.adapterRef.encryption.encryptionMode === "none" || this.adapterRef.encryption.encryptionMode === "encoded-transform-sm4-128-ecb"){
       gmEnable = false;
-    }else{
+    } else {
       gmEnable = true;
     }
     
@@ -805,6 +807,9 @@ class Signalling extends EventEmitter {
         message: 'No this._protoo 3'
       })
     }
+
+    //join之前，清除之前可能存在的request
+    this._protoo.clear()
 
     try {
       let response
