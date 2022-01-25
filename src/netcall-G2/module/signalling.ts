@@ -976,6 +976,8 @@ class Signalling extends EventEmitter {
       }
       this.logger.log('加入房间成功, 查看房间其他人的发布信息: ', JSON.stringify(response.externData.userList))
       if (response.externData !== undefined && response.externData.userList && response.externData.userList.length) {
+        //兼容喜欢把箭头函数transpile成ES5的客户
+        let that = this;
         for (const peer of response.externData.userList) {
           let uid = peer.uid
           if (this.adapterRef.channelInfo.uidType === 'string') {
@@ -1027,8 +1029,6 @@ class Signalling extends EventEmitter {
               remoteStream['muteStatus'][mediaTypeShort].send = mute
               remoteStream['pubStatus'][mediaTypeShort]['simulcastEnable'] = simulcastEnable
               
-              //兼容喜欢把箭头函数transpile成ES5的客户
-              let that = this;
               setTimeout(()=>{
                 // join response中的事件应该延迟到join发生后再抛出
                 that.logger.log('通知房间成员发布信息: ', JSON.stringify(remoteStream.pubStatus))
