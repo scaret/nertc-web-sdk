@@ -1,6 +1,7 @@
 const naluTypes = {
   7: "SPS",
   8: "PPS",
+  6: "SEI",
   5: "IFrame",
   1: "PFrame",
 }
@@ -53,7 +54,9 @@ function initRC4(){
 }
 
 function encodeFunctionRC4({mediaType, encodedFrame, controller}){
-  if (encodedFrame.data.length){
+  // 加密算法，以RC4为例
+  // 本示例中使用的SM4加密库地址： https://www.npmjs.com/package/sm4-128-ecb
+  if (encodedFrame.data.byteLength){
     const u8Arr1 = new Uint8Array(encodedFrame.data);
     const info = findCryptIndexH264(u8Arr1)
     const h264Index = info.pos;
@@ -61,10 +64,12 @@ function encodeFunctionRC4({mediaType, encodedFrame, controller}){
       SM4.rc4_encrypt(u8Arr1, rc4_secret, {shiftStart: 0});
     }else{
       info.frames.forEach((frameInfo)=>{
-        if (frameInfo.frameType === "IFrame" || frameInfo.frameType === "PFrame")
+        if (frameInfo.frameType === "IFrame" || frameInfo.frameType === "PFrame"){
           SM4.rc4_encrypt(u8Arr1, rc4_secret, {
-            shiftStart: frameInfo.pos + customEncryptionOffset, end: frameInfo.posEnd
+            shiftStart: frameInfo.pos + customEncryptionOffset,
+            end: frameInfo.posEnd
           });
+        }
       })
     }
   }
@@ -72,7 +77,8 @@ function encodeFunctionRC4({mediaType, encodedFrame, controller}){
 }
 
 function decodeFunctionRC4({mediaType, encodedFrame, controller}){
-  if (encodedFrame.data.length){
+  // 解密算法，以RC4为例
+  if (encodedFrame.data.byteLength){
     const u8Arr1 = new Uint8Array(encodedFrame.data);
     const info = findCryptIndexH264(u8Arr1)
     const h264Index = info.pos;
@@ -80,10 +86,12 @@ function decodeFunctionRC4({mediaType, encodedFrame, controller}){
       SM4.rc4_decrypt(u8Arr1, rc4_secret, {shiftStart: 0});
     }else{
       info.frames.forEach((frameInfo)=>{
-        if (frameInfo.frameType === "IFrame" || frameInfo.frameType === "PFrame")
-        SM4.rc4_decrypt(u8Arr1, rc4_secret, {
-          shiftStart: frameInfo.pos + customEncryptionOffset, end: frameInfo.posEnd
-        });
+        if (frameInfo.frameType === "IFrame" || frameInfo.frameType === "PFrame"){
+          SM4.rc4_decrypt(u8Arr1, rc4_secret, {
+            shiftStart: frameInfo.pos + customEncryptionOffset,
+            end: frameInfo.posEnd,
+          });          
+        }
       })
     }
   }

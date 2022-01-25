@@ -10,10 +10,10 @@
 
 ## 注意事项
 
-1. H264数据应只加密I帧和P帧，且需在 0x00 0x00 0x01 后需保留三位不做加密（见示例代码）
+1. H264数据应只加密I帧和P帧，且需在 0x00 0x00 0x00 0x01 后需保留三位不做加密（见示例代码）
 2. 由于有丢包情况存在，请勿在帧与帧间使用类似 [cbc加密模式](https://zh.wikipedia.org/wiki/%E5%88%86%E7%BB%84%E5%AF%86%E7%A0%81%E5%B7%A5%E4%BD%9C%E6%A8%A1%E5%BC%8F#%E5%AF%86%E7%A0%81%E5%9D%97%E9%93%BE%E6%8E%A5%EF%BC%88CBC%EF%BC%89)
 3. 开启自定义加密的客户端无法和未开启自定义加密的客户端加入同一个房间。
-
+4. 通过 `sender-transform` 和 `receiver-transform` 的对象内可能包含多个I帧和P帧，加密时按需分别做加密。
 
 ## 示例
 
@@ -29,7 +29,7 @@
       <script>
         
         const rc4_secret = "I_AM_A_KEY"
-		    
+        
         function encodeFunctionRC4({mediaType, encodedFrame, controller}){
           // 加密算法，以RC4为例
           // 本示例中使用的SM4加密库地址： https://www.npmjs.com/package/sm4-128-ecb
@@ -37,22 +37,39 @@
             const u8Arr1 = new Uint8Array(encodedFrame.data);
             const info = findCryptIndexH264(u8Arr1)
             const h264Index = info.pos;
-            const shiftStart = mediaType === "audio" ? 0: Math.max(h264Index, 0)
-            const encrypted = SM4.rc4_encrypt(u8Arr1, rc4_secret, {shiftStart: shiftStart});
-            encodedFrame.data = encrypted.buffer;
+            if (mediaType === "audio" || h264Index <= 0){
+              SM4.rc4_encrypt(u8Arr1, rc4_secret, {shiftStart: 0});
+            }else{
+              info.frames.forEach((frameInfo)=>{
+                if (frameInfo.frameType === "IFrame" || frameInfo.frameType === "PFrame"){
+                  SM4.rc4_encrypt(u8Arr1, rc4_secret, {
+                    shiftStart: frameInfo.pos + customEncryptionOffset,
+                    end: frameInfo.posEnd
+                  });
+                }
+              })
+            }
           }
           controller.enqueue(encodedFrame);
         }
-		
+        
         function decodeFunctionRC4({mediaType, encodedFrame, controller}){
           // 解密算法，以RC4为例
           if (encodedFrame.data.byteLength){
             const u8Arr1 = new Uint8Array(encodedFrame.data);
             const info = findCryptIndexH264(u8Arr1)
             const h264Index = info.pos;
-            const shiftStart = mediaType === "audio" ? 0: Math.max(h264Index, 0)
-            const encrypted = SM4.rc4_decrypt(u8Arr1, rc4_secret, {shiftStart: shiftStart});
-            encodedFrame.data = encrypted.buffer;
+            if (mediaType === "audio" || h264Index <= 0){
+              SM4.rc4_decrypt(u8Arr1, rc4_secret, {shiftStart: 0});
+            }else{
+              info.frames.forEach((frameInfo)=>{
+                if (frameInfo.frameType === "IFrame" || frameInfo.frameType === "PFrame")
+                  SM4.rc4_decrypt(u8Arr1, rc4_secret, {
+                    shiftStart: frameInfo.pos + customEncryptionOffset,
+                    end: frameInfo.posEnd
+                  });
+              })
+            }
           }
           controller.enqueue(encodedFrame);
         }
@@ -76,38 +93,56 @@
         }
       }
       
-      // H264在 0x00 0x00 0x01 后需保留三位不做加密
+      // H264在 0x00 0x00 0x00 0x01 后需保留三位不做加密
       const customEncryptionOffset = 3
       const naluTypes = {
         7: "SPS",
         8: "PPS",
+        6: "SEI",
         5: "IFrame",
         1: "PFrame",
       }
-		
+        
       function findCryptIndexH264(data){
-        // 工具函数，判断I帧和P帧位置
+        // 输入一个 UInt8Array，在其中寻找I帧和P帧
+        // 输入中可能会出现多个I帧和P帧时，需要分别编码/解码
         const result = {
           frames: [],
+          // pos表示第一个I帧或P帧的nalu type的位置+offset
           pos: -1
         };
-        for (let i = 3; i < data.length; i++){
-          if (data[i - 1] === 0x01 && data[i - 2] === 0x00 && data[i - 3] === 0x00){
-            // 低五位为1为p帧，低五位为5为i帧。
+        for (let i = 4; i < data.length; i++){
+          if (data[i - 1] === 0x01 && data[i - 2] === 0x00 && data[i - 3] === 0x00 && data[i - 4] === 0x00){
+            // 低四位为1为p帧，低四位为5为i帧。算法待改进
+            // https://zhuanlan.zhihu.com/p/281176576
+            // https://stackoverflow.com/questions/24884827/possible-locations-for-sequence-picture-parameter-sets-for-h-264-stream/24890903#24890903
             let frameTypeInt = data[i] & 0x1f;
             let frameType = naluTypes[frameTypeInt] || "nalu_" + frameTypeInt
+            if (result.frames.length){
+              //不包含这位
+              result.frames[result.frames.length - 1].posEnd = i - 4
+            }
             result.frames.push({
               pos: i,
               frameType
             });
-            if (frameType === "IFrame" || frameType === "PFrame"){
+            if (result.pos === -1 && (frameType === "IFrame" || frameType === "PFrame")){
               result.pos = i + customEncryptionOffset
             }
           }
         }
         return result;
       }
-		
+
+        /**
+         * SDK加密接口。一个典型的加密过程是这样的：
+         * 
+         * const u8Arr1 = new Uint8Array(evt.encodedFrame.data);
+         * // 对u8Arr1进行加密，获得u8Arr2后：
+         * evt.encodedFrame.data = u8Arr2.buffer
+         * evt.controller.enqueue(evt.encodedFrame);
+         * 
+         */
       const processSenderTransform = function(evt){
         printInfoBeforeEncrypt(evt)
         encodeFunctionRC4(evt)
