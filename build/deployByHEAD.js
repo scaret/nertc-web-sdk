@@ -28,7 +28,7 @@ var srcFolder3 = path.join(
 )
 var destFolder3 = path.join(TARGET_DIR, `${buildId}`)
 fs.emptyDirSync(destFolder3)
-copy(srcFolder3, destFolder3, ['webrtc2.html', 'css', 'js'], 'rtc2Rtmp.html')
+copy(srcFolder3, destFolder3, ['webrtc2.html', 'css', 'js', 'img'], 'rtc2Rtmp.html')
 
 var srcFolderApidoc = path.join(
   __dirname,
@@ -104,7 +104,7 @@ function copy (srcFolder, destFolder, allowPath, excludePath) {
       let stat = fs.lstatSync(src)
       let isDirectory = stat.isDirectory()
       if (isDirectory) {
-        if (/css$/i.test(src) || /\js/.test(src) || /web$/.test(src) || /auido$/.test(src)) {
+        if (/css$/i.test(src) || /\js/.test(src) || /web$/.test(src) || /auido$/.test(src) || /img/.test(src)) {
           return true;
         } else {
           return false;
@@ -118,7 +118,7 @@ function copy (srcFolder, destFolder, allowPath, excludePath) {
           }
         })*/
       } else {
-        if (/webrtc2/i.test(src) || /rtc2Rtmp/i.test(src) || /css/i.test(src) || /\.js/i.test(src) || /web$/.test(src) || /mp3|aac|flac/.test(src)) {
+        if (/webrtc2/i.test(src) || /rtc2Rtmp/i.test(src) || /css/i.test(src) || /\.js/i.test(src) || /web$/.test(src) || /img/.test(src) || /mp3|aac|flac/.test(src)) {
           return true;
         } else {
           return false

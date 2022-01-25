@@ -29,7 +29,7 @@ if (process.env.PLATFORM === 'g2') {
   )
   var destFolder3 = path.join(WEB_NRTC_DIR, `/websdk/G2 ${env}/${webrtcG2Version === '0.0.1' ? 'multi' : webrtcG2Version}/${webrtcG2Branch}/`)
   fs.emptyDirSync(destFolder3)
-  copy(srcFolder3, destFolder3, ['webrtc2.html', 'css', 'js'], 'rtc2Rtmp.html', 'whiteboard.js')
+  copy(srcFolder3, destFolder3, ['webrtc2.html', 'css', 'js', 'img'], 'rtc2Rtmp.html', 'whiteboard.js')
 } else {
   const env = map[nodeEnv] || nodeEnv
   console.log('version:', version, 'nodeEnv:', nodeEnv)
@@ -81,7 +81,7 @@ function copy (srcFolder, destFolder, allowPath, excludePath) {
       let stat = fs.lstatSync(src)
       let isDirectory = stat.isDirectory()
       if (isDirectory) {
-        if (/css$/i.test(src) || /\js/.test(src) || /web$/.test(src) || /auido$/.test(src)) {
+        if (/css$/i.test(src) || /js/.test(src) || /web$/.test(src) || /auido$/.test(src) || /img/.test(src)) {
           return true;
         } else {
           return false;
@@ -95,7 +95,7 @@ function copy (srcFolder, destFolder, allowPath, excludePath) {
           }
         })*/
       } else {
-        if (/webrtc2/i.test(src) || /rtc2Rtmp/i.test(src) || /css/i.test(src) || /\.js/i.test(src) || /web$/.test(src) || /mp3|aac|flac/.test(src)) {
+        if (/webrtc2/i.test(src) || /rtc2Rtmp/i.test(src) || /css/i.test(src) || /\.js/i.test(src) || /web$/.test(src) || /img/.test(src) || /mp3|aac|flac/.test(src)) {
           return true;
         } else {
           return false
