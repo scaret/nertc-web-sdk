@@ -3079,21 +3079,21 @@ $("#setReconnectionMaxRetry").on("click", ()=>{
 
 const handleOnBeforeUnload = function(evt){
   addLog("handleOnBeforeUnload")
+  console.warn("收到了 handleOnBeforeUnload 事件，但并不主动调用leave。")
   // 经测试，以下文字并不会在chrome中展示（但是不重要）
   return "您确认离开当前页面吗？（点否rtc.client不调用leave）"
 }
 
 const handleOnPageHide = function(evt){
-  if (rtc.client){
-    addLog("handleOnPageHide")
-    rtc.client.handlePageUnload(evt)
-  }
+  console.warn("收到了 PageHide 事件，但并不主动调用leave。")
 }
 
 $("#confirmOnRefresh").on("click", ()=>{
   addLog("取消默认的页面卸载逻辑")
+  // 处理未来的client
   NERTC.getParameters().leaveOnUnload = false
   if (rtc.client){
+    // 处理当前的client
     window.removeEventListener("pagehide", rtc.client.handlePageUnload)
     window.removeEventListener("beforeunload", rtc.client.handlePageUnload)
   }
