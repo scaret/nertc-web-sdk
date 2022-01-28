@@ -72,7 +72,9 @@ interface IParameters{
   // 页面卸载时是否自动调用leave
   leaveOnUnload: boolean,
   // 信任 window.ononline 和 window.onoffline回调
-  trustOnOnline: boolean
+  trustOnOnline: boolean,
+  // 部分浏览器加载编解码器需要时间。如果浏览器不支持H264，则等待多少毫秒
+  h264Wait: number,
 }
 
 let parameters:IParameters = {
@@ -126,6 +128,7 @@ let parameters:IParameters = {
   reconnectionMaxRetry: 3,
   leaveOnUnload: true,
   trustOnOnline: false,
+  h264Wait: 1000,
 }
 
 // 注意：getParameters是一些私有全局变量，仅用于调试和私有接口，不用于正常业务
