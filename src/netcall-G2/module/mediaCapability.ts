@@ -1,6 +1,7 @@
 import {SignalRoomCapability, VideoCodecInt2Str, VideoCodecStr2Int} from "../interfaces/SignalProtocols";
 import {AdapterRef, ILogger, VideoCodecType} from "../types";
 import {getSupportedCodecs, VideoCodecList} from "../util/rtcUtil/codec";
+import {getParameters} from "./parameters";
 
 export class MediaCapability{
 
@@ -46,8 +47,27 @@ export class MediaCapability{
   }
   
   async detect(){
+    const start = Date.now()
     let supportedCodecsRecv = await getSupportedCodecs("recv") || {video: [], audio: ["OPUS"]};
     let supportedCodecsSend = await getSupportedCodecs("send") || {video: [], audio: ["OPUS"]};
+    if (getParameters().h264Wait){
+      if (supportedCodecsRecv.video.indexOf("H264") === -1){
+        this.logger.warn(`当前浏览器不支持H264解码。这可能会触发频道内编码协商。最多等待 ${getParameters().h264Wait} 毫秒以避免编码器尚未加载。`);
+        while (Date.now() - start < getParameters().h264Wait){
+          supportedCodecsRecv = await getSupportedCodecs("recv") || {video: [], audio: ["OPUS"]};
+          if (supportedCodecsRecv.video.indexOf("H264") === -1){
+            // 停顿100毫秒后继续
+            await new Promise((resolve)=>{setTimeout(resolve, 100)})
+          }else{
+            this.logger.log(`H264解码器加载完成！用时 ${Date.now() - start} 毫秒`);
+            break;
+          }
+        }
+      }
+      if (supportedCodecsRecv.video.indexOf("H264") === -1){
+        this.logger.warn(`H264解码器加载失败！`);
+      }
+    }
     this.supportedCodecRecv = supportedCodecsRecv.video;
     this.supportedCodecSend = supportedCodecsSend.video;
     this.logger.log("detect supportedCodecRecv", JSON.stringify(this.supportedCodecRecv), "supportedCodecSend", JSON.stringify(this.supportedCodecSend), 'Preferred codec:', JSON.stringify(this.preferredCodecSend));

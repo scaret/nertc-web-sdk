@@ -742,9 +742,26 @@ function initVolumeDetect() {
 }
 
 async function initCodecOptions(){
+  const start = Date.now();
   if (rtc.client && rtc.client._getSupportedCodecs){
-    const supportedCodecsRecv = await rtc.client._getSupportedCodecs("recv");
-    const supportedCodecsSend = await rtc.client._getSupportedCodecs("send");
+    let supportedCodecsRecv = await rtc.client._getSupportedCodecs("recv");
+    if (supportedCodecsRecv.video.indexOf("H264") === -1){
+      console.error("浏览器不支持H264。等待1秒。。。")
+      while(Date.now() - start < 1000){
+        supportedCodecsRecv = await rtc.client._getSupportedCodecs("recv");
+        if (supportedCodecsRecv.video.indexOf("H264") === -1){
+          // 停顿100毫秒后继续
+          await new Promise((resolve)=>{setTimeout(resolve, 100)})
+        }else{
+          console.log(`H264解码器加载完成！用时 ${Date.now() - start} 毫秒`);
+          break;
+        }
+      }
+      if (supportedCodecsRecv.video.indexOf("H264") === -1){
+        console.error(`浏览器确实不支持H264!`);
+      }
+    }
+    let supportedCodecsSend = await rtc.client._getSupportedCodecs("send");
     const codecs = ["H264", "VP8"];
     $('#supported-recv-codec-wrapper').empty();
     $('#supported-send-codec-wrapper').empty();
