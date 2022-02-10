@@ -2075,7 +2075,9 @@ class LocalStream extends EventEmitter {
       this.logger.error('无法识别的媒体类型：', options.mediaType, options.streamType);
     }else{
       if (options.maxBitrate){
-        this.mediaHelper[options.mediaType].encoderConfig[options.streamType].maxBitrate = options.maxBitrate;
+        const maxBitrate = options.maxBitrate * 1000;
+        this.logger.log(`设置maxBitrate ${options.mediaType} ${options.streamType} ${this.mediaHelper[options.mediaType].encoderConfig[options.streamType].maxBitrate} => ${maxBitrate}`)
+        this.mediaHelper[options.mediaType].encoderConfig[options.streamType].maxBitrate = maxBitrate;
       }else{
         this.logger.error('未设定maxBitrate。保留目前的值：', options.mediaType, options.streamType, this.mediaHelper[options.mediaType].encoderConfig[options.streamType].maxBitrate);
       }
