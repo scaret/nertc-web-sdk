@@ -1170,7 +1170,7 @@ $('#enableCodecHacking').on('change', ()=>{
 
 function getVideoSource(mediaType){
   let defaultStr = "1920x1080x15x1"
-  const optionsStr = prompt(`自定义 ${mediaType} 配置 宽x高x帧率x类型（类型1：时钟;类型2：背景替换）`, defaultStr) || defaultStr
+  const optionsStr = prompt(`自定义${mediaType}配置：【宽x高x帧率x类型】\n类型1：时钟; 类型2：背景替换; 类型3：随机颜色`, defaultStr) || defaultStr
   const matches = optionsStr.match(/(\d+)x(\d+)x(\d+)x(\d+)/);
   if (!matches){
     addLog("自定义视频 ：无法匹配字符串" + optionsStr)
@@ -1184,6 +1184,8 @@ function getVideoSource(mediaType){
   }
   if (matches[4] === "1"){
     videoConstraint.type = "clock"
+  }if (matches[4] === "3"){
+    videoConstraint.type = "randomcolor"
   }else{
     videoConstraint.type = "background"
     const bgImg = new Image()
@@ -3043,6 +3045,20 @@ $("#showStats").on('click', ()=>{
     statsTimer = null;
   }
 });
+
+$("#encoderConfigBtn").on("click", ()=>{
+  if (!rtc.localStream){
+    addLog("未找到本地流")
+    return
+  }
+  const options = {
+    mediaType: $("#encoderMediaType").val(),
+    streamType: $("#encoderStreamType").val(),
+    maxBitrate: parseInt($("#bitrateMax").val()),
+  }
+  console.log("上行视频编码设置", options)
+  rtc.localStream.setVideoEncoderConfiguration(options)
+})
 
 $("#setEncryptionMode").click(()=>{
   const encryptionMode = $("#encryptionMode").val();
