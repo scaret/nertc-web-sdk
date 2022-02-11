@@ -609,6 +609,7 @@ class LocalStream extends EventEmitter {
     } else if (initErr) {
       this.state = "UNINIT";
       this.logger.error("localStream.init失败:", initErr.name, initErr.message, initErr);
+      onInitFinished();
       throw initErr;
     } else {
       if (getParameters().allowEmptyMedia){
