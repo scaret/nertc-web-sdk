@@ -2351,14 +2351,15 @@ for (i = 1; i < 4; i++ ) {
     
   })
   function playAuidoEffects(options){
-    if (isAudioEffectsEnd) {
-      console.log('播放结束')
-      clearInterval(audioEffectsPlayTimer)
-      audioEffectsPlayTimer = null
-      audioEffectsProgress.value = 100
-      audioEffectsProgressInfo.innerText = options.audioEffectsFileName + '   ' + formatSeconds(isAudioEffectsTotalTime) + ' / ' + formatSeconds(isAudioEffectsTotalTime)
-      return
-    }
+    // if (isAudioEffectsEnd) {
+      // console.log('播放结束')
+      // clearInterval(audioEffectsPlayTimer)
+      // audioEffectsPlayTimer = null
+      // audioEffectsProgress.value = 100
+      // audioEffectsProgress.value = 0
+      // audioEffectsProgressInfo.innerText = options.audioEffectsFileName + '   ' + formatSeconds(isAudioEffectsTotalTime) + ' / ' + formatSeconds(isAudioEffectsTotalTime)
+      // return
+    // }
     res = rtc.localStream.getAudioEffectsCurrentPosition(options)
     audioEffectsProgress.value = res.playedTime/isAudioEffectsTotalTime * 100
     audioEffectsProgressInfo.innerText = options.audioEffectsFileName + '   ' + formatSeconds(res.playedTime) + ' / ' + formatSeconds(isAudioEffectsTotalTime)
@@ -2369,6 +2370,7 @@ for (i = 1; i < 4; i++ ) {
     console.info('停止音效文件:  ', $(`#soundId${num}`).val())
     let audioEffectsFileName = $(`#path${num}`).val();
     isAudioEffectsEnd = true;
+    // audioEffectsProgress.value = 0;
     clearInterval(audioEffectsPlayTimer);
     if (rtc.localStream) {
       rtc.localStream.stopEffect(Number($(`#soundId${num}`).val()))
