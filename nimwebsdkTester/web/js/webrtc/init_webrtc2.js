@@ -2531,6 +2531,22 @@ let isEnd = false
 let isPuase = false
 let progressLength = progress.offsetLeft + progress.offsetWidth
 
+document.getElementById("audioFilePath").ondragover = (evt)=>{
+  // Prevent default behavior (Prevent file from being opened)
+  evt.preventDefault();
+}
+
+document.getElementById("audioFilePath").ondrop = function(evt){
+  if (evt.dataTransfer.files){
+    evt.preventDefault()
+    const blob = new Blob(evt.dataTransfer.files)
+    const url = URL.createObjectURL(blob)
+    console.log("audioFilePath", url);
+    document.getElementById("audioFilePath").value = url
+  }
+  return false
+}
+
 const audioMixingEndHandler = function(event){
   console.warn('伴音结束: ', event)
   isEnd = true
