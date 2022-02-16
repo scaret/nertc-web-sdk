@@ -267,10 +267,6 @@ class DataReport {
     this.addEvent("recvFirstPackage", recvFirstPackageEvent);
   }
   
- 
-  setGetCloudProxyInfo(options: any) {
-    this.addEvent("getCloudProxyInfo", options);
-  }
   /**
    * 异常断开通知
    * @param {Object} options

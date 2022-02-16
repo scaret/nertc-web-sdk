@@ -1,5 +1,6 @@
 import { EventEmitter } from 'eventemitter3'
 import { ajax } from '../util/ajax'
+import { RtcSystem } from '../util/rtcUtil/rtcSystem'
 import {getCloudProxyInfoUrl, getChannelInfoUrl, SDK_VERSION, roomsTaskUrl} from '../Config'
 // import * as md5 from 'md5';
 const md5 = require('md5');
@@ -108,6 +109,17 @@ class Meeting extends EventEmitter {
       }) as any;
 
       this.adapterRef.logger.log('获取到云代理服务相关信息:', JSON.stringify(data))
+      this.adapterRef.instance.apiFrequencyControl({
+        name: 'setCloudProxyInfo',
+        code: data.code === 200 ? 0 : -1,
+        param: JSON.stringify({
+          channelName,
+          uid,
+          appkey,
+          token,
+          result: data.code
+        }, null, 2)
+      })
       if (data.code === 200) {
         this.adapterRef.channelStatus = 'join'
         const { wsProxyArray, mediaProxyArray, mediaProxyToken, cname, curTime, uid } = data
@@ -128,28 +140,12 @@ class Meeting extends EventEmitter {
           this.adapterRef.proxyServer.mediaProxyToken = mediaProxyToken
           this.adapterRef.proxyServer.credential = uid + '/' + curTime
         }
-        this.adapterRef.instance.apiEventReport('setGetCloudProxyInfo', {
-          channelName,
-          uid,
-          appkey,
-          token,
-          result: 200,
-          msg: ''
-        })
       } else {
         this.adapterRef.channelStatus = 'leave'
         this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
         this.adapterRef.connectState.curState = 'DISCONNECTED'
         this.adapterRef.connectState.reconnecting = false
         this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
-        //上报getCloudProxyInfo失败事件
-        this.adapterRef.instance.apiEventReport('setGetCloudProxyInfo', {
-          channelName,
-          uid,
-          appkey,
-          token,
-          result: data.code
-        })
         return Promise.reject(`code: ${data.code}, reason: ${data.desc}`)
       }
     } catch(e:any) {
@@ -160,13 +156,17 @@ class Meeting extends EventEmitter {
       this.adapterRef.connectState.reconnecting = false
       this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
       //上报getCloudProxyInfo失败事件
-      this.adapterRef.instance.apiEventReport('setGetCloudProxyInfo', {
-        channelName,
-        uid,
-        appkey,
-        token,
-        result: -1,
-        msg: e.message
+      this.adapterRef.instance.apiFrequencyControl({
+        name: 'setCloudProxyInfo',
+        code: -1,
+        param: JSON.stringify({
+          channelName,
+          uid,
+          appkey,
+          token,
+          result: -1,
+          msg: e.message
+        }, null, 2)
       })
       return Promise.reject(`code: -1, reason: ${e.message}`)
     }
