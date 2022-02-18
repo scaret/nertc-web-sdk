@@ -398,6 +398,9 @@ export interface StreamOptions {
   video: boolean;
   /**
    * 是否采集屏幕共享流。如使用自采集（screenVideoSource），则应将 screen 设为true。
+   * 
+   * 注意，Safari on MacOS 的屏幕共享需手势触发，且无法选择共享的屏幕、无法单独共享应用、无法共享音频。
+   * 
    */
   screen?: boolean;
   /**
