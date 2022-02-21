@@ -186,7 +186,7 @@ class Mediasoup extends EventEmitter {
         })
       })
       //firefox浏览器在relay模式（存在bug）
-      if (RtcSystem.browser.ua !== 'firefox' || true){
+      if (RtcSystem.browser.ua !== 'firefox'){
         iceTransportPolicy = 'relay'
       }
       
