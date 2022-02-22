@@ -285,6 +285,7 @@ export default class WSTransport {
         this.logger.log('close websocket');
         this.clearReconnectionTimer();
         this.stopPingPong();
+        this.socket_?.close();
         this.clearSocket();
       }
 }
