@@ -1,4 +1,5 @@
 import {AudioCodecType, VideoCodecType} from "../../types";
+import {getParameters} from "../../module/parameters";
 
 // 表示所有网易支持的编码类型
 export const VideoCodecList: VideoCodecType[] = ["H264", "VP8"];
@@ -25,8 +26,12 @@ function getSupportedCodecFromCapability(direction: "send"|"recv", videoCapabili
       if (codecCapability.mimeType == "video/H264" && result.video.indexOf("H264") === -1){
         //解码：仅当支持H264 high profile，才算支持H264的解码
         if (direction === "recv" && codecCapability.sdpFmtpLine && codecCapability.sdpFmtpLine.indexOf("profile-level-id") > -1){
-          if (codecCapability.sdpFmtpLine.indexOf("profile-level-id=64") > -1){
-            // High Profile
+          if (getParameters().h264StrictHigh){
+            if (codecCapability.sdpFmtpLine.indexOf("profile-level-id=64") > -1){
+              // High Profile
+              result.video.push("H264");
+            }
+          }else{
             result.video.push("H264");
           }
         }else if (result.video.indexOf("H264") === -1){
