@@ -1143,7 +1143,7 @@ class Client extends Base {
   }
 
   enableAudioVolumeIndicator () {
-    this.logger.log('开启双流模式')
+    this.logger.log('开启音量提醒')
   }
 
   enableDualStream (dualStreamSetting: {video: boolean; screen: boolean} = {video: true, screen: false}) {
