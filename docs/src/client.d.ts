@@ -165,6 +165,14 @@ declare interface Client{
      * @since V4.6.0
      */
     enableDualStream(dualStreamSetting?: {video: boolean; screen: boolean}): void;
+
+  /**
+   * 关闭双流模式
+   * 
+   * 双流模式默认为关闭状态。如如开启双流模式后需关闭，请在 [[Client.unpublish]] 后、再次 [[Client.publish]] 之前调用该方法。
+   * 
+   */
+  disableDualStream(): void;
     /**
      * 设置视频大小流。
      * 
