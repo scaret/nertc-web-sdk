@@ -1184,7 +1184,7 @@ function getVideoSource(mediaType){
   }
   if (matches[4] === "1"){
     videoConstraint.type = "clock"
-  }if (matches[4] === "3"){
+  } else if (matches[4] === "3"){
     videoConstraint.type = "randomcolor"
   }else{
     videoConstraint.type = "background"

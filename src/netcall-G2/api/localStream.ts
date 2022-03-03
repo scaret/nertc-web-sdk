@@ -35,6 +35,7 @@ import {ILogger} from "../types";
 import { isHttpProtocol } from '../util/rtcUtil/rtcSupport'
 import {emptyStreamWith, watchTrack} from "../util/gum";
 import {getParameters} from "../module/parameters";
+import {makePrintable} from "../util/util";
 
 /**
  *  请使用 {@link NERTC.createStream} 通过NERTC.createStream创建
@@ -453,11 +454,44 @@ class LocalStream extends EventEmitter {
       this.logger.warn('The current protocol is HTTP')
     }
     // localStream.init行为排队
-    const onInitFinished = await this.client.operationQueue.enqueue({
+    const hookInitFinished = await this.client.operationQueue.enqueue({
       caller: this,
       method: "init",
       options: null,
     })
+    const onInitFinished = ()=>{
+      hookInitFinished()
+      const apiEventDataInit:any = {
+        audio: this.audio,
+        video: this.video,
+        screen: this.screen,
+        screenAudio: this.screenAudio,
+      }
+      if (this.audio || this.screenAudio){
+        apiEventDataInit.audioProfile = this.audioProfile
+        apiEventDataInit.audioProcessing = this.audioProcessing
+      }
+      if (this.video){
+        apiEventDataInit.videoProfile = this.mediaHelper.video.captureConfig.high;
+        apiEventDataInit.videoEncoder = this.mediaHelper.video.encoderConfig.high;
+      }
+      if (this.screen){
+        apiEventDataInit.screenProfile = this.mediaHelper.screen.captureConfig.high
+        apiEventDataInit.screenEncoder = this.mediaHelper.screen.encoderConfig.high;
+      }
+      
+      this.client.apiFrequencyControl({
+        name: 'init',
+        code: 0,
+        param: JSON.stringify(apiEventDataInit)
+      })
+      this.client.apiFrequencyControl({
+        name: 'trackSettings',
+        code: 0,
+        param: JSON.stringify(this.mediaHelper.getTrackSettings())
+      })
+    }
+    
     let initErr:any = null
     
     this.state = "INITING"
@@ -498,22 +532,6 @@ class LocalStream extends EventEmitter {
       this.video = false;
       this.screen = false;
     }
-    this.client.apiFrequencyControl({
-      name: 'init',
-      code: 0,
-      param: JSON.stringify({
-        videoProfile: this.videoProfile,
-        audio: this.audio,
-        audioProfile: this.audioProfile,
-        audioProcessing: this.audioProcessing,
-        video: this.video,
-        cameraId: this.cameraId,
-        microphoneId: this.microphoneId,
-        screen: this.screen,
-        sourceId: this.sourceId,
-        screenProfile: this.screenProfile
-      }, null, ' ')
-    })
     
     try {
       if (this.audio){
@@ -917,23 +935,35 @@ class LocalStream extends EventEmitter {
    */
   async open (options:LocalStreamOpenOptions) {
     let {type, deviceId, sourceId, facingMode, screenAudio, audioSource, videoSource, screenAudioSource, screenVideoSource} = options
-    const onOpenFinished = await this.client.operationQueue.enqueue({
+    const hookOpenFinished = await this.client.operationQueue.enqueue({
       caller: this,
       method: 'open',
       options: options,
     })
+    const onOpenFinished = (data: {code: number, param: {}})=>{
+      hookOpenFinished()
+      const param = makePrintable(Object.assign({}, options, data.param), 4)
+      this.client.apiFrequencyControl({
+        name: 'open',
+        code: data.code,
+        param: JSON.stringify(param)
+      })
+      this.client.apiFrequencyControl({
+        name: 'trackSettings',
+        code: data.code,
+        param: JSON.stringify(this.mediaHelper.getTrackSettings()) 
+      })
+    }
     if (this.client._roleInfo.userRole === 1) {
       const reason = `观众不允许打开设备`;
       this.logger.error(reason);
-      this.client.apiFrequencyControl({
-        name: 'open',
+      onOpenFinished({
         code: -1,
-        param: JSON.stringify({
-          reason: reason,
-          type
-        }, null, ' ')
-      });
-      onOpenFinished()
+        param: {
+          reason,
+          type,
+        }
+      })
       return Promise.reject(
         new RtcError({
           code: ErrorCode.INVALID_OPERATION,
@@ -941,37 +971,20 @@ class LocalStream extends EventEmitter {
         })
       );
     }
-    // 服务器禁言
-    if((<any>window).isAudioBanned) {
-      const reason = `服务器禁止发送音频流`;
-      this.logger.error(reason);
-      this.client.apiFrequencyControl({
-        name: 'open',
-        code: -1,
-        param: JSON.stringify({
-          reason: reason,
-          type
-        }, null, ' ')
-      });
-      options.screenAudio = false;
-    }
-    if((<any>window).isVideoBanned) {
-      const reason = `服务器禁止发送视频流`;
-      this.logger.error(reason);
-      this.client.apiFrequencyControl({
-        name: 'open',
-        code: -1,
-        param: JSON.stringify({
-          reason: reason,
-          type
-        }, null, ' ')
-      });
-    }
     
     try {
       switch(type) {
         case 'audio':
           if((<any>window).isAudioBanned){
+            const reason = `服务器禁止发送音频流`;
+            this.logger.error(reason);
+            onOpenFinished({
+              code: -1,
+              param: {
+                reason,
+                type,
+              }
+            })
             return Promise.reject(
               new RtcError({
                 code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
@@ -982,15 +995,13 @@ class LocalStream extends EventEmitter {
           this.logger.log(`open(): 开启 ${audioSource ? audioSource.label : "mic设备"}`);
           if (this.mediaHelper.audio.micTrack || this.mediaHelper.audio.audioSource){
             this.logger.warn('请先关闭麦克风')
-            this.client.apiFrequencyControl({
-              name: 'open',
+            onOpenFinished({
               code: -1,
-              param: JSON.stringify({
+              param: {
                 reason: '请先关闭麦克风',
                 type
-              }, null, ' ')
+              }
             })
-            onOpenFinished()
             return Promise.reject(
               new RtcError({
                 code: ErrorCode.INVALID_OPERATION,
@@ -1017,6 +1028,15 @@ class LocalStream extends EventEmitter {
           break
         case 'screenAudio':
           if((<any>window).isAudioBanned){
+            const reason = `服务器禁止发送音频流`;
+            this.logger.error(reason);
+            onOpenFinished({
+              code: -1,
+              param: {
+                reason,
+                type,
+              }
+            })
             return Promise.reject(
               new RtcError({
                 code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
@@ -1031,15 +1051,13 @@ class LocalStream extends EventEmitter {
           this.logger.log(`open(): 开启自定义屏幕共享音频 ${screenAudioSource.label}`);
           if (this.mediaHelper.screenAudio.screenAudioTrack || this.mediaHelper.screenAudio.screenAudioSource){
             this.logger.error('请先关闭屏幕共享音频')
-            this.client.apiFrequencyControl({
-              name: 'open',
+            onOpenFinished({
               code: -1,
-              param: JSON.stringify({
+              param: {
                 reason: '请先关闭屏幕共享音频',
                 type
-              }, null, ' ')
+              }
             })
-            onOpenFinished()
             return Promise.reject(
               new RtcError({
                 code: ErrorCode.INVALID_OPERATION,
@@ -1064,6 +1082,15 @@ class LocalStream extends EventEmitter {
         case 'video':
         case 'screen':
           if((<any>window).isVideoBanned){
+            const reason = `服务器禁止发送视频流`;
+            this.logger.error(reason);
+            onOpenFinished({
+              code: -1,
+              param: {
+                reason,
+                type
+              },
+            });
             return Promise.reject(
               new RtcError({
                 code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
@@ -1071,19 +1098,36 @@ class LocalStream extends EventEmitter {
               })
             );
           }
+          if(options.screenAudio && (<any>window).isAudioBanned){
+            const reason = `服务器禁止发送音频流`;
+            this.logger.error(reason);
+            onOpenFinished({
+              code: -1,
+              param: {
+                reason,
+                type,
+                screenAudio: options.screenAudio,
+              }
+            })
+            return Promise.reject(
+              new RtcError({
+                code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+                message: 'audio is banned by server'
+              })
+            );
+          }
+          
           this.logger.log(`开启${type === 'video' ? 'camera' : 'screen'}设备`)
           if (this[type]) {
             if (type === "video"){
               this.logger.warn('请先关闭摄像头')
-              this.client.apiFrequencyControl({
-                name: 'open',
+              onOpenFinished({
                 code: -1,
-                param: JSON.stringify({
+                param: {
                   reason: '请先关闭摄像头',
                   type
-                }, null, ' ')
+                }
               })
-              onOpenFinished()
               return Promise.reject(
                 new RtcError({
                   code: ErrorCode.INVALID_OPERATION,
@@ -1100,7 +1144,13 @@ class LocalStream extends EventEmitter {
                   type
                 }, null, ' ')
               })
-              onOpenFinished()
+              onOpenFinished({
+                code: -1,
+                param: {
+                  reason: '请先关闭屏幕共享',
+                  type
+                }
+              })
               return Promise.reject(
                 new RtcError({
                   code: ErrorCode.INVALID_OPERATION,
@@ -1113,15 +1163,13 @@ class LocalStream extends EventEmitter {
             (this.mediaHelper.screenAudio.screenAudioTrack || this.mediaHelper.screenAudio.screenAudioSource)
           ){
             this.logger.warn('请先关闭屏幕共享音频')
-            this.client.apiFrequencyControl({
-              name: 'open',
+            onOpenFinished({
               code: -1,
-              param: JSON.stringify({
+              param: {
                 reason: '请先关闭屏幕共享音频',
                 type
-              }, null, ' ')
+              }
             })
-            onOpenFinished()
             return Promise.reject(
               new RtcError({
                 code: ErrorCode.INVALID_OPERATION,
@@ -1164,13 +1212,11 @@ class LocalStream extends EventEmitter {
         default:
           this.logger.error('非法参数')
       }
-      onOpenFinished()
-      this.client.apiFrequencyControl({
-        name: 'open',
+      onOpenFinished({
         code: 0,
-        param: JSON.stringify({
+        param: {
           type
-        }, null, ' ')
+        }
       })
     } catch (e) {
       if (["audio", "video", "screen"].indexOf(type) > -1){
@@ -1180,13 +1226,12 @@ class LocalStream extends EventEmitter {
         }
       }
       this.logger.log(`${type} 开启失败: `, e.name, e.message)
-      this.client.apiFrequencyControl({
-        name: 'open',
+      onOpenFinished({
         code: -1,
-        param: JSON.stringify({
-          reason: e.message,
-          type
-        }, null, ' ')
+        param: {
+          type,
+          reason: e.message
+        }
       })
 
       if (e.message
@@ -1196,7 +1241,6 @@ class LocalStream extends EventEmitter {
         && e.message.indexOf('ermission') > -1
         && e.message.indexOf('denied') > -1 ) {
         this.client.safeEmit('accessDenied', type)
-        onOpenFinished()
         return Promise.reject(
           new RtcError({
             code: ErrorCode.NOT_ALLOWED,
@@ -1204,7 +1248,6 @@ class LocalStream extends EventEmitter {
           })
         )
       } else {
-        onOpenFinished()
         return Promise.reject(e)
       }
     }
@@ -1809,6 +1852,11 @@ class LocalStream extends EventEmitter {
           code: -1,
           param: JSON.stringify({reason: 'INVALID_OPERATION'} as ReportParamSwitchCamera, null, ' ')
         })
+        this.client.apiFrequencyControl({
+          name: 'trackSettings',
+          code: 0,
+          param: JSON.stringify(this.mediaHelper.getTrackSettings())
+        })
         return Promise.reject(
           new RtcError({
             code: ErrorCode.INVALID_OPERATION,
@@ -1822,6 +1870,11 @@ class LocalStream extends EventEmitter {
           name: 'switchCamera',
           code: -1,
           param: JSON.stringify({reason: 'INVALID_OPERATION'} as ReportParamSwitchCamera, null, ' ')
+        })
+        this.client.apiFrequencyControl({
+          name: 'trackSettings',
+          code: 0,
+          param: JSON.stringify(this.mediaHelper.getTrackSettings())
         })
         return Promise.reject(
           new RtcError({
@@ -1855,6 +1908,11 @@ class LocalStream extends EventEmitter {
           param: JSON.stringify({} as ReportParamSwitchCamera, null, ' ')
         })
       }
+      this.client.apiFrequencyControl({
+        name: 'trackSettings',
+        code: 0,
+        param: JSON.stringify(this.mediaHelper.getTrackSettings())
+      })
     } catch (e) {
       this.logger.error('API调用失败：Stream:switchDevice' ,e.name, e.message, e);
       this.inSwitchDevice[type] = false
@@ -1865,6 +1923,11 @@ class LocalStream extends EventEmitter {
           param: JSON.stringify({reason: e.message || e.name}, null, ' ')
         })
       }
+      this.client.apiFrequencyControl({
+        name: 'trackSettings',
+        code: 0,
+        param: JSON.stringify(this.mediaHelper.getTrackSettings())
+      })
       return Promise.reject(e)
     }
     
