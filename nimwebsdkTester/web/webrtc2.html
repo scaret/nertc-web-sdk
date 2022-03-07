@@ -327,13 +327,12 @@
           </div>
         </div>
 
-        <p class="block-header">加密相关</p>
-        <div class="part">
+        <p class="block-header">国密加密</p>
+        <div class="part hide">
           <div class="line">
             <select id="encryptionMode" style="width: 40%;">
-              <option value="none">none</option>
-              <option value="sm4-128-ecb" selected>sm4-128-ecb</option>
-              <option value="encoded-transform-sm4-128-ecb">encoded-transform-sm4-128-ecb</option>
+              <option value="none" selected>none</option>
+              <option value="sm4-128-ecb">sm4-128-ecb</option>
             </select>
             <button type="button" id="setEncryptionMode">设置encryptionMode</button>
           </div>
@@ -342,7 +341,38 @@
             <button type="button" id="setEncryptionSecret">设置encryptionSecret</button>
           </div>
         </div>
-
+        
+        <p class="block-header">自定义加密</p>
+        <div class="part hide">
+          <div class="line">
+            密钥：<input id="customEncryptionSecret" cols="16" placeholder="encryptionSecret" value="I_AM_A_KEY">
+          </div>
+          <div class="line">
+            H264帧头偏移(勿改)：<input style="width:20%" id="customEncryptionOffset" cols="1" placeholder="服务器需求，勿改" value="3">
+          </div>
+          <div class="line">
+            <label>
+              <input type="checkbox" id="printEncodedVideoFrame">
+              打印发送端加密前的视频帧内容
+            </label>
+            <br/>
+            <label>
+              <input type="checkbox" id="printRecvVideoFrame">
+              打印接收端解密前的视频帧内容
+            </label>
+          </div>
+          <div class="line">
+            <select id="customTransform" style="width: 40%">
+              <option value="" selected>关闭</option>
+              <option value="rc4">自定义加密：rc4，密钥⬆️</option>
+              <option value="sm4-128-ecb">自定义加密：使用sm4-128-ecb，密钥⬆️</option>
+              <option value="extra-info">测试：端到端延时</option>
+              <option value="transparentWithFlagOn">测试：不进行加解密变化，同时打开自定义加密开关</option>
+              <option value="transparentWithFlagOff">测试：不进行加解密变化，同时关闭自定义加密开关</option>
+            </select>
+            <button type="button" id="setTransform">设置自定义加密</button>
+          </div>
+        </div>
         
         <p class="block-header">订阅配置相关</p>
         <div class="part" id="sub-part">
@@ -933,6 +963,14 @@
           </div>
         </div>
 
+        <p class="block-header">对时<span id="timesync-info"></span></p>
+        <div class="part hide">
+          <label>
+            补足端到端时钟差：
+            <input type="text" id="timesync-value" value="">毫秒
+            <button id="timesync-btn">确定</button>
+          </label>
+        </div>
         <p class="block-header" id="upstreamStatus">采集/上行状态 <span id="upstreamBitrate"></span></p>
         <div class="part hide" id="part-upstream" style="max-width: 350px; overflow: hidden; white-space: nowrap;">
           <div class="line">
@@ -1042,10 +1080,12 @@
   <script src="./js/lib/parseQuery.js"></script>
   <script src="./js/lib/sha1.min.js"></script>
   <script src="./js/lib/vconsole.min.js"></script>
+  <script src="./js/lib/SM4.js"></script>
 
   <script src="./js/nim/NIM_Web_NERTC.js"></script>
   <script src="./js/webrtc/config.js"></script>
   <script src="./js/webrtc/init_event_pairing.js"></script>
+  <script src="./js/webrtc/init_customcrypt.js"></script>
   <script src="./js/webrtc/init_transceiver_info.js"></script>
   <script src="./js/webrtc/init_webrtc2.js"></script>
 

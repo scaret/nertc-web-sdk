@@ -27,6 +27,7 @@ import {reduceCodecs} from "../../../../util/rtcUtil/codec";
 import {MediaSection} from "./sdp/MediaSection";
 import RtcError from '../../../../util/error/rtcError';
 import ErrorCode  from '../../../../util/error/errorCode';
+import {getParameters} from "../../../parameters";
 
 const prefix = 'Firefox60';
 

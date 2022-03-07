@@ -75,6 +75,10 @@ interface IParameters{
   trustOnOnline: boolean,
   // 部分浏览器加载编解码器需要时间。如果浏览器不支持H264，则等待多少毫秒
   h264Wait: number,
+  // 强行开启encodedInsertableStreams
+  forceEncodedInsertableStreams: boolean,
+  // 强行将向服务端上报的customEncryption flag设为false
+  forceCustomEncryptionOff: boolean,
   // 检测H264接收端时必须为High
   h264StrictHigh: boolean,
 }
@@ -131,6 +135,8 @@ let parameters:IParameters = {
   leaveOnUnload: true,
   trustOnOnline: false,
   h264Wait: 1000,
+  forceEncodedInsertableStreams: false,
+  forceCustomEncryptionOff: false,
   h264StrictHigh: false,
 }
 

@@ -439,6 +439,10 @@ function initEvents() {
     addLog(`加密失败：` + evt.cryptType);
   })
 
+  rtc.client.on('sender-transform', processSenderTransform)
+  
+  rtc.client.on('receiver-transform', processReceiverTransform)
+
   rtc.client.on('stream-added', evt => {
     var remoteStream = evt.stream;
     console.warn('收到别人的发布消息: ', remoteStream.streamID, 'mediaType: ', evt.mediaType)
@@ -951,6 +955,40 @@ $('#destroyLocalStream').on('click', () => {
 
 $('#destroy-btn').on('click', () => {
   rtc.client.destroy();
+})
+
+window.timesyncMs = parseInt(window.localStorage.getItem(`${localStoragePrefix}timesync-${env}`)) || 0
+if (timesyncMs){
+  $("#timesync-info").text(` ${timesyncMs}毫秒`)
+}
+$('#timesync-btn').on('click', ()=>{
+  const value = parseInt($('#timesync-value').val())
+  timesyncMs = value
+  $("#timesync-info").text(` ${timesyncMs}毫秒`)
+  window.localStorage.setItem(`${localStoragePrefix}timesync-${env}`, value)
+})
+
+window.customTransform = ""
+$('#setTransform').on('click', () => {
+  let customTransform = $("#customTransform").val()
+  rtc.client.enableCustomTransform(!!customTransform)
+  if (customTransform === "transparentWithFlagOff"){
+    // 该模式下向服务端上报的 customEncryption 字端为false
+    NERTC.getParameters().forceCustomEncryptionOff = true
+  }
+  window.customTransform = customTransform
+  initCustomEncrypt()
+  if (!customTransform){
+    addLog("已关闭自定义加密")
+  }else if (customTransform === "rc4"){
+    initRC4()
+  }else if (customTransform === "sm4-128-ecb"){
+    initSm4()
+  } else if (customTransform === "transparentWithFlagOn" || customTransform === "transparentWithFlagOff"){
+    initTransparent(customTransform)
+  }else{
+    addLog("初始化自定义加密：" + customTransform)
+  }
 })
 
 $('#leaveChannel-btn').on('click', () => {

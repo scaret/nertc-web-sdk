@@ -57,7 +57,7 @@ export class Producer extends EnhancedEventEmitter
   // Associated RTCRtpSender.
   public readonly _rtpSender?: RTCRtpSender;
   // Associated RTCRtpSender.
-  private readonly _rtpSenderLow?: RTCRtpSender;
+  public readonly _rtpSenderLow?: RTCRtpSender;
   // Local track.
   private _track: MediaStreamTrack | null;
   // Local track.
