@@ -599,6 +599,23 @@
           </div>
         </div>
 
+        <p class="block-header">上行视频编码设置</p>
+        <div class="part" id="encoder-config">
+          <div class="line">
+            <select id="encoderMediaType" style="width: 25%">
+              <option value="video">主流</option>
+              <option value="screen">辅流</option>
+            </select>
+            <select id="encoderStreamType" style="width: 25%">
+              <option value="high">大流</option>
+              <option value="low">小流</option>
+            </select>
+            <br/>
+            最大编码比特率/kbps<input type="number" id="bitrateMax" value="5000" style="width: 25%" step="1000">
+            <button id="encoderConfigBtn">设置</button>
+            </div>
+          </div>
+      
         <p class="block-header">自渲染</p>
         <div class="part" id="audio-self">
           <div class="line">
@@ -630,6 +647,7 @@
 
           <div class="line">
             <button type="button" id="toggleVConsole">打开vconsole</button>
+            <button type="button" id="forceHeartbeat">立刻上报</button>
           </div>
           <div class="line">
             <select style="width: 33%" id="loglevel">

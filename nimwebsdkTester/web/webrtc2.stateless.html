@@ -6,143 +6,282 @@
     <meta name="viewport" content="width=700">
   </head>
   <body>
-    <label>房间ID(CID)<input type="text" id="cid" value="" disabled></label><br/>
-    <label>自己的ID<input type="text" id="pusherUid" value=""></label><button id="push-btn">推流</button><span id="pusherState"></span><br/>
-    <label>对方的ID<input type="text" id="pullerUid" value=""></label><button id="pull-btn">拉流</button><span id="pullerState"></span><br/>
-    <video id="pusherPlayer" controls autoplay playsinline muted></video>
-    <video id="pullerPlayer" controls autoplay playsinline></video>
+    <h3>用户认证</h3>
+    <label>服务端地址<select id="endpoint">
+      <option value="https://roomserver-greytest.netease.im" selected>测试服 https://roomserver-greytest.netease.im</option>
+      <option value="http://wecan-api.netease.im">线上服 http://wecan-api.netease.im</option>
+      <option value="">本机服 / </option>
+    </select></label><br/>
+    <label>appkey<input id="appkey" value="34941137369d28603fe90308ebb3047c"></label>
+    <label>clientId<input type="text" id="clientId"></label>
+    <label>token<input type="text" id="token"></label>
+    
+    <h3>推流端操作</h3>
+    <label>宽度<input type="number" id="width" value="640"></label>
+    <label>高度<input type="number" id="height" value="480"></label>
+    <label>视频编码<select id="videoCodecOnly">
+      <option value="h264">h264</option>
+      <option value="vp8">vp8</option>
+    </select></label>
+    <br/>
+    <label>推流streamName<input type="text" id="streamName_push" value=""></label>
+    <button id="push-audio-btn">打开/关闭音频</button>
+    <button id="push-video-btn">打开/关闭视频</button>
+    <button id="unpub">停止推流</button>
+    <span id="sendIceState"></span> 
+    <span id="sendSignalingState"></span> 
+    <span id="sendConnectionState"></span> 
+    <span id="sendState"></span>  
+    <span id="sendTraceId"></span>
+    <h3>拉流端操作</h3>
+    <label>拉流streamName<input type="text" id="streamName_pull" value=""></label><button id="pull-btn-audio">拉音频</button><button id="pull-btn-video">拉视频</button><button id="pull-btn-all">拉音视频</button><button id="unplay">停止拉流</button>
+    <span id="recvIceState"></span> <span id="recvSignalingState"></span> <span id="recvConnectionState"></span> <span id="recvState"></span> <span id="recvTraceId"></span><br/>
+    <div>
+      <h3>标准sdp推拉流demo说明：</h3>
+      <ol>
+        <li>根据文档生成token</li>
+        <li>通过【打开音频】/【打开视频】开启推流</li>
+        <li>记录【推流streamName】，另开一个页面，填入【拉流streamName】</li>
+        <li>通过【拉音频】、【拉视频】、【拉音视频】开启拉流。【拉音频】后可【拉视频】，反之同理。</li>
+        <li>如推流端没有音频，拉流端不得拉取音频。视频同理。</li>
+        <li>出于演示目的，本demo在推流端停止推流后，状态转为 failed 后可重新推流，客户集成时可自行修改。拉流同理。</li>
+      </ol>
+    </div>
+    
+    <video id="sendPlayer" controls autoplay playsinline muted></video>
+    <video id="recvPlayer" controls autoplay playsinline></video>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <script>
       const urlSearchParams = new URLSearchParams(window.location.search);
       const params = Object.fromEntries(urlSearchParams.entries());
       let cid = params.cid
       const prepareEnv = async ()=>{
-        let pusherUid = Math.floor(Math.random() * 9000) + 1000
-        if (!cid){
-          cid = Math.floor(Math.random() * 90000000) + 10000000
-          window.location.href = window.location.href + (window.location.href.indexOf("?") > -1 ? `&cid=${cid}` : `?cid=${cid}`)
-        }else{
-          document.getElementById("cid").value = cid
-          document.getElementById("pusherUid").value = pusherUid
-        }
+        let streamName_push = Math.floor(Math.random() * 900000) + 100000
+        document.getElementById("streamName_push").value = streamName_push
+        let uid = Math.floor(Math.random() * 9000) + 1000
+        document.getElementById("clientId").value = uid
       }
 
       let senderPC = null
       let receiverPC = null
-      let mediaStream = null
-      // let endpoint = `http://localhost:3388/proxy/edge/server` // 本地代理
+      let localMediaStream = new MediaStream()
+      let remoteMediaStream = new MediaStream()
+      // let endpoint = `http://localhost:3388/proxy` // 本地代理
       // let endpoint = `http://localhost:3388/v1/edge/server`    // 本地测试
-      // let endpoint = `/v1/edge/server` // 测试服
-      let endpoint = `https://59-111-239-249.netease.im/v1/edge/server` // HTTPS服务端
+      // let endpoint = `` // 测试服
+      // let endpoint = `http://wecan-api.netease.im` // 线上服
+      // let endpoint = `https://roomserver-greytest.netease.im` // 测试服
       
-      const doPush = async ()=>{
-        const pusherUid = document.getElementById("pusherUid").value;
-        const pullerUid = document.getElementById("pullerUid").value;
-        senderPC = new RTCPeerConnection();
-        senderPC.onnegotiationneeded = async function(){
-          console.log("onnegotiationneeded")
-          let offer = await senderPC.createOffer()
-          await senderPC.setLocalDescription(offer)
+      const createPC = (streamName, direction)=>{
+        const pc = new RTCPeerConnection();
+        let update = false;
+        pc.onnegotiationneeded = async function(){
+          console.log("onnegotiationneeded ", streamName, direction)
+          let offer = await pc.createOffer()
+          await pc.setLocalDescription(offer)
           console.debug(offer.sdp)
-          console.log("PUSHER START POST")
-          const requestId = Date.now();
-          const resp = await axios.post(`${endpoint}/cid/${cid}/push/request?requestId=${requestId}`, {
-            uid: parseInt(pusherUid),
-            dstUid: parseInt(pullerUid),
-            requestId: "" + Date.now(),
-            type: 'offer',
-            sdp: offer.sdp,
+          console.log("发起HTTP请求", direction)
+          // https://office.netease.com/doc/?identity=82a89a50e99a43879cd220f5cddaf343
+          const resp = await axios.post(`${document.getElementById("endpoint").value}/v1/rtc/${direction === "send" ? "publish" : "play"}`, {
+            appkey: document.getElementById("appkey").value,
+            token: document.getElementById("token").value,
+            streamName,
+            clientId: document.getElementById("clientId").value,
+            update,
+            jsep: offer,
+            appData: {
+              clientIp: "127.0.0.1",
+              videoCodecOnly: document.getElementById("videoCodecOnly").value,
+            },
           })
-          console.log("PUSHER POST RESPONSE", resp)
+          update = true
+          console.log(streamName, direction, resp)
           const data = typeof resp.data === "string" ? JSON.parse(resp.data) : resp.data;
-          if (data?.sdp){
-            console.debug(data.sdp)
-            const answer = new RTCSessionDescription({
-              type: 'answer',
-              sdp: data.sdp
-            })
-            senderPC.setRemoteDescription(answer)
+          document.getElementById(direction + "TraceId").innerText = data.traceId
+          
+          if (data?.jsep?.sdp){
+            console.debug(data.jsep.sdp)
+            data.jsep.type = "answer"
+            const answer = new RTCSessionDescription(data.jsep)
+            try{
+              await pc.setRemoteDescription(answer)
+            }catch(e){
+              document.getElementById(direction + "State").innerText = e.name + " " + e.message
+              throw(e)
+            }
             if (data.candidates){
               data.candidates.forEach((candiateObj)=>{
                 const candidate = new RTCIceCandidate(candiateObj)
-                senderPC.addIceCandidate(candidate)
+                pc.addIceCandidate(candidate)
               })
             }
-            document.getElementById("pusherPlayer").srcObject = mediaStream
+            if (direction === "send"){
+              console.log("发送端连接建立成功，开启本地渲染")
+              document.getElementById("sendPlayer").srcObject = localMediaStream
+            }
           }else{
-            document.getElementById("pusherState").innerText = JSON.stringify(data)
+            console.error("请求失败:", data)
+            document.getElementById(direction + "State").innerText = JSON.stringify(data)
           }
         }
-        senderPC.onsignalingstatechange = (evt)=>{
-          document.getElementById("pusherState").innerText = senderPC.signalingState
+        pc.onsignalingstatechange = (evt)=>{
+          console.log("onsignalingstatechange", pc.signalingState)
+          document.getElementById(direction + "SignalingState").innerText = "signalingState:" + pc.signalingState
         }
-        mediaStream = await navigator.mediaDevices.getUserMedia({audio: true, video: true})
-        mediaStream.getAudioTracks().forEach((track)=>{
-          senderPC.addTrack(track)
+        const checkDisconnected = ()=>{
+          if (pc.iceConnectionState === "failed" || pc.iceConnectionState === "closed" || pc.iceConnectionState === "disconnected"){
+            if (pc.connectionState === "closed" || pc.connectionState === "failed" || !pc.connectionState){
+              if (direction === "recv" && receiverPC === pc){
+                console.log("连接断开，开始销毁接收端")
+                remoteMediaStream.getTracks().forEach((t)=>{
+                  remoteMediaStream.removeTrack(t);
+                })
+                document.getElementById( "recvPlayer").srcObject = null
+                receiverPC = null
+              }else if (direction === "send" && senderPC === pc){
+                console.log("连接断开，开始销毁发送端")
+                localMediaStream.getTracks().forEach((t)=>{
+                  t.stop()
+                  localMediaStream.removeTrack(t);
+                })
+                document.getElementById( "sendPlayer").srcObject = null
+                senderPC = null
+              }
+            }
+          }
+        }
+        pc.oniceconnectionstatechange = (evt)=>{
+          console.log("oniceconnectionstatechange", pc.iceConnectionState)
+          document.getElementById(direction + "IceState").innerText = "iceConnectionState:" + pc.iceConnectionState
+          checkDisconnected()
+        }
+        pc.onconnectionstatechange = ()=>{
+          console.log("onconnectionstatechange", pc.connectionState)
+          document.getElementById(direction + "ConnectionState").innerText = "connectionState:" + pc.connectionState
+          checkDisconnected()
+        }
+        
+        pc.ontrack = (evt)=>{
+          console.log("ontrack", streamName, direction, evt.track.kind)
+          remoteMediaStream.getTracks().forEach((t)=>{
+            if (t.kind === evt.track.kind){
+              remoteMediaStream.removeTrack(t)
+            }
+          })
+          remoteMediaStream.addTrack(evt.track);
+          document.getElementById( "recvPlayer").srcObject = remoteMediaStream
+        }
+        return pc;
+      }
+      
+      const doUnpub = async ()=>{
+        console.log("开始关闭发送端")
+        const streamName = document.getElementById("streamName_push").value;
+        const resp = await axios.post(`${document.getElementById("endpoint").value}/v1/rtc/unpub`, {
+          appkey: document.getElementById("appkey").value,
+          token: document.getElementById("token").value,
+          streamName,
+          clientId: document.getElementById('clientId').value
         })
-        mediaStream.getVideoTracks().forEach((track)=>{
-          senderPC.addTrack(track)
+        if (resp.status === 200){
+          console.log("关闭发送端请求成功")
+          // 本demo等待PeerConnection自然中断
+        }else{
+          console.error("关闭发送端请求失败", resp)
+          document.getElementById("recvState").value = JSON.stringify(resp)
+        }
+      }
+      
+      const doUnplay = async ()=>{
+        console.log("开始关闭接收端")
+        const appkey = document.getElementById("appkey").value
+        const streamName = document.getElementById("streamName_pull").value;
+        const clientId = document.getElementById('clientId').value
+        const resp = await axios.post(`${document.getElementById("endpoint").value}/v1/rtc/unplay`, {
+          appkey,
+          streamName,
+          clientId,
+          token: document.getElementById("token").value,
         })
+        if (resp.status === 200){
+          console.log("关闭接收端请求成功")
+          // 本demo等待PeerConnection自然中断
+        }else{
+          console.error("关闭接收端请求失败", resp)
+          document.getElementById("recvState").value = JSON.stringify(resp)
+        }
+      }
+      
+      const doPush = async (type)=>{ // audio/video/all
+        const streamName = document.getElementById("streamName_push").value;
+        if (!senderPC || senderPC.signalingState !== "stable"){
+          senderPC = createPC(streamName, "send")
+        }
+        const sender = senderPC.getSenders().find((s)=>{
+          return s.track?.kind === type
+        })
+        if (sender?.track?.readyState === "live"){
+          console.log(`关闭推流：${sender.track.kind}`)
+          localMediaStream.removeTrack(sender.track)
+          sender.track.stop()
+          sender.track = null
+        } else {
+          console.log(`开始推流：${type}`)
+          const constraints = {}
+          if (type === "video"){
+            constraints.video = {
+              width: parseInt(document.getElementById("width").value),
+              height: parseInt(document.getElementById("height").value)
+            }
+          }else{
+            constraints[type] = true
+          }
+          const ms = await navigator.mediaDevices.getUserMedia(constraints)
+          ms.getTracks().forEach((track)=>{
+            if (sender){
+              sender.replaceTrack(track)
+            }else{
+              senderPC.addTrack(track)
+            }
+            localMediaStream.addTrack(track)
+          })
+        }
       }
 
-      const doPull = async ()=>{
-        const pusherUid = document.getElementById("pusherUid").value;
-        const pullerUid = document.getElementById("pullerUid").value;
-        receiverPC = new RTCPeerConnection();
-        receiverPC.onnegotiationneeded = async function(){
-          console.log("receiverPC.onnegotiationneeded")
-          let offer = await receiverPC.createOffer()
-          await receiverPC.setLocalDescription(offer)
-          console.log(`receiverPC START POST uid ${pullerUid} distUid ${pusherUid}`)
-          const requestId = Date.now();
-          const resp = await axios.post(`${endpoint}/cid/${cid}/pull/request?requestId=${requestId}`, {
-            uid: parseInt(pusherUid),
-            dstUid: parseInt(pullerUid),
-            requestId: "" + Date.now(),
-            type: 'offer',
-            sdp: offer.sdp,
-          })
-          console.log("receiverPC POST RESPONSE", resp)
-          const data = typeof resp.data === "string" ? JSON.parse(resp.data) : resp.data;
-          if (data?.sdp){
-            const answer = new RTCSessionDescription({
-              type: 'answer',
-              sdp: data.sdp
-            })
-            receiverPC.setRemoteDescription(answer)
-            if (data.candidates){
-              data.candidates.forEach((candiateObj)=>{
-                const candidate = new RTCIceCandidate(candiateObj)
-                receiverPC.addIceCandidate(candidate)
-              })
-            }
+      const doPull = async (mediaKind)=>{
+        console.log("开始拉流", mediaKind)
+        const streamName = document.getElementById("streamName_pull").value
+        if (!receiverPC || receiverPC.signalingState !== "stable"){
+          receiverPC = createPC(streamName, "recv")
+        }
+        if (mediaKind === "audio" || mediaKind === "all"){
+          const hasAudio = receiverPC.getReceivers().find(r => r.track.kind === "audio")
+          if (!hasAudio){
+            receiverPC.addTransceiver("audio", {direction: "recvonly"})
           }else{
-            document.getElementById("pullerState").innerText = JSON.stringify(data)
+            console.log("拉流：已有audio，什么都不做")
           }
         }
-        receiverPC.onsignalingstatechange = (evt)=>{
-          console.log("receiverPC.onsignalingstatechange", evt)
-          document.getElementById("pullerState").innerHTML = receiverPC.signalingState
-        }
-        receiverPC.ontrack = function(evt){
-          console.log("receiverPC.ontrack", evt.track)
-          let stream = document.getElementById("pullerPlayer").srcObject
-          if (!stream){
-            stream = new MediaStream;
+        if (mediaKind === "video" || mediaKind === "all"){
+          const hasVideo = receiverPC.getReceivers().find(r => r.track.kind === "video")
+          if (!hasVideo){
+            receiverPC.addTransceiver("video", {direction: "recvonly"})
+          }else{
+            console.log("拉流：已有video，什么都不做")
           }
-          stream.addTrack(evt.track)
-          evt.track.onended = function(){
-            stream.removeTrack(evt.track)
-          }
-          document.getElementById("pullerPlayer").srcObject = stream
         }
-        receiverPC.addTransceiver("audio")
-        receiverPC.addTransceiver("video")
       }
       const main = async ()=>{
         await prepareEnv()
-        document.getElementById('push-btn').onclick = doPush
-        document.getElementById('pull-btn').onclick = doPull
+        document.getElementById('push-audio-btn').onclick = doPush.bind(window, "audio")
+        document.getElementById('push-video-btn').onclick = doPush.bind(window, "video")
+
+        document.getElementById('pull-btn-audio').onclick = doPull.bind(window, "audio")
+        document.getElementById('pull-btn-video').onclick = doPull.bind(window, "video")
+        document.getElementById('pull-btn-all').onclick = doPull.bind(window, "all")
+        
+        document.getElementById('unpub').onclick = doUnpub;
+        document.getElementById('unplay').onclick = doUnplay;
       }
       main()
     </script>

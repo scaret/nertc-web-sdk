@@ -210,7 +210,7 @@ class Client extends Base {
     this.adapterRef.logger.log('stopProxyServer')
     if(this.adapterRef.proxyServer){
       this.adapterRef.proxyServer.enable = false
-    } 
+    }
   }
 
   /**
@@ -493,12 +493,51 @@ class Client extends Base {
   }
 
   async doPublish (stream:LocalStream) {
-    const onPublishFinish = await this.operationQueue.enqueue({
+    const hookPublishFinish = await this.operationQueue.enqueue({
       caller: this as IClient,
       method: 'publish',
       options: stream,
     })
     let reason = ''
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    const onPublishFinish = ()=>{
+      hookPublishFinish()
+      const param: any = {
+        reason,
+        pubStatus: stream.pubStatus,
+        renderMode: stream.renderMode,
+      };
+      if (stream.mediaHelper.audio.micTrack || stream.mediaHelper.audio.audioSource){
+        param.audio = stream.audio
+        param.audioProfile = stream.audioProfile
+        param.microphoneId = stream.microphoneId
+      }
+      if (stream.mediaHelper.screenAudio.screenAudioTrack || stream.mediaHelper.screenAudio.screenAudioSource){
+        param.screenAudio = stream.screenAudio
+        param.audioProfile = stream.audioProfile
+      }
+      if (stream.mediaHelper.video.cameraTrack || stream.mediaHelper.video.videoSource){
+        param.videoProfile = stream.videoProfile
+        param.cameraId = stream.cameraId
+        param.webcamProducerCodec = this.adapterRef._mediasoup?._webcamProducerCodec
+      }
+      if (stream.mediaHelper.screen.screenVideoTrack || stream.mediaHelper.screen.screenVideoSource){
+        param.screen = stream.screen
+        param.screenProfile = stream.screenProfile
+        param.screenProducerCodec = this.adapterRef._mediasoup?._screenProducerCodec
+      }
+      this.apiFrequencyControl({
+        name: 'publish',
+        code: reason ? -1 : 0,
+        param: JSON.stringify(param)
+      })
+      this.apiFrequencyControl({
+        name: '_trackSettings',
+        code: 0,
+        param: JSON.stringify(stream.mediaHelper.getTrackSettings())
+      })
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     if (!stream || (!stream.audio && !stream.video && !stream.screen && !stream.screenAudio)) {
       if(stream && getParameters().allowEmptyMedia){
         this.logger.log('publish: 当前模式允许发布没有媒体流的localStream')
@@ -518,25 +557,7 @@ class Client extends Base {
       this.logger.error('publish: 当前不在频道中，可能是没有加入频道或者是网络波动导致暂时断开连接')
       reason = 'INVALID_OPERATION'
     }
-    const param = JSON.stringify({
-      videoProfile: stream.videoProfile,
-      audio: stream.audio,
-      screenAudio: stream.screenAudio,
-      audioProfile: stream.audioProfile,
-      cameraId: stream.cameraId,
-      microphoneId: stream.microphoneId,
-      pubStatus: stream.pubStatus,
-      renderMode: stream.renderMode,
-      screen: stream.screen,
-      screenProfile: stream.screenProfile,
-      reason
-    }, null, ' ')
     if (reason) {
-      this.apiFrequencyControl({
-        name: 'publish',
-        code: -1,
-        param
-      })
       if(reason === 'INVALID_OPERATION') {
         onPublishFinish()
         return Promise.reject(
@@ -570,19 +591,10 @@ class Client extends Base {
       this.bindLocalStream(stream)
       await this.adapterRef._mediasoup.createProduce(stream, "all");
       onPublishFinish()
-      this.apiFrequencyControl({
-        name: 'publish',
-        code: 0,
-        param
-      })
     } catch (e) {
       this.logger.error('API调用失败：Client:publish' ,e.name, e.message, e.stack, ...arguments);
+      reason = e.message
       onPublishFinish()
-      this.apiFrequencyControl({
-        name: 'publish',
-        code: -1,
-        param
-      })
     }
   }
 
@@ -1174,7 +1186,7 @@ class Client extends Base {
   }
 
   enableAudioVolumeIndicator () {
-    this.logger.log('开启双流模式')
+    this.logger.log('开启音量提醒')
   }
 
   enableDualStream (dualStreamSetting: {video: boolean; screen: boolean} = {video: true, screen: false}) {

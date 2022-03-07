@@ -12,6 +12,7 @@ import {LocalStream} from "./api/localStream";
 import {SpatialManager} from "./api/spatialManager";
 import {OperationQueue} from "./util/OperationQueue";
 import {UploadLog} from "./util/log/upload";
+import {NERTC_VIDEO_QUALITY_ENUM, VIDEO_FRAME_RATE_ENUM} from "./constant/videoQuality";
 
 type UIDTYPE = number | string;
 
@@ -873,13 +874,13 @@ export interface SubscribeConfig{
 }
 
 export interface VideoProfileOptions{
-  resolution: number;
-  frameRate: number;
+  resolution: NERTC_VIDEO_QUALITY_ENUM;
+  frameRate: VIDEO_FRAME_RATE_ENUM;
 }
 
 export interface ScreenProfileOptions{
-  resolution: number;
-  frameRate: number;
+  resolution: NERTC_VIDEO_QUALITY_ENUM;
+  frameRate: VIDEO_FRAME_RATE_ENUM;
 }
 
 export interface EncodingParameters{

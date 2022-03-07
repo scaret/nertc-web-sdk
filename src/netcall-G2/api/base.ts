@@ -42,6 +42,7 @@ class Base extends EventEmitter {
   public transportRebuildCnt: number = 0;
   public clientId: number;
   protected logger: ILogger;
+  private timeLast: number = Date.now();
   constructor(options:ClientOptions) {
     super();
     this._params = {
@@ -527,6 +528,12 @@ class Base extends EventEmitter {
     if (!(time > 0)){
       time = 0;
     }
+    let timeNow = Date.now() + time
+    if (timeNow <= this.timeLast){
+      // 时序
+      timeNow = this.timeLast + 1
+    }
+    this.timeLast = timeNow
     let length = this.adapterRef.apiEvent[name].length
     if (length < 10) {
       this.adapterRef.apiEvent[name].push({
@@ -534,7 +541,7 @@ class Base extends EventEmitter {
         uid: this.adapterRef.channelInfo && this.adapterRef.channelInfo.uid,
         code: code,
         name,
-        time: Date.now() + time,
+        time: timeNow,
         param,
         request_id: this.adapterRef.requestId[name]++
       })

@@ -1208,7 +1208,7 @@ $('#enableCodecHacking').on('change', ()=>{
 
 function getVideoSource(mediaType){
   let defaultStr = "1920x1080x15x1"
-  const optionsStr = prompt(`自定义 ${mediaType} 配置 宽x高x帧率x类型`, defaultStr) || defaultStr
+  const optionsStr = prompt(`自定义${mediaType}配置：【宽x高x帧率x类型】\n类型1：时钟; 类型2：背景替换; 类型3：随机颜色`, defaultStr) || defaultStr
   const matches = optionsStr.match(/(\d+)x(\d+)x(\d+)x(\d+)/);
   if (!matches){
     addLog("自定义视频 ：无法匹配字符串" + optionsStr)
@@ -1222,6 +1222,8 @@ function getVideoSource(mediaType){
   }
   if (matches[4] === "1"){
     videoConstraint.type = "clock"
+  } else if (matches[4] === "3"){
+    videoConstraint.type = "randomcolor"
   }else{
     videoConstraint.type = "background"
     const bgImg = new Image()
@@ -2387,14 +2389,15 @@ for (i = 1; i < 4; i++ ) {
     
   })
   function playAuidoEffects(options){
-    if (isAudioEffectsEnd) {
-      console.log('播放结束')
-      clearInterval(audioEffectsPlayTimer)
-      audioEffectsPlayTimer = null
-      audioEffectsProgress.value = 100
-      audioEffectsProgressInfo.innerText = options.audioEffectsFileName + '   ' + formatSeconds(isAudioEffectsTotalTime) + ' / ' + formatSeconds(isAudioEffectsTotalTime)
-      return
-    }
+    // if (isAudioEffectsEnd) {
+      // console.log('播放结束')
+      // clearInterval(audioEffectsPlayTimer)
+      // audioEffectsPlayTimer = null
+      // audioEffectsProgress.value = 100
+      // audioEffectsProgress.value = 0
+      // audioEffectsProgressInfo.innerText = options.audioEffectsFileName + '   ' + formatSeconds(isAudioEffectsTotalTime) + ' / ' + formatSeconds(isAudioEffectsTotalTime)
+      // return
+    // }
     res = rtc.localStream.getAudioEffectsCurrentPosition(options)
     audioEffectsProgress.value = res.playedTime/isAudioEffectsTotalTime * 100
     audioEffectsProgressInfo.innerText = options.audioEffectsFileName + '   ' + formatSeconds(res.playedTime) + ' / ' + formatSeconds(isAudioEffectsTotalTime)
@@ -2405,6 +2408,7 @@ for (i = 1; i < 4; i++ ) {
     console.info('停止音效文件:  ', $(`#soundId${num}`).val())
     let audioEffectsFileName = $(`#path${num}`).val();
     isAudioEffectsEnd = true;
+    // audioEffectsProgress.value = 0;
     clearInterval(audioEffectsPlayTimer);
     if (rtc.localStream) {
       rtc.localStream.stopEffect(Number($(`#soundId${num}`).val()))
@@ -2564,6 +2568,22 @@ let totalTime = 0
 let isEnd = false
 let isPuase = false
 let progressLength = progress.offsetLeft + progress.offsetWidth
+
+document.getElementById("audioFilePath").ondragover = (evt)=>{
+  // Prevent default behavior (Prevent file from being opened)
+  evt.preventDefault();
+}
+
+document.getElementById("audioFilePath").ondrop = function(evt){
+  if (evt.dataTransfer.files){
+    evt.preventDefault()
+    const blob = new Blob(evt.dataTransfer.files)
+    const url = URL.createObjectURL(blob)
+    console.log("audioFilePath", url);
+    document.getElementById("audioFilePath").value = url
+  }
+  return false
+}
 
 const audioMixingEndHandler = function(event){
   console.warn('伴音结束: ', event)
@@ -3082,6 +3102,20 @@ $("#showStats").on('click', ()=>{
   }
 });
 
+$("#encoderConfigBtn").on("click", ()=>{
+  if (!rtc.localStream){
+    addLog("未找到本地流")
+    return
+  }
+  const options = {
+    mediaType: $("#encoderMediaType").val(),
+    streamType: $("#encoderStreamType").val(),
+    maxBitrate: parseInt($("#bitrateMax").val()),
+  }
+  console.log("上行视频编码设置", options)
+  rtc.localStream.setVideoEncoderConfiguration(options)
+})
+
 $("#setEncryptionMode").click(()=>{
   const encryptionMode = $("#encryptionMode").val();
   rtc.client.setEncryptionMode(encryptionMode);
@@ -3115,6 +3149,11 @@ $("#toggleVConsole").click(()=>{
   if (!vconsole){
     vconsole = new VConsole();
   }
+})
+
+$("#forceHeartbeat").click(()=>{
+  rtc.client.adapterRef._statsReport.doHeartbeat()
+  rtc.client.adapterRef._statsReport.formativeStatsReport.send()
 })
 
 const assertLocalStream = ()=>{

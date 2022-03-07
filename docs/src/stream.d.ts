@@ -220,6 +220,9 @@ declare interface Stream {
     open(options: {
       /**
        * 媒体流类型，即 audio、video 或 screen。
+       * 
+       * 注意，Safari on MacOS 的屏幕共享需手势触发，且无法选择共享的屏幕、无法单独共享应用、无法共享音频。
+       * 
        */
         type: MediaType;
       /**
