@@ -486,7 +486,7 @@ class LocalStream extends EventEmitter {
         param: JSON.stringify(apiEventDataInit)
       })
       this.client.apiFrequencyControl({
-        name: 'trackSettings',
+        name: '_trackSettings',
         code: 0,
         param: JSON.stringify(this.mediaHelper.getTrackSettings())
       })
@@ -949,7 +949,7 @@ class LocalStream extends EventEmitter {
         param: JSON.stringify(param)
       })
       this.client.apiFrequencyControl({
-        name: 'trackSettings',
+        name: '_trackSettings',
         code: data.code,
         param: JSON.stringify(this.mediaHelper.getTrackSettings()) 
       })
@@ -1853,7 +1853,7 @@ class LocalStream extends EventEmitter {
           param: JSON.stringify({reason: 'INVALID_OPERATION'} as ReportParamSwitchCamera, null, ' ')
         })
         this.client.apiFrequencyControl({
-          name: 'trackSettings',
+          name: '_trackSettings',
           code: 0,
           param: JSON.stringify(this.mediaHelper.getTrackSettings())
         })
@@ -1872,7 +1872,7 @@ class LocalStream extends EventEmitter {
           param: JSON.stringify({reason: 'INVALID_OPERATION'} as ReportParamSwitchCamera, null, ' ')
         })
         this.client.apiFrequencyControl({
-          name: 'trackSettings',
+          name: '_trackSettings',
           code: 0,
           param: JSON.stringify(this.mediaHelper.getTrackSettings())
         })
@@ -1909,7 +1909,7 @@ class LocalStream extends EventEmitter {
         })
       }
       this.client.apiFrequencyControl({
-        name: 'trackSettings',
+        name: '_trackSettings',
         code: 0,
         param: JSON.stringify(this.mediaHelper.getTrackSettings())
       })
@@ -1924,7 +1924,7 @@ class LocalStream extends EventEmitter {
         })
       }
       this.client.apiFrequencyControl({
-        name: 'trackSettings',
+        name: '_trackSettings',
         code: 0,
         param: JSON.stringify(this.mediaHelper.getTrackSettings())
       })

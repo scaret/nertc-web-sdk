@@ -3113,6 +3113,11 @@ $("#toggleVConsole").click(()=>{
   }
 })
 
+$("#forceHeartbeat").click(()=>{
+  rtc.client.adapterRef._statsReport.doHeartbeat()
+  rtc.client.adapterRef._statsReport.formativeStatsReport.send()
+})
+
 const assertLocalStream = ()=>{
   if (!rtc.localStream){
     addLog('当前不能执行此操作：rtc.localStream不存在');
