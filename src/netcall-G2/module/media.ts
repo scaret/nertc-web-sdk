@@ -19,6 +19,7 @@ import {RemoteStream} from "../api/remoteStream";
 import {Device} from "./device";
 import {Logger} from "./3rd/mediasoup-client/Logger";
 import {platform} from "../util/platform";
+import {NERTC_VIDEO_QUALITY_ENUM, VIDEO_FRAME_RATE_ENUM} from "../constant/videoQuality";
 class MediaHelper extends EventEmitter {
   stream: LocalStream|RemoteStream;
   public audio: {
@@ -240,7 +241,7 @@ class MediaHelper extends EventEmitter {
     ])
   }
   async getScreenSource(constraint:GetStreamConstraints) {
-    const {width, height, frameRate} = this.convert(this.screen.captureConfig.high)
+    const {width, height, frameRate} = this.screen.captureConfig.high
     let screenStream = await GUM.getScreenStream({
       video:{
         width: {
@@ -719,7 +720,9 @@ class MediaHelper extends EventEmitter {
     return videoTrackLow;
   }
 
-  convert({resolution = 4, frameRate = 0}){
+  convert(options: {resolution: NERTC_VIDEO_QUALITY_ENUM, frameRate: VIDEO_FRAME_RATE_ENUM}){
+    const resolution = options.resolution
+    const frameRate = options.frameRate
     let result = {
       width: 640,
       height: 480,
@@ -793,6 +796,77 @@ class MediaHelper extends EventEmitter {
     } else {
       return constraint;
     }
+  }
+  
+  getTrackSettings (){
+    const settings:any = {}
+    try{
+
+      if (this.audio.micTrack){
+        settings.mic = {
+          settings: this.audio.micTrack.getSettings(),
+          label: this.audio.micTrack.label,
+          readyState: this.audio.micTrack.readyState,
+        }
+      }
+      if (this.audio.audioSource){
+        settings.audioSource = {
+          settings: this.audio.audioSource.getSettings(),
+          label: this.audio.audioSource.label,
+          readyState: this.audio.audioSource.readyState,
+        }
+      }
+      
+      if (this.video.cameraTrack){
+        settings.camera = {
+          settings: this.video.cameraTrack.getSettings(),
+          label: this.video.cameraTrack.label,
+          readyState: this.video.cameraTrack.readyState,
+        }
+      }
+      if (this.video.videoSource){
+        settings.videoSource = {
+          settings: this.video.videoSource.getSettings(),
+          label: this.video.videoSource.label,
+          readyState: this.video.videoSource.readyState,
+        }
+      }
+      
+      if (this.screen.screenVideoTrack){
+        settings.screen = {
+          settings: this.screen.screenVideoTrack.getSettings(),
+          label: this.screen.screenVideoTrack.label,
+          readyState: this.screen.screenVideoTrack.readyState,
+        }
+      }
+      if (this.screen.screenVideoSource){
+        settings.screenVideoSource = {
+          settings: this.screen.screenVideoSource.getSettings(),
+          label: this.screen.screenVideoSource.label,
+          readyState: this.screen.screenVideoSource.readyState,
+        }
+      }
+
+      if (this.screenAudio.screenAudioTrack){
+        settings.screenAudio = {
+          settings: this.screenAudio.screenAudioTrack.getSettings(),
+          label: this.screenAudio.screenAudioTrack.label,
+          readyState: this.screenAudio.screenAudioTrack.readyState,
+        }
+      }
+      if (this.screenAudio.screenAudioSource){
+        settings.screenAudioSource = {
+          settings: this.screenAudio.screenAudioSource.getSettings(),
+          label: this.screenAudio.screenAudioSource.label,
+          readyState: this.screenAudio.screenAudioSource.readyState,
+        }
+      }
+      
+    }catch(e){
+      settings.errName = e.name
+      settings.errMessage = e.message
+    }
+    return settings
   }
   
   // 仅在remoteStream

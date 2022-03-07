@@ -1184,7 +1184,7 @@ function getVideoSource(mediaType){
   }
   if (matches[4] === "1"){
     videoConstraint.type = "clock"
-  }if (matches[4] === "3"){
+  } else if (matches[4] === "3"){
     videoConstraint.type = "randomcolor"
   }else{
     videoConstraint.type = "background"
@@ -3111,6 +3111,11 @@ $("#toggleVConsole").click(()=>{
   if (!vconsole){
     vconsole = new VConsole();
   }
+})
+
+$("#forceHeartbeat").click(()=>{
+  rtc.client.adapterRef._statsReport.doHeartbeat()
+  rtc.client.adapterRef._statsReport.formativeStatsReport.send()
 })
 
 const assertLocalStream = ()=>{
