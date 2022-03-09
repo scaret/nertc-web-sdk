@@ -39,6 +39,16 @@ export const ANDROID_VERSION =
 
 // Firefox
 export const IS_FIREFOX = /Firefox/i.test(USER_AGENT);
+// Firefox version
+export const FIREFOX_VERSION =
+  IS_FIREFOX &&
+  (function() {
+    const match = navigator.userAgent.match(/Firefox\/([\d.]+)/);
+    if (match && match[1]) {
+      return match[1];
+    }
+    return null;
+  })();
 
 // Firefox major version
 export const FIREFOX_MAJOR_VERSION =
@@ -150,6 +160,14 @@ export const IE_VERSION =
 
 export const IS_WECHAT = /(micromessenger|webbrowser)/i.test(USER_AGENT);
 export const WECHAT_VERSION =
+  IS_WECHAT &&
+  (function() {
+    var match = navigator.userAgent.match(/MicroMessenger\/([\d.]+)/);
+    if (match && match[1]) {
+      return match[1];
+    }
+  })();
+export const WECHAT_MAJOR_VERSION =
   IS_WECHAT &&
   (function() {
     var match = USER_AGENT.match(/MicroMessenger\/(\d+)/i);

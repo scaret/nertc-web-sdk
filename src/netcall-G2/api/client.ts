@@ -381,9 +381,23 @@ class Client extends Base {
     try{
       const joinResult = await this.adapterRef._meetings.joinChannel(this._params.JoinChannelRequestParam4WebRTC2)
       this.emit('pairing-join-success')
+      this.apiFrequencyControl({
+        name: 'join',
+        code: 0,
+        param: JSON.stringify({
+          options
+        }, null, ' ')
+      })
       return joinResult
     }catch(e){
       this.emit('pairing-join-error')
+      this.apiFrequencyControl({
+        name: 'join',
+        code: -1,
+        param: JSON.stringify({
+          reason: e
+        }, null, ' ')
+      })
       throw e;
     }
   }
@@ -416,6 +430,13 @@ class Client extends Base {
     }else{
       onLeaveFinish()
     }
+    this.apiFrequencyControl({
+      name: 'leave',
+      code: 0,
+      param: JSON.stringify({
+        uid: this.getUid()
+      }, null, ' ')
+    })
     // invoke uploadLog() if uploadLogEnabled is true
     // if(Number(sessionStorage.getItem('uploadLogEnabled'))) {
     //   this.upLoadParam = {
@@ -504,26 +525,12 @@ class Client extends Base {
       hookPublishFinish()
       const param: any = {
         reason,
-        pubStatus: stream.pubStatus,
-        renderMode: stream.renderMode,
+        pubStatus: stream.pubStatus
       };
-      if (stream.mediaHelper.audio.micTrack || stream.mediaHelper.audio.audioSource){
-        param.audio = stream.audio
-        param.audioProfile = stream.audioProfile
-        param.microphoneId = stream.microphoneId
-      }
-      if (stream.mediaHelper.screenAudio.screenAudioTrack || stream.mediaHelper.screenAudio.screenAudioSource){
-        param.screenAudio = stream.screenAudio
-        param.audioProfile = stream.audioProfile
-      }
       if (stream.mediaHelper.video.cameraTrack || stream.mediaHelper.video.videoSource){
-        param.videoProfile = stream.videoProfile
-        param.cameraId = stream.cameraId
         param.webcamProducerCodec = this.adapterRef._mediasoup?._webcamProducerCodec
       }
       if (stream.mediaHelper.screen.screenVideoTrack || stream.mediaHelper.screen.screenVideoSource){
-        param.screen = stream.screen
-        param.screenProfile = stream.screenProfile
         param.screenProducerCodec = this.adapterRef._mediasoup?._screenProducerCodec
       }
       this.apiFrequencyControl({
@@ -623,15 +630,7 @@ class Client extends Base {
       reason = 'INVALID_OPERATION'
     }
     const param = JSON.stringify({
-      videoProfile: stream && stream.videoProfile,
-      audio: stream && stream.audio,
-      audioProfile: stream && stream.audioProfile,
-      cameraId: stream && stream.cameraId,
-      microphoneId: stream && stream.microphoneId,
       pubStatus: stream && stream.pubStatus,
-      renderMode: stream && stream.renderMode,
-      screen: stream && stream.screen,
-      screenProfile: stream && stream.screenProfile,
       reason
     }, null, ' ')
     if (reason) {
@@ -678,15 +677,7 @@ class Client extends Base {
         name: 'unpublish',
         code: 0,
         param: JSON.stringify({
-          videoProfile: stream && stream.videoProfile,
-          audio: stream && stream.audio,
-          audioProfile: stream && stream.audioProfile,
-          cameraId: stream && stream.cameraId,
-          microphoneId: stream && stream.microphoneId,
-          pubStatus: stream && stream.pubStatus,
-          renderMode: stream && stream.renderMode,
-          screen: stream && stream.screen,
-          screenProfile: stream && stream.screenProfile
+          pubStatus: stream && stream.pubStatus
         }, null, ' ')
       })
       onUnpublishFinish()
@@ -698,15 +689,7 @@ class Client extends Base {
         code: -1,
         param: JSON.stringify({
           reason: e,
-          videoProfile: stream && stream.videoProfile,
-          audio: stream && stream.audio,
-          audioProfile: stream && stream.audioProfile,
-          cameraId: stream && stream.cameraId,
-          microphoneId: stream && stream.microphoneId,
-          pubStatus: stream && stream.pubStatus,
-          renderMode: stream && stream.renderMode,
-          screen: stream && stream.screen,
-          screenProfile: stream && stream.screenProfile
+          pubStatus: stream && stream.pubStatus
         }, null, ' ')
       })
     }
@@ -931,12 +914,9 @@ class Client extends Base {
         code: 0,
         param: JSON.stringify({
           reason: '',
-          audio: stream.audio,
           subStatus: stream.subStatus,
           subConf: stream.subConf,
-          pubStatus: stream.pubStatus,
-          renderMode: stream.renderMode,
-          screen: stream.screen,
+          pubStatus: stream.pubStatus
         }, null, ' ')
       })
     } catch (e) {
@@ -950,12 +930,9 @@ class Client extends Base {
         code: -1,
         param: JSON.stringify({
           reason: e,
-          audio: stream.audio,
           subStatus: stream.subStatus,
           subConf: stream.subConf,
-          pubStatus: stream.pubStatus,
-          renderMode: stream.renderMode,
-          screen: stream.screen,
+          pubStatus: stream.pubStatus
         }, null, ' ')
       })
     }
@@ -1064,12 +1041,8 @@ class Client extends Base {
         code: 0,
         param: JSON.stringify({
           reason: '',
-          audio: stream.audio,
           subStatus: stream.subStatus,
-          subConf: stream.subConf,
-          pubStatus: stream.pubStatus,
-          renderMode: stream.renderMode,
-          screen: stream.screen,
+          subConf: stream.subConf
         }, null, ' ')
       })
     } catch (e) {
@@ -1079,12 +1052,8 @@ class Client extends Base {
         code: -1,
         param: JSON.stringify({
           reason: e,
-          audio: stream.audio,
           subStatus: stream.subStatus,
-          subConf: stream.subConf,
-          pubStatus: stream.pubStatus,
-          renderMode: stream.renderMode,
-          screen: stream.screen,
+          subConf: stream.subConf
         }, null, ' ')
       })
     }

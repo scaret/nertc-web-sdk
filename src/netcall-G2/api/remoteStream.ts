@@ -208,7 +208,7 @@ class RemoteStream extends EventEmitter {
       video: options.video,
     }))
     this.client.apiFrequencyControl({
-      name: 'createStream',
+      name: 'createRemoteStream',
       code: 0,
       param: JSON.stringify({
         audio: this.audio,
@@ -565,10 +565,7 @@ class RemoteStream extends EventEmitter {
       code: 0,
       param: JSON.stringify({
         playOptions:playOptions,
-        audio: this.audio,
-        video: this.video,
-        screen: this.screen,
-        renderMode: this.renderMode
+        end: 'remote'
       }, null, ' ')
     })
   }
@@ -671,10 +668,11 @@ class RemoteStream extends EventEmitter {
       name: 'stop',
       code: 0,
       param: JSON.stringify({
+        end: 'remote',
         audio: this.audio,
         video: this.video,
         screen: this.screen,
-        renderMode: this.renderMode
+        type
       }, null, ' ')
     })
   }

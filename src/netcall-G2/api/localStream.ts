@@ -266,7 +266,7 @@ class LocalStream extends EventEmitter {
       video: options.video,
     }))
     this.client.apiFrequencyControl({
-      name: 'createStream',
+      name: 'createLocalStream',
       code: 0,
       param: JSON.stringify({
         videoProfile: this.videoProfile,
@@ -776,10 +776,7 @@ class LocalStream extends EventEmitter {
       code: 0,
       param: JSON.stringify({
         playOptions:playOptions,
-        audio: this.audio,
-        video: this.video,
-        screen: this.screen,
-        renderMode: this.renderMode
+        end: 'local'
       }, null, ' ')
     })
   }
@@ -817,12 +814,16 @@ class LocalStream extends EventEmitter {
    * @returns {Void}
    */
   setLocalRenderMode (options: RenderMode, mediaType?: MediaTypeShort) {
+    const params: any = {
+      options,
+      mediaType,
+    };
     if (!options || !(options.width - 0) || !(options.height - 0)) {
       this.logger.warn('setLocalRenderMode 参数错误')
       this.client.apiFrequencyControl({
         name: 'setLocalRenderMode',
         code: -1,
-        param: JSON.stringify(options, null, ' ')
+        param: JSON.stringify(params, null, ' ')
       })
       return 'INVALID_ARGUMENTS'
     }
@@ -843,7 +844,7 @@ class LocalStream extends EventEmitter {
     this.client.apiFrequencyControl({
       name: 'setLocalRenderMode',
       code: 0,
-      param: JSON.stringify(options, null, ' ')
+      param: JSON.stringify(params, null, ' ')
     })
   }
 
@@ -881,10 +882,11 @@ class LocalStream extends EventEmitter {
       name: 'stop',
       code: 0,
       param: JSON.stringify({
+        end: 'local',
         audio: this.audio,
         video: this.video,
         screen: this.screen,
-        renderMode: this.renderMode
+        type
       }, null, ' ')
     })
   }
@@ -1445,6 +1447,7 @@ class LocalStream extends EventEmitter {
           audio: this.audio,
           video: this.video,
           screen: this.screen,
+          type: options.type
         }, null, ' ')
       })
       if(reason === 'NOT_OPEN_MIC_YET') {
@@ -1491,6 +1494,7 @@ class LocalStream extends EventEmitter {
           video: this.video,
           screen: this.screen,
           screenAudio: this.screenAudio,
+          type: options.type
         }, null, ' ')
       })
       return
