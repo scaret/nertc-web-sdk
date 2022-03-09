@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>连通性测试</title>
+  <link rel="icon" href="data:,">
+  <meta charset="utf8">
+</head>
+<body>
+<h1>连通性测试</h1>
+
+<h2>测试配置</h2>
+<label>
+  单台服务器测试时间
+  <input type="number" id="connTime" value="5">秒
+</label>
+<br/>
+<label>
+  启用Ice
+  <input type="checkbox" id="enableIce">
+</label>
+<label>
+  ICE地址
+  <input type="text" id="iceUrl" value="turn:rpg.wrtc.dev:3800?transport=tcp" size="40">
+</label>
+<label>
+  ICE用户名
+  <input type="text" id="iceUsername" value="yunxin">
+</label>
+<label>
+  ICE密码
+  <input type="text" id="iceCredential" value="Test123">
+</label>
+<br/>
+<button id="startAllTests" onclick="startAllTests()">轮询测试</button>
+
+<h2>地址列表</h2>
+<div id="vueApp">
+  <ul>
+    <li v-for="conn in CONNECTIONS">
+      <span v-html="conn.group"></span>
+      <span v-html="conn.name"></span>
+      地址：<span v-html="conn.address"></span>
+      <ul>
+        <li v-if="mode !== 'test_all'">
+          <button v-if="conn.status === 'UNINIT' || conn.status === 'ENDED'" v-on:click="testConnection(conn.id)">单服测试</button>
+          <button v-if="conn.status !== 'UNINIT' && conn.status !== 'ENDED'" v-on:click="unloadConnection(conn.id)">结束测试</button>
+        </li>
+        <li v-if="conn.status !== 'UNINIT'">
+          WebSocket状态：{{conn.status}}。
+          Join结果：{{conn.joinResult}}。
+        </li>
+        <li v-if="conn.status !== 'UNINIT'">
+          WebSocket建立时间：{{conn.connMs}}毫秒。
+          Join成功时间：{{conn.joinMs}}毫秒。
+          Ice建立时间：{{conn.iceConnectMs}}毫秒。
+          连接持续时间：{{conn.lastMs}}毫秒。
+        </li>
+        <li v-if="conn.status !== 'UNINIT'">
+          {{conn.candidateSummary}}
+          <button v-on:click="conn.showDetail = !conn.showDetail">显示详情</button>
+        </li>
+        <li v-if="conn.showDetail">
+          <div style="display: flex">
+            <div style="float: left">
+              Candidate配对<br/>
+              <pre v-html="conn.candidatePairInfo"></pre><br/>
+            </div>
+            <div style="float: left">
+              本地Candidate<br/>
+              <pre v-html="conn.localAddress"></pre>
+            </div>
+            <div style="float: left">
+              远端Candidate<br/>
+              <pre v-html="conn.remoteAddress"></pre>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+
+<h2>新增地址</h2>
+<label>
+  连接地址*
+  <input type="text" size="100" id="customAddress">
+</label>
+<br/>
+<label>
+  连接名称
+  <input type="text" id="customName">
+</label>
+<br/>
+<button id="addConnection" onclick="addConnection()">增加</button>
+
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14"></script>
+<script src="./js/nim/NIM_Web_NERTC.js"></script>
+<script src="./js/lib/fakeMediaDevices.js"></script>
+<script src="./js/webrtc/init_testconn.js"></script>
+</body>
+</html>
