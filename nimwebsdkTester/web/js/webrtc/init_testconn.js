@@ -126,7 +126,7 @@ async function testConnection(id){
     debug: true
   })
   const iceServer = {
-    urls: document.getElementById("iceUrl").value,
+    urls: document.getElementById("iceUrl").value.split(","),
     username: document.getElementById("iceUsername").value,
     credential: document.getElementById("iceCredential").value,
   }
