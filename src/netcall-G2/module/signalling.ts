@@ -19,6 +19,7 @@ import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
 import {platform} from "../util/platform";
 import * as env from '../util/rtcUtil/rtcEnvironment';
+import {getOSName, getBrowserInfo} from '../util/rtcUtil/rtcSupport'
 import {getParameters} from "./parameters";
 const protooClient = require('./3rd/protoo-client/')
 
@@ -67,11 +68,7 @@ class Signalling extends EventEmitter {
     this._reset()
     // 设置对象引用
     this.adapterRef = options.adapterRef
-    if(env.IS_EDG){
-      this.browserDevice = 'Edge-' + platform.version
-    }else {
-      this.browserDevice = platform.name + '-' + platform.version
-    }
+    this.browserDevice = getOSName()+ '-' + getBrowserInfo().browserName + '-' + getBrowserInfo().browserVersion;
   }
   
   getTimeOut(type: "join"|"reconnection"){
