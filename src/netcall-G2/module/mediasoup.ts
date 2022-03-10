@@ -202,10 +202,10 @@ class Mediasoup extends EventEmitter {
     }
     if (this.adapterRef.testConf.iceServers){
       iceServers = this.adapterRef.testConf.iceServers
-      iceTransportPolicy = 'relay'
+      iceTransportPolicy = this.adapterRef.testConf.iceTransportPolicy || "relay"
     }
-    if (iceTransportPolicy === 'relay'){
-      this.logger.log("iceServers", JSON.stringify(iceServers))
+    if (iceServers.length){
+      this.logger.log("iceTransportPolicy ", iceTransportPolicy, " iceServers ", JSON.stringify(iceServers))
     }
     if (!this._sendTransport && this._mediasoupDevice) {
       this._sendTransport = this._mediasoupDevice.createSendTransport({

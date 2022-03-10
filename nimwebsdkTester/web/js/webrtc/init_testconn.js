@@ -132,6 +132,7 @@ async function testConnection(id){
   }
   if (iceServer.urls && document.getElementById("enableIce").checked){
     client.adapterRef.testConf.iceServers = [iceServer]
+    client.adapterRef.testConf.iceTransportPolicy = document.getElementById("iceTransportPolicy").value
   }
   
   rtc.client = client
