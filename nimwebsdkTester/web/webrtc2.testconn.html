@@ -8,40 +8,45 @@
 <body>
 <h1>连通性测试</h1>
 
-<h2>测试配置</h2>
-<label>
-  单台服务器测试时间
-  <input type="number" id="connTime" value="5">秒
-</label>
-<br/>
-<label>
-  启用Ice
-  <input type="checkbox" id="enableIce">
-</label>
-<label>
-  ICE地址
-  <input type="text" id="iceUrl" value="turn:rpg.wrtc.dev:3800?transport=tcp" size="40">
-</label>
-<label>
-  ICE用户名
-  <input type="text" id="iceUsername" value="yunxin">
-</label>
-<label>
-  ICE密码
-  <input type="text" id="iceCredential" value="Test123">
-</label>
-<label>
-  IceTransportPolicy
-  <select id="iceTransportPolicy">
-    <option value="all">all</option>
-    <option value="relay">relay</option>
-  </select>
-</label>
-<br/>
-<button id="startAllTests" onclick="startAllTests()">轮询测试</button>
 
-<h2>地址列表</h2>
 <div id="vueApp">
+
+
+  <h2>测试配置</h2>
+  <label>
+    单台服务器测试时间
+    <input type="number" id="connTime" value="5">秒
+  </label>
+  <br/>
+  <label>
+    启用Ice
+    <input type="checkbox" v-model="enableIce">
+  </label>
+  <div v-if="enableIce">
+    <label>
+      ICE地址
+      <input type="text" id="iceUrl" value="turn:rpg.wrtc.dev:3800?transport=tcp" size="40">
+    </label>
+    <label>
+      ICE用户名
+      <input type="text" id="iceUsername" value="yunxin">
+    </label>
+    <label>
+      ICE密码
+      <input type="text" id="iceCredential" value="Test123">
+    </label>
+    <label>
+      IceTransportPolicy
+      <select id="iceTransportPolicy">
+        <option value="all">all</option>
+        <option value="relay" selected>relay</option>
+      </select>
+    </label>
+  </div>
+  <br/>
+  <button id="startAllTests" onclick="startAllTests()">轮询测试</button>
+  
+  <h2>地址列表</h2>
   <ul>
     <li v-for="conn in CONNECTIONS">
       <span v-html="conn.group"></span>

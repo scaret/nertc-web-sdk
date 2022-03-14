@@ -81,6 +81,7 @@ let vueApp = null
 const main = async ()=>{
   vueApp = new Vue({
     data: {
+      enableIce: false,
       mode: "uninit",
       CONNECTIONS,
     },
@@ -125,14 +126,21 @@ async function testConnection(id){
     appkey: WebRTC2.ENV === "production" ? "6acf024e190215b685905444b6e57dd7" : "eca23f68c66d4acfceee77c200200359",
     debug: true
   })
-  const iceServer = {
-    urls: document.getElementById("iceUrl").value.split(","),
-    username: document.getElementById("iceUsername").value,
-    credential: document.getElementById("iceCredential").value,
-  }
-  if (iceServer.urls && document.getElementById("enableIce").checked){
-    client.adapterRef.testConf.iceServers = [iceServer]
-    client.adapterRef.testConf.iceTransportPolicy = document.getElementById("iceTransportPolicy").value
+  
+  NERTC.Logger.setLogLevel(NERTC.Logger.ERROR)
+  if (vueApp.enableIce){
+    const iceServer = {
+      urls: document.getElementById("iceUrl").value.split(","),
+      username: document.getElementById("iceUsername").value,
+      credential: document.getElementById("iceCredential").value,
+    }
+    if (iceServer.urls.length){
+      client.adapterRef.testConf.iceServers = [iceServer]
+      client.adapterRef.testConf.iceTransportPolicy = document.getElementById("iceTransportPolicy").value
+      console.warn("启用Ice", client.adapterRef.testConf.iceServers.length, client.adapterRef.testConf.iceServers, client.adapterRef.testConf.iceTransportPolicy)
+    }else{
+      alert("没有iceServer")
+    }
   }
   
   rtc.client = client
@@ -225,6 +233,7 @@ async function getIceCandidatePair(pc){
   const statsArr = []
   const transports = []
   stats.forEach((item, key)=>{
+    // console.error(item.type, item.id, item)
     delete item.timestamp
     statsArr.push(item)
     if (item.type === "local-candidate"){
@@ -233,12 +242,17 @@ async function getIceCandidatePair(pc){
     if (item.type === "remote-candidate"){
       info.remote.push(item)
     }
+    if (item.type === "candidate-pair" && item.selected === true){
+      // Firefox
+      info.pair = item
+      info.result += `${item.state} `
+    }
     if (item.type === "transport"){
       transports.push(item)
       info.transport = item
     }
   })
-  if (!transports.length){
+  if (!transports.length && !info.pair){
     info.result = "没有transport"
     return info
   }
@@ -246,32 +260,37 @@ async function getIceCandidatePair(pc){
     const candidatePair = statsArr.find((stats)=>{
       return stats.id === transport.selectedCandidatePairId
     })
-    if (candidatePair){
+    if (candidatePair) {
       info.pair = candidatePair
       info.result += `${candidatePair.state} `
-      const localCandidate = statsArr.find((stats)=>{
-        return stats.id === candidatePair.localCandidateId
-      })
-      if (localCandidate){
-        info.result += `|local:${localCandidate.protocol} `
-        info.result += `${localCandidate.address}:${localCandidate.port} ${localCandidate.candidateType} ${localCandidate.networkType}`
-      }else{
-        info.result += `|无法找到localCandidate ${candidatePair.localCandidateId}`
-      }
-      const remoteCandidate = statsArr.find((stats)=>{
-        return stats.id === candidatePair.remoteCandidateId
-      })
-      if (remoteCandidate){
-        info.result += `|remote:${remoteCandidate.protocol} `
-        info.result += `${remoteCandidate.address}:${remoteCandidate.port} ${remoteCandidate.candidateType}`
-      }else{
-        info.result += `|无法找到remoteCandidate ${candidatePair.remoteCandidateId}`
-      }
-
-    }else{
-      info.result += `无法找到candidatePair ${transport.selectedCandidatePairId}`
     }
   })
+  if (info.pair){
+    const candidatePair = info.pair
+    const localCandidate = statsArr.find((stats)=>{
+      return stats.id === candidatePair.localCandidateId
+    })
+    if (localCandidate){
+      if (localCandidate.relayProtocol){
+        info.result += `【relay ${localCandidate.relayProtocol}】`
+      }
+      info.result += `|local:${localCandidate.protocol} `
+      info.result += `${localCandidate.address}:${localCandidate.port} ${localCandidate.candidateType} ${localCandidate.networkType}`
+    }else{
+      info.result += `|无法找到localCandidate ${candidatePair.localCandidateId}`
+    }
+    const remoteCandidate = statsArr.find((stats)=>{
+      return stats.id === candidatePair.remoteCandidateId
+    })
+    if (remoteCandidate){
+      info.result += `|remote:${remoteCandidate.protocol} `
+      info.result += `${remoteCandidate.address}:${remoteCandidate.port} ${remoteCandidate.candidateType}`
+    }else{
+      info.result += `|无法找到remoteCandidate ${candidatePair.remoteCandidateId}`
+    }
+  }else{
+    info.result += `无法找到candidatePair`
+  }
   return info
 }
 
