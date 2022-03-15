@@ -15,19 +15,16 @@ import {
   EnhancedTransceiver, EnhancedRTCRtpParameters
 } from './HandlerInterface';
 import { RemoteSdp } from './sdp/RemoteSdp';
-import { parse as parseScalabilityMode } from '../scalabilityModes';
 import {IceParameters, DtlsRole, DtlsParameters, FillRemoteRecvSdpOptions} from '../Transport';
 import {
   RtpCapabilities,
   RtpParameters,
   RtpEncodingParameters
 } from '../RtpParameters';
-import { SctpCapabilities, SctpStreamParameters } from '../SctpParameters';
+import { SctpCapabilities } from '../SctpParameters';
 import {reduceCodecs} from "../../../../util/rtcUtil/codec";
-import {MediaSection} from "./sdp/MediaSection";
 import RtcError from '../../../../util/error/rtcError';
 import ErrorCode  from '../../../../util/error/errorCode';
-import {getParameters} from "../../../parameters";
 
 const prefix = 'Chrome74';
 

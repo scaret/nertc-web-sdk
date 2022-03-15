@@ -11,7 +11,6 @@ import {RemoteStream} from "./api/remoteStream";
 import {LocalStream} from "./api/localStream";
 import {SpatialManager} from "./api/spatialManager";
 import {OperationQueue} from "./util/OperationQueue";
-import {UploadLog} from "./util/log/upload";
 import {NERTC_VIDEO_QUALITY_ENUM, VIDEO_FRAME_RATE_ENUM} from "./constant/videoQuality";
 
 type UIDTYPE = number | string;

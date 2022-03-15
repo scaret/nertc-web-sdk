@@ -15,10 +15,9 @@ import {
 } from './HandlerInterface';
 import { RemoteSdp } from './sdp/RemoteSdp';
 import {IceParameters, DtlsRole, DtlsParameters, FillRemoteRecvSdpOptions} from '../Transport';
-import {RtpCapabilities, RtpEncodingParameters, RtpParameters} from '../RtpParameters';
-import { SctpCapabilities, SctpStreamParameters } from '../SctpParameters';
+import {RtpCapabilities, RtpParameters} from '../RtpParameters';
+import { SctpCapabilities } from '../SctpParameters';
 import {reduceCodecs} from "../../../../util/rtcUtil/codec";
-import {getMediaSecionIdx} from "../../../../util/getMediaSecionIdx";
 import RtcError from '../../../../util/error/rtcError';
 import ErrorCode  from '../../../../util/error/errorCode';
 import {canShimVideoOrientation, shimVideoOrientation} from "../../../../util/rtcUtil/shimVideoOrientation";

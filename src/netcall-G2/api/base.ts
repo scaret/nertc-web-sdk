@@ -9,12 +9,11 @@ import {
   AdapterRef,
   APIFrequencyControlOptions, NeRtcServerAddresses,
   ClientOptions, JoinChannelRequestParam4WebRTC2,
-  MediaTypeShort, ILogger, MediaSubStatus
+  MediaTypeShort, ILogger
 } from "../types";
 import {MediaCapability} from "../module/mediaCapability";
 import {getSupportedCodecs} from "../util/rtcUtil/codec";
 import {Encryption} from "../module/encryption";
-// import { logController } from "../util/log/upload";
 import RtcError from '../util/error/rtcError';
 import ErrorCode  from '../util/error/errorCode';
 import {getParameters} from "../module/parameters";
@@ -59,7 +58,6 @@ class Base extends EventEmitter {
       apiEvent: {},
       apiEvents: {},
       requestId: {},
-      // logController: logController,
       instance: this as unknown as ICLient,
       report: true
     };
@@ -159,7 +157,6 @@ class Base extends EventEmitter {
       })
     }
 
-    
   }
 
   initWebSocket() {
@@ -368,9 +365,6 @@ class Base extends EventEmitter {
       })
     }
     this.adapterRef._statsReport.statsStart();
-    // 此时开始getstats
-    // this.adapterRef._statsReport.start()
-    // this.adapterRef._statsReport.startHeartbeat()
   }
 
   stopSession() {

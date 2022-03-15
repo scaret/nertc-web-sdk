@@ -258,15 +258,6 @@ export const checkRTCCompatibility = async function() {
       (checkResult.detail.isH264EncodeSupported || checkResult.detail.isVp8EncodeSupported) &&
       (checkResult.detail.isH264EncodeSupported || checkResult.detail.isVp8EncodeSupported) 
 
-    // if (!checkResult.result) {
-    //   // TODO: upload log
-    //   console.log(
-    //     `${navigator.userAgent} isBrowserSupported: ${isBrowserSupport}` +
-    //       `isWebRTCSupported: ${isWebRTCSupport} isMediaSupported: ${isMediaDevicesSupport}` +
-    //       `isH264EncodeSupported: ${checkResult.detail.isH264EncodeSupported} isVp8EncodeSupported: ${checkResult.detail.isVp8EncodeSupported}` +
-    //       `isH264DecodeSupported: ${checkResult.detail.isH264DecodeSupported} isVp8DecodeSupported: ${checkResult.detail.isVp8DecodeSupported}`
-    //   );
-    // }
     return checkResult;
 }
 // 是否本地环境 file, localhost, ip 地址

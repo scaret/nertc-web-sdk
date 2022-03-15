@@ -1,7 +1,5 @@
 import * as loglevel from 'loglevel';
-// import { logController } from '../log/upload'
 import {getParameters} from "../../module/parameters";
-// sessionStorage.setItem('uploadLogEnabled', '0');
 
 // 与声网对齐
 export enum loglevels{
@@ -29,22 +27,9 @@ const logger = {
       }
     },
     enableLogUpload() {
-        // if(!Number(sessionStorage.getItem('uploadLogEnabled'))){
-        //     loglevel.info('enable upload log');
-        //     // initialize LogStorage
-        //     logController.init();
-        //     sessionStorage.setItem('uploadLogEnabled', '1');
-        // }
         (<any>window).logUpload = true;
-
     },
     disableLogUpload() {
-        // if(Number(sessionStorage.getItem('uploadLogEnabled'))) {
-        //     loglevel.info(
-        //         'disable upload log'
-        //       );
-        //     sessionStorage.setItem('uploadLogEnabled', '0');
-        // }
         (<any>window).logUpload = false;
     }
       

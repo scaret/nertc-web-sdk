@@ -1,8 +1,6 @@
 // https://xie.infoq.cn/article/9f4f2fab8d9c6427b099b358d
 import {Client, ILogger, MediaTypeShort, SpatialInitOptions} from "../types";
 import {RemoteStream} from "./remoteStream";
-import {LocalStream} from "./localStream";
-import * as stream from "stream";
 import {Device} from "../module/device";
 
 export interface PannerManagerOptions{

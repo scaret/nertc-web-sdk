@@ -1,6 +1,5 @@
 import { EventEmitter } from 'eventemitter3'
 import { ajax } from '../util/ajax'
-import { RtcSystem } from '../util/rtcUtil/rtcSystem'
 import {getCloudProxyInfoUrl, getChannelInfoUrl, SDK_VERSION, roomsTaskUrl} from '../Config'
 // import * as md5 from 'md5';
 const md5 = require('md5');

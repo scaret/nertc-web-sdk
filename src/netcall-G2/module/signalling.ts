@@ -6,19 +6,17 @@ import {ENGINE_VERSION} from '../Config/index'
 import {
   AdapterRef, ILogger, MediaTypeShort, NetStatusItem,
   SignallingOptions,
-  Timer, VideoCodecType
+  Timer
 } from "../types";
 import {Peer, ProtooNotification} from "./3rd/protoo-client";
 import {Consumer} from "./3rd/mediasoup-client/Consumer";
 import {emptyStreamWith} from "../util/gum";
 import {SignalJoinRes} from "../interfaces/SignalProtocols";
-import {EncryptionModes, encryptionModeToInt} from "./encryption";
+import {encryptionModeToInt} from "./encryption";
 import {RTSTransport} from "./rtsTransport";
 import { parseBase64 } from "../util/crypto-ts/base64";
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
-import {platform} from "../util/platform";
-import * as env from '../util/rtcUtil/rtcEnvironment';
 import {getOSName, getBrowserInfo} from '../util/rtcUtil/rtcSupport'
 import {getParameters} from "./parameters";
 const protooClient = require('./3rd/protoo-client/')
