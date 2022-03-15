@@ -1,7 +1,6 @@
 import { EventEmitter } from 'eventemitter3'
 import { ajax } from '../util/ajax'
 import {getCloudProxyInfoUrl, getChannelInfoUrl, SDK_VERSION, roomsTaskUrl} from '../Config'
-// import * as md5 from 'md5';
 const md5 = require('md5');
 import {
   AdapterRef, AddTaskOptions, ILogger,

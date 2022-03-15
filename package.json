@@ -44,6 +44,7 @@
   "author": "netease im",
   "license": "ISC",
   "dependencies": {
+    "@netease-yunxin/log-storage": "^1.0.5",
     "@types/dateformat": "^3.0.1",
     "@types/dom-mediacapture-record": "^1.0.7",
     "@types/md5": "^2.2.1",
