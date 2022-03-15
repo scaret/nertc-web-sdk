@@ -14,8 +14,7 @@ import {
 } from '../RtpParameters';
 import {
   SctpCapabilities,
-  SctpParameters,
-  SctpStreamParameters
+  SctpParameters
 } from '../SctpParameters';
 import {NeRTCPeerConnection} from "../../../../interfaces/NeRTCPeerConnection";
 

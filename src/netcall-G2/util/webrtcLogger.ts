@@ -1,6 +1,6 @@
 import {platform} from "./platform";
 import {logHelper} from "./logHelper";
-import {LoggerDebugOptions, LoggerOptions} from "../types";
+import {LoggerOptions} from "../types";
 import {getParameters} from "../module/parameters";
 import {loglevels} from "./log/logger";
 import {formatSingleArg} from "./util";
@@ -51,9 +51,7 @@ export class Logger{
     if(getParameters().logLevel <= loglevels.DEBUG){
       logger._log('debug', args);
     }
-    // (<any>window).logStorage && (<any>window).logStorage.log('debug', args);
     (<any>window).logUpload && (<any>window).wsTransport.sendLog(args);
-    // loglevel.debug(arguments);
   }
   
   log(){
@@ -75,8 +73,6 @@ export class Logger{
     if(getParameters().logLevel <= loglevels.INFO){
       logger._log('log', args);
     }
-    //  loglevel.trace(args);
-    // (<any>window).logStorage && (<any>window).logStorage.log('log', args);
     (<any>window).logUpload && (<any>window).wsTransport.sendLog(args);
   }
   
@@ -91,10 +87,7 @@ export class Logger{
     if(getParameters().logLevel <= loglevels.INFO) {
       logger._log('info', args);
     }
-    // loglevel.info(arguments);
-    // (<any>window).logStorage && (<any>window).logStorage.log('info', args);
     (<any>window).logUpload && (<any>window).wsTransport.sendLog(args);
-    
   }
   
   warn(){
@@ -108,8 +101,6 @@ export class Logger{
     if(getParameters().logLevel <= loglevels.WARNING) {
       logger._log('warn', args);
     }
-    // loglevel.warn(arguments);
-    // (<any>window).logStorage && (<any>window).logStorage.log('warn', args);
     (<any>window).logUpload && (<any>window).wsTransport.sendLog(args);
   }
   
@@ -125,8 +116,6 @@ export class Logger{
     if(getParameters().logLevel <= loglevels.ERROR) {
       logger._log('error', args);
     }
-    // loglevel.error(arguments);
-    // (<any>window).logStorage && (<any>window).logStorage.log('error', args);
     (<any>window).logUpload && (<any>window).wsTransport.sendLog(args);
   }
 

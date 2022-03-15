@@ -9,7 +9,6 @@ import {
   SDKRef,
   StatsReportOptions
 } from "../../types";
-// import { platform } from "../../util/platform";
 import { SDK_VERSION } from '../../Config'
 import { generateUUID } from '../../util/rtcUtil/utilsId';
 import isEmpty from "../../util/rtcUtil/isEmpty";

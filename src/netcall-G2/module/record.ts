@@ -1,11 +1,10 @@
 import { EventEmitter } from 'eventemitter3'
 import {
-  AdapterRef, ILogger,
+  ILogger,
   RecordInitOptions,
   RecordStartOptions,
   RecordStatus,
 } from "../types";
-import {MediaHelper} from "./media";
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
 import {LocalStream} from "../api/localStream";

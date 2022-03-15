@@ -20,7 +20,6 @@ import {
   ReportParamSetClientRole
 } from "../interfaces/ApiReportParam";
 import {EncryptionMode, EncryptionModes, encryptionModeToInt} from "../module/encryption";
-import { logController } from '../util/log/upload'
 import RtcError from '../util/error/rtcError';
 import ErrorCode  from '../util/error/errorCode';
 import { SDK_VERSION, BUILD } from "../Config";
@@ -437,22 +436,8 @@ class Client extends Base {
         uid: this.getUid()
       }, null, ' ')
     })
-    // invoke uploadLog() if uploadLogEnabled is true
-    // if(Number(sessionStorage.getItem('uploadLogEnabled'))) {
-    //   this.upLoadParam = {
-    //     uploadAppkey: this.adapterRef.channelInfo.appkey,
-    //     uploadUid: this.adapterRef.channelInfo.uid,
-    //     uploadCid: this.adapterRef.channelInfo.cid
-    //   }
-    //   setTimeout(this.startUpload, 3000, this.upLoadParam);
-    // }
 
   }
-
-  // startUpload(upLoadParam:any) {
-  //   logController.startUploadLog(upLoadParam);
-  // }
-
 
   async leaveRts () {
     this.logger.log('离开频道')

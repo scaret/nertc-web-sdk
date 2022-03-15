@@ -6,7 +6,7 @@ import { AuidoMixingState } from '../constant/state'
 import { ajax } from '../util/ajax'
 import {checkExists, isExistOptions, checkValidInteger} from "../util/param";
 import {
-  AdapterRef, AudioMixingOptions,
+  AudioMixingOptions,
   GetStreamConstraints,
   MediaHelperOptions, MediaTypeShort, MixAudioConf, AudioEffectOptions, MediaTypeAudio, ILogger, EncodingParameters,
 } from "../types";

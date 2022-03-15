@@ -1,8 +1,7 @@
 import { EventEmitter } from 'eventemitter3'
 import {
   RTSTransportOptions,
-  AdapterRef,
-  SDKRef, SnapshotOptions
+  AdapterRef
 } from "../types"
 import RtcError from '../util/error/rtcError';
 import ErrorCode  from '../util/error/errorCode';

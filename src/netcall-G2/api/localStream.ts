@@ -17,17 +17,16 @@ import {
   SnapshotOptions,
   LocalStreamOptions, StreamPlayOptions,
   VideoProfileOptions,
-  AudioEffectOptions, EncodingParameters, GetStreamConstraints, Client as IClient
+  AudioEffectOptions, GetStreamConstraints, Client as IClient
 } from "../types";
 import {MediaHelper} from "../module/media";
-import {checkExists, isExistOptions, checkValidInteger} from "../util/param";
+import {isExistOptions} from "../util/param";
 
 import {
   ReportParamEnableEarback,
   ReportParamSetExternalAudioRender,
   ReportParamSwitchCamera
 } from "../interfaces/ApiReportParam";
-import {AuidoMixingState} from "../constant/state";
 import RtcError from '../util/error/rtcError';
 import ErrorCode  from '../util/error/errorCode';
 import BigNumber from 'bignumber.js'
