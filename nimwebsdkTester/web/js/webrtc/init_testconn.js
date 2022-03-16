@@ -115,6 +115,106 @@ async function unloadConnection(id) {
   clients[id] = null
 }
 
+async function testStateless(){
+  const endpoint = "https://wecan-api.netease.im"
+  const appkey = "4c89d65432637918a7d603e402705b21"
+  const clientId = "1"
+  const streamName = "derek" + Date.now() % 10000
+  const direction = "send"
+  const update = false
+  
+  const pc = new RTCPeerConnection()
+  window.statelessPC = pc;
+
+  pc.onnegotiationneeded = async function(){
+    console.log("onnegotiationneeded ", streamName, direction)
+    let offer = await pc.createOffer()
+    await pc.setLocalDescription(offer)
+    console.debug(offer.sdp)
+    console.log("发起HTTP请求", direction)
+    // https://office.netease.com/doc/?identity=82a89a50e99a43879cd220f5cddaf343
+    const resp = await axios.post(`${endpoint}/v1/rtc/${direction === "send" ? "publish" : "play"}`, {
+      appkey: appkey,
+      token: "",
+      streamName,
+      clientId,
+      update,
+      jsep: offer,
+      appData: {
+        videoCodecOnly: "h264",
+      },
+    })
+    console.log(streamName, direction, resp)
+    const data = typeof resp.data === "string" ? JSON.parse(resp.data) : resp.data;
+    document.getElementById(direction + "TraceId").innerText = data.traceId
+
+    if (data?.jsep?.sdp){
+      console.debug(data.jsep.sdp)
+      data.jsep.type = "answer"
+      const answer = new RTCSessionDescription(data.jsep)
+      try{
+        await pc.setRemoteDescription(answer)
+      }catch(e){
+        document.getElementById(direction + "State").innerText = e.name + " " + e.message
+        throw(e)
+      }
+      if (direction === "send"){
+        console.log("发送端连接建立成功")
+      }
+    }else{
+      console.error("请求失败:", data)
+      document.getElementById(direction + "State").innerText = JSON.stringify(data)
+    }
+  }
+  pc.onsignalingstatechange = (evt)=>{
+    console.log("onsignalingstatechange", pc.signalingState)
+    document.getElementById(direction + "SignalingState").innerText = "signalingState:" + pc.signalingState
+  }
+  const p = new Promise((resolve)=>{
+    let timer
+    pc.oniceconnectionstatechange = async ()=>{
+      clearTimeout(timer)
+      document.getElementById(direction + "IceConnectionState").innerText = "signalingState:" + pc.iceConnectionState
+      if (pc.iceConnectionState === "closed"){
+        console.error("testStateless结束")
+        resolve(pc.iceConnectionState)
+        return
+      }else{
+        timer = setTimeout(pc.oniceconnectionstatechange, 2000)
+      }
+      console.log(pc.iceConnectionState)
+      if (pc.iceConnectionState === "connected"){
+        let networkTypes = []
+        let candidates = []
+        const stats = await pc.getStats()
+        stats.forEach((stat)=>{
+          if (stat.networkType){
+            networkTypes.push(stat.networkType + " " + stat.protocol)
+          }
+          if (stat.type === "local-candidate"){
+            console.log(stat.type, stat.id, stat)
+            candidates.push(stat)
+          }
+        })
+        document.getElementById("networkType").innerText = networkTypes.join("/")
+        document.getElementById("statelessCandidateInfo").innerText = JSON.stringify(candidates, null, 2)
+      }
+    }
+  })
+  // 准备本地流
+  if (!rtc.videoSource){
+    rtc.videoSource = fakeMediaDevices.getFakeMedia({video: true}).video.track
+  }
+  const videoSource = rtc.videoSource
+  pc.addTrack(videoSource)
+  const timeout = parseInt(document.getElementById("connTime").value) * 1000
+  console.log("timeout", timeout)
+  setTimeout(()=>{
+    pc.close()
+  }, timeout)
+  return p
+}
+
 async function testConnection(id){
   if (clients[id]){
     await clients[id].leave()
@@ -273,6 +373,9 @@ async function getIceCandidatePair(pc){
     if (localCandidate){
       if (localCandidate.relayProtocol){
         info.result += `【relay ${localCandidate.relayProtocol}】`
+      }
+      if (localCandidate.networkType && localCandidate.networkType !== "wifi"){
+        info.result += `【${localCandidate.networkType}】`
       }
       info.result += `|local:${localCandidate.protocol} `
       info.result += `${localCandidate.address}:${localCandidate.port} ${localCandidate.candidateType} ${localCandidate.networkType}`

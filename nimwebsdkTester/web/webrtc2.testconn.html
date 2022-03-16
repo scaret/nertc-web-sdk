@@ -104,10 +104,21 @@
 </label>
 <br/>
 <button id="addConnection" onclick="addConnection()">增加</button>
+<br/>
+<br/>
+<button id="startStateless" onclick="testStateless()">无信令测试</button>
+<div id="sendTraceId"></div>
+<div id="sendState"></div>
+<div id="sendSignalingState"></div>
+<div id="sendIceConnectionState"></div>
+<h1 id="networkType"></h1>
+<pre id="statelessCandidateInfo"></pre>
+
 
 <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14"></script>
 <script src="./js/nim/NIM_Web_NERTC.js"></script>
 <script src="./js/lib/fakeMediaDevices.js"></script>
+<script src="./js/lib/axios.min.js"></script>
 <script src="./js/webrtc/init_testconn.js"></script>
 </body>
 </html>
