@@ -60,6 +60,11 @@ function formatServer (server){
   server.iceConnectionState = ""
   server.candidateSummary = ""
   server.candidatePairInfo = ""
+  server.channelName = ""
+  server.p2s = {
+    speed: -1,
+    rtt: -1,
+  }
 
   server.localAddress = ""
   // server.localCandidateType = ""
@@ -79,6 +84,11 @@ function formatServer (server){
 let vueApp = null
 
 const main = async ()=>{
+  if (!rtc.videoSource){
+    rtc.videoSource = fakeMediaDevices.getFakeMedia({video: {
+        type: "randomcolor",
+      }}).video.track
+  }
   vueApp = new Vue({
     data: {
       enableIce: false,
@@ -180,7 +190,7 @@ async function testStateless(){
         resolve(pc.iceConnectionState)
         return
       }else{
-        timer = setTimeout(pc.oniceconnectionstatechange, 2000)
+        timer = setTimeout(pc.oniceconnectionstatechange, 3000)
       }
       console.log(pc.iceConnectionState)
       if (pc.iceConnectionState === "connected"){
@@ -203,7 +213,9 @@ async function testStateless(){
   })
   // 准备本地流
   if (!rtc.videoSource){
-    rtc.videoSource = fakeMediaDevices.getFakeMedia({video: true}).video.track
+    rtc.videoSource = fakeMediaDevices.getFakeMedia({video: {
+      type: "randomcolor",
+      }}).video.track
   }
   const videoSource = rtc.videoSource
   pc.addTrack(videoSource)
@@ -245,11 +257,13 @@ async function testConnection(id){
   
   rtc.client = client
   clients[id] = client
+  const channelName = "testconn" + Math.floor(Math.random() * 9000 + 1000)
   const joinOptions = {
     wssArr: [conn.address],
-    channelName: "derek3222" + Math.random(),
-    uid: id,
+    channelName: channelName,
+    uid: 1,
   }
+  conn.channelName = channelName
   
   const start = Date.now()
   try{
@@ -295,6 +309,9 @@ async function testConnection(id){
     }
     const info = await getIceCandidatePair(sendPC);
     conn.candidateSummary = info.result
+    conn.p2s.rtt = info.rtt
+    conn.p2s.speed = info.speed
+    console.error("info", info)
     conn.candidatePairInfo = JSON.stringify(info.pair, null, 2)
     conn.localAddress = JSON.stringify(info.local, null, 2)
     conn.remoteAddress = JSON.stringify(info.remote, null, 2)
@@ -306,7 +323,9 @@ async function testConnection(id){
   
   // 准备本地流
   if (!rtc.videoSource){
-    rtc.videoSource = fakeMediaDevices.getFakeMedia({video: true}).video.track
+    rtc.videoSource = fakeMediaDevices.getFakeMedia({video: {
+      type: "randomcolor",
+      }}).video.track
   }
   const videoSource = rtc.videoSource
   console.log("videoSource", videoSource)
@@ -316,21 +335,34 @@ async function testConnection(id){
     client,
   })
   await localStream.init(localStream)
+  const options = {
+    mediaType: "video",
+    streamType: "high",
+    maxBitrate: 5000,
+  }
+  console.log("上行视频编码设置", options)
+  localStream.setVideoEncoderConfiguration(options)
   // 开始推流
   const publishStart = Date.now()
   await client.publish(localStream)
 }
 
+let infoHistory = []
+
 async function getIceCandidatePair(pc){
   const info = {
+    ts: Date.now(),
     result: "",
     transport: null,
     local: [],
     remote: [],
+    rtt: -1,
+    speed: -1,
     pair: null
   }
   const stats = await pc.getStats(null)
   const statsArr = []
+  rtc.statsArr = statsArr
   const transports = []
   stats.forEach((item, key)=>{
     // console.error(item.type, item.id, item)
@@ -367,6 +399,25 @@ async function getIceCandidatePair(pc){
   })
   if (info.pair){
     const candidatePair = info.pair
+    const history = infoHistory.find((i)=>{
+      console.error(i.pair?.id, info.pair.id)
+      return i.pair?.id === info.pair.id
+    })
+    info.totalRoundTripTime = candidatePair.totalRoundTripTime
+    info.responsesReceived = candidatePair.responsesReceived
+    info.bytesSent = candidatePair.bytesSent
+    if (history){
+      if(info.responsesReceived - history.responsesReceived > 0){
+        info.rtt = Math.floor((info.totalRoundTripTime - history.totalRoundTripTime) / (info.responsesReceived - history.responsesReceived) * 1000)
+      }else{
+        info.rtt = history.rtt
+      }
+      if (info.bytesSent && history.bytesSent){
+        // kbps
+        info.speed = (info.bytesSent - history.bytesSent) * 8 / (info.ts - history.ts)
+      }
+    }
+    
     const localCandidate = statsArr.find((stats)=>{
       return stats.id === candidatePair.localCandidateId
     })
@@ -393,6 +444,10 @@ async function getIceCandidatePair(pc){
     }
   }else{
     info.result += `无法找到candidatePair`
+  }
+  infoHistory.unshift(info)
+  if (infoHistory.length > 100){
+    infoHistory.pop()
   }
   return info
 }

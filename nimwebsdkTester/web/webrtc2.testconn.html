@@ -15,7 +15,7 @@
   <h2>测试配置</h2>
   <label>
     单台服务器测试时间
-    <input type="number" id="connTime" value="5">秒
+    <input type="number" id="connTime" value="30">秒
   </label>
   <br/>
   <label>
@@ -62,10 +62,15 @@
           Join结果：{{conn.joinResult}}。
         </li>
         <li v-if="conn.status !== 'UNINIT'">
+          房间名称：{{conn.channelName}} 。
           WebSocket建立时间：{{conn.connMs}}毫秒。
           Join成功时间：{{conn.joinMs}}毫秒。
           Ice建立时间：{{conn.iceConnectMs}}毫秒。
           连接持续时间：{{conn.lastMs}}毫秒。
+        </li>
+        <li>
+          网速：{{Math.floor(conn.p2s.speed) }} kbps。
+          延时：{{conn.p2s.rtt}}ms
         </li>
         <li v-if="conn.status !== 'UNINIT'">
           {{conn.candidateSummary}}
