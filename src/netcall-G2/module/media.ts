@@ -99,8 +99,8 @@ class MediaHelper extends EventEmitter {
     screenVideoTrackLow: null,
     screenVideoTrack: null,
     screenVideoSource: null,
-    captureConfig:{high: {width: 640, height: 480, frameRate: 15}},
-    encoderConfig: {high: {maxBitrate: 400000}, low: {maxBitrate: 200000}},
+    captureConfig:{high: {width: 1920, height: 1080, frameRate: 5}},
+    encoderConfig: {high: {maxBitrate: 1500000}, low: {maxBitrate: 200000}},
   };
   public screenAudio: {
     readonly screenAudioStream: MediaStream,

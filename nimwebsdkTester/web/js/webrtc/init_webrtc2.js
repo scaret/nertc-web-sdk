@@ -1355,23 +1355,43 @@ function initLocalStream() {
     throw e;
   }
   updateLocalWatermark()
-  const videoQuality = $('#sessionConfigVideoQuality').val()
+  const resolution = $('#sessionConfigVideoQuality').val()
   const frameRate = $('#sessionConfigVideoFrameRate').val()
-  rtc.localStream.setVideoProfile({
-    resolution: NERTC.VIDEO_QUALITY[videoQuality],
-    frameRate: NERTC.VIDEO_FRAME_RATE[frameRate]
-  })
+  const videoProfile = {}
+  if (resolution){
+    videoProfile.resolution = NERTC.VIDEO_QUALITY[resolution]
+  }
+  if (frameRate){
+    videoProfile.frameRate = NERTC.VIDEO_FRAME_RATE[frameRate]
+  }
+  if (resolution || frameRate){
+    rtc.localStream.setVideoProfile(videoProfile)
+    console.log("setVideoProfile", videoProfile)
+  }else{
+    console.log("setVideoProfile 没有设置")
+  }
 
   const audioProfile = $('#sessionConfigAudioProfile').val();
   if (audioProfile){
     rtc.localStream.setAudioProfile(audioProfile)
   }
-  const screenProfile = $('#sessionConfigScreenProfile').val()
+  
+  const screenProfile = {}
+  const screenResolution = $('#sessionConfigScreenProfile').val()
+  if (screenResolution){
+    screenProfile.resolution = NERTC.VIDEO_QUALITY[screenResolution]
+  }
   const screenFrameRate = $('#sessionConfigScreenFrameRate').val()
-  rtc.localStream.setScreenProfile({
-    resolution: NERTC.VIDEO_QUALITY[screenProfile],
-    frameRate: NERTC.VIDEO_FRAME_RATE[screenFrameRate]
-  })
+  if (screenFrameRate){
+    screenProfile.frameRate = NERTC.VIDEO_FRAME_RATE[screenFrameRate]
+  }
+  if (screenResolution || screenFrameRate){
+    rtc.localStream.setScreenProfile(screenProfile)
+    console.log("setScreenProfile", screenProfile)
+  }else{
+    console.log("setScreenProfile 没有配置")
+  }
+  
   rtc.localStream.init().then(async()=>{
     const playOptions = $('#localPlayOptionsEnabled').prop('checked') ? {
       audio: $("#localPlayOptionsAudio").prop('checked'),
@@ -1853,12 +1873,23 @@ $('#playCamera').on('click', () => {
     assertLocalStream()
     return
   }
-  const videoQuality = $('#sessionConfigVideoQuality').val()
+
+  const resolution = $('#sessionConfigVideoQuality').val()
   const frameRate = $('#sessionConfigVideoFrameRate').val()
-  rtc.localStream.setVideoProfile({
-    resolution: NERTC.VIDEO_QUALITY[videoQuality],
-    frameRate: NERTC.VIDEO_FRAME_RATE[frameRate],
-  })
+  const videoProfile = {}
+  if (resolution){
+    videoProfile.resolution = NERTC.VIDEO_QUALITY[resolution]
+  }
+  if (frameRate){
+    videoProfile.frameRate = NERTC.VIDEO_FRAME_RATE[frameRate]
+  }
+  if (resolution || frameRate){
+    rtc.localStream.setVideoProfile(videoProfile)
+    console.log("setVideoProfile", videoProfile)
+  }else{
+    console.log("setVideoProfile 没有设置")
+  }
+
   rtc.localStream.open({
     type: 'video',
     deviceId: $('#camera').val(),
@@ -1975,12 +2006,22 @@ $('#playScreen').on('click', () => {
     return
   }
 
-  const screenProfile = $('#sessionConfigScreenProfile').val()
+  const screenProfile = {}
+  const screenResolution = $('#sessionConfigScreenProfile').val()
+  if (screenResolution){
+    screenProfile.resolution = NERTC.VIDEO_QUALITY[screenResolution]
+  }
   const screenFrameRate = $('#sessionConfigScreenFrameRate').val()
-  rtc.localStream.setScreenProfile({
-    resolution: NERTC.VIDEO_QUALITY[screenProfile],
-    frameRate: NERTC.VIDEO_FRAME_RATE[screenFrameRate]
-  })
+  if (screenFrameRate){
+    screenProfile.frameRate = NERTC.VIDEO_FRAME_RATE[screenFrameRate]
+  }
+  if (screenResolution || screenFrameRate){
+    rtc.localStream.setScreenProfile(screenProfile)
+    console.log("setScreenProfile", screenProfile)
+  }else{
+    console.log("setScreenProfile 没有配置")
+  }
+  
   rtc.localStream.open({
     type: 'screen',
     sourceId: getUrlVars().sourceId
@@ -2042,12 +2083,22 @@ $('#playScreenAudio').on('click', () => {
     return
   }
 
-  const screenProfile = $('#sessionConfigScreenProfile').val()
+  const screenProfile = {}
+  const screenResolution = $('#sessionConfigScreenProfile').val()
+  if (screenResolution){
+    screenProfile.resolution = NERTC.VIDEO_QUALITY[screenResolution]
+  }
   const screenFrameRate = $('#sessionConfigScreenFrameRate').val()
-  rtc.localStream.setScreenProfile({
-    resolution: NERTC.VIDEO_QUALITY[screenProfile],
-    frameRate: NERTC.VIDEO_FRAME_RATE[screenFrameRate]
-  })
+  if (screenFrameRate){
+    screenProfile.frameRate = NERTC.VIDEO_FRAME_RATE[screenFrameRate]
+  }
+  if (screenResolution || screenFrameRate){
+    rtc.localStream.setScreenProfile(screenProfile)
+    console.log("setScreenProfile", screenProfile)
+  }else{
+    console.log("setScreenProfile 没有配置")
+  }
+  
   rtc.localStream.open({
     type: 'screen',
     screenAudio: true,
@@ -2216,25 +2267,6 @@ $('#camera').on('change', () => {
     console.warn('切换camera失败： ', err)
   })
 })
-
-//重新设置分辨率
-$('#sessionConfigVideoQuality').on('change', () => {
-  const videoQuality = $('#sessionConfigVideoQuality').val()
-  window.rtc.localStream && window.rtc.localStream.setVideoProfile({
-    quality: NERTC.VIDEO_QUALITY[videoQuality]
-  })
-  console.log('change video quality ', videoQuality)
-})
-
-//重新设置帧率
-$('#sessionConfigVideoFrameRate').on('change', () => {
-  const frameRate = $('#sessionConfigVideoFrameRate').val()
-  window.rtc.localStream && window.rtc.localStream.setVideoProfile({
-    frameRate: NERTC.VIDEO_FRAME_RATE[frameRate]
-  })
-  console.log('change frame rate ', frameRate)
-})
-
 
 
 /** 
