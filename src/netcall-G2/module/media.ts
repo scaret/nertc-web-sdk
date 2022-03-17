@@ -82,7 +82,7 @@ class MediaHelper extends EventEmitter {
     cameraConstraint: {video: {}},
     videoSource: null,
     captureConfig:{high: {width: 640, height: 480, frameRate: 15}},
-    encoderConfig: {high: {maxBitrate: 300000}, low: {maxBitrate: 100000}},
+    encoderConfig: {high: {maxBitrate: 800000}, low: {maxBitrate: 100000}},
   };
   public screen: {
     // screenVideoStream中的track可能是screenVideoTrack或者screenVideoSource
