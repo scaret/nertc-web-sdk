@@ -89,6 +89,7 @@ const main = async ()=>{
         type: "randomcolor",
       }}).video.track
   }
+  rtc.videoSource.contentHint = "motion"
   vueApp = new Vue({
     data: {
       enableIce: false,
