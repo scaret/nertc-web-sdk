@@ -391,14 +391,17 @@ class Mediasoup extends EventEmitter {
         }else if (mediaTypeShort === "screen" && this.adapterRef.channelInfo.screenLow){
           simulcastEnable = true
         }
-        const iceUfragReg = offer.sdp.match(/a=ice-ufrag:([0-9a-zA-Z#=+-_\/\\\\]+)/)
+        const iceUfragRegLocal = offer.sdp.match(/a=ice-ufrag:([0-9a-zA-Z#=+-_\/\\\\]+)/)
+        if(!iceUfragRegLocal){
+          this.adapterRef.logger.error(offer.sdp)
+          this.adapterRef.logger.error("找不到 iceUfragRegLocal")
+        }
         try {
           let producerData = {
             requestId     :  `${Math.ceil(Math.random() * 1e9)}`,
             kind       :  kind,
             rtpParameters   :  rtpParameters,
-            iceUfrag : iceUfragReg.length ? iceUfragReg[1] : `${this.adapterRef.channelInfo.cid}#${this.adapterRef.channelInfo.uid}#send`,
-            //transportId: '',
+            iceUfrag : iceUfragRegLocal[1],
             //mediaProfile: [{'ssrc':123, 'res':"320*240", 'fps':30, 'spatialLayer':0, 'maxBitrate':1000}],
             externData    : {
               producerInfo  : {
@@ -1027,10 +1030,10 @@ class Mediasoup extends EventEmitter {
     } else {
       mid = `${mid}`
     }
-    /*const iceUfragReg = offer.sdp.match(/a=ice-ufrag:([0-9a-zA-Z=#+-_\/\\\\]+)/)
-    if (!iceUfragReg){
-      throw new Error("iceUfragReg is null");
-    }*/
+    const iceUfragRegRemote = offer.sdp.match(/a=ice-ufrag:([0-9a-zA-Z=#+-_\/\\\\]+)/)
+    if (!iceUfragRegRemote){
+      throw new Error("iceUfragRegRemote is null");
+    }
     let subUid = uid
     if (this.adapterRef.channelInfo.uidType === 'string') {
       //@ts-ignore
@@ -1045,7 +1048,7 @@ class Mediasoup extends EventEmitter {
       preferredSpatialLayer,
       mid,
       pause: false,
-      iceUfrag: /*iceUfragReg.length ? iceUfragReg[1] : */`${this.adapterRef.channelInfo.cid}#${this.adapterRef.channelInfo.uid}#recv`,
+      iceUfrag: iceUfragRegRemote[1],
     };
     
     this.adapterRef.instance.apiEventReport('setFunction', {

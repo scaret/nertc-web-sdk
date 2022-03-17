@@ -113,4 +113,5 @@ export interface SignalJoinRes extends SignalResBase{
     codecs: any[],
     headerExtensions: any[],
   };
+  supportRandomIceUfrag?: boolean;
 }

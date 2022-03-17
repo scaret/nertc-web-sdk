@@ -251,9 +251,6 @@ export class Chrome74 extends HandlerInterface
     {
       const offer = await this._pc.createOffer({ iceRestart: true });
       
-      if (offer.sdp.indexOf(`a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#`) < 0) {
-        offer.sdp = offer.sdp.replace(/a=ice-ufrag:([0-9a-zA-Z=+-_\/\\\\]+)/g, `a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#${this._direction}`)
-      }
       let localSdpObject = sdpTransform.parse(offer.sdp);
       localSdpObject.media.forEach(media => {
         if (media.type === 'audio' && this._direction === 'send' && media.ext && media.rtcpFb) {
@@ -373,9 +370,6 @@ export class Chrome74 extends HandlerInterface
     Logger.debug(prefix, 'send() | [transceivers:%d]', this._pc.getTransceivers().length);
     
     let offer = await this._pc.createOffer();
-    if (offer.sdp.indexOf(`a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#`) < 0) {
-      offer.sdp = offer.sdp.replace(/a=ice-ufrag:([0-9a-zA-Z=+-_\/\\\\]+)/g, `a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#send`)
-    }
     let localSdpObject = sdpTransform.parse(offer.sdp);
     let dtlsParameters:DtlsParameters|undefined = undefined;
     let offerMediaObject, offerMediaObjectLow;
@@ -626,10 +620,6 @@ export class Chrome74 extends HandlerInterface
 
     const offer = await this._pc.createOffer();
 
-    /////
-    if (offer.sdp.indexOf(`a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#`) < 0) {
-      offer.sdp = offer.sdp.replace(/a=ice-ufrag:([0-9a-zA-Z=+-\/\\\\]+)/g, `a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#send`)
-    }
     let localSdpObject = sdpTransform.parse(offer.sdp);
     localSdpObject.media.forEach(media => {
       if (media.type === 'audio' && media.ext && media.rtcpFb) {
@@ -800,10 +790,7 @@ export class Chrome74 extends HandlerInterface
         Logger.debug(prefix, 'prepareLocalSdp() 添加一个M行')
         transceiver = this._pc.addTransceiver(kind, { direction: "recvonly" });
         offer = await this._pc.createOffer();
-        if (offer.sdp.indexOf(`a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#`) < 0) {
-          offer.sdp = offer.sdp.replace(/a=ice-ufrag:([0-9a-zA-Z=+-_\/\\\\]+)/g, `a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#recv`)
-          offer.sdp = offer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`)
-        }
+        offer.sdp = offer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`)
         Logger.debug(prefix, 'prepareLocalSdp() | calling pc.setLocalDescription()');
         await this._pc.setLocalDescription(offer);
       }
@@ -899,10 +886,8 @@ export class Chrome74 extends HandlerInterface
         this._remoteSdp!.disableMediaSection(`${item.mid}`)
       })
     }
-    if (offer.sdp.indexOf(`a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#`) < 0) {
-      offer.sdp = offer.sdp.replace(/a=ice-ufrag:([0-9a-zA-Z=+-_\/\\\\]+)/g, `a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#recv`)
-      offer.sdp = offer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`)
-    }
+    offer.sdp = offer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`)
+    
     this._remoteSdp!.receive(
       {
         mid                : localId,
@@ -966,9 +951,6 @@ export class Chrome74 extends HandlerInterface
     这里不使用createOffer的原因是：创建consumer的时候，prepareLocalSdp接口的使用在mediasoup.js中，该方法不受_awaitQueue队列控制，做不到完全的同步策略  
     */
     const offer = this._pc.localDescription
-    if (offer.sdp.indexOf(`a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#`) < 0) {
-      offer.sdp = offer.sdp.replace(/a=ice-ufrag:([0-9a-zA-Z=+-_\/\\\\]+)/g, `a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#recv`)
-    }
     Logger.debug(prefix, 'stopReceiving() | calling pc.setLocalDescription()');
     await this._pc.setLocalDescription(offer);
     const answer = { type: 'answer', sdp: this._remoteSdp!.getSdp() };
