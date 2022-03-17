@@ -316,7 +316,7 @@ async function testConnection(id){
       conn.p2s.speed = info.speed
     }
     conn.p2s.speedAverage = info.speedAverage
-    console.error("info", info)
+    // console.error("info", info)
     conn.candidatePairInfo = JSON.stringify(info.pair, null, 2)
     conn.localAddress = JSON.stringify(info.local, null, 2)
     conn.remoteAddress = JSON.stringify(info.remote, null, 2)
@@ -407,12 +407,12 @@ async function getIceCandidatePair(pc){
   if (info.pair){
     const candidatePair = info.pair
     const history = infoHistory.find((i)=>{
-      console.error(i.pair?.id, info.pair.id)
+      // console.error(i.pair?.id, info.pair.id)
       return i.pair?.id === info.pair.id
     })
     infoHistory.reverse()
     const historyEarly = infoHistory.find((i)=>{
-      console.error(i.pair?.id, info.pair.id)
+      // console.error(i.pair?.id, info.pair.id)
       return i.pair?.id === info.pair.id
     })
     infoHistory.reverse()
