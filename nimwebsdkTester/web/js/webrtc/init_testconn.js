@@ -311,7 +311,11 @@ async function testConnection(id){
     const info = await getIceCandidatePair(sendPC);
     conn.candidateSummary = info.result
     conn.p2s.rtt = info.rtt
-    conn.p2s.speed = info.speed
+    conn.p2s.rttAverage = info.rttAverage
+    if (info.speed > 0){
+      conn.p2s.speed = info.speed
+    }
+    conn.p2s.speedAverage = info.speedAverage
     console.error("info", info)
     conn.candidatePairInfo = JSON.stringify(info.pair, null, 2)
     conn.localAddress = JSON.stringify(info.local, null, 2)
@@ -359,6 +363,8 @@ async function getIceCandidatePair(pc){
     remote: [],
     rtt: -1,
     speed: -1,
+    rttAverage: -1,
+    speedAverage: -1,
     pair: null
   }
   const stats = await pc.getStats(null)
@@ -404,9 +410,17 @@ async function getIceCandidatePair(pc){
       console.error(i.pair?.id, info.pair.id)
       return i.pair?.id === info.pair.id
     })
+    infoHistory.reverse()
+    const historyEarly = infoHistory.find((i)=>{
+      console.error(i.pair?.id, info.pair.id)
+      return i.pair?.id === info.pair.id
+    })
+    infoHistory.reverse()
     info.totalRoundTripTime = candidatePair.totalRoundTripTime
     info.responsesReceived = candidatePair.responsesReceived
     info.bytesSent = candidatePair.bytesSent
+    info.rttAverage = Math.floor((info.totalRoundTripTime) / (info.responsesReceived) * 1000)
+    
     if (history){
       if(info.responsesReceived - history.responsesReceived > 0){
         info.rtt = Math.floor((info.totalRoundTripTime - history.totalRoundTripTime) / (info.responsesReceived - history.responsesReceived) * 1000)
@@ -417,6 +431,10 @@ async function getIceCandidatePair(pc){
         // kbps
         info.speed = (info.bytesSent - history.bytesSent) * 8 / (info.ts - history.ts)
       }
+    }
+    if (historyEarly){
+      // 最早记录
+      info.speedAverage = (info.bytesSent - historyEarly.bytesSent) * 8 / (info.ts - historyEarly.ts)
     }
     
     const localCandidate = statsArr.find((stats)=>{

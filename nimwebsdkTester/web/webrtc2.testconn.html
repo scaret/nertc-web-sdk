@@ -70,7 +70,9 @@
         </li>
         <li>
           网速：{{Math.floor(conn.p2s.speed) }} kbps。
-          延时：{{conn.p2s.rtt}}ms
+          延时：{{conn.p2s.rtt}}ms。
+          平均网速：{{Math.floor(conn.p2s.speedAverage) }} kbps。
+          平均延时：{{conn.p2s.rttAverage}}ms。
         </li>
         <li v-if="conn.status !== 'UNINIT'">
           {{conn.candidateSummary}}
