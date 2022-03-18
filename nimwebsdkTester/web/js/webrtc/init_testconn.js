@@ -121,14 +121,22 @@ async function unloadConnection(id) {
   
   const conn = CONNECTIONS.find((c)=> c.id === id)
   conn.status = "ENDED"
-  if (clients[id]){
+  if (clients[id + "_send"]){
     try{
-      await clients[id].leave()
+      await clients[id + "_send"].leave()
     }catch(e){
       console.error(e)
     }
+    clients[id + "_send"] = null
   }
-  clients[id] = null
+  if (clients[id + "_recv"]){
+    try{
+      await clients[id + "_recv"].leave()
+    }catch(e){
+      console.error(e)
+    }
+    clients[id + "+recv"] = null
+  }
 }
 
 async function testStateless(){
