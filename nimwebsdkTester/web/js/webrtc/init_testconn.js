@@ -61,9 +61,11 @@ function formatServer (server){
   server.candidateSummary = ""
   server.candidatePairInfo = ""
   server.channelName = ""
+  server.streamAddedMs = -1
   server.p2s = {
     speed: -1,
     rtt: -1,
+    lost: -1
   }
 
   server.localAddress = ""
@@ -87,6 +89,8 @@ const main = async ()=>{
   if (!rtc.videoSource){
     rtc.videoSource = fakeMediaDevices.getFakeMedia({video: {
         type: "randomcolor",
+        width: 640,
+        height: 480,
       }}).video.track
   }
   rtc.videoSource.contentHint = "motion"
@@ -95,6 +99,7 @@ const main = async ()=>{
       enableIce: false,
       mode: "uninit",
       CONNECTIONS,
+      addresses: [],
     },
     methods: {
       testConnection: testConnection,
@@ -213,11 +218,11 @@ async function testStateless(){
     }
   })
   // 准备本地流
-  if (!rtc.videoSource){
-    rtc.videoSource = fakeMediaDevices.getFakeMedia({video: {
-      type: "randomcolor",
-      }}).video.track
-  }
+  // if (!rtc.videoSource){
+  //   rtc.videoSource = fakeMediaDevices.getFakeMedia({video: {
+  //     type: "randomcolor",
+  //     }}).video.track
+  // }
   const videoSource = rtc.videoSource
   pc.addTrack(videoSource)
   const timeout = parseInt(document.getElementById("connTime").value) * 1000
@@ -229,13 +234,20 @@ async function testStateless(){
 }
 
 async function testConnection(id){
-  if (clients[id]){
+  if (clients[id + "_send"]){
     await clients[id].leave()
+  }
+  if (clients[id + "_recv"]){
+    await clients[id + "_recv"].leave()
   }
   const conn = CONNECTIONS.find((c)=> c.id === id)
   conn.status = "INITING"
   console.log("testConnection")
-  const client = NERTC.createClient({
+  const clientSend = NERTC.createClient({
+    appkey: WebRTC2.ENV === "production" ? "6acf024e190215b685905444b6e57dd7" : "eca23f68c66d4acfceee77c200200359",
+    debug: true
+  })
+  const clientRecv = NERTC.createClient({
     appkey: WebRTC2.ENV === "production" ? "6acf024e190215b685905444b6e57dd7" : "eca23f68c66d4acfceee77c200200359",
     debug: true
   })
@@ -248,29 +260,44 @@ async function testConnection(id){
       credential: document.getElementById("iceCredential").value,
     }
     if (iceServer.urls.length){
-      client.adapterRef.testConf.iceServers = [iceServer]
-      client.adapterRef.testConf.iceTransportPolicy = document.getElementById("iceTransportPolicy").value
-      console.warn("启用Ice", client.adapterRef.testConf.iceServers.length, client.adapterRef.testConf.iceServers, client.adapterRef.testConf.iceTransportPolicy)
+      clientSend.adapterRef.testConf.iceServers = [iceServer]
+      clientSend.adapterRef.testConf.iceTransportPolicy = document.getElementById("iceTransportPolicy").value
+      clientRecv.adapterRef.testConf.iceServers = [iceServer]
+      clientRecv.adapterRef.testConf.iceTransportPolicy = document.getElementById("iceTransportPolicy").value
+      console.warn("启用Ice",
+        clientSend.adapterRef.testConf.iceServers.length,
+        clientSend.adapterRef.testConf.iceServers,
+        clientSend.adapterRef.testConf.iceTransportPolicy
+      )
     }else{
       alert("没有iceServer")
     }
   }
   
-  rtc.client = client
-  clients[id] = client
+  rtc.clientSend = clientSend
+  rtc.clientRecv = clientRecv
+  clients[id + "_send"] = clientSend
+  clients[id + "_recv"] = clientRecv
+  
   const channelName = "testconn" + Math.floor(Math.random() * 9000 + 1000)
-  const joinOptions = {
+  conn.channelName = channelName
+  
+  const start = Date.now()
+  const joinOptionsSend = {
     wssArr: [conn.address],
     channelName: channelName,
     uid: 1,
   }
-  conn.channelName = channelName
-  
-  const start = Date.now()
+  const joinOptionsRecv = {
+    wssArr: [conn.address],
+    channelName: channelName,
+    uid: 2,
+  }
   try{
-    await client.join(joinOptions)
+    await clientSend.join(joinOptionsSend)
+    await clientRecv.join(joinOptionsRecv)
     conn.status = "SUCCESS"
-    conn.joinMs = Date.now() - (client.adapterRef._signalling?._protoo?._data?.openTs || start)
+    conn.joinMs = Date.now() - (clientSend.adapterRef._signalling?._protoo?._data?.openTs || start)
     conn.joinResult = "SUCCESS"
   }catch(e){
     conn.status = "FAIL"
@@ -278,29 +305,28 @@ async function testConnection(id){
     conn.joinResult = "ERROR" + JSON.stringify(e)
     return
   }
-  if (client.adapterRef._signalling?._protoo?._data){
-    conn.connMs = client.adapterRef._signalling?._protoo._data.openTs - client.adapterRef._signalling?._protoo._data.createTs
+  if (clientSend.adapterRef._signalling?._protoo?._data){
+    conn.connMs = clientSend.adapterRef._signalling?._protoo._data.openTs - clientSend.adapterRef._signalling?._protoo._data.createTs
   }
   /////////////
-  const sendPC = client.adapterRef._mediasoup?._sendTransport?._handler?._pc
+  const recvPC = clientRecv.adapterRef._mediasoup?._recvTransport?._handler?._pc
   // 监听ice状态
   let timer = null
   const iceStart = Date.now()
   const handleIceChange = async (evt)=>{
-    
     clearTimeout(timer)
-    if (sendPC.iceConnectionState === "failed" || sendPC.iceConnectionState === "closed"){
-      console.error("sendPC.iceConnectionState", sendPC.iceConnectionState)
+    if (recvPC.iceConnectionState === "failed" || recvPC.iceConnectionState === "closed"){
+      console.error("recvPC.iceConnectionState", recvPC.iceConnectionState)
     }else{
       timer = setTimeout(handleIceChange, 2000)
     }
     // console.error("handleIceChange", sendPC.iceConnectionState, evt)
-    conn.iceConnectionState = sendPC.iceConnectionState
+    conn.iceConnectionState = recvPC.iceConnectionState
     conn.lastMs = Date.now() - start
     if (conn.status === "ENDED"){
       return
     }
-    if (sendPC.iceConnectionState === "connected"){
+    if (recvPC.iceConnectionState === "connected"){
       if (conn.joinResult !== "ICESUCCESS"){
         conn.joinResult = "ICESUCCESS"
         conn.iceConnectMs = Date.now() - iceStart
@@ -308,7 +334,7 @@ async function testConnection(id){
         await new Promise((res)=>setTimeout(res, 200))
       }
     }
-    const info = await getIceCandidatePair(sendPC);
+    const info = await getIceCandidatePair(recvPC);
     conn.candidateSummary = info.result
     conn.p2s.rtt = info.rtt
     conn.p2s.rttAverage = info.rttAverage
@@ -316,40 +342,51 @@ async function testConnection(id){
       conn.p2s.speed = info.speed
     }
     conn.p2s.speedAverage = info.speedAverage
+    conn.p2s.lost = info.lost
+    conn.p2s.lostAverage = info.lostAverage
     // console.error("info", info)
     conn.candidatePairInfo = JSON.stringify(info.pair, null, 2)
     conn.localAddress = JSON.stringify(info.local, null, 2)
     conn.remoteAddress = JSON.stringify(info.remote, null, 2)
   }
-  if (sendPC){
-    rtc.sendPC = sendPC
-    sendPC.addEventListener('iceconnectionstatechange', handleIceChange)
+  if (recvPC){
+    rtc.recvPC = recvPC
+    recvPC.addEventListener('iceconnectionstatechange', handleIceChange)
   }
   
   // 准备本地流
-  if (!rtc.videoSource){
-    rtc.videoSource = fakeMediaDevices.getFakeMedia({video: {
-      type: "randomcolor",
-      }}).video.track
-  }
+  // if (!rtc.videoSource){
+  //   rtc.videoSource = fakeMediaDevices.getFakeMedia({video: {
+  //     type: "randomcolor",
+  //     }}).video.track
+  // }
   const videoSource = rtc.videoSource
   console.log("videoSource", videoSource)
   const localStream = NERTC.createStream({
     video: true,
     videoSource,
-    client,
+    clientSend,
   })
-  await localStream.init(localStream)
+  await localStream.init()
+  const maxBitrate = parseInt(document.getElementById("encoderMbps").value) * 1000
   const options = {
     mediaType: "video",
     streamType: "high",
-    maxBitrate: 5000,
+    maxBitrate: maxBitrate,
   }
   console.log("上行视频编码设置", options)
   localStream.setVideoEncoderConfiguration(options)
-  // 开始推流
+  // 设置拉流
   const publishStart = Date.now()
-  await client.publish(localStream)
+  clientRecv.on('stream-added', (evt)=>{
+    console.error('stream-added', evt);
+    if (evt.stream.streamID === joinOptionsSend.uid){
+      conn.streamAddedMs = Date.now() - publishStart
+      clientRecv.subscribe(evt.stream)
+    }
+  })
+  // 开始推流
+  await clientSend.publish(localStream)
 }
 
 let infoHistory = []
@@ -363,8 +400,10 @@ async function getIceCandidatePair(pc){
     remote: [],
     rtt: -1,
     speed: -1,
+    lost: -1,
     rttAverage: -1,
     speedAverage: -1,
+    lostAverage: -1,
     pair: null
   }
   const stats = await pc.getStats(null)
@@ -389,6 +428,10 @@ async function getIceCandidatePair(pc){
     if (item.type === "transport"){
       transports.push(item)
       info.transport = item
+    }
+    if (item.type === "inbound-rtp"){
+      info.packetsReceived = item.packetsReceived
+      info.packetsLost = item.packetsLost
     }
   })
   if (!transports.length && !info.pair){
@@ -418,7 +461,8 @@ async function getIceCandidatePair(pc){
     infoHistory.reverse()
     info.totalRoundTripTime = candidatePair.totalRoundTripTime
     info.responsesReceived = candidatePair.responsesReceived
-    info.bytesSent = candidatePair.bytesSent
+    // console.error("candidatePair", candidatePair)
+    info.bytesRecv = candidatePair.bytesReceived
     info.rttAverage = Math.floor((info.totalRoundTripTime) / (info.responsesReceived) * 1000)
     
     if (history){
@@ -427,20 +471,29 @@ async function getIceCandidatePair(pc){
       }else{
         info.rtt = history.rtt
       }
-      if (info.bytesSent && history.bytesSent){
+      if (info.bytesRecv && history.bytesRecv){
         // kbps
-        info.speed = (info.bytesSent - history.bytesSent) * 8 / (info.ts - history.ts)
+        info.speed = (info.bytesRecv - history.bytesRecv) * 8 / (info.ts - history.ts)
+      }
+      // console.error("info.packetsReceived", info.packetsReceived)
+      if (info.packetsReceived && history.packetsReceived){
+        info.lost = (info.packetsLost - history.packetsLost) / (info.packetsReceived - history.packetsReceived + info.packetsLost - history.packetsLost)
       }
     }
     if (historyEarly){
       // 最早记录
-      info.speedAverage = (info.bytesSent - historyEarly.bytesSent) * 8 / (info.ts - historyEarly.ts)
+      info.speedAverage = (info.bytesRecv - historyEarly.bytesRecv) * 8 / (info.ts - historyEarly.ts)
+      info.lostAverage = (info.packetsLost - historyEarly.packetsLost) / (info.packetsReceived - historyEarly.packetsReceived + info.packetsLost - history.packetsLost)
     }
-    
     const localCandidate = statsArr.find((stats)=>{
       return stats.id === candidatePair.localCandidateId
     })
     if (localCandidate){
+      if (localCandidate.address){
+        if (vueApp.addresses.indexOf(localCandidate.address) === -1){
+          vueApp.addresses.push(localCandidate.address)
+        }
+      }
       if (localCandidate.relayProtocol){
         info.result += `【relay ${localCandidate.relayProtocol}】`
       }
