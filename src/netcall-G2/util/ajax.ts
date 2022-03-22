@@ -80,6 +80,12 @@ function ajax (option:AjaxOptions) {
     xhr.onerror = function (e:ErrorEvent) {
       reject(e)
     }
+    xhr.ontimeout = function(e: ProgressEvent){
+      reject({
+        code: 456,
+        desc: `ERR_TIMED_OUT ` + option.url
+      })
+    }
     if (contentType.indexOf('x-www-form-urlencoded') >= 0) {
       if (option.data) {
         xhr.send(getFormData(option.data))

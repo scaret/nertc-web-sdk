@@ -96,6 +96,8 @@ export interface AdapterRef {
   testConf: {
     ForwardedAddr?:string;
     turnAddr?:string[];
+    iceServers?: RTCIceServer[];
+    iceTransportPolicy?: RTCIceTransportPolicy;
     relayaddrs?: string;
     relaytoken?: string;
   };

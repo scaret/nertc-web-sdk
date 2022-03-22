@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>连通性测试</title>
+  <link rel="icon" href="data:,">
+  <meta charset="utf8">
+</head>
+<body>
+<h1>连通性测试</h1>
+
+
+<div id="vueApp">
+
+
+  <h2>测试配置</h2>
+  <label>
+    单台服务器测试时间
+    <input type="number" id="connTime" value="20">秒
+  </label>
+  <label>
+    最大编码码率
+    <input type="number" id="encoderMbps" value="50">Mbps
+  </label>
+  <br/>
+  <label>
+    启用Ice
+    <input type="checkbox" v-model="enableIce">
+  </label>
+  <div v-if="enableIce">
+    <label>
+      ICE地址
+      <input type="text" id="iceUrl" value="turn:rpg.wrtc.dev:3800?transport=tcp" size="40">
+    </label>
+    <label>
+      ICE用户名
+      <input type="text" id="iceUsername" value="yunxin">
+    </label>
+    <label>
+      ICE密码
+      <input type="text" id="iceCredential" value="Test123">
+    </label>
+    <label>
+      IceTransportPolicy
+      <select id="iceTransportPolicy">
+        <option value="all">all</option>
+        <option value="relay" selected>relay</option>
+      </select>
+    </label>
+  </div>
+  <br/>
+  <button id="startAllTests" onclick="startAllTests()">轮询测试</button>
+  <br/>
+  <h2>地址列表</h2>
+  <div id="addresses" v-html="addresses.join()"></div>
+  <ul>
+    <li v-for="conn in CONNECTIONS">
+      <span v-html="conn.group"></span>
+      <span v-html="conn.name"></span>
+      地址：<span v-html="conn.address"></span>
+      <ul>
+        <li v-if="mode !== 'test_all'">
+          <button v-if="conn.status === 'UNINIT' || conn.status === 'ENDED'" v-on:click="testConnection(conn.id)">单服测试</button>
+          <button v-if="conn.status !== 'UNINIT' && conn.status !== 'ENDED'" v-on:click="unloadConnection(conn.id)">结束测试</button>
+        </li>
+        <li v-if="conn.status !== 'UNINIT'">
+          WebSocket状态：{{conn.status}}。
+          Join结果：{{conn.joinResult}}。
+          房间名称：{{conn.channelName}}。
+          连接持续时间：{{conn.lastMs}}毫秒。
+        </li>
+        <li v-if="conn.status !== 'UNINIT'">
+          WebSocket建立时间：{{conn.connMs}}毫秒。
+          Join成功时间：{{conn.joinMs}}毫秒。
+          Ice建立时间：{{conn.iceConnectMs}}毫秒。
+          收到StreamAdded时间：{{conn.streamAddedMs}}毫秒。
+        </li>
+        <li>
+          网速：{{Math.floor(conn.p2s.speed) }} kbps。
+          延时：{{conn.p2s.rtt}}ms。
+          丢包：{{ Math.floor(conn.p2s.lost * 10000) / 100}}%。
+        </li>
+        <li>
+          平均网速：{{Math.floor(conn.p2s.speedAverage) }} kbps。
+          平均延时：{{conn.p2s.rttAverage}}ms。
+          平均丢包：{{ Math.floor(conn.p2s.lostAverage * 10000) / 100}}%。
+        </li>
+        <li v-if="conn.status !== 'UNINIT'">
+          {{conn.candidateSummary}}
+          <button v-on:click="conn.showDetail = !conn.showDetail">显示详情</button>
+        </li>
+        <li v-if="conn.showDetail">
+          <div style="display: flex">
+            <div style="float: left">
+              Candidate配对<br/>
+              <pre v-html="conn.candidatePairInfo"></pre><br/>
+            </div>
+            <div style="float: left">
+              本地Candidate<br/>
+              <pre v-html="conn.localAddress"></pre>
+            </div>
+            <div style="float: left">
+              远端Candidate<br/>
+              <pre v-html="conn.remoteAddress"></pre>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+
+<h2>新增地址</h2>
+<label>
+  连接地址*
+  <input type="text" size="100" id="customAddress">
+</label>
+<br/>
+<label>
+  连接名称
+  <input type="text" id="customName">
+</label>
+<br/>
+<button id="addConnection" onclick="addConnection()">增加</button>
+<br/>
+<br/>
+<button id="startStateless" onclick="testStateless()">无信令测试</button>
+<div id="sendTraceId"></div>
+<div id="sendState"></div>
+<div id="sendSignalingState"></div>
+<div id="sendIceConnectionState"></div>
+<h1 id="networkType"></h1>
+<pre id="statelessCandidateInfo"></pre>
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14"></script>
+<script src="./js/nim/NIM_Web_NERTC.js"></script>
+<script src="./js/lib/fakeMediaDevices.js"></script>
+<script src="./js/lib/axios.min.js"></script>
+<script src="./js/webrtc/init_testconn.js"></script>
+</body>
+</html>
