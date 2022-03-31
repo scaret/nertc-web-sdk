@@ -130,8 +130,8 @@ export interface AdapterRef {
 export type ConnectionState = 'DISCONNECTED'|'CONNECTING'|'CONNECTED'|'DISCONNECTING';
 
 // screenShare 为服务端协议叫法，但代码中有大量screen叫法，故使用这种不好的类型名做区分。
-export type MediaType = 'audio'|'video'|'screenShare';
-export type MediaTypeShort = 'audio'|'video'|'screen';
+export type MediaType = 'audio'|'video'|'screenShare'|'audioSlave';
+export type MediaTypeShort = 'audio'|'video'|'screen'|'audioSlave';
 
 export interface NetStatusItem{
   uid: number|string;
@@ -782,6 +782,7 @@ export interface LocalStreamOptions{
 export interface RemoteStreamOptions{
   uid: number|string;
   audio: boolean;
+  audioSlave: boolean;
   video: boolean;
   screen: boolean;
   client: Client;
@@ -864,6 +865,15 @@ export interface PubStatus{
     mute: boolean;
     simulcastEnable: boolean;
   },
+  audioSlave: {
+    audio: boolean;
+    producerId: string;
+    consumerId: string;
+    consumerStatus: ConsumerStatus;
+    stopconsumerStatus: string;
+    mute: boolean;
+    simulcastEnable: boolean;
+  },
   video: {
     video: boolean,
     producerId: string,
@@ -886,6 +896,7 @@ export interface PubStatus{
 
 export interface SubscribeOptions{
   audio?: boolean;
+  audioSlave: boolean;
   video?: boolean|"high"|"low";
   screen?: boolean|"high"|"low";
   highOrLow?: number;
@@ -893,6 +904,7 @@ export interface SubscribeOptions{
 
 export interface SubscribeConfig{
   audio: boolean;
+  audioSlave: boolean;
   video: boolean;
   screen: boolean;
   highOrLow: {

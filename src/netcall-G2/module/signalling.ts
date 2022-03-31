@@ -337,6 +337,7 @@ class Signalling extends EventEmitter {
           remoteStream = new RemoteStream({
             uid,
             audio: false,
+            audioSlave: false,
             video: false,
             screen: false,
             client: this.adapterRef.instance,
@@ -392,6 +393,9 @@ class Signalling extends EventEmitter {
           case "audio":
             mediaTypeShort = 'audio';
             break;
+          case "subAudio":
+            mediaTypeShort = 'audioSlave';
+            break;
           default:
             this.logger.warn(`OnNewProducer 不支持的媒体类型:${mediaType}, uid ${uid}`)
             return
@@ -401,6 +405,7 @@ class Signalling extends EventEmitter {
           remoteStream = new RemoteStream({
             uid,
             audio: mediaTypeShort === 'audio',
+            audioSlave: mediaTypeShort === 'audioSlave',
             video: mediaTypeShort === 'video',
             screen: mediaTypeShort === 'screen',
             client: this.adapterRef.instance,
@@ -465,6 +470,9 @@ class Signalling extends EventEmitter {
           case "audio":
             mediaTypeShort = 'audio';
             break;
+          case "subAudio":
+            mediaTypeShort = 'audioSlave';
+            break;
           default:
             this.logger.warn(`OnProducerClose 不支持的媒体类型 ${mediaType} ${uid}`)
             return;
@@ -497,6 +505,14 @@ class Signalling extends EventEmitter {
         remoteStream.pubStatus[mediaTypeShort].producerId = ''
         const data = this.adapterRef._statsReport && this.adapterRef._statsReport.formativeStatsReport && this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
         if (mediaTypeShort === 'audio') {
+          remoteStream.mediaHelper.audio.micTrack = null;
+          emptyStreamWith(remoteStream.mediaHelper.audio.audioStream, null);
+          delete this.adapterRef.remoteAudioStats[uid];
+          if (data) {
+            data.recvFirstAudioFrame = false
+            data.recvFirstAudioPackage = false
+          }
+        } else if (mediaTypeShort === 'audioSlave') {
           remoteStream.mediaHelper.audio.micTrack = null;
           emptyStreamWith(remoteStream.mediaHelper.audio.audioStream, null);
           delete this.adapterRef.remoteAudioStats[uid];

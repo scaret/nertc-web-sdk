@@ -168,9 +168,10 @@ class LocalStream extends RTCEventEmitter {
   };
   public pubStatus: {
     audio: {audio: boolean},
+    audioSlave: {audio: boolean},
     video: {video: boolean},
     screen: {screen: boolean},
-  } = {audio: {audio: false}, video: {video: false}, screen: {screen: false}};
+  } = {audio: {audio: false}, audioSlave: {audio: false}, video: {video: false}, screen: {screen: false}};
   public muteStatus: {
     // localStream只有send
     // remoteStream的send表示发送端的mute状态，recv表示接收端的mute状态
@@ -353,6 +354,9 @@ class LocalStream extends RTCEventEmitter {
     this.pubStatus = {
       audio: {
         audio: false,
+      },
+      audioSlave: {
+        audio: false
       },
       video: {
         video: false,

@@ -24,7 +24,7 @@ export type ProducerOptions =
   appData: {
     deviceId: string;
     deviceIdLow: string|null;
-    mediaType: "video"|"audio"|"screenShare";
+    mediaType: "video"|"audio"|"screenShare"|"audioSlave";
   };
 }
 

@@ -38,6 +38,7 @@ class RemoteStream extends RTCEventEmitter {
   public readonly streamID:number|string;
   public readonly stringStreamID:string;
   public audio: boolean;
+  public audioSlave: boolean;
   public video: boolean;
   public screen: boolean;
   public client: Client;
@@ -58,6 +59,15 @@ class RemoteStream extends RTCEventEmitter {
   public platformType: PlatformType = PlatformType.unknown;
   public pubStatus:PubStatus = {
     audio: {
+      audio: false,
+      producerId: '',
+      consumerId: '',
+      consumerStatus: 'init',
+      stopconsumerStatus: 'init',
+      mute: false,
+      simulcastEnable: false,
+    },
+    audioSlave: {
       audio: false,
       producerId: '',
       consumerId: '',
@@ -88,10 +98,12 @@ class RemoteStream extends RTCEventEmitter {
   subConf: SubscribeConfig;
   public subStatus: {
     audio: boolean;
+    audioSlave: boolean;
     video: boolean;
     screen: boolean
   } = {
     audio: false,
+    audioSlave: false,
     video: false,
     screen: false
   };
@@ -99,10 +111,12 @@ class RemoteStream extends RTCEventEmitter {
     // localStream只有send
     // remoteStream的send表示发送端的mute状态，recv表示接收端的mute状态
     audio: {send: boolean, recv: boolean};
+    audioSlave: {send: boolean, recv: boolean};
     video: {send: boolean, recv: boolean};
     screen: {send: boolean, recv: boolean};
   } = {
     audio: {send: false, recv: false},
+    audioSlave: {send: false, recv: false},
     video: {send: false, recv: false},
     screen: {send: false, recv: false},
   };
@@ -178,6 +192,7 @@ class RemoteStream extends RTCEventEmitter {
     this.screenPlay_ = false;
     this.subConf = {
       audio: true,
+      audioSlave: true,
       video: true,
       screen: true,
       highOrLow: {
@@ -193,6 +208,7 @@ class RemoteStream extends RTCEventEmitter {
     this.streamID = options.uid
     this.stringStreamID = this.streamID.toString()
     this.audio = options.audio
+    this.audioSlave = options.audioSlave || false
     this.video = options.video || false
     this.screen = options.screen || false
     this.client = options.client
@@ -231,6 +247,7 @@ class RemoteStream extends RTCEventEmitter {
     // this.streamID = ''
     // this.stringStreamID = ''
     this.audio = false
+    this.audioSlave = false
     this.video = false
     this.screen = false
     this.videoView = null
@@ -240,6 +257,15 @@ class RemoteStream extends RTCEventEmitter {
     this.producerId = null
     this.pubStatus = {
       audio: {
+        audio: false,
+        producerId: '',
+        consumerId: '',
+        consumerStatus: 'init',
+        stopconsumerStatus: 'init',
+        mute: false,
+        simulcastEnable: false,
+      },
+      audioSlave: {
         audio: false,
         producerId: '',
         consumerId: '',
@@ -278,11 +304,13 @@ class RemoteStream extends RTCEventEmitter {
     }
     this.subStatus = {
       audio: false,
+      audioSlave: false,
       video: false,
       screen: false,
     }
     this.muteStatus = {
       audio: {send: false, recv: false},
+      audioSlave: {send: false, recv: false},
       video: {send: false, recv: false},
       screen: {send: false, recv: false},
     }
@@ -1369,7 +1397,7 @@ class RemoteStream extends RTCEventEmitter {
   }
   
    clearRemotePubStatus (){
-     let mediaTypes:MediaTypeShort[] = ["audio", "video", "screen"];
+     let mediaTypes:MediaTypeShort[] = ["audio", "audioSlave", "video", "screen"];
      for (let mediaType of mediaTypes){
        this[mediaType] = false
        //@ts-ignore

@@ -332,6 +332,9 @@ export class Chrome74 extends HandlerInterface
     if (appData.mediaType === 'audio' && this._pc.audioSender) {
       Logger.debug(prefix, 'audioSender更新track: ', this._pc.audioSender.track, "=>", track)
       this._pc.audioSender.replaceTrack(track)
+    } else if (appData.mediaType === 'audioSlave' && this._pc.audioSlaveSender) {
+      Logger.debug(prefix, 'audioSlaveSender更新track: ', this._pc.audioSlaveSender.track, "=>", track)
+      this._pc.audioSender.replaceTrack(track)
     } else if (appData.mediaType === 'video' && this._pc.videoSender) {
       Logger.debug(prefix, 'videoSender更新track: ', this._pc.videoSender.track, "=>", track)
       this._pc.videoSender.replaceTrack(track)
@@ -363,6 +366,8 @@ export class Chrome74 extends HandlerInterface
       }
       if (appData.mediaType === 'audio' && !this._pc.audioSender) {
         this._pc.audioSender = transceiver.sender
+      } else if (appData.mediaType === 'audioSlave' && !this._pc.audioSlaveSender) {
+        this._pc.audioSlaveSender = transceiver.sender
       } else if (appData.mediaType === 'video' && !this._pc.videoSender) {
         this._pc.videoSender = transceiver.sender
         this._pc.videoSenderLow = transceiverLow.sender
@@ -591,7 +596,7 @@ export class Chrome74 extends HandlerInterface
     await this._pc.setRemoteDescription(answer);
   }
 
-  async stopSending(localId: string, kind: 'audio'|'video'|'screenShare'): Promise<void>
+  async stopSending(localId: string, kind: 'audio'|'video'|'screenShare'|'audioSlave'): Promise<void>
   {
     this._assertSendDirection();
 
@@ -608,6 +613,9 @@ export class Chrome74 extends HandlerInterface
 
     if (kind === 'audio') {
       this._pc.audioSender.replaceTrack(null);
+      //this._remoteSdp.closeMediaSection('0');  
+    } else if (kind === 'audioSlave') {
+      this._pc.audioSlaveSender.replaceTrack(null);
       //this._remoteSdp.closeMediaSection('0');  
     } else if (kind === 'video') {
       this._pc.videoSender.replaceTrack(null);
