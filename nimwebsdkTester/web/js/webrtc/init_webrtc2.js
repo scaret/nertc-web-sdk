@@ -1910,6 +1910,7 @@ function unpublish(type=null) {
 function subscribe(remoteStream) {
   let subscribeConfig = {
     audio: $('#subAudio').prop('checked'),
+    audioSlave: $('#subAudioSlave').prop('checked'),
     video: $('#subVideo').prop('checked'),
     screen: $('#subScreen').prop('checked'),
   }

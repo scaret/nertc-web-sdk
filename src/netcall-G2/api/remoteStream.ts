@@ -68,7 +68,7 @@ class RemoteStream extends RTCEventEmitter {
       simulcastEnable: false,
     },
     audioSlave: {
-      audio: false,
+      audioSlave: false,
       producerId: '',
       consumerId: '',
       consumerStatus: 'init',
@@ -266,7 +266,7 @@ class RemoteStream extends RTCEventEmitter {
         simulcastEnable: false,
       },
       audioSlave: {
-        audio: false,
+        audioSlave: false,
         producerId: '',
         consumerId: '',
         consumerStatus: 'init',
@@ -295,6 +295,7 @@ class RemoteStream extends RTCEventEmitter {
     }
     this.subConf = {
       audio: true,
+      audioSlave: true,
       video: true,
       screen: true,
       highOrLow: {
@@ -422,6 +423,10 @@ class RemoteStream extends RTCEventEmitter {
     if (typeof conf.audio === "boolean"){
       this.subConf.audio = conf.audio;
     }
+    if (typeof conf.audioSlave === "boolean"){
+      this.subConf.audioSlave = conf.audioSlave;
+    }
+
     if (typeof conf.video === "boolean"){
       this.subConf.video = conf.video;
     }else if (conf.video === "high"){
@@ -446,6 +451,13 @@ class RemoteStream extends RTCEventEmitter {
       this.audio = true
     } else {
       this.subConf.audio = false
+    }
+
+    if (this.pubStatus.audioSlave.audioSlave && this.subConf.audio) {
+      this.subConf.audioSlave = true
+      this.audioSlave = true
+    } else {
+      this.subConf.audioSlave = false
     }
 
     if (this.pubStatus.video.video && this.subConf.video) {

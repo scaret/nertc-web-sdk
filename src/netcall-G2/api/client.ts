@@ -755,6 +755,7 @@ class Client extends Base {
         })
       }
       await this.adapterRef._mediasoup.destroyProduce('audio');
+      await this.adapterRef._mediasoup.destroyProduce('audioSlave');
       await this.adapterRef._mediasoup.destroyProduce('video');
       await this.adapterRef._mediasoup.destroyProduce('screen');
       this.adapterRef.localStream = null;
@@ -785,6 +786,7 @@ class Client extends Base {
     if (mediaType === "all"){
       const info = [
         this.getSubStatus(stream, "audio"),
+        this.getSubStatus(stream, "audioSlave"),
         this.getSubStatus(stream, "video"),
         this.getSubStatus(stream,"screen"),
       ];
@@ -878,6 +880,47 @@ class Client extends Base {
           stream.stop('audio')
           stream.pubStatus.audio.stopconsumerStatus = 'end'
           stream.subStatus.audio = false
+          const uid = stream.getId()
+          if(uid){
+            delete this.adapterRef.remoteAudioStats[uid];
+            const data = this.adapterRef._statsReport && this.adapterRef._statsReport.formativeStatsReport && this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
+            if (data) {
+              data.recvFirstAudioFrame = false
+              data.recvFirstAudioPackage = false
+            }
+          }
+          this.logger.log('取消订阅音频流完成')
+        }
+      }
+
+      if (stream.subConf.audioSlave) {
+        // 应该订阅音频
+        if (stream.pubStatus.audioSlave.audioSlave && !stream.pubStatus.audioSlave.consumerId) {
+          if (stream.pubStatus.audioSlave.consumerStatus !== 'start') {
+            this.logger.log(`subscribe() [开始订阅 ${stream.getId()} 音频流]`)
+            stream.pubStatus.audioSlave.consumerStatus = 'start'
+            await this.adapterRef._mediasoup.createConsumer(uid, 'audio', 'audioSlave', stream.pubStatus.audioSlave.producerId);
+            stream.pubStatus.audioSlave.consumerStatus = 'end'
+            this.logger.log(`subscribe() [订阅 ${stream.getId()} 音频流完成]`)
+          }
+        }
+      } else {
+        // 不应该订阅音频
+        if (stream.pubStatus.audioSlave.consumerId && stream.pubStatus.audioSlave.stopconsumerStatus !== 'start'){
+          this.logger.log('开始取消订阅音频流')
+          stream.pubStatus.audioSlave.stopconsumerStatus = 'start'
+          if (!this.adapterRef._mediasoup){
+            throw new RtcError({
+              code: ErrorCode.NO_MEDIASERVER,
+              message: 'media server error 7'
+            })
+          }
+          await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.audioSlave.consumerId, stream, 'audioSlave');
+          this.adapterRef.instance.removeSsrc(stream.getId(), 'audioSlave')
+          stream.pubStatus.audioSlave.consumerId = '';
+          stream.stop('audioSlave')
+          stream.pubStatus.audioSlave.stopconsumerStatus = 'end'
+          stream.subStatus.audioSlave = false
           const uid = stream.getId()
           if(uid){
             delete this.adapterRef.remoteAudioStats[uid];

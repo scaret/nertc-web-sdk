@@ -20,6 +20,7 @@ type UIDTYPE = number | string;
 export interface AdapterRef {
   uid2SscrList: {[uid in UIDTYPE]:{
       audio:{ssrc: number},
+      audioSlave: {ssrc: number},
       video:{ssrc: number},
       screen:{ssrc: number},
     }
@@ -866,7 +867,7 @@ export interface PubStatus{
     simulcastEnable: boolean;
   },
   audioSlave: {
-    audio: boolean;
+    audioSlave: boolean;
     producerId: string;
     consumerId: string;
     consumerStatus: ConsumerStatus;
@@ -1031,6 +1032,7 @@ export type AudioCodecType = "OPUS";
 export interface SpatialInitOptions {
   subConfig: {
     audio: boolean;
+    audioSlave: boolean;
     video: boolean;
     screen: boolean;
   }

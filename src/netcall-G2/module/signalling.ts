@@ -1078,6 +1078,7 @@ class Signalling extends EventEmitter {
             remoteStream = new RemoteStream({
               uid: uid,
               audio: false,
+              audioSlave: false,
               video: false,
               screen: false,
               client: this.adapterRef.instance,
@@ -1104,6 +1105,9 @@ class Signalling extends EventEmitter {
                   break;
                 case "audio":
                   mediaTypeShort = "audio";
+                  break;
+                case "subAudio":
+                  mediaTypeShort = "audioSlave";
                   break;
                 default:
                   this.logger.warn(`join: 不支持的媒体类型 ${mediaType} ${uid}`)
@@ -1540,6 +1544,7 @@ class Signalling extends EventEmitter {
         remoteStream = new RemoteStream({
           uid,
           audio: false,
+          audioSlave: false,
           video: false,
           screen: false,
           client: this.adapterRef.instance,

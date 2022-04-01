@@ -115,6 +115,7 @@ class LocalStream extends RTCEventEmitter {
   public video: boolean;
   public screen: boolean;
   public screenAudio: boolean;
+  public audioSlave: boolean;
   public client: Client;
   private audioSource: MediaStreamTrack|null
   private videoSource:MediaStreamTrack|null
@@ -264,6 +265,7 @@ class LocalStream extends RTCEventEmitter {
     this.video = options.video || false
     this.screen = options.screen || false
     this.screenAudio = options.screenAudio || false
+    this.audioSlave = this.screenAudio
     this.sourceId = options.sourceId || ''
     this.facingMode = options.facingMode || ''
     this.client = options.client
@@ -342,6 +344,7 @@ class LocalStream extends RTCEventEmitter {
     this.cameraId = ''
     this.screen = false
     this.screenAudio = false
+    this.audioSlave = false
     this.sourceId = ''
     this.facingMode = ''
     this.videoView = null
@@ -1245,7 +1248,7 @@ class LocalStream extends RTCEventEmitter {
               this.logger.log('Stream.open:client不在频道中，无需发布。', constraint);
             }else{
               this.logger.log('Stream.open:开始发布', constraint);
-              await this.client.adapterRef._mediasoup?.createProduce(this, "audio")
+              await this.client.adapterRef._mediasoup?.createProduce(this, "audioSlave")
             }
           }
           break
@@ -1385,7 +1388,7 @@ class LocalStream extends RTCEventEmitter {
             this.logger.log('Stream.open:开始发布', constraint);
             await this.client.adapterRef._mediasoup?.createProduce(this, type)
             if (options.screenAudio){
-              await this.client.adapterRef._mediasoup?.createProduce(this, "audio")
+              await this.client.adapterRef._mediasoup?.createProduce(this, "audioSlave")
             }
           }
           break
@@ -1554,7 +1557,7 @@ class LocalStream extends RTCEventEmitter {
             this.logger.log('Stream.close:关闭音频，保留发布：', type);
           }else{
             this.logger.log('Stream.close:停止发布音频');
-            await this.client.adapterRef._mediasoup?.destroyProduce('audio');
+            await this.client.adapterRef._mediasoup?.destroyProduce('audioSlave');
           }
         }else{
           this.logger.log('Stream.close:未发布音频，无需停止发布');

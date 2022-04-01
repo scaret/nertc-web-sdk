@@ -49,6 +49,11 @@ class Mediasoup extends EventEmitter {
       // 目前未使用low
       low: {ssrc: number, dtx: boolean}|null,
     },
+    audioSlave: {
+      high: {ssrc: number, dtx: boolean}|null,
+      // 目前未使用low
+      low: {ssrc: number, dtx: boolean}|null,
+    },
     video: {
       high: {ssrc: number, rtx: {ssrc: number}}|null,
       low: {ssrc: number, rtx: {ssrc: number}}|null,
@@ -60,6 +65,7 @@ class Mediasoup extends EventEmitter {
   } = {
     ssrcList: [],
     audio: {high: null, low: null},
+    audioSlave: {high: null, low: null},
     video: {high: null, low: null},
     screen: {high: null, low: null},
   };
@@ -244,6 +250,7 @@ class Mediasoup extends EventEmitter {
       })
       this.senderEncodingParameter = {
         ssrcList: [],
+        audioSlave: {high: null, low: null},
         audio: {high: null, low: null},
         video: {high: null, low: null},
         screen: {high: null, low: null},
@@ -399,7 +406,7 @@ class Mediasoup extends EventEmitter {
     this.adapterRef.instance.leave()
   }
 
-  async createProduce (stream:LocalStream, mediaType: "all"|"audio"|"subAudio"|"video"|"screen") {
+  async createProduce (stream:LocalStream, mediaType: "all"|"audio"|"audioSlave"|"video"|"screen") {
     this.loggerSend.log('发布音视频: ', stream.getId(), mediaType)
     //this._sendTransport.removeListener()
     if (!this._sendTransport){
@@ -581,7 +588,7 @@ class Mediasoup extends EventEmitter {
           if (appData.mediaType === 'audio') {
             this._micProducerId = producerId
           } else if (appData.mediaType === 'audioSlave') {
-            this._micProducerId = producerId
+            this._audioSlaveProducerId = producerId
           } else if (appData.mediaType === 'video') {
             this._webcamProducerId = producerId
             //@ts-ignore
@@ -654,7 +661,7 @@ class Mediasoup extends EventEmitter {
       } else {
         const audioTrack = stream.mediaHelper.audio.audioStream.getAudioTracks()[0]
         if (audioTrack){
-          this.loggerSend.log('发布 audioTrack: ', audioTrack.id, audioTrack.label)
+          this.loggerSend.log('发布音频流 audioTrack: ', audioTrack.id, audioTrack.label)
           stream.pubStatus.audio.audio = true
           this._micProducer = await this._sendTransport.produce({
             track: audioTrack,
@@ -679,13 +686,13 @@ class Mediasoup extends EventEmitter {
       }
     }
 
-    if (mediaType === "subAudio" || mediaType === "all"){
+    if (mediaType === "audioSlave" || mediaType === "all"){
       if (this._audioSlaveProducer) {
         this.loggerSend.log('音频辅流已经publish，忽略')
       } else {
-        const audioTrack = stream.mediaHelper.audio.audioSourceStream.getAudioTracks()[0]
+        const audioTrack = stream.mediaHelper.screenAudio.screenAudioStream.getAudioTracks()[0]
         if (audioTrack){
-          this.loggerSend.log('发布 audioSlaveTrack: ', audioTrack.id, audioTrack.label)
+          this.loggerSend.log('发布音频辅流 audioSlaveTrack: ', audioTrack.id, audioTrack.label)
           stream.pubStatus.audioSlave.audio = true
           this._audioSlaveProducer = await this._sendTransport.produce({
             track: audioTrack,
@@ -723,7 +730,7 @@ class Mediasoup extends EventEmitter {
           this.senderEncodingParameter.video.low = null
         }
         const videoTrack = stream.mediaHelper.video.videoStream.getVideoTracks()[0]
-        this.loggerSend.log('发布 videoTrack: ', videoTrack.id, videoTrack.label)
+        this.loggerSend.log('发布视频 videoTrack: ', videoTrack.id, videoTrack.label)
         stream.pubStatus.video.video = true
         //@ts-ignore
         const codecInfo = this.adapterRef.mediaCapability.getCodecSend("video", this._sendTransport.handler._sendingRtpParametersByKind["video"]);
@@ -773,7 +780,7 @@ class Mediasoup extends EventEmitter {
           this.senderEncodingParameter.screen.low = null
         }
         const screenTrack = stream.mediaHelper.screen.screenVideoStream.getVideoTracks()[0]
-        this.loggerSend.log('发布 screenTrack: ', screenTrack.id, screenTrack.label)
+        this.loggerSend.log('发布屏幕共享 screenTrack: ', screenTrack.id, screenTrack.label)
         stream.pubStatus.screen.screen = true
         //@ts-ignore
         const codecInfo = this.adapterRef.mediaCapability.getCodecSend("screen", this._sendTransport.handler._sendingRtpParametersByKind["video"]);
@@ -1081,12 +1088,12 @@ class Mediasoup extends EventEmitter {
     }
 
     let codecOptions = null;
-    if (mediaTypeShort === 'audio') {
+    if (mediaTypeShort === 'audio' || mediaTypeShort === 'audioSlave') {
       codecOptions = {
         opusStereo: 1
       }
     }
-    if (!this._mediasoupDevice || !this._mediasoupDevice.loaded){
+    if (!this._mediasoupDevice || !this._mediasoupDevice.loaded) {
       this.loggerRecv.error('createConsumer：Waiting for Transport Ready');
       await waitForEvent(this, 'transportReady', 3000);
     }
@@ -1151,9 +1158,9 @@ class Mediasoup extends EventEmitter {
     })
     if (localDtlsParameters === undefined) {
       data.transportId = this._recvTransport.id;
-    }
-    else
+    } else {
       data.dtlsParameters = localDtlsParameters;
+    }
     this.loggerRecv.log(`发送consume请求, uid: ${uid}, kind: ${kind}, mediaTypeShort: ${mediaTypeShort}, producerId: ${data.producerId}, transportId: ${data.transportId}, requestId: ${data.requestId}`);
     if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
       info.resolve(null);
@@ -1163,7 +1170,7 @@ class Mediasoup extends EventEmitter {
       })
     }
     const consumeRes = await this.adapterRef._signalling._protoo.request('Consume', data);
-    if (id != remoteStream.pubStatus[mediaTypeShort].producerId){
+    if (id != remoteStream.pubStatus[mediaTypeShort].producerId) {
       this.loggerRecv.warn(`收到consumeRes后Producer已经更新。触发重建下行。uid: ${remoteStream.streamID} mediaType: ${mediaTypeShort} ProducerId: ${id} => ${remoteStream.pubStatus[mediaTypeShort].producerId} ，Consume结果忽略：`, consumeRes);
       this.resetConsumeRequestStatus()
       if (this._recvTransport) {
@@ -1173,9 +1180,9 @@ class Mediasoup extends EventEmitter {
       return this.checkConsumerList(info);
     }
     let { transportId, iceParameters, iceCandidates, dtlsParameters, probeSSrc, rtpParameters, producerId, consumerId, code, errMsg } = consumeRes;
-    if (code === 200){
+    if (code === 200) {
       this.loggerRecv.log(`consume反馈结果: code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
-    }else{
+    } else {
       this.loggerRecv.error(`consume请求失败，将Producer拉入黑名单:  uid: ${uid}, mediaType: ${mediaTypeShort}, producerId ${data.producerId} code: ${code}, errMsg: ${errMsg}`, consumeRes);
       this.unsupportedProducers[data.producerId] = {
         producerId: consumeRes.producerId,
@@ -1192,7 +1199,6 @@ class Mediasoup extends EventEmitter {
     }
     try {
       const peerId = consumeRes.uid
-
       if (code !== 200 || !this.adapterRef.remoteStreamMap[uid]) {
         this.loggerRecv.warn('remoteStream.pubStatus: ', remoteStream.pubStatus)
         
@@ -1216,7 +1222,7 @@ class Mediasoup extends EventEmitter {
           }).catch(()=>{
             this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
           })
-        }else{
+        } else {
           this.adapterRef.instance.safeEmit('@pairing-createConsumer-skip')
         }
         return this.checkConsumerList(info)

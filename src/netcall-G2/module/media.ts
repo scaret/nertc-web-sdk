@@ -642,7 +642,7 @@ class MediaHelper extends EventEmitter {
         const gumStream = await GUM.getStream(config, this.logger)
         const cameraTrack = gumStream.getVideoTracks()[0];
         const micTrack = gumStream.getAudioTracks()[0];
-        if (micTrack){
+        if (micTrack) {
           this.audio.micTrack = micTrack;
           this.listenToTrackEnded(this.audio.micTrack);
           emptyStreamWith(this.audio.micStream, this.audio.micTrack);
@@ -777,7 +777,7 @@ class MediaHelper extends EventEmitter {
       const videoTrack = gumStream.getVideoTracks()[0]
       this.logger.log(`getSecondStream: ${audioTrack ? audioTrack.label : ""} ${videoTrack ? videoTrack.label : ""}`)
       if (audioTrack) {
-        if (typeof constraint.audio === "object"){
+        if (typeof constraint.audio === "object") {
           this.audio.micConstraint = {audio: constraint.audio}
         }
         this.audio.micTrack = audioTrack
