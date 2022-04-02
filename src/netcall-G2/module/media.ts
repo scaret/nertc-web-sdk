@@ -234,6 +234,7 @@ class MediaHelper extends EventEmitter {
   }
   
   assertLive () {
+    if(this.stream.isRemote) return
     if (!this.stream.isRemote){
       if (this.stream.destroyed){
         this._reset()
@@ -310,7 +311,7 @@ class MediaHelper extends EventEmitter {
     }
     this.audio.webAudio.updateTracks([
       {track: this.audio.micTrack || this.audio.audioSource, type: 'microphone'},
-      {track: this.screenAudio.screenAudioTrack || this.screenAudio.screenAudioSource, type: 'screenAudio'},
+      //{track: this.screenAudio.screenAudioTrack || this.screenAudio.screenAudioSource, type: 'screenAudio'},
     ])
   }
   async getScreenSource(constraint:GetStreamConstraints) {
@@ -380,6 +381,10 @@ class MediaHelper extends EventEmitter {
     }
     if (screenAudioSource){
       screenAudio = true;
+    }
+    if (this.stream.isRemote) {
+      this.logger.error('getStream: 远端流不能够调用getStream');
+      return;
     }
     if(!audio && !video && !screen && !screenAudio){
       this.logger.error('getStream: 必须指定媒体类型')
@@ -471,10 +476,6 @@ class MediaHelper extends EventEmitter {
 
     try {
       if (screen) {
-        if (this.stream.isRemote){
-          this.logger.error('getStream: 远端流不能够调用getStream');
-          return;
-        }
         const {width, height, frameRate} = this.screen.captureConfig.high
         
         if (sourceId) {
@@ -538,7 +539,8 @@ class MediaHelper extends EventEmitter {
               this.screenAudio.screenAudioTrack = screenAudioTrack
               emptyStreamWith(this.screenAudio.screenAudioStream, screenAudioTrack)
               this.listenToTrackEnded(screenAudioTrack);
-              this.updateWebAudio()
+              //屏幕共享音频走音频辅流
+              /*this.updateWebAudio()
               if (!this.audio.audioRoutingEnabled){
                 if (this.getAudioInputTracks().length > 1){
                   this.enableAudioRouting();
@@ -546,7 +548,7 @@ class MediaHelper extends EventEmitter {
                   emptyStreamWith(this.audio.audioStream, screenAudioTrack);
                   this.updateAudioSender(screenAudioTrack);
                 }
-              }
+              }*/
             }else{
               this.logger.warn('getStream screenAudio: 未获取到屏幕共享音频');
               this.stream.screenAudio = false;
@@ -768,7 +770,7 @@ class MediaHelper extends EventEmitter {
       )
     }
     if (this.stream.isRemote){
-      throw new Error('getSecondStream:远端用户不能调用getSecondStream');
+      return Promise.reject('getSecondStream:远端用户不能调用getSecondStream');
     }
 
     try {
@@ -1110,6 +1112,13 @@ class MediaHelper extends EventEmitter {
       if (this.stream._play?.audioDom){
         this.stream._play.audioDom.srcObject = this.audio.audioStream
       }
+    } else if (kind === 'audioSlave') {
+      this.screenAudio.screenAudioTrack = track;
+      emptyStreamWith(this.screenAudio.screenAudioStream, track);
+      // Safari：即使前后属性相同，也需要重新设一遍srcObject
+      if (this.stream._play?.audioDom){
+        this.stream._play.audioDom.srcObject = this.audio.audioStream
+      }
     } else if (kind === 'video') {
       this.video.cameraTrack = track;
       emptyStreamWith(this.video.videoStream, track)
@@ -1165,10 +1174,10 @@ class MediaHelper extends EventEmitter {
       this.screenAudio.screenAudioTrack = null;
       this.screenAudio.screenAudioSource = null;
       emptyStreamWith(this.screenAudio.screenAudioStream, null);
-      this.updateWebAudio();
+      /*this.updateWebAudio();
       if (this.canDisableAudioRouting()){
         this.disableAudioRouting();
-      }
+      }*/
     } else if (kind === 'video') {
       type = 'set_camera'
       this.video.cameraTrack?.stop()
@@ -2550,6 +2559,11 @@ class MediaHelper extends EventEmitter {
     if (this.audio.micTrack?.readyState === "live"){
       tracks.push(this.audio.micTrack)
     }
+    return tracks
+  }
+
+  getAudioSlaveInputTracks(): MediaStreamTrack[] {
+    let tracks:MediaStreamTrack[] = [];
     if (this.screenAudio.screenAudioTrack?.readyState === "live"){
       tracks.push(this.screenAudio.screenAudioTrack)
     }

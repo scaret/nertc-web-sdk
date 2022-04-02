@@ -897,16 +897,16 @@ class Client extends Base {
         // 应该订阅音频
         if (stream.pubStatus.audioSlave.audioSlave && !stream.pubStatus.audioSlave.consumerId) {
           if (stream.pubStatus.audioSlave.consumerStatus !== 'start') {
-            this.logger.log(`subscribe() [开始订阅 ${stream.getId()} 音频流]`)
+            this.logger.log(`subscribe() [开始订阅 ${stream.getId()} 音频辅流]`)
             stream.pubStatus.audioSlave.consumerStatus = 'start'
             await this.adapterRef._mediasoup.createConsumer(uid, 'audio', 'audioSlave', stream.pubStatus.audioSlave.producerId);
             stream.pubStatus.audioSlave.consumerStatus = 'end'
-            this.logger.log(`subscribe() [订阅 ${stream.getId()} 音频流完成]`)
+            this.logger.log(`subscribe() [订阅 ${stream.getId()} 音频辅流完成]`)
           }
         }
       } else {
         // 不应该订阅音频
-        if (stream.pubStatus.audioSlave.consumerId && stream.pubStatus.audioSlave.stopconsumerStatus !== 'start'){
+        if (stream.pubStatus.audioSlave.consumerId && stream.pubStatus.audioSlave.stopconsumerStatus !== 'start') {
           this.logger.log('开始取消订阅音频流')
           stream.pubStatus.audioSlave.stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup){

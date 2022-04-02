@@ -177,10 +177,12 @@ class LocalStream extends RTCEventEmitter {
     // localStream只有send
     // remoteStream的send表示发送端的mute状态，recv表示接收端的mute状态
     audio: {send: boolean};
+    audioSlave: {send: boolean};
     video: {send: boolean};
     screen: {send: boolean};
   } = {
     audio: {send: false},
+    audioSlave: {send: false},
     video: {send: false},
     screen: {send: false},
   }
@@ -371,6 +373,7 @@ class LocalStream extends RTCEventEmitter {
 
     this.muteStatus = {
       audio: {send: false},
+      audioSlave: {send: false},
       video: {send: false},
       screen: {send: false},
     }
@@ -1553,12 +1556,15 @@ class LocalStream extends RTCEventEmitter {
         this.screenAudio = false
         this.mediaHelper.stopStream('screenAudio')
         if (this.getAdapterRef()){
-          if (this.mediaHelper.getAudioInputTracks().length > 0){
+          /*if (this.mediaHelper.getAudioInputTracks().length > 0){
             this.logger.log('Stream.close:关闭音频，保留发布：', type);
           }else{
             this.logger.log('Stream.close:停止发布音频');
             await this.client.adapterRef._mediasoup?.destroyProduce('audioSlave');
-          }
+          }*/
+
+          this.logger.log('Stream.close:停止发布音频辅流');
+          await this.client.adapterRef._mediasoup?.destroyProduce('audioSlave');
         }else{
           this.logger.log('Stream.close:未发布音频，无需停止发布');
         }
@@ -1824,6 +1830,99 @@ class LocalStream extends RTCEventEmitter {
   }
 
   /**
+   * 启用音频轨道
+   * @function unmuteAudioSlave
+   * @memberOf Stream#
+   * @return {Promise}
+   */
+  async unmuteAudioSlave () {
+    this.logger.log('启用音频辅流轨道: ', this.stringStreamID)
+    try {
+      if (this.getAdapterRef()){
+        // unmuteLocalAudio1: unmute Mediasoup
+        await this.client.adapterRef._mediasoup?.unmuteAudioSlave()
+      }
+      // unmuteLocalAudio2: unmute发送track
+      const tracks = this.mediaHelper.audio.audioStream.getAudioTracks();
+      if (tracks && tracks.length) {
+        tracks.forEach((track)=>{
+          track.enabled = true;
+        })
+      }
+      // unmuteLocalAudio3. unmute设备
+      this.mediaHelper.getAudioInputTracks().forEach((track)=>{
+        track.enabled = true;
+      })
+      
+      this.muteStatus.audioSlave.send = false;
+      this.client.apiFrequencyControl({
+        name: 'unmuteAudioSlave',
+        code: 0,
+        param: JSON.stringify({
+          streamID: this.stringStreamID
+        }, null, ' ')
+      })
+    } catch (e) {
+      this.logger.error('API调用失败：Stream:unmuteAudio' ,e.name, e.message, e);
+      this.client.apiFrequencyControl({
+        name: 'unmuteAudioSlave',
+        code: -1,
+        param: JSON.stringify({
+          streamID: this.stringStreamID,
+          reason: e
+        }, null, ' ')
+      })
+    }
+  }
+
+  /**
+   * 禁用音频轨道
+   * @function muteAudioSlave
+   * @memberOf Stream#
+   * @return {Promise}
+   */
+  async muteAudioSlave () {
+    this.logger.log('禁用音频辅流轨道: ', this.stringStreamID)
+
+    try {
+      // muteLocalAudio1: mute mediasoup
+      if (this.getAdapterRef()){
+        await this.client.adapterRef._mediasoup?.muteAudioSlave()
+      }
+      // muteLocalAudio2: mute发送的track
+      const tracks = this.mediaHelper.audio.audioStream.getAudioTracks();
+      if (tracks && tracks.length) {
+        tracks.forEach((track)=>{
+          track.enabled = false;
+        })
+      }
+      // muteLocalAudio3: mute麦克风设备track
+      this.mediaHelper.getAudioInputTracks().forEach(track=>{
+        track.enabled = false;
+      })
+
+      this.muteStatus.audioSlave.send = true
+      this.client.apiFrequencyControl({
+        name: 'muteAudioSlave',
+        code: 0,
+        param: JSON.stringify({
+          streamID: this.stringStreamID
+        }, null, ' ')
+      })
+    } catch (e) {
+      this.logger.error('API调用失败：Stream:muteAudioSlave' ,e.name, e.message, e);
+      this.client.apiFrequencyControl({
+        name: 'muteAudioSlave',
+        code: -1,
+        param: JSON.stringify({
+          streamID: this.stringStreamID,
+          reason: e
+        }, null, ' ')
+      })
+    }
+  }
+
+  /**
    * 当前Stream是否有音频
    * @function hasAudio
    * @memberOf Stream#
@@ -1831,6 +1930,16 @@ class LocalStream extends RTCEventEmitter {
    */
   hasAudio () {
     return this.mediaHelper.getAudioInputTracks().length > 0
+  }
+
+  /**
+   * 当前Stream是否有音频
+   * @function hasAudioSlave
+   * @memberOf Stream#
+   * @return {Boolean}
+   */
+  hasAudioSlave () {
+    return this.mediaHelper.getAudioSlaveInputTracks().length > 0
   }
 
   /**
@@ -1846,6 +1955,16 @@ class LocalStream extends RTCEventEmitter {
         logger: this.logger})
     }
     return this.audioLevelHelper?.getAudioLevel() || 0
+  }
+
+  /**
+   * 当前从麦克风中采集的音量
+   * @function getAudioLevel
+   * @memberOf Stream#
+   * @return {volume}
+   */
+  getAudioSlaveLevel () {
+    return this.mediaHelper.getGain()
   }
 
   /**

@@ -1436,6 +1436,28 @@ $('#unsubAudio').on('click', () => {
   })
 })
 
+$('#unsubAudioSlave').on('click', () => {
+  if (!rtc.remoteStreams[subList[subList.selectedIndex].value]) {
+    addLog('无法进行此操作')
+    return
+  }
+
+  let remoteStream = rtc.remoteStreams[subList[subList.selectedIndex].value]
+
+  remoteStream.setSubscribeConfig({
+    audioSlave: false
+  })
+
+  rtc.client.subscribe(remoteStream).then(()=>{
+    console.log('本地 取消订阅音频辅流 成功')
+    addLog('本地 取消订阅音频辅流 成功')
+  }).catch(err=>{
+    addLog('本地 取消订阅音频辅流 失败')
+    console.log('本地 取消订阅音频辅流 失败: ', err)
+  })
+})
+
+
 $('#unsubVideo').on('click', () => {
   if (!rtc.remoteStreams[subList[subList.selectedIndex].value]) {
     addLog('无法进行此操作')
@@ -2064,6 +2086,57 @@ $('#unmuteAudio').on('click', () => {
   }
 })
 
+$('#muteAudioSlave').on('click', () => {
+  let uid = $('#part-play input[name="uid"]').val()
+  console.warn('muteAudioSlave: ', uid)
+  if (uid) {
+    let remoteStream = rtc.remoteStreams[uid]
+    if (remoteStream) {
+      remoteStream.muteAudioSlave().catch(err =>{
+      addLog('muteAudioSlave 错误：' + err)
+      console.log('muteAudioSlave 错误：', err)
+    })
+    } else {
+      console.warn('请检查uid是否正确')
+      addLog('请检查uid是否正确')
+      return
+    }
+  } else if (rtc.localStream) {
+    rtc.localStream.muteAudioSlave().catch(err =>{
+      addLog('muteAudioSlave 错误：' + err)
+      console.log('muteAudioSlave 错误：', err)
+    })
+  } else {
+    assertLocalStream()
+  }
+})
+
+$('#unmuteAudioSlave').on('click', () => {
+  let uid = $('#part-play input[name="uid"]').val()
+  console.warn('unmuteAudioSlave: ', uid)
+  if (uid) {
+    let remoteStream = rtc.remoteStreams[uid]
+    if (remoteStream) {
+      remoteStream.unmuteAudioSlave().catch(err =>{
+        addLog('unmuteAudioSlave 错误：' + err)
+        console.log('unmuteAudioSlave 错误：', err)
+      })
+    } else {
+      console.warn('请检查uid是否正确')
+      addLog('请检查uid是否正确')
+      return
+    }
+  } else if(rtc.localStream){
+    rtc.localStream.unmuteAudioSlave().catch(err =>{
+      addLog('unmuteAudioSlave 错误：' + err)
+      console.log('unmuteAudioSlave 错误：', err)
+    })
+  } else {
+    assertLocalStream()
+  }
+})
+
+
 $('#muteVideo').on('click', () => {
   let uid = $('#part-play input[name="uid"]').val()
   console.warn('muteVideo: ', uid)
@@ -2227,6 +2300,21 @@ $('#setPlayVolume').on('click', () => {
   volume = remoteStream.setAudioVolume(volume)
   $('#playVolumeInput').val(volume)
 })
+
+$('#setAudioSlavePlayVolume').on('click', () => {
+  const uid = $('#part-volume input[name="uid"]').val()
+  let volume = $('#playAudioSlaveVolumeInput').val()
+  let remoteStream = rtc.remoteStreams[uid]
+  if (!remoteStream) {
+    console.warn('请检查uid是否正确')
+    addLog('请检查uid是否正确')
+    return
+  }
+  volume = parseInt(volume)
+  volume = remoteStream.setAudioSlaveVolume(volume)
+  $('#playAudioSlaveVolumeInput').val(volume)
+})
+
 
 $('#setCaptureVolumeType').on('click', () => {
   if (!rtc.localStream) {

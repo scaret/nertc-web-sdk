@@ -1485,7 +1485,6 @@ class Mediasoup extends EventEmitter {
     }
   }
 
-
   async muteAudio(){
     this.loggerSend.log('mute音频')
     if (!this._micProducer){
@@ -1553,6 +1552,83 @@ class Mediasoup extends EventEmitter {
             uid: muteUid,
             data: {
               producerId: this._micProducer.id,
+              mute: false 
+            }
+          } 
+        });
+    } catch (e) {
+      this.loggerSend.error('muteMic() | failed: ', e.name, e.message, e);
+      return Promise.reject(e)
+    }
+  }
+
+  async muteAudioSlave(){
+    this.loggerSend.log('mute音频辅流')
+    if (!this._audioSlaveProducer){
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'No _audioSlaveProducer'
+      })
+    }
+    this._audioSlaveProducer.pause();
+    try{
+      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
+        throw new RtcError({
+          code: ErrorCode.NOT_FOUND,
+          message: 'No _protoo 8'
+        })
+      }
+      let muteUid = this.adapterRef.channelInfo.uid
+      if (this.adapterRef.channelInfo.uidType === 'string') {
+        //@ts-ignore
+        muteUid = new BigNumber(muteUid)
+      } 
+      await this.adapterRef._signalling._protoo.request(
+        'SendUserData', {
+          externData: {
+            'type': 'Mute',
+            cid: this.adapterRef.channelInfo.cid,
+            uid: muteUid,
+            data: {
+              producerId: this._audioSlaveProducer.id,
+              mute: true 
+            }
+          } 
+        });
+    } catch (e) {
+      this.loggerSend.error('muteMic() | failed:', e.name, e.message, e);
+    }
+  }
+
+  async unmuteAudioSlave(){
+    this.loggerSend.log('resume音频辅流')
+    if (!this._audioSlaveProducer){
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'No _audioSlaveProducer'
+      })
+    }
+    this._audioSlaveProducer.resume();
+    try{
+      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
+        throw new RtcError({
+          code: ErrorCode.NOT_FOUND,
+          message: 'No _protoo 9'
+        })
+      }
+      let muteUid = this.adapterRef.channelInfo.uid
+      if (this.adapterRef.channelInfo.uidType === 'string') {
+        //@ts-ignore
+        muteUid = new BigNumber(muteUid)
+      } 
+      await this.adapterRef._signalling._protoo.request(
+        'SendUserData', { 
+          externData: {
+            type: 'Mute',
+            cid: this.adapterRef.channelInfo.cid,
+            uid: muteUid,
+            data: {
+              producerId: this._audioSlaveProducer.id,
               mute: false 
             }
           } 

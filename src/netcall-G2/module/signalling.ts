@@ -925,6 +925,11 @@ class Signalling extends EventEmitter {
         this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-error');
         this._joinFailed(response.code, errMsg)
         return
+      } else {
+        if (this._times) {
+          this.logger.log(`重置重连次数: ${this._times} => 0`)
+          this._times = 0
+        }
       }
       // 服务器禁用音视频: 1 禁用   0 和 2 取消禁用
       if(response.externData.audioRight === 1){

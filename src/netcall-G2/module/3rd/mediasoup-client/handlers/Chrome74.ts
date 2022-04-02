@@ -334,7 +334,7 @@ export class Chrome74 extends HandlerInterface
       this._pc.audioSender.replaceTrack(track)
     } else if (appData.mediaType === 'audioSlave' && this._pc.audioSlaveSender) {
       Logger.debug(prefix, 'audioSlaveSender更新track: ', this._pc.audioSlaveSender.track, "=>", track)
-      this._pc.audioSender.replaceTrack(track)
+      this._pc.audioSlaveSender.replaceTrack(track)
     } else if (appData.mediaType === 'video' && this._pc.videoSender) {
       Logger.debug(prefix, 'videoSender更新track: ', this._pc.videoSender.track, "=>", track)
       this._pc.videoSender.replaceTrack(track)

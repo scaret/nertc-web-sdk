@@ -1341,6 +1341,7 @@ export interface ExistsOptions{
 
 export interface StreamPlayOptions{
   audio?: boolean;
+  audioSlave?: boolean;
   audioType?: "voice"|"music"|"mixing";
   video?: boolean;
   screen?: boolean;
