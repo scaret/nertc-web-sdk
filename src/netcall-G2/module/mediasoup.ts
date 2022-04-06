@@ -908,7 +908,7 @@ class Mediasoup extends EventEmitter {
           message: 'localStream not found'
         })
       }
-      this.adapterRef.localStream.pubStatus.audio.audio = false
+      this.adapterRef.localStream.pubStatus.audioSlave.audio = false
     } else if (kind === 'video') {
       producer = this._webcamProducer
       producerId = this._webcamProducerId
