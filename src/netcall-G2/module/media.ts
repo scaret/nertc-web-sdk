@@ -551,6 +551,7 @@ class MediaHelper extends EventEmitter {
               }*/
             }else{
               this.logger.warn('getStream screenAudio: 未获取到屏幕共享音频');
+              //@ts-ignore
               this.stream.screenAudio = false;
               this.stream.client.emit('error', 'screenAudioNotAllowed');
             }
@@ -845,16 +846,20 @@ class MediaHelper extends EventEmitter {
         const videoView = this.stream.Play?.videoView
         if (videoView) {
           await this.stream.play(videoView)
+          //@ts-ignore
           if ("width" in this.stream.renderMode.local.video){
+            //@ts-ignore
             this.stream.setLocalRenderMode(this.stream.renderMode.local.video, 'video')
           }
         }
+        //@ts-ignore
         const videoSender = this.stream.getSender("video", "high");
         if (videoSender?.track) {
           videoSender.replaceTrack(videoTrack)
         } else {
           this.logger.warn('getSecondStream video: 此时未发布流')
         }
+        //@ts-ignore
         const videoSenderLow = this.stream.getSender("video", "low");
         const historyVideoTrackLow = this.video.videoTrackLow;
         this.video.videoTrackLow?.stop()
@@ -985,6 +990,7 @@ class MediaHelper extends EventEmitter {
       this.logger.error('Remote Stream dont have audio constraints');
       return;
     }
+    //@ts-ignore
     const audioProcessing = this.stream.audioProcessing;
     let constraint:GUMAudioConstraints = {
       channelCount: 1,
@@ -1006,6 +1012,7 @@ class MediaHelper extends EventEmitter {
         constraint.googAutoGainControl2 = audioProcessing.AGC;
       }
     }
+    //@ts-ignore
     switch(this.stream.audioProfile){
       case "standard_stereo":
       case "high_quality_stereo":

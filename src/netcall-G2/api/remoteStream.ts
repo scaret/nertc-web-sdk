@@ -127,6 +127,7 @@ class RemoteStream extends RTCEventEmitter {
   private videoPlay_: boolean;
   private screenPlay_: boolean;
   public active:boolean = true;
+  public destroyed:boolean = false;
   public logger: ILogger;
   remoteStreamId : number;
   public spatialPosition: {x: number, y: number} = {x: 0, y: 0}
