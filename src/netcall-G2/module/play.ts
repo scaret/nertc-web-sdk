@@ -520,12 +520,14 @@ class Play extends EventEmitter {
   async stopPlayAudioStream() {
     if (this.audioDom) {
       this.audioDom.muted = true
+      this.audioDom.srcObject = null
     }
   }
 
   async stopPlayAudioSlaveStream() {
     if (this.audioSlaveDom) {
       this.audioSlaveDom.muted = true
+      this.audioSlaveDom.srcObject = null
     }
   }
 

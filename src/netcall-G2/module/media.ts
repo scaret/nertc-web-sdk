@@ -2629,17 +2629,11 @@ class MediaHelper extends EventEmitter {
       if (this.stream.getAdapterRef()?._mediasoup?._micProducer?._rtpSender){
         this.logger.info('updateAudioSender: 替换当前_micProducer的track', audioTrack.label);
         this.stream.getAdapterRef()?._mediasoup?._micProducer?._rtpSender?.replaceTrack(audioTrack);
-      }
-      else if (this.stream.getAdapterRef()?._mediasoup?._sendTransport?.handler?._pc){
-        const senders = this.stream.getAdapterRef()?._mediasoup?._sendTransport?.handler._pc.getSenders();
-        if (senders){
-          for (var i in senders){
-            const sender = senders[i];
-            if (sender?.track?.kind === "audio"){
-              this.logger.info('updateAudioSender: 替换audioSender', sender.track.label);
-              sender.replaceTrack(audioTrack);
-            }
-          }
+      } else if (this.stream.getAdapterRef()?._mediasoup?._sendTransport?.handler?._pc){
+        const sender = this.stream.getAdapterRef()?._mediasoup?._sendTransport?.handler._pc.audioSender;
+        if (sender){
+          this.logger.info('updateAudioSender: 替换audioSender', sender?.track?.label);
+          sender.replaceTrack(audioTrack);
         }
       }
     }

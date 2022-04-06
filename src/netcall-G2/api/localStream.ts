@@ -2800,18 +2800,19 @@ class LocalStream extends RTCEventEmitter {
     })
   }
 
-  getSender (mediaTypeShort: "audio"|"video"|"screen", streamType: "high"|"low"){
+  getSender (mediaTypeShort: "audio"|"video"|"screen"|"audioSlave", streamType: "high"|"low"){
     const peer = this.getAdapterRef()?._mediasoup?._sendTransport?.handler._pc
     let sender = null;
     if (peer) {
       if (mediaTypeShort === "audio") {
         sender = (streamType === "high" ? peer.audioSender : null)
-      }
-      if (mediaTypeShort === "video") {
+      } if (mediaTypeShort === "video") {
         sender = (streamType === "high" ? peer.videoSender : peer.videoSenderLow)
       } else if (mediaTypeShort === "screen") {
         sender = (streamType === "high" ? peer.screenSender : peer.screenSenderLow)
-      }
+      } else if (mediaTypeShort === "audioSlave") {
+        sender = peer.audioSlaveSender
+      } 
     }
     return sender || null;
   }

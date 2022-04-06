@@ -513,13 +513,13 @@ class Signalling extends EventEmitter {
             data.recvFirstAudioPackage = false
           }
         } else if (mediaTypeShort === 'audioSlave') {
-          remoteStream.mediaHelper.audio.micTrack = null;
-          emptyStreamWith(remoteStream.mediaHelper.audio.audioStream, null);
-          delete this.adapterRef.remoteAudioStats[uid];
+          remoteStream.mediaHelper.screenAudio.screenAudioTrack = null;
+          emptyStreamWith(remoteStream.mediaHelper.screenAudio.screenAudioStream, null);
+          /*delete this.adapterRef.remoteAudioStats[uid];
           if (data) {
             data.recvFirstAudioFrame = false
             data.recvFirstAudioPackage = false
-          }
+          }*/
         } else if (mediaTypeShort === 'video') {
           remoteStream.mediaHelper.video.cameraTrack = null;
           emptyStreamWith(remoteStream.mediaHelper.video.videoStream, null)
