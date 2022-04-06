@@ -1843,16 +1843,16 @@ class LocalStream extends RTCEventEmitter {
         await this.client.adapterRef._mediasoup?.unmuteAudioSlave()
       }
       // unmuteLocalAudio2: unmute发送track
-      const tracks = this.mediaHelper.audio.audioStream.getAudioTracks();
+      const tracks = this.mediaHelper.screenAudio.screenAudioStream.getAudioTracks();
       if (tracks && tracks.length) {
         tracks.forEach((track)=>{
           track.enabled = true;
         })
       }
       // unmuteLocalAudio3. unmute设备
-      this.mediaHelper.getAudioInputTracks().forEach((track)=>{
+      /*this.mediaHelper.getAudioInputTracks().forEach((track)=>{
         track.enabled = true;
-      })
+      })*/
       
       this.muteStatus.audioSlave.send = false;
       this.client.apiFrequencyControl({
@@ -1890,17 +1890,16 @@ class LocalStream extends RTCEventEmitter {
         await this.client.adapterRef._mediasoup?.muteAudioSlave()
       }
       // muteLocalAudio2: mute发送的track
-      const tracks = this.mediaHelper.audio.audioStream.getAudioTracks();
+      const tracks = this.mediaHelper.screenAudio.screenAudioStream.getAudioTracks();
       if (tracks && tracks.length) {
         tracks.forEach((track)=>{
           track.enabled = false;
         })
       }
       // muteLocalAudio3: mute麦克风设备track
-      this.mediaHelper.getAudioInputTracks().forEach(track=>{
+      /*this.mediaHelper.getAudioInputTracks().forEach(track=>{
         track.enabled = false;
-      })
-
+      })*/
       this.muteStatus.audioSlave.send = true
       this.client.apiFrequencyControl({
         name: 'muteAudioSlave',
