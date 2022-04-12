@@ -199,7 +199,7 @@ class RemoteStream extends EventEmitter {
     })
     this._record = new Record({
       logger: this.logger,
-      stream: this,
+      client: this.client
     })
     
     this.logger.log(`创建远端Stream: `, JSON.stringify({

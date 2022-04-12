@@ -2133,6 +2133,7 @@ $('#playScreenAudioOff').on('click', () => {
  *              金融私有化录制逻辑
  * ----------------------------------------
  */
+const screenProfile = $('#sessionConfigScreenProfile').val()
 // 开始录制
 $('#recordVideoPro').on('click', async (_event) => {
   console.log('金融私有化录制: 开始录制')
@@ -2141,9 +2142,8 @@ $('#recordVideoPro').on('click', async (_event) => {
     recordConfig: {
       recordType: $('#part-record-pro input[name="recordMediaType"]:checked').val(),
       recordName: $('#recordName').val(),
-      recordVideoWidth: $('#recordVideoWidth').val(),
-      recordVideoHeight: $('#recordVideoHeight').val(),
-      recordVideoFrame: $('#recordVideoFrame').val(),
+      recordVideoQuality: NERTC[$('#recordVideoQuality').val()],
+      recordVideoFrame: NERTC[$('#recordVideoFrame').val()]
     }
   })
 })

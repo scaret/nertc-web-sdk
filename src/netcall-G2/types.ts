@@ -620,7 +620,8 @@ export interface ScreenSource{
 
 export interface RecordInitOptions{
   logger: ILogger;
-  stream: LocalStream|RemoteStream;
+  client: Client;
+  //stream: LocalStream|RemoteStream;
 }
 
 export interface RecordStatus{
@@ -818,6 +819,7 @@ export interface Client{
   doSubscribe: (stream: RemoteStream)=>Promise<void>
   doUnsubscribe: (stream: RemoteStream)=>void
   doPublish: (stream: LocalStream)=>void
+  updateRecordingAudioStream: ()=>void
 }
 
 export type ConsumerStatus = "init"|"start"|"end"
@@ -906,8 +908,7 @@ export interface ClientMediaRecordingOptions{
 export interface ClientRecordConfig{
   recordType: 'audio' | 'video';
   recordName?: string;
-  recordVideoWidth: number;
-  recordVideoHeight: number;
+  recordVideoQuality: number;
   recordVideoFrame: number;
   recordSize: number;
 }
@@ -1243,5 +1244,5 @@ export interface RTSTransportOptions{
 
 
 export interface FormatMediaOptions{
-  logger: ILogger;
+  adapterRef: AdapterRef;
 }

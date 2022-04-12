@@ -33,7 +33,7 @@ import {OperationQueue} from "../util/OperationQueue";
 import {SpatialManager} from "./spatialManager";
 import {getAudioContext} from "../module/webAudio";
 import {getParameters} from "../module/parameters";
-import {FormatMedia} from "../util/rtcUtil/formatMedia"
+import {FormatMedia} from "../module/formatMedia"
 import {Record} from '../module/record'
 import * as env from '../util/rtcUtil/rtcEnvironment';
 const BigNumber = require("bignumber.js");
@@ -119,7 +119,14 @@ class Client extends Base {
     };
     this._init(options)
     this.logger.info(`NERTC ${SDK_VERSION} ${BUILD}: 客户端创建成功。`);
-    
+    this.on('connection-state-change', (evt)=>{
+      if (evt.prevState === "CONNECTED"){
+        if (this.recordManager.record?._status.isRecording && this.recordManager.record?._status.state === 'started'){
+          this.logger.log("自动停止客户端录制功能")
+          this.recordManager.record.download()
+        }
+      }
+    })
   }
   
   safeEmit (eventName:string, ...args: any[]){
@@ -1680,6 +1687,25 @@ class Client extends Base {
   /**
    * ************************ 客户端录制相关 *****************************
    */
+  
+  updateRecordingAudioStream() {
+    if (!this.recordManager || !this.recordManager.formatMedia || !this.recordManager.formatMedia.destination) {
+      return
+    }
+    this.logger.log('updateRecordingAudioStream() [更新录制的音频]')
+    const audioStreams = []
+    if (this.adapterRef.remoteStreamMap) {
+      for (var uid in this.adapterRef.remoteStreamMap){
+        const remoteStream = this.adapterRef.remoteStreamMap[uid];
+        audioStreams.push(remoteStream.mediaHelper.audio.audioStream);
+      }
+    }
+    if(this.adapterRef.localStream){
+      audioStreams.push(this.adapterRef.localStream.mediaHelper.audio.audioStream);
+    }
+    this.recordManager.formatMedia.updateStream(audioStreams)
+  }
+
   /**
    * 开始录制
    * @function startMediaRecording
@@ -1691,18 +1717,19 @@ class Client extends Base {
    */
   async startMediaRecording (options: ClientMediaRecordingOptions) {
     const {recorder, recordConfig} = options
-    if(!this.adapterRef.localStream) {
-      return
-    }
+
     if (!this.recordManager.record) {
       this.recordManager.record = new Record({
         logger: this.logger,
-        stream: this.adapterRef.localStream,
+        client: this.adapterRef.instance,
+      })
+      this.recordManager.record.on('media-recording-stopped', (evt)=>{
+        this.safeEmit('media-recording-stopped')
       })
     }
     if (!this.recordManager.formatMedia) {
       this.recordManager.formatMedia = new FormatMedia({
-        logger: this.logger
+        adapterRef: this.adapterRef
       })
     }
     const audioStreams = []
@@ -1716,35 +1743,9 @@ class Client extends Base {
         audioStreams.push(remoteStream.mediaHelper.audio.audioStream);
       }
     }
-
+    
     const audioStream = await this.recordManager.formatMedia.formatAudio(audioStreams)
-
-    const videoDoms = []
-    if (recordConfig?.recordType === 'video') {
-      if (this.adapterRef.localStream.Play?.videoDom){
-        videoDoms.push(this.adapterRef.localStream.Play?.videoDom)
-      }
-      if (this.adapterRef.localStream.Play?.screenDom){
-        videoDoms.push(this.adapterRef.localStream.Play?.screenDom)
-      }
-
-      if (recorder === 'all' && this.adapterRef.remoteStreamMap) {
-        for (var uid in this.adapterRef.remoteStreamMap){
-          const remoteStream = this.adapterRef.remoteStreamMap[uid];
-          if (remoteStream.Play?.videoDom){
-            videoDoms.push(remoteStream.Play?.videoDom)
-          }
-          if (remoteStream.Play?.screenDom){
-            videoDoms.push(remoteStream.Play?.screenDom)
-          }
-        }
-      }
-
-      if (videoDoms.length <= 2 && videoDoms.length > 0) {
-
-      }
-    }
-    const videoStream = await this.recordManager.formatMedia.formatVideo(videoDoms, recordConfig)
+    const videoStream = await this.recordManager.formatMedia.formatVideo(recorder, recordConfig)
 
     const streams = []
     streams.push(audioStream, videoStream)
@@ -1802,7 +1803,7 @@ class Client extends Base {
     return this.recordManager.record.download()
   }
 
-  
+
 
 
   /**

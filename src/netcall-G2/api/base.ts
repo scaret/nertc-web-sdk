@@ -20,7 +20,7 @@ import ErrorCode  from '../util/error/errorCode';
 import {getParameters} from "../module/parameters";
 import {RemoteStream} from "./remoteStream";
 import {LocalStream} from "./localStream";
-import {FormatMedia} from "../util/rtcUtil/formatMedia"
+import {FormatMedia} from "../module/formatMedia"
 import {Record} from '../module/record'
 import {Client as ICLient} from "../types"
 import logger, {loglevels} from "../util/log/logger";

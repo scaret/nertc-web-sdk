@@ -396,6 +396,7 @@ class Play extends EventEmitter {
       this.audioDom.muted = false;
       await this.audioDom.play()
       this.logger.log(`播放音频完成，当前播放状态:`, this.audioDom && this.audioDom.played && this.audioDom.played.length)
+      this.stream.client.updateRecordingAudioStream()
     } catch (error) {
       this.logger.warn('播放音频出现问题: ', error.name, error.message, error)
 
