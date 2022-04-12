@@ -251,7 +251,7 @@ class LocalStream extends EventEmitter {
     })
     this._record = new Record({
       logger: this.logger,
-      stream: this,
+      client: this.client,
     })
     if (this.client._params && this.client._params.mode === 'live') {
       this.audioProfile = 'music_standard'

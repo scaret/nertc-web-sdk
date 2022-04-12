@@ -9,7 +9,10 @@ import {
   MediaTypeShort,
   RTMPTask,
   Client as IClient,
-  SpatialInitOptions, MediaSubStatus
+  SpatialInitOptions, 
+  MediaSubStatus,
+  ClientMediaRecordingOptions,
+  ClientRecordConfig
 } from "../types";
 import {LocalStream} from "./localStream";
 import {checkExists, checkValidBoolean, checkValidInteger, checkValidString} from "../util/param";
@@ -30,6 +33,8 @@ import {OperationQueue} from "../util/OperationQueue";
 import {SpatialManager} from "./spatialManager";
 import {getAudioContext} from "../module/webAudio";
 import {getParameters} from "../module/parameters";
+import {FormatMedia} from "../module/formatMedia"
+import {Record} from '../module/record'
 import * as env from '../util/rtcUtil/rtcEnvironment';
 const BigNumber = require("bignumber.js");
 
@@ -114,7 +119,14 @@ class Client extends Base {
     };
     this._init(options)
     this.logger.info(`NERTC ${SDK_VERSION} ${BUILD}: 客户端创建成功。`);
-    
+    this.on('connection-state-change', (evt)=>{
+      if (evt.prevState === "CONNECTED"){
+        if (this.recordManager.record?._status.isRecording && this.recordManager.record?._status.state === 'started'){
+          this.logger.log("自动停止客户端录制功能")
+          this.recordManager.record.download()
+        }
+      }
+    })
   }
   
   safeEmit (eventName:string, ...args: any[]){
@@ -1670,6 +1682,130 @@ class Client extends Base {
     // 提供给智慧树客户 获取远端用户列表
     return this.adapterRef.memberMap;
   }
+
+
+  /**
+   * ************************ 客户端录制相关 *****************************
+   */
+  
+  updateRecordingAudioStream() {
+    if (!this.recordManager || !this.recordManager.formatMedia || !this.recordManager.formatMedia.destination) {
+      return
+    }
+    this.logger.log('updateRecordingAudioStream() [更新录制的音频]')
+    const audioStreams = []
+    if (this.adapterRef.remoteStreamMap) {
+      for (var uid in this.adapterRef.remoteStreamMap){
+        const remoteStream = this.adapterRef.remoteStreamMap[uid];
+        audioStreams.push(remoteStream.mediaHelper.audio.audioStream);
+      }
+    }
+    if(this.adapterRef.localStream){
+      audioStreams.push(this.adapterRef.localStream.mediaHelper.audio.audioStream);
+    }
+    this.recordManager.formatMedia.updateStream(audioStreams)
+  }
+
+  /**
+   * 开始录制
+   * @function startMediaRecording
+   * @memberOf Stream#
+   * @param {Object} param 参数对象
+   * @param {String} param.recordConfig 录制设置的参数
+   * @param {recorder} param.recorder ['local': 录制自己，'all': 录制本地和远端]
+   * @returns {Promise} 包含recordId值，用于下载等操作
+   */
+  async startMediaRecording (options: ClientMediaRecordingOptions) {
+    const {recorder, recordConfig} = options
+
+    if (!this.recordManager.record) {
+      this.recordManager.record = new Record({
+        logger: this.logger,
+        client: this.adapterRef.instance,
+      })
+      this.recordManager.record.on('media-recording-stopped', (evt)=>{
+        this.safeEmit('media-recording-stopped')
+      })
+    }
+    if (!this.recordManager.formatMedia) {
+      this.recordManager.formatMedia = new FormatMedia({
+        adapterRef: this.adapterRef
+      })
+    }
+    const audioStreams = []
+    if(this.adapterRef.localStream){
+      audioStreams.push(this.adapterRef.localStream.mediaHelper.audio.audioStream);
+    }
+    
+    if (recorder === 'all' && this.adapterRef.remoteStreamMap) {
+      for (var uid in this.adapterRef.remoteStreamMap){
+        const remoteStream = this.adapterRef.remoteStreamMap[uid];
+        audioStreams.push(remoteStream.mediaHelper.audio.audioStream);
+      }
+    }
+    
+    const audioStream = await this.recordManager.formatMedia.formatAudio(audioStreams)
+    const videoStream = await this.recordManager.formatMedia.formatVideo(recorder, recordConfig)
+
+    const streams = []
+    streams.push(audioStream, videoStream)
+    if (streams.length === 0) {
+      this.logger.log('没有没发现要录制的媒体流')
+      return 
+    }
+
+    return this.recordManager.record.start({
+      uid: '',
+      type: recordConfig?.recordType || 'video',
+      recordName: recordConfig?.recordName,
+      reset: true,
+      stream: streams
+    })
+
+
+  }
+  /**
+   * 结束视频录制
+   */
+  stopMediaRecording (options: {recordId?: string}) {
+    if (!this.recordManager.record){
+      throw new RtcError({
+        code: ErrorCode.NO_RECORD,
+        message: '操作非法：没有开始录制'
+      })
+    }
+    //FIXME
+    return this.recordManager.record.stop({})
+  }
+
+  /**
+   * 清除录制的音视频
+   */
+  cleanMediaRecording () {
+    if (!this.recordManager.record){
+      throw new RtcError({
+        code: ErrorCode.NO_RECORD,
+        message: '操作非法：没有开始录制'
+      })
+    }
+    return this.recordManager.record.clean()
+  }
+  /**
+   * 下载录制的音视频
+   */
+  downloadMediaRecording () {
+    if (!this.recordManager.record){
+      throw new RtcError({
+        code: ErrorCode.NO_RECORD,
+        message: '操作非法：没有开始录制'
+      })
+    }
+    return this.recordManager.record.download()
+  }
+
+
+
+
   /**
    *  销毁实例
    *  @method destroy
