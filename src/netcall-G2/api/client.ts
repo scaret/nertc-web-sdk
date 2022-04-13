@@ -433,7 +433,7 @@ class Client extends Base {
     }
     this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
     this.adapterRef.connectState.curState = 'DISCONNECTING'
-    this.adapterRef.connectState.reconnecting = false
+    this.adapterRef.connectState.reconnect = false
     this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
     this.setEndSessionTime()
     if (this.adapterRef._meetings) {
@@ -459,7 +459,7 @@ class Client extends Base {
     }
     this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
     this.adapterRef.connectState.curState = 'DISCONNECTING'
-    this.adapterRef.connectState.reconnecting = false
+    this.adapterRef.connectState.reconnect = false
     this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
     this.setEndSessionTime()
     if (this.adapterRef._meetings) {

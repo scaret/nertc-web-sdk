@@ -108,7 +108,7 @@ export interface AdapterRef {
   connectState:{
     prevState: ConnectionState;
     curState:ConnectionState;
-    reconnecting: boolean;
+    reconnect: boolean;
   };
   _mediasoup?:Mediasoup|null;
   mediaHelpers: {[uid in UIDTYPE]:MediaHelper};

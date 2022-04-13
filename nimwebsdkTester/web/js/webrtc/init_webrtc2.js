@@ -652,9 +652,9 @@ function initEvents() {
 
 
   rtc.client.on('connection-state-change', _data => {
-    console.warn(`网络状态 : ${_data.prevState} => ${_data.curState}, 是否重连：${_data.reconnecting}`)
+    console.warn(`网络状态 connection-state-change: ${_data.prevState} => ${_data.curState}, 是否重连：${_data.reconnect}`)
     const div = document.getElementById('netStatus')
-    div.firstElementChild.firstElementChild.lastElementChild.innerText = ` ${_data.curState} ${_data.reconnecting ? "重连中" : ""}`
+    div.firstElementChild.firstElementChild.lastElementChild.innerText = ` ${_data.curState} ${_data.reconnect ? "重连" : ""}`
   })
 
   rtc.client.on("recording-device-changed", evt=>{
