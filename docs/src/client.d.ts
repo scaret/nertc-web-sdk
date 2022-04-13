@@ -722,6 +722,10 @@ declare interface Client{
      * 变化前的状态。
      */
     prevState: ConnectionState;
+    /**
+     * 是否为重连
+     */
+    reconnect: boolean;
   }) => void): void;
 
   /**

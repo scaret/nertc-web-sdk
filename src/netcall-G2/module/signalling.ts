@@ -138,7 +138,7 @@ class Signalling extends EventEmitter {
     if (this._reconnectionTimer) return
     this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
     this.adapterRef.connectState.curState = 'CONNECTING'
-    this.adapterRef.connectState.reconnecting = true
+    this.adapterRef.connectState.reconnect = true
     this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
     this.adapterRef.instance.emit('pairing-websocket-reconnection-start');
     this._destroyProtoo()
@@ -899,9 +899,9 @@ class Signalling extends EventEmitter {
       this.logger.log('Signalling:加入房间成功')
       this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
       this.adapterRef.connectState.curState = 'CONNECTED'
-      this.adapterRef.connectState.reconnecting = false
       
       if (this.adapterRef.channelStatus === 'connectioning') {
+        this.adapterRef.connectState.reconnect = true
         this.logger.log('重连成功，清除之前的媒体的通道')
         this.adapterRef.channelStatus = 'join'
         this.adapterRef.instance.apiEventReport('setRelogin', {
@@ -939,6 +939,7 @@ class Signalling extends EventEmitter {
           this.logger.log('重连成功，当前在未发布状态，无需发布')
         }
       } else {
+        this.adapterRef.connectState.reconnect = false
         const webrtc2Param = this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2
         const currentTime = Date.now()
         this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.joinedSuccessedTime = currentTime
@@ -1071,7 +1072,7 @@ class Signalling extends EventEmitter {
   _joinFailed (reasonCode:string|undefined|number, errMsg: string|undefined) {
     this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
     this.adapterRef.connectState.curState = 'DISCONNECTED'
-    this.adapterRef.connectState.reconnecting = false
+    this.adapterRef.connectState.reconnect = false
     this.adapterRef.channelStatus = 'init'
     this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
 
