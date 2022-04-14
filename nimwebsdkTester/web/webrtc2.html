@@ -616,6 +616,16 @@
             </select>
             <br/>
             最大编码比特率/kbps<input type="number" id="bitrateMax" value="5000" style="width: 25%" step="1000">
+            <br/>
+            <label>
+              优先模式
+              <select id="contentHint">
+                <option value="">默认</option>
+                <option value="motion">流畅优先</option>
+                <option value="detail">画质优先</option>
+              </select>
+            </label>
+            <br/>
             <button id="encoderConfigBtn">设置</button>
             </div>
           </div>

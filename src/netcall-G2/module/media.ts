@@ -82,7 +82,7 @@ class MediaHelper extends EventEmitter {
     cameraConstraint: {video: {}},
     videoSource: null,
     captureConfig:{high: {width: 640, height: 480, frameRate: 15}},
-    encoderConfig: {high: {maxBitrate: 800000}, low: {maxBitrate: 100000}},
+    encoderConfig: {high: {maxBitrate: 800000, contentHint: null}, low: {maxBitrate: 100000, contentHint: "motion"}},
   };
   public screen: {
     // screenVideoStream中的track可能是screenVideoTrack或者screenVideoSource
@@ -100,7 +100,7 @@ class MediaHelper extends EventEmitter {
     screenVideoTrack: null,
     screenVideoSource: null,
     captureConfig:{high: {width: 1920, height: 1080, frameRate: 5}},
-    encoderConfig: {high: {maxBitrate: 1500000}, low: {maxBitrate: 200000}},
+    encoderConfig: {high: {maxBitrate: 1500000, contentHint: null}, low: {maxBitrate: 200000, contentHint: "motion"}},
   };
   public screenAudio: {
     readonly screenAudioStream: MediaStream,
@@ -319,6 +319,16 @@ class MediaHelper extends EventEmitter {
       watchTrack(videoSource);
       this.video.videoSource = videoSource;
       emptyStreamWith(this.video.videoStream, videoSource);
+      if (
+        this.video.videoStream.getVideoTracks().length &&
+        typeof this.video.encoderConfig.high.contentHint === "string" &&
+        // @ts-ignore
+        this.video.videoStream.getVideoTracks()[0].contentHint !== this.video.encoderConfig.high.contentHint
+      ){
+        this.logger.log(`应用 contentHint video high`, this.video.encoderConfig.high.contentHint)
+        // @ts-ignore
+        this.video.videoStream.getVideoTracks()[0].contentHint = this.video.encoderConfig.high.contentHint
+      }
       video = false
     }
 
@@ -351,6 +361,16 @@ class MediaHelper extends EventEmitter {
       watchTrack(screenVideoSource);
       this.screen.screenVideoSource = screenVideoSource;
       emptyStreamWith(this.screen.screenVideoStream, screenVideoSource);
+      if (
+        this.screen.screenVideoStream.getVideoTracks().length &&
+        typeof this.screen.encoderConfig.high.contentHint === "string" &&
+        // @ts-ignore
+        this.screen.screenVideoStream.getVideoTracks()[0].contentHint !== this.screen.encoderConfig.high.contentHint
+      ){
+        this.logger.log(`应用 contentHint screen high`, this.screen.encoderConfig.high.contentHint)
+        // @ts-ignore
+        this.screen.screenVideoStream.getVideoTracks()[0].contentHint = this.screen.encoderConfig.high.contentHint
+      }
       screen = false;
     }
 
@@ -379,6 +399,16 @@ class MediaHelper extends EventEmitter {
           const cameraTrack = stream.getTracks()[0];
           this.video.cameraTrack = cameraTrack;
           emptyStreamWith(this.video.videoStream, cameraTrack)
+          if (
+            this.video.videoStream.getVideoTracks().length &&
+            typeof this.video.encoderConfig.high.contentHint === "string" &&
+            // @ts-ignore
+            this.video.videoStream.getVideoTracks()[0].contentHint !== this.video.encoderConfig.high.contentHint
+          ){
+            this.logger.log(`应用 contentHint video high`, this.video.encoderConfig.high.contentHint)
+            // @ts-ignore
+            this.video.videoStream.getVideoTracks()[0].contentHint = this.video.encoderConfig.high.contentHint
+          }
         } else {
           let gdmStream = await GUM.getScreenStream({
             video:{
@@ -398,6 +428,16 @@ class MediaHelper extends EventEmitter {
           this.screen.screenVideoTrack = gdmStream.getVideoTracks()[0]
           this.listenToTrackEnded(this.screen.screenVideoTrack);
           emptyStreamWith(this.screen.screenVideoStream, this.screen.screenVideoTrack)
+          if (
+            this.screen.screenVideoStream.getVideoTracks().length &&
+            typeof this.screen.encoderConfig.high.contentHint === "string" &&
+            // @ts-ignore
+            this.screen.screenVideoStream.getVideoTracks()[0].contentHint !== this.screen.encoderConfig.high.contentHint
+          ){
+            this.logger.log(`应用 contentHint screen high`, this.screen.encoderConfig.high.contentHint)
+            // @ts-ignore
+            this.screen.screenVideoStream.getVideoTracks()[0].contentHint = this.screen.encoderConfig.high.contentHint
+          }
           if (screenAudio) {
             const screenAudioTrack = gdmStream.getAudioTracks()[0];
             if (screenAudioTrack){
@@ -529,6 +569,16 @@ class MediaHelper extends EventEmitter {
         if (cameraTrack){
           this.video.cameraTrack = cameraTrack;
           emptyStreamWith(this.video.videoStream, cameraTrack);
+          if (
+            this.video.videoStream.getVideoTracks().length &&
+            typeof this.video.encoderConfig.high.contentHint === "string" &&
+            // @ts-ignore
+            this.video.videoStream.getVideoTracks()[0].contentHint !== this.video.encoderConfig.high.contentHint
+          ){
+            this.logger.log(`应用 contentHint video high`, this.video.encoderConfig.high.contentHint)
+            // @ts-ignore
+            this.video.videoStream.getVideoTracks()[0].contentHint = this.video.encoderConfig.high.contentHint
+          }
           this.listenToTrackEnded(this.video.cameraTrack);
           this.stream.client.apiEventReport('setFunction', {
             name: 'set_camera',
@@ -627,6 +677,16 @@ class MediaHelper extends EventEmitter {
         this.video.cameraTrack = videoTrack
         this._stopTrack(this.video.videoStream)
         emptyStreamWith(this.video.videoStream, this.video.cameraTrack);
+        if (
+          this.video.videoStream.getVideoTracks().length &&
+          typeof this.video.encoderConfig.high.contentHint === "string" &&
+          // @ts-ignore
+          this.video.videoStream.getVideoTracks()[0].contentHint !== this.video.encoderConfig.high.contentHint
+        ){
+          this.logger.log(`应用 contentHint video high`, this.video.encoderConfig.high.contentHint)
+          // @ts-ignore
+          this.video.videoStream.getVideoTracks()[0].contentHint = this.video.encoderConfig.high.contentHint
+        }
         
         this.stream.client.apiEventReport('setFunction', {
           name: 'set_camera',
@@ -685,8 +745,16 @@ class MediaHelper extends EventEmitter {
       this.stream.client.safeEmit('track-low-init-fail', {mediaType})
       return null
     }
-    this.logger.log("创建小流", mediaType, trackHigh.label, constraintsLow);
     const videoTrackLow = trackHigh.clone();
+    if (this[mediaType].encoderConfig.low.contentHint){
+      this.logger.log("创建小流", mediaType, this[mediaType].encoderConfig.low.contentHint, trackHigh.label, constraintsLow);
+      // @ts-ignore
+      this.logger.log("应用 contentHint", mediaType, "low", videoTrackLow.contentHint, "=>", this[mediaType].encoderConfig.low.contentHint);
+      // @ts-ignore
+      videoTrackLow.contentHint = this[mediaType].encoderConfig.low.contentHint
+    }else{
+      this.logger.log("创建小流", mediaType, trackHigh.label, constraintsLow);
+    }
     const settings = trackHigh.getSettings();
     if (mediaType === "screen" && platform.name === "Safari"){
       this.logger.log(`创建小流：${mediaType} + ${platform.name} 使用与大流一样的分辨率 ${settings.width}x${settings.height}`)
@@ -881,6 +949,17 @@ class MediaHelper extends EventEmitter {
     } else if (kind === 'video') {
       this.video.cameraTrack = track;
       emptyStreamWith(this.video.videoStream, track)
+      if (
+        this.video.videoStream.getVideoTracks().length &&
+        typeof this.video.encoderConfig.high.contentHint === "string" &&
+        // @ts-ignore
+        this.video.videoStream.getVideoTracks()[0].contentHint !== this.video.encoderConfig.high.contentHint
+      ){
+        this.logger.log(`应用 contentHint video high`, this.video.encoderConfig.high.contentHint)
+        // @ts-ignore
+        this.video.videoStream.getVideoTracks()[0].contentHint = this.video.encoderConfig.high.contentHint
+      }
+    
       // Safari：即使前后属性相同，也需要重新设一遍srcObject
       if (this.stream._play?.videoDom){
         this.stream._play.videoDom.srcObject = this.video.videoStream
@@ -888,6 +967,16 @@ class MediaHelper extends EventEmitter {
     } else if (kind === 'screen') {
       this.screen.screenVideoTrack = track;
       emptyStreamWith(this.screen.screenVideoStream, track)
+      if (
+        this.screen.screenVideoStream.getVideoTracks().length &&
+        typeof this.screen.encoderConfig.high.contentHint === "string" &&
+        // @ts-ignore
+        this.screen.screenVideoStream.getVideoTracks()[0].contentHint !== this.screen.encoderConfig.high.contentHint
+      ){
+        this.logger.log(`应用 contentHint screen high`, this.screen.encoderConfig.high.contentHint)
+        // @ts-ignore
+        this.screen.screenVideoStream.getVideoTracks()[0].contentHint = this.screen.encoderConfig.high.contentHint
+      }
       // Safari：即使前后属性相同，也需要重新设一遍srcObject
       if (this.stream._play?.screenDom){
         this.stream._play.screenDom.srcObject = this.screen.screenVideoStream

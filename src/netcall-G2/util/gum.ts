@@ -19,8 +19,6 @@ async function getStream (constraint:MediaStreamConstraints, logger:ILogger) {
     tracks.forEach((track)=>{
       watchTrack(track);
       if (track.kind === "video"){
-        // @ts-ignore
-        track.contentHint = getParameters().contentHint.video;
         if (canShimCanvas()){
           logger.warn("使用canvas track取代videoTrack", track.label);
           const canvasTrack = shimCanvas(track);
@@ -50,8 +48,6 @@ async function getScreenStream (constraint:MediaStreamConstraints, logger:ILogge
     tracks.forEach((track)=>{
       watchTrack(track);
       if (track.kind === "video"){
-        // @ts-ignore
-        track.contentHint = getParameters().contentHint.screen;
         if (getParameters().screenFocus){
           // @ts-ignore
           if (track.focus){

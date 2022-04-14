@@ -889,6 +889,7 @@ export interface ScreenProfileOptions{
 
 export interface EncodingParameters{
   maxBitrate?: number;
+  contentHint: ""|"motion"|"detail"|null;
 }
 
 export interface SnapshotOptions{
