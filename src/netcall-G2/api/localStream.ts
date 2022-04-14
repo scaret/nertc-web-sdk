@@ -2190,6 +2190,7 @@ class LocalStream extends EventEmitter {
         if (
           this.mediaHelper.screen.screenVideoStream.getVideoTracks().length &&
           typeof this.mediaHelper.screen.encoderConfig.high.contentHint === "string" &&
+          // @ts-ignore
           this.mediaHelper.screen.screenVideoStream.getVideoTracks()[0].contentHint !== this.mediaHelper.screen.encoderConfig.high.contentHint
         ){
           this.logger.log(`应用 contentHint screen high`, this.mediaHelper.screen.encoderConfig.high.contentHint)
@@ -2218,6 +2219,7 @@ class LocalStream extends EventEmitter {
         if (
           this.mediaHelper.video.videoStream.getVideoTracks().length &&
           typeof this.mediaHelper.video.encoderConfig.high.contentHint === "string" &&
+          // @ts-ignore
           this.mediaHelper.video.videoStream.getVideoTracks()[0].contentHint !== this.mediaHelper.video.encoderConfig.high.contentHint
         ){
           this.logger.log(`应用 contentHint video high`, this.mediaHelper.video.encoderConfig.high.contentHint)
@@ -2313,7 +2315,9 @@ class LocalStream extends EventEmitter {
       return;
     }
     let contentHint = this.mediaHelper[mediaTypeShort].encoderConfig[streamType].contentHint
+    // @ts-ignore
     if (typeof contentHint === "string" && sender.track && sender.track.contentHint !== contentHint){
+      // @ts-ignore
       this.logger.log(`applyEncoderConfig 应用 contentHint：${mediaTypeShort} ${streamType} ${sender.track.contentHint} => ${contentHint}`);
       // @ts-ignore
       sender.track.contentHint = contentHint

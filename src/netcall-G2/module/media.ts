@@ -322,6 +322,7 @@ class MediaHelper extends EventEmitter {
       if (
         this.video.videoStream.getVideoTracks().length &&
         typeof this.video.encoderConfig.high.contentHint === "string" &&
+        // @ts-ignore
         this.video.videoStream.getVideoTracks()[0].contentHint !== this.video.encoderConfig.high.contentHint
       ){
         this.logger.log(`应用 contentHint video high`, this.video.encoderConfig.high.contentHint)
@@ -363,6 +364,7 @@ class MediaHelper extends EventEmitter {
       if (
         this.screen.screenVideoStream.getVideoTracks().length &&
         typeof this.screen.encoderConfig.high.contentHint === "string" &&
+        // @ts-ignore
         this.screen.screenVideoStream.getVideoTracks()[0].contentHint !== this.screen.encoderConfig.high.contentHint
       ){
         this.logger.log(`应用 contentHint screen high`, this.screen.encoderConfig.high.contentHint)
@@ -400,6 +402,7 @@ class MediaHelper extends EventEmitter {
           if (
             this.video.videoStream.getVideoTracks().length &&
             typeof this.video.encoderConfig.high.contentHint === "string" &&
+            // @ts-ignore
             this.video.videoStream.getVideoTracks()[0].contentHint !== this.video.encoderConfig.high.contentHint
           ){
             this.logger.log(`应用 contentHint video high`, this.video.encoderConfig.high.contentHint)
@@ -428,6 +431,7 @@ class MediaHelper extends EventEmitter {
           if (
             this.screen.screenVideoStream.getVideoTracks().length &&
             typeof this.screen.encoderConfig.high.contentHint === "string" &&
+            // @ts-ignore
             this.screen.screenVideoStream.getVideoTracks()[0].contentHint !== this.screen.encoderConfig.high.contentHint
           ){
             this.logger.log(`应用 contentHint screen high`, this.screen.encoderConfig.high.contentHint)
@@ -568,6 +572,7 @@ class MediaHelper extends EventEmitter {
           if (
             this.video.videoStream.getVideoTracks().length &&
             typeof this.video.encoderConfig.high.contentHint === "string" &&
+            // @ts-ignore
             this.video.videoStream.getVideoTracks()[0].contentHint !== this.video.encoderConfig.high.contentHint
           ){
             this.logger.log(`应用 contentHint video high`, this.video.encoderConfig.high.contentHint)
@@ -675,6 +680,7 @@ class MediaHelper extends EventEmitter {
         if (
           this.video.videoStream.getVideoTracks().length &&
           typeof this.video.encoderConfig.high.contentHint === "string" &&
+          // @ts-ignore
           this.video.videoStream.getVideoTracks()[0].contentHint !== this.video.encoderConfig.high.contentHint
         ){
           this.logger.log(`应用 contentHint video high`, this.video.encoderConfig.high.contentHint)
@@ -742,6 +748,7 @@ class MediaHelper extends EventEmitter {
     const videoTrackLow = trackHigh.clone();
     if (this[mediaType].encoderConfig.low.contentHint){
       this.logger.log("创建小流", mediaType, this[mediaType].encoderConfig.low.contentHint, trackHigh.label, constraintsLow);
+      // @ts-ignore
       this.logger.log("应用 contentHint", mediaType, "low", videoTrackLow.contentHint, "=>", this[mediaType].encoderConfig.low.contentHint);
       // @ts-ignore
       videoTrackLow.contentHint = this[mediaType].encoderConfig.low.contentHint
@@ -945,6 +952,7 @@ class MediaHelper extends EventEmitter {
       if (
         this.video.videoStream.getVideoTracks().length &&
         typeof this.video.encoderConfig.high.contentHint === "string" &&
+        // @ts-ignore
         this.video.videoStream.getVideoTracks()[0].contentHint !== this.video.encoderConfig.high.contentHint
       ){
         this.logger.log(`应用 contentHint video high`, this.video.encoderConfig.high.contentHint)
@@ -962,6 +970,7 @@ class MediaHelper extends EventEmitter {
       if (
         this.screen.screenVideoStream.getVideoTracks().length &&
         typeof this.screen.encoderConfig.high.contentHint === "string" &&
+        // @ts-ignore
         this.screen.screenVideoStream.getVideoTracks()[0].contentHint !== this.screen.encoderConfig.high.contentHint
       ){
         this.logger.log(`应用 contentHint screen high`, this.screen.encoderConfig.high.contentHint)
