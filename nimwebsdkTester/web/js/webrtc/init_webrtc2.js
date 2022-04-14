@@ -3196,6 +3196,7 @@ $("#encoderConfigBtn").on("click", ()=>{
     mediaType: $("#encoderMediaType").val(),
     streamType: $("#encoderStreamType").val(),
     maxBitrate: parseInt($("#bitrateMax").val()),
+    contentHint: $("#contentHint").val(),
   }
   console.log("上行视频编码设置", options)
   rtc.localStream.setVideoEncoderConfiguration(options)

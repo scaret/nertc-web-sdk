@@ -2134,6 +2134,7 @@ class LocalStream extends EventEmitter {
     mediaType: "video"|"screen",
     streamType: "high"|"low",
     maxBitrate: number,
+    contentHint?: ""|"motion"|"detail",
   }) {
     options.mediaType = options.mediaType || "video";
     options.streamType = options.streamType || "high";
@@ -2143,10 +2144,16 @@ class LocalStream extends EventEmitter {
     }else{
       if (options.maxBitrate){
         const maxBitrate = options.maxBitrate * 1000;
-        this.logger.log(`设置maxBitrate ${options.mediaType} ${options.streamType} ${this.mediaHelper[options.mediaType].encoderConfig[options.streamType].maxBitrate} => ${maxBitrate}`)
+        this.logger.log(`setVideoEncoderConfiguration:设置maxBitrate ${options.mediaType} ${options.streamType} ${this.mediaHelper[options.mediaType].encoderConfig[options.streamType].maxBitrate} => ${maxBitrate}`)
         this.mediaHelper[options.mediaType].encoderConfig[options.streamType].maxBitrate = maxBitrate;
       }else{
-        this.logger.error('未设定maxBitrate。保留目前的值：', options.mediaType, options.streamType, this.mediaHelper[options.mediaType].encoderConfig[options.streamType].maxBitrate);
+        this.logger.log('setVideoEncoderConfiguration:未设定maxBitrate。保留目前的值：', options.mediaType, options.streamType, this.mediaHelper[options.mediaType].encoderConfig[options.streamType].maxBitrate);
+      }
+      if (typeof options.contentHint === "string"){
+        this.logger.log(`setVideoEncoderConfiguration: 应用 contentHint ${options.mediaType} ${options.streamType} ${this.mediaHelper[options.mediaType].encoderConfig[options.streamType].contentHint} => ${options.contentHint}`)
+        this.mediaHelper[options.mediaType].encoderConfig[options.streamType].contentHint = options.contentHint;
+      }else{
+        this.logger.log('setVideoEncoderConfiguration: 未设定 contentHint。保留目前的值：', options.mediaType, options.streamType, this.mediaHelper[options.mediaType].encoderConfig[options.streamType].contentHint);
       }
     }
     if (this.getSender(options.mediaType, options.streamType)){
@@ -2180,6 +2187,15 @@ class LocalStream extends EventEmitter {
           this.mediaHelper.screen.screenVideoTrack = options.track;
         }
         emptyStreamWith(this.mediaHelper.screen.screenVideoStream, options.track);
+        if (
+          this.mediaHelper.screen.screenVideoStream.getVideoTracks().length &&
+          typeof this.mediaHelper.screen.encoderConfig.high.contentHint === "string" &&
+          this.mediaHelper.screen.screenVideoStream.getVideoTracks()[0].contentHint !== this.mediaHelper.screen.encoderConfig.high.contentHint
+        ){
+          this.logger.log(`应用 contentHint screen high`, this.mediaHelper.screen.encoderConfig.high.contentHint)
+          // @ts-ignore
+          this.mediaHelper.screen.screenVideoStream.getVideoTracks()[0].contentHint = this.mediaHelper.screen.encoderConfig.high.contentHint
+        }
         oldTrackLow = this.mediaHelper.screen.screenVideoTrackLow;
         this.mediaHelper.screen.screenVideoTrackLow = null
       }
@@ -2194,11 +2210,20 @@ class LocalStream extends EventEmitter {
       }
       if (oldTrack){
         if (options.external){
-          this.mediaHelper.video.cameraTrack = options.track;
-        }else{
           this.mediaHelper.video.videoSource = options.track;
+        }else{
+          this.mediaHelper.video.cameraTrack = options.track;
         }
         emptyStreamWith(this.mediaHelper.video.videoStream, options.track);
+        if (
+          this.mediaHelper.video.videoStream.getVideoTracks().length &&
+          typeof this.mediaHelper.video.encoderConfig.high.contentHint === "string" &&
+          this.mediaHelper.video.videoStream.getVideoTracks()[0].contentHint !== this.mediaHelper.video.encoderConfig.high.contentHint
+        ){
+          this.logger.log(`应用 contentHint video high`, this.mediaHelper.video.encoderConfig.high.contentHint)
+          // @ts-ignore
+          this.mediaHelper.video.videoStream.getVideoTracks()[0].contentHint = this.mediaHelper.video.encoderConfig.high.contentHint
+        }
         oldTrackLow = this.mediaHelper.video.videoTrackLow;
         this.mediaHelper.video.videoTrackLow = null
       }
@@ -2286,6 +2311,12 @@ class LocalStream extends EventEmitter {
     if (!sender){
       this.logger.error("localStream.applyEncoderConfig: cannot find sender for ", mediaTypeShort, streamType);
       return;
+    }
+    let contentHint = this.mediaHelper[mediaTypeShort].encoderConfig[streamType].contentHint
+    if (typeof contentHint === "string" && sender.track && sender.track.contentHint !== contentHint){
+      this.logger.log(`applyEncoderConfig 应用 contentHint：${mediaTypeShort} ${streamType} ${sender.track.contentHint} => ${contentHint}`);
+      // @ts-ignore
+      sender.track.contentHint = contentHint
     }
     const parameters = (sender.getParameters() as RTCRtpSendParameters);
     let maxBitrateHistory:number|undefined = undefined;
