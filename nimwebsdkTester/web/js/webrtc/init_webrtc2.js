@@ -1208,7 +1208,14 @@ $('#enableCodecHacking').on('change', ()=>{
 
 function getVideoSource(mediaType){
   let defaultStr = "1920x1080x15x1"
-  const optionsStr = prompt(`自定义${mediaType}配置：【宽x高x帧率x类型】\n类型1：时钟; 类型2：背景替换; 类型3：随机颜色`, defaultStr) || defaultStr
+  const optionsStr = prompt(
+`自定义${mediaType}配置：【宽x高x帧率x类型
+类型1：时钟; 
+类型2：背景替换;
+类型3：随机颜色;
+类型4：屏幕共享;
+`
+    , defaultStr) || defaultStr
   const matches = optionsStr.match(/(\d+)x(\d+)x(\d+)x(\d+)/);
   if (!matches){
     addLog("自定义视频 ：无法匹配字符串" + optionsStr)
@@ -1224,6 +1231,8 @@ function getVideoSource(mediaType){
     videoConstraint.type = "clock"
   } else if (matches[4] === "3"){
     videoConstraint.type = "randomcolor"
+  } else if (matches[4] === "4"){
+    videoConstraint.type = "display"
   }else{
     videoConstraint.type = "background"
     const bgImg = new Image()
@@ -3093,6 +3102,29 @@ $("#doUpdateWatermark").on("click", function (){
 $("#closeWatermarkPanel").on("click", function (){
   $("#updateWatermarkPanel").hide();
 });
+
+$("#pushMask").on("click", function(){
+  let uid = document.getElementById("maskUid").value
+  const maskSecond = parseInt(document.getElementById("maskSecond").value)
+  if (!rtc.client?.adapterRef._signalling?._protoo){
+    addLog("打码错误：需加入频道")
+    return
+  }
+  if (!uid){
+    uid = rtc.client.getChannelInfo().uid
+  }
+  const externData = {
+    type: "AutoMaskUid",
+    data: {
+      maskUid: uid,
+      duration: maskSecond,
+      evidence: {
+      }
+    }
+  }
+  console.log("测试打码", externData)
+  rtc.client.adapterRef._signalling._protoo.emit('notification', {method: "OnUserData", data: {externData}})
+})
 
 $("#sdkVersion").text(NERTC.VERSION);
 $("#sdkBuild").text(NERTC.BUILD);

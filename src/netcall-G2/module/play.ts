@@ -28,6 +28,11 @@ class Play extends EventEmitter {
   public videoView:HTMLElement | null;
   public screenView:HTMLElement | null;
   
+  public mask: {
+    enabled: boolean,
+  } = {
+    enabled: false,
+  }
   
   public _watermarkControl: WatermarkControl;
   public _watermarkControlScreen: WatermarkControl;
@@ -544,6 +549,9 @@ class Play extends EventEmitter {
       this.logger.error(`没有视频源`);
       return;
     }
+    if (this.mask.enabled){
+      this.enableMask()
+    }
     try {
       const videoTrack = stream.getVideoTracks()[0];
       if (videoTrack){
@@ -592,6 +600,9 @@ class Play extends EventEmitter {
     if (!this.screenDom){
       this.logger.error(`辅流没有视频源`);
       return;
+    }
+    if (this.mask.enabled){
+      this.enableMask()
     }
     try {
       const videoTrack = stream.getVideoTracks()[0];
@@ -827,6 +838,26 @@ class Play extends EventEmitter {
         })
       })
       return fileUrl;
+    }
+  }
+  
+  enableMask(){
+    this.mask.enabled = true
+    if (this.videoDom){
+      this.videoDom.style.filter = "blur(20px)"
+    }
+    if (this.screenDom){
+      this.screenDom.style.filter = "blur(20px)"
+    }
+  }
+  
+  disableMask(){
+    this.mask.enabled = false
+    if (this.videoDom){
+      this.videoDom.style.filter = ""
+    }
+    if (this.screenDom){
+      this.screenDom.style.filter = ""
     }
   }
 
