@@ -115,7 +115,7 @@ let parameters:IParameters = {
       },
     },
   },
-  screenFocus: false,
+  screenFocus: true,
   allowEmptyMedia: false,
   keepLocalstreamOnLeave: false,
   joinFirstTimeout: 2000,

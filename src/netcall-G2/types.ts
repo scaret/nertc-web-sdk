@@ -892,6 +892,12 @@ export interface EncodingParameters{
   contentHint: ""|"motion"|"detail"|null;
 }
 
+export interface MaskUserSetting {
+  maskUid: number;
+  duration: number;
+  targetEndMs: number;
+}
+
 export interface SnapshotOptions{
   name: string;
   mediaType?: MediaTypeShort;

@@ -4,7 +4,7 @@ import { RtcSystem } from '../util/rtcUtil/rtcSystem'
 import BigNumber from 'bignumber.js'
 import {ENGINE_VERSION} from '../Config/index'
 import {
-  AdapterRef, ILogger, MediaTypeShort, NetStatusItem,
+  AdapterRef, ILogger, MaskUserSetting, MediaTypeShort, NetStatusItem,
   SignallingOptions,
   Timer
 } from "../types";
@@ -42,6 +42,13 @@ class Signalling extends EventEmitter {
     blocker: null,
     pausers: [],
     resumers: [],
+  }
+  public autoMask: {
+    timer: Timer|null,
+    data: MaskUserSetting[],
+  } = {
+    timer: null,
+    data: []
   }
   
   constructor (options: SignallingOptions) {
@@ -602,6 +609,14 @@ class Signalling extends EventEmitter {
         } else if (type === 'RtmpTaskStatus') {
           this.logger.log('RtmpTaskStatus变更: ', JSON.stringify(data, null, ''))
           this.adapterRef.instance.safeEmit('rtmp-state', data)
+        } else if (type === "AutoMaskUid"){
+          const userData = data as MaskUserSetting;
+          this.logger.log(`收到打码通知：`, userData.maskUid, "时长", userData.duration, "秒")
+          if (userData.maskUid && userData.duration){
+            userData.targetEndMs = Date.now() + userData.duration * 1000
+            this.autoMask.data.push(userData)
+            this.updateMaskStatus()            
+          }
         } else if (type === 'MediaCapability') {
           this.logger.warn('MediaCapability房间能力变更: ', JSON.stringify(data, null, ''))
           this.adapterRef.mediaCapability.parseRoom(data);
@@ -1218,7 +1233,59 @@ class Signalling extends EventEmitter {
     }
   }
 
-
+  updateMaskStatus(){
+    let now = Date.now()
+    for (let i = this.autoMask.data.length - 1; i >=0; i--){
+      let userData = this.autoMask.data[i]
+      if (now >= userData.targetEndMs){
+        
+        const localUid = this.adapterRef.channelInfo.uid
+        if (localUid === userData.maskUid && this.adapterRef.localStream){
+          this.logger.log("updateMaskStatus 本地用户去除打码", userData.maskUid)
+          this.adapterRef.localStream._play?.disableMask()
+        }else{
+          const remoteStream = this.adapterRef.remoteStreamMap[userData.maskUid];
+          if (remoteStream){
+            if (remoteStream._play?.mask.enabled){
+              this.logger.log("updateMaskStatus 远端用户去除打码", userData.maskUid)
+              remoteStream._play.disableMask()
+            }
+          }else{
+            // 该用户已离开频道
+          }
+        }
+        // 去除过期消息
+        this.autoMask.data.splice(i, 1)
+      }
+    }
+    
+    let nextTs = Number.MAX_SAFE_INTEGER
+    for (let i = 0; i < this.autoMask.data.length; i++){
+      let userData = this.autoMask.data[i]
+      nextTs = Math.min(nextTs, userData.targetEndMs)
+      const localUid = this.adapterRef.channelInfo.uid
+      if (localUid == userData.maskUid && this.adapterRef.localStream){
+        this.logger.log("updateMaskStatus 本地用户增加打码", userData.maskUid)
+        this.adapterRef.localStream._play?.enableMask()
+      }else{
+        const remoteStream = this.adapterRef.remoteStreamMap[userData.maskUid];
+        if (remoteStream){
+          if (remoteStream._play && !remoteStream._play.mask.enabled){
+            this.logger.log("updateMaskStatus 远端用户增加打码", userData.maskUid, "打码时长", userData.duration, "秒")
+            remoteStream._play.enableMask()
+          }
+        }else{
+          this.logger.log("updateMaskStatus 远端用户不在频道中", userData.maskUid, "打码时长", userData.duration, "秒")
+        }
+      }
+    }
+    if (this.autoMask.timer){
+      clearTimeout(this.autoMask.timer)
+    }
+    this.autoMask.timer = setTimeout(()=>{
+      this.updateMaskStatus()
+    }, nextTs - now)
+  }
 
   async doSendLogout () {
     this.logger.log('doSendLogout begin')
