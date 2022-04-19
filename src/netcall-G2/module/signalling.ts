@@ -139,13 +139,10 @@ class Signalling extends EventEmitter {
 
   async _reconnection() {
     this.logger.log('Signalling _reconnection, times:', this._times)
-    /*if (this.adapterRef.channelStatus === 'connectioning') {
-      return
-    }*/
     if (this._reconnectionTimer) return
     this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
     this.adapterRef.connectState.curState = 'CONNECTING'
-    this.adapterRef.connectState.reconnect = true
+    this.adapterRef.connectState.reconnect = true //增加是否在重来的标志位
     this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
     this.adapterRef.instance.emit('pairing-websocket-reconnection-start');
     this._destroyProtoo()
@@ -203,7 +200,7 @@ class Signalling extends EventEmitter {
     }
     this.logger.log('Signalling: init url=',  url)
     this.adapterRef.channelInfo._protooUrl = url
-    this._url = `${url.indexOf('://') === -1 ? "wss://" : ""}${url}&cid=${this.adapterRef.channelInfo.cid}&uid=${this.adapterRef.channelInfo.uid}`
+    this._url = `${url.indexOf('://') === -1 ? "wss://" : ""}${url}&cid=${this.adapterRef.channelInfo.cid}&uid=${this.adapterRef.channelInfo.uid}&deviceId=${this.adapterRef.deviceId}`
     this.logger.log('连接的url: ', this._url)
 
 
@@ -589,6 +586,14 @@ class Signalling extends EventEmitter {
       case 'activeSpeaker': {
         break
       }
+      case 'OnPeerClose': {
+        //相同UID另外一个连接登录, 这个连接被迫退出
+        this.logger.warn(`相同UID在其他地方登录，您被提出房间`)
+        this.adapterRef.instance.safeEmit('uid-duplicate')
+        this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason = 30000
+        this.adapterRef.instance.leave()
+        break
+      }
       case 'OnKickOff': {
         let { msg, reason } = notification.data.externData;
         this._handleKickedNotify(reason)
@@ -745,7 +750,6 @@ class Signalling extends EventEmitter {
   
   _handleDisconnected (_protoo: Peer) {
     this.logger.log('Signalling:_handleDisconnected')
-    this.logger.log('Signalling:_handleClose')
     if (this._reconnectionTimer && (this.adapterRef.channelStatus === 'connectioning' || this.adapterRef.channelStatus === 'join')) {
       if (_protoo.closed){
         this.logger.warn(`信令通道#${_protoo.id}_${_protoo._transport?.wsid} 在建立过程中被关闭。当前正在重连中，等待下次重连过程。`)
@@ -852,7 +856,7 @@ class Signalling extends EventEmitter {
         }
         this._joinFailed(response.code, errMsg)
         return
-      }else{
+      } else {
         if (this._times){
           this.logger.log(`重置重连次数: ${this._times} => 0`)
           this._times = 0
@@ -945,9 +949,9 @@ class Signalling extends EventEmitter {
             || this.adapterRef.localStream.screen || this.adapterRef.localStream.screenAudio
             || getParameters().allowEmptyMedia
           ){
-            this.logger.log(`重连成功，重新publish本端流:audio ${this.adapterRef.localStream.hasAudio()} video ${this.adapterRef.localStream.hasVideo()} screen ${this.adapterRef.localStream.hasScreen()}`)
+            this.logger.log(`重连成功，重新publish本端流:audio ${this.adapterRef.localStream.hasAudio()}, video ${this.adapterRef.localStream.hasVideo()}, screen ${this.adapterRef.localStream.hasScreen()}`)
             this.adapterRef.instance.doPublish(this.adapterRef.localStream)
-          }else{
+          } else {
             this.logger.log(`重连成功，当前没有媒体流，无需发布`)
           }
         } else {
@@ -1010,7 +1014,7 @@ class Signalling extends EventEmitter {
             this.adapterRef.remoteStreamMap[uid] = remoteStream
             this.adapterRef.memberMap[uid] = "" + uid;
             this.adapterRef.instance.safeEmit('peer-online', {uid})
-          }else{
+          } else {
             remoteStream.active = true;
           }
           if (peer.producerInfoList) {
@@ -1056,9 +1060,9 @@ class Signalling extends EventEmitter {
             }
           } 
         }
-        for(let uid in this.adapterRef.remoteStreamMap){
+        for (let uid in this.adapterRef.remoteStreamMap) {
           let remoteStream = this.adapterRef.remoteStreamMap[uid];
-          if (!remoteStream.active){
+          if (!remoteStream.active) {
             this.logger.warn(`重连期间远端流停止发布：${uid}`);
             delete this.adapterRef.remoteStreamMap[uid];
           }
@@ -1069,7 +1073,7 @@ class Signalling extends EventEmitter {
         this._resolve(response)
         this._resolve = null
         this._reject = null
-      }else{
+      } else {
         // 重连成功
         this.adapterRef.instance.emit('pairing-websocket-reconnection-success');
         if (this.reconnectionControl.resumers.length){
@@ -1503,7 +1507,7 @@ class Signalling extends EventEmitter {
       this.adapterRef.instance.safeEmit('client-banned', {
         uid
       })
-    }
+    } 
   }
 
   destroy() {

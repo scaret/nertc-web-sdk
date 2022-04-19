@@ -286,8 +286,8 @@ export class Producer extends EnhancedEventEmitter
     Logger.debug(prefix, 'transportClosed()');
 
     this._closed = true;
-
-    this._destroyTrack();
+    //媒体的清除动作由上层来处理  
+    //this._destroyTrack();
 
     this.safeEmit('transportclose');
 

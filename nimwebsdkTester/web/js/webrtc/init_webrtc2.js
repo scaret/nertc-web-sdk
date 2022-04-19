@@ -601,6 +601,11 @@ function initEvents() {
       console.log('关闭mic 失败: ', err)
     })
   })
+  rtc.client.on('uid-duplicate', _data => {
+    console.warn("==== uid重复，你被踢出")
+    addLog("==== uid重复，你被踢出")
+  })
+
   rtc.client.on('channel-closed', _data => {
     console.warn("==== 房间被关闭")
     addLog("==== 房间被关闭")

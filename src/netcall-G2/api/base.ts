@@ -24,7 +24,7 @@ import {FormatMedia} from "../module/formatMedia"
 import {Record} from '../module/record'
 import {Client as ICLient} from "../types"
 import logger, {loglevels} from "../util/log/logger";
-
+import  md5 = require('md5');
 let clientCnt = 0;
 
 /**
@@ -66,7 +66,7 @@ class Base extends EventEmitter {
       apiEvents: {},
       requestId: {},
       instance: this as unknown as ICLient,
-      report: true
+      deviceId: ""
     };
   
     if (options.debug === true){
@@ -106,11 +106,6 @@ class Base extends EventEmitter {
     window.debugG2 = options.debug ? true : false
     this.adapterRef.testConf = {}; //内部测试配置
     this.sdkRef = options.ref;
-    if (options.report === undefined) {
-      this.adapterRef.report = true
-    } else {
-      this.adapterRef.report = options.report
-    }
   }
   
   _reset() {
@@ -454,6 +449,7 @@ class Base extends EventEmitter {
   // 设置通话开始时间
   setStartSessionTime() {
     this.adapterRef.state.startSessionTime = Date.now();
+    this.adapterRef.deviceId = md5(this.adapterRef.channelInfo.cid + ':' + this.adapterRef.channelInfo.uid + ":" + this.adapterRef.state.startSessionTime)
   }
 
   // 设置通话结束时间
@@ -583,7 +579,6 @@ class Base extends EventEmitter {
   
   //G2 事件上报
   apiEventReport(func: string, value: any){
-    if(!this.adapterRef.report) return
     if (!func) return
     let datareport = new DataReport({
       adapterRef: this.adapterRef,

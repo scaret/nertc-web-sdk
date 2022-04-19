@@ -447,7 +447,7 @@ export class Transport extends EnhancedEventEmitter
       encodings,
       codecOptions,
       codec,
-      stopTracks = true,
+      stopTracks = false, //produce的流程中不要做stop track的操作，这些逻辑由上层来完成
       disableTrackOnPause = true,
       zeroRtpOnPause = false,
       appData

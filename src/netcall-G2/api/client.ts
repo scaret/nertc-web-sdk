@@ -1619,17 +1619,17 @@ class Client extends Base {
   }
   
   async resumeReconnection(){
-    if (this.adapterRef._signalling){
-      if (this.adapterRef._signalling.reconnectionControl.blocker){
+    if (this.adapterRef._signalling) {
+      if (this.adapterRef._signalling.reconnectionControl.blocker) {
         this.logger.log("resumeReconnection：即将恢复重连过程")
         this.adapterRef._signalling.reconnectionControl.blocker()
         this.adapterRef._signalling.reconnectionControl.pausers.forEach((resolve)=>resolve({reason: "reconnection-resume"}))
         this.adapterRef._signalling.reconnectionControl.pausers = []
-      }else if (this.adapterRef._signalling.reconnectionControl.pausers.length){
+      } else if (this.adapterRef._signalling.reconnectionControl.pausers.length) {
         this.logger.log("resumeReconnection：取消之前的 pauseReconnection 操作。")
         this.adapterRef._signalling.reconnectionControl.pausers.forEach((resolve)=>resolve({reason: "cancelled"}))
         this.adapterRef._signalling.reconnectionControl.pausers = []
-      }else{
+      } else {
         this.logger.warn("resumeReconnection：未发现pauseReconnection操作")
       }
       const info = await new Promise((resolve)=>{

@@ -116,7 +116,7 @@ export interface AdapterRef {
   requestId: {
     [apiName: string]: number;
   }
-  report: boolean | undefined;
+  deviceId: string;
   userPriority: MediaPriorityOptions;
   proxyServer: ProxyServerOptions;
   encryption: Encryption,
