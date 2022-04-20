@@ -7,29 +7,11 @@ import {
   NERtcTimestampWatermarkConfig,
   Timer,
   WatermarkSetting
-} from "../types";
-import {checkExists, checkValidFloat, checkValidInteger, isExistOptions} from "../util/param";
+} from "../../types";
+import {checkExists, checkValidFloat, checkValidInteger, isExistOptions} from "../../util/param";
+import {numberToRGBA} from "./util";
 
-const numberToRGBA = function(num: number){
-  if (num === 0){
-    return `rgba(0,0,0,0)`;
-  }
-  let r,g,b, alpha;
-  b = num % 0x100;
-  num = Math.floor(num / 0x100);
-  g = num % 0x100;
-  num = Math.floor(num / 0x100);
-  r = num % 0x100;
-  num = Math.floor(num / 0x100);
-  if (num > 0){
-    alpha = ((num % 0x100) / 0x100).toFixed(2);
-  }else{
-    alpha = 1;
-  }
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`
-};
-
-class WatermarkControl extends EventEmitter{
+export class CanvasWatermarkControl extends EventEmitter{
   watermarks: WatermarkSetting[];
   private div:HTMLElement|null;
   private settings:{
@@ -602,8 +584,8 @@ class WatermarkControl extends EventEmitter{
   }
 }
 
-class WatermarkManager{
-  public controls:WatermarkControl[];
+class CanvasWatermarkManager{
+  public controls:CanvasWatermarkControl[];
   private timer:Timer;
   constructor() {
     this.controls = [];
@@ -612,7 +594,7 @@ class WatermarkManager{
     }, 1000);
   }
   updateTimestamps(){
-    this.controls.forEach((control:WatermarkControl)=>{
+    this.controls.forEach((control:CanvasWatermarkControl)=>{
       control.watermarks
         .filter((item)=>{return item.type === 'timestamp'})
         .forEach((item)=>{
@@ -624,15 +606,10 @@ class WatermarkManager{
   }
 }
 
-const watermarkManager = new WatermarkManager();
+const watermarkManager = new CanvasWatermarkManager();
 
-function createWatermarkControl(logger:ILogger){
-  const control = new WatermarkControl(logger);
+export function createCanvasWatermarkControl(logger:ILogger){
+  const control = new CanvasWatermarkControl(logger);
   watermarkManager.controls.push(control);
   return control;
-}
-
-export {
-  WatermarkControl,
-  createWatermarkControl
 }
