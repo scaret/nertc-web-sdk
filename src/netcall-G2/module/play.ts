@@ -867,9 +867,9 @@ class Play extends EventEmitter {
     if (this.videoDom){
       this.videoDom.style.filter = "blur(20px)"
     }
-    if (this.screenDom){
-      this.screenDom.style.filter = "blur(20px)"
-    }
+    // if (this.screenDom){
+    //   this.screenDom.style.filter = "blur(20px)"
+    // }
   }
   
   disableMask(){
