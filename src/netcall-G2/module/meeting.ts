@@ -110,13 +110,13 @@ class Meeting extends EventEmitter {
       this.adapterRef.instance.apiFrequencyControl({
         name: 'setCloudProxyInfo',
         code: data.code === 200 ? 0 : -1,
-        param: JSON.stringify({
+        param: {
           channelName,
           uid,
           appkey,
           token,
-          result: data.code
-        }, null, 2)
+          reason: data.code
+        }
       })
       if (data.code === 200) {
         this.adapterRef.channelStatus = 'join'
@@ -139,15 +139,17 @@ class Meeting extends EventEmitter {
           this.adapterRef.proxyServer.credential = uid + '/' + curTime
         }
       } else {
-        this.adapterRef.channelStatus = 'leave'
+        this.adapterRef.logger.log('获取到云代理服务相关信息, 回退')
+
+        /*this.adapterRef.channelStatus = 'leave'
         this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
         this.adapterRef.connectState.curState = 'DISCONNECTED'
         this.adapterRef.connectState.reconnect = false
         this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
-        return Promise.reject(`code: ${data.code}, reason: ${data.desc}`)
+        return Promise.reject(`code: ${data.code}, reason: ${data.desc}`)*/
       }
     } catch(e:any) {
-      this.adapterRef.logger.log('获取到云代理服务相关信息失败:', e.name, e.message, e)
+      this.adapterRef.logger.log('获取到云代理服务相关信息发生错误:', e.name, e.message, e)
       this.adapterRef.channelStatus = 'leave'
       this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
       this.adapterRef.connectState.curState = 'DISCONNECTED'
@@ -155,18 +157,17 @@ class Meeting extends EventEmitter {
       this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
       //上报getCloudProxyInfo失败事件
       this.adapterRef.instance.apiFrequencyControl({
-        name: 'setCloudProxyInfo',
+        name: 'startProxyServer',
         code: -1,
-        param: JSON.stringify({
-          channelName,
-          uid,
-          appkey,
-          token,
-          result: -1,
-          msg: e.message
-        }, null, 2)
+        param: {
+          ...options,
+          reason: e.getMessage()
+        }
       })
-      return Promise.reject(`code: -1, reason: ${e.message}`)
+      throw new RtcError({
+        code: ErrorCode.PROXY_SERVER_ERROR,
+        message: 'getCloudProxyInfo: ' + e.message
+      })
     }
   }
 
@@ -175,13 +176,13 @@ class Meeting extends EventEmitter {
    * 参数 appkey, channelName, uid
    */
   async joinChannel (options:MeetingJoinChannelOptions) {
-    
     try {
+      //执行云代理流程
       if(this.adapterRef.proxyServer.enable){
-        await this.getCloudProxyInfo(options)
+        await this.getCloudProxyInfo(options);
       }
     } catch (e) {
-      return Promise.reject(e)
+      throw e;
     }
 
     const {
@@ -197,10 +198,8 @@ class Meeting extends EventEmitter {
 
     let T1 = Date.now()
     let curtime = +new Date()
-    this.logger.log('getChannelInfoUrl: ', getChannelInfoUrl)
     let url = getChannelInfoUrl
     if (this.adapterRef.instance._params.neRtcServerAddresses.channelServer) {
-      //url = getChannelInfoUrl.replace(/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+\.?/, this.adapterRef.instance._params.neRtcServerAddresses.channelServer)
       url = this.adapterRef.instance._params.neRtcServerAddresses.channelServer
       this.logger.log('私有化配置的 getChannelInfoUrl: ', url)
     }
@@ -242,12 +241,12 @@ class Meeting extends EventEmitter {
 
       this.info.secure = !!token;
       this.info.forward = !!this.adapterRef.testConf.ForwardedAddr
-      this.logger.log('获取到房间信息:', JSON.stringify(data))
+      this.logger.log('join 获取到房间信息:', JSON.stringify(data, null, ' '))
       if (data.code === 200) {
         this.adapterRef.channelStatus = 'join'
         const { ips, time } = data
-        if (!ips || !ips.uid){
-          this.logger.error("加入频道时服务端未返回uid");
+        if (!ips || !ips.uid) {
+          this.logger.warn('join 加入频道时服务端未返回uid');
         }
         const maxVideoQuality = (data.config && data.config.quality_level_limit) || 16
         this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.startWssTime = Date.now()
@@ -268,7 +267,7 @@ class Meeting extends EventEmitter {
               return wsProxy + '/' + serverurl.split(':')[0] + ':' + port
             })
           } else {
-            this.adapterRef.logger.error(`云代理无法获取到server地址, serverurl: ${serverurl}, port: ${port}`);
+            this.adapterRef.logger.warn(`join 云代理无法获取到代理信息, serverurl: ${serverurl}, port: ${port}`);
           }
         }
 
@@ -291,10 +290,7 @@ class Meeting extends EventEmitter {
           appkey
         })
         options.uid = options.uid ? options.uid : this.adapterRef.channelInfo.uid
-        //优先启用云代理的地址
-        // this.adapterRef.channelInfo.relayaddrs = this.adapterRef.proxyServer.mediaProxyArray || ips.relayaddrs
-        // this.adapterRef.channelInfo.relaytoken = this.adapterRef.proxyServer.mediaProxyToken || ips.relaytoken
-        
+       
         this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.token = data.token
         this.adapterRef.channelInfo.T4 = Date.now()
         let rtt = (this.adapterRef.channelInfo.T4 - time.t1) - (time.t3 - time.t2)
@@ -304,11 +300,10 @@ class Meeting extends EventEmitter {
         }, joinChannelLiveConfig, joinChannelRecordConfig))
         this.info.relay = ips.relayaddrs && ips.relayaddrs.length > 0
         this.info.turn = ips.turnaddrs && ips.turnaddrs.length > 0
-        this.logger.log(`开始建立会话`);
         // 会话建立
         return this.adapterRef.instance.startSession()
       } else {
-        this.logger.error(`无法加入房间`);
+        this.logger.warn(`join 无法加入房间`);
         this.adapterRef.channelStatus = 'leave'
         this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
         this.adapterRef.connectState.curState = 'DISCONNECTED'
@@ -323,10 +318,13 @@ class Meeting extends EventEmitter {
           result: data.code,
           serverIp: data.ips && data.ips.turnaddrs && data.ips.turnaddrs.length && data.ips.turnaddrs[0]
         })
-        return Promise.reject(`code: ${data.code}, reason: ${data.desc}`)
+        throw new RtcError({
+          code: data.code || ErrorCode.NO_SERVER_ADDRESS,
+          message: data.desc && data.desc !== '' ? `join: ${data.desc}` : `join: 服务器不允许加入房间, code ${data.code}` 
+        })
       }
     } catch(e) {
-      this.logger.log('获取到房间失败:', e.name, e.message, e)
+      this.logger.log('joing 获取到房间信息错误:', e.name, e.message)
       this.adapterRef.channelStatus = 'leave'
       this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
       this.adapterRef.connectState.curState = 'DISCONNECTED'
@@ -338,10 +336,13 @@ class Meeting extends EventEmitter {
         v_record: joinChannelRecordConfig.recordVideo,
         record_type: joinChannelRecordConfig.recordType,
         host_speaker: joinChannelRecordConfig.isHostSpeaker,
-        result: -2,
+        result: `join() 语法错误: ${e.message}`,
         serverIp: ''
       })
-      throw e;
+      throw new RtcError({
+        code: ErrorCode.UNKNOWN,
+        message: `join() 语法错误: ${e.message}`
+      })
     }
   }
 

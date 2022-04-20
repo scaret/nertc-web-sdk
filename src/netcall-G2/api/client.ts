@@ -332,133 +332,134 @@ class Client extends Base {
    * @return {Promise}
    */
   async join (options: JoinOptions) {
-    this.logger.log('加入频道, options: ', JSON.stringify(options, null, ' '))
-    if(!options.channelName){
-      throw new RtcError({code: ErrorCode.INVALID_PARAMETER, message:'请填写房间名称'})
-    }
-    if (options.joinChannelRecordConfig){
-      checkValidBoolean({
-        tag: "joinOptions.joinChannelRecordConfig.recordAudio should be boolean",
-        value: options.joinChannelRecordConfig.recordAudio,
-      })
-      checkValidBoolean({
-        tag: "joinOptions.joinChannelRecordConfig.recordVideo should be boolean",
-        value: options.joinChannelRecordConfig.recordVideo,
-      })
-    }
-    if (typeof options.uid === 'string') {
-      this.logger.log('uid是string类型')
-      this.adapterRef.channelInfo.uidType = 'string'
-      //options.uid = new BigNumber(options.uid)
-    } else if (typeof options.uid === 'number') {
-      this.logger.log('uid是number类型')
-      this.adapterRef.channelInfo.uidType = 'number'
-      if(options.uid > Number.MAX_SAFE_INTEGER){
-        throw new RtcError({
-          code: ErrorCode.INVALID_PARAMETER,
-          message: 'uid is exceeds the scope of Number'
+    this.logger.log('join() 加入频道, options: ', JSON.stringify(options, null, ' '))
+    try {
+      if (!options.channelName || options.channelName === '') { 
+        throw new RtcError({code: ErrorCode.INVALID_PARAMETER, message:'join: 请填写房间名称'})
+      }
+      if (options.joinChannelRecordConfig){
+        checkValidBoolean({
+          tag: "joinOptions.joinChannelRecordConfig.recordAudio should be boolean",
+          value: options.joinChannelRecordConfig.recordAudio,
+        })
+        checkValidBoolean({
+          tag: "joinOptions.joinChannelRecordConfig.recordVideo should be boolean",
+          value: options.joinChannelRecordConfig.recordVideo,
         })
       }
-    } else {
-      this.logger.error('uid参数格式非法')
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.INVALID_PARAMETER,
-          message: 'uid is invalid'
-        })
-      )
-    }
 
-    // join行为排队
-    this.onJoinFinish = await this.operationQueue.enqueue({
-      caller: this as IClient,
-      method: "join",
-      options,
-    })
-    this.emit('pairing-join-start')
-    if(!this.adapterRef._statsReport){
-      this.initWebSocket();
-    }
-    if (this.adapterRef.channelStatus === 'join' || this.adapterRef.channelStatus === 'connectioning') {
-      this.emit('pairing-join-error')
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.REPEAT_JOIN,
-          message: 'repeatedly join'
-        })
-      )
-    }
-    //正式开始join行为
-    this.adapterRef.connectState.curState = 'CONNECTING'
-    this.adapterRef.connectState.prevState = 'DISCONNECTED'
-    this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
-    if (options.spatial){
-      this.initSpatialManager(options.spatial)
-    }
-    if (options.token){
-      this._params.token = options.token;
-    }
-    this._params.JoinChannelRequestParam4WebRTC2 = {
-      startJoinTime: Date.now(),
-      appkey: this._params.appkey,
-      userRole: this._roleInfo.userRole,
-      channelName: options.channelName,
-      wssArr: options.wssArr,
-      uid: options.uid,
-      token: this._params.token,
-      joinChannelLiveConfig: options.joinChannelLiveConfig || {liveEnable: false},
-      joinChannelRecordConfig: options.joinChannelRecordConfig || {
-        recordAudio: false, // 是否开启音频实时音录制，0不需要，1需要（默认0）
-        recordVideo: false, // 是否开启视频实时音录制，0不需要，1需要（默认0）
-        recordType: 0, // 录制模式，0混单（产生混合录制文件+单独录制文件） 1只混（只产生混合录制文件） 2只单（只产生单独录制文件）
-        isHostSpeaker: false // 主讲人
-      },
-    }
-    if(options.neRtcServerAddresses){
-      this._params.neRtcServerAddresses = {
-        channelServer: options.neRtcServerAddresses.channelServer || '',
-        statisticsServer: options.neRtcServerAddresses.statisticsServer || '',
-        roomServer: options.neRtcServerAddresses.roomServer || '',
-        webSocketProxyServer: options.neRtcServerAddresses.webSocketProxyServer || '',
-        mediaProxyServer: options.neRtcServerAddresses.mediaProxyServer || ''
+      if (typeof options.uid === 'string') {
+        this.logger.log('uid是string类型')
+        this.adapterRef.channelInfo.uidType = 'string'
+      } else if (typeof options.uid === 'number') {
+        this.logger.log('uid是number类型')
+        this.adapterRef.channelInfo.uidType = 'number'
+        if(options.uid > Number.MAX_SAFE_INTEGER){
+          throw new RtcError({
+            code: ErrorCode.INVALID_PARAMETER,
+            message: 'join: uid is exceeds the scope of Number'
+          })
+        }
+      } else {
+        this.logger.error('uid参数格式非法')
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.INVALID_PARAMETER,
+            message: 'join: uid is invalid'
+          })
+        )
       }
-    }
-    
-    this.setStartSessionTime()
-    this.initMode()
-    if (!this.adapterRef.mediaCapability.supportedCodecRecv || !this.adapterRef.mediaCapability.supportedCodecSend){
-      try{
-        await this.adapterRef.mediaCapability.detect();
-      }catch(e){
-        this.logger.error('Failed to detect mediaCapability', e.name, e.message);
-      }
-    }
-    if (!this.adapterRef._meetings){
-      this.emit('pairing-join-error')
-      throw new RtcError({
-        code: ErrorCode.NO_MEETINGS,
-        message: 'meetings error'
+
+      // join行为排队
+      this.onJoinFinish = await this.operationQueue.enqueue({
+        caller: this as IClient,
+        method: "join",
+        options,
       })
-    }
-    try{
+      this.emit('pairing-join-start')
+      if(!this.adapterRef._statsReport){
+        this.initWebSocket();
+      }
+      if (this.adapterRef.channelStatus === 'join' || this.adapterRef.channelStatus === 'connectioning') {
+        this.emit('pairing-join-error')
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.REPEAT_JOIN,
+            message: 'repeatedly join'
+          })
+        )
+      }
+      //正式开始join行为
+      this.adapterRef.connectState.curState = 'CONNECTING'
+      this.adapterRef.connectState.prevState = 'DISCONNECTED'
+      this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
+      if (options.spatial){
+        this.initSpatialManager(options.spatial)
+      }
+      if (options.token){
+        this._params.token = options.token;
+      }
+      this._params.JoinChannelRequestParam4WebRTC2 = {
+        startJoinTime: Date.now(),
+        appkey: this._params.appkey,
+        userRole: this._roleInfo.userRole,
+        channelName: options.channelName,
+        wssArr: options.wssArr,
+        uid: options.uid,
+        token: this._params.token,
+        joinChannelLiveConfig: options.joinChannelLiveConfig || {liveEnable: false},
+        joinChannelRecordConfig: options.joinChannelRecordConfig || {
+          recordAudio: false, // 是否开启音频实时音录制，0不需要，1需要（默认0）
+          recordVideo: false, // 是否开启视频实时音录制，0不需要，1需要（默认0）
+          recordType: 0, // 录制模式，0混单（产生混合录制文件+单独录制文件） 1只混（只产生混合录制文件） 2只单（只产生单独录制文件）
+          isHostSpeaker: false // 主讲人
+        },
+      }
+      if(options.neRtcServerAddresses){
+        this._params.neRtcServerAddresses = {
+          channelServer: options.neRtcServerAddresses.channelServer || '',
+          statisticsServer: options.neRtcServerAddresses.statisticsServer || '',
+          roomServer: options.neRtcServerAddresses.roomServer || '',
+          webSocketProxyServer: options.neRtcServerAddresses.webSocketProxyServer || '',
+          mediaProxyServer: options.neRtcServerAddresses.mediaProxyServer || ''
+        }
+      }
+      
+      this.setStartSessionTime()
+      this.initMode()
+      if (!this.adapterRef.mediaCapability.supportedCodecRecv || !this.adapterRef.mediaCapability.supportedCodecSend){
+        try{
+          await this.adapterRef.mediaCapability.detect();
+        }catch(e){
+          this.logger.error('Failed to detect mediaCapability', e.name, e.message);
+        }
+      }
+      if (!this.adapterRef._meetings){
+        this.emit('pairing-join-error')
+        throw new RtcError({
+          code: ErrorCode.NO_MEETINGS,
+          message: 'meetings error'
+        })
+      }
       const joinResult = await this.adapterRef._meetings.joinChannel(this._params.JoinChannelRequestParam4WebRTC2)
       this.emit('pairing-join-success')
       this.apiFrequencyControl({
         name: 'join',
         code: 0,
-        param: JSON.stringify({
-          options
-        }, null, ' ')
+        param: {
+          ...options
+        }
       })
       return joinResult
-    }catch(e){
+    } catch (e){
       this.emit('pairing-join-error')
       this.apiFrequencyControl({
         name: 'join',
         code: -1,
-        param: JSON.stringify({
-          reason: e
-        }, null, ' ')
+        param: {
+          ...options,
+          reason: e.getMessage()
+        }
       })
       throw e;
     }
@@ -477,9 +478,9 @@ class Client extends Base {
       method: 'leave',
       options: null,
     })
-    this.logger.log('离开频道')
+    this.logger.log('leave() 离开频道')
     if (this.adapterRef.channelStatus !== 'join' && this.adapterRef.channelStatus !== 'connectioning') {
-      this.logger.log(' 状态: ', this.adapterRef.channelStatus)
+      this.logger.log('房间状态: ', this.adapterRef.channelStatus)
       //return Promise.reject('ERR_REPEAT_LEAVE')
     }
     this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
@@ -495,9 +496,9 @@ class Client extends Base {
     this.apiFrequencyControl({
       name: 'leave',
       code: 0,
-      param: JSON.stringify({
+      param: {
         uid: this.getUid()
-      }, null, ' ')
+      }
     })
 
   }
@@ -506,7 +507,6 @@ class Client extends Base {
     this.logger.log('离开频道')
     if (this.adapterRef.channelStatus !== 'join' && this.adapterRef.channelStatus !== 'connectioning') {
       this.logger.log(' 状态: ', this.adapterRef.channelStatus)
-      //return Promise.reject('ERR_REPEAT_LEAVE')
     }
     this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
     this.adapterRef.connectState.curState = 'DISCONNECTING'
@@ -1560,18 +1560,13 @@ class Client extends Base {
    * @return {Promise}
    */
   async addTasks (options:AddTaskOptions) {
-    this.logger.log('增加互动直播推流任务, options: ', JSON.stringify(options))
+    this.logger.log('addTasks() 增加互动直播推流任务, options: ', JSON.stringify(options))
     let reason = null
     if (this._roleInfo.userRole === 1) {
       this.logger.error(`addTasks: 观众不允许进行直播推流操作`);
       reason = 'addTasks: 观众不允许进行直播推流操作'
     }
-    
-    if (!this.adapterRef._meetings){
-      throw new RtcError({
-        code: ErrorCode.NO_MEETINGS,
-        message: 'meetings error'
-      })
+    if (!this.adapterRef._meetings) {
       reason = 'addTasks: 加入房间后进行直播推流操作'
     }
 
@@ -1591,7 +1586,7 @@ class Client extends Base {
     }
 
     try {
-        await this.adapterRef._meetings.addTasks(options)
+        await this.adapterRef._meetings?.addTasks(options)
         this.adapterRef.instance.apiFrequencyControl({
           name: 'addTasks',
           code: 0,
@@ -1600,8 +1595,6 @@ class Client extends Base {
           }
         })
     } catch (e) {
-        console.log('e: ', e.getMessage())
-        debugger
         this.adapterRef.instance.apiFrequencyControl({
         name: 'addTasks',
         code: -1,
@@ -1623,23 +1616,50 @@ class Client extends Base {
    * @return {Promise}
    */
   async deleteTasks (options:{taskIds: string[]}) {
+    this.logger.log('deleteTasks() 删除互动直播推流任务, options: ', options)
+    let reason = null
     if (this._roleInfo.userRole === 1) {
-      this.logger.error(`deleteTasks: 观众不允许进行直播推流操作`);
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.INVALID_OPERATION,
-          message: 'audience is not allowed to operate task'
-        })
-      );
+      reason = 'deleteTasks: 观众不允许进行直播推流操作'
     }
-    this.logger.log('删除互动直播推流任务, options: ', options)
     if (!this.adapterRef._meetings){
+      reason = 'deleteTasks: 加入房间后进行直播推流操作'
+    }
+    if (reason) {
+      this.logger.error(reason);
+      this.adapterRef.instance.apiFrequencyControl({
+        name: 'deleteTasks',
+        code: -1,
+        param: {
+          clientUid: this.getUid(),
+          reason
+        }
+      })
       throw new RtcError({
         code: ErrorCode.NO_MEETINGS,
-        message: 'meetings error'
+        message: reason
       })
     }
-    return this.adapterRef._meetings.deleteTasks(options)
+
+    try {
+        await this.adapterRef._meetings?.deleteTasks(options)
+        this.adapterRef.instance.apiFrequencyControl({
+          name: 'deleteTasks',
+          code: 0,
+          param: {
+            clientUid: this.getUid()
+          }
+        })
+    } catch (e) {
+        this.adapterRef.instance.apiFrequencyControl({
+        name: 'deleteTasks',
+        code: -1,
+        param: {
+          clientUid: this.getUid(),
+          reason: e.getMessage()
+        }
+      })
+      throw e
+    }
   }
 
   /**
@@ -1651,23 +1671,50 @@ class Client extends Base {
    * @return {Promise}
    */
   async updateTasks (options : {rtmpTasks: RTMPTask[]}) {
+    this.logger.log('updateTasks() 更新互动直播推流任务, options: ', options)
+    let reason = null
     if (this._roleInfo.userRole === 1) {
-      this.logger.error(`updateTasks: 观众不允许进行直播推流操作`);
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.INVALID_OPERATION,
-          message: 'audience is not allowed to operate task'
-        })
-      );
+      reason = 'updateTasks: 观众不允许进行直播推流操作'
     }
-    this.logger.log('更新互动直播推流任务, options: ', options)
     if (!this.adapterRef._meetings){
+      reason = 'updateTasks: 加入房间后进行直播推流操作'
+    }
+    if (reason) {
+      this.logger.error(reason);
+      this.adapterRef.instance.apiFrequencyControl({
+        name: 'updateTasks',
+        code: -1,
+        param: {
+          clientUid: this.getUid(),
+          reason
+        }
+      })
       throw new RtcError({
         code: ErrorCode.NO_MEETINGS,
-        message: 'meetings error'
+        message: reason
       })
     }
-    return this.adapterRef._meetings.updateTasks(options)
+
+    try {
+        await this.adapterRef._meetings?.updateTasks(options)
+        this.adapterRef.instance.apiFrequencyControl({
+          name: 'updateTasks',
+          code: 0,
+          param: {
+            clientUid: this.getUid()
+          }
+        })
+    } catch (e) {
+        this.adapterRef.instance.apiFrequencyControl({
+        name: 'updateTasks',
+        code: -1,
+        param: {
+          clientUid: this.getUid(),
+          reason: e.getMessage()
+        }
+      })
+      throw e
+    }
   }
 
   setEncryptionMode(encryptionMode: EncryptionMode){

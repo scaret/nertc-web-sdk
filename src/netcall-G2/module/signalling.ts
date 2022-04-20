@@ -200,7 +200,7 @@ class Signalling extends EventEmitter {
     }
     this.logger.log('Signalling: init url=',  url)
     this.adapterRef.channelInfo._protooUrl = url
-    this._url = `${url.indexOf('://') === -1 ? "wss://" : ""}${url}&cid=${this.adapterRef.channelInfo.cid}&uid=${this.adapterRef.channelInfo.uid}&deviceId=${this.adapterRef.deviceId}`
+    this._url = `${url.indexOf('://') === -1 ? "wss://" : ""}${url}&cid=${this.adapterRef.channelInfo.cid}&uid=${this.adapterRef.channelInfo.uid}&deviceid=${this.adapterRef.deviceId}`
     this.logger.log('连接的url: ', this._url)
 
 
