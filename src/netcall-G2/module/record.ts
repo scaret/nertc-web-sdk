@@ -1,10 +1,11 @@
 import { EventEmitter } from 'eventemitter3'
 import {
-  ILogger,
+  AdapterRef, ILogger,
   RecordInitOptions,
   RecordStartOptions,
-  RecordStatus,
+  RecordStatus, Client
 } from "../types";
+import {MediaHelper} from "./media";
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
 import {LocalStream} from "../api/localStream";
@@ -14,7 +15,7 @@ import {RemoteStream} from "../api/remoteStream";
  * 媒体录制（音频混音录制/视频录制）
  */
 class Record extends EventEmitter {
-  private _status:RecordStatus = {
+  public _status:RecordStatus = {
     recordedChunks: [], // recordedChunks
     isRecording: false, // 录音标志位
     stream: null, // 录制媒体流
@@ -32,7 +33,7 @@ class Record extends EventEmitter {
     startTime: null,
     endTime: null
   };
-  private stream: LocalStream|RemoteStream;
+  private client: Client;
   private _recorder:MediaRecorder|null = null;
   private logger: ILogger;
   constructor (options:RecordInitOptions) {
@@ -43,7 +44,7 @@ class Record extends EventEmitter {
     })
     this._reset() // 初始化属性
     // 设置传入参数
-    this.stream = options.stream
+    this.client = options.client
   }
   /**
    * [开始录制]
@@ -55,7 +56,7 @@ class Record extends EventEmitter {
    * @return {[type]}               [Promise]
    */
   async start (option:RecordStartOptions) {
-    const {stream = null, uid = '0', type = 'video', reset = false } = option
+    const {stream = null, uid = '0', type = 'video', reset = false, recordName } = option
     this.logger.log('开始本地录制: ', JSON.stringify(option, null, ''))
     let reason = null;
     if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) {
@@ -79,7 +80,7 @@ class Record extends EventEmitter {
       }
     }
     if (reason) {
-      this.stream.client.apiFrequencyControl({
+      this.client.apiFrequencyControl({
         name: 'startMediaRecording',
         code: -1,
         param: JSON.stringify({
@@ -94,7 +95,7 @@ class Record extends EventEmitter {
     
     this._status.stream = stream
     this._status.option = option
-    this._status.fileName = `${this._status.option.uid}--${this._getTimeStamp()}--${this._status.option.type || 'video'}`
+    this._status.fileName = this._getFilename(recordName)
     this._status.startTime = this._getTimeStamp()
     // 不是音频就是视频
     let contentTypes = [
@@ -115,7 +116,7 @@ class Record extends EventEmitter {
     try {
       await this._format()
       await this._start()
-      this.stream.client.apiFrequencyControl({
+      this.client.apiFrequencyControl({
         name: 'startMediaRecording',
         code: 0,
         param: JSON.stringify({
@@ -126,7 +127,7 @@ class Record extends EventEmitter {
       })
     } catch (e) {
       this.logger.error('录制start error： ', e.name, e.message, e);
-      this.stream.client.apiFrequencyControl({
+      this.client.apiFrequencyControl({
         name: 'startMediaRecording',
         code: -1,
         param: JSON.stringify({
@@ -162,7 +163,7 @@ class Record extends EventEmitter {
       if(options && options.isUser === false) {
         
       } else {
-        this.stream.client.apiFrequencyControl({
+        this.client.apiFrequencyControl({
           name: 'stopMediaRecording',
           code: -1,
           param: ''
@@ -187,13 +188,13 @@ class Record extends EventEmitter {
       }
       // 默认文件名
       this._recorder.stop()
-      this.stream.client.apiFrequencyControl({
+      this.client.apiFrequencyControl({
         name: 'stopMediaRecording',
         code: 0,
         param: ''
       })
       if (options && options.isUser){
-        this.stream.client.apiFrequencyControl({
+        this.client.apiFrequencyControl({
           name: 'stopMediaRecording',
           code: -1,
           param: ''
@@ -209,7 +210,7 @@ class Record extends EventEmitter {
    */
   play (div:HTMLElement) {
     if (this._status.state !== 'stopped') {
-      this.stream.client.apiFrequencyControl({
+      this.client.apiFrequencyControl({
         name: 'playMediaRecording',
         code: -1,
         param: JSON.stringify({
@@ -219,7 +220,7 @@ class Record extends EventEmitter {
       this.logger.warn(`MediaRecordHelper: record stopping when ${this._recorder && this._recorder.state}`)
       return Promise.resolve()
     }
-    this.stream.client.apiFrequencyControl({
+    this.client.apiFrequencyControl({
       name: 'playMediaRecording',
       code: 0,
       param: JSON.stringify({
@@ -240,6 +241,7 @@ class Record extends EventEmitter {
       }
       return Promise.resolve()
     }).then(() => {
+      console.warn('下载录制： ', this._status)
       if (this._status.recordUrl) {
         const a = document.createElement('a')
         document.body.appendChild(a)
@@ -252,7 +254,7 @@ class Record extends EventEmitter {
         this.logger.log(`MediaRecordHelper: download: cannot download media without url ...`)
       }
       if (isUser) {
-        this.stream.client.apiFrequencyControl({
+        this.client.apiFrequencyControl({
           name: 'downloadMediaRecording',
           code: 0,
           param: ''
@@ -266,7 +268,7 @@ class Record extends EventEmitter {
    * 清空录制文件
    */
   async clean () {
-    this.stream.client.apiFrequencyControl({
+    this.client.apiFrequencyControl({
       name: 'cleanMediaRecording',
       code: 0,
       param: ''
@@ -341,6 +343,16 @@ class Record extends EventEmitter {
   }
   _getTimeStamp () {
     return Math.floor(Date.now() / 1000)
+  }
+  _getFilename (recordName?: string) {
+    let filename = "";
+    if (recordName){
+      filename += recordName + "_"
+    }
+    const now = new Date()
+    filename += `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2, "0")}${(now.getDate()).toString().padStart(2, "0")}`
+    filename += `${(now.getHours()).toString().padStart(2, "0")}${(now.getMinutes()).toString().padStart(2, "0")}${(now.getSeconds()).toString().padStart(2, "0")}${now.getMilliseconds().toString().padStart(3, "0")}`
+    return filename
   }
   /**
    * 检测浏览器是否支持mimetype类型
@@ -459,7 +471,7 @@ class Record extends EventEmitter {
     // 启用日志打印
     this._clearTimer()
     this._startTimer()
-    return Promise.resolve(this._status.option)
+    return Promise.resolve(this._status.recordId)
   }
 
   /**
@@ -486,10 +498,12 @@ class Record extends EventEmitter {
       type: this._status.mimeType
     })
     this._status.recordUrl = URL.createObjectURL(blob)
-    this.emit('stop', this.getRecordStatus())
+    // 目前recorder不保有到client的指向，需要在client上做一次事件委托
+    this.emit('media-recording-stopped', this.getRecordStatus())
     // this._destroy()
     if (resolve) {
-      resolve(this._status.recordUrl)
+      //产品要求录制结束后，通知用户的该录制文件的名称
+      resolve(this._status.fileName)
     }
     // this.download()
   }
@@ -596,7 +610,7 @@ class Record extends EventEmitter {
       startTime: this._status.startTime,
       endTime: this._status.endTime
     }, this._status.option)
-    this.stream.client.apiFrequencyControl({
+    this.client.apiFrequencyControl({
       name: 'listMediaRecording',
       code: 0,
       param: ''

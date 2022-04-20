@@ -23,12 +23,6 @@ interface IParameters{
   videoLowDefaultConstraints: MediaTrackConstraints,
   // 辅流开开启小流时的视频采集参数
   screenLowDefaultConstraints: MediaTrackConstraints,
-
-  // 弱网情况下是保流畅还是保画质 https://webrtc.github.io/samples/src/content/capture/video-contenthint/
-  contentHint: {
-    video: "motion"|"detail",
-    screen: "motion"|"detail",
-  },
   
   // 播放时如果遇到自动播放问题，是否显示video控件的默认控制选项
   controlOnPaused: boolean,
@@ -94,10 +88,6 @@ let parameters:IParameters = {
   localStreams: [],
   videoLowDefaultConstraints: {width: {max: 320}, height: {max: 180}},
   screenLowDefaultConstraints: {width: {max: 320}, height: {max: 180}},
-  contentHint: {
-    video: "motion",
-    screen: "detail",
-  },
   controlOnPaused: true,
   hideControlOnResume: true,
   maxTransportRebuildCnt: 50,
@@ -125,7 +115,7 @@ let parameters:IParameters = {
       },
     },
   },
-  screenFocus: false,
+  screenFocus: true,
   allowEmptyMedia: false,
   keepLocalstreamOnLeave: false,
   joinFirstTimeout: 2000,

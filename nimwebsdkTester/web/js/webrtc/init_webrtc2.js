@@ -652,9 +652,9 @@ function initEvents() {
 
 
   rtc.client.on('connection-state-change', _data => {
-    console.warn(`网络状态 : ${_data.prevState} => ${_data.curState}, 是否重连：${_data.reconnecting}`)
+    console.warn(`网络状态 connection-state-change: ${_data.prevState} => ${_data.curState}, 是否重连：${_data.reconnect}`)
     const div = document.getElementById('netStatus')
-    div.firstElementChild.firstElementChild.lastElementChild.innerText = ` ${_data.curState} ${_data.reconnecting ? "重连中" : ""}`
+    div.firstElementChild.firstElementChild.lastElementChild.innerText = ` ${_data.curState} ${_data.reconnect ? "重连" : ""}`
   })
 
   rtc.client.on("recording-device-changed", evt=>{
@@ -1208,7 +1208,14 @@ $('#enableCodecHacking').on('change', ()=>{
 
 function getVideoSource(mediaType){
   let defaultStr = "1920x1080x15x1"
-  const optionsStr = prompt(`自定义${mediaType}配置：【宽x高x帧率x类型】\n类型1：时钟; 类型2：背景替换; 类型3：随机颜色`, defaultStr) || defaultStr
+  const optionsStr = prompt(
+`自定义${mediaType}配置：【宽x高x帧率x类型
+类型1：时钟; 
+类型2：背景替换;
+类型3：随机颜色;
+类型4：屏幕共享;
+`
+    , defaultStr) || defaultStr
   const matches = optionsStr.match(/(\d+)x(\d+)x(\d+)x(\d+)/);
   if (!matches){
     addLog("自定义视频 ：无法匹配字符串" + optionsStr)
@@ -1224,6 +1231,8 @@ function getVideoSource(mediaType){
     videoConstraint.type = "clock"
   } else if (matches[4] === "3"){
     videoConstraint.type = "randomcolor"
+  } else if (matches[4] === "4"){
+    videoConstraint.type = "display"
   }else{
     videoConstraint.type = "background"
     const bgImg = new Image()
@@ -2134,6 +2143,59 @@ $('#playScreenAudioOff').on('click', () => {
     addLog('关闭屏幕共享音频 失败: ' + err)
     console.log('关闭屏幕共享音频 失败: ', err)
   })
+})
+
+/** 
+ * ----------------------------------------
+ *              金融私有化录制逻辑
+ * ----------------------------------------
+ */
+const screenProfile = $('#sessionConfigScreenProfile').val()
+// 开始录制
+$('#recordVideoPro').on('click', async (_event) => {
+  console.log('金融私有化录制: 开始录制')
+  const result = await rtc.client.startMediaRecording({
+    recorder: $('#part-record-pro input[name="recordType"]:checked').val(),
+    recordConfig: {
+      recordType: $('#part-record-pro input[name="recordMediaType"]:checked').val(),
+      recordName: $('#recordName').val(),
+      recordVideoQuality: NERTC[$('#recordVideoQuality').val()],
+      recordVideoFrame: NERTC[$('#recordVideoFrame').val()]
+    }
+  })
+})
+
+// 结束录制
+$('#recordVideoEndPro').on('click', async (_event) => {
+  console.log('金融私有化录制: 结束录制')
+  try{
+    await rtc.client.stopMediaRecording()
+  }catch(e) {
+    console.error(e)
+    addLog(e.message)
+  }
+  
+})
+
+// 下载文件
+$('#recordDownloadPro').on('click', async (_event) => {
+  console.log('金融私有化录制: 下载文件')
+  try{
+    await rtc.client.downloadMediaRecording()
+  }catch(e) {
+    console.error(e)
+    addLog(e.message)
+  }
+})
+// 清理文件
+$('#recordCleanPro').on('click', async (_event) => {
+  console.log('金融私有化录制: 清理文件')
+  try{
+    await rtc.client.cleanMediaRecording()
+  }catch(e) {
+    console.error(e)
+    addLog(e.message)
+  }
 })
 
 /** 
@@ -3073,6 +3135,29 @@ $("#closeWatermarkPanel").on("click", function (){
   $("#updateWatermarkPanel").hide();
 });
 
+$("#pushMask").on("click", function(){
+  let uid = document.getElementById("maskUid").value
+  const maskSecond = parseInt(document.getElementById("maskSecond").value)
+  if (!rtc.client?.adapterRef._signalling?._protoo){
+    addLog("打码错误：需加入频道")
+    return
+  }
+  if (!uid){
+    uid = rtc.client.getChannelInfo().uid
+  }
+  const externData = {
+    type: "AutoMaskUid",
+    data: {
+      maskUid: uid,
+      duration: maskSecond,
+      evidence: {
+      }
+    }
+  }
+  console.log("测试打码", externData)
+  rtc.client.adapterRef._signalling._protoo.emit('notification', {method: "OnUserData", data: {externData}})
+})
+
 $("#sdkVersion").text(NERTC.VERSION);
 $("#sdkBuild").text(NERTC.BUILD);
 $("#systemRequirement").text(`WebRTC:${NERTC.checkSystemRequirements() ? "支持": "不支持"}； 适配器:${NERTC.getHandler()}`);
@@ -3175,6 +3260,7 @@ $("#encoderConfigBtn").on("click", ()=>{
     mediaType: $("#encoderMediaType").val(),
     streamType: $("#encoderStreamType").val(),
     maxBitrate: parseInt($("#bitrateMax").val()),
+    contentHint: $("#contentHint").val(),
   }
   console.log("上行视频编码设置", options)
   rtc.localStream.setVideoEncoderConfiguration(options)

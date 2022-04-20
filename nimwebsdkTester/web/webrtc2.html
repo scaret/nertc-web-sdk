@@ -616,6 +616,16 @@
             </select>
             <br/>
             最大编码比特率/kbps<input type="number" id="bitrateMax" value="5000" style="width: 25%" step="1000">
+            <br/>
+            <label>
+              优先模式
+              <select id="contentHint">
+                <option value="">默认</option>
+                <option value="motion">流畅优先</option>
+                <option value="detail">画质优先</option>
+              </select>
+            </label>
+            <br/>
             <button id="encoderConfigBtn">设置</button>
             </div>
           </div>
@@ -690,6 +700,50 @@
         </div>
       </div>
       <div class="block">
+
+        <p class="block-header" id="clientRecord">金融私有化客户端录制</p>
+        <div class="part hide" id="part-record-pro">
+          <div class="line">
+            <input type="radio" name="recordType" value="local">
+            <label>录制自己</label>
+            <input type="radio" name="recordType" value="all" checked>
+            <label>录制所有人</label>
+          </div>
+          <div class="line">
+            <input type="radio" name="recordMediaType" value="audio">
+            <label>音频录制</label>
+            <input type="radio" name="recordMediaType" value="video" checked>
+            <label>音视频录制</label>
+          </div>
+          <div class="line">设置录制的视频设置: </div>
+          <div class="line">
+            <label for='recordVideoQuality'>录制的视频分辨率</label>
+            <select id='recordVideoQuality'>
+              <option value='RECORD_VIDEO_QUALITY_360p'>640*360</option>
+              <option value='RECORD_VIDEO_QUALITY_480p'>640*480</option>
+              <option value='RECORD_VIDEO_QUALITY_720p'>1280*720</option>
+            </select>
+          </div>
+
+          <div class="line">
+            <label for='recordVideoFrame'>录制的视频帧率</label>
+            <select id='recordVideoFrame'>
+              <option value='RECORD_VIDEO_FRAME_RATE_15'>15</option>
+              <option value='RECORD_VIDEO_FRAME_RATE_30'>30</option>
+            </select>
+          </div>
+          <div class="line">
+            录制的文件名称：
+            <input type="text" id="recordName">
+          </div>
+          <div class="line">
+            录制列表
+            <button id="recordVideoPro" class="close">开始</button>
+            <button id="recordVideoEndPro" class="close">结束</button>
+            <button id="recordDownloadPro" class="close">下载</button>
+            <button id="recordCleanPro" class="close">清理</button>
+          </div>
+        </div>
 
         <p class="block-header" id="clientRecord">客户端录制相关</p>
         <div class="part hide" id="part-record">
@@ -768,6 +822,26 @@
           <div class="line">
             混音状态：<span id="audioMixingState"></span>
             上行音频：<span id="audioSenderLabel"></span>
+          </div>
+        </div>
+
+
+        <p class="block-header" id="automask">自动打码</p>
+        <div class="part" id='automask'>
+          <div class="line">
+            模拟打码下发:
+            <br/>
+            <label>
+              uid(不填则为自己)：
+              <input type="text" id="maskUid">
+            </label>
+            <br/>
+            <label>
+              打码时长：
+              <input type="number" id="maskSecond" value="3">秒
+            </label>
+            <br/>
+            <button id="pushMask">打码</button>
           </div>
         </div>
 

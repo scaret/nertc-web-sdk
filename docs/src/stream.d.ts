@@ -960,7 +960,35 @@ declare interface Stream {
          * 
          */
         soundId: number;
-      }) : Promise<unknown> 
+      }) : Promise<unknown>
+
+
+  /**
+   * 视频上行参数设置。
+   *
+   * @note setVideoEncoderConfiguration 方法只作用于本地视频流。
+   * 
+   * @example 设置上行屏幕共享最大编码比特率为3M，流畅度优先：
+   * 
+   * ```javascript
+   * // rtc.localStream = NERTC.createStream({screen: true})
+   * rtc.localStream.setVideoEncoderConfiguration({
+   *   mediaType: "screen",
+   *   streamType: "high",
+   *   maxBitrate: 3_000_000,
+   *   contentHint: "motion",
+   * })
+   * // await rtc.localStream.init()
+   * // await rtc.client.publish(rtc.localStream)
+   * ```
+   * 
+   */
+  setVideoEncoderConfiguration(options: {
+    mediaType: "video"|"screen",
+    streamType: "high"|"low",
+    maxBitrate?: number,
+    contentHint?: "motion"|"detail",
+  }): void;
     /**
      * 添加视频画布水印。
      * 

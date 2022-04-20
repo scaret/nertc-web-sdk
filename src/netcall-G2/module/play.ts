@@ -39,6 +39,12 @@ class Play extends EventEmitter {
       encoderControl: EncoderWatermarkControl;
     }
   }
+  public mask: {
+    enabled: boolean,
+  } = {
+    enabled: false,
+  }
+  
   private autoPlayType:Number;
   private stream: LocalStream | RemoteStream;
   private logger: ILogger
@@ -416,6 +422,7 @@ class Play extends EventEmitter {
       this.audioDom.muted = false;
       await this.audioDom.play()
       this.logger.log(`播放音频完成，当前播放状态:`, this.audioDom && this.audioDom.played && this.audioDom.played.length)
+      this.stream.client.updateRecordingAudioStream()
     } catch (error) {
       this.logger.warn('播放音频出现问题: ', error.name, error.message, error)
 
@@ -563,6 +570,9 @@ class Play extends EventEmitter {
       this.logger.error(`没有视频源`);
       return;
     }
+    if (this.mask.enabled){
+      this.enableMask()
+    }
     try {
       const videoTrack = stream.getVideoTracks()[0];
       if (videoTrack){
@@ -611,6 +621,9 @@ class Play extends EventEmitter {
     if (!this.screenDom){
       this.logger.error(`辅流没有视频源`);
       return;
+    }
+    if (this.mask.enabled){
+      this.enableMask()
     }
     try {
       const videoTrack = stream.getVideoTracks()[0];
@@ -846,6 +859,26 @@ class Play extends EventEmitter {
         })
       })
       return fileUrl;
+    }
+  }
+  
+  enableMask(){
+    this.mask.enabled = true
+    if (this.videoDom){
+      this.videoDom.style.filter = "blur(20px)"
+    }
+    if (this.screenDom){
+      this.screenDom.style.filter = "blur(20px)"
+    }
+  }
+  
+  disableMask(){
+    this.mask.enabled = false
+    if (this.videoDom){
+      this.videoDom.style.filter = ""
+    }
+    if (this.screenDom){
+      this.screenDom.style.filter = ""
     }
   }
 

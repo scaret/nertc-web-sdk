@@ -108,7 +108,7 @@ export interface AdapterRef {
   connectState:{
     prevState: ConnectionState;
     curState:ConnectionState;
-    reconnecting: boolean;
+    reconnect: boolean;
   };
   _mediasoup?:Mediasoup|null;
   mediaHelpers: {[uid in UIDTYPE]:MediaHelper};
@@ -620,7 +620,8 @@ export interface ScreenSource{
 
 export interface RecordInitOptions{
   logger: ILogger;
-  stream: LocalStream|RemoteStream;
+  client: Client;
+  //stream: LocalStream|RemoteStream;
 }
 
 export interface RecordStatus{
@@ -646,6 +647,7 @@ export interface RecordStartOptions{
   stream: MediaStream|MediaStream[];
   uid: number|string;
   type: string;
+  recordName?: string;
   reset: boolean;
 }
 
@@ -817,6 +819,7 @@ export interface Client{
   doSubscribe: (stream: RemoteStream)=>Promise<void>
   doUnsubscribe: (stream: RemoteStream)=>void
   doPublish: (stream: LocalStream)=>void
+  updateRecordingAudioStream: ()=>void
 }
 
 export type ConsumerStatus = "init"|"start"|"end"
@@ -886,6 +889,13 @@ export interface ScreenProfileOptions{
 
 export interface EncodingParameters{
   maxBitrate?: number;
+  contentHint: ""|"motion"|"detail"|null;
+}
+
+export interface MaskUserSetting {
+  maskUid: number;
+  duration: number;
+  targetEndMs: number;
 }
 
 export interface SnapshotOptions{
@@ -894,8 +904,20 @@ export interface SnapshotOptions{
 }
 
 export interface MediaRecordingOptions{
-  type: string;
+  type:string;
   reset: boolean;
+}
+export interface ClientMediaRecordingOptions{
+  recorder?: 'local' | 'all';
+  recordConfig?: ClientRecordConfig
+}
+
+export interface ClientRecordConfig{
+  recordType: 'audio' | 'video';
+  recordName?: string;
+  recordVideoQuality: number;
+  recordVideoFrame: number;
+  recordSize: number;
 }
 
 export interface SignallingOptions{
@@ -1290,4 +1312,8 @@ export interface PreProcessingConfig{
   canvasElem: HTMLCanvasElement;
   handlers: PreProcessingHandler[];
   timer: number|null;
+}
+
+export interface FormatMediaOptions{
+  adapterRef: AdapterRef;
 }
