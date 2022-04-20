@@ -1013,6 +1013,31 @@ export interface WatermarkSetting{
   }
 }
 
+
+export interface EncoderWatermarkStyle{
+  textBaseline: CanvasTextBaseline;
+  left: number;
+  top: number;
+  font: string;
+  fillStyle: string;
+
+  bgWidth: number;
+  bgHeight: number;
+  bgFillStyle: string;
+}
+
+export interface EncoderWatermarkSetting{
+  type: 'text'|'timestamp'|'image';
+  content: string;
+  imageUrls?: string[];
+  loop: boolean;
+  interval?: number;
+  loopIndex: number;
+  imgElems?: HTMLImageElement[];
+  startMs?: number;
+  style: EncoderWatermarkStyle
+}
+
 /**
  * 画布水印配置
  */
@@ -1168,6 +1193,31 @@ export interface NERtcImageWatermarkConfig {
    */
   loop: boolean;
 }
+
+/**
+ * 画布水印配置
+ */
+export interface NERtcEncoderWatermarkConfig {
+  /**
+   * 水印类型，video为主流，screen为辅流
+   */
+  mediaType: 'video'|'screen';
+
+  /**
+   * 文字水印 最对支持10个
+   */
+  textWatermarks:NERtcTextWatermarkConfig[] ;
+
+  /**
+   * 时间戳水印
+   */
+  timestampWatermarks:NERtcTimestampWatermarkConfig ;
+
+  /**
+   * 图片水印，最多支持4个
+   */
+  imageWatermarks:NERtcImageWatermarkConfig[] ;
+}
   
 export interface NeRtcServerAddresses{
   channelServer?: string;
@@ -1225,4 +1275,19 @@ export interface RTSTransportOptions{
   port: number;
   transportId: string;
   adapterRef: AdapterRef;
+}
+
+export interface PreProcessingHandler{
+  name: "copy"|"color"|"watermark";
+  func: (mediaHelper: MediaHelper, mediaType: "video"|"screen", config: PreProcessingConfig)=>void
+}
+
+export interface PreProcessingConfig{
+  // canvasTrack指的是开启前处理后的Track
+  canvasTrack: MediaStreamTrack;
+  canvasCtx: CanvasRenderingContext2D;
+  videoElem: HTMLVideoElement;
+  canvasElem: HTMLCanvasElement;
+  handlers: PreProcessingHandler[];
+  timer: number|null;
 }

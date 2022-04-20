@@ -8,7 +8,14 @@ import {checkExists, isExistOptions, checkValidInteger} from "../util/param";
 import {
   AudioMixingOptions,
   GetStreamConstraints,
-  MediaHelperOptions, MediaTypeShort, MixAudioConf, AudioEffectOptions, MediaTypeAudio, ILogger, EncodingParameters,
+  MediaHelperOptions,
+  MediaTypeShort,
+  MixAudioConf,
+  AudioEffectOptions,
+  MediaTypeAudio,
+  ILogger,
+  EncodingParameters,
+  PreProcessingConfig,
 } from "../types";
 import {emptyStreamWith, watchTrack} from "../util/gum";
 import RtcError from '../util/error/rtcError';
@@ -20,6 +27,7 @@ import {Device} from "./device";
 import {Logger} from "./3rd/mediasoup-client/Logger";
 import {platform} from "../util/platform";
 import {NERTC_VIDEO_QUALITY_ENUM, VIDEO_FRAME_RATE_ENUM} from "../constant/videoQuality";
+import {disablePreProcessing, enablePreProcessing, preProcessingCopy} from "./preProcessing";
 class MediaHelper extends EventEmitter {
   stream: LocalStream|RemoteStream;
   public audio: {
@@ -66,13 +74,17 @@ class MediaHelper extends EventEmitter {
     audioRoutingEnabled: false,
   };
   public video: {
-    // videoStream中的track可能是cameraTrack或者videoSource
+    // videoStream中的track可能是：
+    // 1. cameraTrack/videoSource
+    // 2. 被前处理的canvasTrack
     readonly videoStream: MediaStream;
     // videoTrackLow可能是cameraTrack或者videoSource的小流
     videoTrackLow: MediaStreamTrack|null
     cameraTrack: MediaStreamTrack|null;
     cameraConstraint: {video: MediaTrackConstraints};
     videoSource:MediaStreamTrack|null;
+    preProcessingEnabled: boolean;
+    preProcessing: PreProcessingConfig|null;
     captureConfig: { high: {width: number, height: number, frameRate: number}};
     encoderConfig: { high: EncodingParameters, low: EncodingParameters};
   } = {
@@ -81,17 +93,23 @@ class MediaHelper extends EventEmitter {
     cameraTrack: null,
     cameraConstraint: {video: {}},
     videoSource: null,
+    preProcessingEnabled: false,
+    preProcessing: null,
     captureConfig:{high: {width: 640, height: 480, frameRate: 15}},
     encoderConfig: {high: {maxBitrate: 800000}, low: {maxBitrate: 100000}},
   };
   public screen: {
-    // screenVideoStream中的track可能是screenVideoTrack或者screenVideoSource
+    // screenVideoStream中的track可能是:
+    // 1. screenVideoTrack或者screenVideoSource
+    // 2. 前处理后的canvasTrack
     readonly screenVideoStream: MediaStream;
     // screenVideoTrackLow可能是screenVideoTrack或者screenVideoSource的小流
     screenVideoTrackLow: MediaStreamTrack|null;
     
     screenVideoTrack: MediaStreamTrack|null;
     screenVideoSource: MediaStreamTrack|null;
+    preProcessingEnabled: boolean;
+    preProcessing: PreProcessingConfig|null;
     captureConfig: { high: {width: number, height: number, frameRate: number}};
     encoderConfig: {high: EncodingParameters, low: EncodingParameters};
   } = {
@@ -99,6 +117,8 @@ class MediaHelper extends EventEmitter {
     screenVideoTrackLow: null,
     screenVideoTrack: null,
     screenVideoSource: null,
+    preProcessingEnabled: false,
+    preProcessing: null,
     captureConfig:{high: {width: 1920, height: 1080, frameRate: 5}},
     encoderConfig: {high: {maxBitrate: 1500000}, low: {maxBitrate: 200000}},
   };
@@ -111,7 +131,7 @@ class MediaHelper extends EventEmitter {
     screenAudioTrack: null,
     screenAudioSource: null,
   }
-  private logger: ILogger;
+  logger: ILogger;
   
   constructor (options:MediaHelperOptions) {
     super()
@@ -681,6 +701,7 @@ class MediaHelper extends EventEmitter {
     }
 
     if (trackHigh?.readyState !== "live"){
+      console.error("trackHigh", trackHigh)
       this.logger.error(`创建小流失败：大流已在停止状态`, trackHigh?.label)
       this.stream.client.safeEmit('track-low-init-fail', {mediaType})
       return null
@@ -2366,6 +2387,14 @@ class MediaHelper extends EventEmitter {
         }
       }
     }
+  }
+  
+  enablePreProcessing (mediaType: "video"|"screen" = "video", fps?: number){
+    enablePreProcessing(this, mediaType, fps)
+  }
+  
+  disablePreProcessing(mediaType: "video"|"screen"){
+    disablePreProcessing(this, mediaType)
   }
 
   destroy() {

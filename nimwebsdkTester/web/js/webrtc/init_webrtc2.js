@@ -1421,7 +1421,15 @@ function initLocalStream() {
 
 function updateLocalWatermark(){
   if (watermarks.local){
-    rtc.localStream.setCanvasWatermarkConfigs(watermarks.local);
+    if (document.getElementById('watermark-type').value === "encoding"){
+      console.log("更新编码水印")
+      addLog("更新编码水印")
+      rtc.localStream.setEncodingWatermarkConfigs(watermarks.local);
+    }else{
+      console.log("更新画布水印")
+      addLog("更新画布水印")
+      rtc.localStream.setCanvasWatermarkConfigs(watermarks.local);
+    }
   }else if ($('#idWatermark').prop('checked')){
     rtc.localStream.setCanvasWatermarkConfigs({
       textWatermarks: [{
@@ -2892,7 +2900,7 @@ $("#clearWatermark").on('click', ()=>{
   if (!stream){
     return addLog('水印：请检查uid是否正确')
   }
-  addLog('清空水印');
+  
   if(uid){
     if (watermarks.remote[uid]){
       watermarks.remote[uid][mediaType] = {
@@ -2906,9 +2914,22 @@ $("#clearWatermark").on('click', ()=>{
       };
     }
   }
-  stream.setCanvasWatermarkConfigs({
-    mediaType: $("#watermarkMediaType").val()
-  });
+
+
+  if (document.getElementById("watermark-type").value === "encoding"){
+    console.log(`清空编码水印 UID ${stream.streamID}\n${$("#watermarkMediaType").val()}`);
+    addLog('清空编码水印');
+    stream.setEncoderWatermarkConfigs({
+      mediaType: $("#watermarkMediaType").val()
+    });
+  }else{
+    console.log(`清空画布水印 UID ${stream.streamID}\n${$("#watermarkMediaType").val()}`);
+    addLog('清空画布水印');
+    stream.setCanvasWatermarkConfigs({
+      mediaType: $("#watermarkMediaType").val()
+    });
+  }
+
 });
 $("#setWatermark").on('click', ()=>{
   let stream, watermarkConf;
@@ -2988,8 +3009,14 @@ $("#setWatermark").on('click', ()=>{
       watermarkConf.imageWatermarks.push(watermarkOptions);
       break;
   }
-  console.log(`水印设置 UID ${stream.streamID}\n${JSON.stringify(watermarkConf, null, 2)}`);
-  stream.setCanvasWatermarkConfigs(watermarkConf);
+
+  if (document.getElementById("watermark-type").value === "encoding"){
+    console.log(`编码水印设置 UID ${stream.streamID}\n${JSON.stringify(watermarkConf, null, 2)}`);
+    stream.setEncoderWatermarkConfigs(watermarkConf);
+  }else{
+    console.log(`画布水印设置 UID ${stream.streamID}\n${JSON.stringify(watermarkConf, null, 2)}`);
+    stream.setCanvasWatermarkConfigs(watermarkConf);
+  }
 
 })
 $("#showUpdateWatermark").on("click", function(){
@@ -3031,8 +3058,13 @@ $("#doUpdateWatermark").on("click", function (){
     watermarks.local[mediaType] = wm;
   }
 
-  console.log(`水印设置 UID ${stream.streamID}\n${JSON.stringify(wm, null, 2)}`);
-  stream.setCanvasWatermarkConfigs(wm);
+  if (document.getElementById("watermark-type").value === "encoding"){
+    console.log(`编码水印设置 UID ${stream.streamID}\n${JSON.stringify(wm, null, 2)}`);
+    stream.setEncoderWatermarkConfigs(wm);
+  }else{
+    console.log(`画布水印设置 UID ${stream.streamID}\n${JSON.stringify(wm, null, 2)}`);
+    stream.setCanvasWatermarkConfigs(wm);
+  }
   
 });
 
@@ -3343,3 +3375,12 @@ function getdate() {
       d = now.getDate();
   return y + "-" + (m < 10 ? "0" + m : m) + "-" + (d < 10 ? "0" + d : d) + " " + now.toTimeString().substr(0, 8);
 }
+
+// setTimeout(()=>{
+//   if (rtc.localStream?.mediaHelper.video.preProcessingEnabled){
+//     rtc.localStream?.mediaHelper.disablePreProcessing()
+//   }else{
+//     rtc.localStream?.mediaHelper.enablePreProcessing()
+//    
+//   }
+// }, 10000)

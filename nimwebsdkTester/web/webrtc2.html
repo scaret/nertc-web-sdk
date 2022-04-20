@@ -889,10 +889,16 @@
         </div>
 
         <p class="block-header" id="watermark">水印功能</p>
-        <div class="part hide" id='watermarkFeature1'>
+        <div class="part" id='watermarkFeature1'>
           <div class="line">
             ID水印
             <input type="checkbox" id="idWatermark" checked>
+          </div>
+          <div class="line">
+            <select id="watermark-type">
+              <option value="encoding" selected>编码水印（新）</option>
+              <option value="canvas">画布水印（旧）</option>
+            </select>
           </div>
           <div class="line">
             操作对象(不填则操作自己)
@@ -914,7 +920,7 @@
             </label><br />
             <label>
               内容content
-              <input placeholder="" type="text" id="watermarkContent">
+              <input placeholder="" type="text" id="watermarkContent" value="">
             </label><br />
             <label>
               颜色fontColor
@@ -947,10 +953,10 @@
             <label>
               图片
               <select id="watermarkImageUrls" multiple>
-                <option value="https://netease.im/res/image/m/logo_big.png">云信</option>
-                <option value="https://static.chiefmore.com/u/cms/www/201908/09100143mbgu.jpg">七鱼</option>
-                <option value="https://img.51miz.com/Element/00/83/05/25/69a3270b_E830525_0ce9bbdf.png">网易云音乐</option>
-                <option value="https://dun.163.com/public/res/news/qr-logo.jpg">易盾</option>
+                <option value="img/logo_yunxin.png">云信.png</option>
+                <option value="img/logo_qiyu.jpg">七鱼.jpg</option>
+                <option value="img/logo_yidun.jpg">易盾.jpg</option>
+                <option value="img/logo_yidun_transparent.png">易盾透明.png</option>
               </select>
             </label><br />
             <label>
