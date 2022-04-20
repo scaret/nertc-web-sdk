@@ -17,7 +17,7 @@ import {
   SnapshotOptions,
   LocalStreamOptions, StreamPlayOptions,
   VideoProfileOptions,
-  AudioEffectOptions, GetStreamConstraints, Client as IClient
+  AudioEffectOptions, GetStreamConstraints, Client as IClient, NERtcEncoderWatermarkConfig
 } from "../types";
 import {MediaHelper} from "../module/media";
 import {isExistOptions} from "../util/param";
@@ -567,6 +567,9 @@ class LocalStream extends EventEmitter {
           videoDeviceId: this.cameraId,
           facingMode: this.facingMode,
         })
+        if (this.mediaHelper.video.preProcessingEnabled){
+          this.mediaHelper.enablePreProcessing("video")
+        }
       }
     } catch (e) {
       this.logger.log('打开camera失败: ', e.name, e.message)
@@ -599,6 +602,9 @@ class LocalStream extends EventEmitter {
           screenAudioSource: this.screenAudioSource,
         }
         await this.mediaHelper.getStream(constraints)
+        if (this.mediaHelper.screen.preProcessingEnabled){
+          this.mediaHelper.enablePreProcessing("screen")
+        }
       }
     } catch (e) {
       this.logger.log('打开屏幕共享失败: ', e.name, e.message)
@@ -1193,6 +1199,9 @@ class LocalStream extends EventEmitter {
             this.screenAudio = true
           }
           await this.mediaHelper.getStream(constraint);
+          if (this.mediaHelper.screen.preProcessingEnabled){
+            this.mediaHelper.enablePreProcessing("screen")
+          }
           if (deviceId){
             if (type === "video"){
               this.cameraId = deviceId
@@ -1387,6 +1396,9 @@ class LocalStream extends EventEmitter {
         }
         this.video = false
         this.mediaHelper.stopStream('video')
+        if (this.mediaHelper.video.preProcessingEnabled){
+          this.mediaHelper.disablePreProcessing("video")
+        }
         if (!this._play){
           onCloseFinished()
           throw new RtcError({
@@ -1410,6 +1422,9 @@ class LocalStream extends EventEmitter {
           break
         }
         this.screen = false
+        if (this.mediaHelper.screen.preProcessingEnabled){
+          this.mediaHelper.disablePreProcessing("screen")
+        }
         this.mediaHelper.stopStream('screen')
         if (!this._play){
           throw new RtcError({
@@ -1902,8 +1917,15 @@ class LocalStream extends EventEmitter {
       )
     }
     try {
+      const preProcessingEnabled = this.mediaHelper.video.preProcessingEnabled
+      if (preProcessingEnabled){
+        this.mediaHelper.disablePreProcessing("video")
+      }
       await this.mediaHelper.getSecondStream(constraint)
       this.inSwitchDevice[type] = false
+      if (preProcessingEnabled){
+        this.mediaHelper.enablePreProcessing("video")
+      }
       if (type === "video"){
         this.client.apiFrequencyControl({
           name: 'switchCamera',
@@ -2171,7 +2193,14 @@ class LocalStream extends EventEmitter {
     let oldTrack;
     let oldTrackLow;
     let external = false; // 被替换的流是否是外部流
+    let preProcessingEnabled = false
+    let preProcessingMediaType: "video"|"screen" = "video"
     if (options.mediaType === "screen"){
+      preProcessingEnabled = this.mediaHelper.screen.preProcessingEnabled
+      preProcessingMediaType = options.mediaType
+      if (preProcessingEnabled){
+        this.mediaHelper.disablePreProcessing("screen")
+      }
       if (this.mediaHelper.screen.screenVideoTrack){
         oldTrack = this.mediaHelper.screen.screenVideoTrack;
         this.mediaHelper.screen.screenVideoTrack = null
@@ -2201,6 +2230,11 @@ class LocalStream extends EventEmitter {
         this.mediaHelper.screen.screenVideoTrackLow = null
       }
     }else if (options.mediaType === "video"){
+      const preProcessingEnabled = this.mediaHelper.video.preProcessingEnabled
+      preProcessingMediaType = options.mediaType
+      if (preProcessingEnabled){
+        this.mediaHelper.disablePreProcessing("video")
+      }
       if (this.mediaHelper.video.cameraTrack){
         oldTrack = this.mediaHelper.video.cameraTrack;
         this.mediaHelper.video.cameraTrack = null;
@@ -2228,6 +2262,9 @@ class LocalStream extends EventEmitter {
         }
         oldTrackLow = this.mediaHelper.video.videoTrackLow;
         this.mediaHelper.video.videoTrackLow = null
+        if (this.mediaHelper.video.preProcessingEnabled){
+          this.mediaHelper.enablePreProcessing("video")
+        }
       }
     }
     if (oldTrack){
@@ -2238,17 +2275,21 @@ class LocalStream extends EventEmitter {
       this.logger.error(`replaceTrack ${options.mediaType} 当前没有可替换的流`)
       return null
     }
-    const sender = this.getSender(options.mediaType, "high")
-    const senderLow = this.getSender(options.mediaType, "low")
-    if (sender){
-      sender.replaceTrack(options.track)
-      this.logger.log(`replaceTrack ${options.mediaType} 成功替换上行`)
-    }
-    if (senderLow && oldTrackLow){
-      const newTrackLow = await this.mediaHelper.createTrackLow(options.mediaType)
-      if (newTrackLow){
-        senderLow.replaceTrack(newTrackLow);
-        this.logger.log(`replaceTrack ${options.mediaType} 成功替换上行小流`)
+    if (preProcessingEnabled){
+      this.mediaHelper.enablePreProcessing(preProcessingMediaType)
+    }else{
+      const sender = this.getSender(options.mediaType, "high")
+      const senderLow = this.getSender(options.mediaType, "low")
+      if (sender){
+        sender.replaceTrack(options.track)
+        this.logger.log(`replaceTrack ${options.mediaType} 成功替换上行`)
+      }
+      if (senderLow && oldTrackLow){
+        const newTrackLow = await this.mediaHelper.createTrackLow(options.mediaType)
+        if (newTrackLow){
+          senderLow.replaceTrack(newTrackLow);
+          this.logger.log(`replaceTrack ${options.mediaType} 成功替换上行小流`)
+        }
       }
     }
     return {
@@ -2872,17 +2913,13 @@ class LocalStream extends EventEmitter {
    */
 
   setCanvasWatermarkConfigs (options: NERtcCanvasWatermarkConfig){
-    if (this._play && this._play._watermarkControl){
+    if (this._play){
       let watermarkControl = null;
       if (!options.mediaType || options.mediaType === "video"){
-        if (this._play._watermarkControl){
-          watermarkControl = this._play._watermarkControl;
-        }
+        watermarkControl = this._play.watermark.video.canvasControl;
       }
       else if (options.mediaType === "screen"){
-        if (this._play._watermarkControlScreen){
-          watermarkControl = this._play._watermarkControlScreen;
-        }
+        watermarkControl = this._play.watermark.screen.canvasControl
       }
       if (!watermarkControl){
         this.logger.error("setCanvasWatermarkConfigs：播放器未初始化", options.mediaType);
@@ -2896,10 +2933,10 @@ class LocalStream extends EventEmitter {
       };
       if (options.textWatermarks && options.textWatermarks.length > LIMITS.TEXT){
         this.logger.error(`目前的文字水印数量：${options.textWatermarks.length}。允许的数量：${LIMITS.TEXT}`);
-          throw new RtcError({
-            code: ErrorCode.INVALID_PARAMETER,
-            message: 'watermark exceeds limit'
-          })
+        throw new RtcError({
+          code: ErrorCode.INVALID_PARAMETER,
+          message: 'watermark exceeds limit'
+        })
       }
       if (options.imageWatermarks && options.imageWatermarks.length > LIMITS.IMAGE){
         this.logger.error(`目前的图片水印数量：${options.imageWatermarks.length}。允许的数量：${LIMITS.IMAGE}`);
@@ -2920,6 +2957,60 @@ class LocalStream extends EventEmitter {
       this.logger.error("setCanvasWatermarkConfigs：播放器未初始化");
     }
 
+  };
+  /**
+   * 设置编码水印
+   */
+  setEncoderWatermarkConfigs (options: NERtcEncoderWatermarkConfig){
+    if (this._play && this._play){
+      let watermarkControl = null;
+      if (!options.mediaType || options.mediaType === "video"){
+          watermarkControl = this._play.watermark.video.encoderControl;
+        if (!this.mediaHelper.video.preProcessingEnabled){
+          this.mediaHelper.enablePreProcessing("video")
+        }
+      }
+      else if (options.mediaType === "screen"){
+        watermarkControl = this._play.watermark.screen.encoderControl;
+        if (!this.mediaHelper.screen.preProcessingEnabled){
+          this.mediaHelper.enablePreProcessing("screen")
+        }
+      }
+      if (!watermarkControl){
+        this.logger.error("setEncoderWatermarkConfigs：播放器未初始化", options.mediaType);
+        return;
+      }
+
+      const LIMITS = {
+        TEXT: 10,
+        TIMESTAMP: 1,
+        IMAGE: 4,
+      };
+      if (options.textWatermarks && options.textWatermarks.length > LIMITS.TEXT){
+        this.logger.error(`目前的文字水印数量：${options.textWatermarks.length}。允许的数量：${LIMITS.TEXT}`);
+        throw new RtcError({
+          code: ErrorCode.INVALID_PARAMETER,
+          message: 'watermark exceeds limit'
+        })
+      }
+      if (options.imageWatermarks && options.imageWatermarks.length > LIMITS.IMAGE){
+        this.logger.error(`目前的图片水印数量：${options.imageWatermarks.length}。允许的数量：${LIMITS.IMAGE}`);
+        throw new RtcError({
+          code: ErrorCode.INVALID_PARAMETER,
+          message: 'watermark exceeds limit'
+        })
+      }
+      watermarkControl.checkWatermarkParams(options);
+      watermarkControl.updateWatermarks(options);
+
+      this.client.apiFrequencyControl({
+        name: 'setEncoderWatermarkConfigs',
+        code: 0,
+        param: JSON.stringify(options, null, 2)
+      })
+    }else{
+      this.logger.error("setEncoderWatermarkConfigs：播放器未初始化");
+    }
   };
   
   getMuteStatus (mediaType: MediaTypeShort){

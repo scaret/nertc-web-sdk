@@ -1,5 +1,4 @@
 import { EventEmitter } from 'eventemitter3'
-import {createWatermarkControl, WatermarkControl} from "../module/watermark";
 import {
   PlayOptions,
   SnapshotOptions, RenderMode, ILogger
@@ -10,6 +9,8 @@ import {getParameters} from "./parameters";
 import {getDomInfo} from "../util/util";
 import {LocalStream} from "../api/localStream";
 import {RemoteStream} from "../api/remoteStream";
+import {CanvasWatermarkControl, createCanvasWatermarkControl} from "./watermark/CanvasWatermarkControl";
+import {createEncoderWatermarkControl, EncoderWatermarkControl} from "./watermark/EncoderWatermarkControl";
 
 class Play extends EventEmitter {
   private volume:number | null;
@@ -28,14 +29,22 @@ class Play extends EventEmitter {
   public videoView:HTMLElement | null;
   public screenView:HTMLElement | null;
   
+  public watermark:{
+    video: {
+      canvasControl: CanvasWatermarkControl;
+      encoderControl: EncoderWatermarkControl;
+    },
+    screen: {
+      canvasControl: CanvasWatermarkControl;
+      encoderControl: EncoderWatermarkControl;
+    }
+  }
   public mask: {
     enabled: boolean,
   } = {
     enabled: false,
   }
   
-  public _watermarkControl: WatermarkControl;
-  public _watermarkControlScreen: WatermarkControl;
   private autoPlayType:Number;
   private stream: LocalStream | RemoteStream;
   private logger: ILogger
@@ -75,8 +84,16 @@ class Play extends EventEmitter {
       cut: false,
     };
     this.audioSinkId = "";
-    this._watermarkControl = createWatermarkControl(this.logger);
-    this._watermarkControlScreen = createWatermarkControl(this.logger);
+    this.watermark = {
+      video: {
+        canvasControl: createCanvasWatermarkControl(this.logger),
+        encoderControl: createEncoderWatermarkControl(this.logger),
+      },
+      screen: {
+        canvasControl: createCanvasWatermarkControl(this.logger),
+        encoderControl: createEncoderWatermarkControl(this.logger),
+      },
+    }
     this.autoPlayType = 0;
   }
 
@@ -312,7 +329,9 @@ class Play extends EventEmitter {
       if (this.videoView){
         this.videoView.appendChild(this.videoContainerDom)
         this.logger.log(`视频主流dom节点挂载成功。父节点：${getDomInfo(this.videoView)}`)
-        this._watermarkControl.start(this.videoContainerDom);
+        if (this.watermark.video.canvasControl.watermarks.length){
+          this.watermark.video.canvasControl.start(this.videoContainerDom);
+        }
       }
     }
   }
@@ -327,7 +346,9 @@ class Play extends EventEmitter {
       if (this.screenView){
         this.screenView.appendChild(this.screenContainerDom)
         this.logger.log(`视频辅流dom节点挂载成功。父节点：${getDomInfo(this.screenView)}`)
-        this._watermarkControlScreen.start(this.screenContainerDom);
+        if (this.watermark.screen.canvasControl.watermarks.length){
+          this.watermark.screen.canvasControl.start(this.screenContainerDom);
+        }
       }
     }
   }

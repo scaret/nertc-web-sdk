@@ -1265,17 +1265,13 @@ class RemoteStream extends EventEmitter {
    * @returns {Promise} ，用于下载等操作
    */
   setCanvasWatermarkConfigs (options: NERtcCanvasWatermarkConfig){
-    if (this._play && this._play._watermarkControl){
+    if (this._play){
       let watermarkControl = null;
       if (!options.mediaType || options.mediaType === "video"){
-        if (this._play._watermarkControl){
-          watermarkControl = this._play._watermarkControl;
-        }
+        watermarkControl = this._play.watermark.video.canvasControl
       }
       else if (options.mediaType === "screen"){
-        if (this._play._watermarkControlScreen){
-          watermarkControl = this._play._watermarkControlScreen;
-        }
+        watermarkControl = this._play.watermark.screen.canvasControl
       }
       if (!watermarkControl){
         this.logger.error("setCanvasWatermarkConfigs：播放器未初始化", options.mediaType);
