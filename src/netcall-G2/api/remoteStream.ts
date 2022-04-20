@@ -210,11 +210,10 @@ class RemoteStream extends EventEmitter {
     this.client.apiFrequencyControl({
       name: 'createRemoteStream',
       code: 0,
-      param: JSON.stringify({
-        audio: this.audio,
-        video: this.video,
-        screen: this.screen,
-      }, null, ' ')
+      param: {
+        streamID: this.stringStreamID,
+        clientUid: this.client.adapterRef.channelInfo.uid || '',
+      }
     })
   }
 

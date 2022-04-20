@@ -1,5 +1,5 @@
 export interface ReportParamBase {
-  reason?: string
+  reason?: string|null|undefined
 }
 
 export interface ReportParamSetChannelProfile extends ReportParamBase{

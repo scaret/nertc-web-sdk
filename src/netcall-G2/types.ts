@@ -936,7 +936,7 @@ export interface ClientOptions{
 export interface APIFrequencyControlOptions{
   name: string;
   code?: number;
-  param: string;
+  param: string|object;
 }
 
 export interface APIEventItem{
@@ -945,7 +945,7 @@ export interface APIEventItem{
   time: number;
   cid: number;
   uid: number|string;
-  param: string;
+  param: string|object;
   request_id: number;
 }
 

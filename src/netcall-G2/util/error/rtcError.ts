@@ -30,6 +30,10 @@ class RtcError extends Error {
         return this.code_;
     }
 
+    getMessage() {
+        return this.message_;
+    }
+
     getExtraCode() {
         return this.extraCode_;
     }

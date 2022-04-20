@@ -54,6 +54,16 @@ const NERTC = {
     NONE: 4,
     
     setLogLevel(level:loglevels) {
+      if (client) {
+        client.apiFrequencyControl({
+          name: 'setLogLevel',
+          code: 0,
+          param: {
+            clientUid: client.adapterRef.channelInfo.uid || '',
+            level
+          }
+        })
+      }
       log.setLogLevel(level);
     },
 
@@ -64,6 +74,15 @@ const NERTC = {
      *
      */
     enableLogUpload() {
+      if (client) {
+        client.apiFrequencyControl({
+          name: 'enableLogUpload',
+          code: 0,
+          param: {
+            clientUid: client.adapterRef.channelInfo.uid || '',
+          }
+        })
+      }
       log.enableLogUpload();
     },
 
@@ -73,6 +92,15 @@ const NERTC = {
      * 默认是关闭状态，如果你调用了开启日志上传（enableLogUpload)，可以通过本方法停止上传日志。
      */
     disableLogUpload() {
+      if (client) {
+        client.apiFrequencyControl({
+          name: 'disableLogUpload',
+          code: 0,
+          param: {
+            clientUid: client.adapterRef.channelInfo.uid || '',
+          }
+        })
+      }
       log.disableLogUpload();
     }
   },

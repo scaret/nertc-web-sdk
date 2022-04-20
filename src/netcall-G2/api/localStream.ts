@@ -267,16 +267,16 @@ class LocalStream extends EventEmitter {
     this.client.apiFrequencyControl({
       name: 'createLocalStream',
       code: 0,
-      param: JSON.stringify({
+      param: {
+        streamID: this.stringStreamID,
+        clientUid: this.client.adapterRef.channelInfo.uid || '',
         videoProfile: this.videoProfile,
         audio: this.audio,
         audioProfile: this.audioProfile,
         video: this.video,
-        cameraId: this.cameraId,
-        microphoneId: this.microphoneId,
         screen: this.screen,
         screenProfile: this.screenProfile
-      }, null, ' ')
+      }
     })
   }
   

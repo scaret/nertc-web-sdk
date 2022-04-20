@@ -65,6 +65,14 @@ class Client extends Base {
   private handleOnOnlineOffline: (evt?: any) => void;
   constructor (options:ClientOptions) {
     super(options)
+    this.apiFrequencyControl({
+      name: 'createClient',
+      code: 0,
+      param: {
+        uid: '',
+        debug: options.debug
+      }
+    })
 
     this.operationQueue = new OperationQueue(this.logger)
     /**
@@ -203,15 +211,37 @@ class Client extends Base {
    *  @return {Objec}
    */
   getChannelInfo() {
+    this.apiFrequencyControl({
+      name: 'createRemoteStream',
+      code: 0,
+      param: {
+        clientUid: this.adapterRef.channelInfo.uid || '',
+      }
+    })
     return this.adapterRef.channelInfo || {}
   }
 
   
   startProxyServer(type?: number) {
+    let reason = null
     this.adapterRef.logger.log('startProxyServer, type: ', type)
     if (this.adapterRef.channelStatus === 'join' || this.adapterRef.channelStatus === 'connectioning') {
       this.adapterRef.logger.error('startProxyServer: 请在加入房间前调用')
-      return 'INVALID_OPERATION'
+      reason = 'INVALID_OPERATION'
+    }
+    this.apiFrequencyControl({
+      name: 'createRemoteStream',
+      code: reason ? -1 : 0,
+      param: {
+        clientUid: this.adapterRef.channelInfo.uid || '',
+        reason
+      }
+    })
+    if(reason) {
+      throw new RtcError({
+        code: ErrorCode.INVALID_PARAMETER,
+        message: 'startProxyServer: 请在加入房间前调用'
+      })
     }
     this.adapterRef.proxyServer.enable = true
     type ? this.adapterRef.proxyServer.type = type : null
@@ -222,6 +252,14 @@ class Client extends Base {
     if(this.adapterRef.proxyServer){
       this.adapterRef.proxyServer.enable = false
     }
+    this.apiFrequencyControl({
+      name: 'createRemoteStream',
+      code: 0,
+      param: {
+        clientUid: this.adapterRef.channelInfo.uid || '',
+        reason: ''
+      }
+    })
   }
 
   /**
@@ -240,16 +278,29 @@ class Client extends Base {
 
   setLocalMediaPriority (options: MediaPriorityOptions) {
     this.logger.log('setLocalMediaPriority, options: ', JSON.stringify(options))
+    let reason = null
     if (this.adapterRef.channelStatus === 'join' || this.adapterRef.channelStatus === 'connectioning') {
       this.logger.error('setLocalMediaPriority: 请在加入房间前调用')
-      return 'INVALID_OPERATION'
+      reason = 'setLocalMediaPriority: 请在加入房间前调用'
     }
-    /*if (options === undefined) {
-      this.adapterRef.userPriority = undefined
-      return
-    }*/
+
     const {priority = 100, preemtiveMode = false} = options
     if(typeof priority !== 'number' || isNaN(priority)){
+      reason = 'setLocalMediaPriority: priority is not Number'
+    }
+
+    this.apiFrequencyControl({
+      name: 'createRemoteStream',
+      code: 0,
+      param: {
+        clientUid: this.adapterRef.channelInfo.uid || '',
+        priority,
+        preemtiveMode,
+        reason: ''
+      }
+    })
+
+    if (reason) {
       throw new RtcError({
         code: ErrorCode.INVALID_PARAMETER,
         message: 'setLocalMediaPriority: priority is not Number'
@@ -1159,12 +1210,32 @@ class Client extends Base {
     this.adapterRef.channelInfo.videoLow = dualStreamSetting.video;
     this.adapterRef.channelInfo.screenLow = dualStreamSetting.screen;
     this.logger.log('开启双流模式')
+    this.apiFrequencyControl({
+      name: 'enableDualStream',
+      code: 0,
+      param: {
+        clientUid: this.adapterRef.channelInfo.uid || '',
+        video: dualStreamSetting.video,
+        screen: dualStreamSetting.screen,
+        reason: ''
+      }
+    })
   }
 
-  disableDualStream () {
+  disableDualStream (dualStreamSetting: {video: boolean; screen: boolean} = {video: false, screen: false}) {
     this.logger.log('关闭双流模式')
     this.adapterRef.channelInfo.videoLow = false;
     this.adapterRef.channelInfo.screenLow = false;
+    this.apiFrequencyControl({
+      name: 'disableDualStream',
+      code: 0,
+      param: {
+        clientUid: this.adapterRef.channelInfo.uid || '',
+        video: dualStreamSetting.video,
+        screen: dualStreamSetting.screen,
+        reason: ''
+      }
+    })
   }
   
   /**
@@ -1258,7 +1329,10 @@ class Client extends Base {
     this.apiFrequencyControl({
       name: 'setClientRole',
       code: reason ? -1 : 0,
-      param: JSON.stringify(param, null, ' ')
+      param: {
+        role,
+        reason
+      }
     })
     if (reason){
       if(reason === 'INVALID_OPERATION') {
@@ -1445,12 +1519,12 @@ class Client extends Base {
    * @return {null}
    */
   setChannelProfile(options:{mode: 'rtc'|'live'}) {
-    let reason;
-    this.logger.log('设置房间模型, options: ', JSON.stringify(options, null, ' '))
+    let reason = null;
+    this.logger.log('setChannelProfile, options: ', JSON.stringify(options, null, ' '))
     if (this.adapterRef.connectState.curState !== "DISCONNECTED") {
-      this.logger.warn('已经在频道中')
-      reason = 'INVALID_OPERATION'
-    }else{
+      this.logger.warn('setChannelProfile: 请在加入房间前调用')
+      reason = 'setChannelProfile: 请在加入房间前调用'
+    } else {
       const mode = options.mode || 'rtc';
       if (this.adapterRef.localStream) {
         if (mode === 'live'){
@@ -1461,19 +1535,18 @@ class Client extends Base {
       }
       this._params.mode = mode  
     }
-    const param:ReportParamSetChannelProfile = {
-      reason,
-      channelProfile: (options.mode === "live" ? 1 : 0)
-    };
     this.apiFrequencyControl({
       name: 'setChannelProfile',
       code: reason ? -1 : 0,
-      param: JSON.stringify(param, null, ' ')
+      param: {
+        mode: options.mode,
+        reason
+      }
     })
     if (reason){
       throw new RtcError({
         code: ErrorCode.INVALID_OPERATION,
-        message: 'invalid operation'
+        message: reason
       })
     }
   }
@@ -1486,24 +1559,59 @@ class Client extends Base {
    * @param {Array} [options.rtmpTasks] 推流任务
    * @return {Promise}
    */
-  addTasks (options:AddTaskOptions) {
+  async addTasks (options:AddTaskOptions) {
+    this.logger.log('增加互动直播推流任务, options: ', JSON.stringify(options))
+    let reason = null
     if (this._roleInfo.userRole === 1) {
       this.logger.error(`addTasks: 观众不允许进行直播推流操作`);
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.INVALID_OPERATION,
-          message: 'audience is not allowed to operate task'
-        })
-      );
+      reason = 'addTasks: 观众不允许进行直播推流操作'
     }
-    this.logger.log('增加互动直播推流任务, options: ', JSON.stringify(options))
+    
     if (!this.adapterRef._meetings){
       throw new RtcError({
         code: ErrorCode.NO_MEETINGS,
         message: 'meetings error'
       })
+      reason = 'addTasks: 加入房间后进行直播推流操作'
     }
-    return this.adapterRef._meetings.addTasks(options)
+
+    if (reason) {
+      this.adapterRef.instance.apiFrequencyControl({
+        name: 'addTasks',
+        code: -1,
+        param: {
+          clientUid: this.getUid(),
+          reason
+        }
+      })
+      throw new RtcError({
+        code: ErrorCode.NO_MEETINGS,
+        message: reason
+      })
+    }
+
+    try {
+        await this.adapterRef._meetings.addTasks(options)
+        this.adapterRef.instance.apiFrequencyControl({
+          name: 'addTasks',
+          code: 0,
+          param: {
+            clientUid: this.getUid()
+          }
+        })
+    } catch (e) {
+        console.log('e: ', e.getMessage())
+        debugger
+        this.adapterRef.instance.apiFrequencyControl({
+        name: 'addTasks',
+        code: -1,
+        param: {
+          clientUid: this.getUid(),
+          reason: e.getMessage()
+        }
+      })
+      throw e
+    }
   }
 
   /**
@@ -1514,7 +1622,7 @@ class Client extends Base {
    * @param {Array} [options.taskId] 该推流任务的id要求唯一
    * @return {Promise}
    */
-  deleteTasks (options:{taskIds: string[]}) {
+  async deleteTasks (options:{taskIds: string[]}) {
     if (this._roleInfo.userRole === 1) {
       this.logger.error(`deleteTasks: 观众不允许进行直播推流操作`);
       return Promise.reject(
@@ -1542,7 +1650,7 @@ class Client extends Base {
    * @param {Array} [options.rtmpTasks] 推流任务
    * @return {Promise}
    */
-  updateTasks (options : {rtmpTasks: RTMPTask[]}) {
+  async updateTasks (options : {rtmpTasks: RTMPTask[]}) {
     if (this._roleInfo.userRole === 1) {
       this.logger.error(`updateTasks: 观众不允许进行直播推流操作`);
       return Promise.reject(

@@ -372,40 +372,22 @@ class Meeting extends EventEmitter {
   //添加推流任务
   async addTasks (options:AddTaskOptions) {
     const {
-      // appkey,
-      // channelName,
-      // uid,
-      // sessionMode,
       rtmpTasks = []
     } = options
+    let reason = 'addTasks: 请在加入房间后进行直播推流操作'
     if (!this.adapterRef.channelInfo.cid) {
-      this.adapterRef.instance.apiFrequencyControl({
-        name: 'addTasks',
-        code: -1,
-        param: JSON.stringify({
-          error: '请先加入房间',
-          version: 1,
-          taskId: rtmpTasks.length ? rtmpTasks[0].taskId : ''
-        }, null, '')
-      })
-      this.logger.error('请先加入房间')
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.INVALID_OPERATION,
-          message: 'invalid operation'
-        })
-      )
+      reason = 'addTasks: 请在加入房间后进行直播推流操作'
     } else if (!rtmpTasks || !Array.isArray(rtmpTasks) || !rtmpTasks.length){
-      this.logger.error('添加推流任务失败: 参数格式错误，rtmpTasks为空，或者该数组长度为空')
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.INVALID_PARAMETER,
-          message: 'invalid parameter'
-        })
-      )
+      reason = 'addTasks: 参数格式错误，rtmpTasks为空，或者该数组长度为空'
+    }
+    if (reason) {
+      this.logger.error(reason)
+      throw new RtcError({
+        code: ErrorCode.INVALID_OPERATION,
+        message: reason
+      })
     }
     let url = roomsTaskUrl
-    this.logger.log('roomsTaskUrl: ', roomsTaskUrl)
     if (this.adapterRef.instance._params.neRtcServerAddresses.roomServer) {
       //url = roomsTaskUrl.replace(/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+\.?/, this.adapterRef.instance._params.neRtcServerAddresses.roomServer)
       url = this.adapterRef.instance._params.neRtcServerAddresses.roomServer
@@ -448,61 +430,21 @@ class Meeting extends EventEmitter {
         })
         if (data.code === 200) {
           this.logger.log('添加推流任务完成')
-          this.adapterRef.instance.apiFrequencyControl({
-            name: 'addTasks',
-            code: 0,
-            param: JSON.stringify({
-              version: 1,
-              taskId: rtmpTasks[i].taskId,
-              streamUrl: rtmpTasks[i].streamUrl,
-              record: rtmpTasks[i].record,
-              hostUid: rtmpTasks[i].hostUid,
-              layout: rtmpTasks[i].layout,
-              config: rtmpTasks[i].config,
-            }, null, ' ')
-          })
         } else {
           this.logger.error('添加推流任务失败: ', data)
-          this.adapterRef.instance.apiFrequencyControl({
-            name: 'addTasks',
-            code: data.code,
-            param: JSON.stringify({
-              version: 1,
-              taskId: rtmpTasks[i].taskId,
-              streamUrl: rtmpTasks[i].streamUrl,
-              record: rtmpTasks[i].record,
-              hostUid: parseInt(rtmpTasks[i].hostUid),
-              layout: rtmpTasks[i].layout,
-              config: rtmpTasks[i].config,
-            }, null, ' ')
-          })
           return Promise.reject(
             new RtcError({
               code: ErrorCode.ADD_TASK_FAILED,
-              message: 'add task failed'
+              message: 'addTasks: 服务器反馈错误码 ' + data.code
             })
           )
         }
       } catch (e) {
-        this.logger.error('addTasks: ', e.name, e.message, e)
-        this.adapterRef.instance.apiFrequencyControl({
-          name: 'addTasks',
-          code: -1,
-          param: JSON.stringify({
-            error: 'code error',
-            version: 1,
-            taskId: rtmpTasks[i].taskId,
-            streamUrl: rtmpTasks[i].streamUrl,
-            record: rtmpTasks[i].record,
-            hostUid: parseInt(rtmpTasks[i].hostUid),
-            layout: rtmpTasks[i].layout,
-            config: rtmpTasks[i].config,
-          }, null, ' ')
-        })
+        this.logger.error('addTasks: ', e.name, e.message)
         return Promise.reject(
           new RtcError({
             code: ErrorCode.ADD_TASK_FAILED,
-            message: 'add task failed'
+            message: 'addTasks: 语法错误 ' + e.name + ', ' + e.message
           })
         )
       }
