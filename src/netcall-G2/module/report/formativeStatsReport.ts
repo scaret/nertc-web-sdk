@@ -1283,6 +1283,10 @@ class FormativeStatsReport {
     if(!this.adapterRef.report) return
     if (!this.infos.uid || !this.infos.cid) return
 
+    if (navigator.onLine === false){
+      console.warn("侦测到网络不在线，暂停上报")
+      return
+    }
       //上报G2的数据
       let datareport = new DataReport({
           adapterRef: this.adapterRef

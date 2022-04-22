@@ -488,6 +488,11 @@ class Base extends EventEmitter {
       })
     }
     this.emit('pairing-reBuildRecvTransport-start');
+    if (this.adapterRef._mediasoup._recvTransport) {
+      this.adapterRef._mediasoup._recvTransport.close();
+      this.adapterRef._mediasoup.getIceStatus("recv")
+      this.adapterRef._mediasoup._recvTransport = null
+    }
     this.adapterRef._mediasoup.init()
     this.logger.log('下行通道异常, remoteStreamMap', this.adapterRef.remoteStreamMap)
     this.logger.log('this._eventQueue: ', this.adapterRef._mediasoup._eventQueue)

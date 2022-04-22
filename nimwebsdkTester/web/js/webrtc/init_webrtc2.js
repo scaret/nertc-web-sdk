@@ -379,6 +379,15 @@ function initEvents() {
     bindEventParing()
   }
   
+  rtc.client.on('ice-change', evt=>{
+    console.warn(`ice状态：${evt.direction} ${evt.info}`)
+    if (evt.direction === "send"){
+      document.getElementById("iceSend").innerText = evt.info
+    }else{
+      document.getElementById("iceRecv").innerText = evt.info
+    }
+  })
+  
   rtc.client.on('peer-online', evt => {
     console.warn(`${evt.uid} 加入房间`)
     addLog(`${evt.uid} 加入房间`)
