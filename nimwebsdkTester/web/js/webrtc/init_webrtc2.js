@@ -496,27 +496,26 @@ function initEvents() {
     remoteStream.play(document.getElementById('remote-container'), playOptions).then(()=>{
       console.log('播放对端的流成功', playOptions)
       remoteStream.setRemoteRenderMode(globalConfig.remoteViewConfig)
-      
       setTimeout(checkRemoteStramStruck, 2000)
     }).catch(err=>{
       console.log('播放对端的流失败: ', err)
     })
     // 自动播放受限
-    if(window.autoPlayStart) {
-      rtc.client.on('notAllowedError', err => {
-        const errorCode = err.getCode();
-        const id = remoteStream.getId()
-        addView(id);
-        if(errorCode === 41030){
-          $(`#${id}-img`).show();
-            $(`#${id}-img`).on('click', async () => {
-              // console.log('start resume--->');
-              await remoteStream.resume();
-              $(`#${id}-img`).hide();
-            });
-        }
-      })
-    }
+    remoteStream.on('notAllowedError', err => {
+      console.log('remoteStream notAllowedError', remoteStream);
+      const errorCode = err.getCode();
+      const id = remoteStream.getId();
+      addView(id);
+      if(errorCode === 41030){
+        $(`#${id}-img`).show();
+          $(`#${id}-img`).on('click', async () => {
+            console.log('start resume--->');
+            await remoteStream.resume();
+            $(`#${id}-img`).hide();
+          });
+      }
+    })
+    
     
   })
   
@@ -1032,10 +1031,6 @@ $('#tasks-btn').on('click', () => {
       window.infoWindow = null
     }
   }, 1000);*/
-})
-
-$('#auto-play-btn').on('click', () => {
-  window.autoPlayStart = true;
 })
 
 $('#refreshDevices').on('click', () =>{
