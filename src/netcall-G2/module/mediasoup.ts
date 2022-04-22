@@ -412,6 +412,9 @@ class Mediasoup extends EventEmitter {
                 mute: false, //  false
               }
             },
+            appData: {
+              enableTcpCandidate: true
+            },
             ...appData
           };
 
@@ -1049,6 +1052,9 @@ class Mediasoup extends EventEmitter {
       mid,
       pause: false,
       iceUfrag: iceUfragRegRemote[1],
+      appData: {
+        enableTcpCandidate: true
+      }
     };
     
     this.adapterRef.instance.apiEventReport('setFunction', {
