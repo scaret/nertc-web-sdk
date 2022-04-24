@@ -1,4 +1,4 @@
-import {ILogger} from "../types";
+import {ILogger, NeMediaStreamTrack} from "../types";
 import {getParameters} from "../module/parameters";
 import {Logger} from "./webrtcLogger";
 import {Device} from "../module/device";
@@ -93,6 +93,31 @@ async function getScreenStream (constraint:MediaStreamConstraints, logger:ILogge
   return mediaStream
 }
 
+//监测track状态
+const trackWatcher = ()=>{
+  const videoTracks = getParameters().tracks.video as NeMediaStreamTrack[]
+  const audioTracks = getParameters().tracks.audio as NeMediaStreamTrack[]
+  const now = Date.now()
+  videoTracks.forEach((track, i)=>{
+    if (!track.endedAt && track.readyState === "ended"){
+      logger.log(`VIDEOTRACK#${i} 已停止：【${track.label}】`)
+      track.endedAt = now
+      const evt = new CustomEvent("neTrackEnded")
+      track.dispatchEvent(evt)
+    }
+  })
+  audioTracks.forEach((track, i)=>{
+    if (!track.endedAt && track.readyState === "ended"){
+      logger.log(`AUDIOTRACK#${i} 已停止：【${track.label}】`)
+      track.endedAt = now
+      const evt = new CustomEvent("neTrackEnded")
+      track.dispatchEvent(evt)
+    }
+  })
+}
+
+setInterval(trackWatcher, 1000)
+
 export function watchTrack(track: MediaStreamTrack|null){
   if (track){
     if (track.readyState === "ended"){
@@ -108,6 +133,7 @@ export function watchTrack(track: MediaStreamTrack|null){
         logger.warn(`注意：AUDIOTRACK#${globalAudioTracks.length} 与 AUDIOTRACK#${t} 相同`);
         globalAudioTracks.push(null);
       }else{
+        track.addEventListener('ended', trackWatcher)
         globalAudioTracks.push(track);
       }
     }
@@ -121,6 +147,7 @@ export function watchTrack(track: MediaStreamTrack|null){
         logger.warn(`注意：AUDIOTRACK#${globalVideoTracks.length} 与 VIDEOTRACK#${t} 相同`);
         globalVideoTracks.push(null);
       }else{
+        track.addEventListener('ended', trackWatcher)
         globalVideoTracks.push(track);
       }
     }
@@ -132,12 +159,20 @@ function emptyStreamWith(stream:MediaStream, withTrack: MediaStreamTrack|null){
   stream.getTracks().forEach((track)=>{
     if (track !== withTrack){
       stream.removeTrack(track);
+      if (stream.onremovetrack){
+        // @ts-ignore
+        stream.onremovetrack({track})
+      }
     }else{
       sameTrack = true;
     }
   })
   if (!sameTrack && withTrack){
     stream.addTrack(withTrack);
+    if (stream.onaddtrack){
+      // @ts-ignore
+      stream.onaddtrack({track: withTrack})
+    }
   }
 }
 

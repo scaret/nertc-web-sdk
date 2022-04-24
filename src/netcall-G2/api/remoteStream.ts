@@ -524,7 +524,7 @@ class RemoteStream extends EventEmitter {
         if(this._play && this.mediaHelper.video.videoStream.getVideoTracks().length){
           this.logger.log(`uid ${this.stringStreamID} 开始启动视频播放 主流 远端`);
           try{
-            await this._play.playVideoStream(this.mediaHelper.video.videoStream, view)
+            await this._play.playVideoStream(this.mediaHelper.video.renderStream, view)
             if ("width" in this.renderMode.remote.video){
               this._play.setVideoRender(this.renderMode.remote.video)
             }
@@ -546,7 +546,7 @@ class RemoteStream extends EventEmitter {
         if(this._play && this.mediaHelper && this.mediaHelper.screen.screenVideoStream.getVideoTracks().length){
           this.logger.log(`uid ${this.stringStreamID} 开始启动视频播放 辅流 远端`);
           try{
-            await this._play.playScreenStream(this.mediaHelper.screen.screenVideoStream, view)
+            await this._play.playScreenStream(this.mediaHelper.screen.renderStream, view)
             if ("width" in this.renderMode.remote.screen){
               this._play.setScreenRender(this.renderMode.remote.screen)
             }

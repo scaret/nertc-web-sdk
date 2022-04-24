@@ -1304,6 +1304,10 @@ export interface PreProcessingHandler{
   func: (mediaHelper: MediaHelper, mediaType: "video"|"screen", config: PreProcessingConfig)=>void
 }
 
+export interface NeMediaStreamTrack extends MediaStreamTrack{
+  endedAt?: number;
+}
+
 export interface PreProcessingConfig{
   // canvasTrack指的是开启前处理后的Track
   canvasTrack: MediaStreamTrack;
