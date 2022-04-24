@@ -25,6 +25,7 @@ import { SctpCapabilities } from '../SctpParameters';
 import {reduceCodecs} from "../../../../util/rtcUtil/codec";
 import RtcError from '../../../../util/error/rtcError';
 import ErrorCode  from '../../../../util/error/errorCode';
+import {getParameters} from "../../../parameters";
 
 const prefix = 'Chrome74';
 
@@ -581,6 +582,12 @@ export class Chrome74 extends HandlerInterface
       answer.sdp = answer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=maxptime:60`)
     }
     Logger.debug(prefix, 'fillRemoteRecvSdp() | calling pc.setRemoteDescription() [answer]: ', answer.sdp);
+    if (!getParameters().enableUdpCandidate){
+      answer.sdp = answer.sdp.replace(/\r\na=candidate:udpcandidate[^\r]+/g, '')
+    }
+    if (!getParameters().enableTcpCandidate){
+      answer.sdp = answer.sdp.replace(/\r\na=candidate:tcpcandidate[^\r]+/g, '')
+    }
     await this._pc.setRemoteDescription(answer);
   }
 
@@ -906,6 +913,12 @@ export class Chrome74 extends HandlerInterface
     if (this._pc.signalingState === 'stable') {
       await this._pc.setLocalDescription(offer);
       Logger.debug(prefix, 'receive() | calling pc.setLocalDescription()');
+    }
+    if (!getParameters().enableUdpCandidate){
+      answer.sdp = answer.sdp.replace(/\r\na=candidate:udpcandidate[^\r]+/g, '')
+    }
+    if (!getParameters().enableTcpCandidate){
+      answer.sdp = answer.sdp.replace(/\r\na=candidate:tcpcandidate[^\r]+/g, '')
     }
     await this._pc.setRemoteDescription(answer);
     const transceiver = this._pc.getTransceivers()
