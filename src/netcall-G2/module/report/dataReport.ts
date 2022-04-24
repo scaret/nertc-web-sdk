@@ -56,7 +56,6 @@ class DataReport {
     let { sessionConfig = {} } = channelInfo
     this.cid = channelInfo.cid || channelInfo.channelId || 0;
     this.uid = channelInfo.uid || 0;
-    let sessionStart = this.adapterRef.state.startSessionTime ||  Date.now();
     let appKeyWebrtc2 = instance._params && instance._params.appkey
     const appKey = appKeyWebrtc2;
     this.time = channelInfo.clientNtpTime - channelInfo.T4
@@ -64,7 +63,7 @@ class DataReport {
       name: 'common',
       ver: "2.0",
       sdk_type: "nrtc2",
-      session_id: md5(this.cid + ':' + this.uid + ":" + sessionStart),
+      session_id: this.adapterRef.deviceId,
       app_key: appKey
     };
     this.eventKeys = [];

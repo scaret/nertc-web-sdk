@@ -174,6 +174,12 @@ const ErrorCode = {
     MEDIA_OPEN_BANNED_BY_SERVER: 41032,
 
     /*
+     * 云代理失败
+     *
+     */
+    PROXY_SERVER_ERROR: 41033,
+
+    /*
      * 未知错误
      *
      */
