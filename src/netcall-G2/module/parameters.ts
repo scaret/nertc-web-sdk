@@ -75,6 +75,10 @@ interface IParameters{
   forceCustomEncryptionOff: boolean,
   // 检测H264接收端时必须为High
   h264StrictHigh: boolean,
+  // 允许TCP
+  enableTcpCandidate: boolean,
+  // 允许UDP
+  enableUdpCandidate: boolean,
 }
 
 let parameters:IParameters = {
@@ -128,6 +132,8 @@ let parameters:IParameters = {
   forceEncodedInsertableStreams: false,
   forceCustomEncryptionOff: false,
   h264StrictHigh: false,
+  enableTcpCandidate: true,
+  enableUdpCandidate: true,
 }
 
 // 注意：getParameters是一些私有全局变量，仅用于调试和私有接口，不用于正常业务

@@ -74,6 +74,23 @@ class Mediasoup extends EventEmitter {
   private logger: ILogger;
   private loggerSend: ILogger;
   private loggerRecv: ILogger;
+  public iceStatusHistory: {
+    send: {
+      promises: ((value: unknown)=>void)[]
+      status: {
+        info: string,
+      }
+    },
+    recv: {
+      promises: ((value: unknown)=>void)[],
+      status: {
+        info: string,
+      }
+    },
+  } = {
+    send: {promises: [], status: {info: ""}},
+    recv: {promises: [], status: {info: ""}},
+  }
   constructor (options:MediasoupManagerOptions) {
     super()
     this.adapterRef = options.adapterRef
@@ -152,10 +169,12 @@ class Mediasoup extends EventEmitter {
     
     if (this._sendTransport) {
       this._sendTransport.close();
+      this.getIceStatus("send")
     }
     this._sendTransport = null
     if (this._recvTransport) {
       this._recvTransport.close();
+      this.getIceStatus("recv")
     }
     this._recvTransport = null
     
@@ -232,6 +251,9 @@ class Mediasoup extends EventEmitter {
         screen: {high: null, low: null},
       };
       this._sendTransport.on('connectionstatechange', this._sendTransportConnectionstatechange.bind(this, this._sendTransport))
+      this._sendTransport.handler._pc.addEventListener("iceconnectionstatechange", ()=>{
+        this.getIceStatus("send")
+      })
     }
     
     if (!this._recvTransport) {
@@ -254,7 +276,19 @@ class Mediasoup extends EventEmitter {
       });
       this._recvTransport = _recvTransport;
       _recvTransport.on('connectionstatechange', this._recvTransportConnectionstatechange.bind(this, _recvTransport))
+      _recvTransport.handler._pc.addEventListener("iceconnectionstatechange", ()=>{
+        this.getIceStatus("recv")
+      })
     }
+    let timer = setInterval(()=>{
+      const iceStatus = this.getIceStatus()
+      if (!this._mediasoupDevice){
+        // destroyed
+        clearInterval(timer)
+      }else{
+        const iceStatus = this.getIceStatus()
+      }
+    }, 1000)
     this.emit('transportReady');
   }
 
@@ -391,14 +425,17 @@ class Mediasoup extends EventEmitter {
         }else if (mediaTypeShort === "screen" && this.adapterRef.channelInfo.screenLow){
           simulcastEnable = true
         }
-        const iceUfragReg = offer.sdp.match(/a=ice-ufrag:([0-9a-zA-Z#=+-_\/\\\\]+)/)
+        const iceUfragRegLocal = offer.sdp.match(/a=ice-ufrag:([0-9a-zA-Z#=+-_\/\\\\]+)/)
+        if(!iceUfragRegLocal){
+          this.adapterRef.logger.error(offer.sdp)
+          this.adapterRef.logger.error("找不到 iceUfragRegLocal")
+        }
         try {
           let producerData = {
             requestId     :  `${Math.ceil(Math.random() * 1e9)}`,
             kind       :  kind,
             rtpParameters   :  rtpParameters,
-            iceUfrag : iceUfragReg.length ? iceUfragReg[1] : `${this.adapterRef.channelInfo.cid}#${this.adapterRef.channelInfo.uid}#send`,
-            //transportId: '',
+            iceUfrag : iceUfragRegLocal[1],
             //mediaProfile: [{'ssrc':123, 'res':"320*240", 'fps':30, 'spatialLayer':0, 'maxBitrate':1000}],
             externData    : {
               producerInfo  : {
@@ -408,6 +445,9 @@ class Mediasoup extends EventEmitter {
                 spatialLayerCount : simulcastEnable ? 2 : 1,
                 mute: false, //  false
               }
+            },
+            appData: {
+              enableTcpCandidate: true
             },
             ...appData
           };
@@ -1027,10 +1067,10 @@ class Mediasoup extends EventEmitter {
     } else {
       mid = `${mid}`
     }
-    /*const iceUfragReg = offer.sdp.match(/a=ice-ufrag:([0-9a-zA-Z=#+-_\/\\\\]+)/)
-    if (!iceUfragReg){
-      throw new Error("iceUfragReg is null");
-    }*/
+    const iceUfragRegRemote = offer.sdp.match(/a=ice-ufrag:([0-9a-zA-Z=#+-_\/\\\\]+)/)
+    if (!iceUfragRegRemote){
+      throw new Error("iceUfragRegRemote is null");
+    }
     let subUid = uid
     if (this.adapterRef.channelInfo.uidType === 'string') {
       //@ts-ignore
@@ -1045,7 +1085,10 @@ class Mediasoup extends EventEmitter {
       preferredSpatialLayer,
       mid,
       pause: false,
-      iceUfrag: /*iceUfragReg.length ? iceUfragReg[1] : */`${this.adapterRef.channelInfo.cid}#${this.adapterRef.channelInfo.uid}#recv`,
+      iceUfrag: iceUfragRegRemote[1],
+      appData: {
+        enableTcpCandidate: true
+      }
     };
     
     this.adapterRef.instance.apiEventReport('setFunction', {
@@ -1073,7 +1116,6 @@ class Mediasoup extends EventEmitter {
       if (this._recvTransport) {
         await this.closeTransport(this._recvTransport);
       }
-      this._recvTransport = null
       this.adapterRef.instance.reBuildRecvTransport()
       return this.checkConsumerList(info);
     }
@@ -1130,7 +1172,6 @@ class Mediasoup extends EventEmitter {
         if (this._recvTransport) {
           await this.closeTransport(this._recvTransport);
         }
-        this._recvTransport = null
         this.resetConsumeRequestStatus()
         this.adapterRef.instance.reBuildRecvTransport()
         return*/
@@ -1223,7 +1264,6 @@ class Mediasoup extends EventEmitter {
       if (this._recvTransport) {
         await this.closeTransport(this._recvTransport);
       }
-      this._recvTransport = null
       this.adapterRef.instance.reBuildRecvTransport()
       return this.checkConsumerList(info)
     }
@@ -1645,6 +1685,130 @@ class Mediasoup extends EventEmitter {
       this.loggerSend.error('updateUserRole failed:', e.name, e.message, e);
       throw e;
     }
+  }
+  
+  async getIceStatus(direction: "send"|"recv" = "send"){
+    const start = Date.now()
+    const iceStatus:any = {
+      direction,
+      iceConnectionState: "uninit",
+      info: "",
+      elapse: -1,
+    }
+    let pc
+    if (direction === "send"){
+      pc = this._sendTransport?._handler?._pc
+    }else{
+      pc = this._recvTransport?._handler?._pc
+    }
+    if (!pc){
+      iceStatus.info = "no_pc_" + direction
+    }else{
+      iceStatus.info += "#" + pc.pcid
+      
+      iceStatus.iceConnectionState = pc.iceConnectionState
+      iceStatus.info += "|iceConnectoinState " + pc.iceConnectionState
+      if (pc.iceConnectionState === "checking" && !pc.iceStartedAt){
+        pc.iceStartedAt = start
+      }
+      if (pc.iceStartedAt){
+        iceStatus.elapse = start - pc.iceStartedAt
+      }
+      if (this.iceStatusHistory[direction].promises[0]){
+        this.iceStatusHistory[direction].promises[0](null)
+        this.iceStatusHistory[direction].promises = []
+      }
+      if (pc.iceConnectionState === "connected" || pc.iceConnectionState === "completed"){
+        if (!pc.iceConnectedAt){
+          pc.iceConnectedAt = start
+        }
+        await new Promise((res) => {
+          this.iceStatusHistory[direction].promises = [res]
+          setTimeout(res, 100)
+        })
+      }
+      
+      const stats = await pc.getStats(null)
+      const statsArr:RTCStats[] = []
+      const transports:RTCTransportStats[] = []
+      stats.forEach((item, key)=>{
+        statsArr.push(item)
+        if (item.type === "transport"){
+          transports.push(item)
+        }
+      })
+      if (!transports.length){
+        iceStatus.info += "|no transport stats";
+      }
+      transports.forEach((transport)=>{
+        const candidatePair = statsArr.find((stats)=>{
+          return stats.id === transport.selectedCandidatePairId
+        }) as (RTCIceCandidatePairStats|null)
+        if (candidatePair){
+          const localCandidate = statsArr.find((stats)=>{
+            return stats.id === candidatePair.localCandidateId
+          }) as any
+          if (localCandidate){
+            iceStatus.info += `|local:${localCandidate.protocol} `
+            iceStatus.info += `${localCandidate.address || "NOADDRESS"}:${localCandidate.port || "NOPORT"} ${localCandidate.candidateType} ${localCandidate.networkType || ""}`
+            iceStatus.networkType = localCandidate.networkType
+            iceStatus.protocol = localCandidate.protocol
+            iceStatus.relayProtocol = localCandidate.relayProtocol
+            iceStatus.ip = localCandidate.ip
+            iceStatus.address = localCandidate.address
+          }else{
+            iceStatus.info += `|无法找到localCandidate ${candidatePair.localCandidateId}`
+          }
+          const remoteCandidate = statsArr.find((stats)=>{
+            return stats.id === candidatePair.remoteCandidateId
+          }) as any
+          if (remoteCandidate){
+            iceStatus.info += `|remote:${remoteCandidate.protocol} `
+            iceStatus.info += `${remoteCandidate.address || "NOADDRESS"}:${remoteCandidate.port || "NOPORT"} ${remoteCandidate.candidateType}`
+          }else{
+            iceStatus.info += `|无法找到remoteCandidate ${candidatePair.remoteCandidateId}`
+          }
+        }else{
+          iceStatus.info += `无法找到candidatePair ${transport.selectedCandidatePairId}`
+        }
+      })
+    }
+    
+    if (
+      // 只上报差异
+      this.iceStatusHistory[direction].status.info !== iceStatus.info &&
+      // 不上报new
+      iceStatus.iceConnectionState !== "new" &&
+      // 不上报checking，因为checking太多了
+      iceStatus.iceConnectionState !== "checking" &&
+      // 模块是否已经被销毁
+      this._mediasoupDevice
+      ){
+      const iceConnectionStateMap:any = {
+        "new": 1,
+        "checking": 2,
+        "connected": 3,
+        "completed": 4,
+        "failed": -1,
+        "disconnected": -2,
+        "closed": -3,
+      }
+      const code = iceConnectionStateMap[iceStatus.iceConnectionState || 0] || 0;
+      if (code > 0){
+        this.adapterRef.logger.log("iceConnectionStateChanged", direction, iceStatus.info)
+      }else{
+        this.adapterRef.logger.warn("iceConnectionStateChanged", direction, iceStatus.info)
+      }
+      this.adapterRef.instance.apiFrequencyControl({
+        name: '_iceStateChange_' + direction,
+        code,
+        param: JSON.stringify(iceStatus)
+      })
+      this.adapterRef.instance.safeEmit('ice-change', iceStatus)
+    }
+    this.iceStatusHistory[direction].status = iceStatus
+    
+    return iceStatus
   }
 
   destroy() {
