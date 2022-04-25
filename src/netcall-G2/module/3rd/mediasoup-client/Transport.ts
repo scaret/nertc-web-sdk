@@ -595,7 +595,7 @@ export class Transport extends EnhancedEventEmitter
       // failed due to closed Transport.
       .catch((error: Error) =>
       {
-        if (stopTracks)
+        /*if (stopTracks)
         {
           try {
             if (track.kind === "audio"){
@@ -612,7 +612,7 @@ export class Transport extends EnhancedEventEmitter
             track.stop();
           }
           catch (error2) {}
-        }
+        }*/
 
         throw error;
       });
