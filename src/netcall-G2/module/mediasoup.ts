@@ -1708,15 +1708,28 @@ class Mediasoup extends EventEmitter {
       
       iceStatus.iceConnectionState = pc.iceConnectionState
       iceStatus.info += "|iceConnectoinState " + pc.iceConnectionState
-      if (pc.iceConnectionState === "checking" && !pc.iceStartedAt){
-        pc.iceStartedAt = start
-      }
+
       if (pc.iceStartedAt){
         iceStatus.elapse = start - pc.iceStartedAt
       }
       if (this.iceStatusHistory[direction].promises[0]){
         this.iceStatusHistory[direction].promises[0](null)
         this.iceStatusHistory[direction].promises = []
+      }
+      if (pc.iceConnectionState === "checking"){
+        if (!pc.iceStartedAt){
+          pc.iceStartedAt = start
+        }
+        await new Promise((res) => {
+          this.iceStatusHistory[direction].promises = [res]
+          // 如果checking状态少于3秒，则不上报
+          setTimeout(res, 3000)
+        })
+        if (pc.iceConnectionState !== "checking"){
+          return iceStatus
+        }else{
+          iceStatus.elapse = Date.now() - pc.iceStartedAt
+        }
       }
       if (pc.iceConnectionState === "connected" || pc.iceConnectionState === "completed"){
         if (!pc.iceConnectedAt){
@@ -1779,8 +1792,6 @@ class Mediasoup extends EventEmitter {
       this.iceStatusHistory[direction].status.info !== iceStatus.info &&
       // 不上报new
       iceStatus.iceConnectionState !== "new" &&
-      // 不上报checking，因为checking太多了
-      iceStatus.iceConnectionState !== "checking" &&
       // 模块是否已经被销毁
       this._mediasoupDevice
       ){
