@@ -430,7 +430,7 @@ class RemoteStream extends EventEmitter {
       name: 'setSubscribeConfig',
       code: 0,
       param: {
-        clientUid: this.client.getUid(),
+        clientUid: this.client.adapterRef.channelInfo.uid,
         ...this.subConf
       }
     })
@@ -505,7 +505,7 @@ class RemoteStream extends EventEmitter {
           this.audioPlay_ = true;
         }catch(error) {
           this.audioPlay_ = false;
-          this.client.emit('notAllowedError', error)
+          this.client.emit('notAllowedError', error) 
           this.client.emit('NotAllowedError', error) // 兼容临时版本客户
         }
       }
@@ -538,7 +538,7 @@ class RemoteStream extends EventEmitter {
             //   message: ErrorMessage
             // })
             this.videoPlay_ = false;
-            this.client.emit('notAllowedError', error)
+            this.client.emit('notAllowedError', error) 
             this.client.emit('NotAllowedError', error) // 兼容临时版本客户
           }
         }  

@@ -375,7 +375,7 @@ class Meeting extends EventEmitter {
     const {
       rtmpTasks = []
     } = options
-    let reason = 'addTasks: 请在加入房间后进行直播推流操作'
+    let reason = null
     if (!this.adapterRef.channelInfo.cid) {
       reason = 'addTasks: 请在加入房间后进行直播推流操作'
     } else if (!rtmpTasks || !Array.isArray(rtmpTasks) || !rtmpTasks.length){
