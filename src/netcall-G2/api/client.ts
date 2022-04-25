@@ -546,6 +546,11 @@ class Client extends Base {
         this.adapterRef.encryption.encodedInsertableStreams = true
         this.logger.log('已开启自定义加解密')
       }
+      this.apiFrequencyControl({
+        name: 'enableCustomTransform',
+        code: 0,
+        param: JSON.stringify({enable})
+      })
     }
   }
 
