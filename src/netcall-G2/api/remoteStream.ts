@@ -429,7 +429,10 @@ class RemoteStream extends EventEmitter {
     this.client.apiFrequencyControl({
       name: 'setSubscribeConfig',
       code: 0,
-      param: JSON.stringify(conf, null, ' ')
+      param: {
+        clientUid: this.client.getUid(),
+        ...this.subConf
+      }
     })
     if (this.pubStatus.screen.screen){
       const param:ReportParamSubscribeRemoteSubStreamVideo = {

@@ -399,7 +399,6 @@ class Mediasoup extends EventEmitter {
 
   async createProduce (stream:LocalStream, mediaTypeInput: "all"|"audio"|"video"|"screen") {
     this.loggerSend.log('发布音视频: ', stream.getId(), mediaTypeInput)
-    //this._sendTransport.removeListener()
     if (!this._sendTransport){
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
