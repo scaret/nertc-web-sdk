@@ -1648,7 +1648,10 @@ class LocalStream extends EventEmitter {
     this.client.apiFrequencyControl({
       name: 'setAudioProfile',
       code: 0,
-      param: JSON.stringify({profile}, null, '')
+      param: {
+        streamID: this.stringStreamID,
+        profile
+      }
     })
   }
 
@@ -1690,6 +1693,7 @@ class LocalStream extends EventEmitter {
         name: 'setAudioVolume',
         code: -1,
         param: JSON.stringify({
+          streamID: this.stringStreamID,
           volume,
           reason
         }, null, ' ')
@@ -1700,6 +1704,7 @@ class LocalStream extends EventEmitter {
       name: 'setAudioVolume',
       code: 0,
       param: JSON.stringify({
+        streamID: this.stringStreamID,
         volume
       }, null, ' ')
     })
@@ -1734,6 +1739,7 @@ class LocalStream extends EventEmitter {
         name: 'setCaptureVolume',
         code: -1,
         param: JSON.stringify({
+          streamID: this.stringStreamID,
           volume,
           audioType,
           reason
@@ -1745,6 +1751,7 @@ class LocalStream extends EventEmitter {
       name: 'setCaptureVolume',
       code: 0,
       param: JSON.stringify({
+        streamID: this.stringStreamID,
         audioType,
         volume
       }, null, ' ')
@@ -2148,7 +2155,10 @@ class LocalStream extends EventEmitter {
     this.client.apiFrequencyControl({
       name: 'setVideoProfile',
       code: 0,
-      param: JSON.stringify(options, null, ' ')
+      param: {
+        streamID: this.stringStreamID,
+        ...options
+      }
     })
   }
 
@@ -2299,10 +2309,6 @@ class LocalStream extends EventEmitter {
     }
   }
 
-  setBeautyEffectOptions () {
-    this.logger.log('设置美颜效果选项')
-  }
-
   hasScreen () {
     return this.mediaHelper.screen.screenVideoStream.getVideoTracks().length > 0
   }
@@ -2325,7 +2331,10 @@ class LocalStream extends EventEmitter {
     this.client.apiFrequencyControl({
       name: 'setScreenProfile',
       code: 0,
-      param: JSON.stringify(profile, null, 2)
+      param: {
+        streamID: this.stringStreamID,
+        ...profile
+      }
     })
   }
 
@@ -2415,6 +2424,7 @@ class LocalStream extends EventEmitter {
       return 1500 * 1000
     } return 0
   }
+  
   /**
    * 截取指定用户的视频画面(文件保存在浏览器默认路径)
    * @function takeSnapshot
@@ -2435,7 +2445,10 @@ class LocalStream extends EventEmitter {
       this.client.apiFrequencyControl({
         name: 'takeSnapshot',
         code: 0,
-        param: JSON.stringify(options, null, ' ')
+        param: {
+          streamID: this.stringStreamID,
+          ...options
+        }
       })
     } else {
       this.logger.log(`没有视频流，请检查是否有 发布 过视频`)

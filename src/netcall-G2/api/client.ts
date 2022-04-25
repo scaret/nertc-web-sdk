@@ -641,7 +641,7 @@ class Client extends Base {
     }
     
     try {
-      if (!this.adapterRef._mediasoup){
+      if (!this.adapterRef._mediasoup) {
         onPublishFinish()
         throw new RtcError({
           code: ErrorCode.NO_MEDIASERVER,
@@ -741,7 +741,7 @@ class Client extends Base {
         name: 'unpublish',
         code: -1,
         param: JSON.stringify({
-          reason: e,
+          reason: e.message,
           pubStatus: stream && stream.pubStatus
         }, null, ' ')
       })
@@ -982,7 +982,7 @@ class Client extends Base {
         name: 'subscribe',
         code: -1,
         param: JSON.stringify({
-          reason: e,
+          reason: e.message,
           subStatus: stream.subStatus,
           subConf: stream.subConf,
           pubStatus: stream.pubStatus
@@ -1093,6 +1093,8 @@ class Client extends Base {
         name: 'unsubscribe',
         code: 0,
         param: JSON.stringify({
+          clientUid: this.getUid(),
+          streamId: stream.stringStreamID,
           reason: '',
           subStatus: stream.subStatus,
           subConf: stream.subConf
@@ -1104,7 +1106,9 @@ class Client extends Base {
         name: 'unsubscribe',
         code: -1,
         param: JSON.stringify({
-          reason: e,
+          clientUid: this.getUid(),
+          streamId: stream.stringStreamID,
+          reason: e.message,
           subStatus: stream.subStatus,
           subConf: stream.subConf
         }, null, ' ')
@@ -1142,8 +1146,9 @@ class Client extends Base {
       this.apiFrequencyControl({
         name: 'setRemoteVideoStreamType',
         param: JSON.stringify({
-          highOrLow: highOrLow,
-          uid: stream.stringStreamID
+          clientUid: this.getUid(),
+          streamId: stream.stringStreamID,
+          highOrLow: highOrLow
         }, null, ' ')
       })
     } catch (e) {
@@ -1152,9 +1157,10 @@ class Client extends Base {
         name: 'setRemoteVideoStreamType',
         code: -1,
         param: JSON.stringify({
-          reason: e,
-          highOrLow: highOrLow,
-          uid: stream.stringStreamID
+          clientUid: this.getUid(),
+          streamId: stream.stringStreamID,
+          reason: e.message,
+          highOrLow: highOrLow
         }, null, ' ')
       })
     }
@@ -1188,10 +1194,13 @@ class Client extends Base {
       stream.subConf.highOrLow[mediaType] = highOrLow;
       this.apiFrequencyControl({
         name: 'setRemoteStreamType',
-        param: JSON.stringify({
-          highOrLow: highOrLow,
-          uid: stream.stringStreamID
-        }, null, ' ')
+        code: 0,
+        param: {
+          highOrLow,
+          mediaType,
+          clientUid: this.getUid(),
+          streamID: stream.stringStreamID
+        }
       })
     } catch (e) {
       this.logger.error('API调用失败：Client:setRemoteStreamType' ,e, ...arguments);
@@ -1199,9 +1208,10 @@ class Client extends Base {
         name: 'setRemoteVideoStreamType',
         code: -1,
         param: JSON.stringify({
-          reason: e,
-          highOrLow: highOrLow,
-          uid: stream.stringStreamID
+          reason: e.message,
+          highOrLow,
+          mediaType,
+          streamID: stream.stringStreamID
         }, null, ' ')
       })
     }

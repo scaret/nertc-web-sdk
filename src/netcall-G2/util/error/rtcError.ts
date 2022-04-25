@@ -25,6 +25,11 @@ class RtcError extends Error {
         this.message_ = options.message;
         this.extraCode_ = options.extraCode;
     }
+
+    get code() {
+        return this.code_;
+    }
+
     get message() {
         return this.message_;
     }
