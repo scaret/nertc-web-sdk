@@ -79,6 +79,8 @@ interface IParameters{
   enableTcpCandidate: boolean,
   // 允许UDP
   enableUdpCandidate: boolean,
+  // 修补Safari本地canvas track无法播放的问题
+  shimLocalCanvas: "safari"|"all"|"never"
 }
 
 let parameters:IParameters = {
@@ -134,6 +136,7 @@ let parameters:IParameters = {
   h264StrictHigh: false,
   enableTcpCandidate: true,
   enableUdpCandidate: true,
+  shimLocalCanvas: "safari",
 }
 
 // 注意：getParameters是一些私有全局变量，仅用于调试和私有接口，不用于正常业务

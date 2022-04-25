@@ -28,6 +28,8 @@ import {Logger} from "./3rd/mediasoup-client/Logger";
 import {platform} from "../util/platform";
 import {NERTC_VIDEO_QUALITY_ENUM, VIDEO_FRAME_RATE_ENUM} from "../constant/videoQuality";
 import {disablePreProcessing, enablePreProcessing, preProcessingCopy} from "./preProcessing";
+import {IS_SAFARI} from "../util/rtcUtil/rtcEnvironment";
+import {pcCloneTrack} from "../util/pcCloneTrack";
 class MediaHelper extends EventEmitter {
   stream: LocalStream|RemoteStream;
   public audio: {
@@ -78,6 +80,10 @@ class MediaHelper extends EventEmitter {
     // 1. cameraTrack/videoSource
     // 2. 被前处理的canvasTrack
     readonly videoStream: MediaStream;
+    // renderStream是本地渲染用的、video标签的srcObject。其中的Track可能是
+    // 1. 大多数情况下与videoStream内用于发送的track一样
+    // 2. 由于Safari的CanvasCaptureMediaStreamTrack的本地播放问题，Safari开启前处理时是个remoteTrack https://bugs.webkit.org/show_bug.cgi?id=181663
+    renderStream: MediaStream;
     // videoTrackLow可能是cameraTrack或者videoSource的小流
     videoTrackLow: MediaStreamTrack|null
     cameraTrack: MediaStreamTrack|null;
@@ -89,6 +95,7 @@ class MediaHelper extends EventEmitter {
     encoderConfig: { high: EncodingParameters, low: EncodingParameters};
   } = {
     videoStream: new MediaStream(),
+    renderStream: new MediaStream(),
     videoTrackLow: null,
     cameraTrack: null,
     cameraConstraint: {video: {}},
@@ -103,6 +110,10 @@ class MediaHelper extends EventEmitter {
     // 1. screenVideoTrack或者screenVideoSource
     // 2. 前处理后的canvasTrack
     readonly screenVideoStream: MediaStream;
+    // renderStream是本地渲染用的、video标签的srcObject。其中的Track可能是
+    // 1. 大多数情况下与videoStream内用于发送的track一样
+    // 2. 由于Safari的CanvasCaptureMediaStreamTrack的本地播放问题，Safari开启前处理时是个remoteTrack https://bugs.webkit.org/show_bug.cgi?id=181663
+    renderStream: MediaStream;
     // screenVideoTrackLow可能是screenVideoTrack或者screenVideoSource的小流
     screenVideoTrackLow: MediaStreamTrack|null;
     
@@ -114,6 +125,7 @@ class MediaHelper extends EventEmitter {
     encoderConfig: {high: EncodingParameters, low: EncodingParameters};
   } = {
     screenVideoStream: new MediaStream(),
+    renderStream: new MediaStream(),
     screenVideoTrackLow: null,
     screenVideoTrack: null,
     screenVideoSource: null,
@@ -158,6 +170,9 @@ class MediaHelper extends EventEmitter {
       }
       return tag
     })
+    
+    this.bindRenderStream()
+    
     Device.on("recording-device-changed", (evt)=>{
       if (this.audio.micTrack){
         if (this.audio.deviceInfo.mic.deviceId === evt.device.deviceId){
@@ -178,6 +193,45 @@ class MediaHelper extends EventEmitter {
         }
       }
     })
+  }
+  
+  bindRenderStream(){
+    if (
+      (IS_SAFARI && getParameters().shimLocalCanvas === "safari")
+      || getParameters().shimLocalCanvas === "all"
+    ){
+      this.video.videoStream.onaddtrack = async (evt: MediaStreamTrackEvent) =>{
+        // @ts-ignore
+        if (typeof CanvasCaptureMediaStreamTrack !== "undefined" && evt.track instanceof CanvasCaptureMediaStreamTrack){
+          const clonedTrack = pcCloneTrack(evt.track)
+          watchTrack(clonedTrack)
+          this.logger.warn("renderStream cloned track for video:", evt.track, clonedTrack)
+          emptyStreamWith(this.video.renderStream, clonedTrack)
+        }else{
+          emptyStreamWith(this.video.renderStream, evt.track)
+        }
+      }
+      this.video.videoStream.onremovetrack = (evt: MediaStreamTrackEvent)=>{
+        emptyStreamWith(this.video.renderStream, null)
+      }
+      this.screen.screenVideoStream.onaddtrack = async (evt: MediaStreamTrackEvent) =>{
+        // @ts-ignore
+        if (typeof CanvasCaptureMediaStreamTrack !== "undefined" && evt.track instanceof CanvasCaptureMediaStreamTrack){
+          const clonedTrack = pcCloneTrack(evt.track)
+          watchTrack(clonedTrack)
+          this.logger.warn("renderStream cloned track for screen:", evt.track, clonedTrack)
+          emptyStreamWith(this.screen.renderStream, clonedTrack)
+        }else{
+          emptyStreamWith(this.screen.renderStream, evt.track)
+        }
+      }
+      this.screen.screenVideoStream.onremovetrack = (evt: MediaStreamTrackEvent)=>{
+        emptyStreamWith(this.screen.renderStream, null)
+      }
+    }else{
+      this.video.renderStream = this.video.videoStream
+      this.screen.renderStream = this.screen.screenVideoStream
+    }
   }
   
   assertLive () {
@@ -764,7 +818,6 @@ class MediaHelper extends EventEmitter {
     }
 
     if (trackHigh?.readyState !== "live"){
-      console.error("trackHigh", trackHigh)
       this.logger.error(`创建小流失败：大流已在停止状态`, trackHigh?.label)
       this.stream.client.safeEmit('track-low-init-fail', {mediaType})
       return null
@@ -986,7 +1039,7 @@ class MediaHelper extends EventEmitter {
     
       // Safari：即使前后属性相同，也需要重新设一遍srcObject
       if (this.stream._play?.videoDom){
-        this.stream._play.videoDom.srcObject = this.video.videoStream
+        this.stream._play.videoDom.srcObject = this.video.renderStream
       }
     } else if (kind === 'screen') {
       this.screen.screenVideoTrack = track;
@@ -1003,7 +1056,7 @@ class MediaHelper extends EventEmitter {
       }
       // Safari：即使前后属性相同，也需要重新设一遍srcObject
       if (this.stream._play?.screenDom){
-        this.stream._play.screenDom.srcObject = this.screen.screenVideoStream
+        this.stream._play.screenDom.srcObject = this.screen.renderStream
       }
     }
   }

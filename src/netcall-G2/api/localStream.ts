@@ -722,7 +722,7 @@ class LocalStream extends EventEmitter {
         if(this._play && this.mediaHelper.video.videoStream.getVideoTracks().length){
           this.logger.log(`uid ${this.stringStreamID} 开始启动视频播放 主流 本地`);
           try{
-            await this._play.playVideoStream(this.mediaHelper.video.videoStream, view)
+            await this._play.playVideoStream(this.mediaHelper.video.renderStream, view)
             if ("width" in this.renderMode.local.video){
               this._play.setVideoRender(this.renderMode.local.video)
             }
@@ -744,7 +744,7 @@ class LocalStream extends EventEmitter {
         if(this._play && this.mediaHelper.screen.screenVideoStream.getVideoTracks().length){
           this.logger.log(`uid ${this.stringStreamID} 开始启动视频播放 辅流 本地`);
           try{
-            await this._play.playScreenStream(this.mediaHelper.screen.screenVideoStream, view)
+            await this._play.playScreenStream(this.mediaHelper.screen.renderStream, view)
             if ("width" in this.renderMode.local.screen){
               this._play.setScreenRender(this.renderMode.local.screen)
             }
