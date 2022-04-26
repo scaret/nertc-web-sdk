@@ -121,6 +121,7 @@ export class EncoderWatermarkControl extends EventEmitter{
           tag: 'Stream.setEncoderWatermarkConfigs:textWatermarks.fontSize',
           value: watermark.fontSize,
           min: 1,
+          max: 128,
         };
         if (isExistOptions(fontSizeCheck).result){
           checkValidInteger(fontSizeCheck);
@@ -130,6 +131,7 @@ export class EncoderWatermarkControl extends EventEmitter{
           tag: 'Stream.setEncoderWatermarkConfigs:textWatermarks.fontColor',
           value: watermark.fontColor,
           min: 0,
+          max: 0xFFFFFFFF,
         };
         if (isExistOptions(fontColorCheck).result){
           checkValidInteger(fontColorCheck);
