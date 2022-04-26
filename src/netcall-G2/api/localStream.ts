@@ -544,19 +544,6 @@ class LocalStream extends EventEmitter {
       this.logger.log('打开mic失败: ', e.name, e.message)
       initErr = e;
       this.audio = false
-      if (e.message
-        // 为什么这样写：
-        // Safari和ios的提示是：The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.
-        // Chrome的提示是：Permission Denied. Permission Denied by system
-        && e.message.indexOf('ermission') > -1
-        && e.message.indexOf('denied') > -1 ) {
-        this.client.safeEmit('accessDenied', 'audio')
-      } else if (e.message && e.message.indexOf('not found') > -1) {
-        this.client.safeEmit('notFound', 'audio')
-      } else {
-        this.client.safeEmit('deviceError', 'audio')
-      }
-      this.emit('device-error', {type: 'audio', error: e});
     }
 
     try {
@@ -575,21 +562,6 @@ class LocalStream extends EventEmitter {
       this.logger.log('打开camera失败: ', e.name, e.message)
       initErr = e
       this.video = false
-      if (e.message
-        // 为什么这样写：
-        // Safari和ios的提示是：The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.
-        // Chrome的提示是：Permission Denied. Permission Denied by system
-        && e.message.indexOf('ermission') > -1
-        && e.message.indexOf('denied') > -1 ) {
-        this.client.safeEmit('accessDenied', 'video')
-      } else if (e.message && e.message.indexOf('not found') > -1) {
-        this.client.safeEmit('notFound', 'video')
-      } else if (e.message && e.message.indexOf('not start video source') > -1) {
-        this.client.safeEmit('beOccupied', 'video')
-      } else {
-        this.client.safeEmit('deviceError', 'video')
-      }
-      this.emit('device-error', {type: 'video', error: e});
     }
 
     try {
@@ -610,22 +582,6 @@ class LocalStream extends EventEmitter {
       this.logger.log('打开屏幕共享失败: ', e.name, e.message)
       initErr = e
       this.screen = true
-      if (e.message
-        // 为什么这样写：
-        // Safari和ios的提示是：The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.
-        // Chrome的提示是：Permission Denied. Permission Denied by system
-        && e.message.indexOf('ermission') > -1
-        && e.message.indexOf('denied') > -1
-      ) {
-        this.client.safeEmit('accessDenied', 'screen')
-      }else if (e.message && e.message.indexOf('not found') > -1) {
-        this.client.safeEmit('notFound', 'screen')
-      } else if (e.message && e.message.indexOf('not start video source') > -1) {
-        this.client.safeEmit('beOccupied', 'screen')
-      } else {
-        this.client.safeEmit('deviceError', 'screen')
-      }
-      this.emit('device-error', {type: 'screen', error: e});
     }
     if (this.audio||this.video||this.screen){
       this.state = "INITED"
@@ -1253,7 +1209,6 @@ class LocalStream extends EventEmitter {
         // Chrome的提示是：Permission Denied. Permission Denied by system
         && e.message.indexOf('ermission') > -1
         && e.message.indexOf('denied') > -1 ) {
-        this.client.safeEmit('accessDenied', type)
         return Promise.reject(
           new RtcError({
             code: ErrorCode.NOT_ALLOWED,
