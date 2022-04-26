@@ -30,6 +30,7 @@ export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: 
     preProcessing = {
       canvasTrack,
       canvasCtx,
+      videoTrack: null,
       videoElem,
       canvasElem,
       handlers: [{
@@ -59,6 +60,7 @@ export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: 
     mediaHelper.logger.error(`enablePreProcessing：当前没有视频输入 ${mediaType}`)
     return
   }
+  preProcessing.videoTrack = videoTrack
   preProcessing.videoElem.srcObject = new MediaStream([videoTrack])
 
   // 3. 处理上行发送
@@ -87,11 +89,15 @@ export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: 
   const interval = Math.floor(1000 / fps)
   preProcessing.timer = getRTCTimer().setInterval(()=>{
     if (preProcessing){
-      if (preProcessing.videoElem.videoWidth !== preProcessing.canvasElem.width ||
-        preProcessing.videoElem.videoHeight !== preProcessing.canvasElem.height){
-        mediaHelper.logger.error(`前处理宽高变化 ${mediaType} ${preProcessing.canvasElem.width}x${preProcessing.canvasElem.height} => ${preProcessing.videoElem.videoWidth}x${preProcessing.videoElem.videoHeight}`)
-        preProcessing.canvasElem.width = preProcessing.videoElem.videoWidth
-        preProcessing.canvasElem.height = preProcessing.videoElem.videoHeight
+      if (preProcessing.videoElem.videoWidth && preProcessing.videoElem.videoHeight){
+        if (
+          preProcessing.videoElem.videoWidth !== preProcessing.canvasElem.width ||
+          preProcessing.videoElem.videoHeight !== preProcessing.canvasElem.height
+        ){
+          mediaHelper.logger.warn(`前处理宽高变化 ${mediaType} ${preProcessing.canvasElem.width}x${preProcessing.canvasElem.height} => ${preProcessing.videoElem.videoWidth}x${preProcessing.videoElem.videoHeight}`)
+          preProcessing.canvasElem.width = preProcessing.videoElem.videoWidth
+          preProcessing.canvasElem.height = preProcessing.videoElem.videoHeight
+        }
       }
       if (preProcessing.handlers.length){
         for (let handler of preProcessing.handlers){
@@ -117,7 +123,7 @@ export async function canDisablePreProcessing(mediaHelper: MediaHelper, mediaTyp
   }
 }
 
-export async function disablePreProcessing(mediaHelper: MediaHelper, mediaType: "video"|"screen" = "video"){
+export async function disablePreProcessing(mediaHelper: MediaHelper, mediaType: "video"|"screen" = "video", keepFlag: boolean = false){
   mediaHelper.logger.log(`disablePreProcessing ${mediaType}`)
 
   const preProcessing = mediaHelper[mediaType].preProcessing
@@ -133,7 +139,7 @@ export async function disablePreProcessing(mediaHelper: MediaHelper, mediaType: 
   }
   
   // 2. 处理本地videoTrack连接
-  let videoTrack, oldTrackLow
+  let videoTrack:MediaStreamTrack|null, oldTrackLow
   if (mediaType === "video"){
     videoTrack = mediaHelper.video.cameraTrack || mediaHelper.video.videoSource;
     oldTrackLow = mediaHelper.video.videoTrackLow
@@ -154,22 +160,39 @@ export async function disablePreProcessing(mediaHelper: MediaHelper, mediaType: 
     senderLow = mediaHelper.stream.getSender(mediaType, "low")
   }
   if (sender){
-    sender.replaceTrack(preProcessing.canvasTrack)
-    mediaHelper.logger.log(`disablePreProcessing ${mediaType} 成功替换上行`)
-  }
-  if (senderLow && oldTrackLow){
-    const newTrackLow = await mediaHelper.createTrackLow(mediaType)
-    if (newTrackLow){
-      senderLow.replaceTrack(newTrackLow);
-      oldTrackLow.stop()
-      mediaHelper.logger.log(`disablePreProcessing ${mediaType} 成功替换上行小流`)
+    if (videoTrack?.readyState === "live"){
+      sender.replaceTrack(videoTrack)
+      mediaHelper.logger.log(`disablePreProcessing ${mediaType} 成功替换上行为【${videoTrack.label}】`)
+    }else{
+      sender.replaceTrack(null)
+      mediaHelper.logger.warn(`disablePreProcessing 删除上行`)
     }
   }
-
-  mediaHelper[mediaType].preProcessingEnabled = false
+  if (senderLow && oldTrackLow){
+    if (videoTrack?.readyState === "live"){
+      const newTrackLow = await mediaHelper.createTrackLow(mediaType)
+      if (newTrackLow){
+        senderLow.replaceTrack(newTrackLow);
+        oldTrackLow.stop()
+        mediaHelper.logger.log(`disablePreProcessing ${mediaType} 成功替换上行小流`)
+      }
+    }else{
+      senderLow.replaceTrack(null);
+      mediaHelper.logger.warn(`disablePreProcessing 删除上行小流`)
+    }
+  }
+  if (!keepFlag){
+    mediaHelper[mediaType].preProcessingEnabled = false
+  }
 }
 
 export function preProcessingCopy(mediaHelper: MediaHelper, mediaType: "video"|"screen", config: PreProcessingConfig){
+  if (config.videoTrack){
+    if (config.videoTrack.enabled !== config.canvasTrack.enabled){
+      mediaHelper.logger.log(`preProcessingCopy: 更改mute状态 ${mediaType} ${config.canvasTrack.enabled} => ${config.videoTrack.enabled}`)
+      config.canvasTrack.enabled = config.videoTrack.enabled
+    }
+  }
   config.canvasCtx.drawImage(config.videoElem, 0, 0)
 }
 
