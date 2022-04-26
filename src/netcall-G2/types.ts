@@ -1313,6 +1313,7 @@ export interface PreProcessingConfig{
   canvasTrack: MediaStreamTrack;
   canvasCtx: CanvasRenderingContext2D;
   videoElem: HTMLVideoElement;
+  videoTrack: MediaStreamTrack|null;
   canvasElem: HTMLCanvasElement;
   handlers: PreProcessingHandler[];
   timer: number|null;

@@ -30,6 +30,7 @@ export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: 
     preProcessing = {
       canvasTrack,
       canvasCtx,
+      videoTrack: null,
       videoElem,
       canvasElem,
       handlers: [{
@@ -59,6 +60,7 @@ export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: 
     mediaHelper.logger.error(`enablePreProcessing：当前没有视频输入 ${mediaType}`)
     return
   }
+  preProcessing.videoTrack = videoTrack
   preProcessing.videoElem.srcObject = new MediaStream([videoTrack])
 
   // 3. 处理上行发送
@@ -185,6 +187,12 @@ export async function disablePreProcessing(mediaHelper: MediaHelper, mediaType: 
 }
 
 export function preProcessingCopy(mediaHelper: MediaHelper, mediaType: "video"|"screen", config: PreProcessingConfig){
+  if (config.videoTrack){
+    if (config.videoTrack.enabled !== config.canvasTrack.enabled){
+      mediaHelper.logger.log(`preProcessingCopy: 更改mute状态 ${mediaType} ${config.canvasTrack.enabled} => ${config.videoTrack.enabled}`)
+      config.canvasTrack.enabled = config.videoTrack.enabled
+    }
+  }
   config.canvasCtx.drawImage(config.videoElem, 0, 0)
 }
 
