@@ -814,8 +814,12 @@ class MediaHelper extends EventEmitter {
       trackHigh = this.screen.screenVideoStream.getVideoTracks()[0];
     }
 
-    if (trackHigh?.readyState !== "live"){
-      this.logger.error(`创建小流失败：大流已在停止状态`, trackHigh?.label)
+    if (!trackHigh){
+      this.logger.error(`创建小流失败：当前没有大流`)
+      this.stream.client.safeEmit('track-low-init-fail', {mediaType})
+      return null
+    }else if (trackHigh.readyState !== "live"){
+      this.logger.error(`创建小流失败：大流已在停止状态`, trackHigh.label)
       this.stream.client.safeEmit('track-low-init-fail', {mediaType})
       return null
     }
@@ -2535,8 +2539,8 @@ class MediaHelper extends EventEmitter {
     enablePreProcessing(this, mediaType, fps)
   }
   
-  disablePreProcessing(mediaType: "video"|"screen"){
-    disablePreProcessing(this, mediaType)
+  disablePreProcessing(mediaType: "video"|"screen", keepFlag = false){
+    disablePreProcessing(this, mediaType, keepFlag)
   }
 
   destroy() {

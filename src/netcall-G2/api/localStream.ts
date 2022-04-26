@@ -1199,7 +1199,10 @@ class LocalStream extends EventEmitter {
             this.screenAudio = true
           }
           await this.mediaHelper.getStream(constraint);
-          if (this.mediaHelper.screen.preProcessingEnabled){
+          if (type === "video" && this.mediaHelper.video.preProcessingEnabled){
+            this.mediaHelper.enablePreProcessing("video")
+          }
+          if (type === "screen" && this.mediaHelper.screen.preProcessingEnabled){
             this.mediaHelper.enablePreProcessing("screen")
           }
           if (deviceId){
@@ -1397,7 +1400,8 @@ class LocalStream extends EventEmitter {
         this.video = false
         this.mediaHelper.stopStream('video')
         if (this.mediaHelper.video.preProcessingEnabled){
-          this.mediaHelper.disablePreProcessing("video")
+          //把预处理停了，但是保留flag以待下次开启
+          this.mediaHelper.disablePreProcessing("video", true)
         }
         if (!this._play){
           onCloseFinished()
@@ -1423,7 +1427,8 @@ class LocalStream extends EventEmitter {
         }
         this.screen = false
         if (this.mediaHelper.screen.preProcessingEnabled){
-          this.mediaHelper.disablePreProcessing("screen")
+          //把预处理停了，但是保留flag以待下次开启
+          this.mediaHelper.disablePreProcessing("screen", true)
         }
         this.mediaHelper.stopStream('screen')
         if (!this._play){
