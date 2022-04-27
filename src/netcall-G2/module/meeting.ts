@@ -267,7 +267,7 @@ class Meeting extends EventEmitter {
               return wsProxy + '/' + serverurl.split(':')[0] + ':' + port
             })
           } else {
-            this.adapterRef.logger.warn(`join 云代理无法获取到代理信息, serverurl: ${serverurl}, port: ${port}`);
+            this.adapterRef.logger.log(`join 云代理无法获取到代理信息, serverurl: ${serverurl}, port: ${port}`);
           }
         }
 
@@ -303,7 +303,8 @@ class Meeting extends EventEmitter {
         // 会话建立
         return this.adapterRef.instance.startSession()
       } else {
-        this.logger.warn(`join 无法加入房间`);
+        const errorMessage = data.desc && data.desc !== '' ? `join: ${data.desc}` : `join: 服务器不允许加入房间, code ${data.code}` 
+        this.logger.warn(errorMessage);
         this.adapterRef.channelStatus = 'leave'
         this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
         this.adapterRef.connectState.curState = 'DISCONNECTED'
@@ -318,10 +319,12 @@ class Meeting extends EventEmitter {
           result: data.code,
           serverIp: data.ips && data.ips.turnaddrs && data.ips.turnaddrs.length && data.ips.turnaddrs[0]
         })
-        throw new RtcError({
-          code: data.code || ErrorCode.NO_SERVER_ADDRESS,
-          message: data.desc && data.desc !== '' ? `join: ${data.desc}` : `join: 服务器不允许加入房间, code ${data.code}` 
-        })
+        return Promise.reject(
+          new RtcError({
+            code: data.code || ErrorCode.NO_SERVER_ADDRESS,
+            message: errorMessage
+          })
+        )
       }
     } catch(e) {
       this.logger.log('joing 获取到房间信息错误:', e.name, e.message)
@@ -341,7 +344,7 @@ class Meeting extends EventEmitter {
       })
       throw new RtcError({
         code: ErrorCode.UNKNOWN,
-        message: `join() 语法错误: ${e.message}`
+        message: `join() 异常: ${e.message}`
       })
     }
   }
@@ -445,7 +448,7 @@ class Meeting extends EventEmitter {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.ADD_TASK_FAILED,
-            message: 'addTasks: 语法错误 ' + e.name + ', ' + e.message
+            message: 'addTasks: 异常 ' + e.name + ', ' + e.message
           })
         )
       }
