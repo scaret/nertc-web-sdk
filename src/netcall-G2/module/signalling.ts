@@ -105,10 +105,10 @@ class Signalling extends EventEmitter {
 
       const prevConfig = this.reconnectionControl.current;
       const connConfig:SignalingConnectionConfig = this.reconnectionControl.next || {
-        timeout: 0,
+        timeout: isReconnectMeeting ? getParameters().reconnectionFirstTimeout : 0,
         url: this.adapterRef.channelInfo.wssArr[0],
         serverIndex: 0,
-        times: 0,
+        times: isReconnectMeeting ? 1 : 0,
         isJoinRetry: isReconnect,
         isReconnection: isReconnectMeeting,
       };
