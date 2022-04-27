@@ -297,7 +297,7 @@ class Mediasoup extends EventEmitter {
       this.loggerSend.error('_sendTransportConnectionstatechange：出现了_sendTransport绑定不一致的状况。');
       return;
     }
-    this.loggerSend.log(`send connection state changed to ${connectionState}`);
+    this.loggerSend.log(`send connection #${_sendTransport._handler._pc.pcid} state  changed to ${connectionState}`);
     this.emit('upstream-state-change', {connectionState});
     if (connectionState === 'failed') {
       try {
@@ -317,10 +317,8 @@ class Mediasoup extends EventEmitter {
               })
             }
             iceParameters = await this.adapterRef._signalling._protoo.request('restartIce', { transportId: this._sendTransport.id });
-          } else {
-            iceParameters = this._sendTransportIceParameters
+            await this._sendTransport.restartIce({ iceParameters });
           }
-          await this._sendTransport.restartIce({ iceParameters });
         }
       } catch (e){
         this.loggerSend.error('restartIce() | failed:', e,name, e.message);
@@ -338,7 +336,7 @@ class Mediasoup extends EventEmitter {
       this.loggerRecv.error('_recvTransportConnectionstatechange：出现了_recvTransport绑定不一致的状况。');
       return;
     }
-    this.loggerRecv.log(`recv connection state changed to ${connectionState}`);
+    this.loggerRecv.log(`recv connection ${_recvTransport._handler._pc.pcid} state changed to ${connectionState}`);
     this.emit('downstream-state-change', {connectionState});
     if (connectionState === 'failed') {
       try {
@@ -351,10 +349,8 @@ class Mediasoup extends EventEmitter {
           let iceParameters = null
           if (this._protoo && this._protoo.connected) {
             iceParameters = await this._protoo.request('restartIce', { transportId: this._recvTransport.id });
-          } else {
-            iceParameters = this._recvTransportIceParameters
+            await this._recvTransport.restartIce({ iceParameters });
           }
-          await this._recvTransport.restartIce({ iceParameters });
         }
       } catch (e){
         this.loggerRecv.error('restartIce() | failed:', e.name, e.message);
