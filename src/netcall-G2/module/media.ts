@@ -316,21 +316,42 @@ class MediaHelper extends EventEmitter {
   }
   async getScreenSource(constraint:GetStreamConstraints) {
     const {width, height, frameRate} = this.screen.captureConfig.high
-    let screenStream = await GUM.getScreenStream({
-      video:{
-        width: {
-          ideal: width
+    try{
+      let screenStream = await GUM.getScreenStream({
+        video:{
+          width: {
+            ideal: width
+          },
+          height: {
+            ideal: height
+          },
+          frameRate: {
+            ideal: frameRate,
+            max: frameRate
+          }
         },
-        height: {
-          ideal: height
-        },
-        frameRate: {
-          ideal: frameRate,
-          max: frameRate
-        }
-      },
-    }, this.logger)
-    return screenStream;
+      }, this.logger)
+      return screenStream;
+    }catch(e){
+      const mediaType = "screen"
+      if (e.message
+        // 为什么这样写：
+        // Safari和ios的提示是：The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.
+        // Chrome的提示是：Permission Denied. Permission Denied by system
+        && e.message.indexOf('ermission') > -1
+        && e.message.indexOf('denied') > -1 ) {
+        this.stream.client.safeEmit('accessDenied', mediaType)
+      } else if (e.message && e.message.indexOf('not found') > -1) {
+        this.stream.client.safeEmit('notFound', mediaType)
+      } else if (e.message && e.message.indexOf('not start video source') > -1) {
+        this.stream.client.safeEmit('beOccupied', mediaType)
+      } else {
+        this.stream.client.safeEmit('deviceError', mediaType)
+      }
+      this.stream.emit('device-error', {type: mediaType, error: e});
+
+      return Promise.reject(e)
+    }
   }
 
   async getStream(constraint:GetStreamConstraints) {
@@ -669,6 +690,8 @@ class MediaHelper extends EventEmitter {
       this.assertLive()
     } catch (e){
       this.logger.error('getStream error:', e.name, e.message)
+      
+      let mediaType = "audio"
       if (audio) {
         this.stream.client.apiEventReport('setFunction', {
           name: 'set_mic',
@@ -677,6 +700,7 @@ class MediaHelper extends EventEmitter {
         })
       } 
       if (video) {
+        mediaType = "video"
         this.stream.client.apiEventReport('setFunction', {
           name: 'set_camera',
           oper: '1',
@@ -684,12 +708,30 @@ class MediaHelper extends EventEmitter {
         })
       } 
       if (screen) {
+        mediaType = "screen"
         this.stream.client.apiEventReport('setFunction', {
           name: 'set_screen',
           oper: '1',
           value: e.message
         })
       }
+
+      if (e.message
+        // 为什么这样写：
+        // Safari和ios的提示是：The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.
+        // Chrome的提示是：Permission Denied. Permission Denied by system
+        && e.message.indexOf('ermission') > -1
+        && e.message.indexOf('denied') > -1 ) {
+        this.stream.client.safeEmit('accessDenied', mediaType)
+      } else if (e.message && e.message.indexOf('not found') > -1) {
+        this.stream.client.safeEmit('notFound', mediaType)
+      } else if (e.message && e.message.indexOf('not start video source') > -1) {
+        this.stream.client.safeEmit('beOccupied', mediaType)
+      } else {
+        this.stream.client.safeEmit('deviceError', mediaType)
+      }
+      this.stream.emit('device-error', {type: mediaType, error: e});
+
       return Promise.reject(e)
     }
   }
