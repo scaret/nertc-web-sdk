@@ -353,18 +353,10 @@ class Base extends EventEmitter {
       })
     }
     try{
-      await this.adapterRef._signalling.init(url)
+      await this.adapterRef._signalling.init(false, false)
     }catch(e){
-      this.logger.warn('startSession error: ', e)
-      if (e === 'timeout') {
-        this.adapterRef.channelInfo.wssArrIndex++
-        // 递归
-        await this.startSession(retry+1)
-        return
-      } else {
-        this.adapterRef.channelStatus = 'leave'
-        throw e
-      }
+      this.adapterRef.channelStatus = 'leave'
+      throw e
     }
     //将连接成功的url放置到列表的首部，方便后续的重连逻辑
     const connectUrl = wssArr[this.adapterRef.channelInfo.wssArrIndex]

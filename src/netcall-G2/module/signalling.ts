@@ -4,7 +4,7 @@ import { RtcSystem } from '../util/rtcUtil/rtcSystem'
 import BigNumber from 'bignumber.js'
 import {ENGINE_VERSION} from '../Config/index'
 import {
-  AdapterRef, ILogger, MaskUserSetting, MediaTypeShort, NetStatusItem,
+  AdapterRef, ILogger, MaskUserSetting, MediaTypeShort, NetStatusItem, SignalingConnectionConfig,
   SignallingOptions,
   Timer
 } from "../types";
@@ -23,22 +23,25 @@ const protooClient = require('./3rd/protoo-client/')
 
 class Signalling extends EventEmitter {
   private adapterRef: AdapterRef;
-  private _reconnectionTimer: Timer|null = null;
+  private _reconnectionTimer:Timer|null = null
   public _protoo: Peer|null = null;
-  private _times: number = 0;
   private _url: string|null = null;
-  private _reconnectionTimeout: number = 30 * 1000;
   private _resolve: ((data:any)=>void)|null = null;
   private _reject: ((data:any)=>void)|null = null;
   private consumers: {[consumerId: string]: Consumer } = {};
   private keepAliveTimer: Timer|null = null;
   public browserDevice: String;
   private logger: ILogger;
+  private _reconnectionTimeout: number = 30 * 1000;
   public reconnectionControl:{
+    current: SignalingConnectionConfig|null,
+    next: SignalingConnectionConfig|null,
     blocker: any,
     pausers: ((info: any)=>void)[],
     resumers: ((info: any)=>void)[],
   } = {
+    current: null,
+    next: null,
     blocker: null,
     pausers: [],
     resumers: [],
@@ -75,31 +78,21 @@ class Signalling extends EventEmitter {
     this.adapterRef = options.adapterRef
     this.browserDevice = getOSName()+ '-' + getBrowserInfo().browserName + '-' + getBrowserInfo().browserVersion;
   }
-  
-  getTimeOut(type: "join"|"reconnection"){
-    const times = this._times;
-    let timeout;
-    if (type === "join"){
-      timeout = getParameters().joinFirstTimeout + 2000 * Math.max(times - 1, 0)
-    }else{
-      timeout = getParameters().reconnectionFirstTimeout + 2000 * Math.max(times - 1, 0)
-    }
-    return timeout
-  }
 
   async _reset() {
     if (this._reconnectionTimer) {
       clearTimeout(this._reconnectionTimer)
     }
     this._reconnectionTimer = null
-    this._times = 0
     this._destroyProtoo()
+    this.reconnectionControl.current = null
+    this.reconnectionControl.next = null
     this._reconnectionTimeout = 30 * 1000
     this._resolve = null
     this._reject = null
   }
 
-  init(url:string, isReconnect:boolean=false, isReconnectMeeting:boolean=false) {
+  init(isReconnect:boolean, isReconnectMeeting:boolean) {
     if(this._reconnectionTimer) return Promise.resolve()
     
     return new Promise((resolve, reject) =>{
@@ -109,43 +102,112 @@ class Signalling extends EventEmitter {
       if(!isReconnect){
         this._reject = reject
       }
+
+      const prevConfig = this.reconnectionControl.current;
+      const connConfig:SignalingConnectionConfig = this.reconnectionControl.next || {
+        timeout: isReconnectMeeting ? getParameters().reconnectionFirstTimeout : 0,
+        url: this.adapterRef.channelInfo.wssArr[0],
+        serverIndex: 0,
+        times: isReconnectMeeting ? 1 : 0,
+        isJoinRetry: isReconnect,
+        isReconnection: isReconnectMeeting,
+      };
+      this.adapterRef.channelInfo.wssArrIndex = connConfig.serverIndex;
+      if (isReconnect){
+        // url = this.adapterRef.channelInfo.wssArr[this.adapterRef.channelInfo.wssArrIndex]
+        if (isReconnectMeeting){
+          // 重连期间
+          this.adapterRef.logger.error(`Signalling 开始尝试第 ${connConfig.serverIndex + 1}/${this.adapterRef.channelInfo.wssArr.length} 台服务器的第 ${connConfig.times}/${getParameters().reconnectionMaxRetry} 次重连，退避时间：${connConfig.timeout}毫秒，服务器地址：${connConfig.url}`)
+        }else{
+          // join期间
+          this.adapterRef.logger.error(`Join: 正在尝试第 ${connConfig.serverIndex + 1}/${this.adapterRef.channelInfo.wssArr.length} 台服务器的第 ${connConfig.times}/${getParameters().joinMaxRetry} 次重连，退避时间：${connConfig.timeout}毫秒，服务器地址：${connConfig.url}`)
+        }
+      }else{
+        // 第一次join
+        this.adapterRef.logger.log(`Join: 正在尝试第 ${connConfig.serverIndex + 1} / ${this.adapterRef.channelInfo.wssArr.length} 个服务器的第 ${connConfig.times} / ${getParameters().joinMaxRetry} 次连接`)
+      }
+      this.reconnectionControl.current = connConfig
+      this.reconnectionControl.next = null
       
-      this._init(url)
+      this._init(connConfig.url)
+
+      //开始安排下一次重连的设置
+      let nextConnConfig = Object.assign({}, connConfig)
+      if (!connConfig.times){
+        nextConnConfig.times = 1
+        nextConnConfig.serverIndex = 0
+      }else{
+        nextConnConfig.serverIndex++
+      }
+      if (nextConnConfig.serverIndex >= this.adapterRef.channelInfo.wssArr.length){
+        nextConnConfig.times++
+        nextConnConfig.serverIndex = 0
+      }
+      if (isReconnect){
+        nextConnConfig.timeout = getParameters().joinFirstTimeout + (nextConnConfig.times - 1) * 2000
+      }else if (isReconnectMeeting){
+        nextConnConfig.timeout = getParameters().reconnectionFirstTimeout + (nextConnConfig.times - 1) * 2000
+      }
+      nextConnConfig.timeout = nextConnConfig.times * 2000
+      nextConnConfig.isJoinRetry = isReconnect
+      nextConnConfig.isReconnection = isReconnectMeeting
+      nextConnConfig.url = this.adapterRef.channelInfo.wssArr[nextConnConfig.serverIndex]
+      this.reconnectionControl.next = nextConnConfig
+      if (this._reconnectionTimer){
+        clearTimeout(this._reconnectionTimer)
+      }
+
       this._reconnectionTimer = setTimeout(()=>{
+        if (this._reconnectionTimer){
+          clearTimeout(this._reconnectionTimer)
+        }
         this._reconnectionTimer = null
+        this._destroyProtoo()
         if (isReconnectMeeting) {
           this.adapterRef.instance.emit('pairing-websocket-reconnection-error');
           this._reconnection()
         } else {
           this._connection()
         }
-      }, this.getTimeOut(isReconnectMeeting ? "reconnection" : "join"))
+      }, nextConnConfig.timeout)
     })
   }
 
   async _connection() {
-    this.logger.log('Signalling _connection, times:', this._times)
+    // _connection指的是join期间的重试
     this._destroyProtoo()
-    if(this._times < getParameters().joinMaxRetry){
-      ++this._times
-      this.logger.warn(`Signalling加入频道: 第 ${this.adapterRef.channelInfo.wssArrIndex + 1}/${this.adapterRef.channelInfo.wssArr.length} 台服务器，第 ${this._times}/${getParameters().joinMaxRetry} 次尝试。服务器地址：${this.adapterRef.channelInfo._protooUrl}。等待时间：${this.getTimeOut("join")} 毫秒`)
-      this.init(this.adapterRef.channelInfo._protooUrl, true)
+    const prevConfig = this.reconnectionControl.current;
+    const connConfig = this.reconnectionControl.next;
+    if (!connConfig){
+      // 不应该走到这里
+      this.adapterRef.logger.error('Join结束')
+      return
+    }
+    if(!prevConfig || connConfig.times <= getParameters().joinMaxRetry){
+      this.init(true, false)
     } else {
-      this.logger.warn('Signalling 3次重连结束')
-      this._times = 0
+      this.adapterRef.logger.error(`所有的服务器地址都连接失败, 主动离开房间`)
+      this.adapterRef.channelInfo.wssArrIndex = 0
+      this.adapterRef.instance.leave()
+      this.adapterRef.instance.emit('error', 'SOCKET_ERROR')
       this._reject && this._reject('timeout')
     }
   }
 
   async _reconnection() {
-    this.logger.log('Signalling _reconnection, times:', this._times)
+    /*if (this.adapterRef.channelStatus === 'connectioning') {
+      return
+    }*/
     if (this._reconnectionTimer) return
     this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
     this.adapterRef.connectState.curState = 'CONNECTING'
     this.adapterRef.connectState.reconnect = true //增加是否在重来的标志位
-    this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
+    if (this.adapterRef.connectState.prevState !== this.adapterRef.connectState.curState){
+      this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
+    }
     this.adapterRef.instance.emit('pairing-websocket-reconnection-start');
     this._destroyProtoo()
+
 
     if (this.adapterRef.connectState.prevState === "CONNECTED"){
       // 更新上下行状态为unknown，因为此时服务端无法下发上下行状态
@@ -155,7 +217,7 @@ class Signalling extends EventEmitter {
       })
       this.adapterRef.instance.safeEmit('network-quality', this.adapterRef.netStatusList)
     }
-    
+
     if (this.reconnectionControl.pausers.length){
       this.logger.log(`重连过程暂停`);
       this.reconnectionControl.pausers.forEach((resolve)=> resolve({reason: "reconnection-start"}))
@@ -164,7 +226,7 @@ class Signalling extends EventEmitter {
         this.reconnectionControl.blocker = resolve;
       })
     }
-    
+
     for (let uid in this.adapterRef.remoteStreamMap){
       const remoteStream = this.adapterRef.remoteStreamMap[uid];
       if (remoteStream._play){
@@ -172,25 +234,15 @@ class Signalling extends EventEmitter {
         remoteStream._play.destroy();
       }
     }
-    
-    if(this._times < getParameters().reconnectionMaxRetry){
-      ++this._times
-      this.logger.warn(`Signalling断线重连: 第 ${this.adapterRef.channelInfo.wssArrIndex + 1}/${this.adapterRef.channelInfo.wssArr.length} 台服务器，第 ${this._times}/${getParameters().reconnectionMaxRetry} 次尝试。服务器地址：${this.adapterRef.channelInfo._protooUrl}。等待时间：${this.getTimeOut("reconnection")} 毫秒`)
-      this.init(this.adapterRef.channelInfo._protooUrl, true, true)
-    } else {
-      this.logger.warn(`Signalling  url: ${this.adapterRef.channelInfo._protooUrl}, 当前服务器地址重连结束, 尝试下一个服务器地址`)
-      if (++this.adapterRef.channelInfo.wssArrIndex >= this.adapterRef.channelInfo.wssArr.length) {
-        this.adapterRef.instance.emit('pairing-websocket-reconnection-skip');
-        this.logger.error('所有的服务器地址都连接失败, 主动离开房间')
-        this.adapterRef.channelInfo.wssArrIndex = 0
-        this.adapterRef.instance.leave()
-        this.adapterRef.instance.emit('error', 'SOCKET_ERROR')
-        return
-      }
-      const url = this.adapterRef.channelInfo.wssArr[this.adapterRef.channelInfo.wssArrIndex]
-      this._times = 1
-      this.logger.warn(`Signalling 开始连接第 ${this.adapterRef.channelInfo.wssArrIndex + 1}/${this.adapterRef.channelInfo.wssArr.length} 台服务器：${url}`)
-      this.init(url, true, true)
+
+    if (this.reconnectionControl.next && this.reconnectionControl.next.times > getParameters().reconnectionMaxRetry){
+      this.adapterRef.instance.emit('pairing-websocket-reconnection-skip');
+      this.adapterRef.logger.error('所有的服务器地址都连接失败, 主动离开房间')
+      this.adapterRef.channelInfo.wssArrIndex = 0
+      this.adapterRef.instance.leave()
+      this.adapterRef.instance.emit('error', 'SOCKET_ERROR')
+    }else{
+      this.init(true, true)
     }
   }
 
@@ -849,18 +901,9 @@ class Signalling extends EventEmitter {
           'Signalling: 加入房间失败, reason = ',
           response.code, errMsg
         )
-        if (this._times){
-          this.adapterRef.instance.emit('pairing-websocket-reconnection-error');
-          this.logger.error(`重连失败，重置重连次数: ${this._times} => 0`)
-          this._times = 0
-        }
+        this.adapterRef.instance.emit('pairing-websocket-reconnection-error');
         this._joinFailed(response.code, errMsg)
         return
-      } else {
-        if (this._times){
-          this.logger.log(`重置重连次数: ${this._times} => 0`)
-          this._times = 0
-        }
       }
       // 服务器禁用音视频: 1 禁用   0 和 2 取消禁用
       if(response.externData.audioRight === 1){
@@ -915,6 +958,7 @@ class Signalling extends EventEmitter {
         clearTimeout(this._reconnectionTimer)
         this._reconnectionTimer = null
       }
+      this.reconnectionControl.next = null
       this.logger.log('Signalling:加入房间成功')
       this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
       this.adapterRef.connectState.curState = 'CONNECTED'
