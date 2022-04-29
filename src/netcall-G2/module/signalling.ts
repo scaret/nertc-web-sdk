@@ -1060,6 +1060,8 @@ class Signalling extends EventEmitter {
             this.adapterRef.instance.safeEmit('peer-online', {uid})
           } else {
             remoteStream.active = true;
+            this.adapterRef.memberMap[uid] = "" + uid;
+            this.adapterRef.instance.safeEmit('peer-online', {uid})
           }
           if (peer.producerInfoList) {
             for (const peoducerInfo of peer.producerInfoList) {
