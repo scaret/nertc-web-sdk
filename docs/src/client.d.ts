@@ -883,8 +883,10 @@ declare interface Client{
    * ```
    */
   on(event: "recording-device-changed", callback: (
-    state: "ACTIVE"|"INACTIVE"|"CHANGED",
-    device: DeviceInfo,
+    evt: {
+      state: "ACTIVE"|"INACTIVE"|"CHANGED",
+      device: DeviceInfo,
+    }
   ) => void): void;
 
   /**
@@ -896,8 +898,10 @@ declare interface Client{
    * 注：Firefox不支持设备检测
    */
   on(event: "camera-changed", callback: (
-    state: "ACTIVE"|"INACTIVE"|"CHANGED",
-    device: DeviceInfo,
+    evt: {
+      state: "ACTIVE"|"INACTIVE"|"CHANGED",
+      device: DeviceInfo,
+    }
   ) => void): void;
 
   /**
@@ -910,8 +914,10 @@ declare interface Client{
    * 
    */
   on(event: "playout-device-changed", callback: (
-    state: "ACTIVE"|"INACTIVE"|"CHANGED",
-    device: DeviceInfo,
+    evt: {
+      state: "ACTIVE"|"INACTIVE"|"CHANGED",
+      device: DeviceInfo,
+    }
   ) => void): void;
   
   /**
