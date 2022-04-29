@@ -199,7 +199,7 @@ declare interface Client{
    * 
    * ```
    * // 在订阅状态下，想将屏幕共享的大流切换为小流。
-   * rtc.client.setRemoteStreamType(remoteStream, NERTC.STREAM_TYPE,LOW, "screen")
+   * rtc.client.setRemoteStreamType(remoteStream, NERTC.STREAM_TYPE.LOW, "screen")
    * ```
    */
   setRemoteStreamType(
