@@ -25,13 +25,13 @@ declare interface Stream {
      * 设置视频订阅的参数。
      * 
      * 注意：
-     * * 如果您想取消订阅远端的音频，但是保持视频不变，则应该设audio为false，video不设: `{audio: true}`
      * * 如果您想取消订阅远端所有媒体，应使用 [[Client.unsubscribe]]
      * * 如果您在已经订阅了远端的视频大流的情况下，想实时切换为小流，应使用[[Client.setRemoteStreamType]]
      * * 参数 highOrLow中，0 表示大流，1 表示小流。默认为大流。为了保持代码清晰，建议使用常量 `NERTC.STREAM_TYPE.HIGH` 和 `NERTC.STREAM_TYPE.LOW`指定。
-     * 
+     * * 如果您想取消订阅远端的音频，但是保持视频不变，则应该设audio为false，video不设（见例子2）
      * @example
      * ```
+     * // 例子1：订阅大流
      * rtc.client.on("stream-added", (evt)=>{
      *   console.log(`远端${evt.stream.getId()}发布了 ${evt.mediaType} 流`)
      *   rtc.client.setSubscribeConfig({
@@ -42,6 +42,10 @@ declare interface Stream {
      *   })
      *   rtc.client.subscribe(evt.stream)
      * });
+     * 
+     * // 例子2：在音视频已经订阅的情况下，仅取消订阅音频
+     * remoteStream.setSubscribeConfig({audio: false});
+     * rtc.client.subscribe(remoteStream)
      * ```
      * 
     */
