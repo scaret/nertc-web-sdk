@@ -165,6 +165,11 @@ export enum NetworkStatus {
   DOWN= 6,
 }
 
+export enum STREAM_TYPE {
+  HIGH = 0,
+  LOW = 1,
+}
+
   /***
    * 房间中所有成员的上下行网络质量。
    */
