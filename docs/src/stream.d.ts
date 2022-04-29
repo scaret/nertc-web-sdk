@@ -7,7 +7,7 @@ import {
   NERtcCanvasWatermarkConfig,
   MediaType,
   RenderMode,
-  RecordStatus
+  RecordStatus, STREAM_TYPE
 } from "./types";
 /**
  * 音视频流对象。
@@ -24,7 +24,26 @@ declare interface Stream {
     /**
      * 设置视频订阅的参数。
      * 
-     * @param subscribeOptions 配置参数。
+     * 注意：
+     * * 如果您想取消订阅远端的音频，但是保持视频不变，则应该设audio为false，video不设: `{audio: true}`
+     * * 如果您想取消订阅远端所有媒体，应使用 [[Client.unsubscribe]]
+     * * 如果您在已经订阅了远端的视频大流的情况下，想实时切换为小流，应使用[[Client.setRemoteStreamType]]
+     * * 参数 highOrLow中，0 表示大流，1 表示小流。默认为大流。为了保持代码清晰，建议使用常量 `NERTC.STREAM_TYPE.HIGH` 和 `NERTC.STREAM_TYPE.LOW`指定。
+     * 
+     * @example
+     * ```
+     * rtc.client.on("stream-added", (evt)=>{
+     *   console.log(`远端${evt.stream.getId()}发布了 ${evt.mediaType} 流`)
+     *   rtc.client.setSubscribeConfig({
+     *     audio: true,
+     *     video: true,
+     *     screen: true,
+     *     highOrLow: NERTC.STREAM_TYPE.HIGH
+     *   })
+     *   rtc.client.subscribe(evt.stream)
+     * });
+     * ```
+     * 
     */
     setSubscribeConfig(subscribeOptions: {
       /**
@@ -43,8 +62,9 @@ declare interface Stream {
        * 订阅大流或小流。
        * 
        * 0 表示大流，1 表示小流。默认为大流。
+       * 可以使用常量 `NERTC.STREAM_TYPE.HIGH` 和 `NERTC.STREAM_TYPE.LOW`指定
        */
-      highOrLow?: number;
+      highOrLow?: STREAM_TYPE;
     }): void;
 
   /**
