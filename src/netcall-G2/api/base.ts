@@ -305,9 +305,12 @@ class Base extends EventEmitter {
     this.adapterRef.netStatusList = [];
     for (let uid in this.adapterRef.remoteStreamMap){
       const stream = this.adapterRef.remoteStreamMap[uid];
-      stream.active = false;
-      stream.stop();
-      stream.clearRemotePubStatus()
+      if (stream.active){
+        stream.active = false;
+        stream.stop();
+        stream.clearRemotePubStatus()
+        this.adapterRef.instance.safeEmit('peer-leave', {uid});        
+      }
     }
     this.adapterRef.memberMap = {}
     this.adapterRef.uid2SscrList = {}
@@ -415,7 +418,7 @@ class Base extends EventEmitter {
   async clearMember(uid: number | string) {
     this.logger.log(`${uid}离开房间`);
     const remotStream = this.adapterRef.remoteStreamMap[uid];
-    if (remotStream) {
+    if (remotStream?.active) {
       const mediaTypeList:MediaTypeShort[] = ["audio", "video", "screen"]
       for (let mediaType of mediaTypeList){
         if (remotStream.pubStatus[mediaType].producerId){
