@@ -7,7 +7,7 @@ import {
   NERtcCanvasWatermarkConfig,
   MediaType,
   RenderMode,
-  RecordStatus, STREAM_TYPE
+  RecordStatus, STREAM_TYPE, NERtcEncoderWatermarkConfig
 } from "./types";
 /**
  * 音视频流对象。
@@ -1016,11 +1016,48 @@ declare interface Stream {
     /**
      * 添加视频画布水印。
      * 
-     * @note setCanvasWatermarkConfigs 方法作用于本地视频画布，不影响视频流。视频流截图时，图片中不包含水印。
+     * @note 注意事项
+     * * setCanvasWatermarkConfigs 方法作用于本地视频画布，不影响视频流。视频流截图时，图片中不包含水印。
+     * * 
      * 
      * @param options 画布水印设置。支持设置文字水印、图片水印和时间戳水印，设置为 null 表示清除水印。
      */
     setCanvasWatermarkConfigs(options: NERtcCanvasWatermarkConfig): void;
+    /**
+     * 添加视频编码水印。
+     *
+     * @note 注意事项
+     * * setEncoderWatermarkConfigs 方法仅作用于本地视频画布，且直接影响视频流。视频流截图时，图片中包含水印。
+     * * 由于浏览器策略限制，图片必须存于同一域名下。
+     *
+     * @param options 编码水印设置。支持设置文字水印、图片水印和时间戳水印，设置为 null 表示清除水印。
+     * 
+     * @example
+     * ```
+     * // rtc.localStream.init()后
+     * rtc.localStream.setEncoderWatermarkConfigs({
+        "mediaType": "video",
+        "timestampWatermarks": {},
+        "textWatermarks": [
+          {
+            "content": "网易云信",
+            "offsetX": 200,
+            "offsetY": 200
+          }
+        ],
+        "imageWatermarks": [
+          {
+            "imageUrls": [
+              "img/logo_yunxin.png"
+            ],
+            "loop": true
+          }
+        ]
+      })
+     * ```
+     * 
+     */
+    setEncoderWatermarkConfigs(options: NERtcEncoderWatermarkConfig): void;
     /**
      *  销毁音视频流对象。
      */
