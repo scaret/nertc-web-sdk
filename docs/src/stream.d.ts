@@ -1074,5 +1074,34 @@ declare interface Stream {
       error: any
     ) => void): void;
 
+
+  /**
+   * `notAllowedError` 事件表示浏览器自动播放受限
+   * 
+   * @example
+   * ```javascript
+   * rtc.remoteStream.on("notAllowedError", (evt) => {
+   *   // 获取错误码
+   *   const errorCode = evt.getCode();
+   *   // 判断为自动播放受限
+   *   if(errorCode === 41030){
+   *      // 手势操作恢复
+   *      $("#button").on("click", async () => {
+   *         await remoteStream.resume();
+   *         $("#button").hide();
+   *      });
+   *   }
+   * });
+   * ```
+   */
+   on(event: "notAllowedError", callback: (
+    evt: {
+      /**
+      * 错误码
+      */
+      erroCode: Number
+    }
+    ) => void): void;
+
 }
 export { Stream };
