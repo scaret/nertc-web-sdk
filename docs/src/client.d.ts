@@ -9,7 +9,7 @@ import {
   RTMPTask,
   RTMPTaskState,
   MediaPriorityOptions,
-  EncryptionMode,
+  EncryptionMode, STREAM_TYPE,
 } from "./types";
 import { Stream } from "./stream";
 import {ConnectionState} from "./types";
@@ -165,16 +165,48 @@ declare interface Client{
      * @since V4.6.0
      */
     enableDualStream(dualStreamSetting?: {video: boolean; screen: boolean}): void;
+
+  /**
+   * 关闭双流模式
+   * 
+   * 双流模式默认为关闭状态。如如开启双流模式后需关闭，请在 [[Client.unpublish]] 后、再次 [[Client.publish]] 之前调用该方法。
+   * 
+   */
+  disableDualStream(): void;
     /**
-     * 设置视频大小流。
-     * 
-     * 如果发送端开启了双流模式，即大小流模式，订阅端默认接收大流，您也可以在订阅端调用此方法选择接收大流还是小流。
-     * 
-     * @note 该方法可以在加入房间前后设置。
+     * 动态切换视频大小流。可参见[[Client.setRemoteStreamType]]方法。
+     *
      * @param stream 指定音视频流。
-     * @param highOrLow 指定大小流类型。0 表示小流，1 表示大流。
-    */
-    setRemoteVideoStreamType(stream: Stream, highOrLow: 0|1): Promise<void>;
+     * @param highOrLow 指定大小流类型。可以使用`NERTC.STREAM_TYPE.HIGH` 或 `NERTC.STREAM_TYPE.LOW` 指定
+     * 
+     * @note 注意事项
+     * * 该方法是在处于订阅状态时改变订阅的大小流类型时使用的。如您需要指定订阅那一刻的大小流类型，请参考[[Stream.setSubscribeConfig]]
+     * * 如需指定辅流大小流，请使用 [[Client.setRemoteStreamType]]
+     */
+    setRemoteVideoStreamType(stream: Stream, highOrLow: STREAM_TYPE): Promise<void>;
+    
+  /**
+   * 动态切换视频大小流。
+   *
+   * 如果发送端开启了双流模式，即大小流模式，订阅端默认接收大流，您也可以在订阅端调用此方法选择接收大流还是小流。
+   *
+   * @param stream 指定音视频流。
+   * @param highOrLow 指定大小流类型。可以使用`NERTC.STREAM_TYPE.HIGH` 或 `NERTC.STREAM_TYPE.LOW` 指定
+   * @param mediaType 媒体类型。主流为"video"，辅流为"screen"
+   *
+   * @note 注意事项
+   * * 该方法是在处于订阅状态时改变订阅的大小流类型时使用的。如您需要指定订阅那一刻的大小流类型，请参考[[Stream.setSubscribeConfig]]
+   * 
+   * ```
+   * // 在订阅状态下，想将屏幕共享的大流切换为小流。
+   * rtc.client.setRemoteStreamType(remoteStream, NERTC.STREAM_TYPE.LOW, "screen")
+   * ```
+   */
+  setRemoteStreamType(
+    stream: Stream,
+    highOrLow: STREAM_TYPE,
+    mediaType: "video"|"screen"
+  ): Promise<void>;
 
   /**
    设置用户角色。默认情况下用户以主播角色加入房间。
@@ -855,8 +887,10 @@ declare interface Client{
    * ```
    */
   on(event: "recording-device-changed", callback: (
-    state: "ACTIVE"|"INACTIVE"|"CHANGED",
-    device: DeviceInfo,
+    evt: {
+      state: "ACTIVE"|"INACTIVE"|"CHANGED",
+      device: DeviceInfo,
+    }
   ) => void): void;
 
   /**
@@ -868,8 +902,10 @@ declare interface Client{
    * 注：Firefox不支持设备检测
    */
   on(event: "camera-changed", callback: (
-    state: "ACTIVE"|"INACTIVE"|"CHANGED",
-    device: DeviceInfo,
+    evt: {
+      state: "ACTIVE"|"INACTIVE"|"CHANGED",
+      device: DeviceInfo,
+    }
   ) => void): void;
 
   /**
@@ -882,8 +918,10 @@ declare interface Client{
    * 
    */
   on(event: "playout-device-changed", callback: (
-    state: "ACTIVE"|"INACTIVE"|"CHANGED",
-    device: DeviceInfo,
+    evt: {
+      state: "ACTIVE"|"INACTIVE"|"CHANGED",
+      device: DeviceInfo,
+    }
   ) => void): void;
   
   /**

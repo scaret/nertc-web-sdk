@@ -4,7 +4,7 @@
 
 import { Client } from './client';
 import { Stream } from './stream';
-import { StreamOptions } from "./types";
+import {STREAM_TYPE, StreamOptions} from "./types";
 import { DeviceInfo } from "./browser";
 
 /**
@@ -367,4 +367,8 @@ declare namespace NERTC {
     HE_AAC: number;
   };
   
+  const STREAM_TYPE: {
+    HIGH: STREAM_TYPE.HIGH,
+    LOW: STREAM_TYPE.LOW,
+  }
 }
