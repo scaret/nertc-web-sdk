@@ -1,5 +1,5 @@
 import {MediaHelper} from "./media";
-import {PreProcessingConfig} from "../types";
+import {PreProcessingConfig, PreProcessingHistoryInfo} from "../types";
 import {emptyStreamWith} from "../util/gum";
 import {getRTCTimer} from "../util/RTCTimer";
 
@@ -33,15 +33,18 @@ export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: 
       videoTrack: null,
       videoElem,
       canvasElem,
-      handlers: [{
-        name: "copy",
-        func: preProcessingCopy,
-      }],
+      mirror: false,
+      handlers: [
+        {
+          name: "copy",
+          func: preProcessingCopy,
+        },
+        mediaHelper.stream._play?.watermark[mediaType].encoderControl.handler
+      ],
+      history: [],
       timer: null,
     }
     mediaHelper[mediaType].preProcessing = preProcessing
-    // @ts-ignore
-    preProcessing.handlers.push(mediaHelper.stream._play?.watermark[mediaType].encoderControl.handler)
   }
   
   // 2. 为防止之前曾经调用过enablePreProcessing，须重新连接一遍
@@ -87,7 +90,7 @@ export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: 
     clearInterval(preProcessing.timer)
   }
   const interval = Math.floor(1000 / fps)
-  preProcessing.timer = getRTCTimer().setInterval(()=>{
+  preProcessing.timer = getRTCTimer().setInterval(async ()=>{
     if (preProcessing){
       if (preProcessing.videoElem.videoWidth && preProcessing.videoElem.videoHeight){
         if (
@@ -100,9 +103,30 @@ export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: 
         }
       }
       if (preProcessing.handlers.length){
+        const startTs = Date.now()
+        const handlerTs = []
         for (let handler of preProcessing.handlers){
-          handler.func(mediaHelper, mediaType, preProcessing)
+          if (handler){
+            const spentStart = startTs
+            await handler.func(mediaHelper, mediaType, preProcessing)
+            const spent = Date.now() - spentStart
+            handlerTs.push({
+              name: handler.name,
+              spent
+            })
+          }
         }
+        const endTs = Date.now()
+        let i = 0;
+        for (; i < preProcessing.history.length; i++){
+          if (endTs - preProcessing.history[i].endTs > 5000){
+            continue
+          }else{
+            break
+          }
+        }
+        preProcessing.history.splice(0, i)
+        preProcessing.history.push({startTs, endTs, handlerTs})
       }else{
         // 要是没有前处理流程，默认就使用复制
         preProcessingCopy(mediaHelper, mediaType, preProcessing)
@@ -193,7 +217,13 @@ export function preProcessingCopy(mediaHelper: MediaHelper, mediaType: "video"|"
       config.canvasTrack.enabled = config.videoTrack.enabled
     }
   }
-  config.canvasCtx.drawImage(config.videoElem, 0, 0)
+  if (config.mirror){
+    config.canvasCtx.scale(-1, 1)
+    config.canvasCtx.drawImage(config.videoElem, 0, 0, config.videoElem.videoWidth * -1, config.videoElem.videoHeight)
+    config.canvasCtx.scale(-1, 1)
+  }else{
+    config.canvasCtx.drawImage(config.videoElem, 0, 0)
+  }
 }
 
 export function preProcessingPureColor(mediaHelper: MediaHelper, mediaType: "video"|"screen", config: PreProcessingConfig){
