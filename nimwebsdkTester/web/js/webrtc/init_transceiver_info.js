@@ -192,6 +192,9 @@ const captureTimer = setInterval(async ()=>{
     $("#upstreamBitrate").text(upstreamBitrate + "kbps");
     
     let htmlSendstats = ""
+    if (!rtc.client?.adapterRef?._mediasoup?._sendTransport?._handler?._pc){
+      return;
+    }
     const stats = await rtc.client.adapterRef._mediasoup._sendTransport._handler._pc.getStats()
     sendStatsFilter.filters = {all: 0}
     stats.forEach((report, i)=>{
@@ -282,6 +285,9 @@ const captureTimer = setInterval(async ()=>{
 
 
     let htmlRecvstats = ""
+    if (!rtc.client?.adapterRef?._mediasoup?._recvTransport?._handler?._pc){
+      return;
+    }
     const stats = await rtc.client.adapterRef._mediasoup._recvTransport._handler._pc.getStats()
     recvStatsFilter.filters = {all: 0}
     stats.forEach((report, i)=>{

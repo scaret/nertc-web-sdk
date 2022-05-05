@@ -300,9 +300,12 @@ class Base extends EventEmitter {
     this.adapterRef.netStatusList = [];
     for (let uid in this.adapterRef.remoteStreamMap){
       const stream = this.adapterRef.remoteStreamMap[uid];
-      stream.active = false;
-      stream.stop();
-      stream.clearRemotePubStatus()
+      if (stream.active){
+        stream.active = false;
+        stream.stop();
+        stream.clearRemotePubStatus()
+        this.adapterRef.instance.safeEmit('peer-leave', {uid});        
+      }
     }
     this.adapterRef.memberMap = {}
     this.adapterRef.uid2SscrList = {}
@@ -353,18 +356,10 @@ class Base extends EventEmitter {
       })
     }
     try{
-      await this.adapterRef._signalling.init(url)
+      await this.adapterRef._signalling.init(false, false)
     }catch(e){
-      this.logger.warn('startSession error: ', e)
-      if (e === 'timeout') {
-        this.adapterRef.channelInfo.wssArrIndex++
-        // 递归
-        await this.startSession(retry+1)
-        return
-      } else {
-        this.adapterRef.channelStatus = 'leave'
-        throw e
-      }
+      this.adapterRef.channelStatus = 'leave'
+      throw e
     }
     //将连接成功的url放置到列表的首部，方便后续的重连逻辑
     const connectUrl = wssArr[this.adapterRef.channelInfo.wssArrIndex]
@@ -410,7 +405,7 @@ class Base extends EventEmitter {
   async clearMember(uid: number | string) {
     this.logger.log(`${uid}离开房间`);
     const remotStream = this.adapterRef.remoteStreamMap[uid];
-    if (remotStream) {
+    if (remotStream?.active) {
       const mediaTypeList:MediaTypeShort[] = ["audio", "video", "screen"]
       for (let mediaType of mediaTypeList){
         if (remotStream.pubStatus[mediaType].producerId){

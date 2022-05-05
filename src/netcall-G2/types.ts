@@ -1020,6 +1020,15 @@ export interface JoinChannelRequestParam4WebRTC2{
   token?: string;
 }
 
+export interface SignalingConnectionConfig{
+  timeout: number,
+  url: string,
+  serverIndex: number,
+  times: number,
+  isJoinRetry: boolean,
+  isReconnection: boolean
+}
+
 export interface WatermarkSetting{
   type: 'text'|'timestamp'|'image';
   content: string;

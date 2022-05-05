@@ -60,6 +60,8 @@ table th:nth-of-type(2) {
 [[Client.getUid]]|获取本地用户 ID。
 [[Client.startProxyServer]]|开启云代理。
 [[Client.stopProxyServer]]|关闭云代理。
+[[Client.enableDualStream]]|开启双流发布模式。
+[[Client.disableDualStream]]|关闭双流发布模式。
 
 
 ### <span id="旁路推流管理">旁路推流管理</span>
@@ -179,6 +181,8 @@ table th:nth-of-type(2) {
 [[Stream.stopAllEffects]] | 停止播放所有音效文件
 [[Stream.pauseAllEffects]] | 暂停播放所有音效文件
 [[Stream.resumeAllEffects]] | 恢复播放所有音效文件
+[[Stream.getAudioEffectsDuration]] | 获取音效时长
+[[Stream.getAudioEffectsCurrentPosition]] | 获取音效播放进度
 
 
 ## <span id="录制管理">录制管理</span>

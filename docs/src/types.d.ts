@@ -165,6 +165,11 @@ export enum NetworkStatus {
   DOWN= 6,
 }
 
+export enum STREAM_TYPE {
+  HIGH = 0,
+  LOW = 1,
+}
+
   /***
    * 房间中所有成员的上下行网络质量。
    */
@@ -581,6 +586,31 @@ export interface NERtcCanvasWatermarkConfig {
    */
   imageWatermarks: NERtcImageWatermarkConfig[];
 }
+
+/**
+ * 编码水印设置。
+ *
+ * 同时设置文字、时间戳或图片水印时，如果不同类型的水印位置有重叠，会按照图片、文本、时间戳的顺序进行图层覆盖。
+ */
+export interface NERtcEncoderWatermarkConfig {
+  /**
+   * 视频流类型。支持设置为主流（video）或辅流（screen）。
+   */
+  mediaType: 'video'|'screen';
+  /**
+   * 文字水印。最多可以添加 10 个文字水印。
+   */
+  textWatermarks: NERtcTextWatermarkConfig[];
+  /**
+   * 时间戳水印。只能添加 1 个时间戳水印。
+   */
+  timestampWatermarks: NERtcTimestampWatermarkConfig;
+  /**
+   * 图片水印，最多可以添加 4 个图片水印。
+   */
+  imageWatermarks: NERtcImageWatermarkConfig[];
+}
+
 /**
  * 文字水印设置参数。
  * 
