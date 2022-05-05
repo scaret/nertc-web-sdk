@@ -15,7 +15,7 @@ import {
   MediaTypeAudio,
   ILogger,
   EncodingParameters,
-  PreProcessingConfig,
+  PreProcessingConfig, PreProcessingHandlerName,
 } from "../types";
 import {emptyStreamWith, watchTrack} from "../util/gum";
 import RtcError from '../util/error/rtcError';
@@ -2586,6 +2586,37 @@ class MediaHelper extends EventEmitter {
   
   disablePreProcessing(mediaType: "video"|"screen", keepFlag = false){
     disablePreProcessing(this, mediaType, keepFlag)
+  }
+  
+  getPreprocessingStats(mediaType: "video"|"screen" = "video"){
+    const history = this[mediaType].preProcessing?.history
+    if (!history?.length){
+      return null
+    }
+    const timeLen = history[history.length - 1].endTs - history[0].startTs
+    const spent: any = {
+      total: 0
+    }
+    for (let i = 0; i < history.length; i++){
+      spent.total += history[i].endTs - history[i].startTs
+      for (let handlerTs of history[i].handlerTs){
+        if (handlerTs.spent > 0){
+          if (!spent[handlerTs.name]){
+            spent[handlerTs.name] = 0
+          }
+          spent[handlerTs.name] += handlerTs.spent
+        }
+      }
+    }
+    const fps = history.length * 1000 / timeLen
+    const load = spent.total / timeLen
+    const delay = spent.total / history.length
+    return {
+      fps,
+      load,
+      delay,
+      spent,
+    }
   }
 
   destroy() {
