@@ -612,8 +612,10 @@ class Signalling extends EventEmitter {
               message: 'No this._protoo 2'
             })
           }
-          if (this._protoo.connected) {
-            this.logger.log('OnSignalRestart即将在3秒后执行重连')
+          if (this._protoo.connected && this.adapterRef.connectState.curState === 'CONNECTED') {
+            //sdk内部已经在重连中，不主动执行
+            
+            /*this.logger.log('OnSignalRestart即将在3秒后执行重连')
             const _protoo = this._protoo;
             setTimeout(()=>{
               if (_protoo !== this._protoo){
@@ -628,7 +630,7 @@ class Signalling extends EventEmitter {
               } else {
                 this.logger.log('OnSignalRestart取消重连。channelStatus：', this.adapterRef.channelStatus)
               }
-            }, 3 * 1000)
+            }, 3 * 1000)*/
           } else {
             this._reconnection()
           }

@@ -556,13 +556,13 @@ class Mediasoup extends EventEmitter {
               message: 'No _protoo 2'
             })
           }
-          const { transportId, iceParameters, iceCandidates, dtlsParameters, producerId } = 
+          const { code, transportId, iceParameters, iceCandidates, dtlsParameters, producerId } = 
             await this.adapterRef._signalling._protoo.request('Produce', producerData);
 
           if (transportId !== undefined) {
             this._sendTransport._id = transportId;
           }
-          this.loggerSend.log(`produce请求反馈结果, kind: ${kind}, producerId:`, producerId)
+          this.loggerSend.log(`produce请求反馈结果, code: ${code}, kind: ${kind}, producerId:`, producerId)
           let codecInfo = {codecParam: null, codecName: null};
           if (appData.mediaType === 'audio') {
             this._micProducerId = producerId
