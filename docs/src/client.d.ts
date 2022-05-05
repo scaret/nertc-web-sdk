@@ -481,7 +481,7 @@ declare interface Client{
     destroy(): void;
     
   /**
-   * 本地用户的角色已改变回调。
+   * `client-role-changed` 回调表示本地用户的角色已改变。
    * 
    * 直播场景下，当用户角色切换时会触发此回调，即主播切换为观众，或观众切换为主播时。
    */
@@ -493,7 +493,7 @@ declare interface Client{
   }) => void): void;
 
   /**
-   * 远端用户发布了音视频流。
+   * `stream-added` 回调表示远端用户发布了音视频流。
    *
    * * 通常收到该事件后需要订阅音视频，即调用 [[Stream.setSubscribeConfig]] 和 [[Client.subscribe]]
    * * 该事件会为每一个音频或视频单独触发一次。`evt.mediaType`标识了具体的媒体类型。
@@ -521,7 +521,7 @@ declare interface Client{
 
 
   /**
-   * 应用已接收远端音视频流。
+   * `stream-subscribed` 回调表示应用已接收远端音视频流。
    * 
    * * 通常收到该事件后需要播放远端音视频。即调用 [[Stream.setRemoteRenderMode]] 和 [[Stream.play]]
    * * 该事件会为每一个音频或视频单独触发一次。`evt.mediaType`标识了具体的媒体类型。
@@ -555,7 +555,7 @@ declare interface Client{
   }) => void): void;
 
   /**
-   * 应用已删除远端音视频流。
+   * `stream-removed` 回调表示应用已删除远端音视频流。
    * 
    * 远端用户调用 [[Client.unpublish]] 方法之后，会触发此回调。
    *
@@ -584,7 +584,7 @@ declare interface Client{
   }) => void): void;
 
   /**
-   * 该事件会返回当前房间内音量最大的用户的 uid。
+   * `active-speaker` 事件会返回当前房间内音量最大的用户的 uid。
    */
   on(event: "active-speaker", callback: (evt: {
     /**
@@ -594,7 +594,7 @@ declare interface Client{
   }) => void): void;
 
   /**
-   * 该事件会返回当前房间内除自己以外的用户的音量。
+   * `volume-indicator` 事件会返回当前房间内除自己以外的用户的音量。
    * @example
    * ```javascript
    * rtc.client.on("volume-indicator", (userList)=>{
@@ -617,7 +617,7 @@ declare interface Client{
   }[]) => void): void;
 
   /**
-   * 该事件表示有远端用户或主播加入房间。
+   * `peer-online` 事件表示有远端用户或主播加入房间。
    * 
    * - 通信场景中，该回调提示有远端用户加入了房间，并返回新加入房间的用户 ID。
    * - 直播场景中，该回调提示有主播角色加入了房间，并返回该主播的用户 ID。
@@ -635,7 +635,7 @@ declare interface Client{
   }) => void): void;
 
   /**
-   * 该事件表示远端用户或主播角色离开房间。
+   * `peer-leave` 事件表示远端用户或主播角色离开房间。
    * 
    * 以下场景中会触发该回调：
    * - 远端用户离开房间。
@@ -652,7 +652,7 @@ declare interface Client{
 
 
   /**
-   * 该事件表示远端用户静音其音频，即关掉自己的声音。
+   * `mute-audio` 事件表示远端用户静音其音频，即关掉自己的声音。
    */
   on(event: "mute-audio", callback: (evt: {
     /**
@@ -663,7 +663,7 @@ declare interface Client{
 
 
   /**
-   * 该事件表示远端用户取消静音，即打开自己的声音。
+   * `unmute-audio` 事件表示远端用户取消静音，即打开自己的声音。
    */
   on(event: "unmute-audio", callback: (evt: {
     /**
@@ -674,7 +674,7 @@ declare interface Client{
 
 
   /**
-   * 该事件表示远端用户在视频通话中关掉自己的视频。
+   * `mute-video` 事件表示远端用户在视频通话中关掉自己的视频。
    */
   on(event: "mute-video", callback: (evt: {
     /**
@@ -684,7 +684,7 @@ declare interface Client{
   }) => void): void;
   
   /**
-   * 该事件表示远端用户在视频通话中打开自己的视频。
+   * `unmute-video` 事件表示远端用户在视频通话中打开自己的视频。
    */
   on(event: "unmute-video", callback: (evt: {
     /**
@@ -694,7 +694,7 @@ declare interface Client{
   }) => void): void;
   
   /**
-   * 该事件表示远端用户暂停屏幕共享。
+   * `mute-screen` 事件表示远端用户暂停屏幕共享。
    */
   on(event: "mute-screen", callback: (evt: {
     /**
@@ -704,7 +704,7 @@ declare interface Client{
   }) => void): void;
 
   /**
-   * 该事件表示远端用户继续屏幕共享。
+   * `unmute-screen` 事件表示远端用户继续屏幕共享。
    */
   on(event: "unmute-screen", callback: (evt: {
     /**
@@ -714,7 +714,7 @@ declare interface Client{
   }) => void): void;
 
   /**
-   * 该事件表示本地用户被踢出房间。
+   * `client-banned` 事件表示本地用户被踢出房间。
    * 
    * @note 仅被踢出房间的用户会收到此回调。
    */
@@ -726,24 +726,31 @@ declare interface Client{
   }) => void): void;
   
   /**
-   * 该事件表示房间已关闭。
+   * `channel-closed` 事件表示房间已关闭。
    */
   on(event: "channel-closed", callback: () => void): void;
 
   /**
-   * 该事件表示本地用户停止屏幕共享。
+   * `stopScreenSharing` 表示本地用户停止屏幕共享。这通常是在屏幕共享浮窗上点击关闭触发的。
    */
   on(event: "stopScreenSharing", callback: (evt: {
   }) => void): void;
   
   /**
-   * 该事件表示本地用户停止屏幕共享音频。
+   * `stopScreenAudio`事件表示本地用户停止屏幕共享音频。这通常是在屏幕共享浮窗上点击关闭触发的。
    */
   on(event: "stopScreenAudio", callback: (evt: {
   }) => void): void;
 
   /**
-   * 该事件表示 SDK 与服务器的连接状态发生了变化。
+   * `connection-state-change`事件表示 SDK 与服务器的连接状态发生了变化。
+   * 
+   * @example 示例代码
+   * ```
+   * rtc.client.on('connection-state-change', (evt)=>{
+   *   console.log(`connection-state-change ${evt.prevState} => ${evt.curState}。是否重连：${evt.reconnect}`)
+   * })
+   * ```
    */
   on(event: "connection-state-change", callback: (evt: {
     /**
@@ -783,69 +790,69 @@ declare interface Client{
     reason:string }) => void): void;
   
   /**
-   * 音频轨道结束。造成的原因可能是设备被拔出。
+   * `audioTrackEnded` 事件表示音频轨道结束。造成的原因可能是设备被拔出。
    */
   on(event: "audioTrackEnded"): void;
 
   /**
-   * 视频频轨道结束。造成的原因可能是设备被拔出。
+   * `videoTrackEnded` 事件表示视频频轨道结束。造成的原因可能是设备被拔出。
    */
   on(event: "videoTrackEnded"): void;
 
   /**
-   * 该事件表示推流状态发生了变化。
+   * `rtmp-state` 事件表示RTMP旁路推流状态发生了变化。
    */
   on(event: "rtmp-state", callback: (state: RTMPTaskState) => void): void;
 
   /**
-   * 该事件展示房间中所有成员的上下行网络质量。
+   * `network-quality` 事件展示房间中所有成员的上下行网络质量。
    */
   on(event: "network-quality", callback: (netStatus: NetStatusItem[]) => void): void;
 
   /**
-   * 该事件展示了目前房间内的异常事件。
+   * `exception` 事件展示了目前房间内的异常事件。
    * 
    * 异常事件不是错误，但是往往会引起通话质量问题。
    */
   on(event: "exception", callback: (exceptionEvent: ClientExceptionEvt) => void): void;
 
   /**
-   * 该回调表示本地设置的媒体流加密密钥与房间中其他成员不一致，加入房间失败。
+   * `crypt-error` 回调表示本地设置的媒体流加密密钥与房间中其他成员不一致，加入房间失败。
    * 
    * 请通过 [[Client.setEncryptionSecret]] 重新设置加密密钥。
    */
   on(event: "crypt-error", callback: (evt: { cryptType: EncryptionMode }) => void): void;
 
   /**
-   * 获取设备权限被拒绝。
+   * `accessDenied` 事件表示获取设备权限被拒绝。
    */
   on(event: "accessDenied", callback: (
     mediaType: "audio"|"video"
   ) => void): void;
 
   /**
-   * 获取麦克风或摄像头权限时，无法找到指定设备。
+   * `notFound`事件表示获取麦克风或摄像头权限时，无法找到指定设备。
    */
   on(event: "notFound", callback: (
     mediaType: "audio"|"video"
   ) => void): void;
 
   /**
-   * 获取麦克风或摄像头权限时，遭遇未知错误错误。
+   * `deviceError`事件表示获取麦克风或摄像头权限时，遭遇未知错误错误。
    */
   on(event: "deviceError", callback: (
     mediaType: "audio"|"video"
   ) => void): void;
 
   /**
-   * 获取麦克风或摄像头权限时，设备被占用。
+   * `beOccupied`事件表示获取麦克风或摄像头权限时，设备被占用。
    */
   on(event: "beOccupied", callback: (
     mediaType: "audio"|"video"
   ) => void): void;
 
   /**
-   * 浏览器自动播放受限
+   * `notAllowedError`事件表示浏览器自动播放受限
    * 
    * @example
    * ```javascript
@@ -865,7 +872,7 @@ declare interface Client{
     ) => void): void;
 
   /**
-   * 该回调通知应用有音频输入设备被添加、更改或移除。
+   * `recording-device-changed` 回调通知应用有音频输入设备被添加、更改或移除。
    * * `ACTIVE`: 新增设备
    * * `INACTIVE`: 设备被移除
    * * `CHANGED`: 设备更改
@@ -894,7 +901,7 @@ declare interface Client{
   ) => void): void;
 
   /**
-   * 该回调通知应用有视频输入设备被添加、更改或移除。
+   * `camera-changed` 回调通知应用有视频输入设备被添加、更改或移除。
    * * `ACTIVE`: 新增设备
    * * `INACTIVE`: 设备被移除
    * * `CHANGED`: 设备更改
@@ -909,7 +916,7 @@ declare interface Client{
   ) => void): void;
 
   /**
-   * 该回调通知应用有音频输出设备被添加、更改或移除。
+   * `playout-device-change` 回调通知应用有音频输出设备被添加、更改或移除。
    * * `ACTIVE`: 新增设备
    * * `INACTIVE`: 设备被移除
    * * `CHANGED`: 设备更改
