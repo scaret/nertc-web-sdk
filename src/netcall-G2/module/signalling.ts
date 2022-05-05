@@ -36,12 +36,14 @@ class Signalling extends EventEmitter {
   public reconnectionControl:{
     current: SignalingConnectionConfig|null,
     next: SignalingConnectionConfig|null,
+    copynext: SignalingConnectionConfig|null, //这里实时存储备份一下next的重连参数，在ice断开重连时用到
     blocker: any,
     pausers: ((info: any)=>void)[],
     resumers: ((info: any)=>void)[],
   } = {
     current: null,
     next: null,
+    copynext: null,
     blocker: null,
     pausers: [],
     resumers: [],
@@ -87,11 +89,15 @@ class Signalling extends EventEmitter {
     this._destroyProtoo()
     this.reconnectionControl.current = null
     this.reconnectionControl.next = null
+    this.reconnectionControl.copynext = null
     this._reconnectionTimeout = 30 * 1000
     this._resolve = null
     this._reject = null
   }
 
+  //isReconnect: 当前是否在重连连接websocket
+  //isReconnectMeeting： 是否是websocket链接成功之后，发生的断开重连
+  //sdk的重连策略：http://doc.hz.netease.com/pages/editpage.action?pageId=332806101
   init(isReconnect:boolean, isReconnectMeeting:boolean) {
     if(this._reconnectionTimer) return Promise.resolve()
     
@@ -114,7 +120,6 @@ class Signalling extends EventEmitter {
       };
       this.adapterRef.channelInfo.wssArrIndex = connConfig.serverIndex;
       if (isReconnect){
-        // url = this.adapterRef.channelInfo.wssArr[this.adapterRef.channelInfo.wssArrIndex]
         if (isReconnectMeeting){
           // 重连期间
           this.adapterRef.logger.error(`Signalling 开始尝试第 ${connConfig.serverIndex + 1}/${this.adapterRef.channelInfo.wssArr.length} 台服务器的第 ${connConfig.times}/${getParameters().reconnectionMaxRetry} 次重连，退避时间：${connConfig.timeout}毫秒，服务器地址：${connConfig.url}`)
@@ -135,7 +140,7 @@ class Signalling extends EventEmitter {
       let nextConnConfig = Object.assign({}, connConfig)
       if (!connConfig.times){
         nextConnConfig.times = 1
-        nextConnConfig.serverIndex = 0
+        nextConnConfig.serverIndex = 1 //首次重连的场景下，next记录下个websocket服务器地址，不记录第一个
       }else{
         nextConnConfig.serverIndex++
       }
@@ -152,7 +157,7 @@ class Signalling extends EventEmitter {
       nextConnConfig.isJoinRetry = isReconnect
       nextConnConfig.isReconnection = isReconnectMeeting
       nextConnConfig.url = this.adapterRef.channelInfo.wssArr[nextConnConfig.serverIndex]
-      this.reconnectionControl.next = nextConnConfig
+      this.reconnectionControl.next = this.reconnectionControl.copynext = nextConnConfig
       if (this._reconnectionTimer){
         clearTimeout(this._reconnectionTimer)
       }
