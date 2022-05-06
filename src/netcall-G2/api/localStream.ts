@@ -2915,7 +2915,7 @@ class LocalStream extends EventEmitter {
       watermarkControl.updateWatermarks(options);
 
       this.client.apiFrequencyControl({
-        name: 'setCanvasWatermarkConfigs',
+        name: 'setLocalCanvasWatermarkConfigs',
         code: 0,
         param: JSON.stringify(options, null, 2)
       })
