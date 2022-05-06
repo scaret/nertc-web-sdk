@@ -10,8 +10,9 @@ import {
   NERtcTimestampWatermarkConfig, PreProcessingConfig, PreProcessingHandler,
 } from "../../types";
 import {checkExists, checkValidFloat, checkValidInteger, isExistOptions} from "../../util/param";
-import {numberToRGBA} from "./util";
+import {measureText, numberToRGBA} from "./util";
 import {MediaHelper} from "../media";
+import {getParameters} from "../parameters";
 
 
 export class EncoderWatermarkControl extends EventEmitter{
@@ -28,7 +29,10 @@ export class EncoderWatermarkControl extends EventEmitter{
       defaultStyle: {
         left: 0,
         top: 0,
-        font: "15pt Verdana",
+        textWidth: 0,
+        textHeight: 0,
+        fontSize: "15pt",
+        fontFamily: getParameters().encoderWatermarkFontFamily,
         fillStyle: "white",
         textBaseline: "hanging",
 
@@ -53,19 +57,14 @@ export class EncoderWatermarkControl extends EventEmitter{
         }else{
           content = item.content || ""
         }
-        config.canvasCtx.font = item.style.font
+        config.canvasCtx.font = `${item.style.fontSize} ${item.style.fontFamily}`
         config.canvasCtx.textBaseline = item.style.textBaseline;
         const text = item.content || ""
 
         // 先画背景
         if (item.style.bgWidth === -1 && item.style.bgHeight === -1){
-          const textSize:TextMetrics = config.canvasCtx.measureText(text)
-          if (item.style.bgWidth === -1){
-            item.style.bgWidth = textSize.width
-          }
-          if (item.style.bgHeight === -1){
-            item.style.bgHeight = textSize.emHeightDescent
-          }
+          item.style.bgWidth = item.style.textWidth
+          item.style.bgHeight = item.style.textHeight
         }
 
         if (item.style.bgWidth && item.style.bgHeight){
@@ -399,12 +398,15 @@ export class EncoderWatermarkControl extends EventEmitter{
 
         // 文字大小
         if (typeof item.fontSize === "number"){
-          style.font = `${item.fontSize}pt Verdana`;
+          style.fontSize = `${item.fontSize}pt`;
         }else if (!item.fontSize){
           // 维持默认值
         }else if (typeof item.fontSize === "string"){
-          style.font = item.fontSize;
+          style.fontSize = item.fontSize;
         }
+        const textSize = measureText(item.content, style.fontSize, style.fontFamily)
+        style.textWidth = textSize.width
+        style.textHeight = textSize.height
 
         // 左边距
         if (item.offsetX){
@@ -462,12 +464,15 @@ export class EncoderWatermarkControl extends EventEmitter{
 
         // 文字大小
         if (typeof item.fontSize === "number"){
-          style.font = `${item.fontSize}pt Verdana`;
+          style.fontSize = `${item.fontSize}pt`;
         }else if (!item.fontSize){
           // 维持默认值
         }else if (typeof item.fontSize === "string"){
-          style.font = item.fontSize;
+          style.fontSize = item.fontSize;
         }
+        const textSize = measureText(content, style.fontSize, style.fontFamily)
+        style.textWidth = textSize.width
+        style.textHeight = textSize.height
 
         // 左边距
         if (item.offsetX){

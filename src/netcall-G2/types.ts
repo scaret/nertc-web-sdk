@@ -1049,7 +1049,10 @@ export interface EncoderWatermarkStyle{
   textBaseline: CanvasTextBaseline;
   left: number;
   top: number;
-  font: string;
+  fontSize: string;
+  textWidth: number;
+  textHeight: number;
+  fontFamily: string;
   fillStyle: string;
 
   bgWidth: number;

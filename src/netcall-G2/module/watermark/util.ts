@@ -15,4 +15,25 @@ export function numberToRGBA (num: number){
     alpha = 1;
   }
   return `rgba(${r}, ${g}, ${b}, ${alpha})`
-};
+}
+
+/*
+  副作用：会造成dom卡顿，不要老是调用
+ */
+export function measureText (text: string, fontSize: string, fontFamily: string) {
+  let div = document.createElement("div")
+  let span = document.createElement("span")
+  span.innerText = text
+  span.style.fontSize = fontSize
+  span.style.fontFamily = fontFamily
+  div.style.opacity = "0"
+  div.style.position = "absolute"
+  div.style.height = fontSize
+  document.body.appendChild(div)
+  div.appendChild(span)
+  const height = div.clientHeight
+  const width = span.offsetWidth
+  div.remove()
+  return {width, height}
+}
+

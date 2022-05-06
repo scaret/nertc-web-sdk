@@ -69,6 +69,8 @@ interface IParameters{
   trustOnOnline: boolean,
   // 部分浏览器加载编解码器需要时间。如果浏览器不支持H264，则等待多少毫秒
   h264Wait: number,
+  // 编码水印字体
+  encoderWatermarkFontFamily: string;
   // 强行开启encodedInsertableStreams
   forceEncodedInsertableStreams: boolean,
   // 强行将向服务端上报的customEncryption flag设为false
@@ -131,6 +133,7 @@ let parameters:IParameters = {
   leaveOnUnload: true,
   trustOnOnline: false,
   h264Wait: 1000,
+  encoderWatermarkFontFamily: "Verdana",
   forceEncodedInsertableStreams: false,
   forceCustomEncryptionOff: false,
   h264StrictHigh: false,
