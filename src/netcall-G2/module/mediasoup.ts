@@ -20,7 +20,7 @@ import { RtcSystem } from '../util/rtcUtil/rtcSystem'
 class Mediasoup extends EventEmitter {
   private adapterRef:AdapterRef;
   private _consumers: {[consumerId: string]: any} = {};
-  private _timeout: number = 30 * 1000;
+  private _timeout: number = 60 * 1000;
   public _edgeRtpCapabilities: any|null = null;
   private _mediasoupDevice:Device|null = null;
   private _sendTransportIceParameters:null = null;
@@ -144,7 +144,6 @@ class Mediasoup extends EventEmitter {
   }
 
   _reset() {
-    this._timeout = 30 * 1000
     this._edgeRtpCapabilities = null
     this._mediasoupDevice = null
     
@@ -304,11 +303,11 @@ class Mediasoup extends EventEmitter {
         if (this._sendTransport) {
           if (!this._sendTransportTimeoutTimer) {
             this._sendTransportTimeoutTimer = setTimeout(()=>{
-              this._sendTransportConnectTimeout()
+              this._reconnectTransportConnectTimeout()
             }, this._timeout)
           }
           
-          let iceParameters = null
+          /*let iceParameters = null
           if (this._protoo && this._protoo.connected) {
             if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
               throw new RtcError({
@@ -318,11 +317,12 @@ class Mediasoup extends EventEmitter {
             }
             iceParameters = await this.adapterRef._signalling._protoo.request('restartIce', { transportId: this._sendTransport.id });
             await this._sendTransport.restartIce({ iceParameters });
-          }
+          }*/
         }
       } catch (e){
-        this.loggerSend.error('restartIce() | failed:', e,name, e.message);
+        this.loggerSend.error('reconnectSendTransportConnect() | failed:', e,name, e.message);
       }
+
     } else if (connectionState === 'connected') {
       if (this._sendTransportTimeoutTimer) {
         clearTimeout(this._sendTransportTimeoutTimer)
@@ -343,17 +343,17 @@ class Mediasoup extends EventEmitter {
         if (this._recvTransport) {
           if (!this._recvTransportTimeoutTimer) {
             this._recvTransportTimeoutTimer = setTimeout(()=>{
-              this._recvTransportConnectTimeout()
+              this._reconnectTransportConnectTimeout()
             }, this._timeout)
           }
-          let iceParameters = null
+          /*let iceParameters = null
           if (this._protoo && this._protoo.connected) {
             iceParameters = await this._protoo.request('restartIce', { transportId: this._recvTransport.id });
             await this._recvTransport.restartIce({ iceParameters });
-          }
+          }*/
         }
       } catch (e){
-        this.loggerRecv.error('restartIce() | failed:', e.name, e.message);
+        this.loggerRecv.error('reconnectRecvTransportConnect() | failed:', e.name, e.message);
       }
     } else if (connectionState === 'connected') {
       if (this._recvTransportTimeoutTimer) {
@@ -367,13 +367,13 @@ class Mediasoup extends EventEmitter {
     this.loggerSend.warn('媒体上行传输通道连接失败')
     if (this.adapterRef._signalling){
       if(this.adapterRef.connectState.curState === 'CONNECTED'){
-        this.loggerSend.error('媒体上行传输通道连接失败，尝试整体重连')
+        this.loggerSend.log('媒体上行传输通道连接失败，尝试整体重连')
         this.adapterRef.channelStatus = 'connectioning'
+        this.adapterRef._signalling.reconnectionControl.next = this.adapterRef._signalling.reconnectionControl.copynext
         this.adapterRef._signalling._reconnection()
       } else {
         this.loggerSend.error('媒体上行传输通道建立失败，抛错错误')
         this.adapterRef.instance.emit('error', 'SOCKET_ERROR')
-        // this.adapterRef.instance.leave()
       }
     }
   }
@@ -384,13 +384,19 @@ class Mediasoup extends EventEmitter {
       if (this.adapterRef.connectState.curState === 'CONNECTED'){
         this.loggerRecv.error('媒体下行传输通道连接失败，尝试整体重连')
         this.adapterRef.channelStatus = 'connectioning'
+        this.adapterRef._signalling.reconnectionControl.next = this.adapterRef._signalling.reconnectionControl.copynext
         this.adapterRef._signalling._reconnection()
       }else{
         this.loggerRecv.error('媒体下行传输通道建立失败，抛错错误')
         this.adapterRef.instance.emit('error', 'SOCKET_ERROR')
-        // this.adapterRef.instance.leave()
       }
     }
+  }
+
+  async _reconnectTransportConnectTimeout(){
+    this.loggerRecv.error('媒体传输通道一直重连失败，主动退出房间')
+    this.adapterRef.instance.emit('error', 'MEDIA_TRANSPORT_DISCONNECT')
+    this.adapterRef.instance.leave()
   }
 
   async createProduce (stream:LocalStream, mediaTypeInput: "all"|"audio"|"video"|"screen") {
@@ -556,13 +562,13 @@ class Mediasoup extends EventEmitter {
               message: 'No _protoo 2'
             })
           }
-          const { transportId, iceParameters, iceCandidates, dtlsParameters, producerId } = 
+          const { code, transportId, iceParameters, iceCandidates, dtlsParameters, producerId } = 
             await this.adapterRef._signalling._protoo.request('Produce', producerData);
 
           if (transportId !== undefined) {
             this._sendTransport._id = transportId;
           }
-          this.loggerSend.log(`produce请求反馈结果, kind: ${kind}, producerId:`, producerId)
+          this.loggerSend.log(`produce请求反馈结果, code: ${code}, kind: ${kind}, producerId:`, producerId)
           let codecInfo = {codecParam: null, codecName: null};
           if (appData.mediaType === 'audio') {
             this._micProducerId = producerId

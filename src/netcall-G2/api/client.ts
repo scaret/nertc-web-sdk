@@ -337,7 +337,7 @@ class Client extends Base {
       if (!options.channelName || options.channelName === '') { 
         throw new RtcError({code: ErrorCode.INVALID_PARAMETER, message:'join: 请填写房间名称'})
       }
-      if (options.joinChannelRecordConfig){
+      if (options.joinChannelRecordConfig) {
         checkValidBoolean({
           tag: "joinOptions.joinChannelRecordConfig.recordAudio should be boolean",
           value: options.joinChannelRecordConfig.recordAudio,

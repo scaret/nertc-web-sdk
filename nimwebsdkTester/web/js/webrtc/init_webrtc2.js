@@ -1209,12 +1209,12 @@ $('#enableCodecHacking').on('change', ()=>{
 function getVideoSource(mediaType){
   let defaultStr = "1920x1080x15x1"
   const optionsStr = prompt(
-`自定义${mediaType}配置：【宽x高x帧率x类型
-类型1：时钟; 
-类型2：背景替换;
-类型3：随机颜色;
-类型4：屏幕共享;
-`
+  `自定义${mediaType}配置：【宽x高x帧率x类型
+  类型1：时钟; 
+  类型2：背景替换;
+  类型3：随机颜色;
+  类型4：屏幕共享;
+  `
     , defaultStr) || defaultStr
   const matches = optionsStr.match(/(\d+)x(\d+)x(\d+)x(\d+)/);
   if (!matches){
