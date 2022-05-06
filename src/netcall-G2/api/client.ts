@@ -458,7 +458,7 @@ class Client extends Base {
         code: -1,
         param: {
           ...options,
-          reason: e.getMessage()
+          reason: e.message
         }
       })
       throw e;
@@ -1615,7 +1615,7 @@ class Client extends Base {
         code: -1,
         param: {
           clientUid: this.getUid(),
-          reason: e.getMessage()
+          reason: e.message
         }
       })
       throw e
@@ -1670,7 +1670,7 @@ class Client extends Base {
         code: -1,
         param: {
           clientUid: this.getUid(),
-          reason: e.getMessage()
+          reason: e.message
         }
       })
       throw e
@@ -1725,7 +1725,7 @@ class Client extends Base {
         code: -1,
         param: {
           clientUid: this.getUid(),
-          reason: e.getMessage()
+          reason: e.message
         }
       })
       throw e
