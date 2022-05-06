@@ -1326,10 +1326,11 @@ class RemoteStream extends EventEmitter {
       watermarkControl.checkWatermarkParams(options);
       watermarkControl.updateWatermarks(options);
 
+      const param = Object.assign({uid: this.stringStreamID}, options)
       this.client.apiFrequencyControl({
-        name: 'setCanvasWatermarkConfigs',
+        name: 'setRemoteCanvasWatermarkConfigs',
         code: 0,
-        param: JSON.stringify(options, null, 2)
+        param: JSON.stringify(param, null, 2)
       })
     }else{
       this.logger.error("setCanvasWatermarkConfigs：播放器未初始化");
