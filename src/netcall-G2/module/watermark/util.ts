@@ -21,6 +21,9 @@ export function numberToRGBA (num: number){
   副作用：会造成dom卡顿，不要老是调用
  */
 export function measureText (text: string, fontSize: string, fontFamily: string) {
+  if (!text){
+    return {width: 0, height: 0}
+  }
   let div = document.createElement("div")
   let span = document.createElement("span")
   span.innerText = text
