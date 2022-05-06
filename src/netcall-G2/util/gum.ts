@@ -95,11 +95,11 @@ async function getScreenStream (constraint:MediaStreamConstraints, logger:ILogge
 
 //监测track状态
 const trackWatcher = ()=>{
-  const videoTracks = getParameters().tracks.video as NeMediaStreamTrack[]
-  const audioTracks = getParameters().tracks.audio as NeMediaStreamTrack[]
+  const videoTracks = getParameters().tracks.video as (NeMediaStreamTrack|null)[]
+  const audioTracks = getParameters().tracks.audio as (NeMediaStreamTrack|null)[]
   const now = Date.now()
   videoTracks.forEach((track, i)=>{
-    if (!track.endedAt && track.readyState === "ended"){
+    if (track && !track.endedAt && track.readyState === "ended"){
       logger.log(`VIDEOTRACK#${i} 已停止：【${track.label}】`)
       track.endedAt = now
       const evt = new CustomEvent("neTrackEnded")
@@ -107,7 +107,7 @@ const trackWatcher = ()=>{
     }
   })
   audioTracks.forEach((track, i)=>{
-    if (!track.endedAt && track.readyState === "ended"){
+    if (track && !track.endedAt && track.readyState === "ended"){
       logger.log(`AUDIOTRACK#${i} 已停止：【${track.label}】`)
       track.endedAt = now
       const evt = new CustomEvent("neTrackEnded")
