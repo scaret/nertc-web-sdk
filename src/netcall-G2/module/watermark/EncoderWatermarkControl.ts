@@ -302,6 +302,7 @@ export class EncoderWatermarkControl extends EventEmitter{
           tag: 'Stream.setEncoderWatermarkConfigs:imageWatermarks.fps',
           value: watermark.fps,
           min: 0,
+          max: 30,
         };
         if (isExistOptions(fpsCheck).result){
           checkValidFloat(fpsCheck);
