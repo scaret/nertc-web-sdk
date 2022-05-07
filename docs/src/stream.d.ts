@@ -1038,24 +1038,26 @@ declare interface Stream {
      * ```
      * // rtc.localStream.init()后
      * rtc.localStream.setEncoderWatermarkConfigs({
-        "mediaType": "video",
-        "timestampWatermarks": {},
-        "textWatermarks": [
-          {
-            "content": "网易云信",
-            "offsetX": 200,
-            "offsetY": 200
-          }
-        ],
-        "imageWatermarks": [
-          {
-            "imageUrls": [
-              "img/logo_yunxin.png"
-            ],
-            "loop": true
-          }
-        ]
-      })
+     *    "mediaType": "video",
+     *    "textWatermarks": [
+     *      {
+     *        "content": "网易云信",
+     *        "offsetX": 200,
+     *        "offsetY": 200
+     *      }
+     *    ]
+     *  })
+     * rtc.localStream.setEncoderWatermarkConfigs({
+     *    "mediaType": "screen",
+     *    "imageWatermarks": [
+     *      {
+     *        "imageUrls": [
+     *          "img/logo_yunxin.png"
+     *        ],
+     *        "loop": true
+     *      }
+     *    ]
+     *  })
      * ```
      * 
      */
