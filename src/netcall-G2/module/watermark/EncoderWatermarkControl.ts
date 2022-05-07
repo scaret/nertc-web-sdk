@@ -113,6 +113,17 @@ export class EncoderWatermarkControl extends EventEmitter{
   
   checkWatermarkParams(options: NERtcEncoderWatermarkConfig){
     // 因为水印的参数检查太长了，所以从stream.ts挪到这里
+    let wmCounts =
+      (options.textWatermarks?.length || 0) + 
+      (options.timestampWatermarks ? 1 : 0) + 
+      (options.imageWatermarks?.length || 0)
+    const wmCountCheck = {
+      tag: 'Stream.setEncoderWatermarkConfigs:watermarks.count',
+      value: wmCounts,
+      max: getParameters().encoderWatermarkLimit,
+    };
+    checkValidInteger(wmCountCheck);
+    
     if (options.textWatermarks){
       options.textWatermarks.forEach((watermark)=>{
         // 检查文字水印字体参数
