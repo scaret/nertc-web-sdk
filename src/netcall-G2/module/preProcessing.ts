@@ -86,11 +86,7 @@ export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: 
   }
   
   // 4. 处理具体的前处理钩子
-  if (preProcessing.timer){
-    clearInterval(preProcessing.timer)
-  }
-  const interval = Math.floor(1000 / fps)
-  preProcessing.timer = getRTCTimer().setInterval(async ()=>{
+  const drawFrame = async ()=>{
     if (preProcessing){
       if (preProcessing.videoElem.videoWidth && preProcessing.videoElem.videoHeight){
         if (
@@ -133,7 +129,17 @@ export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: 
         // preProcessingPureColor(mediaHelper, mediaType, preProcessing)
       }
     }
-  }, interval)
+  }
+  if (preProcessing.timer){
+    clearInterval(preProcessing.timer)
+  }
+  const interval = Math.floor(1000 / fps)
+  try{
+    drawFrame()
+  }catch(e){
+    mediaHelper.logger.error(`drawFrame`, e.name, e.message, e.stack)
+  }
+  preProcessing.timer = getRTCTimer().setInterval(drawFrame, interval)
   mediaHelper[mediaType].preProcessingEnabled = true
 }
 
@@ -155,6 +161,9 @@ export async function disablePreProcessing(mediaHelper: MediaHelper, mediaType: 
     mediaHelper.logger.warn(`disablePreProcessing ${mediaType}:当前没有前处理配置`)
     return
   }
+  
+  // 0. 去除最后一帧
+  preProcessing.canvasCtx.clearRect(0, 0, preProcessing.canvasElem.width, preProcessing.canvasElem.height)
 
   // 1. 处理前处理钩子
   if (preProcessing?.timer){

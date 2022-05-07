@@ -71,6 +71,8 @@ interface IParameters{
   h264Wait: number,
   // 编码水印字体
   encoderWatermarkFontFamily: string;
+  // 编码水印最大数量
+  encoderWatermarkLimit: number;
   // 强行开启encodedInsertableStreams
   forceEncodedInsertableStreams: boolean,
   // 强行将向服务端上报的customEncryption flag设为false
@@ -133,6 +135,7 @@ let parameters:IParameters = {
   leaveOnUnload: true,
   trustOnOnline: false,
   h264Wait: 1000,
+  encoderWatermarkLimit: 1,
   encoderWatermarkFontFamily: "Verdana",
   forceEncodedInsertableStreams: false,
   forceCustomEncryptionOff: false,
