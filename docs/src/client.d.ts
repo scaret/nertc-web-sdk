@@ -138,12 +138,17 @@ declare interface Client{
     unsubscribe(stream: Stream): Promise<void>;
     /**
      * 开启双流模式
-     * 
-     * 该方法在 Publish 端，即发送端，开启双流模式。该方法建议在加入频道（Client.join）后调用。
-     * 
+     *
      * 双流为视频大流和视频小流，其中视频大流指高分辨率、高码率的视频流，视频小流指低分辨率、低码率的视频流。
+     *
+     * @since V4.6.0
      * 
-     * 请在调用 [[Client.publish]] 之前调用该方法。
+     * @note 注意事项
+     * * 该方法在 Publish 端，即发送端调用。该方法建议在 [[Client.join]] 后、[[Client.publish]] 前调用。
+     * * 接收端大小流通过 [[Client.subscribe]] 和 [[Client.setRemoteStreamType]] 进行调用和切换。
+     * * 视频小流的目标码率为100kbps，屏幕共享小流的目标码率为200kbps。
+     * * SDK会尝试使用接近 180p(240x180) 的低分辨率进行重新采集以提高编解码效率。浏览器会尽量在保证长宽比的情况下使小流的采集接近180p。但由于浏览器和摄像头的限制，小流的分辨率也会出现240p、480p甚至与大流一致的情况，这些都为正常现象。
+     * 
      * 
      * ```javascript
      * // 加入频道后
@@ -161,8 +166,7 @@ declare interface Client{
      *   uid: 1234
      * });
      * ```
-     * 
-     * @since V4.6.0
+     *
      */
     enableDualStream(dualStreamSetting?: {video: boolean; screen: boolean}): void;
 
