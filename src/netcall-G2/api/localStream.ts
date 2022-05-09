@@ -684,14 +684,8 @@ class LocalStream extends EventEmitter {
             }
             this.videoPlay_ = true;
           }catch(error) {
-            // let ErrorMessage = 'NotAllowedError: videoplay is not allowed in current browser, please refer to https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082' 
-            // throw new RtcError({
-            //   code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
-            //   message: ErrorMessage
-            // })
             this.videoPlay_ = false;
-            this.client.emit('notAllowedError', error)
-            this.client.emit('NotAllowedError', error) // 兼容临时版本客户
+            this.logger.log('localStream play video error ', error);
           }
         }  
       }
@@ -707,8 +701,7 @@ class LocalStream extends EventEmitter {
             this.screenPlay_ = false;
           }catch(error){
             this.screenPlay_ = false;
-            this.client.emit('notAllowedError', error)
-            this.client.emit('NotAllowedError', error) // 兼容临时版本客户
+            this.logger.log('localStream play screen error ', error);
           }
         }
       }
@@ -2922,7 +2915,7 @@ class LocalStream extends EventEmitter {
       watermarkControl.updateWatermarks(options);
 
       this.client.apiFrequencyControl({
-        name: 'setCanvasWatermarkConfigs',
+        name: 'setLocalCanvasWatermarkConfigs',
         code: 0,
         param: JSON.stringify(options, null, 2)
       })

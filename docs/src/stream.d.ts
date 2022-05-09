@@ -1028,7 +1028,9 @@ declare interface Stream {
      *
      * @note 注意事项
      * * setEncoderWatermarkConfigs 方法仅作用于本地视频画布，且直接影响视频流。视频流截图时，图片中包含水印。
+     * * 水印数量最多为1个。如有图文组合水印需求，可自行合成为1个图片。
      * * 由于浏览器策略限制，图片必须存于同一域名下。
+     * * 文字水印不具备折行功能。
      *
      * @param options 编码水印设置。支持设置文字水印、图片水印和时间戳水印，设置为 null 表示清除水印。
      * 
@@ -1036,24 +1038,26 @@ declare interface Stream {
      * ```
      * // rtc.localStream.init()后
      * rtc.localStream.setEncoderWatermarkConfigs({
-        "mediaType": "video",
-        "timestampWatermarks": {},
-        "textWatermarks": [
-          {
-            "content": "网易云信",
-            "offsetX": 200,
-            "offsetY": 200
-          }
-        ],
-        "imageWatermarks": [
-          {
-            "imageUrls": [
-              "img/logo_yunxin.png"
-            ],
-            "loop": true
-          }
-        ]
-      })
+     *    "mediaType": "video",
+     *    "textWatermarks": [
+     *      {
+     *        "content": "网易云信",
+     *        "offsetX": 200,
+     *        "offsetY": 200
+     *      }
+     *    ]
+     *  })
+     * rtc.localStream.setEncoderWatermarkConfigs({
+     *    "mediaType": "screen",
+     *    "imageWatermarks": [
+     *      {
+     *        "imageUrls": [
+     *          "img/logo_yunxin.png"
+     *        ],
+     *        "loop": true
+     *      }
+     *    ]
+     *  })
      * ```
      * 
      */
@@ -1072,6 +1076,35 @@ declare interface Stream {
     on(event: "device-error", callback: (
       type: "audio"|"video"|"screen",
       error: any
+    ) => void): void;
+
+
+  /**
+   * `notAllowedError` 事件表示浏览器自动播放受限
+   * 
+   * @example
+   * ```javascript
+   * rtc.remoteStream.on("notAllowedError", (evt) => {
+   *   // 获取错误码
+   *   const errorCode = evt.getCode();
+   *   // 判断为自动播放受限
+   *   if(errorCode === 41030){
+   *      // 手势操作恢复
+   *      $("#button").on("click", async () => {
+   *         await remoteStream.resume();
+   *         $("#button").hide();
+   *      });
+   *   }
+   * });
+   * ```
+   */
+   on(event: "notAllowedError", callback: (
+    evt: {
+      /**
+      * 错误码
+      */
+      erroCode: Number
+    }
     ) => void): void;
 
 }

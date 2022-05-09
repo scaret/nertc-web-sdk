@@ -217,6 +217,15 @@ class RemoteStream extends EventEmitter {
     })
   }
 
+  safeEmit (eventName:string, ...args: any[]){
+    // remoteStream 抛出的事件
+    try{
+      this.emit(eventName, ...args);
+    }catch(e){
+      this.logger.error(`Error on event ${eventName}: ${e.name} ${e.message}`, e.stack);
+    }
+  }
+
   _reset () {
     // 即使remoteStream销毁了，也不要删除streamId属性，这样用户能够通过getId知道谁销毁了
     // this.streamID = ''
@@ -505,8 +514,13 @@ class RemoteStream extends EventEmitter {
           this.audioPlay_ = true;
         }catch(error) {
           this.audioPlay_ = false;
-          this.client.emit('notAllowedError', error) 
-          this.client.emit('NotAllowedError', error) // 兼容临时版本客户
+          let err = {
+            error: error,
+            uid: this.stringStreamID
+          }
+          this.client.emit('notAllowedError', err) 
+          this.client.emit('NotAllowedError', err) // 兼容旧版本
+          this.safeEmit('notAllowedError', error)
         }
       }
     }
@@ -538,8 +552,13 @@ class RemoteStream extends EventEmitter {
             //   message: ErrorMessage
             // })
             this.videoPlay_ = false;
-            this.client.emit('notAllowedError', error) 
-            this.client.emit('NotAllowedError', error) // 兼容临时版本客户
+            let err = {
+              error: error,
+              uid: this.stringStreamID
+            }
+            this.client.emit('notAllowedError', err) 
+            this.client.emit('NotAllowedError', err) // 兼容旧版本
+            this.safeEmit('notAllowedError', error)
           }
         }  
       }
@@ -555,8 +574,13 @@ class RemoteStream extends EventEmitter {
             this.screenPlay_ = false;
           }catch(error){
             this.screenPlay_ = false;
-            this.client.emit('notAllowedError', error)
-            this.client.emit('NotAllowedError', error) // 兼容临时版本客户
+            let err = {
+              error: error,
+              uid: this.stringStreamID
+            }
+            this.client.emit('notAllowedError', err) 
+            this.client.emit('NotAllowedError', err) // 兼容旧版本
+            this.safeEmit('notAllowedError', error)
           }
         }
       }
@@ -1302,10 +1326,11 @@ class RemoteStream extends EventEmitter {
       watermarkControl.checkWatermarkParams(options);
       watermarkControl.updateWatermarks(options);
 
+      const param = Object.assign({uid: this.stringStreamID}, options)
       this.client.apiFrequencyControl({
-        name: 'setCanvasWatermarkConfigs',
+        name: 'setRemoteCanvasWatermarkConfigs',
         code: 0,
-        param: JSON.stringify(options, null, 2)
+        param: JSON.stringify(param, null, 2)
       })
     }else{
       this.logger.error("setCanvasWatermarkConfigs：播放器未初始化");

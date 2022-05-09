@@ -1049,7 +1049,10 @@ export interface EncoderWatermarkStyle{
   textBaseline: CanvasTextBaseline;
   left: number;
   top: number;
-  font: string;
+  fontSize: string;
+  textWidth: number;
+  textHeight: number;
+  fontFamily: string;
   fillStyle: string;
 
   bgWidth: number;
@@ -1308,8 +1311,10 @@ export interface RTSTransportOptions{
   adapterRef: AdapterRef;
 }
 
+export type PreProcessingHandlerName = "copy"|"color"|"watermark"
+
 export interface PreProcessingHandler{
-  name: "copy"|"color"|"watermark";
+  name: PreProcessingHandlerName;
   func: (mediaHelper: MediaHelper, mediaType: "video"|"screen", config: PreProcessingConfig)=>void
 }
 
@@ -1324,8 +1329,19 @@ export interface PreProcessingConfig{
   videoElem: HTMLVideoElement;
   videoTrack: MediaStreamTrack|null;
   canvasElem: HTMLCanvasElement;
-  handlers: PreProcessingHandler[];
+  handlers: (PreProcessingHandler|undefined)[];
+  mirror: boolean;
+  history: PreProcessingHistoryInfo[];
   timer: number|null;
+}
+
+export interface PreProcessingHistoryInfo{
+  startTs: number;
+  endTs: number;
+  handlerTs: {
+    name: string;
+    spent: number;
+  }[]
 }
 
 export interface FormatMediaOptions{
