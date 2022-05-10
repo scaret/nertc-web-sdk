@@ -538,6 +538,11 @@ export interface StatsReportOptions{
   adapterRef: AdapterRef;
 }
 
+export interface AudioLevelOptions{
+  stream: MediaStream;
+  adapterRef: AdapterRef;
+}
+
 export interface WebAudioOptions{
   logger: ILogger;
   isAnalyze?: boolean;

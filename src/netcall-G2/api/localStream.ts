@@ -20,8 +20,8 @@ import {
   AudioEffectOptions, GetStreamConstraints, Client as IClient, NERtcEncoderWatermarkConfig
 } from "../types";
 import {MediaHelper} from "../module/media";
-import {isExistOptions} from "../util/param";
-
+import {checkExists, isExistOptions, checkValidInteger} from "../util/param";
+import {AudioLevel} from '../module/audioLevel';
 import {
   ReportParamEnableEarback,
   ReportParamSetExternalAudioRender,
@@ -111,6 +111,7 @@ class LocalStream extends EventEmitter {
   public mediaHelper:MediaHelper;
   _play: Play|null;
   private _record: Record|null;
+  private audioLevelHelper: AudioLevel|null = null;
   public audioProfile:string;
   public videoProfile: {
     frameRate: number;
@@ -348,6 +349,10 @@ class LocalStream extends EventEmitter {
       this._record.destroy()
     }
     this._record = null
+    if (this.audioLevelHelper) {
+      this.audioLevelHelper.destroy()
+    }
+    this.audioLevelHelper = null
   }
 
   get Play() {
@@ -969,6 +974,9 @@ class LocalStream extends EventEmitter {
           if(this.mediaHelper){
             const constraint = {audio: true, audioDeviceId: deviceId, audioSource};
             await this.mediaHelper.getStream(constraint);
+            if (this.audioLevelHelper && this.mediaHelper.audio.audioStream) {
+              this.audioLevelHelper.updateStream(this.mediaHelper.audio.audioStream)
+            }
             if (deviceId){
               this.microphoneId = deviceId;
             }
@@ -1307,6 +1315,10 @@ class LocalStream extends EventEmitter {
         }
         this.audio = false
         this.mediaHelper.stopStream('audio')
+        if (this.audioLevelHelper) {
+          this.audioLevelHelper.disconnect()
+        }
+
         if (this.getAdapterRef()){
           if (this.mediaHelper.getAudioInputTracks().length > 0){
             this.logger.log('Stream.close:关闭音频，保留发布：', type);
@@ -1585,7 +1597,10 @@ class LocalStream extends EventEmitter {
    * @return {volume}
    */
   getAudioLevel () {
-    return this.mediaHelper.getGain()
+    if (!this.audioLevelHelper && this.mediaHelper.getAudioTrack()){
+      this.audioLevelHelper = new AudioLevel({adapterRef: this.client.adapterRef, stream: this.mediaHelper.audio.audioStream})
+    }
+    return this.audioLevelHelper?.getAudioLevel() || 0
   }
 
   /**

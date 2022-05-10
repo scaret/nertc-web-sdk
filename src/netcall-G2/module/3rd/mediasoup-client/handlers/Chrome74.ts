@@ -801,6 +801,9 @@ export class Chrome74 extends HandlerInterface
         transceiver = this._pc.addTransceiver(kind, { direction: "recvonly" });
         offer = await this._pc.createOffer();
         offer.sdp = offer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`)
+        if (offer.sdp.indexOf('a=fmtp:111')) {
+          offer.sdp = offer.sdp.replace(/a=fmtp:111 ([0-9=;a-zA-Z-]*)/, 'a=fmtp:111 minptime=10;stereo=1;sprop-stereo=1;useinbandfec=1')
+        }
         Logger.debug(prefix, 'prepareLocalSdp() | calling pc.setLocalDescription()');
         await this._pc.setLocalDescription(offer);
       }
@@ -898,17 +901,24 @@ export class Chrome74 extends HandlerInterface
     }
     offer.sdp = offer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`)
     
-    this._remoteSdp!.receive(
-      {
-        mid                : localId,
-        kind,
-        offerRtpParameters : rtpParameters,
-        streamId           : rtpParameters.rtcp!.cname!,
-        trackId,
-        reuseMid,
-      });
+    if (offer.sdp.indexOf('a=fmtp:111')) {
+      offer.sdp = offer.sdp.replace(/a=fmtp:111 ([0-9=;a-zA-Z]*)/, 'a=fmtp:111 minptime=10;stereo=1;sprop-stereo=1;useinbandfec=1')
+    }
+
+    this._remoteSdp!.receive({
+      mid                : localId,
+      kind,
+      offerRtpParameters : rtpParameters,
+      streamId           : rtpParameters.rtcp!.cname!,
+      trackId,
+      reuseMid,
+    });
 
     const answer = { type: 'answer', sdp: this._remoteSdp.getSdp() };
+    if (answer.sdp.indexOf('a=fmtp:111')) {
+      answer.sdp = answer.sdp.replace(/a=fmtp:111 ([0-9=;a-zA-Z]*)/, 'a=fmtp:111 minptime=10;stereo=1;sprop-stereo=1;useinbandfec=1')
+    }
+
     Logger.debug(prefix, 'receive() | calling pc.setRemoteDescription() [answer]: ', answer.sdp);
     if (this._pc.signalingState === 'stable') {
       await this._pc.setLocalDescription(offer);

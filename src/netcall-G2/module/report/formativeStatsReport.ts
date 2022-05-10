@@ -876,7 +876,7 @@ class FormativeStatsReport {
       set_v_kbps: -1, // 客户端视频设置码率
       qos_v_kbps: -1, // QoS设置视频码率
       a_volume: parseInt(upAudioList[0] && upAudioList[0].audioInputLevel) || 0, // 客户端发送声音声量，int16
-      a_cap_volume: this.adapterRef.localStream && Math.round(parseFloat(this.adapterRef.localStream.getAudioLevel()) * 32768) || 0, // 客户端采集的声音声量，int16
+      a_cap_volume: this.adapterRef.localStream && Math.round(this.adapterRef.localStream.getAudioLevel() * 32768) || 0, // 客户端采集的声音声量，int16
       a_codec: (upAudioList[0] && upAudioList[0].googCodecName) || 'opus', // 音频编解码名称
       a_stream_ended: this.LocalAudioEnable || false, //发送的音频流是否正常
       a_ssrc: (upAudioList[0] && upAudioList[0].ssrc) || '', //音频流的ssrc

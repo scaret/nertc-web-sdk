@@ -976,10 +976,25 @@ class MediaHelper extends EventEmitter {
     }
     switch(this.stream.audioProfile){
       case "standard_stereo":
-        constraint.channelCount = 2;
-        break;
       case "high_quality_stereo":
+        constraint.googAutoGainControl = false;
+        constraint.googAutoGainControl2 = false;
+        //测试发现需要关闭回声消除，编码双声道才生效
+        constraint.echoCancellation = false;
+        constraint.googNoiseSuppression = false;
         constraint.channelCount = 2;
+        //关闭AEC
+        /*constraint.echoCancellation = false;
+        //constraint.googEchoCancellation = false;
+        //constraint.googEchoCancellation2 = false;
+        //关闭ANS
+        //constraint.noiseSuppression = false;
+        constraint.googNoiseSuppression = false;
+        //constraint.googNoiseSuppression2 = false;
+        //关闭AGC
+        //constraint.autoGainControl = false;
+        constraint.googAutoGainControl = false;
+        constraint.googAutoGainControl2 = false;*/
         break;
     }
     if (JSON.stringify(constraint) === "{}") {

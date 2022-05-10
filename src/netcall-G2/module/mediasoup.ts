@@ -319,6 +319,8 @@ class Mediasoup extends EventEmitter {
             await this._sendTransport.restartIce({ iceParameters });
           }*/
         }
+        //直接执行信令层面的重连
+        this._sendTransportConnectTimeout()
       } catch (e){
         this.loggerSend.error('reconnectSendTransportConnect() | failed:', e,name, e.message);
       }
@@ -355,6 +357,8 @@ class Mediasoup extends EventEmitter {
       } catch (e){
         this.loggerRecv.error('reconnectRecvTransportConnect() | failed:', e.name, e.message);
       }
+      //直接执行信令层面的重连
+      this._recvTransportConnectTimeout()
     } else if (connectionState === 'connected') {
       if (this._recvTransportTimeoutTimer) {
         clearTimeout(this._recvTransportTimeoutTimer)

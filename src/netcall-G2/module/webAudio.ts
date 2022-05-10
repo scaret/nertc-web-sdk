@@ -117,7 +117,7 @@ class WebAudio extends EventEmitter{
   
   constructor(option: WebAudioOptions) {
     super()
-    const { logger, isAnalyze=true, isRemote = false } = option
+    const { logger, isAnalyze=false, isRemote = false } = option
     this.support = supports.WebAudio && supports.MediaStream
 
     // set our starting value

@@ -161,7 +161,7 @@ class Meeting extends EventEmitter {
         code: -1,
         param: {
           ...options,
-          reason: e.getMessage()
+          reason: e.message
         }
       })
       throw new RtcError({
