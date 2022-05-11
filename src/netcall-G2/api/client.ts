@@ -212,7 +212,7 @@ class Client extends Base {
    */
   getChannelInfo() {
     this.apiFrequencyControl({
-      name: 'createRemoteStream',
+      name: 'getChannelInfo',
       code: 0,
       param: {
         clientUid: this.adapterRef.channelInfo.uid || '',
@@ -230,7 +230,7 @@ class Client extends Base {
       reason = 'INVALID_OPERATION'
     }
     this.apiFrequencyControl({
-      name: 'createRemoteStream',
+      name: 'startProxyServer',
       code: reason ? -1 : 0,
       param: {
         clientUid: this.adapterRef.channelInfo.uid || '',
@@ -253,7 +253,7 @@ class Client extends Base {
       this.adapterRef.proxyServer.enable = false
     }
     this.apiFrequencyControl({
-      name: 'createRemoteStream',
+      name: 'stopProxyServer',
       code: 0,
       param: {
         clientUid: this.adapterRef.channelInfo.uid || '',
@@ -290,7 +290,7 @@ class Client extends Base {
     }
 
     this.apiFrequencyControl({
-      name: 'createRemoteStream',
+      name: 'setLocalMediaPriority',
       code: 0,
       param: {
         clientUid: this.adapterRef.channelInfo.uid || '',
@@ -497,7 +497,7 @@ class Client extends Base {
       name: 'leave',
       code: 0,
       param: {
-        uid: this.getUid()
+        clientUid: this.getUid()
       }
     })
 
@@ -690,7 +690,11 @@ class Client extends Base {
       this.apiFrequencyControl({
         name: 'unpublish',
         code: -1,
-        param
+        param: {
+          clientUid: this.getUid(),
+          pubStatus: stream && stream.pubStatus,
+          reason
+        }
       })
       if(reason === 'INVALID_OPERATION') {
         onUnpublishFinish()
@@ -1752,7 +1756,7 @@ class Client extends Base {
       mode: encryptionModeToInt(encryptionMode)
     };
     this.apiFrequencyControl({
-      name: 'enableEncryption',
+      name: 'setEncryptionMode',
       code: 0,
       param: JSON.stringify(param, null, ' ')
     })
@@ -1775,6 +1779,13 @@ class Client extends Base {
     }
     this.logger.log('设置加密密钥');
     this.adapterRef.encryption.setEncryptionSecret(encryptionSecret);
+    this.apiFrequencyControl({
+      name: 'setEncryptionSecret',
+      code: 0,
+      param: JSON.stringify({
+        encryptionSecret
+      }, null, ' ')
+    })
   }
   
   async pauseReconnection(){

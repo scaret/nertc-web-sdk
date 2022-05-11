@@ -270,7 +270,6 @@ class LocalStream extends EventEmitter {
       code: 0,
       param: {
         streamID: this.stringStreamID,
-        clientUid: this.client.adapterRef.channelInfo.uid || '',
         videoProfile: this.videoProfile,
         audio: this.audio,
         audioProfile: this.audioProfile,
@@ -487,7 +486,10 @@ class LocalStream extends EventEmitter {
       this.client.apiFrequencyControl({
         name: 'init',
         code: 0,
-        param: JSON.stringify(apiEventDataInit)
+        param: {
+          streamID: this.stringStreamID,
+          ...apiEventDataInit
+        }
       })
       this.client.apiFrequencyControl({
         name: '_trackSettings',
@@ -734,8 +736,9 @@ class LocalStream extends EventEmitter {
       name: 'play',
       code: 0,
       param: JSON.stringify({
-        playOptions:playOptions,
-        end: 'local'
+        streamID: this.stringStreamID,
+        playOptions: playOptions,
+        isRemote: false
       }, null, ' ')
     })
   }
@@ -759,7 +762,14 @@ class LocalStream extends EventEmitter {
         this.screenPlay_ = true;
       }
     }
-
+    this.client.apiFrequencyControl({
+      name: 'resume',
+      code: 0,
+      param: JSON.stringify({
+        streamID: this.stringStreamID,
+        isRemote: false
+      }, null, ' ')
+    })
   }
 
   /**
@@ -803,7 +813,11 @@ class LocalStream extends EventEmitter {
     this.client.apiFrequencyControl({
       name: 'setLocalRenderMode',
       code: 0,
-      param: JSON.stringify(params, null, ' ')
+      param: {
+        streamID: this.stringStreamID,
+        mediaType,
+        ...params
+      }
     })
   }
 
@@ -841,7 +855,8 @@ class LocalStream extends EventEmitter {
       name: 'stop',
       code: 0,
       param: JSON.stringify({
-        end: 'local',
+        streamID: this.stringStreamID,
+        isRemote: false,
         audio: this.audio,
         video: this.video,
         screen: this.screen,
@@ -876,6 +891,15 @@ class LocalStream extends EventEmitter {
         })
       )
     }
+    this.client.apiFrequencyControl({
+      name: 'isPlaying',
+      code: 0,
+      param: JSON.stringify({
+        streamID: this.stringStreamID,
+        isRemote: false,
+        type
+      }, null, ' ')
+    })
     this.logger.log(`检查${this.stringStreamID}的${type}播放状态: ${isPlaying}`)
     return isPlaying
   }
@@ -907,7 +931,10 @@ class LocalStream extends EventEmitter {
       this.client.apiFrequencyControl({
         name: 'open',
         code: data.code,
-        param: JSON.stringify(param)
+        param: {
+          streamID: this.stringStreamID,
+          ...param
+        }
       })
       this.client.apiFrequencyControl({
         name: '_trackSettings',
@@ -1423,6 +1450,7 @@ class LocalStream extends EventEmitter {
         code: -1,
         param: JSON.stringify({
           reason,
+          streamID: this.stringStreamID,
           audio: this.audio,
           video: this.video,
           screen: this.screen,
@@ -1469,6 +1497,7 @@ class LocalStream extends EventEmitter {
         code: 0,
         param: JSON.stringify({
           reason,
+          streamID: this.stringStreamID,
           audio: this.audio,
           video: this.video,
           screen: this.screen,
@@ -1514,7 +1543,8 @@ class LocalStream extends EventEmitter {
         name: 'unmuteAudio',
         code: 0,
         param: JSON.stringify({
-          streamID: this.stringStreamID
+          streamID: this.stringStreamID,
+          isRemote: false
         }, null, ' ')
       })
     } catch (e) {
@@ -1524,7 +1554,8 @@ class LocalStream extends EventEmitter {
         code: -1,
         param: JSON.stringify({
           streamID: this.stringStreamID,
-          reason: e
+          isRemote: false,
+          reason: e.message
         }, null, ' ')
       })
     }
@@ -1564,7 +1595,8 @@ class LocalStream extends EventEmitter {
         name: 'muteAudio',
         code: 0,
         param: JSON.stringify({
-          streamID: this.stringStreamID
+          streamID: this.stringStreamID,
+          isRemote: false
         }, null, ' ')
       })
     } catch (e) {
@@ -1574,7 +1606,8 @@ class LocalStream extends EventEmitter {
         code: -1,
         param: JSON.stringify({
           streamID: this.stringStreamID,
-          reason: e
+          isRemote: false,
+          reason: e.message
         }, null, ' ')
       })
     }
@@ -1662,6 +1695,7 @@ class LocalStream extends EventEmitter {
         code: -1,
         param: JSON.stringify({
           streamID: this.stringStreamID,
+          isRemote: false,
           volume,
           reason
         }, null, ' ')
@@ -1672,7 +1706,8 @@ class LocalStream extends EventEmitter {
       name: 'setAudioVolume',
       code: 0,
       param: JSON.stringify({
-        streamID: this.stringStreamID,
+        streamId: this.stringStreamID,
+        isRemote: true,
         volume
       }, null, ' ')
     })
@@ -1752,6 +1787,15 @@ class LocalStream extends EventEmitter {
         setTimeout(callback, 0);
       }
     }
+    this.client.apiFrequencyControl({
+      name: 'setAudioOutput',
+      code: 0,
+      param: JSON.stringify({
+        streamID: this.stringStreamID,
+        deviceId,
+        isRemote: false
+      }, null, ' ')
+    })
   };
 
   /**
@@ -1841,9 +1885,14 @@ class LocalStream extends EventEmitter {
         this.logger.log(`当前没有开启视频输入设备，无法切换`)
         this.inSwitchDevice[type] = false
         this.client.apiFrequencyControl({
-          name: 'switchCamera',
+          name: 'switchDevice',
           code: -1,
-          param: JSON.stringify({reason: 'INVALID_OPERATION'} as ReportParamSwitchCamera, null, ' ')
+          param: {
+            reason: 'INVALID_OPERATION: 当前没有开启视频输入设备，无法切换',
+            type,
+            deviceId,
+            streamID: this.stringStreamID
+          }
         })
         this.client.apiFrequencyControl({
           name: '_trackSettings',
@@ -1860,9 +1909,14 @@ class LocalStream extends EventEmitter {
         this.logger.log(`自定义视频输入不支持，无法切换`)
         this.inSwitchDevice[type] = false
         this.client.apiFrequencyControl({
-          name: 'switchCamera',
+          name: 'switchDevice',
           code: -1,
-          param: JSON.stringify({reason: 'INVALID_OPERATION'} as ReportParamSwitchCamera, null, ' ')
+          param: {
+            reason: 'INVALID_OPERATION: 自定义视频输入不支持，无法切换',
+            type,
+            deviceId,
+            streamID: this.stringStreamID
+          }
         })
         this.client.apiFrequencyControl({
           name: '_trackSettings',
@@ -1903,9 +1957,13 @@ class LocalStream extends EventEmitter {
       }
       if (type === "video"){
         this.client.apiFrequencyControl({
-          name: 'switchCamera',
+          name: 'switchDevice',
           code: 0,
-          param: JSON.stringify({} as ReportParamSwitchCamera, null, ' ')
+          param: {
+            type,
+            deviceId,
+            streamID: this.stringStreamID
+          }
         })
       }
       this.client.apiFrequencyControl({
@@ -1918,9 +1976,14 @@ class LocalStream extends EventEmitter {
       this.inSwitchDevice[type] = false
       if (type === "video"){
         this.client.apiFrequencyControl({
-          name: 'switchCamera',
+          name: 'switchDevice',
           code: -1,
-          param: JSON.stringify({reason: e.message || e.name}, null, ' ')
+          param: {
+            reason: e.message,
+            type,
+            deviceId,
+            streamID: this.stringStreamID
+          }
         })
       }
       this.client.apiFrequencyControl({
@@ -1930,7 +1993,6 @@ class LocalStream extends EventEmitter {
       })
       return Promise.reject(e)
     }
-    
   }
 
   /**
@@ -1957,7 +2019,8 @@ class LocalStream extends EventEmitter {
         name: 'unmuteVideo',
         code: 0,
         param: JSON.stringify({
-          streamID: this.stringStreamID
+          streamID: this.stringStreamID,
+          isRemote: false
         }, null, ' ')
       })
     } catch (e) {
@@ -1967,7 +2030,8 @@ class LocalStream extends EventEmitter {
         code: -1,
         param: JSON.stringify({
           streamID: this.stringStreamID,
-          reason: e
+          isRemote: false,
+          reason: e.message
         }, null, ' ')
       })
     }
@@ -1996,7 +2060,8 @@ class LocalStream extends EventEmitter {
         name: 'muteVideo',
         code: 0,
         param: JSON.stringify({
-          streamID: this.stringStreamID
+          streamID: this.stringStreamID,
+          isRemote: false
         }, null, ' ')
       })
     } catch (e) {
@@ -2006,7 +2071,8 @@ class LocalStream extends EventEmitter {
         code: -1,
         param: JSON.stringify({
           streamID: this.stringStreamID,
-          reason: e
+          isRemote: false,
+          reason: e.message
         }, null, ' ')
       })
     }
@@ -2037,7 +2103,8 @@ class LocalStream extends EventEmitter {
         name: 'unmuteScreen',
         code: 0,
         param: JSON.stringify({
-          streamID: this.stringStreamID
+          streamID: this.stringStreamID,
+          isRemote: false
         }, null, ' ')
       })
     } catch (e) {
@@ -2047,7 +2114,8 @@ class LocalStream extends EventEmitter {
         code: -1,
         param: JSON.stringify({
           streamID: this.stringStreamID,
-          reason: e
+          isRemote: false,
+          reason: e.message
         }, null, ' ')
       })
     }
@@ -2077,7 +2145,8 @@ class LocalStream extends EventEmitter {
         name: 'muteScreen',
         code: 0,
         param: JSON.stringify({
-          streamID: this.stringStreamID
+          streamID: this.stringStreamID,
+          isRemote: false
         }, null, ' ')
       })
     } catch (e) {
@@ -2087,7 +2156,8 @@ class LocalStream extends EventEmitter {
         code: -1,
         param: JSON.stringify({
           streamID: this.stringStreamID,
-          reason: e
+          isRemote: false,
+          reason: e.message
         }, null, ' ')
       })
     }
@@ -2415,6 +2485,7 @@ class LocalStream extends EventEmitter {
         code: 0,
         param: {
           streamID: this.stringStreamID,
+          isRemote: false,
           ...options
         }
       })
@@ -2425,6 +2496,8 @@ class LocalStream extends EventEmitter {
         code: -1,
         param: JSON.stringify({
           streamID: this.stringStreamID,
+          isRemote: false,
+          ...options,
           reason: `没有视频流，请检查是否有 发布 过视频`
         }, null, ' ')
       })
@@ -2932,7 +3005,10 @@ class LocalStream extends EventEmitter {
       this.client.apiFrequencyControl({
         name: 'setLocalCanvasWatermarkConfigs',
         code: 0,
-        param: JSON.stringify(options, null, 2)
+        param: {
+          streamID: this.stringStreamID,
+          mediaType: options.mediaType
+        }
       })
     }else{
       this.logger.error("setCanvasWatermarkConfigs：播放器未初始化");
@@ -3021,17 +3097,10 @@ class LocalStream extends EventEmitter {
     this.client.apiFrequencyControl({
       name: 'destroy',
       code: 0,
-      param: JSON.stringify({
-        videoProfile: this.videoProfile,
-        audio: this.audio,
-        audioProcessing: this.audioProcessing,
-        audioProfile: this.audioProfile,
-        video: this.video,
-        cameraId: this.cameraId,
-        microphoneId: this.microphoneId,
-        screen: this.screen,
-        screenProfile: this.screenProfile
-      }, null, ' ')
+      param: {
+        streamID: this.stringStreamID,
+        isRemote: false
+      }
     })
     this.logger.log(`uid ${this.stringStreamID} 销毁 Stream 实例`)
     this.stop()
