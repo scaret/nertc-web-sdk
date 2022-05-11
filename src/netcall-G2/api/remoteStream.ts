@@ -439,7 +439,7 @@ class RemoteStream extends EventEmitter {
       name: 'setSubscribeConfig',
       code: 0,
       param: {
-        clientUid: this.client.adapterRef.channelInfo.uid,
+        streamID: this.stringStreamID,
         ...this.subConf
       }
     })
@@ -591,7 +591,7 @@ class RemoteStream extends EventEmitter {
       code: 0,
       param: JSON.stringify({
         playOptions:playOptions,
-        end: 'remote'
+        isRemote: true
       }, null, ' ')
     })
   }
@@ -615,6 +615,14 @@ class RemoteStream extends EventEmitter {
         this.screenPlay_ = true;
       }
     }
+    this.client.apiFrequencyControl({
+      name: 'resume',
+      code: 0,
+      param: JSON.stringify({
+        streamID: this.stringStreamID,
+        isRemote: true
+      }, null, ' ')
+    })
   }
 
   /**
@@ -633,7 +641,11 @@ class RemoteStream extends EventEmitter {
       this.client.apiFrequencyControl({
         name: 'setRemoteRenderMode',
         code: -1,
-        param: JSON.stringify(options, null, ' ')
+        param: {
+          streamID: this.stringStreamID,
+          mediaType,
+          ...options
+        }
       })
     }
     if (!this.client || !this._play) {
@@ -656,7 +668,11 @@ class RemoteStream extends EventEmitter {
     this.client.apiFrequencyControl({
       name: 'setRemoteRenderMode',
       code: 0,
-      param: JSON.stringify(options, null, ' ')
+      param: {
+        ...options,
+        mediaType,
+        streamID: this.stringStreamID
+      }
     })
   }
 
@@ -694,7 +710,8 @@ class RemoteStream extends EventEmitter {
       name: 'stop',
       code: 0,
       param: JSON.stringify({
-        end: 'remote',
+        streamID: this.stringStreamID,
+        isRemote: true,
         audio: this.audio,
         video: this.video,
         screen: this.screen,
@@ -729,6 +746,15 @@ class RemoteStream extends EventEmitter {
         })
       )
     }
+    this.client.apiFrequencyControl({
+      name: 'isPlaying',
+      code: 0,
+      param: JSON.stringify({
+        streamID: this.stringStreamID,
+        isRemote: true,
+        type
+      }, null, ' ')
+    })
     this.logger.log(`检查${this.stringStreamID}的${type}播放状态: ${isPlaying}`)
     return isPlaying
   }
@@ -796,7 +822,8 @@ class RemoteStream extends EventEmitter {
         name: 'muteAudio',
         code: 0,
         param: JSON.stringify({
-          streamID: this.stringStreamID
+          streamID: this.stringStreamID,
+          isRemote: true
         }, null, ' ')
       })
     } catch (e) {
@@ -806,7 +833,8 @@ class RemoteStream extends EventEmitter {
         code: -1,
         param: JSON.stringify({
           streamID: this.stringStreamID,
-          reason: e
+          isRemote: true,
+          reason: e.message
         }, null, ' ')
       })
     }
@@ -861,6 +889,7 @@ class RemoteStream extends EventEmitter {
         code: -1,
         param: JSON.stringify({
           volume,
+          isRemote: true,
           reason
         }, null, ' ')
       })
@@ -870,7 +899,8 @@ class RemoteStream extends EventEmitter {
       name: 'setAudioVolume',
       code: 0,
       param: JSON.stringify({
-        volume
+        volume,
+        isRemote: false
       }, null, ' ')
     })
   }
@@ -901,6 +931,15 @@ class RemoteStream extends EventEmitter {
         setTimeout(callback, 0);
       }
     }
+    this.client.apiFrequencyControl({
+        name: 'setAudioOutput',
+        code: 0,
+        param: JSON.stringify({
+          streamID: this.stringStreamID,
+          deviceId,
+          isRemote: true
+        }, null, ' ')
+      })
   };
 
   /**
@@ -933,6 +972,7 @@ class RemoteStream extends EventEmitter {
         name: 'unmuteVideo',
         code: 0,
         param: JSON.stringify({
+          isRemote: true,
           streamID: this.stringStreamID
         }, null, ' ')
       })
@@ -942,8 +982,9 @@ class RemoteStream extends EventEmitter {
         name: 'unmuteVideo',
         code: -1,
         param: JSON.stringify({
+          isRemote: true,
           streamID: this.stringStreamID,
-          reason: e
+          reason: e.message
         }, null, ' ')
       })
     }
@@ -972,7 +1013,8 @@ class RemoteStream extends EventEmitter {
         name: 'muteVideo',
         code: 0,
         param: JSON.stringify({
-          streamID: this.stringStreamID
+          streamID: this.stringStreamID,
+          isRemote: true
         }, null, ' ')
       })
     } catch (e) {
@@ -982,7 +1024,8 @@ class RemoteStream extends EventEmitter {
         code: -1,
         param: JSON.stringify({
           streamID: this.stringStreamID,
-          reason: e
+          isRemote: true,
+          reason: e.message
         }, null, ' ')
       })
     }
@@ -1018,6 +1061,7 @@ class RemoteStream extends EventEmitter {
         name: 'unmuteScreen',
         code: 0,
         param: JSON.stringify({
+          isRemote: true,
           streamID: this.stringStreamID
         }, null, ' ')
       })
@@ -1027,8 +1071,9 @@ class RemoteStream extends EventEmitter {
         name: 'unmuteScreen',
         code: -1,
         param: JSON.stringify({
+          isRemote: true,
           streamID: this.stringStreamID,
-          reason: e
+          reason: e.message
         }, null, ' ')
       })
     }
@@ -1057,6 +1102,7 @@ class RemoteStream extends EventEmitter {
         name: 'muteScreen',
         code: 0,
         param: JSON.stringify({
+          isRemote: true,
           streamID: this.stringStreamID
         }, null, ' ')
       })
@@ -1066,8 +1112,9 @@ class RemoteStream extends EventEmitter {
         name: 'muteScreen',
         code: -1,
         param: JSON.stringify({
+          isRemote: true,
           streamID: this.stringStreamID,
-          reason: e
+          reason: e.message
         }, null, ' ')
       })
     }
@@ -1107,7 +1154,11 @@ class RemoteStream extends EventEmitter {
       this.client.apiFrequencyControl({
         name: 'takeSnapshot',
         code: 0,
-        param: JSON.stringify(options, null, ' ')
+        param: {
+          ...options,
+          streamID: this.stringStreamID,
+          isRemote: true
+        }
       })
     } else {
       this.logger.log(`没有视频流，请检查是否有 订阅 过视频`)
@@ -1116,6 +1167,8 @@ class RemoteStream extends EventEmitter {
         code: -1,
         param: JSON.stringify({
           streamID: this.stringStreamID,
+          isRemote: false,
+          ...options,
           reason: `没有视频流，请检查是否有 订阅 过视频`
         }, null, ' ')
       })
@@ -1330,7 +1383,10 @@ class RemoteStream extends EventEmitter {
       this.client.apiFrequencyControl({
         name: 'setRemoteCanvasWatermarkConfigs',
         code: 0,
-        param: JSON.stringify(param, null, 2)
+        param: {
+          streamID: this.stringStreamID,
+          mediaType: options.mediaType
+        }
       })
     }else{
       this.logger.error("setCanvasWatermarkConfigs：播放器未初始化");
@@ -1378,11 +1434,10 @@ class RemoteStream extends EventEmitter {
     this.client.apiFrequencyControl({
       name: 'destroy',
       code: 0,
-      param: JSON.stringify({
-        audio: this.audio,
-        video: this.video,
-        screen: this.screen,
-      }, null, ' ')
+      param: {
+        streamID: this.stringStreamID,
+        isRemote: true
+      }
     })
     this.logger.log(`uid ${this.stringStreamID} 销毁 Stream 实例`)
     this.stop()
