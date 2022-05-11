@@ -1149,8 +1149,16 @@ class FormativeStatsReport {
     }
 
     let stuckRate = (nextStuck - prevStuck) / (nextNormal - prevNormal)
-    
-    if (stuckRate < 0.2) {
+    const data = {
+      //@ts-ignore
+      totalFreezeTime:  parseInt(stuckRate * 1000),
+      //@ts-ignore
+      freezeTime: stuckRate * 10 > 1 ? parseInt(stuckRate * 10) : stuckRate > 0 ? 1 : 0
+    }
+    //console.log('远端音频卡顿率: ', JSON.stringify(data, null, ' '))
+    return data
+
+    /*if (stuckRate < 0.2) {
       return {
         totalFreezeTime: 0,
         freezeTime: 0
@@ -1164,7 +1172,7 @@ class FormativeStatsReport {
         totalFreezeTime,
         freezeTime: 2
       } 
-    }
+    }*/
   }
 
   getLocalVideoFreezeStats(data:UpVideoItem, uid:number|string) {
@@ -1178,6 +1186,30 @@ class FormativeStatsReport {
 
     let n = parseInt(data.googFrameRateInput)
     let i = parseInt(data.googFrameRateSent)
+
+    let stuckRate = (n - i) / n
+    //@ts-ignore
+    totalFreezeTime = parseInt(stuckRate * 2000)
+    let freezeTime = 0
+    if(totalFreezeTime < 300){
+      totalFreezeTime = 0
+      freezeTime = 0
+    } else if(totalFreezeTime > 1500) {
+      freezeTime = 6
+    } else {
+      //@ts-ignore
+      freezeTime = parseInt(totalFreezeTime / 300)
+    }
+
+    const info = {
+      totalFreezeTime,
+      //@ts-ignore
+      freezeTime
+    }
+    //console.log('本端视频卡顿率: ', JSON.stringify(info, null, ' '))
+    return info
+
+    /*
     if (n > 5 && i < 3) {
       if (this.adapterRef.localVideoStats && this.adapterRef.localVideoStats[0]) {
         totalFreezeTime = this.adapterRef.localVideoStats[0].TotalFreezeTime || 0
@@ -1192,7 +1224,7 @@ class FormativeStatsReport {
         totalFreezeTime,
         freezeTime: 0
       } 
-    }
+    }*/
   }
 
   getLocalScreenFreezeStats(data:UpVideoItem, uid:number|string) {
@@ -1206,7 +1238,31 @@ class FormativeStatsReport {
 
     let n = parseInt(data.googFrameRateInput)
     let i = parseInt(data.googFrameRateSent)
-    if (n > 5 && i < 3) {
+
+    let stuckRate = (n - i) / n
+
+    //@ts-ignore
+    totalFreezeTime = parseInt(stuckRate * 2000)
+    let freezeTime = 0
+    if(totalFreezeTime < 300){
+      totalFreezeTime = 0
+      freezeTime = 0
+    } else if(totalFreezeTime > 1500) {
+      freezeTime = 6
+    } else {
+      //@ts-ignore
+      freezeTime = parseInt(totalFreezeTime / 300)
+    }
+
+    const info = {
+      totalFreezeTime,
+      //@ts-ignore
+      freezeTime
+    }
+    //console.log('本端屏幕共享卡顿率: ', JSON.stringify(info, null, ' '))
+    return info
+
+    /*if (n > 5 && i < 3) {
       if (this.adapterRef.localScreenStats && this.adapterRef.localScreenStats[0]) {
         totalFreezeTime = this.adapterRef.localScreenStats[0].TotalFreezeTime || 0
       }
@@ -1220,21 +1276,51 @@ class FormativeStatsReport {
         totalFreezeTime,
         freezeTime: 0
       }
-    }
+    }*/
   }
 
   getRemoteVideoFreezeStats(prev: DownVideoItem, next: DownVideoItem, uid:number|string) {
     let totalFreezeTime = 0
-    if (!next) {
+    //@ts-ignore
+    if (!next || next.framesDecoded == 0) {
       return {
         totalFreezeTime,
         freezeTime: 0
       }
+    } else if (next && next.googFrameRateDecoded == '0' && next.framesDecoded) {
+      return {
+        totalFreezeTime: 2000,
+        freezeTime: 6
+      }
     }
+
 
     let n = parseInt(next.googFrameRateReceived)
     let i = parseInt(next.googFrameRateDecoded)
-    if (n > 5 && n < 10 && i < 3 || n > 10 && n < 20 && i < 4 || n > 20 && i < 5) {
+
+    let stuckRate = (i - n) / i
+    //@ts-ignore
+    totalFreezeTime = parseInt(stuckRate * 2000)
+    let freezeTime = 0
+    if(totalFreezeTime < 300){
+      totalFreezeTime = 0
+      freezeTime = 0
+    } else if(totalFreezeTime > 1500) {
+      freezeTime = 6
+    } else {
+      //@ts-ignore
+      freezeTime = parseInt(totalFreezeTime / 300)
+    }
+
+    const info = {
+      totalFreezeTime,
+      //@ts-ignore
+      freezeTime
+    }
+    //console.log('远端屏幕共享卡顿率: ', JSON.stringify(info, null, ' '))
+    return info
+
+    /*if (n > 5 && n < 10 && i < 3 || n > 10 && n < 20 && i < 4 || n > 20 && i < 5) {
       if (this.adapterRef.remoteVideoStats && this.adapterRef.remoteVideoStats[uid]) {
         totalFreezeTime = this.adapterRef.remoteVideoStats[uid].TotalFreezeTime || 0
       }
@@ -1248,7 +1334,7 @@ class FormativeStatsReport {
         totalFreezeTime,
         freezeTime: 0
       } 
-    }
+    }*/
   }
 
   getRemoteScreenFreezeStats(prev: DownVideoItem, next: DownVideoItem, uid:number|string) {
@@ -1262,7 +1348,29 @@ class FormativeStatsReport {
 
     let n = parseInt(next.googFrameRateReceived)
     let i = parseInt(next.googFrameRateDecoded)
-    if (n > 5 && n < 10 && i < 3 || n > 10 && n < 20 && i < 4 || n > 20 && i < 5) {
+    let stuckRate = (i - n) / i
+    //@ts-ignore
+    totalFreezeTime = parseInt(stuckRate * 2000)
+    let freezeTime = 0
+    if(totalFreezeTime < 300){
+      totalFreezeTime = 0
+      freezeTime = 0
+    } else if(totalFreezeTime > 1500) {
+      freezeTime = 6
+    } else {
+      //@ts-ignore
+      freezeTime = parseInt(totalFreezeTime / 300)
+    }
+
+    const info = {
+      totalFreezeTime,
+      //@ts-ignore
+      freezeTime
+    }
+    //console.log('远端屏幕共享卡顿率: ', JSON.stringify(info, null, ' '))
+    return info
+
+    /*if (n > 5 && n < 10 && i < 3 || n > 10 && n < 20 && i < 4 || n > 20 && i < 5) {
       if (this.adapterRef.remoteScreenStats && this.adapterRef.remoteScreenStats[uid]) {
         totalFreezeTime = this.adapterRef.remoteScreenStats[uid].TotalFreezeTime || 0
       }
@@ -1276,7 +1384,7 @@ class FormativeStatsReport {
         totalFreezeTime,
         freezeTime: 0
       }
-    }
+    }*/
   }
 
   send () {
