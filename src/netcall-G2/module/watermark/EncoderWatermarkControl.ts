@@ -294,6 +294,7 @@ export class EncoderWatermarkControl extends EventEmitter{
           tag: 'Stream.setEncoderWatermarkConfigs:imageWatermarks.imageUrls.length',
           value: watermark.imageUrls.length,
           min: 1,
+          max: 10,
         };
         checkValidInteger(imageUrlsLengthCheck);
 
