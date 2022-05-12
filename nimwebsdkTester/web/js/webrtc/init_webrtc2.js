@@ -1292,7 +1292,7 @@ function getAudioSource(mediaType){
 }
 
 $('#switchCustom').on('click', () => {
-  rtc.screenVideoSource = rtc.screenVideoSource?.readyState === "live" ? rtc.screenVideoSource :getVideoSource("screen")
+  rtc.screenVideoSource = rtc.screenVideoSource.readyState === "live" ? rtc.screenVideoSource :getVideoSource("screen")
   rtc.localStream.switchScreenStream({screenVideoSource:rtc.screenVideoSource});
 })
 
@@ -1315,7 +1315,7 @@ function initLocalStream() {
   const audio = !!enableAudio;
   let audioSource;
   if (enableAudio === "source"){
-    rtc.audioSource = rtc.audioSource?.readyState === "live" ? rtc.audioSource : getAudioSource("audio")
+    rtc.audioSource = rtc.audioSource && rtc.audioSource.readyState === "live" ? rtc.audioSource : getAudioSource("audio")
     audioSource = rtc.audioSource
   }else{
     audioSource = null
@@ -1325,7 +1325,7 @@ function initLocalStream() {
   const video = !!enableVideo;
   let videoSource;
   if (enableVideo === "source"){
-    rtc.videoSource = rtc.videoSource?.readyState === "live" ? rtc.videoSource :getVideoSource("video")
+    rtc.videoSource = rtc.videoSource && rtc.videoSource.readyState === "live" ? rtc.videoSource :getVideoSource("video")
     videoSource = rtc.videoSource;
   }else{
     videoSource = null
@@ -1335,7 +1335,7 @@ function initLocalStream() {
   const screen = !!enableScreen;
   let screenVideoSource;
   if (enableScreen === "source"){
-    rtc.screenVideoSource = rtc.screenVideoSource?.readyState === "live" ? rtc.screenVideoSource :getVideoSource("screen")
+    rtc.screenVideoSource = rtc.screenVideoSource && rtc.screenVideoSource.readyState === "live" ? rtc.screenVideoSource :getVideoSource("screen")
     screenVideoSource = rtc.screenVideoSource;
   }else{
     screenVideoSource = null
@@ -1345,7 +1345,7 @@ function initLocalStream() {
   const screenAudio = !!enableScreenAudio;
   let screenAudioSource;
   if (enableScreenAudio === "source"){
-    rtc.screenAudioSource = rtc.screenAudioSource?.readyState === "live" ? rtc.screenAudioSource : getAudioSource("screenAudio")
+    rtc.screenAudioSource = rtc.screenAudioSource && rtc.screenAudioSource.readyState === "live" ? rtc.screenAudioSource : getAudioSource("screenAudio")
     screenAudioSource = rtc.screenAudioSource
   }else{
     screenAudioSource = null
@@ -1888,7 +1888,7 @@ $('#playCameraSource').on('click', () => {
     assertLocalStream()
     return
   }
-  rtc.videoSource = rtc.videoSource?.readyState === "live" ? rtc.videoSource : getVideoSource("video")
+  rtc.videoSource = rtc.videoSource && rtc.videoSource.readyState === "live" ? rtc.videoSource : getVideoSource("video")
   rtc.localStream.open({
     type: 'video',
     videoSource: rtc.videoSource,
@@ -1963,7 +1963,7 @@ $('#playMicroSource').on('click', () => {
   if ($('#sessionConfigAudioProfile').val()){
     rtc.localStream.setAudioProfile($('#sessionConfigAudioProfile').val())
   }
-  rtc.audioSource = rtc.audioSource?.readyState === "live" ? rtc.audioSource : getAudioSource("audio")
+  rtc.audioSource = rtc.audioSource && rtc.audioSource.readyState === "live" ? rtc.audioSource : getAudioSource("audio")
   let openOptions = {
     type: 'audio',
     audioSource: rtc.audioSource,
@@ -2018,7 +2018,7 @@ $('#playScreenSource').on('click', () => {
     assertLocalStream()
     return
   }
-  rtc.screenVideoSource = rtc.screenVideoSource?.readyState === "live" ? rtc.screenVideoSource :getVideoSource("screen")
+  rtc.screenVideoSource = rtc.screenVideoSource && rtc.screenVideoSource.readyState === "live" ? rtc.screenVideoSource :getVideoSource("screen")
   let openOptions = {
     type: 'screen',
     screenVideoSource: rtc.screenVideoSource,
@@ -2095,7 +2095,7 @@ $('#playScreenAudioSource').on('click', () => {
   if (audioProfile){
     rtc.localStream.setAudioProfile(audioProfile)
   }
-  rtc.screenAudioSource = rtc.screenAudioSource?.readyState === "live" ? rtc.screenAudioSource : getAudioSource("screenAudio")
+  rtc.screenAudioSource = rtc.screenAudioSource && rtc.screenAudioSource.readyState === "live" ? rtc.screenAudioSource : getAudioSource("screenAudio")
   let openOptions = {
     type: 'screenAudio',
     screenAudioSource: rtc.screenAudioSource,
@@ -3155,10 +3155,6 @@ $("#closeWatermarkPanel").on("click", function (){
 $("#pushMask").on("click", function(){
   let uid = document.getElementById("maskUid").value
   const maskSecond = parseInt(document.getElementById("maskSecond").value)
-  if (!rtc.client?.adapterRef._signalling?._protoo){
-    addLog("打码错误：需加入频道")
-    return
-  }
   if (!uid){
     uid = rtc.client.getChannelInfo().uid
   }
@@ -3297,12 +3293,12 @@ $("#setEncryptionSecret").click(()=>{
 
 $("#pauseReconnection").on("click", async ()=>{
   const info = await rtc.client.pauseReconnection();
-  addLog("===暂停重连" + info?.reason)
+  addLog("===暂停重连" + info && info.reason)
 })
 
 $("#resumeReconnection").on("click", async ()=>{
   const info = await rtc.client.resumeReconnection();
-  addLog("===恢复重连" + info?.reason)
+  addLog("===恢复重连" + info && info.reason)
 })
 
 let urlParams = new URLSearchParams(window.location.search);
@@ -3487,12 +3483,3 @@ function getdate() {
       d = now.getDate();
   return y + "-" + (m < 10 ? "0" + m : m) + "-" + (d < 10 ? "0" + d : d) + " " + now.toTimeString().substr(0, 8);
 }
-
-// setTimeout(()=>{
-//   if (rtc.localStream?.mediaHelper.video.preProcessingEnabled){
-//     rtc.localStream?.mediaHelper.disablePreProcessing()
-//   }else{
-//     rtc.localStream?.mediaHelper.enablePreProcessing()
-//    
-//   }
-// }, 10000)
