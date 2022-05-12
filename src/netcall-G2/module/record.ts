@@ -10,6 +10,7 @@ import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
 import {LocalStream} from "../api/localStream";
 import {RemoteStream} from "../api/remoteStream";
+import { RtcSystem } from '../util/rtcUtil/rtcSystem'
 
 /**
  * 媒体录制（音频混音录制/视频录制）
@@ -59,7 +60,7 @@ class Record extends EventEmitter {
     const {stream = null, uid = '0', type = 'video', reset = false, recordName } = option
     this.logger.log('开始本地录制: ', JSON.stringify(option, null, ''))
     let reason = null;
-    if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) {
+    if (!window.MediaRecorder || !MediaRecorder.isTypeSupported || RtcSystem.browser.ua !== 'chrome') {
       this.logger.log('浏览器不支持本地录制')
       reason = 'RecordBrowserNotSupport'
     }
@@ -90,7 +91,10 @@ class Record extends EventEmitter {
           recordName: ''
         }, null, ' ')
       })
-      return reason;
+      throw new RtcError({
+        code: ErrorCode.INVALID_OPERATION,
+        message: '浏览器不支持本地录制'
+      });
     }
     
     this._status.stream = stream
