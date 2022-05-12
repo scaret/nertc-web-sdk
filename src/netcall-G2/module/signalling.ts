@@ -394,10 +394,8 @@ class Signalling extends EventEmitter {
             mediaTypeShort = 'audio';
             break;
           default:
-            throw new RtcError({
-              code: ErrorCode.UNKNOWN_TYPE,
-              message: `Unrecognized mediaType ${mediaType}`
-            })
+            this.logger.warn(`OnNewProducer 不支持的媒体类型:${mediaType}, uid ${uid}`)
+            return
         }
         let remoteStream = this.adapterRef.remoteStreamMap[uid]
         if (!remoteStream) {
@@ -469,10 +467,8 @@ class Signalling extends EventEmitter {
             mediaTypeShort = 'audio';
             break;
           default:
-            throw new RtcError({
-              code: ErrorCode.UNKNOWN_TYPE,
-              message: `Unrecognized mediaType ${mediaType}`
-            })
+            this.logger.warn(`OnProducerClose 不支持的媒体类型 ${mediaType} ${uid}`)
+            return;
         }
         
         if (remoteStream.pubStatus[mediaTypeShort].producerId !== producerId) {
@@ -1085,10 +1081,8 @@ class Signalling extends EventEmitter {
                   mediaTypeShort = "audio";
                   break;
                 default:
-                  throw new RtcError({
-                    code: ErrorCode.UNKNOWN_TYPE,
-                    message: `Unrecognized mediaType ${mediaType}`
-                  })
+                  this.logger.warn(`join: 不支持的媒体类型 ${mediaType} ${uid}`)
+                  continue
               }
               remoteStream[mediaTypeShort] = true
               //@ts-ignore
