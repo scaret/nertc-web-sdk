@@ -48,3 +48,7 @@ color: #0f9d58;
 #sendGetStats, #recvGetStats{
   clear: both;
 }
+
+.select-changed{
+  background: lightyellow;
+}

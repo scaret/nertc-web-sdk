@@ -3337,6 +3337,15 @@ $("#setReconnectionMaxRetry").on("click", ()=>{
   NERTC.getParameters().joinMaxRetry = reconnectionMaxRetry
 })
 
+$("select").on("change", function(){
+  if ($(this).val()){
+    $(this).addClass("select-changed")
+  }else{
+    $(this).removeClass("select-changed")
+  }
+  
+})
+
 
 const handleOnBeforeUnload = function(evt){
   addLog("handleOnBeforeUnload")
