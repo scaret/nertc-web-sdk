@@ -225,10 +225,16 @@
             <input type="checkbox" id="autoPub" checked>
             <button id="refreshDevices">刷新设备</button>
           </div>
+          
+          <h5 class="line">音频采集配置</h5>
           <div class="line">
-            <label for='sessionConfigAudioProfile'>audioProfile</label>
+            <select id="micro">
+              <option value="">选择麦克风：默认</option>
+            </select>
+          </div>
+          <div class="line">
             <select id='sessionConfigAudioProfile'>
-              <option value="">默认（不选）</option>
+              <option value="">audioProfile：默认（不选）</option>
               <option value='speech_low_quality'>16 kHz 采样率，单声道，编码码率约 24 Kbps，speech_low_quality</option>
               <option value='speech_standard'>32 kHz 采样率，单声道，编码码率约 24 Kbps，speech_standard</option>
               <option value='music_standard'>48 kHz 采样率，单声道，编码码率约 40 Kbps，music_standard</option>
@@ -236,64 +242,6 @@
               <option value='high_quality'>48 kHz 采样率，单声道， 编码码率约 128 Kbps，high_quality</option>
               <option value='high_quality_stereo'> 48 kHz 采样率，双声道，编码码率约 192 Kbps，high_quality_stereo</option>
             </select>
-          </div>
-          <div class="line">
-            <label for='sessionConfigScreenProfile'>屏幕共享分辨率</label>
-            <select id='sessionConfigScreenProfile'>
-              <option value="">默认（1920x1080）</option>
-              <option value='VIDEO_QUALITY_1080p'>1920x1080</option>
-              <option value='VIDEO_QUALITY_480p'>640x480</option>
-              <option value='VIDEO_QUALITY_720p'>1280x720</option>
-            </select>
-          </div>
-          <div class="line">
-            <label for='sessionConfigScreenFrameRate'>屏幕共享帧率</label>
-            <select id='sessionConfigScreenFrameRate'>
-              <option value="">默认（5帧）</option>
-              <option value='CHAT_VIDEO_FRAME_RATE_5'>5</option>
-              <option value='CHAT_VIDEO_FRAME_RATE_10'>10</option>
-              <option value='CHAT_VIDEO_FRAME_RATE_15'>15</option>
-              <option value='CHAT_VIDEO_FRAME_RATE_20'>20</option>
-              <option value='CHAT_VIDEO_FRAME_RATE_25'>25</option>
-            </select>
-          </div>
-          <div class="line">
-            <label for='sessionConfigVideoQuality'>视频质量</label>
-            <select id='sessionConfigVideoQuality'>
-              <option value="">默认（默认为640x480）</option>
-              <option value='VIDEO_QUALITY_480p'>640x480</option>
-              <option value='VIDEO_QUALITY_180p'>320x180</option>
-              <option value='VIDEO_QUALITY_720p'>1280x720</option>
-              <option value='VIDEO_QUALITY_1080p'>1920x1080</option>
-            </select>
-          </div>
-          <div class="line">
-            <label for='sessionConfigVideoFrameRate'>视频帧率</label>
-            <select id='sessionConfigVideoFrameRate'>
-              <option value="">默认（默认为15帧）</option>
-              <option value='CHAT_VIDEO_FRAME_RATE_NORMAL'>normal</option>
-              <option value='CHAT_VIDEO_FRAME_RATE_5'>5</option>
-              <option value='CHAT_VIDEO_FRAME_RATE_10'>10</option>
-              <option value='CHAT_VIDEO_FRAME_RATE_15'>15</option>
-              <option value='CHAT_VIDEO_FRAME_RATE_20'>20</option>
-              <option value='CHAT_VIDEO_FRAME_RATE_25'>25</option>
-            </select>
-          </div>
-          <div class="line">
-            摄像头
-            <select id="camera"></select>
-          </div>
-          <div class="line">
-            摄像头前后置
-            <select id="cameraFacingMode">
-              <option value="">不选</option>
-              <option value="user">user</option>
-              <option value="environment">environment</option>
-            </select>
-          </div>
-          <div class="line">
-            麦克风
-            <select id="micro"></select>
           </div>
           <div class="line">
             <select id="aec" style="width:32%">
@@ -312,10 +260,61 @@
               <option value="false">增益控制AGC:false</option>
             </select>
           </div>
+
+          <h5 class="line">视频采集配置（主流）</h5>
           <div class="line">
-            <span>扬声器: </span>
-            <select id="sounder" style="width: 120px;"></select> <button id="setAudioOutput">设置</button>
+            <select id="camera">
+              <option value="">摄像头选择：默认</option>
+            </select>
           </div>
+          <div class="line">
+            <select id="cameraFacingMode">
+              <option value="">摄像头前后置：默认</option>
+              <option value="user">user</option>
+              <option value="environment">environment</option>
+            </select>
+          </div>
+          <div class="line">
+            <select id='sessionConfigVideoQuality'>
+              <option value="">分辨率：默认（默认为640x480）</option>
+              <option value='VIDEO_QUALITY_480p'>640x480</option>
+              <option value='VIDEO_QUALITY_180p'>320x180</option>
+              <option value='VIDEO_QUALITY_720p'>1280x720</option>
+              <option value='VIDEO_QUALITY_1080p'>1920x1080</option>
+            </select>
+          </div>
+          <div class="line">
+            <select id='sessionConfigVideoFrameRate'>
+              <option value="">帧率：默认（默认为15帧）</option>
+              <option value='CHAT_VIDEO_FRAME_RATE_NORMAL'>normal</option>
+              <option value='CHAT_VIDEO_FRAME_RATE_5'>5</option>
+              <option value='CHAT_VIDEO_FRAME_RATE_10'>10</option>
+              <option value='CHAT_VIDEO_FRAME_RATE_15'>15</option>
+              <option value='CHAT_VIDEO_FRAME_RATE_20'>20</option>
+              <option value='CHAT_VIDEO_FRAME_RATE_25'>25</option>
+            </select>
+          </div>
+
+          <h5 class="line">屏幕共享采集配置（辅流）</h5>
+          <div class="line">
+            <select id='sessionConfigScreenProfile'>
+              <option value="">分辨率：默认（1920x1080）</option>
+              <option value='VIDEO_QUALITY_1080p'>1920x1080</option>
+              <option value='VIDEO_QUALITY_480p'>640x480</option>
+              <option value='VIDEO_QUALITY_720p'>1280x720</option>
+            </select>
+          </div>
+          <div class="line">
+            <select id='sessionConfigScreenFrameRate'>
+              <option value="">帧率：默认（5帧）</option>
+              <option value='CHAT_VIDEO_FRAME_RATE_5'>5</option>
+              <option value='CHAT_VIDEO_FRAME_RATE_10'>10</option>
+              <option value='CHAT_VIDEO_FRAME_RATE_15'>15</option>
+              <option value='CHAT_VIDEO_FRAME_RATE_20'>20</option>
+              <option value='CHAT_VIDEO_FRAME_RATE_25'>25</option>
+            </select>
+          </div>
+          
           <div class="line">
             <button type="button" id="initLocalStream">初始化</button>
             <button type="button" id="pub">发布</button>
@@ -382,6 +381,7 @@
             </div>
           </div>
           -->
+          <h5 class="line">设置新加入的流</h5>
           <div class="line">
             订阅audio
             <input type="checkbox" id="subAudio" checked>
@@ -393,6 +393,8 @@
             <input type="checkbox" id="subScreen" checked>
 
           </div>
+          
+          <h5 class="line">设置指定流</h5>
           <div class="line">
             <select id='subResolutionVideo' style="width: 49%">
               <option value=''>主流大小流</option>
@@ -424,6 +426,12 @@
             </select>
             <button type="button" id="switchHigh">切换大流</button>
             <button type="button" id="switchLow">切换小流</button>
+          </div>
+          
+          <h5 class="line">设置当前所有流</h5>
+          <div class="line">
+            <button type="button" id="subscribeAll">订阅全部</button>
+            <button type="button" id="unsubscribeAll">取消订阅全部</button>
           </div>
         </div>
 
@@ -541,6 +549,10 @@
               (0-100)：</span>
             <input type="number" step="20" id="captureVolumeTypeInput" value="100">
             <button id="setCaptureVolumeType">设置</button>
+          </div>
+          <div class="line">
+            <span>扬声器: </span>
+            <select id="sounder" style="width: 120px;"></select> <button id="setAudioOutput">设置</button>
           </div>
         </div>
         <p class="block-header">音量检测</p>

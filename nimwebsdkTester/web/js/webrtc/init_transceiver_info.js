@@ -24,24 +24,24 @@ const captureTimer = setInterval(async ()=>{
   }
   let audioInfo = "";
   if (rtc.localStream){
-    audioInfo += `数量：${rtc.localStream?.mediaHelper.getAudioInputTracks().length}`
-    if (rtc.localStream?.mediaHelper.audio.audioRoutingEnabled) {
+    audioInfo += `数量：${rtc.localStream.mediaHelper.getAudioInputTracks().length}`
+    if (rtc.localStream.mediaHelper.audio.audioRoutingEnabled) {
       audioInfo += " 混音中"
     }
     const sender = rtc.localStream.getSender("audio", "high")
-    if (sender?.track){
+    if (sender && sender.track){
       audioInfo += " 发布中"
     }
   }
   $("#audioStatus").text(audioInfo)
 
-  const transceivers = rtc.client?.adapterRef?._mediasoup?._sendTransport?.handler?._pc?.getTransceivers() || []
+  const transceivers = getPC("send") ? getPC("send").getTransceivers() : []
   NERTC.getParameters().tracks.audio.forEach((track, index)=>{
     if (track){
       const trackId = "track_status_" + track.id.split(/\W/).join("")
       let content = "";
       const matchedTransceivers = transceivers.filter((t =>{
-        return t?.sender?.track?.id === track.id;
+        return t.sender.track && t.sender.track.id === track.id;
       }))
       content += matchedTransceivers.map((transceiver)=>{
         return "mid" + transceiver.mid
@@ -63,8 +63,8 @@ const captureTimer = setInterval(async ()=>{
         content+= " AEC"
       }
       
-      if (track?.constructor?.name !== "MediaStreamTrack"){
-        content += " [" + track?.constructor?.name + "]"
+      if (track.constructor.name !== "MediaStreamTrack"){
+        content += " [" + track.constructor.name + "]"
       }
       content += ` ${track.label}`;
       if (track.readyState === "ended"){
@@ -86,7 +86,7 @@ const captureTimer = setInterval(async ()=>{
       const trackId = "track_status_" + track.id.split(/\W/).join("")
       let content = "";
       const matchedTransceivers = transceivers.filter((t =>{
-        return t?.sender?.track?.id === track.id;
+        return t.sender.track && t.sender.track.id === track.id;
       }))
       content += matchedTransceivers.map((transceiver)=>{
         return "mid" + transceiver.mid;
@@ -103,8 +103,8 @@ const captureTimer = setInterval(async ()=>{
       if (settings.width || settings.height || settings.frameRate) {
         content += ` ${parseInt(settings.width)}x${parseInt(settings.height)}x${parseInt(settings.frameRate)}`
       }
-      if (track?.constructor?.name !== "MediaStreamTrack"){
-        content += " [" + track?.constructor?.name + "]"
+      if (track.constructor.name !== "MediaStreamTrack"){
+        content += " [" + track.constructor.name + "]"
       }
       content += ` ${track.label}`;
       if (track.readyState === "ended"){
@@ -124,8 +124,8 @@ const captureTimer = setInterval(async ()=>{
 
 
   // 上行状态
-  if (rtc.client?.adapterRef?._mediasoup?._sendTransport?._handler?._pc){
-    const transceivers = rtc.client.adapterRef._mediasoup._sendTransport._handler._pc.getTransceivers()
+  if (getPC("send")){
+    const transceivers = getPC("send").getTransceivers()
     let html = "";
     let upstreamBitrate = 0;
     for (let i = 0; i < transceivers.length; i++){
@@ -192,10 +192,10 @@ const captureTimer = setInterval(async ()=>{
     $("#upstreamBitrate").text(upstreamBitrate + "kbps");
     
     let htmlSendstats = ""
-    if (!rtc.client?.adapterRef?._mediasoup?._sendTransport?._handler?._pc){
+    if (!getPC("send")){
       return;
     }
-    const stats = await rtc.client.adapterRef._mediasoup._sendTransport._handler._pc.getStats()
+    const stats = await getPC("send").getStats()
     sendStatsFilter.filters = {all: 0}
     stats.forEach((report, i)=>{
       sendStatsFilter.filters.all++;
@@ -221,8 +221,8 @@ const captureTimer = setInterval(async ()=>{
   }
   
   // 下行状态
-  if (rtc.client?.adapterRef?._mediasoup?._recvTransport?._handler?._pc){
-    const transceivers = rtc.client.adapterRef._mediasoup._recvTransport._handler._pc.getTransceivers()
+  if (getPC("recv")){
+    const transceivers = getPC("recv").getTransceivers()
     let html = "";
     let downstreamBitrate = 0;
     for (let i = 0; i < transceivers.length; i++){
@@ -285,10 +285,10 @@ const captureTimer = setInterval(async ()=>{
 
 
     let htmlRecvstats = ""
-    if (!rtc.client?.adapterRef?._mediasoup?._recvTransport?._handler?._pc){
+    if (!getPC("recv")){
       return;
     }
-    const stats = await rtc.client.adapterRef._mediasoup._recvTransport._handler._pc.getStats()
+    const stats = await getPC("recv").getStats()
     recvStatsFilter.filters = {all: 0}
     stats.forEach((report, i)=>{
       recvStatsFilter.filters.all++;
@@ -314,7 +314,7 @@ const captureTimer = setInterval(async ()=>{
   }
 
   // 订阅状态
-  if (rtc.client?.adapterRef.remoteStreamMap){
+  if (rtc.client && rtc.client.adapterRef.remoteStreamMap){
     let html = "";
     for (let uid in rtc.client.adapterRef.remoteStreamMap){
       const remoteStream = rtc.client.adapterRef.remoteStreamMap[uid];
@@ -377,19 +377,19 @@ const captureTimer = setInterval(async ()=>{
     let highlight = false
     if (rtc.client.adapterRef._mediasoup._micProducerId){
       currentPubStatus += "音频"
-      if (rtc.client.adapterRef.localStream?.pubStatus.audio.audio !== !!rtc.client.adapterRef._mediasoup._micProducerId){
+      if (rtc.client.adapterRef.localStream && rtc.client.adapterRef.localStream.pubStatus.audio.audio !== !!rtc.client.adapterRef._mediasoup._micProducerId){
         highlight = true
       }
     }
     if (rtc.client.adapterRef._mediasoup._webcamProducerId){
       currentPubStatus += " 视频"
-      if (rtc.client.adapterRef.localStream?.pubStatus.video.video !== !!rtc.client.adapterRef._mediasoup._webcamProducerId){
+      if (rtc.client.adapterRef.localStream && rtc.client.adapterRef.localStream.pubStatus.video.video !== !!rtc.client.adapterRef._mediasoup._webcamProducerId){
         highlight = true
       }
     }
     if (rtc.client.adapterRef._mediasoup._screenProducerId){
       currentPubStatus += " 屏幕共享"
-      if (rtc.client.adapterRef.localStream?.pubStatus.screen.screen !== !!rtc.client.adapterRef._mediasoup._screenProducerId){
+      if (rtc.client.adapterRef.localStream && rtc.client.adapterRef.localStream.pubStatus.screen.screen !== !!rtc.client.adapterRef._mediasoup._screenProducerId){
         highlight = true
       }
     }
@@ -420,3 +420,16 @@ $("#sendStatsFilterList").on("click", ".sendStatsFilter",function(){
 $("#recvStatsFilterList").on("click", ".recvStatsFilter",function(){
   recvStatsFilter.selected = $(this).attr("data-key")
 })
+
+function getPC(direction){
+  if (!rtc.client || !rtc.client.adapterRef._mediasoup){
+    return null
+  }
+  if (direction === "send"){
+    return rtc.client.adapterRef._mediasoup._sendTransport && rtc.client.adapterRef._mediasoup._sendTransport.handler._pc
+  }else if (direction === "recv"){
+    return rtc.client.adapterRef._mediasoup._recvTransport && rtc.client.adapterRef._mediasoup._recvTransport.handler._pc
+  }else{
+    return null
+  }
+}
