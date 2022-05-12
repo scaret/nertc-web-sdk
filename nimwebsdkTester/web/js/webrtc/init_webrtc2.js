@@ -338,31 +338,48 @@ function initDevices(requestPerm) {
   NERTC.getMicrophones(requestPerm).then((data) => {
     var info = JSON.stringify(data)
     console.log('麦克风: %o', info)
-    renderDeivce($('#micro'), data)
+    renderDevice($('#micro'), data)
   })
   NERTC.getCameras(requestPerm).then((data) => {
     var info = JSON.stringify(data)
     console.log('摄像头: %o', info)
-    renderDeivce($('#camera'), data)
+    renderDevice($('#camera'), data)
   })
   NERTC.getDevices(requestPerm).then((data)=>{
     const sounders = data.audioOut;
-    renderDeivce($("#sounder"), sounders);
+    renderDevice($("#sounder"), sounders);
   })
 }
 
-function renderDeivce(node, device) {
-  let html = '<option value="">默认</option>'
-  device = device.devices || device
-  for (var i = 0, len = device.length; i < len; i++) {
-    html +=
-      '<option value="' +
-      device[i].deviceId +
-      '">' +
-      device[i].label +
-      '</option>'
+function renderDevice(node, devices) {
+  if (node.length){
+    node = node[0]
   }
-  node.html(html)
+  const childNodes = node.childNodes
+  for (let i in childNodes){
+    const childNode = childNodes[i]
+    if (childNode.value){
+      childNode.disabled = true
+    }
+  }
+  
+  for (var i = 0, len = devices.length; i < len; i++) {
+    let isNewDevice = true
+    for (let j in childNodes){
+      const childNode = childNodes[j]
+      if (childNode.value === devices[i].deviceId){
+        isNewDevice = false
+        childNode.innerText = devices[i].label
+        childNode.disabled = false
+      }
+    }
+    if (isNewDevice){
+      const elem = document.createElement("option")
+      elem.value = devices[i].deviceId
+      elem.innerText = devices[i].label
+      node.appendChild(elem)
+    }
+  }
 }
 
 // 是否显示网络回调
