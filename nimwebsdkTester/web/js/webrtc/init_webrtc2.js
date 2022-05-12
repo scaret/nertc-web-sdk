@@ -1205,6 +1205,19 @@ $('#switchLow').on('click', () => {
   }
 })
 
+$("#subscribeAll").on("click", ()=>{
+  for (let uid in rtc.client.adapterRef.remoteStreamMap){
+    const remoteStream = rtc.client.adapterRef.remoteStreamMap[uid]
+    rtc.client.subscribe(remoteStream)
+  }
+})
+
+$("#unsubscribeAll").on("click", ()=>{
+  for (let uid in rtc.client.adapterRef.remoteStreamMap){
+    const remoteStream = rtc.client.adapterRef.remoteStreamMap[uid]
+    rtc.client.unsubscribe(remoteStream)
+  }
+})
 
 $('#openAsl').on('click', () => {
   rtc.client.openAslMode()
