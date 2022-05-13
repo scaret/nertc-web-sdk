@@ -662,12 +662,18 @@ function initEvents() {
     let tables = $("#netQuality");
     $("#netQuality tr:not(:first)").remove();
     _data.forEach(item => {
-      tr = $(`<tr style="font-size: small">
-        <td>${item.uid}</td>
+      tr = `<tr style="font-size: small">
+        <td>${item.uid}`
+      const remoteStream = rtc.remoteStreams[item.uid]
+      if (remoteStream && remoteStream.platformType !== 16){
+        tr += `<br/>${NERTC.PlatformTypeMap[remoteStream.platformType]}`
+      }
+      tr +=  
+        `</td>
         <td>${NERTC.NETWORK_STATUS[item.uplinkNetworkQuality]} (${item.uplinkNetworkQuality})</td>
         <td>${NERTC.NETWORK_STATUS[item.downlinkNetworkQuality]} (${item.downlinkNetworkQuality})</td>
-        </tr>`);
-      tr.appendTo(tables)
+        </tr>`
+      $(tr).appendTo(tables)
     })
   })
 
