@@ -1206,6 +1206,7 @@ class Signalling extends EventEmitter {
     } catch (e) {
       this.logger.error("信令包保活失败", transportId, e.name, e.message)
       if (this.keepAliveTimer) {
+        this._handleDisconnected(this._protoo)
         clearInterval(this.keepAliveTimer)
         this.keepAliveTimer = null
       }
