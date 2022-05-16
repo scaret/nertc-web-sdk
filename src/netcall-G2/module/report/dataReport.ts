@@ -300,11 +300,18 @@ class DataReport {
       data.heartbeat = this.heartbeat
       if (this.api.length) {
         this.api.forEach((evt)=>{
-          if (!evt.uid){
+          if (!evt.uid) {
             evt.uid = this.adapterRef.channelInfo && this.adapterRef.channelInfo.uid
           }
-          if (!evt.cid){
+          if (!evt.cid) {
             evt.cid = this.adapterRef.channelInfo && this.adapterRef.channelInfo.cid
+          }
+          if (evt.param && typeof evt.param === 'object') {
+            //@ts-ignore
+            if (evt.param.clientUid !== undefined) {
+              //@ts-ignore
+              evt.param.clientUid = evt.uid
+            }
           }
         });
         data.event = {apiEvent: this.api};

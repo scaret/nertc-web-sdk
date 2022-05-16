@@ -1693,23 +1693,23 @@ class LocalStream extends EventEmitter {
       this.client.apiFrequencyControl({
         name: 'setAudioVolume',
         code: -1,
-        param: JSON.stringify({
+        param: {
           streamID: this.stringStreamID,
           isRemote: false,
           volume,
           reason
-        }, null, ' ')
+        }
       })
       return reason
     }
     this.client.apiFrequencyControl({
       name: 'setAudioVolume',
       code: 0,
-      param: JSON.stringify({
-        streamId: this.stringStreamID,
-        isRemote: true,
+      param: {
+        streamID: this.stringStreamID,
+        isRemote: false,
         volume
-      }, null, ' ')
+      }
     })
   }
 
@@ -3007,6 +3007,7 @@ class LocalStream extends EventEmitter {
         code: 0,
         param: {
           streamID: this.stringStreamID,
+          isRemote: false,
           mediaType: options.mediaType
         }
       })

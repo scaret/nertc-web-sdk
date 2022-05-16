@@ -440,7 +440,9 @@ class RemoteStream extends EventEmitter {
       code: 0,
       param: {
         streamID: this.stringStreamID,
-        ...this.subConf
+        conf: {
+          ...this.subConf
+        }
       }
     })
     if (this.pubStatus.screen.screen){
@@ -887,21 +889,23 @@ class RemoteStream extends EventEmitter {
       this.client.apiFrequencyControl({
         name: 'setAudioVolume',
         code: -1,
-        param: JSON.stringify({
+        param: {
+          streamID: this.stringStreamID,
           volume,
           isRemote: true,
           reason
-        }, null, ' ')
+        }
       })
       return reason
     }
     this.client.apiFrequencyControl({
       name: 'setAudioVolume',
       code: 0,
-      param: JSON.stringify({
+      param: {
+        streamID: this.stringStreamID,
         volume,
-        isRemote: false
-      }, null, ' ')
+        isRemote: true
+      }
     })
   }
 
@@ -1384,6 +1388,7 @@ class RemoteStream extends EventEmitter {
         name: 'setRemoteCanvasWatermarkConfigs',
         code: 0,
         param: {
+          isRemote: false,
           streamID: this.stringStreamID,
           mediaType: options.mediaType
         }

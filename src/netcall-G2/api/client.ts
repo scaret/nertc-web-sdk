@@ -69,7 +69,7 @@ class Client extends Base {
       name: 'createClient',
       code: 0,
       param: {
-        uid: '',
+        clientUid: '',
         debug: options.debug
       }
     })
