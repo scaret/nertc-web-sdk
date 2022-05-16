@@ -556,6 +556,25 @@ declare interface Stream {
     }): Promise<"INVALID_OPERATION" | undefined>;
 
     /**
+     * 截取指定用户的视频流画面，并生成 Base64。
+     * 
+     * 
+     * @note
+     * - 本地视频流截图，需要在 Client.join 并 Client.publish 发布流成功之后调用。
+     * - 远端视频流截图，需要在  Client.subscribe 订阅远端视频流之后调用。
+     * - 水印不会被截图。
+     *
+     * @returns 截图画面生成的 Base64。
+     *
+     */
+     takeSnapshotBase64(options: {
+      /**
+       * 截图的视频流类型。
+       */
+      mediaType?: "video"|"screen";
+    }): string;
+
+    /**
      * 开启单人视频录制。
      * 
      * @param mediaRecordingOptions 参数对象。

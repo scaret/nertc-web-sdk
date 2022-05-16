@@ -13,6 +13,7 @@ import {
   RemoteStreamOptions,
   RenderMode,
   SnapshotOptions,
+  SnapshotBase64Options,
   StreamPlayOptions,
   SubscribeConfig,
   SubscribeOptions,
@@ -1174,6 +1175,48 @@ class RemoteStream extends EventEmitter {
           isRemote: false,
           ...options,
           reason: `没有视频流，请检查是否有 订阅 过视频`
+        }, null, ' ')
+      })
+      return 'INVALID_OPERATION'
+    }
+  }
+
+  /**
+   * 截取指定用户的视频画面并生成 base64
+   * @function takeSnapshotBase64
+   * @memberOf Stream#
+   * @param  {Object} options  配置参数
+   * @returns {string}
+   */
+   takeSnapshotBase64 (options: SnapshotBase64Options) {
+    if (this.video || this.screen) {
+      if (!this._play){
+        throw new RtcError({
+          code: ErrorCode.NO_PLAY,
+          message: 'no play'
+        })
+      }
+      let base64Url =  this._play.takeSnapshotBase64(options);
+      this.client.apiFrequencyControl({
+        name: 'takeSnapshotBase64',
+        code: 0,
+        param: {
+          streamID: this.stringStreamID,
+          isRemote: false,
+          ...options
+        }
+      })
+      return base64Url;
+    } else {
+      this.logger.log(`没有视频流，请检查是否有 发布 过视频`)
+      this.client.apiFrequencyControl({
+        name: 'takeSnapshotBase64',
+        code: -1,
+        param: JSON.stringify({
+          streamID: this.stringStreamID,
+          isRemote: false,
+          ...options,
+          reason: `没有视频流，请检查是否有 发布 过视频`
         }, null, ' ')
       })
       return 'INVALID_OPERATION'

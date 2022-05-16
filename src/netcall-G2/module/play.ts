@@ -1,7 +1,7 @@
 import { EventEmitter } from 'eventemitter3'
 import {
   PlayOptions,
-  SnapshotOptions, RenderMode, ILogger
+  SnapshotOptions, SnapshotBase64Options, RenderMode, ILogger
 } from "../types"
 import RtcError from '../util/error/rtcError';
 import ErrorCode  from '../util/error/errorCode';
@@ -796,6 +796,7 @@ class Play extends EventEmitter {
         message: 'no context of canvas'
       })
     }
+
     // video
     if (snapshotVideo){
       const name = options.name || ((streamId || this.stream.getId()) + '-' + this.index++);
@@ -825,9 +826,12 @@ class Play extends EventEmitter {
           resolve(name + '.png')
         })
       })
+
       if (!snapshotScreen){
         return fileUrl;
       }
+
+
     }
     // screen
     if (snapshotScreen){
@@ -860,6 +864,63 @@ class Play extends EventEmitter {
       })
       return fileUrl;
     }
+  }
+
+  /**
+  * 视频截图生成base64
+  */
+  takeSnapshotBase64 (options:SnapshotBase64Options){
+      let snapshotVideo = (!options.mediaType && this.videoDom) || options.mediaType === 'video';
+      let snapshotScreen = (!options.mediaType && this.screenDom) || options.mediaType === 'screen';
+      let canvas = document.createElement("canvas")
+      let ctx = canvas.getContext("2d");
+      if (!ctx){
+        throw new RtcError({
+          code: ErrorCode.NOT_FOUND,
+          message: 'no context of canvas'
+        })
+      }
+      // video
+      if (snapshotVideo){
+        ctx.fillStyle = '#ffffff'
+        if (!this.videoDom){
+          throw new RtcError({
+            code: ErrorCode.NOT_FOUND,
+            message: 'no videoDom'
+          })
+        }
+        ctx.fillRect(0, 0, this.videoDom.videoWidth, this.videoDom.videoHeight)
+        canvas.width = this.videoDom.videoWidth
+        canvas.height = this.videoDom.videoHeight
+        ctx.drawImage(this.videoDom, 0, 0, this.videoDom.videoWidth, this.videoDom.videoHeight, 0, 0, this.videoDom.videoWidth, this.videoDom.videoHeight)
+        const fileUrl = this.getBase64Image(canvas);
+        if (!snapshotScreen){
+          return fileUrl;
+        }
+      }
+      // screen
+      if (snapshotScreen){
+        ctx.fillStyle = '#ffffff'
+        if (!this.screenDom){
+          throw new RtcError({
+            code: ErrorCode.NOT_FOUND,
+            message: 'no screenDom'
+          })
+        }
+        ctx.fillRect(0, 0, this.screenDom.videoWidth, this.screenDom.videoHeight)
+        canvas.width = this.screenDom.videoWidth
+        canvas.height = this.screenDom.videoHeight
+        ctx.drawImage(this.screenDom, 0, 0, this.screenDom.videoWidth, this.screenDom.videoHeight, 0, 0, this.screenDom.videoWidth, this.screenDom.videoHeight)
+        const fileUrl = this.getBase64Image(canvas);
+        return fileUrl;
+      }
+   }
+
+
+
+  getBase64Image(canvas:HTMLCanvasElement) {//传入canvas图片
+    let dataURL = canvas.toDataURL("image/", 1);
+    return dataURL;
   }
   
   enableMask(){
