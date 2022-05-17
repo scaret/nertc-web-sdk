@@ -2472,6 +2472,37 @@ $('#snapshot').click(function(event) {
 
 /**
  * ----------------------------------------
+ *             截图生成 base64
+ * ----------------------------------------
+ */
+ $('#snapshotbase64').click(function(event) {
+  if (rtc.client) {
+    let stream
+    let uid = $('#snapshotAccount').val()
+    let mediaType = $('#snapType').val()
+    console.warn('截图生成 base64: ', uid)
+    if (rtc.client.getUid() == uid || !uid) {
+      stream = rtc.localStream
+      if (!stream) {
+        console.warn('请检查本地流是否存在')
+        addLog('请检查uid是否正确')
+        return
+      }
+    } else {
+      stream = rtc.remoteStreams[uid]
+      if (!stream) {
+        console.warn('请检查uid是否正确')
+        addLog('请检查uid是否正确')
+        return
+      }
+    }
+    let base64Url = stream.takeSnapshotBase64({mediaType: mediaType});
+    console.warn('截图生成 base64: ',base64Url);
+  }
+})
+
+/**
+ * ----------------------------------------
  *             音效相关
  * ----------------------------------------
  */

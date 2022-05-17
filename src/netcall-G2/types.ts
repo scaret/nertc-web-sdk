@@ -908,6 +908,10 @@ export interface SnapshotOptions{
   mediaType?: MediaTypeShort;
 }
 
+export interface SnapshotBase64Options {
+  mediaType?: MediaTypeShort;
+}
+
 export interface MediaRecordingOptions{
   type:string;
   reset: boolean;
