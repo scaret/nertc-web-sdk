@@ -512,7 +512,7 @@ function initEvents() {
     } : null;
     remoteStream.play(document.getElementById('remote-container'), playOptions).then(()=>{
       console.log('播放对端的流成功', playOptions)
-      remoteStream.setRemoteRenderMode(globalConfig.remoteViewConfig)
+      remoteStream.setRemoteRenderMode(globalConfig.remoteViewConfig, evt.mediaType)
       setTimeout(checkRemoteStramStruck, 2000)
     }).catch(err=>{
       console.log('播放对端的流失败: ', err)
