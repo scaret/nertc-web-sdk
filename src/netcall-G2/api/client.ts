@@ -1108,6 +1108,33 @@ class Client extends Base {
         this.logger.log('取消订阅音频流完成')
       }
 
+      if (stream.pubStatus.audioSlave.consumerId && stream.pubStatus.audioSlave.stopconsumerStatus !== 'start') {
+        this.logger.log('开始取消订阅音频流')
+        stream.pubStatus.audioSlave.stopconsumerStatus = 'start'
+        if (!this.adapterRef._mediasoup){
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIASERVER,
+            message: 'media server error 7'
+          })
+        }
+        await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.audioSlave.consumerId, stream, 'audioSlave');
+        this.adapterRef.instance.removeSsrc(stream.getId(), 'audioSlave')
+        stream.pubStatus.audioSlave.consumerId = '';
+        stream.stop('audioSlave')
+        stream.pubStatus.audioSlave.stopconsumerStatus = 'end'
+        stream.subStatus.audioSlave = false
+        const uid = stream.getId()
+        if(uid){
+          delete this.adapterRef.remoteAudioStats[uid];
+          const data = this.adapterRef._statsReport && this.adapterRef._statsReport.formativeStatsReport && this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
+          if (data) {
+            data.recvFirstAudioFrame = false
+            data.recvFirstAudioPackage = false
+          }
+        }
+        this.logger.log('取消订阅音频流完成')
+      }
+
       if (stream.pubStatus.video.consumerId && stream.pubStatus.video.stopconsumerStatus !== 'start'){
         this.logger.log('开始取消订阅视频流')
         stream.pubStatus.video.stopconsumerStatus = 'start'

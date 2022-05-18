@@ -505,9 +505,21 @@ class FormativeStatsReport {
           // Safari， 0-1，正好与Chrome呈线性关系
           audioLevel = Math.floor(data[i].audioLevel * 32768);
         }
+
+        const remoteStream = this.adapterRef.remoteStreamMap[uid]
+        const muteStatus = remoteStream && (remoteStream.muteStatus.audio.send || remoteStream.muteStatus.audio.recv)
+        let isPlaying = true
+        if (muteStatus) {
+          isPlaying = false 
+        }
+
+        if (!remoteStream || !remoteStream.Play || !remoteStream.Play.audioDom || !remoteStream.Play.audioDom.srcObject || remoteStream.Play.audioDom.muted) {
+          isPlaying = false 
+        }
+
         this._audioLevel.push({
           uid,
-          level: +audioLevel || 0,
+          level: isPlaying ? (+audioLevel || 0) : 0,
         })
       } else if (i.indexOf('_recv_') !== -1 && i.indexOf('_video') !== -1) {
         //主流
@@ -1054,6 +1066,10 @@ class FormativeStatsReport {
     const remoteStream = this.adapterRef.remoteStreamMap[uid]
     const muteStatus = remoteStream && (remoteStream.muteStatus.audio.send || remoteStream.muteStatus.audio.recv)
     if (remoteStream && muteStatus) {
+      return
+    }
+
+    if (!remoteStream || !remoteStream.Play || !remoteStream.Play.audioDom || !remoteStream.Play.audioDom.srcObject || remoteStream.Play.audioDom.muted) {
       return
     }
     /*this.adapterRef.logger.warn('前一周期 audio prev.bytesReceived: ', prev.bytesReceived)
