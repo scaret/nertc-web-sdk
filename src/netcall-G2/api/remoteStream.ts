@@ -852,7 +852,7 @@ class RemoteStream extends RTCEventEmitter {
           message: 'no play'
         })
       }
-      this.muteStatus.audio.recv = true;
+      this.muteStatus.audio.recv = false;
       this.mediaHelper.audio.audioStream.getAudioTracks().length && (this.mediaHelper.audio.audioStream.getAudioTracks()[0].enabled = true)
       this._play.playAudioStream(this.mediaHelper.audio.audioStream, false)
       this.client.apiFrequencyControl({
@@ -930,7 +930,7 @@ class RemoteStream extends RTCEventEmitter {
           message: 'no play'
         })
       }
-      this.muteStatus.audioSlave.recv = true;
+      this.muteStatus.audioSlave.recv = false;
       this.mediaHelper.screenAudio.screenAudioStream.getAudioTracks().length && (this.mediaHelper.screenAudio.screenAudioStream.getAudioTracks()[0].enabled = true)
       this._play.playAudioSlaveStream(this.mediaHelper.screenAudio.screenAudioStream, false)
       this.client.apiFrequencyControl({

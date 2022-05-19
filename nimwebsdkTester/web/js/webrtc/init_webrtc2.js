@@ -603,10 +603,10 @@ function initEvents() {
   })
   
   rtc.client.on('volume-indicator', _data => {
-   // console.log("===== 正在说话的远端用户及其音量：", _data)
+    //console.log("===== 正在说话的远端用户及其音量：", _data)
     $("#volume-indicator").empty();
     for (var i = 0; i < _data.length; i++){
-      $("#volume-indicator").append(`<tr><td>${_data[i].uid}</td><td>${_data[i].level}</td></tr>`);
+      $("#volume-indicator").append(`<tr><td>${_data[i].uid}</td><td>${_data[i].level}</td><td>${_data[i].type}</td></tr>`);
     }
   })
 
@@ -3484,7 +3484,7 @@ $("#startPlay").on("click", function(){
   }
   addLog("播放" + stream.getId() + " " + mediaType);
   if (mediaType){
-    const playOptions = {audio: false, video: false, screen: false};
+    const playOptions = {audio: false, audioSlave: false, video: false, screen: false};
     playOptions[mediaType] = true
     stream.play(document.getElementById('manual-container'), playOptions);
   }else{

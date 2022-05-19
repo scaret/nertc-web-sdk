@@ -29,7 +29,7 @@ class FormativeStatsReport {
   public LocalAudioEnable: boolean;
   public localVideoEnable: boolean;
   public localScreenEnable: boolean;
-  private _audioLevel: {uid:number|string, level: number}[];
+  private _audioLevel: {uid:number|string, level: number, type: 'audio' | 'audioSlave'}[];
   private infos: {
     cid?: number;
     uid?: number|string;
@@ -453,6 +453,32 @@ class FormativeStatsReport {
         currentData.send.screen.rtt = currentData.recv.screen.rtt = data[i].googRtt
         currentData.send.screen.jitter = currentData.recv.screen.jitter = data[i].googJitterReceived || 0
         upScreenList.push(data[i])
+      } else if (i.indexOf('_recv_') !== -1 && i.indexOf('_audioSlave') !== -1) {
+        let audioLevel:number = 0;
+        if (data[i].audioOutputLevel >= 0) {
+          // Chrome， 0-32767
+          audioLevel = data[i].audioOutputLevel;
+        } else if (data[i].audioLevel >= 0) {
+          // Safari， 0-1，正好与Chrome呈线性关系
+          audioLevel = Math.floor(data[i].audioLevel * 32768);
+        }
+        const remoteStream = this.adapterRef.remoteStreamMap[uid]
+        const muteStatus = remoteStream && (remoteStream.muteStatus.audioSlave.send || remoteStream.muteStatus.audioSlave.recv)
+        let isPlaying = true
+        if (muteStatus) {
+          isPlaying = false 
+        }
+
+        if (!remoteStream || !remoteStream.Play || !remoteStream.Play.audioSlaveDom || !remoteStream.Play.audioSlaveDom.srcObject || remoteStream.Play.audioSlaveDom.muted) {
+          isPlaying = false 
+        }
+
+        this._audioLevel.push({
+          uid,
+          level: isPlaying ? (+audioLevel || 0) : 0,
+          type: 'audioSlave'
+        })
+
       } else if (i.indexOf('_recv_') !== -1 && i.indexOf('_audio') !== -1) {
         if (!this.firstData.recvFirstData[uid]) {
           this.firstData.recvFirstData[uid] = {
@@ -520,6 +546,7 @@ class FormativeStatsReport {
         this._audioLevel.push({
           uid,
           level: isPlaying ? (+audioLevel || 0) : 0,
+          type: 'audio'
         })
       } else if (i.indexOf('_recv_') !== -1 && i.indexOf('_video') !== -1) {
         //主流
