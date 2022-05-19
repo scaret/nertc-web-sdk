@@ -33,37 +33,79 @@
 var logIndex = 0;
 var logHeadStart = 0;
 var lostLogCnt = 0;
-$(".kbnDocTableCell__dataField").each(function(){
-  const $elem = $(this);
-  const text = $elem.text();
-  let textArr;
-  try{
-    textArr = JSON.parse(text);
-    const matches = textArr[0].match(/NERTC:([A-Z]+):(\d+)/);
-    if (!matches){
-      console.log.apply(console, textArr);
+
+async function scrollBottom(){
+  let scrollTopHistory = document.body.parentElement.scrollTop;
+  let scrollNotChangedCnt = 0;
+  for (let i = 0; i < 100; i++){
+    document.body.parentElement.scrollTop = 500000;
+    await new Promise((res)=>{
+      setTimeout(res, 50);
+    });
+    if (document.body.parentElement.scrollTop - scrollTopHistory < 10){
+      scrollNotChangedCnt ++;
     }else{
-      const currentIndex = parseInt(matches[2]);
-      const type = matches[1].toLowerCase();
-      if (logIndex === 0){
-        logHeadStart = currentIndex;
-      }
-      else if (logIndex + 1 !== currentIndex){
-        console.error(`缺失日志条数：`, currentIndex - logIndex - 1);
-        lostLogCnt += Math.max(currentIndex - logIndex - 1, 1);
-      }
-      logIndex = currentIndex;
-      console[type].apply(console, textArr);
+      console.log("滚动成功", scrollTopHistory, "=>", document.body.parentElement.scrollTop);
+      scrollNotChangedCnt = 0;
+      scrollTopHistory = document.body.parentElement.scrollTop;
     }
-  }catch(e){
-    if("" + parseInt(text) === text){
-      return;
-    }else{
-      console.error("无法识别的日志格式：", text);
+    
+    if (scrollNotChangedCnt > 20){
+      console.log("已滚动到底");
+      break;
     }
   }
-});
-console.log(`========== 本页日志起始序号：${logHeadStart}  共缺少日志条数：${lostLogCnt} ===========`);
+};
+
+function printLog(){
+  $(".kbnDocTableCell__dataField").each(function(){
+    const $elem = $(this);
+    const text = $elem.text();
+    let textArr;
+    try{
+      textArr = JSON.parse(text);
+      const matches = textArr[0].match(/NERTC:([A-Z]+):(\d+)/);
+      if (!matches){
+        console.log.apply(console, textArr);
+      }else{
+        const currentIndex = parseInt(matches[2]);
+        const type = matches[1].toLowerCase();
+        if (logIndex === 0){
+          logHeadStart = currentIndex;
+        }
+        else if (logIndex + 1 !== currentIndex){
+          console.error(`缺失日志条数：`, currentIndex - logIndex - 1);
+          lostLogCnt += Math.max(currentIndex - logIndex - 1, 1);
+        }
+        logIndex = currentIndex;
+        console[type].apply(console, textArr);
+      }
+    }catch(e){
+      if("" + parseInt(text) === text){
+        return;
+      }else{
+        console.error("无法识别的日志格式：", text);
+      }
+    }
+  });
+  console.log(`========== 本页日志起始序号：${logHeadStart} 日志条数： ${logIndex - logHeadStart + 1}  共缺少日志条数：${lostLogCnt} ===========`);
+  console.log(`下一页：${getNextPageUrl()}`);
+};
+
+function getNextPageUrl(){
+  const txt = $(".eui-textNoWrap:last").text().replace("th ", " ");
+  const ts = Date.parse(txt);
+  const date = new Date(ts);
+  let hash = location.hash.replace("1=1&", "").replace(/from:(.*),mode:/, `from:'${date.toISOString()}',mode:`);
+  if (hash.indexOf("1=1") === -1){
+    hash += "&1=1";
+  }
+  let url = `${location.protocol}//${location.host}${location.pathname}?_t=${Date.now()}${hash}`;
+  return url;
+}
+
+scrollBottom().then(printLog)
+
 </script>
 <script>
   const scriptText = document.getElementById("printLogScript").innerHTML.replace(/\n/g, "")
