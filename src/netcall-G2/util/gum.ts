@@ -103,7 +103,7 @@ const trackWatcher = ()=>{
   if (now - lastWatchTs > interval * 2.5){
     let text = `侦测到主线程事件循环从卡死中恢复。卡顿时间：${ now - lastWatchTs - interval }毫秒。`
     text += "这可能是由于页面切往后台、设备休眠、频繁的dom操作、阻塞性代码引起的。"
-    text +=`当前页面页面是否隐藏：${document.hidden}。网络状态：${navigator.onLine}。`
+    text +=`当前页面页面是否隐藏：${document.hidden}，可见性：${document.visibilityState}，网络状态：${navigator.onLine}。`
     logger.warn(text)
   }
   lastWatchTs = now
