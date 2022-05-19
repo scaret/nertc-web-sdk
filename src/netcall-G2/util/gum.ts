@@ -94,10 +94,19 @@ async function getScreenStream (constraint:MediaStreamConstraints, logger:ILogge
 }
 
 //监测track状态
+let lastWatchTs = Date.now()
+const interval = 1000
 const trackWatcher = ()=>{
   const videoTracks = getParameters().tracks.video as (NeMediaStreamTrack|null)[]
   const audioTracks = getParameters().tracks.audio as (NeMediaStreamTrack|null)[]
   const now = Date.now()
+  if (now - lastWatchTs > interval * 2.5){
+    let text = `侦测到主线程事件循环从卡死中恢复。卡顿时间：${ now - lastWatchTs - interval }毫秒。`
+    text += "这可能是由于页面切往后台、设备休眠、频繁的dom操作、阻塞性代码引起的。"
+    text +=`当前页面页面是否隐藏：${document.hidden}。网络状态：${navigator.onLine}。`
+    logger.warn(text)
+  }
+  lastWatchTs = now
   videoTracks.forEach((track, i)=>{
     if (track && !track.endedAt && track.readyState === "ended"){
       logger.log(`VIDEOTRACK#${i} 已停止：【${track.label}】`)
@@ -116,7 +125,7 @@ const trackWatcher = ()=>{
   })
 }
 
-setInterval(trackWatcher, 1000)
+setInterval(trackWatcher, interval)
 
 export function watchTrack(track: MediaStreamTrack|null){
   if (track){
