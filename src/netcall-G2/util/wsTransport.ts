@@ -150,6 +150,15 @@ export default class WSTransport {
         // time属性至少比上一条+1毫秒，这样kibana的日志排序才正确。
         const time = Math.max(this.lastLogTime + 1, Date.now())
         this.lastLogTime = time;
+        try{
+          // @ts-ignore
+          if (this.cachedLogs.length){
+            // @ts-ignore
+            this.cachedLogs[this.cachedLogs.length - 1].data[0].replace("[NERTC", "[缓存][NERTC")
+          }
+        }catch(e){
+          // do noting
+        }
         this.cachedLogs.push({
           time,
           data
