@@ -255,12 +255,24 @@ getSpeakers(requestPerm: boolean = false) {
  */
 checkSystemRequirements() {
   let PC = window.RTCPeerConnection || (window as any).mozRTCPeerConnection || (window as any).webkitRTCPeerConnection;
+  if (!PC){
+    console.warn(`checkSystemRequirements: 没有 RTCPeerConnection 对象。`)
+    return false
+  }
   let getUserMedia = navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
-  let webSocket = window.WebSocket;
-  let isBrowserSupport = isBrowserSupported();
-  let isAPISupport = !!PC && !!getUserMedia && !!webSocket && !!isBrowserSupport;
-  
-  return isAPISupport;
+  if (!getUserMedia){
+    console.warn(`checkSystemRequirements: 没有 getUserMedia 方法。请检查https是否启用。`)
+    return false
+  }
+  if (!window.WebSocket){
+    console.warn(`checkSystemRequirements: 没有 WebSocket 对象。`)
+    return false
+  }
+  if (!isBrowserSupported()){
+    console.warn(`checkSystemRequirements: 不支持的浏览器。当前的 UserAgent为 ${navigator.userAgent}`)
+    return false
+  }
+  return true
 },
 /**
  * 获取 SDK 对当前浏览器支持的编解码格式。
