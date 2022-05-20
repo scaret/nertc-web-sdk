@@ -192,6 +192,7 @@ export class EncoderWatermarkControl extends EventEmitter{
           tag: 'Stream.setEncoderWatermarkConfigs:timestampWatermarks.fontSize',
           value: watermark.fontSize,
           min: 1,
+          max: 128,
         };
         if (isExistOptions(fontSizeCheck).result){
           checkValidInteger(fontSizeCheck);
