@@ -2510,6 +2510,10 @@ $('#snapshot').click(function(event) {
       }
     }
     let base64Url = stream.takeSnapshotBase64({mediaType: mediaType});
+    let base64Input = document.getElementById('base64Text');
+    base64Input.value = base64Url;
+    base64Input.select();
+    document.execCommand('copy');
     console.warn('截图生成 base64: ',base64Url);
   }
 })
