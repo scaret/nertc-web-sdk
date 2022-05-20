@@ -1399,7 +1399,6 @@ function initLocalStream() {
     addLog('初始化本地流失败' + e)
     throw e;
   }
-  updateLocalWatermark()
   const resolution = $('#sessionConfigVideoQuality').val()
   const frameRate = $('#sessionConfigVideoFrameRate').val()
   const videoProfile = {}
@@ -1448,8 +1447,11 @@ function initLocalStream() {
     await rtc.localStream.play(document.getElementById('local-container'), playOptions)
     console.warn('音视频初始化完成，播放本地视频', playOptions);
     rtc.localStream.setLocalRenderMode(globalConfig.localViewConfig)
-    if(!$('#camera').val())
+    updateLocalWatermark()
+    if(!$('#camera').val()){
       initDevices()
+    }
+
     // 发布
     if ($('#autoPub').prop('checked')) {
       if (rtc.client.adapterRef.connectState.curState === 'CONNECTED'){
@@ -1465,28 +1467,39 @@ function initLocalStream() {
 }
 
 function updateLocalWatermark(){
-  if (watermarks.local){
-    if (document.getElementById('watermark-type').value === "encoding"){
-      console.log("更新编码水印")
-      addLog("更新编码水印")
-      rtc.localStream.setEncodingWatermarkConfigs(watermarks.local);
-    }else{
-      console.log("更新画布水印")
-      addLog("更新画布水印")
-      rtc.localStream.setCanvasWatermarkConfigs(watermarks.local);
-    }
-  }else if ($('#idWatermark').prop('checked')){
-    rtc.localStream.setCanvasWatermarkConfigs({
-      textWatermarks: [{
-        content: 'video ' + rtc.localStream.getId(),
-      }],
-    });
-    rtc.localStream.setCanvasWatermarkConfigs({
-      mediaType: "screen",
-      textWatermarks: [{
-        content: 'screen ' + rtc.localStream.getId(),
-      }],
-    });
+  try{
+    if (watermarks.local){
+      if (document.getElementById('watermark-type').value === "encoding"){
+        console.log("更新编码水印", watermarks.local.video)
+        if (watermarks.local.video){
+          addLog("更新编码水印 video")
+          rtc.localStream.setEncoderWatermarkConfigs(watermarks.local.video);
+        }
+        if (watermarks.local.screen){
+          addLog("更新编码水印 screen")
+          rtc.localStream.setEncoderWatermarkConfigs(watermarks.local.screen);
+        }
+        
+      }else{
+        console.log("更新画布水印")
+        addLog("更新画布水印")
+        rtc.localStream.setCanvasWatermarkConfigs(watermarks.local);
+      }
+    }else if ($('#idWatermark').prop('checked')){
+      rtc.localStream.setCanvasWatermarkConfigs({
+        textWatermarks: [{
+          content: 'video ' + rtc.localStream.getId(),
+        }],
+      });
+      rtc.localStream.setCanvasWatermarkConfigs({
+        mediaType: "screen",
+        textWatermarks: [{
+          content: 'screen ' + rtc.localStream.getId(),
+        }],
+      });
+    }  
+  }catch(e){
+    console.error(e.name, e.message, e.stack)
   }
 }
 
