@@ -885,17 +885,27 @@ export class Firefox60 extends HandlerInterface
       })
       Logger.debug(prefix, 'receive() 检索出来了缺失的media Session: ', missMediaSessions)
       missMediaSessions.forEach(item => {
-        this._remoteSdp!.receive({
+        const filteredCodecs:any[] = []
+        extendedRtpCapabilities.codecs.forEach((codec: any)=>{
+          if (codec.kind === item.kind){
+            const codecCopy = Object.assign({}, codec)
+            codecCopy.parameters = codecCopy.parameters || codecCopy.localParameters
+            codecCopy.payloadType = codecCopy.payloadType || codecCopy.localPayloadType
+            filteredCodecs.push(codecCopy)
+          }
+        })
+        const data = {
           mid: `${item.mid}`,
           kind: item.kind,
           offerRtpParameters: {
-            codecs: extendedRtpCapabilities.codecs.filter((codec:any)=>{return codec.kind == item.kind}),
+            codecs: filteredCodecs,
             encodings:[{ssrc: 0}],
             headerExtensions:[],
             rtcp:{},
             mid:`${item.mid}`
           }
-        })
+        }
+        this._remoteSdp!.receive(data)
         this._remoteSdp!.disableMediaSection(`${item.mid}`)
       })
     }

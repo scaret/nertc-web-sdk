@@ -1558,8 +1558,12 @@ function subscribe(remoteStream) {
   remoteStream.setSubscribeConfig(subscribeConfig)
 
   rtc.client.subscribe(remoteStream).then(()=>{
-    console.log('本地 subscribe 成功')
-    addLog('本地 subscribe 成功')
+    if (!remoteStream.active){
+      console.warn("订阅期间远端已离开")
+      return
+    }
+    console.log(`subscribe 成功 ${remoteStream.streamID}`)
+    addLog(`subscribe 成功 ${remoteStream.streamID}`)
     if (watermarks.remote[remoteStream.streamID]){
       remoteStream.setCanvasWatermarkConfigs(watermarks.remote[remoteStream.streamID].video);
       remoteStream.setCanvasWatermarkConfigs(watermarks.remote[remoteStream.streamID].screen);
