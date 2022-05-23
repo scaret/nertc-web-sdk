@@ -47,7 +47,7 @@ class Base extends EventEmitter {
   public logStorage: any;
   public transportRebuildCnt: number = 0;
   public clientId: number;
-  protected logger: ILogger;
+  public logger: ILogger;
   private timeLast: number = Date.now();
   constructor(options:ClientOptions) {
     super();

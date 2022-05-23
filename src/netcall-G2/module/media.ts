@@ -27,7 +27,7 @@ import {Device} from "./device";
 import {Logger} from "./3rd/mediasoup-client/Logger";
 import {platform} from "../util/platform";
 import {NERTC_VIDEO_QUALITY_ENUM, VIDEO_FRAME_RATE_ENUM} from "../constant/videoQuality";
-import {disablePreProcessing, enablePreProcessing, preProcessingCopy} from "./preProcessing";
+import {canDisablePreProcessing, disablePreProcessing, enablePreProcessing, preProcessingCopy} from "./preProcessing";
 import {IS_SAFARI} from "../util/rtcUtil/rtcEnvironment";
 import {pcCloneTrack} from "../util/pcCloneTrack";
 class MediaHelper extends EventEmitter {
@@ -2601,6 +2601,10 @@ class MediaHelper extends EventEmitter {
   
   disablePreProcessing(mediaType: "video"|"screen", keepFlag = false){
     disablePreProcessing(this, mediaType, keepFlag)
+  }
+
+  canDisablePreProcessing(mediaType: "video"|"screen"){
+    return canDisablePreProcessing(this, mediaType)
   }
   
   getPreprocessingStats(mediaType: "video"|"screen" = "video"){

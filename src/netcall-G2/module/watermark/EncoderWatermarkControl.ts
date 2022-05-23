@@ -44,6 +44,7 @@ export class EncoderWatermarkControl extends EventEmitter{
     this.watermarks = [];
     this.handler = {
       name: "watermark",
+      enabled: false,
       func: this.handleFrame.bind(this)
     }
   }

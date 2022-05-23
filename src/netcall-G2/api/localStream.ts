@@ -3067,13 +3067,15 @@ class LocalStream extends EventEmitter {
     if (this._play && this._play){
       let watermarkControl = null;
       if (!options.mediaType || options.mediaType === "video"){
-          watermarkControl = this._play.watermark.video.encoderControl;
+        watermarkControl = this._play.watermark.video.encoderControl;
+        this._play.watermark.video.encoderControl.handler.enabled = true
         if (!this.mediaHelper.video.preProcessingEnabled){
           this.mediaHelper.enablePreProcessing("video")
         }
       }
       else if (options.mediaType === "screen"){
         watermarkControl = this._play.watermark.screen.encoderControl;
+        this._play.watermark.screen.encoderControl.handler.enabled = true
         if (!this.mediaHelper.screen.preProcessingEnabled){
           this.mediaHelper.enablePreProcessing("screen")
         }
