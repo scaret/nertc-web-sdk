@@ -3338,6 +3338,37 @@ $("#forceHeartbeat").click(()=>{
   rtc.client.adapterRef._statsReport.formativeStatsReport.send()
 })
 
+const pluginMap = {
+  mirror: {
+    id: 'mirror',
+    name: '镜像',
+    pathToPlugin: './MirrorPlugin.js',
+    nePlugin: null,
+  }
+}
+
+
+for (var key in pluginMap){
+  const pluginItem = pluginMap[key]
+  const installBtn = $(`<button id="${key}-install">安装</button>`)
+  installBtn.on("click", ()=>{
+    NERTC.pluginManager.import(pluginItem.pathToPlugin).then((nePlugin)=>{
+      pluginItem.nePlugin = pluginItem
+      addLog("插件加载完成：" + pluginItem.name)
+    })
+  })
+  const uninstallBtn = $(`<button id=${key}-uninstall>卸载</button>`)
+  uninstallBtn.on("click", ()=>{
+    NERTC.pluginManager.uninstall(pluginItem.pathToPlugin).then(()=>{
+      pluginItem.nePlugin = null
+      addLog("插件卸载完成：" + pluginItem.name)
+    })
+  })
+  let div = $(`<div><span>${pluginItem.name}</span></div>`)
+  $("#nePluginContainer").append(div)
+  div.append(installBtn)
+  div.append(uninstallBtn)
+}
 const assertLocalStream = ()=>{
   if (!rtc.localStream){
     addLog('当前不能执行此操作：rtc.localStream不存在');

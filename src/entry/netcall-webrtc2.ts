@@ -15,6 +15,7 @@ import RtcError from '../netcall-G2/util/error/rtcError';
 import ErrorCode from '../netcall-G2/util/error/errorCode';
 import {getParameters} from "../netcall-G2/module/parameters";
 import { isBrowserSupported } from '../netcall-G2/util/rtcUtil/rtcSupport'
+import {pluginManager} from "../netcall-G2/api/pluginManager";
 
 /**
  * {@link NERTC} 
@@ -39,7 +40,7 @@ import { isBrowserSupported } from '../netcall-G2/util/rtcUtil/rtcSupport'
 let client:Client|null;
 
 
-const NERTC = {
+export const NERTC = {
 
   Logger: {
     
@@ -129,6 +130,7 @@ createClient (options:ClientOptions) {
   if (!client){
     client = instance;
   }
+  pluginManager.safeEmit('client-created', {client: instance})
   return instance;
 },
 
@@ -172,6 +174,7 @@ createStream (options:LocalStreamOptions) {
       client: options.client || client
     }))
     getParameters().localStreams.push(localStream)
+    pluginManager.emit('stream-created', {localStream: localStream})
     return localStream
   } else {
     return clientNotYetUninitialized
@@ -303,6 +306,8 @@ destroy(parameterClient?: Client){
     client = null
   }
 },
+  
+pluginManager: pluginManager,
 
 PlatformTypeMap: PlatformTypeMap,
 

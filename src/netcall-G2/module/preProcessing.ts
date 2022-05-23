@@ -33,11 +33,22 @@ export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: 
       videoTrack: null,
       videoElem,
       canvasElem,
-      mirror: false,
       handlers: [
         {
+          name: "syncState",
+          enabled: true,
+          func: preProcessingSyncState
+        },
+        {
           name: "copy",
+          enabled: true,
           func: preProcessingCopy,
+        },
+        {
+          //镜像插件前处理预留位置
+          name: "mirror",
+          enabled: false,
+          func: ()=>{}
         },
         mediaHelper.stream._play?.watermark[mediaType].encoderControl.handler
       ],
@@ -60,11 +71,12 @@ export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: 
     emptyStreamWith(mediaHelper.screen.screenVideoStream, preProcessing.canvasTrack)
   }
   if (!videoTrack){
-    mediaHelper.logger.error(`enablePreProcessing：当前没有视频输入 ${mediaType}`)
-    return
+    mediaHelper.logger.warn(`enablePreProcessing：当前没有视频输入 ${mediaType}`)
+    preProcessing.videoElem.srcObject = new MediaStream([])
+  }else{
+    preProcessing.videoElem.srcObject = new MediaStream([videoTrack])
   }
   preProcessing.videoTrack = videoTrack
-  preProcessing.videoElem.srcObject = new MediaStream([videoTrack])
 
   // 3. 处理上行发送
   let sender, senderLow
@@ -102,7 +114,7 @@ export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: 
         const startTs = Date.now()
         const handlerTs = []
         for (let handler of preProcessing.handlers){
-          if (handler){
+          if (handler && handler.enabled){
             const spentStart = startTs
             await handler.func(mediaHelper, mediaType, preProcessing)
             const spent = Date.now() - spentStart
@@ -146,11 +158,13 @@ export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: 
 // 当没有前处理勾子时，前处理可关闭
 export async function canDisablePreProcessing(mediaHelper: MediaHelper, mediaType: "video"|"screen"){
   const preProcessing = mediaHelper[mediaType].preProcessing
-  if (preProcessing?.timer && preProcessing.handlers.length === 0){
-    return true
-  }else{
+  if (!preProcessing || !preProcessing.timer){
     return false
   }
+  const extraHandlers = preProcessing.handlers.filter((handler)=>{
+    return handler && handler.enabled && handler.name !== "syncState" && handler.name !== "copy"
+  })
+  return extraHandlers.length === 0
 }
 
 export async function disablePreProcessing(mediaHelper: MediaHelper, mediaType: "video"|"screen" = "video", keepFlag: boolean = false){
@@ -219,6 +233,15 @@ export async function disablePreProcessing(mediaHelper: MediaHelper, mediaType: 
   }
 }
 
+export function preProcessingSyncState(mediaHelper: MediaHelper, mediaType: "video"|"screen", config: PreProcessingConfig){
+  if (config.videoTrack){
+    if (config.videoTrack.enabled !== config.canvasTrack.enabled){
+      mediaHelper.logger.log(`preProcessingCopy: 更改mute状态 ${mediaType} ${config.canvasTrack.enabled} => ${config.videoTrack.enabled}`)
+      config.canvasTrack.enabled = config.videoTrack.enabled
+    }
+  }
+}
+
 export function preProcessingCopy(mediaHelper: MediaHelper, mediaType: "video"|"screen", config: PreProcessingConfig){
   if (config.videoTrack){
     if (config.videoTrack.enabled !== config.canvasTrack.enabled){
@@ -226,13 +249,7 @@ export function preProcessingCopy(mediaHelper: MediaHelper, mediaType: "video"|"
       config.canvasTrack.enabled = config.videoTrack.enabled
     }
   }
-  if (config.mirror){
-    config.canvasCtx.scale(-1, 1)
-    config.canvasCtx.drawImage(config.videoElem, 0, 0, config.videoElem.videoWidth * -1, config.videoElem.videoHeight)
-    config.canvasCtx.scale(-1, 1)
-  }else{
-    config.canvasCtx.drawImage(config.videoElem, 0, 0)
-  }
+  config.canvasCtx.drawImage(config.videoElem, 0, 0)
 }
 
 export function preProcessingPureColor(mediaHelper: MediaHelper, mediaType: "video"|"screen", config: PreProcessingConfig){

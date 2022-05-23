@@ -793,6 +793,7 @@ export enum PlatformType{
 }
 
 export interface Client{
+  logger: ILogger;
   adapterRef: AdapterRef;
   apiFrequencyControl: (event:any)=>void;
   emit:(eventName: string, eventData?:any)=>void
@@ -1316,10 +1317,11 @@ export interface RTSTransportOptions{
   adapterRef: AdapterRef;
 }
 
-export type PreProcessingHandlerName = "copy"|"color"|"watermark"
+export type PreProcessingHandlerName = "syncState"|"copy"|"color"|"watermark"|"mirror"
 
 export interface PreProcessingHandler{
   name: PreProcessingHandlerName;
+  enabled: boolean;
   func: (mediaHelper: MediaHelper, mediaType: "video"|"screen", config: PreProcessingConfig)=>void
 }
 
@@ -1335,7 +1337,6 @@ export interface PreProcessingConfig{
   videoTrack: MediaStreamTrack|null;
   canvasElem: HTMLCanvasElement;
   handlers: (PreProcessingHandler|undefined)[];
-  mirror: boolean;
   history: PreProcessingHistoryInfo[];
   timer: number|null;
 }
