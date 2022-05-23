@@ -203,6 +203,7 @@ export class EncoderWatermarkControl extends EventEmitter{
           tag: 'Stream.setEncoderWatermarkConfigs:timestampWatermarks.fontColor',
           value: watermark.fontColor,
           min: 0,
+          max: 0xFFFFFFFF,
         };
         if (isExistOptions(fontColorCheck).result){
           checkValidInteger(fontColorCheck);
