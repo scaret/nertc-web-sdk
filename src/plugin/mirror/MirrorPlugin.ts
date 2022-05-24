@@ -1,16 +1,13 @@
-import {NEPlugin, PluginManager} from "../core";
+import {NEPlugin} from "../core";
 import type {LocalStream} from "../../netcall-G2/api/localStream";
 import type {MediaHelper} from "../../netcall-G2/module/media";
 import type {PreProcessingConfig} from "../../netcall-G2/types";
-
-const pluginName = "mirror"
-const version = "1.0.0"
+import {NERTC} from "../../entry/netcall-webrtc2";
 
 class MirrorPlugin implements NEPlugin{
-  name = pluginName
+  name = "mirror"
   version = "1.0.0"
   description = "插件示例：编码镜像"
-  installed = false
   NERTC: any
   
   async install(NERTC: any){
@@ -48,14 +45,6 @@ class MirrorPlugin implements NEPlugin{
     }else{
       console.error(`无法找到 mirrorHandler`)
     }
-
-    /**
-     * disableMirror
-     */
-    // @ts-ignore
-    localStream.disableMirror = () => {
-
-    }
   }
 
   preProcessingMirror(mediaHelper: MediaHelper, mediaType: "video"|"screen", config: PreProcessingConfig){
@@ -68,9 +57,9 @@ class MirrorPlugin implements NEPlugin{
 const nePlugin = new MirrorPlugin()
 
 // @ts-ignore
-if(window.NERTC && window.NERTC.pluginManager){
+if(window.WebRTC2 && window.WebRTC2.pluginManager){
 // @ts-ignore
-  window.NERTC.pluginManager.lastImported = nePlugin
+  window.WebRTC2.pluginManager.lastImported = nePlugin
 }
 
 export default nePlugin

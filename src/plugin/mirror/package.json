@@ -3,7 +3,7 @@
   "private": false,
   "version": "1.0.0",
   "scripts": {
-    "dev": "NODE_ENV=development webpack -w",
+    "dev:mirror": "NODE_ENV=development webpack -w",
     "test": "echo none"
   },
   "author": "netease im",
