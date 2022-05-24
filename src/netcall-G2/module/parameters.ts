@@ -83,6 +83,8 @@ interface IParameters{
   enableTcpCandidate: boolean,
   // 允许UDP
   enableUdpCandidate: boolean,
+  // 最大事件循环卡顿提示次数
+  maxEventLoopLagWarning: number,
   // 修补Safari本地canvas track无法播放的问题
   shimLocalCanvas: "safari"|"all"|"never"
 }
@@ -142,6 +144,7 @@ let parameters:IParameters = {
   h264StrictHigh: false,
   enableTcpCandidate: true,
   enableUdpCandidate: true,
+  maxEventLoopLagWarning: 3,
   shimLocalCanvas: "safari",
 }
 
