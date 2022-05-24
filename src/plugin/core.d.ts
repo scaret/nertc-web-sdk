@@ -371,7 +371,7 @@ declare namespace CORE {
 }
 
 declare interface PluginManager{
-  load: (NEPlugin: any)=>Promise<void>
+  import: (pathToPlugin: string)=>Promise<void>
 }
 
 declare interface NEPlugin{
@@ -380,7 +380,6 @@ declare interface NEPlugin{
   description: string;
   install: (NERTC: any)=>Promise<void>
   uninstall: ()=>Promise<void>
-  installed: boolean
   extendClient?: (client: Client)=>Promise<void>
   extendLocalStream?: (localStream: LocalStream)=>Promise<void>
 }
