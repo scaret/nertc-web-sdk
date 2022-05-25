@@ -36,9 +36,9 @@ import {ILogger} from "../types";
 import { isHttpProtocol } from '../util/rtcUtil/rtcSupport'
 import {emptyStreamWith, watchTrack} from "../util/gum";
 import {getParameters} from "../module/parameters";
-import {makePrintable} from "../util/util";
 import {startBeauty, closeBeauty, transformTrack, setBeautyFilter} from "../util/beauty";
 import * as env from '../util/rtcUtil/rtcEnvironment';
+import {makePrintable} from "../util/rtcUtil/utils";
 
 /**
  *  请使用 {@link NERTC.createStream} 通过NERTC.createStream创建

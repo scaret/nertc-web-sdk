@@ -10,7 +10,7 @@ import {
   StatsReportOptions
 } from "../../types";
 import { SDK_VERSION } from '../../Config'
-import { generateUUID } from '../../util/rtcUtil/utilsId';
+import { generateUUID } from '../../util/rtcUtil/utils';
 import isEmpty from "../../util/rtcUtil/isEmpty";
 const sha1 =  require('js-sha1');
 

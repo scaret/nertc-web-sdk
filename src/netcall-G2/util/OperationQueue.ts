@@ -1,6 +1,6 @@
 import {Client, ILogger, JoinOptions} from "../types";
 import {LocalStream, LocalStreamCloseOptions, LocalStreamOpenOptions} from "../api/localStream";
-import {makePrintable} from "./util";
+import {makePrintable} from "./rtcUtil/utils";
 
 type OperationArgs = {
   caller: Client,

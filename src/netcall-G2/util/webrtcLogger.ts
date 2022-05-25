@@ -3,7 +3,7 @@ import {logHelper} from "./logHelper";
 import {LoggerOptions} from "../types";
 import {getParameters} from "../module/parameters";
 import {loglevels} from "./log/logger";
-import {formatSingleArg} from "./util";
+import {formatSingleArg} from "./rtcUtil/utils";
 
 let logIndex = 0
 

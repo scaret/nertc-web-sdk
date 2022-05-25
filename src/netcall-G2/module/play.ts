@@ -6,7 +6,7 @@ import {
 import RtcError from '../util/error/rtcError';
 import ErrorCode  from '../util/error/errorCode';
 import {getParameters} from "./parameters";
-import {getDomInfo} from "../util/util";
+import {getDomInfo} from "../util/rtcUtil/utils";
 import {LocalStream} from "../api/localStream";
 import {RemoteStream} from "../api/remoteStream";
 import {CanvasWatermarkControl, createCanvasWatermarkControl} from "./watermark/CanvasWatermarkControl";
