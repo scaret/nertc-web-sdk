@@ -4,7 +4,6 @@
 
 import { Device } from '../../module/device'
 import { RtcSystem } from './rtcSystem'
-import { platform } from "../platform";
 import * as env from './rtcEnvironment';
 import { getSupportedCodecs } from './codec';
 
@@ -103,10 +102,10 @@ const base = {
 }
 
 function getVersion () {
-  let prefix = platform && platform.name
-  let version = platform && platform.version
-  //console.log('platform', platform)
+  let prefix = getBrowserInfo().browserName;
+  let version = getBrowserInfo().browserVersion;
   //version = version && version.match(/(\d|\.)+/)[0]
+  //@ts-ignore
   version = version && version.match(/\d+/)[0]
   return {
     prefix,
@@ -126,11 +125,9 @@ const RtcSupport =  {
   },
   checkCompatibility () {
     let result = Object.assign(getVersion(), {
-      system:
-        platform &&
-        platform.os.family + ' ' + platform.os.version,
-      browser: platform && platform.name,
-      version: platform && platform.version
+      system: getOSInfo().osName + ' ' + getOSInfo().osVersion,
+      browser: getBrowserInfo().browserName,
+      version: getBrowserInfo().browserVersion
     })
 
     // 当前屏幕共享写死false
@@ -274,20 +271,23 @@ export const isHttpProtocol = function() {
 }
 
 const OSNameMap = new Map([
-  [env.IS_ANDROID, 'Android'],
-  [env.IS_IOS, 'iOS'],
-  [env.IS_WIN, 'Windows'],
-  [env.IS_MAC, 'MacOS'],
-  [env.IS_LINUX, 'Linux']
+  [env.IS_ANDROID, ['Android', env.ANDROID_VERSION]],
+  [env.IS_IOS, ['iOS', env.IOS_VERSION]],
+  [env.IS_WIN, ['Windows', env.WIN_VERSION]],
+  [env.IS_MAC, ['MacOS', env.MACOS_VERSION]]
 ]);
 
-export const getOSName = function() {
-  let osName = platform.os.family;
+export function getOSInfo() {
+  let osName = 'unknown',
+    osVersion = 'unknown';
   if (OSNameMap.get(true)) {
-    osName = OSNameMap.get(true);
+    //@ts-ignore
+    osName = OSNameMap.get(true)[0];
+    //@ts-ignore
+    osVersion = OSNameMap.get(true)[1];
   }
-  return osName;
-};
+  return { osName, osVersion };
+}
 
 const browserInfoMap = new Map([
   [env.IS_FIREFOX, ['Firefox', env.FIREFOX_VERSION]],
@@ -307,12 +307,13 @@ const browserInfoMap = new Map([
   [env.IS_VIVOBROWSER, ['VIVO', env.VIVO_VERSION]],
   [env.IS_EDGE, ['EDGE', env.EDGE_VERSION]],
   [env.IS_SOGOUM, ['SogouMobile', env.SOGOUM_VERSION]],
-  [env.IS_SOGOU, ['Sogou', env.SOGOU_VERSION]]
+  [env.IS_SOGOU, ['Sogou', env.SOGOU_VERSION]],
+  [env.IS_ELECTRON, ['Sogou', env.ELECTRON_VERSION]]
 ]);
 
 export function getBrowserInfo() {
-  let browserName = platform.name,
-    browserVersion = platform.version;
+  let browserName = 'unknown',
+    browserVersion = 'unknown';
   if (browserInfoMap.get(true)) {
     //@ts-ignore
     browserName = browserInfoMap.get(true)[0];

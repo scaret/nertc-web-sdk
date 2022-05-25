@@ -4,7 +4,7 @@
 import { EventEmitter } from "eventemitter3";
 import * as bowser from "bowser";
 import {AdapterRef, MediaTypeShort} from "../../types";
-import {platform} from "../../util/platform";
+import {getOSInfo, getBrowserInfo} from '../../util/rtcUtil/rtcSupport';
 import * as env from '../../util/rtcUtil/rtcEnvironment';
 
 class GetStats extends EventEmitter{  
@@ -332,13 +332,13 @@ class GetStats extends EventEmitter{
     params.cid = this.adapterRef?.channelInfo.cid;
     params.uid = this.adapterRef?.channelInfo.uid;
     if(env.IS_EDG) {
-      params.browser = 'Edge-' + platform.version;
+      params.browser = 'Edge-' + getBrowserInfo().browserVersion;
     }else {
-      params.browser = platform.name + '-' + platform.version;
+      params.browser = getBrowserInfo().browserName + '-' + getBrowserInfo().browserVersion;
     }
     
 
-    params.platform = platform.os.family;
+    params.platform = getOSInfo().osName;
     return params;
   }
 

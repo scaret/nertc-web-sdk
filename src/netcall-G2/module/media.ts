@@ -25,10 +25,9 @@ import {LocalStream} from "../api/localStream";
 import {RemoteStream} from "../api/remoteStream";
 import {Device} from "./device";
 import {Logger} from "./3rd/mediasoup-client/Logger";
-import {platform} from "../util/platform";
+import * as env from "../util/rtcUtil/rtcEnvironment";
 import {NERTC_VIDEO_QUALITY_ENUM, VIDEO_FRAME_RATE_ENUM} from "../constant/videoQuality";
 import {canDisablePreProcessing, disablePreProcessing, enablePreProcessing, preProcessingCopy} from "./preProcessing";
-import {IS_SAFARI} from "../util/rtcUtil/rtcEnvironment";
 import {pcCloneTrack} from "../util/pcCloneTrack";
 class MediaHelper extends EventEmitter {
   stream: LocalStream|RemoteStream;
@@ -197,7 +196,7 @@ class MediaHelper extends EventEmitter {
   
   bindRenderStream(){
     if (
-      (IS_SAFARI && getParameters().shimLocalCanvas === "safari")
+      (env.IS_SAFARI && getParameters().shimLocalCanvas === "safari")
       || getParameters().shimLocalCanvas === "all"
     ){
       this.video.videoStream.onaddtrack = async (evt: MediaStreamTrackEvent) =>{
@@ -879,8 +878,8 @@ class MediaHelper extends EventEmitter {
       this.logger.log("创建小流", mediaType, trackHigh.label, constraintsLow);
     }
     const settings = trackHigh.getSettings();
-    if (mediaType === "screen" && platform.name === "Safari"){
-      this.logger.log(`创建小流：${mediaType} + ${platform.name} 使用与大流一样的分辨率 ${settings.width}x${settings.height}`)
+    if (mediaType === "screen" && env.IS_SAFARI){
+      this.logger.log(`创建小流：${mediaType} + Safari 使用与大流一样的分辨率 ${settings.width}x${settings.height}`)
     }
     else if (settings.width && settings.height) {
       try{

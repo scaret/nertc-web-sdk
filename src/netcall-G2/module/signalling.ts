@@ -17,7 +17,7 @@ import {RTSTransport} from "./rtsTransport";
 import { parseBase64 } from "../util/crypto-ts/base64";
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
-import {getOSName, getBrowserInfo} from '../util/rtcUtil/rtcSupport'
+import {getOSInfo, getBrowserInfo} from '../util/rtcUtil/rtcSupport';
 import {getParameters} from "./parameters";
 const protooClient = require('./3rd/protoo-client/')
 
@@ -78,7 +78,7 @@ class Signalling extends EventEmitter {
     this._reset()
     // 设置对象引用
     this.adapterRef = options.adapterRef
-    this.browserDevice = getOSName()+ '-' + getBrowserInfo().browserName + '-' + getBrowserInfo().browserVersion;
+    this.browserDevice = getOSInfo().osName + '-' + getBrowserInfo().browserName + '-' + getBrowserInfo().browserVersion;
   }
 
   async _reset() {

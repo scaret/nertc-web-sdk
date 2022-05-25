@@ -12,10 +12,10 @@ import {
 import {
   DataReport,
 } from "./dataReport";
-import {platform} from "../../util/platform";
 import RtcError from '../../util/error/rtcError';
 import ErrorCode  from '../../util/error/errorCode';
 import * as env from '../../util/rtcUtil/rtcEnvironment';
+import {getOSInfo, getBrowserInfo} from '../../util/rtcUtil/rtcSupport';
 
 let url = 'https://statistic.live.126.net/statistic/realtime/sdkinfo'
 type UIDTYPE = number | string;
@@ -120,8 +120,8 @@ class FormativeStatsReport {
       device: -1,
       isp: -1,
       platform:
-        tool.convertPlatform(platform.os.family) + '-' + platform.os.version + '- webrtc',
-      browser: platform.name + '-' + platform.version,
+        tool.convertPlatform(getOSInfo().osName) + '-' + getOSInfo().osVersion + '- webrtc',
+      browser: getBrowserInfo().browserName + '-' + getBrowserInfo().browserVersion,
       sdk_ver: '3.6.0',
       appkey: appkey,
       // 上报时间间隔
