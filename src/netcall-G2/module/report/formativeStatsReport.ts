@@ -15,7 +15,7 @@ import {
 import RtcError from '../../util/error/rtcError';
 import ErrorCode  from '../../util/error/errorCode';
 import * as env from '../../util/rtcUtil/rtcEnvironment';
-import {getOSInfo, getBrowserInfo} from '../../util/rtcUtil/rtcSupport';
+import {getOSInfo, getBrowserInfo} from '../../util/rtcUtil/rtcPlatform';
 
 let url = 'https://statistic.live.126.net/statistic/realtime/sdkinfo'
 type UIDTYPE = number | string;

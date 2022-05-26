@@ -4,7 +4,7 @@
 import { EventEmitter } from "eventemitter3";
 import * as bowser from "bowser";
 import {AdapterRef, MediaTypeShort} from "../../types";
-import {getOSInfo, getBrowserInfo} from '../../util/rtcUtil/rtcSupport';
+import {getOSInfo, getBrowserInfo} from '../../util/rtcUtil/rtcPlatform';
 import * as env from '../../util/rtcUtil/rtcEnvironment';
 
 class GetStats extends EventEmitter{  

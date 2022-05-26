@@ -17,7 +17,7 @@ import {RTSTransport} from "./rtsTransport";
 import { parseBase64 } from "../util/crypto-ts/base64";
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
-import {getOSInfo, getBrowserInfo} from '../util/rtcUtil/rtcSupport';
+import {getOSInfo, getBrowserInfo} from '../util/rtcUtil/rtcPlatform';
 import {getParameters} from "./parameters";
 const protooClient = require('./3rd/protoo-client/')
 
