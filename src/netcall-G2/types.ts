@@ -1357,3 +1357,9 @@ export interface PreProcessingHistoryInfo{
 export interface FormatMediaOptions{
   adapterRef: AdapterRef;
 }
+
+export interface BeautyEffectOptions {
+  brightnessLevel: number;
+  rednessLevel: number;
+  smoothnessLevel: number;
+}

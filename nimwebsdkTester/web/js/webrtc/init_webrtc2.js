@@ -1018,10 +1018,14 @@ $('#setTransform').on('click', () => {
   }
 })
 
-$('#leaveChannel-btn').on('click', () => {
+$('#leaveChannel-btn').on('click', async() => {
   addLog('离开房间')
   console.info('开始离开房间...')
   clearInterval(audioEffectsPlayTimer);
+  // 销毁美颜
+  await rtc.localStream.setBeautyEffect(false);
+  window.isBeautyStarted = false;
+  console.warn('销毁美颜功能');
   window.rtc.client.leave()
   rtc.remoteStreams.length = 0
   subList.length = 0
@@ -1059,6 +1063,109 @@ $('#tasks-btn').on('click', () => {
 $('#refreshDevices').on('click', () =>{
   initDevices(true);
 })
+
+/**
+ * ----------------------------------------
+ *              基础美颜
+ * ----------------------------------------
+ */
+
+ const range0 = document.getElementById("filterIntensity"); // 滤镜明亮度
+ const range1 = document.getElementById("r1"); // 明亮度
+ const range2 = document.getElementById("r2"); // 美白
+ const range3 = document.getElementById("r3"); // 红润
+ const range4 = document.getElementById("r4"); // 平滑
+ 
+
+// 预设美颜参数
+let preEffects;
+$('#preSetBeauty').on('click', () => {
+  // if (!rtc.localStream) {
+  //   assertLocalStream()
+  //   return
+  // }
+  const meibaiVal = $('#setMeibai').val() || 0
+  const hongrunVal = $('#setHongrun').val() || 0
+  const pinghuaVal = $('#setPinghua').val() || 0
+  preEffects = {
+    brightnessLevel: Number(meibaiVal),
+    rednessLevel: Number(hongrunVal),
+    smoothnessLevel: Number(pinghuaVal)
+  }
+  console.log('预设美颜参数：', preEffects);
+})
+
+$('#startBeauty').on('click', async() => {
+  await rtc.localStream.setBeautyEffect(true);
+  console.warn('开启美颜功能');
+  if(preEffects){
+    rtc.localStream.setBeautyEffectOptions(preEffects);
+  }
+})
+
+$('#closeBeauty').on('click', async() => {
+  await rtc.localStream.setBeautyEffect(false);
+  console.warn('关闭美颜功能');
+})
+
+// const lut = $('#setBeautyFilter').val();
+const lutSelect = document.getElementById('setBeautyFilter');
+let lut;
+lutSelect.addEventListener('change', (e) => {
+  const options = [
+      null,
+      'ziran',
+      'baixi',
+      'fennen',
+      'weimei',
+      'langman',
+      'rixi',
+      'landiao',
+      'qingliang',
+      'huaijiu',
+      'qingcheng',
+      'wuhou',
+      'zhigan',
+      'mopian',
+      'dianying',
+      'heibai'
+  ];
+  const optsIndex = e.target.selectedIndex;
+  lut = options[optsIndex];
+  console.log('optsIndex',optsIndex, 'lut',lut);
+  range0.disabled = lut ? false : true;
+  rtc.localStream.setFilter(lut);
+});
+
+
+range0.addEventListener('change', () => {
+  const val = Number(range0.value);
+  rtc.localStream.setFilter(lut, val);
+})
+
+range2.addEventListener('change', () => {
+  const val = Number(range2.value) / 100;
+  let effects = {
+    brightnessLevel: val
+  }
+  rtc.localStream.setBeautyEffectOptions(effects);
+})
+range3.addEventListener('change', () => {
+  const val = Number(range3.value) / 100;
+  let effects = {
+    rednessLevel: val
+  }
+  rtc.localStream.setBeautyEffectOptions(effects);
+})
+
+range4.addEventListener('change', () => {
+  const val = Number(range4.value) / 100;
+  let effects = {
+    smoothnessLevel: val
+  }
+  rtc.localStream.setBeautyEffectOptions(effects);
+})
+
 
 /**
  * ----------------------------------------
@@ -1968,6 +2075,7 @@ $('#playCamera').on('click', () => {
     console.log('打开摄像头 sucess')
     await rtc.localStream.play(document.getElementById('local-container'))
     rtc.localStream.setLocalRenderMode(globalConfig.localViewConfig)
+    !!rtc.localStream.isBeautyTrack && (await rtc.localStream.setBeautyEffect(true))
   }).catch(err =>{
     addLog('打开摄像头' + err)
     console.log('打开摄像头 失败: ', err)
@@ -1984,6 +2092,7 @@ $('#playCameraOff').on('click', () => {
     type: 'video'
   }).then(()=>{
     console.log('关闭摄像头 sucess')
+    rtc.localStream.isBeautyTrack && rtc.localStream.setBeautyEffect(false);
   }).catch(err =>{
     addLog('关闭摄像头 失败: ' + err)
     console.log('关闭摄像头 失败: ', err)
@@ -2386,6 +2495,7 @@ $('#camera').on('change', () => {
   console.warn('切换camera: ', cameraId)
   window.rtc.localStream && window.rtc.localStream.switchDevice('video', cameraId).then(()=>{
     console.warn('切换camera成功')
+    !!window.rtc.localStream.isBeautyTrack && window.rtc.localStream.setBeautyEffect(true)
   }).catch(err=>{
     console.warn('切换camera失败： ', err)
   })
