@@ -82,7 +82,7 @@ file.appendFile = function (path, data) {
 }
 
 file.zip = function (dest, options) {
-  console.log('dest option', dest, options)
+  // console.log('dest option', dest, options)
   var zip = archiver('zip')
   var output = fse.createWriteStream(dest)
   output.on('close', function () {
