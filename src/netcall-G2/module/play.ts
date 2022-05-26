@@ -120,8 +120,8 @@ class Play extends EventEmitter {
 
   }
 
-  _initNodeVideo() {
-    this._initVideoContainer()
+  _initNodeVideo(end:string) {
+    this._initVideoContainer(end)
     this._initVideo()
     if (this.videoDom){
       if (this.videoContainerDom){
@@ -152,11 +152,15 @@ class Play extends EventEmitter {
     }
   }
 
-  _initVideoContainer() {
+  _initVideoContainer(end:string) {
     if(!this.videoView) return
     if(!this.videoContainerDom) {
       this.videoContainerDom = document.createElement('div')
-      this.videoContainerDom.className = "nertc-video-container";
+      if(end === 'local'){
+        this.videoContainerDom.className = "nertc-video-container-local";
+      }else {
+        this.videoContainerDom.className = "nertc-video-container-remote";
+      }
       // 样式
       this.videoContainerDom.style.overflow = 'hidden'
       this.videoContainerDom.style.position = 'relative'
@@ -557,14 +561,14 @@ class Play extends EventEmitter {
     }
   }
 
-  async playVideoStream(stream:MediaStream, view:HTMLElement) {
+  async playVideoStream(stream:MediaStream, view:HTMLElement, end:string) {
     if(!stream || !view) return
     if (this.videoDom?.srcObject === stream) {
       this.logger.log(`playVideoStream：跳过重复的播放请求`);
       return
     }
     this.videoView = view
-    this._initNodeVideo()
+    this._initNodeVideo(end)
     this._mountVideoToDom()
     if (!this.videoDom){
       this.logger.error(`没有视频源`);

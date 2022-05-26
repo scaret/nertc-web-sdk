@@ -18,6 +18,7 @@ import {
   SnapshotBase64Options,
   LocalStreamOptions, StreamPlayOptions,
   VideoProfileOptions,
+  BeautyEffectOptions,
   AudioEffectOptions, GetStreamConstraints, Client as IClient, NERtcEncoderWatermarkConfig
 } from "../types";
 import {MediaHelper} from "../module/media";
@@ -36,6 +37,8 @@ import { isHttpProtocol } from '../util/rtcUtil/rtcSupport'
 import {emptyStreamWith, watchTrack} from "../util/gum";
 import {getParameters} from "../module/parameters";
 import {makePrintable} from "../util/util";
+import {startBeauty, closeBeauty, transformTrack, setBeautyFilter} from "../util/beauty";
+import * as env from '../util/rtcUtil/rtcEnvironment';
 
 /**
  *  请使用 {@link NERTC.createStream} 通过NERTC.createStream创建
@@ -114,6 +117,9 @@ class LocalStream extends EventEmitter {
   private _record: Record|null;
   private audioLevelHelper: AudioLevel|null = null;
   public audioProfile:string;
+  private _cameraTrack:MediaStreamTrack|null;
+  private _transformedTrack:MediaStreamTrack|null;
+  private lastEffects:any;
   public videoProfile: {
     frameRate: number;
     resolution: number;
@@ -168,6 +174,7 @@ class LocalStream extends EventEmitter {
   public logger:ILogger;
   public localStreamId: number;
   public destroyed:boolean = false;
+  private isBeautyTrack: boolean = false;
   
   constructor (options:LocalStreamOptions) {
     super()
@@ -245,6 +252,8 @@ class LocalStream extends EventEmitter {
     this.videoSource = options.videoSource || null
     this.screenAudioSource = options.screenAudioSource || null
     this.screenVideoSource = options.screenVideoSource || null
+    this._cameraTrack = null
+    this._transformedTrack = null
     this.mediaHelper = new MediaHelper({
       stream: this,
     });
@@ -686,7 +695,8 @@ class LocalStream extends EventEmitter {
         if(this._play && this.mediaHelper.video.videoStream.getVideoTracks().length){
           this.logger.log(`uid ${this.stringStreamID} 开始启动视频播放 主流 本地`);
           try{
-            await this._play.playVideoStream(this.mediaHelper.video.renderStream, view)
+            let end = 'local';
+            await this._play.playVideoStream(this.mediaHelper.video.videoStream, view, end)
             if ("width" in this.renderMode.local.video){
               this._play.setVideoRender(this.renderMode.local.video)
             }
@@ -1385,6 +1395,14 @@ class LocalStream extends EventEmitter {
           reason = 'NOT_OPEN_CAMERA_YET'
           break
         }
+        if(this._transformedTrack && this._cameraTrack){
+          this._cameraTrack.stop();
+          this._cameraTrack = null;
+        }
+        if(this._transformedTrack){
+          this._transformedTrack.stop();
+          this._transformedTrack = null;
+        }
         this.video = false
         this.mediaHelper.stopStream('video')
         if (this.mediaHelper.video.preProcessingEnabled){
@@ -1878,6 +1896,11 @@ class LocalStream extends EventEmitter {
       }
 
       const cameraTrack = this.mediaHelper.video.cameraTrack
+      //关闭美颜track, 切换后的回调中再重新开启美颜
+      if(this._transformedTrack){
+        this._transformedTrack.stop();
+        this._transformedTrack = null;
+      }
       if (cameraTrack?.readyState === "live" && cameraTrack?.getSettings().deviceId === deviceId) {
         this.logger.log(`切换相同的摄像头设备，不处理`)
         this.inSwitchDevice[type] = false
@@ -3132,6 +3155,107 @@ class LocalStream extends EventEmitter {
       }
     }
   }
+
+  /**
+   * 设置美颜效果
+   * @function setBeautyEffectOptions
+   * @memberOf Stream#
+   * @return 
+   */
+
+   setBeautyEffectOptions(effects:BeautyEffectOptions) {
+    if(!this.isBeautyTrack){
+      return;
+    }
+    this.lastEffects = effects;
+    this.logger.log('setBeautyEffectOptions() 设置美颜效果', effects)
+    startBeauty(true, effects);
+  }
+
+  /**
+   * 开启美颜
+   * @function setBeautyEffect
+   * @memberOf Stream#
+   * @return {Promise}
+   */
+
+   async setBeautyEffect(isStart:boolean){
+    if(isStart && this._transformedTrack){
+      this.logger.log('美颜已经开启');
+      return;
+    }
+    await this.startBeautyEffect(isStart);
+    this.logger.log('setBeautyEffect()', isStart);
+  }
+
+  async startBeautyEffect(isStart:boolean){
+    if (this.mediaHelper && this.mediaHelper.video.cameraTrack) {
+      if(isStart) {
+        this.logger.log('startBeautyEffect() 开启美颜');
+        this.isBeautyTrack = true;
+        let effects;
+        if(this.lastEffects){
+          effects = this.lastEffects;
+        }else {
+          effects = {
+            brightnessLevel: 0,
+            rednessLevel: 0,
+            smoothnessLevel:0
+          }
+        }
+        this._cameraTrack = this.mediaHelper.video.cameraTrack
+        //@ts-ignore
+        this._transformedTrack = transformTrack(this._cameraTrack);
+        await this.replaceTrack({
+          mediaType: "video",
+          //@ts-ignore
+          track: this._transformedTrack,
+          external: false
+        });
+        startBeauty(true, effects);
+        if(env.IS_ANY_SAFARI){
+          let localVideoDom = document.getElementsByClassName('nertc-video-container-local')[0].querySelector('video');
+          localVideoDom!.style.display = 'none';
+        }
+      }else {
+        if(!this.isBeautyTrack){
+          return;
+        }
+        this.logger.log('startBeautyEffect() 关闭美颜');
+        await this.replaceTrack({
+          mediaType: "video",
+          //@ts-ignore
+          track: this._cameraTrack,
+          external: false
+        });
+        if(this._transformedTrack){
+          this._transformedTrack.stop();
+          this._transformedTrack = null;
+        }
+        this.isBeautyTrack = false;
+        closeBeauty();
+        if(env.IS_ANY_SAFARI){
+          let localVideoDom = document.getElementsByClassName('nertc-video-container-local')[0].querySelector('video');
+          localVideoDom!.style.display = 'block';
+        }
+      }
+
+    }else {
+      this.logger.log("beautyTrack() 此时还没有有视频track");
+    }
+  }
+
+  /**
+   *  添加滤镜
+   *  @method setFilter
+   *  @memberOf Stream#
+   *  @param {Void}
+   */
+   setFilter(options:string|null, intensity?:number) {
+    // intensity不填写就是默认值
+    this.logger.log('setFilter() set beauty filter', options, intensity);
+    setBeautyFilter(options,intensity);
+  }
   
   /**
    *  销毁实例
@@ -3153,6 +3277,14 @@ class LocalStream extends EventEmitter {
     this.stop()
     this._reset()
     this.destroyed = true;
+    this.lastEffects = null;
+    //销毁时，清除美颜小流track
+    getParameters().tracks.video.forEach((track)=>{
+      if(track && track.readyState === 'live'){
+          track.stop();
+          track = null;
+      }
+    });
   }
 }
 
