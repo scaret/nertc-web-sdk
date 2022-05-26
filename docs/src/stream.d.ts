@@ -347,6 +347,9 @@ declare interface Stream {
     /**
      * 设置音频播放的音量。
      * @param volume 要设置的远端音频的播放音量，范围为 [0-100]。0 表示静音。
+     * 
+     * @note 注意
+     * 由于系统限制，ios上目前不支持设置远端音量。
      */
     setAudioVolume(volume?: number): string | undefined;
     /**
