@@ -1398,23 +1398,63 @@ function getAudioSource(mediaType){
   }else{
     defaultStr = "3x1x0"
   }
-  const optionsStr = prompt("自定义音频配置 【声音ID(1-3)】x【音量0-1】x【噪音(0-1)】", defaultStr) || defaultStr
-  const matches = optionsStr.match(/(.+)x(.+)x(.+)/);
-  const BUILTIN_AB = [null, "brysj", "bbdbbjyy", "mmdmmjwp"];
-  const audioConstraint = {
-    mono :{
-      data: BUILTIN_AB[matches[1]],
-      loop: true,
-      gain: parseFloat(matches[2]),
-    },
-    channelCount: 1,
+  let message = "自定义音频配置 【声音ID(1-3)】x【音量0-1】x【噪音(0-1)】："
+  message += "\n2_1_1：播报爸爸的爸爸叫爷爷"
+  message += "\nsine：播放左右声道相反的正弦波"
+  const optionsStr = prompt(message, defaultStr) || defaultStr
+  if (optionsStr === "sine"){
+    const audioConstraint = {
+      type: "oscstereo"
+    }
+    console.log("自定义音频配置", mediaType, defaultStr, audioConstraint);
+    const fakeAudio = fakeMediaDevices.getFakeMedia({audio: audioConstraint}).audio
+    // let i = 0
+    // fakeAudio.gainNodeLeft.gain.value = 1
+    // fakeAudio.gainNodeRight.gain.value = 1
+    // setInterval(()=>{
+    //   i++
+    //   if (i % 4 === 1){
+    //     console.log("正弦波切换为仅左声道", i)
+    //     fakeAudio.gainNodeLeft.gain.value = 0.5
+    //     fakeAudio.gainNodeRight.gain.value = 0
+    //   }
+    //   if (i % 4 === 2){
+    //     console.log("正弦波切换为双声道", i)
+    //     fakeAudio.gainNodeLeft.gain.value = 0.5
+    //     fakeAudio.gainNodeRight.gain.value = 0.5
+    //   }
+    //   if (i % 4 === 3){
+    //     console.log("正弦波切换为仅右声道", i)
+    //     fakeAudio.gainNodeLeft.gain.value = 0
+    //     fakeAudio.gainNodeRight.gain.value = 0.5
+    //   }
+    //   if (i % 4 === 0){
+    //     console.log("正弦波切换为双声道", i)
+    //     fakeAudio.gainNodeLeft.gain.value = 0.5
+    //     fakeAudio.gainNodeRight.gain.value = 0.5
+    //   }
+    // }, 2000)
+    rtc.fakeAudio = fakeAudio
+    return fakeAudio.track;
+  }else{
+    const matches = optionsStr.match(/(.+)x(.+)x(.+)/);
+    const BUILTIN_AB = [null, "brysj", "bbdbbjyy", "mmdmmjwp"];
+    const audioConstraint = {
+      mono :{
+        data: BUILTIN_AB[matches[1]],
+        loop: true,
+        gain: parseFloat(matches[2]),
+      },
+      channelCount: 1,
+    }
+    if (parseFloat(matches[3]) > 0.01){
+      audioConstraint.mono.noise = {gain: parseFloat(matches[3])}
+    }
+    console.log("自定义音频配置", mediaType, defaultStr, audioConstraint);
+    const fakeAudio = fakeMediaDevices.getFakeMedia({audio: audioConstraint}).audio
+    rtc.fakeAudio = fakeAudio
+    return fakeAudio.track;
   }
-  if (parseFloat(matches[3]) > 0.01){
-    audioConstraint.mono.noise = {gain: parseFloat(matches[3])}
-  }
-  console.log("自定义音频配置", mediaType, defaultStr, audioConstraint);
-  const audioSource = fakeMediaDevices.getFakeMedia({audio: audioConstraint}).audio.track;
-  return audioSource;
 }
 
 $('#switchCustom').on('click', () => {
