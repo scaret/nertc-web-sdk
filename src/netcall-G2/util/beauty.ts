@@ -221,7 +221,7 @@ export function transformTrack(track: MediaStreamTrack) {
         videoElem
             .play()
             .then(() => {
-                const { videoWidth: width, videoHeight: height } = videoElem;
+                const { width: width, height: height } = videoElem;
                 // 将视频塞给滤镜
                 filters.mapSource = videoElem;
 
@@ -240,16 +240,16 @@ export function transformTrack(track: MediaStreamTrack) {
     };
 
     videoElem.onresize = () => {
-        if (videoElem.videoWidth && videoElem.videoHeight) {
+        if (videoElem.width && videoElem.height) {
             // filters.canvas.width = videoElem.videoWidth;
             // filters.canvas.height = videoElem.videoHeight;
 
             if (env.IS_ANY_SAFARI) {
-                filters.canvas.style.height = videoElem.videoHeight;
-                filters.canvas.style.width = videoElem.videoWidth;
+                filters.canvas.style.height = videoElem.height;
+                filters.canvas.style.width = videoElem.width;
             }
 
-            filters.setSize(videoElem.videoWidth, videoElem.videoHeight);
+            filters.setSize(videoElem.width, videoElem.height);
         }
     };
 
