@@ -28,6 +28,7 @@ import {
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
 import BigNumber from 'bignumber.js'
+import {AudioLevel} from '../module/audioLevel';
 
 let remoteStreamCnt = 0;
 
@@ -40,6 +41,7 @@ class RemoteStream extends EventEmitter {
   public client: Client;
   public mediaHelper:MediaHelper;
   _play: Play|null;
+  public audioLevelHelper: AudioLevel|null = null;
   private _record: Record|null;
   public videoView:HTMLElement|null|undefined|String;
   public screenView:HTMLElement|null|undefined|String;
