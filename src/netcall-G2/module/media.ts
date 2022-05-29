@@ -2545,6 +2545,9 @@ class MediaHelper extends EventEmitter {
         formerTrack.enabled = true;
       }
       emptyStreamWith(this.audio.audioStream, destinationTrack);
+      if(this.stream.audioLevelHelper) {
+        this.stream.audioLevelHelper.updateStream(this.audio.audioStream)
+      }
       this.updateAudioSender(destinationTrack);
     }else{
       this.logger.log('enableAudioRouting: 已替换为Destination');

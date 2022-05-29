@@ -15,6 +15,8 @@ const globalAc = window.AudioContext || window.webkitAudioContext;
 class AudioLevel extends EventEmitter{
   private support:boolean;
   private level: number;
+  public letfvolume: number;
+  public rightVolume: number;
   private adapterRef: AdapterRef;
   private stream: MediaStream|null;
   private analyserNode: AnalyserNode|null;
@@ -27,6 +29,8 @@ class AudioLevel extends EventEmitter{
     super()
     this.support = supports.WebAudio && supports.MediaStream
     this.level = 0
+    this.letfvolume = 0
+    this.rightVolume = 0
     this.stream = options.stream
     this.adapterRef = options.adapterRef
     this.context = new globalAc()
@@ -98,6 +102,11 @@ class AudioLevel extends EventEmitter{
       this.sourceNode.disconnect(0);
       this.sourceNode = null
     }
+
+    if (this.audioWorkletNode) {
+      this.audioWorkletNode.disconnect(0)
+      this.audioWorkletNode = null
+    }
     this.stream = null
     this.level = 0
   }
@@ -125,23 +134,34 @@ class AudioLevel extends EventEmitter{
       this.adapterRef.logger.warn("initAudioWorkletNode:参数不够");
       return;
     }
+    if (this.audioWorkletNode) {
+      return
+    }
     try {
       //使用CND加速
-      await this.context.audioWorklet.addModule('https://yx-web-nosdn.netease.im/common/32204f5b5ca42e0164515894fa4d0b09/volumeProcessor.js')
+      //支持单声道
+      //await this.context.audioWorklet.addModule('https://yx-web-nosdn.netease.im/common/32204f5b5ca42e0164515894fa4d0b09/volumeProcessor.js')
+      //支持双声道，文件就是 src/netcall-G2/module/volumeProcessor.js
+      await this.context.audioWorklet.addModule('https://yx-web-nosdn.netease.im/sdk-release/volumeProcessor.js')
       this.audioWorkletNode = new AudioWorkletNode(this.context, 'vumeter')
       this.audioWorkletNode.port.onmessage  = event => {
         if (event.data.volume) {
-          this.level = event.data.volume
+          this.letfvolume = event.data.letfvolume
+          this.rightVolume = event.data.rightVolume
         }
       }
     } catch (e) {
-      this.adapterRef.logger.warn('音量采集模块加载失败: ', e)
+      this.adapterRef.logger.error('音量采集模块加载失败: ', e)
     }
   } 
 
 
   updateStream(audioStream: MediaStream) {
     this.adapterRef.logger.log('AudioLevel updateStream()')
+    if (this.sourceNode) {
+      this.sourceNode.disconnect(0);
+      this.sourceNode = null
+    }
     this.stream = audioStream
     this.connect()
   }
@@ -164,9 +184,13 @@ class AudioLevel extends EventEmitter{
 
   getAudioLevel () {
     //音量过低了
-    if (this.level < 0.00005) {
+    /*if (this.level < 0.00005) {
       this.level = 0
-    }
+    }*/
+    this.level = +((this.letfvolume + this.letfvolume)/2).toFixed(5)
+    /*console.log('左声道音量: ', this.letfvolume)
+    console.log('右声道音量： ', this.rightVolume)
+    console.warn('中和左右声道: ', this.level)*/
     return this.level
   }
 

@@ -115,7 +115,7 @@ class LocalStream extends EventEmitter {
   public mediaHelper:MediaHelper;
   _play: Play|null;
   private _record: Record|null;
-  private audioLevelHelper: AudioLevel|null = null;
+  public audioLevelHelper: AudioLevel|null = null;
   public audioProfile:string;
   private _cameraTrack:MediaStreamTrack|null;
   private _transformedTrack:MediaStreamTrack|null;
@@ -1194,6 +1194,10 @@ class LocalStream extends EventEmitter {
             this.screenAudio = true
           }
           await this.mediaHelper.getStream(constraint);
+
+          if (this.screenAudio && this.audioLevelHelper && this.mediaHelper.audio.audioStream) {
+            this.audioLevelHelper.updateStream(this.mediaHelper.audio.audioStream)
+          }
           if (type === "video" && this.mediaHelper.video.preProcessingEnabled){
             this.mediaHelper.enablePreProcessing("video")
           }
@@ -1353,9 +1357,9 @@ class LocalStream extends EventEmitter {
         }
         this.audio = false
         this.mediaHelper.stopStream('audio')
-        if (this.audioLevelHelper) {
+        /*if (this.audioLevelHelper) {
           this.audioLevelHelper.disconnect()
-        }
+        }*/
 
         if (this.getAdapterRef()){
           if (this.mediaHelper.getAudioInputTracks().length > 0){
