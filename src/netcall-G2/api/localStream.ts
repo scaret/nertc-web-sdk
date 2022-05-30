@@ -3210,12 +3210,16 @@ class LocalStream extends EventEmitter {
         this._cameraTrack = this.mediaHelper.video.cameraTrack
         //@ts-ignore
         this._transformedTrack = transformTrack(this._cameraTrack);
+        const videoTrackLow = this.mediaHelper.video.videoTrackLow
         await this.replaceTrack({
           mediaType: "video",
           //@ts-ignore
           track: this._transformedTrack,
           external: false
         });
+        if (videoTrackLow){
+          videoTrackLow.stop()
+        }
         startBeauty(true, effects);
         if(env.IS_ANY_SAFARI){
           let localVideoDom = document.getElementsByClassName('nertc-video-container-local')[0].querySelector('video');
@@ -3226,12 +3230,16 @@ class LocalStream extends EventEmitter {
           return;
         }
         this.logger.log('startBeautyEffect() 关闭美颜');
+        const videoTrackLow = this.mediaHelper.video.videoTrackLow
         await this.replaceTrack({
           mediaType: "video",
           //@ts-ignore
           track: this._cameraTrack,
           external: false
         });
+        if (videoTrackLow){
+          videoTrackLow.stop()
+        }
         if(this._transformedTrack){
           this._transformedTrack.stop();
           this._transformedTrack = null;
