@@ -213,7 +213,7 @@ class Meeting extends EventEmitter {
       appkey
     })
     try{
-      const data = await ajax({
+      let data = await ajax({
         url, //'https://webtest.netease.im/nrtcproxy/nrtc/getChannelInfos.action'
         type: 'POST',
         contentType: 'application/x-www-form-urlencoded',
@@ -241,7 +241,13 @@ class Meeting extends EventEmitter {
 
       this.info.secure = !!token;
       this.info.forward = !!this.adapterRef.testConf.ForwardedAddr
-      this.logger.log('join 获取到房间信息:', JSON.stringify(data, null, ' '))
+      if (typeof data === "string"){
+        // 兼容mockjs
+        this.logger.warn(`join 返回值类型为string，应为object。尝试进行强制类型转换。`, data)
+        data = JSON.parse(data)
+      }else{
+        this.logger.log('join 获取到房间信息:', JSON.stringify(data, null, ' '))
+      }
       if (data.code === 200) {
         this.adapterRef.channelStatus = 'join'
         const { ips, time } = data
