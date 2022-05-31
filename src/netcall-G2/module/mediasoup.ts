@@ -554,6 +554,13 @@ class Mediasoup extends EventEmitter {
               maxBitrate: 1000
             });
           }
+          
+          // 去除RED http://jira.netease.com/browse/NRTCG2-16502
+          for(let codecId = producerData.rtpParameters.codecs.length -1; codecId >= 0; codecId--){
+            if (producerData.rtpParameters.codecs[codecId].mimeType === "audio/red"){
+              producerData.rtpParameters.codecs.splice(codecId, 1)
+            }
+          }
 
           if (localDtlsParameters === undefined){
             producerData.transportId = this._sendTransport.id;
