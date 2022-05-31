@@ -142,7 +142,7 @@ class AudioLevel extends EventEmitter{
       //支持单声道
       //await this.context.audioWorklet.addModule('https://yx-web-nosdn.netease.im/common/32204f5b5ca42e0164515894fa4d0b09/volumeProcessor.js')
       //支持双声道，文件就是 src/netcall-G2/module/volumeProcessor.js
-      await this.context.audioWorklet.addModule('https://yx-web-nosdn.netease.im/sdk-release/volumeProcessor.js')
+      await this.context.audioWorklet.addModule('https://yx-web-nosdn.netease.im/sdk-release/volumeProcessorUglify.js')
       this.audioWorkletNode = new AudioWorkletNode(this.context, 'vumeter')
       this.audioWorkletNode.port.onmessage  = event => {
         if (event.data.volume) {
