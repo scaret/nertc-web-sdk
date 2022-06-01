@@ -3183,7 +3183,7 @@ class LocalStream extends EventEmitter {
    * @return {Promise}
    */
 
-   async setBeautyEffect(isStart:boolean){
+  async setBeautyEffect(isStart:boolean){
     if(isStart && this._transformedTrack){
       this.logger.log('美颜已经开启');
       return;
@@ -3263,7 +3263,7 @@ class LocalStream extends EventEmitter {
    *  @memberOf Stream#
    *  @param {Void}
    */
-   setFilter(options:string|null, intensity?:number) {
+  setFilter(options:string|null, intensity?:number) {
     // intensity不填写就是默认值
     this.logger.log('setFilter() set beauty filter', options, intensity);
     setBeautyFilter(options,intensity);

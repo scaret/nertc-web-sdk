@@ -31,6 +31,27 @@ export declare type MediaType = 'audio' | 'video' | 'screen';
 export declare type EncryptionMode = 'none' | 'sm4-128-ecb';
 
 /**
+ * 滤镜类型。包括：
+ * - `ziran`：自然。
+ * - `baixi`：白皙。
+ * - `fennen`：粉嫩。
+ * - `weimei`：唯美。
+ * - `langman`：浪漫。
+ * - `rixi`：日系。
+ * - `landiao`：蓝调。
+ * - `qingliang`：清凉。
+ * - `huaijiu`：怀旧。
+ * - `qingcheng`：青橙。
+ * - `wuhou`：午后。
+ * - `zhigan`：质感。
+ * - `mopian`：默片。
+ * - `dianying`：电影。
+ * - `heibai`：黑白。
+ * 
+ */
+export declare type BeautyFilters = 'ziran' | 'baixi' | 'fennen' | 'weimei' | 'langman' | 'rixi' | 'landiao' | 'qingliang' | 'huaijiu' | 'qingcheng' | 'wuhou' | 'zhigan' | 'mopian' | 'dianying' | 'heibai';
+
+/**
  * 视频画布设置。
  */
 export interface RenderMode {

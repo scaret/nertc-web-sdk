@@ -7,6 +7,7 @@ import {
   NERtcCanvasWatermarkConfig,
   MediaType,
   RenderMode,
+  BeautyFilters,
   RecordStatus, STREAM_TYPE, NERtcEncoderWatermarkConfig
 } from "./types";
 /**
@@ -1084,6 +1085,40 @@ declare interface Stream {
      * 
      */
     setEncoderWatermarkConfigs(options: NERtcEncoderWatermarkConfig): void;
+    
+    /**
+     * 开启/关闭美颜
+     * @param {Boolean} option 设置 true 表示开启美颜，设置 false 表示关闭美颜。
+     *
+     */
+    setBeautyEffect(option:boolean):Promise<void>;
+    /**
+     * 设置美颜效果
+     * 
+     * @param options 美颜选项。
+     */
+    setBeautyEffectOptions(options: {
+      /**
+     * 
+     * 明亮度。取值范围 [0,1]
+     */
+       brightnessLevel: number;
+    /**
+     * 红润度。取值范围 [0,1]
+     */
+     rednessLevel: number;
+    /**
+     * 平滑度。取值范围 [0,1]
+     */
+     smoothnessLevel: number;
+    }): void;
+    /**
+     * 设置滤镜
+     * 
+     * @param {BeautyFilters} options 滤镜选项。
+     * @param {Number} intensity 滤镜强度。取值范围 [0,1]
+     */
+    setFilter(options:BeautyFilters, intensity?:number): void;
     /**
      *  销毁音视频流对象。
      */
