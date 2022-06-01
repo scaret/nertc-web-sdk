@@ -596,6 +596,7 @@ class RemoteStream extends EventEmitter {
       name: 'play',
       code: 0,
       param: JSON.stringify({
+        streamID: this.stringStreamID,
         playOptions:playOptions,
         isRemote: true
       }, null, ' ')
