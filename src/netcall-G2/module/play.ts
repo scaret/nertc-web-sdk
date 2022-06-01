@@ -335,6 +335,8 @@ class Play extends EventEmitter {
         this.logger.log(`视频主流dom节点挂载成功。父节点：${getDomInfo(this.videoView)}`)
         if (this.watermark.video.canvasControl.watermarks.length){
           this.watermark.video.canvasControl.start(this.videoContainerDom);
+        }else{
+          this.watermark.video.canvasControl.div = this.videoContainerDom
         }
       }
     }
@@ -352,6 +354,8 @@ class Play extends EventEmitter {
         this.logger.log(`视频辅流dom节点挂载成功。父节点：${getDomInfo(this.screenView)}`)
         if (this.watermark.screen.canvasControl.watermarks.length){
           this.watermark.screen.canvasControl.start(this.screenContainerDom);
+        }else{
+          this.watermark.screen.canvasControl.div = this.screenContainerDom
         }
       }
     }
