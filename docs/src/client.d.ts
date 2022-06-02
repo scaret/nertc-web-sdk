@@ -479,10 +479,22 @@ declare interface Client{
          */
         rtmpTasks: RTMPTask[];
     }): Promise<void>;
+
+
+  /**
+   * 启用自定义加密
+   * 需要在加入频道前调用`client.enableCustomTransform()`方法。调用后，可收到两个事件：`sender-transform` 和`receiver-transform`，应在这两个方法中实现加密和解密操作。
+   * 自定义加密功能依赖 [encodedInsertableStreams](https://chromestatus.com/feature/5499415634640896) 接口。目前仅支持桌面端Chrome 94及以上版本。
+   * 
+   */
+  enableCustomTransform(): void;
+    
     /**
      * 销毁客户端对象。
      */
     destroy(): void;
+    
+    
     
   /**
    * `client-role-changed` 回调表示本地用户的角色已改变。
@@ -915,6 +927,48 @@ declare interface Client{
     }
   ) => void): void;
   
+  /**
+   * `track-low-init-success` 回调通知小流创建成功
+   *
+   */
+  on(event: "track-low-init-success", callback: (
+    evt: {
+      mediaType: "video"|"screen",
+    }
+  ) => void): void;
+
+
+  /**
+   * `track-low-init-fail` 回调通知小流创建失败
+   */
+  on(event: "track-low-init-fail", callback: (
+    evt: {
+      mediaType: "video"|"screen",
+    }
+  ) => void): void;
+  
+  /**
+   * `sender-transform` 回调用于自定义加密，回调编码后的帧
+   */
+  on(event: "sender-transform", callback: (
+    evt: {
+      mediaType: "audio"|"video"|"screen",
+      encodedFrame: any,
+    },
+  ) => void): void;
+
+
+  /**
+   * `receiver-transform` 回调用于自定义加密，回调解码前的帧
+   */
+  on(event: "receiver-transform", callback: (
+    evt: {
+      uid: number,
+      mediaType: "audio"|"video"|"screen",
+      encodedFrame: any,
+    },
+  ) => void): void;
+
   /**
    * 该回调可以取消监听事件。
    *
