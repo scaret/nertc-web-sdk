@@ -69,6 +69,39 @@ export interface RenderMode {
   cut: boolean;
 }
 
+/**
+ * 客户端录制参数。
+ */
+export interface ClientMediaRecordingOptions{
+  /**
+   * 仅录制本段，或者录制房间里所有人 
+  */
+  recorder?: 'local' | 'all';
+  /**
+   * 录制的配置参数
+  */
+  recordConfig?: ClientRecordConfig
+}
+
+export interface ClientRecordConfig{
+  /**
+   * 仅录制音频或者录制音视频（video表示音视频都录制）
+  */
+  recordType: 'audio' | 'video';
+  /**
+   * 录制文件的名称
+  */
+  recordName?: string;
+  /**
+   * 录制文件的分辨率，仅支持640*360、640*480、1280*720设置（NERTC.RECORD_VIDEO_QUALITY_360p | NERTC.RECORD_VIDEO_QUALITY_480p | NERTC.RECORD_VIDEO_QUALITY_720p
+  */
+  recordVideoQuality: number;
+  /**
+   * 录制文件的帧率，仅支持15和30两种设置（NERTC.RECORD_VIDEO_FRAME_RATE_15 | NERTC.RECORD_VIDEO_FRAME_RATE_30）
+  */
+  recordVideoFrame: number;
+}
+
 /*
  * 录制状态。
  */
