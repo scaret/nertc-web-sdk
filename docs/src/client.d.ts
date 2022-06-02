@@ -916,6 +916,26 @@ declare interface Client{
   ) => void): void;
   
   /**
+   * `track-low-init-success` 回调通知小流创建成功
+   *
+   */
+  on(event: "track-low-init-success", callback: (
+    evt: {
+      mediaType: "video"|"screen",
+    }
+  ) => void): void;
+
+
+  /**
+   * `track-low-init-fail` 回调通知小流创建失败
+   */
+  on(event: "track-low-init-fail", callback: (
+    evt: {
+      mediaType: "video"|"screen",
+    }
+  ) => void): void;
+  
+  /**
    * 该回调可以取消监听事件。
    *
    */
