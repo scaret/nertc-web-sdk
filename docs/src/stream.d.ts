@@ -7,6 +7,7 @@ import {
   NERtcCanvasWatermarkConfig,
   MediaType,
   RenderMode,
+  BeautyFilters,
   RecordStatus, STREAM_TYPE, NERtcEncoderWatermarkConfig
 } from "./types";
 /**
@@ -347,6 +348,9 @@ declare interface Stream {
     /**
      * 设置音频播放的音量。
      * @param volume 要设置的远端音频的播放音量，范围为 [0-100]。0 表示静音。
+     * 
+     * @note 注意
+     * 由于系统限制，ios上目前不支持设置远端音量。
      */
     setAudioVolume(volume?: number): string | undefined;
     /**
@@ -1050,6 +1054,7 @@ declare interface Stream {
      * * 水印数量最多为1个。如有图文组合水印需求，可自行合成为1个图片。
      * * 由于浏览器策略限制，图片必须存于同一域名下。
      * * 文字水印不具备折行功能。
+     * * 编码水印仅支持桌面端Chrome及Safari浏览器
      *
      * @param options 编码水印设置。支持设置文字水印、图片水印和时间戳水印，设置为 null 表示清除水印。
      * 
@@ -1081,6 +1086,40 @@ declare interface Stream {
      * 
      */
     setEncoderWatermarkConfigs(options: NERtcEncoderWatermarkConfig): void;
+    
+    /**
+     * 开启/关闭美颜
+     * @param {Boolean} option 设置 true 表示开启美颜，设置 false 表示关闭美颜。
+     *
+     */
+    setBeautyEffect(option:boolean):Promise<void>;
+    /**
+     * 设置美颜效果
+     * 
+     * @param options 美颜选项。
+     */
+    setBeautyEffectOptions(options: {
+      /**
+     * 
+     * 明亮度。取值范围 [0,1]
+     */
+       brightnessLevel: number;
+    /**
+     * 红润度。取值范围 [0,1]
+     */
+     rednessLevel: number;
+    /**
+     * 平滑度。取值范围 [0,1]
+     */
+     smoothnessLevel: number;
+    }): void;
+    /**
+     * 设置滤镜
+     * 
+     * @param {BeautyFilters} options 滤镜选项。
+     * @param {Number} intensity 滤镜强度。取值范围 [0,1]
+     */
+    setFilter(options:BeautyFilters, intensity?:number): void;
     /**
      *  销毁音视频流对象。
      */

@@ -120,8 +120,8 @@ class Play extends EventEmitter {
 
   }
 
-  _initNodeVideo() {
-    this._initVideoContainer()
+  _initNodeVideo(end:string) {
+    this._initVideoContainer(end)
     this._initVideo()
     if (this.videoDom){
       if (this.videoContainerDom){
@@ -152,11 +152,15 @@ class Play extends EventEmitter {
     }
   }
 
-  _initVideoContainer() {
+  _initVideoContainer(end:string) {
     if(!this.videoView) return
     if(!this.videoContainerDom) {
       this.videoContainerDom = document.createElement('div')
-      this.videoContainerDom.className = "nertc-video-container";
+      if(end === 'local'){
+        this.videoContainerDom.className = "nertc-video-container-local";
+      }else {
+        this.videoContainerDom.className = "nertc-video-container-remote";
+      }
       // 样式
       this.videoContainerDom.style.overflow = 'hidden'
       this.videoContainerDom.style.position = 'relative'
@@ -331,6 +335,8 @@ class Play extends EventEmitter {
         this.logger.log(`视频主流dom节点挂载成功。父节点：${getDomInfo(this.videoView)}`)
         if (this.watermark.video.canvasControl.watermarks.length){
           this.watermark.video.canvasControl.start(this.videoContainerDom);
+        }else{
+          this.watermark.video.canvasControl.div = this.videoContainerDom
         }
       }
     }
@@ -348,6 +354,8 @@ class Play extends EventEmitter {
         this.logger.log(`视频辅流dom节点挂载成功。父节点：${getDomInfo(this.screenView)}`)
         if (this.watermark.screen.canvasControl.watermarks.length){
           this.watermark.screen.canvasControl.start(this.screenContainerDom);
+        }else{
+          this.watermark.screen.canvasControl.div = this.screenContainerDom
         }
       }
     }
@@ -557,14 +565,14 @@ class Play extends EventEmitter {
     }
   }
 
-  async playVideoStream(stream:MediaStream, view:HTMLElement) {
+  async playVideoStream(stream:MediaStream, view:HTMLElement, end:string) {
     if(!stream || !view) return
     if (this.videoDom?.srcObject === stream) {
       this.logger.log(`playVideoStream：跳过重复的播放请求`);
       return
     }
     this.videoView = view
-    this._initNodeVideo()
+    this._initNodeVideo(end)
     this._mountVideoToDom()
     if (!this.videoDom){
       this.logger.error(`没有视频源`);

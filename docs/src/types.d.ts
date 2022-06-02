@@ -31,6 +31,27 @@ export declare type MediaType = 'audio' | 'video' | 'screen';
 export declare type EncryptionMode = 'none' | 'sm4-128-ecb';
 
 /**
+ * 滤镜类型。包括：
+ * - `ziran`：自然。
+ * - `baixi`：白皙。
+ * - `fennen`：粉嫩。
+ * - `weimei`：唯美。
+ * - `langman`：浪漫。
+ * - `rixi`：日系。
+ * - `landiao`：蓝调。
+ * - `qingliang`：清凉。
+ * - `huaijiu`：怀旧。
+ * - `qingcheng`：青橙。
+ * - `wuhou`：午后。
+ * - `zhigan`：质感。
+ * - `mopian`：默片。
+ * - `dianying`：电影。
+ * - `heibai`：黑白。
+ * 
+ */
+export declare type BeautyFilters = 'ziran' | 'baixi' | 'fennen' | 'weimei' | 'langman' | 'rixi' | 'landiao' | 'qingliang' | 'huaijiu' | 'qingcheng' | 'wuhou' | 'zhigan' | 'mopian' | 'dianying' | 'heibai';
+
+/**
  * 视频画布设置。
  */
 export interface RenderMode {
@@ -46,6 +67,39 @@ export interface RenderMode {
    * 是否裁剪
    */
   cut: boolean;
+}
+
+/**
+ * 客户端录制参数。
+ */
+export interface ClientMediaRecordingOptions{
+  /**
+   * 仅录制本段，或者录制房间里所有人 
+  */
+  recorder?: 'local' | 'all';
+  /**
+   * 录制的配置参数
+  */
+  recordConfig?: ClientRecordConfig
+}
+
+export interface ClientRecordConfig{
+  /**
+   * 仅录制音频或者录制音视频（video表示音视频都录制）
+  */
+  recordType: 'audio' | 'video';
+  /**
+   * 录制文件的名称
+  */
+  recordName?: string;
+  /**
+   * 录制文件的分辨率，仅支持640*360、640*480、1280*720设置（NERTC.RECORD_VIDEO_QUALITY_360p | NERTC.RECORD_VIDEO_QUALITY_480p | NERTC.RECORD_VIDEO_QUALITY_720p
+  */
+  recordVideoQuality: number;
+  /**
+   * 录制文件的帧率，仅支持15和30两种设置（NERTC.RECORD_VIDEO_FRAME_RATE_15 | NERTC.RECORD_VIDEO_FRAME_RATE_30）
+  */
+  recordVideoFrame: number;
 }
 
 /*

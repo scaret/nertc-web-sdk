@@ -4,10 +4,24 @@ const pjson = require('../../package.json')
 const path = require('path')
 const file = require('../file.js')
 const version = pjson.private ? pjson.privateVersion : pjson.version 
+const fs = require('fs')
 
 if (process.env.PLATFORM === 'g2') {
   const g2Version = pjson.webrtcG2Version
   var sdkG2ZipPath = './dist/NERTC_Web_SDK_V' + g2Version + '.zip'
+  
+  const sdkDirPath = path.join(__dirname, '../../dist/lib/', g2Version, nodeEnv)
+  const sdkFiles = fs.readdirSync(sdkDirPath)
+  for (let filename of sdkFiles){
+    if (filename && filename.indexOf("NERTC") === -1){
+      console.log('SDK zip: ignoring file', filename)
+      // 删除名字中不带NERTC的文件
+      fs.unlinkSync(path.join(sdkDirPath, filename))
+    }else{
+      console.log('SDK zip: added file', filename)
+    }
+  }
+  
   file.zip(sdkG2ZipPath, {
     sources: [
       {

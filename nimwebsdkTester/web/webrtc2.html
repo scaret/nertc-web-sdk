@@ -190,6 +190,54 @@
             <button type="button" id="tasks-btn">推流任务功能</button>
           </div>
         </div>
+        <p class="block-header">美颜</p>
+        <div class="line">预设美颜参数: </div>
+        <div class="line">
+          美白
+          <input type="text" id="setMeibai" class="input-40"> 红润
+          <input type="text" id="setHongrun" class="input-40"> 平滑
+          <input type="text" id="setPinghua" class="input-40"> 
+          <button id="preSetBeauty">设置</button>
+        </div>
+        <div id="part-tasks" class="part">
+          <div class="line">
+            <button type="button" id="startBeauty">开启美颜</button>
+            <button type="button" id="closeBeauty">关闭美颜</button>
+          </div>
+          <div class="line">
+            <label for='setBeautyFilter'>滤镜</label>
+            <select id='setBeautyFilter'>
+              <option value="">默认（不选）</option>
+              <option value='ziran'>自然</option>
+              <option value='baixi'>白皙</option>
+              <option value='fennen'>粉嫩</option>
+              <option value='weimei'>唯美</option>
+              <option value='langman'>浪漫</option>
+              <option value='rixi'>日系</option>
+              <option value='landiao'>蓝调</option>
+              <option value='qingliang'>清凉</option>
+              <option value='huaijiu'>怀旧</option>
+              <option value='qingcheng'>青橙</option>
+              <option value='wuhou'>午后</option>
+              <option value='zhigan'>质感</option>
+              <option value='mopian'>默片</option>
+              <option value='dianying'>电影</option>
+              <option value='heibai'>黑白</option>
+            </select>
+          </div>
+          <div class="line">
+            <label for="r1">滤镜强度:</label><input type="range" id="filterIntensity" min="0" max="1" value="0" step="0.01" disabled/>
+          </div>
+          <div class="line">
+            <label for="r1">美白: </label><input type="range" id="r2" value="0"/>
+          </div>
+          <div class="line">
+            <label for="r1">红润: </label><input type="range" id="r3" value="0"/>
+          </div>
+          <div class="line">
+            <label for="r1">平滑: </label><input type="range" id="r4" value="0"/>
+          </div>
+        </div>
       </div>
       <div class="block">
         <p class="block-header">发布配置相关</p>

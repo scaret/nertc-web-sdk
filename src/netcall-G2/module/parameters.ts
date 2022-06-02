@@ -102,7 +102,7 @@ let parameters:IParameters = {
   screenLowDefaultConstraints: {width: {max: 320}, height: {max: 180}},
   controlOnPaused: true,
   hideControlOnResume: true,
-  maxTransportRebuildCnt: 50,
+  maxTransportRebuildCnt: Number.MAX_SAFE_INTEGER,
   logLevel: loglevels.INFO,
   forceListenDeviceChange: true,
   codecOptions: {

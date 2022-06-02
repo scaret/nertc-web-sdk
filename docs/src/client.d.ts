@@ -10,6 +10,7 @@ import {
   RTMPTaskState,
   MediaPriorityOptions,
   EncryptionMode, STREAM_TYPE,
+  ClientMediaRecordingOptions
 } from "./types";
 import { Stream } from "./stream";
 import {ConnectionState} from "./types";
@@ -138,12 +139,17 @@ declare interface Client{
     unsubscribe(stream: Stream): Promise<void>;
     /**
      * 开启双流模式
-     * 
-     * 该方法在 Publish 端，即发送端，开启双流模式。该方法建议在加入频道（Client.join）后调用。
-     * 
+     *
      * 双流为视频大流和视频小流，其中视频大流指高分辨率、高码率的视频流，视频小流指低分辨率、低码率的视频流。
+     *
+     * @since V4.6.0
      * 
-     * 请在调用 [[Client.publish]] 之前调用该方法。
+     * @note 注意事项
+     * * 该方法在 Publish 端，即发送端调用。该方法建议在 [[Client.join]] 后、[[Client.publish]] 前调用。
+     * * 接收端大小流通过 [[Client.subscribe]] 和 [[Client.setRemoteStreamType]] 进行调用和切换。
+     * * 视频小流的目标码率为100kbps，屏幕共享小流的目标码率为200kbps。
+     * * SDK会尝试使用接近 180p(240x180) 的低分辨率进行重新采集以提高编解码效率。浏览器会尽量在保证长宽比的情况下使小流的采集接近180p。但由于浏览器和摄像头的限制，小流的分辨率也会出现240p、480p甚至与大流一致的情况，这些都为正常现象。
+     * 
      * 
      * ```javascript
      * // 加入频道后
@@ -161,8 +167,7 @@ declare interface Client{
      *   uid: 1234
      * });
      * ```
-     * 
-     * @since V4.6.0
+     *
      */
     enableDualStream(dualStreamSetting?: {video: boolean; screen: boolean}): void;
 
@@ -436,6 +441,82 @@ declare interface Client{
         mode: 'rtc' | 'live';
     }): void;
 
+
+    /**
+     客户端录制功能。
+
+     允许用户在浏览器上实现本地录制音视频的功能。
+
+     @since V4.6.10
+
+     @note 
+     - 需要在加入房间之后调用。
+     - 不允许同时录制多个文件。
+     - 仅在chrome内核的浏览器上支持。
+     - 录制文件的下载地址为浏览器默认下载地址
+     - 录制文件的格式是webm，并非所有的播放器都支持（chrome上是可以直接播放的），如果需要转格式，需要开发者自己完成
+     - 录制模块没有做内存管理，如果录制的时间过长，到导致内存占用越来越大，需要开发者及时释放
+
+     @param options 是录制参数。详细信息请参考 ClientMediaRecordingOptions
+     
+     ```JavaScript
+       // client.join()加入房间之后
+       const data = {
+         recorder: 'all',
+         recordConfig: {
+          recordType: 'video',
+          recordName: '录制文件名称',
+          recordVideoQuality: NERTC.RECORD_VIDEO_QUALITY_360p,
+          recordVideoFrame: NERTC.RECORD_VIDEO_FRAME_RATE_15
+        }
+       }
+       client.startMediaRecording(data);
+     ```
+     */
+    startMediaRecording(options: ClientMediaRecordingOptions): Promise<undefined>;
+
+    /**
+     结束视频录制
+     @since V4.6.10
+
+     
+     ```JavaScript
+       // client.startMediaRecording() 开启录制之后
+       client.stopMediaRecording();
+     ```
+     */
+    stopMediaRecording(): void;
+
+    /**
+     下载录制的音视频数据，生成录制文件
+     @since V4.6.10
+
+     @note 
+     - 客户端录制，数据是保持在内存中，如果没有执行cleanMediaRecording释放，可以多次调用该接口生产录制文件。
+     - 下载地址为浏览器默认地址
+     
+     ```JavaScript
+       // client.startMediaRecording() 开启录制之后
+       client.downloadMediaRecording();
+     ```
+     */
+    downloadMediaRecording(): void;
+
+    /**
+     清除内存中的录制的音视频数据
+     @since V4.6.10
+
+     @note 
+     - 客户端录制，数据是保持在内存中，需要主动调用该接口进行释放内存资源。
+     
+     ```JavaScript
+       // client.startMediaRecording() 开启录制之后
+       client.cleanMediaRecording();
+     ```
+     */
+    cleanMediaRecording(): void;
+
+
     /**
      * 添加房间推流任务。
      * 
@@ -475,10 +556,22 @@ declare interface Client{
          */
         rtmpTasks: RTMPTask[];
     }): Promise<void>;
+
+
+  /**
+   * 启用自定义加密
+   * 需要在加入频道前调用`client.enableCustomTransform()`方法。调用后，可收到两个事件：`sender-transform` 和`receiver-transform`，应在这两个方法中实现加密和解密操作。
+   * 自定义加密功能依赖 [encodedInsertableStreams](https://chromestatus.com/feature/5499415634640896) 接口。目前仅支持桌面端Chrome 94及以上版本。
+   * 
+   */
+  enableCustomTransform(): void;
+    
     /**
      * 销毁客户端对象。
      */
     destroy(): void;
+    
+    
     
   /**
    * `client-role-changed` 回调表示本地用户的角色已改变。
@@ -714,6 +807,11 @@ declare interface Client{
   }) => void): void;
 
   /**
+   * `uid-duplicate` 事件表示当前有人使用相同的uid加入了房间，你被提出了。
+   */
+  on(event: "uid-duplicate", callback: () => void): void;
+
+  /**
    * `client-banned` 事件表示本地用户被踢出房间。
    * 
    * @note 仅被踢出房间的用户会收到此回调。
@@ -911,6 +1009,48 @@ declare interface Client{
     }
   ) => void): void;
   
+  /**
+   * `track-low-init-success` 回调通知小流创建成功
+   *
+   */
+  on(event: "track-low-init-success", callback: (
+    evt: {
+      mediaType: "video"|"screen",
+    }
+  ) => void): void;
+
+
+  /**
+   * `track-low-init-fail` 回调通知小流创建失败
+   */
+  on(event: "track-low-init-fail", callback: (
+    evt: {
+      mediaType: "video"|"screen",
+    }
+  ) => void): void;
+  
+  /**
+   * `sender-transform` 回调用于自定义加密，回调编码后的帧
+   */
+  on(event: "sender-transform", callback: (
+    evt: {
+      mediaType: "audio"|"video"|"screen",
+      encodedFrame: any,
+    },
+  ) => void): void;
+
+
+  /**
+   * `receiver-transform` 回调用于自定义加密，回调解码前的帧
+   */
+  on(event: "receiver-transform", callback: (
+    evt: {
+      uid: number,
+      mediaType: "audio"|"video"|"screen",
+      encodedFrame: any,
+    },
+  ) => void): void;
+
   /**
    * 该回调可以取消监听事件。
    *

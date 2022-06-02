@@ -156,7 +156,7 @@ export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: 
 }
 
 // 当没有前处理勾子时，前处理可关闭
-export async function canDisablePreProcessing(mediaHelper: MediaHelper, mediaType: "video"|"screen"){
+export function canDisablePreProcessing(mediaHelper: MediaHelper, mediaType: "video"|"screen"){
   const preProcessing = mediaHelper[mediaType].preProcessing
   if (!preProcessing || !preProcessing.timer){
     return false

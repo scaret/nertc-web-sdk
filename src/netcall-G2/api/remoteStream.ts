@@ -28,6 +28,7 @@ import {
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
 import BigNumber from 'bignumber.js'
+import {AudioLevel} from '../module/audioLevel';
 
 let remoteStreamCnt = 0;
 
@@ -40,6 +41,7 @@ class RemoteStream extends EventEmitter {
   public client: Client;
   public mediaHelper:MediaHelper;
   _play: Play|null;
+  public audioLevelHelper: AudioLevel|null = null;
   private _record: Record|null;
   public videoView:HTMLElement|null|undefined|String;
   public screenView:HTMLElement|null|undefined|String;
@@ -543,7 +545,8 @@ class RemoteStream extends EventEmitter {
         if(this._play && this.mediaHelper.video.videoStream.getVideoTracks().length){
           this.logger.log(`uid ${this.stringStreamID} 开始启动视频播放 主流 远端`);
           try{
-            await this._play.playVideoStream(this.mediaHelper.video.renderStream, view)
+            let end = 'remote';
+            await this._play.playVideoStream(this.mediaHelper.video.videoStream, view, end)
             if ("width" in this.renderMode.remote.video){
               this._play.setVideoRender(this.renderMode.remote.video)
             }
@@ -593,6 +596,7 @@ class RemoteStream extends EventEmitter {
       name: 'play',
       code: 0,
       param: JSON.stringify({
+        streamID: this.stringStreamID,
         playOptions:playOptions,
         isRemote: true
       }, null, ' ')

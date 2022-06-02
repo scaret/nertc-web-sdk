@@ -13,7 +13,7 @@ import {numberToRGBA} from "./util";
 
 export class CanvasWatermarkControl extends EventEmitter{
   watermarks: WatermarkSetting[];
-  private div:HTMLElement|null;
+  div:HTMLElement|null;
   private settings:{
     defaultStyle: {[key:string]: string};
   }
