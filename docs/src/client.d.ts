@@ -10,6 +10,7 @@ import {
   RTMPTaskState,
   MediaPriorityOptions,
   EncryptionMode, STREAM_TYPE,
+  ClientMediaRecordingOptions
 } from "./types";
 import { Stream } from "./stream";
 import {ConnectionState} from "./types";
@@ -440,6 +441,82 @@ declare interface Client{
         mode: 'rtc' | 'live';
     }): void;
 
+
+    /**
+     客户端录制功能。
+
+     允许用户在浏览器上实现本地录制音视频的功能。
+
+     @since V4.6.10
+
+     @note 
+     - 需要在加入房间之后调用。
+     - 不允许同时录制多个文件。
+     - 仅在chrome内核的浏览器上支持。
+     - 录制文件的下载地址为浏览器默认下载地址
+     - 录制文件的格式是webm，并非所有的播放器都支持（chrome上是可以直接播放的），如果需要转格式，需要开发者自己完成
+     - 录制模块没有做内存管理，如果录制的时间过长，到导致内存占用越来越大，需要开发者及时释放
+
+     @param options 是录制参数。详细信息请参考 ClientMediaRecordingOptions
+     
+     ```JavaScript
+       // client.join()加入房间之后
+       const data = {
+         recorder: 'all',
+         recordConfig: {
+          recordType: 'video',
+          recordName: '录制文件名称',
+          recordVideoQuality: NERTC.RECORD_VIDEO_QUALITY_360p,
+          recordVideoFrame: NERTC.RECORD_VIDEO_FRAME_RATE_15
+        }
+       }
+       client.startMediaRecording(data);
+     ```
+     */
+    startMediaRecording(options: ClientMediaRecordingOptions): Promise<undefined>;
+
+    /**
+     结束视频录制
+     @since V4.6.10
+
+     
+     ```JavaScript
+       // client.startMediaRecording() 开启录制之后
+       client.stopMediaRecording();
+     ```
+     */
+    stopMediaRecording(): void;
+
+    /**
+     下载录制的音视频数据，生成录制文件
+     @since V4.6.10
+
+     @note 
+     - 客户端录制，数据是保持在内存中，如果没有执行cleanMediaRecording释放，可以多次调用该接口生产录制文件。
+     - 下载地址为浏览器默认地址
+     
+     ```JavaScript
+       // client.startMediaRecording() 开启录制之后
+       client.downloadMediaRecording();
+     ```
+     */
+    downloadMediaRecording(): void;
+
+    /**
+     清除内存中的录制的音视频数据
+     @since V4.6.10
+
+     @note 
+     - 客户端录制，数据是保持在内存中，需要主动调用该接口进行释放内存资源。
+     
+     ```JavaScript
+       // client.startMediaRecording() 开启录制之后
+       client.cleanMediaRecording();
+     ```
+     */
+    cleanMediaRecording(): void;
+
+
     /**
      * 添加房间推流任务。
      * 
@@ -728,6 +805,11 @@ declare interface Client{
      */
     uid: number|string;
   }) => void): void;
+
+  /**
+   * `uid-duplicate` 事件表示当前有人使用相同的uid加入了房间，你被提出了。
+   */
+  on(event: "uid-duplicate", callback: () => void): void;
 
   /**
    * `client-banned` 事件表示本地用户被踢出房间。
