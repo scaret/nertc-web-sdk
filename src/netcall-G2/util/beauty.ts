@@ -186,9 +186,15 @@ export function transformTrack(track: MediaStreamTrack) {
     videoElem = document.createElement('video');
     const newStream = new MediaStream([track]);
     videoElem.srcObject = newStream;
-    if(constraint){
-        videoElem.width = constraint.width;
-        videoElem.height = constraint.height;
+    let videoConstraints;
+    if (env.IS_ANY_SAFARI) {
+        videoConstraints = settings;
+    } else {
+        videoConstraints = constraint;
+    }
+    if(videoConstraints){
+        videoElem.width = videoConstraints.width;
+        videoElem.height = videoConstraints.height;
         filters.setSize(videoElem.width, videoElem.height);
     }
     (<any>window).oscillatorRunning = true;
@@ -248,7 +254,6 @@ export function transformTrack(track: MediaStreamTrack) {
                 filters.canvas.style.height = videoElem.height;
                 filters.canvas.style.width = videoElem.width;
             }
-
             filters.setSize(videoElem.width, videoElem.height);
         }
     };
