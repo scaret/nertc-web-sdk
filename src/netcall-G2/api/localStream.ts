@@ -696,7 +696,7 @@ class LocalStream extends EventEmitter {
           this.logger.log(`uid ${this.stringStreamID} 开始启动视频播放 主流 本地`);
           try{
             let end = 'local';
-            await this._play.playVideoStream(this.mediaHelper.video.videoStream, view, end)
+            await this._play.playVideoStream(this.mediaHelper.video.renderStream, view, end)
             if ("width" in this.renderMode.local.video){
               this._play.setVideoRender(this.renderMode.local.video)
             }
@@ -2292,6 +2292,7 @@ class LocalStream extends EventEmitter {
           this.mediaHelper.screen.screenVideoTrack = options.track;
         }
         emptyStreamWith(this.mediaHelper.screen.screenVideoStream, options.track);
+        emptyStreamWith(this.mediaHelper.screen.renderStream, options.track);
         if (
           this.mediaHelper.screen.screenVideoStream.getVideoTracks().length &&
           typeof this.mediaHelper.screen.encoderConfig.high.contentHint === "string" &&
@@ -2326,6 +2327,7 @@ class LocalStream extends EventEmitter {
           this.mediaHelper.video.cameraTrack = options.track;
         }
         emptyStreamWith(this.mediaHelper.video.videoStream, options.track);
+        emptyStreamWith(this.mediaHelper.video.renderStream, options.track);
         if (
           this.mediaHelper.video.videoStream.getVideoTracks().length &&
           typeof this.mediaHelper.video.encoderConfig.high.contentHint === "string" &&

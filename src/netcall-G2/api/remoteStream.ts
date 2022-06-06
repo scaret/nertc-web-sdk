@@ -546,7 +546,7 @@ class RemoteStream extends EventEmitter {
           this.logger.log(`uid ${this.stringStreamID} 开始启动视频播放 主流 远端`);
           try{
             let end = 'remote';
-            await this._play.playVideoStream(this.mediaHelper.video.videoStream, view, end)
+            await this._play.playVideoStream(this.mediaHelper.video.renderStream, view, end)
             if ("width" in this.renderMode.remote.video){
               this._play.setVideoRender(this.renderMode.remote.video)
             }
