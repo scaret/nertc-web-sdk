@@ -836,6 +836,7 @@ class Signalling extends EventEmitter {
     const requestData = {
       method: 'Join',
       requestId: `${Math.ceil(Math.random() * 1e9)}`,
+      supportStdRed: true,
       externData: {
         userName: `${this.adapterRef.channelInfo.uid}`,
         token: this.adapterRef.channelInfo.token,
@@ -885,10 +886,7 @@ class Signalling extends EventEmitter {
       let response
       let thisProtoo = this._protoo
       try{
-        response = await this._protoo.request('Join', {
-          requestId: requestData.requestId,
-          externData: requestData.externData
-        }) as SignalJoinRes;
+        response = await this._protoo.request('Join', requestData) as SignalJoinRes;
       }catch(e){
         if (thisProtoo !== this._protoo){
           this.logger.warn(`过期的信令通道消息：【${e.name}】`, e.message)
