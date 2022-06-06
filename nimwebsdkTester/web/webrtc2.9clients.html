@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<body>
+<div id="views">
+  
+</div>
+<script src="./js/nim/NIM_Web_NERTC.js"></script>
+<script src="./js/lib/jquery.min.js"></script>
+<script>
+  window.clients = {}
+  const channelName = Math.floor(Math.random() * 9000) + 1000
+  const main = ()=>{
+    for (let i = 1; i < 10; i++){
+      const wrapper = document.createElement('div')
+      const panel = document.createElement('div')
+      $(wrapper).appendTo("views")
+      $(panel).appendTo(wrapper)
+      
+      $(`<span>频道号: </span>`).appendTo(panel)
+      const channelInput = document.createElement('input')
+      channelInput.value = channelName
+      $(channelInput).appendTo(panel)
+
+      $(`<span>uid: </span>`).appendTo(panel)
+      const uidInput = document.createElement('input')
+      uidInput.value = channelName * 100 + i
+      $(uidInput).appendTo(panel)
+
+      const joinButton = document.createElement('button')
+      joinButton.innerText = "加入频道"
+      $(joinButton).appendTo(panel)
+      
+      const leaveButton = document.createElement('button')
+      leaveButton.innerText = "离开频道"
+      $(leaveButton).appendTo(panel)
+
+      const destroyButton = document.createElement('button')
+      destroyButton.innerText = "销毁"
+      $(destroyButton).appendTo(panel)
+
+      $("<span> </span>").appendTo(panel)
+
+      const openAudioInput = document.createElement("button")
+      openAudioInput.innerText = "打开音频"
+      $(openAudioInput).appendTo(panel)
+
+      const closeAudioInput = document.createElement("button")
+      closeAudioInput.innerText = "关闭音频"
+      $(closeAudioInput).appendTo(panel)
+
+
+      const openVideoInput = document.createElement("button")
+      openVideoInput.innerText = "打开视频"
+      $(openVideoInput).appendTo(panel)
+
+      const closeVideoInput = document.createElement("button")
+      closeVideoInput.innerText = "关闭视频"
+      $(closeVideoInput).appendTo(panel)
+
+      document.getElementById('views').appendChild(wrapper)
+      const client = NERTC.createClient({
+        appkey: "eca23f68c66d4acfceee77c200200359",
+        debug: true
+      })
+      client.on('stream-added', (evt)=>{
+        client.subscribe(evt.stream)
+      })
+      client.on('stream-subscribed', (evt)=>{
+        console.log(`${channelName} ${evt.stream.streamID}`)
+        evt.stream.setRemoteRenderMode({
+          width: 200,
+          height: 200,
+          cut: false
+        })
+        evt.stream.play(wrapper)
+      })
+      
+      NERTC.getParameters().allowEmptyMedia = true
+      const localStream = NERTC.createStream({
+        audio: false,
+        video: false,
+        client: client,
+      })
+      localStream.init()
+      
+      joinButton.onclick = async ()=>{
+        const channelName = channelInput.value
+        const uid = uidInput.value
+        await client.join({
+          channelName,
+          uid,
+        })
+        client.publish(localStream)
+      }
+
+      leaveButton.onclick = async ()=>{
+        client.leave()
+      }
+      
+      destroyButton.onclick = async ()=>{
+        client.destroy()
+      }
+      
+      openAudioInput.onclick = async ()=>{
+        localStream.open({type: "audio"})
+        localStream.play(wrapper, {audio: true})
+      }
+      
+      closeAudioInput.onclick = async ()=>{
+        localStream.close({type: "audio"})
+      }
+      
+      openVideoInput.onclick = async ()=>{
+        await localStream.open({type: "video"})
+        localStream.setLocalRenderMode({
+          width: 200,
+          height: 200,
+          cut: false
+        })
+        await localStream.play(wrapper, {video: true})
+      }
+
+      closeVideoInput.onclick = async ()=>{
+        localStream.close({type: "video"})
+      }
+    }
+  }
+  main()
+</script>
+<script ></script>
+</body>
+</html>
