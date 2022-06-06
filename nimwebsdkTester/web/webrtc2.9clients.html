@@ -57,6 +57,18 @@
       closeVideoInput.innerText = "关闭视频"
       $(closeVideoInput).appendTo(panel)
 
+      const openBeautyInput = document.createElement("button")
+      openBeautyInput.innerText = "开启美颜"
+      $(openBeautyInput).appendTo(panel)
+
+      const openLutInput = document.createElement("button")
+      openLutInput.innerText = "蓝调滤镜"
+      $(openLutInput).appendTo(panel)
+
+      const closeBeautyInput = document.createElement("button")
+      closeBeautyInput.innerText = "关闭美颜"
+      $(closeBeautyInput).appendTo(panel)
+
       document.getElementById('views').appendChild(wrapper)
       const client = NERTC.createClient({
         appkey: "eca23f68c66d4acfceee77c200200359",
@@ -122,6 +134,18 @@
 
       closeVideoInput.onclick = async ()=>{
         localStream.close({type: "video"})
+      }
+
+      openBeautyInput.onclick = async () => {
+        await localStream.setBeautyEffect(true);
+      }
+
+      openLutInput.onclick = () => {
+        localStream.setFilter('landiao', 1);
+      }
+
+      closeBeautyInput.onclick = async () => {
+        await localStream.setBeautyEffect(false);
       }
     }
   }
