@@ -1,4 +1,4 @@
-import { generateUUID } from './utilsId';
+import { generateUUID } from './utils';
 
 /**
  * 基于 requestAnimationFrame 实现类 setInterval  的功能

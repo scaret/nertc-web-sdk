@@ -1,7 +1,7 @@
 import {getParameters} from "../../parameters";
 import {loglevels} from "../../../util/log/logger";
 import {updateLogIndex} from "../../../util/webrtcLogger";
-import {formatSingleArg} from "../../../util/util";
+import {formatSingleArg} from "../../../util/rtcUtil/utils";
 
 const APP_NAME = 'mediasoup-client';
 

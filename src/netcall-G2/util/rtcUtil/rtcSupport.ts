@@ -2,11 +2,11 @@
 // updated by hzzouhuan
 // https://github.com/HenrikJoreteg/webrtcsupport
 
-import { Device } from '../../module/device'
-import { RtcSystem } from './rtcSystem'
-import { platform } from "../platform";
+import { Device } from '../../module/device';
 import * as env from './rtcEnvironment';
 import { getSupportedCodecs } from './codec';
+import { getOSInfo, getBrowserInfo } from './rtcPlatform';
+
 
 // default check result
 let checkResult = {
@@ -22,13 +22,9 @@ let checkResult = {
   }
 };
 
-// var version
-
 // 1. getUserMedia
-//console.warn(' RtcSystem.browser.ua: ', RtcSystem.browser)
-//console.warn('RtcSystem.ios: ', RtcSystem.ios())
 var getUserMedia = null
-if (RtcSystem.ios() && RtcSystem.browser.ua === 'weixin') {
+if (env.IS_IOS && env.IS_WECHAT) {
   //console.warn('是ios端 微信')
 } else {
   getUserMedia = (navigator.getUserMedia =
@@ -103,10 +99,10 @@ const base = {
 }
 
 function getVersion () {
-  let prefix = platform && platform.name
-  let version = platform && platform.version
-  //console.log('platform', platform)
+  let prefix = getBrowserInfo().browserName;
+  let version = getBrowserInfo().browserVersion;
   //version = version && version.match(/(\d|\.)+/)[0]
+  //@ts-ignore
   version = version && version.match(/\d+/)[0]
   return {
     prefix,
@@ -126,11 +122,9 @@ const RtcSupport =  {
   },
   checkCompatibility () {
     let result = Object.assign(getVersion(), {
-      system:
-        platform &&
-        platform.os.family + ' ' + platform.os.version,
-      browser: platform && platform.name,
-      version: platform && platform.version
+      system: getOSInfo().osName + ' ' + getOSInfo().osVersion,
+      browser: getBrowserInfo().browserName,
+      version: getBrowserInfo().browserVersion
     })
 
     // 当前屏幕共享写死false
@@ -271,53 +265,4 @@ export const isHttpProtocol = function() {
     return true;
   }
   return false;
-}
-
-const OSNameMap = new Map([
-  [env.IS_ANDROID, 'Android'],
-  [env.IS_IOS, 'iOS'],
-  [env.IS_WIN, 'Windows'],
-  [env.IS_MAC, 'MacOS'],
-  [env.IS_LINUX, 'Linux']
-]);
-
-export const getOSName = function() {
-  let osName = platform.os.family;
-  if (OSNameMap.get(true)) {
-    osName = OSNameMap.get(true);
-  }
-  return osName;
-};
-
-const browserInfoMap = new Map([
-  [env.IS_FIREFOX, ['Firefox', env.FIREFOX_VERSION]],
-  [env.IS_EDG, ['Edg', env.EDG_VERSION]],
-  [env.IS_CHROME, ['Chrome', env.CHROME_VERSION]],
-  [env.IS_SAFARI, ['Safari', env.SAFARI_VERSION]],
-  [env.IS_WECHAT, ['WeChat', env.WECHAT_VERSION]],
-  [env.IS_WQQB, ['QQ(Win)', env.WQQB_VERSION]],
-  [env.IS_MQQB, ['QQ(Mobile)', env.MQQB_VERSION]],
-  [env.IS_X5MQQB, ['QQ(Mobile X5)', env.MQQB_VERSION]],
-  [env.IS_MACQQB, ['QQ(Mac)', env.MACQQB_VERSION]],
-  [env.IS_IPADQQB, ['QQ(iPad)', env.IPADQQB_VERSION]],
-  [env.IS_MIBROWSER, ['MI', env.MI_VERSION]],
-  [env.IS_HUAWEIBROWSER, ['HW', env.HUAWEI_VERSION]],
-  [env.IS_SAMSUNGBROWSER, ['Samsung', env.SAMSUNG_VERSION]],
-  [env.IS_OPPOBROWSER, ['OPPO', env.OPPO_VERSION]],
-  [env.IS_VIVOBROWSER, ['VIVO', env.VIVO_VERSION]],
-  [env.IS_EDGE, ['EDGE', env.EDGE_VERSION]],
-  [env.IS_SOGOUM, ['SogouMobile', env.SOGOUM_VERSION]],
-  [env.IS_SOGOU, ['Sogou', env.SOGOU_VERSION]]
-]);
-
-export function getBrowserInfo() {
-  let browserName = platform.name,
-    browserVersion = platform.version;
-  if (browserInfoMap.get(true)) {
-    //@ts-ignore
-    browserName = browserInfoMap.get(true)[0];
-    //@ts-ignore
-    browserVersion = browserInfoMap.get(true)[1];
-  }
-  return { browserName, browserVersion };
 }

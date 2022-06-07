@@ -149,17 +149,9 @@ class Client extends Base {
   // 初始化nrtc
   _init (options:ClientOptions) {
     this.initWebSocket();
-    // let checkSum = sha1(`${wsParams.PROD}${wsParams.timestamp}${SDK_VERSION}${wsParams.platform}${wsParams.sdktype}${wsParams.deviceId}${wsParams.salt}`);
-    // let url = `${wsParams.wsURL}?deviceId=${wsParams.deviceId}&isTest=${wsParams.PROD}&sdkVer=${SDK_VERSION}&sdktype=${wsParams.sdktype}&timestamp=${wsParams.timestamp}&platform=${wsParams.platform}&checkSum=${checkSum}`;
-    // (<any>window).wsTransport = new WSTransport({
-    //   url: url,
-    //   adapterRef: this.adapterRef
-    // });
-    // (<any>window).wsTransport.init();
     const { appkey = '', token } = options
     if (!appkey) {
       this.logger.error('Client: init error: 请传入appkey')
-      // this.logStorage.log('log','Client: init error: 请传入appkey')
       throw new RtcError({code: ErrorCode.INVALID_PARAMETER, message:'请传入appkey'})
     }
     this._params.appkey = appkey
@@ -573,7 +565,6 @@ class Client extends Base {
       options: stream,
     })
     let reason = ''
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     const onPublishFinish = ()=>{
       hookPublishFinish()
       const param: any = {

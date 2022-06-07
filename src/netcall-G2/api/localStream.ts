@@ -36,9 +36,9 @@ import {ILogger} from "../types";
 import { isHttpProtocol } from '../util/rtcUtil/rtcSupport'
 import {emptyStreamWith, watchTrack} from "../util/gum";
 import {getParameters} from "../module/parameters";
-import {makePrintable} from "../util/util";
 import {startBeauty, closeBeauty, transformTrack, setBeautyFilter} from "../util/beauty";
 import * as env from '../util/rtcUtil/rtcEnvironment';
+import {makePrintable} from "../util/rtcUtil/utils";
 
 /**
  *  请使用 {@link NERTC.createStream} 通过NERTC.createStream创建
@@ -3210,7 +3210,7 @@ class LocalStream extends EventEmitter {
         this._cameraTrack = this.mediaHelper.video.cameraTrack
         //@ts-ignore
         this._transformedTrack = transformTrack(this._cameraTrack);
-        const videoTrackLow = this.mediaHelper.video.videoTrackLow
+        const videoTrackLow = this.mediaHelper.video.videoTrackLow;
         await this.replaceTrack({
           mediaType: "video",
           //@ts-ignore
@@ -3218,7 +3218,7 @@ class LocalStream extends EventEmitter {
           external: false
         });
         if (videoTrackLow){
-          videoTrackLow.stop()
+          videoTrackLow.stop();
         }
         startBeauty(true, effects);
         if(env.IS_ANY_SAFARI){
@@ -3230,7 +3230,7 @@ class LocalStream extends EventEmitter {
           return;
         }
         this.logger.log('startBeautyEffect() 关闭美颜');
-        const videoTrackLow = this.mediaHelper.video.videoTrackLow
+        const videoTrackLow = this.mediaHelper.video.videoTrackLow;
         await this.replaceTrack({
           mediaType: "video",
           //@ts-ignore
@@ -3238,7 +3238,7 @@ class LocalStream extends EventEmitter {
           external: false
         });
         if (videoTrackLow){
-          videoTrackLow.stop()
+          videoTrackLow.stop();
         }
         if(this._transformedTrack){
           this._transformedTrack.stop();
@@ -3290,13 +3290,6 @@ class LocalStream extends EventEmitter {
     this._reset()
     this.destroyed = true;
     this.lastEffects = null;
-    //销毁时，清除美颜小流track
-    getParameters().tracks.video.forEach((track)=>{
-      if(track && track.readyState === 'live'){
-          track.stop();
-          track = null;
-      }
-    });
   }
 }
 

@@ -1,9 +1,9 @@
-import {platform} from "./platform";
 import {logHelper} from "./logHelper";
 import {LoggerOptions} from "../types";
 import {getParameters} from "../module/parameters";
 import {loglevels} from "./log/logger";
-import {formatSingleArg} from "./util";
+import {formatSingleArg} from "./rtcUtil/utils";
+import {getBrowserInfo} from "./rtcUtil/rtcPlatform";
 
 let logIndex = 0
 
@@ -44,7 +44,7 @@ export class Logger{
     var logger = this;
     this.logHelper && this.logHelper.log(arguments)
     var args = logger.formatArgs("DEBUG", [].slice.call(arguments, 0))
-    // if (this.supportedBrowsers.indexOf(platform.name) !== -1 && typeof args[0] === "string") {
+    // if (this.supportedBrowsers.indexOf(getBrowserInfo().browserName) !== -1 && typeof args[0] === "string") {
     //   args[0] = '%c' + args[0]
     //   args.splice(1, 0, logger.style)
     // }
@@ -58,7 +58,7 @@ export class Logger{
     var logger = this;
     this.logHelper && this.logHelper.log(arguments)
     var args = logger.formatArgs("LOG", [].slice.call(arguments, 0))
-    if (this.supportedBrowsers.indexOf(platform.name) !== -1 && typeof args[0] === "string") {
+    if (this.supportedBrowsers.indexOf(getBrowserInfo().browserName) !== -1 && typeof args[0] === "string") {
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
       for (let i = 2; i < args.length; i++){
@@ -80,7 +80,7 @@ export class Logger{
     var logger = this;
     this.logHelper && this.logHelper.log(arguments)
     var args = logger.formatArgs("INFO", [].slice.call(arguments, 0))
-    if (this.supportedBrowsers.indexOf(platform.name) !== -1 && typeof args[0] === "string") {
+    if (this.supportedBrowsers.indexOf(getBrowserInfo().browserName) !== -1 && typeof args[0] === "string") {
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
     }
@@ -94,7 +94,7 @@ export class Logger{
     var logger = this;
     this.logHelper && this.logHelper.log(arguments)
     var args = logger.formatArgs("WARN", [].slice.call(arguments, 0))
-    if (this.supportedBrowsers.indexOf(platform.name) !== -1 && typeof args[0] === "string") {
+    if (this.supportedBrowsers.indexOf(getBrowserInfo().browserName) !== -1 && typeof args[0] === "string") {
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
     }
@@ -108,7 +108,7 @@ export class Logger{
     var logger = this;
     this.logHelper && this.logHelper.log(arguments)
     var args = logger.formatArgs("ERROR", [].slice.call(arguments, 0))
-    if (this.supportedBrowsers.indexOf(platform.name) !== -1 && typeof args[0] === "string") {
+    if (this.supportedBrowsers.indexOf(getBrowserInfo().browserName) !== -1 && typeof args[0] === "string") {
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
     }
@@ -156,7 +156,7 @@ export class Logger{
 
   // use this form to skip drop_console of uglify
   chrome(func:string, args:any[]) {
-    let name = platform.name;
+    let name = getBrowserInfo().browserName;
     //@ts-ignore
     if (this.cs[func]){
       //@ts-ignore

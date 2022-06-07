@@ -1,8 +1,7 @@
-import { EventEmitter } from 'eventemitter3'
-import { RemoteStream } from '../api/remoteStream'
-import { RtcSystem } from '../util/rtcUtil/rtcSystem'
-import BigNumber from 'bignumber.js'
-import {ENGINE_VERSION} from '../Config/index'
+import { EventEmitter } from 'eventemitter3';
+import { RemoteStream } from '../api/remoteStream';
+import BigNumber from 'bignumber.js';
+import {ENGINE_VERSION} from '../Config/index';
 import {
   AdapterRef, ILogger, MaskUserSetting, MediaTypeShort, NetStatusItem, SignalingConnectionConfig,
   SignallingOptions,
@@ -17,7 +16,7 @@ import {RTSTransport} from "./rtsTransport";
 import { parseBase64 } from "../util/crypto-ts/base64";
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
-import {getOSName, getBrowserInfo} from '../util/rtcUtil/rtcSupport'
+import {getOSInfo, getBrowserInfo} from '../util/rtcUtil/rtcPlatform';
 import {getParameters} from "./parameters";
 const protooClient = require('./3rd/protoo-client/')
 
@@ -78,7 +77,7 @@ class Signalling extends EventEmitter {
     this._reset()
     // 设置对象引用
     this.adapterRef = options.adapterRef
-    this.browserDevice = getOSName()+ '-' + getBrowserInfo().browserName + '-' + getBrowserInfo().browserVersion;
+    this.browserDevice = getOSInfo().osName + '-' + getBrowserInfo().browserName + '-' + getBrowserInfo().browserVersion;
   }
 
   async _reset() {
@@ -860,8 +859,8 @@ class Signalling extends EventEmitter {
         },
         mediaCapabilitySet: this.adapterRef.mediaCapability.stringify(),
         browser: {                       
-          name: RtcSystem.browser.ua,       
-          version: `${RtcSystem.browser.version}`
+          name: getBrowserInfo().browserName,       
+          version: `${getBrowserInfo().browserVersion}`
         },
         gmEnable: gmEnable,
         gmMode: encryptionModeToInt(this.adapterRef.encryption.encryptionMode),

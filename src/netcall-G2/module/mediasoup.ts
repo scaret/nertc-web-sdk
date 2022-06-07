@@ -15,7 +15,7 @@ import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
 import {RemoteStream} from "../api/remoteStream";
 import {getParameters} from "./parameters";
-import { RtcSystem } from '../util/rtcUtil/rtcSystem'
+import * as env from '../util/rtcUtil/rtcEnvironment';
 
 class Mediasoup extends EventEmitter {
   private adapterRef:AdapterRef;
@@ -204,7 +204,7 @@ class Mediasoup extends EventEmitter {
         })
       })
       //firefox浏览器在relay模式（存在bug）
-      if (RtcSystem.browser.ua !== 'firefox'){
+      if(!env.IS_FIREFOX){
         iceTransportPolicy = 'relay'
       }
       
