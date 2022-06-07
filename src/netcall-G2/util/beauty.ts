@@ -180,15 +180,14 @@ const update = () => {
 export function transformTrack(track: MediaStreamTrack) {
     logger.log("beauty track transform");
     startLut();
-    const constraint = track.getConstraints();
     const settings = track.getSettings();
     frameRate = settings.frameRate || 30;
     videoElem = document.createElement('video');
     const newStream = new MediaStream([track]);
     videoElem.srcObject = newStream;
-    if(constraint){
-        videoElem.width = constraint.width;
-        videoElem.height = constraint.height;
+    if(settings){
+        videoElem.width = settings.width;
+        videoElem.height = settings.height;
         filters.setSize(videoElem.width, videoElem.height);
     }
     (<any>window).oscillatorRunning = true;
