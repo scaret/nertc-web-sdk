@@ -458,7 +458,7 @@ class Client extends Base {
         code: -1,
         param: {
           ...options,
-          reason: e.message
+          reason: e && e.message
         }
       })
       throw e;
