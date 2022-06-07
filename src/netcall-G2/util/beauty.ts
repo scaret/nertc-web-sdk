@@ -186,15 +186,9 @@ export function transformTrack(track: MediaStreamTrack) {
     videoElem = document.createElement('video');
     const newStream = new MediaStream([track]);
     videoElem.srcObject = newStream;
-    let videoConstraints;
-    if (env.IS_ANY_SAFARI) {
-        videoConstraints = settings;
-    } else {
-        videoConstraints = constraint;
-    }
-    if(videoConstraints){
-        videoElem.width = videoConstraints.width;
-        videoElem.height = videoConstraints.height;
+    if(settings){
+        videoElem.width = settings.width;
+        videoElem.height = settings.height;
         filters.setSize(videoElem.width, videoElem.height);
     }
     (<any>window).oscillatorRunning = true;
