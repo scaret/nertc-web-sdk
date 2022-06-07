@@ -2,8 +2,7 @@
 // updated by hzzouhuan
 // https://github.com/HenrikJoreteg/webrtcsupport
 
-import { Device } from '../../module/device'
-import { RtcSystem } from './rtcSystem'
+import { Device } from '../../module/device';
 import * as env from './rtcEnvironment';
 import { getSupportedCodecs } from './codec';
 import { getOSInfo, getBrowserInfo } from './rtcPlatform';
@@ -23,13 +22,9 @@ let checkResult = {
   }
 };
 
-// var version
-
 // 1. getUserMedia
-//console.warn(' RtcSystem.browser.ua: ', RtcSystem.browser)
-//console.warn('RtcSystem.ios: ', RtcSystem.ios())
 var getUserMedia = null
-if (RtcSystem.ios() && RtcSystem.browser.ua === 'weixin') {
+if (env.IS_IOS && env.IS_WECHAT) {
   //console.warn('是ios端 微信')
 } else {
   getUserMedia = (navigator.getUserMedia =

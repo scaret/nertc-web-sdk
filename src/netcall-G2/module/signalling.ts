@@ -1,8 +1,7 @@
-import { EventEmitter } from 'eventemitter3'
-import { RemoteStream } from '../api/remoteStream'
-import { RtcSystem } from '../util/rtcUtil/rtcSystem'
-import BigNumber from 'bignumber.js'
-import {ENGINE_VERSION} from '../Config/index'
+import { EventEmitter } from 'eventemitter3';
+import { RemoteStream } from '../api/remoteStream';
+import BigNumber from 'bignumber.js';
+import {ENGINE_VERSION} from '../Config/index';
 import {
   AdapterRef, ILogger, MaskUserSetting, MediaTypeShort, NetStatusItem, SignalingConnectionConfig,
   SignallingOptions,
@@ -860,8 +859,8 @@ class Signalling extends EventEmitter {
         },
         mediaCapabilitySet: this.adapterRef.mediaCapability.stringify(),
         browser: {                       
-          name: RtcSystem.browser.ua,       
-          version: `${RtcSystem.browser.version}`
+          name: getBrowserInfo().browserName,       
+          version: `${getBrowserInfo().browserVersion}`
         },
         gmEnable: gmEnable,
         gmMode: encryptionModeToInt(this.adapterRef.encryption.encryptionMode),

@@ -1,9 +1,8 @@
-import { EventEmitter } from 'eventemitter3'
-import * as GUM from '../util/gum'
-import { WebAudio } from './webAudio'
-import { RtcSystem } from '../util/rtcUtil/rtcSystem'
-import { AuidoMixingState } from '../constant/state'
-import { ajax } from '../util/ajax'
+import { EventEmitter } from 'eventemitter3';
+import * as GUM from '../util/gum';
+import { WebAudio } from './webAudio';
+import { AuidoMixingState } from '../constant/state';
+import { ajax } from '../util/ajax';
 import {checkExists, isExistOptions, checkValidInteger} from "../util/param";
 import {
   AudioMixingOptions,
@@ -924,7 +923,7 @@ class MediaHelper extends EventEmitter {
     } else if (resolution === 4) {
       result.width = 640
       result.height = 480
-    } else if (resolution === 8 || RtcSystem.ios()) {
+    } else if (resolution === 8 || env.IS_IOS_SAFARI) {
       //ios端safari浏览器，1080P分辨率的视频编码发送异常，这里修改为720P
       result.width = 1280
       result.height = 720

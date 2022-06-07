@@ -1,5 +1,5 @@
 import {getParameters} from "../../module/parameters";
-import {RtcSystem} from "./rtcSystem";
+import * as env from "./rtcEnvironment";
 
 
 export function canShimCanvas(){
@@ -9,7 +9,7 @@ export function canShimCanvas(){
   }else if (getParameters().shimCanvas === "always"){
     result = true;
   }else if (getParameters().shimCanvas === "ios151") {
-    if (RtcSystem.ios() && navigator.userAgent.indexOf(" OS 15_1") > -1){
+    if (env.IS_IOS && navigator.userAgent.indexOf(" OS 15_1") > -1){
       return true;
     }else{
       return false;
