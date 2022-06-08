@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf8">
+  <link rel="icon" href="data:,">
+  <title>多实例测试</title>
+</head>
+<body>
+<label><input type="checkbox" id="defaultOpenMic">打开麦克风</label>
+<label><input type="checkbox" id="defaultOpenCamera" checked>打开摄像头</label>
+<div id="views">
+  
+</div>
+<script>
+  var searchParams = new URLSearchParams(location.search);
+  const COUNT = parseInt(searchParams.get("count"))
+  if (!COUNT){
+    searchParams.set("count", 4)
+    window.location.href = `${window.location.pathname}?${searchParams.toString()}`
+  }
+</script>
+<script src="./js/nim/NIM_Web_NERTC.js"></script>
+<script src="./js/lib/jquery.min.js"></script>
+<script>
+  window.clients = {}
+  const channelName = Math.floor(Math.random() * 9000) + 1000
+  const main = ()=>{
+    for (let i = 0; i < COUNT; i++){
+      const wrapper = document.createElement('div')
+      const panel = document.createElement('div')
+      const localContainer = document.createElement('div')
+      const remoteContainer = document.createElement('div')
+      $(wrapper).appendTo("views")
+      $(panel).appendTo(wrapper)
+      $(localContainer).appendTo(wrapper)
+      $(remoteContainer).appendTo(wrapper)
+
+      wrapper.style.clear = "both"
+      localContainer.style.width = "200px"
+      localContainer.style.height = "200px"
+      localContainer.style.float = "left"
+      remoteContainer.style.width = "800px"
+      remoteContainer.style.height = "200px"
+      remoteContainer.style.float = "left"
+      
+      $(`<span>频道号: </span>`).appendTo(panel)
+      const channelInput = document.createElement('input')
+      channelInput.value = channelName
+      $(channelInput).appendTo(panel)
+
+      $(`<span>uid: </span>`).appendTo(panel)
+      const uidInput = document.createElement('input')
+      uidInput.value = channelName * 100 + i
+      $(uidInput).appendTo(panel)
+
+      const joinButton = document.createElement('button')
+      joinButton.innerText = "加入频道"
+      $(joinButton).appendTo(panel)
+      
+      const leaveButton = document.createElement('button')
+      leaveButton.innerText = "离开频道"
+      $(leaveButton).appendTo(panel)
+
+      const destroyButton = document.createElement('button')
+      destroyButton.innerText = "销毁"
+      $(destroyButton).appendTo(panel)
+
+      $("<span> </span>").appendTo(panel)
+
+      const openAudioInput = document.createElement("button")
+      openAudioInput.innerText = "打开音频"
+      $(openAudioInput).appendTo(panel)
+
+      const closeAudioInput = document.createElement("button")
+      closeAudioInput.innerText = "关闭音频"
+      $(closeAudioInput).appendTo(panel)
+
+
+      const openVideoInput = document.createElement("button")
+      openVideoInput.innerText = "打开视频"
+      $(openVideoInput).appendTo(panel)
+
+      const closeVideoInput = document.createElement("button")
+      closeVideoInput.innerText = "关闭视频"
+      $(closeVideoInput).appendTo(panel)
+
+      const openBeautyInput = document.createElement("button")
+      openBeautyInput.innerText = "开启美颜"
+      $(openBeautyInput).appendTo(panel)
+
+      const openLutInput = document.createElement("button")
+      openLutInput.innerText = "蓝调滤镜"
+      $(openLutInput).appendTo(panel)
+
+      const closeBeautyInput = document.createElement("button")
+      closeBeautyInput.innerText = "关闭美颜"
+      $(closeBeautyInput).appendTo(panel)
+
+      document.getElementById('views').appendChild(wrapper)
+      const client = NERTC.createClient({
+        appkey: "eca23f68c66d4acfceee77c200200359",
+        debug: true
+      })
+      window.clients[i] = client
+      client.on('stream-added', (evt)=>{
+        client.subscribe(evt.stream)
+      })
+      client.on('stream-subscribed', (evt)=>{
+        console.log(`${channelName} ${evt.stream.streamID}`)
+        evt.stream.setRemoteRenderMode({
+          width: 200,
+          height: 200,
+          cut: false
+        })
+        evt.stream.play(remoteContainer)
+      })
+      
+      NERTC.getParameters().allowEmptyMedia = true
+      const localStream = NERTC.createStream({
+        audio: false,
+        video: false,
+        client: client,
+      })
+      localStream.init()
+      localStream.setLocalRenderMode({
+        width: 200,
+        height: 200,
+        cut: false
+      })
+      joinButton.onclick = async ()=>{
+        const channelName = channelInput.value
+        const uid = uidInput.value
+        await client.join({
+          channelName,
+          uid,
+        })
+        await client.publish(localStream)
+        if (document.getElementById("defaultOpenMic").checked){
+          await localStream.open({type: "audio"})
+          localStream.play(localContainer, {audio: true})
+        }
+        if (document.getElementById("defaultOpenCamera").checked){
+          const cameras = await NERTC.getCameras()
+          let deviceId = ""
+          if (cameras.length){
+            deviceId = cameras[i % cameras.length].deviceId
+          }
+          await localStream.open({type: "video", deviceId})
+          await localStream.play(localContainer, {video: true})
+        }
+      }
+
+      leaveButton.onclick = async ()=>{
+        client.leave()
+      }
+      
+      destroyButton.onclick = async ()=>{
+        client.destroy()
+      }
+      
+      openAudioInput.onclick = async ()=>{
+        localStream.open({type: "audio"})
+        localStream.play(localContainer, {audio: true})
+      }
+      
+      closeAudioInput.onclick = async ()=>{
+        localStream.close({type: "audio"})
+      }
+      
+      openVideoInput.onclick = async ()=>{
+        await localStream.open({type: "video"})
+        await localStream.play(localContainer, {video: true})
+      }
+
+      closeVideoInput.onclick = async ()=>{
+        localStream.close({type: "video"})
+      }
+
+      openBeautyInput.onclick = async () => {
+        await localStream.setBeautyEffect(true);
+      }
+
+      openLutInput.onclick = () => {
+        localStream.setFilter('landiao', 1);
+      }
+
+      closeBeautyInput.onclick = async () => {
+        await localStream.setBeautyEffect(false);
+      }
+    }
+  }
+  main()
+</script>
+<script ></script>
+</body>
+</html>
