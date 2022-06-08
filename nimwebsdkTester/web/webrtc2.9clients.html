@@ -1,20 +1,47 @@
 <!DOCTYPE html>
 <html>
+<head>
+  <meta charset="utf8">
+  <link rel="icon" href="data:,">
+  <title>多实例测试</title>
+</head>
 <body>
+<label><input type="checkbox" id="defaultOpenMic">打开麦克风</label>
+<label><input type="checkbox" id="defaultOpenCamera" checked>打开摄像头</label>
 <div id="views">
   
 </div>
+<script>
+  var searchParams = new URLSearchParams(location.search);
+  const COUNT = parseInt(searchParams.get("count"))
+  if (!COUNT){
+    searchParams.set("count", 4)
+    window.location.href = `${window.location.pathname}?${searchParams.toString()}`
+  }
+</script>
 <script src="./js/nim/NIM_Web_NERTC.js"></script>
 <script src="./js/lib/jquery.min.js"></script>
 <script>
   window.clients = {}
   const channelName = Math.floor(Math.random() * 9000) + 1000
   const main = ()=>{
-    for (let i = 1; i < 10; i++){
+    for (let i = 0; i < COUNT; i++){
       const wrapper = document.createElement('div')
       const panel = document.createElement('div')
+      const localContainer = document.createElement('div')
+      const remoteContainer = document.createElement('div')
       $(wrapper).appendTo("views")
       $(panel).appendTo(wrapper)
+      $(localContainer).appendTo(wrapper)
+      $(remoteContainer).appendTo(wrapper)
+
+      wrapper.style.clear = "both"
+      localContainer.style.width = "200px"
+      localContainer.style.height = "200px"
+      localContainer.style.float = "left"
+      remoteContainer.style.width = "800px"
+      remoteContainer.style.height = "200px"
+      remoteContainer.style.float = "left"
       
       $(`<span>频道号: </span>`).appendTo(panel)
       const channelInput = document.createElement('input')
@@ -74,6 +101,7 @@
         appkey: "eca23f68c66d4acfceee77c200200359",
         debug: true
       })
+      window.clients[i] = client
       client.on('stream-added', (evt)=>{
         client.subscribe(evt.stream)
       })
@@ -84,7 +112,7 @@
           height: 200,
           cut: false
         })
-        evt.stream.play(wrapper)
+        evt.stream.play(remoteContainer)
       })
       
       NERTC.getParameters().allowEmptyMedia = true
@@ -94,7 +122,11 @@
         client: client,
       })
       localStream.init()
-      
+      localStream.setLocalRenderMode({
+        width: 200,
+        height: 200,
+        cut: false
+      })
       joinButton.onclick = async ()=>{
         const channelName = channelInput.value
         const uid = uidInput.value
@@ -102,7 +134,20 @@
           channelName,
           uid,
         })
-        client.publish(localStream)
+        await client.publish(localStream)
+        if (document.getElementById("defaultOpenMic").checked){
+          await localStream.open({type: "audio"})
+          localStream.play(localContainer, {audio: true})
+        }
+        if (document.getElementById("defaultOpenCamera").checked){
+          const cameras = await NERTC.getCameras()
+          let deviceId = ""
+          if (cameras.length){
+            deviceId = cameras[i % cameras.length].deviceId
+          }
+          await localStream.open({type: "video", deviceId})
+          await localStream.play(localContainer, {video: true})
+        }
       }
 
       leaveButton.onclick = async ()=>{
@@ -115,7 +160,7 @@
       
       openAudioInput.onclick = async ()=>{
         localStream.open({type: "audio"})
-        localStream.play(wrapper, {audio: true})
+        localStream.play(localContainer, {audio: true})
       }
       
       closeAudioInput.onclick = async ()=>{
@@ -124,12 +169,7 @@
       
       openVideoInput.onclick = async ()=>{
         await localStream.open({type: "video"})
-        localStream.setLocalRenderMode({
-          width: 200,
-          height: 200,
-          cut: false
-        })
-        await localStream.play(wrapper, {video: true})
+        await localStream.play(localContainer, {video: true})
       }
 
       closeVideoInput.onclick = async ()=>{
