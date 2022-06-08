@@ -896,7 +896,12 @@ class Signalling extends EventEmitter {
       }
       this.logger.log('Signalling:加入房间 ack ->  ', JSON.stringify(response, (k, v)=>{return k === "edgeRtpCapabilities" ? null : v;}));
       if (response.code != 200) {
-        const errMsg = response.externData ? response.externData.errMsg : response.errMsg
+        let errMsg = "Unknown Error"
+        if (response.externData){
+          errMsg = response.externData.errMsg
+        } else if (response.errMsg){
+          errMsg = response.errMsg
+        }
         this.logger.error(
           'Signalling: 加入房间失败, reason = ',
           response.code, errMsg
@@ -1132,7 +1137,7 @@ class Signalling extends EventEmitter {
     }
   }
 
-  _joinFailed (reasonCode:string|undefined|number, errMsg: string|undefined) {
+  _joinFailed (reasonCode:string|undefined|number, errMsg: string) {
     this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
     this.adapterRef.connectState.curState = 'DISCONNECTED'
     this.adapterRef.connectState.reconnect = false
