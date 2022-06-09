@@ -74,6 +74,10 @@ config = merge(config, {
         }
       },
       {
+        test: /netcall-G2\/module\/blobs\/raw\/.*\.js$/,
+        use: 'raw-loader'
+      },
+      {
         test: /\.tsx?$/,
         use: 'ts-loader',
         exclude: /node_modules/,
