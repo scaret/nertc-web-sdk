@@ -769,7 +769,7 @@ function initVolumeDetect() {
       }
       instantMeter.value = instantValueDisplay.innerText = result
     }
-  }, 1000);
+  }, 100);
 }
 
 async function initCodecOptions(){

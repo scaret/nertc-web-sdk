@@ -1,7 +1,7 @@
 import { EventEmitter } from "eventemitter3";
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
-import {ILogger, Timer} from "../types";
+import {DeviceQueryData, ILogger, Timer} from "../types";
 import {Logger} from "../util/webrtcLogger";
 import {getParameters} from "./parameters";
 
@@ -90,6 +90,11 @@ class DeviceManager extends EventEmitter {
       }
     }
     devices = await navigator.mediaDevices.enumerateDevices();
+    let compatAudioInputList:string[] = []
+    try{
+      compatAudioInputList = JSON.parse(localStorage.getItem("compatAudioInputList") || "[]")
+    }catch(e){
+    }
     devices.forEach(function (device) {
       if (options.videoinput && device.kind === 'videoinput') {
         let deviceInfo:DeviceInfo = {
@@ -109,6 +114,13 @@ class DeviceManager extends EventEmitter {
           deviceInfo.groupId = device.groupId
         }
         result.audioIn.push(deviceInfo)
+        
+        if (device.label && compatAudioInputList.indexOf(device.label) !== -1){
+          const compatDeviceInfo = Object.assign({}, deviceInfo)
+          compatDeviceInfo.deviceId += "?compat=left"
+          compatDeviceInfo.label = `【兼容模式】${compatDeviceInfo.label}`
+          result.audioIn.push(compatDeviceInfo)
+        }
       } else if (options.audiooutput && device.kind === 'audiooutput') {
         let deviceInfo:DeviceInfo = {
           deviceId: device.deviceId,
@@ -363,6 +375,41 @@ class DeviceManager extends EventEmitter {
     this.userGestureUI.style.display = "block";
     this.userGestureUI.innerHTML = `由于浏览器限制，该操作需手势触发。<br/>点击此处以继续<br/>详细信息：${e.name}<br/>${e.message}`
     document.body.appendChild(this.userGestureUI)
+  }
+  
+  parseDeviceId(deviceIdQueryString:string){
+    const questionIndex = deviceIdQueryString.indexOf("?")
+    if (questionIndex > -1){
+      const data:DeviceQueryData = {
+        deviceId: deviceIdQueryString.slice(0, questionIndex)
+      }
+      const query = deviceIdQueryString.slice(questionIndex + 1)
+      const vars = query.split('&');
+      for (let i = 0; i < vars.length; i++) {
+        var pair = vars[i].split('=');
+        data[pair[0]] = pair[1]
+      }
+      return data
+    }else{
+      return {
+        deviceId: deviceIdQueryString
+      }
+    }
+  }
+  
+  stringifyDeviceId(deviceQueryData: DeviceQueryData){
+    let query = ""
+    for (let key in deviceQueryData){
+      if (key !== "deviceId"){
+        if (query) {
+          query += `&`
+        }else{
+          query += `?`
+        }
+        query += `${key}=${deviceQueryData[key]}`
+      }
+    }
+    return `${deviceQueryData.deviceId}${query}`
   }
 
   clean() {

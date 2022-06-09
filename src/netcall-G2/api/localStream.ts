@@ -1654,7 +1654,9 @@ class LocalStream extends EventEmitter {
    */
   getAudioLevel () {
     if (!this.audioLevelHelper && this.mediaHelper.getAudioTrack()){
-      this.audioLevelHelper = new AudioLevel({adapterRef: this.client.adapterRef, stream: this.mediaHelper.audio.audioStream})
+      this.audioLevelHelper = new AudioLevel({
+        stream: this.mediaHelper.audio.audioStream,
+        logger: this.logger})
     }
     return this.audioLevelHelper?.getAudioLevel() || 0
   }
