@@ -3512,6 +3512,22 @@ $("#setEncryptionSecret").click(()=>{
   addLog("setEncryptionSecret " + encryptionSecret)
 })
 
+$("#removeMostListeners").click(()=>{
+  const eventWhitelist = $("#event-whitelist").val()
+  for (let eventName in rtc.client._events){
+    if (eventWhitelist && eventWhitelist.indexOf(eventName) > -1){
+      continue
+    }
+    if (eventName && eventName[0] !== '@'){
+      const eventLen = rtc.client._events[eventName].length || 1
+      let msg = `去除${eventLen}个监听${eventName}`
+      addLog(msg)
+      console.log(msg, rtc.client._events[eventName])
+      rtc.client.off(eventName)
+    }
+  }
+})
+
 $("#pauseReconnection").on("click", async ()=>{
   const info = await rtc.client.pauseReconnection();
   addLog("===暂停重连" + info && info.reason)
