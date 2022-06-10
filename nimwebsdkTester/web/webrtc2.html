@@ -884,7 +884,7 @@
 
 
         <p class="block-header" id="automask">自动打码</p>
-        <div class="part" id='automask'>
+        <div class="part hide">
           <div class="line">
             模拟打码下发:
             <br/>
@@ -1020,7 +1020,7 @@
         </div>
 
         <p class="block-header" id="watermark">水印功能</p>
-        <div class="part" id='watermarkFeature1'>
+        <div class="part hide" id='watermarkFeature1'>
           <div class="line">
             ID水印
             <input type="checkbox" id="idWatermark" checked>
@@ -1178,6 +1178,18 @@
 
         <p class="block-header">插件</p>
         <div class="part hide" id="nePluginContainer">
+        </div>
+
+        <p class="block-header">去除事件监听</p>
+        <div class="part" id="removeListeners">
+          <label>
+            事件监听白名单<br/>
+            <select id="event-whitelist" multiple>
+              <option value="stream-added" selected>stream-added</option>
+              <option value="stream-subscribed" selected>stream-subscribed</option>
+            </select>
+          </label>
+          <button id="removeMostListeners">去除所有事件（除白名单）</button>
         </div>
         
         <p class="block-header">检查视频卡顿</p>

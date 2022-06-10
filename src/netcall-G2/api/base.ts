@@ -459,7 +459,7 @@ class Base extends EventEmitter {
     const sessionDuration =
       this.adapterRef.state.endSessionTime -
       this.adapterRef.state.startSessionTime;
-    this.emit('sessionDuration', sessionDuration);
+    this.adapterRef.instance.safeEmit('@sessionDuration', sessionDuration);
     this.adapterRef.state.startSessionTime = 0;
     this.adapterRef.state.endSessionTime = 0;
   }
@@ -478,7 +478,7 @@ class Base extends EventEmitter {
         message: 'media server error 3'
       })
     }
-    this.emit('pairing-reBuildRecvTransport-start');
+    this.adapterRef.instance.safeEmit('@pairing-reBuildRecvTransport-start');
     if (this.adapterRef._mediasoup._recvTransport) {
       this.adapterRef._mediasoup._recvTransport.close();
       this.adapterRef._mediasoup.getIceStatus("recv")
@@ -505,13 +505,13 @@ class Base extends EventEmitter {
       } catch (e) {
         this.logger.error('重连逻辑订阅 error: ', e, e.name, e.message)
         hasError = true
-        this.emit('pairing-reBuildRecvTransport-error');
+        this.adapterRef.instance.safeEmit('@pairing-reBuildRecvTransport-error');
         break
       }
       this.logger.log('重连逻辑订阅 over: ', stream.stringStreamID)
     }
     if(!hasError){
-      this.emit('pairing-reBuildRecvTransport-success');
+      this.adapterRef.instance.safeEmit('@pairing-reBuildRecvTransport-success');
     }
   }
 

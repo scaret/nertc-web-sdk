@@ -401,7 +401,7 @@ function initEvents() {
     addLog(`${evt.uid} 加入房间`)
   })
   
-  rtc.client.on('mediaCapabilityChange', evt=>{
+  rtc.client.on('@mediaCapabilityChange', evt=>{
     $("#room-codec-wrapper").text(JSON.stringify(rtc.client.adapterRef.mediaCapability.room.videoCodecType));
   })
   
@@ -3510,6 +3510,22 @@ $("#setEncryptionSecret").click(()=>{
   const encryptionSecret = $("#encryptionSecret").val();
   rtc.client.setEncryptionSecret(encryptionSecret);
   addLog("setEncryptionSecret " + encryptionSecret)
+})
+
+$("#removeMostListeners").click(()=>{
+  const eventWhitelist = $("#event-whitelist").val()
+  for (let eventName in rtc.client._events){
+    if (eventWhitelist && eventWhitelist.indexOf(eventName) > -1){
+      continue
+    }
+    if (eventName && eventName[0] !== '@'){
+      const eventLen = rtc.client._events[eventName].length || 1
+      let msg = `去除${eventLen}个监听${eventName}`
+      addLog(msg)
+      console.log(msg, rtc.client._events[eventName])
+      rtc.client.off(eventName)
+    }
+  }
 })
 
 $("#pauseReconnection").on("click", async ()=>{
