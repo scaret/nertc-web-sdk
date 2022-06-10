@@ -168,7 +168,7 @@ class Signalling extends EventEmitter {
         this._reconnectionTimer = null
         this._destroyProtoo()
         if (isReconnectMeeting) {
-          this.adapterRef.instance.emit('pairing-websocket-reconnection-error');
+          this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-error');
           this._reconnection()
         } else {
           this._connection()
@@ -193,7 +193,7 @@ class Signalling extends EventEmitter {
       this.adapterRef.logger.error(`所有的服务器地址都连接失败, 主动离开房间`)
       this.adapterRef.channelInfo.wssArrIndex = 0
       this.adapterRef.instance.leave()
-      this.adapterRef.instance.emit('error', 'SOCKET_ERROR')
+      this.adapterRef.instance.safeEmit('error', 'SOCKET_ERROR')
       this._reject && this._reject('timeout')
     }
   }
@@ -209,7 +209,7 @@ class Signalling extends EventEmitter {
     if (this.adapterRef.connectState.prevState !== this.adapterRef.connectState.curState){
       this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
     }
-    this.adapterRef.instance.emit('pairing-websocket-reconnection-start');
+    this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-start');
     this._destroyProtoo()
 
 
@@ -240,11 +240,11 @@ class Signalling extends EventEmitter {
     }
 
     if (this.reconnectionControl.next && this.reconnectionControl.next.times > getParameters().reconnectionMaxRetry){
-      this.adapterRef.instance.emit('pairing-websocket-reconnection-skip');
+      this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-skip');
       this.adapterRef.logger.error('所有的服务器地址都连接失败, 主动离开房间')
       this.adapterRef.channelInfo.wssArrIndex = 0
       this.adapterRef.instance.leave()
-      this.adapterRef.instance.emit('error', 'SOCKET_ERROR')
+      this.adapterRef.instance.safeEmit('error', 'SOCKET_ERROR')
     }else{
       this.init(true, true)
     }
@@ -679,7 +679,7 @@ class Signalling extends EventEmitter {
         } else if (type === 'MediaCapability') {
           this.logger.warn('MediaCapability房间能力变更: ', JSON.stringify(data, null, ''))
           this.adapterRef.mediaCapability.parseRoom(data);
-          this.adapterRef.instance.safeEmit('mediaCapabilityChange');
+          this.adapterRef.instance.safeEmit('@mediaCapabilityChange');
           if (this.adapterRef._mediasoup && this.adapterRef.mediaCapability.room.videoCodecType && this.adapterRef.localStream){
             //@ts-ignore
             const targetCodecVideo = this.adapterRef.mediaCapability.getCodecSend("video", this.adapterRef._mediasoup._sendTransport.handler._sendingRtpParametersByKind["video"]);
@@ -906,7 +906,7 @@ class Signalling extends EventEmitter {
           'Signalling: 加入房间失败, reason = ',
           response.code, errMsg
         )
-        this.adapterRef.instance.emit('pairing-websocket-reconnection-error');
+        this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-error');
         this._joinFailed(response.code, errMsg)
         return
       }
@@ -991,7 +991,7 @@ class Signalling extends EventEmitter {
         }
         this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities;
         this.adapterRef.mediaCapability.parseRoom(response.externData.roomCapability);
-        this.adapterRef.instance.emit('mediaCapabilityChange');
+        this.adapterRef.instance.safeEmit('@mediaCapabilityChange');
         await this.adapterRef._mediasoup.init()
         if (this.adapterRef.localStream) {
           if (this.adapterRef.localStream.audio || this.adapterRef.localStream.video
@@ -1030,7 +1030,7 @@ class Signalling extends EventEmitter {
         }
         this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities;
         this.adapterRef.mediaCapability.parseRoom(response.externData.roomCapability);
-        this.adapterRef.instance.emit('mediaCapabilityChange');
+        this.adapterRef.instance.safeEmit('@mediaCapabilityChange');
         await this.adapterRef._mediasoup.init()
       }
           
@@ -1124,7 +1124,7 @@ class Signalling extends EventEmitter {
         this._reject = null
       } else {
         // 重连成功
-        this.adapterRef.instance.emit('pairing-websocket-reconnection-success');
+        this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-success');
         if (this.reconnectionControl.resumers.length){
           this.reconnectionControl.resumers.forEach((resolve)=> resolve({reason: "reconnection-success"}))
           this.reconnectionControl.resumers = []
@@ -1184,7 +1184,7 @@ class Signalling extends EventEmitter {
           this.logger.error('网络重连时，加入房间失败，主动离开。重连失败原因：', errMsg)
       }
       this.logger.error('网络重连时，加入房间失败，主动离开。重连失败原因：', errMsg)
-      this.adapterRef.instance.emit('error', 'RELOGIN_ERROR')
+      this.adapterRef.instance.safeEmit('error', 'RELOGIN_ERROR')
       this.adapterRef.instance.leave()
     }
   }
@@ -1530,7 +1530,7 @@ class Signalling extends EventEmitter {
   }
   
   _handleAbility (data:{code:number, msg:string}){
-    this.adapterRef.instance.emit('warning', {
+    this.adapterRef.instance.safeEmit('warning', {
       code: data.code,
       msg: data.msg
     })

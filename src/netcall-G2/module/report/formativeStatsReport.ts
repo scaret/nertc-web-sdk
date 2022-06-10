@@ -1000,7 +1000,7 @@ class FormativeStatsReport {
     }
 
     if (0 === parseInt(next.audioInputLevel)) {
-      this.adapterRef.instance.emit('exception', {
+      this.adapterRef.instance.safeEmit('exception', {
         msg: 'AUDIO_INPUT_LEVEL_TOO_LOW',
         code: 2001,
         uid:uid,
@@ -1009,7 +1009,7 @@ class FormativeStatsReport {
 
     let audioSendBytesDelta = parseInt(next.bytesSent) - parseInt(prev.bytesSent)
     if (0 === audioSendBytesDelta) {
-      this.adapterRef.instance.emit('exception', {
+      this.adapterRef.instance.safeEmit('exception', {
         msg: 'SEND_AUDIO_BITRATE_TOO_LOW',
         code: 2003,
         uid
@@ -1031,7 +1031,7 @@ class FormativeStatsReport {
     this.adapterRef.logger.warn('前一周期 video prev.bytesSent: ', prev.bytesSent)
     this.adapterRef.logger.warn('当前节点 video next.bytesSent: ', next.bytesSent)*/
     if (parseInt(next.googFrameRateInput) > 5 && parseInt(next.googFrameRateSent) <= 1) {
-      this.adapterRef.instance.emit('exception', {
+      this.adapterRef.instance.safeEmit('exception', {
         msg: 'FRAMERATE_SENT_TOO_LOW',
         code: 1002,
         uid
@@ -1039,7 +1039,7 @@ class FormativeStatsReport {
     }
     let videoSendBytesDelta = parseInt(next.bytesSent) - parseInt(prev.bytesSent)
     if (videoSendBytesDelta === 0) {
-      this.adapterRef.instance.emit('exception', {
+      this.adapterRef.instance.safeEmit('exception', {
         msg: 'FRAMERATE_VIDEO_BITRATE_TOO_LOW',
         code: 1003,
         uid
@@ -1065,7 +1065,7 @@ class FormativeStatsReport {
     let audioDecodingNormalDelta = parseInt(next.googDecodingNormal) - parseInt(prev.googDecodingNormal)
 
     if (audioRecvBytesDelta > 0 && audioDecodingNormalDelta === 0) {
-      this.adapterRef.instance.emit('exception', {
+      this.adapterRef.instance.safeEmit('exception', {
         msg: 'RECV_AUDIO_DECODE_FAILED',
         code: 2005,
         uid
@@ -1074,7 +1074,7 @@ class FormativeStatsReport {
     if((audioRecvBytesDelta > 0 && audioDecodingNormalDelta > 0 && 0 === +(next.audioOutputLevel || next.audioLevel))) {
       const volume = remoteStream && remoteStream.Play && remoteStream.Play.audioDom && remoteStream.Play.audioDom.volume
       if (volume && volume > 0) {
-        this.adapterRef.instance.emit('exception', {
+        this.adapterRef.instance.safeEmit('exception', {
           msg: 'AUDIO_OUTPUT_LEVEL_TOO_LOW',
           code: 2002,
           uid
@@ -1097,7 +1097,7 @@ class FormativeStatsReport {
     this.adapterRef.logger.warn('当前节点 video next.googFrameRateDecoded: ', next.googFrameRateDecoded)*/
     let videoRecvBytesDelta = parseInt(next.bytesReceived) - parseInt(prev.bytesReceived)
     if (videoRecvBytesDelta > 0 && parseInt(next.googFrameRateDecoded) === 0) {
-      this.adapterRef.instance.emit('exception', {
+      this.adapterRef.instance.safeEmit('exception', {
         msg: 'RECV_VIDEO_DECODE_FAILED',
         code: 1005,
         uid
@@ -1119,7 +1119,7 @@ class FormativeStatsReport {
     this.adapterRef.logger.warn('当前节点 video next.googFrameRateDecoded: ', next.googFrameRateDecoded)*/
     let screenRecvBytesDelta = parseInt(next.bytesReceived) - parseInt(prev.bytesReceived)
     if (screenRecvBytesDelta > 0 && parseInt(next.googFrameRateDecoded) === 0) {
-      this.adapterRef.instance.emit('exception', {
+      this.adapterRef.instance.safeEmit('exception', {
         msg: 'RECV_SCREEN_DECODE_FAILED',
         code: 1005,
         uid

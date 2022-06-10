@@ -127,7 +127,7 @@ class Client extends Base {
     };
     this._init(options)
     this.logger.info(`NERTC ${SDK_VERSION} ${BUILD}: 客户端创建成功。`);
-    this.on('connection-state-change', (evt)=>{
+    this.on('@connection-state-change', (evt)=>{
       if (evt.prevState === "CONNECTED"){
         if (this.recordManager.record?._status.isRecording && this.recordManager.record?._status.state === 'started'){
           this.logger.log("自动停止客户端录制功能")
@@ -138,8 +138,13 @@ class Client extends Base {
   }
   
   safeEmit (eventName:string, ...args: any[]){
-    // 对客户抛出的事件请使用这个函数
+    // 所有抛出事件请使用这个函数。
+    // 内部事件名请加@
+    // 外部事件会先抛出名字前加@的同名事件。内部如要监听该事件的，则通过 client.addListener("@stream-added")，以避免与用户事件混淆
     try{
+      if (!eventName.match(/^@/)){
+        this.emit(`@${eventName}`, ...args);
+      }
       this.emit(eventName, ...args);
     }catch(e){
       this.logger.error(`Error on event ${eventName}: ${e.name} ${e.message}`, e.stack);
@@ -188,8 +193,8 @@ class Client extends Base {
         this.logger.debug('孤立的join完成回调')
       }
     }
-    this.on('pairing-join-success', handleJoinFinish);
-    this.on('pairing-join-error', handleJoinFinish);
+    this.addListener('@pairing-join-success', handleJoinFinish);
+    this.addListener('@pairing-join-error', handleJoinFinish);
   }
 
   getUid() {
@@ -368,12 +373,12 @@ class Client extends Base {
         method: "join",
         options,
       })
-      this.emit('pairing-join-start')
+      this.safeEmit('@pairing-join-start')
       if(!this.adapterRef._statsReport){
         this.initWebSocket();
       }
       if (this.adapterRef.channelStatus === 'join' || this.adapterRef.channelStatus === 'connectioning') {
-        this.emit('pairing-join-error')
+        this.safeEmit('@pairing-join-error')
         return Promise.reject(
           new RtcError({
             code: ErrorCode.REPEAT_JOIN,
@@ -427,14 +432,14 @@ class Client extends Base {
         }
       }
       if (!this.adapterRef._meetings){
-        this.emit('pairing-join-error')
+        this.safeEmit('@pairing-join-error')
         throw new RtcError({
           code: ErrorCode.NO_MEETINGS,
           message: 'meetings error'
         })
       }
       const joinResult = await this.adapterRef._meetings.joinChannel(this._params.JoinChannelRequestParam4WebRTC2)
-      this.emit('pairing-join-success')
+      this.safeEmit('@pairing-join-success')
       this.apiFrequencyControl({
         name: 'join',
         code: 0,
@@ -444,7 +449,7 @@ class Client extends Base {
       })
       return joinResult
     } catch (e){
-      this.emit('pairing-join-error')
+      this.safeEmit('@pairing-join-error')
       this.apiFrequencyControl({
         name: 'join',
         code: -1,
@@ -1896,7 +1901,7 @@ class Client extends Base {
         client: this.adapterRef.instance,
       })
       this.recordManager.record.on('media-recording-stopped', (evt)=>{
-        this.safeEmit('media-recording-stopped')
+        this.safeEmit('@media-recording-stopped')
       })
     }
     if (!this.recordManager.formatMedia) {

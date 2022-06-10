@@ -401,7 +401,7 @@ function initEvents() {
     addLog(`${evt.uid} 加入房间`)
   })
   
-  rtc.client.on('mediaCapabilityChange', evt=>{
+  rtc.client.on('@mediaCapabilityChange', evt=>{
     $("#room-codec-wrapper").text(JSON.stringify(rtc.client.adapterRef.mediaCapability.room.videoCodecType));
   })
   

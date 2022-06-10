@@ -816,7 +816,7 @@ export interface Client{
   removeSsrc: (uid:number|string, kind?:MediaTypeShort) => void
   stopSession: ()=>void
   startSession: ()=>void
-  on: (eventName: string, listener: (evt: any)=>void)=>void
+  addListener: (eventName: string, listener: (evt: any)=>void)=>void
   isPublished: (stream: LocalStream) => boolean
   getSubStatus: (stream: RemoteStream, mediaType: MediaTypeShort|"all") => MediaSubStatus
   clearMember: (uid: number | string) => void

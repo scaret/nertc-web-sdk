@@ -377,7 +377,7 @@ class Mediasoup extends EventEmitter {
         this.adapterRef._signalling._reconnection()
       } else {
         this.loggerSend.error('媒体上行传输通道建立失败，抛错错误')
-        this.adapterRef.instance.emit('error', 'SOCKET_ERROR')
+        this.adapterRef.instance.safeEmit('error', 'SOCKET_ERROR')
       }
     }
   }
@@ -392,14 +392,14 @@ class Mediasoup extends EventEmitter {
         this.adapterRef._signalling._reconnection()
       }else{
         this.loggerRecv.error('媒体下行传输通道建立失败，抛错错误')
-        this.adapterRef.instance.emit('error', 'SOCKET_ERROR')
+        this.adapterRef.instance.safeEmit('error', 'SOCKET_ERROR')
       }
     }
   }
 
   async _reconnectTransportConnectTimeout(){
     this.loggerRecv.error('媒体传输通道一直重连失败，主动退出房间')
-    this.adapterRef.instance.emit('error', 'MEDIA_TRANSPORT_DISCONNECT')
+    this.adapterRef.instance.safeEmit('error', 'MEDIA_TRANSPORT_DISCONNECT')
     this.adapterRef.instance.leave()
   }
 
@@ -911,7 +911,7 @@ class Mediasoup extends EventEmitter {
   }
 
   async createConsumer(uid:number|string, kind:'audio'|'video',mediaType: MediaType, id:string, preferredSpatialLayer:number = 0){
-    this.adapterRef.instance.emit('pairing-createConsumer-start')
+    this.adapterRef.instance.safeEmit('@pairing-createConsumer-start')
     return new Promise((resolve, reject)=>{
       this._eventQueue.push({uid, kind, id, mediaType, preferredSpatialLayer, resolve, reject});
       if (this._eventQueue.length > 1) {
@@ -993,7 +993,7 @@ class Mediasoup extends EventEmitter {
     this.loggerRecv.log(`开始订阅 ${uid} 的 ${mediaTypeShort} 媒体: ${id} 大小流: `, preferredSpatialLayer)
 
     if (!id) {
-      this.adapterRef.instance.emit('pairing-createConsumer-error')
+      this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
       return this.checkConsumerList(info)
     } else if (this.unsupportedProducers[id]){
       this.loggerRecv.warn("_createConsumer: 跳过不支持的Producer", id, JSON.stringify(this.unsupportedProducers[id]))
@@ -1004,7 +1004,7 @@ class Mediasoup extends EventEmitter {
     //@ts-ignore
     if (!remoteStream || !remoteStream.pubStatus[mediaTypeShort][mediaTypeShort] || !remoteStream.pubStatus[mediaTypeShort].producerId) {
       //this._eventQueue = this._eventQueue.filter((item)=>{item.uid != uid })
-      this.adapterRef.instance.emit('pairing-createConsumer-error')
+      this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
       return this.checkConsumerList(info)
     }
 
@@ -1017,7 +1017,7 @@ class Mediasoup extends EventEmitter {
 
       if (isPlaying) {
         this.loggerRecv.log('当前播放正常，直接返回')
-        this.adapterRef.instance.emit('pairing-createConsumer-skip')
+        this.adapterRef.instance.safeEmit('@pairing-createConsumer-skip')
         return this.checkConsumerList(info)
       } else if (remoteStream.pubStatus[mediaTypeShort].stopconsumerStatus !== 'start') {
         this.loggerRecv.log('先停止之前的订阅')
@@ -1051,7 +1051,7 @@ class Mediasoup extends EventEmitter {
       await waitForEvent(this, 'transportReady', 3000);
     }
     if (!this._recvTransport) {
-      this.adapterRef.instance.emit('pairing-createConsumer-error')
+      this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
       info.resolve(null);
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
@@ -1171,12 +1171,12 @@ class Mediasoup extends EventEmitter {
         if (remoteStream.pubStatus[mediaTypeShort].producerId && id != remoteStream.pubStatus[mediaTypeShort].producerId) {
           this.loggerRecv.log('此前的订阅已经失效，重新订阅')
           this.adapterRef.instance.doSubscribe(remoteStream).then(()=>{
-            this.adapterRef.instance.emit('pairing-createConsumer-success')
+            this.adapterRef.instance.safeEmit('@pairing-createConsumer-success')
           }).catch(()=>{
-            this.adapterRef.instance.emit('pairing-createConsumer-error')
+            this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
           })
         }else{
-          this.adapterRef.instance.emit('pairing-createConsumer-skip')
+          this.adapterRef.instance.safeEmit('@pairing-createConsumer-skip')
         }
         return this.checkConsumerList(info)
 
@@ -1257,10 +1257,10 @@ class Mediasoup extends EventEmitter {
           })
         }
         remoteStream.mediaHelper.updateStream(mediaTypeShort, consumer.track)
-        this.adapterRef.instance.emit('pairing-createConsumer-success')
+        this.adapterRef.instance.safeEmit('@pairing-createConsumer-success')
         this.adapterRef.instance.safeEmit('stream-subscribed', {stream: remoteStream, 'mediaType': mediaTypeShort})
       } else {
-        this.adapterRef.instance.emit('pairing-createConsumer-error')
+        this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
         this.loggerRecv.log('该次consume状态错误： ', JSON.stringify(remoteStream['pubStatus'], null, ''))
       }
       return this.checkConsumerList(info)
@@ -1304,19 +1304,19 @@ class Mediasoup extends EventEmitter {
     }
 
     if (!id) {
-      this.adapterRef.instance.emit('pairing-createConsumer-error')
+      this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
       return this.checkConsumerList(info)
     }
     let remoteStream = this.adapterRef.remoteStreamMap[uid]
     //@ts-ignore
     if (!remoteStream || !remoteStream.pubStatus[mediaTypeShort][mediaTypeShort] || !remoteStream.pubStatus[mediaTypeShort].producerId) {
       //this._eventQueue = this._eventQueue.filter((item)=>{item.uid != uid })
-      this.adapterRef.instance.emit('pairing-createConsumer-error')
+      this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
       return this.checkConsumerList(info)
     }
     if (remoteStream['pubStatus'][mediaTypeShort]['consumerId']) {
       this.loggerRecv.log('已经订阅过，返回')
-      this.adapterRef.instance.emit('pairing-createConsumer-skip')
+      this.adapterRef.instance.safeEmit('@pairing-createConsumer-skip')
       return this.checkConsumerList(info)
     }
     const data = {
@@ -1373,10 +1373,10 @@ class Mediasoup extends EventEmitter {
         remoteStream['pubStatus'][mediaTypeShort][mediaTypeShort] = true
         remoteStream['pubStatus'][mediaTypeShort]['consumerId'] = consumerId
         remoteStream['pubStatus'][mediaTypeShort]['producerId'] = producerId
-        this.adapterRef.instance.emit('pairing-createConsumer-success')
+        this.adapterRef.instance.safeEmit('@pairing-createConsumer-success')
       } else {
         this.loggerRecv.log('该次consume状态错误： ', JSON.stringify(remoteStream['pubStatus'], null, ''))
-        this.adapterRef.instance.emit('pairing-createConsumer-error')
+        this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
       }
       return this.checkConsumerList(info)
     } catch (error) {
@@ -1406,7 +1406,7 @@ class Mediasoup extends EventEmitter {
           })
         await consumer.close();
         if (remoteStream && mediaType){
-          this.adapterRef.instance.safeEmit('stream-unsubscribed', {stream: remoteStream, mediaType})
+          this.adapterRef.instance.safeEmit('@stream-unsubscribed', {stream: remoteStream, mediaType})
         }
       }catch(e){
         this.logger.error("CloseConsumer失败", e.name, e.message, e)
@@ -1827,7 +1827,7 @@ class Mediasoup extends EventEmitter {
         code,
         param: JSON.stringify(iceStatus)
       })
-      this.adapterRef.instance.safeEmit('ice-change', iceStatus)
+      this.adapterRef.instance.safeEmit('@ice-change', iceStatus)
     }
     this.iceStatusHistory[direction].status = iceStatus
     
