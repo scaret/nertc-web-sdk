@@ -1,4 +1,5 @@
 import {IConfig, SDK_VERSION, BUILD} from "./index";
+import {urlManager} from "../util/URLManager";
 
 console.log(`You are Running RTC SDK in development mode. Version ${SDK_VERSION} Build ${BUILD}`)
 
@@ -10,6 +11,24 @@ const Config:IConfig = {
   roomsTaskUrl: 'https://roomserver-greytest.netease.im/v2/sdk/rooms/',
   getCloudProxyInfoUrl: 'https://ap-qa-jd.netease.im/v1/g2/getCloudProxyInfo'
 }
+
+// getchannelinfo房间加入
+urlManager.addUrlBackup([
+  "webtest.netease.im",
+  "vcloud-quictest.netease.im",
+])
+
+// 互动直播任务设置
+urlManager.addUrlBackup([
+  "roomserver-greytest.netease.im",
+  "nrtc-yidun-qa.netease.im",
+])
+
+// 日志上传和数据上报
+urlManager.addUrlBackup([
+  "statistic.live.126.net",
+  "apm.yunxinhi.com"
+])
 
 const ENV = "development";
 

@@ -87,6 +87,8 @@ interface IParameters{
   maxEventLoopLagWarning: number,
   // 启用兼容模式的音频输入
   enableCompatAudioInput: boolean,
+  // 主链路无响应多久后启用备用链路
+  fireBackupDelay: number,
   // 修补Safari本地canvas track无法播放的问题
   shimLocalCanvas: "safari"|"all"|"never"
 }
@@ -148,6 +150,7 @@ let parameters:IParameters = {
   enableUdpCandidate: true,
   maxEventLoopLagWarning: 3,
   enableCompatAudioInput: true,
+  fireBackupDelay: 3000,
   shimLocalCanvas: "safari",
 }
 
