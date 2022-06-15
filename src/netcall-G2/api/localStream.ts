@@ -39,6 +39,7 @@ import {getParameters} from "../module/parameters";
 import {startBeauty, closeBeauty, transformTrack, setBeautyFilter} from "../util/beauty";
 import * as env from '../util/rtcUtil/rtcEnvironment';
 import {makePrintable} from "../util/rtcUtil/utils";
+import {applyResolution} from '../util/rtcUtil/applyResolution'
 
 /**
  *  请使用 {@link NERTC.createStream} 通过NERTC.createStream创建
@@ -2212,7 +2213,7 @@ class LocalStream extends EventEmitter {
    * @param {Number} [options.frameRate] 设置本端视频帧率：NERTC.CHAT_VIDEO_FRAME_RATE_5、NERTC.CHAT_VIDEO_FRAME_RATE_10、NERTC.CHAT_VIDEO_FRAME_RATE_15、NERTC.CHAT_VIDEO_FRAME_RATE_20、NERTC.CHAT_VIDEO_FRAME_RATE_25
    * @returns {Null}  
   */
-  setVideoProfile (options:VideoProfileOptions) {
+  async setVideoProfile (options:VideoProfileOptions) {
     Object.assign(this.videoProfile, options)
     this.mediaHelper.video.captureConfig.high = this.mediaHelper.convert(this.videoProfile);
     this.mediaHelper.video.encoderConfig.high.maxBitrate = this.getVideoBW()
@@ -2220,6 +2221,36 @@ class LocalStream extends EventEmitter {
     this.client.adapterRef.channelInfo.sessionConfig.maxVideoQuality = NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p
     this.client.adapterRef.channelInfo.sessionConfig.videoQuality = this.videoProfile.resolution
     this.client.adapterRef.channelInfo.sessionConfig.videoFrameRate = this.videoProfile.frameRate
+    if (this.mediaHelper.video.cameraTrack){
+      try{
+        this.logger.log(`setVideoProfile 尝试动态修改分辨率【${this.mediaHelper.video.cameraTrack.label}】`)
+        await applyResolution(
+          this.mediaHelper.video.cameraTrack,
+          this.mediaHelper.video.captureConfig.high.width,
+          this.mediaHelper.video.captureConfig.high.height,
+          this.logger
+        )
+      }catch(e){
+        this.logger.error(`无法使用动态分辨率:`, e.name, e.message)
+      }
+    }
+    const sender = this.getSender("video", "high")
+     if (sender){
+       const parameters:RTCRtpParameters = sender.getParameters()
+       // @ts-ignore
+       const encodings:RTCRtpEncodingParameters = parameters.encodings && parameters.encodings[0]
+       if (encodings?.maxBitrate !== this.mediaHelper.video.encoderConfig.high.maxBitrate){
+         this.logger.log(`setVideoProfile调整上行码率 ${encodings.maxBitrate} => ${this.mediaHelper.video.encoderConfig.high.maxBitrate}`)
+         encodings.maxBitrate = this.mediaHelper.video.encoderConfig.high.maxBitrate
+         try{
+           sender.setParameters(parameters)
+         }catch(e){
+           this.logger.error(`setVideoProfile无法调整上行码率`, e.name, e.message)
+         }
+       }else{
+         this.logger.log(`setVideoProfile无需调整上行码率 ${encodings?.maxBitrate}`)
+       }
+     }
     this.client.apiFrequencyControl({
       name: 'setVideoProfile',
       code: 0,
@@ -2398,6 +2429,33 @@ class LocalStream extends EventEmitter {
     this.mediaHelper.screen.encoderConfig.high.maxBitrate = this.getScreenBW()
     this.logger.log(`setScreenProfile ${JSON.stringify(profile)} 屏幕共享采集参数 ${JSON.stringify(this.mediaHelper.screen.captureConfig.high)} 编码参数 ${JSON.stringify(this.mediaHelper.screen.encoderConfig.high)}`)
     this.client.adapterRef.channelInfo.sessionConfig.screenQuality = profile
+    if (this.mediaHelper.screen.screenVideoTrack){
+      applyResolution(
+        this.mediaHelper.screen.screenVideoTrack,
+        this.mediaHelper.screen.captureConfig.high.width,
+        this.mediaHelper.screen.captureConfig.high.height,
+        this.logger
+      )
+    }
+
+    const sender = this.getSender("screen", "high")
+    if (sender){
+      const parameters:RTCRtpParameters = sender.getParameters()
+      // @ts-ignore
+      const encodings:RTCRtpEncodingParameters = parameters.encodings && parameters.encodings[0]
+      if (encodings?.maxBitrate !== this.mediaHelper.screen.encoderConfig.high.maxBitrate){
+        this.logger.log(`setScreenProfile 调整上行码率 ${encodings.maxBitrate} => ${this.mediaHelper.screen.encoderConfig.high.maxBitrate}`)
+        encodings.maxBitrate = this.mediaHelper.screen.encoderConfig.high.maxBitrate
+        try{
+          sender.setParameters(parameters)
+        }catch(e){
+          this.logger.error(`setScreenProfile 无法调整上行码率`, e.name, e.message)
+        }
+      }else{
+        this.logger.log(`setScreenProfile 无需调整上行码率 ${encodings?.maxBitrate}`)
+      }
+    }
+    
     this.client.apiFrequencyControl({
       name: 'setScreenProfile',
       code: 0,

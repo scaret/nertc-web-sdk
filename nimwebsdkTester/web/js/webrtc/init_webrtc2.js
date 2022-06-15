@@ -2541,6 +2541,30 @@ $('#camera').on('change', () => {
   })
 })
 
+//重新设置分辨率
+$('#sessionConfigVideoQuality').on('change', () => {
+  const videoQuality = $('#sessionConfigVideoQuality').val()
+  window.rtc.localStream && window.rtc.localStream.setVideoProfile({
+    resolution: NERTC.VIDEO_QUALITY[videoQuality]
+  })
+})
+
+//重新设置屏幕共享分辨率
+$('#sessionConfigScreenProfile').on('change', () => {
+  const screenProfile = $('#sessionConfigScreenProfile').val()
+  window.rtc.localStream && window.rtc.localStream.setScreenProfile({
+    resolution: NERTC.VIDEO_QUALITY[screenProfile]
+  })
+})
+
+//重新设置帧率
+$('#sessionConfigVideoFrameRate').on('change', () => {
+  const frameRate = $('#sessionConfigVideoFrameRate').val()
+  window.rtc.localStream && window.rtc.localStream.setVideoProfile({
+    frameRate: NERTC.VIDEO_FRAME_RATE[frameRate]
+  })
+  console.log('change frame rate ', frameRate)
+})
 
 /** 
  * ----------------------------------------
