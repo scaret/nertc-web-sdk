@@ -3635,6 +3635,37 @@ $("#confirmOnRefresh").on("click", ()=>{
   window.onpagehide = handleOnPageHide
 })
 
+$('#lbsRemoveLocalConfig').on("click", ()=>{
+  localStorage.removeItem(NERTC.lbsManager.localStorageKey)
+  addLog("已删除lbs本地配置")
+})
+
+$('#lbsLoadBuiltinConfig').on("click", ()=>{
+  NERTC.lbsManager.loadBuiltinConfig()
+  addLog("已载入lbs内置配置")
+})
+
+$('#lbsLoadLocalConfig').on("click", ()=>{
+  const config = NERTC.lbsManager.loadLocalConfig($('#appkey').val())
+  if (config.config){
+    addLog("已载入lbs本地配置")
+    console.log("已载入lbs本地配置", config)
+  }else{
+    addLog("载入lbs本地配置失败 " + config.reason)
+    console.error("载入lbs本地配置失败", config)
+  }
+})
+
+$('#lbsStartUpdate').on("click", async ()=>{
+  const config = await NERTC.lbsManager.startUpdate($('#appkey').val(), "manual")
+  if (config){
+    addLog("已载入lbs远端配置")
+    console.log("已载入lbs远端配置", config)
+  }else{
+    addLog("载入lbs远端配置失败")
+  }
+})
+
 /** 
  * ----------------------------------------
  *              工具类函数

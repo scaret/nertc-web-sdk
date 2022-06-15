@@ -17,6 +17,7 @@ import {
   HeartbeatEvent, APIEventItem,
 } from "../../types";
 import {USER_AGENT} from "../../util/rtcUtil/rtcEnvironment";
+import {lbsManager} from "../LBSManager";
 
 let reportUrl = "https://statistic.live.126.net/statics/report/common/form";
 
@@ -347,7 +348,7 @@ class DataReport {
       reportUrl = this.adapterRef.instance._params.neRtcServerAddresses.statisticsServer
       //this.adapterRef.logger.log('私有化配置的 reportUrl: ', reportUrl)
     }
-    ajax({ 
+    lbsManager.ajax({ 
       type: "post", 
       url: reportUrl, 
       data: data, 

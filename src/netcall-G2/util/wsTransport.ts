@@ -3,7 +3,7 @@ import { getReconnectionTimeout } from '../util/rtcUtil/utils';
 import * as protobuf  from 'protobufjs';
 import heartbeatStats = require('../util/proto/heartbeatStats');
 import {AdapterRef, ILogger} from "../types";
-import {urlManager} from "./URLManager";
+import {lbsManager} from "../module/LBSManager";
 
 const PING_PONG_INTERVAL = 10000;
 const PING_TIMEOUT = 10000;
@@ -253,7 +253,7 @@ export default class WSTransport {
         this.isConnecting_ = true;
         this.reconnectionCount_++;
 
-        const urlSettings = urlManager.getURLSettings(this.url_)
+        const urlSettings = lbsManager.getURLSettings(this.url_)
         const urlSetting = urlSettings[this.reconnectionCount_ % urlSettings.length]
         if (urlSetting.url !== this.url_){
           this.logger.warn(`${urlSetting.seqId} WebSocket切换备用线路 ${this.url_} => ${urlSetting.url}`)

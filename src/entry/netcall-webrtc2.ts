@@ -16,6 +16,7 @@ import ErrorCode from '../netcall-G2/util/error/errorCode';
 import {getParameters} from "../netcall-G2/module/parameters";
 import { isBrowserSupported } from '../netcall-G2/util/rtcUtil/rtcSupport'
 import {pluginManager} from "../netcall-G2/api/pluginManager";
+import {lbsManager} from "../netcall-G2/module/LBSManager";
 
 /**
  * {@link NERTC} 
@@ -105,6 +106,8 @@ export const NERTC = {
       log.disableLogUpload();
     }
   },
+  
+  lbsManager: lbsManager,
 
   /**
  * 创建客户端，开始通话前调用一次即可

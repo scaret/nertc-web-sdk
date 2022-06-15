@@ -150,7 +150,7 @@ let parameters:IParameters = {
   enableUdpCandidate: true,
   maxEventLoopLagWarning: 3,
   enableCompatAudioInput: true,
-  fireBackupDelay: 3000,
+  fireBackupDelay: 5000,
   shimLocalCanvas: "safari",
 }
 

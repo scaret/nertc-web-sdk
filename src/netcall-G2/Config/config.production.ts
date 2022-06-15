@@ -1,7 +1,7 @@
 import {IConfig, SDK_VERSION, BUILD} from "./index";
-import {urlManager} from "../util/URLManager";
 
-const Config:IConfig = {
+export const Config:IConfig = {
+  lbsUrl: "https://wecan-lbs.netease.im/api/v1/web_domains",
   checkSumUrl: 'https://nrtc.netease.im/demo/getChecksum.action',
   // appkey: '4c418f22935f1e2cf8488ff1c84229c0',
   createChannelUrl: 'https://nrtc.netease.im/nrtc/createChannel.action',
@@ -10,27 +10,25 @@ const Config:IConfig = {
   getCloudProxyInfoUrl: 'https://ap-prd-jd.netease.im/v1/g2/getCloudProxyInfo'
 }
 
-// getchannelinfo房间加入
-urlManager.addUrlBackup([
-  "nrtc.netease.im",
-  "wecan-gw.yunxinvcloud.com",
-])
-
-// 互动直播任务设置
-urlManager.addUrlBackup([
-  "roomserver.netease.im",
-  "wecan-sdk.yunxinvcloud.com",
-])
-
-// 日志上传和数据上报
-urlManager.addUrlBackup([
-  "statistic.live.126.net",
-  "apm.yunxinhi.com"
-])
-
-const ENV = "production";
-
-export {
-  ENV,
-  Config
+export const LBS_BUILD_CONFIG: {
+  [mainDomain: string]: [string, string]
+} = {
+  "wecan-lbs.netease.im": [
+    "wecan-lbs.netease.im",
+    "wecan-lbs.yunxinvcloud.com",
+  ],
+  "nrtc.netease.im": [
+    "nrtc.netease.im",
+    "wecan-gw.yunxinvcloud.com",
+  ],
+  "roomserver.netease.im": [
+    "roomserver.netease.im",
+    "wecan-sdk.yunxinvcloud.com",
+  ],
+  "statistic.live.126.net": [
+    "statistic.live.126.net",
+    "apm.yunxinhi.com"
+  ]
 }
+
+export const ENV = "production";
