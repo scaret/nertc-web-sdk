@@ -2,6 +2,7 @@ import {MediaHelper} from "./media";
 import {PreProcessingConfig, PreProcessingHistoryInfo} from "../types";
 import {emptyStreamWith} from "../util/gum";
 import {getRTCTimer} from "../util/RTCTimer";
+import {RTCCanvas} from "../util/rtcUtil/rtcCanvas";
 
 export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: "video"|"screen" = "video", fps?: number){
   if (!fps){
@@ -14,16 +15,16 @@ export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: 
     mediaHelper.logger.log(`enablePreProcessing:初始化 mediaType ${mediaType}`)
     const videoElem = document.createElement("video")
     // document.body.appendChild(videoElem)
-    const canvasElem = document.createElement("canvas")
-    const canvasCtx = canvasElem.getContext("2d")
+    let rtcCanvas = new RTCCanvas('canvas')
+    let canvasElem = rtcCanvas._canvas
+    let canvasCtx = rtcCanvas._ctx
     if (!canvasCtx){
       throw new Error("无法创建canvasCtx 2d")
     }
     // @ts-ignore
     const canvasStream:MediaStream = canvasElem.captureStream()
     videoElem.onresize = ()=>{
-      canvasElem.width = videoElem.videoWidth
-      canvasElem.height = videoElem.videoHeight
+      rtcCanvas.setSize(videoElem.videoWidth, videoElem.videoHeight)
       videoElem.play()
     }
     const canvasTrack = canvasStream.getVideoTracks()[0]
@@ -32,6 +33,7 @@ export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: 
       canvasCtx,
       videoTrack: null,
       videoElem,
+      //@ts-ignore
       canvasElem,
       handlers: [
         {
@@ -56,6 +58,9 @@ export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: 
       timer: null,
     }
     mediaHelper[mediaType].preProcessing = preProcessing
+  }
+  if(!preProcessing){
+    return;
   }
   
   // 2. 为防止之前曾经调用过enablePreProcessing，须重新连接一遍
