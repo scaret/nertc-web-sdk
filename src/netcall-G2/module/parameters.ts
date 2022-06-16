@@ -7,13 +7,18 @@ import {ProducerCodecOptions} from "./3rd/mediasoup-client/Producer";
 
 interface IParameters{
 
+  // 存储了所有通过SDK的MediaStreamTrack，包括SDK开启的、外部输入的、小流等
   tracks: {
     audio: (MediaStreamTrack|null)[],
     video: (MediaStreamTrack|null)[],
   },
-  // 储存了通过createClient创建的客户端
+
   shimVideoOrientation: "never"|"ios151"|"allsafari",
+  
+  // ios15.1上行直接通过摄像头发送H264会导致页面崩溃，需要在canvas绘制后传输  
   shimCanvas: "never"|"ios151"|"always",
+
+  // 存储了通过createClient创建的客户端
   clients: Client[];
   
   // 存储了通过createStream创建的客户端
@@ -35,6 +40,8 @@ interface IParameters{
   
   // 最大PeerConnection重连次数
   maxTransportRebuildCnt: number,
+
+  // 整个页面打印在console里的最低logLevel等级
   logLevel: loglevels,
   
   // mediasoup中的编码选项
@@ -153,6 +160,43 @@ let parameters:IParameters = {
   fireBackupDelay: 5000,
   shimLocalCanvas: "safari",
 }
+
+try{
+  if (location.search && typeof URLSearchParams === "function"){
+    const searchParams = new URLSearchParams(location.search)
+
+    let key:keyof typeof parameters
+    for(key in parameters){
+      const builtinValue = parameters[key]
+      const searchStr = searchParams.get(key)
+      if (searchStr){
+        let queryValue:number|string|boolean|null = null
+        if (typeof builtinValue === "string"){
+          queryValue = searchStr
+        } else if (typeof builtinValue === "boolean"){
+          if (searchStr === "true" || searchStr === "false"){
+            queryValue = (searchStr === "true")
+          }
+        } else if (typeof builtinValue === "number"){
+          queryValue = Number(searchStr)
+          if (Number(searchStr) > Number.MIN_SAFE_INTEGER){
+            queryValue = Number(searchStr)
+          }
+        }
+        if (queryValue !== null && builtinValue !== queryValue){
+          console.warn(`NERTC 通过URL改变了私有化变量：${key}:`, builtinValue, "=>",  queryValue)
+          // @ts-ignore
+          parameters[key] = queryValue
+        }
+      }
+    }
+  }  
+}catch(e){
+  // console.error(e)
+}
+
+
+
 
 // 注意：getParameters是一些私有全局变量，仅用于调试和私有接口，不用于正常业务
 export const getParameters = ()=>{

@@ -91,9 +91,11 @@ class DeviceManager extends EventEmitter {
     }
     devices = await navigator.mediaDevices.enumerateDevices();
     let compatAudioInputList:string[] = []
-    try{
-      compatAudioInputList = JSON.parse(localStorage.getItem("compatAudioInputList") || "[]")
-    }catch(e){
+    if (getParameters().enableCompatAudioInput){
+      try{
+        compatAudioInputList = JSON.parse(localStorage.getItem("compatAudioInputList") || "[]")
+      }catch(e){
+      }
     }
     devices.forEach(function (device) {
       if (options.videoinput && device.kind === 'videoinput') {
