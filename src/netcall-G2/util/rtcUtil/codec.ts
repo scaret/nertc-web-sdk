@@ -1,5 +1,6 @@
 import {AudioCodecType, VideoCodecType} from "../../types";
 import {getParameters} from "../../module/parameters";
+import {RTCCanvas} from "../rtcUtil/rtcCanvas";
 
 // 表示所有网易支持的编码类型
 export const VideoCodecList: VideoCodecType[] = ["H264", "VP8"];
@@ -84,8 +85,9 @@ async function getSupportedCodecs(direction:"send"|"recv" =  "recv", PeerConnect
     }else{
       // throw new Error(`direction ${direction} Not supported yet`);
       const pc = new PeerConnection({});
-      let canvas:any = document.createElement('canvas');
-      canvas.getContext('2d');
+      let rtcCanvas = new RTCCanvas('canvas');
+      let canvas = rtcCanvas._canvas;
+      //@ts-ignore
       const fakeStream = canvas.captureStream(0);
       pc.addTrack(fakeStream.getVideoTracks()[0], fakeStream);
       const offer = await pc.createOffer({});
@@ -95,6 +97,7 @@ async function getSupportedCodecs(direction:"send"|"recv" =  "recv", PeerConnect
         return false;
       }
       const result = getSupportedCodecFromSDP(offer.sdp);
+      rtcCanvas.destroy();
       return result;
     }
   }

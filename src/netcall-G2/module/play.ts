@@ -11,6 +11,7 @@ import {LocalStream} from "../api/localStream";
 import {RemoteStream} from "../api/remoteStream";
 import {CanvasWatermarkControl, createCanvasWatermarkControl} from "./watermark/CanvasWatermarkControl";
 import {createEncoderWatermarkControl, EncoderWatermarkControl} from "./watermark/EncoderWatermarkControl";
+import {RTCCanvas} from "../util/rtcUtil/rtcCanvas";
 
 class Play extends EventEmitter {
   private volume:number | null;
@@ -796,12 +797,19 @@ class Play extends EventEmitter {
     let snapshotVideo = (!options.mediaType && this.videoDom) || options.mediaType === 'video';
     let snapshotScreen = (!options.mediaType && this.screenDom) || options.mediaType === 'screen';
 
-    let canvas = document.createElement("canvas")
-    let ctx = canvas.getContext("2d");
+    let rtcCanvas = new RTCCanvas('canvas');
+    let canvas = rtcCanvas._canvas;
+    let ctx = rtcCanvas._ctx;
     if (!ctx){
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
         message: 'no context of canvas'
+      })
+    }
+    if(!canvas){
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'no canvas'
       })
     }
 
@@ -816,12 +824,12 @@ class Play extends EventEmitter {
         })
       }
       ctx.fillRect(0, 0, this.videoDom.videoWidth, this.videoDom.videoHeight)
-      canvas.width = this.videoDom.videoWidth
-      canvas.height = this.videoDom.videoHeight
+      rtcCanvas.setSize(this.videoDom.videoWidth, this.videoDom.videoHeight)
       ctx.drawImage(this.videoDom, 0, 0, this.videoDom.videoWidth, this.videoDom.videoHeight, 0, 0, this.videoDom.videoWidth, this.videoDom.videoHeight)
       const fileUrl = await new Promise((resolve, reject)=>{
-        canvas.toBlob(blob => {
+        canvas!.toBlob(blob => {
           this.logger.log('takeSnapshot, 获取到截图的blob: ', blob)
+          //@ts-ignore
           let url = URL.createObjectURL(blob)
           this.logger.log('截图的url: ', url)
           let a = document.createElement('a')
@@ -836,6 +844,7 @@ class Play extends EventEmitter {
       })
 
       if (!snapshotScreen){
+        rtcCanvas.destroy();
         return fileUrl;
       }
 
@@ -852,12 +861,12 @@ class Play extends EventEmitter {
         })
       }
       ctx.fillRect(0, 0, this.screenDom.videoWidth, this.screenDom.videoHeight)
-      canvas.width = this.screenDom.videoWidth
-      canvas.height = this.screenDom.videoHeight
+      rtcCanvas.setSize(this.screenDom.videoWidth, this.screenDom.videoHeight)
       ctx.drawImage(this.screenDom, 0, 0, this.screenDom.videoWidth, this.screenDom.videoHeight, 0, 0, this.screenDom.videoWidth, this.screenDom.videoHeight)
       const fileUrl = await new Promise((resolve, reject)=>{
-        canvas.toBlob(blob => {
+        canvas!.toBlob(blob => {
           this.logger.log('takeSnapshot, 获取到截图的blob: ', blob)
+          //@ts-ignore
           let url = URL.createObjectURL(blob)
           this.logger.log('截图的url: ', url)
           let a = document.createElement('a')
@@ -870,8 +879,11 @@ class Play extends EventEmitter {
           resolve(name + '.png')
         })
       })
+      rtcCanvas.destroy();
       return fileUrl;
     }
+
+    
   }
 
   /**
@@ -880,12 +892,19 @@ class Play extends EventEmitter {
   takeSnapshotBase64 (options:SnapshotBase64Options){
       let snapshotVideo = (!options.mediaType && this.videoDom) || options.mediaType === 'video';
       let snapshotScreen = (!options.mediaType && this.screenDom) || options.mediaType === 'screen';
-      let canvas = document.createElement("canvas")
-      let ctx = canvas.getContext("2d");
+      let rtcCanvas = new RTCCanvas('canvas');
+      let canvas = rtcCanvas._canvas;
+      let ctx = rtcCanvas._ctx;
       if (!ctx){
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
           message: 'no context of canvas'
+        })
+      }
+      if(!canvas){
+        throw new RtcError({
+          code: ErrorCode.NOT_FOUND,
+          message: 'no canvas'
         })
       }
       // video
@@ -898,11 +917,11 @@ class Play extends EventEmitter {
           })
         }
         ctx.fillRect(0, 0, this.videoDom.videoWidth, this.videoDom.videoHeight)
-        canvas.width = this.videoDom.videoWidth
-        canvas.height = this.videoDom.videoHeight
+        rtcCanvas.setSize(this.videoDom.videoWidth, this.videoDom.videoHeight)
         ctx.drawImage(this.videoDom, 0, 0, this.videoDom.videoWidth, this.videoDom.videoHeight, 0, 0, this.videoDom.videoWidth, this.videoDom.videoHeight)
         const fileUrl = this.getBase64Image(canvas);
         if (!snapshotScreen){
+          rtcCanvas.destroy();
           return fileUrl;
         }
       }
@@ -916,10 +935,10 @@ class Play extends EventEmitter {
           })
         }
         ctx.fillRect(0, 0, this.screenDom.videoWidth, this.screenDom.videoHeight)
-        canvas.width = this.screenDom.videoWidth
-        canvas.height = this.screenDom.videoHeight
+        rtcCanvas.setSize(this.screenDom.videoWidth, this.screenDom.videoHeight)
         ctx.drawImage(this.screenDom, 0, 0, this.screenDom.videoWidth, this.screenDom.videoHeight, 0, 0, this.screenDom.videoWidth, this.screenDom.videoHeight)
         const fileUrl = this.getBase64Image(canvas);
+        rtcCanvas.destroy();
         return fileUrl;
       }
    }
