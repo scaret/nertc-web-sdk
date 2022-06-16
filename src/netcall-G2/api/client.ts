@@ -36,6 +36,7 @@ import {getParameters} from "../module/parameters";
 import {FormatMedia} from "../module/formatMedia"
 import {Record} from '../module/record'
 import * as env from '../util/rtcUtil/rtcEnvironment';
+import {lbsManager} from "../module/LBSManager";
 const BigNumber = require("bignumber.js");
 
 /**
@@ -134,6 +135,11 @@ class Client extends Base {
           this.recordManager.record.download()
         }
       }
+      if (evt.curState === "CONNECTED" && evt.prevState === "CONNECTING"){
+        if (evt.reconnect){
+          lbsManager.startUpdate(this._params.appkey, "reconnect")
+        }
+      }
     })
   }
   
@@ -160,6 +166,20 @@ class Client extends Base {
       throw new RtcError({code: ErrorCode.INVALID_PARAMETER, message:'请传入appkey'})
     }
     this._params.appkey = appkey
+    
+    const localConfig = lbsManager.loadLocalConfig(appkey)
+    if (localConfig.config){
+      // 载入LBS本地配置成功
+      const expireTime = localConfig.config.ts + localConfig.config.config.ttl * 1000 - Date.now()
+      if (expireTime < 60000){
+        this.logger.log(`LBS在 ${Math.floor(expireTime / 1000)} 秒后过期。发起异步刷新请求`)
+        lbsManager.startUpdate(appkey, "renew")
+      }
+    }else{
+      // 载入本地配置失败，发起远程请求
+      lbsManager.startUpdate(appkey, localConfig.reason)
+    }
+    
     this._params.token = token
     this._roleInfo = {
       userRole: 0, // 0:主播，1：观众
