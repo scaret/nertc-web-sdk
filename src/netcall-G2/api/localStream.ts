@@ -1,5 +1,3 @@
-
-import { EventEmitter } from "eventemitter3";
 import {
   VIDEO_FRAME_RATE,
   NERTC_VIDEO_QUALITY} from "../constant/videoQuality";
@@ -40,7 +38,9 @@ import {getParameters} from "../module/parameters";
 import {startBeauty, closeBeauty, transformTrack, setBeautyFilter} from "../util/beauty";
 import * as env from '../util/rtcUtil/rtcEnvironment';
 import {makePrintable} from "../util/rtcUtil/utils";
-import {applyResolution} from '../util/rtcUtil/applyResolution';
+import {applyResolution} from '../util/rtcUtil/applyResolution'
+import {RTCEventEmitter} from "../util/rtcUtil/RTCEventEmitter";
+import {alerter} from "../module/alerter";
 import { BackGroundOptions } from '../plugin/segmentation/src/types';
 import { loadPlugin } from "../plugin";
 import VideoPostProcess from "../module/video-post-processing";
@@ -104,7 +104,7 @@ export interface LocalStreamCloseOptions{
  *  @param {MeidaTrack} [options.videoSource] 自定义的视频的track
  *  @returns {Stream}  
  */
-class LocalStream extends EventEmitter {
+class LocalStream extends RTCEventEmitter {
   public streamID:number|string;
   public stringStreamID:string;
   public audio: boolean;
@@ -288,6 +288,10 @@ class LocalStream extends EventEmitter {
       this.audioProfile = 'music_standard'
     }else{
       this.audioProfile = 'speech_low_quality'
+    }
+    
+    if (getParameters().enableAlerter !== "never"){
+      alerter.watchLocalStream(this)
     }
     
     this.logger.log(`创建 本地 Stream: `, JSON.stringify({
