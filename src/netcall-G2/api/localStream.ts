@@ -1,5 +1,3 @@
-
-import { EventEmitter } from "eventemitter3";
 import {
   VIDEO_FRAME_RATE,
   NERTC_VIDEO_QUALITY} from "../constant/videoQuality";
@@ -40,6 +38,8 @@ import {startBeauty, closeBeauty, transformTrack, setBeautyFilter} from "../util
 import * as env from '../util/rtcUtil/rtcEnvironment';
 import {makePrintable} from "../util/rtcUtil/utils";
 import {applyResolution} from '../util/rtcUtil/applyResolution'
+import {RTCEventEmitter} from "../util/rtcUtil/RTCEventEmitter";
+import {alerter} from "../module/alerter";
 
 /**
  *  请使用 {@link NERTC.createStream} 通过NERTC.createStream创建
@@ -96,7 +96,7 @@ export interface LocalStreamCloseOptions{
  *  @param {MeidaTrack} [options.videoSource] 自定义的视频的track
  *  @returns {Stream}  
  */
-class LocalStream extends EventEmitter {
+class LocalStream extends RTCEventEmitter {
   public streamID:number|string;
   public stringStreamID:string;
   public audio: boolean;
@@ -269,6 +269,10 @@ class LocalStream extends EventEmitter {
       this.audioProfile = 'music_standard'
     }else{
       this.audioProfile = 'speech_low_quality'
+    }
+    
+    if (getParameters().enableAlerter !== "never"){
+      alerter.watchLocalStream(this)
     }
     
     this.logger.log(`创建 本地 Stream: `, JSON.stringify({

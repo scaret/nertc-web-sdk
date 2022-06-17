@@ -599,6 +599,14 @@ class Play extends EventEmitter {
       }).catch((e)=>{
         if (e.name === "AbortError"){
           // The play() request was interrupted by a new load request. https://goo.gl/LdLk22
+        } else if (e.name === 'NotAllowedError') {
+          this.logger.error(e.name, e.message)
+          const rtcError = new RtcError({
+            code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
+            message: e.toString(),
+            url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082'
+          })
+          this.stream.safeEmit('notAllowedError', rtcError)
         }else{
           console.error(e);
         }
@@ -647,6 +655,20 @@ class Play extends EventEmitter {
         if (this.screenDom?.paused && getParameters()["controlOnPaused"]){
           //给微信的Workaround。微信会play()执行成功但不播放
           this.showControlIfVideoPause();
+        }
+      }).catch((e)=>{
+        if (e.name === "AbortError"){
+          // The play() request was interrupted by a new load request. https://goo.gl/LdLk22
+        } else if (e.name === 'NotAllowedError') {
+          this.logger.error(e.name, e.message)
+          const rtcError = new RtcError({
+            code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
+            message: e.toString(),
+            url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082'
+          })
+          this.stream.safeEmit('notAllowedError', rtcError)
+        }else{
+          console.error(e);
         }
       })
     } catch (e) {

@@ -25,12 +25,13 @@ import {Record} from '../module/record'
 import {Client as ICLient} from "../types"
 import logger, {loglevels} from "../util/log/logger";
 import  md5 = require('md5');
+import {RTCEventEmitter} from "../util/rtcUtil/RTCEventEmitter";
 let clientCnt = 0;
 
 /**
  * 基础框架
  */
-class Base extends EventEmitter {
+class Base extends RTCEventEmitter {
   public _params: {
     mode: "rtc" | "live";
     appkey: string;
@@ -102,8 +103,9 @@ class Base extends EventEmitter {
     this._reset();
     this.adapterRef.encryption = new Encryption(this.adapterRef)
 
-    //@ts-ignore
-    window.debugG2 = options.debug ? true : false
+    if (options.debug){
+      getParameters().debugG2 = true
+    }
     this.adapterRef.testConf = {}; //内部测试配置
     this.sdkRef = options.ref;
   }
