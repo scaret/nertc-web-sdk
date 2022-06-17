@@ -1416,3 +1416,14 @@ export interface BeautyEffectOptions {
   rednessLevel: number;
   smoothnessLevel: number;
 }
+
+export interface AdvancedBeautyEffectOptions {
+  thinFaceLevel: number;
+  bigEyesLevel: number;
+}
+
+export interface PluginOptions {
+  key: string;
+  pluginUrl: string;
+  wasmUrl?: string;
+}

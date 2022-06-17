@@ -1,5 +1,6 @@
 const env = require('./build/env')
 const git = require('./build/git')
+const CopyPlugin = require('copy-webpack-plugin')
 
 if (env.isProduction() && git.hasChange()) {
   // throw new Error('please commit all changes')
@@ -36,6 +37,19 @@ const genFileName = (type = '', tagversion = '') => {
   return env.isDevelopment()
     ? `NIM_Web_[name]${type}.js`
     : `NIM_Web_[name]${type}_v${tagversion}${suffix}.js`
+}
+
+const getWasmFileName = (type = '', tagversion = '') => {
+  if (type !== '') {
+    type = '_' + type
+  } 
+  if (tagversion == '') {
+    tagversion = version
+  }
+
+  return env.isDevelopment()
+    ? `NIM_Web_[name]${type}.wasm`
+    : `NIM_Web_[name]${type}_v${tagversion}${suffix}.wasm`
 }
 
 let config = require('./webpack.config.base')({})
@@ -125,7 +139,9 @@ if (env.isDevelopment()) {
 // 设置webrtcG2相关的配置
 let configWebrtcG2 = merge(config, {
   entry: {
-    NERTC: './src/entry/netcall-webrtc2'
+    NERTC: './src/entry/netcall-webrtc2',
+    VirtualBackground: './src/entry/virtual-background',
+    AdvancedBeauty: './src/entry/advanced-beauty'
   },
   output: {
     devtoolNamespace: 'nertc',
@@ -145,6 +161,10 @@ let configWebrtcG2 = merge(config, {
     new webpack.BannerPlugin({
       banner: `NeRTC ${webrtcG2Version}|BUILD ${git.describe()} ${process.env.NODE_ENV}`
     }),
+    new CopyPlugin([{ 
+      from: './src/**/*.wasm',
+      to: path.join(cwd, './dist/lib/', webrtcG2Version, nodeEnv, '/wasm/') + getWasmFileName('', webrtcG2Version),
+    }]),
   ],
   resolve: {
     alias: {

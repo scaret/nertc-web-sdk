@@ -17,6 +17,7 @@ import {
   LocalStreamOptions, StreamPlayOptions,
   VideoProfileOptions,
   BeautyEffectOptions,
+  PluginOptions,
   AudioEffectOptions, GetStreamConstraints, Client as IClient, NERtcEncoderWatermarkConfig
 } from "../types";
 import {MediaHelper} from "../module/media";
@@ -40,6 +41,13 @@ import {makePrintable} from "../util/rtcUtil/utils";
 import {applyResolution} from '../util/rtcUtil/applyResolution'
 import {RTCEventEmitter} from "../util/rtcUtil/RTCEventEmitter";
 import {alerter} from "../module/alerter";
+import { BackGroundOptions } from '../plugin/segmentation/src/types';
+import { loadPlugin } from "../plugin";
+import VideoPostProcess from "../module/video-post-processing";
+import BasicBeauty from "../module/video-post-processing/basic-beauty";
+import VirtualBackground from "../module/video-post-processing/virtual-background";
+import AdvancedBeauty from "../module/video-post-processing/advanced-beauty";
+import { PluginType } from "../plugin/plugin-list";
 
 /**
  *  请使用 {@link NERTC.createStream} 通过NERTC.createStream创建
@@ -114,6 +122,13 @@ class LocalStream extends RTCEventEmitter {
   private screenVideoSource:MediaStreamTrack|null
   private screenAudioSource:MediaStreamTrack|null
   public mediaHelper:MediaHelper;
+  // 美颜相关实例对象
+  private videoPostProcess = new VideoPostProcess();
+  private basicBeauty = new BasicBeauty(this.videoPostProcess);
+  private virtualBackground = new VirtualBackground(this.videoPostProcess);
+  private advancedBeauty = new AdvancedBeauty(this.videoPostProcess);
+  private _segmentProcessor: VirtualBackground|null;
+  private _advancedBeautyProcessor: AdvancedBeauty | null = null;
   _play: Play|null;
   private _record: Record|null;
   public audioLevelHelper: AudioLevel|null = null;
@@ -121,6 +136,7 @@ class LocalStream extends RTCEventEmitter {
   private _cameraTrack:MediaStreamTrack|null;
   private _transformedTrack:MediaStreamTrack|null;
   private lastEffects:any;
+  private lastFilter:any;
   public videoProfile: {
     frameRate: number;
     resolution: number;
@@ -176,6 +192,8 @@ class LocalStream extends RTCEventEmitter {
   public localStreamId: number;
   public destroyed:boolean = false;
   private isBeautyTrack: boolean = false;
+  private isBodySegmentTrack: boolean = false;
+  private isAdvancedBeautyTrack: boolean = false;
   
   constructor (options:LocalStreamOptions) {
     super()
@@ -253,6 +271,7 @@ class LocalStream extends RTCEventEmitter {
     this.videoSource = options.videoSource || null
     this.screenAudioSource = options.screenAudioSource || null
     this.screenVideoSource = options.screenVideoSource || null
+    this._segmentProcessor = null
     this._cameraTrack = null
     this._transformedTrack = null
     this.mediaHelper = new MediaHelper({
@@ -369,6 +388,10 @@ class LocalStream extends RTCEventEmitter {
     this.audioLevelHelper = null
   }
 
+  get segmentProcessor() {
+    return this._segmentProcessor
+  }
+
   get Play() {
     return this._play
   }
@@ -458,6 +481,119 @@ class LocalStream extends RTCEventEmitter {
       return this.mediaHelper.audio.audioStream;
     }else{
       return null;
+    }
+  }
+
+  //打开背景分割
+  async enableBodySegment() {
+    this.logger.log("enableBodySegment() 开启背景分割功能");
+    if(!this._segmentProcessor && this.videoPostProcess.getPlugin('VirtualBackground')){
+      this._segmentProcessor = this.virtualBackground;
+      this._segmentProcessor.init();
+      this._segmentProcessor.once('segment-load', () => {
+        this._startBodySegment();
+      })
+    } 
+  }
+
+  //关闭背景分割
+  async disableBodySegment() {
+    await this._cancelBodySegment();
+    if(this._segmentProcessor) {
+      this._segmentProcessor.destroy();
+      this._segmentProcessor = null;
+    }
+    this.logger.log("disableBodySegment() 关闭背景分割功能");
+  }
+
+  async _startBodySegment() {  
+    if(this._segmentProcessor){
+      this.logger.log("_startBodySegment() 打开背景分割功能");
+      await this.transformTrack(true, this._segmentProcessor)
+      this.isBodySegmentTrack = true
+    }
+  }
+
+  async _cancelBodySegment() {
+    this.logger.log("_cancelBodySegment() 取消背景分割功能");
+    this.isBodySegmentTrack = false;  
+    if(this._segmentProcessor){
+      await this.transformTrack(false, this._segmentProcessor)
+    }
+  }
+  
+  setBackGround(options: BackGroundOptions) {
+    this.logger.log('setBackGround() options: ', options)
+    if(this.virtualBackground) {
+      this.virtualBackground.setVirtualBackGround(options);
+    }
+  }
+
+  async enableAdvancedBeauty(faceSize?:number) {
+    this.logger.log("enableAdvancedBeauty() 开启高级美颜功能");
+    if(!this._advancedBeautyProcessor && this.videoPostProcess.getPlugin('AdvancedBeauty')){ 
+      this._advancedBeautyProcessor = this.advancedBeauty;
+      this._advancedBeautyProcessor.init(faceSize);
+      this._advancedBeautyProcessor.once('facePoints-load', () => {
+        this.logger.log('facePoints-load')
+        this._startAdvancedBeauty();
+      })
+    } 
+  }
+
+  async disableAdvancedBeauty() {
+    await this._cancelAdvancedBeauty();
+    if(this._advancedBeautyProcessor){ 
+      this._advancedBeautyProcessor.destroy();
+      this._advancedBeautyProcessor = null;
+    }
+    this.logger.log("disableAdvancedBeauty() 关闭高级美颜功能");
+  }
+
+  async _startAdvancedBeauty() {  
+    if(this._advancedBeautyProcessor){
+      this.logger.log("_startAdvancedBeauty() 打开高级美颜功能");
+      await this.transformTrack(true, this._advancedBeautyProcessor)
+      this.isAdvancedBeautyTrack = true
+    }
+  }
+
+  async _cancelAdvancedBeauty() {
+    this.logger.log("_cancelAdvancedBeauty() 取消高级美颜功能");
+    this.isAdvancedBeautyTrack = false;  
+    if(this._advancedBeautyProcessor){
+      await this.transformTrack(false, this._advancedBeautyProcessor)
+    }
+  }
+
+  setAdvBeautyEffect:AdvancedBeauty['setAdvEffect'] = (...args) => {
+    this._advancedBeautyProcessor?.setAdvEffect(...args);
+  };
+
+  async transformTrack(enable:boolean, processor: VirtualBackground | AdvancedBeauty | null) {
+    if (!processor) {
+      return
+    }
+    let videoTrackLow;
+    if (this.mediaHelper && this.mediaHelper.video.cameraTrack) {
+      this._cameraTrack  = this.mediaHelper.video.cameraTrack;
+      this._transformedTrack = await processor.setTrack(enable, this._cameraTrack ) as MediaStreamTrack;
+      videoTrackLow = this.mediaHelper.video.videoTrackLow;
+       // 替换 track
+      await this.replaceTrack({
+            mediaType: "video",
+            //@ts-ignore
+            track: this._transformedTrack,
+            external: false
+      });
+      if (videoTrackLow){
+        videoTrackLow.stop();
+      }
+      if (this.mediaHelper.video.videoTrackLow){
+        this.mediaHelper.video.videoTrackLow.stop();
+      }
+    } else {
+      this.logger.log("此时还没有有视频track");
     }
   }
   
@@ -709,6 +845,30 @@ class LocalStream extends RTCEventEmitter {
           }catch(error) {
             this.videoPlay_ = false;
             this.logger.log('localStream play video error ', error);
+          }
+
+          try{
+            // 打开基础美颜
+            if(this.isBeautyTrack){
+              await this.setBeautyEffect(true);
+              this.isBeautyTrack = false;
+              if(this.lastEffects){
+                this.setBeautyEffectOptions(this.lastEffects);
+              }
+              if(this.lastFilter){
+                this.setFilter(this.lastFilter);
+              }
+            }
+            // 打开背景分割
+            if(this.isBodySegmentTrack) {
+              await this._startBodySegment();
+            }
+            // 打开高级美颜
+            if(this.isAdvancedBeautyTrack) {
+              await this._startAdvancedBeauty();
+            }
+          }catch(error) {
+            this.logger.log(`开启失败: ${error}`);
           }
         }  
       }
@@ -1404,6 +1564,22 @@ class LocalStream extends RTCEventEmitter {
           reason = 'NOT_OPEN_CAMERA_YET'
           break
         }
+        // 关闭基础美颜
+        this.isBeautyTrack = this.basicBeauty.isEnable
+        if(this.isBeautyTrack){
+          await this.setBeautyEffect(false);
+        }
+        //关闭背景分割
+        if(this.isBodySegmentTrack) {
+          await this._cancelBodySegment();
+          this.isBodySegmentTrack = true;
+        }
+        //关闭高级美颜
+        if(this.isAdvancedBeautyTrack) {
+          await this._cancelAdvancedBeauty();
+          this.isAdvancedBeautyTrack = true;
+        }
+        // 释放当前 track
         if(this._transformedTrack && this._cameraTrack){
           this._cameraTrack.stop();
           this._cameraTrack = null;
@@ -1907,6 +2083,18 @@ class LocalStream extends RTCEventEmitter {
       }
 
       const cameraTrack = this.mediaHelper.video.cameraTrack
+      if(this.basicBeauty.isEnable){
+        await this.setBeautyEffect(false);
+        this.isBeautyTrack = true;
+      }
+      if(this.isBodySegmentTrack) {
+        await this._cancelBodySegment();
+        this.isBodySegmentTrack = true;
+      }
+      if(this.isAdvancedBeautyTrack) {
+        await this._cancelAdvancedBeauty();
+        this.isAdvancedBeautyTrack = true;
+      }
       //关闭美颜track, 切换后的回调中再重新开启美颜
       if(this._transformedTrack){
         this._transformedTrack.stop();
@@ -2006,6 +2194,24 @@ class LocalStream extends RTCEventEmitter {
         code: 0,
         param: JSON.stringify(this.mediaHelper.getTrackSettings())
       })
+      //重新开启背景分割
+      if(this.isBodySegmentTrack) {
+        await this._startBodySegment();
+      }
+      //重新开启高级美颜
+      if(this.isAdvancedBeautyTrack) {
+        await this._startAdvancedBeauty();
+      }
+      //重新开启基础美颜
+      if(this.isBeautyTrack){
+        await this.setBeautyEffect(true);
+        if(this.lastEffects){
+          this.setBeautyEffectOptions(this.lastEffects);
+        }
+        if(this.lastFilter){
+          this.setFilter(this.lastFilter);
+        }
+      }
     } catch (e) {
       this.logger.error('API调用失败：Stream:switchDevice' ,e.name, e.message, e);
       this.inSwitchDevice[type] = false
@@ -3234,12 +3440,8 @@ class LocalStream extends RTCEventEmitter {
    */
 
    setBeautyEffectOptions(effects:BeautyEffectOptions) {
-    if(!this.isBeautyTrack){
-      return;
-    }
     this.lastEffects = effects;
-    this.logger.log('setBeautyEffectOptions() 设置美颜效果', effects)
-    startBeauty(true, effects);
+    this.basicBeauty.setBeautyOptions(effects);
   }
 
   /**
@@ -3249,20 +3451,16 @@ class LocalStream extends RTCEventEmitter {
    * @return {Promise}
    */
 
-  async setBeautyEffect(isStart:boolean){
-    if(isStart && this._transformedTrack){
-      this.logger.log('美颜已经开启');
+   async setBeautyEffect(isStart:boolean){
+    const basicBeauty  = this.basicBeauty;
+    let videoTrackLow;
+    if(basicBeauty.isEnable === isStart){
       return;
     }
-    await this.startBeautyEffect(isStart);
-    this.logger.log('setBeautyEffect()', isStart);
-  }
-
-  async startBeautyEffect(isStart:boolean){
     if (this.mediaHelper && this.mediaHelper.video.cameraTrack) {
+      this._cameraTrack = this.mediaHelper.video.cameraTrack;
       if(isStart) {
         this.logger.log('startBeautyEffect() 开启美颜');
-        this.isBeautyTrack = true;
         let effects;
         if(this.lastEffects){
           effects = this.lastEffects;
@@ -3273,51 +3471,32 @@ class LocalStream extends RTCEventEmitter {
             smoothnessLevel:0
           }
         }
-        this._cameraTrack = this.mediaHelper.video.cameraTrack
-        //@ts-ignore
-        this._transformedTrack = transformTrack(this._cameraTrack);
-        const videoTrackLow = this.mediaHelper.video.videoTrackLow;
-        await this.replaceTrack({
-          mediaType: "video",
-          //@ts-ignore
-          track: this._transformedTrack,
-          external: false
-        });
-        if (videoTrackLow){
-          videoTrackLow.stop();
-        }
-        startBeauty(true, effects);
+        this._transformedTrack = await basicBeauty.setBeauty(isStart, this._cameraTrack) as MediaStreamTrack;
+        videoTrackLow = this.mediaHelper.video.videoTrackLow;
+        basicBeauty.setBeautyOptions(effects);
         if(env.IS_ANY_SAFARI){
           let localVideoDom = document.getElementsByClassName('nertc-video-container-local')[0].querySelector('video');
           localVideoDom!.style.display = 'none';
         }
       }else {
-        if(!this.isBeautyTrack){
-          return;
-        }
         this.logger.log('startBeautyEffect() 关闭美颜');
-        const videoTrackLow = this.mediaHelper.video.videoTrackLow;
-        await this.replaceTrack({
-          mediaType: "video",
-          //@ts-ignore
-          track: this._cameraTrack,
-          external: false
-        });
-        if (videoTrackLow){
-          videoTrackLow.stop();
-        }
-        if(this._transformedTrack){
-          this._transformedTrack.stop();
-          this._transformedTrack = null;
-        }
-        this.isBeautyTrack = false;
-        closeBeauty();
+        this._transformedTrack = await basicBeauty.setBeauty(isStart) as MediaStreamTrack;
+        videoTrackLow = this.mediaHelper.video.videoTrackLow;
         if(env.IS_ANY_SAFARI){
           let localVideoDom = document.getElementsByClassName('nertc-video-container-local')[0].querySelector('video');
           localVideoDom!.style.display = 'block';
         }
       }
-
+      // 替换 track
+      await this.replaceTrack({
+            mediaType: "video",
+            //@ts-ignore
+            track: this._transformedTrack,
+            external: false
+      });
+      if (videoTrackLow){
+        videoTrackLow.stop();
+      }
     }else {
       this.logger.log("beautyTrack() 此时还没有有视频track");
     }
@@ -3329,10 +3508,49 @@ class LocalStream extends RTCEventEmitter {
    *  @memberOf Stream#
    *  @param {Void}
    */
-  setFilter(options:string|null, intensity?:number) {
+   setFilter(options:string|null, intensity?:number) {
     // intensity不填写就是默认值
+    this.lastFilter = options;
     this.logger.log('setFilter() set beauty filter', options, intensity);
-    setBeautyFilter(options,intensity);
+    // setBeautyFilter(options,intensity);
+    this.basicBeauty.setFilter(options, intensity);
+  }
+
+  /**
+   * 注册插件
+   * @param options 
+   */
+   async registerPlugin(options: PluginOptions) {
+    if (this.videoPostProcess.getPlugin(options.key as any)) {
+      this.logger.log(`Plugin ${options.key} exist`);
+      return
+    }
+    await loadPlugin(options.key as any, options.pluginUrl).then(() => {
+      try {
+        const plugin = eval(`new window.${options.key}(options)`);
+        plugin.once('plugin-load', () => {
+          this.videoPostProcess.registerPlugin(options.key as any, plugin);
+          this.logger.log(`Plugin ${options.key} loaded`);
+          this.emit('plugin-load', options.key);
+        }) 
+      } catch(e) {
+        console.log(e);
+        this.logger.error(`create plugin ${options.key} error`);
+      }
+    })
+  }
+
+  async unregisterPlugin(key: PluginType) {
+    if(this.videoPostProcess){
+      if(key === 'VirtualBackground'){
+        await this.disableBodySegment();
+      }else if(key === 'AdvancedBeauty'){
+        await this.disableAdvancedBeauty();
+      }else {
+        this.logger.warn(`unregisterPlugin key '${key}' error`)
+      }
+      this.videoPostProcess.unregisterPlugin(key);
+    }
   }
   
   /**
@@ -3356,6 +3574,19 @@ class LocalStream extends RTCEventEmitter {
     this._reset()
     this.destroyed = true;
     this.lastEffects = null;
+    this.lastFilter = null;
+    // 销毁虚拟背景 wasm 的 process
+    if (this._segmentProcessor) {
+      this._segmentProcessor.destroy();
+      this._segmentProcessor = null;
+    }
+    // 销毁高级美颜 wasm 的 process
+    if(this._advancedBeautyProcessor){
+      this._advancedBeautyProcessor.destroy();
+      this._advancedBeautyProcessor = null;
+    }
+    // 销毁美颜相关 webgl 管线
+    this.videoPostProcess.destroy();
   }
 }
 
