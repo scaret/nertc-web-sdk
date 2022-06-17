@@ -2251,14 +2251,6 @@ class LocalStream extends EventEmitter {
       if (this.mediaHelper.video.cameraTrack){
         this.mediaHelper.video.cameraTrack.enabled = true
       }
-      //打开背景分割
-      if(this.isBodySegmentTrack) {
-        await this._startBodySegment();
-      }
-      //打开高级美颜
-      if(this.isAdvancedBeautyTrack) {
-        await this._startAdvancedBeauty();
-      }
       this.muteStatus.video.send = false
       this.client.apiFrequencyControl({
         name: 'unmuteVideo',
@@ -2291,16 +2283,6 @@ class LocalStream extends EventEmitter {
   async muteVideo () {
     this.logger.log(`禁用 ${this.stringStreamID} 的视频轨道`)
     try {
-      //关闭背景分割
-      if(this.isBodySegmentTrack) {
-        await this._cancelBodySegment();
-        this.isBodySegmentTrack = true;
-      }
-      //关闭高级美颜
-      if(this.isAdvancedBeautyTrack) {
-        await this._cancelAdvancedBeauty();
-        this.isAdvancedBeautyTrack = true;
-      }
       if (this.getAdapterRef()){
         await this.client.adapterRef._mediasoup?.muteVideo()
       }
