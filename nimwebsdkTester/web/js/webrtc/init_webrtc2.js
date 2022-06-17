@@ -36,6 +36,46 @@ var WEBRTC2_ENV = {
   }
 };
 
+//背景分割
+const virtualBackgroundPluginConfig = {
+  development: {
+    key: 'VirtualBackground',
+    pluginUrl: './js/nim/NIM_Web_VirtualBackground.js',
+    wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/nn_segment_normal.wasm' + `?time=${Math.random()}`,
+  }, 
+  production: {
+    key: 'VirtualBackground',
+    pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}.js`,
+    wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/nn_segment_normal.wasm' + `?time=${Math.random()}`,
+  },
+  test: {
+    key: 'VirtualBackground',
+    pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}_test.js`,
+    wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/nn_segment_normal.wasm' + `?time=${Math.random()}`,
+  } 
+};
+const segment_config = virtualBackgroundPluginConfig[NERTC.ENV];
+
+//高级美颜
+const advancedBeautyPluginConfig = {
+  development: {
+    key: 'AdvancedBeauty',
+    pluginUrl: './js/nim/NIM_Web_AdvancedBeauty.js',
+    wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/nn_face_points.wasm' + `?time=${Math.random()}`,
+  }, 
+  production: {
+    key: 'AdvancedBeauty',
+    pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}.js`,
+    wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/nn_face_points.wasm' + `?time=${Math.random()}`,
+  },
+  test: {
+    key: 'AdvancedBeauty',
+    pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}_test.js`,
+    wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/nn_face_points.wasm' + `?time=${Math.random()}`,
+  } 
+};
+const beauty_config = advancedBeautyPluginConfig[NERTC.ENV];
+
 let privatizationConfig = null
 /*{
   "appkey":"6c6a4f0c8928b54032ebc495e442ebbf",
@@ -1025,8 +1065,17 @@ $('#leaveChannel-btn').on('click', async() => {
   // 销毁美颜
   await rtc.localStream.setBeautyEffect(false);
   window.isBeautyStarted = false;
-  console.warn('销毁美颜功能');
+  if(rtc.enableBodySegment){
+    await rtc.localStream.disableBodySegment();
+  }
+  if(rtc.enableAdvancedBeauty){
+    await rtc.localStream.disableAdvancedBeauty();
+  }
+  $('#segmentStatus').html('loading').hide();
+  $('#advancedBeautyStatus').html('loading').hide();
   window.rtc.client.leave()
+  rtc.enableBodySegment = false
+  rtc.enableAdvancedBeauty = false
   rtc.remoteStreams.length = 0
   subList.length = 0
   clearInterval(playTimer)
@@ -1165,6 +1214,156 @@ range4.addEventListener('change', () => {
   }
   rtc.localStream.setBeautyEffectOptions(effects);
 })
+
+function onPluginLoaded(name) {
+  console.log('onPluginLoaded', name)
+  if (name == 'VirtualBackground') {
+    //rtc.localStream.enableBodySegment();
+    $('#segmentStatus').html('loaded').show();
+    rtc.enableBodySegment = true
+  } else if (name == 'AdvancedBeauty') {
+    //const maxFaceSize = document.getElementById('adv-face-size');
+    //rtc.localStream.enableAdvancedBeauty(Number(maxFaceSize.value));
+    $('#advancedBeautyStatus').html('loaded').show();
+    rtc.enableAdvancedBeauty = true
+  }
+}
+
+$('#registerVitrualBackground').on('click', () => {
+  if (rtc.enableBodySegment) {
+    console.log('plugin VitrualBackground exist');
+    return;
+  }
+  $('#segmentStatus').html('loading').show();
+  rtc.localStream.registerPlugin(segment_config)  
+})
+
+$('#enableSegment').on('click', () => {
+  if (rtc.localStream && rtc.enableBodySegment) {
+    rtc.localStream.enableBodySegment();
+  } else {
+    //console.warn('当前没有启动localStream，先记录状态');
+  }
+})
+
+$('#disableSegment').on('click', () => {
+  if (rtc.localStream) {
+    console.warn('关闭背景分割'); 
+    rtc.localStream.disableBodySegment();
+  } else {
+    console.warn('当前没有启动localStream，先记录状态');
+  }
+})
+
+$('#unregisterVitrualBackground').on('click', () => {
+  $('#segmentStatus').html('loading').hide();
+  rtc.localStream.unregisterPlugin(segment_config.key)
+  rtc.enableBodySegment = false
+})
+
+$('#registerAdvancedBeauty').on('click', () => {
+  if (rtc.enableAdvancedBeauty) {
+    console.log('plugin AdvancedBeauty exist');
+    return;
+  }
+  $('#advancedBeautyStatus').html('loading').show();
+  rtc.localStream.registerPlugin(beauty_config)  
+})
+
+$('#advancedBeauty').on('click', () => {
+  if (rtc.localStream && rtc.enableAdvancedBeauty) {
+    const maxFaceSize = document.getElementById('adv-face-size');
+    rtc.localStream.enableAdvancedBeauty(Number(maxFaceSize.value));
+  } else {
+    //console.warn('当前没有启动localStream，先记录状态');
+  }
+})
+
+$('#closeAdvancedBeauty').on('click', () => {
+  if(rtc.localStream){
+    console.warn('关闭高级美颜');
+    rtc.localStream.disableAdvancedBeauty();
+  }
+})
+
+$('#resetAdvBeauty').on('click', () => {
+  if(rtc.localStream){
+    console.warn('重置高级美颜');
+    rtc.localStream.setAdvBeautyEffect('reset');
+  }
+})
+
+$('#unregisterAdvancedBeauty').on('click', () => {
+  $('#advancedBeautyStatus').html('loading').hide();
+  rtc.localStream.unregisterPlugin(beauty_config.key)
+  rtc.enableAdvancedBeauty = false
+})
+
+document.getElementById('select').onchange = function () {
+  let file = this.files[0];
+  let reader = new FileReader();
+  reader.onload = function () {
+      const img = new Image();
+      img.src = this.result;
+      img.onload = () => {
+        rtc.localStream.setBackGround({type: 'image', source: img})
+      }  
+      //rtc.localStream.setBackGround({type: 'image', source: this.result})
+  };
+  reader.readAsDataURL(file);
+}
+
+$('#red').on('click', () => {
+  rtc.localStream.setBackGround({type: 'color', color: '#ff0000'})
+});
+
+$('#green').on('click', () => {
+  rtc.localStream.setBackGround({type: 'color', color: '#00ff00'})
+});
+
+$('#blue').on('click', () => {
+  rtc.localStream.setBackGround({type: 'color', color: '#0000ff'})
+});
+
+$('#blur').on('click', () => {
+  let level = $('#level').val();
+  rtc.localStream.setBackGround({type: 'blur', level: parseInt(level)})
+});
+
+$('#level').on('change', () => {
+  let level = $('#level').val();
+  console.log('level', level);
+  rtc.localStream.setBackGround({type: 'blur', level: parseInt(level)})
+});
+
+// 高级美颜
+const keyMap = {
+  'enlargeEye':'adv-enlarge-eye',
+  'roundedEye':'adv-rounded-eye',
+  'openCanthus':'adv-open-canthus',
+  'eyeDistance':'adv-eye-distance',
+  'eyeAngle':'adv-eye-angle',
+  'shrinkNose':'adv-shrink-nose',
+  'lengthenNose':'adv-lengthen-nose',
+  'shrinkMouth':'adv-shrink-mouth',
+  'mouthCorners':'adv-mouth-corners',
+  'adjustPhiltrum':'adv-adjust-philtrum',
+  'shrinkUnderjaw':'adv-shrink-underjaw',
+  'shrinkCheekbone':'adv-shrink-cheekbone',
+  'lengthenJaw':'adv-lengthen-jaw',
+  'narrowedFace':'adv-narrowed-face',
+  'shrinkFace': 'adv-shrink-face',
+  'vShapedFace':'adv-vshaped-face',
+  'minifyFace':'adv-minify-face'
+}
+
+for(const key in keyMap){
+  $(`#${keyMap[key]}`).on('input', (e)=>{
+    if(rtc.localStream){
+      rtc.localStream.setAdvBeautyEffect(key, Number(e.target.value));
+    }
+  })
+}
 
 
 /**
@@ -1611,6 +1810,8 @@ function initLocalStream() {
     addLog('音视频初始化失败, 请检查设备列表')
     rtc.localStream = null
   })
+  //插件
+  rtc.localStream.on('plugin-load', onPluginLoaded);
 }
 
 function updateLocalWatermark(){
