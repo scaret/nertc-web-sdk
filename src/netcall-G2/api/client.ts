@@ -154,12 +154,14 @@ class Client extends Base {
     }
     this._params.appkey = appkey
     
-    const localConfig = lbsManager.loadLocalConfig(appkey)
+    // 为什么需要在Client._init时读取本地配置而不是在SDK加载时读取：
+    // 因为一部分客户加载了SDK后不一定会发起会话，这种情况下没有必要读取localStorage。
+    const localConfig = lbsManager.loadLocalConfig(appkey, "clientInit")
     if (localConfig.config){
       // 载入LBS本地配置成功
       const expireTime = localConfig.config.ts + localConfig.config.config.ttl * 1000 - Date.now()
-      if (expireTime < 60000){
-        this.logger.log(`LBS在 ${Math.floor(expireTime / 1000)} 秒后过期。发起异步刷新请求`)
+      if (expireTime < localConfig.config.config.preloadTimeSec * 1000){
+        this.logger.log(`LBS在 ${Math.floor(expireTime / 1000)} 秒后过期。preloadTimeSec: ${localConfig.config.config.preloadTimeSec}。发起异步刷新请求`)
         lbsManager.startUpdate(appkey, "renew")
       }
     }else{

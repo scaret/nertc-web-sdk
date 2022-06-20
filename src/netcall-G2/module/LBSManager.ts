@@ -1,6 +1,6 @@
 import {ILogger, Timer} from "../types";
 import {Logger} from "../util/webrtcLogger";
-import {LBS_BUILD_CONFIG, lbsUrl, SDK_VERSION} from "../Config";
+import {BUILD, LBS_BUILD_CONFIG, lbsUrl, SDK_VERSION} from "../Config";
 import RtcError from "../util/error/rtcError";
 import ErrorCode from "../util/error/errorCode";
 import {getParameters} from "./parameters";
@@ -11,6 +11,8 @@ export interface DomainItem{
   id: number,
   domain: string,
   mainDomain: string,
+  successCount: number,
+  failCount: number,
   lastFinishedAt: number,
   lastResult: "success"|"fail",
   updatedAt: number,
@@ -32,6 +34,7 @@ export interface URLSetting{
 export interface LBS_RES{
   "clientIp": string,
   "ttl": number,
+  "preloadTimeSec": number,
   "nrtc": [string, string],
   "call": [string, string],
   "tracking": [string, string],
@@ -41,6 +44,7 @@ export interface LBS_CONFIG {
   ts: number;
   appKey: string;
   sdkVersion: string;
+  sdkBuild: string;
   config: LBS_RES
 }
 
@@ -66,9 +70,10 @@ class LBSManager {
   private lastUpdatedAt:number = 0
   private lastAppKey:string = ""
   private lbsState: "builtin"|"local"|"remote" = "builtin"
+  private lbsStateWillChangeTimer: Timer|null = null
   
   constructor() {
-    this.loadBuiltinConfig()
+    this.loadBuiltinConfig("onload")
     window.addEventListener('online', ()=>{
       if (this.lastAppKey){
         this.logger.log(`侦测到网络连接恢复，尝试更新LBS配置`)
@@ -107,17 +112,18 @@ class LBSManager {
           clearTimeout(this.updateTimer)
         }
         this.updateTimer = setTimeout(()=>{
-          this.startUpdate(appKey, "expire")
+          this.logger.log(`LBS已到过期时间，正在回滚至内建设置`)
+          this.loadBuiltinConfig("expire")
         }, config.ttl * 1000)
       }
       
+      this.handleLbsStateWillChange(reason)
       this.addUrlBackup(config.nrtc[0], config.nrtc)
       this.addUrlBackup(config.call[0], config.call)
       this.addUrlBackup(config.tracking[0], config.tracking)
 
       this.lbsState = "remote"
-      this.logger.log(`成功加载远端配置。过期时间：${config.ttl}秒后`)
-      
+      this.logger.log(`成功加载远端配置。过期时间：${config.ttl}秒后。preloadTimeSec:${config.preloadTimeSec}：`)
       this.saveConfig(appKey, config)
       return config
     }else{
@@ -130,15 +136,60 @@ class LBSManager {
    * 1. SDK第一次载入时，localStorage配置不可用
    * 2. 域名配置过期后，请求LBS配置无法返回
    */
-  private async loadBuiltinConfig(){
-    const formerDomains = Object.keys(this.urlBackupMap)
-    if (formerDomains.length){
-      this.logger.warn(`正在使用内置域名配置刷新。当前的域名配置：`, formerDomains)
+  private async loadBuiltinConfig(reason: string){
+    if (reason !== "onload"){
+      this.handleLbsStateWillChange(reason)
     }
     for (let mainDomain in this.builtinConfig){
       this.addUrlBackup(mainDomain, this.builtinConfig[mainDomain])
     }
     this.lbsState = "builtin"
+    this.logger.log(`成功加载内建配置 ${reason}。`)
+  }
+  
+  private handleLbsStateWillChange(reason: string){
+    if (this.lbsStateWillChangeTimer){
+      clearTimeout((this.lbsStateWillChangeTimer))
+    }
+    const before = {
+      lbsState: this.lbsState,
+      settings: this.getSettings(),
+    }
+    this.lbsStateWillChangeTimer = setTimeout(()=>{
+      const after = {
+        lbsState: this.lbsState,
+        settings: this.getSettings(),
+      }
+      getParameters().clients.forEach((client)=>{
+        if (!client.destroyed && client.adapterRef.connectState.curState !== "DISCONNECTED"){
+          client.apiFrequencyControl({
+            name: '_lbsStateChange',
+            code: 0,
+            param: {
+              reason,
+              before,
+              after,
+            }
+          })
+        }
+      })
+    }, 0)
+  }
+  
+  private getSettings(){
+    const domains = Object.keys(this.urlBackupMap)
+    const info:any = {}
+    domains.forEach((mainDomain)=>{
+      info[mainDomain] = this.urlBackupMap[mainDomain].map((domainItem)=>{
+        return {
+          domain: domainItem.domain,
+          successCount: domainItem.successCount,
+          failCount: domainItem.failCount,
+          lastResult: domainItem.lastResult,
+        }
+      })
+    })
+    return info
   }
   
   private saveConfig(appKey:string, config: LBS_RES){
@@ -147,6 +198,7 @@ class LBSManager {
       ts,
       appKey,
       sdkVersion: SDK_VERSION,
+      sdkBuild: BUILD,
       config
     }
     try{
@@ -156,7 +208,7 @@ class LBSManager {
     }
   }
   
-  loadLocalConfig(appKey: string): LoadLocalConfigRes{
+  loadLocalConfig(appKey: string, reason: string): LoadLocalConfigRes{
     let data:LBS_CONFIG|null = null
     this.lastAppKey = appKey
     try{
@@ -174,29 +226,26 @@ class LBSManager {
     }
 
     const now = Date.now()
-    const ttl = data.ts + data.config.ttl * 1000 - now
-    if (ttl <0){
-      this.logger.log(`LBS不使用本地配置：ttl已过期${ Math.floor(- ttl / 1000)} 秒。`)
+    const ttlMs = data.ts + data.config.ttl * 1000 - now
+    if (ttlMs <0){
+      this.logger.log(`LBS不使用本地配置：ttl已过期${ Math.floor(- ttlMs / 1000)} 秒。`)
       return {reason: "expire", config: null}
     }
-    else if (data.sdkVersion !== SDK_VERSION){
-      this.logger.warn(`LBS不使用本地配置：版本不匹配。${data.sdkVersion} ${SDK_VERSION}。`)
+    else if (data.sdkVersion !== SDK_VERSION || data.sdkBuild !== BUILD){
+      this.logger.warn(`LBS不使用本地配置：版本不匹配。${data.sdkVersion}/${data.sdkBuild} ${SDK_VERSION}/${BUILD}。`)
       return {reason: "version", config: null}
     } else if (data.appKey !== appKey){
       this.logger.warn(`LBS不使用本地配置：appKey不匹配。${data.appKey} ${appKey}。`)
       return {reason: "appkey", config: null}
     } else {
+      this.handleLbsStateWillChange(reason)
       this.addUrlBackup(data.config.call[0], data.config.call)
       this.addUrlBackup(data.config.nrtc[0], data.config.nrtc)
       this.addUrlBackup(data.config.tracking[0], data.config.tracking)
       
       this.lbsState = "local"
-      this.logger.log(`成功加载本地配置。过期时间：${Math.floor(ttl / 1000)} 秒后`)
+      this.logger.log(`成功加载本地配置。过期时间：${Math.floor(ttlMs / 1000)} 秒后。`)
       
-      if (ttl < 60000){
-        this.logger.log(`LBS在 ${Math.floor(ttl / 1000)} 秒后过期。`)
-        this.startUpdate(appKey, "renew")
-      }
       return {reason: "success", config: data}
     }
   }
@@ -205,19 +254,29 @@ class LBSManager {
    * 当前同域名配置会被覆盖。
    */
   addUrlBackup(mainDomain:string, replacedBy: [string, string]|[string]){
+    const formerDomainSettings = this.urlBackupMap[mainDomain] || []
     this.urlBackupMap[mainDomain] = []
     const URLBackup = this.urlBackupMap[mainDomain]
     const updatedAt = Date.now()
     replacedBy.forEach((domain)=>{
-      const item:DomainItem = {
-        id: URLBackup.length,
-        domain,
-        mainDomain,
-        lastFinishedAt: 0,
-        lastResult: "success",
-        updatedAt,
+      let domainItem = formerDomainSettings.find((item)=>{
+        return item.domain === domain && item.mainDomain === mainDomain
+      })
+      if (domainItem){
+        domainItem.updatedAt = updatedAt
+      }else{
+        domainItem = {
+          id: URLBackup.length,
+          domain,
+          mainDomain,
+          lastFinishedAt: 0,
+          successCount: 0,
+          failCount: 0,
+          lastResult: "success",
+          updatedAt,
+        }
       }
-      URLBackup.push(item)
+      URLBackup.push(domainItem)
     })
   }
   
@@ -251,6 +310,7 @@ class LBSManager {
   
   private markSuccess(urlSetting: URLSetting){
     urlSetting.item.lastFinishedAt = Date.now()
+    urlSetting.item.successCount++
     urlSetting.item.lastResult = "success"
     urlSetting.state = "success"
     const domainList = this.urlBackupMap[urlSetting.item.mainDomain]
@@ -261,6 +321,7 @@ class LBSManager {
       })
       if (index > -1){
         this.logger.warn(`主备域名互换。${domainList[0].domain} => ${urlSetting.item.domain}`)
+        this.handleLbsStateWillChange("domainDown:" + domainList[0].domain)
         domainList.splice(index, 1)
         domainList.unshift(urlSetting.item)
       }
@@ -268,6 +329,7 @@ class LBSManager {
   }
   private markFail(urlSetting: URLSetting){
     urlSetting.item.lastFinishedAt = Date.now()
+    urlSetting.item.failCount++
     urlSetting.item.lastResult = "fail"
     urlSetting.state = "fail"
   }

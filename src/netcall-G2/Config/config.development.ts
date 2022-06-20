@@ -17,7 +17,7 @@ export const LBS_BUILD_CONFIG: {
 } = {
   "wecan-lbs-qa.netease.im": [
     "wecan-lbs-qa.netease.im",
-    "wecan-lbs-qa2.netease.im",
+    "vcloud-sentry.netease.im",
   ],
   "webtest.netease.im": [
     "webtest.netease.im",

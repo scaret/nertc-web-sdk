@@ -3866,12 +3866,12 @@ $('#lbsRemoveLocalConfig').on("click", ()=>{
 })
 
 $('#lbsLoadBuiltinConfig').on("click", ()=>{
-  NERTC.lbsManager.loadBuiltinConfig()
+  NERTC.lbsManager.loadBuiltinConfig("manual")
   addLog("已载入lbs内置配置")
 })
 
 $('#lbsLoadLocalConfig').on("click", ()=>{
-  const config = NERTC.lbsManager.loadLocalConfig($('#appkey').val())
+  const config = NERTC.lbsManager.loadLocalConfig($('#appkey').val(), "manual")
   if (config.config){
     addLog("已载入lbs本地配置")
     console.log("已载入lbs本地配置", config)
