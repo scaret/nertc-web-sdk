@@ -88,7 +88,7 @@ config = merge(config, {
         }
       },
       {
-        test: /netcall-G2\/|\\module\/|\\blobs\/|\\raw\/.*\.js$/,
+        test: /netcall-G2\/|\\module\/|\\blobs\/|\\raw\/|\\.*\.js$/,
         use: 'raw-loader'
       },
       {
