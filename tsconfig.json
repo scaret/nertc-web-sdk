@@ -18,8 +18,6 @@
   },
   "include": [
     "src/netcall-G2",
-    "src\\netcall-G2",
-    "src/entry",
-    "src\\entry"
+    "src/entry"
   ]
 }
