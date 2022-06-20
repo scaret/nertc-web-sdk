@@ -54,7 +54,7 @@ config = merge(config, {
   module: {
     rules: [
       {
-        test: /netcall-G2\/Config\/index\.ts$/,
+        test: /netcall-G2[\/\\]Config[\/\\]index\.ts$/,
         loader: 'string-replace-loader',
         options: {
           multiple: [
@@ -74,7 +74,7 @@ config = merge(config, {
         }
       },
       {
-        test: /netcall-G2\/module\/blobs\/raw\/.*\.js$/,
+        test: /netcall-G2[\/\\]module[\/\\]blobs[\/\\]raw[\/\\].*\.js$/,
         use: 'raw-loader'
       },
       {
