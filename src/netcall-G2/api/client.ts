@@ -37,6 +37,7 @@ import {FormatMedia} from "../module/formatMedia"
 import {Record} from '../module/record'
 import * as env from '../util/rtcUtil/rtcEnvironment';
 import {lbsManager} from "../module/LBSManager";
+import {alerter} from "../module/alerter";
 const BigNumber = require("bignumber.js");
 
 /**
@@ -143,20 +144,6 @@ class Client extends Base {
     })
   }
   
-  safeEmit (eventName:string, ...args: any[]){
-    // 所有抛出事件请使用这个函数。
-    // 内部事件名请加@
-    // 外部事件会先抛出名字前加@的同名事件。内部如要监听该事件的，则通过 client.addListener("@stream-added")，以避免与用户事件混淆
-    try{
-      if (!eventName.match(/^@/)){
-        this.emit(`@${eventName}`, ...args);
-      }
-      this.emit(eventName, ...args);
-    }catch(e){
-      this.logger.error(`Error on event ${eventName}: ${e.name} ${e.message}`, e.stack);
-    }
-  }
-  
   // 初始化nrtc
   _init (options:ClientOptions) {
     this.initWebSocket();
@@ -215,6 +202,10 @@ class Client extends Base {
     }
     this.addListener('@pairing-join-success', handleJoinFinish);
     this.addListener('@pairing-join-error', handleJoinFinish);
+    
+    if (getParameters().enableAlerter !== "never"){
+      alerter.watchClient(this.adapterRef.instance)
+    }
   }
 
   getUid() {

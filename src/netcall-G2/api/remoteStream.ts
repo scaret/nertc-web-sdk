@@ -1,4 +1,3 @@
-import {EventEmitter} from "eventemitter3";
 import {STREAM_TYPE} from "../constant/videoQuality";
 import {Play} from '../module/play'
 import {Record} from '../module/record'
@@ -29,10 +28,13 @@ import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
 import BigNumber from 'bignumber.js'
 import {AudioLevel} from '../module/audioLevel';
+import {RTCEventEmitter} from "../util/rtcUtil/RTCEventEmitter";
+import {getParameters} from "../module/parameters";
+import {alerter} from "../module/alerter";
 
 let remoteStreamCnt = 0;
 
-class RemoteStream extends EventEmitter {
+class RemoteStream extends RTCEventEmitter {
   public readonly streamID:number|string;
   public readonly stringStreamID:string;
   public audio: boolean;
@@ -205,6 +207,10 @@ class RemoteStream extends EventEmitter {
       client: this.client
     })
     
+    if (getParameters().enableAlerter !=="never"){
+      alerter.watchRemoteStream(this)
+    }
+    
     this.logger.log(`创建远端Stream: `, JSON.stringify({
       streamID: this.stringStreamID,
       audio: options.audio,
@@ -218,15 +224,6 @@ class RemoteStream extends EventEmitter {
         clientUid: this.client.adapterRef.channelInfo.uid || '',
       }
     })
-  }
-
-  safeEmit (eventName:string, ...args: any[]){
-    // remoteStream 抛出的事件
-    try{
-      this.emit(eventName, ...args);
-    }catch(e){
-      this.logger.error(`Error on event ${eventName}: ${e.name} ${e.message}`, e.stack);
-    }
   }
 
   _reset () {

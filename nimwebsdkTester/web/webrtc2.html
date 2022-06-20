@@ -237,6 +237,142 @@
           <div class="line">
             <label for="r1">平滑: </label><input type="range" id="r4" value="0"/>
           </div>
+
+          <p class="block-header">背景分割</p>
+        <div class="line">
+          <button type="button" id="registerVitrualBackground">注册</button>
+          <button type="button" id="enableSegment">打开</button> 
+          <button type="button" id="disableSegment">关闭</button> 
+          <button type="button" id="unregisterVitrualBackground">销毁</button> 
+          <label id="segmentStatus" style="display: none;">loading</label>
+          <br>
+          <!-- <button type="button" id="startSegment">启动</button> 
+          <button type="button" id="cancelSegment">取消</button>  -->
+          <br>   
+          <button id="red">红色</button>
+          <button id="green">绿色</button>
+          <button id="blue">蓝色</button>      
+        </div>
+        <div class="line">
+            背景图<input id="select" type="file" accept="image/png, image/jpeg"></input>
+        </div>
+         <div class="line">
+          <button id="blur">虚化</button>
+          <label for='level'>level</label>
+          <select id="level">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+          </select>
+        </div>
+        <p class="block-header">高级美颜</p>
+        <div class="line">
+          <label>
+            最大人脸数：
+            <input id="adv-face-size" type="number" step="0" min="1" max="5" value="1">
+          </label> 
+        </div>
+        <div class="line">
+          <button type="button" id="registerAdvancedBeauty">注册</button>
+          <button type="button" id="advancedBeauty">打开</button>
+          <button type="button" id="closeAdvancedBeauty">关闭</button>
+          <button type="button" id="resetAdvBeauty">重置</button>
+          <button type="button" id="unregisterAdvancedBeauty">销毁</button> 
+          <label id="advancedBeautyStatus" style="display: none;">loading</label>
+        </div>
+        <div class="line">
+          <label>
+            大眼:
+            <input id="adv-enlarge-eye" type="range" step="0.01" min="0" max="1" value="0">
+          </label>
+          <br>
+          <label>
+            圆眼:
+            <input id="adv-rounded-eye" type="range" step="0.01" min="0" max="1" value="0">
+          </label> 
+          <br>
+          <label>
+            开眼角:
+            <input id="adv-open-canthus" type="range" step="0.01" min="0" max="1" value="0">
+          </label>
+          <br>
+          <label>
+            眼距:
+            <input id="adv-eye-distance" type="range" step="0.01" min="0" max="1" value="0.5">
+          </label>
+          <br>
+          <label>
+            眼睛角度:
+            <input id="adv-eye-angle" type="range" step="0.01" min="0" max="1" value="0.5">
+          </label>
+          <br>
+          <label>
+            瘦鼻:
+            <input id="adv-shrink-nose" type="range" step="0.01" min="0" max="1" value="0">
+          </label>
+          <br>
+          <label>
+            长鼻:
+            <input id="adv-lengthen-nose" type="range" step="0.01" min="0" max="1" value="0.5">
+          </label>
+          <br>
+          <label>
+            嘴巴大小:
+            <input id="adv-shrink-mouth" type="range" step="0.01" min="0" max="1" value="0.5">
+          </label>
+          <br>
+          <label>
+            嘴角调整:
+            <input id="adv-mouth-corners" type="range" step="0.01" min="0" max="1" value="0.5">
+          </label>
+          <br>
+          <label>
+            人中:
+            <input id="adv-adjust-philtrum" type="range" step="0.01" min="0" max="1" value="0.5">
+          </label>
+          <br>
+          <label>
+            瘦下颌:
+            <input id="adv-shrink-underjaw" type="range" step="0.01" min="0" max="1" value="0.0">
+          </label>
+          <br>
+          <label>
+            瘦颧骨:
+            <input id="adv-shrink-cheekbone" type="range" step="0.01" min="0" max="1" value="0.0">
+          </label>
+          <br>
+          <label>
+            下巴:
+            <input id="adv-lengthen-jaw" type="range" step="0.01" min="0" max="1" value="0.5">
+          </label>
+          <br>
+          <label>
+            窄脸:
+            <input id="adv-narrowed-face" type="range" step="0.01" min="0" max="1" value="0.0">
+          </label>
+          <br>
+          <label>
+            瘦脸:
+            <input id="adv-shrink-face" type="range" step="0.01" min="0" max="1" value="0.0">
+          </label>
+          <br>
+          <label>
+            V 脸:
+            <input id="adv-vshaped-face" type="range" step="0.01" min="0" max="1" value="0.5">
+          </label>
+          <br>
+          <label>
+            小脸:
+            <input id="adv-minify-face" type="range" step="0.01" min="0" max="1" value="0.0">
+          </label>
+        </div>
         </div>
       </div>
       <div class="block">

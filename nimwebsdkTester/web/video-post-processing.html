@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,shrink-to-fit=no">
+    <title>video-post-processing</title>
+    <style>
+        body {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            margin: 0;
+            padding: 0;
+        }
+
+        #root {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 10%;
+            bottom: 0;
+            display: block;
+            text-align: center;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        video {
+            border: 4px solid black;
+            border-radius: 10px;
+            margin-bottom: 4px;
+        }
+
+        canvas {
+            border: 8px solid black;
+            border-radius: 20px;
+        }
+
+        .uis {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .group>label {
+            margin: 0.5rem;
+            display: flex;
+            align-items: center;
+            color: rgb(32, 32, 32);
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root">
+        <!-- 此处插入 video 及美颜之后的 canvas -->
+        <video id='old' style="width: 640px;height: 480px;object-fit:cover;">
+        </video>
+        <video id='new' style="width: 640px;height: 480px;object-fit:cover;">
+        </video>
+
+        <div class="uis">
+            <div class="group">
+                <label>
+                    磨皮:<input id="smooth" type="range" min="0" max="1" value="0" step="0.01">
+                </label>
+                <label>
+                    美白:<input id="whiten" type="range" min="0" max="1" value="0" step="0.01">
+                </label>
+                <label>
+                    红润:<input id="redden" type="range" min="0" max="1" value="0" step="0.01">
+                </label>
+            </div>
+            <div class="group">
+                <label>
+                    滤镜：
+                    <select id="lut-select">
+                        <option value="">无</option>
+                        <option value="ziran">自然</option>
+                        <option value="baixi">白皙</option>
+                        <option value="fennen">粉嫩</option>
+                        <option value="weimei">唯美</option>
+                        <option value="langman">浪漫</option>
+                        <option value="rixi">日系</option>
+                        <option value="landiao">蓝调</option>
+                        <option value="qingliang">清凉</option>
+                        <option value="huaijiu">怀旧</option>
+                        <option value="qingcheng">青橙</option>
+                        <option value="wuhou">午后</option>
+                        <option value="zhigan">质感</option>
+                        <option value="mopian">默片</option>
+                        <option value="dianying">电影</option>
+                        <option value="heibai">黑白</option>
+                    </select>
+                </label>
+                <label>
+                    强度:<input id="lut-intensity" disabled="" type="range" min="0" max="1" value="0" step="0.01">
+                </label>
+            </div>
+        </div>
+    </div>
+</body>
+<script src="./js/nim/NIM_Web_NERTC.js"></script>
+<script src="./js/lib/videoProcess.js"></script>
+</html>

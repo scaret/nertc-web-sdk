@@ -827,6 +827,7 @@ export interface Client{
   doUnsubscribe: (stream: RemoteStream)=>void
   doPublish: (stream: LocalStream)=>void
   updateRecordingAudioStream: ()=>void
+  _events?: {[eventName: string]: any}
 }
 
 export type ConsumerStatus = "init"|"start"|"end"
@@ -1414,4 +1415,15 @@ export interface BeautyEffectOptions {
   brightnessLevel: number;
   rednessLevel: number;
   smoothnessLevel: number;
+}
+
+export interface AdvancedBeautyEffectOptions {
+  thinFaceLevel: number;
+  bigEyesLevel: number;
+}
+
+export interface PluginOptions {
+  key: string;
+  pluginUrl: string;
+  wasmUrl?: string;
 }

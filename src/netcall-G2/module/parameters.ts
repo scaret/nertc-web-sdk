@@ -24,6 +24,12 @@ interface IParameters{
   // 存储了通过createStream创建的客户端
   localStreams: LocalStream[],
   
+  // debugG2
+  debugG2: boolean,
+  
+  // 是否开启UI提示
+  enableAlerter: "never"|"nolistener"|"always",
+  
   // 主流开开启小流时的视频采集参数
   videoLowDefaultConstraints: MediaTrackConstraints,
   // 辅流开开启小流时的视频采集参数
@@ -109,6 +115,8 @@ let parameters:IParameters = {
   shimCanvas: "ios151",
   clients: [],
   localStreams: [],
+  debugG2: false,
+  enableAlerter: "nolistener",
   videoLowDefaultConstraints: {width: {max: 320}, height: {max: 180}},
   screenLowDefaultConstraints: {width: {max: 320}, height: {max: 180}},
   controlOnPaused: true,
