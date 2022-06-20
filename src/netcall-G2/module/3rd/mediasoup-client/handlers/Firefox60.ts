@@ -318,6 +318,9 @@ export class Firefox60 extends HandlerInterface
       {
         encoding.rid = `r${idx}`;
       });
+      // Clone the encodings and reverse them because Firefox likes them
+			// from high to low.
+			encodings!.reverse();
     }
 
     const sendingRtpParameters =
