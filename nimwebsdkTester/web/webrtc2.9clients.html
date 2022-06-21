@@ -101,6 +101,7 @@
         appkey: "eca23f68c66d4acfceee77c200200359",
         debug: true
       })
+      NERTC.Logger.enableLogUpload();
       window.clients[i] = client
       client.on('stream-added', (evt)=>{
         client.subscribe(evt.stream)
