@@ -14,10 +14,9 @@ import {
   FirstPacketSentEvent,
   FunctionEvent,
   CommonEvent,
-  HeartbeatEvent, APIEventItem,
+  HeartbeatEvent, APIEventItem, RequestLBSEvent,
 } from "../../types";
 import {USER_AGENT} from "../../util/rtcUtil/rtcEnvironment";
-import {lbsManager} from "../LBSManager";
 
 let reportUrl = "https://statistic.live.126.net/statics/report/common/form";
 
@@ -169,6 +168,7 @@ class DataReport {
     loginEvent.extra_info = JSON.stringify({
       userAgent: USER_AGENT
     })
+    loginEvent.lbs_addrs = this.adapterRef.lbsManager.getReportField("nrtc")
     this.addEvent("login", loginEvent);
   }
 
@@ -279,6 +279,10 @@ class DataReport {
     this.addEvent("function", functionEvent);
   }
 
+  setRequestLbs (requestLbsEvent: RequestLBSEvent){
+    this.addEvent("requestLBS", requestLbsEvent);
+  }
+
   reset() {
     this.eventKeys = []
     this.api = []
@@ -348,7 +352,7 @@ class DataReport {
       reportUrl = this.adapterRef.instance._params.neRtcServerAddresses.statisticsServer
       //this.adapterRef.logger.log('私有化配置的 reportUrl: ', reportUrl)
     }
-    lbsManager.ajax({ 
+    this.adapterRef.lbsManager.ajax({
       type: "post", 
       url: reportUrl, 
       data: data, 

@@ -12,7 +12,6 @@ import BigNumber from 'bignumber.js'
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
 import {SignalGetChannelInfoResponse} from "../interfaces/SignalProtocols";
-import {lbsManager} from "./LBSManager";
 
 /**
  * 会控相关
@@ -88,7 +87,7 @@ class Meeting extends EventEmitter {
     let curtime = Date.parse(new Date())/1000
     const md5str = appkey + "." + uid + "." + curtime
     try{
-      const data = await lbsManager.ajax({
+      const data = await this.adapterRef.lbsManager.ajax({
         url,
         type: 'POST',
         //contentType: 'application/x-www-form-urlencoded',
@@ -214,7 +213,7 @@ class Meeting extends EventEmitter {
       appkey
     })
     try{
-      let data = await lbsManager.ajax({
+      let data = await this.adapterRef.lbsManager.ajax({
         url, //'https://webtest.netease.im/nrtcproxy/nrtc/getChannelInfos.action'
         type: 'POST',
         contentType: 'application/x-www-form-urlencoded',
@@ -421,7 +420,7 @@ class Meeting extends EventEmitter {
         }
       }) 
       try {
-        const data:any = await lbsManager.ajax({
+        const data:any = await this.adapterRef.lbsManager.ajax({
           url, 
           type: 'POST',
           contentType: 'application/json;charset=utf-8',
@@ -506,7 +505,7 @@ class Meeting extends EventEmitter {
     for (let i=0; i < taskIds.length; i++) {
       this.logger.log('deleteTasks: ', taskIds[i])
       try {
-        const data:any = await lbsManager.ajax({
+        const data:any = await this.adapterRef.lbsManager.ajax({
           url, 
           type: 'POST',
           contentType: 'application/json;charset=utf-8',
@@ -621,7 +620,7 @@ class Meeting extends EventEmitter {
         }
       }) 
       try {
-        const data:any = await lbsManager.ajax({
+        const data:any = await this.adapterRef.lbsManager.ajax({
           url, 
           type: 'POST',
           contentType: 'application/json;charset=utf-8',

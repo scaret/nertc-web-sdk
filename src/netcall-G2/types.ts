@@ -12,6 +12,8 @@ import {LocalStream} from "./api/localStream";
 import {SpatialManager} from "./api/spatialManager";
 import {OperationQueue} from "./util/OperationQueue";
 import {NERTC_VIDEO_QUALITY_ENUM, VIDEO_FRAME_RATE_ENUM} from "./constant/videoQuality";
+import {LBSManager} from "./module/LBSManager";
+import {DataReport} from "./module/report/dataReport";
 
 type UIDTYPE = number | string;
 
@@ -50,6 +52,7 @@ export interface AdapterRef {
   mediaCapability: MediaCapability;
   nim?: any;
   instance: Client;
+  lbsManager: LBSManager,
   channelInfo?: any;
   apiEvent: {
     [prop: string]: APIEventItem[];
@@ -189,6 +192,7 @@ export interface LoginEvent extends DataEvent{
   supported_codec_recv?: string;
   preferred_codec_send?: string;
   roomCodecType?: string;
+  lbs_addrs: any;
 }
 
 export interface ReloginEvent extends DataEvent{
@@ -246,6 +250,15 @@ export interface HeartbeatEvent extends DataEvent {
   sys?:string;
   tx?:string;
   rx?:string;
+}
+
+export interface RequestLBSEvent extends DataEvent{
+  app_key: string;
+  request_id: string;
+  err_code: number;
+  err_msg: string;
+  rtt: number;
+  time: number;
 }
 
 export interface WholeStatsReportOptions{
@@ -805,7 +818,7 @@ export interface Client{
   }
   spatialManager: SpatialManager|null;
   operationQueue: OperationQueue
-  apiEventReport: (eventName: string, eventData: any)=>void
+  apiEventReport: (eventName: keyof DataReport, eventData: any)=>void
   getPeer: (sendOrRecv: 'send'|'recv')=>any
   leave: ()=>any
   addSsrc: (uid:number|string, kind:MediaTypeShort, ssrc:number)=>any

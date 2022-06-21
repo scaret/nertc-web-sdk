@@ -26,6 +26,7 @@ import {Client as ICLient} from "../types"
 import logger, {loglevels} from "../util/log/logger";
 import  md5 = require('md5');
 import {RTCEventEmitter} from "../util/rtcUtil/RTCEventEmitter";
+import {LBSManager} from "../module/LBSManager";
 let clientCnt = 0;
 
 /**
@@ -137,6 +138,9 @@ class Base extends RTCEventEmitter {
     this.adapterRef.encryption = new Encryption(this.adapterRef);
     
     this._resetState(); // 内部状态对象
+    
+    this.adapterRef.lbsManager = new LBSManager(this as unknown as ICLient),
+    
     this._destroyModule();
   }
 

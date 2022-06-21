@@ -3861,17 +3861,17 @@ $("#confirmOnRefresh").on("click", ()=>{
 })
 
 $('#lbsRemoveLocalConfig').on("click", ()=>{
-  localStorage.removeItem(NERTC.lbsManager.localStorageKey)
+  localStorage.removeItem(rtc.client.adapterRef.lbsManager.localStorageKey)
   addLog("已删除lbs本地配置")
 })
 
 $('#lbsLoadBuiltinConfig').on("click", ()=>{
-  NERTC.lbsManager.loadBuiltinConfig("manual")
+  rtc.client.adapterRef.lbsManager.loadBuiltinConfig("manual")
   addLog("已载入lbs内置配置")
 })
 
 $('#lbsLoadLocalConfig').on("click", ()=>{
-  const config = NERTC.lbsManager.loadLocalConfig($('#appkey').val(), "manual")
+  const config = rtc.client.adapterRef.lbsManager.loadLocalConfig("manual")
   if (config.config){
     addLog("已载入lbs本地配置")
     console.log("已载入lbs本地配置", config)
@@ -3882,7 +3882,7 @@ $('#lbsLoadLocalConfig').on("click", ()=>{
 })
 
 $('#lbsStartUpdate').on("click", async ()=>{
-  const config = await NERTC.lbsManager.startUpdate($('#appkey').val(), "manual")
+  const config = await rtc.client.adapterRef.lbsManager.startUpdate("manual")
   if (config){
     addLog("已载入lbs远端配置")
     console.log("已载入lbs远端配置", config)
