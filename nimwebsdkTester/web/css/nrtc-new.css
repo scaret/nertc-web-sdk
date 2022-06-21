@@ -12,6 +12,9 @@
     overflow: scroll;
     background-color: #f3f3f3;
   }
+  .vconsole {
+    display: inline-block;
+  }
 }
 
 @media (min-width: 769px) {
@@ -21,6 +24,9 @@
     display: flex;
     overflow: scroll;
     background-color: #f3f3f3;
+  }
+  .vconsole {
+    display: none;
   }
 }
 
