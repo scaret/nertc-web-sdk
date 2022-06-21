@@ -7,16 +7,16 @@ import { StyledFilter } from './styled-filter';
 import { baseTextureShader } from '../../shaders/base-texture-shader.glsl';
 import { waterFlowShader } from '../../shaders/water-flow-shader.glsl';
 
-let instance: WaterFlowStyled | null = null;
+const instances = new Set<WaterFlowStyled>();
 let waterImg: HTMLImageElement | null = null;
 loadImage(
     'https://yx-web-nosdn.netease.im/common/e7ea13cd337a076e246d9119d2eda3ee/dirty-map.png',
     (img) => {
         waterImg = img;
-        if (instance) {
+        instances.forEach((instance)=>{
             instance.waterFlowMap!.source = img;
             instance.waterFlowMap!.refresh();
-        }
+        })
     }
 );
 export class WaterFlowStyled extends StyledFilter {
@@ -28,8 +28,8 @@ export class WaterFlowStyled extends StyledFilter {
         uvBuffer: ReturnType<typeof createAttributeBuffer>
     ) {
         super(renderer, map, posBuffer, uvBuffer);
+        instances.add(this);
         this.initStyled();
-        instance = this;
     }
 
     private initStyled() {
@@ -103,6 +103,6 @@ export class WaterFlowStyled extends StyledFilter {
         super.destroy(clearBuffer);
         const gl = this.renderer.gl;
         gl?.deleteTexture(this.waterFlowMap!.glTexture);
-        instance = null;
+        instances.delete(this);
     }
 }

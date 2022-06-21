@@ -8,27 +8,27 @@ import { baseTextureShader } from '../../shaders/base-texture-shader.glsl';
 import { lutShader } from '../../shaders/lut-shader.glsl';
 import { fireShader } from '../../shaders/fire-shader.glsl';
 
-let instance: FireStyled | null = null;
+const instances = new Set<FireStyled>();
 let fireImg: HTMLImageElement | null = null;
 let warmImg: HTMLImageElement | null = null;
 loadImage(
     'https://yx-web-nosdn.netease.im/common/7809a2b1951cff7a2dacec82434e0ef3/fire-mask.png',
     (img) => {
         fireImg = img;
-        if (instance) {
+        instances.forEach((instance)=>{
             instance.fireMap!.source = img;
             instance.fireMap!.refresh();
-        }
+        })
     }
 );
 loadImage(
     'https://yx-web-nosdn.netease.im/common/3b3332c5ae4306312b6f3c4c552a464a/qingcheng.png',
     (img) => {
         warmImg = img;
-        if (instance) {
-            instance.fireMap!.source = img;
-            instance.fireMap!.refresh();
-        }
+        instances.forEach((instance)=>{
+            instance.warmMap!.source = img;
+            instance.warmMap!.refresh();
+        })
     }
 );
 export class FireStyled extends StyledFilter {
@@ -41,8 +41,8 @@ export class FireStyled extends StyledFilter {
         uvBuffer: ReturnType<typeof createAttributeBuffer>
     ) {
         super(renderer, map, posBuffer, uvBuffer);
+        instances.add(this);
         this.initStyled();
-        instance = this;
     }
 
     private initStyled() {
@@ -137,6 +137,6 @@ export class FireStyled extends StyledFilter {
         const gl = this.renderer.gl;
         gl?.deleteTexture(this.warmMap!.glTexture);
         gl?.deleteTexture(this.fireMap!.glTexture);
-        instance = null;
+        instances.delete(this);
     }
 }

@@ -3,13 +3,13 @@ const globalConfig = window.globalConfig = {
   env: 'DEV',
   inited: false,
   localViewConfig: {  // 本地视频容器尺寸
-    width: 160,
-    height: 120,
+    width: 480,
+    height: 420,
     cut: false // 默认不裁剪
   },
   remoteViewConfig: { // 远程视频容器尺寸
-    width: 160,
-    height: 120,
+    width: 320,
+    height: 240,
     cut: false // 默认不裁剪
   }
 }
@@ -59,22 +59,44 @@ const segment_config = virtualBackgroundPluginConfig[NERTC.ENV];
 //高级美颜
 const advancedBeautyPluginConfig = {
   development: {
-    key: 'AdvancedBeauty',
-    pluginUrl: './js/nim/NIM_Web_AdvancedBeauty.js',
-    wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/nn_face_points.wasm' + `?time=${Math.random()}`,
+    chrome: {
+      key: 'AdvancedBeauty',
+      pluginUrl: './js/nim/NIM_Web_AdvancedBeauty.js',
+      wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/ne_face_points.wasm' + `?time=${Math.random()}`,
+    },
+    safari: {
+      key: 'AdvancedBeauty',
+      pluginUrl: './js/nim/NIM_Web_AdvancedBeauty.js',
+      wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/ne_face_points_nosimd.wasm' + `?time=${Math.random()}`,
+    }
   }, 
   production: {
-    key: 'AdvancedBeauty',
-    pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}.js`,
-    wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/nn_face_points.wasm' + `?time=${Math.random()}`,
+    chrome: {
+      key: 'AdvancedBeauty',
+      pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}.js`,
+      wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/ne_face_points.wasm' + `?time=${Math.random()}`,
+    },
+    safari: {
+      key: 'AdvancedBeauty',
+      pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}.js`,
+      wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/ne_face_points_nosimd.wasm' + `?time=${Math.random()}`,
+    } 
   },
   test: {
-    key: 'AdvancedBeauty',
-    pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}_test.js`,
-    wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/nn_face_points.wasm' + `?time=${Math.random()}`,
+    chrome: {
+      key: 'AdvancedBeauty',
+      pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}_test.js`,
+      wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/ne_face_points.wasm' + `?time=${Math.random()}`,
+    },
+    safari: {
+      key: 'AdvancedBeauty',
+      pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}_test.js`,
+      wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/ne_face_points_nosimd.wasm' + `?time=${Math.random()}`,
+    }
   } 
 };
-const beauty_config = advancedBeautyPluginConfig[NERTC.ENV];
+
+let beauty_config = null;
 
 let privatizationConfig = null
 /*{
@@ -1254,10 +1276,6 @@ function onPluginLoaded(name) {
 }
 
 $('#registerVitrualBackground').on('click', () => {
-  if (rtc.enableBodySegment) {
-    console.log('plugin VitrualBackground exist');
-    return;
-  }
   $('#segmentStatus').html('loading').show();
   rtc.localStream.registerPlugin(segment_config)  
 })
@@ -1285,12 +1303,10 @@ $('#unregisterVitrualBackground').on('click', () => {
   rtc.enableBodySegment = false
 })
 
-$('#registerAdvancedBeauty').on('click', () => {
-  if (rtc.enableAdvancedBeauty) {
-    console.log('plugin AdvancedBeauty exist');
-    return;
-  }
+$('#registerAdvancedBeauty').on('click', async () => {
   $('#advancedBeautyStatus').html('loading').show();
+  const type = await wasmFeatureDetect.simd() ? 'chrome' : 'safari';
+  beauty_config = advancedBeautyPluginConfig[NERTC.ENV][type];
   rtc.localStream.registerPlugin(beauty_config)  
 })
 
@@ -1378,7 +1394,9 @@ const keyMap = {
   'narrowedFace':'adv-narrowed-face',
   'shrinkFace': 'adv-shrink-face',
   'vShapedFace':'adv-vshaped-face',
-  'minifyFace':'adv-minify-face'
+  'minifyFace':'adv-minify-face',
+  'whitenTeeth':'adv-whiten-teeth',
+  'brightenEye': 'adv-brighten-eye'
 }
 
 for(const key in keyMap){
@@ -2430,7 +2448,6 @@ $('#playCamera').on('click', () => {
     console.log('打开摄像头 sucess')
     await rtc.localStream.play(document.getElementById('local-container'))
     rtc.localStream.setLocalRenderMode(globalConfig.localViewConfig)
-    !!rtc.localStream.isBeautyTrack && (await rtc.localStream.setBeautyEffect(true))
   }).catch(err =>{
     addLog('打开摄像头' + err)
     console.log('打开摄像头 失败: ', err)
@@ -2447,7 +2464,6 @@ $('#playCameraOff').on('click', () => {
     type: 'video'
   }).then(()=>{
     console.log('关闭摄像头 sucess')
-    rtc.localStream.isBeautyTrack && rtc.localStream.setBeautyEffect(false);
   }).catch(err =>{
     addLog('关闭摄像头 失败: ' + err)
     console.log('关闭摄像头 失败: ', err)
@@ -2850,7 +2866,6 @@ $('#camera').on('change', () => {
   console.warn('切换camera: ', cameraId)
   window.rtc.localStream && window.rtc.localStream.switchDevice('video', cameraId).then(()=>{
     console.warn('切换camera成功')
-    !!window.rtc.localStream.isBeautyTrack && window.rtc.localStream.setBeautyEffect(true)
   }).catch(err=>{
     console.warn('切换camera失败： ', err)
   })

@@ -12,7 +12,7 @@ class mHumanSegmenter {
     max_face_size = 1;
     keyPointSize = 0;
 
-    init(binary) {
+    async init(binary) {
         global.Module = {
             wasmBinary: binary,
             onRuntimeInitialized: () => {
@@ -22,7 +22,7 @@ class mHumanSegmenter {
                     this.keyPointSize = this.mHumanSegmenter.getKeyPointSize();
                     this.handleInitFinished();
             }
-        }
+        }   
         require('../lib/ne_face_points.js');
     }
 

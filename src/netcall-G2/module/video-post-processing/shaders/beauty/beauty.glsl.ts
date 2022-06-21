@@ -11,6 +11,8 @@ export const beautyShader = {
     uniform sampler2D map;
     uniform sampler2D blurMap;
     uniform sampler2D highPassMap;
+    uniform sampler2D maskMap;
+    uniform int hasMask;
 
     // 磨皮度
     uniform float intensity;
@@ -19,11 +21,15 @@ export const beautyShader = {
     
     void main() {
         vec4 originColor = texture2D(map, vuv);
-        if(intensity > 0.0){
+        float _intensity = intensity;
+        if(hasMask > 0){
+            _intensity *= texture2D(maskMap, vuv).a;
+        }
+        if(_intensity > 0.0){
             vec2 stepOffset = 0.5 / size;
             float uOffsetX = stepOffset.x;
             float uOffsetY = stepOffset.y;
-            float strength = intensity * 1.2;
+            float strength = _intensity * 1.2;
     
             vec4 meanColor = texture2D(blurMap, vuv);
             vec4 varColor = texture2D(highPassMap, vuv);
@@ -46,7 +52,7 @@ export const beautyShader = {
             float flag = step(0.5, hPass);
             vec3 color = mix(max(vec3(0.0), (2.0*hPass + resultColor - 1.0)), min(vec3(1.0), (resultColor + 2.0*hPass - 1.0)), flag);
             
-            gl_FragColor = vec4(mix(resultColor.rgb, color.rgb, intensity), 1.0);
+            gl_FragColor = vec4(mix(resultColor.rgb, color.rgb, _intensity), 1.0);
         }else{
             gl_FragColor = originColor;
         }

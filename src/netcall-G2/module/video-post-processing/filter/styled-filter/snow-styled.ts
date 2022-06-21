@@ -8,16 +8,16 @@ import { baseTextureShader } from '../../shaders/base-texture-shader.glsl';
 import { lutShader } from '../../shaders/lut-shader.glsl';
 import { snowShader } from '../../shaders/snow-shader.glsl';
 
-let instance: SnowStyled | null = null;
+const instances = new Set<SnowStyled>();
 let snowImg: HTMLImageElement | null = null;
 loadImage(
     'https://yx-web-nosdn.netease.im/common/09bf9341d5b50e3b10c49e0c55fd184e/snow.png',
     (img) => {
         snowImg = img;
-        if (instance) {
+        instances.forEach((instance)=>{
             instance.snowMap!.source = img;
             instance.snowMap!.refresh();
-        }
+        })
     }
 );
 export class SnowStyled extends StyledFilter {
@@ -29,8 +29,8 @@ export class SnowStyled extends StyledFilter {
         uvBuffer: ReturnType<typeof createAttributeBuffer>
     ) {
         super(renderer, map, posBuffer, uvBuffer);
+        instances.add(this);
         this.initStyled();
-        instance = this;
     }
 
     private initStyled() {
@@ -119,6 +119,6 @@ export class SnowStyled extends StyledFilter {
         super.destroy(clearBuffer);
         const gl = this.renderer.gl;
         gl?.deleteTexture(this.snowMap!.glTexture);
-        instance = null;
+        instances.delete(this);
     }
 }

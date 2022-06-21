@@ -8,16 +8,16 @@ import { baseTextureShader } from '../../shaders/base-texture-shader.glsl';
 import { lutShader } from '../../shaders/lut-shader.glsl';
 import { sciShader } from '../../shaders/sci-shader';
 
-let instance: SciStyled | null = null;
+const instances = new Set<SciStyled>();
 let sciImg: HTMLImageElement | null = null;
 loadImage(
     'https://yx-web-nosdn.netease.im/common/3ca954d195d272f1652891837d0c8ba7/kehuan.png',
     (img) => {
         sciImg = img;
-        if (instance) {
+        instances.forEach((instance)=>{
             instance.sciMap!.source = img;
             instance.sciMap!.refresh();
-        }
+        })
     }
 );
 export class SciStyled extends StyledFilter {
@@ -29,8 +29,8 @@ export class SciStyled extends StyledFilter {
         uvBuffer: ReturnType<typeof createAttributeBuffer>
     ) {
         super(renderer, map, posBuffer, uvBuffer);
+        instances.add(this);
         this.initStyled();
-        instance = this;
     }
 
     private initStyled() {
@@ -119,6 +119,6 @@ export class SciStyled extends StyledFilter {
         super.destroy(clearBuffer);
         const gl = this.renderer.gl;
         gl?.deleteTexture(this.sciMap!.glTexture);
-        instance = null;
+        instances.delete(this);
     }
 }
