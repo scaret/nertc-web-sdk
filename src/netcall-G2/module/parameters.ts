@@ -98,8 +98,10 @@ interface IParameters{
   enableUdpCandidate: boolean,
   // 最大事件循环卡顿提示次数
   maxEventLoopLagWarning: number,
-  // 启用兼容模式的音频输入
-  enableCompatAudioInput: boolean,
+  // 总是记录能够开启兼容模式的音频输入设备
+  alwaysSaveCompatAudioInput: boolean,
+  // 兼容模式下怎么决定用哪个声道
+  audioInputcompatMode: "left"|"right"|"auto",
   // 主链路无响应多久后启用备用链路
   fireBackupDelay: number,
   // 修补Safari本地canvas track无法播放的问题
@@ -164,7 +166,8 @@ let parameters:IParameters = {
   enableTcpCandidate: true,
   enableUdpCandidate: true,
   maxEventLoopLagWarning: 3,
-  enableCompatAudioInput: true,
+  alwaysSaveCompatAudioInput: false,
+  audioInputcompatMode: "auto",
   fireBackupDelay: 5000,
   shimLocalCanvas: "safari",
 }

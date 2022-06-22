@@ -3891,6 +3891,23 @@ $('#lbsStartUpdate').on("click", async ()=>{
   }
 })
 
+$("#enableCompatMode").click(()=>{
+  NERTC.Device.enableCompatMode()
+  addLog("开启兼容模式")
+  initDevices()
+})
+
+$("#disableCompatMode").click(()=>{
+  NERTC.Device.disableCompatMode()
+  addLog("关闭兼容模式")
+  initDevices()
+})
+
+$("#clearCompatList").click(()=>{
+  localStorage.removeItem(NERTC.Device.compatAudioInputList.localStorageKey)
+  addLog("清除兼容设备列表")
+})
+
 /** 
  * ----------------------------------------
  *              工具类函数
