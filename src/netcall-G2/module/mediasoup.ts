@@ -990,7 +990,11 @@ class Mediasoup extends EventEmitter {
   async _createConsumer(info:ProduceConsumeInfo): Promise<"checkConsumerList"> {
     const {uid, kind, mediaType, id, preferredSpatialLayer = 0} = info;
     const mediaTypeShort = (mediaType === 'screenShare' ? 'screen' : mediaType);
-    this.loggerRecv.log(`开始订阅 ${uid} 的 ${mediaTypeShort} 媒体: ${id} 大小流: `, preferredSpatialLayer)
+    if (mediaTypeShort === "audio"){
+      this.loggerRecv.log(`开始订阅 ${uid} 的 ${mediaTypeShort} 媒体: ${id}`)
+    }else{
+      this.loggerRecv.log(`开始订阅 ${uid} 的 ${mediaTypeShort} 媒体: ${id} preferredSpatialLayer: ${preferredSpatialLayer} 大小流: `, preferredSpatialLayer === 1 ? "大流" : "小流")
+    }
 
     if (!id) {
       this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
