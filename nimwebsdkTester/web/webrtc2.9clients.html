@@ -8,6 +8,8 @@
 <body>
 <label><input type="checkbox" id="defaultOpenMic">打开麦克风</label>
 <label><input type="checkbox" id="defaultOpenCamera" checked>打开摄像头</label>
+<label id="segmentStatus" style="display: none;"></label>
+<label id="advancedBeautyStatus" style="display: none;"></label>
 <div id="views">
   
 </div>
@@ -96,6 +98,53 @@
       closeBeautyInput.innerText = "关闭美颜"
       $(closeBeautyInput).appendTo(panel)
 
+<<<<<<< HEAD
+=======
+      $("<br>").appendTo(panel)
+      $("<br>").appendTo(panel)
+      $("<span>高级美颜:</span>").appendTo(panel)
+
+      const registerAdvBeautyInput = document.createElement("button")
+      registerAdvBeautyInput.innerText = "注册"
+      $(registerAdvBeautyInput).appendTo(panel)
+
+      const openAdvBeautyInput = document.createElement("button")
+      openAdvBeautyInput.innerText = "打开"
+      $(openAdvBeautyInput).appendTo(panel)
+
+      const closeAdvBeautyInput = document.createElement("button")
+      closeAdvBeautyInput.innerText = "关闭"
+      $(closeAdvBeautyInput).appendTo(panel)
+
+      const resetAdvBeautyInput = document.createElement("button")
+      resetAdvBeautyInput.innerText = "重置"
+      $(resetAdvBeautyInput).appendTo(panel)
+
+      const destroyAdvBeautyInput = document.createElement("button")
+      destroyAdvBeautyInput.innerText = "销毁"
+      $(destroyAdvBeautyInput).appendTo(panel)
+
+      $("<br>").appendTo(panel)
+      $("<br>").appendTo(panel)
+      $("<span>背景分割:</span>").appendTo(panel)
+      
+      const registerVitrualBackgroundInput = document.createElement("button")
+      registerVitrualBackgroundInput.innerText = "注册"
+      $(registerVitrualBackgroundInput).appendTo(panel)
+
+      const openVitrualBackgroundInput = document.createElement("button")
+      openVitrualBackgroundInput.innerText = "打开"
+      $(openVitrualBackgroundInput).appendTo(panel)
+
+      const closeVitrualBackgroundInput = document.createElement("button")
+      closeVitrualBackgroundInput.innerText = "关闭"
+      $(closeVitrualBackgroundInput).appendTo(panel)
+
+      const destroyVitrualBackgroundInput = document.createElement("button")
+      destroyVitrualBackgroundInput.innerText = "销毁"
+      $(destroyVitrualBackgroundInput).appendTo(panel)
+
+>>>>>>> 6126526b (fix: adv demo)
       const localStreamInfo = document.createElement("div")
       $(localStreamInfo).appendTo(panel)
 
@@ -200,6 +249,103 @@
       closeBeautyInput.onclick = async () => {
         await getLocalStream().setBeautyEffect(false);
       }
+
+      //背景分割
+        const virtualBackgroundPluginConfig = {
+        development: {
+            key: 'VirtualBackground',
+            pluginUrl: './js/nim/NIM_Web_VirtualBackground.js',
+            wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/nn_segment_normal.wasm' + `?time=${Math.random()}`,
+        }, 
+        production: {
+            key: 'VirtualBackground',
+            pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}.js`,
+            wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/nn_segment_normal.wasm' + `?time=${Math.random()}`,
+        },
+        test: {
+            key: 'VirtualBackground',
+            pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}_test.js`,
+            wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/nn_segment_normal.wasm' + `?time=${Math.random()}`,
+        } 
+        };
+        const segment_config = virtualBackgroundPluginConfig[NERTC.ENV];
+
+        //高级美颜
+        const advancedBeautyPluginConfig = {
+        development: {
+            key: 'AdvancedBeauty',
+            pluginUrl: './js/nim/NIM_Web_AdvancedBeauty.js',
+            wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/ne_face_points.wasm' + `?time=${Math.random()}`,
+        }, 
+        production: {
+            key: 'AdvancedBeauty',
+            pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}.js`,
+            wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/ne_face_points.wasm' + `?time=${Math.random()}`,
+        },
+        test: {
+            key: 'AdvancedBeauty',
+            pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}_test.js`,
+            wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/ne_face_points.wasm' + `?time=${Math.random()}`,
+        } 
+        };
+        const beauty_config = advancedBeautyPluginConfig[NERTC.ENV];
+        //高级美颜
+        registerAdvBeautyInput.onclick = async () => {
+            $('#advancedBeautyStatus').html('高级美颜loading').show();
+            await getLocalStream().registerPlugin(beauty_config);
+            getLocalStream().on('plugin-load', onPluginLoaded);
+        }
+
+        openAdvBeautyInput.onclick = async () => {
+            await getLocalStream().enableAdvancedBeauty(1);
+            await getLocalStream().setAdvBeautyEffect('vShapedFace', 1);
+            await getLocalStream().setAdvBeautyEffect('shrinkFace', 1);
+        }
+
+        closeAdvBeautyInput.onclick = async () => {
+            await getLocalStream().disableAdvancedBeauty(false);
+            $('#advancedBeautyStatus').hide();
+        }
+
+        resetAdvBeautyInput.onclick = async () => {
+            await getLocalStream().setAdvBeautyEffect('reset');
+            $('#advancedBeautyStatus').hide();
+        }
+
+        destroyAdvBeautyInput.onclick = async () => {
+            await getLocalStream().unregisterPlugin(beauty_config.key);
+            $('#advancedBeautyStatus').hide();
+        }
+        // 背景分割
+        registerVitrualBackgroundInput.onclick = async () => {
+            $('#segmentStatus').html('背景分割loading').show();
+            await getLocalStream().registerPlugin(segment_config);
+            getLocalStream().on('plugin-load', onPluginLoaded);
+        }
+
+        openVitrualBackgroundInput.onclick = async () => {
+            await getLocalStream().enableBodySegment();
+        }
+
+        closeVitrualBackgroundInput.onclick = async () => {
+            await getLocalStream().disableBodySegment();
+            $('#segmentStatus').hide();
+        }
+
+        destroyVitrualBackgroundInput.onclick = async () => {
+            await getLocalStream().unregisterPlugin(segment_config.key);
+            $('#segmentStatus').hide();
+        }
+
+        function onPluginLoaded(name) {
+            console.log('onPluginLoaded: ', name)
+            if (name == 'VirtualBackground') {
+                $('#segmentStatus').html(`${localStreamInfo.innerText} 背景分割loaded`).show();
+            } else if (name == 'AdvancedBeauty') {
+                $('#advancedBeautyStatus').html(`${localStreamInfo.innerText} 高级美颜loaded`).show();
+            }
+        }
+
     }
   }
   main()
