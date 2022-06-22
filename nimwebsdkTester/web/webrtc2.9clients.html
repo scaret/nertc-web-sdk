@@ -96,6 +96,9 @@
       closeBeautyInput.innerText = "关闭美颜"
       $(closeBeautyInput).appendTo(panel)
 
+      const localStreamInfo = document.createElement("div")
+      $(localStreamInfo).appendTo(panel)
+
       document.getElementById('views').appendChild(wrapper)
       const client = NERTC.createClient({
         appkey: "eca23f68c66d4acfceee77c200200359",
@@ -117,17 +120,25 @@
       })
       
       NERTC.getParameters().allowEmptyMedia = true
-      const localStream = NERTC.createStream({
-        audio: false,
-        video: false,
-        client: client,
-      })
-      localStream.init()
-      localStream.setLocalRenderMode({
-        width: 200,
-        height: 200,
-        cut: false
-      })
+      let localStream = null
+      const getLocalStream = ()=>{
+        if (!localStream || localStream.destroyed){
+          localStream = NERTC.createStream({
+            audio: false,
+            video: false,
+            client: client,
+          })
+          localStreamInfo.innerText = "localstream_" + localStream.localStreamId
+          localStream.init()
+          localStream.setLocalRenderMode({
+            width: 200,
+            height: 200,
+            cut: false
+          })
+        }
+        return localStream
+      }
+      
       joinButton.onclick = async ()=>{
         const channelName = channelInput.value
         const uid = uidInput.value
@@ -135,6 +146,7 @@
           channelName,
           uid,
         })
+        getLocalStream()
         await client.publish(localStream)
         if (document.getElementById("defaultOpenMic").checked){
           await localStream.open({type: "audio"})
@@ -160,33 +172,33 @@
       }
       
       openAudioInput.onclick = async ()=>{
-        localStream.open({type: "audio"})
-        localStream.play(localContainer, {audio: true})
+        getLocalStream().open({type: "audio"})
+        getLocalStream().play(localContainer, {audio: true})
       }
       
       closeAudioInput.onclick = async ()=>{
-        localStream.close({type: "audio"})
+        getLocalStream().close({type: "audio"})
       }
       
       openVideoInput.onclick = async ()=>{
-        await localStream.open({type: "video"})
-        await localStream.play(localContainer, {video: true})
+        await getLocalStream().open({type: "video"})
+        await getLocalStream().play(localContainer, {video: true})
       }
 
       closeVideoInput.onclick = async ()=>{
-        localStream.close({type: "video"})
+        getLocalStream().close({type: "video"})
       }
 
       openBeautyInput.onclick = async () => {
-        await localStream.setBeautyEffect(true);
+        await getLocalStream().setBeautyEffect(true);
       }
 
       openLutInput.onclick = () => {
-        localStream.setFilter('landiao', 1);
+        getLocalStream().setFilter('landiao', 1);
       }
 
       closeBeautyInput.onclick = async () => {
-        await localStream.setBeautyEffect(false);
+        await getLocalStream().setBeautyEffect(false);
       }
     }
   }
