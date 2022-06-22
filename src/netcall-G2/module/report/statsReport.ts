@@ -17,7 +17,7 @@ const sha1 =  require('js-sha1');
 const wsURL = 'wss://statistic.live.126.net/lps-websocket/websocket/collect';
 const DEV = 1; // 测试
 const PROD = 0; // 线上
-const deviceId = generateUUID();
+
 const platform = 'web';
 const sdktype = 'webrtc';
 const timestamp = new Date().getTime();
@@ -93,7 +93,7 @@ class StatsReport extends EventEmitter {
   }
 
   start () {
-    
+    let deviceId = generateUUID();
     let checkSum = sha1(`${PROD}${timestamp}${SDK_VERSION}${platform}${sdktype}${deviceId}${salt}`);
     let url = `${wsURL}?deviceId=${deviceId}&isTest=${PROD}&sdkVer=${SDK_VERSION}&sdktype=${sdktype}&timestamp=${timestamp}&platform=${platform}&checkSum=${checkSum}`;
     this.wsTransport_ = (<any>window).wsTransport = new WSTransport({

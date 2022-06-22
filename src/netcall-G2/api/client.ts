@@ -146,7 +146,6 @@ class Client extends Base {
   
   // 初始化nrtc
   _init (options:ClientOptions) {
-    this.initWebSocket();
     const { appkey = '', token } = options
     if (!appkey) {
       this.logger.error('Client: init error: 请传入appkey')
