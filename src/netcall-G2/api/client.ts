@@ -58,6 +58,7 @@ const BigNumber = require("bignumber.js");
  */
 class Client extends Base {
   public _roleInfo: { userRole: number; audienceList: {} };
+  public _audioAsl: boolean = false
   public upLoadParam:any;
   public destroyed: boolean = false;
   public operationQueue: OperationQueue;
@@ -470,6 +471,27 @@ class Client extends Base {
       })
       throw e;
     }
+  }
+  
+  enableAudioAsl(enable: boolean = true){
+    if (this.adapterRef.connectState.curState !== "DISCONNECTED"){
+      let msg = `enableAudioAsl: 需要在加入房间前调用`
+      this.logger.error(msg)
+      throw new Error(msg)
+    }
+    if (this._audioAsl === enable){
+      this.logger.warn(`enableAudioAsl 未改变开启状态：${this._audioAsl}`)
+    }else{
+      this.logger.log(`enableAudioAsl ${this._audioAsl} => ${enable}`)
+      this._audioAsl = enable
+    }
+    this.apiFrequencyControl({
+      name: 'enableAudioAsl',
+      code: 0,
+      param: {
+        enable
+      }
+    })
   }
 
   /**

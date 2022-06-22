@@ -969,6 +969,13 @@ class Signalling extends EventEmitter {
       this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
       this.adapterRef.connectState.curState = 'CONNECTED'
       
+      if (response.aslActiveNum){
+        this.logger.log(`aslActiveNum数量： ${response.aslActiveNum}`)
+        this.adapterRef.channelInfo.aslActiveNum = response.aslActiveNum
+      }else{
+       this.logger.warn(`服务端不支持ASL`)
+      }
+      
       if (this.adapterRef.channelStatus === 'connectioning') {
         this.adapterRef.connectState.reconnect = true
         this.logger.log('重连成功，清除之前的媒体的通道')
