@@ -925,7 +925,7 @@ declare interface Client{
    * `accessDenied` 事件表示获取设备权限被拒绝。
    */
   on(event: "accessDenied", callback: (
-    mediaType: "audio"|"video"
+    mediaType: "audio"|"video"|"screen"
   ) => void): void;
 
   /**
