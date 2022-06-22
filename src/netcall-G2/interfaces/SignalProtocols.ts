@@ -71,6 +71,7 @@ const VideoCodecInt2Str = {
 export {VideoCodecStr2Int, VideoCodecInt2Str}
 
 export interface SignalJoinRes extends SignalResBase{
+  aslActiveNum: number;
   appid: string;
   mode: SignalChannelMode;
   edgeMode: number;

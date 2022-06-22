@@ -1097,6 +1097,7 @@ class Mediasoup extends EventEmitter {
       kind,
       rtpCapabilities,
       uid: subUid,
+      audioAslFlag: this.adapterRef.instance._audioAsl,
       producerId: id,
       preferredSpatialLayer,
       mid,

@@ -849,6 +849,17 @@ $('#init-btn').on('click', () => {
   
 })
 
+
+$('#enableAudioAsl').on('click', () => {
+  rtc.client.enableAudioAsl()
+  addLog("启用ASL")
+})
+
+$('#disableAudioAsl').on('click', () => {
+  rtc.client.enableAudioAsl(false)
+  addLog("禁用ASL")
+})
+
 /** 
  * ----------------------------------------
  *              房间逻辑
@@ -980,7 +991,10 @@ $('#joinChannel-btn').on('click', async () => {
     }
   }).then((obj) => {
     addLog('加入房间成功')
-    console.info('加入房间...')
+    console.info('加入房间成功')
+    if (rtc.client._audioAsl){
+      addLog("ASL选路数量：" + rtc.client.adapterRef.channelInfo.aslActiveNum)
+    }
     if (rtc.localStream && rtc.localStream.inited){
       // localStream已经初始化了
       if ($('#autoPub').prop('checked')) {
