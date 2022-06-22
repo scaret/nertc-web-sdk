@@ -7,29 +7,52 @@ const logger:ILogger = new Logger({
   }
 });
 
-const trackList:{srcTrack: MediaStreamTrack, destTrack: MediaStreamTrack}[] = []
+const trackList:{
+  srcTrack: MediaStreamTrack,
+  destTrack: MediaStreamTrack,
+  enabled: boolean,
+}[] = []
 
 let timer = setInterval(()=>{
   for (let pairId = trackList.length - 1; pairId>=0; pairId--){
-    const srcTrack = trackList[pairId].srcTrack
-    const destTrack = trackList[pairId].destTrack
-    if (srcTrack.readyState === "ended"){
-      if (destTrack.readyState === "live"){
-        logger.log(`同步MediaStreamTrack关闭状态。【${srcTrack.label}】=>【${destTrack.label}】`)
-        destTrack.stop()
+    const pair = trackList[pairId]
+    if (pair.srcTrack.readyState === "ended"){
+      if (pair.destTrack.readyState === "live"){
+        logger.log(`同步MediaStreamTrack关闭状态。【${pair.srcTrack.label}】=>【${pair.destTrack.label}】`)
+        pair.destTrack.stop()
       }
       trackList.splice(pairId, 1)
+      return
     }
-    if (destTrack.readyState === "ended"){
-      if (srcTrack.readyState === "live"){
-        logger.warn(`同步MediaStreamTrack关闭状态。【${destTrack.label}】=>【${srcTrack.label}】`)
-        srcTrack.stop()
+    if (pair.destTrack.readyState === "ended"){
+      if (pair.srcTrack.readyState === "live"){
+        logger.warn(`同步MediaStreamTrack关闭状态。【${pair.destTrack.label}】=>【${pair.srcTrack.label}】`)
+        pair.srcTrack.stop()
       }
       trackList.splice(pairId, 1)
+      return
+    }
+    if (pair.srcTrack.enabled !== pair.enabled){
+      pair.enabled = pair.srcTrack.enabled
+      if (pair.srcTrack.enabled !== pair.destTrack.enabled){
+        logger.warn(`同步MediaStreamTrack enabled:【${pair.srcTrack.label}】`, pair.enabled)
+        pair.destTrack.enabled = pair.srcTrack.enabled
+      }
+    }
+    if (pair.destTrack.enabled !== pair.enabled){
+      pair.enabled = pair.destTrack.enabled
+      if (pair.destTrack.enabled !== pair.srcTrack.enabled){
+        logger.warn(`同步MediaStreamTrack enabled:【${pair.srcTrack.label}】`, pair.enabled)
+        pair.srcTrack.enabled = pair.destTrack.enabled
+      }
     }
   }
 }, 1000)
 
 export function syncTrackState(srcTrack: MediaStreamTrack, destTrack: MediaStreamTrack){
-  trackList.push({srcTrack, destTrack})
+  trackList.push({
+    srcTrack,
+    destTrack,
+    enabled: srcTrack.enabled,
+  })
 }

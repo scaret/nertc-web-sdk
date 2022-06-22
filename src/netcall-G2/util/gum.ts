@@ -1,4 +1,4 @@
-import {DeviceQueryData, GUMConstaints, ILogger, NeMediaStreamTrack} from "../types";
+import {GUMConstaints, ILogger, NeMediaStreamTrack} from "../types";
 import {getParameters} from "../module/parameters";
 import {Logger} from "./webrtcLogger";
 import {Device} from "../module/device";
@@ -6,6 +6,7 @@ import {canShimCanvas, shimCanvas} from "./rtcUtil/shimCanvas";
 import {getAudioContext} from "../module/webAudio";
 import {syncTrackState} from "./syncTrackState";
 import {AudioLevel} from "../module/audioLevel";
+import {compatAudioInputList} from "../module/compatAudioInputList";
 
 const logger:ILogger = new Logger({
   tagGen: ()=>{
@@ -15,7 +16,6 @@ const logger:ILogger = new Logger({
 
 
 async function getStream (constraint:GUMConstaints, logger:ILogger) {
-  let audioDeviceData:DeviceQueryData|null = null
   if (constraint.audio){
     if (!constraint.audio.deviceId){
       const defaultDevice = Device.deviceHistory.audioIn.find((deviceInfo)=>{
@@ -26,14 +26,10 @@ async function getStream (constraint:GUMConstaints, logger:ILogger) {
         constraint.audio.deviceId = {exact: defaultDevice.deviceId}
       }
     }
-    if (constraint.audio.deviceId){
-      audioDeviceData = Device.parseDeviceId(constraint.audio.deviceId.exact)
-      constraint.audio.deviceId.exact = audioDeviceData.deviceId
-      if (audioDeviceData.compat){
-        logger.log(`getStream：尝试为音频设备启用兼容模式：${constraint.audio.deviceId.exact}`)
-        constraint.audio.channelCount = 2
-        constraint.audio.echoCancellation = false
-      }
+    if (compatAudioInputList.enabled){
+      logger.log(`兼容模式：constraint强制将channelCount设为2，echoCancellation设为false`)
+      constraint.audio.channelCount = 2
+      constraint.audio.echoCancellation = false
     }
   }
   logger.log('getLocalStream constraint:', JSON.stringify(constraint))
@@ -54,42 +50,38 @@ async function getStream (constraint:GUMConstaints, logger:ILogger) {
         }
       }else if (track.kind === "audio"){
         
-        if (getParameters().enableCompatAudioInput){
+        if (getParameters().alwaysSaveCompatAudioInput || compatAudioInputList.enabled){
           const capabilities = track.getCapabilities ? track.getCapabilities() : {}
-
           // 1. 找到并记录双声道的设备
-          let compatAudioInputList:string[] = []
-          try{
-            compatAudioInputList = JSON.parse(localStorage.getItem("compatAudioInputList") || "[]")
-          }catch(e){
-            logger.error(`无法获取兼容设备列表`, e.name, e.message)
-          }
           if (capabilities.channelCount && capabilities.channelCount.max && capabilities.channelCount.max >= 2){
             logger.log(`该设备支持兼容模式：${track.label}`)
-            if (compatAudioInputList.indexOf(track.label) === -1){
-              compatAudioInputList.push(track.label)
-              if (compatAudioInputList.length > 10){
-                compatAudioInputList.shift()
-              }
-              // 下次getDevices，设备列表会出现【兼容模式】字样
-              localStorage.setItem("compatAudioInputList", JSON.stringify(compatAudioInputList))
-            }
+            compatAudioInputList.addUnique(track.label)
+          }else{
+            logger.log(`该设备不支持兼容模式：${track.label}`)
           }
-          
-          // 2. 为 compat=left 的设备启用左声道
-          if (audioDeviceData?.compat === "left"){
-            const context = getAudioContext()
-            if (context){
-              const channelSplitter = context.createChannelSplitter(2)
-              const destination = context.createMediaStreamDestination()
-              const sourceStream = new MediaStream([track])
-              const source = context.createMediaStreamSource(sourceStream)
-              const audioLevelHelper = new AudioLevel({
-                stream: sourceStream,
-                logger: logger,
-                sourceNode: source,
-              })
-              let output = 0 // 0:左， 1：右
+        }
+        
+        if (compatAudioInputList.enabled){
+          const context = getAudioContext()
+          if (context){
+            const channelSplitter = context.createChannelSplitter(2)
+            const destination = context.createMediaStreamDestination()
+            const sourceStream = new MediaStream([track])
+            const source = context.createMediaStreamSource(sourceStream)
+            const audioLevelHelper = new AudioLevel({
+              stream: sourceStream,
+              logger: logger,
+              sourceNode: source,
+            })
+            let output = 0 // 0:左， 1：右
+            if (getParameters().audioInputcompatMode === "left"){
+              logger.log(`兼容模式：仅使用左声道`)
+              output = 0
+            }else if (getParameters().audioInputcompatMode === "right"){
+              logger.log(`兼容模式：仅使用右声道`)
+              output = 1
+            }else if (getParameters().audioInputcompatMode === "auto"){
+              logger.log(`兼容模式：在左右声道间根据音量切换`)
               audioLevelHelper.on('channel-state-change', (evt)=>{
                 if (evt.state === "leftLoud" && output === 1){
                   logger.log(`兼容模式切换至左声道：`, track.label)
@@ -103,16 +95,15 @@ async function getStream (constraint:GUMConstaints, logger:ILogger) {
                   output = 1
                 }
               })
-              source.connect(channelSplitter)
-              channelSplitter.connect(destination, 0)
-              
-              const destTrack = destination.stream.getTracks()[0]
-              watchTrack(destTrack)
-              syncTrackState(track, destTrack)
-              stream.removeTrack(track)
-              stream.addTrack(destTrack)
-              logger.log(`getStream：启用兼容模式成功`)
             }
+            source.connect(channelSplitter)
+            channelSplitter.connect(destination, output)
+            const destTrack = destination.stream.getTracks()[0]
+            watchTrack(destTrack)
+            syncTrackState(track, destTrack)
+            stream.removeTrack(track)
+            stream.addTrack(destTrack)
+            logger.log(`getStream：启用兼容模式成功`)
           }
         }
       }

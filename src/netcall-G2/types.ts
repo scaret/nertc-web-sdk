@@ -1356,12 +1356,6 @@ export interface PreProcessingHistoryInfo{
   }[]
 }
 
-export interface DeviceQueryData{
-  deviceId: string;
-  compat?: "left";
-  [key:string]: string|undefined;
-}
-
 export interface GUMAudioConstraints{
   channelCount: number;
   deviceId?: {

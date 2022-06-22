@@ -1,11 +1,11 @@
-import { EventEmitter } from "eventemitter3";
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
-import {DeviceQueryData, ILogger, Timer} from "../types";
+import {ILogger, Timer} from "../types";
 import {Logger} from "../util/webrtcLogger";
 import {getParameters} from "./parameters";
 import {RTCEventEmitter} from "../util/rtcUtil/RTCEventEmitter";
 import {alerter} from "./alerter";
+import {compatAudioInputList} from "./compatAudioInputList";
 
 export interface DeviceInfo {
   deviceId: string;
@@ -27,6 +27,7 @@ class DeviceManager extends RTCEventEmitter {
     audioOut: DeviceInfo[],
   } = {audioIn: [], video: [], audioOut: []};
   private logger: ILogger;
+  private compatAudioInputList = compatAudioInputList
   private handleDeviceChange: ()=>any
   /**
    * onUserGestureNeeded 是一个提供给客户实现的属性。
@@ -99,13 +100,6 @@ class DeviceManager extends RTCEventEmitter {
       }
     }
     devices = await navigator.mediaDevices.enumerateDevices();
-    let compatAudioInputList:string[] = []
-    if (getParameters().enableCompatAudioInput){
-      try{
-        compatAudioInputList = JSON.parse(localStorage.getItem("compatAudioInputList") || "[]")
-      }catch(e){
-      }
-    }
     devices.forEach(function (device) {
       if (options.videoinput && device.kind === 'videoinput') {
         let deviceInfo:DeviceInfo = {
@@ -117,21 +111,22 @@ class DeviceManager extends RTCEventEmitter {
         }
         result.video.push(deviceInfo)
       } else if (options.audioinput && device.kind === 'audioinput') {
-        let deviceInfo:DeviceInfo = {
-          deviceId: device.deviceId,
-          label: device.label || (options.noFillLabel ? device.label : 'microphone ' + (result.audioIn.length + 1)),
+        let deviceInfo:DeviceInfo
+        if (compatAudioInputList.enabled && device.label && compatAudioInputList.has(device.label)){
+          deviceInfo = {
+            deviceId: device.deviceId,
+            label: `${navigator.language === 'zh-CN' ? "【兼容模式】" : "[Compat Mode]"}${device.label}`,
+          }
+        }else{
+          deviceInfo = {
+            deviceId: device.deviceId,
+            label: device.label || (options.noFillLabel ? device.label : 'microphone ' + (result.audioIn.length + 1)),
+          }
         }
         if (options.groupId){
           deviceInfo.groupId = device.groupId
         }
         result.audioIn.push(deviceInfo)
-        
-        if (device.label && compatAudioInputList.indexOf(device.label) !== -1){
-          const compatDeviceInfo = Object.assign({}, deviceInfo)
-          compatDeviceInfo.deviceId += "?compat=left"
-          compatDeviceInfo.label = `【兼容模式】${compatDeviceInfo.label}`
-          result.audioIn.push(compatDeviceInfo)
-        }
       } else if (options.audiooutput && device.kind === 'audiooutput') {
         let deviceInfo:DeviceInfo = {
           deviceId: device.deviceId,
@@ -365,6 +360,18 @@ class DeviceManager extends RTCEventEmitter {
     this.hasPerm.video = false;
     this.hasPerm.audioOut = false;
   }
+  
+  enableCompatMode(){
+    this.logger.log(`开启兼容模式`)
+    compatAudioInputList.enabled = true
+    this.compatAudioInputList.load()
+    this.handleDeviceChange()
+  }
+  disableCompatMode(){
+    this.logger.log(`关闭兼容模式。`)
+    compatAudioInputList.enabled = false
+    this.handleDeviceChange()
+  }
 
   defaultHandleUserGestureNeeded(e: {name: string, message: string}){
     const innerHTML = `由于浏览器限制，该操作需手势触发。`
@@ -372,41 +379,6 @@ class DeviceManager extends RTCEventEmitter {
     + `<br/>点击此处以继续`
     alerter.alert(innerHTML)
     this.logger.warn(`为避免看到这个消息，您应该实现 Device.onUserGestureNeeded 方法，引导用户作出手势，并触发 Device.on("user-gesture-fired")事件。`)
-  }
-  
-  parseDeviceId(deviceIdQueryString:string){
-    const questionIndex = deviceIdQueryString.indexOf("?")
-    if (questionIndex > -1){
-      const data:DeviceQueryData = {
-        deviceId: deviceIdQueryString.slice(0, questionIndex)
-      }
-      const query = deviceIdQueryString.slice(questionIndex + 1)
-      const vars = query.split('&');
-      for (let i = 0; i < vars.length; i++) {
-        var pair = vars[i].split('=');
-        data[pair[0]] = pair[1]
-      }
-      return data
-    }else{
-      return {
-        deviceId: deviceIdQueryString
-      }
-    }
-  }
-  
-  stringifyDeviceId(deviceQueryData: DeviceQueryData){
-    let query = ""
-    for (let key in deviceQueryData){
-      if (key !== "deviceId"){
-        if (query) {
-          query += `&`
-        }else{
-          query += `?`
-        }
-        query += `${key}=${deviceQueryData[key]}`
-      }
-    }
-    return `${deviceQueryData.deviceId}${query}`
   }
 
   clean() {

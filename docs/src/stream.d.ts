@@ -35,7 +35,7 @@ declare interface Stream {
      * // 例子1：订阅大流
      * rtc.client.on("stream-added", (evt)=>{
      *   console.log(`远端${evt.stream.getId()}发布了 ${evt.mediaType} 流`)
-     *   rtc.client.setSubscribeConfig({
+     *   evt.stream.setSubscribeConfig({
      *     audio: true,
      *     video: true,
      *     screen: true,

@@ -557,22 +557,24 @@ function initEvents() {
     }).catch(err=>{
       console.log('播放对端的流失败: ', err)
     })
-    // 自动播放受限
-    remoteStream.on('notAllowedError', err => {
-      console.log('remoteStream notAllowedError', remoteStream);
-      const errorCode = err.getCode();
-      const id = remoteStream.getId();
-      addView(id);
-      if(errorCode === 41030){
-        $(`#${id}-img`).show();
+    
+    if (!DO_NOT_ADD_EVENTS){
+      // 自动播放受限
+      remoteStream.on('notAllowedError', err => {
+        console.log('remoteStream notAllowedError', remoteStream);
+        const errorCode = err.getCode();
+        const id = remoteStream.getId();
+        addView(id);
+        if(errorCode === 41030){
+          $(`#${id}-img`).show();
           $(`#${id}-img`).on('click', async () => {
             console.log('start resume--->');
             await remoteStream.resume();
             $(`#${id}-img`).hide();
           });
-      }
-    })
-    
+        }
+      })
+    }
     
   })
   
@@ -3737,6 +3739,8 @@ $("#setEncryptionSecret").click(()=>{
   addLog("setEncryptionSecret " + encryptionSecret)
 })
 
+let DO_NOT_ADD_EVENTS = false
+
 $("#removeMostListeners").click(()=>{
   const eventWhitelist = $("#event-whitelist").val()
   for (let eventName in rtc.client._events){
@@ -3751,6 +3755,8 @@ $("#removeMostListeners").click(()=>{
       rtc.client.off(eventName)
     }
   }
+  addLog(`新加入的remoteStream不再监听事件`)
+  DO_NOT_ADD_EVENTS = true
 })
 
 $("#pauseReconnection").on("click", async ()=>{
@@ -3889,6 +3895,23 @@ $('#lbsStartUpdate').on("click", async ()=>{
   }else{
     addLog("载入lbs远端配置失败")
   }
+})
+
+$("#enableCompatMode").click(()=>{
+  NERTC.Device.enableCompatMode()
+  addLog("开启兼容模式")
+  initDevices()
+})
+
+$("#disableCompatMode").click(()=>{
+  NERTC.Device.disableCompatMode()
+  addLog("关闭兼容模式")
+  initDevices()
+})
+
+$("#clearCompatList").click(()=>{
+  localStorage.removeItem(NERTC.Device.compatAudioInputList.localStorageKey)
+  addLog("清除兼容设备列表")
 })
 
 /** 
