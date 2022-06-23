@@ -11,21 +11,21 @@ export const Config:IConfig = {
 }
 
 export const LBS_BUILD_CONFIG: {
-  [mainDomain: string]: [string, string]
+  [tag: string]: [string, string]
 } = {
-  "wecan-lbs.netease.im": [
+  "lbs": [
     "wecan-lbs.netease.im",
     "wecan-lbs.yunxinvcloud.com",
   ],
-  "nrtc.netease.im": [
+  "nrtc": [
     "nrtc.netease.im",
     "wecan-gw.yunxinvcloud.com",
   ],
-  "roomserver.netease.im": [
+  "call": [
     "roomserver.netease.im",
     "wecan-sdk.yunxinvcloud.com",
   ],
-  "statistic.live.126.net": [
+  "tracking": [
     "statistic.live.126.net",
     "apm.yunxinhi.com"
   ]

@@ -18,7 +18,6 @@ import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
 import {getOSInfo, getBrowserInfo} from '../util/rtcUtil/rtcPlatform';
 import {getParameters} from "./parameters";
-import {lbsManager} from "./LBSManager";
 const protooClient = require('./3rd/protoo-client/')
 
 class Signalling extends EventEmitter {

@@ -1,19 +1,37 @@
-import {ILogger, Timer} from "../types";
-import {Logger} from "../util/webrtcLogger";
-import {LBS_BUILD_CONFIG, lbsUrl, SDK_VERSION} from "../Config";
+// 双域名高可用 文档： https://docs.popo.netease.com/lingxi/2b526730494f44dca20c76a81cd2e207#edit
+// 用法：通过client.adapterRef.lbsManager.ajax()像之前一样请求就行了
+// requestLBS可以在这里找到上报 http://logsearch.hz.netease.com/vcloud_elk_ssd_online/goto/5d2204e2b0eca5f1c5111f98258b40a4
+
+import {ILogger, Timer, Client, RequestLBSEvent} from "../types";
+import {BUILD, LBS_BUILD_CONFIG, lbsUrl, SDK_VERSION} from "../Config";
 import RtcError from "../util/error/rtcError";
 import ErrorCode from "../util/error/errorCode";
 import {getParameters} from "./parameters";
 import {AjaxOptions, getFormData} from "../util/ajax";
+import {generateUUID} from "../util/rtcUtil/utils";
+import {DataReport} from "./report/dataReport";
 var JSONbig = require('json-bigint');
 
 export interface DomainItem{
   id: number,
   domain: string,
   mainDomain: string,
-  lastFinishedAt: number,
-  lastResult: "success"|"fail",
+  successCount: number,
+  failCount: number,
+  lastRequest?: {
+    // https://docs.popo.netease.com/lingxi/2b526730494f44dca20c76a81cd2e207#edit
+    startAt: number,
+    finishiedAt: number,
+    rtt: number,
+    status: "success"|"fail"|"inprogress",
+    requestId: number,
+    seqId: string,
+    uuid: string,
+    errCode: number,
+    errMsg: string,
+  },
   updatedAt: number,
+  tag: string,
 }
 
 export interface URLSetting{
@@ -32,6 +50,7 @@ export interface URLSetting{
 export interface LBS_RES{
   "clientIp": string,
   "ttl": number,
+  "preloadTimeSec": number,
   "nrtc": [string, string],
   "call": [string, string],
   "tracking": [string, string],
@@ -41,6 +60,7 @@ export interface LBS_CONFIG {
   ts: number;
   appKey: string;
   sdkVersion: string;
+  sdkBuild: string;
   config: LBS_RES
 }
 
@@ -49,37 +69,51 @@ export interface LoadLocalConfigRes {
   config: LBS_CONFIG|null;
 }
 
-class LBSManager {
-  private logger:ILogger = new Logger({
-    tagGen: ()=>{
-      let tag = `LBSManager ` + this.lbsState
-      return tag
-    }
-  });
+enum LBS_ERR_CODE{
+  UNKNOWN_ERROR = 99999,
+  TIMEOUT= 70100,
+  JSON_ERROR = 70101,
+  FORMAT_ERROR = 70102,
+}
+
+export class LBSManager {
+  private client:Client
+  private logger:ILogger
   private urlBackupMap:{[domain: string]: DomainItem[]} = {}
   private requestCnt = 0
   private localStorageKey = "LBS_CONFIG"
   private builtinConfig: {
-    [mainDomain: string]: [string, string]
+    [tag: string]: [string, string]
   } = LBS_BUILD_CONFIG
   private updateTimer: Timer|null = null
   private lastUpdatedAt:number = 0
-  private lastAppKey:string = ""
-  private lbsState: "builtin"|"local"|"remote" = "builtin"
+  private lbsState: "uninit"|"builtin"|"local"|"remote" = "uninit"
+  private lbsStateWillChangeTimer: Timer|null = null
   
-  constructor() {
-    this.loadBuiltinConfig()
+  constructor(client: Client) {
+    this.client = client
+    this.logger = client.logger.getChild(()=>{
+      let tag = `LBSManager ` + this.lbsState
+      if (this.client.adapterRef.lbsManager !== this){
+        tag += "DETACHED"
+      }
+      return tag
+    })
     window.addEventListener('online', ()=>{
-      if (this.lastAppKey){
+      if (this.client.adapterRef.connectState.curState !== "DISCONNECTED" && this.client.adapterRef.lbsManager === this){
         this.logger.log(`侦测到网络连接恢复，尝试更新LBS配置`)
-        this.startUpdate(this.lastAppKey, "online")
+        this.startUpdate("online")
       }
     })
   }
   /**
    * 向LBS发起请求，更新域名配置，并存储在localStorage
    */
-  async startUpdate(appKey: string, reason: string): Promise<LBS_RES|undefined>{
+  async startUpdate(reason: string): Promise<LBS_RES|undefined>{
+    if (!this.client._params.appkey){
+      this.logger.error(`无法更新域名配置：缺少appkey`)
+      return
+    }
     const now = Date.now()
     const lastUpdatedDuration = now - this.lastUpdatedAt
     if (lastUpdatedDuration < 3000){
@@ -87,18 +121,21 @@ class LBSManager {
       return
     }
     this.lastUpdatedAt = now
-    this.lastAppKey = appKey
     this.logger.log(`startUpdate: 开始更新LBS配置。原因：${reason}`)
     let config:LBS_RES | null = null
     try{
       config = await this.ajax({
-        url: `${lbsUrl}?reason=${reason}&sdkVersion=${encodeURIComponent(SDK_VERSION)}&appKey=${encodeURIComponent(appKey)}&business=rtc&clientType=16`,
+        url: `${lbsUrl}?reason=${reason}&sdkVersion=${encodeURIComponent(SDK_VERSION)}&appKey=${encodeURIComponent(this.client._params.appkey)}&business=rtc&clientType=16`,
         type: 'GET',
       }) as LBS_RES
     }catch(e){
       this.logger.error(`LBS更新失败！`, e)
-      return
     }
+    //上报LBS结果
+    const requestInfoArr = this.getReportField("lbs")
+    requestInfoArr.forEach((data: RequestLBSEvent)=>{
+      this.client.apiEventReport('setRequestLbs', data)
+    })
     if (config && config.nrtc && config.call && config.tracking){
       
       // ttl到期后重新更新配置
@@ -107,21 +144,22 @@ class LBSManager {
           clearTimeout(this.updateTimer)
         }
         this.updateTimer = setTimeout(()=>{
-          this.startUpdate(appKey, "expire")
+          this.logger.log(`LBS已到过期时间，正在回滚至内建设置`)
+          this.loadBuiltinConfig("expire")
         }, config.ttl * 1000)
       }
       
-      this.addUrlBackup(config.nrtc[0], config.nrtc)
-      this.addUrlBackup(config.call[0], config.call)
-      this.addUrlBackup(config.tracking[0], config.tracking)
+      this.handleLbsStateWillChange(reason)
+      this.addUrlBackup(config.nrtc[0], config.nrtc, 'nrtc')
+      this.addUrlBackup(config.call[0], config.call, 'call')
+      this.addUrlBackup(config.tracking[0], config.tracking, 'tracking')
 
       this.lbsState = "remote"
-      this.logger.log(`成功加载远端配置。过期时间：${config.ttl}秒后`)
-      
-      this.saveConfig(appKey, config)
+      this.logger.log(`成功加载远端配置。过期时间：${config.ttl}秒后。preloadTimeSec:${config.preloadTimeSec}：`)
+      this.saveConfig(config)
       return config
     }else{
-      this.logger.error(`无效的 LBS 返回`, config)
+      this.logger.error(`startUpdate更新失败：无效的 LBS 返回`, config)
     }
   }
 
@@ -130,23 +168,141 @@ class LBSManager {
    * 1. SDK第一次载入时，localStorage配置不可用
    * 2. 域名配置过期后，请求LBS配置无法返回
    */
-  private async loadBuiltinConfig(){
-    const formerDomains = Object.keys(this.urlBackupMap)
-    if (formerDomains.length){
-      this.logger.warn(`正在使用内置域名配置刷新。当前的域名配置：`, formerDomains)
+  async loadBuiltinConfig(reason: string){
+    if (this.lbsState !== "uninit"){
+      this.handleLbsStateWillChange(reason)
     }
-    for (let mainDomain in this.builtinConfig){
-      this.addUrlBackup(mainDomain, this.builtinConfig[mainDomain])
+    for (let tag in this.builtinConfig){
+      if (this.builtinConfig[tag].length){
+        this.addUrlBackup(this.builtinConfig[tag][0], this.builtinConfig[tag], tag)
+      }
     }
     this.lbsState = "builtin"
+    this.logger.log(`成功加载内建配置 ${reason}。`)
   }
   
-  private saveConfig(appKey:string, config: LBS_RES){
+  private handleLbsStateWillChange(reason: string){
+    if (this.lbsStateWillChangeTimer){
+      clearTimeout((this.lbsStateWillChangeTimer))
+    }
+    const before = {
+      lbsState: this.lbsState,
+      settings: this.getSettings(),
+    }
+    this.lbsStateWillChangeTimer = setTimeout(()=>{
+      const after = {
+        lbsState: this.lbsState,
+        settings: this.getSettings(),
+      }
+      if (this.client.adapterRef.connectState.curState !== "DISCONNECTED"){
+        this.client.apiFrequencyControl({
+          name: '_lbsStateChange',
+          code: 0,
+          param: {
+            reason,
+            before,
+            after,
+          }
+        })
+      }
+    }, 0)
+  }
+  
+  private getSettings(){
+    const domains = Object.keys(this.urlBackupMap)
+    const info:any = {}
+    domains.forEach((mainDomain)=>{
+      info[mainDomain] = this.urlBackupMap[mainDomain].map((domainItem)=>{
+        const lastResult = domainItem.lastRequest ? {
+          status: domainItem.lastRequest.status,
+          rtt: domainItem.lastRequest.rtt,
+        } : undefined
+        return {
+          domain: domainItem.domain,
+          successCount: domainItem.successCount,
+          failCount: domainItem.failCount,
+          lastResult,
+        }
+      })
+    })
+    return info
+  }
+  
+  // 获取最近一次的请求信息，用于上报
+  getReportField(tag: "lbs"|"nrtc"|"call"|"tracking"){
+    const domainItems:DomainItem[] = []
+    for (let mainDomain in this.urlBackupMap){
+      for (let i = 0; i < this.urlBackupMap[mainDomain].length; i++){
+        const item = this.urlBackupMap[mainDomain][i]
+        if (item.tag === tag){
+          domainItems.push(item)
+        }
+      }
+    }
+    let lbsAddrs:any = []
+    let requestId = 0
+    domainItems.forEach((domainItem)=>{
+      if (domainItem.lastRequest && domainItem.lastRequest.status !== "inprogress"){
+        if (domainItem.lastRequest.requestId > requestId){
+          requestId = domainItem.lastRequest.requestId
+          lbsAddrs = []
+        }
+        if (domainItem.lastRequest.requestId !== requestId){
+          return
+        }
+        if (tag === "lbs"){
+          lbsAddrs.push({
+            app_key: this.client._params.appkey,
+            request_id: domainItem.lastRequest.uuid,
+            err_code: domainItem.lastRequest.errCode,
+            err_msg: domainItem.lastRequest.errMsg,
+            rtt: domainItem.lastRequest.rtt,
+            time: domainItem.lastRequest.finishiedAt,
+          } as RequestLBSEvent)
+        }
+        else if (tag === "nrtc"){
+          lbsAddrs.push({
+            domain: domainItem.domain,
+            type: 1,
+            code: domainItem.lastRequest.status === "success" ? 0 : 1,
+          })
+        } else if (tag === "call"){
+          lbsAddrs.push({
+            domain: domainItem.domain,
+            type: 1,
+            code: domainItem.lastRequest.status === "success" ? 0 : 1,
+            status: domainItem.lastRequest.status,
+            lbsFrom: this.lbsState,
+            rtt: domainItem.lastRequest.rtt
+          })
+        } else{
+          lbsAddrs.push({
+            domain: domainItem.domain,
+            requestId: domainItem.lastRequest.uuid,
+            addr: "",
+            type: 1,
+            code: domainItem.lastRequest.status === "success" ? 0 : 1,
+            status: domainItem.lastRequest.status,
+            lbsFrom: this.lbsState,
+            rtt: domainItem.lastRequest.rtt
+          })
+        }
+      }
+    })
+    return lbsAddrs
+  }
+  
+  private saveConfig(config: LBS_RES){
+    if (!this.client._params.appkey){
+      this.logger.error(`saveConfig: 缺少appkey`)
+      return
+    }
     const ts = Date.now()
     const data:LBS_CONFIG = {
       ts,
-      appKey,
+      appKey: this.client._params.appkey,
       sdkVersion: SDK_VERSION,
+      sdkBuild: BUILD,
       config
     }
     try{
@@ -156,9 +312,12 @@ class LBSManager {
     }
   }
   
-  loadLocalConfig(appKey: string): LoadLocalConfigRes{
+  loadLocalConfig(reason: string): LoadLocalConfigRes{
+    if (!this.client._params.appkey){
+      this.logger.error(`loadLocalConfig: 缺少appkey`)
+      return {reason: "appkeyNotFound", config: null}
+    }
     let data:LBS_CONFIG|null = null
-    this.lastAppKey = appKey
     try{
       const str = window.localStorage.getItem(this.localStorageKey)
       if (!str){
@@ -174,29 +333,26 @@ class LBSManager {
     }
 
     const now = Date.now()
-    const ttl = data.ts + data.config.ttl * 1000 - now
-    if (ttl <0){
-      this.logger.log(`LBS不使用本地配置：ttl已过期${ Math.floor(- ttl / 1000)} 秒。`)
+    const ttlMs = data.ts + data.config.ttl * 1000 - now
+    if (ttlMs <0){
+      this.logger.log(`LBS不使用本地配置：ttl已过期${ Math.floor(- ttlMs / 1000)} 秒。`)
       return {reason: "expire", config: null}
     }
-    else if (data.sdkVersion !== SDK_VERSION){
-      this.logger.warn(`LBS不使用本地配置：版本不匹配。${data.sdkVersion} ${SDK_VERSION}。`)
+    else if (data.sdkVersion !== SDK_VERSION || data.sdkBuild !== BUILD){
+      this.logger.warn(`LBS不使用本地配置：版本不匹配。${data.sdkVersion}/${data.sdkBuild} ${SDK_VERSION}/${BUILD}。`)
       return {reason: "version", config: null}
-    } else if (data.appKey !== appKey){
-      this.logger.warn(`LBS不使用本地配置：appKey不匹配。${data.appKey} ${appKey}。`)
+    } else if (data.appKey !== this.client._params.appkey){
+      this.logger.warn(`LBS不使用本地配置：appKey不匹配。${data.appKey} ${this.client._params.appkey}。`)
       return {reason: "appkey", config: null}
     } else {
-      this.addUrlBackup(data.config.call[0], data.config.call)
-      this.addUrlBackup(data.config.nrtc[0], data.config.nrtc)
-      this.addUrlBackup(data.config.tracking[0], data.config.tracking)
+      this.handleLbsStateWillChange(reason)
+      this.addUrlBackup(data.config.call[0], data.config.call, "call")
+      this.addUrlBackup(data.config.nrtc[0], data.config.nrtc, "nrtc")
+      this.addUrlBackup(data.config.tracking[0], data.config.tracking, "tracking")
       
       this.lbsState = "local"
-      this.logger.log(`成功加载本地配置。过期时间：${Math.floor(ttl / 1000)} 秒后`)
+      this.logger.log(`成功加载本地配置。过期时间：${Math.floor(ttlMs / 1000)} 秒后。`)
       
-      if (ttl < 60000){
-        this.logger.log(`LBS在 ${Math.floor(ttl / 1000)} 秒后过期。`)
-        this.startUpdate(appKey, "renew")
-      }
       return {reason: "success", config: data}
     }
   }
@@ -204,20 +360,30 @@ class LBSManager {
   /**
    * 当前同域名配置会被覆盖。
    */
-  addUrlBackup(mainDomain:string, replacedBy: [string, string]|[string]){
+  addUrlBackup(mainDomain:string, replacedBy: [string, string]|[string], tag: string){
+    const formerDomainSettings = this.urlBackupMap[mainDomain] || []
     this.urlBackupMap[mainDomain] = []
     const URLBackup = this.urlBackupMap[mainDomain]
     const updatedAt = Date.now()
     replacedBy.forEach((domain)=>{
-      const item:DomainItem = {
-        id: URLBackup.length,
-        domain,
-        mainDomain,
-        lastFinishedAt: 0,
-        lastResult: "success",
-        updatedAt,
+      let domainItem = formerDomainSettings.find((item)=>{
+        return item.domain === domain && item.mainDomain === mainDomain
+      })
+      if (domainItem){
+        domainItem.updatedAt = updatedAt
+        domainItem.tag = tag
+      }else{
+        domainItem = {
+          id: URLBackup.length,
+          domain,
+          mainDomain,
+          successCount: 0,
+          failCount: 0,
+          updatedAt,
+          tag,
+        }
       }
-      URLBackup.push(item)
+      URLBackup.push(domainItem)
     })
   }
   
@@ -233,7 +399,7 @@ class LBSManager {
       domain = domainMatch[2]
     }
     if (!this.urlBackupMap[domain]){
-      this.addUrlBackup(domain, [domain])
+      this.addUrlBackup(domain, [domain], "extra")
     }
     const requestId = this.requestCnt++
     const urlSettings:URLSetting[] = this.urlBackupMap[domain].map((item, index)=>{
@@ -250,26 +416,43 @@ class LBSManager {
   }
   
   private markSuccess(urlSetting: URLSetting){
-    urlSetting.item.lastFinishedAt = Date.now()
-    urlSetting.item.lastResult = "success"
+    if (urlSetting.item.lastRequest?.status === "inprogress"){
+      urlSetting.item.lastRequest.finishiedAt = Date.now()
+      urlSetting.item.lastRequest.rtt = urlSetting.item.lastRequest.finishiedAt - urlSetting.item.lastRequest.startAt
+      urlSetting.item.lastRequest.status = "success"
+    }
+    urlSetting.item.successCount++
     urlSetting.state = "success"
     const domainList = this.urlBackupMap[urlSetting.item.mainDomain]
-    if (domainList && domainList[0].lastResult === "fail"){
+    if (domainList && domainList[0].lastRequest?.status === "fail"){
       // 如果主域名无法访问，而备用域名可以访问，则下次直接访问备用域名
       const index = domainList.findIndex((item)=>{
         return item === urlSetting.item
       })
       if (index > -1){
         this.logger.warn(`主备域名互换。${domainList[0].domain} => ${urlSetting.item.domain}`)
+        this.handleLbsStateWillChange("domainDown:" + domainList[0].domain)
         domainList.splice(index, 1)
         domainList.unshift(urlSetting.item)
       }
     }
   }
-  private markFail(urlSetting: URLSetting){
-    urlSetting.item.lastFinishedAt = Date.now()
-    urlSetting.item.lastResult = "fail"
+  // markFail指将一次XMLHTTPRequest请求计为失败。
+  // 第一次失败会立即触发备用链路的请求。
+  // - 第二次如成功，备用链路会自动和主链路交换优先级。
+  // - 第二次如失败，会将.ajax()整体请求计为失败。
+  private markFail(urlSetting: URLSetting, errCode: number, errMsg: string){
+    
+    if (urlSetting.item.lastRequest?.status === "inprogress"){
+      urlSetting.item.lastRequest.finishiedAt = Date.now()
+      urlSetting.item.lastRequest.rtt = urlSetting.item.lastRequest.finishiedAt - urlSetting.item.lastRequest.startAt
+      urlSetting.item.lastRequest.status = "fail"
+      urlSetting.item.lastRequest.errCode = errCode
+      urlSetting.item.lastRequest.errMsg = errMsg
+    }
+    urlSetting.item.failCount++
     urlSetting.state = "fail"
+    this.logger.error(`markFail：`, urlSetting.item.domain, errCode, errMsg)
   }
   private isAllRequestsFinished(urlSettings: URLSetting[]){
     for (let i in urlSettings){
@@ -291,35 +474,69 @@ class LBSManager {
 
     return new Promise((resolve, reject)=>{
       const handleXHRLoad = (xhr: XMLHttpRequest, urlSetting: URLSetting)=>{
-        this.markSuccess(urlSetting)
-        urlSettings.forEach((setting)=>{
-          if (setting.timer){
-            clearTimeout(setting.timer)
-            setting.timer = undefined
+        // console.error("handleXHRLoad", xhr.status, urlSetting.item.tag, xhr.responseType, xhr.response, xhr)
+        if (xhr.status >= 400){
+          // 服务端api即使拒绝一个请求，status也是200的。
+          this.markFail(urlSetting, xhr.status, typeof xhr.response === "string" ? xhr.response : JSON.stringify(xhr.response))
+          if (urlSettings[1] && urlSettings[1].fire && urlSettings[1].timer){
+            // 如果备用链路尚未启动，则直接启用备用链路
+            this.logger.warn(`主线路请求发生错误，启用备用线路 【主  ${urlSetting.url} 】【备 ${urlSettings[1].url} 】` , xhr.status)
+            urlSettings[1].fire()
+          } else if (this.isAllRequestsFinished(urlSettings)) {
+            return reject(new RtcError({
+              code: ErrorCode.INVALID_PARAMETER,
+              message: 'could not send request due to invalid parameter'
+            }))
           }
-          setting.fire = undefined
-        })
-        if (ajaxFinished) {
-          this.logger.log(`${urlSetting.url} 已忽略返回值：${xhr.status}`)
-          return
+        } else if (xhr.responseType === "json" && !xhr.response){
+          // 如果服务端的ContentType是json，而返回的内容不是json，这会导致response为null，而无法获得实际的返回值
+          this.markFail(urlSetting, LBS_ERR_CODE.JSON_ERROR, "JSON_ERROR")
+          if (urlSettings[1] && urlSettings[1].fire && urlSettings[1].timer){
+            // 如果备用链路尚未启动，则直接启用备用链路
+            this.logger.warn(`主线路请求发生错误，启用备用线路 【主  ${urlSetting.url} 】【备 ${urlSettings[1].url} 】` , xhr)
+            urlSettings[1].fire()
+          }
+        } else if (xhr.response?.code === 500){
+          // 兼容getChannelInfo返回500的情况
+          this.markFail(urlSetting, LBS_ERR_CODE.UNKNOWN_ERROR, JSON.stringify(xhr.response))
+          if (urlSettings[1] && urlSettings[1].fire && urlSettings[1].timer){
+            // 如果备用链路尚未启动，则直接启用备用链路
+            this.logger.warn(`主线路请求发生错误，启用备用线路 【主  ${urlSetting.url} 】【备 ${urlSettings[1].url} 】` , xhr.response)
+            urlSettings[1].fire()
+          }
+        } else if (
+          urlSetting.item.tag === "lbs" &&
+          (!xhr.response?.call?.length || !xhr.response?.nrtc?.length || !xhr.response?.tracking?.length)
+        ){
+          this.markFail(urlSetting, LBS_ERR_CODE.FORMAT_ERROR, JSON.stringify(xhr.response))
+          if (urlSettings[1] && urlSettings[1].fire && urlSettings[1].timer){
+            // 如果备用链路尚未启动，则直接启用备用链路
+            this.logger.warn(`主线路请求发生错误，启用备用线路 【主  ${urlSetting.url} 】【备 ${urlSettings[1].url} 】` , "FORMAT_ERROR")
+            urlSettings[1].fire()
+          }
         } else {
-          ajaxFinished = true
-          if (xhr.status > 400) {
-            return Promise.reject(
-              new RtcError({
-                code: ErrorCode.INVALID_PARAMETER,
-                message: 'could not send request due to invalid parameter'
-              })
-            )
+          this.markSuccess(urlSetting)
+          urlSettings.forEach((setting)=>{
+            if (setting.timer){
+              clearTimeout(setting.timer)
+              setting.timer = undefined
+            }
+            setting.fire = undefined
+          })
+          if (ajaxFinished) {
+            this.logger.log(`${urlSetting.url} 已忽略返回值：${xhr.status}`)
+            return
+          } else {
+            ajaxFinished = true
+            var data = xhr.response
+            // data = JSON.parse(data)
+            resolve(data)
           }
-          var data = xhr.response
-          // data = JSON.parse(data)
-          resolve(data)
         }
       }
 
       const handleXHRError = (xhr: XMLHttpRequest, urlSetting: URLSetting, e: ProgressEvent)=>{
-        this.markFail(urlSetting)
+        this.markFail(urlSetting, LBS_ERR_CODE.UNKNOWN_ERROR, `${e.type|| JSON.stringify(e)}:${urlSetting.url}`)
         if (urlSettings[1] && urlSettings[1].fire && urlSettings[1].timer){
           // 如果备用链路尚未启动，则直接启用备用链路
           this.logger.warn(`主线路请求发生错误，启用备用线路 【主  ${urlSetting.url} 】【备 ${urlSettings[1].url} 】` , e)
@@ -332,7 +549,7 @@ class LBSManager {
       }
 
       const handleXHRTimeout = (xhrRequest: XMLHttpRequest, urlSetting: URLSetting, e: ProgressEvent)=>{
-        this.markFail(urlSetting)
+        this.markFail(urlSetting, LBS_ERR_CODE.TIMEOUT, "TIMEOUT")
         if (urlSettings[1] && urlSettings[1].fire && urlSettings[1].timer){
           // 如果备用链路尚未启动，则直接启用备用链路
           this.logger.warn(`主线路请求超时，启用备用线路 【主 ${urlSetting.url}】【备 ${urlSettings[1].url}】` , e)
@@ -362,6 +579,13 @@ class LBSManager {
             }
           })
         }
+        if (urlSetting.item.tag === "lbs"){
+          const uuid = generateUUID()
+          if (urlSetting.item.lastRequest){
+            urlSetting.item.lastRequest.uuid = uuid
+          }
+          xhr.setRequestHeader("X-Request-Id", uuid)
+        }
 
         xhr.onload = handleXHRLoad.bind(xhr, xhr, urlSetting)
         xhr.onerror = handleXHRError.bind(xhr, xhr, urlSetting)
@@ -390,6 +614,17 @@ class LBSManager {
             urlSetting.timer = undefined
           }
           urlSetting.state = "sent"
+          urlSetting.item.lastRequest = {
+            status: "inprogress",
+            startAt: Date.now(),
+            requestId: urlSetting.requestId,
+            seqId: urlSetting.seqId,
+            uuid: "",
+            finishiedAt: 0,
+            errCode: 0,
+            errMsg: "",
+            rtt: -1
+          }
           createXHR(urlSetting)
         }
         if (index){
@@ -408,5 +643,3 @@ class LBSManager {
     })
   }
 }
-
-export const lbsManager = new LBSManager()

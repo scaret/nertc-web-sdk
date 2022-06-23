@@ -36,7 +36,6 @@ import {getParameters} from "../module/parameters";
 import {FormatMedia} from "../module/formatMedia"
 import {Record} from '../module/record'
 import * as env from '../util/rtcUtil/rtcEnvironment';
-import {lbsManager} from "../module/LBSManager";
 import {alerter} from "../module/alerter";
 const BigNumber = require("bignumber.js");
 
@@ -139,7 +138,7 @@ class Client extends Base {
       }
       if (evt.curState === "CONNECTED" && evt.prevState === "CONNECTING"){
         if (evt.reconnect){
-          lbsManager.startUpdate(this._params.appkey, "reconnect")
+          this.adapterRef.lbsManager.startUpdate("reconnect")
         }
       }
     })
@@ -154,17 +153,18 @@ class Client extends Base {
     }
     this._params.appkey = appkey
     
-    const localConfig = lbsManager.loadLocalConfig(appkey)
+    this.adapterRef.lbsManager.loadBuiltinConfig("onload")
+    const localConfig = this.adapterRef.lbsManager.loadLocalConfig("clientInit")
     if (localConfig.config){
       // 载入LBS本地配置成功
       const expireTime = localConfig.config.ts + localConfig.config.config.ttl * 1000 - Date.now()
-      if (expireTime < 60000){
-        this.logger.log(`LBS在 ${Math.floor(expireTime / 1000)} 秒后过期。发起异步刷新请求`)
-        lbsManager.startUpdate(appkey, "renew")
+      if (expireTime < localConfig.config.config.preloadTimeSec * 1000){
+        this.logger.log(`LBS在 ${Math.floor(expireTime / 1000)} 秒后过期。preloadTimeSec: ${localConfig.config.config.preloadTimeSec}。发起异步刷新请求`)
+        this.adapterRef.lbsManager.startUpdate("renew")
       }
     }else{
-      // 载入本地配置失败，发起远程请求
-      lbsManager.startUpdate(appkey, localConfig.reason)
+      // 载入本地配置失败=>载入内置配置，同时发起远程请求
+      this.adapterRef.lbsManager.startUpdate(localConfig.reason)
     }
     
     this._params.token = token
@@ -1635,18 +1635,20 @@ class Client extends Base {
     try {
         await this.adapterRef._meetings?.addTasks(options)
         this.adapterRef.instance.apiFrequencyControl({
-          name: 'addTasks',
+          name: 'onAddTasks',
           code: 0,
           param: {
+            lbsAddrs: this.adapterRef.lbsManager.getReportField("call"),
             clientUid: this.getUid()
           }
         })
     } catch (e) {
         this.adapterRef.instance.apiFrequencyControl({
-        name: 'addTasks',
+        name: 'onAddTasks',
         code: -1,
         param: {
           clientUid: this.getUid(),
+          lbsAddrs: this.adapterRef.lbsManager.getReportField("call"),
           reason: e.message
         }
       })
@@ -1690,18 +1692,20 @@ class Client extends Base {
     try {
         await this.adapterRef._meetings?.deleteTasks(options)
         this.adapterRef.instance.apiFrequencyControl({
-          name: 'deleteTasks',
+          name: 'onDeleteTasks',
           code: 0,
           param: {
+            lbsAddrs: this.adapterRef.lbsManager.getReportField("call"),
             clientUid: this.getUid()
           }
         })
     } catch (e) {
         this.adapterRef.instance.apiFrequencyControl({
-        name: 'deleteTasks',
+        name: 'onDeleteTasks',
         code: -1,
         param: {
           clientUid: this.getUid(),
+          lbsAddrs: this.adapterRef.lbsManager.getReportField("call"),
           reason: e.message
         }
       })
@@ -1745,18 +1749,20 @@ class Client extends Base {
     try {
         await this.adapterRef._meetings?.updateTasks(options)
         this.adapterRef.instance.apiFrequencyControl({
-          name: 'updateTasks',
+          name: 'onUpdateTasks',
           code: 0,
           param: {
-            clientUid: this.getUid()
+            clientUid: this.getUid(),
+            lbsAddrs: this.adapterRef.lbsManager.getReportField('call')
           }
         })
     } catch (e) {
         this.adapterRef.instance.apiFrequencyControl({
-        name: 'updateTasks',
+        name: 'onUpdateTasks',
         code: -1,
         param: {
           clientUid: this.getUid(),
+          lbsAddrs: this.adapterRef.lbsManager.getReportField("call"),
           reason: e.message
         }
       })
