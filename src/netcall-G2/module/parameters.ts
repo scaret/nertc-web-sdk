@@ -118,7 +118,7 @@ let parameters:IParameters = {
   clients: [],
   localStreams: [],
   debugG2: false,
-  enableAlerter: "nolistener",
+  enableAlerter: "never",
   videoLowDefaultConstraints: {width: {max: 320}, height: {max: 180}},
   screenLowDefaultConstraints: {width: {max: 320}, height: {max: 180}},
   controlOnPaused: true,
