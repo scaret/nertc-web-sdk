@@ -201,11 +201,6 @@ table th:nth-of-type(2) {
 
 通过 [[Client.on]] 和 [[Stream.on]] 方法监听 [[Client]] 和 [[Stream]] 方法触发的事件。
 
-从版本v4.6.20起，如果页面没有监听以下事件，则客户端发生异常时，页面会直接产生提示消息：
-+ 如果浏览器的版本明确低于Chrome 72，而页面加入频道前没有调用 [[checkSystemRequrirement]]
-+ 如果Client因为网络原因异常退出，而页面没有监听`Client.on("SOCKET_ERROR")`或者`Client.on("connection-state-change")`
-+ 如果播放行为因为浏览器自动播放策略屏蔽，而页面没有监听`Stream.on("notAllowedError")`
-
 ## <span id="errorCode">错误代码</span>
 以下为 SDK 可能抛出的错误，请参考下表进行处理
 

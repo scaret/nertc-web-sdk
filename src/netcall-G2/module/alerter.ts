@@ -46,7 +46,7 @@ class Alerter extends RTCEventEmitter{
   }
   watchClient(client: Client){
     client.addListener('@pairing-join-start', ()=>{
-      if ((getParameters().debugG2 && systemChecker.checkCnt === 0) || getParameters().enableAlerter === "always"){
+      if (systemChecker.checkCnt === 0 || getParameters().enableAlerter === "always"){
         const MIN_CHROME_VERSION = 72
         if (env.IS_CHROME && (env.IS_MAC || env.IS_WIN) && env.CHROME_MAJOR_VERSION && env.CHROME_MAJOR_VERSION < MIN_CHROME_VERSION){
           let innerHTML = `您当前正在使用的Chrome浏览器版本为${env.CHROME_MAJOR_VERSION}, 不在NERTC的支持范围。请更新您的浏览器。`
@@ -59,7 +59,7 @@ class Alerter extends RTCEventEmitter{
     client.addListener('@connection-state-change', evt=>{
       if (evt.curState === "DISCONNECTING" && evt.prevState === "CONNECTING"){
         if (
-          (getParameters().debugG2 && client._events && !client._events["connection-state-change"] && !client._events["SOCKET_ERROR"])
+          (client._events && !client._events["connection-state-change"] && !client._events["SOCKET_ERROR"])
           || getParameters().enableAlerter === "always"
         ){
           let innerHTML = `由于网络原因，您当前已经退出房间。`
@@ -72,7 +72,7 @@ class Alerter extends RTCEventEmitter{
   watchLocalStream(localStream: LocalStream){
     localStream.on('@notAllowedError', evt=>{
       if (
-        (getParameters().debugG2 && !localStream._events["notAllowedError"])
+        !localStream._events["notAllowedError"]
         || getParameters().enableAlerter === "always"
       ){
         let innerHTML = `音频播放需要手势触发。`
@@ -85,7 +85,7 @@ class Alerter extends RTCEventEmitter{
   watchRemoteStream(remoteStream: RemoteStream){
     remoteStream.on('@notAllowedError', evt=>{
       if (
-        (getParameters().debugG2 && !remoteStream._events["notAllowedError"])
+        !remoteStream._events["notAllowedError"]
         || getParameters().enableAlerter === "always"
       ){
         let innerHTML = `音频播放需要手势触发。`
