@@ -6,6 +6,7 @@ import {formatSingleArg} from "./rtcUtil/utils";
 import {getBrowserInfo} from "./rtcUtil/rtcPlatform";
 
 let logIndex = 0
+let cachedLogs:any[] = [];
 
 export function updateLogIndex(){
   logIndex++
@@ -51,7 +52,7 @@ export class Logger{
     if(getParameters().logLevel <= loglevels.DEBUG){
       logger._log('debug', args);
     }
-    (<any>window).logUpload && (<any>window).wsTransport && (<any>window).wsTransport.sendLog(args);
+    logCache(args);
   }
   
   log(){
@@ -73,7 +74,7 @@ export class Logger{
     if(getParameters().logLevel <= loglevels.INFO){
       logger._log('log', args);
     }
-    (<any>window).logUpload && (<any>window).wsTransport && (<any>window).wsTransport.sendLog(args);
+    logCache(args);
   }
   
   info(){
@@ -87,7 +88,7 @@ export class Logger{
     if(getParameters().logLevel <= loglevels.INFO) {
       logger._log('info', args);
     }
-    (<any>window).logUpload && (<any>window).wsTransport && (<any>window).wsTransport.sendLog(args);
+    logCache(args);
   }
   
   warn(){
@@ -101,7 +102,7 @@ export class Logger{
     if(getParameters().logLevel <= loglevels.WARNING) {
       logger._log('warn', args);
     }
-    (<any>window).logUpload && (<any>window).wsTransport && (<any>window).wsTransport.sendLog(args);
+    logCache(args);
   }
   
   error(){
@@ -116,7 +117,7 @@ export class Logger{
     if(getParameters().logLevel <= loglevels.ERROR) {
       logger._log('error', args);
     }
-    (<any>window).logUpload && (<any>window).wsTransport && (<any>window).wsTransport.sendLog(args);
+    logCache(args);
   }
 
   _log(name:string, args:any[]) {
@@ -242,4 +243,35 @@ function simpleClone (obj:any, cache: any[] = []) {
     }
   }
   return clonedObj
+}
+
+function logCache(args:any) {
+  if((<any>window).logUpload){
+    if(!(<any>window).wsTransport){
+      // ws创建前 缓存日志
+      let time = Date.now();
+      try{
+        // @ts-ignore
+        if (cachedLogs.length){
+          // @ts-ignore
+          cachedLogs[cachedLogs.length - 1].args[0].replace("[NERTC", "[缓存][NERTC")
+        }
+      }catch(e){
+        // do noting
+      }
+      cachedLogs.push({
+        time,
+        args
+      })
+      // console.error('cachedLogs: ',cachedLogs)
+    }else {
+      if(cachedLogs.length){
+        cachedLogs.forEach(item => {
+          (<any>window).wsTransport.sendLog(item.args);
+        })
+        cachedLogs = [];
+      }
+      (<any>window).wsTransport.sendLog(args);
+    }
+  }
 }
