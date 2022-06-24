@@ -21,7 +21,7 @@
     "watch:tag": "watch 'npm run build:tag' ./src/protocol/map -du --interval=0.25 --filter=./build/parseTagMapFilter.js",
     "watch:sdk": "npm run build:sdk -- -w",
     "zip:api": "cross-env NODE_ENV=production npm run build:api && node build/api/zip.js",
-    "zip:sdk:g2": "cross-env PLATFORM=g2 NODE_ENV=production node build/sdk/zip.js",
+    "zip:sdk:g2": "cross-env PLATFORM=g2 NODE_ENV=production node build/sdk/zipSDKOnly.js",
     "copy:sdk": "npm run zip:sdk && node build/sdk/copy.js",
     "copy:api": "npm run build:api && node build/api/copy.js",
     "dev:prod": "cross-env PLATFORM=all NODE_ENV=production npm run dev",
