@@ -123,6 +123,8 @@ export interface AdapterRef {
   userPriority: MediaPriorityOptions;
   proxyServer: ProxyServerOptions;
   encryption: Encryption,
+  isAudioBanned: boolean,
+  isVideoBanned: boolean
 }
 
 export type ConnectionState = 'DISCONNECTED'|'CONNECTING'|'CONNECTED'|'DISCONNECTING';

@@ -710,18 +710,18 @@ class Signalling extends EventEmitter {
         } else if (type === 'ChangeRight') {
           // 服务器禁用音频/视频: 1 禁用   2 取消禁用  0 无需处理
           if(data.audioRight === 1) {
-            (<any>window).isAudioBanned = true;
+            this.adapterRef.isAudioBanned = true;
           }else if(data.audioRight === 2) {
-            (<any>window).isAudioBanned = false;
+            this.adapterRef.isAudioBanned = false;
           }
 
           if(data.videoRight === 1) {
-            (<any>window).isVideoBanned = true;
+            this.adapterRef.isVideoBanned = true;
           }else if(data.videoRight === 2) {
-            (<any>window).isVideoBanned = false;
+            this.adapterRef.isVideoBanned = false;
           }
 
-          if((<any>window).isAudioBanned && (<any>window).isVideoBanned) {
+          if(this.adapterRef.isAudioBanned && this.adapterRef.isVideoBanned) {
             this.adapterRef.instance.apiEventReport('setFunction', {
               name: 'set_mediaRightChange',
               oper: '1',
@@ -730,7 +730,7 @@ class Signalling extends EventEmitter {
             })
           }
     
-          if(!(<any>window).isAudioBanned && (<any>window).isVideoBanned) {
+          if(!this.adapterRef.isAudioBanned && this.adapterRef.isVideoBanned) {
             this.adapterRef.instance.apiEventReport('setFunction', {
               name: 'set_mediaRightChange',
               oper: '1',
@@ -739,7 +739,7 @@ class Signalling extends EventEmitter {
             })
           }
     
-          if((<any>window).isAudioBanned && !(<any>window).isVideoBanned) {
+          if(this.adapterRef.isAudioBanned && !this.adapterRef.isVideoBanned) {
             this.adapterRef.instance.apiEventReport('setFunction', {
               name: 'set_mediaRightChange',
               oper: '1',
@@ -748,7 +748,7 @@ class Signalling extends EventEmitter {
             })
           }
     
-          if(!(<any>window).isAudioBanned && !(<any>window).isVideoBanned) {
+          if(!this.adapterRef.isAudioBanned && !this.adapterRef.isVideoBanned) {
             this.adapterRef.instance.apiEventReport('setFunction', {
               name: 'set_mediaRightChange',
               oper: '1',
@@ -757,7 +757,7 @@ class Signalling extends EventEmitter {
             })
           }
 
-          if((<any>window).isAudioBanned){
+          if(this.adapterRef.isAudioBanned){
             if(!this.adapterRef.localStream){
               return;
             }
@@ -780,7 +780,7 @@ class Signalling extends EventEmitter {
           if(!this.adapterRef.localStream){
             return;
           }
-          if((<any>window).isVideoBanned){
+          if(this.adapterRef.isVideoBanned){
             let isVideoOn = this.adapterRef.localStream.video;
             let isScreenOn = this.adapterRef.localStream.screen;
             // 关掉所有视频相关 (辅流跟随视频流同步禁止)
@@ -912,18 +912,18 @@ class Signalling extends EventEmitter {
       }
       // 服务器禁用音视频: 1 禁用   0 和 2 取消禁用
       if(response.externData.audioRight === 1){
-        (<any>window).isAudioBanned = true;
+        this.adapterRef.isAudioBanned = true;
       }else {
-        (<any>window).isAudioBanned = false;
+        this.adapterRef.isAudioBanned = false;
       }
 
       if(response.externData.videoRight === 1){
-        (<any>window).isVideoBanned = true;
+        this.adapterRef.isVideoBanned = true;
       }else {
-        (<any>window).isVideoBanned = false;
+        this.adapterRef.isVideoBanned = false;
       }
 
-      if((<any>window).isAudioBanned && (<any>window).isVideoBanned) {
+      if(this.adapterRef.isAudioBanned && this.adapterRef.isVideoBanned) {
         this.adapterRef.instance.apiEventReport('setFunction', {
           name: 'set_mediaRightChange',
           oper: '1',
@@ -932,7 +932,7 @@ class Signalling extends EventEmitter {
         })
       }
 
-      if(!(<any>window).isAudioBanned && (<any>window).isVideoBanned) {
+      if(!this.adapterRef.isAudioBanned && this.adapterRef.isVideoBanned) {
         this.adapterRef.instance.apiEventReport('setFunction', {
           name: 'set_mediaRightChange',
           oper: '1',
@@ -941,7 +941,7 @@ class Signalling extends EventEmitter {
         })
       }
 
-      if((<any>window).isAudioBanned && !(<any>window).isVideoBanned) {
+      if(this.adapterRef.isAudioBanned && !this.adapterRef.isVideoBanned) {
         this.adapterRef.instance.apiEventReport('setFunction', {
           name: 'set_mediaRightChange',
           oper: '1',
@@ -950,7 +950,7 @@ class Signalling extends EventEmitter {
         })
       }
 
-      if(!(<any>window).isAudioBanned && !(<any>window).isVideoBanned) {
+      if(!this.adapterRef.isAudioBanned && !this.adapterRef.isVideoBanned) {
         this.adapterRef.instance.apiEventReport('setFunction', {
           name: 'set_mediaRightChange',
           oper: '1',
