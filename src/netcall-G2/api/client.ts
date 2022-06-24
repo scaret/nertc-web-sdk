@@ -1095,6 +1095,7 @@ class Client extends Base {
         }
         await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.audio.consumerId, stream, 'audio');
         this.adapterRef.instance.removeSsrc(stream.getId(), 'audio')
+        stream.mediaHelper.updateStream('audio', null)
         stream.pubStatus.audio.consumerId = '';
         stream.stop('audio')
         stream.pubStatus.audio.stopconsumerStatus = 'end'
@@ -1122,6 +1123,7 @@ class Client extends Base {
         }
         await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.audioSlave.consumerId, stream, 'audioSlave');
         this.adapterRef.instance.removeSsrc(stream.getId(), 'audioSlave')
+        stream.mediaHelper.updateStream('audioSlave', null)
         stream.pubStatus.audioSlave.consumerId = '';
         stream.stop('audioSlave')
         stream.pubStatus.audioSlave.stopconsumerStatus = 'end'
@@ -1149,6 +1151,7 @@ class Client extends Base {
         }
         await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.video.consumerId, stream, 'video');
         this.adapterRef.instance.removeSsrc(stream.getId(), 'video')
+        stream.mediaHelper.updateStream('video', null)
         stream.pubStatus.video.consumerId = '';
         stream.stop('video')
         stream.pubStatus.video.stopconsumerStatus = 'end'
@@ -1177,6 +1180,7 @@ class Client extends Base {
         }
         await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.screen.consumerId, stream, 'screen');
         this.adapterRef.instance.removeSsrc(stream.getId(), 'screen')
+        stream.mediaHelper.updateStream('screen', null)
         stream.pubStatus.screen.consumerId = '';
         stream.stop('screen')
         stream.pubStatus.screen.stopconsumerStatus = 'end'
