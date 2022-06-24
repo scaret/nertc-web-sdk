@@ -234,9 +234,6 @@ class Mediasoup extends EventEmitter {
         sctpParameters      : undefined,
         iceServers,
         iceTransportPolicy,
-        proprietaryConstraints   : {
-          optional: [ { googDscp: true }, { googIPv6: false } ]
-        },
         appData: {
           cid: this.adapterRef.channelInfo.cid,
           uid: this.adapterRef.channelInfo.uid,
@@ -264,9 +261,6 @@ class Mediasoup extends EventEmitter {
         sctpParameters: undefined,
         iceServers,
         iceTransportPolicy,
-        proprietaryConstraints: {
-          optional: [ { googDscp: true } ]
-        },
         appData: {
           cid: this.adapterRef.channelInfo.cid,
           uid: this.adapterRef.channelInfo.uid,
