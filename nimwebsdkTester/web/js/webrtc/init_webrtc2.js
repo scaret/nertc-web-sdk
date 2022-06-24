@@ -3423,6 +3423,32 @@ $("#stopPlay").on("click", function(){
   }
 });
 
+$("#isPlaying").on("click", function(){
+  let uid = $("#stopUid").val();
+  let mediaType = $("#stopMediaType").val();
+  let stream;
+  if (!uid){
+    stream = rtc.localStream;
+  }else{
+    stream = rtc.remoteStreams[uid];
+  }
+  if (!stream){
+    addLog("正在播放：未找到stream" + uid);
+    return;
+  }
+  if (!mediaType){
+    ["audio", "video", "screen"].forEach(async (mediaType)=>{
+      stream.isPlaying(mediaType).then((result)=>{
+        addLog("正在播放：" + stream.getId() + " " + mediaType + " " + result);
+      })
+    })
+  }else{
+    stream.isPlaying(mediaType).then((result)=>{
+      addLog("正在播放：" + stream.getId() + " " + mediaType + " " + result);
+    })
+  }
+});
+
 /**
  * ----------------------------------------
  *              水印相关

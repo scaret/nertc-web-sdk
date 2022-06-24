@@ -32,10 +32,12 @@
       const panel = document.createElement('div')
       const localContainer = document.createElement('div')
       const remoteContainer = document.createElement('div')
+      const statsContainer = document.createElement('pre')
       $(wrapper).appendTo("views")
       $(panel).appendTo(wrapper)
       $(localContainer).appendTo(wrapper)
       $(remoteContainer).appendTo(wrapper)
+      $(statsContainer).appendTo(wrapper)
 
       wrapper.style.clear = "both"
       localContainer.style.width = "200px"
@@ -86,6 +88,9 @@
       closeVideoInput.innerText = "关闭视频"
       $(closeVideoInput).appendTo(panel)
 
+
+      $("<br><span>美颜：</span>").appendTo(panel)
+      
       const openBeautyInput = document.createElement("button")
       openBeautyInput.innerText = "开启美颜"
       $(openBeautyInput).appendTo(panel)
@@ -98,8 +103,6 @@
       closeBeautyInput.innerText = "关闭美颜"
       $(closeBeautyInput).appendTo(panel)
 
-      $("<br>").appendTo(panel)
-      $("<br>").appendTo(panel)
       $("<span>高级美颜:</span>").appendTo(panel)
 
       const registerAdvBeautyInput = document.createElement("button")
@@ -122,8 +125,6 @@
       destroyAdvBeautyInput.innerText = "销毁"
       $(destroyAdvBeautyInput).appendTo(panel)
 
-      $("<br>").appendTo(panel)
-      $("<br>").appendTo(panel)
       $("<span>背景分割:</span>").appendTo(panel)
       
       const registerVitrualBackgroundInput = document.createElement("button")
@@ -142,6 +143,21 @@
       destroyVitrualBackgroundInput.innerText = "销毁"
       $(destroyVitrualBackgroundInput).appendTo(panel)
 
+      $("<br/><span>Stats</span>").appendTo(panel)
+      const getSessionStatsBtn = document.createElement("button")
+      getSessionStatsBtn.innerText = "getSessionStats"
+      $(getSessionStatsBtn).appendTo(panel)
+      const getSystemStatsBtn = document.createElement("button")
+      getSystemStatsBtn.innerText = "getSystemStats"
+      $(getSystemStatsBtn).appendTo(panel)
+      const getTransportStatsBtn = document.createElement("button")
+      getTransportStatsBtn.innerText = "getTransportStats"
+      $(getTransportStatsBtn).appendTo(panel)
+      const getStatsOffBtn = document.createElement("button")
+      getStatsOffBtn.innerText = "关闭"
+      $(getStatsOffBtn).appendTo(panel)
+      $("<br/>").appendTo(panel)
+      
       const localStreamInfo = document.createElement("div")
       $(localStreamInfo).appendTo(panel)
 
@@ -247,6 +263,36 @@
         await getLocalStream().setBeautyEffect(false);
       }
 
+      let statsStatus = "getStatsOff"
+      let statsTimer = setInterval(async ()=>{
+        let text = ""
+        if (statsStatus === "getSessionStats"){
+          const sessionStats = await client.getSessionStats()
+          text = JSON.stringify(sessionStats, null, 2)
+        } else if (statsStatus === "getSystemStats"){
+          const systemStats = await client.getSystemStats()
+          text = JSON.stringify(systemStats, null, 2)
+        } else if (statsStatus === "getTransportStats"){
+          const transportStats = await client.getTransportStats()
+          text = JSON.stringify(transportStats, null, 2)
+        }
+        if (statsContainer.innerText !== text){
+          statsContainer.innerText = text
+        }
+      }, 2000)
+      getSessionStatsBtn.onclick = ()=>{
+        statsStatus = "getSessionStats"
+      }
+      getSystemStatsBtn.onclick = ()=>{
+        statsStatus = "getSystemStats"
+      }
+      getTransportStatsBtn.onclick = ()=>{
+        statsStatus = "getTransportStats"
+      }
+      getStatsOffBtn.onclick = ()=>{
+        statsStatus = "getStatsOff"
+      }
+      
       //背景分割
         const virtualBackgroundPluginConfig = {
         development: {
