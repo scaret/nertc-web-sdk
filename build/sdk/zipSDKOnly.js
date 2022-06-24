@@ -10,6 +10,19 @@ if (process.env.PLATFORM === 'g2') {
   const g2Version = pjson.webrtcG2Version
   var sdkG2ZipPath = './dist/NERTC_Web_SDK_V' + g2Version + '.zip'
   
+  const sdkDirPath = path.join(__dirname, '../../dist/lib/', g2Version, nodeEnv)
+  const sdkFiles = fs.readdirSync(sdkDirPath)
+  for (let filename of sdkFiles){
+    if (filename && filename.indexOf("NERTC") === -1){
+      const filePath = path.join(sdkDirPath, filename)
+      // 删除名字中不带NERTC的文件
+      console.log('SDK zip: 删除文件/文件夹', filename)
+      fs.rmSync(filePath, {recursive: true, force: true})
+    }else{
+      console.log('SDK zip: added file', filename)
+    }
+  }
+  
   file.zip(sdkG2ZipPath, {
     sources: [
       {
