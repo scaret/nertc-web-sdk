@@ -3471,21 +3471,31 @@ class LocalStream extends RTCEventEmitter {
             smoothnessLevel:0
           }
         }
-        this._transformedTrack = await basicBeauty.setBeauty(isStart, this._cameraTrack) as MediaStreamTrack;
+        let videoDom;
+        if(env.IS_ANY_SAFARI){
+          if(this._play){
+            let localVideoDom:HTMLVideoElement|null;
+            videoDom = this._play.getVideoDom;
+            localVideoDom = this._play.getVideoDom!.querySelector('video');
+            localVideoDom!.style.display = 'none';
+          }
+        }
+        this._transformedTrack = await basicBeauty.setBeauty(isStart, this._cameraTrack, videoDom) as MediaStreamTrack;
         videoTrackLow = this.mediaHelper.video.videoTrackLow;
         basicBeauty.setBeautyOptions(effects);
-        if(env.IS_ANY_SAFARI){
-          let localVideoDom = document.getElementsByClassName('nertc-video-container-local')[0].querySelector('video');
-          localVideoDom!.style.display = 'none';
-        }
+        
       }else {
         this.logger.log('startBeautyEffect() 关闭美颜');
+        if(env.IS_ANY_SAFARI){
+          let localVideoDom;
+          if(this._play){
+            localVideoDom = this._play.getVideoDom!.querySelector('video');
+            localVideoDom!.style.display = 'block';
+          }
+        }
         this._transformedTrack = await basicBeauty.setBeauty(isStart) as MediaStreamTrack;
         videoTrackLow = this.mediaHelper.video.videoTrackLow;
-        if(env.IS_ANY_SAFARI){
-          let localVideoDom = document.getElementsByClassName('nertc-video-container-local')[0].querySelector('video');
-          localVideoDom!.style.display = 'block';
-        }
+        
       }
       // 替换 track
       await this.replaceTrack({

@@ -166,7 +166,7 @@ export default class VideoPostProcess {
      * @param {MediaStreamTrack} track
      * @returns {Promise<number>} resolve 参数返回 canvas 预渲染时间间隔，减缓帧抖动
      */
-    private createTrack(track: MediaStreamTrack){
+    private createTrack(track: MediaStreamTrack, videoDom?:any){
         return new Promise((resolve, reject)=>{
             if(this.trackInstance && this.trackInstance === track){
                 logger.log("VideoPostProcess track transform unnecessary");
@@ -202,7 +202,8 @@ export default class VideoPostProcess {
                 this.filters.canvas.style.top = '50%';
                 this.filters.canvas.style.transform = 'translate(-50%,-50%)';
                 // safari下，本地<video>切换成<canvas>
-                document.getElementsByClassName('nertc-video-container-local')[0].appendChild(this.filters.canvas);
+                // 多实例支持:
+                videoDom.appendChild(this.filters.canvas);
                 // safari 13.1 浏览器 需要<video> 和 <canvas> 在可视区域才能正常播放
                 if(env.SAFARI_MAJOR_VERSION! < 14){
                     this.video.style.height = '0px';
@@ -325,7 +326,7 @@ export default class VideoPostProcess {
         }, 1000 / this.frameRate, null);
     }
 
-    setTaskAndTrack = (task: TaskType, isEnable: boolean, track?: MediaStreamTrack)=>{
+    setTaskAndTrack = (task: TaskType, isEnable: boolean, track?: MediaStreamTrack, videoDom?:any)=>{
         return new Promise((resolve, reject)=>{
             if(isEnable){
                 if(this.hasTask(task)){
@@ -333,7 +334,7 @@ export default class VideoPostProcess {
                     return resolve(this.track!);
                 }
                 // 创建 track，track创建是异步的
-                this.createTrack(track!)
+                this.createTrack(track!, videoDom)
                     .then((time)=>{
                         // 加入任务队列
                         this.addTask(task);
