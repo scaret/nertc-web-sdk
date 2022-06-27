@@ -98,8 +98,8 @@ var subList = $('#subList').get(0) //订阅列表
 var currentSpeaker = {}
 // 添加日志
 function addLog(info) {
-  var temp = JSON.stringify(info)
-  debugContentNode.innerHTML = `<p>${temp}</p>` + debugContentNode.innerHTML
+  var temp = (typeof info === "string" ? info : JSON.stringify(info))
+  debugContentNode.innerHTML = `<p>${info}</p>` + debugContentNode.innerHTML
 }
 
 window.addEventListener('unhandledrejection', (evt)=>{
@@ -3760,10 +3760,15 @@ $("#encoderConfigBtn").on("click", ()=>{
   const options = {
     mediaType: $("#encoderMediaType").val(),
     streamType: $("#encoderStreamType").val(),
-    maxBitrate: parseInt($("#bitrateMax").val()),
-    contentHint: $("#contentHint").val(),
+  }
+  if (document.getElementById("enableBitrateMax").checked){
+    options.maxBitrate = parseInt($("#bitrateMax").val())
+  }
+  if (document.getElementById("enableContentHint").checked){
+    options.contentHint = $("#contentHint").val()
   }
   console.log("上行视频编码设置", options)
+  addLog("上行视频编码设置" + JSON.stringify(options))
   rtc.localStream.setVideoEncoderConfiguration(options)
 })
 
