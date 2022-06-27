@@ -112,16 +112,9 @@ class DeviceManager extends RTCEventEmitter {
         result.video.push(deviceInfo)
       } else if (options.audioinput && device.kind === 'audioinput') {
         let deviceInfo:DeviceInfo
-        if (compatAudioInputList.enabled && device.label && compatAudioInputList.has(device.label)){
-          deviceInfo = {
-            deviceId: device.deviceId,
-            label: `${navigator.language === 'zh-CN' ? "【兼容模式】" : "[Compat Mode]"}${device.label}`,
-          }
-        }else{
-          deviceInfo = {
-            deviceId: device.deviceId,
-            label: device.label || (options.noFillLabel ? device.label : 'microphone ' + (result.audioIn.length + 1)),
-          }
+        deviceInfo = {
+          deviceId: device.deviceId,
+          label: device.label || (options.noFillLabel ? device.label : 'microphone ' + (result.audioIn.length + 1)),
         }
         if (options.groupId){
           deviceInfo.groupId = device.groupId
@@ -364,7 +357,6 @@ class DeviceManager extends RTCEventEmitter {
   enableCompatMode(){
     this.logger.log(`开启兼容模式`)
     compatAudioInputList.enabled = true
-    this.compatAudioInputList.load()
     this.handleDeviceChange()
   }
   disableCompatMode(){

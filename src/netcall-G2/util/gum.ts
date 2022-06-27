@@ -49,19 +49,13 @@ async function getStream (constraint:GUMConstaints, logger:ILogger) {
           stream.addTrack(canvasTrack);
         }
       }else if (track.kind === "audio"){
-        
-        if (getParameters().alwaysSaveCompatAudioInput || compatAudioInputList.enabled){
-          const capabilities = track.getCapabilities ? track.getCapabilities() : {}
-          // 1. 找到并记录双声道的设备
-          if (capabilities.channelCount && capabilities.channelCount.max && capabilities.channelCount.max >= 2){
-            logger.log(`该设备支持兼容模式：${track.label}`)
-            compatAudioInputList.addUnique(track.label)
-          }else{
-            logger.log(`该设备不支持兼容模式：${track.label}`)
-          }
-        }
-        
         if (compatAudioInputList.enabled){
+          const settings = track.getSettings? track.getSettings() : {}
+          if (settings.channelCount && settings.channelCount >= 2 ){
+            logger.log(`该设备支持兼容模式：${track.label}`, settings)
+          }else{
+            logger.warn(`该设备为单声道设备，强行开启兼容模式(右声道无声)：${track.label}`, settings)
+          }
           const context = getAudioContext()
           if (context){
             const channelSplitter = context.createChannelSplitter(2)
@@ -100,6 +94,10 @@ async function getStream (constraint:GUMConstaints, logger:ILogger) {
             channelSplitter.connect(destination, output)
             const destTrack = destination.stream.getTracks()[0]
             watchTrack(destTrack)
+            compatAudioInputList.compatTracks.push(({
+              source: track,
+              dest: destTrack,
+            }))
             syncTrackState(track, destTrack)
             stream.removeTrack(track)
             stream.addTrack(destTrack)
