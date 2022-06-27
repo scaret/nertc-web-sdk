@@ -28,6 +28,7 @@ import * as env from "../util/rtcUtil/rtcEnvironment";
 import {NERTC_VIDEO_QUALITY_ENUM, VIDEO_FRAME_RATE_ENUM} from "../constant/videoQuality";
 import {canDisablePreProcessing, disablePreProcessing, enablePreProcessing, preProcessingCopy} from "./preProcessing";
 import {pcCloneTrack} from "../util/pcCloneTrack";
+import {compatAudioInputList} from "./compatAudioInputList";
 class MediaHelper extends EventEmitter {
   stream: LocalStream|RemoteStream;
   public audio: {
@@ -49,7 +50,7 @@ class MediaHelper extends EventEmitter {
     micTrack: MediaStreamTrack|null;
     // Chrome为default设备做音频切换的时候，已有的track的label不会更新
     deviceInfo: {
-      mic: {label: string, groupId?: string, deviceId?: string},
+      mic: {compatAudio: boolean, label: string, groupId?: string, deviceId?: string},
     }
     webAudio: WebAudio|null;
     micConstraint: {audio: MediaTrackConstraints}|null;
@@ -63,7 +64,7 @@ class MediaHelper extends EventEmitter {
     audioSource: null,
     micTrack: null,
     // Chrome为default设备做音频切换的时候，已有的track的label不会更新
-    deviceInfo: {mic: {label: ""}},
+    deviceInfo: {mic: {compatAudio: false, label: ""}},
     webAudio: null,
     micConstraint: null,
     mixAudioConf: {
@@ -575,10 +576,21 @@ class MediaHelper extends EventEmitter {
               this.updateAudioSender(this.audio.micTrack);
             }
           }
-          const micSettings = this.audio.micTrack.getSettings();
-          this.audio.deviceInfo.mic.label = this.audio.micTrack.label;
-          this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
-          this.audio.deviceInfo.mic.groupId = micSettings.groupId;
+          const compatAudioSource = compatAudioInputList.findSource(this.audio.micTrack.id)
+          if (compatAudioSource){
+            // 如果是启用了兼容模式的设备，则设备信息来自于 compatAudioSource
+            this.audio.deviceInfo.mic.compatAudio = true
+            const micSettings = compatAudioSource.getSettings();
+            this.audio.deviceInfo.mic.label = compatAudioSource.label;
+            this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
+            this.audio.deviceInfo.mic.groupId = micSettings.groupId;
+          }else{
+            this.audio.deviceInfo.mic.compatAudio = false
+            const micSettings = this.audio.micTrack.getSettings();
+            this.audio.deviceInfo.mic.label = this.audio.micTrack.label;
+            this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
+            this.audio.deviceInfo.mic.groupId = micSettings.groupId;
+          }
           this.stream.client.apiEventReport('setFunction', {
             name: 'set_mic',
             oper: '1',
@@ -644,10 +656,21 @@ class MediaHelper extends EventEmitter {
               this.updateAudioSender(this.audio.micTrack);
             }
           }
-          const micSettings = micTrack.getSettings()
-          this.audio.deviceInfo.mic.label = this.audio.micTrack.label;
-          this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
-          this.audio.deviceInfo.mic.groupId = micSettings.groupId;
+          const compatAudioSource = compatAudioInputList.findSource(this.audio.micTrack.id)
+          if (compatAudioSource){
+            // 如果是启用了兼容模式的设备，则设备信息来自于 compatAudioSource
+            this.audio.deviceInfo.mic.compatAudio = true
+            const micSettings = compatAudioSource.getSettings();
+            this.audio.deviceInfo.mic.label = compatAudioSource.label;
+            this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
+            this.audio.deviceInfo.mic.groupId = micSettings.groupId;
+          }else{
+            this.audio.deviceInfo.mic.compatAudio = false
+            const micSettings = this.audio.micTrack.getSettings();
+            this.audio.deviceInfo.mic.label = this.audio.micTrack.label;
+            this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
+            this.audio.deviceInfo.mic.groupId = micSettings.groupId;
+          }
           this.stream.client.apiEventReport('setFunction', {
             name: 'set_mic',
             oper: '1',
@@ -771,10 +794,21 @@ class MediaHelper extends EventEmitter {
             this.updateAudioSender(this.audio.micTrack);
           }
         }
-        const micSettings = audioTrack.getSettings();
-        this.audio.deviceInfo.mic.label = this.audio.micTrack.label;
-        this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
-        this.audio.deviceInfo.mic.groupId = micSettings.groupId;
+        const compatAudioSource = compatAudioInputList.findSource(this.audio.micTrack.id)
+        if (compatAudioSource){
+          // 如果是启用了兼容模式的设备，则设备信息来自于 compatAudioSource
+          this.audio.deviceInfo.mic.compatAudio = true
+          const micSettings = compatAudioSource.getSettings();
+          this.audio.deviceInfo.mic.label = compatAudioSource.label;
+          this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
+          this.audio.deviceInfo.mic.groupId = micSettings.groupId;
+        }else{
+          this.audio.deviceInfo.mic.compatAudio = false
+          const micSettings = this.audio.micTrack.getSettings();
+          this.audio.deviceInfo.mic.label = this.audio.micTrack.label;
+          this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
+          this.audio.deviceInfo.mic.groupId = micSettings.groupId;
+        }
 
         this.stream.client.apiEventReport('setFunction', {
           name: 'set_mic',
@@ -1176,7 +1210,7 @@ class MediaHelper extends EventEmitter {
       stream.removeTrack(track);
       if (this.audio.micTrack === track){
         this.audio.micTrack = null;
-        this.audio.deviceInfo.mic = {label: ""};
+        this.audio.deviceInfo.mic = {compatAudio: compatAudioInputList.enabled, label: ""};
         this.updateWebAudio()
       }
       if (this.screenAudio.screenAudioTrack === track){
