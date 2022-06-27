@@ -98,6 +98,10 @@ class Play extends EventEmitter {
     this.autoPlayType = 0;
   }
 
+  get getVideoDom() {
+    return this.videoContainerDom;
+  }
+
   _reset() {
     this.videoDom = null
     this.screenDom = null
