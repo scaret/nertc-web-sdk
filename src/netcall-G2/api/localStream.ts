@@ -35,7 +35,6 @@ import {ILogger} from "../types";
 import { isHttpProtocol } from '../util/rtcUtil/rtcSupport'
 import {emptyStreamWith, watchTrack} from "../util/gum";
 import {getParameters} from "../module/parameters";
-import {startBeauty, closeBeauty, transformTrack, setBeautyFilter} from "../util/beauty";
 import * as env from '../util/rtcUtil/rtcEnvironment';
 import {makePrintable} from "../util/rtcUtil/utils";
 import {applyResolution} from '../util/rtcUtil/applyResolution'
@@ -3522,7 +3521,6 @@ class LocalStream extends RTCEventEmitter {
     // intensity不填写就是默认值
     this.lastFilter = options;
     this.logger.log('setFilter() set beauty filter', options, intensity);
-    // setBeautyFilter(options,intensity);
     this.basicBeauty.setFilter(options, intensity);
   }
 
