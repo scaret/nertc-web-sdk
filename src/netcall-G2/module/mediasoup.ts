@@ -406,8 +406,8 @@ class Mediasoup extends EventEmitter {
     this.adapterRef.instance.leave()
   }
 
-  async createProduce (stream:LocalStream, mediaType: "all"|"audio"|"audioSlave"|"video"|"screen") {
-    this.loggerSend.log('发布音视频: ', stream.getId(), mediaType)
+  async createProduce (stream:LocalStream, mediaTypeInput: "all"|"audio"|"audioSlave"|"video"|"screen") {
+    this.loggerSend.log('发布音视频: ', stream.getId(), mediaTypeInput)
     //this._sendTransport.removeListener()
     if (!this._sendTransport){
       throw new RtcError({
@@ -686,7 +686,7 @@ class Mediasoup extends EventEmitter {
       }
     }
 
-    if (mediaType === "audioSlave" || mediaType === "all"){
+    if (mediaTypeInput  === "audioSlave" || mediaTypeInput === "all"){
       if (this._audioSlaveProducer) {
         this.loggerSend.log('音频辅流已经publish，忽略')
       } else {

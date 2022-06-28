@@ -133,7 +133,7 @@ async function getScreenStream (constraint:MediaStreamConstraints, logger:ILogge
             // @ts-ignore
             track.focus("no-focus-change");
           }else{
-            logger.warn("当前浏览器不支持屏幕共享跳转控制")
+            logger.log("当前浏览器不支持屏幕共享跳转控制")
           }
         }
       }
