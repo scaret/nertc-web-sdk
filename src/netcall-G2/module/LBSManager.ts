@@ -86,7 +86,12 @@ export class LBSManager {
     [tag: string]: [string, string]
   } = LBS_BUILD_CONFIG
   private updateTimer: Timer|null = null
-  private lastUpdatedAt:number = 0
+  private lastUpdateStartAt:number = 0
+  private lastUpdate: {
+    activeFrom: number,
+    res: LBS_RES,
+  }|null = null
+  private tagToMainDomain: {[tag: string]: string} = {}
   private lbsState: "uninit"|"builtin"|"local"|"remote" = "uninit"
   private lbsStateWillChangeTimer: Timer|null = null
   
@@ -115,12 +120,12 @@ export class LBSManager {
       return
     }
     const now = Date.now()
-    const lastUpdatedDuration = now - this.lastUpdatedAt
+    const lastUpdatedDuration = now - this.lastUpdateStartAt
     if (lastUpdatedDuration < 3000){
       this.logger.log(`startUpdate 忽略更新请求 ${reason}: 上次更新于 ${lastUpdatedDuration} 毫秒前`)
       return
     }
-    this.lastUpdatedAt = now
+    this.lastUpdateStartAt = now
     this.logger.log(`startUpdate: 开始更新LBS配置。原因：${reason}`)
     let config:LBS_RES | null = null
     try{
@@ -149,13 +154,20 @@ export class LBSManager {
         }, config.ttl * 1000)
       }
       
+      this.lastUpdate = {
+        activeFrom: Date.now(),
+        res: config
+      }
       this.handleLbsStateWillChange(reason)
-      this.addUrlBackup(config.nrtc[0], config.nrtc, 'nrtc')
-      this.addUrlBackup(config.call[0], config.call, 'call')
-      this.addUrlBackup(config.tracking[0], config.tracking, 'tracking')
-
+      this.addUrlBackup(this.tagToMainDomain.nrtc, config.nrtc, 'nrtc')
+      this.addUrlBackup(this.tagToMainDomain.call, config.call, 'call')
+      this.addUrlBackup(this.tagToMainDomain.tracking, config.tracking, 'tracking')
+      
       this.lbsState = "remote"
       this.logger.log(`成功加载远端配置。过期时间：${config.ttl}秒后。preloadTimeSec:${config.preloadTimeSec}：`)
+      this.client.safeEmit('@lbs-config-update', {
+        reason,
+      })
       this.saveConfig(config)
       return config
     }else{
@@ -175,9 +187,13 @@ export class LBSManager {
     for (let tag in this.builtinConfig){
       if (this.builtinConfig[tag].length){
         this.addUrlBackup(this.builtinConfig[tag][0], this.builtinConfig[tag], tag)
+        this.tagToMainDomain[tag] = this.builtinConfig[tag][0]
       }
     }
     this.lbsState = "builtin"
+    this.client.safeEmit('@lbs-config-update', {
+      reason,
+    })
     this.logger.log(`成功加载内建配置 ${reason}。`)
   }
   
@@ -345,14 +361,21 @@ export class LBSManager {
       this.logger.warn(`LBS不使用本地配置：appKey不匹配。${data.appKey} ${this.client._params.appkey}。`)
       return {reason: "appkey", config: null}
     } else {
+      this.lastUpdate = {
+        activeFrom: data.ts,
+        res: data.config
+      }
       this.handleLbsStateWillChange(reason)
-      this.addUrlBackup(data.config.call[0], data.config.call, "call")
-      this.addUrlBackup(data.config.nrtc[0], data.config.nrtc, "nrtc")
-      this.addUrlBackup(data.config.tracking[0], data.config.tracking, "tracking")
+      this.addUrlBackup(this.tagToMainDomain.call, data.config.call, "call")
+      this.addUrlBackup(this.tagToMainDomain.nrtc, data.config.nrtc, "nrtc")
+      this.addUrlBackup(this.tagToMainDomain.tracking, data.config.tracking, "tracking")
       
       this.lbsState = "local"
       this.logger.log(`成功加载本地配置。过期时间：${Math.floor(ttlMs / 1000)} 秒后。`)
       
+      this.client.safeEmit('@lbs-config-update', {
+        reason,
+      })
       return {reason: "success", config: data}
     }
   }
