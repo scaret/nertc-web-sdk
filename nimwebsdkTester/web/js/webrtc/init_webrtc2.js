@@ -762,6 +762,10 @@ function initEvents() {
     $("#currentRole").text(evt.role);
   });
   
+  rtc.client.on('@lbs-config-update', (evt)=>{
+    addLog('lbs配置变为：' + rtc.client.adapterRef.lbsManager.lbsState + '。原因：' + evt.reason)
+  })
+  
   rtc.client.on('rtmp-state', _data => {
     console.warn('=====互动直播状况：', _data)
     addLog(`互动直播推流任务：${_data.taskId}，的状态：${_data.code}`)
@@ -4003,6 +4007,7 @@ $("#confirmOnRefresh").on("click", ()=>{
 $('#lbsRemoveLocalConfig').on("click", ()=>{
   localStorage.removeItem(rtc.client.adapterRef.lbsManager.localStorageKey)
   addLog("已删除lbs本地配置")
+  location.reload()
 })
 
 $('#lbsLoadBuiltinConfig').on("click", ()=>{
@@ -4030,6 +4035,16 @@ $('#lbsStartUpdate').on("click", async ()=>{
     addLog("载入lbs远端配置失败")
   }
 })
+
+const lbsTimer = setInterval(()=>{
+  let lbsState = rtc.client.adapterRef.lbsManager.lbsState
+  document.getElementById("lbsState").innerText = lbsState
+  if (rtc.client.adapterRef.lbsManager.lastUpdate){
+    document.getElementById("lbsExpireTime").innerText = rtc.client.adapterRef.lbsManager.lastUpdate.res.ttl - Math.floor( (Date.now() - rtc.client.adapterRef.lbsManager.lastUpdate.activeFrom) / 1000)
+  }else{
+    document.getElementById("lbsExpireTime").innerText = ""
+  }
+}, 1000)
 
 $("#enableCompatMode").click(()=>{
   NERTC.Device.enableCompatMode()
