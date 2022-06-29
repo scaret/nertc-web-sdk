@@ -2614,7 +2614,7 @@ $('#playScreenAudio').on('click', () => {
     screenProfile.resolution = NERTC.VIDEO_QUALITY[screenResolution]
   }
   const screenFrameRate = $('#sessionConfigScreenFrameRate').val()
-  if (screenFrameRate)
+  if (screenFrameRate){
     screenProfile.frameRate = NERTC.VIDEO_FRAME_RATE[screenFrameRate]
   }
   if (screenResolution || screenFrameRate){
