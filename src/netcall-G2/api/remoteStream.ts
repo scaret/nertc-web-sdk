@@ -38,6 +38,7 @@ class RemoteStream extends RTCEventEmitter {
   public readonly streamID:number|string;
   public readonly stringStreamID:string;
   public audio: boolean;
+  public audioSlave: boolean;
   public video: boolean;
   public screen: boolean;
   public client: Client;
@@ -56,9 +57,19 @@ class RemoteStream extends RTCEventEmitter {
   private consumerId: string|null;
   private producerId: string|null;
   public platformType: PlatformType = PlatformType.unknown;
+  public isRemote: boolean = true;
   public pubStatus:PubStatus = {
     audio: {
       audio: false,
+      producerId: '',
+      consumerId: '',
+      consumerStatus: 'init',
+      stopconsumerStatus: 'init',
+      mute: false,
+      simulcastEnable: false,
+    },
+    audioSlave: {
+      audioSlave: false,
       producerId: '',
       consumerId: '',
       consumerStatus: 'init',
@@ -88,10 +99,12 @@ class RemoteStream extends RTCEventEmitter {
   subConf: SubscribeConfig;
   public subStatus: {
     audio: boolean;
+    audioSlave: boolean;
     video: boolean;
     screen: boolean
   } = {
     audio: false,
+    audioSlave: false,
     video: false,
     screen: false
   };
@@ -99,18 +112,22 @@ class RemoteStream extends RTCEventEmitter {
     // localStream只有send
     // remoteStream的send表示发送端的mute状态，recv表示接收端的mute状态
     audio: {send: boolean, recv: boolean};
+    audioSlave: {send: boolean, recv: boolean};
     video: {send: boolean, recv: boolean};
     screen: {send: boolean, recv: boolean};
   } = {
     audio: {send: false, recv: false},
+    audioSlave: {send: false, recv: false},
     video: {send: false, recv: false},
     screen: {send: false, recv: false},
   };
-  public isRemote: true = true;
+
   private audioPlay_: boolean;
+  private audioSlavePlay_: boolean;
   private videoPlay_: boolean;
   private screenPlay_: boolean;
   public active:boolean = true;
+  public destroyed:boolean = false;
   public logger: ILogger;
   remoteStreamId : number;
   public spatialPosition: {x: number, y: number} = {x: 0, y: 0}
@@ -174,10 +191,12 @@ class RemoteStream extends RTCEventEmitter {
     this.consumerId = null;
     this.producerId = null;
     this.audioPlay_ = false;
+    this.audioSlavePlay_ = false
     this.videoPlay_ = false;
     this.screenPlay_ = false;
     this.subConf = {
       audio: true,
+      audioSlave: true,
       video: true,
       screen: true,
       highOrLow: {
@@ -193,6 +212,7 @@ class RemoteStream extends RTCEventEmitter {
     this.streamID = options.uid
     this.stringStreamID = this.streamID.toString()
     this.audio = options.audio
+    this.audioSlave = options.audioSlave || false
     this.video = options.video || false
     this.screen = options.screen || false
     this.client = options.client
@@ -231,6 +251,7 @@ class RemoteStream extends RTCEventEmitter {
     // this.streamID = ''
     // this.stringStreamID = ''
     this.audio = false
+    this.audioSlave = false
     this.video = false
     this.screen = false
     this.videoView = null
@@ -241,6 +262,15 @@ class RemoteStream extends RTCEventEmitter {
     this.pubStatus = {
       audio: {
         audio: false,
+        producerId: '',
+        consumerId: '',
+        consumerStatus: 'init',
+        stopconsumerStatus: 'init',
+        mute: false,
+        simulcastEnable: false,
+      },
+      audioSlave: {
+        audioSlave: false,
         producerId: '',
         consumerId: '',
         consumerStatus: 'init',
@@ -269,6 +299,7 @@ class RemoteStream extends RTCEventEmitter {
     }
     this.subConf = {
       audio: true,
+      audioSlave: true,
       video: true,
       screen: true,
       highOrLow: {
@@ -278,11 +309,13 @@ class RemoteStream extends RTCEventEmitter {
     }
     this.subStatus = {
       audio: false,
+      audioSlave: false,
       video: false,
       screen: false,
     }
     this.muteStatus = {
       audio: {send: false, recv: false},
+      audioSlave: {send: false, recv: false},
       video: {send: false, recv: false},
       screen: {send: false, recv: false},
     }
@@ -394,6 +427,10 @@ class RemoteStream extends RTCEventEmitter {
     if (typeof conf.audio === "boolean"){
       this.subConf.audio = conf.audio;
     }
+    if (typeof conf.audioSlave === "boolean"){
+      this.subConf.audioSlave = conf.audioSlave;
+    }
+
     if (typeof conf.video === "boolean"){
       this.subConf.video = conf.video;
     }else if (conf.video === "high"){
@@ -418,6 +455,13 @@ class RemoteStream extends RTCEventEmitter {
       this.audio = true
     } else {
       this.subConf.audio = false
+    }
+
+    if (this.pubStatus.audioSlave.audioSlave && this.subConf.audioSlave) {
+      this.subConf.audioSlave = true
+      this.audioSlave = true
+    } else {
+      this.subConf.audioSlave = false
     }
 
     if (this.pubStatus.video.video && this.subConf.video) {
@@ -498,6 +542,9 @@ class RemoteStream extends RTCEventEmitter {
     if (!isExistOptions({tag: 'Stream.playOptions.audio', value: playOptions.audio}).result){
       playOptions.audio = true;
     }
+    if (!isExistOptions({tag: 'Stream.playOptions.audioSlave', value: playOptions.audioSlave}).result){
+      playOptions.audioSlave = true;
+    }
     if (!isExistOptions({tag: 'Stream.playOptions.video', value: playOptions.video}).result){
       playOptions.video = true;
     }
@@ -523,6 +570,22 @@ class RemoteStream extends RTCEventEmitter {
           this.client.emit('notAllowedError', err) 
           this.client.emit('NotAllowedError', err) // 兼容旧版本
           this.safeEmit('notAllowedError', error)
+          this.client.emit('notAllowedError', error)
+        }
+      }
+    }
+
+    if(playOptions.audioSlave && this._play && this.mediaHelper.screenAudio.screenAudioStream.getTracks().length){
+      if (this.client.spatialManager){
+        this.logger.log(`启用了空间音频，跳过本地音频辅流播放。`)
+      }else{
+        this.logger.log(`uid ${this.stringStreamID} 开始播放远端音频辅流`)
+        try{
+          await this._play.playAudioSlaveStream(this.mediaHelper.screenAudio.screenAudioStream, playOptions.muted)
+          this.audioSlavePlay_ = true;
+        }catch(error) {
+          this.audioSlavePlay_ = false;
+          this.client.emit('notAllowedError', error)
         }
       }
     }
@@ -536,10 +599,10 @@ class RemoteStream extends RTCEventEmitter {
       view = null
     }
 
-    if (view){
-      if (playOptions.video){
+    if (view) {
+      if (playOptions.video) {
         this.videoView = view;
-        if(this._play && this.mediaHelper.video.videoStream.getVideoTracks().length){
+        if (this._play && this.mediaHelper.video.videoStream.getVideoTracks().length) {
           this.logger.log(`uid ${this.stringStreamID} 开始启动视频播放 主流 远端`);
           try{
             let end = 'remote';
@@ -548,7 +611,7 @@ class RemoteStream extends RTCEventEmitter {
               this._play.setVideoRender(this.renderMode.remote.video)
             }
             this.videoPlay_ = true;
-          }catch(error) {
+          } catch(error) {
             // let ErrorMessage = 'NotAllowedError: videoplay is not allowed in current browser, please refer to https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082' 
             // throw new RtcError({
             //   code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
@@ -565,7 +628,7 @@ class RemoteStream extends RTCEventEmitter {
           }
         }  
       }
-      if (playOptions.screen){
+      if (playOptions.screen) {
         this.screenView = view;
         if(this._play && this.mediaHelper && this.mediaHelper.screen.screenVideoStream.getVideoTracks().length){
           this.logger.log(`uid ${this.stringStreamID} 开始启动视频播放 辅流 远端`);
@@ -611,6 +674,9 @@ class RemoteStream extends RTCEventEmitter {
       await this._play.resume();
       if (this._play.audioDom && !this._play.audioDom.paused){
         this.audioPlay_ = true;
+      }
+      if (this._play.audioSlaveDom && !this._play.audioSlaveDom.paused){
+        this.audioSlavePlay_ = true;
       }
       if (this._play.videoDom && !this._play.videoDom.paused){
         this.videoPlay_ = true;
@@ -687,11 +753,14 @@ class RemoteStream extends RTCEventEmitter {
    * @return {Void}
    */
   stop (type?:MediaTypeShort) {
-    this.logger.log(`uid ${this.stringStreamID} Stream.stop: 停止播放 ${type || "音视频流"}`)
+    this.logger.warn(`uid ${this.stringStreamID} Stream.stop: 停止播放 ${type || "音视频流"}`)
     if(!this._play) return
     if (type === 'audio') {
       this._play.stopPlayAudioStream()
       this.audioPlay_ = false;
+    } else if (type === 'audioSlave') {
+      this._play.stopPlayAudioSlaveStream()
+      this.audioSlavePlay_ = false;
     } else if (type === 'video') {
       this._play.stopPlayVideoStream()
       this.videoPlay_ = false;
@@ -699,9 +768,12 @@ class RemoteStream extends RTCEventEmitter {
       this._play.stopPlayScreenStream()
       this.screenPlay_ = false;
     } else {
-      if(this._play.audioDom){
+      if (this._play.audioDom) {
         this._play.stopPlayAudioStream()
         this.audioPlay_ = false;
+      } if(this._play.audioSlaveDom) {
+        this._play.stopPlayAudioSlaveStream()
+        this.audioSlavePlay_ = false;
       } if (this._play.videoDom){
         this._play.stopPlayVideoStream()
         this.videoPlay_ = false;
@@ -737,6 +809,8 @@ class RemoteStream extends RTCEventEmitter {
 
     } else if (type === 'audio') {
       isPlaying = await this._play.isPlayAudioStream()
+    } else if (type === 'audioSlave') {
+      isPlaying = await this._play.isPlayAudioSlaveStream()
     } else if (type === 'video') {
       isPlaying = await this._play.isPlayVideoStream()
     }else if (type === 'screen') {
@@ -778,7 +852,7 @@ class RemoteStream extends RTCEventEmitter {
           message: 'no play'
         })
       }
-      this.muteStatus.audio.recv = true;
+      this.muteStatus.audio.recv = false;
       this.mediaHelper.audio.audioStream.getAudioTracks().length && (this.mediaHelper.audio.audioStream.getAudioTracks()[0].enabled = true)
       this._play.playAudioStream(this.mediaHelper.audio.audioStream, false)
       this.client.apiFrequencyControl({
@@ -845,6 +919,83 @@ class RemoteStream extends RTCEventEmitter {
   }
 
   /**
+   * 启用音频辅流轨道
+   */
+  async unmuteAudioSlave () {
+    this.logger.log('启用音频辅流轨道: ', this.stringStreamID)
+    try {
+      if (!this._play){
+        throw new RtcError({
+          code: ErrorCode.NO_PLAY,
+          message: 'no play'
+        })
+      }
+      this.muteStatus.audioSlave.recv = false;
+      this.mediaHelper.screenAudio.screenAudioStream.getAudioTracks().length && (this.mediaHelper.screenAudio.screenAudioStream.getAudioTracks()[0].enabled = true)
+      this._play.playAudioSlaveStream(this.mediaHelper.screenAudio.screenAudioStream, false)
+      this.client.apiFrequencyControl({
+        name: 'unmuteAudioSlave',
+        code: 0,
+        param: JSON.stringify({
+          streamID: this.stringStreamID
+        }, null, ' ')
+      })
+    } catch (e) {
+      this.logger.error('API调用失败：Stream:unmuteAudioSlave' ,e.name, e.message, e);
+      this.client.apiFrequencyControl({
+        name: 'unmuteAudioSlave',
+        code: -1,
+        param: JSON.stringify({
+          streamID: this.stringStreamID,
+          reason: e
+        }, null, ' ')
+      })
+    }
+  }
+
+  /**
+   * 禁用音频轨道
+   * @function muteAudio
+   * @memberOf Stream#
+   * @return {Promise}
+   */
+  async muteAudioSlave () {
+    this.logger.log('禁用音频辅流轨道: ', this.stringStreamID)
+
+    try {
+      if (!this._play){
+        throw new RtcError({
+          code: ErrorCode.NO_PLAY,
+          message: 'no play'
+        })
+      }
+      this.muteStatus.audioSlave.recv = true
+      if (this.mediaHelper.screenAudio.screenAudioStream.getAudioTracks().length){
+        this.mediaHelper.screenAudio.screenAudioStream.getAudioTracks()[0].enabled = false;
+      }
+      this._play.stopPlayAudioSlaveStream()
+      this.client.apiFrequencyControl({
+        name: 'muteAudioSlave',
+        code: 0,
+        param: JSON.stringify({
+          streamID: this.stringStreamID
+        }, null, ' ')
+      })
+    } catch (e) {
+      this.logger.error('API调用失败：Stream:muteAudioSlave' ,e.name, e.message, e);
+      this.client.apiFrequencyControl({
+        name: 'muteAudioSlave',
+        code: -1,
+        param: JSON.stringify({
+          streamID: this.stringStreamID,
+          reason: e
+        }, null, ' ')
+      })
+    }
+  }
+
+
+  /**
    * 当前Stream是否有音频
    * @function hasAudio
    * @memberOf Stream#
@@ -852,6 +1003,10 @@ class RemoteStream extends RTCEventEmitter {
    */
   hasAudio () {
     return this.mediaHelper.audio.audioStream.getAudioTracks().length > 0
+  }
+
+  hasAudioSlave () {
+    return this.mediaHelper.screenAudio.screenAudioStream.getAudioTracks().length > 0
   }
 
   /**
@@ -884,7 +1039,7 @@ class RemoteStream extends RTCEventEmitter {
       }
       this._play.setPlayVolume(volume)
     } else {
-      this.logger.log(`没有音频流，请检查是否有发布过音频`)
+      this.logger.log(`没有音频流，请检查是否有订阅过音频`)
       reason = 'INVALID_OPERATION'
     }
     if (reason) {
@@ -908,6 +1063,52 @@ class RemoteStream extends RTCEventEmitter {
         volume,
         isRemote: true
       }
+    })
+  }
+
+  setAudioSlaveVolume (volume = 100) {
+    let reason = null
+    if (!Number.isInteger(volume)) {
+      this.logger.log('volume 为 0 - 100 的整数')
+      reason = 'INVALID_ARGUMENTS'
+    } else if (volume < 0) {
+      volume = 0
+    } else if (volume > 100) {
+      volume = 255
+    } else {
+      volume = volume * 2.55
+    }
+    this.logger.log(`调节${this.stringStreamID}的音频辅流音量大小: ${volume}`)
+
+    if (this.audioSlave) {
+      if (!this._play){
+        throw new RtcError({
+          code: ErrorCode.NO_PLAY,
+          message: 'no play'
+        })
+      }
+      this._play.setPlayAudioSlaveVolume(volume)
+    } else {
+      this.logger.log(`没有音频辅流，请检查是否有订阅过音频辅流`)
+      reason = 'INVALID_OPERATION'
+    }
+    if (reason) {
+      this.client.apiFrequencyControl({
+        name: 'setAudioSlaveVolume',
+        code: -1,
+        param: JSON.stringify({
+          volume,
+          reason
+        }, null, ' ')
+      })
+      return reason
+    }
+    this.client.apiFrequencyControl({
+      name: 'setAudioSlaveVolume',
+      code: 0,
+      param: JSON.stringify({
+        volume
+      }, null, ' ')
     })
   }
 
@@ -1369,7 +1570,7 @@ class RemoteStream extends RTCEventEmitter {
   }
   
    clearRemotePubStatus (){
-     let mediaTypes:MediaTypeShort[] = ["audio", "video", "screen"];
+     let mediaTypes:MediaTypeShort[] = ["audio", "audioSlave", "video", "screen"];
      for (let mediaType of mediaTypes){
        this[mediaType] = false
        //@ts-ignore

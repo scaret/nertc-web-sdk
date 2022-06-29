@@ -86,7 +86,9 @@ export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: 
   // 3. 处理上行发送
   let sender, senderLow
   if (!mediaHelper.stream.isRemote){
+    //@ts-ignore
     sender = mediaHelper.stream.getSender(mediaType, "high")
+    //@ts-ignore
     senderLow = mediaHelper.stream.getSender(mediaType, "low")
   }
   if (sender){
@@ -208,7 +210,9 @@ export async function disablePreProcessing(mediaHelper: MediaHelper, mediaType: 
   // 3. 处理上行发送
   let sender, senderLow
   if (!mediaHelper.stream.isRemote){
+    //@ts-ignore
     sender = mediaHelper.stream.getSender(mediaType, "high")
+    //@ts-ignore
     senderLow = mediaHelper.stream.getSender(mediaType, "low")
   }
   if (sender){

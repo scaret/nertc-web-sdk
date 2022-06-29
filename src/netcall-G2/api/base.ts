@@ -412,7 +412,7 @@ class Base extends RTCEventEmitter {
     this.logger.log(`${uid}离开房间`);
     const remotStream = this.adapterRef.remoteStreamMap[uid];
     if (remotStream?.active) {
-      const mediaTypeList:MediaTypeShort[] = ["audio", "video", "screen"]
+      const mediaTypeList:MediaTypeShort[] = ["audio", "video", "screen", "audioSlave"]
       for (let mediaType of mediaTypeList){
         if (remotStream.pubStatus[mediaType].producerId){
           this.adapterRef.instance.safeEmit('stream-removed', {stream: remotStream, 'mediaType': mediaType, reason: "onPeerLeave"})
@@ -603,7 +603,7 @@ class Base extends RTCEventEmitter {
   // 不支持 firefox
   getUidAndKindBySsrc(ssrc:number) {
     // 发送端
-    const mediaTypeList:MediaTypeShort[] = ["audio", "video", "screen"]
+    const mediaTypeList:MediaTypeShort[] = ["audio", "video", "screen", "audioSlave"]
     const streamTypeList: ("high"|"low")[] = ["high", "low"]
     for (let mediaType of mediaTypeList){
       for (let streamType of streamTypeList){
@@ -620,6 +620,8 @@ class Base extends RTCEventEmitter {
     for (let i in this.adapterRef.uid2SscrList) {
       if(this.adapterRef.uid2SscrList[i].audio.ssrc == ssrc){
         return {uid: i, kind: 'audio', streamType: "high"}
+      } else if(this.adapterRef.uid2SscrList[i].audioSlave.ssrc == ssrc){
+        return {uid: i, kind: 'audioSlave', streamType: "high"}
       } else if(this.adapterRef.uid2SscrList[i].video && this.adapterRef.uid2SscrList[i].video.ssrc == ssrc){
         return {uid: i, kind: 'video', streamType: "high"}
       } else if(this.adapterRef.uid2SscrList[i].screen && this.adapterRef.uid2SscrList[i].screen.ssrc == ssrc){
@@ -637,6 +639,7 @@ class Base extends RTCEventEmitter {
     if (!this.adapterRef.uid2SscrList[uid]) {
       this.adapterRef.uid2SscrList[uid] = {
         audio: {ssrc: 0},
+        audioSlave: {ssrc: 0},
         video: {ssrc: 0},
         screen: {ssrc: 0},
       };

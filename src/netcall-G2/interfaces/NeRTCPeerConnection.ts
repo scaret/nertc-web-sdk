@@ -3,6 +3,7 @@ export interface NeRTCPeerConnection extends RTCPeerConnection{
   pcid?: number;
   iceStartedAt?: number;
   iceConnectedAt?: number;
+  audioSlaveSender?: RTCRtpSender;
   videoSender?: RTCRtpSender;
   screenSender?: RTCRtpSender;
   videoSenderLow?: RTCRtpSender;

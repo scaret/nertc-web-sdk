@@ -131,7 +131,7 @@ export abstract class HandlerInterface extends EnhancedEventEmitter
 
   abstract send(options: HandlerSendOptions): Promise<HandlerSendResult>;
 
-  abstract stopSending(localId: string, kind: 'audio'|'video'|'screenShare'): Promise<void>;
+  abstract stopSending(localId: string, kind: 'audio'|'video'|'screenShare'|'audioSlave'): Promise<void>;
 
   abstract fillRemoteRecvSdp(options: FillRemoteRecvSdpOptions): any;
   

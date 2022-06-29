@@ -337,6 +337,7 @@ class Signalling extends EventEmitter {
           remoteStream = new RemoteStream({
             uid,
             audio: false,
+            audioSlave: false,
             video: false,
             screen: false,
             client: this.adapterRef.instance,
@@ -392,6 +393,9 @@ class Signalling extends EventEmitter {
           case "audio":
             mediaTypeShort = 'audio';
             break;
+          case "subAudio":
+            mediaTypeShort = 'audioSlave';
+            break;
           default:
             this.logger.warn(`OnNewProducer 不支持的媒体类型:${mediaType}, uid ${uid}`)
             return
@@ -401,6 +405,7 @@ class Signalling extends EventEmitter {
           remoteStream = new RemoteStream({
             uid,
             audio: mediaTypeShort === 'audio',
+            audioSlave: mediaTypeShort === 'audioSlave',
             video: mediaTypeShort === 'video',
             screen: mediaTypeShort === 'screen',
             client: this.adapterRef.instance,
@@ -465,6 +470,9 @@ class Signalling extends EventEmitter {
           case "audio":
             mediaTypeShort = 'audio';
             break;
+          case "subAudio":
+            mediaTypeShort = 'audioSlave';
+            break;
           default:
             this.logger.warn(`OnProducerClose 不支持的媒体类型 ${mediaType} ${uid}`)
             return;
@@ -504,6 +512,14 @@ class Signalling extends EventEmitter {
             data.recvFirstAudioFrame = false
             data.recvFirstAudioPackage = false
           }
+        } else if (mediaTypeShort === 'audioSlave') {
+          remoteStream.mediaHelper.screenAudio.screenAudioTrack = null;
+          emptyStreamWith(remoteStream.mediaHelper.screenAudio.screenAudioStream, null);
+          /*delete this.adapterRef.remoteAudioStats[uid];
+          if (data) {
+            data.recvFirstAudioFrame = false
+            data.recvFirstAudioPackage = false
+          }*/
         } else if (mediaTypeShort === 'video') {
           remoteStream.mediaHelper.video.cameraTrack = null;
           emptyStreamWith(remoteStream.mediaHelper.video.videoStream, null)
@@ -909,7 +925,8 @@ class Signalling extends EventEmitter {
         this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-error');
         this._joinFailed(response.code, errMsg)
         return
-      }
+      } 
+      
       // 服务器禁用音视频: 1 禁用   0 和 2 取消禁用
       if(response.externData.audioRight === 1){
         this.adapterRef.isAudioBanned = true;
@@ -1062,6 +1079,7 @@ class Signalling extends EventEmitter {
             remoteStream = new RemoteStream({
               uid: uid,
               audio: false,
+              audioSlave: false,
               video: false,
               screen: false,
               client: this.adapterRef.instance,
@@ -1088,6 +1106,9 @@ class Signalling extends EventEmitter {
                   break;
                 case "audio":
                   mediaTypeShort = "audio";
+                  break;
+                case "subAudio":
+                  mediaTypeShort = "audioSlave";
                   break;
                 default:
                   this.logger.warn(`join: 不支持的媒体类型 ${mediaType} ${uid}`)
@@ -1524,6 +1545,7 @@ class Signalling extends EventEmitter {
         remoteStream = new RemoteStream({
           uid,
           audio: false,
+          audioSlave: false,
           video: false,
           screen: false,
           client: this.adapterRef.instance,
