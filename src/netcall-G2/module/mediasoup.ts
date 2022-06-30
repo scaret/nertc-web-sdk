@@ -215,7 +215,6 @@ class Mediasoup extends EventEmitter {
       if(!env.IS_FIREFOX){
         iceTransportPolicy = 'relay'
       }
-      
     }
     if (this.adapterRef.testConf.turnAddr) {
       iceServers.length = 0
@@ -577,13 +576,29 @@ class Mediasoup extends EventEmitter {
               message: 'No _protoo 2'
             })
           }
-          const { code, transportId, iceParameters, iceCandidates, dtlsParameters, producerId } = 
+          const { code, transportId, iceParameters, iceCandidates, turnParameters, dtlsParameters, producerId } = 
             await this.adapterRef._signalling._protoo.request('Produce', producerData);
 
           if (transportId !== undefined) {
             this._sendTransport._id = transportId;
           }
           this.loggerSend.log(`produce请求反馈结果, code: ${code}, kind: ${kind}, producerId:`, producerId)
+          
+          if (turnParameters) { //服务器反馈turn server，sdk更新ice Server
+            let iceServers = [];
+            let iceTransportPolicy:RTCIceTransportPolicy = 'all';
+            iceServers.push({
+              urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=udp',
+              credential: turnParameters.password,
+              username: turnParameters.username
+            }, {
+              urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=tcp',
+              credential: turnParameters.password,
+              username: turnParameters.username
+            })
+            await this._sendTransport.updateIceServers({iceServers})
+          }
+
           let codecInfo = {codecParam: null, codecName: null};
           if (appData.mediaType === 'audio') {
             this._micProducerId = producerId
@@ -1179,7 +1194,7 @@ class Mediasoup extends EventEmitter {
       this.adapterRef.instance.reBuildRecvTransport()
       return this.checkConsumerList(info);
     }
-    let { transportId, iceParameters, iceCandidates, dtlsParameters, probeSSrc, rtpParameters, producerId, consumerId, code, errMsg } = consumeRes;
+    let { transportId, iceParameters, iceCandidates, dtlsParameters, probeSSrc, rtpParameters, turnParameters, producerId, consumerId, code, errMsg } = consumeRes;
     if (code === 200) {
       this.loggerRecv.log(`consume反馈结果: code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
     } else {
@@ -1200,6 +1215,22 @@ class Mediasoup extends EventEmitter {
     try {
       const peerId = consumeRes.uid
       if (code !== 200 || !this.adapterRef.remoteStreamMap[uid]) {
+
+        if (turnParameters) { //服务器反馈turn server，sdk更新ice Server
+          let iceServers = [];
+          let iceTransportPolicy:RTCIceTransportPolicy = 'all';
+          iceServers.push({
+            urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=udp',
+            credential: turnParameters.password,
+            username: turnParameters.username
+          }, {
+            urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=tcp',
+            credential: turnParameters.password,
+            username: turnParameters.username
+          })
+          await this._recvTransport.updateIceServers({iceServers})
+        }
+
         this.loggerRecv.warn('remoteStream.pubStatus: ', remoteStream.pubStatus)
         
         if (peerId && uid != peerId) {
@@ -1556,7 +1587,7 @@ class Mediasoup extends EventEmitter {
             }
           } 
         });
-    } catch (e) {
+    } catch (e: any) {
       this.loggerSend.error('muteMic() | failed: ', e.name, e.message, e);
       return Promise.reject(e)
     }
