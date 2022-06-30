@@ -984,11 +984,19 @@ class Signalling extends EventEmitter {
       this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
       this.adapterRef.connectState.curState = 'CONNECTED'
       
-      if (response.aslActiveNum){
-        this.logger.log(`aslActiveNum数量： ${response.aslActiveNum}`)
-        this.adapterRef.channelInfo.aslActiveNum = response.aslActiveNum
+      if (response.supportWebAsl){
+        if (response.aslActiveNum){
+          this.logger.log(`aslActiveNum数量： ${response.aslActiveNum}`)
+          this.adapterRef.channelInfo.aslActiveNum = response.aslActiveNum
+        }else{
+          this.logger.warn(`服务端支持ASL但没有返回ASL数量`)
+        }
       }else{
-       this.logger.warn(`服务端不支持ASL`)
+        this.logger.log(`服务端未开启ASL`)
+      }
+      this.adapterRef.instance._audioAsl.serverEnabled = !!response.supportWebAsl
+      if (this.adapterRef.instance._audioAsl.clientEnabled && !this.adapterRef.instance._audioAsl.serverEnabled){
+        this.adapterRef.instance.safeEmit('@AslServerNotSupported')
       }
       
       if (this.adapterRef.channelStatus === 'connectioning') {

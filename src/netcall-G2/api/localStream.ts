@@ -2558,12 +2558,13 @@ class LocalStream extends RTCEventEmitter {
     if (this.mediaHelper.video.cameraTrack){
       try{
         this.logger.log(`setVideoProfile 尝试动态修改分辨率【${this.mediaHelper.video.cameraTrack.label}】`)
-        await applyResolution(
-          this.mediaHelper.video.cameraTrack,
-          this.mediaHelper.video.captureConfig.high.width,
-          this.mediaHelper.video.captureConfig.high.height,
-          this.logger
-        )
+        await applyResolution({
+          track: this._cameraTrack?.readyState === "live" ? this._cameraTrack : this.mediaHelper.video.cameraTrack,
+          targetWidth: this.mediaHelper.video.captureConfig.high.width,
+          targetHeight: this.mediaHelper.video.captureConfig.high.height,
+          keepAspectRatio: !!this.mediaHelper.video.videoTrackLow,
+          logger: this.logger,
+        })
       }catch(e){
         this.logger.error(`无法使用动态分辨率:`, e.name, e.message)
       }
@@ -2764,12 +2765,13 @@ class LocalStream extends RTCEventEmitter {
     this.logger.log(`setScreenProfile ${JSON.stringify(profile)} 屏幕共享采集参数 ${JSON.stringify(this.mediaHelper.screen.captureConfig.high)} 编码参数 ${JSON.stringify(this.mediaHelper.screen.encoderConfig.high)}`)
     this.client.adapterRef.channelInfo.sessionConfig.screenQuality = profile
     if (this.mediaHelper.screen.screenVideoTrack){
-      applyResolution(
-        this.mediaHelper.screen.screenVideoTrack,
-        this.mediaHelper.screen.captureConfig.high.width,
-        this.mediaHelper.screen.captureConfig.high.height,
-        this.logger
-      )
+      applyResolution({
+          track: this.mediaHelper.screen.screenVideoTrack,
+          targetWidth: this.mediaHelper.screen.captureConfig.high.width,
+          targetHeight: this.mediaHelper.screen.captureConfig.high.height,
+          keepAspectRatio: !!this.mediaHelper.screen.screenVideoTrackLow,
+          logger: this.logger,
+      })
     }
 
     const sender = this.getSender("screen", "high")

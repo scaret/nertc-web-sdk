@@ -518,6 +518,11 @@ export class LBSManager {
             // 如果备用链路尚未启动，则直接启用备用链路
             this.logger.warn(`主线路请求发生错误，启用备用线路 【主  ${urlSetting.url} 】【备 ${urlSettings[1].url} 】` , xhr)
             urlSettings[1].fire()
+          } else if (this.isAllRequestsFinished(urlSettings)) {
+            return reject(new RtcError({
+              code: LBS_ERR_CODE.JSON_ERROR,
+              message: 'JSON_ERROR'
+            }))
           }
         } else if (xhr.response?.code === 500){
           // 兼容getChannelInfo返回500的情况
@@ -526,6 +531,9 @@ export class LBSManager {
             // 如果备用链路尚未启动，则直接启用备用链路
             this.logger.warn(`主线路请求发生错误，启用备用线路 【主  ${urlSetting.url} 】【备 ${urlSettings[1].url} 】` , xhr.response)
             urlSettings[1].fire()
+          } else if (this.isAllRequestsFinished(urlSettings)) {
+            var data = xhr.response
+            resolve(data)
           }
         } else if (
           urlSetting.item.tag === "lbs" &&
@@ -536,6 +544,8 @@ export class LBSManager {
             // 如果备用链路尚未启动，则直接启用备用链路
             this.logger.warn(`主线路请求发生错误，启用备用线路 【主  ${urlSetting.url} 】【备 ${urlSettings[1].url} 】` , "FORMAT_ERROR")
             urlSettings[1].fire()
+          }else{
+            return resolve(xhr.response)
           }
         } else {
           this.markSuccess(urlSetting)

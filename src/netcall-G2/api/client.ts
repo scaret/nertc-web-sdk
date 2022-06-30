@@ -57,7 +57,12 @@ const BigNumber = require("bignumber.js");
  */
 class Client extends Base {
   public _roleInfo: { userRole: number; audienceList: {} };
-  public _audioAsl: boolean = false
+  public _audioAsl: {
+    serverEnabled?: boolean,
+    clientEnabled: boolean,
+  } = {
+    clientEnabled: false,
+  };
   public upLoadParam:any;
   public destroyed: boolean = false;
   public operationQueue: OperationQueue;
@@ -482,17 +487,28 @@ class Client extends Base {
       this.logger.error(msg)
       throw new Error(msg)
     }
-    if (this._audioAsl === enable){
-      this.logger.warn(`enableAudioAsl 未改变开启状态：${this._audioAsl}`)
-    }else{
-      this.logger.log(`enableAudioAsl ${this._audioAsl} => ${enable}`)
-      this._audioAsl = enable
+    if (this._audioAsl.clientEnabled === enable){
+      this.logger.warn(`enableAudioAsl 未改变开启状态：`, this._audioAsl)
+    } else {
+      if (enable === true){
+        if (this._audioAsl.serverEnabled === false){
+          this.logger.warn(`enableAudioAsl 设置成功但服务端未开启ASL。`)
+          this.safeEmit('@AslServerNotSupported')
+        }else if (this._audioAsl.serverEnabled === true){
+          this.logger.log(`enableAudioAsl 成功开启ASL。`)
+        }else{
+          this.logger.log(`enableAudioAsl 客户端开启成功。`)
+        }
+      }
+      this.logger.log(`enableAudioAsl ${this._audioAsl.clientEnabled} => ${enable}`)
+      this._audioAsl.clientEnabled = enable
     }
     this.apiFrequencyControl({
       name: 'enableAudioAsl',
       code: 0,
       param: {
-        enable
+        enable,
+        status: this._audioAsl
       }
     })
   }
