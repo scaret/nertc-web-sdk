@@ -839,6 +839,7 @@ export interface Client{
   getSubStatus: (stream: RemoteStream, mediaType: MediaTypeShort|"all") => MediaSubStatus
   clearMember: (uid: number | string) => void
   resetChannel: ()=>void
+  bindLocalStream: (stream: LocalStream)=>void
   // 注：当前接口不应存在只有用户调用的方法，以避免SDK内部调用。
   // 例如，开启空间音频时禁止用户Subscribe，此时SDK内部应调用doSubscribe。
   doSubscribe: (stream: RemoteStream)=>Promise<void>

@@ -1021,7 +1021,7 @@ $('#joinChannel-btn').on('click', async () => {
           updateLocalWatermark()
         }
       }
-    }else if (enableAudio || enableVideo || enableScreen || enableScreenAudio || NERTC.getParameters().allowEmptyMedia){
+    }else if (enableAudio || enableVideo || enableScreen || enableScreenAudio || NERTC.getParameters().allowEmptyMedia || true){
       initLocalStream()
     }else{
       addLog("加入频道后未执行初始化本地流")
@@ -1851,7 +1851,7 @@ function initLocalStream() {
   }).catch(err=>{
     console.warn('音视频初始化失败: ', err)
     addLog('音视频初始化失败, 请检查设备列表')
-    rtc.localStream = null
+    //rtc.localStream = null
   })
   //插件
   rtc.localStream.on('plugin-load', onPluginLoaded);

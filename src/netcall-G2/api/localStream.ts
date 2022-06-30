@@ -58,14 +58,14 @@ let localStreamCnt = 0;
 
 export interface LocalStreamOpenOptions{
   type: MediaTypeShort|"screenAudio",
-    deviceId?: string,
-    sourceId?: string,
-    facingMode?: string,
-    screenAudio?: boolean,
-    audioSource?: MediaStreamTrack,
-    videoSource?: MediaStreamTrack,
-    screenAudioSource?: MediaStreamTrack,
-    screenVideoSource?: MediaStreamTrack,
+  deviceId?: string,
+  sourceId?: string,
+  facingMode?: string,
+  screenAudio?: boolean,
+  audioSource?: MediaStreamTrack,
+  videoSource?: MediaStreamTrack,
+  screenAudioSource?: MediaStreamTrack,
+  screenVideoSource?: MediaStreamTrack,
 }
 
 export interface LocalStreamCloseOptions{
@@ -1146,6 +1146,10 @@ class LocalStream extends RTCEventEmitter {
     }
     
     try {
+      if (!this.getAdapterRef()) {
+        this.logger.log('Stream.open: 绑定 localStream ', type);
+        this.client.bindLocalStream(this)
+      } 
       switch(type) {
         case 'audio':
           if(this.client.adapterRef.isAudioBanned){
@@ -1183,27 +1187,26 @@ class LocalStream extends RTCEventEmitter {
             )
           }
           this.audio = true
-          if(this.mediaHelper){
+          if (this.mediaHelper) {
             const constraint = {audio: true, audioDeviceId: deviceId, audioSource};
             await this.mediaHelper.getStream(constraint);
             if (this.audioLevelHelper && this.mediaHelper.audio.audioStream) {
               this.audioLevelHelper.updateStream(this.mediaHelper.audio.audioStream)
             }
-            if (deviceId){
+            if (deviceId) {
               this.microphoneId = deviceId;
             }
-            if (!this.getAdapterRef()){
-              this.logger.log('Stream.open:localStream未发布，无需发布', type, constraint);
-            } else if (this.client.adapterRef.connectState.curState !== "CONNECTED"){
+            
+            if (this.client.adapterRef.connectState.curState !== "CONNECTED") {
               this.logger.log('Stream.open:client不在频道中，无需发布。', constraint);
-            }else{
+            } else {
               this.logger.log('Stream.open:开始发布', constraint);
               await this.client.adapterRef._mediasoup?.createProduce(this, "audio")
             }
           }
           break
         case 'screenAudio':
-          if(this.client.adapterRef.isAudioBanned){
+          if (this.client.adapterRef.isAudioBanned) {
             const reason = `服务器禁止发送音频流`;
             this.logger.error(reason);
             onOpenFinished({
@@ -1220,12 +1223,12 @@ class LocalStream extends RTCEventEmitter {
               })
             );
           }
-          if (!screenAudioSource){
+          if (!screenAudioSource) {
             this.logger.error(`open(): 不允许单独开启屏幕共享音频功能。`);
             return;
           }
           this.logger.log(`open(): 开启自定义屏幕共享音频 ${screenAudioSource.label}`);
-          if (this.mediaHelper.screenAudio.screenAudioTrack || this.mediaHelper.screenAudio.screenAudioSource){
+          if (this.mediaHelper.screenAudio.screenAudioTrack || this.mediaHelper.screenAudio.screenAudioSource) {
             this.logger.error('请先关闭屏幕共享音频')
             onOpenFinished({
               code: -1,
@@ -1242,14 +1245,12 @@ class LocalStream extends RTCEventEmitter {
             )
           }
           this.screenAudio = true
-          if(this.mediaHelper){
+          if (this.mediaHelper) {
             const constraint = {screenAudio: true, screenAudioSource};
             await this.mediaHelper.getStream(constraint);
-            if (!this.getAdapterRef()){
-              this.logger.log('Stream.open:localStream未发布，无需发布', type, constraint);
-            } else if (this.client.adapterRef.connectState.curState !== "CONNECTED"){
+            if (this.client.adapterRef.connectState.curState !== "CONNECTED") {
               this.logger.log('Stream.open:client不在频道中，无需发布。', constraint);
-            }else{
+            } else {
               this.logger.log('Stream.open:开始发布', constraint);
               await this.client.adapterRef._mediasoup?.createProduce(this, "audioSlave")
             }
@@ -1257,7 +1258,7 @@ class LocalStream extends RTCEventEmitter {
           break
         case 'video':
         case 'screen':
-          if(this.client.adapterRef.isVideoBanned){
+          if (this.client.adapterRef.isVideoBanned) {
             const reason = `服务器禁止发送视频流`;
             this.logger.error(reason);
             onOpenFinished({
@@ -1274,7 +1275,7 @@ class LocalStream extends RTCEventEmitter {
               })
             );
           }
-          if(options.screenAudio && this.client.adapterRef.isAudioBanned){
+          if (options.screenAudio && this.client.adapterRef.isAudioBanned) {
             const reason = `服务器禁止发送音频流`;
             this.logger.error(reason);
             onOpenFinished({
@@ -1382,10 +1383,9 @@ class LocalStream extends RTCEventEmitter {
             if (type === "video"){
               this.cameraId = deviceId
             }
-          }
-          if (!this.getAdapterRef()){
-            this.logger.log('Stream.open:localStream未发布，无需发布', type, constraint);
-          } else if (this.client.adapterRef.connectState.curState !== "CONNECTED"){
+          } 
+          
+          if (this.client.adapterRef.connectState.curState !== "CONNECTED"){
             this.logger.log('Stream.open:client不在频道中，无需发布。', constraint);
           }else{
             this.logger.log('Stream.open:开始发布', constraint);
@@ -1404,7 +1404,7 @@ class LocalStream extends RTCEventEmitter {
           type
         }
       })
-    } catch (e) {
+    } catch (e: any) {
       if (["audio", "video", "screen"].indexOf(type) > -1){
         this[type] = false
         if (type === "screen" && options.screenAudio){
