@@ -837,8 +837,6 @@ class Signalling extends EventEmitter {
   }
 
   async join () {
-    
-
     let gmEnable;
     if (!this.adapterRef.encryption.encryptionSecret) {
       gmEnable = false;
@@ -852,6 +850,7 @@ class Signalling extends EventEmitter {
       method: 'Join',
       requestId: `${Math.ceil(Math.random() * 1e9)}`,
       supportStdRed: true,
+      supportTurn: !this.adapterRef.proxyServer.enable,
       externData: {
         userName: `${this.adapterRef.channelInfo.uid}`,
         token: this.adapterRef.channelInfo.token,

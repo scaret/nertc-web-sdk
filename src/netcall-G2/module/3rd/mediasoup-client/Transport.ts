@@ -431,10 +431,11 @@ export class Transport extends EnhancedEventEmitter
     else if (!Array.isArray(iceServers))
       throw new TypeError('missing iceServers');
 
-    // Enqueue command.
-    return this._awaitQueue.push(
-      async () => this._handler.updateIceServers(iceServers),
-      'transport.updateIceServers()');
+    return this._handler.updateIceServers(iceServers)
+    // 该接口不使用 Enqueue command，因为服务器的设计模式导致执行到这里的时候，produce或者consumer还在执行，会阻塞 
+    // return this._awaitQueue.push(
+    //   async () => this._handler.updateIceServers(iceServers),
+    //   'transport.updateIceServers()');
   }
 
   /**

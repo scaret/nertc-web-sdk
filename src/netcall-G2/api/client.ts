@@ -1076,15 +1076,15 @@ class Client extends Base {
    * @param {Stream} Stream类型
    * @returns {Promise}  
    */
-  async unsubscribe (stream:RemoteStream) {
+  async unsubscribe (stream:RemoteStream, mediaType?: 'audio'|'audioSlave'|'video'|'screen') {
     checkExists({tag: 'client.unsubscribe:stream', value: stream});
-    return this.doUnsubscribe(stream)
+    return this.doUnsubscribe(stream, mediaType)
   }
 
-  async doUnsubscribe (stream:RemoteStream) {
-    this.logger.log('取消订阅远端音视频流: ', stream)
+  async doUnsubscribe (stream:RemoteStream, mediaType?: 'audio'|'audioSlave'|'video'|'screen') {
+    this.logger.log(`unsubscribe() [取消订阅远端音视频流: ${stream.stringStreamID}, mediaType: ${mediaType ? mediaType : 'all'}]`)
     try {
-      if (stream.pubStatus.audio.consumerId && stream.pubStatus.audio.stopconsumerStatus !== 'start') {
+      if ((mediaType === undefined || mediaType === 'audio') && stream.pubStatus.audio.consumerId && stream.pubStatus.audio.stopconsumerStatus !== 'start') {
         this.logger.log('开始取消订阅音频流')
         stream.pubStatus.audio.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup){
@@ -1095,6 +1095,7 @@ class Client extends Base {
         }
         await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.audio.consumerId, stream, 'audio');
         this.adapterRef.instance.removeSsrc(stream.getId(), 'audio')
+        stream.mediaHelper.updateStream('audio', null)
         stream.pubStatus.audio.consumerId = '';
         stream.stop('audio')
         stream.pubStatus.audio.stopconsumerStatus = 'end'
@@ -1111,7 +1112,7 @@ class Client extends Base {
         this.logger.log('取消订阅音频流完成')
       }
 
-      if (stream.pubStatus.audioSlave.consumerId && stream.pubStatus.audioSlave.stopconsumerStatus !== 'start') {
+      if ((mediaType === undefined || mediaType === 'audioSlave') && stream.pubStatus.audioSlave.consumerId && stream.pubStatus.audioSlave.stopconsumerStatus !== 'start') {
         this.logger.log('开始取消订阅音频流')
         stream.pubStatus.audioSlave.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup){
@@ -1122,6 +1123,7 @@ class Client extends Base {
         }
         await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.audioSlave.consumerId, stream, 'audioSlave');
         this.adapterRef.instance.removeSsrc(stream.getId(), 'audioSlave')
+        stream.mediaHelper.updateStream('audioSlave', null)
         stream.pubStatus.audioSlave.consumerId = '';
         stream.stop('audioSlave')
         stream.pubStatus.audioSlave.stopconsumerStatus = 'end'
@@ -1138,7 +1140,7 @@ class Client extends Base {
         this.logger.log('取消订阅音频流完成')
       }
 
-      if (stream.pubStatus.video.consumerId && stream.pubStatus.video.stopconsumerStatus !== 'start'){
+      if ((mediaType === undefined || mediaType === 'video') && stream.pubStatus.video.consumerId && stream.pubStatus.video.stopconsumerStatus !== 'start'){
         this.logger.log('开始取消订阅视频流')
         stream.pubStatus.video.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup){
@@ -1149,6 +1151,7 @@ class Client extends Base {
         }
         await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.video.consumerId, stream, 'video');
         this.adapterRef.instance.removeSsrc(stream.getId(), 'video')
+        stream.mediaHelper.updateStream('video', null)
         stream.pubStatus.video.consumerId = '';
         stream.stop('video')
         stream.pubStatus.video.stopconsumerStatus = 'end'
@@ -1166,7 +1169,7 @@ class Client extends Base {
         this.logger.log('取消订阅视频流完成')
       }
 
-      if (stream.pubStatus.screen.consumerId && stream.pubStatus.screen.stopconsumerStatus !== 'start'){
+      if ((mediaType === undefined || mediaType === 'screen') && stream.pubStatus.screen.consumerId && stream.pubStatus.screen.stopconsumerStatus !== 'start'){
         this.logger.log('开始取消订阅辅流')
         stream.pubStatus.screen.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup){
@@ -1177,6 +1180,7 @@ class Client extends Base {
         }
         await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.screen.consumerId, stream, 'screen');
         this.adapterRef.instance.removeSsrc(stream.getId(), 'screen')
+        stream.mediaHelper.updateStream('screen', null)
         stream.pubStatus.screen.consumerId = '';
         stream.stop('screen')
         stream.pubStatus.screen.stopconsumerStatus = 'end'

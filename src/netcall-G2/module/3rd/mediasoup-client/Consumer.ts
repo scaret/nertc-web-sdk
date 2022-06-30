@@ -309,7 +309,7 @@ export class Consumer extends EnhancedEventEmitter
 
   private _destroyTrack(): void
   {
-    Logger.warn(prefix, 'don not stop receiver track')
+    Logger.debug(prefix, 'don not stop receiver track')
     return
     // try
     // {

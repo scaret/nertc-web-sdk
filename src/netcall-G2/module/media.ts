@@ -1111,7 +1111,7 @@ class MediaHelper extends EventEmitter {
   }
   
   // 仅在remoteStream
-  updateStream(kind:MediaTypeShort, track:MediaStreamTrack) {
+  updateStream(kind:MediaTypeShort, track:MediaStreamTrack|null) {
     if (kind === 'audio') {
       this.audio.micTrack = track;
       emptyStreamWith(this.audio.audioStream, track);

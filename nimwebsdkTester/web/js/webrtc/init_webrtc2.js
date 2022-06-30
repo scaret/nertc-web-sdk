@@ -1021,7 +1021,7 @@ $('#joinChannel-btn').on('click', async () => {
           updateLocalWatermark()
         }
       }
-    }else if (enableAudio || enableVideo || enableScreen || enableScreenAudio || NERTC.getParameters().allowEmptyMedia){
+    }else if (enableAudio || enableVideo || enableScreen || enableScreenAudio || NERTC.getParameters().allowEmptyMedia || true){
       initLocalStream()
     }else{
       addLog("加入频道后未执行初始化本地流")
@@ -1448,17 +1448,18 @@ $('#unsubAudioSlave').on('click', () => {
 
   let remoteStream = rtc.remoteStreams[subList[subList.selectedIndex].value]
 
-  remoteStream.setSubscribeConfig({
-    audioSlave: false
-  })
+  // remoteStream.setSubscribeConfig({
+  //   audioSlave: false
+  // })
 
-  rtc.client.subscribe(remoteStream).then(()=>{
+  rtc.client.unsubscribe(remoteStream, 'audioSlave').then(()=>{
     console.log('本地 取消订阅音频辅流 成功')
     addLog('本地 取消订阅音频辅流 成功')
   }).catch(err=>{
     addLog('本地 取消订阅音频辅流 失败')
     console.log('本地 取消订阅音频辅流 失败: ', err)
   })
+
 })
 
 
@@ -1470,11 +1471,11 @@ $('#unsubVideo').on('click', () => {
 
   let remoteStream = rtc.remoteStreams[subList[subList.selectedIndex].value]
 
-  remoteStream.setSubscribeConfig({
-    video: false
-  })
+  // remoteStream.setSubscribeConfig({
+  //   video: false
+  // })
 
-  rtc.client.subscribe(remoteStream).then(()=>{
+  rtc.client.unsubscribe(remoteStream, 'video').then(()=>{
     console.log('本地 取消订阅视频 成功')
     addLog('本地 取消订阅视频 成功')
   }).catch(err=>{
@@ -1850,7 +1851,7 @@ function initLocalStream() {
   }).catch(err=>{
     console.warn('音视频初始化失败: ', err)
     addLog('音视频初始化失败, 请检查设备列表')
-    rtc.localStream = null
+    //rtc.localStream = null
   })
   //插件
   rtc.localStream.on('plugin-load', onPluginLoaded);
