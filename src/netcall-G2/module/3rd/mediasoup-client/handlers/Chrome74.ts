@@ -232,7 +232,7 @@ export class Chrome74 extends HandlerInterface
 
   async updateIceServers(iceServers: RTCIceServer[]): Promise<void>
   {
-    Logger.error(prefix, 'updateIceServers(): ', iceServers);
+    Logger.debug(prefix, 'updateIceServers(): ');
 
     const configuration = this._pc.getConfiguration();
 

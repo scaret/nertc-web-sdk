@@ -753,7 +753,7 @@ class RemoteStream extends RTCEventEmitter {
    * @return {Void}
    */
   stop (type?:MediaTypeShort) {
-    this.logger.warn(`uid ${this.stringStreamID} Stream.stop: 停止播放 ${type || "音视频流"}`)
+    this.logger.log(`uid ${this.stringStreamID} Stream.stop: 停止播放 ${type || "音视频流"}`)
     if(!this._play) return
     if (type === 'audio') {
       this._play.stopPlayAudioStream()

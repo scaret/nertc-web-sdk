@@ -1076,15 +1076,15 @@ class Client extends Base {
    * @param {Stream} Stream类型
    * @returns {Promise}  
    */
-  async unsubscribe (stream:RemoteStream) {
+  async unsubscribe (stream:RemoteStream, mediaType?: 'audio'|'audioSlave'|'video'|'screen') {
     checkExists({tag: 'client.unsubscribe:stream', value: stream});
-    return this.doUnsubscribe(stream)
+    return this.doUnsubscribe(stream, mediaType)
   }
 
-  async doUnsubscribe (stream:RemoteStream) {
-    this.logger.log('取消订阅远端音视频流: ', stream)
+  async doUnsubscribe (stream:RemoteStream, mediaType?: 'audio'|'audioSlave'|'video'|'screen') {
+    this.logger.log(`unsubscribe() [取消订阅远端音视频流: ${stream.stringStreamID}, mediaType: ${mediaType ? mediaType : 'all'}]`)
     try {
-      if (stream.pubStatus.audio.consumerId && stream.pubStatus.audio.stopconsumerStatus !== 'start') {
+      if ((mediaType === undefined || mediaType === 'audio') && stream.pubStatus.audio.consumerId && stream.pubStatus.audio.stopconsumerStatus !== 'start') {
         this.logger.log('开始取消订阅音频流')
         stream.pubStatus.audio.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup){
@@ -1111,7 +1111,7 @@ class Client extends Base {
         this.logger.log('取消订阅音频流完成')
       }
 
-      if (stream.pubStatus.audioSlave.consumerId && stream.pubStatus.audioSlave.stopconsumerStatus !== 'start') {
+      if ((mediaType === undefined || mediaType === 'audioSlave') && stream.pubStatus.audioSlave.consumerId && stream.pubStatus.audioSlave.stopconsumerStatus !== 'start') {
         this.logger.log('开始取消订阅音频流')
         stream.pubStatus.audioSlave.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup){
@@ -1138,7 +1138,7 @@ class Client extends Base {
         this.logger.log('取消订阅音频流完成')
       }
 
-      if (stream.pubStatus.video.consumerId && stream.pubStatus.video.stopconsumerStatus !== 'start'){
+      if ((mediaType === undefined || mediaType === 'video') && stream.pubStatus.video.consumerId && stream.pubStatus.video.stopconsumerStatus !== 'start'){
         this.logger.log('开始取消订阅视频流')
         stream.pubStatus.video.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup){
@@ -1166,7 +1166,7 @@ class Client extends Base {
         this.logger.log('取消订阅视频流完成')
       }
 
-      if (stream.pubStatus.screen.consumerId && stream.pubStatus.screen.stopconsumerStatus !== 'start'){
+      if ((mediaType === undefined || mediaType === 'screen') && stream.pubStatus.screen.consumerId && stream.pubStatus.screen.stopconsumerStatus !== 'start'){
         this.logger.log('开始取消订阅辅流')
         stream.pubStatus.screen.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup){
