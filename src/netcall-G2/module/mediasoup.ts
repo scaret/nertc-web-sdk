@@ -991,6 +991,9 @@ class Mediasoup extends EventEmitter {
     } else if (this.unsupportedProducers[id]){
       this.loggerRecv.warn("_createConsumer: 跳过不支持的Producer", id, JSON.stringify(this.unsupportedProducers[id]))
       return this.checkConsumerList(info)
+    } else if (this.unsupportedProducers[`${this._recvTransport?._id}___${id}`]){
+      this.loggerRecv.warn(`_createConsumer: 跳过不支持的Producer+Transport组合。ProducerId: ${id} transportId: ${this._recvTransport?._id}`, JSON.stringify(this.unsupportedProducers[id]))
+      return this.checkConsumerList(info)
     }
 
     const remoteStream = this.adapterRef.remoteStreamMap[uid]
@@ -1127,6 +1130,17 @@ class Mediasoup extends EventEmitter {
     let { transportId, iceParameters, iceCandidates, dtlsParameters, probeSSrc, rtpParameters, producerId, consumerId, code, errMsg } = consumeRes;
     if (code === 200){
       this.loggerRecv.log(`consume反馈结果: code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
+    } else if (code === 601){
+      // 某些情况下的Producer换了个Transport之后是可以订阅的。这个时候需要拉黑的是Producer+Transport的组合
+      this.loggerRecv.error(`consume请求失败，将Producer+Transport拉入黑名单:  uid: ${uid}, mediaType: ${mediaTypeShort}, producerId ${data.producerId} transportId ${this._recvTransport._id} code: ${code}, errMsg: ${errMsg}`, consumeRes);
+      this.unsupportedProducers[`${this._recvTransport._id}___${data.producerId}`] = {
+        producerId: consumeRes.producerId,
+        code: code,
+        uid: uid,
+        mediaType: mediaTypeShort,
+        errMsg: errMsg,
+      };
+      return this.checkConsumerList(info);
     }else{
       this.loggerRecv.error(`consume请求失败，将Producer拉入黑名单:  uid: ${uid}, mediaType: ${mediaTypeShort}, producerId ${data.producerId} code: ${code}, errMsg: ${errMsg}`, consumeRes);
       this.unsupportedProducers[data.producerId] = {
