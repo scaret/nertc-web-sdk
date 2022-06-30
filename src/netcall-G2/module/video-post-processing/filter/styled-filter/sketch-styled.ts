@@ -9,27 +9,27 @@ import { smoothShader } from '../../shaders/smooth-shader.glsl';
 import { edgeShader } from '../../shaders/edge-shader.glsl';
 import { sketchShader } from '../../shaders/sketch-shader.glsl';
 
-let instance: SketchStyled | null = null;
+const instances = new Set<SketchStyled>();
 let gridImg: HTMLImageElement | null = null;
 let pencilImg: HTMLImageElement | null = null;
 loadImage(
     'https://yx-web-nosdn.netease.im/common/082a02e2398adef11f6e3c9b2b7f5d88/grid.png',
     (img) => {
         gridImg = img;
-        if (instance) {
+        instances.forEach((instance)=>{
             instance.gridMap!.source = img;
             instance.gridMap!.refresh();
-        }
+        })
     }
 );
 loadImage(
     'https://yx-web-nosdn.netease.im/common/f1ad16a8efb5fa87b2068fe446a794d0/pencil-stroke.png',
     (img) => {
         pencilImg = img;
-        if (instance) {
+        instances.forEach((instance)=>{
             instance.pencilMap!.source = img;
             instance.pencilMap!.refresh();
-        }
+        })
     }
 );
 
@@ -45,8 +45,8 @@ export class SketchStyled extends StyledFilter {
         uvBuffer: ReturnType<typeof createAttributeBuffer>
     ) {
         super(renderer, map, posBuffer, uvBuffer);
+        instances.add(this);
         this.initStyled();
-        instance = this;
     }
 
     private initStyled() {
@@ -163,6 +163,6 @@ export class SketchStyled extends StyledFilter {
         super.destroy(clearBuffer);
         const gl = this.renderer.gl;
         gl?.deleteTexture(this.pencilMap!.glTexture);
-        instance = null;
+        instances.delete(this);
     }
 }

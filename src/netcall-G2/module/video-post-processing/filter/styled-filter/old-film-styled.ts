@@ -8,27 +8,27 @@ import { baseTextureShader } from '../../shaders/base-texture-shader.glsl';
 import { oldFilmShader } from '../../shaders/old-film-shader.glsl';
 import { lutShader } from '../../shaders/lut-shader.glsl';
 
-let instance: OldFilmStyled | null = null;
+const instances = new Set<OldFilmStyled>();
 let dirtyImg: HTMLImageElement | null = null;
 let oldFilmImg: HTMLImageElement | null = null;
 loadImage(
     'https://yx-web-nosdn.netease.im/common/e7ea13cd337a076e246d9119d2eda3ee/dirty-map.png',
     (img) => {
         dirtyImg = img;
-        if (instance) {
+        instances.forEach((instance)=>{
             instance.dirtyMap!.source = img;
             instance.dirtyMap!.refresh();
-        }
+        })
     }
 );
 loadImage(
     'https://yx-web-nosdn.netease.im/common/6a38caeab164d1b5cc086391d6a11a74/huaijiu.png',
     (img) => {
         oldFilmImg = img;
-        if (instance) {
+        instances.forEach((instance)=>{
             instance.oldFilmLut!.source = img;
             instance.oldFilmLut!.refresh();
-        }
+        })
     }
 );
 export class OldFilmStyled extends StyledFilter {
@@ -42,8 +42,8 @@ export class OldFilmStyled extends StyledFilter {
         uvBuffer: ReturnType<typeof createAttributeBuffer>
     ) {
         super(renderer, map, posBuffer, uvBuffer);
+        instances.add(this);
         this.initStyled();
-        instance = this;
     }
 
     private initStyled() {
@@ -139,6 +139,6 @@ export class OldFilmStyled extends StyledFilter {
         const gl = this.renderer.gl;
         gl?.deleteTexture(this.dirtyMap!.glTexture);
         gl?.deleteTexture(this.oldFilmLut!.glTexture);
-        instance = null;
+        instances.delete(this);
     }
 }

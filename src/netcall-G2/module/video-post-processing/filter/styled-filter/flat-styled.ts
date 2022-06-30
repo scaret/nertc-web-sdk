@@ -9,16 +9,16 @@ import { smoothShader } from '../../shaders/smooth-shader.glsl';
 import { flatShader } from '../../shaders/flat-shader.glsl';
 import { lutShader } from '../../shaders/lut-shader.glsl';
 
-let instance: FlatStyled | null = null;
+const instances = new Set<FlatStyled>();
 let lutImg: HTMLImageElement | null = null;
 loadImage(
     'https://yx-web-nosdn.netease.im/common/cf8bfec70d7998bb0033757276c6559a/weimei.png',
     (img) => {
         lutImg = img;
-        if (instance) {
+        instances.forEach((instance)=>{
             instance.lutMap!.source = img;
             instance.lutMap!.refresh();
-        }
+        })
     }
 );
 export class FlatStyled extends StyledFilter {
@@ -30,8 +30,8 @@ export class FlatStyled extends StyledFilter {
         uvBuffer: ReturnType<typeof createAttributeBuffer>
     ) {
         super(renderer, map, posBuffer, uvBuffer);
+        instances.add(this);
         this.initStyled();
-        instance = this;
     }
     private smCount = 1;
     private initStyled() {
@@ -197,6 +197,6 @@ export class FlatStyled extends StyledFilter {
         super.destroy(clearBuffer);
         const gl = this.renderer.gl;
         gl?.deleteTexture(this.lutMap!.glTexture);
-        instance = null;
+        instances.delete(this);
     }
 }

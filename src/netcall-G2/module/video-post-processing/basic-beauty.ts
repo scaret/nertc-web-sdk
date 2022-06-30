@@ -130,12 +130,12 @@ export default class BasicBeauty {
      * 开启、关闭美颜
      * isEnable 为 true 时， track 必须赋值
      */
-    setBeauty(isEnable: boolean, track?: MediaStreamTrack, videoDom?:any){
+    setBeauty(isEnable: boolean, track?: MediaStreamTrack){
         if(isEnable && !this.lutLoaded){
             this.startLut();
         }
         return new Promise((resolve, reject)=>{
-            this.videPostProcess.setTaskAndTrack('BasicBeauty', isEnable, track, videoDom)
+            this.videPostProcess.setTaskAndTrack('BasicBeauty', isEnable, track)
             .then((track)=>{
                 if(!isEnable){
                     const filters = this.videPostProcess.filters;

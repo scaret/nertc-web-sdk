@@ -106,7 +106,7 @@ export class OperationQueue{
         this.current = elem;
         this.current.status = "live"
         if (source === "instant"){
-          this.logger.log(`开始执行操作：${elem.args.method}。参数：`, makePrintable(elem.args.options, 4))
+          this.logger.log(`开始执行操作：${elem.args.method}。参数：`, makePrintable(elem.args.options, 1))
         }else{
           this.logger.log(`开始执行队列中的操作：${elem.args.method}#${elem.id}，等待时间：${Date.now() - elem.enqueueTs}ms。参数：`, elem.args.options)
         }

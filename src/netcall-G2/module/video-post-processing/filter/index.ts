@@ -33,7 +33,12 @@ export class Filters {
             uvArray, 
             advBeautyIndicesArray,
             advBeautyPosArray,
-            advBeautyZindexArray
+            advBeautyZindexArray,
+            advFaceMaskUVArray,
+            advEyeTeethPosArray,
+            advEyeTeethIndicesArray,
+            advEyeTeethZindexArray,
+            advEyeTeethUVArray
          } = typedArray;
 
         const posBuffer = createAttributeBuffer(gl, 'position', posArray, 2);
@@ -58,13 +63,51 @@ export class Filters {
             1,
             'ELEMENT_ARRAY_BUFFER'
         );
+        const advFaceMaskUVBuffer = createAttributeBuffer(
+            gl,
+            'uv',
+            advFaceMaskUVArray,
+            2
+        );
+        const advEyeTeethPosBuffer = createAttributeBuffer(
+            gl,
+            'tPosition',
+            advEyeTeethPosArray,
+            2
+        );
+        const advEyeTeethIndicesBuffer = createAttributeBuffer(
+            gl,
+            'indices',
+            advEyeTeethIndicesArray,
+            1,
+            'ELEMENT_ARRAY_BUFFER'
+        );
+        const advEyeTeethZindexBuffer = createAttributeBuffer(
+            gl,
+            'zIndex',
+            advEyeTeethZindexArray,
+            1
+        );
+        const advEyeTeethUVBuffer = createAttributeBuffer(
+            gl,
+            'uv',
+            advEyeTeethUVArray,
+            2
+        );
 
         this.advBeauty = new AdvBeautyFilter(
             this._renderer,
             this.map,
             advBeautyPosBuffer,
             advBeautyZindexBuffer,
-            advBeautyIndicesBuffer
+            advBeautyIndicesBuffer,
+            advFaceMaskUVBuffer,
+            posBuffer,
+            uvBuffer,
+            advEyeTeethPosBuffer,
+            advEyeTeethIndicesBuffer,
+            advEyeTeethZindexBuffer,
+            advEyeTeethUVBuffer
         );
         this.beauty = new BeautyFilter(
             this._renderer,
@@ -145,6 +188,8 @@ export class Filters {
         const filters = this.filters;
         filters[0].map = this.map;
         filters[0].render();
+        // face mask 传递
+        (<BeautyFilter>filters[1]).faceMask = (<AdvBeautyFilter> filters[0]).faceMask;
         for (let i = 1; i < filters.length; i++) {
             filters[i].map = filters[i - 1].output;
             filters[i].render();

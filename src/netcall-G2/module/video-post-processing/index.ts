@@ -1,4 +1,5 @@
 import * as env from '../../util/rtcUtil/rtcEnvironment';
+import { EventEmitter } from "eventemitter3";
 import { ILogger } from '../../types';
 import { PluginType } from '../../plugin/plugin-list';
 import { Logger } from '../../util/webrtcLogger';
@@ -61,7 +62,7 @@ class VideoToImageData {
 }
 
 type TaskType = 'BasicBeauty' | 'VirtualBackground' | 'AdvancedBeauty';
-export default class VideoPostProcess {
+export default class VideoPostProcess extends EventEmitter {
     // 插件模块
     private pluginModules:{
         VirtualBackground:{
@@ -101,7 +102,7 @@ export default class VideoPostProcess {
     // 初始化 image data 转换
     private videoToImageData: VideoToImageData | null = new VideoToImageData();
     // 视频源
-    private video: HTMLVideoElement | null = null;
+    video: HTMLVideoElement | null = null;
     // 帧率
     private frameRate = 15;
     // 帧缓存
@@ -139,6 +140,7 @@ export default class VideoPostProcess {
             this.update();
             if(this.taskSet.size === 1){
                 this.updateTimer();
+                this.emit('taskSwitch', true);
             }
         }
     }
@@ -151,6 +153,7 @@ export default class VideoPostProcess {
             this.timerId = -1;
             this.sourceMap = null;
             this.frameCache = null;
+            this.emit('taskSwitch', false);
         }
         // 新任务移除，马上渲染一次
         this.update();
@@ -166,7 +169,7 @@ export default class VideoPostProcess {
      * @param {MediaStreamTrack} track
      * @returns {Promise<number>} resolve 参数返回 canvas 预渲染时间间隔，减缓帧抖动
      */
-    private createTrack(track: MediaStreamTrack, videoDom?:any){
+    private createTrack(track: MediaStreamTrack){
         return new Promise((resolve, reject)=>{
             if(this.trackInstance && this.trackInstance === track){
                 logger.log("VideoPostProcess track transform unnecessary");
@@ -191,26 +194,6 @@ export default class VideoPostProcess {
             this.video = this.video || document.createElement('video');
             const newStream = new MediaStream([this.sourceTrack]);
             this.video.srcObject = newStream;
-
-            if (env.IS_ANY_SAFARI) {
-                this.video.style.visibility = 'hidden';
-                // safari在使用canvas.captureStream获取webgl渲染后的视频流，在本地播放时可能出现红屏或黑屏
-                this.filters.canvas.style.height = '100%';
-                this.filters.canvas.style.width = 'auto';
-                this.filters.canvas.style.position = 'absolute';
-                this.filters.canvas.style.left = '50%';
-                this.filters.canvas.style.top = '50%';
-                this.filters.canvas.style.transform = 'translate(-50%,-50%)';
-                // safari下，本地<video>切换成<canvas>
-                // 多实例支持:
-                videoDom.appendChild(this.filters.canvas);
-                // safari 13.1 浏览器 需要<video> 和 <canvas> 在可视区域才能正常播放
-                if(env.SAFARI_MAJOR_VERSION! < 14){
-                    this.video.style.height = '0px';
-                    this.video.style.width = '0px';
-                    document.body.appendChild(this.video);
-                }
-            }
 
             const resizeHandler = (video: HTMLVideoElement)=>{
                 const { videoWidth: width, videoHeight: height } = video!;
@@ -326,7 +309,7 @@ export default class VideoPostProcess {
         }, 1000 / this.frameRate, null);
     }
 
-    setTaskAndTrack = (task: TaskType, isEnable: boolean, track?: MediaStreamTrack, videoDom?:any)=>{
+    setTaskAndTrack = (task: TaskType, isEnable: boolean, track?: MediaStreamTrack)=>{
         return new Promise((resolve, reject)=>{
             if(isEnable){
                 if(this.hasTask(task)){
@@ -334,7 +317,7 @@ export default class VideoPostProcess {
                     return resolve(this.track!);
                 }
                 // 创建 track，track创建是异步的
-                this.createTrack(track!, videoDom)
+                this.createTrack(track!)
                     .then((time)=>{
                         // 加入任务队列
                         this.addTask(task);
@@ -357,6 +340,7 @@ export default class VideoPostProcess {
             }
         })
     }
+
     destroy(){
         this.taskSet.clear();
         workerTimer.clearTimeout(this.timerId);

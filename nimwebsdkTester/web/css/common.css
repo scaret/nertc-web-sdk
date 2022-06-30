@@ -104,7 +104,7 @@ body {
 }
 .video-container {
   display: inline-block;
-  max-height: 36vh;
+  max-height: 50vh;
   overflow: auto;
   /*width: 200px;
   height: 200px*/

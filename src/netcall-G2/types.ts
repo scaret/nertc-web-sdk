@@ -1453,6 +1453,12 @@ export interface AdvancedBeautyEffectOptions {
 
 export interface PluginOptions {
   key: string;
-  pluginUrl: string;
+  pluginUrl?: string;
+  pluginObj?: AnyClass;
   wasmUrl?: string;
+}
+
+type AnyClass = {
+  new(...args: any): AnyClass;
+  [key:string]: any
 }

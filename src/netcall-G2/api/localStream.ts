@@ -316,6 +316,41 @@ class LocalStream extends RTCEventEmitter {
         screenProfile: this.screenProfile
       }
     })
+
+    // 监听美颜任务队列事件，用以兼容 safari 下 canvas 多实例的场景
+    if(env.IS_ANY_SAFARI){
+      this.videoPostProcess.on('taskSwitch',(isON)=>{
+        if(this._play){
+          const localVideoDom = this._play.getVideoDom!.querySelector('video');
+          const videoDom = this._play.getVideoDom;
+          if(localVideoDom && videoDom){
+            const filters = this.videoPostProcess.filters;
+            const video = this.videoPostProcess.video;
+            if(isON){
+              localVideoDom.style.display = 'none';
+              // safari在使用canvas.captureStream获取webgl渲染后的视频流，在本地播放时可能出现红屏或黑屏
+              filters.canvas.style.height = '100%';
+              filters.canvas.style.width = 'auto';
+              filters.canvas.style.position = 'absolute';
+              filters.canvas.style.left = '50%';
+              filters.canvas.style.top = '50%';
+              filters.canvas.style.transform = 'translate(-50%,-50%)';
+              // safari下，本地<video>切换成<canvas>
+              videoDom.appendChild(filters.canvas);
+              // safari 13.1 浏览器 需要<video> 和 <canvas> 在可视区域才能正常播放
+              if(env.SAFARI_MAJOR_VERSION! < 14 && video){
+                  video.style.height = '0px';
+                  video.style.width = '0px';
+                  document.body.appendChild(video);
+              }
+            }else{
+              localVideoDom.style.display = '';
+              videoDom.removeChild(filters.canvas);
+            }
+          }
+        }
+      });
+    }
   }
   
   getAdapterRef(){
@@ -495,8 +530,15 @@ class LocalStream extends RTCEventEmitter {
 
   //打开背景分割
   async enableBodySegment() {
-    this.logger.log("enableBodySegment() 开启背景分割功能");
+    this.logger.log("enableBodySegment() 开启背景分割功能");   
     if(!this._segmentProcessor && this.videoPostProcess.getPlugin('VirtualBackground')){
+      this.client.apiFrequencyControl({
+        name: 'enableBodySegment',
+        code: 0,
+        param: {
+          streamID: this.stringStreamID
+        }
+      })
       this._segmentProcessor = this.virtualBackground;
       this._segmentProcessor.init();
       this._segmentProcessor.once('segment-load', () => {
@@ -511,6 +553,13 @@ class LocalStream extends RTCEventEmitter {
     if(this._segmentProcessor) {
       this._segmentProcessor.destroy();
       this._segmentProcessor = null;
+      this.client.apiFrequencyControl({
+        name: 'disableBodySegment',
+        code: 0,
+        param: {
+          streamID: this.stringStreamID
+        }
+      })
     }
     this.logger.log("disableBodySegment() 关闭背景分割功能");
   }
@@ -535,12 +584,27 @@ class LocalStream extends RTCEventEmitter {
     this.logger.log('setBackGround() options: ', options)
     if(this.virtualBackground) {
       this.virtualBackground.setVirtualBackGround(options);
+      this.client.apiFrequencyControl({
+        name: 'setBackGround',
+        code: 0,
+        param: {
+          streamID: this.stringStreamID,
+          type: options.type,
+        } 
+      })
     }
   }
 
   async enableAdvancedBeauty(faceSize?:number) {
     this.logger.log("enableAdvancedBeauty() 开启高级美颜功能");
     if(!this._advancedBeautyProcessor && this.videoPostProcess.getPlugin('AdvancedBeauty')){ 
+      this.client.apiFrequencyControl({
+        name: 'enableAdvancedBeauty',
+        code: 0,
+        param: {
+          streamID: this.stringStreamID
+        }
+      })
       this._advancedBeautyProcessor = this.advancedBeauty;
       this._advancedBeautyProcessor.init(faceSize);
       this._advancedBeautyProcessor.once('facePoints-load', () => {
@@ -555,6 +619,13 @@ class LocalStream extends RTCEventEmitter {
     if(this._advancedBeautyProcessor){ 
       this._advancedBeautyProcessor.destroy();
       this._advancedBeautyProcessor = null;
+      this.client.apiFrequencyControl({
+        name: 'disableAdvancedBeauty',
+        code: 0,
+        param: {
+          streamID: this.stringStreamID
+        }
+      })
     }
     this.logger.log("disableAdvancedBeauty() 关闭高级美颜功能");
   }
@@ -576,7 +647,17 @@ class LocalStream extends RTCEventEmitter {
   }
 
   setAdvBeautyEffect:AdvancedBeauty['setAdvEffect'] = (...args) => {
-    this._advancedBeautyProcessor?.setAdvEffect(...args);
+    if(this.advancedBeauty) {
+      this._advancedBeautyProcessor?.setAdvEffect(...args);
+      this.client.apiFrequencyControl({
+        name: 'setAdvBeautyEffect',
+        code: 0,
+        param: {
+          streamID: this.stringStreamID,
+          options: JSON.stringify(args)
+        } 
+      })
+  }
   };
 
   async transformTrack(enable:boolean, processor: VirtualBackground | AdvancedBeauty | null) {
@@ -860,7 +941,6 @@ class LocalStream extends RTCEventEmitter {
             // 打开基础美颜
             if(this.isBeautyTrack){
               await this.setBeautyEffect(true);
-              this.isBeautyTrack = false;
               if(this.lastEffects){
                 this.setBeautyEffectOptions(this.lastEffects);
               }
@@ -1112,7 +1192,7 @@ class LocalStream extends RTCEventEmitter {
     })
     const onOpenFinished = (data: {code: number, param: {}})=>{
       hookOpenFinished()
-      const param = makePrintable(Object.assign({}, options, data.param), 4)
+      const param = makePrintable(Object.assign({}, options, data.param), 1)
       this.client.apiFrequencyControl({
         name: 'open',
         code: data.code,
@@ -2207,10 +2287,6 @@ class LocalStream extends RTCEventEmitter {
       }
 
       const cameraTrack = this.mediaHelper.video.cameraTrack
-      if(this.basicBeauty.isEnable){
-        await this.setBeautyEffect(false);
-        this.isBeautyTrack = true;
-      }
       if(this.isBodySegmentTrack) {
         await this._cancelBodySegment();
         this.isBodySegmentTrack = true;
@@ -2218,6 +2294,10 @@ class LocalStream extends RTCEventEmitter {
       if(this.isAdvancedBeautyTrack) {
         await this._cancelAdvancedBeauty();
         this.isAdvancedBeautyTrack = true;
+      }
+      this.isBeautyTrack = this.basicBeauty.isEnable
+      if(this.isBeautyTrack){
+        await this.setBeautyEffect(false);
       }
       //关闭美颜track, 切换后的回调中再重新开启美颜
       if(this._transformedTrack){
@@ -3567,7 +3647,7 @@ class LocalStream extends RTCEventEmitter {
    */
 
    setBeautyEffectOptions(effects:BeautyEffectOptions) {
-    this.lastEffects = effects;
+    this.lastEffects = {...this.lastEffects, ...effects};
     this.basicBeauty.setBeautyOptions(effects);
   }
 
@@ -3581,13 +3661,24 @@ class LocalStream extends RTCEventEmitter {
    async setBeautyEffect(isStart:boolean){
     const basicBeauty  = this.basicBeauty;
     let videoTrackLow;
-    if(basicBeauty.isEnable === isStart){
-      return;
-    }
     if (this.mediaHelper && this.mediaHelper.video.cameraTrack) {
-      this._cameraTrack = this.mediaHelper.video.cameraTrack;
-      if(isStart) {
-        this.logger.log('startBeautyEffect() 开启美颜');
+      this._cameraTrack  = this.mediaHelper.video.cameraTrack;
+      this._transformedTrack = await basicBeauty.setBeauty(isStart, this._cameraTrack) as MediaStreamTrack;
+      videoTrackLow = this.mediaHelper.video.videoTrackLow;
+       // 替换 track
+      await this.replaceTrack({
+            mediaType: "video",
+            //@ts-ignore
+            track: this._transformedTrack,
+            external: false
+      });
+      if (videoTrackLow){
+        videoTrackLow.stop();
+      }
+      if (this.mediaHelper.video.videoTrackLow){
+        this.mediaHelper.video.videoTrackLow.stop();
+      }
+      if(isStart){
         let effects;
         if(this.lastEffects){
           effects = this.lastEffects;
@@ -3598,44 +3689,27 @@ class LocalStream extends RTCEventEmitter {
             smoothnessLevel:0
           }
         }
-        let videoDom;
-        if(env.IS_ANY_SAFARI){
-          if(this._play){
-            let localVideoDom:HTMLVideoElement|null;
-            videoDom = this._play.getVideoDom;
-            localVideoDom = this._play.getVideoDom!.querySelector('video');
-            localVideoDom!.style.display = 'none';
-          }
-        }
-        this._transformedTrack = await basicBeauty.setBeauty(isStart, this._cameraTrack, videoDom) as MediaStreamTrack;
-        videoTrackLow = this.mediaHelper.video.videoTrackLow;
         basicBeauty.setBeautyOptions(effects);
-        
-      }else {
-        this.logger.log('startBeautyEffect() 关闭美颜');
-        if(env.IS_ANY_SAFARI){
-          let localVideoDom;
-          if(this._play){
-            localVideoDom = this._play.getVideoDom!.querySelector('video');
-            localVideoDom!.style.display = 'block';
+        this.client.apiFrequencyControl({
+          name: 'setBeautyEffect',
+          code: 0,
+          param: {
+            streamID: this.stringStreamID,
+            isRemote: false
           }
-        }
-        this._transformedTrack = await basicBeauty.setBeauty(isStart) as MediaStreamTrack;
-        videoTrackLow = this.mediaHelper.video.videoTrackLow;
-        
+        })
+      }else {
+        this.client.apiFrequencyControl({
+          name: 'setBeautyEffect',
+          code: -1,
+          param: {
+            streamID: this.stringStreamID,
+            isRemote: false
+          }
+        })
       }
-      // 替换 track
-      await this.replaceTrack({
-            mediaType: "video",
-            //@ts-ignore
-            track: this._transformedTrack,
-            external: false
-      });
-      if (videoTrackLow){
-        videoTrackLow.stop();
-      }
-    }else {
-      this.logger.log("beautyTrack() 此时还没有有视频track");
+    } else {
+      this.logger.log("此时还没有有视频track");
     }
   }
 
@@ -3661,19 +3735,44 @@ class LocalStream extends RTCEventEmitter {
       this.logger.log(`Plugin ${options.key} exist`);
       return
     }
-    await loadPlugin(options.key as any, options.pluginUrl).then(() => {
-      try {
-        const plugin = eval(`new window.${options.key}(options)`);
+    let plugin: any = null;
+    try {
+      if(options.pluginUrl) {
+        await loadPlugin(options.key as any, options.pluginUrl);
+        plugin = eval(`new window.${options.key}(options)`);
+      } else if(options.pluginObj) {
+        plugin = new options.pluginObj(options);
+      }
+      if(plugin) {
         plugin.once('plugin-load', () => {
           this.videoPostProcess.registerPlugin(options.key as any, plugin);
           this.logger.log(`Plugin ${options.key} loaded`);
           this.emit('plugin-load', options.key);
+          this.client.apiFrequencyControl({
+            name: 'registerPlugin',
+            code: 0,
+            param: {
+              streamID: this.stringStreamID,
+              plugin: options.key
+            }
+          })
         }) 
-      } catch(e) {
-        console.log(e);
-        this.logger.error(`create plugin ${options.key} error`);
-      }
-    })
+      } else {
+        this.logger.error(`can't get plugin ${options.key}`);
+        this.client.apiFrequencyControl({
+          name: 'registerPlugin',
+          code: -1,
+          param: {
+            streamID: this.stringStreamID,
+            plugin: options.key
+          }
+        })
+      }     
+    } catch(e) {
+      console.log(e);
+      this.logger.error(`create plugin ${options.key} error`);
+    } 
+
   }
 
   async unregisterPlugin(key: PluginType) {

@@ -8,7 +8,7 @@ import { baseTextureShader } from '../../shaders/base-texture-shader.glsl';
 import { hackerShader } from '../../shaders/hacker-shader.glsl';
 import { lutShader } from '../../shaders/lut-shader.glsl';
 
-let instance: HackerStyled | null = null;
+const instances = new Set<HackerStyled>();
 let hackerImg: HTMLImageElement | null = null;
 let textImg: HTMLImageElement | null = null;
 let rndImg: HTMLImageElement | null = null;
@@ -16,30 +16,30 @@ loadImage(
     'https://yx-web-nosdn.netease.im/common/aa92803e508487ec33a1be75459e46e7/haike.png',
     (img) => {
         hackerImg = img;
-        if (instance) {
+        instances.forEach((instance)=>{
             instance.hackerMap!.source = img;
             instance.hackerMap!.refresh();
-        }
+        })
     }
 );
 loadImage(
     'https://yx-web-nosdn.netease.im/common/b249f4d3024c9fc4533e199d1c78c158/text.png',
     (img) => {
         textImg = img;
-        if (instance) {
+        instances.forEach((instance)=>{
             instance.textMap!.source = img;
             instance.textMap!.refresh();
-        }
+        })
     }
 );
 loadImage(
     'https://yx-web-nosdn.netease.im/common/11f09edad695dfabf71e6961b7e78afd/rnd.png',
     (img) => {
         rndImg = img;
-        if (instance) {
+        instances.forEach((instance)=>{
             instance.rndMap!.source = img;
             instance.rndMap!.refresh();
-        }
+        })
     }
 );
 export class HackerStyled extends StyledFilter {
@@ -53,8 +53,8 @@ export class HackerStyled extends StyledFilter {
         uvBuffer: ReturnType<typeof createAttributeBuffer>
     ) {
         super(renderer, map, posBuffer, uvBuffer);
+        instances.add(this);
         this.initStyled();
-        instance = this;
     }
 
     private initStyled() {
@@ -159,6 +159,6 @@ export class HackerStyled extends StyledFilter {
         gl?.deleteTexture(this.hackerMap!.glTexture);
         gl?.deleteTexture(this.textMap!.glTexture);
         gl?.deleteTexture(this.rndMap!.glTexture);
-        instance = null;
+        instances.delete(this);
     }
 }

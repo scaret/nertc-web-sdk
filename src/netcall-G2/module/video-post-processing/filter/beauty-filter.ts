@@ -16,6 +16,7 @@ export class BeautyFilter extends Filter {
     private _smooth = 0;
     private _whiten = 0;
     private _redden = 0;
+    private _faceMask: ReturnType<typeof createTexture> | null = null;
 
     constructor(
         renderer: Renderer,
@@ -237,6 +238,14 @@ export class BeautyFilter extends Filter {
         }
     }
 
+    set faceMask(mask: ReturnType<typeof createTexture> | null){
+        if(this._faceMask !== mask){
+            this.programs['beauty'].setUniform('maskMap', mask);
+            this.programs['beauty'].setUniform('hasMask', mask ? 1 : 0);
+            this._faceMask = mask;
+        }
+    }
+
     get output() {
         if (this.redden) {
             return this.framebuffers['redden'].targetTexture;
@@ -303,7 +312,7 @@ export class BeautyFilter extends Filter {
             framebuffers['hBlurY'].bind();
             renderer.render(programs['hBlurY']);
 
-            // 保变混合
+            // 保边混合
             framebuffers['beauty'].bind();
             renderer.render(programs['beauty']);
         }
