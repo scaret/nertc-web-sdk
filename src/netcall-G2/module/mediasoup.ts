@@ -16,6 +16,8 @@ import ErrorCode from '../util/error/errorCode';
 import {RemoteStream} from "../api/remoteStream";
 import {getParameters} from "./parameters";
 import { RtcSystem } from '../util/rtcUtil/rtcSystem'
+import {NeRTCPeerConnection} from "../interfaces/NeRTCPeerConnection";
+
 
 class Mediasoup extends EventEmitter {
   private adapterRef:AdapterRef;
@@ -64,11 +66,14 @@ class Mediasoup extends EventEmitter {
   private _probeSSrc?: string;
   public unsupportedProducers: {
     [producerId: string]: {
+      pc?: NeRTCPeerConnection,
+      consumeRes: {
         producerId: string,
         code: number,
         uid: string|number,
         mediaType: MediaTypeShort,
         errMsg: string
+      }
     }
   } = {};
   private logger: ILogger;
@@ -989,11 +994,18 @@ class Mediasoup extends EventEmitter {
       this.adapterRef.instance.emit('pairing-createConsumer-error')
       return this.checkConsumerList(info)
     } else if (this.unsupportedProducers[id]){
-      this.loggerRecv.warn("_createConsumer: 跳过不支持的Producer", id, JSON.stringify(this.unsupportedProducers[id]))
-      return this.checkConsumerList(info)
-    } else if (this.unsupportedProducers[`${this._recvTransport?._id}___${id}`]){
-      this.loggerRecv.warn(`_createConsumer: 跳过不支持的Producer+Transport组合。ProducerId: ${id} transportId: ${this._recvTransport?._id}`, JSON.stringify(this.unsupportedProducers[id]))
-      return this.checkConsumerList(info)
+      const unsupportedProducerInfo = this.unsupportedProducers[id]
+      if (unsupportedProducerInfo.pc){
+        if (this._recvTransport?.handler._pc === unsupportedProducerInfo.pc){
+          this.loggerRecv.warn(`_createConsumer: 跳过不支持的Producer+Transport组合。ProducerId: ${id} transportId: ${this._recvTransport?._id}`, JSON.stringify(unsupportedProducerInfo.consumeRes))
+          return this.checkConsumerList(info)
+        }else{
+          this.loggerRecv.warn(`_createConsumer: 订阅黑名单中已更新的Producer：${unsupportedProducerInfo.pc.pcid} => ${this._recvTransport?.handler._pc.pcid}。ProducerId: ${id} transportId: ${this._recvTransport?._id}`, JSON.stringify(unsupportedProducerInfo.consumeRes))
+        }
+      }else{
+        this.loggerRecv.warn("_createConsumer: 跳过不支持的Producer", id, JSON.stringify(unsupportedProducerInfo.consumeRes))
+        return this.checkConsumerList(info)
+      }
     }
 
     const remoteStream = this.adapterRef.remoteStreamMap[uid]
@@ -1117,6 +1129,7 @@ class Mediasoup extends EventEmitter {
         message: 'No _protoo 4'
       })
     }
+    const recvPC = this._recvTransport.handler._pc
     const consumeRes = await this.adapterRef._signalling._protoo.request('Consume', data);
     if (id != remoteStream.pubStatus[mediaTypeShort].producerId){
       this.loggerRecv.warn(`收到consumeRes后Producer已经更新。触发重建下行。uid: ${remoteStream.streamID} mediaType: ${mediaTypeShort} ProducerId: ${id} => ${remoteStream.pubStatus[mediaTypeShort].producerId} ，Consume结果忽略：`, consumeRes);
@@ -1133,22 +1146,27 @@ class Mediasoup extends EventEmitter {
     } else if (code === 601){
       // 某些情况下的Producer换了个Transport之后是可以订阅的。这个时候需要拉黑的是Producer+Transport的组合
       this.loggerRecv.error(`consume请求失败，将Producer+Transport拉入黑名单:  uid: ${uid}, mediaType: ${mediaTypeShort}, producerId ${data.producerId} transportId ${this._recvTransport._id} code: ${code}, errMsg: ${errMsg}`, consumeRes);
-      this.unsupportedProducers[`${this._recvTransport._id}___${data.producerId}`] = {
-        producerId: consumeRes.producerId,
-        code: code,
-        uid: uid,
-        mediaType: mediaTypeShort,
-        errMsg: errMsg,
+      this.unsupportedProducers[data.producerId] = {
+        pc: recvPC,
+        consumeRes: {
+          producerId: consumeRes.producerId,
+          code: code,
+          uid: uid,
+          mediaType: mediaTypeShort,
+          errMsg: errMsg,
+        }
       };
       return this.checkConsumerList(info);
     }else{
       this.loggerRecv.error(`consume请求失败，将Producer拉入黑名单:  uid: ${uid}, mediaType: ${mediaTypeShort}, producerId ${data.producerId} code: ${code}, errMsg: ${errMsg}`, consumeRes);
       this.unsupportedProducers[data.producerId] = {
-        producerId: consumeRes.producerId,
-        code: code,
-        uid: uid,
-        mediaType: mediaTypeShort,
-        errMsg: errMsg,
+        consumeRes: {
+          producerId: consumeRes.producerId,
+          code: code,
+          uid: uid,
+          mediaType: mediaTypeShort,
+          errMsg: errMsg,
+        }
       };
       return this.checkConsumerList(info);
     }
