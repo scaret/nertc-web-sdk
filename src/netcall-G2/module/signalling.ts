@@ -1019,7 +1019,7 @@ class Signalling extends EventEmitter {
         if (this.adapterRef.localStream) {
           if (this.adapterRef.localStream.audio || this.adapterRef.localStream.video
             || this.adapterRef.localStream.screen || this.adapterRef.localStream.screenAudio
-            || getParameters().allowEmptyMedia
+            || getParameters().allowEmptyMedia || this.adapterRef.localStream.audioSlave
           ){
             this.logger.log(`重连成功，重新publish本端流:audio ${this.adapterRef.localStream.hasAudio()}, video ${this.adapterRef.localStream.hasVideo()}, screen ${this.adapterRef.localStream.hasScreen()}`)
             this.adapterRef.instance.doPublish(this.adapterRef.localStream)

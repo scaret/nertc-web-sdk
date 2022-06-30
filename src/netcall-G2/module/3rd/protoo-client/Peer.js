@@ -183,17 +183,17 @@ class Peer extends EnhancedEventEmitter
 				}, timeout),
 				close : () =>
 				{
-					//this._logger.debug('主动关闭了 sent: ', sent)
-					clearTimeout(sent.timer);
-					this._logger.debug(`向edge的 ${sent.method} 请求, id ${sent.id} 被取消：连接 #${this.id} 已被关闭。连接建立时间：${this._data.openTs - this._data.createTs}ms, 请求时间：${Date.now() - sent.startTs}ms`)
-          return pResolve({})
+					// //this._logger.debug('主动关闭了 sent: ', sent)
+					// clearTimeout(sent.timer);
+					// this._logger.debug(`向edge的 ${sent.method} 请求, id ${sent.id} 被取消：连接 #${this.id} 已被关闭。连接建立时间：${this._data.openTs - this._data.createTs}ms, 请求时间：${Date.now() - sent.startTs}ms`)
+          // return pResolve({errMsg: 'peer closed'})
 
-          /*let err = new Error();
+          let err = new Error();
           err.name = 'peer closed'
           if (sent.method) {
             err.message = `向edge的 ${sent.method} 请求被取消：连接 #${this.id} 已被关闭。连接建立时间：${this._data.openTs - this._data.createTs}ms, 请求时间：${Date.now() - sent.startTs}ms`
           }
-          pReject(err);*/
+          pReject(err);
 				}
 			};
 

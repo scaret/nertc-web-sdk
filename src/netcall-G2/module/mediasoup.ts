@@ -158,6 +158,7 @@ class Mediasoup extends EventEmitter {
     this._sendTransportIceParameters = null
     this._recvTransportIceParameters = null
     this._micProducer = null
+    this._audioSlaveProducer = null
     this._micProducerId = null
     this._webcamProducer = null
     this._webcamProducerId = null
