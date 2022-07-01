@@ -102,6 +102,8 @@ interface IParameters{
   audioInputcompatMode: "left"|"right"|"auto",
   // 主链路无响应多久后启用备用链路
   fireBackupDelay: number,
+  // audioAslFlag设为false时强制关闭ASL功能
+  audioAslFlag: boolean,
   // 修补Safari本地canvas track无法播放的问题
   shimLocalCanvas: "safari"|"all"|"never"
 }
@@ -166,6 +168,7 @@ let parameters:IParameters = {
   maxEventLoopLagWarning: 3,
   audioInputcompatMode: "auto",
   fireBackupDelay: 5000,
+  audioAslFlag: true,
   shimLocalCanvas: "safari",
 }
 
