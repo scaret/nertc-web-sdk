@@ -2635,16 +2635,22 @@ class LocalStream extends RTCEventEmitter {
     this.client.adapterRef.channelInfo.sessionConfig.maxVideoQuality = NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p
     this.client.adapterRef.channelInfo.sessionConfig.videoQuality = this.videoProfile.resolution
     this.client.adapterRef.channelInfo.sessionConfig.videoFrameRate = this.videoProfile.frameRate
-    if (this.mediaHelper.video.cameraTrack){
+    const cameraTrack = this._cameraTrack?.readyState === "live" ? this._cameraTrack : this.mediaHelper.video.cameraTrack
+    if (cameraTrack){
       try{
-        this.logger.log(`setVideoProfile 尝试动态修改分辨率【${this.mediaHelper.video.cameraTrack.label}】`)
+        this.logger.log(`setVideoProfile 尝试动态修改分辨率【${cameraTrack.label}】`)
         await applyResolution({
-          track: this._cameraTrack?.readyState === "live" ? this._cameraTrack : this.mediaHelper.video.cameraTrack,
+          track: cameraTrack,
           targetWidth: this.mediaHelper.video.captureConfig.high.width,
           targetHeight: this.mediaHelper.video.captureConfig.high.height,
           keepAspectRatio: !!this.mediaHelper.video.videoTrackLow,
           logger: this.logger,
         })
+        const settings = cameraTrack.getSettings()
+        if (settings.width && settings.height){
+          this.mediaHelper.video.cameraConstraint.video.width = settings.width
+          this.mediaHelper.video.cameraConstraint.video.height = settings.height
+        }
       }catch(e){
         this.logger.error(`无法使用动态分辨率:`, e.name, e.message)
       }
