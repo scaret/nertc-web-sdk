@@ -18,6 +18,10 @@ import {DataReport} from "./module/report/dataReport";
 type UIDTYPE = number | string;
 
 export interface AdapterRef {
+  audioAsl: {
+    enabled: "yes"|"no"|"unknown",
+    aslActiveNum: number,
+  },
   uid2SscrList: {[uid in UIDTYPE]:{
       audio:{ssrc: number},
       audioSlave: {ssrc: number},
@@ -816,10 +820,6 @@ export interface Client{
   apiFrequencyControl: (event:any)=>void;
   emit:(eventName: string, eventData?:any)=>void
   safeEmit:(eventName: string, eventData?:any)=>void
-  _audioAsl: {
-    serverEnabled?: boolean,
-    clientEnabled: boolean,
-  };
   _roleInfo: {
     userRole: number;
     audienceList: {[uid in UIDTYPE]: boolean}

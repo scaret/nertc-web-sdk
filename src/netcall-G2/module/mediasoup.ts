@@ -1156,7 +1156,8 @@ class Mediasoup extends EventEmitter {
       kind,
       rtpCapabilities,
       uid: subUid,
-      audioAslFlag: this.adapterRef.instance._audioAsl.clientEnabled && this.adapterRef.instance._audioAsl.serverEnabled,
+      // 除非通过私有接口强制关闭，不然总是可以向服务端发送 audioAslFlag为true，由服务端决定开启/关闭asl功能
+      audioAslFlag: getParameters().audioAslFlag,
       producerId: id,
       preferredSpatialLayer,
       mid,

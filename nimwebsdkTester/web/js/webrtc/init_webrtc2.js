@@ -467,8 +467,8 @@ function initEvents() {
     $("#room-codec-wrapper").text(JSON.stringify(rtc.client.adapterRef.mediaCapability.room.videoCodecType));
   })
   
-  rtc.client.on('@AslServerNotSupported', evt=>{
-    addLog('服务端不支持ASL')
+  rtc.client.on('aslStatus', evt=>{
+    addLog(`服务端ASL支持状态：${evt.enabled} 选路数量 ${evt.aslActiveNum}`)
   })
   
   rtc.client.on('warning', evt => {
@@ -879,17 +879,6 @@ $('#init-btn').on('click', () => {
   
 })
 
-
-$('#enableAudioAsl').on('click', () => {
-  rtc.client.enableAudioAsl()
-  addLog("启用ASL")
-})
-
-$('#disableAudioAsl').on('click', () => {
-  rtc.client.enableAudioAsl(false)
-  addLog("禁用ASL")
-})
-
 /** 
  * ----------------------------------------
  *              房间逻辑
@@ -1022,9 +1011,6 @@ $('#joinChannel-btn').on('click', async () => {
   }).then((obj) => {
     addLog('加入房间成功')
     console.info('加入房间成功')
-    if (rtc.client._audioAsl.clientEnabled && rtc.client._audioAsl.serverEnabled){
-      addLog("ASL选路数量：" + rtc.client.adapterRef.channelInfo.aslActiveNum)
-    }
     if (rtc.localStream && rtc.localStream.inited){
       // localStream已经初始化了
       if ($('#autoPub').prop('checked')) {

@@ -114,6 +114,10 @@ class Base extends RTCEventEmitter {
   _reset() {
     this.sdkRef = null; // SDK对象的this指针
     this.adapterRef = {// adapter对象内部成员与方法挂载的引用
+      audioAsl: {
+        enabled: "unknown",
+        aslActiveNum: -1,
+      },
       channelInfo: {
         sessionConfig: {}
       },
