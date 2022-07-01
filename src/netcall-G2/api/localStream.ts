@@ -1657,9 +1657,9 @@ class LocalStream extends RTCEventEmitter {
           break
         }
         // 关闭基础美颜
-        this.isBeautyTrack = this.basicBeauty.isEnable
         if(this.isBeautyTrack){
           await this.setBeautyEffect(false);
+          this.isBeautyTrack = true;
         }
         //关闭背景分割
         if(this.isBodySegmentTrack) {
@@ -2295,9 +2295,9 @@ class LocalStream extends RTCEventEmitter {
         await this._cancelAdvancedBeauty();
         this.isAdvancedBeautyTrack = true;
       }
-      this.isBeautyTrack = this.basicBeauty.isEnable
       if(this.isBeautyTrack){
         await this.setBeautyEffect(false);
+        this.isBeautyTrack = true;
       }
       //关闭美颜track, 切换后的回调中再重新开启美颜
       if(this._transformedTrack){
@@ -3662,6 +3662,7 @@ class LocalStream extends RTCEventEmitter {
     const basicBeauty  = this.basicBeauty;
     let videoTrackLow;
     if (this.mediaHelper && this.mediaHelper.video.cameraTrack) {
+      this.isBeautyTrack = isStart;
       this._cameraTrack  = this.mediaHelper.video.cameraTrack;
       this._transformedTrack = await basicBeauty.setBeauty(isStart, this._cameraTrack) as MediaStreamTrack;
       videoTrackLow = this.mediaHelper.video.videoTrackLow;
