@@ -2628,9 +2628,14 @@ class LocalStream extends RTCEventEmitter {
    * @returns {Null}  
   */
   async setVideoProfile (options:VideoProfileOptions) {
-    Object.assign(this.videoProfile, options)
+    if (options.resolution > -1){
+      this.videoProfile.resolution = options.resolution
+    }
+    if (options.frameRate > -1){
+      this.videoProfile.frameRate = options.frameRate
+    }
     this.mediaHelper.video.captureConfig.high = this.mediaHelper.convert(this.videoProfile);
-    this.mediaHelper.video.encoderConfig.high.maxBitrate = this.getVideoBW()
+    this.mediaHelper.video.encoderConfig.high.maxBitrate = this.getVideoBW() || this.mediaHelper.video.encoderConfig.high.maxBitrate
     this.logger.log(`setVideoProfile ${JSON.stringify(options)} 视频采集参数 ${JSON.stringify(this.mediaHelper.video.captureConfig.high)} 编码参数 ${JSON.stringify(this.mediaHelper.video.encoderConfig.high)}`)
     this.client.adapterRef.channelInfo.sessionConfig.maxVideoQuality = NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p
     this.client.adapterRef.channelInfo.sessionConfig.videoQuality = this.videoProfile.resolution
@@ -2845,7 +2850,12 @@ class LocalStream extends RTCEventEmitter {
    * @returns {Void}  
   */
   setScreenProfile (profile: ScreenProfileOptions) {
-    Object.assign(this.screenProfile, profile)
+    if (profile.frameRate > -1){
+      this.screenProfile.frameRate = profile.frameRate
+    }
+    if (profile.resolution > -1){
+      this.screenProfile.resolution
+    }
     this.mediaHelper.screen.captureConfig.high = this.mediaHelper.convert(this.screenProfile)
     this.mediaHelper.screen.encoderConfig.high.maxBitrate = this.getScreenBW()
     this.logger.log(`setScreenProfile ${JSON.stringify(profile)} 屏幕共享采集参数 ${JSON.stringify(this.mediaHelper.screen.captureConfig.high)} 编码参数 ${JSON.stringify(this.mediaHelper.screen.encoderConfig.high)}`)
@@ -2955,7 +2965,10 @@ class LocalStream extends RTCEventEmitter {
       return 1200 * 1000
     } else if (this.videoProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p) {
       return 1500 * 1000
-    } return 0
+    } else {
+      this.logger.warn(`发现不支持的 NERTC_VIDEO_QUALITY ${this.videoProfile.resolution}`)
+      return 800 * 1000
+    }
   }
   
   getScreenBW(){
@@ -2973,7 +2986,10 @@ class LocalStream extends RTCEventEmitter {
       return 1200 * 1000
     } else if (this.screenProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p) {
       return 1500 * 1000
-    } return 0
+    } else {
+      this.logger.warn(`发现不支持的 NERTC_VIDEO_QUALITY ${this.screenProfile.resolution}`)
+      return 1500 * 1000
+    }
   }
   
   /**
