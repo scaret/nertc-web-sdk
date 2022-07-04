@@ -463,8 +463,16 @@ declare interface Stream {
 
     /**
      * 设置视频属性。
+     * 
+     * 从 V4.6.20 起，可以在打开摄像头后继续通过调用该方法动态修改分辨率。该功能由于浏览器和摄像头的限制，可能出现以下情况：
+     * - 从低分辨率切换到高分辨率失败
+     * - 从高分辨率切换到低分辨率时长宽比不完全符合profile设定
+     * - 在多个页面开启摄像头或者打开大小流的情况下，分辨率切换失败
+     *  SDK仅保证在这些情况下的设备可用及码率切换正常。
+     * 
      * @example
      * ```javascript
+     * // init前，设置分辨率及帧率
      * rtc.localStream = createStream({
      *   video: true,
      *   audio: true,
@@ -476,6 +484,12 @@ declare interface Stream {
      *   frameRate: NERTC.VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_15,
      * })
      * await rtc.localStream.init()
+     * 
+     * 
+     * // init后，动态下调分辨率
+     * rtc.localStream.setVideoProfile({
+     *   resolution: NERTC.VIDEO_QUALITY.VIDEO_QUALITY_720p,
+     * })
      * ```
      */
     setVideoProfile(options: {
@@ -505,6 +519,12 @@ declare interface Stream {
      * 设置屏幕共享中的屏幕属性。
      * 
      * 该方法设置屏幕共享时屏幕的显示属性，必须在 Stream.init 之前调用。
+     * 
+     * 从 V4.6.20 起，可以在打开屏幕共享后继续通过调用该方法动态修改分辨率。该功能由于浏览器的限制，可能出现以下情况：
+     * - 从低分辨率切换到高分辨率失败
+     * - 从高分辨率切换到低分辨率时长宽比不完全符合profile设定
+     * - 屏幕共享的边缘被切断
+     *  SDK仅保证在这些情况下的设备可用及码率切换正常。
      * 
      * @note 该方法仅可对本地流调用。
      * 

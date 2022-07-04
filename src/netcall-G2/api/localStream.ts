@@ -2648,7 +2648,7 @@ class LocalStream extends RTCEventEmitter {
           track: cameraTrack,
           targetWidth: this.mediaHelper.video.captureConfig.high.width,
           targetHeight: this.mediaHelper.video.captureConfig.high.height,
-          keepAspectRatio: !!this.mediaHelper.video.videoTrackLow,
+          keepAspectRatio: getParameters().keepAspectRatio,
           logger: this.logger,
         })
         const settings = cameraTrack.getSettings()
@@ -2865,7 +2865,7 @@ class LocalStream extends RTCEventEmitter {
           track: this.mediaHelper.screen.screenVideoTrack,
           targetWidth: this.mediaHelper.screen.captureConfig.high.width,
           targetHeight: this.mediaHelper.screen.captureConfig.high.height,
-          keepAspectRatio: !!this.mediaHelper.screen.screenVideoTrackLow,
+          keepAspectRatio: getParameters().keepAspectRatio,
           logger: this.logger,
       })
     }
