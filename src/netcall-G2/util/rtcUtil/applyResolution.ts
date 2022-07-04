@@ -32,13 +32,17 @@ export async function applyResolution(options:ApplyResolutionOptions){
       }
     }
     await track.applyConstraints(constraint)
+    // 经实践检验，applyConstraints返回之后的一段时间，浏览器会继续调整Track的分辨率。
+    await new Promise((res)=>{
+      setTimeout(res, 100)
+    })
 
     // 检查新的长宽比是否应用成功
     const settingsAfter = track.getSettings()
     if (settingsBefore.width !== settingsAfter.width || settingsBefore.height !== settingsAfter.height){
-      logger.log(`applyResolution 成功修改分辨率 保留长宽比：${keepAspectRatio} ${settingsBefore.width}x${settingsBefore.height} => ${settingsAfter.width}x${settingsAfter.height} 【${track.label}】`)
+      logger.log(`applyResolution 成功修改分辨率 保留长宽比：${keepAspectRatio} ${settingsBefore.width}x${settingsBefore.height} => ${settingsAfter.width}x${settingsAfter.height} (constraints: ${JSON.stringify(constraint)})【${track.label}】`)
     }else{
-      logger.warn(`applyResolution 无法修改分辨率为${targetWidth}x${targetHeight}，目前的分辨率：${settingsBefore.width}x${settingsBefore.height} 【${track.label}】`)
+      logger.warn(`applyResolution 无法修改分辨率为${targetWidth}x${targetHeight}，目前的分辨率：${settingsBefore.width}x${settingsBefore.height} (constraints: ${JSON.stringify(constraint)})【${track.label}】`)
     }
   } else {
     logger.log(`applyResolution 无需修改分辨率 ${settingsBefore.width}x${settingsBefore.height} 【${track.label}】`)
