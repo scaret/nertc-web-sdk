@@ -2854,7 +2854,7 @@ class LocalStream extends RTCEventEmitter {
       this.screenProfile.frameRate = profile.frameRate
     }
     if (profile.resolution > -1){
-      this.screenProfile.resolution
+      this.screenProfile.resolution = profile.resolution
     }
     this.mediaHelper.screen.captureConfig.high = this.mediaHelper.convert(this.screenProfile)
     this.mediaHelper.screen.encoderConfig.high.maxBitrate = this.getScreenBW()
