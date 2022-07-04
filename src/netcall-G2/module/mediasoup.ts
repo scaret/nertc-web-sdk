@@ -1217,22 +1217,6 @@ class Mediasoup extends EventEmitter {
     try {
       const peerId = consumeRes.uid
       if (code !== 200 || !this.adapterRef.remoteStreamMap[uid]) {
-
-        if (turnParameters) { //服务器反馈turn server，sdk更新ice Server
-          let iceServers = [];
-          let iceTransportPolicy:RTCIceTransportPolicy = 'all';
-          iceServers.push({
-            urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=udp',
-            credential: turnParameters.password,
-            username: turnParameters.username
-          }, {
-            urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=tcp',
-            credential: turnParameters.password,
-            username: turnParameters.username
-          })
-          await this._recvTransport.updateIceServers({iceServers})
-        }
-
         this.loggerRecv.warn('remoteStream.pubStatus: ', remoteStream.pubStatus)
         
         if (peerId && uid != peerId) {
@@ -1268,7 +1252,20 @@ class Mediasoup extends EventEmitter {
         this.adapterRef.instance.reBuildRecvTransport()
         return*/
       } 
-
+      if (turnParameters) { //服务器反馈turn server，sdk更新ice Server
+        let iceServers = [];
+        let iceTransportPolicy:RTCIceTransportPolicy = 'all';
+        iceServers.push({
+          urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=udp',
+          credential: turnParameters.password,
+          username: turnParameters.username
+        }, {
+          urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=tcp',
+          credential: turnParameters.password,
+          username: turnParameters.username
+        })
+        await this._recvTransport.updateIceServers({iceServers})
+      }
       if (rtpParameters && rtpParameters.encodings && rtpParameters.encodings.length && rtpParameters.encodings[0].ssrc) {
         this.adapterRef.instance.addSsrc(uid, mediaTypeShort, rtpParameters.encodings[0].ssrc)
       }
