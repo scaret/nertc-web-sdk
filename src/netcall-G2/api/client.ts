@@ -195,7 +195,7 @@ class Client extends Base {
     }
   }
 
-  getUid() {
+  getUid() :number|undefined{
     return this.adapterRef.channelInfo && this.adapterRef.channelInfo.uid
   }
 
@@ -1462,7 +1462,7 @@ class Client extends Base {
     this.adapterRef.localStream = localStream
     localStream.client = this as IClient;
     const uid = this.getUid();
-    if (localStream.streamID !== uid){
+    if (uid && localStream.streamID !== uid){
       this.logger.warn('localStream更换streamID', localStream.streamID, '=>', uid);
       localStream.streamID = uid;
       localStream.stringStreamID = uid.toString();
