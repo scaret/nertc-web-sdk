@@ -197,6 +197,8 @@ class LocalStream extends RTCEventEmitter {
   private isBeautyTrack: boolean = false;
   private isBodySegmentTrack: boolean = false;
   private isAdvancedBeautyTrack: boolean = false;
+  private canvasWatermarkOptions:NERtcCanvasWatermarkConfig | null = null;
+  private encoderWatermarkOptions: NERtcEncoderWatermarkConfig | null = null;
   
   constructor (options:LocalStreamOptions) {
     super()
@@ -676,6 +678,13 @@ class LocalStream extends RTCEventEmitter {
             track: this._transformedTrack,
             external: false
       });
+      //重新开启水印
+      if(this.encoderWatermarkOptions) {
+        this.setEncoderWatermarkConfigs(this.encoderWatermarkOptions);
+      }
+      if(this.canvasWatermarkOptions) {
+        this.setCanvasWatermarkConfigs(this.canvasWatermarkOptions!);
+      }
       if (videoTrackLow){
         videoTrackLow.stop();
       }
@@ -3583,6 +3592,7 @@ class LocalStream extends RTCEventEmitter {
       }
       watermarkControl.checkWatermarkParams(options);
       watermarkControl.updateWatermarks(options);
+      this.canvasWatermarkOptions = options;
 
       this.client.apiFrequencyControl({
         name: 'setLocalCanvasWatermarkConfigs',
@@ -3644,6 +3654,7 @@ class LocalStream extends RTCEventEmitter {
       }
       watermarkControl.checkWatermarkParams(options);
       watermarkControl.updateWatermarks(options);
+      this.encoderWatermarkOptions = options;
 
       this.client.apiFrequencyControl({
         name: 'setEncoderWatermarkConfigs',
