@@ -194,7 +194,9 @@ export class LBSManager {
     this.client.safeEmit('@lbs-config-update', {
       reason,
     })
-    this.logger.log(`成功加载内建配置 ${reason}。`)
+    if (reason !== "oninit"){
+      this.logger.log(`成功加载内建配置 ${reason}。`)
+    }
   }
   
   private handleLbsStateWillChange(reason: string){
