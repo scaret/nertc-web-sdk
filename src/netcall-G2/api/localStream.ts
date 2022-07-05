@@ -2640,7 +2640,17 @@ class LocalStream extends RTCEventEmitter {
     this.client.adapterRef.channelInfo.sessionConfig.maxVideoQuality = NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p
     this.client.adapterRef.channelInfo.sessionConfig.videoQuality = this.videoProfile.resolution
     this.client.adapterRef.channelInfo.sessionConfig.videoFrameRate = this.videoProfile.frameRate
-    const cameraTrack = this._cameraTrack?.readyState === "live" ? this._cameraTrack : this.mediaHelper.video.cameraTrack
+    let cameraTrack = this.mediaHelper.video.cameraTrack
+    let cameraSettings = cameraTrack?.getSettings()
+    if (cameraSettings && !cameraSettings.width){
+      // 尝试寻找美颜的cameraTrack。不要直接判断是否是CanvasCaptureMediaStreamTrack因为Firefox不支持
+      cameraSettings = this._cameraTrack?.getSettings()
+      if (cameraSettings?.width && this._cameraTrack?.readyState === "live"){
+        this.logger.log(`setVideoProfile 侦测到美颜在开启状态`)
+        cameraTrack = this._cameraTrack
+      }
+    }
+     
     if (cameraTrack){
       try{
         this.logger.log(`setVideoProfile 尝试动态修改分辨率【${cameraTrack.label}】`)
