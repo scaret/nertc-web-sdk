@@ -302,11 +302,12 @@ export default class VideoPostProcess extends EventEmitter {
     };
 
     private updateTimer(){
-        this.update();
-        workerTimer.clearTimeout(this.timerId);
-        this.timerId = workerTimer.setTimeout(() => {
-            this.updateTimer();
-        }, 1000 / this.frameRate, null);
+        let that = this;
+        workerTimer.setTimeout(function updateFunc() {
+            that.update();
+            workerTimer.clearTimeout(that.timerId);
+            that.timerId = workerTimer.setTimeout(updateFunc, that.frameRate, null)
+        }, 1000/this.frameRate, null)
     }
 
     setTaskAndTrack = (task: TaskType, isEnable: boolean, track?: MediaStreamTrack)=>{
