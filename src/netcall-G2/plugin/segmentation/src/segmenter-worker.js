@@ -20,7 +20,7 @@ class mHumanSegmenter {
                 this.handleInitFinished();
             }
         }
-        require('../lib/nn_segment_normal.js');
+        require('../lib/ne_segment_normal.js');
     }
 
     async process(frame) {

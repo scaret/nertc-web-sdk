@@ -39,22 +39,43 @@ var WEBRTC2_ENV = {
 //背景分割
 const virtualBackgroundPluginConfig = {
   development: {
-    key: 'VirtualBackground',
-    pluginUrl: './js/nim/NIM_Web_VirtualBackground.js',
-    wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/nn_segment_normal.wasm' + `?time=${Math.random()}`,
+    chrome: {
+      key: 'VirtualBackground',
+      pluginUrl: './js/nim/NIM_Web_VirtualBackground.js',
+      wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal.wasm' + `?time=${Math.random()}`,
+    },
+    safari: {
+      key: 'VirtualBackground',
+      pluginUrl: './js/nim/NIM_Web_VirtualBackground.js',
+      wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal_nosimd.wasm' + `?time=${Math.random()}`,
+    }
   }, 
   production: {
-    key: 'VirtualBackground',
-    pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}.js`,
-    wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/nn_segment_normal.wasm' + `?time=${Math.random()}`,
+    chrome: {
+      key: 'VirtualBackground',
+      pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}.js`,
+      wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal.wasm' + `?time=${Math.random()}`,
+    },
+    safari: {
+      key: 'VirtualBackground',
+      pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}.js`,
+      wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal_nosimd.wasm' + `?time=${Math.random()}`,
+    }
   },
   test: {
-    key: 'VirtualBackground',
-    pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}_test.js`,
-    wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/nn_segment_normal.wasm' + `?time=${Math.random()}`,
+    chrome: {
+      key: 'VirtualBackground',
+      pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}_test.js`,
+      wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal.wasm' + `?time=${Math.random()}`,
+    },
+    safari: {
+      key: 'VirtualBackground',
+      pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}_test.js`,
+      wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal_nosimd.wasm' + `?time=${Math.random()}`,
+    }
   } 
 };
-const segment_config = virtualBackgroundPluginConfig[NERTC.ENV];
+let segment_config = null;
 
 //高级美颜
 const advancedBeautyPluginConfig = {
@@ -1263,9 +1284,11 @@ function onPluginLoaded(name) {
   }
 }
 
-$('#registerVitrualBackground').on('click', () => {
+$('#registerVitrualBackground').on('click', async () => {
   $('#segmentStatus').html('loading').show();
-  rtc.localStream.registerPlugin(segment_config)  
+  const type = await wasmFeatureDetect.simd() ? 'chrome' : 'safari';
+  segment_config = virtualBackgroundPluginConfig[NERTC.ENV][type];
+  rtc.localStream.registerPlugin(segment_config)
 })
 
 $('#enableSegment').on('click', () => {
