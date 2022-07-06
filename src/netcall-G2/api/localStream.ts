@@ -3616,16 +3616,30 @@ class LocalStream extends RTCEventEmitter {
       let watermarkControl = null;
       if (!options.mediaType || options.mediaType === "video"){
         watermarkControl = this._play.watermark.video.encoderControl;
-        this._play.watermark.video.encoderControl.handler.enabled = true
-        if (!this.mediaHelper.video.preProcessingEnabled){
-          this.mediaHelper.enablePreProcessing("video")
+        if (options.textWatermarks?.length || options.timestampWatermarks || options.imageWatermarks?.length){
+          this._play.watermark.video.encoderControl.handler.enabled = true
+          if (!this.mediaHelper.video.preProcessingEnabled){
+            this.mediaHelper.enablePreProcessing("video")
+          }
+        }else{
+          this._play.watermark.video.encoderControl.handler.enabled = false
+          if (this.mediaHelper.canDisablePreProcessing('video')){
+            this.mediaHelper.disablePreProcessing("video")
+          }
         }
       }
       else if (options.mediaType === "screen"){
         watermarkControl = this._play.watermark.screen.encoderControl;
-        this._play.watermark.screen.encoderControl.handler.enabled = true
-        if (!this.mediaHelper.screen.preProcessingEnabled){
-          this.mediaHelper.enablePreProcessing("screen")
+        if (options.textWatermarks?.length || options.timestampWatermarks || options.imageWatermarks?.length){
+          this._play.watermark.screen.encoderControl.handler.enabled = true
+          if (!this.mediaHelper.screen.preProcessingEnabled){
+            this.mediaHelper.enablePreProcessing("screen")
+          }
+        }else{
+          this._play.watermark.screen.encoderControl.handler.enabled = false
+          if (this.mediaHelper.canDisablePreProcessing('screen')){
+            this.mediaHelper.disablePreProcessing("screen")
+          }
         }
       }
       if (!watermarkControl){

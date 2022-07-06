@@ -4,10 +4,25 @@ import {emptyStreamWith} from "../util/gum";
 import {getRTCTimer} from "../util/RTCTimer";
 import {RTCCanvas} from "../util/rtcUtil/rtcCanvas";
 
-export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: "video"|"screen" = "video", fps?: number){
+export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: "video"|"screen", fps?: number){
   if (!fps){
     fps = mediaHelper[mediaType].captureConfig.high.frameRate
   }
+
+  let videoTrack:MediaStreamTrack|null;
+  let oldTrackLow: MediaStreamTrack|null;
+  if (mediaType === "video"){
+    videoTrack = mediaHelper.video.cameraTrack || mediaHelper.video.videoSource;
+    oldTrackLow = mediaHelper.video.videoTrackLow
+  }else{
+    videoTrack = mediaHelper.screen.screenVideoTrack || mediaHelper.screen.screenVideoSource;
+    oldTrackLow = mediaHelper.screen.screenVideoTrackLow
+  }
+  if(!videoTrack){
+    mediaHelper.logger.warn(`enablePreProcessing：当前没有视频输入 ${mediaType}`)
+    return
+  }
+  
   let preProcessing = mediaHelper[mediaType].preProcessing
   
   // 1.初始化预处理环境
@@ -64,23 +79,12 @@ export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: 
   }
   
   // 2. 为防止之前曾经调用过enablePreProcessing，须重新连接一遍
-  let videoTrack:MediaStreamTrack|null;
-  let oldTrackLow: MediaStreamTrack|null;
   if (mediaType === "video"){
-    videoTrack = mediaHelper.video.cameraTrack || mediaHelper.video.videoSource;
-    oldTrackLow = mediaHelper.video.videoTrackLow
     emptyStreamWith(mediaHelper.video.videoStream, preProcessing.canvasTrack)
   }else{
-    videoTrack = mediaHelper.screen.screenVideoTrack || mediaHelper.screen.screenVideoSource;
-    oldTrackLow = mediaHelper.video.videoTrackLow
     emptyStreamWith(mediaHelper.screen.screenVideoStream, preProcessing.canvasTrack)
   }
-  if (!videoTrack){
-    mediaHelper.logger.warn(`enablePreProcessing：当前没有视频输入 ${mediaType}`)
-    preProcessing.videoElem.srcObject = new MediaStream([])
-  }else{
-    preProcessing.videoElem.srcObject = new MediaStream([videoTrack])
-  }
+  preProcessing.videoElem.srcObject = new MediaStream([videoTrack])
   preProcessing.videoTrack = videoTrack
 
   // 3. 处理上行发送

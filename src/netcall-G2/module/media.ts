@@ -2639,7 +2639,7 @@ class MediaHelper extends EventEmitter {
     }
   }
   
-  enablePreProcessing (mediaType: "video"|"screen" = "video", fps?: number){
+  enablePreProcessing (mediaType: "video"|"screen", fps?: number){
     enablePreProcessing(this, mediaType, fps)
   }
   
