@@ -149,7 +149,7 @@ export default class VideoPostProcess extends EventEmitter {
         this.taskSet.delete(task);
         logger.info(`task ${task} is removed.`);
         if(this.taskSet.size === 0){
-            workerTimer.clearTimeout(this.timerId);
+            workerTimer.clearInterval(this.timerId);
             this.timerId = -1;
             this.sourceMap = null;
             this.frameCache = null;
@@ -236,7 +236,7 @@ export default class VideoPostProcess extends EventEmitter {
                 return this.filters.update(false);
             } else {
                  // 任务队列为空, 且 filters 已被销毁，但 timer 没停止，兼容此类错误
-                return workerTimer.clearTimeout(this.timerId);
+                return workerTimer.clearInterval(this.timerId);
             }
         }
     
@@ -301,13 +301,8 @@ export default class VideoPostProcess extends EventEmitter {
         this.filters.update(false);
     };
 
-    private updateTimer(){
-        let that = this;
-        workerTimer.setTimeout(function updateFunc() {
-            that.update();
-            workerTimer.clearTimeout(that.timerId);
-            that.timerId = workerTimer.setTimeout(updateFunc, that.frameRate, null)
-        }, 1000/this.frameRate, null)
+    private updateTimer(){  
+        this.timerId = workerTimer.setInterval(this.update, 1000/this.frameRate, null)
     }
 
     setTaskAndTrack = (task: TaskType, isEnable: boolean, track?: MediaStreamTrack)=>{
@@ -344,7 +339,7 @@ export default class VideoPostProcess extends EventEmitter {
 
     destroy(){
         this.taskSet.clear();
-        workerTimer.clearTimeout(this.timerId);
+        workerTimer.clearInterval(this.timerId);
         this.videoToImageData = null;
         this.sourceTrack = null;
         this.trackInstance?.stop();
