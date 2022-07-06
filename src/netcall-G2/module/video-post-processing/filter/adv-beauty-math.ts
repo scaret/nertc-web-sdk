@@ -432,56 +432,8 @@ export const handlers:{
             Vector2.setPoint(posData, idx, p);
         });
     },
-    enlargeEye:(posData, intensity)=>{
-        // 横向缩放因子
-        const hScale = 1.0 + intensity * 0.1 * miscutRatio;
-        // 纵向缩放因子
-        const vScale = 1.0 + intensity * 0.25;
-        // 斜向缩放因子
-        const vhScale = hScale * 0.45 + vScale * 0.55;
-        // 缩放因子队列
-        const scales = [hScale, vhScale, vhScale, hScale, vhScale, vhScale, vScale, vScale];
-    
-        // 左眼放大
-        [52,53,54,55,56,57,72,73].forEach((idx, index)=>{
-            let p = Vector2.getVec(posData, idx);
-            p = Vector2.add(lEyeCenter, Vector2.scale(Vector2.sub(p, lEyeCenter), scales[index]));
-            Vector2.setPoint(posData, idx, p);
-        });
-
-        // 右眼放大
-        [58,59,60,61,62,63,75,76].forEach((idx, index)=>{
-            let p = Vector2.getVec(posData, idx);
-            p = Vector2.add(rEyeCenter, Vector2.scale(Vector2.sub(p, rEyeCenter), scales[index]));
-            Vector2.setPoint(posData, idx, p);
-        });
-    },
-    roundedEye:(posData, intensity)=>{
-        // 横向缩放因子
-        const hScale = 1.0 - intensity * 0.05 * miscutRatio;
-        // 纵向缩放因子
-        const vScale = 1.0 + intensity * 0.3;
-        // 斜向缩放因子
-        const vhScale = hScale * 0.4 + vScale * 0.6;
-        // 缩放因子队列
-        const scales = [vhScale, vhScale, vhScale, vhScale, vScale, vScale];
-    
-        // 左眼放大
-        [53,54,56,57,72,73].forEach((idx, index)=>{
-            let p = Vector2.getVec(posData, idx);
-            p = Vector2.add(lEyeCenter, Vector2.scale(Vector2.sub(p, lEyeCenter), scales[index]));
-            Vector2.setPoint(posData, idx, p);
-        });
-
-        // 右眼放大
-        [59,60,62,63,75,76].forEach((idx, index)=>{
-            let p = Vector2.getVec(posData, idx);
-            p = Vector2.add(rEyeCenter, Vector2.scale(Vector2.sub(p, rEyeCenter), scales[index]));
-            Vector2.setPoint(posData, idx, p);
-        });
-    },
     openCanthus:(posData, intensity)=>{
-        const scale = 1.0 + intensity * 0.1 * miscutRatio;
+        const scale = 1.0 + intensity * 0.05 * miscutRatio;
 
         // 取出 52、55 点, 沿对应向量平移 55 点
         const p52 = Vector2.getVec(posData, 52);
@@ -498,9 +450,25 @@ export const handlers:{
         // 将 54、56 点靠拢 55 点；将 59、63 点靠拢 58 点
         [54, 56, 59, 63].forEach((idx)=>{
             let p = Vector2.getVec(posData, idx);
-            p = Vector2.lerp(p, idx < 57 ? p55 : p58, intensity * 0.15);
+            p = Vector2.lerp(p, idx < 57 ? p55 : p58, intensity * 0.1);
             Vector2.setPoint(posData, idx, p);
         })
+        // 计算左眼几何中心
+        lEyeCenter = Vector2.center(
+            ...(
+                [52,53,54,55,56,57,72,73].map((idx)=>{
+                    return Vector2.getVec(posData, idx);
+                })
+            )
+        );
+        // 计算右眼几何中心
+        rEyeCenter = Vector2.center(
+            ...(
+                [58,59,60,61,62,63,75,76].map((idx)=>{
+                    return Vector2.getVec(posData, idx);
+                })
+            )
+        );
     },
     eyeDistance:(posData, intensity)=>{
         intensity = (intensity - 0.5) * miscutRatio * 0.3;
@@ -530,6 +498,78 @@ export const handlers:{
             const p = Vector2.add(Vector2.getVec(posData, idx), dr);
             Vector2.setPoint(posData, idx, p);
         })
+        // 计算左眼几何中心
+        lEyeCenter = Vector2.center(
+            ...(
+                [52,53,54,55,56,57,72,73].map((idx)=>{
+                    return Vector2.getVec(posData, idx);
+                })
+            )
+        );
+        // 计算右眼几何中心
+        rEyeCenter = Vector2.center(
+            ...(
+                [58,59,60,61,62,63,75,76].map((idx)=>{
+                    return Vector2.getVec(posData, idx);
+                })
+            )
+        );
+    },
+    roundedEye:(posData, intensity)=>{
+        // // 横向缩放因子
+        // const hScale = 1.0 - intensity * 0.05 * miscutRatio;
+        // // 纵向缩放因子
+        // const vScale = 1.0 + intensity * 0.3;
+        // // 斜向缩放因子
+        // const vhScale = hScale * 0.4 + vScale * 0.6;
+        // // 缩放因子队列
+        // const scales = [vhScale, vhScale, vhScale, vhScale, vScale, vScale];
+    
+        // // 左眼放大
+        // [53,54,56,57,72,73].forEach((idx, index)=>{
+        //     let p = Vector2.getVec(posData, idx);
+        //     p = Vector2.add(lEyeCenter, Vector2.scale(Vector2.sub(p, lEyeCenter), scales[index]));
+        //     Vector2.setPoint(posData, idx, p);
+        // });
+
+        // // 右眼放大
+        // [59,60,62,63,75,76].forEach((idx, index)=>{
+        //     let p = Vector2.getVec(posData, idx);
+        //     p = Vector2.add(rEyeCenter, Vector2.scale(Vector2.sub(p, rEyeCenter), scales[index]));
+        //     Vector2.setPoint(posData, idx, p);
+        // });
+        return {
+            lEyeCenter,
+            rEyeCenter
+        }
+    },
+    enlargeEye:(posData, intensity)=>{
+        // // 横向缩放因子
+        // const hScale = 1.0 + intensity * 0.1 * miscutRatio;
+        // // 纵向缩放因子
+        // const vScale = 1.0 + intensity * 0.25;
+        // // 斜向缩放因子
+        // const vhScale = hScale * 0.45 + vScale * 0.55;
+        // // 缩放因子队列
+        // const scales = [hScale, vhScale, vhScale, hScale, vhScale, vhScale, vScale, vScale];
+    
+        // // 左眼放大
+        // [52,53,54,55,56,57,72,73].forEach((idx, index)=>{
+        //     let p = Vector2.getVec(posData, idx);
+        //     p = Vector2.add(lEyeCenter, Vector2.scale(Vector2.sub(p, lEyeCenter), scales[index]));
+        //     Vector2.setPoint(posData, idx, p);
+        // });
+
+        // // 右眼放大
+        // [58,59,60,61,62,63,75,76].forEach((idx, index)=>{
+        //     let p = Vector2.getVec(posData, idx);
+        //     p = Vector2.add(rEyeCenter, Vector2.scale(Vector2.sub(p, rEyeCenter), scales[index]));
+        //     Vector2.setPoint(posData, idx, p);
+        // });
+        return {
+            lEyeCenter,
+            rEyeCenter
+        }
     },
     shrinkNose:(posData, intensity)=>{
         intensity = intensity * 0.15 * miscutRatio;
