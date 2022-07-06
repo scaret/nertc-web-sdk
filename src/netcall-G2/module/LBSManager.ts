@@ -7,7 +7,7 @@ import {BUILD, LBS_BUILD_CONFIG, lbsUrl, SDK_VERSION} from "../Config";
 import RtcError from "../util/error/rtcError";
 import ErrorCode from "../util/error/errorCode";
 import {getParameters} from "./parameters";
-import {AjaxOptions, getFormData} from "../util/ajax";
+import {ajax, AjaxOptions, getFormData} from "../util/ajax";
 import {generateUUID} from "../util/rtcUtil/utils";
 import {DataReport} from "./report/dataReport";
 var JSONbig = require('json-bigint');
@@ -491,6 +491,11 @@ export class LBSManager {
 
 
   ajax (option:AjaxOptions) {
+    
+    if (getParameters().disableLBSService){
+      this.logger.log(`disableLBSService:`, option.url)
+      return ajax(option)
+    }
 
     // 可能有多个配置，含有备份URL
     const urlSettings = this.getURLSettings(option.url)
