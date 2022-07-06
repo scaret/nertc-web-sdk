@@ -106,6 +106,8 @@ interface IParameters{
   audioAslFlag: boolean,
   // 动态修改分辨率时是否尽量保留长宽比（即使保留长宽比，也会有zoom影响）
   keepAspectRatio: boolean,
+  // 是否关闭LBS服务
+  disableLBSService: boolean,
   // 修补Safari本地canvas track无法播放的问题
   shimLocalCanvas: "safari"|"all"|"never"
 }
@@ -172,6 +174,7 @@ let parameters:IParameters = {
   fireBackupDelay: 5000,
   audioAslFlag: true,
   keepAspectRatio: false,
+  disableLBSService: false,
   shimLocalCanvas: "safari",
 }
 
