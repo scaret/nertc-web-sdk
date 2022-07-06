@@ -6,6 +6,7 @@ import { createFrameBuffer } from '../gl-utils/framebuffer';
 import { baseTextureShader } from '../shaders/base-texture-shader.glsl';
 import { advBeautyWireShader } from '../shaders/adv-beauty/adv-beauty-wire-shader.glsl';
 import { advBeautyShader } from '../shaders/adv-beauty/adv-beauty-shader.glsl';
+import { advBeautyEyeShader } from '../shaders/adv-beauty/adv-beauty-eye-shader.glsl';
 import { advFaceMaskShader } from '../shaders/adv-beauty/adv-facemask-shader.glsl';
 import { Filter } from './filter';
 import { Vector2, preHandle, handlers, HandleKey, Matrix3x3 } from './adv-beauty-math';
@@ -274,6 +275,40 @@ export class AdvBeautyFilter extends Filter {
             this.framebuffers.wire = wireFramebuffer;
         }
 
+        // 面部变形
+        const morphProgram = new Program(gl, () => {
+            gl.drawElements(
+                gl.TRIANGLES,
+                this.indicesBuffer!.count,
+                gl.UNSIGNED_SHORT,
+                0
+            );
+        });
+        morphProgram.setShader(advBeautyShader.vShader, 'VERTEX');
+        morphProgram.setShader(advBeautyShader.fShader, 'FRAGMENT');
+        morphProgram.setAttributeBuffer(this.posBuffer);
+        morphProgram.setAttributeBuffer(this.targetPosBuffer);
+        morphProgram.setAttributeBuffer(this.zIndexBuffer);
+        const morphFramebuffer = createFrameBuffer(
+            gl,
+            size.width,
+            size.height
+        )!;
+        morphProgram.setUniform('size', [size.width, size.height]);
+        
+        if(this.isShowWire){
+            morphProgram.setUniform('wireMap', wireFramebuffer!.targetTexture);
+        }
+        morphProgram.setUniform('showWire', this.isShowWire ? 1.0 : 0.0);
+        morphProgram.setUniform('map', this.map);
+        morphProgram.setUniform('teethLut', this.whiteTeethLutMap);
+        morphProgram.setUniform('teethIntensity', 0.0);
+        morphProgram.setUniform('eyeIntensity', 0.0);
+        morphProgram.setIndices(this.indicesBuffer);
+        this.programs.morph = morphProgram;
+        this.framebuffers.morph = morphFramebuffer;
+
+        // 脸部遮罩
         const faceMaskProgram = new Program(gl, () => {
             gl.drawElements(
                 gl.TRIANGLES,
@@ -298,6 +333,7 @@ export class AdvBeautyFilter extends Filter {
         this.programs.faceMask = faceMaskProgram;
         this.framebuffers.faceMask = faceMaskFramebuffer;
 
+        // 眼睛牙齿遮罩
         const eyeTeethProgram = new Program(gl, () => {
             gl.drawElements(
                 gl.TRIANGLES,
@@ -322,38 +358,28 @@ export class AdvBeautyFilter extends Filter {
         this.programs.eyeTeeth = eyeTeethProgram;
         this.framebuffers.eyeTeeth = eyeTeethFramebuffer;
 
+        morphProgram.setUniform('eyeTeethMaskMap', eyeTeethFramebuffer.targetTexture);
+
         for(let i=0; i<2; i++){
-            const morphProgram = new Program(gl, () => {
-                gl.drawElements(
-                    gl.TRIANGLES,
-                    this.indicesBuffer!.count,
-                    gl.UNSIGNED_SHORT,
-                    0
-                );
-            });
-            morphProgram.setShader(advBeautyShader.vShader, 'VERTEX');
-            morphProgram.setShader(advBeautyShader.fShader, 'FRAGMENT');
-            morphProgram.setAttributeBuffer(this.posBuffer);
-            morphProgram.setAttributeBuffer(this.targetPosBuffer);
-            morphProgram.setAttributeBuffer(this.zIndexBuffer);
-            const morphFramebuffer = createFrameBuffer(
+            // 大眼圆眼
+            const eyeProgram = new Program(gl);
+            eyeProgram.setShader(baseTextureShader.vShader, 'VERTEX');
+            eyeProgram.setShader(advBeautyEyeShader.fShader,'FRAGMENT');
+            eyeProgram.setAttributeBuffer(this.planePosBuffer);
+            eyeProgram.setAttributeBuffer(this.planeUVBuffer);
+            const eyeFramebuffer = createFrameBuffer(
                 gl,
                 size.width,
                 size.height
             )!;
-            morphProgram.setUniform('size', [size.width, size.height]);
-            morphProgram.setUniform('map', i===0 ? this.map : this.framebuffers['morph0'].targetTexture);
-            if(this.isShowWire){
-                morphProgram.setUniform('wireMap', wireFramebuffer!.targetTexture);
-            }
-            morphProgram.setUniform('showWire', this.isShowWire ? 1.0 : 0.0);
-            morphProgram.setUniform('eyeTeethMaskMap', eyeTeethFramebuffer.targetTexture);
-            morphProgram.setUniform('teethLut', this.whiteTeethLutMap);
-            morphProgram.setUniform('teethIntensity', 0.0);
-            morphProgram.setUniform('eyeIntensity', 0.0);
-            morphProgram.setIndices(this.indicesBuffer);
-            this.programs[`morph${i}`] = morphProgram;
-            this.framebuffers[`morph${i}`] = morphFramebuffer;
+            eyeProgram.setUniform('map', i===0 ? morphFramebuffer.targetTexture : this.framebuffers.lEye.targetTexture);
+            eyeProgram.setUniform('eyeCenter', [0, 0]);
+            eyeProgram.setUniform('rdIntensity', 0);
+            eyeProgram.setUniform('lgIntensity', 0);
+            eyeProgram.setUniform('range', 0);
+            const eyeKey = ['lEye','rEye'][i];
+            this.programs[eyeKey] = eyeProgram;
+            this.framebuffers[eyeKey] = eyeFramebuffer;
 
             const faceMaskMergeProgram = new Program(gl);
             faceMaskMergeProgram.setShader(baseTextureShader.vShader, 'VERTEX');
@@ -375,9 +401,10 @@ export class AdvBeautyFilter extends Filter {
 
     get output() {
         if (this.advData) {
-            const faceNum = this.advData.length / 212 >> 0;
-            return this.framebuffers[`morph${(faceNum-1)%2}`].targetTexture;
-            return this.framebuffers.eyeTeeth.targetTexture;
+            // const faceNum = this.advData.length / 212 >> 0;
+            // return this.framebuffers[`morph${(faceNum-1)%2}`].targetTexture;
+            // return this.framebuffers.eyeTeeth.targetTexture;
+            return this.framebuffers.rEye.targetTexture;
         }
         return super.output;
     }
@@ -393,10 +420,10 @@ export class AdvBeautyFilter extends Filter {
     updateSize() {
         const size = this.renderer.getSize();
         [
-            'wire', 'morph0', 'morph1', 'faceMask', 'faceMaskMerge0', 
+            'wire', 'morph', 'lEye', 'rEye', 'faceMask', 'faceMaskMerge0', 
             'faceMaskMerge1', 'eyeTeeth'
         ].forEach((key) => {
-            if(['faceMaskMerge0', 'faceMaskMerge1'].indexOf(key) === -1){
+            if(['faceMaskMerge0', 'faceMaskMerge1', 'lEye', 'rEye'].indexOf(key) === -1){
                 this.programs[key]?.setUniform('size', [size.width, size.height]);
             }
 
@@ -417,18 +444,23 @@ export class AdvBeautyFilter extends Filter {
         if(key in this.params && typeof intensity === 'number'){
             this.params[key as HandleKey] = Math.min(1, Math.max(0, intensity));
             if(key === 'whitenTeeth' && this.params[key as HandleKey]===0){
-                for(let i=0; i<2; i++){
-                    this.programs[`morph${i}`].setUniform('teethIntensity', 0);
-                }
-            }
-            if(key === 'brightenEye'){
-                for(let i=0; i<2; i++){
-                    this.programs[`morph${i}`].setUniform('eyeIntensity', intensity);
-                }
+                this.programs.morph.setUniform('teethIntensity', 0);
+            }else if(key === 'brightenEye'){
+                this.programs.morph.setUniform('eyeIntensity', intensity);
+            }else if(key === 'roundedEye'){
+                this.programs.lEye.setUniform('rdIntensity', intensity);
+                this.programs.rEye.setUniform('rdIntensity', intensity);
+            }else if(key === 'enlargeEye'){
+                this.programs.lEye.setUniform('lgIntensity', intensity);
+                this.programs.rEye.setUniform('lgIntensity', intensity);
             }
         }else{
             this.params = {...this.defParams};
         }
+    }
+
+    private posToUV(pos: Vector2, width: number, height: number){
+        return new Vector2(pos.x / width, 1.0 - pos.y / height);
     }
 
     render() {
@@ -436,13 +468,17 @@ export class AdvBeautyFilter extends Filter {
         if(advData){
             const renderer = this.renderer;
             const gl = renderer.gl!;
+            const size = renderer.getSize();
             const faceNum = advData.length / 212 >> 0;
 
             for(let i=0; i < faceNum; i++){
                 const data = advData.slice(i * 212, (i+1) * 212);
                 const idx = i%2;
-                const morph = this.programs[`morph${idx}`];
+                const morph = this.programs.morph;
                 const faceMaskMerge = this.programs[`faceMaskMerge${idx}`];
+
+                // 设置贴图
+                morph.setUniform('map', i===0 ? this.map : this.framebuffers.rEye.targetTexture);
 
                 // 设置点位
                 morph.updateAttribute('position', (typedArray)=>{
@@ -450,6 +486,8 @@ export class AdvBeautyFilter extends Filter {
                     advBtyFaceMesh.genTopFace(<Int16Array>typedArray);
                     advBtyFaceMesh.genFaceOutline(<Int16Array>typedArray);
                 });
+
+                let eyeInfo: any = null;
 
                 // 计算点位
                 morph.updateAttribute('tPosition', (typedArray)=>{
@@ -465,10 +503,16 @@ export class AdvBeautyFilter extends Filter {
                             // 点位不准的情况下，先由客户端进行修正
                             if(key === 'whitenTeeth'){
                                 morph.setUniform('teethIntensity', res);
+                            }else if (key === 'roundedEye' || key === 'enlargeEye') {
+                                eyeInfo = {
+                                    ...res,
+                                    posData: array
+                                }
                             }
                         }
                     }
                 })
+                // 设置线框
                 this.setWirePosBuffer();
 
                 // 渲染线框
@@ -509,9 +553,39 @@ export class AdvBeautyFilter extends Filter {
                 this.renderer.render(this.programs.eyeTeeth);
 
                 // 渲染变形结果
-                morph.setUniform('map', i < 1 ? this.map : this.framebuffers[`morph${idx===0 ? 1 : 0}`].targetTexture);
-                this.framebuffers[`morph${idx}`].bind();
+                this.framebuffers.morph.bind();
                 this.renderer.render(morph);
+
+                // 设置眼睛效果参数
+                if(eyeInfo){
+                    const lEyeCenter = this.posToUV(eyeInfo.lEyeCenter, size.width, size.height);
+                    const rEyeCenter = this.posToUV(eyeInfo.rEyeCenter, size.width, size.height);
+                    const p52 = this.posToUV(Vector2.getVec(eyeInfo.posData, 52), size.width, size.height);
+                    const p55 = this.posToUV(Vector2.getVec(eyeInfo.posData, 55), size.width, size.height);
+                    const p58 = this.posToUV(Vector2.getVec(eyeInfo.posData, 58), size.width, size.height);
+                    const p61 = this.posToUV(Vector2.getVec(eyeInfo.posData, 61), size.width, size.height);
+
+                    // 左眼参数设置
+                    this.programs.lEye.setUniform('eyeCenter', lEyeCenter.value);
+                    this.programs.lEye.setUniform('range', Math.max(
+                        Vector2.dis(lEyeCenter, p52),
+                        Vector2.dis(lEyeCenter, p55)
+                    ));
+
+                    // 右眼参数设置
+                    this.programs.rEye.setUniform('eyeCenter', rEyeCenter.value);
+                    this.programs.rEye.setUniform('range', Math.max(
+                        Vector2.dis(rEyeCenter, p58),
+                        Vector2.dis(rEyeCenter, p61)
+                    ));
+                }
+
+                // 渲染左眼
+                this.framebuffers.lEye.bind();
+                this.renderer.render(this.programs.lEye);
+                // 渲染右眼
+                this.framebuffers.rEye.bind();
+                this.renderer.render(this.programs.rEye);
             }
         }
     }

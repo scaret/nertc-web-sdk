@@ -46,7 +46,7 @@ export const advBeautyShader = {
     #endif
 
     uniform float showWire;
-
+    
     uniform sampler2D map;
     uniform sampler2D wireMap;
     uniform sampler2D eyeTeethMaskMap;
@@ -54,29 +54,6 @@ export const advBeautyShader = {
     uniform float eyeIntensity;
     uniform float teethIntensity;
     varying vec2 vuv;
-
-    vec3 lut16(vec3 color, sampler2D lut){
-        float blue = color.b * 15.0;
-            
-        vec2 q1;
-        float fb = floor(blue);
-        q1.y = floor(fb * 0.25);
-        q1.x = fb - (q1.y * 4.0);
-
-        vec2 q2;
-        float cb = ceil(blue);
-        q2.y = floor(cb * 0.25);
-        q2.x = cb - (q2.y * 4.0);
-
-        vec2 t = 0.234375 * color.rg + vec2(0.015625);
-        vec2 t1 = q1 * 0.25 + t;
-        vec3 p1 = texture2D(lut, t1).rgb;
-
-        vec2 t2 = q2 * 0.25 + t;
-        vec3 p2 = texture2D(lut, t2).rgb;
-
-        return mix(p1, p2, fract(blue));
-    }
 
     vec3 lut64(vec3 color, sampler2D lut){
         float blue = color.b * 63.0;
@@ -99,6 +76,17 @@ export const advBeautyShader = {
         vec3 p2 = texture2D(lut, t2).rgb;
 
         return mix(p1, p2, fract(blue));
+    }
+
+    vec2 inflate(vec2 uv, vec2 center, float range, float strength) {
+        float dist = distance(uv, center);
+        if(dist > range){
+            return vec2(-1.0);
+        }
+        vec2 dir = normalize(uv - center);
+        float scale = 1. - strength + strength * smoothstep(0., 1., dist / range);
+        float newDist = dist * scale;
+        return center + newDist * dir;
     }
 
     void main() {
@@ -124,3 +112,27 @@ export const advBeautyShader = {
     }
 `
 };
+
+// lut16 滤镜转换
+// vec3 lut16(vec3 color, sampler2D lut){
+//     float blue = color.b * 15.0;
+        
+//     vec2 q1;
+//     float fb = floor(blue);
+//     q1.y = floor(fb * 0.25);
+//     q1.x = fb - (q1.y * 4.0);
+
+//     vec2 q2;
+//     float cb = ceil(blue);
+//     q2.y = floor(cb * 0.25);
+//     q2.x = cb - (q2.y * 4.0);
+
+//     vec2 t = 0.234375 * color.rg + vec2(0.015625);
+//     vec2 t1 = q1 * 0.25 + t;
+//     vec3 p1 = texture2D(lut, t1).rgb;
+
+//     vec2 t2 = q2 * 0.25 + t;
+//     vec3 p2 = texture2D(lut, t2).rgb;
+
+//     return mix(p1, p2, fract(blue));
+// }
