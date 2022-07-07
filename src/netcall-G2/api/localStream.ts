@@ -683,7 +683,7 @@ class LocalStream extends RTCEventEmitter {
         this.setEncoderWatermarkConfigs(this.encoderWatermarkOptions);
       }
       if(this.canvasWatermarkOptions) {
-        this.setCanvasWatermarkConfigs(this.canvasWatermarkOptions!);
+        this.setCanvasWatermarkConfigs(this.canvasWatermarkOptions);
       }
       if (videoTrackLow){
         videoTrackLow.stop();
@@ -3730,6 +3730,13 @@ class LocalStream extends RTCEventEmitter {
             track: this._transformedTrack,
             external: false
       });
+      //重新开启水印
+      if(this.encoderWatermarkOptions) {
+        this.setEncoderWatermarkConfigs(this.encoderWatermarkOptions);
+      }
+      if(this.canvasWatermarkOptions) {
+        this.setCanvasWatermarkConfigs(this.canvasWatermarkOptions);
+      }
       if (videoTrackLow){
         videoTrackLow.stop();
       }
