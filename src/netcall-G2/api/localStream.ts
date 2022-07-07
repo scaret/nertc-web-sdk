@@ -2472,7 +2472,12 @@ class LocalStream extends EventEmitter {
       return 1200 * 1000
     } else if (this.videoProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p) {
       return 1500 * 1000
-    } return 0
+    } else if (this.videoProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_4k) {
+      return 50000 * 1000
+    } else {
+      this.logger.warn(`发现不支持的 NERTC_VIDEO_QUALITY ${this.videoProfile.resolution}`)
+      return 800 * 1000
+    }
   }
   
   getScreenBW(){
@@ -2490,7 +2495,12 @@ class LocalStream extends EventEmitter {
       return 1200 * 1000
     } else if (this.screenProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p) {
       return 1500 * 1000
-    } return 0
+    } else if (this.screenProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_4k) {
+      return 50000 * 1000
+    } else {
+      this.logger.warn(`发现不支持的 NERTC_VIDEO_QUALITY ${this.screenProfile.resolution}`)
+      return 1500 * 1000
+    }
   }
   
   /**

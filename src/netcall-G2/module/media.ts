@@ -932,6 +932,9 @@ class MediaHelper extends EventEmitter {
     } else if (resolution === 16) {
       result.width = 1920
       result.height = 1080
+    } else if (resolution === 32) {
+      result.width = 3840
+      result.height = 2160
     }
 
     if (frameRate === 0 ) {
@@ -946,6 +949,8 @@ class MediaHelper extends EventEmitter {
       result.frameRate = 20
     } else if (frameRate === 5) {
       result.frameRate = 25
+    } else if (frameRate === 7) {
+      result.frameRate = 60
     }
     return result
   }
