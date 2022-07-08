@@ -112,7 +112,9 @@ let parameters:IParameters = {
     },
     video: {
       high: {
-        videoGoogleStartBitrate: 1000,
+        videoGoogleStartBitrate: 10000,
+        videoGoogleMinBitrate: 10000,
+        videoGoogleMaxBitrate: 50000,
       },
       low: {
         videoGoogleStartBitrate: 500,
@@ -120,7 +122,9 @@ let parameters:IParameters = {
     },
     screen: {
       high: {
-        videoGoogleStartBitrate: 2000,
+        videoGoogleStartBitrate: 10000,
+        videoGoogleMinBitrate: 10000,
+        videoGoogleMaxBitrate: 50000,
       },
       low: {
         videoGoogleStartBitrate: 500,

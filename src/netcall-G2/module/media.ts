@@ -103,7 +103,7 @@ class MediaHelper extends EventEmitter {
     preProcessingEnabled: false,
     preProcessing: null,
     captureConfig:{high: {width: 640, height: 480, frameRate: 15}},
-    encoderConfig: {high: {maxBitrate: 800000, contentHint: null}, low: {maxBitrate: 100000, contentHint: "motion"}},
+    encoderConfig: {high: {maxBitrate: 800000, contentHint: "detail"}, low: {maxBitrate: 100000, contentHint: "motion"}},
   };
   public screen: {
     // screenVideoStream中的track可能是:
@@ -132,7 +132,7 @@ class MediaHelper extends EventEmitter {
     preProcessingEnabled: false,
     preProcessing: null,
     captureConfig:{high: {width: 1920, height: 1080, frameRate: 5}},
-    encoderConfig: {high: {maxBitrate: 1500000, contentHint: null}, low: {maxBitrate: 200000, contentHint: "motion"}},
+    encoderConfig: {high: {maxBitrate: 1500000, contentHint: "detail"}, low: {maxBitrate: 200000, contentHint: "motion"}},
   };
   public screenAudio: {
     readonly screenAudioStream: MediaStream,

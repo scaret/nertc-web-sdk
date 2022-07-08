@@ -792,13 +792,13 @@ async function initCodecOptions(){
         console.error(`浏览器确实不支持H264!`);
       }
     }
-    let supportedCodecsSend = await rtc.client._getSupportedCodecs("send");
+    let supportedCodecsSend = {video: ["VP8"]};
     const codecs = ["H264", "VP8"];
     $('#supported-recv-codec-wrapper').empty();
     $('#supported-send-codec-wrapper').empty();
     codecs.forEach((codec)=>{
-      $('#supported-recv-codec-wrapper').append(`<label><input type="checkbox" class="codec-hacking" disabled id="supportRecv${codec}" ${(supportedCodecsRecv.video.indexOf(codec) > -1) ? "checked" : ""}>${codec}</label>`)
-      $('#supported-send-codec-wrapper').append(`<label><input type="checkbox" class="codec-hacking" disabled id="supportSend${codec}" ${(supportedCodecsSend.video.indexOf(codec) > -1) ? "checked" : ""}>${codec}</label>`)
+      $('#supported-recv-codec-wrapper').append(`<label><input type="checkbox" class="codec-hacking" id="supportRecv${codec}" ${(supportedCodecsRecv.video.indexOf(codec) > -1) ? "checked" : ""}>${codec}</label>`)
+      $('#supported-send-codec-wrapper').append(`<label><input type="checkbox" class="codec-hacking" id="supportSend${codec}" ${(supportedCodecsSend.video.indexOf(codec) > -1) ? "checked" : ""}>${codec}</label>`)
     });
   }
 }
