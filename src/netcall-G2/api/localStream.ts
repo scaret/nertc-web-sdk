@@ -2468,6 +2468,10 @@ class LocalStream extends RTCEventEmitter {
       if (this.mediaHelper.video.cameraTrack){
         this.mediaHelper.video.cameraTrack.enabled = true
       }
+      // 打开背景分割
+      if(this.isBodySegmentTrack) {
+        await this._startBodySegment();
+      }
       this.muteStatus.video.send = false
       this.client.apiFrequencyControl({
         name: 'unmuteVideo',
@@ -2499,7 +2503,12 @@ class LocalStream extends RTCEventEmitter {
    */
   async muteVideo () {
     this.logger.log(`禁用 ${this.stringStreamID} 的视频轨道`)
-    try {
+    try { 
+      //关闭背景分割
+      if(this.isBodySegmentTrack) {
+        await this._cancelBodySegment();
+        this.isBodySegmentTrack = true;
+      }
       if (this.getAdapterRef()){
         await this.client.adapterRef._mediasoup?.muteVideo()
       }
