@@ -1461,6 +1461,7 @@ class Client extends Base {
   bindLocalStream(localStream: LocalStream){
     this.adapterRef.localStream = localStream
     localStream.client = this as IClient;
+    localStream.logger.parent = this.logger;
     const uid = this.getUid();
     if (uid && localStream.streamID !== uid){
       this.logger.warn('localStream更换streamID', localStream.streamID, '=>', uid);

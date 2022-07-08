@@ -20,7 +20,7 @@ export class Logger{
   private logHelper?:logHelper;
   private supportedBrowsers: string[];
   private cs:Console;
-  private parent?: Logger;
+  public parent?: Logger;
   private tagGen?: ()=>string;
   constructor(options:LoggerOptions) {
     this.options = options;

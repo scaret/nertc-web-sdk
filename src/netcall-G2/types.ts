@@ -152,6 +152,7 @@ export interface ILogger{
   warn: (...msg:any)=>void
   error: (...msg:any)=>void
   getChild: (tagGen: ()=>string)=>ILogger;
+  parent?: ILogger;
 }
 
 export interface LogStorage{
