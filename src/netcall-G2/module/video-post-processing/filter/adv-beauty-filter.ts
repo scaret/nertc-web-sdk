@@ -1,7 +1,7 @@
 import { Renderer } from '../gl-utils/renderer';
 import { Program } from '../gl-utils/program';
 import { createAttributeBuffer } from '../gl-utils/buffer-attribute';
-import { createTexture, loadImage } from '../gl-utils/texture';
+import { createTexture, loadImage, imgDataSize } from '../gl-utils/texture';
 import { createFrameBuffer } from '../gl-utils/framebuffer';
 import { baseTextureShader } from '../shaders/base-texture-shader.glsl';
 import { advBeautyWireShader } from '../shaders/adv-beauty/adv-beauty-wire-shader.glsl';
@@ -260,6 +260,7 @@ export class AdvBeautyFilter extends Filter {
     private initProgramBuffer() {
         const gl = this.renderer.gl!;
         const size = this.renderer.getSize();
+        const advDataSize = imgDataSize(size.width, size.height);
 
         let wireFramebuffer = null;
         if(this.isShowWire){
@@ -270,7 +271,7 @@ export class AdvBeautyFilter extends Filter {
             wireProgram.setShader(advBeautyWireShader.fShader, 'FRAGMENT');
             wireProgram.setAttributeBuffer(this.wirePosBuffer);
             wireFramebuffer = createFrameBuffer(gl, size.width, size.height)!;
-            wireProgram.setUniform('size', [size.width, size.height]);
+            wireProgram.setUniform('size', [advDataSize.width, advDataSize.height]);
             this.programs.wire = wireProgram;
             this.framebuffers.wire = wireFramebuffer;
         }
@@ -294,7 +295,7 @@ export class AdvBeautyFilter extends Filter {
             size.width,
             size.height
         )!;
-        morphProgram.setUniform('size', [size.width, size.height]);
+        morphProgram.setUniform('size', [advDataSize.width, advDataSize.height]);
         
         if(this.isShowWire){
             morphProgram.setUniform('wireMap', wireFramebuffer!.targetTexture);
@@ -327,7 +328,7 @@ export class AdvBeautyFilter extends Filter {
             size.width,
             size.height
         )!;
-        faceMaskProgram.setUniform('size', [size.width, size.height]);
+        faceMaskProgram.setUniform('size', [advDataSize.width, advDataSize.height]);
         faceMaskProgram.setUniform('map', this.faceMaskMap);
         faceMaskProgram.setIndices(this.indicesBuffer);
         this.programs.faceMask = faceMaskProgram;
@@ -352,7 +353,7 @@ export class AdvBeautyFilter extends Filter {
             size.width,
             size.height
         )!;
-        eyeTeethProgram.setUniform('size', [size.width, size.height]);
+        eyeTeethProgram.setUniform('size', [advDataSize.width, advDataSize.height]);
         eyeTeethProgram.setUniform('map', this.eyeTeethMaskMap);
         eyeTeethProgram.setIndices(this.advEyeTeethIndicesBuffer);
         this.programs.eyeTeeth = eyeTeethProgram;
@@ -419,12 +420,13 @@ export class AdvBeautyFilter extends Filter {
 
     updateSize() {
         const size = this.renderer.getSize();
+        const advDataSize = imgDataSize(size.width, size.height);
         [
             'wire', 'morph', 'lEye', 'rEye', 'faceMask', 'faceMaskMerge0', 
             'faceMaskMerge1', 'eyeTeeth'
         ].forEach((key) => {
             if(['faceMaskMerge0', 'faceMaskMerge1', 'lEye', 'rEye'].indexOf(key) === -1){
-                this.programs[key]?.setUniform('size', [size.width, size.height]);
+                this.programs[key]?.setUniform('size', [advDataSize.width, advDataSize.height]);
             }
 
             const framebuffer = this.framebuffers[key];
@@ -469,6 +471,7 @@ export class AdvBeautyFilter extends Filter {
             const renderer = this.renderer;
             const gl = renderer.gl!;
             const size = renderer.getSize();
+            const advDataSize = imgDataSize(size.width, size.height);
             const faceNum = advData.length / 212 >> 0;
 
             for(let i=0; i < faceNum; i++){
@@ -558,12 +561,12 @@ export class AdvBeautyFilter extends Filter {
 
                 // 设置眼睛效果参数
                 if(eyeInfo){
-                    const lEyeCenter = this.posToUV(eyeInfo.lEyeCenter, size.width, size.height);
-                    const rEyeCenter = this.posToUV(eyeInfo.rEyeCenter, size.width, size.height);
-                    const p52 = this.posToUV(Vector2.getVec(eyeInfo.posData, 52), size.width, size.height);
-                    const p55 = this.posToUV(Vector2.getVec(eyeInfo.posData, 55), size.width, size.height);
-                    const p58 = this.posToUV(Vector2.getVec(eyeInfo.posData, 58), size.width, size.height);
-                    const p61 = this.posToUV(Vector2.getVec(eyeInfo.posData, 61), size.width, size.height);
+                    const lEyeCenter = this.posToUV(eyeInfo.lEyeCenter, advDataSize.width, advDataSize.height);
+                    const rEyeCenter = this.posToUV(eyeInfo.rEyeCenter, advDataSize.width, advDataSize.height);
+                    const p52 = this.posToUV(Vector2.getVec(eyeInfo.posData, 52), advDataSize.width, advDataSize.height);
+                    const p55 = this.posToUV(Vector2.getVec(eyeInfo.posData, 55), advDataSize.width, advDataSize.height);
+                    const p58 = this.posToUV(Vector2.getVec(eyeInfo.posData, 58), advDataSize.width, advDataSize.height);
+                    const p61 = this.posToUV(Vector2.getVec(eyeInfo.posData, 61), advDataSize.width, advDataSize.height);
 
                     // 左眼参数设置
                     this.programs.lEye.setUniform('eyeCenter', lEyeCenter.value);

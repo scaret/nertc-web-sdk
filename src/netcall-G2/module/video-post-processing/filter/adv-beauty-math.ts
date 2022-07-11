@@ -482,7 +482,7 @@ export const handlers:{
         const p43 = Vector2.getVec(posData, 43);
         const p55 = Vector2.getVec(posData, 55);
         const p58 = Vector2.getVec(posData, 58);
-        const pi = Vector2.intersectPoint(p43, Vector2.getVec(posData, 44), p55, p58) || p43;
+        const pi = Vector2.intersectPoint(p43, Vector2.getVec(posData, 46), p55, p58) || p43;
         // 计算左右眼平移向量
         const dl = Vector2.scale(Vector2.sub(p55, pi), intensity);
         const dr = Vector2.scale(Vector2.sub(p58, pi), intensity);

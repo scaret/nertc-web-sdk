@@ -148,6 +148,9 @@ export class Filters {
         return this._renderer.canvas;
     }
 
+    get srcMap(){
+        return this.map;
+    }
     /**
      * 设置视频源
      * @param {TexImageSource|null} source

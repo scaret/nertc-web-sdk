@@ -44,7 +44,7 @@ class mHumanSegmenter {
         Module.HEAPU8.set(frame.data, this.inputPtr);
         this.mHumanSegmenter.process(this.inputPtr, this.outputPtr, this.width, this.height);
         const result = Module.HEAPU8.subarray(this.outputPtr, this.outputPtr + frame.data.length);
-        const segment_mask = new Uint8Array(result)
+        const segment_mask = new Uint8ClampedArray(result);
         this.handleMaskData(segment_mask, frame);
         this.isProcessing = false;
         if (this.buffer.length) {
@@ -72,12 +72,11 @@ class mHumanSegmenter {
         })
     }
 
-    handleMaskData = (segment_mask, frame) => {
+    handleMaskData = (segment_mask) => {
         global.postMessage({
             type: 'mask',
             maskData: segment_mask,
-            imageData: frame
-        }, [segment_mask.buffer, frame.data.buffer])
+        }, [segment_mask.buffer])
     }
 }
 
