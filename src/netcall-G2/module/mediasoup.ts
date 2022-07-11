@@ -1169,8 +1169,6 @@ class Mediasoup extends EventEmitter {
       kind,
       rtpCapabilities,
       uid: subUid,
-      // 除非通过私有接口强制关闭，不然总是可以向服务端发送 audioAslFlag为true，由服务端决定开启/关闭asl功能
-      audioAslFlag: getParameters().audioAslFlag,
       producerId: id,
       preferredSpatialLayer,
       mid,
@@ -1190,6 +1188,9 @@ class Mediasoup extends EventEmitter {
       data.transportId = this._recvTransport.id;
     } else {
       data.dtlsParameters = localDtlsParameters;
+    }
+    if (data.kind === "audio"){
+      data.audioAslFlag = (this.adapterRef.audioAsl.enabled === "yes" && getParameters().audioAslFlag)
     }
     this.loggerRecv.log(`发送consume请求, uid: ${uid}, kind: ${kind}, mediaTypeShort: ${mediaTypeShort}, producerId: ${data.producerId}, transportId: ${data.transportId}, requestId: ${data.requestId}`);
     if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
