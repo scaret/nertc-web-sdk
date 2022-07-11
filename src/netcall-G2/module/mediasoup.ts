@@ -2,7 +2,9 @@ import { EventEmitter } from 'eventemitter3'
 import * as mediasoupClient from './3rd/mediasoup-client/'
 import {
   AdapterRef, ILogger,
-  MediasoupManagerOptions, MediaType, MediaTypeShort,
+  MediasoupManagerOptions,
+  MediasoupManagerInitOptions,
+  MediaType, MediaTypeShort,
   ProduceConsumeInfo,
   Timer, VideoCodecType
 } from "../types";
@@ -189,8 +191,8 @@ class Mediasoup extends EventEmitter {
     this.resetConsumeRequestStatus();
   }
 
-  async init() {
-    this.logger.log('初始化 devices、transport')
+  async init(turnParameters?: MediasoupManagerInitOptions|undefined) {
+    this.logger.warn('初始化 devices、transport: ', turnParameters)
     if (this.adapterRef._enableRts) {
       return
     }
@@ -226,13 +228,39 @@ class Mediasoup extends EventEmitter {
       })
       iceTransportPolicy = 'relay'
     }
-    if (this.adapterRef.testConf.iceServers){
+    if (this.adapterRef.testConf.iceServers) {
       iceServers = this.adapterRef.testConf.iceServers
       iceTransportPolicy = this.adapterRef.testConf.iceTransportPolicy || "relay"
     }
-    if (iceServers.length){
+    if (iceServers.length) {
       this.logger.log("iceTransportPolicy ", iceTransportPolicy, " iceServers ", JSON.stringify(iceServers))
     }
+
+    const iceServersSender = []
+    const iceServersRecv = []
+    if (turnParameters) { //服务器反馈turn server，sdk更新ice Server
+      let iceTransportPolicy:RTCIceTransportPolicy = 'all';
+      iceServersSender.push({
+        urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=udp',
+        credential: turnParameters.password,
+        username: `${turnParameters.username}#Send`
+      }, {
+        urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=tcp',
+        credential: turnParameters.password,
+        username: `${turnParameters.username}#Send`
+      })
+
+      iceServersRecv.push({
+        urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=udp',
+        credential: turnParameters.password,
+        username: `${turnParameters.username}#Recv`
+      }, {
+        urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=tcp',
+        credential: turnParameters.password,
+        username: `${turnParameters.username}#Recv`
+      })
+    }
+
     if (!this._sendTransport && this._mediasoupDevice) {
       this._sendTransport = this._mediasoupDevice.createSendTransport({
         id            : this.adapterRef.channelInfo.uid,
@@ -240,7 +268,7 @@ class Mediasoup extends EventEmitter {
         iceCandidates      : undefined,
         dtlsParameters      : undefined,
         sctpParameters      : undefined,
-        iceServers,
+        iceServers: iceServersSender.length ? iceServersSender: iceServers,
         iceTransportPolicy,
         appData: {
           cid: this.adapterRef.channelInfo.cid,
@@ -268,7 +296,7 @@ class Mediasoup extends EventEmitter {
         iceCandidates: undefined,
         dtlsParameters: undefined,
         sctpParameters: undefined,
-        iceServers,
+        iceServers: iceServersRecv.length ? iceServersRecv: iceServers,
         iceTransportPolicy,
         appData: {
           cid: this.adapterRef.channelInfo.cid,
@@ -577,28 +605,13 @@ class Mediasoup extends EventEmitter {
               message: 'No _protoo 2'
             })
           }
-          const { code, transportId, iceParameters, iceCandidates, turnParameters, dtlsParameters, producerId } = 
+          const { code, transportId, iceParameters, iceCandidates, dtlsParameters, producerId } = 
             await this.adapterRef._signalling._protoo.request('Produce', producerData);
 
           if (transportId !== undefined) {
             this._sendTransport._id = transportId;
           }
           this.loggerSend.log(`produce请求反馈结果, code: ${code}, kind: ${kind}, producerId:`, producerId)
-          
-          if (turnParameters) { //服务器反馈turn server，sdk更新ice Server
-            let iceServers = [];
-            let iceTransportPolicy:RTCIceTransportPolicy = 'all';
-            iceServers.push({
-              urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=udp',
-              credential: turnParameters.password,
-              username: turnParameters.username
-            }, {
-              urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=tcp',
-              credential: turnParameters.password,
-              username: turnParameters.username
-            })
-            await this._sendTransport.updateIceServers({iceServers})
-          }
 
           let codecInfo = {codecParam: null, codecName: null};
           if (appData.mediaType === 'audio') {
@@ -1196,7 +1209,7 @@ class Mediasoup extends EventEmitter {
       this.adapterRef.instance.reBuildRecvTransport()
       return this.checkConsumerList(info);
     }
-    let { transportId, iceParameters, iceCandidates, dtlsParameters, probeSSrc, rtpParameters, turnParameters, producerId, consumerId, code, errMsg } = consumeRes;
+    let { transportId, iceParameters, iceCandidates, dtlsParameters, probeSSrc, rtpParameters, producerId, consumerId, code, errMsg } = consumeRes;
     if (code === 200) {
       this.loggerRecv.log(`consume反馈结果: code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
     } else {
@@ -1252,20 +1265,6 @@ class Mediasoup extends EventEmitter {
         this.adapterRef.instance.reBuildRecvTransport()
         return*/
       } 
-      if (turnParameters) { //服务器反馈turn server，sdk更新ice Server
-        let iceServers = [];
-        let iceTransportPolicy:RTCIceTransportPolicy = 'all';
-        iceServers.push({
-          urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=udp',
-          credential: turnParameters.password,
-          username: turnParameters.username
-        }, {
-          urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=tcp',
-          credential: turnParameters.password,
-          username: turnParameters.username
-        })
-        await this._recvTransport.updateIceServers({iceServers})
-      }
       if (rtpParameters && rtpParameters.encodings && rtpParameters.encodings.length && rtpParameters.encodings[0].ssrc) {
         this.adapterRef.instance.addSsrc(uid, mediaTypeShort, rtpParameters.encodings[0].ssrc)
       }

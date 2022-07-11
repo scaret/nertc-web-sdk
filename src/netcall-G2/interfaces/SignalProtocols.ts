@@ -115,5 +115,13 @@ export interface SignalJoinRes extends SignalResBase{
     codecs: any[],
     headerExtensions: any[],
   };
+  supportTurn?: boolean;
+  turnParameters?: {
+    ip: string;
+    port: number;
+    username: string;
+    password: string;
+    protocol: string[]
+  };
   supportRandomIceUfrag?: boolean;
 }
