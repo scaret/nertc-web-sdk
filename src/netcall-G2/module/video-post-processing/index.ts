@@ -62,6 +62,7 @@ class VideoToImageData {
 }
 
 type TaskType = 'BasicBeauty' | 'VirtualBackground' | 'AdvancedBeauty';
+
 export default class VideoPostProcess extends EventEmitter {
     // 插件模块
     private pluginModules:{
@@ -105,8 +106,6 @@ export default class VideoPostProcess extends EventEmitter {
     video: HTMLVideoElement | null = null;
     // 帧率
     private frameRate = 15;
-    // 帧缓存
-    private frameCache: ImageData | null = null;
     // 定时器 id
     private timerId:number = -1;
 
@@ -115,6 +114,10 @@ export default class VideoPostProcess extends EventEmitter {
     private taskSnapshot = new Set<TaskType>();
     private readyTaskSet = new Set<TaskType>(['BasicBeauty']);
     // 任务参数
+    private imgDataSize: {width:number, height: number} = {
+        width: 640,
+        height: 480
+    };
     private sourceMap: ImageData | null = null;
     private maskData: ImageData | null = null;
     private advBeautyData: number[] | Int16Array = [];
@@ -149,10 +152,9 @@ export default class VideoPostProcess extends EventEmitter {
         this.taskSet.delete(task);
         logger.info(`task ${task} is removed.`);
         if(this.taskSet.size === 0){
-            workerTimer.clearInterval(this.timerId);
+            workerTimer.clearTimeout(this.timerId);
             this.timerId = -1;
             this.sourceMap = null;
-            this.frameCache = null;
             this.emit('taskSwitch', false);
         }
         // 新任务移除，马上渲染一次
@@ -207,8 +209,9 @@ export default class VideoPostProcess extends EventEmitter {
             this.video.onloadedmetadata = () => {
                 this.video!.play()
                     .then(() => {
+                        this.filters.mapSource = this.video;
                         resizeHandler(this.video!);
-                        resolve(2000/this.frameRate);
+                        resolve(0);
                     })
                     .catch((err) => {
                         logger.error('video element play error', err);
@@ -228,81 +231,101 @@ export default class VideoPostProcess extends EventEmitter {
         logger.log('返回原始 track.');
         return this.sourceTrack;
     }
-    
+
+    private frameCount = [0, 0];
     // task render loop
-    update = async () => {
+    update = (updateFrameCount = true) => {
         if(!this.taskSet.size){
             if( this.filters ){
                 return this.filters.update(false);
             } else {
                  // 任务队列为空, 且 filters 已被销毁，但 timer 没停止，兼容此类错误
-                return workerTimer.clearInterval(this.timerId);
+                return workerTimer.clearTimeout(this.timerId);
             }
         }
-    
-        // 帧缓存
-        this.frameCache = (await this.videoToImageData!.getImageData(this.video)) as ImageData;
-        
-        if(this.frameCache){
-            if(this.taskReady){
-                // 原图上传
-                this.filters.mapSource = this.sourceMap ?? this.frameCache;
-                // 设置虚拟背景参数
-                if(this.taskSet.has('VirtualBackground')){
-                    this.filters.virtualBackground.setMaskMap(this.maskData);
-                    this.maskData = null;
+
+        if(updateFrameCount){
+            this.frameCount[0] += 1;
+        }
+
+        if(this.taskReady){
+            let needImgData = false;
+            // 设置虚拟背景参数
+            if(this.taskSet.has('VirtualBackground')){
+                this.filters.virtualBackground.setMaskMap(this.maskData);
+                this.maskData = null;
+                needImgData = true;
+            }
+            // 设置高级美颜参数
+            if(this.taskSet.has('AdvancedBeauty')){
+                this.filters.advBeauty.setAdvData(this.advBeautyData as Int16Array);
+                this.advBeautyData = [];
+                needImgData = true;
+            }
+
+            // 新的任务处理
+            this.taskSnapshot = new Set(this.taskSet);
+            this.readyTaskSet.clear();
+            this.readyTaskSet.add('BasicBeauty');
+
+            this.frameCount[1] = this.frameCount[0];
+            if(needImgData){
+                this.filters.update(false);
+                // 获取下一帧原图的 imageData
+                this.sourceMap = this.filters.normal.getImageData(this.filters.srcMap, (size)=>{
+                    this.imgDataSize = size;
+                });
+            }else{
+                this.filters.update(true);
+            }
+            // 虚拟背景任务
+            if(this.taskSet.has('VirtualBackground')){
+                // 获取对应插件
+                const plugin = this.pluginModules.VirtualBackground;
+
+                if(!plugin){
+                    logger.error('VirtualBackground plugin is null.');
+                }else{
+                    const {width, height} = this.imgDataSize;
+                    // 背景替换推理
+                    plugin.process(this.sourceMap!, width, height, (result)=>{
+                        this.maskData = this.taskSet.has('VirtualBackground') ? result : null;
+                        this.readyTaskSet.add('VirtualBackground');
+                        if(this.frameCount[1] < this.frameCount[0]){
+                            this.updateTimer();
+                            this.update(false);
+                        }
+                    });
                 }
-                // 设置高级美颜参数
-                if(this.taskSet.has('AdvancedBeauty')){
-                    this.filters.advBeauty.setAdvData(this.advBeautyData as Int16Array);
-                    this.advBeautyData = [];
-                }
-    
-                // 新的任务处理
-                this.taskSnapshot = new Set(this.taskSet);
-                this.readyTaskSet.clear();
-                this.readyTaskSet.add('BasicBeauty');
-    
-                // 取出当前帧
-                this.sourceMap = this.frameCache;
-                // 虚拟背景任务
-                if(this.taskSet.has('VirtualBackground')){
-                    // 获取对应插件
-                    const plugin = this.pluginModules.VirtualBackground;
-    
-                    if(!plugin){
-                        logger.error('VirtualBackground plugin is null.');
-                    }else{
-                        const {width, height} = this.filters.canvas;
-                        // 背景替换推理
-                        plugin.process(this.sourceMap, width, height, (result)=>{
-                            this.maskData = this.taskSet.has('VirtualBackground') ? result : null;
-                            this.readyTaskSet.add('VirtualBackground');
-                        });
-                    }
-                }
-                // 高级美颜任务
-                if(this.taskSet.has('AdvancedBeauty')){
-                    const plugin = this.pluginModules.AdvancedBeauty;
-    
-                    if(!plugin){
-                        logger.error('AdvancedBeauty plugin is null.');
-                    }else{
-                        const {width, height} = this.filters.canvas;
-                        // 高级美颜推理
-                        plugin.process(this.sourceMap, width, height, (result)=>{
-                            this.advBeautyData = this.taskSet.has('AdvancedBeauty') ? result : [];
-                            this.readyTaskSet.add('AdvancedBeauty');
-                        });
-                    }
+            }
+            // 高级美颜任务
+            if(this.taskSet.has('AdvancedBeauty')){
+                const plugin = this.pluginModules.AdvancedBeauty;
+
+                if(!plugin){
+                    logger.error('AdvancedBeauty plugin is null.');
+                }else{
+                    const {width, height} = this.imgDataSize;
+                    // 高级美颜推理
+                    plugin.process(this.sourceMap!, width, height, (result)=>{
+                        this.advBeautyData = this.taskSet.has('AdvancedBeauty') ? result : [];
+                        this.readyTaskSet.add('AdvancedBeauty');
+                        if(this.frameCount[1] < this.frameCount[0]){
+                            this.updateTimer();
+                            this.update(false);
+                        }
+                    });
                 }
             }
         }
-        this.filters.update(false);
     };
 
-    private updateTimer(){  
-        this.timerId = workerTimer.setInterval(this.update, 1000/this.frameRate, null)
+    private updateTimer(){
+        workerTimer.clearTimeout(this.timerId);
+        this.timerId = workerTimer.setTimeout(()=>{
+            this.updateTimer();
+            this.update();
+        }, 1000/this.frameRate, null)
     }
 
     setTaskAndTrack = (task: TaskType, isEnable: boolean, track?: MediaStreamTrack)=>{
@@ -339,7 +362,7 @@ export default class VideoPostProcess extends EventEmitter {
 
     destroy(){
         this.taskSet.clear();
-        workerTimer.clearInterval(this.timerId);
+        workerTimer.clearTimeout(this.timerId);
         this.videoToImageData = null;
         this.sourceTrack = null;
         this.trackInstance?.stop();
@@ -349,8 +372,8 @@ export default class VideoPostProcess extends EventEmitter {
         this.sourceMap = null;
         this.maskData = null;
         (<any>this.advBeautyData) = null;
-        this.frameCache = null;
         (<any>this.pluginModules) = null;
+        this.frameCount = [0, 0];
         logger.log('videoPostProcess destroyed');
     }
 }

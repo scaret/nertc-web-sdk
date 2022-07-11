@@ -31,6 +31,21 @@ export function toNthPower(num: number) {
     return 1;
 }
 
+/**
+ * 输出 imagedata 时进行尺寸转换
+ */
+export function imgDataSize (width: number, height: number) {
+    const maxSize = Math.max(width, height);
+    if(maxSize > 512){
+        const ratio = maxSize / 512;
+        return {
+            width: (width/ratio) >> 0,
+            height: (height/ratio) >> 0
+        }
+    }
+    return {width, height}
+}
+
 export type Texture = {
     glTexture: WebGLTexture | null;
     source: TexImageSource | null;

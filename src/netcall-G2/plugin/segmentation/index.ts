@@ -57,9 +57,7 @@ class Segmentation extends EventEmitter {
                     this.emit('segment-load');
                     break;
                 case 'mask':
-                    const { maskData, imageData } = data;
-                    const rgbaAlphaData = new Uint8ClampedArray(maskData);
-                    const newImageData = new ImageData(rgbaAlphaData, this.width, this.height);
+                    const newImageData = new ImageData(data.maskData, this.width, this.height);
                     this.onMaskDataCallback(newImageData);
                     break;
                 case 'destroyed':
