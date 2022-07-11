@@ -6,31 +6,24 @@
 }
 
 @media (max-width: 768px) {
-  .nrtc-container .top{
-    width: 100%;
-    height: 60vh;
-    overflow: scroll;
-    background-color: #f3f3f3;
-  }
   .vconsole {
     display: inline-block;
   }
 }
 
 @media (min-width: 769px) {
-  .nrtc-container .top{
-    width: 100%;
-    height: 60vh;
-    display: flex;
-    overflow: scroll;
-    background-color: #f3f3f3;
-  }
   .vconsole {
     display: none;
   }
 }
 
-
+.nrtc-container .top{
+  width: 100%;
+  height: 60vh;
+  display: flex;
+  overflow: scroll;
+  background-color: #f3f3f3;
+}
 
 .nrtc-container .bottom{
   width: 100%;
