@@ -267,11 +267,11 @@ function logCache(args:any) {
     }else {
       if(cachedLogs.length){
         cachedLogs.forEach(item => {
-          (<any>window).wsTransport.sendLog(item.args);
+          (<any>window).wsTransport && (<any>window).wsTransport.sendLog(item.args);
         })
         cachedLogs = [];
       }
-      (<any>window).wsTransport.sendLog(args);
+      (<any>window).wsTransport && (<any>window).wsTransport.sendLog(args);
     }
   }
 }
