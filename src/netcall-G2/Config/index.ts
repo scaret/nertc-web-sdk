@@ -12,7 +12,7 @@ export interface IConfig{
 }
 
 //Env Specific configs
-import {Config, ENV} from "./config.development";// WEBPACK_STRING_REPLACE_ENV -don't delete the comment
+import {Config, ENV} from "./config.production";// WEBPACK_STRING_REPLACE_ENV -don't delete the comment
 
 const checkSumUrl = Config.checkSumUrl;
 const createChannelUrl = Config.createChannelUrl;

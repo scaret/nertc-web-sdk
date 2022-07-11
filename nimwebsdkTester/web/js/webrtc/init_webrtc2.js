@@ -29,10 +29,10 @@ var WEBRTC2_ENV = {
     AppSecret: '1209afc826ea'
   },
   PROD: {
-    appkey: "6acf024e190215b685905444b6e57dd7",
+    appkey: "3f46258310ab84fa5c9d91999640cb44",
     checkSumUrl: "https://nrtc.netease.im/demo/getChecksum.action",
     getTokenUrl: 'https://api.netease.im/nimserver/user/getToken.action',
-    AppSecret: 'fffeeb78f165'
+    AppSecret: ''
   }
 };
 
@@ -792,13 +792,13 @@ async function initCodecOptions(){
         console.error(`浏览器确实不支持H264!`);
       }
     }
-    let supportedCodecsSend = {video: ["VP8"]};
+    let supportedCodecsSend = await rtc.client._getSupportedCodecs("send");
     const codecs = ["H264", "VP8"];
     $('#supported-recv-codec-wrapper').empty();
     $('#supported-send-codec-wrapper').empty();
     codecs.forEach((codec)=>{
-      $('#supported-recv-codec-wrapper').append(`<label><input type="checkbox" class="codec-hacking" id="supportRecv${codec}" ${(supportedCodecsRecv.video.indexOf(codec) > -1) ? "checked" : ""}>${codec}</label>`)
-      $('#supported-send-codec-wrapper').append(`<label><input type="checkbox" class="codec-hacking" id="supportSend${codec}" ${(supportedCodecsSend.video.indexOf(codec) > -1) ? "checked" : ""}>${codec}</label>`)
+      $('#supported-recv-codec-wrapper').append(`<label><input type="checkbox" class="codec-hacking" disabled id="supportRecv${codec}" ${(supportedCodecsRecv.video.indexOf(codec) > -1) ? "checked" : ""}>${codec}</label>`)
+      $('#supported-send-codec-wrapper').append(`<label><input type="checkbox" class="codec-hacking" disabled id="supportSend${codec}" ${(supportedCodecsSend.video.indexOf(codec) > -1) ? "checked" : ""}>${codec}</label>`)
     });
   }
 }

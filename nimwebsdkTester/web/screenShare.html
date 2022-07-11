@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>WebRTC(G2)测试页</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./css/reset.css">
+  <link rel="stylesheet" href="./css/common.css">
+  <link rel="stylesheet" href="./css/nrtc-new.css">
+  <link rel="stylesheet" href="./css/main.css">
+</head>
+
+<body>
+  <div class="nrtc-container">
+    <div class="top" style="height: 30vh">
+      <div class="block">
+        <p class="block-header">会话类型</p>
+        <div id="part-channel" class="part">
+          <input type="text" id="appkey" style="display:none">
+          <div class="line">
+            房间名称：
+            <input type="text" id="channelName" value="">
+          </div>
+          <div class="line">
+            UID：
+            <input type="text" id="uid" value="" placeholder="不填则随机">
+            <input type="checkbox" id="useStringUid">string类型
+          </div>
+          <div class="line" style="display:none">
+            token:
+            <input type="text" id="token" >
+          </div>
+          <div class="line">
+            <button type="button" id="joinChannel-btn">加入房间</button>
+            <button type="button" id="leaveChannel-btn">离开</button>
+            <button type="button" id="destroy-btn">销毁</button>
+          </div>
+        </div>
+      </div>
+      <div class="block">
+        <p class="block-header">设备相关</p>
+        <div class="part">
+          <div class="line">
+            音频
+            <button id="playMicroSource" class="close">自定义</button>
+            <button id="playMicro" class="close">打开</button>
+            <button id="playMicroOff" class="close">关闭</button>
+          </div>
+          <div class="line">
+            视频
+            <button id="playCameraSource" class="close">自定义</button>
+            <button id="playCamera" class="close">打开</button>
+            <button id="playCameraOff" class="close">关闭</button>
+          </div>
+          <div class="line">
+            屏幕贡献
+            <button id="playScreenSource" class="close">自定义</button>
+            <button id="playScreen" class="close">打开</button>
+            <button id="playScreenOff" class="close">关闭</button>
+          </div>
+          <!-- <div class="line">
+            系统声音
+            <button id="playScreenAudioSource" class="close">自定义</button>
+            <button id="playScreenAudio" class="close">双开</button>
+            <button id="playScreenAudioOff" class="close">关闭</button>
+          </div> -->
+        </div>
+      </div>
+    </div>
+    <div class="bottom" style="height: 70vh">
+      <div class="block" style="width:200px">
+        <p class="block-header">日志</p>
+        <button id="clear-btn">清空</button>
+        <div class="part">
+          <div id="debug-content" class="bottom-debug-content"></div>
+        </div>
+      </div>
+      <div class="block3">
+        <h1>画面区域</h1>
+        <div id="local-container" class="video-container" style="max-height:40vh">
+          <h5>自己的画面</h5>
+        </div>
+        <div id="remote-container" class="video-container" style="max-height:40vh">
+          <h5>其他人的画面</h5>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <script src="./js/lib/axios.min.js"></script>
+  <script src="./js/lib/common.js"></script>
+  <script src="./js/lib/fakeMediaDevices.js"></script>
+
+  <script src="./js/lib/graph.js"></script>
+  <script src="./js/lib/jquery.min.js"></script>
+  <script src="./js/lib/parseQuery.js"></script>
+  <script src="./js/lib/sha1.min.js"></script>
+  <script src="./js/lib/vconsole.min.js"></script>
+  <script src="./js/lib/SM4.js"></script>
+
+  <script src="./js/nim/NIM_Web_NERTC_v4.6.11.js"></script>
+  <script src="./js/webrtc/config.js"></script>
+  <script src="./js/webrtc/screenShare.js"></script>
+
+</body>
+
+</html>

@@ -2423,6 +2423,10 @@ class LocalStream extends EventEmitter {
   }
 
   applyEncoderConfig (mediaTypeShort: "video"|"screen", streamType: "high"|"low") {
+    //@ts-ignore
+    if(window.notApply === true) {
+      return
+    }
     let maxBitrate = this.mediaHelper[mediaTypeShort].encoderConfig[streamType].maxBitrate;
     if (!maxBitrate){
       return;
@@ -2450,10 +2454,10 @@ class LocalStream extends EventEmitter {
     }
     sender.setParameters(parameters)
       .then(() => {
-        this.logger.log(`最大编码码率：${mediaTypeShort} ${streamType} ${maxBitrateHistory ? maxBitrateHistory + "=>" : ""}${maxBitrate}`);
+        this.logger.log(`applyEncoderConfig 最大编码码率：${mediaTypeShort} ${streamType} ${maxBitrateHistory ? maxBitrateHistory + "=>" : ""}${maxBitrate}`);
       })
       .catch((e:any) => {
-        this.logger.error(`应用最大编码码率失败：${mediaTypeShort} ${streamType} ${maxBitrate}`, parameters, e.name, e.message, e);
+        this.logger.error(`applyEncoderConfig 应用最大编码码率失败：${mediaTypeShort} ${streamType} ${maxBitrate}`, parameters, e.name, e.message, e);
       });
   }
 
