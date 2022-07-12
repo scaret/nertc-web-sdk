@@ -1205,14 +1205,13 @@ class Mediasoup extends EventEmitter {
     try{
       consumeRes = await this.adapterRef._signalling._protoo.request('Consume', data);
     }catch(e){
-      if (e.message === 'request timeout'){
-        if (this.adapterRef._signalling._protoo === _protoo){
-          this.logger.error('Consume消息Timeout，尝试信令重连')
-          this.adapterRef.channelStatus = 'connectioning'
-          this.adapterRef._signalling._reconnection()
-        }
+      if (e.message === 'request timeout' && this.adapterRef._signalling._protoo === _protoo){
+        this.logger.error(`Consume消息Timeout，尝试信令重连：${e.name}/${e.message}。当前的连接状态：${this.adapterRef.connectState.curState}。原始请求：`, JSON.stringify(data))
+        this.adapterRef.channelStatus = 'connectioning'
+        this.adapterRef._signalling._reconnection()
+      }else{
+        this.logger.error(`Consume消息错误：${e.name}/${e.message}。当前的连接状态：${this.adapterRef.connectState.curState}。原始请求：`, JSON.stringify(data))
       }
-      this.logger.error(`Consume消息错误：${e.name}/${e.message}。当前的连接状态：${this.adapterRef.connectState.curState}。原始请求：`, data)
       throw new RtcError({
         code: ErrorCode.UNKNOWN,
         message: e.message

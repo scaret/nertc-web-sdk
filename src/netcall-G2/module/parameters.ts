@@ -108,6 +108,8 @@ interface IParameters{
   keepAspectRatio: boolean,
   // 是否关闭LBS服务
   disableLBSService: boolean,
+  // protoo单条消息的timeout时间。
+  protooMessageTimeout: number,
   // 修补Safari本地canvas track无法播放的问题
   shimLocalCanvas: "safari"|"all"|"never"
 }
@@ -175,6 +177,7 @@ let parameters:IParameters = {
   audioAslFlag: true,
   keepAspectRatio: false,
   disableLBSService: false,
+  protooMessageTimeout: 30000,
   shimLocalCanvas: "safari",
 }
 

@@ -1,6 +1,7 @@
 const Logger = require('./Logger');
 const EnhancedEventEmitter = require('./EnhancedEventEmitter');
 const Message = require('./Message');
+const {getParameters} = require("../../parameters");
 
 const logger = new Logger('Peer');
 
@@ -151,7 +152,7 @@ class Peer extends EnhancedEventEmitter
 
 		return new Promise((pResolve, pReject) =>
 		{
-			const timeout = 6 * 1000; /*15000 * (15 + (0.1 * this._sents.size));*/
+			const timeout = getParameters().protooMessageTimeout; /*15000 * (15 + (0.1 * this._sents.size));*/
 			const sent =
 			{
 				id      : request.id,
@@ -353,7 +354,7 @@ class Peer extends EnhancedEventEmitter
 		if (!sent)
 		{
 			logger.error(
-				'received response does not match any sent request', response.id, response);
+				'received response does not match any sent request', response.id, JSON.stringify(response));
 
 			return;
 		}
