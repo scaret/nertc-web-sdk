@@ -1200,7 +1200,24 @@ class Mediasoup extends EventEmitter {
         message: 'No _protoo 4'
       })
     }
-    const consumeRes = await this.adapterRef._signalling._protoo.request('Consume', data);
+    const _protoo = this.adapterRef._signalling._protoo
+    let consumeRes:any = null
+    try{
+      consumeRes = await this.adapterRef._signalling._protoo.request('Consume', data);
+    }catch(e){
+      if (e.message === 'request timeout'){
+        if (this.adapterRef._signalling._protoo === _protoo){
+          this.logger.error('Consume消息Timeout，尝试信令重连')
+          this.adapterRef.channelStatus = 'connectioning'
+          this.adapterRef._signalling._reconnection()
+        }
+      }
+      this.logger.error(`Consume消息错误：${e.name}/${e.message}。当前的连接状态：${this.adapterRef.connectState.curState}。原始请求：`, data)
+      throw new RtcError({
+        code: ErrorCode.UNKNOWN,
+        message: e.message
+      })
+    }
     if (id != remoteStream.pubStatus[mediaTypeShort].producerId) {
       this.loggerRecv.warn(`收到consumeRes后Producer已经更新。触发重建下行。uid: ${remoteStream.streamID} mediaType: ${mediaTypeShort} ProducerId: ${id} => ${remoteStream.pubStatus[mediaTypeShort].producerId} ，Consume结果忽略：`, consumeRes);
       this.resetConsumeRequestStatus()
