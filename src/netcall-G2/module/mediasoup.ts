@@ -1174,6 +1174,8 @@ class Mediasoup extends EventEmitter {
       mid,
       pause: false,
       iceUfrag: iceUfragRegRemote[1],
+      // WebASL 1.0协议迷思：实际audioAslFlag对整个Transport生效。只有第一次Consume时的audioAslFlag有效，且覆盖整个Transport。Video也要带。
+      audioAslFlag: this.adapterRef.audioAsl.enabled === "yes" && getParameters().audioAslFlag,
       appData: {
         enableTcpCandidate: true
       }
@@ -1188,9 +1190,6 @@ class Mediasoup extends EventEmitter {
       data.transportId = this._recvTransport.id;
     } else {
       data.dtlsParameters = localDtlsParameters;
-    }
-    if (data.kind === "audio"){
-      data.audioAslFlag = (this.adapterRef.audioAsl.enabled === "yes" && getParameters().audioAslFlag)
     }
     this.loggerRecv.log(`发送consume请求, uid: ${uid}, kind: ${kind}, mediaTypeShort: ${mediaTypeShort}, producerId: ${data.producerId}, transportId: ${data.transportId}, requestId: ${data.requestId}`);
     if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
