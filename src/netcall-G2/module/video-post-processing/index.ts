@@ -13,54 +13,6 @@ const logger: ILogger = new Logger({
     }
 });
 
-/** 将视频转换为 ImageData 的类*/
-class VideoToImageData {
-    private canvas: HTMLCanvasElement;
-    private _ctx: CanvasRenderingContext2D | null;
-    constructor() {
-        this.canvas = document.createElement('canvas');
-        this._ctx = this.canvas.getContext('2d')!;
-        logger.info('video to imageData is ready.');
-    }
-
-    private get ctx(){
-        if(!this._ctx){
-            logger.error(`ImageData context is null.`);
-        }
-        return this._ctx!;
-    }
-
-    getImageData(video: HTMLVideoElement | null){
-        return new Promise((resolve, reject)=>{
-            if(!video){
-                reject('video is null.');
-            }
-            if('readyState' in video!){
-                if(video.readyState < 2){
-                    logger.warn('media source not ready');
-                    setTimeout(() => {
-                        this.getImageData(video)
-                            .then((imageData)=>{
-                                resolve(imageData);
-                            }).catch((err)=>{
-                                reject(err);
-                            })
-                    }, 0);
-                }else{
-                    const {videoWidth, videoHeight} = video;
-                    this.canvas.width = videoWidth;
-                    this.canvas.height = videoHeight;
-                    this.ctx.drawImage(video, 0, 0, videoWidth, videoHeight);
-                    const imageData = this.ctx.getImageData(0, 0, videoWidth, videoHeight);
-                    resolve(imageData);
-                }
-            }else{
-                reject('invalid video.');
-            }
-        })
-    }
-}
-
 type TaskType = 'BasicBeauty' | 'VirtualBackground' | 'AdvancedBeauty';
 
 export default class VideoPostProcess extends EventEmitter {
@@ -100,8 +52,6 @@ export default class VideoPostProcess extends EventEmitter {
 
     // 初始化视频滤镜管线
     filters: Filters = new Filters();
-    // 初始化 image data 转换
-    private videoToImageData: VideoToImageData | null = new VideoToImageData();
     // 视频源
     video: HTMLVideoElement | null = null;
     // 帧率
@@ -181,6 +131,10 @@ export default class VideoPostProcess extends EventEmitter {
 
             const settings = track.getSettings();
             this.frameRate = settings.frameRate || 15;
+            if(this.frameRate > 30){
+                logger.warn('In chrome, webgl drawing video which framerate greater than 30fps may cause memory leak.');
+                this.frameRate = 30;
+            }
             
             // 从 canvas 获取 track
             this.sourceTrack = track;
@@ -188,6 +142,7 @@ export default class VideoPostProcess extends EventEmitter {
             // 抓新流时需要释放之前的流，否则会导致抓流泄露
             if(this.trackInstance){
                 this.trackInstance.stop();
+                this.trackInstance = null;
             }
             const stream = (<any>this.filters.canvas).captureStream(this.frameRate);
             this.trackInstance = stream.getVideoTracks()[0];
@@ -363,7 +318,6 @@ export default class VideoPostProcess extends EventEmitter {
     destroy(){
         this.taskSet.clear();
         workerTimer.clearTimeout(this.timerId);
-        this.videoToImageData = null;
         this.sourceTrack = null;
         this.trackInstance?.stop();
         this.trackInstance = null;
