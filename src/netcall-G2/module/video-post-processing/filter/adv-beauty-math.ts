@@ -482,7 +482,7 @@ export const handlers:{
         const p43 = Vector2.getVec(posData, 43);
         const p55 = Vector2.getVec(posData, 55);
         const p58 = Vector2.getVec(posData, 58);
-        const pi = Vector2.intersectPoint(p43, Vector2.getVec(posData, 46), p55, p58) || p43;
+        const pi = Vector2.intersectPoint(p43, Vector2.getVec(posData, 46), lEyeCenter, rEyeCenter) || p43;
         // 计算左右眼平移向量
         const dl = Vector2.scale(Vector2.sub(p55, pi), intensity);
         const dr = Vector2.scale(Vector2.sub(p58, pi), intensity);
@@ -516,56 +516,12 @@ export const handlers:{
         );
     },
     roundedEye:(posData, intensity)=>{
-        // // 横向缩放因子
-        // const hScale = 1.0 - intensity * 0.05 * miscutRatio;
-        // // 纵向缩放因子
-        // const vScale = 1.0 + intensity * 0.3;
-        // // 斜向缩放因子
-        // const vhScale = hScale * 0.4 + vScale * 0.6;
-        // // 缩放因子队列
-        // const scales = [vhScale, vhScale, vhScale, vhScale, vScale, vScale];
-    
-        // // 左眼放大
-        // [53,54,56,57,72,73].forEach((idx, index)=>{
-        //     let p = Vector2.getVec(posData, idx);
-        //     p = Vector2.add(lEyeCenter, Vector2.scale(Vector2.sub(p, lEyeCenter), scales[index]));
-        //     Vector2.setPoint(posData, idx, p);
-        // });
-
-        // // 右眼放大
-        // [59,60,62,63,75,76].forEach((idx, index)=>{
-        //     let p = Vector2.getVec(posData, idx);
-        //     p = Vector2.add(rEyeCenter, Vector2.scale(Vector2.sub(p, rEyeCenter), scales[index]));
-        //     Vector2.setPoint(posData, idx, p);
-        // });
         return {
             lEyeCenter,
             rEyeCenter
         }
     },
     enlargeEye:(posData, intensity)=>{
-        // // 横向缩放因子
-        // const hScale = 1.0 + intensity * 0.1 * miscutRatio;
-        // // 纵向缩放因子
-        // const vScale = 1.0 + intensity * 0.25;
-        // // 斜向缩放因子
-        // const vhScale = hScale * 0.45 + vScale * 0.55;
-        // // 缩放因子队列
-        // const scales = [hScale, vhScale, vhScale, hScale, vhScale, vhScale, vScale, vScale];
-    
-        // // 左眼放大
-        // [52,53,54,55,56,57,72,73].forEach((idx, index)=>{
-        //     let p = Vector2.getVec(posData, idx);
-        //     p = Vector2.add(lEyeCenter, Vector2.scale(Vector2.sub(p, lEyeCenter), scales[index]));
-        //     Vector2.setPoint(posData, idx, p);
-        // });
-
-        // // 右眼放大
-        // [58,59,60,61,62,63,75,76].forEach((idx, index)=>{
-        //     let p = Vector2.getVec(posData, idx);
-        //     p = Vector2.add(rEyeCenter, Vector2.scale(Vector2.sub(p, rEyeCenter), scales[index]));
-        //     Vector2.setPoint(posData, idx, p);
-        // });
         return {
             lEyeCenter,
             rEyeCenter
@@ -749,35 +705,31 @@ export const handlers:{
         })
     },
     shrinkCheekbone:(posData, intensity)=>{
-        intensity *= 0.4;
+        intensity *= 0.08;
         const lIntensity = intensity * lmiscutRatio;
         const rIntensity = intensity * rmiscutRatio;
 
         // 获取瘦颧骨关键点
-        const p12 = Vector2.getVec(posData, 12);
-        const p20 = Vector2.getVec(posData, 20);
-        const p0 = Vector2.getVec(posData, 0);
-        const p32 = Vector2.getVec(posData, 32);
+        const p43 = Vector2.getVec(posData, 43);
+        const p49 = Vector2.getVec(posData, 49);
 
         // 计算拟合点
-        const idxPairs = [[2, 30], [4, 28], [6, 26], [8, 24]];
+        const idxPairs = [[0, 32], [2, 30], [4, 28], [6, 26], [8, 24]];
         const pointPairs: Vector2[][] = [];
-        const lVPoints: Vector2[] = [];
-        const rVPoints: Vector2[] = [];
+        const tPoints: Vector2[] = [];
 
         idxPairs.forEach((idxes)=>{
             const lp = Vector2.getVec(posData, idxes[0]);
             const rp = Vector2.getVec(posData, idxes[1]);
             pointPairs.push([lp, rp]);
-            lVPoints.push(Vector2.intersectPoint(lp, rp, p0, p12)!);
-            rVPoints.push(Vector2.intersectPoint(rp, lp, p32, p20)!);
+            tPoints.push(Vector2.intersectPoint(lp, rp, p43, p49)!);
         })
 
         // 瘦颧骨拟合
-        const lerpRatios = [1.0, 1.0, 0.5, 0.1];
+        const lerpRatios = [0.35, 0.7, 0.5, 0.3, 0.1];
         pointPairs.forEach((points, index)=>{
-            const lp = Vector2.lerp(points[0], lVPoints[index], lIntensity * lerpRatios[index]);
-            const rp = Vector2.lerp(points[1], rVPoints[index], rIntensity * lerpRatios[index]);
+            const lp = Vector2.lerp(points[0], tPoints[index], lIntensity * lerpRatios[index]);
+            const rp = Vector2.lerp(points[1], tPoints[index], rIntensity * lerpRatios[index]);
             Vector2.setPoint(posData, idxPairs[index][0], lp);
             Vector2.setPoint(posData, idxPairs[index][1], rp);
         })
