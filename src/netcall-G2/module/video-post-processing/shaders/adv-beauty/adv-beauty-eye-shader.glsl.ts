@@ -30,7 +30,7 @@ export const advBeautyEyeShader = {
         if(rdIntensity > 0.0){
             float maxRdIntens = mix(1.0, 0.5, lgIntensity);
             float rdIntens = mix(0.0, maxRdIntens, rdIntensity);
-            uv = inflate(uv, eyeCenter, range * 1.25, rdIntens * 3.0, 0.075);
+            uv = inflate(uv, eyeCenter, range * 1.5, rdIntens, 0.25);
         }
         if(lgIntensity > 0.0){
             uv = inflate(uv, eyeCenter, range * 3.0, lgIntensity, 0.125);

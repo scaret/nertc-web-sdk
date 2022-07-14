@@ -34,15 +34,18 @@ export function toNthPower(num: number) {
 /**
  * 输出 imagedata 时进行尺寸转换
  */
-export function imgDataSize (width: number, height: number) {
-    // const maxSize = Math.max(width, height);
-    // if(maxSize > 512){
-    //     const ratio = maxSize / 512;
-    //     return {
-    //         width: (width/ratio) >> 0,
-    //         height: (height/ratio) >> 0
-    //     }
-    // }
+export function imgDataSize (width: number, height: number, limitSize?: number) {
+    limitSize = limitSize ?? Math.min(height);
+    if(limitSize){
+        const maxSize = Math.max(width, height);
+        if(maxSize > 512){
+            const ratio = maxSize / 512;
+            return {
+                width: (width/ratio) >> 0,
+                height: (height/ratio) >> 0
+            }
+        }
+    }
     return {width, height}
 }
 
