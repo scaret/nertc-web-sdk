@@ -273,7 +273,7 @@ export default class VideoPostProcess extends EventEmitter {
         this.timerId = workerTimer.setTimeout(()=>{
             this.updateTimer();
             this.update();
-        }, 1000/this.frameRate, null)
+        }, 1000 / (this.frameRate * 1.1), null)
     }
 
     setTaskAndTrack = (task: TaskType, isEnable: boolean, track?: MediaStreamTrack)=>{
