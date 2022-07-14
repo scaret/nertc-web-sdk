@@ -100,7 +100,7 @@ export const advBeautyShader = {
             }
             if(eyeInten>0.0){
                 eyeInten += 1.0;
-                color.rgb = (color.rgb - vec3(0.5)) * eyeInten + vec3(0.5);
+                color.rgb = clamp(color.rgb - vec3(0.5), -0.25, 0.5) * eyeInten + vec3(0.5);
             }
         }
         if(showWire > 0.5){

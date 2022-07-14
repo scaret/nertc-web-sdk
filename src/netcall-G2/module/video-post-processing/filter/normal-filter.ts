@@ -1,7 +1,7 @@
 import { Renderer } from '../gl-utils/renderer';
 import { Program } from '../gl-utils/program';
 import { createAttributeBuffer } from '../gl-utils/buffer-attribute';
-import { createTexture, imgDataSize } from '../gl-utils/texture';
+import { createTexture } from '../gl-utils/texture';
 import { createFrameBuffer } from '../gl-utils/framebuffer';
 import { baseTextureShader } from '../shaders/base-texture-shader.glsl';
 import { Filter } from './filter';
@@ -21,7 +21,6 @@ export class NormalFilter extends Filter {
     private initProgram() {
         const gl = this.renderer.gl!;
         let size = this.renderer.getSize();
-        size = imgDataSize(size.width, size.height);
         const imgDataProgram = new Program(gl);
         imgDataProgram.setShader(baseTextureShader.vShader, 'VERTEX');
         imgDataProgram.setShader(baseTextureShader.yFlipFShader, 'FRAGMENT');
@@ -46,7 +45,7 @@ export class NormalFilter extends Filter {
     }
 
     private pixels: Uint8ClampedArray | null = null;
-    getImageData(srcMap: ReturnType<typeof createTexture>, sizeCB:(size:{width: number, height: number})=>void){
+    getImageData(srcMap: ReturnType<typeof createTexture>){
         if(srcMap !== this._srcMap){
             this._srcMap = srcMap;
             this.programs.imgData.setUniform('map', this._srcMap);
@@ -55,12 +54,8 @@ export class NormalFilter extends Filter {
             this._srcMap.refresh();
         }
         const renderer = this.renderer;
-        const size1 = renderer.getSize();
-        const size2 = imgDataSize(size1.width, size1.height);
-        sizeCB(size2);
-        const {width, height} = size2;
+        const {width, height} = renderer.getSize();
         const gl = renderer.gl!;
-        renderer.setViewport(0, 0, width, height);
         this.framebuffers.imgData.bind();
         renderer.render(this.programs.imgData);
         if(!this.pixels){
@@ -68,7 +63,6 @@ export class NormalFilter extends Filter {
         }
         gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, this.pixels);
         this.framebuffers.imgData.bind(true);
-        renderer.setViewport(0, 0, size1.width, size1.height);
         return new ImageData(this.pixels, width, height);
     }
 
@@ -83,8 +77,7 @@ export class NormalFilter extends Filter {
     }
 
     updateSize() {
-        let size = this.renderer.getSize();
-        size = imgDataSize(size.width, size.height);
+        const size = this.renderer.getSize();
         const framebuffer = this.framebuffers.imgData;
         if(framebuffer){
             framebuffer.targetTexture.opts.width = size.width;

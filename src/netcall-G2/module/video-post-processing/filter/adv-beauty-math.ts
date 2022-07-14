@@ -381,32 +381,20 @@ let rmiscutRatio: number = 1;
 // 预计算眼睛中心点及根据中心点据求错切系数
 export const preHandle = (posData: Int16Array)=>{
     // 计算左眼几何中心
-    lEyeCenter = Vector2.center(
-        ...(
-            [52,53,54,55,56,57,72,73].map((idx)=>{
-                return Vector2.getVec(posData, idx);
-            })
-        )
-    );
+    lEyeCenter = Vector2.getVec(posData, 74);
     // 计算右眼几何中心
-    rEyeCenter = Vector2.center(
-        ...(
-            [58,59,60,61,62,63,75,76].map((idx)=>{
-                return Vector2.getVec(posData, idx);
-            })
-        )
-    );
+    rEyeCenter = Vector2.getVec(posData, 77);
     // 计算错切系数
-    const p43 = Vector2.getVec(posData, 43);
-    const lDis = Vector2.dis(lEyeCenter, p43);
-    const rDis = Vector2.dis(rEyeCenter, p43);
-    miscutRatio = lDis > rDis ? rDis / (lDis || 1) : lDis / (rDis || 1);
-    // 扩展 30% 的阈值，兼容左右脸不对称的情况
-    miscutRatio = Math.min(1.0, Math.max(0.0, miscutRatio / 0.7));
+    // const p43 = Vector2.getVec(posData, 43);
+    // const lDis = Vector2.dis(lEyeCenter, p43);
+    // const rDis = Vector2.dis(rEyeCenter, p43);
+    // miscutRatio = lDis > rDis ? rDis / (lDis || 1) : lDis / (rDis || 1);
+    // // 修正左右脸不对称且误差抖动的问题
+    // miscutRatio = Math.min(1.0, Math.max(0.0, miscutRatio*miscutRatio*4));
     
-    const maxDis = Math.max(lDis, rDis);
-    lmiscutRatio = lDis/maxDis;
-    rmiscutRatio - rDis/maxDis;
+    // const maxDis = Math.max(lDis, rDis);
+    // lmiscutRatio = lDis/maxDis;
+    // rmiscutRatio - rDis/maxDis;
 }
 
 // 大眼和圆眼最好用 shader 去对像素进行操作，这样过度会更自然一点
@@ -417,7 +405,7 @@ export const handlers:{
     eyeAngle:(posData, intensity)=>{
         const angle = (intensity - 0.5) * 0.06 * Math.PI;
         // 构建左旋转矩阵
-        const matrixl = Matrix3x3.rotate(angle, lEyeCenter.value[0], lEyeCenter.value[1]);
+        const matrixl = Matrix3x3.rotate(angle, lEyeCenter.x, lEyeCenter.y);
         // 旋转左眼
         [52,53,54,55,56,57,72,73].forEach((idx)=>{
             const p = matrixl.multiplyPoint(Vector2.getVec(posData, idx));
@@ -425,7 +413,7 @@ export const handlers:{
         });
 
         // 构建右旋转矩阵
-        const matrixr = Matrix3x3.rotate(-angle, rEyeCenter.value[0], rEyeCenter.value[1]);
+        const matrixr = Matrix3x3.rotate(-angle, rEyeCenter.x, rEyeCenter.y);
          // 旋转右眼
         [58,59,60,61,62,63,75,76].forEach((idx)=>{
             const p = matrixr.multiplyPoint(Vector2.getVec(posData, idx));
@@ -433,15 +421,20 @@ export const handlers:{
         });
     },
     openCanthus:(posData, intensity)=>{
-        const scale = 1.0 + intensity * 0.05 * miscutRatio;
+        intensity *= 0.05;
 
-        // 取出 52、55 点, 沿对应向量平移 55 点
-        const p52 = Vector2.getVec(posData, 52);
-        const p55 = Vector2.add(p52, Vector2.scale(Vector2.sub(Vector2.getVec(posData, 55), p52), scale));
+        // 获取交点
+        const p43 = Vector2.getVec(posData, 43);
+        const p46 = Vector2.getVec(posData, 46);
+        let p55 = Vector2.getVec(posData, 55);
+        let p58 = Vector2.getVec(posData, 58); 
+        // 计算交点
+        const pi = Vector2.intersectPoint(p43, p46, p55, p58) || p43;
+        // 沿对应向量平移 55 点
+        p55 = Vector2.lerp(p55, pi, intensity);
 
-        // 取出 61、58 点，沿对应向量平移 58 点
-        const p61 = Vector2.getVec(posData, 61);
-        const p58 = Vector2.add(p61, Vector2.scale(Vector2.sub(Vector2.getVec(posData, 58), p61), scale));
+        // 沿对应向量平移 58 点
+        p58 = Vector2.lerp(p58, pi, intensity);
 
         // 更改 55、58 点的位置信息
         Vector2.setPoint(posData, 55, p55);
@@ -450,70 +443,34 @@ export const handlers:{
         // 将 54、56 点靠拢 55 点；将 59、63 点靠拢 58 点
         [54, 56, 59, 63].forEach((idx)=>{
             let p = Vector2.getVec(posData, idx);
-            p = Vector2.lerp(p, idx < 57 ? p55 : p58, intensity * 0.1);
+            p = Vector2.lerp(p, idx < 57 ? p55 : p58, intensity * 0.05);
             Vector2.setPoint(posData, idx, p);
         })
-        // 计算左眼几何中心
-        lEyeCenter = Vector2.center(
-            ...(
-                [52,53,54,55,56,57,72,73].map((idx)=>{
-                    return Vector2.getVec(posData, idx);
-                })
-            )
-        );
-        // 计算右眼几何中心
-        rEyeCenter = Vector2.center(
-            ...(
-                [58,59,60,61,62,63,75,76].map((idx)=>{
-                    return Vector2.getVec(posData, idx);
-                })
-            )
-        );
     },
     eyeDistance:(posData, intensity)=>{
-        intensity = (intensity - 0.5) * miscutRatio * 0.3;
+        intensity = (intensity - 0.5) * 0.1;
 
-        // 扩大眼距时范围较小比较自然
-        if(intensity > 0){
-            intensity *= 0.6;
-        }
-
-        // 计算交点
+        // 获取 43 点
         const p43 = Vector2.getVec(posData, 43);
-        const p55 = Vector2.getVec(posData, 55);
-        const p58 = Vector2.getVec(posData, 58);
-        const pi = Vector2.intersectPoint(p43, Vector2.getVec(posData, 46), lEyeCenter, rEyeCenter) || p43;
         // 计算左右眼平移向量
-        const dl = Vector2.scale(Vector2.sub(p55, pi), intensity);
-        const dr = Vector2.scale(Vector2.sub(p58, pi), intensity);
+        const dl = Vector2.scale(Vector2.sub(lEyeCenter, p43), intensity);
+        const dr = Vector2.scale(Vector2.sub(rEyeCenter, p43), intensity);
 
         // 左眼平移
-        [52,53,54,55,56,57,72,73].forEach((idx)=>{
+        [52,53,54,55,56,57,72,73,74].forEach((idx)=>{
             const p = Vector2.add(Vector2.getVec(posData, idx), dl);
             Vector2.setPoint(posData, idx, p);
         });
 
         // 右眼平移
-        [58,59,60,61,62,63,75,76].forEach((idx)=>{
+        [58,59,60,61,62,63,75,76,77].forEach((idx)=>{
             const p = Vector2.add(Vector2.getVec(posData, idx), dr);
             Vector2.setPoint(posData, idx, p);
         })
-        // 计算左眼几何中心
-        lEyeCenter = Vector2.center(
-            ...(
-                [52,53,54,55,56,57,72,73].map((idx)=>{
-                    return Vector2.getVec(posData, idx);
-                })
-            )
-        );
-        // 计算右眼几何中心
-        rEyeCenter = Vector2.center(
-            ...(
-                [58,59,60,61,62,63,75,76].map((idx)=>{
-                    return Vector2.getVec(posData, idx);
-                })
-            )
-        );
+        // 更新左眼几何中心
+        lEyeCenter = Vector2.getVec(posData, 74);
+        // 更新右眼几何中心
+        rEyeCenter = Vector2.getVec(posData, 77);
     },
     roundedEye:(posData, intensity)=>{
         return {
@@ -528,7 +485,7 @@ export const handlers:{
         }
     },
     shrinkNose:(posData, intensity)=>{
-        intensity = intensity * 0.15 * miscutRatio;
+        intensity = intensity * 0.15;
         // 将 80、82 点靠近 46 点， 将 81、83 点靠近 46 点
         const p46 = Vector2.getVec(posData, 46);
         [80, 81, 82, 83].forEach((idx)=>{
@@ -542,10 +499,8 @@ export const handlers:{
         });
     },
     lengthenNose:(posData, intensity)=>{
-        // 长鼻在理想状态下无需错切修正
-        // 但是原始的推理数据存在侧面误差，因此引入错切系数对其尽心修正
-        // 此处的错切系数容错范围进一步扩大，以使得仅在推理数据存在误差的阈值处进行容错
-        intensity = (intensity - 0.5) * 0.5 * Math.min(1.0, Math.pow(miscutRatio, 3.0) * 4);
+        // 原始的推理数据存在侧面误差，存在切面问题
+        intensity = (intensity - 0.5) * 0.25;
      
         // 标记 46 点的邻接点
         const adjs46 = [80, 81, 82, 83, 47, 51];
@@ -576,8 +531,9 @@ export const handlers:{
         })
     },
     shrinkMouth:(posData, intensity)=>{
+        intensity -= 0.65;
         // 横向缩放因子
-        const hScale = 1.0 + intensity * 0.15 * miscutRatio;
+        const hScale = 1.0 + intensity * 0.25;
         // 纵向缩放因子
         const vScale = 1.0 + intensity * 0.2;
         
@@ -657,7 +613,7 @@ export const handlers:{
         });
     },
     adjustPhiltrum:(posData, intensity)=>{
-        intensity = (intensity - 0.5) * 0.25 * Math.min(1.0, Math.pow(miscutRatio, 2) * 2);
+        intensity = (intensity - 0.5) * 0.25;
 
         // 计算平移向量
         const p87 = Vector2.getVec(posData, 87);
@@ -672,8 +628,8 @@ export const handlers:{
     },
     shrinkUnderjaw:(posData, intensity)=>{
         intensity *= 0.1;
-        const lIntensity = intensity * lmiscutRatio;
-        const rIntensity = intensity * rmiscutRatio;
+        const lIntensity = intensity;
+        const rIntensity = intensity;
 
         // 获取瘦下颌关键点
         const p16 = Vector2.getVec(posData, 16);
@@ -682,7 +638,7 @@ export const handlers:{
         const p32 = Vector2.getVec(posData, 32);
 
         // 计算拟合点
-        const idxPairs = [[8, 24], [10, 22], [12, 20]];
+        const idxPairs = [[6, 26], [8, 24], [10, 22], [12, 20], [14, 18]];
         const pointPairs: Vector2[][] = [];
         const lVPoints: Vector2[] = [];
         const rVPoints: Vector2[] = [];
@@ -696,7 +652,7 @@ export const handlers:{
         })
 
         // 瘦下颌拟合
-        const lerpRatios = [0.5, 1.0, 0.5];
+        const lerpRatios = [0.33, 0.66, 1.0, 0.66, 0.33];
         pointPairs.forEach((points, index)=>{
             const lp = Vector2.lerp(points[0], lVPoints[index], lIntensity * lerpRatios[index]);
             const rp = Vector2.lerp(points[1], rVPoints[index], rIntensity * lerpRatios[index]);
@@ -706,8 +662,8 @@ export const handlers:{
     },
     shrinkCheekbone:(posData, intensity)=>{
         intensity *= 0.08;
-        const lIntensity = intensity * lmiscutRatio;
-        const rIntensity = intensity * rmiscutRatio;
+        const lIntensity = intensity;
+        const rIntensity = intensity;
 
         // 获取瘦颧骨关键点
         const p43 = Vector2.getVec(posData, 43);
@@ -726,7 +682,7 @@ export const handlers:{
         })
 
         // 瘦颧骨拟合
-        const lerpRatios = [0.35, 0.7, 0.5, 0.3, 0.1];
+        const lerpRatios = [0.33, 0.66, 0.33, 0.22, 0.11];
         pointPairs.forEach((points, index)=>{
             const lp = Vector2.lerp(points[0], tPoints[index], lIntensity * lerpRatios[index]);
             const rp = Vector2.lerp(points[1], tPoints[index], rIntensity * lerpRatios[index]);
@@ -735,7 +691,7 @@ export const handlers:{
         })
     },
     lengthenJaw:(posData, intensity)=>{
-        intensity = (0.5 - intensity) * 0.1 * Math.min(1.0, Math.pow(miscutRatio, 2) * 4);
+        intensity = (0.5 - intensity) * 0.1;
 
         // 计算平移向量
         const p16 = Vector2.getVec(posData, 16);
@@ -751,14 +707,14 @@ export const handlers:{
     },
     narrowedFace:(posData, intensity)=>{
         intensity = intensity * 0.05;
-        const lIntensity = intensity * lmiscutRatio;
-        const rIntensity = intensity * rmiscutRatio;
+        const lIntensity = intensity;
+        const rIntensity = intensity;
         // 取中轴点
         const p43 = Vector2.getVec(posData, 43);
         const p16 = Vector2.getVec(posData, 16);
         // 窄脸点对
         const pairs = [[106, 111], [0,32], [2,30],[4,28],[6,26],[8,24],[10,22],[12,20],[14,18]];
-        const ratios = [0.25, 0.625, 1.0];
+        const ratios = [0.33, 0.66, 1.0];
         // 将点对与中轴的交点靠拢
         pairs.forEach((points, index)=>{
             let pl = Vector2.getVec(posData, points[0]);
@@ -773,8 +729,8 @@ export const handlers:{
     },
     shrinkFace:(posData, intensity)=>{
         intensity = intensity * 0.1;
-        const lIntensity = intensity * lmiscutRatio;
-        const rIntensity = intensity * rmiscutRatio;
+        const lIntensity = intensity;
+        const rIntensity = intensity;
         // 取中轴点
         const p43 = Vector2.getVec(posData, 43);
         const p16 = Vector2.getVec(posData, 16);
@@ -813,8 +769,8 @@ export const handlers:{
     vShapedFace:(posData, intensity)=>{
         intensity -= 0.5;
         intensity = intensity > 0 ? intensity * 0.4 : intensity * 0.2;
-        const lIntensity = intensity * lmiscutRatio;
-        const rIntensity = intensity * rmiscutRatio;
+        const lIntensity = intensity;
+        const rIntensity = intensity;
 
         // 获取 V 型关键点
         const p16 = Vector2.getVec(posData, 16);
@@ -844,7 +800,7 @@ export const handlers:{
         })
     },
     minifyFace:(posData, intensity)=>{
-        intensity = intensity * 0.1 * Math.min(1.0, Math.pow(miscutRatio, 2) * 2);
+        intensity = intensity * 0.1;
 
         // 计算小脸追踪点
         const p43 = Vector2.getVec(posData, 43);

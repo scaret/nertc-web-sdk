@@ -63,11 +63,6 @@ export default class VideoPostProcess extends EventEmitter {
     private taskSet = new Set<TaskType>();
     private taskSnapshot = new Set<TaskType>();
     private readyTaskSet = new Set<TaskType>(['BasicBeauty']);
-    // 任务参数
-    private imgDataSize: {width:number, height: number} = {
-        width: 640,
-        height: 480
-    };
     private sourceMap: ImageData | null = null;
     private maskData: ImageData | null = null;
     private advBeautyData: number[] | Int16Array = [];
@@ -227,9 +222,7 @@ export default class VideoPostProcess extends EventEmitter {
             if(needImgData){
                 this.filters.update(false);
                 // 获取下一帧原图的 imageData
-                this.sourceMap = this.filters.normal.getImageData(this.filters.srcMap, (size)=>{
-                    this.imgDataSize = size;
-                });
+                this.sourceMap = this.filters.normal.getImageData(this.filters.srcMap);
             }else{
                 this.filters.update(true);
             }
@@ -241,7 +234,7 @@ export default class VideoPostProcess extends EventEmitter {
                 if(!plugin){
                     logger.error('VirtualBackground plugin is null.');
                 }else{
-                    const {width, height} = this.imgDataSize;
+                    const {width, height} = this.filters.canvas;
                     // 背景替换推理
                     plugin.process(this.sourceMap!, width, height, (result)=>{
                         this.maskData = this.taskSet.has('VirtualBackground') ? result : null;
@@ -260,7 +253,7 @@ export default class VideoPostProcess extends EventEmitter {
                 if(!plugin){
                     logger.error('AdvancedBeauty plugin is null.');
                 }else{
-                    const {width, height} = this.imgDataSize;
+                    const {width, height} = this.filters.canvas;
                     // 高级美颜推理
                     plugin.process(this.sourceMap!, width, height, (result)=>{
                         this.advBeautyData = this.taskSet.has('AdvancedBeauty') ? result : [];
