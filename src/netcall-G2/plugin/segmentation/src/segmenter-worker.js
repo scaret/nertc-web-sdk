@@ -43,14 +43,22 @@ class mHumanSegmenter {
         }
         Module.HEAPU8.set(frame.data, this.inputPtr);
         this.mHumanSegmenter.process(this.inputPtr, this.outputPtr, this.width, this.height);
-        const result = Module.HEAPU8.subarray(this.outputPtr, this.outputPtr + frame.data.length);
-        const segment_mask = new Uint8ClampedArray(result);
+        const result = Module.HEAPU8.subarray(this.outputPtr, this.outputPtr + 256 * 256);
+        const segment_mask = this.alphaToImageData(result);
         this.handleMaskData(segment_mask, frame);
         this.isProcessing = false;
         if (this.buffer.length) {
             const buffer = this.buffer.shift();
             this.process(buffer);
         }
+    }
+
+    alphaToImageData(data) {
+        const imageData = new Uint8ClampedArray(data.length * 4);
+        for(let i =0; i < data.length; i++) {
+            imageData[i * 4 + 3] = data[i];
+        }
+        return imageData;
     }
 
     destroy() {
