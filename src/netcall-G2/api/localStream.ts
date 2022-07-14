@@ -689,9 +689,6 @@ class LocalStream extends RTCEventEmitter {
       if (videoTrackLow){
         videoTrackLow.stop();
       }
-      if (this.mediaHelper.video.videoTrackLow){
-        this.mediaHelper.video.videoTrackLow.stop();
-      }
     } else {
       this.logger.log("此时还没有有视频track");
     }
@@ -3756,9 +3753,6 @@ class LocalStream extends RTCEventEmitter {
       }
       if (videoTrackLow){
         videoTrackLow.stop();
-      }
-      if (this.mediaHelper.video.videoTrackLow){
-        this.mediaHelper.video.videoTrackLow.stop();
       }
       if(isStart){
         let effects;
