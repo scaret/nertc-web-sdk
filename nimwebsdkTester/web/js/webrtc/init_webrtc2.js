@@ -1116,9 +1116,9 @@ $('#leaveChannel-btn').on('click', async() => {
   console.info('开始离开房间...')
   clearInterval(audioEffectsPlayTimer);
   // 销毁美颜
-  if(window.isBeautyStarted){
-    await rtc.localStream.setBeautyEffect(false);
-  }
+  // if(window.isBeautyStarted){
+  //   await rtc.localStream.setBeautyEffect(false);
+  // }
   
   if(rtc.enableBodySegment){
     await rtc.localStream.disableBodySegment();

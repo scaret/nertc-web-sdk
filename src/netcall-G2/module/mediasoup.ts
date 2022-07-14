@@ -1174,6 +1174,8 @@ class Mediasoup extends EventEmitter {
       mid,
       pause: false,
       iceUfrag: iceUfragRegRemote[1],
+      // WebASL 1.0协议迷思：实际audioAslFlag对整个Transport生效。只有第一次Consume时的audioAslFlag有效，且覆盖整个Transport。Video也要带。
+      audioAslFlag: this.adapterRef.audioAsl.enabled === "yes" && getParameters().audioAslFlag,
       appData: {
         enableTcpCandidate: true
       }
@@ -1189,9 +1191,6 @@ class Mediasoup extends EventEmitter {
     } else {
       data.dtlsParameters = localDtlsParameters;
     }
-    if (data.kind === "audio"){
-      data.audioAslFlag = (this.adapterRef.audioAsl.enabled === "yes" && getParameters().audioAslFlag)
-    }
     this.loggerRecv.log(`发送consume请求, uid: ${uid}, kind: ${kind}, mediaTypeShort: ${mediaTypeShort}, producerId: ${data.producerId}, transportId: ${data.transportId}, requestId: ${data.requestId}`);
     if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
       info.resolve(null);
@@ -1200,7 +1199,23 @@ class Mediasoup extends EventEmitter {
         message: 'No _protoo 4'
       })
     }
-    const consumeRes = await this.adapterRef._signalling._protoo.request('Consume', data);
+    const _protoo = this.adapterRef._signalling._protoo
+    let consumeRes:any = null
+    try{
+      consumeRes = await this.adapterRef._signalling._protoo.request('Consume', data);
+    }catch(e){
+      if (e.message === 'request timeout' && this.adapterRef._signalling._protoo === _protoo){
+        this.logger.error(`Consume消息Timeout，尝试信令重连：${e.name}/${e.message}。当前的连接状态：${this.adapterRef.connectState.curState}。原始请求：`, JSON.stringify(data))
+        this.adapterRef.channelStatus = 'connectioning'
+        this.adapterRef._signalling._reconnection()
+      }else{
+        this.logger.error(`Consume消息错误：${e.name}/${e.message}。当前的连接状态：${this.adapterRef.connectState.curState}。原始请求：`, JSON.stringify(data))
+      }
+      throw new RtcError({
+        code: ErrorCode.UNKNOWN,
+        message: e.message
+      })
+    }
     if (id != remoteStream.pubStatus[mediaTypeShort].producerId) {
       this.loggerRecv.warn(`收到consumeRes后Producer已经更新。触发重建下行。uid: ${remoteStream.streamID} mediaType: ${mediaTypeShort} ProducerId: ${id} => ${remoteStream.pubStatus[mediaTypeShort].producerId} ，Consume结果忽略：`, consumeRes);
       this.resetConsumeRequestStatus()

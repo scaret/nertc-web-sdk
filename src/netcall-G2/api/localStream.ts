@@ -137,6 +137,7 @@ class LocalStream extends RTCEventEmitter {
   private _transformedTrack:MediaStreamTrack|null;
   private lastEffects:any;
   private lastFilter:any;
+  private isSwitchwithBeauty:boolean=false;
   public videoProfile: {
     frameRate: number;
     resolution: number;
@@ -688,9 +689,6 @@ class LocalStream extends RTCEventEmitter {
       if (videoTrackLow){
         videoTrackLow.stop();
       }
-      if (this.mediaHelper.video.videoTrackLow){
-        this.mediaHelper.video.videoTrackLow.stop();
-      }
     } else {
       this.logger.log("此时还没有有视频track");
     }
@@ -949,6 +947,11 @@ class LocalStream extends RTCEventEmitter {
           try{
             // 打开基础美颜
             if(this.isBeautyTrack){
+              // 如果是开启美颜并切换摄像头
+              if(this.isSwitchwithBeauty){
+                this.isBeautyTrack = true;
+                return;
+              }
               await this.setBeautyEffect(true);
               if(this.lastEffects){
                 this.setBeautyEffectOptions(this.lastEffects);
@@ -1669,6 +1672,7 @@ class LocalStream extends RTCEventEmitter {
         if(this.isBeautyTrack){
           await this.setBeautyEffect(false);
           this.isBeautyTrack = true;
+          this.isSwitchwithBeauty = false;
         }
         //关闭背景分割
         if(this.isBodySegmentTrack) {
@@ -2307,6 +2311,7 @@ class LocalStream extends RTCEventEmitter {
       if(this.isBeautyTrack){
         await this.setBeautyEffect(false);
         this.isBeautyTrack = true;
+        this.isSwitchwithBeauty = true;
       }
       //关闭美颜track, 切换后的回调中再重新开启美颜
       if(this._transformedTrack){
@@ -2415,8 +2420,8 @@ class LocalStream extends RTCEventEmitter {
       if(this.isAdvancedBeautyTrack) {
         await this._startAdvancedBeauty();
       }
-      //重新开启基础美颜
-      if(this.isBeautyTrack){
+      // 重新开启基础美颜
+      if(this.isSwitchwithBeauty){
         await this.setBeautyEffect(true);
         if(this.lastEffects){
           this.setBeautyEffectOptions(this.lastEffects);
@@ -3749,9 +3754,6 @@ class LocalStream extends RTCEventEmitter {
       if (videoTrackLow){
         videoTrackLow.stop();
       }
-      if (this.mediaHelper.video.videoTrackLow){
-        this.mediaHelper.video.videoTrackLow.stop();
-      }
       if(isStart){
         let effects;
         if(this.lastEffects){
@@ -3893,6 +3895,15 @@ class LocalStream extends RTCEventEmitter {
     if(this._advancedBeautyProcessor){
       this._advancedBeautyProcessor.destroy();
       this._advancedBeautyProcessor = null;
+    }
+    // 销毁基础美颜, 释放当前track
+    if(this._cameraTrack){
+      this._cameraTrack.stop();
+      this._cameraTrack = null;
+    }
+    if(this._transformedTrack){
+      this._transformedTrack.stop();
+      this._transformedTrack = null;
     }
     // 销毁美颜相关 webgl 管线
     this.videoPostProcess.destroy();
