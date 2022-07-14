@@ -42,7 +42,7 @@ const virtualBackgroundPluginConfig = {
     chrome: {
       key: 'VirtualBackground',
       pluginUrl: './js/nim/NIM_Web_VirtualBackground.js',
-      wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/test_segment.wasm' + `?time=${Math.random()}`,
+      wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal.wasm' + `?time=${Math.random()}`,
     },
     safari: {
       key: 'VirtualBackground',

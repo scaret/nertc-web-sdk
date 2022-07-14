@@ -20,8 +20,7 @@ class mHumanSegmenter {
                 this.handleInitFinished();
             }
         }
-        require('../lib/nn_segment_normal_test.js');
-        this.alphaToImageData([1,2,3,4])
+        require('../lib/ne_segment_normal.js');
     }
 
     async process(frame) {
@@ -44,10 +43,8 @@ class mHumanSegmenter {
         }
         Module.HEAPU8.set(frame.data, this.inputPtr);
         this.mHumanSegmenter.process(this.inputPtr, this.outputPtr, this.width, this.height);
-        const result = Module.HEAPU8.subarray(this.outputPtr, this.outputPtr + 256*256);
-        
+        const result = Module.HEAPU8.subarray(this.outputPtr, this.outputPtr + 256 * 256);
         const segment_mask = this.alphaToImageData(result);
-        
         this.handleMaskData(segment_mask, frame);
         this.isProcessing = false;
         if (this.buffer.length) {
