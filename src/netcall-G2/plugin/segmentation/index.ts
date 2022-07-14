@@ -57,7 +57,7 @@ class Segmentation extends EventEmitter {
                     this.emit('segment-load');
                     break;
                 case 'mask':
-                    const newImageData = new ImageData(data.maskData, this.width, this.height);
+                    const newImageData = new ImageData(data.maskData, 256, 256);
                     this.onMaskDataCallback(newImageData);
                     break;
                 case 'destroyed':
