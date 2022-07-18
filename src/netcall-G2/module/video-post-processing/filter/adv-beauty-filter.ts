@@ -380,6 +380,7 @@ export class AdvBeautyFilter extends Filter {
             eyeProgram.setUniform('rdIntensity', 0);
             eyeProgram.setUniform('lgIntensity', 0);
             eyeProgram.setUniform('range', 0);
+            eyeProgram.setUniform('rdDir', [0, 0]);
             const eyeKey = ['lEye','rEye'][i];
             this.programs[eyeKey] = eyeProgram;
             this.framebuffers[eyeKey] = eyeFramebuffer;
@@ -582,8 +583,12 @@ export class AdvBeautyFilter extends Filter {
                     const rEyeCenter = this.posToUV(eyeInfo.rEyeCenter, size.width, size.height);
                     const p52 = this.posToUV(Vector2.getVec(eyeInfo.posData, 52), size.width, size.height);
                     const p55 = this.posToUV(Vector2.getVec(eyeInfo.posData, 55), size.width, size.height);
+                    const p72 = this.posToUV(Vector2.getVec(eyeInfo.posData, 72), size.width, size.height);
+                    const p73 = this.posToUV(Vector2.getVec(eyeInfo.posData, 73), size.width, size.height);
                     const p58 = this.posToUV(Vector2.getVec(eyeInfo.posData, 58), size.width, size.height);
                     const p61 = this.posToUV(Vector2.getVec(eyeInfo.posData, 61), size.width, size.height);
+                    const p75 = this.posToUV(Vector2.getVec(eyeInfo.posData, 75), size.width, size.height);
+                    const p76 = this.posToUV(Vector2.getVec(eyeInfo.posData, 76), size.width, size.height);
 
                     // 左眼参数设置
                     this.programs.lEye.setUniform('eyeCenter', lEyeCenter.value);
@@ -591,6 +596,7 @@ export class AdvBeautyFilter extends Filter {
                         Vector2.dis(lEyeCenter, p52),
                         Vector2.dis(lEyeCenter, p55)
                     ));
+                    this.programs.lEye.setUniform('rdDir', Vector2.normalize(Vector2.sub(p72, p73)).value);
 
                     // 右眼参数设置
                     this.programs.rEye.setUniform('eyeCenter', rEyeCenter.value);
@@ -598,6 +604,7 @@ export class AdvBeautyFilter extends Filter {
                         Vector2.dis(rEyeCenter, p58),
                         Vector2.dis(rEyeCenter, p61)
                     ));
+                    this.programs.rEye.setUniform('rdDir', Vector2.normalize(Vector2.sub(p75, p76)).value);
                 }
 
                 // 渲染左眼
