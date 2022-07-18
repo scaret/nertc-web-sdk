@@ -139,6 +139,19 @@ class Client extends Base {
         if (evt.reconnect){
           this.adapterRef.lbsManager.startUpdate("reconnect")
         }
+        if (this.adapterRef.datareportCache?.length){
+          this.logger.log(`上报进频道前事件：${this.adapterRef.datareportCache.length}条: ${this.adapterRef.datareportCache.map(e => e.func).join()}`)
+          this.adapterRef.datareportCache.forEach((cache)=>{
+            // @ts-ignore
+            const eventData:any = cache.datareport[cache.func]
+            if (eventData){
+              eventData.cid = eventData.cid || this.adapterRef.channelInfo.cid
+              eventData.uid = eventData.uid || this.adapterRef.channelInfo.uid
+            }
+            cache.datareport.send()
+          })
+          this.adapterRef.datareportCache = []
+        }
       }
     })
   }

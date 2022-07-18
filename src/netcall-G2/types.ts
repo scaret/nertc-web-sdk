@@ -18,6 +18,7 @@ import {DataReport} from "./module/report/dataReport";
 type UIDTYPE = number | string;
 
 export interface AdapterRef {
+  datareportCache: {func: string, datareport: DataReport}[];
   audioAsl: {
     enabled: "yes"|"no"|"unknown",
     aslActiveNum: number,
