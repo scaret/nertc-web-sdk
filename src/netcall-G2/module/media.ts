@@ -564,7 +564,7 @@ class MediaHelper extends EventEmitter {
         })
         if (audio) {
           let gumAudioStream = await GUM.getStream({
-            audio: (this.getAudioConstraints()) ? this.getAudioConstraints() : true,
+            audio: this.getAudioConstraints(),
           }, this.logger)
           this.audio.micTrack = gumAudioStream.getAudioTracks()[0];
           emptyStreamWith(this.audio.micStream, this.audio.micTrack)

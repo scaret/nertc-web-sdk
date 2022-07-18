@@ -20,6 +20,11 @@ registerProcessor('vumeter', class extends AudioWorkletProcessor {
   process (inputs, outputs, parameters) {
     const input = inputs[0];
 
+    this.port.postMessage({
+      type: 'rawinputs',
+      inputs,
+    });
+
     // Note that the input will be down-mixed to mono; however, if no inputs are
     // connected then zero channels will be passed in.
     if (input.length > 0) {
@@ -60,12 +65,14 @@ registerProcessor('vumeter', class extends AudioWorkletProcessor {
         }
         if (samplesRight){
           this.port.postMessage({
+            type: 'volume',
             left: this._leftVolume,
             right: this._rightVolume,
             volume: Math.max(this._leftVolume, this._rightVolume)
           });
         }else{
           this.port.postMessage({
+            type: 'volume',
             volume: Math.max(this._leftVolume, this._rightVolume)
           });
         }

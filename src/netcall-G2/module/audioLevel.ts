@@ -97,7 +97,7 @@ class AudioLevel extends EventEmitter{
         }
         this.support.audioWorkletNode = new AudioWorkletNode(this.support.context, 'vumeter')
 
-        this.support.audioWorkletNode.port.onmessage  = event => {
+        const handleTypeVolume = (event: MessageEvent)=>{
           const ts = Date.now()
           const sec = Math.floor(ts)
           
@@ -217,6 +217,20 @@ class AudioLevel extends EventEmitter{
                 }
               }
             }
+          }
+        }
+        
+        const handleTypeRawInputs = (event: MessageEvent)=>{
+          console.error("handleTypeRawInputs", event.data.inputs)
+        }
+
+        this.support.audioWorkletNode.port.onmessage = function (event){
+          if (event.data.type === 'volume'){
+            handleTypeVolume(event)
+          }else if (event.data.type === 'rawinputs'){
+            handleTypeRawInputs(event)
+          }else {
+            console.error('Unknown message', event)
           }
         }
       }

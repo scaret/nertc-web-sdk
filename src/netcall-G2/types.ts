@@ -1357,6 +1357,7 @@ export interface PreProcessingHistoryInfo{
 
 
 export interface GUMAudioConstraints{
+  sampleRate?: number;
   channelCount: number;
   deviceId?: {
     exact: string
