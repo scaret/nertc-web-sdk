@@ -15,7 +15,7 @@ import {
   MediaTypeAudio,
   ILogger,
   EncodingParameters,
-  PreProcessingConfig, PreProcessingHandlerName,
+  PreProcessingConfig, PreProcessingHandlerName, GUMConstaints, GUMAudioConstraints,
 } from "../types";
 import {emptyStreamWith, watchTrack} from "../util/gum";
 import RtcError from '../util/error/rtcError';
@@ -597,8 +597,8 @@ class MediaHelper extends EventEmitter {
           return;
         }
         const {height, width, frameRate} = this.video.captureConfig.high
-        let config:MediaStreamConstraints = {
-          audio: (audio && this.getAudioConstraints()) ? this.getAudioConstraints() : audio,
+        let config:GUMConstaints = {
+          audio: (audio && this.getAudioConstraints()) ? this.getAudioConstraints() : undefined,
           video: video ? {
             width: {
               ideal: width
@@ -609,24 +609,21 @@ class MediaHelper extends EventEmitter {
             frameRate: {
               ideal: frameRate || 15
             }
-          } : false
+          } : undefined
         }
-        if (audioDeviceId && audio) {
-          if (config.audio === true) {
-            config.audio = {}
-          }
-          (config.audio as any).deviceId = {
+        if (audioDeviceId && config.audio) {
+          config.audio.deviceId = {
             exact: audioDeviceId
           }
         }
 
-        if (video) {
+        if (config.video) {
           if (facingMode) {
-            (config.video as any).facingMode = {
+            config.video.facingMode = {
               exact: facingMode
             }
           } else if (videoDeviceId) {
-            (config.video as any).deviceId = {
+            config.video.deviceId = {
               exact: videoDeviceId
             }
           }
@@ -736,7 +733,7 @@ class MediaHelper extends EventEmitter {
     }
   }
 
-  async getSecondStream(constraint: MediaStreamConstraints) {
+  async getSecondStream(constraint: GUMConstaints) {
     let {
       audio = false, 
       video = false,
@@ -955,13 +952,16 @@ class MediaHelper extends EventEmitter {
     return result
   }
 
-  getAudioConstraints() {
+  getAudioConstraints() :GUMAudioConstraints|undefined{
     if (this.stream.isRemote){
       this.logger.error('Remote Stream dont have audio constraints');
       return;
     }
+    //@ts-ignore
     const audioProcessing = this.stream.audioProcessing;
-    let constraint:any = {};
+    let constraint:GUMAudioConstraints = {
+      channelCount: 1,
+    };
     if (audioProcessing) {
       if (typeof audioProcessing.AEC !== "undefined") {
         constraint.echoCancellation = audioProcessing.AEC;
@@ -979,6 +979,7 @@ class MediaHelper extends EventEmitter {
         constraint.googAutoGainControl2 = audioProcessing.AGC;
       }
     }
+    //@ts-ignore
     switch(this.stream.audioProfile){
       case "standard_stereo":
       case "high_quality_stereo":
@@ -1002,11 +1003,7 @@ class MediaHelper extends EventEmitter {
         constraint.googAutoGainControl2 = false;*/
         break;
     }
-    if (JSON.stringify(constraint) === "{}") {
-      return null;
-    } else {
-      return constraint;
-    }
+    return constraint;
   }
   
   getTrackSettings (){

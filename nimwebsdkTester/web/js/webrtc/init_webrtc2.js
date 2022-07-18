@@ -3619,6 +3619,18 @@ $("#confirmOnRefresh").on("click", ()=>{
   window.onpagehide = handleOnPageHide
 })
 
+$("#enableCompatMode").click(()=>{
+  NERTC.Device.enableCompatMode()
+  addLog("开启兼容模式")
+  initDevices()
+})
+
+$("#disableCompatMode").click(()=>{
+  NERTC.Device.disableCompatMode()
+  addLog("关闭兼容模式")
+  initDevices()
+})
+
 /** 
  * ----------------------------------------
  *              工具类函数

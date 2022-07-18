@@ -85,6 +85,8 @@ interface IParameters{
   enableUdpCandidate: boolean,
   // 最大事件循环卡顿提示次数
   maxEventLoopLagWarning: number,
+  // 兼容模式下怎么决定用哪个声道
+  audioInputcompatMode: "left"|"right"|"auto",
   // 修补Safari本地canvas track无法播放的问题
   shimLocalCanvas: "safari"|"all"|"never"
 }
@@ -148,6 +150,7 @@ let parameters:IParameters = {
   h264StrictHigh: false,
   enableTcpCandidate: true,
   enableUdpCandidate: true,
+  audioInputcompatMode: "left",
   maxEventLoopLagWarning: 3,
   shimLocalCanvas: "safari",
 }
