@@ -60,6 +60,7 @@ class Base extends RTCEventEmitter {
     this.clientId = clientCnt++;
     // @ts-ignore typescript成员初始化
     this.adapterRef = {// adapter对象内部成员与方法挂载的引用
+      datareportCache: [],
       channelInfo: {
         sessionConfig: {}
       },
@@ -114,6 +115,7 @@ class Base extends RTCEventEmitter {
   _reset() {
     this.sdkRef = null; // SDK对象的this指针
     this.adapterRef = {// adapter对象内部成员与方法挂载的引用
+      datareportCache: [],
       audioAsl: {
         enabled: "unknown",
         aslActiveNum: -1,
@@ -600,7 +602,15 @@ class Base extends RTCEventEmitter {
       cid: '' + this.adapterRef.channelInfo.cid,
       time: Date.now()
     }, value))
-    datareport.send()
+    if (this.adapterRef.channelInfo.cid && this.adapterRef.channelInfo.uid){
+      datareport.send()
+    }else{
+      // 没有cid/uid不要上报
+      this.adapterRef.datareportCache.push({func, datareport})
+      if (this.adapterRef.datareportCache.length > 20){
+        this.adapterRef.datareportCache.shift()
+      }
+    }
   }
 
   /*** 用户成员uid和ssrc对应的list ***/
