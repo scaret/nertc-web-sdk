@@ -3,6 +3,7 @@ import { getReconnectionTimeout } from '../util/rtcUtil/utils';
 import * as protobuf  from 'protobufjs';
 import heartbeatStats = require('../util/proto/heartbeatStats');
 import {AdapterRef, ILogger} from "../types";
+import {URLSetting} from "../module/LBSManager";
 
 const PING_PONG_INTERVAL = 10000;
 const PING_TIMEOUT = 10000;
@@ -25,6 +26,7 @@ export default class WSTransport {
     private lastLogTime: number = 0;
     private cachedLogs :{time: number, data: Object}[] = [];
     private textEncoder = new TextEncoder();
+    private urlSetting?: URLSetting;
 
     constructor(options: any){
         this.url_ = options.url;
@@ -67,6 +69,10 @@ export default class WSTransport {
         this.isConnecting_ = false;
         const url = event.target.url;
         this.logger.log(`websocket[${url}] is connected`);
+        if (this.urlSetting){
+          this.logger.debug(`markFinish success seqId:${this.urlSetting.seqId} source:${this.urlSetting.item.source}  url:${url}`)
+          delete this.urlSetting
+        }
         this.startPingPong();
     }
 
@@ -97,6 +103,10 @@ export default class WSTransport {
       onerror(event:any) {
         const url = event.target.url;
         this.logger.warn(`websocket[${url}] error observed`);
+        if (this.urlSetting){
+          this.logger.debug(`markFinish fail seqId:${this.urlSetting.seqId} source:${this.urlSetting.item.source}  url:${url}`)
+          delete this.urlSetting
+        }
         if (!this.isConnected_) {
           // WS connection failed at the first time
           this.reconnect()
@@ -257,6 +267,7 @@ export default class WSTransport {
         if (urlSetting.url !== this.url_){
           this.logger.warn(`${urlSetting.seqId} WebSocket切换备用线路 ${this.url_} => ${urlSetting.url}`)
           this.url_ = urlSetting.url
+          this.urlSetting = urlSetting
         }
         
         this.socket_ = new WebSocket(this.url_);

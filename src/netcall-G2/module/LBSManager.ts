@@ -9,8 +9,23 @@ import ErrorCode from "../util/error/errorCode";
 import {getParameters} from "./parameters";
 import {ajax, AjaxOptions, getFormData} from "../util/ajax";
 import {generateUUID} from "../util/rtcUtil/utils";
-import {DataReport} from "./report/dataReport";
 var JSONbig = require('json-bigint');
+
+type URLBackupSourceType = 'builtin'|'localstorage'|'lbs'|'extra'
+
+export interface RequestInfo{
+  // https://docs.popo.netease.com/lingxi/2b526730494f44dca20c76a81cd2e207#edit
+  xhr?: XMLHttpRequest,
+  startAt: number,
+  finishiedAt: number,
+  rtt: number,
+  status: "success"|"fail"|"inprogress",
+  requestId: number,
+  seqId: string,
+  uuid: string,
+  errCode: number,
+  errMsg: string,
+}
 
 export interface DomainItem{
   id: number,
@@ -18,20 +33,11 @@ export interface DomainItem{
   mainDomain: string,
   successCount: number,
   failCount: number,
-  lastRequest?: {
-    // https://docs.popo.netease.com/lingxi/2b526730494f44dca20c76a81cd2e207#edit
-    startAt: number,
-    finishiedAt: number,
-    rtt: number,
-    status: "success"|"fail"|"inprogress",
-    requestId: number,
-    seqId: string,
-    uuid: string,
-    errCode: number,
-    errMsg: string,
-  },
+  requestInfos: RequestInfo[],
+  lastRequest?: RequestInfo,
   updatedAt: number,
   tag: string,
+  source: URLBackupSourceType,
 }
 
 export interface URLSetting{
@@ -159,9 +165,9 @@ export class LBSManager {
         res: config
       }
       this.handleLbsStateWillChange(reason)
-      this.addUrlBackup(this.tagToMainDomain.nrtc, config.nrtc, 'nrtc')
-      this.addUrlBackup(this.tagToMainDomain.call, config.call, 'call')
-      this.addUrlBackup(this.tagToMainDomain.tracking, config.tracking, 'tracking')
+      this.addUrlBackup(this.tagToMainDomain.nrtc, config.nrtc, 'nrtc', 'lbs')
+      this.addUrlBackup(this.tagToMainDomain.call, config.call, 'call', 'lbs')
+      this.addUrlBackup(this.tagToMainDomain.tracking, config.tracking, 'tracking', 'lbs')
       
       this.lbsState = "remote"
       this.logger.log(`成功加载远端配置。过期时间：${config.ttl}秒后。preloadTimeSec:${config.preloadTimeSec}：`)
@@ -186,7 +192,7 @@ export class LBSManager {
     }
     for (let tag in this.builtinConfig){
       if (this.builtinConfig[tag].length){
-        this.addUrlBackup(this.builtinConfig[tag][0], this.builtinConfig[tag], tag)
+        this.addUrlBackup(this.builtinConfig[tag][0], this.builtinConfig[tag], tag, 'builtin')
         this.tagToMainDomain[tag] = this.builtinConfig[tag][0]
       }
     }
@@ -368,9 +374,9 @@ export class LBSManager {
         res: data.config
       }
       this.handleLbsStateWillChange(reason)
-      this.addUrlBackup(this.tagToMainDomain.call, data.config.call, "call")
-      this.addUrlBackup(this.tagToMainDomain.nrtc, data.config.nrtc, "nrtc")
-      this.addUrlBackup(this.tagToMainDomain.tracking, data.config.tracking, "tracking")
+      this.addUrlBackup(this.tagToMainDomain.call, data.config.call, "call", 'localstorage')
+      this.addUrlBackup(this.tagToMainDomain.nrtc, data.config.nrtc, "nrtc", 'localstorage')
+      this.addUrlBackup(this.tagToMainDomain.tracking, data.config.tracking, "tracking", 'localstorage')
       
       this.lbsState = "local"
       this.logger.log(`成功加载本地配置。过期时间：${Math.floor(ttlMs / 1000)} 秒后。`)
@@ -385,7 +391,7 @@ export class LBSManager {
   /**
    * 当前同域名配置会被覆盖。
    */
-  addUrlBackup(mainDomain:string, replacedBy: [string, string]|[string], tag: string){
+  addUrlBackup(mainDomain:string, replacedBy: [string, string]|[string], tag: string, source: URLBackupSourceType){
     const formerDomainSettings = this.urlBackupMap[mainDomain] || []
     this.urlBackupMap[mainDomain] = []
     const URLBackup = this.urlBackupMap[mainDomain]
@@ -397,15 +403,18 @@ export class LBSManager {
       if (domainItem){
         domainItem.updatedAt = updatedAt
         domainItem.tag = tag
+        domainItem.source = source
       }else{
         domainItem = {
           id: URLBackup.length,
           domain,
           mainDomain,
+          requestInfos: [],
           successCount: 0,
           failCount: 0,
           updatedAt,
           tag,
+          source,
         }
       }
       URLBackup.push(domainItem)
@@ -424,7 +433,7 @@ export class LBSManager {
       domain = domainMatch[2]
     }
     if (!this.urlBackupMap[domain]){
-      this.addUrlBackup(domain, [domain], "extra")
+      this.addUrlBackup(domain, [domain], "extra", 'extra')
     }
     const requestId = this.requestCnt++
     const urlSettings:URLSetting[] = this.urlBackupMap[domain].map((item, index)=>{
@@ -440,11 +449,12 @@ export class LBSManager {
     return urlSettings
   }
   
-  private markSuccess(urlSetting: URLSetting){
-    if (urlSetting.item.lastRequest?.status === "inprogress"){
-      urlSetting.item.lastRequest.finishiedAt = Date.now()
-      urlSetting.item.lastRequest.rtt = urlSetting.item.lastRequest.finishiedAt - urlSetting.item.lastRequest.startAt
-      urlSetting.item.lastRequest.status = "success"
+  private markSuccess(urlSetting: URLSetting, requestInfo: RequestInfo){
+    if (requestInfo?.status === "inprogress"){
+      requestInfo.finishiedAt = Date.now()
+      requestInfo.rtt = requestInfo.finishiedAt - requestInfo.startAt
+      requestInfo.status = "success"
+      this.logger.debug(`markFinish success seqId:${urlSetting.seqId} source:${urlSetting.item.source} rtt:${requestInfo.rtt}ms url:${urlSetting.url}`)
     }
     urlSetting.item.successCount++
     urlSetting.state = "success"
@@ -466,14 +476,14 @@ export class LBSManager {
   // 第一次失败会立即触发备用链路的请求。
   // - 第二次如成功，备用链路会自动和主链路交换优先级。
   // - 第二次如失败，会将.ajax()整体请求计为失败。
-  private markFail(urlSetting: URLSetting, errCode: number, errMsg: string){
-    
-    if (urlSetting.item.lastRequest?.status === "inprogress"){
-      urlSetting.item.lastRequest.finishiedAt = Date.now()
-      urlSetting.item.lastRequest.rtt = urlSetting.item.lastRequest.finishiedAt - urlSetting.item.lastRequest.startAt
-      urlSetting.item.lastRequest.status = "fail"
-      urlSetting.item.lastRequest.errCode = errCode
-      urlSetting.item.lastRequest.errMsg = errMsg
+  private markFail(urlSetting: URLSetting, requestInfo: RequestInfo, errCode: number, errMsg: string){
+    if (requestInfo?.status === "inprogress"){
+      requestInfo.finishiedAt = Date.now()
+      requestInfo.rtt = requestInfo.finishiedAt - requestInfo.startAt
+      requestInfo.status = "fail"
+      requestInfo.errCode = errCode
+      requestInfo.errMsg = errMsg
+      this.logger.debug(`markFinish fail seqId:${urlSetting.seqId} source:${urlSetting.item.source} rtt:${requestInfo.rtt}ms url:${urlSetting.url}`, errCode, errMsg)
     }
     urlSetting.item.failCount++
     urlSetting.state = "fail"
@@ -503,11 +513,11 @@ export class LBSManager {
     let ajaxFinished = false
 
     return new Promise((resolve, reject)=>{
-      const handleXHRLoad = (xhr: XMLHttpRequest, urlSetting: URLSetting)=>{
+      const handleXHRLoad = (xhr: XMLHttpRequest, requestInfo: RequestInfo, urlSetting: URLSetting)=>{
         // console.error("handleXHRLoad", xhr.status, urlSetting.item.tag, xhr.responseType, xhr.response, xhr)
         if (xhr.status >= 400){
           // 服务端api即使拒绝一个请求，status也是200的。
-          this.markFail(urlSetting, xhr.status, typeof xhr.response === "string" ? xhr.response : JSON.stringify(xhr.response))
+          this.markFail(urlSetting, requestInfo, xhr.status, typeof xhr.response === "string" ? xhr.response : JSON.stringify(xhr.response))
           if (urlSettings[1] && urlSettings[1].fire && urlSettings[1].timer){
             // 如果备用链路尚未启动，则直接启用备用链路
             this.logger.warn(`主线路请求发生错误，启用备用线路 【主  ${urlSetting.url} 】【备 ${urlSettings[1].url} 】` , xhr.status)
@@ -520,7 +530,7 @@ export class LBSManager {
           }
         } else if (xhr.responseType === "json" && !xhr.response){
           // 如果服务端的ContentType是json，而返回的内容不是json，这会导致response为null，而无法获得实际的返回值
-          this.markFail(urlSetting, LBS_ERR_CODE.JSON_ERROR, "JSON_ERROR")
+          this.markFail(urlSetting, requestInfo, LBS_ERR_CODE.JSON_ERROR, "JSON_ERROR")
           if (urlSettings[1] && urlSettings[1].fire && urlSettings[1].timer){
             // 如果备用链路尚未启动，则直接启用备用链路
             this.logger.warn(`主线路请求发生错误，启用备用线路 【主  ${urlSetting.url} 】【备 ${urlSettings[1].url} 】` , xhr)
@@ -533,7 +543,7 @@ export class LBSManager {
           }
         } else if (xhr.response?.code === 500){
           // 兼容getChannelInfo返回500的情况
-          this.markFail(urlSetting, LBS_ERR_CODE.UNKNOWN_ERROR, JSON.stringify(xhr.response))
+          this.markFail(urlSetting, requestInfo, LBS_ERR_CODE.UNKNOWN_ERROR, JSON.stringify(xhr.response))
           if (urlSettings[1] && urlSettings[1].fire && urlSettings[1].timer){
             // 如果备用链路尚未启动，则直接启用备用链路
             this.logger.warn(`主线路请求发生错误，启用备用线路 【主  ${urlSetting.url} 】【备 ${urlSettings[1].url} 】` , xhr.response)
@@ -546,7 +556,7 @@ export class LBSManager {
           urlSetting.item.tag === "lbs" &&
           (!xhr.response?.call?.length || !xhr.response?.nrtc?.length || !xhr.response?.tracking?.length)
         ){
-          this.markFail(urlSetting, LBS_ERR_CODE.FORMAT_ERROR, JSON.stringify(xhr.response))
+          this.markFail(urlSetting, requestInfo, LBS_ERR_CODE.FORMAT_ERROR, JSON.stringify(xhr.response))
           if (urlSettings[1] && urlSettings[1].fire && urlSettings[1].timer){
             // 如果备用链路尚未启动，则直接启用备用链路
             this.logger.warn(`主线路请求发生错误，启用备用线路 【主  ${urlSetting.url} 】【备 ${urlSettings[1].url} 】` , "FORMAT_ERROR")
@@ -555,7 +565,7 @@ export class LBSManager {
             return resolve(xhr.response)
           }
         } else {
-          this.markSuccess(urlSetting)
+          this.markSuccess(urlSetting, requestInfo)
           urlSettings.forEach((setting)=>{
             if (setting.timer){
               clearTimeout(setting.timer)
@@ -575,8 +585,8 @@ export class LBSManager {
         }
       }
 
-      const handleXHRError = (xhr: XMLHttpRequest, urlSetting: URLSetting, e: ProgressEvent)=>{
-        this.markFail(urlSetting, LBS_ERR_CODE.UNKNOWN_ERROR, `${e.type|| JSON.stringify(e)}:${urlSetting.url}`)
+      const handleXHRError = (xhr: XMLHttpRequest, requestInfo: RequestInfo, urlSetting: URLSetting, e: ProgressEvent)=>{
+        this.markFail(urlSetting, requestInfo, LBS_ERR_CODE.UNKNOWN_ERROR, `${e.type|| JSON.stringify(e)}:${urlSetting.url}`)
         if (urlSettings[1] && urlSettings[1].fire && urlSettings[1].timer){
           // 如果备用链路尚未启动，则直接启用备用链路
           this.logger.warn(`主线路请求发生错误，启用备用线路 【主  ${urlSetting.url} 】【备 ${urlSettings[1].url} 】` , e)
@@ -588,8 +598,8 @@ export class LBSManager {
         }
       }
 
-      const handleXHRTimeout = (xhrRequest: XMLHttpRequest, urlSetting: URLSetting, e: ProgressEvent)=>{
-        this.markFail(urlSetting, LBS_ERR_CODE.TIMEOUT, "TIMEOUT")
+      const handleXHRTimeout = (xhr: XMLHttpRequest, requestInfo: RequestInfo, urlSetting: URLSetting, e: ProgressEvent)=>{
+        this.markFail(urlSetting, requestInfo, LBS_ERR_CODE.TIMEOUT, "TIMEOUT")
         if (urlSettings[1] && urlSettings[1].fire && urlSettings[1].timer){
           // 如果备用链路尚未启动，则直接启用备用链路
           this.logger.warn(`主线路请求超时，启用备用线路 【主 ${urlSetting.url}】【备 ${urlSettings[1].url}】` , e)
@@ -604,8 +614,9 @@ export class LBSManager {
         }
       }
 
-      const createXHR = (urlSetting: URLSetting)=>{
+      const createXHR = (requestInfo:RequestInfo, urlSetting: URLSetting)=>{
         const xhr = new XMLHttpRequest()
+        requestInfo.xhr = xhr
         xhr.open(option.type || 'GET', urlSetting.url, true)
         xhr.responseType = option.dataType || 'json'
 
@@ -627,9 +638,9 @@ export class LBSManager {
           xhr.setRequestHeader("X-Request-Id", uuid)
         }
 
-        xhr.onload = handleXHRLoad.bind(xhr, xhr, urlSetting)
-        xhr.onerror = handleXHRError.bind(xhr, xhr, urlSetting)
-        xhr.ontimeout = handleXHRTimeout.bind(xhr, xhr, urlSetting)
+        xhr.onload = handleXHRLoad.bind(xhr, xhr, requestInfo, urlSetting)
+        xhr.onerror = handleXHRError.bind(xhr, xhr, requestInfo, urlSetting)
+        xhr.ontimeout = handleXHRTimeout.bind(xhr, xhr, requestInfo, urlSetting)
         if (contentType.indexOf('x-www-form-urlencoded') >= 0) {
           if (option.data) {
             xhr.send(getFormData(option.data))
@@ -654,7 +665,7 @@ export class LBSManager {
             urlSetting.timer = undefined
           }
           urlSetting.state = "sent"
-          urlSetting.item.lastRequest = {
+          const requestInfo:RequestInfo = {
             status: "inprogress",
             startAt: Date.now(),
             requestId: urlSetting.requestId,
@@ -665,7 +676,13 @@ export class LBSManager {
             errMsg: "",
             rtt: -1
           }
-          createXHR(urlSetting)
+          urlSetting.item.lastRequest = requestInfo
+          urlSetting.item.requestInfos.push(requestInfo)
+          if (urlSetting.item.requestInfos.length > 20){
+            console.error(`shift`)
+            urlSetting.item.requestInfos.shift()
+          }
+          createXHR(requestInfo, urlSetting)
         }
         if (index){
           urlSetting.timer = setTimeout(()=>{
