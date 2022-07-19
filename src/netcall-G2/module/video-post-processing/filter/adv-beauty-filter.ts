@@ -474,6 +474,14 @@ export class AdvBeautyFilter extends Filter {
         }
     }
 
+    presetAdvEffect(preset:{
+        [key in HandleKey]?:number
+    }){
+        for (const key in preset) {
+            this.setAdvEffect(key as HandleKey, preset[key as HandleKey]);
+        }
+    }
+
     private posToUV(pos: Vector2, width: number, height: number){
         return new Vector2(pos.x / width, 1.0 - pos.y / height);
     }

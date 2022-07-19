@@ -1334,6 +1334,26 @@ $('#resetAdvBeauty').on('click', () => {
     rtc.localStream.setAdvBeautyEffect('reset');
   }
 })
+$('#presetAdvBeauty').on('click', () => {
+  if(rtc.localStream){
+    rtc.localStream.presetAdvBeautyEffect({
+    // 大眼
+    'enlargeEye': 0.25,
+    // 圆眼
+    'roundedEye': 0.5,
+     // 窄脸
+     'narrowedFace': 0.25,
+     // 瘦脸
+     'shrinkFace': 0.15,
+     // v 脸
+     'vShapedFace': 0.6,
+     // 小脸
+     'minifyFace': 0.15,
+     // 美牙
+     'whitenTeeth': 0.5
+    });
+  }
+})
 
 $('#unregisterAdvancedBeauty').on('click', () => {
   $('#advancedBeautyStatus').html('loading').hide();

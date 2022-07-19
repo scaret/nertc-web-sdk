@@ -59,6 +59,10 @@ export default class AdvancedBeauty extends EventEmitter{
         this.videPostProcess.filters.advBeauty.setAdvEffect(...args);
     };
 
+    presetAdvEffect: AdvBeautyFilter['presetAdvEffect'] = (...args) => {
+        this.videPostProcess.filters.advBeauty.presetAdvEffect(...args);
+    }
+
     get isEnable() {
         return this.videPostProcess.hasTask('AdvancedBeauty');
     }

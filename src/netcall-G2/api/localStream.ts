@@ -3724,8 +3724,23 @@ class LocalStream extends RTCEventEmitter {
             options: JSON.stringify(args)
           } 
         })
-    }
+      }
     };
+
+    // 预设高级美颜参数
+    presetAdvBeautyEffect:AdvancedBeauty['presetAdvEffect'] = (...args) => {
+      if(this.advancedBeauty) {
+        this._advancedBeautyProcessor?.presetAdvEffect(...args);
+        this.client.apiFrequencyControl({
+          name: 'presetAdvBeautyEffect',
+          code: 0,
+          param: {
+            streamID: this.stringStreamID,
+            options: JSON.stringify(args)
+          } 
+        })
+      }
+    }
   
     async transformTrack(enable:boolean, processor: VirtualBackground | AdvancedBeauty | null) {
       if (!processor) {
