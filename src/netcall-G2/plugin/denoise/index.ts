@@ -18,7 +18,7 @@ class AIDenoise extends EventEmitter {
                 return 'AIDenoise'
             }
         });
-        this.modelParam.wasmUrl = 'https://yx-web-nosdn.netease.im/sdk-release/ai_denoise.wasm';
+        this.modelParam.wasmUrl = 'https://yx-web-nosdn.netease.im/sdk-release/ai_denoise_128.wasm';
         this.isLoaded = false;
         this.preload(this.modelParam);
     }

@@ -26,43 +26,30 @@ class denoise {
        //暂时*32767
        let i ;       
        console.log('frame', frame)
-        for (i = 0; i < frame.length; i++) {
-            frame[i] = frame[i] * 32767;
-        }
-
         this.isProcessing = true;
         if (!this.initMem) {
             this.inputPtr = Module._rnnoise_Malloc(this.buffer_size * 4);
             this.outputPtr = Module._rnnoise_Malloc(this.buffer_size * 4);
             this.initMem = true;
         }
-
         let data = new Float32Array(frame);
-        Module.HEAPF32.set(data, this.inputPtr >> 2);
+        let result = null;
+        Module.HEAPF32.set(data, this.inputPtr >> 2);      
         if(Module._rnnoise_process_frame(this.rnnoise, this.outputPtr, this.inputPtr)){
-            let result = Module.HEAPF32.subarray(this.outputPtr >> 2, (this.outputPtr >> 2) + this.buffer_size);
-            this.handleAudioData(result);
+            result = new Float32Array(Module.HEAPF32.subarray(this.outputPtr >> 2, (this.outputPtr >> 2) + this.buffer_size));
         } else {
             //_rnnoise_process_frame返回值为null时表示无数据返回，此时返回空数组
-            // let result = new Float32Array();
-            // this.handleAudioData(result)
-            //console.log('temp', Module.HEAPF32.subarray(this.outputPtr >> 2, (this.outputPtr >> 2) + this.buffer_size))
-            let result = new Float32Array(Module.HEAPF32.subarray(this.outputPtr >> 2, (this.outputPtr >> 2) + this.buffer_size));
-            //暂时/32767
-            for (i = 0; i < result.length; i++) {
-                result[i] = result[i] / 32767;
-            }
-            console.log('result', result)
-            this.handleAudioData(result);
+            console.warn('_rnnoise_process_frame 无返回值')
+            result = new Float32Array();
         }
-
+        console.log('result', result)  
+        this.handleAudioData(result);
         this.isProcessing = false;
         if (this.buffer.length) {
             const buffer = this.buffer.shift();
             this.process(buffer);
         }
     }
-
 
     destroy() {
         this.rnnoise = null;
