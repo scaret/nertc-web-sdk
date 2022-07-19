@@ -110,6 +110,8 @@ interface IParameters{
   disableLBSService: boolean,
   // protoo单条消息的timeout时间。
   protooMessageTimeout: number,
+  //是否复用已经取消订阅的远端媒体流的mid
+  reuseMid: boolean,
   // 修补Safari本地canvas track无法播放的问题
   shimLocalCanvas: "safari"|"all"|"never"
 }
@@ -178,6 +180,7 @@ let parameters:IParameters = {
   keepAspectRatio: false,
   disableLBSService: false,
   protooMessageTimeout: 30000,
+  reuseMid: true,
   shimLocalCanvas: "safari",
 }
 
