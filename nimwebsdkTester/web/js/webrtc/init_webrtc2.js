@@ -1733,7 +1733,7 @@ function getAudioSource(mediaType){
 }
 
 $('#switchCustom').on('click', () => {
-  rtc.screenVideoSource = rtc.screenVideoSource.readyState === "live" ? rtc.screenVideoSource :getVideoSource("screen")
+  rtc.screenVideoSource = rtc.screenVideoSource && rtc.screenVideoSource.readyState === "live" ? rtc.screenVideoSource :getVideoSource("screen")
   rtc.localStream.switchScreenStream({screenVideoSource:rtc.screenVideoSource});
 })
 
