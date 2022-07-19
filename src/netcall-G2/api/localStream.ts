@@ -332,14 +332,33 @@ class LocalStream extends RTCEventEmitter {
             const filters = this.videoPostProcess.filters;
             const video = this.videoPostProcess.video;
             if(isON){
+              const canvas = filters.canvas;
+              const rect = videoDom.getBoundingClientRect();
+              const pr = rect.width / rect.height;
+              const cr = canvas.width / canvas.height;
               localVideoDom.style.display = 'none';
               // safari在使用canvas.captureStream获取webgl渲染后的视频流，在本地播放时可能出现红屏或黑屏
-              filters.canvas.style.height = '100%';
-              filters.canvas.style.width = 'auto';
-              filters.canvas.style.position = 'absolute';
-              filters.canvas.style.left = '50%';
-              filters.canvas.style.top = '50%';
-              filters.canvas.style.transform = 'translate(-50%,-50%)';
+              // filters.canvas.style.height = '100%';
+              // filters.canvas.style.width = 'auto';
+              canvas.style.position = 'absolute';
+              // filters.canvas.style.left = '50%';
+              // filters.canvas.style.top = '50%';
+              // filters.canvas.style.transform = 'translate(-50%,-50%)';
+
+              if(pr > cr){
+                canvas.style.height = `100%`;
+                canvas.style.top = '0px';
+                const wRatio = rect.height * cr / rect.width;
+                canvas.style.width = `${wRatio * 100}%`;
+                canvas.style.left = `${(1 - wRatio) * 50}%`;
+              }else{
+                canvas.style.width = `100%`;
+                canvas.style.left = '0px';
+                const hRatio = rect.width / cr / rect.height;
+                canvas.style.height = `${hRatio * 100}%`;
+                canvas.style.top = `${(1 - hRatio) * 50}%`;
+              }
+
               // safari下，本地<video>切换成<canvas>
               videoDom.appendChild(filters.canvas);
               // safari 13.1 浏览器 需要<video> 和 <canvas> 在可视区域才能正常播放
@@ -2241,6 +2260,12 @@ class LocalStream extends RTCEventEmitter {
         this.mediaHelper.video.cameraTrack.enabled = true
       }
       await this.resumeVideoPostProcess();
+      if(env.IS_SAFARI){
+        const videoDom = this._play?.getVideoDom;
+        if(videoDom){
+          videoDom.style.backgroundColor = '';
+        }
+      }
       this.muteStatus.video.send = false
       this.client.apiFrequencyControl({
         name: 'unmuteVideo',
@@ -2274,6 +2299,12 @@ class LocalStream extends RTCEventEmitter {
     this.logger.log(`禁用 ${this.stringStreamID} 的视频轨道`)
     try { 
       await this.suspendVideoPostProcess();
+      if(env.IS_SAFARI){
+        const videoDom = this._play?.getVideoDom;
+        if(videoDom){
+          videoDom.style.backgroundColor = 'black';
+        }
+      }
       if (this.getAdapterRef()){
         await this.client.adapterRef._mediasoup?.muteVideo()
       }
