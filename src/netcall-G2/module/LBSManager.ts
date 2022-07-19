@@ -33,7 +33,6 @@ export interface DomainItem{
   mainDomain: string,
   successCount: number,
   failCount: number,
-  requestInfos: RequestInfo[],
   lastRequest?: RequestInfo,
   updatedAt: number,
   tag: string,
@@ -409,7 +408,6 @@ export class LBSManager {
           id: URLBackup.length,
           domain,
           mainDomain,
-          requestInfos: [],
           successCount: 0,
           failCount: 0,
           updatedAt,
@@ -677,11 +675,6 @@ export class LBSManager {
             rtt: -1
           }
           urlSetting.item.lastRequest = requestInfo
-          urlSetting.item.requestInfos.push(requestInfo)
-          if (urlSetting.item.requestInfos.length > 20){
-            console.error(`shift`)
-            urlSetting.item.requestInfos.shift()
-          }
           createXHR(requestInfo, urlSetting)
         }
         if (index){
