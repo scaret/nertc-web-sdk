@@ -21,7 +21,7 @@ registerProcessor('audioWorkletAgentProcessor', class extends AudioWorkletProces
     const inputData = this.inputDataSeq.shift()
     if (inputData && outputs[0]){
       if (outputs[0][1]){
-        outputs[0][1].set(inputData[1] || inputData[0])
+        outputs[0][1].set(inputData[0])
       }
       outputs[0][0].set(inputData[0])
     }

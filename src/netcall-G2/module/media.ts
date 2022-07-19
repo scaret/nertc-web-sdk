@@ -367,8 +367,6 @@ class MediaHelper extends EventEmitter {
   }
   
   async initWorkletAgent(gumAudioStream: MediaStream){
-    this.audio.micTrack = gumAudioStream.getAudioTracks()[0];
-    emptyStreamWith(this.audio.micStream, this.audio.micTrack)
     const context = getAudioContext()
     const sourceNode = context!.createMediaStreamSource(gumAudioStream)
     if (!this.audio.audioWorkletAgent){
@@ -407,21 +405,8 @@ class MediaHelper extends EventEmitter {
 
     const destTrack = this.audio.audioWorkletAgent.support.destination.stream.getAudioTracks()[0]
     console.error(`destTrack`, destTrack)
-
-    this.listenToTrackEnded(this.audio.micTrack)
-    this.updateWebAudio();
-    if (!this.audio.audioRoutingEnabled){
-      if (this.getAudioInputTracks().length > 1){
-        this.enableAudioRouting();
-      }else{
-        emptyStreamWith(this.audio.audioStream, destTrack);
-        this.updateAudioSender(destTrack);
-      }
-    }
-    const micSettings = this.audio.micTrack.getSettings();
-    this.audio.deviceInfo.mic.label = this.audio.micTrack.label;
-    this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
-    this.audio.deviceInfo.mic.groupId = micSettings.groupId;
+    emptyStreamWith(this.audio.audioStream, destTrack);
+    this.updateAudioSender(destTrack);
   }
 
   async getStream(constraint:GetStreamConstraints) {
@@ -464,16 +449,7 @@ class MediaHelper extends EventEmitter {
       watchTrack(audioSource);
       this.audio.audioSource = audioSource;
       emptyStreamWith(this.audio.audioSourceStream, audioSource);
-      this.updateWebAudio();
-      this.stream.client.updateRecordingAudioStream()
-      if (!this.audio.audioRoutingEnabled){
-        if (this.getAudioInputTracks().length > 1){
-          this.enableAudioRouting();
-        }else{
-          emptyStreamWith(this.audio.audioStream, audioSource);
-          this.updateAudioSender(audioSource);
-        }
-      }
+      this.initWorkletAgent(this.audio.audioSourceStream)
       audio = false
     }
 
@@ -636,7 +612,14 @@ class MediaHelper extends EventEmitter {
           let gumAudioStream = await GUM.getStream({
             audio: this.getAudioConstraints(),
           }, this.logger)
+          this.audio.micTrack = gumAudioStream.getAudioTracks()[0];
+          emptyStreamWith(this.audio.micStream, this.audio.micTrack)
           this.initWorkletAgent(gumAudioStream)
+          this.listenToTrackEnded(this.audio.micTrack)
+          const micSettings = this.audio.micTrack.getSettings();
+          this.audio.deviceInfo.mic.label = this.audio.micTrack.label;
+          this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
+          this.audio.deviceInfo.mic.groupId = micSettings.groupId;
           this.stream.client.apiEventReport('setFunction', {
             name: 'set_mic',
             oper: '1',
@@ -689,7 +672,14 @@ class MediaHelper extends EventEmitter {
         const cameraTrack = gumStream.getVideoTracks()[0];
         const micTrack = gumStream.getAudioTracks()[0];
         if (micTrack){
+          this.audio.micTrack = micTrack;
+          emptyStreamWith(this.audio.micStream, this.audio.micTrack)
           this.initWorkletAgent(gumStream)
+          this.listenToTrackEnded(this.audio.micTrack)
+          const micSettings = this.audio.micTrack.getSettings();
+          this.audio.deviceInfo.mic.label = this.audio.micTrack.label;
+          this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
+          this.audio.deviceInfo.mic.groupId = micSettings.groupId;
           this.stream.client.apiEventReport('setFunction', {
             name: 'set_mic',
             oper: '1',
