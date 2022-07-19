@@ -7,6 +7,12 @@ registerProcessor('audioWorkletAgentProcessor', class extends AudioWorkletProces
     this.port.onmessage = event => {
       if (event.data.type === "outputData"){
         this.inputDataSeq.push(event.data.data)
+        if (this.inputDataSeq.length > 20){
+          this.inputDataSeq.splice(0, 15)
+          this.port.postMessage({
+            type: 'buffer too long',
+          });
+        }
       }
     }
   }
