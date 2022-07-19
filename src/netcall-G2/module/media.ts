@@ -31,6 +31,7 @@ import {canDisablePreProcessing, disablePreProcessing, enablePreProcessing, preP
 import {IS_SAFARI} from "../util/rtcUtil/rtcEnvironment";
 import {pcCloneTrack} from "../util/pcCloneTrack";
 import {AudioWorkletAgent} from "./audioWorkletAgent";
+import AIDenoise from '../plugin/denoise';
 class MediaHelper extends EventEmitter {
   stream: LocalStream|RemoteStream;
   public audio: {
@@ -146,6 +147,8 @@ class MediaHelper extends EventEmitter {
     screenAudioSource: null,
   }
   logger: ILogger;
+  enableAIDenoise: boolean = true;
+  AIDenoise: AIDenoise | null;
   
   constructor (options:MediaHelperOptions) {
     super()
@@ -194,6 +197,13 @@ class MediaHelper extends EventEmitter {
           }
         }
       }
+    })
+
+    //AI降噪
+    this.AIDenoise = new AIDenoise({});
+    this.AIDenoise.on('plugin-load', () => {
+      console.warn(' this.AIDenoise load ')
+      this.AIDenoise?.init();
     })
   }
   
@@ -368,11 +378,26 @@ class MediaHelper extends EventEmitter {
       })
       this.audio.audioWorkletAgent.init()
       this.audio.audioWorkletAgent.on('rawinputs', (evt)=>{
-
+       // console.log('evt', evt.inputs[0])
         // 测试：延迟5秒
-        setTimeout(()=>{
+        // setTimeout(()=>{
+        // this.audio.audioWorkletAgent!.outputData(evt.inputs[0])
+        // }, 100)
+        if(this.enableAIDenoise) {
+          if(this.AIDenoise && this.AIDenoise.load) {
+            this.AIDenoise!.process(evt.inputs[0][0], data => {
+             // console.log('noise data', evt.inputs[0][0])
+             // console.log('denoise data', data)
+              if(data.length) {
+                evt.inputs[0][0] = data;
+              }
+              this.audio.audioWorkletAgent!.outputData(evt.inputs[0])
+            });
+           
+          }
+        } else {
           this.audio.audioWorkletAgent!.outputData(evt.inputs[0])
-        }, 5000)
+        }    
       })
     }else{
       this.audio.audioWorkletAgent.support.sourceNode.disconnect(this.audio.audioWorkletAgent.support.audioWorkletNode!)
