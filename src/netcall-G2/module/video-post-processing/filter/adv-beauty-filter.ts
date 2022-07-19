@@ -138,7 +138,7 @@ export class AdvBeautyFilter extends Filter {
         'lengthenJaw': 0.5,
         'narrowedFace':0,
         'shrinkFace':0,
-        'vShapedFace':0.5,
+        'vShapedFace':0,
         'minifyFace':0,
         'whitenTeeth':0,
         'brightenEye':0

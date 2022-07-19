@@ -1346,7 +1346,7 @@ $('#presetAdvBeauty').on('click', () => {
      // 瘦脸
      'shrinkFace': 0.15,
      // v 脸
-     'vShapedFace': 0.6,
+     'vShapedFace': 0.3,
      // 小脸
      'minifyFace': 0.15,
      // 美牙
