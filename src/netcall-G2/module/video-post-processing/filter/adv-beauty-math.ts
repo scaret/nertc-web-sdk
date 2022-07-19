@@ -785,8 +785,7 @@ export const handlers:{
         );
     },
     vShapedFace:(posData, intensity)=>{
-        intensity -= 0.5;
-        intensity = intensity > 0 ? intensity * 0.4 : intensity * 0.2;
+        intensity *= 0.2;
         const lIntensity = intensity;
         const rIntensity = intensity;
 
