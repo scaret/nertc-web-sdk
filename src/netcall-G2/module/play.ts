@@ -205,7 +205,6 @@ class Play extends EventEmitter {
       this.videoDom.style.left = '50%'
       this.videoDom.style.top = '50%'
       this.videoDom.style.transform = 'translate(-50%,-50%)'
-      this.videoDom.style.backgroundColor = '#000000'
       //this.videoDom.style.objectFit = 'cover'
       // 设置属性
       this.videoDom.setAttribute('x-webkit-airplay', 'x-webkit-airplay')

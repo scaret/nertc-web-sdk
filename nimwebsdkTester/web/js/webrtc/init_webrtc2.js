@@ -1115,17 +1115,8 @@ $('#leaveChannel-btn').on('click', async() => {
   addLog('离开房间')
   console.info('开始离开房间...')
   clearInterval(audioEffectsPlayTimer);
-  // 销毁美颜
-  // if(window.isBeautyStarted){
-  //   await rtc.localStream.setBeautyEffect(false);
-  // }
   
-  if(rtc.enableBodySegment){
-    await rtc.localStream.disableBodySegment();
-  }
-  if(rtc.enableAdvancedBeauty){
-    await rtc.localStream.disableAdvancedBeauty();
-  }
+
   $('#segmentStatus').html('loading').hide();
   $('#advancedBeautyStatus').html('loading').hide();
   window.rtc.client.leave()
@@ -1341,6 +1332,26 @@ $('#resetAdvBeauty').on('click', () => {
   if(rtc.localStream){
     console.warn('重置高级美颜');
     rtc.localStream.setAdvBeautyEffect('reset');
+  }
+})
+$('#presetAdvBeauty').on('click', () => {
+  if(rtc.localStream){
+    rtc.localStream.presetAdvBeautyEffect({
+    // 大眼
+    'enlargeEye': 0.25,
+    // 圆眼
+    'roundedEye': 0.5,
+     // 窄脸
+     'narrowedFace': 0.25,
+     // 瘦脸
+     'shrinkFace': 0.15,
+     // v 脸
+     'vShapedFace': 0.6,
+     // 小脸
+     'minifyFace': 0.15,
+     // 美牙
+     'whitenTeeth': 0.5
+    });
   }
 })
 

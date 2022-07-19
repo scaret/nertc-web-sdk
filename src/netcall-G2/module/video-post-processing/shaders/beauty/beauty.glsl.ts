@@ -29,7 +29,7 @@ export const beautyShader = {
             vec2 stepOffset = 0.5 / size;
             float uOffsetX = stepOffset.x;
             float uOffsetY = stepOffset.y;
-            float strength = _intensity * 1.2;
+            float strength = _intensity * 1.0;
     
             vec4 meanColor = texture2D(blurMap, vuv);
             vec4 varColor = texture2D(highPassMap, vuv);

@@ -372,6 +372,7 @@ export type HandleKey =
      // 亮眼
      'brightenEye';
 
+let refineCenter = true;
 let lEyeCenter: Vector2;
 let rEyeCenter: Vector2;
 let miscutRatio: number = 1;
@@ -473,12 +474,29 @@ export const handlers:{
         rEyeCenter = Vector2.getVec(posData, 77);
     },
     roundedEye:(posData, intensity)=>{
+        refineCenter = false;
+        lEyeCenter = Vector2.center(...[52,53,54,55,56,57,72,73].map((idx)=>{
+            return Vector2.getVec(posData, idx);
+        }));
+        rEyeCenter = Vector2.center(...[58,59,60,61,62,63,75,76].map((idx)=>{
+            return Vector2.getVec(posData, idx);
+        }))
         return {
             lEyeCenter,
             rEyeCenter
         }
     },
     enlargeEye:(posData, intensity)=>{
+        if(refineCenter){
+            lEyeCenter = Vector2.center(...[52,53,54,55,56,57,72,73].map((idx)=>{
+                return Vector2.getVec(posData, idx);
+            }));
+            rEyeCenter = Vector2.center(...[58,59,60,61,62,63,75,76].map((idx)=>{
+                return Vector2.getVec(posData, idx);
+            }))
+        }else{
+            refineCenter = true;
+        }
         return {
             lEyeCenter,
             rEyeCenter

@@ -78,17 +78,6 @@ export const advBeautyShader = {
         return mix(p1, p2, fract(blue));
     }
 
-    vec2 inflate(vec2 uv, vec2 center, float range, float strength) {
-        float dist = distance(uv, center);
-        if(dist > range){
-            return vec2(-1.0);
-        }
-        vec2 dir = normalize(uv - center);
-        float scale = 1. - strength + strength * smoothstep(0., 1., dist / range);
-        float newDist = dist * scale;
-        return center + newDist * dir;
-    }
-
     void main() {
         vec4 color = texture2D(map, vuv);
         if(eyeIntensity > 0.0 || teethIntensity > 0.0){
