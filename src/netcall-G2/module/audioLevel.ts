@@ -221,7 +221,7 @@ class AudioLevel extends EventEmitter{
         }
         
         const handleTypeRawInputs = (event: MessageEvent)=>{
-          console.error("handleTypeRawInputs", event.data.inputs)
+          // console.error("handleTypeRawInputs", event.data.inputs)
         }
 
         this.support.audioWorkletNode.port.onmessage = function (event){
