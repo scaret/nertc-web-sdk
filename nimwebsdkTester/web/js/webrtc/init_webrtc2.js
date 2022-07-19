@@ -1392,7 +1392,7 @@ function getVideoSource(mediaType){
 function getAudioSource(mediaType){
   let defaultStr;
   if (mediaType === "audio"){
-    defaultStr = "1x1x0";
+    defaultStr = "1x1x0.2";
   } else if (mediaType === "screenAudio"){
     defaultStr = "2x1x0";
   }else{
@@ -3619,16 +3619,12 @@ $("#confirmOnRefresh").on("click", ()=>{
   window.onpagehide = handleOnPageHide
 })
 
-$("#enableCompatMode").click(()=>{
-  NERTC.Device.enableCompatMode()
-  addLog("开启兼容模式")
-  initDevices()
+$("#enableAIDenoise").click(()=>{
+  rtc.localStream.mediaHelper.enableAIDenoise = true
 })
 
-$("#disableCompatMode").click(()=>{
-  NERTC.Device.disableCompatMode()
-  addLog("关闭兼容模式")
-  initDevices()
+$("#disableAIDenoise").click(()=>{
+  rtc.localStream.mediaHelper.enableAIDenoise = false
 })
 
 /** 
