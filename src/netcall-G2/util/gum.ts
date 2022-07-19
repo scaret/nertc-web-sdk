@@ -31,9 +31,8 @@ async function getStream (constraint:GUMConstaints, logger:ILogger) {
       constraint.audio.channelCount = 2
       constraint.audio.echoCancellation = false
     }
-    console.error(`音频采集强制设为采样率16k，关闭噪声抑制`)
+    console.error(`音频采集强制设为采样率16k`)
     constraint.audio.sampleRate = 16000
-    constraint.audio.noiseSuppression = false
   }
   logger.log('getLocalStream constraint:', JSON.stringify(constraint))
   try {
