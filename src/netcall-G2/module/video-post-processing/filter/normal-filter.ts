@@ -58,7 +58,7 @@ export class NormalFilter extends Filter {
         const gl = renderer.gl!;
         this.framebuffers.imgData.bind();
         renderer.render(this.programs.imgData);
-        if(!this.pixels){
+        if(!this.pixels || this.pixels.length !== width * height * 4){
             this.pixels = new Uint8ClampedArray(width * height * 4);
         }
         gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, this.pixels);
