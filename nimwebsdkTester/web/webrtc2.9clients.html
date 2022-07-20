@@ -8,6 +8,7 @@
 <body>
 <label><input type="checkbox" id="defaultOpenMic">打开麦克风</label>
 <label><input type="checkbox" id="defaultOpenCamera" checked>打开摄像头</label>
+<label><input type="checkbox" id="defaultOpenScreen">打开屏幕共享</label>
 <label id="segmentStatus" style="display: none;"></label>
 <label id="advancedBeautyStatus" style="display: none;"></label>
 <div id="views">
@@ -33,6 +34,8 @@
       const channelPanel = document.createElement('div')
       const audioPanel = document.createElement('div')
       const videoPanel = document.createElement('div')
+      const screenPanel = document.createElement('div')
+      const screenAudioPanel = document.createElement('div')
       const beautyPanel = document.createElement('div')
       const statsPanel = document.createElement('div')
       
@@ -43,6 +46,8 @@
       $(channelPanel).appendTo(wrapper)
       $(audioPanel).appendTo(wrapper)
       $(videoPanel).appendTo(wrapper)
+      $(screenPanel).appendTo(wrapper)
+      $(screenAudioPanel).appendTo(wrapper)
       $(beautyPanel).appendTo(wrapper)
       $(statsPanel).appendTo(wrapper)
       $(localContainer).appendTo(wrapper)
@@ -50,7 +55,7 @@
       $(statsContainer).appendTo(wrapper)
 
       wrapper.style.clear = "both"
-      localContainer.style.width = "200px"
+      localContainer.style.width = "400px"
       localContainer.style.height = "200px"
       localContainer.style.float = "left"
       remoteContainer.style.width = "800px"
@@ -90,6 +95,12 @@
       closeAudioInput.innerText = "关闭音频"
       $(closeAudioInput).appendTo(audioPanel)
 
+      const $muteAudio = $(`<button>muteAudio</button>`)
+      $muteAudio.appendTo(audioPanel)
+
+      const $unmuteAudio = $(`<button>unmuteAudio</button>`)
+      $unmuteAudio.appendTo(audioPanel)
+
       $(`<span>音量: </span>`).appendTo(audioPanel)
       const $volumeInput = $(`<input type="number" value="100" step="10">`)
       $volumeInput.appendTo(audioPanel)
@@ -103,6 +114,49 @@
       const closeVideoInput = document.createElement("button")
       closeVideoInput.innerText = "关闭视频"
       $(closeVideoInput).appendTo(videoPanel)
+      
+      const $muteVideo = $(`<button>muteVideo</button>`)
+      $muteVideo.appendTo(videoPanel)
+
+      const $unmuteVideo = $(`<button>unmuteVideo</button>`)
+      $unmuteVideo.appendTo(videoPanel)
+
+      const $takeVideoSnapshot = $(`<button>$takeVideoSnapshot</button>`)
+      $takeVideoSnapshot.appendTo(videoPanel)
+
+      const $takeVideoSnapshotBase64 = $(`<button>$takeVideoSnapshotBase64</button>`)
+      $takeVideoSnapshotBase64.appendTo(videoPanel)
+      
+      const openScreenInput = document.createElement("button")
+      openScreenInput.innerText = "打开屏幕共享"
+      $(openScreenInput).appendTo(screenPanel)
+
+      const closeScreenInput = document.createElement("button")
+      closeScreenInput.innerText = "关闭屏幕共享"
+      $(closeScreenInput).appendTo(screenPanel)
+
+      const $muteScreen = $(`<button>muteScreen</button>`)
+      $muteScreen.appendTo(screenPanel)
+      
+      const $unmuteScreen = $(`<button>unmuteScreen</button>`)
+      $unmuteScreen.appendTo(screenPanel)
+
+
+      const $takeScreenSnapshot = $(`<button>$takeScreenSnapshot</button>`)
+      $takeScreenSnapshot.appendTo(screenPanel)
+
+      const $takeScreenSnapshotBase64 = $(`<button>$takeScreenSnapshotBase64</button>`)
+      $takeScreenSnapshotBase64.appendTo(screenPanel)
+
+      const closeScreenAudioInput = document.createElement("button")
+      closeScreenAudioInput.innerText = "关闭辅流音频"
+      $(closeScreenAudioInput).appendTo(screenAudioPanel)
+
+      const $muteAudioSlave = $(`<button>muteAudioSlave</button>`)
+      $muteAudioSlave.appendTo(screenAudioPanel)
+
+      const $unmuteAudioSlave = $(`<button>unmuteAudioSlave</button>`)
+      $unmuteAudioSlave.appendTo(screenAudioPanel)
       
       $("<span>美颜：</span>").appendTo(beautyPanel)
       
@@ -236,6 +290,10 @@
           await localStream.open({type: "video", deviceId})
           await localStream.play(localContainer, {video: true})
         }
+        if (document.getElementById("defaultOpenScreen").checked){
+          await localStream.open({type: "screen", screenAudio: true})
+          await localStream.play(localContainer, {screen: true})
+        }
       }
 
       leaveButton.onclick = async ()=>{
@@ -264,6 +322,19 @@
         getLocalStream().close({type: "video"})
       }
 
+      openScreenInput.onclick = async ()=>{
+        await getLocalStream().open({type: "screen", screenAudio: true})
+        await getLocalStream().play(localContainer, {screen: true})
+      }
+
+      closeScreenInput.onclick = async ()=>{
+        getLocalStream().close({type: "screen"})
+      }
+
+      closeScreenAudioInput.onclick = async ()=>{
+        getLocalStream().close({type: "screenAudio"})
+      }
+
       openBeautyInput.onclick = async () => {
         await getLocalStream().setBeautyEffect(true);
       }
@@ -278,9 +349,75 @@
       
       $setVolumeBtn.on('click', ()=>{
         const captureVolume = $volumeInput.val()
-        console.error("设置音量", captureVolume)
-        localStream.setCaptureVolume(captureVolume)
+        console.log("设置音量", captureVolume)
+        getLocalStream().setCaptureVolume(captureVolume)
       })
+
+      $muteAudio[0].onclick = async ()=>{
+        console.log('muteAudio')
+        getLocalStream().muteAudio()
+      }
+
+      $unmuteAudio[0].onclick = async ()=>{
+        console.log('unmuteAudio')
+        getLocalStream().unmuteAudio()
+      }
+
+      $muteVideo[0].onclick = async ()=>{
+        console.log('muteVideo')
+        getLocalStream().muteVideo()
+      }
+
+      $unmuteVideo[0].onclick = async ()=>{
+        console.log('unmuteVideo')
+        getLocalStream().unmuteVideo()
+      }
+
+      $muteScreen[0].onclick = async ()=>{
+        console.log('muteScreen')
+        getLocalStream().muteScreen()
+      }
+
+      $unmuteScreen[0].onclick = async ()=>{
+        console.log('unmuteScreen')
+        getLocalStream().unmuteScreen()
+      }
+
+      $muteAudioSlave[0].onclick = async ()=>{
+        getLocalStream().muteAudioSlave()
+      }
+
+      $unmuteAudioSlave[0].onclick = async ()=>{
+        getLocalStream().unmuteAudioSlave()
+      }
+
+      $takeVideoSnapshot[0].onclick = async ()=>{
+        getLocalStream().takeSnapshot({
+          mediaType: 'video',
+        })
+      }
+      
+      $takeVideoSnapshotBase64[0].onclick = async ()=>{
+        const base64 = getLocalStream().takeSnapshotBase64({
+          mediaType: 'video',
+        })
+        console.log(base64)
+        console.log(`%c `, `padding: 200px 200px; background-image: url(${base64})`)
+      }
+      
+      $takeScreenSnapshot[0].onclick = async ()=>{
+        getLocalStream().takeSnapshot({
+          mediaType: 'screen',
+        })
+      }
+
+      $takeScreenSnapshotBase64[0].onclick = async ()=>{
+        const base64 = getLocalStream().takeSnapshotBase64({
+          mediaType: 'screen',
+        })
+        console.log(base64)
+        console.log(`%c `, `padding: 200px 200px; background-image: url(${base64})`)
+      }
 
       let statsStatus = "getStatsOff"
       let statsTimer = setInterval(async ()=>{
