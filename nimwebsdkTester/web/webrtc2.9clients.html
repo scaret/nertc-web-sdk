@@ -29,12 +29,22 @@
   const main = ()=>{
     for (let i = 0; i < COUNT; i++){
       const wrapper = document.createElement('div')
-      const panel = document.createElement('div')
+      
+      const channelPanel = document.createElement('div')
+      const audioPanel = document.createElement('div')
+      const videoPanel = document.createElement('div')
+      const beautyPanel = document.createElement('div')
+      const statsPanel = document.createElement('div')
+      
       const localContainer = document.createElement('div')
       const remoteContainer = document.createElement('div')
       const statsContainer = document.createElement('pre')
       $(wrapper).appendTo("views")
-      $(panel).appendTo(wrapper)
+      $(channelPanel).appendTo(wrapper)
+      $(audioPanel).appendTo(wrapper)
+      $(videoPanel).appendTo(wrapper)
+      $(beautyPanel).appendTo(wrapper)
+      $(statsPanel).appendTo(wrapper)
       $(localContainer).appendTo(wrapper)
       $(remoteContainer).appendTo(wrapper)
       $(statsContainer).appendTo(wrapper)
@@ -47,119 +57,123 @@
       remoteContainer.style.height = "200px"
       remoteContainer.style.float = "left"
       
-      $(`<span>频道号: </span>`).appendTo(panel)
+      
+      $(`<span>频道号: </span>`).appendTo(channelPanel)
       const channelInput = document.createElement('input')
       channelInput.value = channelName
-      $(channelInput).appendTo(panel)
+      $(channelInput).appendTo(channelPanel)
 
-      $(`<span>uid: </span>`).appendTo(panel)
+      $(`<span>uid: </span>`).appendTo(channelPanel)
       const uidInput = document.createElement('input')
       uidInput.value = channelName * 100 + i
-      $(uidInput).appendTo(panel)
+      $(uidInput).appendTo(channelPanel)
 
       const joinButton = document.createElement('button')
       joinButton.innerText = "加入频道"
-      $(joinButton).appendTo(panel)
+      $(joinButton).appendTo(channelPanel)
       
       const leaveButton = document.createElement('button')
       leaveButton.innerText = "离开频道"
-      $(leaveButton).appendTo(panel)
+      $(leaveButton).appendTo(channelPanel)
 
       const destroyButton = document.createElement('button')
       destroyButton.innerText = "销毁"
-      $(destroyButton).appendTo(panel)
+      $(destroyButton).appendTo(channelPanel)
 
-      $("<span> </span>").appendTo(panel)
+      $("<span> </span>").appendTo(channelPanel)
 
       const openAudioInput = document.createElement("button")
       openAudioInput.innerText = "打开音频"
-      $(openAudioInput).appendTo(panel)
+      $(openAudioInput).appendTo(audioPanel)
 
       const closeAudioInput = document.createElement("button")
       closeAudioInput.innerText = "关闭音频"
-      $(closeAudioInput).appendTo(panel)
+      $(closeAudioInput).appendTo(audioPanel)
 
-
+      $(`<span>音量: </span>`).appendTo(audioPanel)
+      const $volumeInput = $(`<input type="number" value="100" step="10">`)
+      $volumeInput.appendTo(audioPanel)
+      const $setVolumeBtn = $(`<button>设置音量</button>`)
+      $setVolumeBtn.appendTo(audioPanel)
+      
       const openVideoInput = document.createElement("button")
       openVideoInput.innerText = "打开视频"
-      $(openVideoInput).appendTo(panel)
+      $(openVideoInput).appendTo(videoPanel)
 
       const closeVideoInput = document.createElement("button")
       closeVideoInput.innerText = "关闭视频"
-      $(closeVideoInput).appendTo(panel)
-
-
-      $("<br><span>美颜：</span>").appendTo(panel)
+      $(closeVideoInput).appendTo(videoPanel)
+      
+      $("<span>美颜：</span>").appendTo(beautyPanel)
       
       const openBeautyInput = document.createElement("button")
       openBeautyInput.innerText = "开启美颜"
-      $(openBeautyInput).appendTo(panel)
+      $(openBeautyInput).appendTo(beautyPanel)
 
       const openLutInput = document.createElement("button")
       openLutInput.innerText = "蓝调滤镜"
-      $(openLutInput).appendTo(panel)
+      $(openLutInput).appendTo(beautyPanel)
 
       const closeBeautyInput = document.createElement("button")
       closeBeautyInput.innerText = "关闭美颜"
-      $(closeBeautyInput).appendTo(panel)
+      $(closeBeautyInput).appendTo(beautyPanel)
 
-      $("<span>高级美颜:</span>").appendTo(panel)
+      $("<span>高级美颜:</span>").appendTo(beautyPanel)
 
       const registerAdvBeautyInput = document.createElement("button")
       registerAdvBeautyInput.innerText = "注册"
-      $(registerAdvBeautyInput).appendTo(panel)
+      $(registerAdvBeautyInput).appendTo(beautyPanel)
 
       const openAdvBeautyInput = document.createElement("button")
       openAdvBeautyInput.innerText = "打开"
-      $(openAdvBeautyInput).appendTo(panel)
+      $(openAdvBeautyInput).appendTo(beautyPanel)
 
       const closeAdvBeautyInput = document.createElement("button")
       closeAdvBeautyInput.innerText = "关闭"
-      $(closeAdvBeautyInput).appendTo(panel)
+      $(closeAdvBeautyInput).appendTo(beautyPanel)
 
       const resetAdvBeautyInput = document.createElement("button")
       resetAdvBeautyInput.innerText = "重置"
-      $(resetAdvBeautyInput).appendTo(panel)
+      $(resetAdvBeautyInput).appendTo(beautyPanel)
 
       const destroyAdvBeautyInput = document.createElement("button")
       destroyAdvBeautyInput.innerText = "销毁"
-      $(destroyAdvBeautyInput).appendTo(panel)
+      $(destroyAdvBeautyInput).appendTo(beautyPanel)
 
-      $("<span>背景分割:</span>").appendTo(panel)
+      $("<span>背景分割:</span>").appendTo(beautyPanel)
       
       const registerVitrualBackgroundInput = document.createElement("button")
       registerVitrualBackgroundInput.innerText = "注册"
-      $(registerVitrualBackgroundInput).appendTo(panel)
+      $(registerVitrualBackgroundInput).appendTo(beautyPanel)
 
       const openVitrualBackgroundInput = document.createElement("button")
       openVitrualBackgroundInput.innerText = "打开"
-      $(openVitrualBackgroundInput).appendTo(panel)
+      $(openVitrualBackgroundInput).appendTo(beautyPanel)
 
       const closeVitrualBackgroundInput = document.createElement("button")
       closeVitrualBackgroundInput.innerText = "关闭"
-      $(closeVitrualBackgroundInput).appendTo(panel)
+      $(closeVitrualBackgroundInput).appendTo(beautyPanel)
 
       const destroyVitrualBackgroundInput = document.createElement("button")
       destroyVitrualBackgroundInput.innerText = "销毁"
-      $(destroyVitrualBackgroundInput).appendTo(panel)
+      $(destroyVitrualBackgroundInput).appendTo(beautyPanel)
 
-      $("<br/><span>Stats</span>").appendTo(panel)
+      $("<span>Stats</span>").appendTo(statsPanel)
       const getSessionStatsBtn = document.createElement("button")
       getSessionStatsBtn.innerText = "getSessionStats"
-      $(getSessionStatsBtn).appendTo(panel)
+      $(getSessionStatsBtn).appendTo(statsPanel)
       const getSystemStatsBtn = document.createElement("button")
       getSystemStatsBtn.innerText = "getSystemStats"
-      $(getSystemStatsBtn).appendTo(panel)
+      $(getSystemStatsBtn).appendTo(statsPanel)
       const getTransportStatsBtn = document.createElement("button")
       getTransportStatsBtn.innerText = "getTransportStats"
-      $(getTransportStatsBtn).appendTo(panel)
+      $(getTransportStatsBtn).appendTo(statsPanel)
       const getStatsOffBtn = document.createElement("button")
       getStatsOffBtn.innerText = "关闭"
-      $(getStatsOffBtn).appendTo(panel)
-      $("<br/>").appendTo(panel)
+      $(getStatsOffBtn).appendTo(statsPanel)
       
       const localStreamInfo = document.createElement("div")
-      $(localStreamInfo).appendTo(panel)
+      $(localStreamInfo).appendTo(statsPanel)
 
       document.getElementById('views').appendChild(wrapper)
       const client = NERTC.createClient({
@@ -212,7 +226,6 @@
         await client.publish(localStream)
         if (document.getElementById("defaultOpenMic").checked){
           await localStream.open({type: "audio"})
-          localStream.play(localContainer, {audio: true})
         }
         if (document.getElementById("defaultOpenCamera").checked){
           const cameras = await NERTC.getCameras()
@@ -262,6 +275,12 @@
       closeBeautyInput.onclick = async () => {
         await getLocalStream().setBeautyEffect(false);
       }
+      
+      $setVolumeBtn.on('click', ()=>{
+        const captureVolume = $volumeInput.val()
+        console.error("设置音量", captureVolume)
+        localStream.setCaptureVolume(captureVolume)
+      })
 
       let statsStatus = "getStatsOff"
       let statsTimer = setInterval(async ()=>{
