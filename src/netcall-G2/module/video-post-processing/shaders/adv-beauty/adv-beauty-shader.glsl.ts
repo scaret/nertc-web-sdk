@@ -121,7 +121,6 @@ export const advBeautyShader = {
                 sumColor = clamp(sumColor + (color.rgb - sumColor) * 2.0, 0.0, 1.0);
                 sumColor = max(color.rgb, sumColor);
                 color.rgb = mix(color.rgb, sumColor, eyeInten);
-
                 eyeInten = 1.0 + eyeInten * 0.25;
                 color.rgb = (color.rgb - vec3(0.5)) * eyeInten + vec3(0.5);
             }

@@ -1346,11 +1346,13 @@ $('#presetAdvBeauty').on('click', () => {
      // 瘦脸
      'shrinkFace': 0.15,
      // v 脸
-     'vShapedFace': 0.3,
+     'vShapedFace': 0.33,
      // 小脸
      'minifyFace': 0.15,
+     // 亮眼
+     'brightenEye': 0.75,
      // 美牙
-     'whitenTeeth': 0.5
+     'whitenTeeth': 0.75
     });
   }
 })
