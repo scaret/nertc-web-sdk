@@ -46,7 +46,7 @@ export const advBeautyShader = {
     #endif
 
     uniform float showWire;
-    
+    uniform vec2 size;
     uniform sampler2D map;
     uniform sampler2D wireMap;
     uniform sampler2D eyeTeethMaskMap;
@@ -88,8 +88,41 @@ export const advBeautyShader = {
                 color.rgb = mix(color.rgb, lut64(color.rgb, teethLut), teethInten);
             }
             if(eyeInten>0.0){
-                eyeInten += 1.0;
-                color.rgb = clamp(color.rgb - vec3(0.5), -0.25, 0.5) * eyeInten + vec3(0.5);
+                vec2 step1 = vec2(size.x / 640.0 / size.x, 0.0);
+                vec2 step2 = vec2(0.0, size.y / 480.0 /size.y);
+                vec3 sumColor = vec3(0.0, 0.0, 0.0);
+                sumColor += texture2D(map, vuv - 2.0 * step1 - 2.0 * step2).rgb;
+                sumColor += texture2D(map, vuv - 2.0 * step1 - 1.0 * step2).rgb;
+                sumColor += texture2D(map, vuv - 2.0 * step1).rgb;
+                sumColor += texture2D(map, vuv - 2.0 * step1 + 1.0 * step2).rgb;
+                sumColor += texture2D(map, vuv - 2.0 * step1 + 2.0 * step2).rgb;
+                sumColor += texture2D(map, vuv - 1.0 * step1 - 2.0 * step2).rgb;
+                sumColor += texture2D(map, vuv - 1.0 * step1 - 1.0 * step2).rgb;
+                sumColor += texture2D(map, vuv - 1.0 * step1).rgb;
+                sumColor += texture2D(map, vuv - 1.0 * step1 + 1.0 * step2).rgb;
+                sumColor += texture2D(map, vuv - 1.0 * step1 + 2.0 * step2).rgb;
+                sumColor += texture2D(map, vuv - 2.0 * step2).rgb;
+                sumColor += texture2D(map, vuv - 1.0 * step2).rgb;
+                sumColor += texture2D(map, vuv).rgb;
+                sumColor += texture2D(map, vuv + 1.0 * step2).rgb;
+                sumColor += texture2D(map, vuv + 2.0 * step2).rgb;
+                sumColor += texture2D(map, vuv + 1.0 * step1 - 2.0 * step2).rgb;
+                sumColor += texture2D(map, vuv + 1.0 * step1 - 1.0 * step2).rgb;
+                sumColor += texture2D(map, vuv + 1.0 * step1).rgb;
+                sumColor += texture2D(map, vuv + 1.0 * step1 + 1.0 * step2).rgb;
+                sumColor += texture2D(map, vuv + 1.0 * step1 + 2.0 * step2).rgb;
+                sumColor += texture2D(map, vuv + 2.0 * step1 - 2.0 * step2).rgb;
+                sumColor += texture2D(map, vuv + 2.0 * step1 - 1.0 * step2).rgb;
+                sumColor += texture2D(map, vuv + 2.0 * step1).rgb;
+                sumColor += texture2D(map, vuv + 2.0 * step1 + 1.0 * step2).rgb;
+                sumColor += texture2D(map, vuv + 2.0 * step1 + 2.0 * step2).rgb;
+                
+                sumColor = sumColor * 0.04;
+                sumColor = clamp(sumColor + (color.rgb - sumColor) * 2.0, 0.0, 1.0);
+                sumColor = max(color.rgb, sumColor);
+                color.rgb = mix(color.rgb, sumColor, eyeInten);
+                eyeInten = 1.0 + eyeInten * 0.25;
+                color.rgb = (color.rgb - vec3(0.5)) * eyeInten + vec3(0.5);
             }
         }
         if(showWire > 0.5){

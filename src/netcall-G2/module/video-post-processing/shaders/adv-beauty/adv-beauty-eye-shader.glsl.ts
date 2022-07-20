@@ -52,11 +52,11 @@ export const advBeautyEyeShader = {
             float maxRdIntens = mix(1.0, 0.5, lgIntensity);
             float rdIntens = mix(0.0, maxRdIntens, rdIntensity);
             uv = lgEye(uv, eyeCenter, range * 2.0, rdIntens, 0.075);
-            uv = rdEye(uv, eyeCenter, range * 2.0, rdIntens, 0.075);
+            uv = rdEye(uv, eyeCenter, range * 2.0, rdIntens, 0.1);
         }
         if(lgIntensity > 0.0){
-            uv = lgEye(uv, eyeCenter, range * 3.0, lgIntensity, 0.1);
-            uv = rdEye(uv, eyeCenter, range * 3.0, lgIntensity, 0.05);
+            uv = lgEye(uv, eyeCenter, range * 2.5, lgIntensity, 0.1);
+            uv = rdEye(uv, eyeCenter, range * 2.5, lgIntensity, 0.05);
         }
         gl_FragColor = texture2D(map, uv);
     }
