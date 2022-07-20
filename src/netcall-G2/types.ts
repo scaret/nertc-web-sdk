@@ -540,7 +540,8 @@ export interface StatsReportOptions{
 
 export interface AudioLevelOptions{
   stream: MediaStream;
-  adapterRef: AdapterRef;
+  logger: ILogger;
+  sourceNode?: AudioNode;
 }
 
 export interface WebAudioOptions{
@@ -1352,6 +1353,53 @@ export interface PreProcessingHistoryInfo{
     name: string;
     spent: number;
   }[]
+}
+
+
+export interface GUMAudioConstraints{
+  sampleRate?: number;
+  channelCount: number;
+  deviceId?: {
+    exact: string
+  },
+
+  echoCancellation?: boolean;
+  googEchoCancellation?: boolean;
+  googEchoCancellation2?: boolean;
+
+  noiseSuppression?: boolean;
+  googNoiseSuppression?: boolean;
+  googNoiseSuppression2?: boolean;
+
+  autoGainControl?: boolean;
+  googAutoGainControl?: boolean;
+  googAutoGainControl2?: boolean;
+
+
+}
+
+export interface GUMVideoConstraints{
+  mandatory?: any;
+  width?: {
+    ideal: number;
+  }
+  height?:{
+    ideal: number;
+  }
+  frameRate?:{
+    ideal: number;
+  }
+  facingMode?: {
+    exact: string;
+  }
+  deviceId?: {
+    exact: string
+  }
+}
+
+export interface GUMConstaints{
+  audio?: GUMAudioConstraints
+  video?: GUMVideoConstraints
 }
 
 export interface FormatMediaOptions{

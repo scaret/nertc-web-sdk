@@ -70,7 +70,9 @@ export function getAudioContext(){
     return globalAc;
   }else if (supports.WebAudio && supports.MediaStream)
   {
-    globalAc = new window.AudioContext()
+    globalAc = new window.AudioContext({
+      sampleRate: 16000,
+    })
     return globalAc;
   }else{
     return null;

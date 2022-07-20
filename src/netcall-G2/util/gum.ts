@@ -1,8 +1,12 @@
-import {ILogger, NeMediaStreamTrack} from "../types";
+import {GUMConstaints, ILogger, NeMediaStreamTrack} from "../types";
 import {getParameters} from "../module/parameters";
 import {Logger} from "./webrtcLogger";
 import {Device} from "../module/device";
 import {canShimCanvas, shimCanvas} from "./rtcUtil/shimCanvas";
+import {getAudioContext} from "../module/webAudio";
+import {syncTrackState} from "./syncTrackState";
+import {AudioLevel} from "../module/audioLevel";
+import {compatAudioInputList} from "../module/compatAudioInputList";
 
 const logger:ILogger = new Logger({
   tagGen: ()=>{
@@ -10,13 +14,33 @@ const logger:ILogger = new Logger({
   }
 });
 
-async function getStream (constraint:MediaStreamConstraints, logger:ILogger) {
+
+async function getStream (constraint:GUMConstaints, logger:ILogger) {
+  if (constraint.audio){
+    if (!constraint.audio.deviceId){
+      const defaultDevice = Device.deviceHistory.audioIn.find((deviceInfo)=>{
+        return deviceInfo.deviceId === "default"
+      })
+      if (defaultDevice){
+        logger.log(`getStream：音频使用默认设备${defaultDevice.label}`)
+        constraint.audio.deviceId = {exact: defaultDevice.deviceId}
+      }
+    }
+    if (compatAudioInputList.enabled){
+      logger.log(`兼容模式：constraint强制将channelCount设为2，echoCancellation设为false`)
+      constraint.audio.channelCount = 2
+      constraint.audio.echoCancellation = false
+    }
+    console.error(`音频采集强制设为采样率16k`)
+    constraint.audio.sampleRate = 16000
+  }
   logger.log('getLocalStream constraint:', JSON.stringify(constraint))
   try {
     const stream = await navigator.mediaDevices.getUserMedia(constraint)
     logger.log('获取到媒体流: ', stream.id)
     const tracks = stream.getTracks();
-    tracks.forEach((track)=>{
+    for (let trackId = 0; trackId < tracks.length; trackId++){
+      const track = tracks[trackId]
       watchTrack(track);
       if (track.kind === "video"){
         if (canShimCanvas()){
@@ -26,8 +50,64 @@ async function getStream (constraint:MediaStreamConstraints, logger:ILogger) {
           stream.removeTrack(track)
           stream.addTrack(canvasTrack);
         }
+      }else if (track.kind === "audio"){
+        if (compatAudioInputList.enabled){
+          const settings = track.getSettings? track.getSettings() : {}
+          if (settings.channelCount && settings.channelCount >= 2 ){
+            logger.log(`该设备支持兼容模式：${track.label}`, settings)
+          }else{
+            logger.warn(`该设备为单声道设备，强行开启兼容模式(右声道无声)：${track.label}`, settings)
+          }
+          const context = getAudioContext()
+          if (context){
+            const channelSplitter = context.createChannelSplitter(2)
+            const destination = context.createMediaStreamDestination()
+            const sourceStream = new MediaStream([track])
+            const source = context.createMediaStreamSource(sourceStream)
+            const audioLevelHelper = new AudioLevel({
+              stream: sourceStream,
+              logger: logger,
+              sourceNode: source,
+            })
+            let output = 0 // 0:左， 1：右
+            if (getParameters().audioInputcompatMode === "left"){
+              logger.log(`兼容模式：仅使用左声道`)
+              output = 0
+            }else if (getParameters().audioInputcompatMode === "right"){
+              logger.log(`兼容模式：仅使用右声道`)
+              output = 1
+            }else if (getParameters().audioInputcompatMode === "auto"){
+              logger.log(`兼容模式：在左右声道间根据音量切换`)
+              audioLevelHelper.on('channel-state-change', (evt)=>{
+                if (evt.state === "leftLoud" && output === 1){
+                  logger.log(`兼容模式切换至左声道：`, track.label)
+                  channelSplitter.disconnect(destination)
+                  channelSplitter.connect(destination, 0)
+                  output = 0
+                }else if (evt.state === "rightLoud" && output === 0){
+                  logger.log(`兼容模式切换至右声道：`, track.label)
+                  channelSplitter.disconnect(destination)
+                  channelSplitter.connect(destination, 1)
+                  output = 1
+                }
+              })
+            }
+            source.connect(channelSplitter)
+            channelSplitter.connect(destination, output)
+            const destTrack = destination.stream.getTracks()[0]
+            watchTrack(destTrack)
+            compatAudioInputList.compatTracks.push(({
+              source: track,
+              dest: destTrack,
+            }))
+            syncTrackState(track, destTrack)
+            stream.removeTrack(track)
+            stream.addTrack(destTrack)
+            logger.log(`getStream：启用兼容模式成功`)
+          }
+        }
       }
-    });
+    }
     return stream
   } catch(e) {
     logger.error('媒体设备获取失败: ', e.name, e.message)
@@ -55,7 +135,7 @@ async function getScreenStream (constraint:MediaStreamConstraints, logger:ILogge
             // @ts-ignore
             track.focus("no-focus-change");
           }else{
-            logger.warn("当前浏览器不支持屏幕共享跳转控制")
+            logger.log("当前浏览器不支持屏幕共享跳转控制")
           }
         }
       }

@@ -4,6 +4,7 @@ import ErrorCode from '../util/error/errorCode';
 import {ILogger, Timer} from "../types";
 import {Logger} from "../util/webrtcLogger";
 import {getParameters} from "./parameters";
+import {compatAudioInputList} from "./compatAudioInputList";
 
 export interface DeviceInfo {
   deviceId: string;
@@ -341,6 +342,17 @@ class DeviceManager extends EventEmitter {
     this.hasPerm.audioIn = false;
     this.hasPerm.video = false;
     this.hasPerm.audioOut = false;
+  }
+  
+  enableCompatMode(){
+    this.logger.log(`开启兼容模式`)
+    compatAudioInputList.enabled = true
+    this.handleDeviceChange()
+  }
+  disableCompatMode(){
+    this.logger.log(`关闭兼容模式。`)
+    compatAudioInputList.enabled = false
+    this.handleDeviceChange()
   }
 
   defaultHandleUserGestureNeeded(e: {name: string, message: string}){

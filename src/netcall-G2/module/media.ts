@@ -1,6 +1,6 @@
 import { EventEmitter } from 'eventemitter3'
 import * as GUM from '../util/gum'
-import { WebAudio } from './webAudio'
+import {getAudioContext, WebAudio} from './webAudio'
 import { RtcSystem } from '../util/rtcUtil/rtcSystem'
 import { AuidoMixingState } from '../constant/state'
 import { ajax } from '../util/ajax'
@@ -15,7 +15,7 @@ import {
   MediaTypeAudio,
   ILogger,
   EncodingParameters,
-  PreProcessingConfig, PreProcessingHandlerName,
+  PreProcessingConfig, PreProcessingHandlerName, GUMConstaints, GUMAudioConstraints,
 } from "../types";
 import {emptyStreamWith, watchTrack} from "../util/gum";
 import RtcError from '../util/error/rtcError';
@@ -30,6 +30,8 @@ import {NERTC_VIDEO_QUALITY_ENUM, VIDEO_FRAME_RATE_ENUM} from "../constant/video
 import {canDisablePreProcessing, disablePreProcessing, enablePreProcessing, preProcessingCopy} from "./preProcessing";
 import {IS_SAFARI} from "../util/rtcUtil/rtcEnvironment";
 import {pcCloneTrack} from "../util/pcCloneTrack";
+import {AudioWorkletAgent} from "./audioWorkletAgent";
+import AIDenoise from '../plugin/denoise';
 class MediaHelper extends EventEmitter {
   stream: LocalStream|RemoteStream;
   public audio: {
@@ -53,6 +55,7 @@ class MediaHelper extends EventEmitter {
     deviceInfo: {
       mic: {label: string, groupId?: string, deviceId?: string},
     }
+    audioWorkletAgent?: AudioWorkletAgent;
     webAudio: WebAudio|null;
     micConstraint: {audio: MediaTrackConstraints}|null;
     mixAudioConf:MixAudioConf,
@@ -144,6 +147,8 @@ class MediaHelper extends EventEmitter {
     screenAudioSource: null,
   }
   logger: ILogger;
+  enableAIDenoise: boolean = true;
+  AIDenoise: AIDenoise | null;
   
   constructor (options:MediaHelperOptions) {
     super()
@@ -192,6 +197,13 @@ class MediaHelper extends EventEmitter {
           }
         }
       }
+    })
+
+    //AI降噪
+    this.AIDenoise = new AIDenoise({});
+    this.AIDenoise.on('plugin-load', () => {
+      console.warn(' this.AIDenoise load ')
+      this.AIDenoise?.init();
     })
   }
   
@@ -353,6 +365,49 @@ class MediaHelper extends EventEmitter {
       return Promise.reject(e)
     }
   }
+  
+  async initWorkletAgent(gumAudioStream: MediaStream){
+    const context = getAudioContext()
+    const sourceNode = context!.createMediaStreamSource(gumAudioStream)
+    if (!this.audio.audioWorkletAgent){
+      this.audio.audioWorkletAgent = new AudioWorkletAgent({
+        logger: this.logger,
+        sourceNode,
+      })
+      this.audio.audioWorkletAgent.init()
+      this.audio.audioWorkletAgent.on('rawinputs', (evt)=>{
+       // console.log('evt', evt.inputs[0])
+        // 测试：延迟5秒
+        // setTimeout(()=>{
+        // this.audio.audioWorkletAgent!.outputData(evt.inputs[0])
+        // }, 100)
+        if(this.enableAIDenoise) {
+          if(this.AIDenoise && this.AIDenoise.load) {
+            this.AIDenoise!.process(evt.inputs[0][0], data => {
+             // console.log('noise data', evt.inputs[0][0])
+             // console.log('denoise data', data)
+              if(data.length) {
+                evt.inputs[0][0] = data;
+              }
+              this.audio.audioWorkletAgent!.outputData(evt.inputs[0])
+            });
+           
+          }
+        } else {
+          this.audio.audioWorkletAgent!.outputData(evt.inputs[0])
+        }    
+      })
+    }else{
+      this.audio.audioWorkletAgent.support.sourceNode.disconnect(this.audio.audioWorkletAgent.support.audioWorkletNode!)
+      sourceNode.connect(this.audio.audioWorkletAgent.support.audioWorkletNode!)
+      this.audio.audioWorkletAgent.support.sourceNode = sourceNode
+    }
+
+    const destTrack = this.audio.audioWorkletAgent.support.destination.stream.getAudioTracks()[0]
+    console.error(`destTrack`, destTrack)
+    emptyStreamWith(this.audio.audioStream, destTrack);
+    this.updateAudioSender(destTrack);
+  }
 
   async getStream(constraint:GetStreamConstraints) {
     let {
@@ -394,16 +449,7 @@ class MediaHelper extends EventEmitter {
       watchTrack(audioSource);
       this.audio.audioSource = audioSource;
       emptyStreamWith(this.audio.audioSourceStream, audioSource);
-      this.updateWebAudio();
-      this.stream.client.updateRecordingAudioStream()
-      if (!this.audio.audioRoutingEnabled){
-        if (this.getAudioInputTracks().length > 1){
-          this.enableAudioRouting();
-        }else{
-          emptyStreamWith(this.audio.audioStream, audioSource);
-          this.updateAudioSender(audioSource);
-        }
-      }
+      this.initWorkletAgent(this.audio.audioSourceStream)
       audio = false
     }
 
@@ -564,20 +610,12 @@ class MediaHelper extends EventEmitter {
         })
         if (audio) {
           let gumAudioStream = await GUM.getStream({
-            audio: (this.getAudioConstraints()) ? this.getAudioConstraints() : true,
+            audio: this.getAudioConstraints(),
           }, this.logger)
           this.audio.micTrack = gumAudioStream.getAudioTracks()[0];
           emptyStreamWith(this.audio.micStream, this.audio.micTrack)
+          this.initWorkletAgent(gumAudioStream)
           this.listenToTrackEnded(this.audio.micTrack)
-          this.updateWebAudio();
-          if (!this.audio.audioRoutingEnabled){
-            if (this.getAudioInputTracks().length > 1){
-              this.enableAudioRouting();
-            }else{
-              emptyStreamWith(this.audio.audioStream, this.audio.micTrack);
-              this.updateAudioSender(this.audio.micTrack);
-            }
-          }
           const micSettings = this.audio.micTrack.getSettings();
           this.audio.deviceInfo.mic.label = this.audio.micTrack.label;
           this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
@@ -597,8 +635,8 @@ class MediaHelper extends EventEmitter {
           return;
         }
         const {height, width, frameRate} = this.video.captureConfig.high
-        let config:MediaStreamConstraints = {
-          audio: (audio && this.getAudioConstraints()) ? this.getAudioConstraints() : audio,
+        let config:GUMConstaints = {
+          audio: (audio && this.getAudioConstraints()) ? this.getAudioConstraints() : undefined,
           video: video ? {
             width: {
               ideal: width
@@ -609,24 +647,21 @@ class MediaHelper extends EventEmitter {
             frameRate: {
               ideal: frameRate || 15
             }
-          } : false
+          } : undefined
         }
-        if (audioDeviceId && audio) {
-          if (config.audio === true) {
-            config.audio = {}
-          }
-          (config.audio as any).deviceId = {
+        if (audioDeviceId && config.audio) {
+          config.audio.deviceId = {
             exact: audioDeviceId
           }
         }
 
-        if (video) {
+        if (config.video) {
           if (facingMode) {
-            (config.video as any).facingMode = {
+            config.video.facingMode = {
               exact: facingMode
             }
           } else if (videoDeviceId) {
-            (config.video as any).deviceId = {
+            config.video.deviceId = {
               exact: videoDeviceId
             }
           }
@@ -638,19 +673,10 @@ class MediaHelper extends EventEmitter {
         const micTrack = gumStream.getAudioTracks()[0];
         if (micTrack){
           this.audio.micTrack = micTrack;
-          this.listenToTrackEnded(this.audio.micTrack);
-          emptyStreamWith(this.audio.micStream, this.audio.micTrack);
-          this.updateWebAudio();
-          this.stream.client.updateRecordingAudioStream()
-          if (!this.audio.audioRoutingEnabled){
-            if (this.getAudioInputTracks().length > 1){
-              this.enableAudioRouting();
-            }else{
-              emptyStreamWith(this.audio.audioStream, this.audio.micTrack);
-              this.updateAudioSender(this.audio.micTrack);
-            }
-          }
-          const micSettings = micTrack.getSettings()
+          emptyStreamWith(this.audio.micStream, this.audio.micTrack)
+          this.initWorkletAgent(gumStream)
+          this.listenToTrackEnded(this.audio.micTrack)
+          const micSettings = this.audio.micTrack.getSettings();
           this.audio.deviceInfo.mic.label = this.audio.micTrack.label;
           this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
           this.audio.deviceInfo.mic.groupId = micSettings.groupId;
@@ -736,7 +762,7 @@ class MediaHelper extends EventEmitter {
     }
   }
 
-  async getSecondStream(constraint: MediaStreamConstraints) {
+  async getSecondStream(constraint: GUMConstaints) {
     let {
       audio = false, 
       video = false,
@@ -955,13 +981,16 @@ class MediaHelper extends EventEmitter {
     return result
   }
 
-  getAudioConstraints() {
+  getAudioConstraints() :GUMAudioConstraints|undefined{
     if (this.stream.isRemote){
       this.logger.error('Remote Stream dont have audio constraints');
       return;
     }
+    //@ts-ignore
     const audioProcessing = this.stream.audioProcessing;
-    let constraint:any = {};
+    let constraint:GUMAudioConstraints = {
+      channelCount: 1,
+    };
     if (audioProcessing) {
       if (typeof audioProcessing.AEC !== "undefined") {
         constraint.echoCancellation = audioProcessing.AEC;
@@ -979,6 +1008,7 @@ class MediaHelper extends EventEmitter {
         constraint.googAutoGainControl2 = audioProcessing.AGC;
       }
     }
+    //@ts-ignore
     switch(this.stream.audioProfile){
       case "standard_stereo":
       case "high_quality_stereo":
@@ -1002,11 +1032,7 @@ class MediaHelper extends EventEmitter {
         constraint.googAutoGainControl2 = false;*/
         break;
     }
-    if (JSON.stringify(constraint) === "{}") {
-      return null;
-    } else {
-      return constraint;
-    }
+    return constraint;
   }
   
   getTrackSettings (){

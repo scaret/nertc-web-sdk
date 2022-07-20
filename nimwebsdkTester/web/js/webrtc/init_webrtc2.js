@@ -1392,7 +1392,7 @@ function getVideoSource(mediaType){
 function getAudioSource(mediaType){
   let defaultStr;
   if (mediaType === "audio"){
-    defaultStr = "1x1x0";
+    defaultStr = "1x1x0.2";
   } else if (mediaType === "screenAudio"){
     defaultStr = "2x1x0";
   }else{
@@ -3617,6 +3617,14 @@ $("#confirmOnRefresh").on("click", ()=>{
   }
   window.onbeforeunload = handleOnBeforeUnload;
   window.onpagehide = handleOnPageHide
+})
+
+$("#enableAIDenoise").click(()=>{
+  rtc.localStream.mediaHelper.enableAIDenoise = true
+})
+
+$("#disableAIDenoise").click(()=>{
+  rtc.localStream.mediaHelper.enableAIDenoise = false
 })
 
 /** 
