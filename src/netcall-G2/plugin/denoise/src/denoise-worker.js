@@ -23,9 +23,6 @@ class denoise {
     }
 
     async process(frame) {
-       //暂时*32767
-       let i ;       
-       console.log('frame', frame)
         this.isProcessing = true;
         if (!this.initMem) {
             this.inputPtr = Module._rnnoise_Malloc(this.buffer_size * 4);
@@ -42,7 +39,6 @@ class denoise {
             console.warn('_rnnoise_process_frame 无返回值')
             result = new Float32Array();
         }
-        console.log('result', result)  
         this.handleAudioData(result);
         this.isProcessing = false;
         if (this.buffer.length) {
