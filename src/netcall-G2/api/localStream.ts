@@ -615,13 +615,29 @@ class LocalStream extends RTCEventEmitter {
       this.client.adapterRef.channelInfo.sessionConfig.videoFrameRate = this.videoProfile.frameRate
     }
     if(this.client.adapterRef.isAudioBanned && this.client.adapterRef.isVideoBanned) {
-      return;
+      const reason = `服务器禁止发送音视频流`;
+      this.logger.error(reason);
+      this.client.apiFrequencyControl({
+        name: 'init',
+        code: -1,
+        param: JSON.stringify({
+          reason: reason,
+        }, null, ' ')
+      });
+      this.audio = false;
+      this.screenAudio = false;
+      this.video = false;
+      this.screen = false;
+      throw new RtcError({
+        code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+        message: 'audio and video are banned by server'
+      })
     }
-    if(this.client.adapterRef.isAudioBanned) {
+    if(this.client.adapterRef.isAudioBanned && !this.client.adapterRef.isVideoBanned) {
       const reason = `服务器禁止发送音频流`;
       this.logger.error(reason);
       this.client.apiFrequencyControl({
-        name: 'open',
+        name: 'init',
         code: -1,
         param: JSON.stringify({
           reason: reason,
@@ -631,11 +647,11 @@ class LocalStream extends RTCEventEmitter {
       this.screenAudio = false;
     }
     
-    if(this.client.adapterRef.isVideoBanned) {
+    if(!this.client.adapterRef.isAudioBanned && this.client.adapterRef.isVideoBanned) {
       const reason = `服务器禁止发送视频流`;
       this.logger.error(reason);
       this.client.apiFrequencyControl({
-        name: 'open',
+        name: 'init',
         code: -1,
         param: JSON.stringify({
           reason: reason,
