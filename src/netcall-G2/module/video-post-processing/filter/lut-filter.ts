@@ -82,6 +82,7 @@ export class LutFilter extends Filter {
                     intensity
                 };
                 if (key === this.curLutName) {
+                    this.curLutName = null;
                     this.setlut(key);
                 }
             });

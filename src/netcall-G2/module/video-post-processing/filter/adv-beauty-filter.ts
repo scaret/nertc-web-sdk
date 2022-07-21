@@ -97,8 +97,8 @@ loadImage('https://yx-web-nosdn.netease.im/common/655421269305cac5c1e48d62f0fac8
 loadImage('https://yx-web-nosdn.netease.im/common/ca8a6b0be3427ead9b19bcf9ae1245a8/teath.png',(img)=>{
     whiteTeethLutImg = img;
     instances.forEach((instance)=>{
-        instance.eyeTeethMaskMap!.source = img;
-        instance.eyeTeethMaskMap!.refresh();
+        instance.whiteTeethLutMap!.source = img;
+        instance.whiteTeethLutMap!.refresh();
     })
 })
 export class AdvBeautyFilter extends Filter {
