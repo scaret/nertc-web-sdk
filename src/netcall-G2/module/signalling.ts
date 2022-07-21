@@ -738,7 +738,7 @@ class Signalling extends EventEmitter {
           }
 
           if(this.adapterRef.isAudioBanned && this.adapterRef.isVideoBanned) {
-            this.adapterRef.instance.apiEventReport('setFunction', {
+            this.adapterRef.instance.apiEventReport('setAudioVideoBanned', {
               name: 'set_mediaRightChange',
               oper: '1',
               isAudioBanned: true,
@@ -747,7 +747,7 @@ class Signalling extends EventEmitter {
           }
     
           if(!this.adapterRef.isAudioBanned && this.adapterRef.isVideoBanned) {
-            this.adapterRef.instance.apiEventReport('setFunction', {
+            this.adapterRef.instance.apiEventReport('setAudioVideoBanned', {
               name: 'set_mediaRightChange',
               oper: '1',
               isAudioBanned: false,
@@ -756,7 +756,7 @@ class Signalling extends EventEmitter {
           }
     
           if(this.adapterRef.isAudioBanned && !this.adapterRef.isVideoBanned) {
-            this.adapterRef.instance.apiEventReport('setFunction', {
+            this.adapterRef.instance.apiEventReport('setAudioVideoBanned', {
               name: 'set_mediaRightChange',
               oper: '1',
               isAudioBanned: true,
@@ -765,7 +765,7 @@ class Signalling extends EventEmitter {
           }
     
           if(!this.adapterRef.isAudioBanned && !this.adapterRef.isVideoBanned) {
-            this.adapterRef.instance.apiEventReport('setFunction', {
+            this.adapterRef.instance.apiEventReport('setAudioVideoBanned', {
               name: 'set_mediaRightChange',
               oper: '1',
               isAudioBanned: false,
@@ -940,7 +940,7 @@ class Signalling extends EventEmitter {
       }
 
       if(this.adapterRef.isAudioBanned && this.adapterRef.isVideoBanned) {
-        this.adapterRef.instance.apiEventReport('setFunction', {
+        this.adapterRef.instance.apiEventReport('setAudioVideoBanned', {
           name: 'set_mediaRightChange',
           oper: '1',
           isAudioBanned: true,
@@ -949,7 +949,7 @@ class Signalling extends EventEmitter {
       }
 
       if(!this.adapterRef.isAudioBanned && this.adapterRef.isVideoBanned) {
-        this.adapterRef.instance.apiEventReport('setFunction', {
+        this.adapterRef.instance.apiEventReport('setAudioVideoBanned', {
           name: 'set_mediaRightChange',
           oper: '1',
           isAudioBanned: false,
@@ -958,7 +958,7 @@ class Signalling extends EventEmitter {
       }
 
       if(this.adapterRef.isAudioBanned && !this.adapterRef.isVideoBanned) {
-        this.adapterRef.instance.apiEventReport('setFunction', {
+        this.adapterRef.instance.apiEventReport('setAudioVideoBanned', {
           name: 'set_mediaRightChange',
           oper: '1',
           isAudioBanned: true,
@@ -967,7 +967,7 @@ class Signalling extends EventEmitter {
       }
 
       if(!this.adapterRef.isAudioBanned && !this.adapterRef.isVideoBanned) {
-        this.adapterRef.instance.apiEventReport('setFunction', {
+        this.adapterRef.instance.apiEventReport('setAudioVideoBanned', {
           name: 'set_mediaRightChange',
           oper: '1',
           isAudioBanned: false,

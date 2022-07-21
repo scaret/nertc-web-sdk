@@ -14,7 +14,7 @@ import {
   FirstPacketSentEvent,
   FunctionEvent,
   CommonEvent,
-  HeartbeatEvent, APIEventItem, RequestLBSEvent,
+  HeartbeatEvent, APIEventItem, RequestLBSEvent, AudioVideoBannedEvent
 } from "../../types";
 import {USER_AGENT} from "../../util/rtcUtil/rtcEnvironment";
 
@@ -281,6 +281,10 @@ class DataReport {
 
   setRequestLbs (requestLbsEvent: RequestLBSEvent){
     this.addEvent("requestLBS", requestLbsEvent);
+  }
+
+  setAudioVideoBanned (audioVideoBannedEvent: AudioVideoBannedEvent){
+    this.addEvent("audioVideoBanned", audioVideoBannedEvent);
   }
 
   reset() {
