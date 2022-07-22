@@ -270,6 +270,14 @@ export interface RequestLBSEvent extends DataEvent{
   time: number;
 }
 
+export interface AudioVideoBannedEvent extends DataEvent{
+  cid: string;
+  uid: string;
+  isAudioBanned: boolean;
+  isVideoBanned: boolean;
+  time: number;
+}
+
 export interface WholeStatsReportOptions{
   appkey: string;
   adapterRef: AdapterRef;
