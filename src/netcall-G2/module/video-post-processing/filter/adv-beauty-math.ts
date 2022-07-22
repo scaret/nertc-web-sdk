@@ -474,6 +474,7 @@ export const handlers:{
         rEyeCenter = Vector2.getVec(posData, 77);
     },
     roundedEye:(posData, intensity)=>{
+        // 由于眼部推理点位会出现反转，中心点可取 74、77 点
         refineCenter = false;
         lEyeCenter = Vector2.center(...[52,53,54,55,56,57,72,73].map((idx)=>{
             return Vector2.getVec(posData, idx);
@@ -487,6 +488,7 @@ export const handlers:{
         }
     },
     enlargeEye:(posData, intensity)=>{
+        // 由于眼部推理点位会出现反转，中心点可取 74、77 点
         if(refineCenter){
             lEyeCenter = Vector2.center(...[52,53,54,55,56,57,72,73].map((idx)=>{
                 return Vector2.getVec(posData, idx);
