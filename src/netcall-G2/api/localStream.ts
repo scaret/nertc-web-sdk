@@ -3560,6 +3560,7 @@ class LocalStream extends RTCEventEmitter {
       }
       if (videoTrackLow){
         videoTrackLow.stop();
+        this.mediaHelper.video.videoTrackLow = null;
       }
       if(isStart){
         let effects;
@@ -3774,15 +3775,16 @@ class LocalStream extends RTCEventEmitter {
               track: this._transformedTrack,
               external: false
         });
+        if (videoTrackLow){
+          videoTrackLow.stop();
+          this.mediaHelper.video.videoTrackLow = null;
+        }
         //重新开启水印
         if(this.encoderWatermarkOptions) {
           this.setEncoderWatermarkConfigs(this.encoderWatermarkOptions);
         }
         if(this.canvasWatermarkOptions) {
           this.setCanvasWatermarkConfigs(this.canvasWatermarkOptions);
-        }
-        if (videoTrackLow){
-          videoTrackLow.stop();
         }
       } else {
         this.logger.log("此时还没有有视频track");

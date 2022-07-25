@@ -379,6 +379,7 @@ export class AdvBeautyFilter extends Filter {
             eyeProgram.setUniform('eyeCenter', [0, 0]);
             eyeProgram.setUniform('rdIntensity', 0);
             eyeProgram.setUniform('lgIntensity', 0);
+            eyeProgram.setUniform('intensRatio', 0);
             eyeProgram.setUniform('range', 0);
             eyeProgram.setUniform('rdDir', [0, 0]);
             const eyeKey = ['lEye','rEye'][i];
@@ -591,12 +592,20 @@ export class AdvBeautyFilter extends Filter {
                     const rEyeCenter = this.posToUV(eyeInfo.rEyeCenter, size.width, size.height);
                     const p52 = this.posToUV(Vector2.getVec(eyeInfo.posData, 52), size.width, size.height);
                     const p55 = this.posToUV(Vector2.getVec(eyeInfo.posData, 55), size.width, size.height);
-                    const p72 = this.posToUV(Vector2.getVec(eyeInfo.posData, 72), size.width, size.height);
-                    const p73 = this.posToUV(Vector2.getVec(eyeInfo.posData, 73), size.width, size.height);
+                    let p72 = Vector2.getVec(eyeInfo.posData, 72);
+                    let p73 = Vector2.getVec(eyeInfo.posData, 73);
                     const p58 = this.posToUV(Vector2.getVec(eyeInfo.posData, 58), size.width, size.height);
                     const p61 = this.posToUV(Vector2.getVec(eyeInfo.posData, 61), size.width, size.height);
-                    const p75 = this.posToUV(Vector2.getVec(eyeInfo.posData, 75), size.width, size.height);
-                    const p76 = this.posToUV(Vector2.getVec(eyeInfo.posData, 76), size.width, size.height);
+                    let p75 = Vector2.getVec(eyeInfo.posData, 75);
+                    let p76 = Vector2.getVec(eyeInfo.posData, 76);
+
+                    const lDis2 = Math.min(1.0, Math.max(0.0, (Vector2.disPow2(p72, p73) - 4) / 4));
+                    const rDis2 = Math.min(1.0, Math.max(0.0, (Vector2.disPow2(p75, p76) - 4) / 4));
+
+                    p72 = this.posToUV(p72, size.width, size.height);
+                    p73 = this.posToUV(p73, size.width, size.height);
+                    p75 = this.posToUV(p75, size.width, size.height);
+                    p76 = this.posToUV(p76, size.width, size.height);
 
                     // 左眼参数设置
                     this.programs.lEye.setUniform('eyeCenter', lEyeCenter.value);
@@ -605,6 +614,7 @@ export class AdvBeautyFilter extends Filter {
                         Vector2.dis(lEyeCenter, p55)
                     ));
                     this.programs.lEye.setUniform('rdDir', Vector2.normalize(Vector2.sub(p72, p73)).value);
+                    this.programs.lEye.setUniform('intensRatio', lDis2);
 
                     // 右眼参数设置
                     this.programs.rEye.setUniform('eyeCenter', rEyeCenter.value);
@@ -613,6 +623,7 @@ export class AdvBeautyFilter extends Filter {
                         Vector2.dis(rEyeCenter, p61)
                     ));
                     this.programs.rEye.setUniform('rdDir', Vector2.normalize(Vector2.sub(p75, p76)).value);
+                    this.programs.rEye.setUniform('intensRatio', rDis2);
                 }
 
                 // 渲染左眼

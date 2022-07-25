@@ -11,6 +11,7 @@ export const advBeautyEyeShader = {
     uniform vec2 rdDir;
     uniform float rdIntensity;
     uniform float lgIntensity;
+    uniform float intensRatio;
     uniform float range;
 
     varying vec2 vuv;
@@ -48,15 +49,18 @@ export const advBeautyEyeShader = {
 
     void main() {
         vec2 uv = vuv;
-        if(rdIntensity > 0.0){
-            float maxRdIntens = mix(1.0, 0.5, lgIntensity);
-            float rdIntens = mix(0.0, maxRdIntens, rdIntensity);
-            uv = lgEye(uv, eyeCenter, range * 2.0, rdIntens, 0.075);
-            uv = rdEye(uv, eyeCenter, range * 2.0, rdIntens, 0.1);
-        }
-        if(lgIntensity > 0.0){
-            uv = lgEye(uv, eyeCenter, range * 2.5, lgIntensity, 0.1);
-            uv = rdEye(uv, eyeCenter, range * 2.5, lgIntensity, 0.05);
+        if(intensRatio > 0.0){
+            if(rdIntensity > 0.0){
+                float maxRdIntens = mix(1.0, 0.5, lgIntensity);
+                float rdIntens = mix(0.0, maxRdIntens, rdIntensity * intensRatio);
+                uv = lgEye(uv, eyeCenter, range * 2.0, rdIntens, 0.075);
+                uv = rdEye(uv, eyeCenter, range * 2.0, rdIntens, 0.1);
+            }
+            if(lgIntensity > 0.0){
+                float lgIntens = lgIntensity * intensRatio;
+                uv = lgEye(uv, eyeCenter, range * 2.5, lgIntens, 0.1);
+                uv = rdEye(uv, eyeCenter, range * 2.5, lgIntens, 0.05);
+            }
         }
         gl_FragColor = texture2D(map, uv);
     }
