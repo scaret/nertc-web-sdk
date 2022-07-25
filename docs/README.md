@@ -237,6 +237,6 @@ NO_RECORD | 41027 | 没有实例化 Record
 NOT_FOUND | 41028 | 未获取，可以通过 console 日志查看原因
 APPDATA_ERROR | 41029 | appData 错误，可以通过 console 日志查看原因
 AUTO_PLAY_NOT_ALLOWED | 41030 | 自动播放受限
-MEDIA_OPEN_BANNED_BY_SERVER ｜ 41032 ｜ 被服务器禁言
+MEDIA_OPEN_BANNED_BY_SERVER | 41032 | 被服务器禁言
 UNKNOWN | 99999 | 未知错误
 
