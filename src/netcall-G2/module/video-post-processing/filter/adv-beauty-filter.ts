@@ -478,8 +478,12 @@ export class AdvBeautyFilter extends Filter {
     presetAdvEffect(preset:{
         [key in HandleKey]?:number
     }){
-        for (const key in preset) {
-            this.setAdvEffect(key as HandleKey, preset[key as HandleKey]);
+        for(const key in this.defParams){
+            if(key in preset){
+                this.setAdvEffect(key as HandleKey, preset[key as HandleKey]);
+            } else {
+                this.setAdvEffect(key as HandleKey, this.defParams[key as HandleKey]);
+            }
         }
     }
 
