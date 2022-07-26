@@ -52,3 +52,7 @@ color: #0f9d58;
 .select-changed{
   background: lightyellow;
 }
+
+.remote-view{
+  float: left
+}

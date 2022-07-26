@@ -2557,6 +2557,14 @@ class LocalStream extends RTCEventEmitter {
       // 如果当前正在发送，则直接应用最新码率
       this.applyEncoderConfig(options.mediaType, options.streamType)
     }
+    this.client.apiFrequencyControl({
+      name: 'setVideoEncoderConfiguration',
+      code: 0,
+      param: {
+        streamID: this.stringStreamID,
+        options
+      }
+    })
   }
   
   async replaceTrack(options: {

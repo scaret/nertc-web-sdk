@@ -482,6 +482,29 @@ function initEvents() {
   rtc.client.on('peer-online', evt => {
     console.warn(`${evt.uid} 加入房间`)
     addLog(`${evt.uid} 加入房间`)
+    
+    const view = getRemoteView(evt.uid)
+    view.audio = {
+      added: false,
+      subscribed: false,
+      muted: false,
+    }
+    view.video = {
+      added: false,
+      subscribed: false,
+      muted: false,
+    }
+    view.screen = {
+      added: false,
+      subscribed: false,
+      muted: false,
+    }
+    view.audioSlave = {
+      added: false,
+      subscribed: false,
+      muted: false,
+    }
+    view.$div.show()
   })
   
   rtc.client.on('@mediaCapabilityChange', evt=>{
@@ -500,6 +523,7 @@ function initEvents() {
   rtc.client.on('peer-leave', evt => {
     console.warn(`${evt.uid} 离开房间`)
     addLog(`${evt.uid} 离开房间`)
+    getRemoteView(evt.uid).$div.hide()
     delete rtc.remoteStreams[evt.uid]
     if (currentSpeaker.uid == evt.uid) {
       currentSpeaker.uid = null
@@ -510,32 +534,38 @@ function initEvents() {
   rtc.client.on('mute-audio', evt => {
     console.warn(`${evt.uid} mute自己的音频`)
     addLog(`${evt.uid} mute自己的音频`)
+    getRemoteView(evt.uid).audio.muted = true
   })
 
   rtc.client.on('unmute-audio', evt => {
     console.warn(`${evt.uid} unmute自己的音频`)
     addLog(`${evt.uid} unmute自己的音频`)
+    getRemoteView(evt.uid).audio.muted = false
   })
 
   rtc.client.on('mute-video', evt => {
     console.warn(`${evt.uid} mute自己的视频`)
     addLog(`${evt.uid} mute自己的视频`)
+    getRemoteView(evt.uid).video.muted = true
   })
 
   rtc.client.on('unmute-video', evt => {
     console.warn(`${evt.uid} unmute自己的视频`)
     addLog(`${evt.uid} unmute自己的视频`)
+    getRemoteView(evt.uid).video.muted = false
   })
 
 
   rtc.client.on('mute-screen', evt => {
     console.warn(`${evt.uid} mute自己的辅流`)
     addLog(`${evt.uid} mute自己的辅流`)
+    getRemoteView(evt.uid).screen.muted = true
   })
 
   rtc.client.on('unmute-screen', evt => {
     console.warn(`${evt.uid} unmute自己的辅流`)
     addLog(`${evt.uid} unmute自己的辅流`)
+    getRemoteView(evt.uid).screen.muted = false
   })
   
   rtc.client.on('crypt-error', evt => {
@@ -551,6 +581,8 @@ function initEvents() {
     var remoteStream = evt.stream;
     console.warn('收到别人的发布消息: ', remoteStream.streamID, 'mediaType: ', evt.mediaType)
     
+    getRemoteView(evt.stream.streamID)[evt.mediaType].added = true
+    
     if (rtc.remoteStreams[remoteStream.streamID]) {
       console.warn('清除之前的音视频流，重新sub')
       remoteStream.stop()
@@ -564,6 +596,7 @@ function initEvents() {
     var remoteStream = evt.stream;
     console.warn('收到别人停止发布的消息: ', remoteStream.streamID, 'mediaType: ', evt.mediaType)
     addLog(`${remoteStream.streamID}停止发布 ` + evt.mediaType)
+    getRemoteView(evt.stream.streamID)[evt.mediaType].added = false
     
     if (!remoteStream.audio && !remoteStream.video && !remoteStream.screen) {
       delete rtc.remoteStreams[remoteStream.streamID]
@@ -571,10 +604,15 @@ function initEvents() {
     }
     remoteStream.stop(evt.mediaType);
   })
+  
+  rtc.client.on('@stream-unsubscribed', evt=>{
+    getRemoteView(evt.stream.streamID)[evt.mediaType].subscribed = false
+  })
 
   rtc.client.on('stream-subscribed', evt => {
     var remoteStream = evt.stream;
     console.warn('订阅别人的流成功的通知: ', remoteStream.streamID, 'mediaType: ', evt.mediaType)
+    getRemoteView(evt.stream.streamID)[evt.mediaType].subscribed = true
     const uid = $('#part-volume input[name="uid"]').val();
     const deviceId = $('#sounder').val();
     if (uid === "" + remoteStream.streamID && deviceId && deviceId !== "default"){
@@ -597,7 +635,8 @@ function initEvents() {
       video: $("#remotePlayOptionsVideo").prop('checked'),
       screen: $("#remotePlayOptionsScreen").prop('checked'),
     } : null;
-    remoteStream.play(document.getElementById('remote-container'), playOptions).then(()=>{
+    const remoteDiv = getRemoteView(remoteStream.streamID).$div[0]
+    remoteStream.play(remoteDiv, playOptions).then(()=>{
       console.log('播放对端的流成功', playOptions)
       remoteStream.setRemoteRenderMode(globalConfig.remoteViewConfig, evt.mediaType)
       setTimeout(checkRemoteStramStruck, 2000)
@@ -899,6 +938,100 @@ async function initCodecOptions(){
 $('#init-btn').on('click', () => {
   
 })
+
+/*
+  uid: number,
+  $div: $div,
+  audio :{
+     added: boolean,
+     subscribed: boolean,
+     muted: boolean,
+  },
+ */
+const remoteViews = []
+
+function getRemoteView(uid){
+  let view = null
+  let i = 0
+  for (; i < remoteViews.length; i++){
+    if (uid == remoteViews[i].uid){
+      view = remoteViews[i]
+      break;
+    }else if (uid < remoteViews[i].uid){
+      break
+    }
+  }
+  if (view){
+    return view
+  }else{
+    const $div = $(`<div class="remote-view remove-view-${uid}"><div class="remote-view-title remote-view-title-${uid}"></div></div>`)
+    view = {
+      uid: uid,
+      $div: $div,
+      audio: {added: false, subscribed: false, muted: false},
+      video: {added: false, subscribed: false, muted: false},
+      screen: {added: false, subscribed: false, muted: false},
+      audioSlave: {added: false, subscribed: false, muted: false},
+    }
+    if (i > 0){
+      remoteViews.splice(i, 0, view)
+      $div.insertAfter(remoteViews[i - 1].$div)
+    }else{
+      $div.insertAfter('#remote-container-title')
+      remoteViews.unshift(view)
+    }
+    return view
+  }
+}
+
+function updateRemoteViewInfo(){
+  for (let i = 0; i < remoteViews.length; i++){
+    const view = remoteViews[i]
+    let title = `remote ${view.uid}`;
+    ["audio", "video", "screen","audioSlave"].forEach((mediaType)=>{
+      let infoStr = ""
+      if (view[mediaType].subscribed){
+        infoStr += `${mediaType}`.toUpperCase()
+      }else if (view[mediaType].added){
+        infoStr += `${mediaType}`
+      }
+      if (view[mediaType].muted){
+        infoStr = `<del>${infoStr}</del>`
+      }
+      const remoteStream = rtc.remoteStreams[view.uid]
+      if (remoteStream){
+        if (mediaType === "video"){
+          const track = remoteStream.mediaHelper.video.cameraTrack
+          if (track){
+            const settings = track.getSettings()
+            if (settings && settings.width && settings.height){
+              infoStr += ` ${settings.width}x${settings.height}`
+            }
+          }
+        }
+        if (mediaType === "screen"){
+          const track = remoteStream.mediaHelper.screen.screenVideoTrack
+          if (track){
+            const settings = track.getSettings()
+            if (settings && settings.width && settings.height){
+              infoStr += ` ${settings.width}x${settings.height}`
+            }
+          }
+        }
+      }
+      if (infoStr){
+        title += " " + infoStr
+      }
+    })
+    const html = view.$div.children(".remote-view-title").html()
+    if (html !== title){
+      console.log(`更新说明【${html}】=>【${title}】`)
+      view.$div.children(".remote-view-title").html(title)
+    }
+  }
+}
+
+const updateRemoteViewInfoTimer = setInterval(updateRemoteViewInfo, 200)
 
 /** 
  * ----------------------------------------
@@ -1607,6 +1740,10 @@ $('#switchLow').on('click', () => {
 })
 
 $("#subscribeAll").on("click", ()=>{
+  $("#subAudio").prop("checked", true)
+  $("#subAudioSlave").prop("checked", true)
+  $("#subVideo").prop("checked", true)
+  $("#subScreen").prop("checked", true)
   for (let uid in rtc.client.adapterRef.remoteStreamMap){
     const remoteStream = rtc.client.adapterRef.remoteStreamMap[uid]
     rtc.client.subscribe(remoteStream)
@@ -1614,6 +1751,10 @@ $("#subscribeAll").on("click", ()=>{
 })
 
 $("#unsubscribeAll").on("click", ()=>{
+  $("#subAudio").prop("checked", false)
+  $("#subAudioSlave").prop("checked", false)
+  $("#subVideo").prop("checked", false)
+  $("#subScreen").prop("checked", false)
   for (let uid in rtc.client.adapterRef.remoteStreamMap){
     const remoteStream = rtc.client.adapterRef.remoteStreamMap[uid]
     rtc.client.unsubscribe(remoteStream)
