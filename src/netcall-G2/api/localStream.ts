@@ -3545,7 +3545,7 @@ class LocalStream extends RTCEventEmitter {
       this._transformedTrack = await basicBeauty.setBeauty(isStart, this._cameraTrack) as MediaStreamTrack;
       videoTrackLow = this.mediaHelper.video.videoTrackLow;
        // 替换 track
-      await this.replaceTrack({
+      await this.replacePluginTrack({
             mediaType: "video",
             //@ts-ignore
             track: this._transformedTrack,
@@ -3558,8 +3558,10 @@ class LocalStream extends RTCEventEmitter {
       if(this.canvasWatermarkOptions) {
         this.setCanvasWatermarkConfigs(this.canvasWatermarkOptions);
       }
-      if (videoTrackLow){
+      videoTrackLow = this.mediaHelper.video.videoTrackLow;
+      if(videoTrackLow && !isStart) {
         videoTrackLow.stop();
+        videoTrackLow = null;
       }
       if(isStart){
         let effects;
@@ -4023,9 +4025,9 @@ class LocalStream extends RTCEventEmitter {
       }
     })
     this.logger.log(`uid ${this.stringStreamID} 销毁 Stream 实例`)
+    await this.close({type:'video'});
     this.stop()
     this._reset()
-    await this.suspendVideoPostProcess();
     this.destroyed = true;
     this.lastEffects = null;
     this.lastFilter = null;
