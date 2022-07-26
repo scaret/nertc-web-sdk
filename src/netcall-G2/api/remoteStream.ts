@@ -563,14 +563,9 @@ class RemoteStream extends RTCEventEmitter {
           this.audioPlay_ = true;
         }catch(error) {
           this.audioPlay_ = false;
-          let err = {
-            error: error,
-            uid: this.stringStreamID
-          }
-          this.client.emit('notAllowedError', err) 
-          this.client.emit('NotAllowedError', err) // 兼容旧版本
+          this.client.emit('notAllowedError', error) 
+          this.client.emit('NotAllowedError', error) // 兼容旧版本
           this.safeEmit('notAllowedError', error)
-          this.client.emit('notAllowedError', error)
         }
       }
     }
@@ -585,7 +580,9 @@ class RemoteStream extends RTCEventEmitter {
           this.audioSlavePlay_ = true;
         }catch(error) {
           this.audioSlavePlay_ = false;
-          this.client.emit('notAllowedError', error)
+          this.client.emit('notAllowedError', error) 
+          this.client.emit('NotAllowedError', error) // 兼容旧版本
+          this.safeEmit('notAllowedError', error)
         }
       }
     }
@@ -618,12 +615,8 @@ class RemoteStream extends RTCEventEmitter {
             //   message: ErrorMessage
             // })
             this.videoPlay_ = false;
-            let err = {
-              error: error,
-              uid: this.stringStreamID
-            }
-            this.client.emit('notAllowedError', err) 
-            this.client.emit('NotAllowedError', err) // 兼容旧版本
+            this.client.emit('notAllowedError', error) 
+            this.client.emit('NotAllowedError', error) // 兼容旧版本
             this.safeEmit('notAllowedError', error)
           }
         }  
@@ -640,12 +633,8 @@ class RemoteStream extends RTCEventEmitter {
             this.screenPlay_ = false;
           }catch(error){
             this.screenPlay_ = false;
-            let err = {
-              error: error,
-              uid: this.stringStreamID
-            }
-            this.client.emit('notAllowedError', err) 
-            this.client.emit('NotAllowedError', err) // 兼容旧版本
+            this.client.emit('notAllowedError', error) 
+            this.client.emit('NotAllowedError', error) // 兼容旧版本
             this.safeEmit('notAllowedError', error)
           }
         }
