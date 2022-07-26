@@ -582,6 +582,7 @@ function initEvents() {
     console.warn('收到别人的发布消息: ', remoteStream.streamID, 'mediaType: ', evt.mediaType)
     
     getRemoteView(evt.stream.streamID)[evt.mediaType].added = true
+    getRemoteView(evt.stream.streamID).$div.show()
     
     if (rtc.remoteStreams[remoteStream.streamID]) {
       console.warn('清除之前的音视频流，重新sub')
@@ -789,13 +790,21 @@ function initEvents() {
     let tr = null
     let tables = $("#netQuality");
     $("#netQuality tr:not(:first)").remove();
+    remoteViews.forEach((view)=>{
+      view.uplinkNetworkQuality = ""
+      view.downlinkNetworkQuality = ""
+    })
     _data.forEach(item => {
       tr = `<tr style="font-size: small">
         <td>${item.uid}`
       const remoteStream = rtc.remoteStreams[item.uid]
       if (remoteStream && remoteStream.platformType !== 16){
-        tr += `<br/>${NERTC.PlatformTypeMap[remoteStream.platformType]}`
+        tr += `<br/>${NERTC.PlatformTypeMap[remoteStream.platformType] || "platform" + remoteStream.platformType}`
       }
+      getRemoteView(item.uid).platformType = NERTC.PlatformTypeMap[remoteStream.platformType] || "platform" + remoteStream.platformType
+      getRemoteView(item.uid).uplinkNetworkQuality = `${NERTC.NETWORK_STATUS[item.uplinkNetworkQuality]} (${item.uplinkNetworkQuality})`
+      getRemoteView(item.uid).downlinkNetworkQuality = `${NERTC.NETWORK_STATUS[item.downlinkNetworkQuality]} (${item.downlinkNetworkQuality})`
+
       tr +=  
         `</td>
         <td>${NERTC.NETWORK_STATUS[item.uplinkNetworkQuality]} (${item.uplinkNetworkQuality})</td>
@@ -942,6 +951,8 @@ $('#init-btn').on('click', () => {
 /*
   uid: number,
   $div: $div,
+  uplinkNetworkQuality: "",
+  downlinkNetworkQuality: "",
   audio :{
      added: boolean,
      subscribed: boolean,
@@ -968,6 +979,9 @@ function getRemoteView(uid){
     view = {
       uid: uid,
       $div: $div,
+      uplinkNetworkQuality: "",
+      downlinkNetworkQuality: "",
+      platformType: "",
       audio: {added: false, subscribed: false, muted: false},
       video: {added: false, subscribed: false, muted: false},
       screen: {added: false, subscribed: false, muted: false},
@@ -980,6 +994,7 @@ function getRemoteView(uid){
       $div.insertAfter('#remote-container-title')
       remoteViews.unshift(view)
     }
+    view.$div.hide()
     return view
   }
 }
@@ -987,7 +1002,7 @@ function getRemoteView(uid){
 function updateRemoteViewInfo(){
   for (let i = 0; i < remoteViews.length; i++){
     const view = remoteViews[i]
-    let title = `remote ${view.uid}`;
+    let title = `${view.platformType || "remote"} ${view.uid}`;
     ["audio", "video", "screen","audioSlave"].forEach((mediaType)=>{
       let infoStr = ""
       if (view[mediaType].subscribed){
@@ -1023,6 +1038,9 @@ function updateRemoteViewInfo(){
         title += " " + infoStr
       }
     })
+    if (view.uplinkNetworkQuality && view.downlinkNetworkQuality){
+      title += `<br/>⬆${view.uplinkNetworkQuality} ⬇${view.downlinkNetworkQuality}`
+    }
     const html = view.$div.children(".remote-view-title").html()
     if (html !== title){
       console.log(`更新说明【${html}】=>【${title}】`)
@@ -1746,7 +1764,15 @@ $("#subscribeAll").on("click", ()=>{
   $("#subScreen").prop("checked", true)
   for (let uid in rtc.client.adapterRef.remoteStreamMap){
     const remoteStream = rtc.client.adapterRef.remoteStreamMap[uid]
-    rtc.client.subscribe(remoteStream)
+    if (remoteStream.active){
+      remoteStream.setSubscribeConfig({
+        audio: true,
+        video: true,
+        screen: true,
+        audioSlave: true
+      })
+      rtc.client.subscribe(remoteStream)
+    }
   }
 })
 
@@ -3683,9 +3709,17 @@ $("#startPlay").on("click", function(){
   if (mediaType){
     const playOptions = {audio: false, audioSlave: false, video: false, screen: false};
     playOptions[mediaType] = true
-    stream.play(document.getElementById('manual-container'), playOptions);
+    if (uid){
+      stream.play(getRemoteView(uid).$div[0], playOptions)
+    }else{
+      stream.play(document.getElementById('local-container'), playOptions)
+    }
   }else{
-    stream.play(document.getElementById('manual-container'));
+    if (uid){
+      stream.play(getRemoteView(uid).$div[0])
+    }else{
+      stream.play(document.getElementById('local-container'))
+    }
   }
 });
 $("#stopPlay").on("click", function(){
