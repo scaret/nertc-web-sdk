@@ -1044,10 +1044,20 @@ class MediaHelper extends EventEmitter {
     try{
 
       if (this.audio.micTrack){
-        settings.mic = {
-          settings: this.audio.micTrack.getSettings(),
-          label: this.audio.micTrack.label,
-          readyState: this.audio.micTrack.readyState,
+        const track = compatAudioInputList.findSource(this.audio.micTrack.id)
+        if (track){
+          settings.mic = {
+            compat: true,
+            settings: track.getSettings(),
+            label: track.label,
+            readyState: track.readyState,
+          }
+        }else{
+          settings.mic = {
+            settings: this.audio.micTrack.getSettings(),
+            label: this.audio.micTrack.label,
+            readyState: this.audio.micTrack.readyState,
+          }
         }
       }
       if (this.audio.audioSource){
