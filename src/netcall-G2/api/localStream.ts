@@ -321,60 +321,9 @@ class LocalStream extends RTCEventEmitter {
         screenProfile: this.screenProfile
       }
     })
-
-    // 监听美颜任务队列事件，用以兼容 safari 下 canvas 多实例的场景
-    if(env.IS_ANY_SAFARI){
-      this.videoPostProcess.on('taskSwitch',(isON)=>{
-        if(this._play){
-          const localVideoDom = this._play.getVideoDom!.querySelector('video');
-          const videoDom = this._play.getVideoDom;
-          if(localVideoDom && videoDom){
-            const filters = this.videoPostProcess.filters;
-            const video = this.videoPostProcess.video;
-            if(isON){
-              const canvas = filters.canvas;
-              const rect = videoDom.getBoundingClientRect();
-              const pr = rect.width / rect.height;
-              const cr = canvas.width / canvas.height;
-              localVideoDom.style.display = 'none';
-              // safari在使用canvas.captureStream获取webgl渲染后的视频流，在本地播放时可能出现红屏或黑屏
-              // filters.canvas.style.height = '100%';
-              // filters.canvas.style.width = 'auto';
-              canvas.style.position = 'absolute';
-              // filters.canvas.style.left = '50%';
-              // filters.canvas.style.top = '50%';
-              // filters.canvas.style.transform = 'translate(-50%,-50%)';
-
-              if(pr > cr){
-                canvas.style.height = `100%`;
-                canvas.style.top = '0px';
-                const wRatio = rect.height * cr / rect.width;
-                canvas.style.width = `${wRatio * 100}%`;
-                canvas.style.left = `${(1 - wRatio) * 50}%`;
-              }else{
-                canvas.style.width = `100%`;
-                canvas.style.left = '0px';
-                const hRatio = rect.width / cr / rect.height;
-                canvas.style.height = `${hRatio * 100}%`;
-                canvas.style.top = `${(1 - hRatio) * 50}%`;
-              }
-
-              // safari下，本地<video>切换成<canvas>
-              videoDom.appendChild(filters.canvas);
-              // safari 13.1 浏览器 需要<video> 和 <canvas> 在可视区域才能正常播放
-              if(env.SAFARI_MAJOR_VERSION! < 14 && video){
-                  video.style.height = '0px';
-                  video.style.width = '0px';
-                  document.body.appendChild(video);
-              }
-            }else{
-              localVideoDom.style.display = '';
-              videoDom.removeChild(filters.canvas);
-            }
-          }
-        }
-      });
-    }
+    this.videoPostProcess.on('taskSwitch',()=>{
+      this.replaceCanvas();
+    })
   }
   
   getAdapterRef(){
@@ -3441,11 +3390,13 @@ class LocalStream extends RTCEventEmitter {
           this._play.watermark.video.encoderControl.handler.enabled = true
           if (!this.mediaHelper.video.preProcessingEnabled){
             this.mediaHelper.enablePreProcessing("video")
+            this.replaceCanvas();
           }
         }else{
           this._play.watermark.video.encoderControl.handler.enabled = false
           if (this.mediaHelper.canDisablePreProcessing('video')){
             this.mediaHelper.disablePreProcessing("video")
+            this.replaceCanvas();
           }
         }
       }
@@ -3996,6 +3947,73 @@ class LocalStream extends RTCEventEmitter {
       }
     }catch(error){
       this.logger.log(`开启失败: ${error}`);
+    }
+  }
+
+  // 兼容 safari 15.3 下抓流红黑屏及其他问题
+  private replaceCanvas(){
+    if(!this._play) return;
+    if(!env.IS_ANY_SAFARI) return;
+    if(env.SAFARI_VERSION && parseFloat(env.SAFARI_VERSION) > 15.3) return;
+    
+    const localVideoDom = this._play.getVideoDom!.querySelector('video');
+    const videoDom = this._play.getVideoDom;
+    if(localVideoDom && videoDom){
+      const filters = this.videoPostProcess.filters;
+      const video = this.videoPostProcess.video;
+
+      const vpp = this.videoPostProcess;
+      const vppOn = vpp.hasTask('BasicBeauty') || vpp.hasTask('VirtualBackground') || vpp.hasTask('AdvancedBeauty');
+      const wmOn = this.mediaHelper.video.preProcessingEnabled;
+
+      if(vppOn){
+         // safari 13.1 浏览器 需要<video> 和 <canvas> 在可视区域才能正常播放
+         if(env.SAFARI_MAJOR_VERSION! < 14 && video){
+          video.style.height = '0px';
+          video.style.width = '0px';
+          document.body.appendChild(video);
+        }
+
+        if(!wmOn && filters.canvas.parentElement !== videoDom){
+          const canvas = filters.canvas;
+          const rect = videoDom.getBoundingClientRect();
+          const pr = rect.width / rect.height;
+          const cr = canvas.width / canvas.height;
+          localVideoDom.style.display = 'none';
+          // safari在使用canvas.captureStream获取webgl渲染后的视频流，在本地播放时可能出现红屏或黑屏
+          // filters.canvas.style.height = '100%';
+          // filters.canvas.style.width = 'auto';
+          canvas.style.position = 'absolute';
+          // filters.canvas.style.left = '50%';
+          // filters.canvas.style.top = '50%';
+          // filters.canvas.style.transform = 'translate(-50%,-50%)';
+
+          if(pr > cr){
+            canvas.style.height = `100%`;
+            canvas.style.top = '0px';
+            const wRatio = rect.height * cr / rect.width;
+            canvas.style.width = `${wRatio * 100}%`;
+            canvas.style.left = `${(1 - wRatio) * 50}%`;
+          }else{
+            canvas.style.width = `100%`;
+            canvas.style.left = '0px';
+            const hRatio = rect.width / cr / rect.height;
+            canvas.style.height = `${hRatio * 100}%`;
+            canvas.style.top = `${(1 - hRatio) * 50}%`;
+          }
+
+          // safari下，本地<video>切换成<canvas>
+          videoDom.appendChild(filters.canvas);
+        }else if(wmOn && filters.canvas.parentElement === videoDom){
+          localVideoDom.style.display = '';
+          videoDom.removeChild(filters.canvas);
+        }
+      }else{
+        localVideoDom.style.display = '';
+        try {
+          videoDom.removeChild(filters.canvas);
+        } catch (error) {}
+      }
     }
   }
   
