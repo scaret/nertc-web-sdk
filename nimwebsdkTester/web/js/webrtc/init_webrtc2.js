@@ -798,12 +798,15 @@ function initEvents() {
       tr = `<tr style="font-size: small">
         <td>${item.uid}`
       const remoteStream = rtc.remoteStreams[item.uid]
-      if (remoteStream && remoteStream.platformType !== 16){
-        tr += `<br/>${NERTC.PlatformTypeMap[remoteStream.platformType] || "platform" + remoteStream.platformType}`
+      
+      if (remoteStream){
+        if (remoteStream.platformType !== 16){
+          tr += `<br/>${NERTC.PlatformTypeMap[remoteStream.platformType] || "platform" + remoteStream.platformType}`
+        }
+        getRemoteView(item.uid).platformType = NERTC.PlatformTypeMap[remoteStream.platformType] || "platform" + remoteStream.platformType
+        getRemoteView(item.uid).uplinkNetworkQuality = `${NERTC.NETWORK_STATUS[item.uplinkNetworkQuality]} (${item.uplinkNetworkQuality})`
+        getRemoteView(item.uid).downlinkNetworkQuality = `${NERTC.NETWORK_STATUS[item.downlinkNetworkQuality]} (${item.downlinkNetworkQuality})`
       }
-      getRemoteView(item.uid).platformType = NERTC.PlatformTypeMap[remoteStream.platformType] || "platform" + remoteStream.platformType
-      getRemoteView(item.uid).uplinkNetworkQuality = `${NERTC.NETWORK_STATUS[item.uplinkNetworkQuality]} (${item.uplinkNetworkQuality})`
-      getRemoteView(item.uid).downlinkNetworkQuality = `${NERTC.NETWORK_STATUS[item.downlinkNetworkQuality]} (${item.downlinkNetworkQuality})`
 
       tr +=  
         `</td>
@@ -1039,7 +1042,7 @@ function updateRemoteViewInfo(){
       }
     })
     if (view.uplinkNetworkQuality && view.downlinkNetworkQuality){
-      title += `<br/>⬆${view.uplinkNetworkQuality} ⬇${view.downlinkNetworkQuality}`
+      title += `<br>⬆${view.uplinkNetworkQuality} ⬇${view.downlinkNetworkQuality}`
     }
     const html = view.$div.children(".remote-view-title").html()
     if (html !== title){
