@@ -3757,6 +3757,114 @@ class LocalStream extends RTCEventEmitter {
         })
       }
     }
+
+    async replacePluginTrack(options: {
+      mediaType: "video"|"screen",
+      track: MediaStreamTrack,
+      external: boolean,
+      noLowTrack?: boolean
+    }){
+      // replaceTrack不会主动关掉原来的track，包括大小流
+      let oldTrack;
+      let oldTrackLow;
+      let external = false; // 被替换的流是否是外部流
+   
+      if (options.mediaType === "screen"){   
+        if (this.mediaHelper.screen.screenVideoTrack){
+          oldTrack = this.mediaHelper.screen.screenVideoTrack;
+          this.mediaHelper.screen.screenVideoTrack = null
+        }else if (this.mediaHelper.screen.screenVideoSource){
+          external = true
+          oldTrack = this.mediaHelper.screen.screenVideoSource;
+          this.mediaHelper.screen.screenVideoSource = null
+        }
+        if (oldTrack){
+          if (options.external){
+            this.mediaHelper.screen.screenVideoSource = options.track;
+          }else{
+            this.mediaHelper.screen.screenVideoTrack = options.track;
+          }
+          emptyStreamWith(this.mediaHelper.screen.screenVideoStream, options.track);
+          emptyStreamWith(this.mediaHelper.screen.renderStream, options.track);
+          if (
+            this.mediaHelper.screen.screenVideoStream.getVideoTracks().length &&
+            typeof this.mediaHelper.screen.encoderConfig.high.contentHint === "string" &&
+            // @ts-ignore
+            this.mediaHelper.screen.screenVideoStream.getVideoTracks()[0].contentHint !== this.mediaHelper.screen.encoderConfig.high.contentHint
+          ){
+            this.logger.log(`应用 contentHint screen high`, this.mediaHelper.screen.encoderConfig.high.contentHint)
+            // @ts-ignore
+            this.mediaHelper.screen.screenVideoStream.getVideoTracks()[0].contentHint = this.mediaHelper.screen.encoderConfig.high.contentHint
+          }
+          oldTrackLow = this.mediaHelper.screen.screenVideoTrackLow;
+          this.mediaHelper.screen.screenVideoTrackLow = null
+        }
+      }else if (options.mediaType === "video"){
+        if (this.mediaHelper.video.cameraTrack){
+          oldTrack = this.mediaHelper.video.cameraTrack;
+          this.mediaHelper.video.cameraTrack = null;
+        }else if (this.mediaHelper.video.videoSource){
+          external = true
+          oldTrack = this.mediaHelper.video.videoSource;
+          this.mediaHelper.video.videoSource = null;
+        }
+        if (oldTrack){
+          if (options.external){
+            this.mediaHelper.video.videoSource = options.track;
+          }else{
+            this.mediaHelper.video.cameraTrack = options.track;
+          }
+          emptyStreamWith(this.mediaHelper.video.videoStream, options.track);
+          emptyStreamWith(this.mediaHelper.video.renderStream, options.track);
+          if (
+            this.mediaHelper.video.videoStream.getVideoTracks().length &&
+            typeof this.mediaHelper.video.encoderConfig.high.contentHint === "string" &&
+            // @ts-ignore
+            this.mediaHelper.video.videoStream.getVideoTracks()[0].contentHint !== this.mediaHelper.video.encoderConfig.high.contentHint
+          ){
+            this.logger.log(`应用 contentHint video high`, this.mediaHelper.video.encoderConfig.high.contentHint)
+            // @ts-ignore
+            this.mediaHelper.video.videoStream.getVideoTracks()[0].contentHint = this.mediaHelper.video.encoderConfig.high.contentHint
+          }
+          oldTrackLow = this.mediaHelper.video.videoTrackLow;
+          this.mediaHelper.video.videoTrackLow = null
+          if (this.mediaHelper.video.preProcessingEnabled){
+            this.mediaHelper.enablePreProcessing("video")
+          }
+        }
+      }
+      if (oldTrack){
+        this.logger.log(`replaceTrack ${options.mediaType} dual:${!!oldTrackLow}【external: ${external} ${oldTrack.label}】=>【external: ${options.external} ${options.track.label}】`)
+        watchTrack(options.track)
+        this.mediaHelper.listenToTrackEnded(options.track);
+      }else{
+        this.logger.error(`replaceTrack ${options.mediaType} 当前没有可替换的流`)
+        return null
+      }
+     
+        const sender = this.getSender(options.mediaType, "high")
+        const senderLow = this.getSender(options.mediaType, "low")
+        if (sender){
+          sender.replaceTrack(options.track)
+          this.logger.log(`replaceTrack ${options.mediaType} 成功替换上行`)
+        }
+        if (senderLow && oldTrackLow && !options.noLowTrack){
+          oldTrackLow.stop();
+          oldTrackLow = null;
+          const newTrackLow = await this.mediaHelper.createTrackLow(options.mediaType)
+          console.warn('create new TrackLow')
+          if (newTrackLow){
+            senderLow.replaceTrack(newTrackLow);   
+            this.logger.log(`replaceTrack ${options.mediaType} 成功替换上行小流`)
+          }
+        }
+      
+      return {
+        oldTrack,
+        oldTrackLow,
+        external,
+      }
+    }
   
     async transformTrack(enable:boolean, processor: VirtualBackground | AdvancedBeauty | null) {
       if (!processor) {
@@ -3766,14 +3874,15 @@ class LocalStream extends RTCEventEmitter {
       if (this.mediaHelper && this.mediaHelper.video.cameraTrack) {
         this._cameraTrack  = this.mediaHelper.video.cameraTrack;
         this._transformedTrack = await processor.setTrack(enable, this._cameraTrack ) as MediaStreamTrack;
-        videoTrackLow = this.mediaHelper.video.videoTrackLow;
          // 替换 track
-        await this.replaceTrack({
+        await this.replacePluginTrack({
               mediaType: "video",
               //@ts-ignore
               track: this._transformedTrack,
-              external: false
+              external: false,
+              noLowTrack: !enable
         });
+        
         //重新开启水印
         if(this.encoderWatermarkOptions) {
           this.setEncoderWatermarkConfigs(this.encoderWatermarkOptions);
@@ -3781,9 +3890,10 @@ class LocalStream extends RTCEventEmitter {
         if(this.canvasWatermarkOptions) {
           this.setCanvasWatermarkConfigs(this.canvasWatermarkOptions);
         }
-        if (videoTrackLow){
+        videoTrackLow = this.mediaHelper.video.videoTrackLow;
+        if(videoTrackLow && !enable) {
           videoTrackLow.stop();
-          this.mediaHelper.video.videoTrackLow = null;
+          videoTrackLow = null;
         }
       } else {
         this.logger.log("此时还没有有视频track");
