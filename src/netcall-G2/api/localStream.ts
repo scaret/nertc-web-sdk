@@ -3552,11 +3552,8 @@ class LocalStream extends RTCEventEmitter {
             external: false
       });
       //重新开启水印
-      if(this.encoderWatermarkOptions) {
-        this.setEncoderWatermarkConfigs(this.encoderWatermarkOptions);
-      }
-      if(this.canvasWatermarkOptions) {
-        this.setCanvasWatermarkConfigs(this.canvasWatermarkOptions);
+      if (this.mediaHelper.video.preProcessingEnabled){
+        this.mediaHelper.enablePreProcessing("video")
       }
       videoTrackLow = this.mediaHelper.video.videoTrackLow;
       if(videoTrackLow && !isStart) {
@@ -3830,9 +3827,6 @@ class LocalStream extends RTCEventEmitter {
           }
           oldTrackLow = this.mediaHelper.video.videoTrackLow;
           this.mediaHelper.video.videoTrackLow = null
-          if (this.mediaHelper.video.preProcessingEnabled){
-            this.mediaHelper.enablePreProcessing("video")
-          }
         }
       }
       if (oldTrack){
@@ -3844,22 +3838,22 @@ class LocalStream extends RTCEventEmitter {
         return null
       }
      
-        const sender = this.getSender(options.mediaType, "high")
-        const senderLow = this.getSender(options.mediaType, "low")
-        if (sender){
-          sender.replaceTrack(options.track)
-          this.logger.log(`replaceTrack ${options.mediaType} 成功替换上行`)
+      const sender = this.getSender(options.mediaType, "high")
+      const senderLow = this.getSender(options.mediaType, "low")
+      if (sender){
+        sender.replaceTrack(options.track)
+        this.logger.log(`replaceTrack ${options.mediaType} 成功替换上行`)
+      }
+      if (senderLow && oldTrackLow && !options.noLowTrack){
+        oldTrackLow.stop();
+        oldTrackLow = null;
+        const newTrackLow = await this.mediaHelper.createTrackLow(options.mediaType)
+        console.warn('create new TrackLow')
+        if (newTrackLow){
+          senderLow.replaceTrack(newTrackLow);   
+          this.logger.log(`replaceTrack ${options.mediaType} 成功替换上行小流`)
         }
-        if (senderLow && oldTrackLow && !options.noLowTrack){
-          oldTrackLow.stop();
-          oldTrackLow = null;
-          const newTrackLow = await this.mediaHelper.createTrackLow(options.mediaType)
-          console.warn('create new TrackLow')
-          if (newTrackLow){
-            senderLow.replaceTrack(newTrackLow);   
-            this.logger.log(`replaceTrack ${options.mediaType} 成功替换上行小流`)
-          }
-        }
+      }
       
       return {
         oldTrack,
@@ -3883,15 +3877,12 @@ class LocalStream extends RTCEventEmitter {
               track: this._transformedTrack,
               external: false,
               noLowTrack: !enable
-        });
-        
+        });      
         //重新开启水印
-        if(this.encoderWatermarkOptions) {
-          this.setEncoderWatermarkConfigs(this.encoderWatermarkOptions);
+        if (this.mediaHelper.video.preProcessingEnabled){
+          this.mediaHelper.enablePreProcessing("video")
         }
-        if(this.canvasWatermarkOptions) {
-          this.setCanvasWatermarkConfigs(this.canvasWatermarkOptions);
-        }
+
         videoTrackLow = this.mediaHelper.video.videoTrackLow;
         if(videoTrackLow && !enable) {
           videoTrackLow.stop();
