@@ -3549,7 +3549,8 @@ class LocalStream extends RTCEventEmitter {
             mediaType: "video",
             //@ts-ignore
             track: this._transformedTrack,
-            external: false
+            external: false,
+            noLowTrack: !isStart
       });
       //重新开启水印
       if (this.mediaHelper.video.preProcessingEnabled){
