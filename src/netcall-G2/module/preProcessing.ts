@@ -164,6 +164,11 @@ export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: 
   }
   preProcessing.timer = getRTCTimer().setInterval(drawFrame, interval)
   mediaHelper[mediaType].preProcessingEnabled = true
+  // 添加该事件，用以解决与美颜的冲突问题
+  mediaHelper.emit('preProcessChange', {
+    mediaType,
+    isOn: true
+  });
 }
 
 // 当没有前处理勾子时，前处理可关闭
@@ -244,6 +249,10 @@ export async function disablePreProcessing(mediaHelper: MediaHelper, mediaType: 
   if (!keepFlag){
     mediaHelper[mediaType].preProcessingEnabled = false
   }
+  mediaHelper.emit('preProcessChange', {
+    mediaType,
+    isOn: false
+  });
 }
 
 export function preProcessingSyncState(mediaHelper: MediaHelper, mediaType: "video"|"screen", config: PreProcessingConfig){
