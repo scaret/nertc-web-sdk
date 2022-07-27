@@ -329,11 +329,16 @@ class LocalStream extends RTCEventEmitter {
     this.videoPostProcess.on('taskSwitch', (isOn)=>{
       this.canvasReplaceTags.videoPost = isOn;
       this.replaceCanvas();
+      if(isOn && parseFloat(env.SAFARI_VERSION || '0') === 15.3){
+        this.logger.warn('当前版本的 Safari 下，开启美颜背替相关功能会导致内存泄露(Safari 内核 bug：从 WebGL 抓取视频流会内存泄露)。');
+      }
     })
 
-    this.mediaHelper.on('preProcessChange', (isOn)=>{
-      this.canvasReplaceTags.waterMark = isOn;
-      this.replaceCanvas();
+    this.mediaHelper.on('preProcessChange', (info)=>{
+      if(info.mediaType === 'video'){
+        this.canvasReplaceTags.waterMark = info.isOn;
+        this.replaceCanvas();
+      }
     })
   }
   
@@ -3964,7 +3969,7 @@ class LocalStream extends RTCEventEmitter {
   private async replaceCanvas(){
     if(!this._play) return;
     if(!env.IS_ANY_SAFARI) return;
-    if(env.SAFARI_VERSION && parseFloat(env.SAFARI_VERSION) > 16.0) return;
+    if(env.SAFARI_VERSION && parseFloat(env.SAFARI_VERSION) > 16) return;
     const localVideoDom = this._play.getVideoDom!.querySelector('video');
     const videoDom = this._play.getVideoDom;
     if(localVideoDom && videoDom){
@@ -3974,15 +3979,15 @@ class LocalStream extends RTCEventEmitter {
       const vppOn = this.canvasReplaceTags.videoPost;
       const wmOn = this.canvasReplaceTags.waterMark;
       if(vppOn){
+        const canvas = filters.canvas;
+        canvas.style.height = '0px';
+        canvas.style.width = '0px';
+        document.body.appendChild(canvas);
          // safari 13.1 浏览器 需要 <video> 和 <canvas> 在可视区域才能正常播放
          if(env.SAFARI_MAJOR_VERSION! < 14 && video){
-          const canvas = filters.canvas;
-          canvas.style.height = '0px';
-          canvas.style.width = '0px';
           video.style.height = '0px';
           video.style.width = '0px';
           document.body.appendChild(video);
-          document.body.appendChild(canvas);
         }
 
         if(!wmOn && filters.canvas.parentElement !== videoDom){
@@ -4015,16 +4020,12 @@ class LocalStream extends RTCEventEmitter {
 
           // safari下，本地<video>切换成<canvas>
           videoDom.appendChild(filters.canvas);
-        }else if(wmOn && filters.canvas.parentElement === videoDom){
+        }else if(wmOn){
           localVideoDom.style.display = '';
-          videoDom.removeChild(filters.canvas);
-          console.error(filters.canvas);
         }
       }else{
         localVideoDom.style.display = '';
-        try {
-          videoDom.removeChild(filters.canvas);
-        } catch (error) {}
+        filters.canvas.parentNode?.removeChild(filters.canvas);
       }
     }
   }
