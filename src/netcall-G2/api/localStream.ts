@@ -3836,7 +3836,7 @@ class LocalStream extends RTCEventEmitter {
       if (this.mediaHelper && this.mediaHelper.video.cameraTrack) {
         this._cameraTrack  = this.mediaHelper.video.cameraTrack;
         this._transformedTrack = await processor.setTrack(enable, this._cameraTrack ) as MediaStreamTrack;
-         // 替换 track
+        //替换 track
         await this.replacePluginTrack({
               mediaType: "video",
               //@ts-ignore
@@ -3849,11 +3849,11 @@ class LocalStream extends RTCEventEmitter {
           this.mediaHelper.enablePreProcessing("video")
         }
 
-        videoTrackLow = this.mediaHelper.video.videoTrackLow;
-        if(videoTrackLow && !enable) {
-          videoTrackLow.stop();
-          videoTrackLow = null;
-        }
+        // videoTrackLow = this.mediaHelper.video.videoTrackLow;
+        // if(videoTrackLow && !enable) {
+        //   videoTrackLow.stop();
+        //   videoTrackLow = null;
+        // }
       } else {
         this.logger.log("此时还没有有视频track");
       }
