@@ -136,6 +136,10 @@ class LocalStream extends RTCEventEmitter {
     isBodySegmentTrack: false,
     isAdvBeautyTrack: false
   };
+  private canvasReplaceTags = {
+    videoPost: false,
+    waterMark: false
+  };
 
   _play: Play|null;
   private _record: Record|null;
@@ -321,7 +325,14 @@ class LocalStream extends RTCEventEmitter {
         screenProfile: this.screenProfile
       }
     })
-    this.videoPostProcess.on('taskSwitch',()=>{
+    
+    this.videoPostProcess.on('taskSwitch', (isOn)=>{
+      this.canvasReplaceTags.videoPost = isOn;
+      this.replaceCanvas();
+    })
+
+    this.mediaHelper.on('preProcessChange', (isOn)=>{
+      this.canvasReplaceTags.waterMark = isOn;
       this.replaceCanvas();
     })
   }
@@ -3390,13 +3401,11 @@ class LocalStream extends RTCEventEmitter {
           this._play.watermark.video.encoderControl.handler.enabled = true
           if (!this.mediaHelper.video.preProcessingEnabled){
             this.mediaHelper.enablePreProcessing("video")
-            this.replaceCanvas();
           }
         }else{
           this._play.watermark.video.encoderControl.handler.enabled = false
           if (this.mediaHelper.canDisablePreProcessing('video')){
             this.mediaHelper.disablePreProcessing("video")
-            this.replaceCanvas();
           }
         }
       }
@@ -3950,28 +3959,29 @@ class LocalStream extends RTCEventEmitter {
     }
   }
 
-  // 兼容 safari 15.3 下抓流红黑屏及其他问题
-  private replaceCanvas(){
+  // 兼容 safari 15.3 以下版本抓流红黑屏及其他问题
+  private async replaceCanvas(){
     if(!this._play) return;
     if(!env.IS_ANY_SAFARI) return;
-    if(env.SAFARI_VERSION && parseFloat(env.SAFARI_VERSION) > 15.3) return;
-    
+    if(env.SAFARI_VERSION && parseFloat(env.SAFARI_VERSION) > 16.0) return;
     const localVideoDom = this._play.getVideoDom!.querySelector('video');
     const videoDom = this._play.getVideoDom;
     if(localVideoDom && videoDom){
       const filters = this.videoPostProcess.filters;
       const video = this.videoPostProcess.video;
 
-      const vpp = this.videoPostProcess;
-      const vppOn = vpp.hasTask('BasicBeauty') || vpp.hasTask('VirtualBackground') || vpp.hasTask('AdvancedBeauty');
-      const wmOn = this.mediaHelper.video.preProcessingEnabled;
-
+      const vppOn = this.canvasReplaceTags.videoPost;
+      const wmOn = this.canvasReplaceTags.waterMark;
       if(vppOn){
-         // safari 13.1 浏览器 需要<video> 和 <canvas> 在可视区域才能正常播放
+         // safari 13.1 浏览器 需要 <video> 和 <canvas> 在可视区域才能正常播放
          if(env.SAFARI_MAJOR_VERSION! < 14 && video){
+          const canvas = filters.canvas;
+          canvas.style.height = '0px';
+          canvas.style.width = '0px';
           video.style.height = '0px';
           video.style.width = '0px';
           document.body.appendChild(video);
+          document.body.appendChild(canvas);
         }
 
         if(!wmOn && filters.canvas.parentElement !== videoDom){
@@ -4007,6 +4017,7 @@ class LocalStream extends RTCEventEmitter {
         }else if(wmOn && filters.canvas.parentElement === videoDom){
           localVideoDom.style.display = '';
           videoDom.removeChild(filters.canvas);
+          console.error(filters.canvas);
         }
       }else{
         localVideoDom.style.display = '';
