@@ -917,12 +917,7 @@ class Client extends Base {
           stream.subStatus.audioSlave = false
           const uid = stream.getId()
           if(uid){
-            delete this.adapterRef.remoteAudioStats[uid];
-            const data = this.adapterRef._statsReport && this.adapterRef._statsReport.formativeStatsReport && this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
-            if (data) {
-              data.recvFirstAudioFrame = false
-              data.recvFirstAudioPackage = false
-            }
+            delete this.adapterRef.remoteAudioSlaveStats[uid];
           }
           this.logger.log('取消订阅音频流完成')
         }
@@ -1121,12 +1116,7 @@ class Client extends Base {
         stream.subStatus.audioSlave = false
         const uid = stream.getId()
         if(uid){
-          delete this.adapterRef.remoteAudioStats[uid];
-          const data = this.adapterRef._statsReport && this.adapterRef._statsReport.formativeStatsReport && this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
-          if (data) {
-            data.recvFirstAudioFrame = false
-            data.recvFirstAudioPackage = false
-          }
+          delete this.adapterRef.remoteAudioSlaveStats[uid];
         }
         this.logger.log('取消订阅音频流完成')
       }
@@ -1580,6 +1570,18 @@ class Client extends Base {
     })
   }
 
+  /**
+   * 获取本地发布流的音频辅流统计数据
+   * @function getLocalAudioSlaveStats
+   * @memberOf Client#
+   * @return {Promise}
+   */
+   getLocalAudioSlaveStats(){
+    return new Promise((resolve, reject) =>{
+      resolve(this.adapterRef.localAudioSlaveStats)
+    })
+  }
+
  /**
    * 获取本地发布流的音频统计数据
    * @function getLocalVideoStats
@@ -1606,6 +1608,12 @@ class Client extends Base {
   getRemoteAudioStats(){
     return new Promise((resolve, reject) =>{
       resolve(this.adapterRef.remoteAudioStats)
+    })
+  }
+
+  getRemoteAudioSlaveStats(){
+    return new Promise((resolve, reject) =>{
+      resolve(this.adapterRef.remoteAudioSlaveStats)
     })
   }
 

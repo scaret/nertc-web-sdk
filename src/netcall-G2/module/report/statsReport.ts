@@ -123,15 +123,16 @@ class StatsReport extends EventEmitter {
     try {
       if(this.isStartGetStats) { // 数据上报部分
         let data = await this.stats?.getAllStats();
+        //console.log('原始 data--->', data)
         let reportData = this.calculateReport(data);
-        // console.log('data--->', reportData)
+        //console.log('data--->', reportData)
         if(!env.IS_ELECTRON){ // Electron 上报的数据和 Chrome 不同，暂时不上报，后续需要再进行单独处理
           this.wsTransport_.sendPB(reportData);
         }
         
       }
     } catch (error) {
-      this.adapterRef.logger.error('getStats失败：' , error);
+      this.adapterRef.logger.log('doHeartbeat: ' , error);
     }
     
     
