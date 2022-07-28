@@ -129,6 +129,7 @@ class LocalStream extends RTCEventEmitter {
   private advancedBeauty = new AdvancedBeauty(this.videoPostProcess);
   private _segmentProcessor: VirtualBackground|null;
   private _advancedBeautyProcessor: AdvancedBeauty | null = null;
+  private virtualBackgroundOptions: BackGroundOptions =  { type: 'color', color: '#e7ad3c' };
   private lastEffects:any;
   private lastFilter:any;
   private videoPostProcessTags = {
@@ -2231,6 +2232,9 @@ class LocalStream extends RTCEventEmitter {
   async unmuteVideo () {
     this.logger.log(`启用 ${this.stringStreamID} 的视频轨道`)
     try {
+      if(this.videoPostProcessTags.isBodySegmentTrack) {
+        this.setBackGround(this.virtualBackgroundOptions)
+      }
       if (this.getAdapterRef()){
         this.client.adapterRef._mediasoup?.unmuteVideo()
       }
@@ -2279,7 +2283,12 @@ class LocalStream extends RTCEventEmitter {
   async muteVideo () {
     this.logger.log(`禁用 ${this.stringStreamID} 的视频轨道`)
     try { 
-      await this.suspendVideoPostProcess();
+      //开启背景替换时mute后视频为纯背景
+      if(this.videoPostProcessTags.isBodySegmentTrack ) {
+        let tempOptions = this.virtualBackgroundOptions;
+        this.setBackGround({type: 'color', color:'#000000'})
+        this.virtualBackgroundOptions = tempOptions;
+      }
       if(env.IS_SAFARI){
         const videoDom = this._play?.getVideoDom;
         if(videoDom){
@@ -3515,7 +3524,6 @@ class LocalStream extends RTCEventEmitter {
             //@ts-ignore
             track: this._transformedTrack,
             external: false,
-            noLowTrack: !isStart
       });
       //重新开启水印
       if (this.mediaHelper.video.preProcessingEnabled){
@@ -3631,6 +3639,7 @@ class LocalStream extends RTCEventEmitter {
       this.logger.log('setBackGround() options: ', options)
       if(this.virtualBackground) {
         this.virtualBackground.setVirtualBackGround(options);
+        this.virtualBackgroundOptions = options;
         this.client.apiFrequencyControl({
           name: 'setBackGround',
           code: 0,
@@ -3727,7 +3736,6 @@ class LocalStream extends RTCEventEmitter {
       mediaType: "video"|"screen",
       track: MediaStreamTrack,
       external: boolean,
-      noLowTrack?: boolean
     }){
       // replaceTrack不会主动关掉原来的track，包括大小流
       let oldTrack;
@@ -3810,13 +3818,12 @@ class LocalStream extends RTCEventEmitter {
         sender.replaceTrack(options.track)
         this.logger.log(`replaceTrack ${options.mediaType} 成功替换上行`)
       }
-      if (senderLow && oldTrackLow && !options.noLowTrack){
-        oldTrackLow.stop();
-        oldTrackLow = null;
+      if (senderLow && oldTrackLow){
         const newTrackLow = await this.mediaHelper.createTrackLow(options.mediaType)
-        console.warn('create new TrackLow')
         if (newTrackLow){
-          senderLow.replaceTrack(newTrackLow);   
+          senderLow.replaceTrack(newTrackLow);  
+          oldTrackLow.stop();
+          oldTrackLow = null; 
           this.logger.log(`replaceTrack ${options.mediaType} 成功替换上行小流`)
         }
       }
@@ -3842,7 +3849,6 @@ class LocalStream extends RTCEventEmitter {
               //@ts-ignore
               track: this._transformedTrack,
               external: false,
-              noLowTrack: !enable
         });      
         //重新开启水印
         if (this.mediaHelper.video.preProcessingEnabled){
