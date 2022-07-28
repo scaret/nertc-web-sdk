@@ -239,15 +239,18 @@ export default class VideoPostProcess extends EventEmitter {
                     logger.error('VirtualBackground plugin is null.');
                 }else{
                     const {width, height} = this.filters.canvas;
-                    // 背景替换推理
-                    plugin.process(this.sourceMap!, width, height, (result)=>{
-                        this.maskData = this.taskSet.has('VirtualBackground') ? result : null;
-                        this.readyTaskSet.add('VirtualBackground');
-                        if(this.frameCount[1] < this.frameCount[0]){
-                            this.updateTimer();
-                            this.update(false);
-                        }
-                    });
+                    // 屏蔽空帧
+                    if(width > 16 && height > 16){
+                        // 背景替换推理
+                        plugin.process(this.sourceMap!, width, height, (result)=>{
+                            this.maskData = this.taskSet.has('VirtualBackground') ? result : null;
+                            this.readyTaskSet.add('VirtualBackground');
+                            if(this.frameCount[1] < this.frameCount[0]){
+                                this.updateTimer();
+                                this.update(false);
+                            }
+                        });
+                    }
                 }
             }
             // 高级美颜任务
