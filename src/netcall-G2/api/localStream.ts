@@ -1479,7 +1479,7 @@ class LocalStream extends RTCEventEmitter {
           reason = 'NOT_OPEN_CAMERA_YET'
           break
         }
-        await this.suspendVideoPostProcess();
+        await this.suspendVideoPostProcess(true);
         // 释放当前 track
         if(this._transformedTrack && this._cameraTrack){
           this._cameraTrack.stop();
@@ -3853,13 +3853,7 @@ class LocalStream extends RTCEventEmitter {
         //重新开启水印
         if (this.mediaHelper.video.preProcessingEnabled){
           this.mediaHelper.enablePreProcessing("video")
-        }
-
-        // videoTrackLow = this.mediaHelper.video.videoTrackLow;
-        // if(videoTrackLow && !enable) {
-        //   videoTrackLow.stop();
-        //   videoTrackLow = null;
-        // }
+        }  
       } else {
         this.logger.log("此时还没有有视频track");
       }
@@ -3927,7 +3921,7 @@ class LocalStream extends RTCEventEmitter {
   }
 
   // 临时挂起视频后处理
-  async suspendVideoPostProcess(){
+  async suspendVideoPostProcess(closeTrackLow: boolean = false){
     const {isBeautyTrack, isBodySegmentTrack, isAdvBeautyTrack} = this.videoPostProcessTags;
     if(isBeautyTrack){
       await this.setBeautyEffect(false);
@@ -3941,6 +3935,12 @@ class LocalStream extends RTCEventEmitter {
       await this._cancelAdvancedBeauty();
       this.videoPostProcessTags.isAdvBeautyTrack = true;
     }
+
+    let videoTrackLow = this.mediaHelper.video.videoTrackLow;
+    if(videoTrackLow && closeTrackLow) {
+        videoTrackLow.stop();
+        videoTrackLow = null;
+    }   
   }
 
   // 恢复挂起的视频后处理
