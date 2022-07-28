@@ -84,6 +84,9 @@ export interface AdapterRef {
   remoteAudioStats: {
     [uid in UIDTYPE]: MediaStats
   }
+  remoteAudioSlaveStats: {
+    [uid in UIDTYPE]: MediaStats
+  }
   remoteVideoStats: {
     [uid in UIDTYPE]: MediaStats
   } 
@@ -96,6 +99,9 @@ export interface AdapterRef {
   // 未发布localStream时，该值指向null
   localStream: LocalStream|null;
   localAudioStats: {
+    [uid in UIDTYPE]: LocalAudioStats
+  } 
+  localAudioSlaveStats: {
     [uid in UIDTYPE]: LocalAudioStats
   } 
   localVideoStats: [LocalVideoStats];

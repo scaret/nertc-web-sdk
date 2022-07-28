@@ -436,7 +436,11 @@ class Signalling extends EventEmitter {
           this.adapterRef.instance.safeEmit('stream-added', {stream: remoteStream, 'mediaType': mediaTypeShort})
         }
         if (mute) {
-          this.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {uid})
+          if (mediaTypeShort === 'audioSlave') {
+            this.adapterRef.instance.safeEmit('mute-audio-slave', {uid: remoteStream.getId()})
+          } else {
+            this.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
+          }
         }
         break
       }
@@ -515,11 +519,7 @@ class Signalling extends EventEmitter {
         } else if (mediaTypeShort === 'audioSlave') {
           remoteStream.mediaHelper.screenAudio.screenAudioTrack = null;
           emptyStreamWith(remoteStream.mediaHelper.screenAudio.screenAudioStream, null);
-          /*delete this.adapterRef.remoteAudioStats[uid];
-          if (data) {
-            data.recvFirstAudioFrame = false
-            data.recvFirstAudioPackage = false
-          }*/
+          delete this.adapterRef.remoteAudioSlaveStats[uid];
         } else if (mediaTypeShort === 'video') {
           remoteStream.mediaHelper.video.cameraTrack = null;
           emptyStreamWith(remoteStream.mediaHelper.video.videoStream, null)
@@ -671,6 +671,7 @@ class Signalling extends EventEmitter {
       }
       case 'OnUserData': {
         let { type, data, } = notification.data.externData;
+        //console.warn('收到userData通知: ', notification.data.externData)
         if (type === 'StreamStatus') {
           this._handleStreamStatusNotify(data)
         } else if (type === 'NetStatus') {
@@ -1140,7 +1141,11 @@ class Signalling extends EventEmitter {
                   that.adapterRef.instance.safeEmit('stream-added', {stream: remoteStream, 'mediaType': mediaTypeShort})
                 }
                 if (mute) {
-                  that.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
+                  if (mediaTypeShort === 'audioSlave') {
+                    that.adapterRef.instance.safeEmit(`mute-audio-slave`, {uid: remoteStream.getId()})
+                  } else {
+                    that.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
+                  }
                 }
               }, 0);
             }
@@ -1517,14 +1522,22 @@ class Signalling extends EventEmitter {
     const producerId = data.producerId;
     const mute = data.mute;
     Object.values(this.adapterRef.remoteStreamMap).forEach(stream => {
-      const mediaTypeList:MediaTypeShort[] = ["audio", "video", "screen"]
+      const mediaTypeList:MediaTypeShort[] = ["audio", "video", "screen", "audioSlave"]
       mediaTypeList.forEach((mediaTypeShort)=>{
         if (stream.pubStatus[mediaTypeShort].producerId === producerId){
           stream.muteStatus[mediaTypeShort].send = mute
           if (mute) {
-            this.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {uid: stream.getId()})
+            if (mediaTypeShort === 'audioSlave') {
+              this.adapterRef.instance.safeEmit('mute-audio-slave', {uid: stream.getId()})
+            } else {
+              this.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {uid: stream.getId()})
+            }
           } else {
-            this.adapterRef.instance.safeEmit(`unmute-${mediaTypeShort}`, {uid: stream.getId()})
+            if (mediaTypeShort === 'audioSlave') {
+              this.adapterRef.instance.safeEmit('unmute-audio-slave', {uid: stream.getId()})
+            } else {
+              this.adapterRef.instance.safeEmit(`unmute-${mediaTypeShort}`, {uid: stream.getId()})
+            }
           }
         }
       })

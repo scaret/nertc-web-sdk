@@ -283,9 +283,11 @@ class Base extends RTCEventEmitter {
         UserCount: 0
       },
       localAudioStats: [],
+      localAudioSlaveStats: [],
       localVideoStats: [],
       localScreenStats: [],
       remoteAudioStats: {},
+      remoteAudioSlaveStats: {},
       remoteVideoStats: {},
       remoteScreenStats: {},
     })
@@ -428,6 +430,7 @@ class Base extends RTCEventEmitter {
       delete this.adapterRef.remoteStreamMap[uid];
       delete this.adapterRef.memberMap[uid];
       delete this.adapterRef.remoteAudioStats[uid];
+      delete this.adapterRef.remoteAudioSlaveStats[uid];
       delete this.adapterRef.remoteVideoStats[uid];
       delete this.adapterRef.remoteScreenStats[uid];
       for (let mediaType of mediaTypeList){

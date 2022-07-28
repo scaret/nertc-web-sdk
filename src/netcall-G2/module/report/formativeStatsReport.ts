@@ -52,9 +52,11 @@ class FormativeStatsReport {
   private infos2: {[key: string]: any};
   private paramSecond: {
     upAudioCache: any,
+    upAudioSlaveCache: any,
     upVideoCache: any,
     upScreenCache: any,
     downAudioCache: any,
+    downAudioSlaveCache: any,
     downVideoCache: any,
     downScreenCache: any,
   };
@@ -88,9 +90,11 @@ class FormativeStatsReport {
     this.infos2 = {};
     this.paramSecond = {
       upAudioCache: {},
+      upAudioSlaveCache: {},
       upVideoCache: {},
       upScreenCache: {},
       downAudioCache: {},
+      downAudioSlaveCache: {},
       downVideoCache: {},
       downScreenCache: {},
     };
@@ -259,9 +263,11 @@ class FormativeStatsReport {
   clearSecond () {
     this.paramSecond = {
       upAudioCache: {},
+      upAudioSlaveCache: {},
       upVideoCache: {},
       upScreenCache: {},
       downAudioCache: {},
+      downAudioSlaveCache: {},
       downVideoCache: {},
       downScreenCache: {},
     }
@@ -291,9 +297,11 @@ class FormativeStatsReport {
   update (data:any, time: number) {
     data = Object.assign({}, data.local, data.remote)
     let upAudioList = []
+    let upAudioSlaveList = []
     let upVideoList = []
     let upScreenList = []
     let downAudioList = []
+    let downAudioSlaveList = []
     let downVideoList = []
     let downScreenList = []
     if (this.webrtcStats.length == 2) {
@@ -304,6 +312,14 @@ class FormativeStatsReport {
       send: {
         uid: 0,
         audio: {
+          prevLost: 0,
+          nextLost: 0,
+          prevPacket: 0,
+          nextPacket: 0,
+          rtt: 0,
+          jitter: 0
+        }, 
+        audioSlave: {
           prevLost: 0,
           nextLost: 0,
           prevPacket: 0,
@@ -338,6 +354,14 @@ class FormativeStatsReport {
           rtt: 0,
           jitter: 0
         }, 
+        audioSlave: {
+          prevLost: 0,
+          nextLost: 0,
+          prevPacket: 0,
+          nextPacket: 0,
+          rtt: 0,
+          jitter: 0
+        }, 
         video: {
           prevLost: 0,
           nextLost: 0,
@@ -361,6 +385,7 @@ class FormativeStatsReport {
     if (this._audioLevel) {
       this._audioLevel.length = 0
     }
+    //console.log('update: ', data)
     for (let i in data) {
       //let uid = parseInt(i.split('_')[3] || "");
       let uid;
@@ -378,7 +403,22 @@ class FormativeStatsReport {
       /*if (!(uid - 0)){
         uid = 0;
       }*/
-      if (i.indexOf('_send_') !== -1 && i.indexOf('_audio') !== -1) {
+      if (i.indexOf('_send_') !== -1 && i.indexOf('_audioSlave') !== -1) {
+        if (this.paramSecond.upAudioSlaveCache[uid]) {
+          currentData.send.audioSlave.prevLost = this.paramSecond.upAudioSlaveCache[uid].packetsLost
+          currentData.send.audioSlave.prevPacket = this.paramSecond.upAudioSlaveCache[uid].packetsSent
+          data[i].alr = this.getPacketLossRate(this.paramSecond.upAudioSlaveCache[uid], data[i], true)
+          this.dispatchExceptionEventSendAudio(this.paramSecond.upAudioSlaveCache[uid], data[i], uid)
+        } 
+        bytesSent += parseInt(data[i].bytesSent) 
+        this.paramSecond.upAudioSlaveCache[uid] = data[i]
+        currentData.send.uid = this.adapterRef.channelInfo.uid
+        currentData.send.audioSlave.nextLost = data[i].packetsLost
+        currentData.send.audioSlave.nextPacket = data[i].packetsSent
+        currentData.send.audioSlave.rtt = currentData.recv.audioSlave.rtt = data[i].googRtt
+        currentData.send.audioSlave.jitter = currentData.recv.audioSlave.jitter = data[i].googJitterReceived || 0
+        upAudioSlaveList.push(data[i])
+      } else if (i.indexOf('_send_') !== -1 && i.indexOf('_audio') !== -1) {
         if (!this.firstData.sendFirstAudioPackage && data[i].packetsSent > 0) {
           this.firstData.sendFirstAudioPackage = true
           this.adapterRef.instance.apiEventReport('setSendFirstPackage', {
@@ -454,6 +494,22 @@ class FormativeStatsReport {
         currentData.send.screen.jitter = currentData.recv.screen.jitter = data[i].googJitterReceived || 0
         upScreenList.push(data[i])
       } else if (i.indexOf('_recv_') !== -1 && i.indexOf('_audioSlave') !== -1) {
+
+        if (this.paramSecond.downAudioSlaveCache[uid]) {
+          currentData.recv.audio.prevLost = this.paramSecond.downAudioSlaveCache[uid].packetsLost
+          currentData.recv.audio.prevPacket = this.paramSecond.downAudioSlaveCache[uid].packetsReceived
+          data[i].alr = this.getPacketLossRate(this.paramSecond.downAudioSlaveCache[uid], data[i])
+        }
+        let stats = this.getRemoteAudioFreezeStats(this.paramSecond.downAudioSlaveCache[uid], data[i], uid)
+        data[i].freezeTime = stats.freezeTime
+        data[i].totalFreezeTime = stats.totalFreezeTime
+        bytesReceived += parseInt(data[i].bytesReceived) 
+        this.paramSecond.downAudioSlaveCache[uid] = data[i]
+        currentData.recv.uid = +uid
+        currentData.recv.audioSlave.nextLost = data[i].packetsLost
+        currentData.recv.audioSlave.nextPacket = data[i].packetsReceived
+        downAudioSlaveList.push(data[i])
+
         let audioLevel:number = 0;
         if (data[i].audioOutputLevel >= 0) {
           // Chrome， 0-32767
@@ -675,9 +731,9 @@ class FormativeStatsReport {
     if (time % 2 === 0) {
       this.adapterRef.instance.safeEmit('volume-indicator', this._audioLevel)
       // 更新上行信息
-      this.updateTxMediaInfo(upAudioList, upVideoList, upScreenList);
+      this.updateTxMediaInfo(upAudioList, upAudioSlaveList, upVideoList, upScreenList);
       // 更新下行信息
-      this.updateRxMediaInfo(downAudioList, downVideoList, downScreenList)
+      this.updateRxMediaInfo(downAudioList, downAudioSlaveList, downVideoList, downScreenList)
       let length = this.infos2.tx2 && this.infos2.tx2[0].v_res.length
       if ( length === this.infos.interval / 2) {
         this.send()
@@ -692,7 +748,7 @@ class FormativeStatsReport {
   }
 
   // 组装下行的媒体信息
-  updateRxMediaInfo (downAudioList: DownAudioItem[], downVideoList: DownVideoItem[], downScreenList: DownVideoItem[]) {
+  updateRxMediaInfo (downAudioList: DownAudioItem[], downAudioSlaveList: DownAudioItem[], downVideoList: DownVideoItem[], downScreenList: DownVideoItem[]) {
     let audio2:AudioRtxInfo = {
       uid: [],
       a_p_volume: [],
@@ -731,6 +787,29 @@ class FormativeStatsReport {
     }
 
     let RecvBitrate = 0
+
+    downAudioSlaveList.map(item => {
+      let uid='0';
+      if (item.id) {
+        uid = item.id.split('_')[3]
+      }
+
+      if (this.adapterRef.remoteAudioSlaveStats[uid]) {
+        this.adapterRef.remoteAudioSlaveStats[uid] = {TotalFreezeTime: 0}
+      }
+      const remoteStream = this.adapterRef.remoteStreamMap[uid]
+      this.adapterRef.remoteAudioSlaveStats[uid] = {
+        CodecType: 'Opus',
+        End2EndDelay: (parseInt(item.googCurrentDelayMs) || 0) + (parseInt(item.googJitterBufferMs) || 0),
+        MuteState: remoteStream && (remoteStream.muteStatus.audio.send || remoteStream.muteStatus.audio.recv),
+        PacketLossRate: item.alr || 0,
+        RecvBitrate: item.bitsReceivedPerSecond || 0,
+        RecvLevel: parseInt(item.audioOutputLevel) || +item.audioLevel || 0,
+        TotalFreezeTime: item.totalFreezeTime || 0,
+        TotalPlayDuration: parseInt(item.totalSamplesDuration) || 0,
+        TransportDelay: parseInt(item.googCurrentDelayMs) || 0
+      }
+    })
 
     downAudioList.map(item => {
       let uid='0';
@@ -888,7 +967,7 @@ class FormativeStatsReport {
 
   // 获取本地上行的媒体信息
 
-  getLocalMediaStats (upAudioList: UpAudioItem[], upVideoList: UpVideoItem[], upScreenList: UpVideoItem[]) {
+  getLocalMediaStats (upAudioList: UpAudioItem[], upAudioSlaveList: UpAudioItem[], upVideoList: UpVideoItem[], upScreenList: UpVideoItem[]) {
     let result = {
       a_lost: (upAudioList[0] && upAudioList[0].alr) || 0, // 音频丢包百分比
       v_lost: (upVideoList[0] && upVideoList[0].vlr) || 0, // 视频丢包百分比
@@ -948,6 +1027,15 @@ class FormativeStatsReport {
       SamplingRate: SamplingRate,
       SendBitrate: result.real_a_kbps_n,
       SendLevel: result.a_volume
+    }
+
+    this.adapterRef.localAudioSlaveStats[0] = {
+      CodecType: 'Opus',
+      MuteState: this.adapterRef.localStream.muteStatus.audioSlave.send,
+      RecordingLevel: parseInt(upAudioSlaveList[0] && upAudioSlaveList[0].audioInputLevel) || 0,
+      SamplingRate: SamplingRate,
+      SendBitrate: upAudioSlaveList[0] ? upAudioSlaveList[0].bitsSentPerSecond : 0,
+      SendLevel: parseInt(upAudioSlaveList[0] && upAudioSlaveList[0].audioInputLevel) || 0,
     }
 
     this.adapterRef.localVideoStats[0] = {
@@ -1016,9 +1104,9 @@ class FormativeStatsReport {
   }
 
   // 组装上行的媒体信息
-  updateTxMediaInfo (upAudioList:UpAudioItem[], upVideoList:UpVideoItem[], upScreenList:UpVideoItem[]) {
+  updateTxMediaInfo (upAudioList:UpAudioItem[], upAudioSlaveCache:UpAudioItem[], upVideoList:UpVideoItem[], upScreenList:UpVideoItem[]) {
     if(!this.adapterRef.localStream) return
-    let tmp = this.getLocalMediaStats(upAudioList, upVideoList, upScreenList)
+    let tmp = this.getLocalMediaStats(upAudioList, upAudioSlaveCache, upVideoList, upScreenList)
     // 更新其他信息
     // @ts-ignore
     let systemNetworkType = ((navigator.connection || {}).type || 'unknown').toString().toLowerCase()
