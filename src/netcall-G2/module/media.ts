@@ -1133,8 +1133,8 @@ class MediaHelper extends EventEmitter {
       this.screenAudio.screenAudioTrack = track;
       emptyStreamWith(this.screenAudio.screenAudioStream, track);
       // Safari：即使前后属性相同，也需要重新设一遍srcObject
-      if (this.stream._play?.audioDom){
-        this.stream._play.audioDom.srcObject = this.audio.audioStream
+      if (this.stream._play?.audioSlaveDom){
+        this.stream._play.audioSlaveDom.srcObject = this.audio.audioStream
       }
     } else if (kind === 'video') {
       this.video.cameraTrack = track;
