@@ -2282,13 +2282,13 @@ class LocalStream extends RTCEventEmitter {
    */
   async muteVideo () {
     this.logger.log(`禁用 ${this.stringStreamID} 的视频轨道`)
+    //开启背景替换时mute后视频为纯背景
+    if(this.videoPostProcessTags.isBodySegmentTrack ) {
+      let tempOptions = this.virtualBackgroundOptions;
+      this.setBackGround({type: 'color', color:'#000000'})
+      this.virtualBackgroundOptions = tempOptions;
+    }
     try { 
-      //开启背景替换时mute后视频为纯背景
-      if(this.videoPostProcessTags.isBodySegmentTrack ) {
-        let tempOptions = this.virtualBackgroundOptions;
-        this.setBackGround({type: 'color', color:'#000000'})
-        this.virtualBackgroundOptions = tempOptions;
-      }
       if(env.IS_SAFARI){
         const videoDom = this._play?.getVideoDom;
         if(videoDom){
