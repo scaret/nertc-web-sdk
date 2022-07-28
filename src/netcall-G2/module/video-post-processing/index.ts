@@ -250,6 +250,8 @@ export default class VideoPostProcess extends EventEmitter {
                                 this.update(false);
                             }
                         });
+                    }else{
+                        this.readyTaskSet.add('VirtualBackground');
                     }
                 }
             }
