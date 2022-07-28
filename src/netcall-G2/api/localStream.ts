@@ -3512,12 +3512,10 @@ class LocalStream extends RTCEventEmitter {
 
    async setBeautyEffect(isStart:boolean){
     const basicBeauty  = this.basicBeauty;
-    let videoTrackLow;
     if (this.mediaHelper && this.mediaHelper.video.cameraTrack) {
       this.videoPostProcessTags.isBeautyTrack = isStart;
       this._cameraTrack  = this.mediaHelper.video.cameraTrack;
       this._transformedTrack = await basicBeauty.setBeauty(isStart, this._cameraTrack) as MediaStreamTrack;
-      videoTrackLow = this.mediaHelper.video.videoTrackLow;
        // 替换 track
       await this.replacePluginTrack({
             mediaType: "video",
@@ -3528,11 +3526,6 @@ class LocalStream extends RTCEventEmitter {
       //重新开启水印
       if (this.mediaHelper.video.preProcessingEnabled){
         this.mediaHelper.enablePreProcessing("video")
-      }
-      videoTrackLow = this.mediaHelper.video.videoTrackLow;
-      if(videoTrackLow && !isStart) {
-        videoTrackLow.stop();
-        videoTrackLow = null;
       }
       if(isStart){
         let effects;
@@ -3839,7 +3832,6 @@ class LocalStream extends RTCEventEmitter {
       if (!processor) {
         return
       }
-      let videoTrackLow;
       if (this.mediaHelper && this.mediaHelper.video.cameraTrack) {
         this._cameraTrack  = this.mediaHelper.video.cameraTrack;
         this._transformedTrack = await processor.setTrack(enable, this._cameraTrack ) as MediaStreamTrack;
