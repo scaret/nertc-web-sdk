@@ -2244,7 +2244,6 @@ class LocalStream extends RTCEventEmitter {
       if (this.mediaHelper.video.cameraTrack){
         this.mediaHelper.video.cameraTrack.enabled = true
       }
-      await this.resumeVideoPostProcess();
       if(env.IS_SAFARI){
         const videoDom = this._play?.getVideoDom;
         if(videoDom){
