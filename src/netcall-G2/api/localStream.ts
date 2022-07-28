@@ -2245,6 +2245,9 @@ class LocalStream extends RTCEventEmitter {
       if (this.mediaHelper.video.cameraTrack){
         this.mediaHelper.video.cameraTrack.enabled = true
       }
+      if (this.mediaHelper.video.videoTrackLow){
+        this.mediaHelper.video.videoTrackLow.enabled = true
+      }
       if(env.IS_SAFARI){
         const videoDom = this._play?.getVideoDom;
         if(videoDom){
@@ -2303,6 +2306,9 @@ class LocalStream extends RTCEventEmitter {
       }
       if (this.mediaHelper.video.cameraTrack){
         this.mediaHelper.video.cameraTrack.enabled = false
+      }
+      if (this.mediaHelper.video.videoTrackLow){
+        this.mediaHelper.video.videoTrackLow.enabled = false
       }
       this.muteStatus.video.send = true
       this.client.apiFrequencyControl({
