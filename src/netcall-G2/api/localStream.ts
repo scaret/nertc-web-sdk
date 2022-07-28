@@ -893,6 +893,7 @@ class LocalStream extends RTCEventEmitter {
         this._play.setVideoRender(options)
       }
       this.renderMode.local.video = options;
+      this.replaceCanvas();
     }
     if (!mediaType || mediaType === "screen"){
       this.renderMode.local.screen = options;
@@ -3814,7 +3815,6 @@ class LocalStream extends RTCEventEmitter {
         oldTrackLow.stop();
         oldTrackLow = null;
         const newTrackLow = await this.mediaHelper.createTrackLow(options.mediaType)
-        console.warn('create new TrackLow')
         if (newTrackLow){
           senderLow.replaceTrack(newTrackLow);   
           this.logger.log(`replaceTrack ${options.mediaType} 成功替换上行小流`)
@@ -3902,7 +3902,6 @@ class LocalStream extends RTCEventEmitter {
         })
       }     
     } catch(e) {
-      console.log(e);
       this.logger.error(`create plugin ${options.key} error`);
     } 
 
@@ -3992,9 +3991,7 @@ class LocalStream extends RTCEventEmitter {
 
         if(!wmOn && filters.canvas.parentElement !== videoDom){
           const canvas = filters.canvas;
-          const rect = videoDom.getBoundingClientRect();
-          const pr = rect.width / rect.height;
-          const cr = canvas.width / canvas.height;
+
           localVideoDom.style.display = 'none';
           // safari在使用canvas.captureStream获取webgl渲染后的视频流，在本地播放时可能出现红屏或黑屏
           // filters.canvas.style.height = '100%';
@@ -4004,18 +4001,42 @@ class LocalStream extends RTCEventEmitter {
           // filters.canvas.style.top = '50%';
           // filters.canvas.style.transform = 'translate(-50%,-50%)';
 
-          if(pr > cr){
-            canvas.style.height = `100%`;
-            canvas.style.top = '0px';
-            const wRatio = rect.height * cr / rect.width;
-            canvas.style.width = `${wRatio * 100}%`;
-            canvas.style.left = `${(1 - wRatio) * 50}%`;
+          const rect = videoDom.getBoundingClientRect();
+          const pr = rect.width / rect.height;
+          const cr = canvas.width / canvas.height;
+          const {width, height, cut} = this.renderMode.local.video as {width:number, height: number, cut:boolean};
+          const vcr = width / height;
+
+          if(cut){
+            // 上下裁切
+            if(vcr > cr){
+              canvas.style.width = `100%`;
+              canvas.style.left = '0px';
+              const hRatio = rect.width / cr / rect.height;
+              canvas.style.height = `${hRatio * 100}%`;
+              canvas.style.top = `${-(hRatio - 1) * 50}%`;
+            }else{ // 左右裁切
+              canvas.style.height = `100%`;
+              canvas.style.top = '0px';
+              const wRatio = rect.height * cr / rect.width;
+              canvas.style.width = `${wRatio * 100}%`;
+              canvas.style.left = `${-(wRatio - 1) * 50}%`;
+            }
           }else{
-            canvas.style.width = `100%`;
-            canvas.style.left = '0px';
-            const hRatio = rect.width / cr / rect.height;
-            canvas.style.height = `${hRatio * 100}%`;
-            canvas.style.top = `${(1 - hRatio) * 50}%`;
+            // 左右留白
+            if(pr > cr){
+              canvas.style.height = `100%`;
+              canvas.style.top = '0px';
+              const wRatio = rect.height * cr / rect.width;
+              canvas.style.width = `${wRatio * 100}%`;
+              canvas.style.left = `${(1 - wRatio) * 50}%`;
+            }else{ // 上下留白
+              canvas.style.width = `100%`;
+              canvas.style.left = '0px';
+              const hRatio = rect.width / cr / rect.height;
+              canvas.style.height = `${hRatio * 100}%`;
+              canvas.style.top = `${(1 - hRatio) * 50}%`;
+            }
           }
 
           // safari下，本地<video>切换成<canvas>

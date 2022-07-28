@@ -223,8 +223,9 @@ export default class VideoPostProcess extends EventEmitter {
                 this.filters.update(false);
                 // 获取下一帧原图的 imageData
                 this.sourceMap = this.filters.normal.getImageData(
-                    this.filters.srcMap, 
-                    env.IS_ANY_SAFARI && env.SAFARI_MAJOR_VERSION!<14
+                    this.filters.srcMap,
+                    (env.IS_ANY_SAFARI && env.SAFARI_MAJOR_VERSION!<14) ||
+                    (env.IS_CHROME && env.CHROME_MAJOR_VERSION!<80)
                 );
             }else{
                 this.filters.update(true);
