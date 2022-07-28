@@ -726,16 +726,50 @@ class Signalling extends EventEmitter {
           this._handleAbility(notification.data.externData.data);
         } else if (type === 'ChangeRight') {
           // 服务器禁用音频/视频: 1 禁用   2 取消禁用  0 无需处理
+          let uid = data.uid;
+          let audioDuration, videoDuration;
           if(data.audioRight === 1) {
             this.adapterRef.isAudioBanned = true;
+            audioDuration = data.audioDuration;
+            let type = 'audio';
+            let state = true;
+            const rtcError = new RtcError({
+              code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+              message: 'ChangeRight audio is banned by server'
+            })
+            this.adapterRef.instance.safeEmit('audioVideoBanned', {rtcError, uid, type, state, duration:audioDuration})
           }else if(data.audioRight === 2) {
             this.adapterRef.isAudioBanned = false;
+            audioDuration = data.audioDuration;
+            let type = 'audio';
+            let state = false;
+            const rtcError = new RtcError({
+              code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+              message: 'ChangeRight audio is unbanned by server '
+            })
+            this.adapterRef.instance.safeEmit('audioVideoBanned', {rtcError, uid, type, state, duration:audioDuration})
           }
 
           if(data.videoRight === 1) {
             this.adapterRef.isVideoBanned = true;
+            videoDuration = data.videoDuration;
+            let type = 'video';
+            let state = true;
+            const rtcError = new RtcError({
+              code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+              message: 'ChangeRight video is banned by server'
+            })
+            this.adapterRef.instance.safeEmit('audioVideoBanned', {rtcError, uid, type, state, duration:videoDuration})
           }else if(data.videoRight === 2) {
             this.adapterRef.isVideoBanned = false;
+            videoDuration = data.videoDuration;
+            let type = 'video';
+            let state = false;
+            const rtcError = new RtcError({
+              code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+              message: 'ChangeRight video is unbanned by server'
+            })
+            this.adapterRef.instance.safeEmit('audioVideoBanned', {rtcError, uid, type, state, duration:videoDuration})
           }
 
           if(this.adapterRef.isAudioBanned && this.adapterRef.isVideoBanned) {
@@ -926,16 +960,30 @@ class Signalling extends EventEmitter {
         this._joinFailed(response.code, errMsg)
         return
       } 
-      
+      let uid = this.adapterRef.channelInfo.uid;
       // 服务器禁用音视频: 1 禁用   0 和 2 取消禁用
       if(response.externData.audioRight === 1){
         this.adapterRef.isAudioBanned = true;
+        let type = 'audio';
+        let state = true;
+        const rtcError = new RtcError({
+          code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+          message: 'Join() audio is banned by server'
+        })
+        this.adapterRef.instance.safeEmit('audioVideoBanned', {rtcError, uid, type, state})
       }else {
         this.adapterRef.isAudioBanned = false;
       }
 
       if(response.externData.videoRight === 1){
         this.adapterRef.isVideoBanned = true;
+        let type = 'video';
+        let state = true;
+        const rtcError = new RtcError({
+          code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+          message: 'Join() video is banned by server'
+        })
+        this.adapterRef.instance.safeEmit('audioVideoBanned', {rtcError, uid, type, state})
       }else {
         this.adapterRef.isVideoBanned = false;
       }
@@ -947,6 +995,12 @@ class Signalling extends EventEmitter {
           isAudioBanned: true,
           isVideoBanned: true
         })
+        this.logger.error("服务器禁止发送音频流")
+        if (this._reconnectionTimer) {
+          clearTimeout(this._reconnectionTimer)
+          this._reconnectionTimer = null
+        }
+        return;
       }
 
       if(!this.adapterRef.isAudioBanned && this.adapterRef.isVideoBanned) {
