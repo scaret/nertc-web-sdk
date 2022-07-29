@@ -1509,6 +1509,9 @@ class LocalStream extends RTCEventEmitter {
           this.logger.log('Stream.close:停止发布视频');
           await this.client.adapterRef._mediasoup?.destroyProduce('video');
         }
+        // mute 状态下，关闭视频需要将相关标志位初始化
+        this.replaceTags.isMuted = false;
+        this.virtualBackground.emptyFrame = false;
         break
       case 'screen':
         this.logger.log('关闭屏幕共享')
@@ -4006,7 +4009,7 @@ class LocalStream extends RTCEventEmitter {
     if(!this._play) return;
     if(!env.IS_ANY_SAFARI) return;
     if(env.SAFARI_VERSION && parseFloat(env.SAFARI_VERSION) > 15.2) return;
-    const localVideoDom = this._play.getVideoDom!.querySelector('video');
+    const localVideoDom = this._play.getVideoDom?.querySelector('video');
     const videoDom = this._play.getVideoDom;
     if(localVideoDom && videoDom){
       const filters = this.videoPostProcess.filters;
