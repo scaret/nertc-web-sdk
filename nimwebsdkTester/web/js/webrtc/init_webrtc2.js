@@ -531,11 +531,11 @@ function initEvents() {
   rtc.client.on("audioVideoBanned", (evt) => {
     if (evt.state) {
       console.warn(
-        `监听到服务器禁言,  uid: ${evt.uid}, 媒体类型: ${evt.type}, 禁言状态: ${evt.state}, 禁言时间: ${evt.duration}s  `
+        `监听到服务器禁言,  uid: ${evt.uid}, 媒体类型: ${evt.mediaType}, 禁言状态: ${evt.state}, 禁言时间: ${evt.duration}s  `
       );
     } else {
       console.warn(
-        `监听到服务器解开禁言,  uid: ${evt.uid}, 媒体类型: ${evt.type}, 禁言状态: ${evt.state}, 禁言时间: ${evt.duration}s  `
+        `监听到服务器解开禁言,  uid: ${evt.uid}, 媒体类型: ${evt.mediaType}, 禁言状态: ${evt.state}, 禁言时间: ${evt.duration}s  `
       );
     }
   });
