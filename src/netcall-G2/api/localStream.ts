@@ -129,7 +129,6 @@ class LocalStream extends RTCEventEmitter {
   private advancedBeauty = new AdvancedBeauty(this.videoPostProcess);
   private _segmentProcessor: VirtualBackground|null;
   private _advancedBeautyProcessor: AdvancedBeauty | null = null;
-  private virtualBackgroundOptions: BackGroundOptions =  { type: 'color', color: '#e7ad3c' };
   private lastEffects:any;
   private lastFilter:any;
   private videoPostProcessTags = {
@@ -2234,10 +2233,8 @@ class LocalStream extends RTCEventEmitter {
   async unmuteVideo () {
     this.logger.log(`启用 ${this.stringStreamID} 的视频轨道`)
     try {
-      if(this.videoPostProcessTags.isBodySegmentTrack) {
-        this.setBackGround(this.virtualBackgroundOptions)
-      } else {
-        this.virtualBackgroundOptions = { type: 'color', color: '#e7ad3c' };
+      if (this.virtualBackground) {
+        this.virtualBackground.emptyFrame = false;
       }
       if (this.getAdapterRef()){
         this.client.adapterRef._mediasoup?.unmuteVideo()
@@ -2293,17 +2290,10 @@ class LocalStream extends RTCEventEmitter {
    */
   async muteVideo () {
     this.logger.log(`禁用 ${this.stringStreamID} 的视频轨道`)
-    
-    //开启背景替换时mute后视频为纯背景
-    let tempOptions = this.virtualBackgroundOptions;
-    if(this.videoPostProcessTags.isBodySegmentTrack) {
-      this.setBackGround({type: 'color', color:'#000000'})
-      this.virtualBackgroundOptions = tempOptions;
-    } else {
-      this.virtualBackgroundOptions = {type: 'color', color:'#000000'};
-    }
-    
     try { 
+      if (this.virtualBackground) {
+        this.virtualBackground.emptyFrame = true;
+      }
       if(env.IS_SAFARI){
         const videoDom = this._play?.getVideoDom;
         if(videoDom){
@@ -3671,7 +3661,6 @@ class LocalStream extends RTCEventEmitter {
       this.logger.log('setBackGround() options: ', options)
       if(this.virtualBackground) {
         this.virtualBackground.setVirtualBackGround(options);
-        this.virtualBackgroundOptions = options;
         this.client.apiFrequencyControl({
           name: 'setBackGround',
           code: 0,
