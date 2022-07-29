@@ -4005,7 +4005,7 @@ class LocalStream extends RTCEventEmitter {
   private async replaceCanvas(){
     if(!this._play) return;
     if(!env.IS_ANY_SAFARI) return;
-    if(env.SAFARI_VERSION && parseFloat(env.SAFARI_VERSION) > 16) return;
+    if(env.SAFARI_VERSION && parseFloat(env.SAFARI_VERSION) > 15.2) return;
     const localVideoDom = this._play.getVideoDom!.querySelector('video');
     const videoDom = this._play.getVideoDom;
     if(localVideoDom && videoDom){
