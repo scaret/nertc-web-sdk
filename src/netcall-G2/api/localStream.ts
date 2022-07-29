@@ -1509,9 +1509,11 @@ class LocalStream extends RTCEventEmitter {
           this.logger.log('Stream.close:停止发布视频');
           await this.client.adapterRef._mediasoup?.destroyProduce('video');
         }
-        // mute 状态下，关闭视频需要将相关标志位初始化
-        this.replaceTags.isMuted = false;
-        this.virtualBackground.emptyFrame = false;
+        // mute 状态下，关闭摄像头需要将相关标志位初始化
+        if(this.replaceTags.isMuted){
+          this.replaceTags.isMuted = false;
+          this.virtualBackground.emptyFrame = false;
+        }
         break
       case 'screen':
         this.logger.log('关闭屏幕共享')
@@ -2166,6 +2168,11 @@ class LocalStream extends RTCEventEmitter {
         constraint = this.mediaHelper.video.cameraConstraint
       }
       this.cameraId = deviceId
+      // mute 状态下，切换摄像头需要将相关标志位初始化
+      if(this.replaceTags.isMuted){
+        this.replaceTags.isMuted = false;
+        this.virtualBackground.emptyFrame = false;
+      }
     } else {
       this.logger.error(`switchDevice: unknown type ${type}`)
       return Promise.reject(
