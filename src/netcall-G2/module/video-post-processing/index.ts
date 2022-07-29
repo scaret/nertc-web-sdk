@@ -320,6 +320,7 @@ export default class VideoPostProcess extends EventEmitter {
     destroy(){
         this.taskSet.clear();
         workerTimer.clearTimeout(this.timerId);
+        this.sourceTrack?.stop();
         this.sourceTrack = null;
         this.trackInstance?.stop();
         this.trackInstance = null;
