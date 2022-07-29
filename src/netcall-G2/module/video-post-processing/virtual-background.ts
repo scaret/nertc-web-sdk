@@ -116,4 +116,10 @@ export default class VirtualBackground extends EventEmitter{
     get isEnable() {
         return this.videPostProcess.hasTask('VirtualBackground');
     }
+
+    set emptyFrame(isEmptyFrame: boolean){
+        if(this.videPostProcess){
+            this.videPostProcess.filters.virtualBackground.emptyFrame = isEmptyFrame;
+        }
+    }
 }

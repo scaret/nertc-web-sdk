@@ -136,6 +136,11 @@ class LocalStream extends RTCEventEmitter {
     isBodySegmentTrack: false,
     isAdvBeautyTrack: false
   };
+  private replaceTags = {
+    videoPost: false,
+    waterMark: false,
+    isMuted: false
+  };
 
   _play: Play|null;
   private _record: Record|null;
@@ -202,7 +207,7 @@ class LocalStream extends RTCEventEmitter {
   public destroyed:boolean = false;
   private canvasWatermarkOptions:NERtcCanvasWatermarkConfig | null = null;
   private encoderWatermarkOptions: NERtcEncoderWatermarkConfig | null = null;
-  
+
   constructor (options:LocalStreamOptions) {
     super()
     this.localStreamId = localStreamCnt++;
@@ -321,60 +326,21 @@ class LocalStream extends RTCEventEmitter {
         screenProfile: this.screenProfile
       }
     })
+    
+    this.videoPostProcess.on('taskSwitch', (isOn)=>{
+      this.replaceTags.videoPost = isOn;
+      this.replaceCanvas();
+      if(isOn && parseFloat(env.SAFARI_VERSION || '0') === 15.3){
+        this.logger.warn('当前版本的 Safari 下，开启美颜背替相关功能会导致内存泄露(Safari 内核 bug：从 WebGL 抓取视频流会内存泄露)。');
+      }
+    })
 
-    // 监听美颜任务队列事件，用以兼容 safari 下 canvas 多实例的场景
-    if(env.IS_ANY_SAFARI){
-      this.videoPostProcess.on('taskSwitch',(isON)=>{
-        if(this._play){
-          const localVideoDom = this._play.getVideoDom!.querySelector('video');
-          const videoDom = this._play.getVideoDom;
-          if(localVideoDom && videoDom){
-            const filters = this.videoPostProcess.filters;
-            const video = this.videoPostProcess.video;
-            if(isON){
-              const canvas = filters.canvas;
-              const rect = videoDom.getBoundingClientRect();
-              const pr = rect.width / rect.height;
-              const cr = canvas.width / canvas.height;
-              localVideoDom.style.display = 'none';
-              // safari在使用canvas.captureStream获取webgl渲染后的视频流，在本地播放时可能出现红屏或黑屏
-              // filters.canvas.style.height = '100%';
-              // filters.canvas.style.width = 'auto';
-              canvas.style.position = 'absolute';
-              // filters.canvas.style.left = '50%';
-              // filters.canvas.style.top = '50%';
-              // filters.canvas.style.transform = 'translate(-50%,-50%)';
-
-              if(pr > cr){
-                canvas.style.height = `100%`;
-                canvas.style.top = '0px';
-                const wRatio = rect.height * cr / rect.width;
-                canvas.style.width = `${wRatio * 100}%`;
-                canvas.style.left = `${(1 - wRatio) * 50}%`;
-              }else{
-                canvas.style.width = `100%`;
-                canvas.style.left = '0px';
-                const hRatio = rect.width / cr / rect.height;
-                canvas.style.height = `${hRatio * 100}%`;
-                canvas.style.top = `${(1 - hRatio) * 50}%`;
-              }
-
-              // safari下，本地<video>切换成<canvas>
-              videoDom.appendChild(filters.canvas);
-              // safari 13.1 浏览器 需要<video> 和 <canvas> 在可视区域才能正常播放
-              if(env.SAFARI_MAJOR_VERSION! < 14 && video){
-                  video.style.height = '0px';
-                  video.style.width = '0px';
-                  document.body.appendChild(video);
-              }
-            }else{
-              localVideoDom.style.display = '';
-              videoDom.removeChild(filters.canvas);
-            }
-          }
-        }
-      });
-    }
+    this.mediaHelper.on('preProcessChange', (info)=>{
+      if(info.mediaType === 'video'){
+        this.replaceTags.waterMark = info.isOn;
+        this.replaceCanvas();
+      }
+    })
   }
   
   getAdapterRef(){
@@ -928,6 +894,7 @@ class LocalStream extends RTCEventEmitter {
         this._play.setVideoRender(options)
       }
       this.renderMode.local.video = options;
+      this.replaceCanvas();
     }
     if (!mediaType || mediaType === "screen"){
       this.renderMode.local.screen = options;
@@ -1512,7 +1479,7 @@ class LocalStream extends RTCEventEmitter {
           reason = 'NOT_OPEN_CAMERA_YET'
           break
         }
-        await this.suspendVideoPostProcess();
+        await this.suspendVideoPostProcess(true);
         // 释放当前 track
         if(this._transformedTrack && this._cameraTrack){
           this._cameraTrack.stop();
@@ -1541,6 +1508,11 @@ class LocalStream extends RTCEventEmitter {
         }else{
           this.logger.log('Stream.close:停止发布视频');
           await this.client.adapterRef._mediasoup?.destroyProduce('video');
+        }
+        // mute 状态下，关闭摄像头需要将相关标志位初始化
+        if(this.replaceTags.isMuted){
+          this.replaceTags.isMuted = false;
+          this.virtualBackground.emptyFrame = false;
         }
         break
       case 'screen':
@@ -2196,6 +2168,11 @@ class LocalStream extends RTCEventEmitter {
         constraint = this.mediaHelper.video.cameraConstraint
       }
       this.cameraId = deviceId
+      // mute 状态下，切换摄像头需要将相关标志位初始化
+      if(this.replaceTags.isMuted){
+        this.replaceTags.isMuted = false;
+        this.virtualBackground.emptyFrame = false;
+      }
     } else {
       this.logger.error(`switchDevice: unknown type ${type}`)
       return Promise.reject(
@@ -2266,6 +2243,9 @@ class LocalStream extends RTCEventEmitter {
   async unmuteVideo () {
     this.logger.log(`启用 ${this.stringStreamID} 的视频轨道`)
     try {
+      if (this.virtualBackground) {
+        this.virtualBackground.emptyFrame = false;
+      }
       if (this.getAdapterRef()){
         this.client.adapterRef._mediasoup?.unmuteVideo()
       }
@@ -2275,7 +2255,13 @@ class LocalStream extends RTCEventEmitter {
       if (this.mediaHelper.video.cameraTrack){
         this.mediaHelper.video.cameraTrack.enabled = true
       }
-      await this.resumeVideoPostProcess();
+      // 避免在 mute 状态下，开启美颜功能，导致原始track被禁用后无法重新开启的问题
+      if (this.videoPostProcess.sourceTrack){
+        this.videoPostProcess.sourceTrack.enabled = true;
+      }
+      if (this.mediaHelper.video.videoTrackLow){
+        this.mediaHelper.video.videoTrackLow.enabled = true
+      }
       if(env.IS_SAFARI){
         const videoDom = this._play?.getVideoDom;
         if(videoDom){
@@ -2291,6 +2277,7 @@ class LocalStream extends RTCEventEmitter {
           isRemote: false
         }, null, ' ')
       })
+      this.replaceTags.isMuted = false;
     } catch (e) {
       this.logger.error('API调用失败：Stream:unmuteVideo' ,e.name, e.message, e);
       this.client.apiFrequencyControl({
@@ -2314,7 +2301,9 @@ class LocalStream extends RTCEventEmitter {
   async muteVideo () {
     this.logger.log(`禁用 ${this.stringStreamID} 的视频轨道`)
     try { 
-      await this.suspendVideoPostProcess();
+      if (this.virtualBackground) {
+        this.virtualBackground.emptyFrame = true;
+      }
       if(env.IS_SAFARI){
         const videoDom = this._play?.getVideoDom;
         if(videoDom){
@@ -2330,6 +2319,12 @@ class LocalStream extends RTCEventEmitter {
       if (this.mediaHelper.video.cameraTrack){
         this.mediaHelper.video.cameraTrack.enabled = false
       }
+      if (this.mediaHelper.video.videoTrackLow){
+        this.mediaHelper.video.videoTrackLow.enabled = false
+      }
+      if (this.videoPostProcess.sourceTrack){
+        this.videoPostProcess.sourceTrack.enabled = false;
+      }
       this.muteStatus.video.send = true
       this.client.apiFrequencyControl({
         name: 'muteVideo',
@@ -2339,6 +2334,7 @@ class LocalStream extends RTCEventEmitter {
           isRemote: false
         }, null, ' ')
       })
+      this.replaceTags.isMuted = true;
     } catch (e) {
       this.logger.error('API调用失败：Stream:muteVideo' ,e.name, e.message, e);
       this.client.apiFrequencyControl({
@@ -2350,6 +2346,7 @@ class LocalStream extends RTCEventEmitter {
           reason: e.message
         }, null, ' ')
       })
+      this.replaceTags.isMuted = false;
     }
   }
 
@@ -2363,6 +2360,7 @@ class LocalStream extends RTCEventEmitter {
   async unmuteScreen () {
     this.logger.log(`启用 ${this.stringStreamID} 的视频轨道`)
     try {
+      
       if (this.getAdapterRef()){
         this.client.adapterRef._mediasoup?.unmuteScreen()
       }
@@ -2677,6 +2675,15 @@ class LocalStream extends RTCEventEmitter {
         }
       }
     }
+    if (this.replaceTags.isMuted) {
+      if(this.mediaHelper.video.cameraTrack){
+        this.mediaHelper.video.cameraTrack.enabled = false;
+      }
+      if(this.mediaHelper.video.videoTrackLow){
+        this.mediaHelper.video.videoTrackLow.enabled = false;
+      }
+    }
+
     return {
       oldTrack,
       oldTrackLow,
@@ -3546,29 +3553,26 @@ class LocalStream extends RTCEventEmitter {
 
    async setBeautyEffect(isStart:boolean){
     const basicBeauty  = this.basicBeauty;
-    let videoTrackLow;
     if (this.mediaHelper && this.mediaHelper.video.cameraTrack) {
+      const hasWaterMark = this.replaceTags.waterMark;
+      if(hasWaterMark){
+        this.mediaHelper.disablePreProcessing("video");
+      }
+
       this.videoPostProcessTags.isBeautyTrack = isStart;
       this._cameraTrack  = this.mediaHelper.video.cameraTrack;
       this._transformedTrack = await basicBeauty.setBeauty(isStart, this._cameraTrack) as MediaStreamTrack;
-      videoTrackLow = this.mediaHelper.video.videoTrackLow;
        // 替换 track
-      await this.replaceTrack({
+      await this.replacePluginTrack({
             mediaType: "video",
             //@ts-ignore
             track: this._transformedTrack,
-            external: false
+            external: false,
       });
+
       //重新开启水印
-      if(this.encoderWatermarkOptions) {
-        this.setEncoderWatermarkConfigs(this.encoderWatermarkOptions);
-      }
-      if(this.canvasWatermarkOptions) {
-        this.setCanvasWatermarkConfigs(this.canvasWatermarkOptions);
-      }
-      if (videoTrackLow){
-        videoTrackLow.stop();
-        this.mediaHelper.video.videoTrackLow = null;
+      if(hasWaterMark){
+        this.mediaHelper.enablePreProcessing("video")
       }
       if(isStart){
         let effects;
@@ -3766,34 +3770,139 @@ class LocalStream extends RTCEventEmitter {
         })
       }
     }
+
+    async replacePluginTrack(options: {
+      mediaType: "video"|"screen",
+      track: MediaStreamTrack,
+      external: boolean,
+    }){
+      // replaceTrack不会主动关掉原来的track，包括大小流
+      let oldTrack;
+      let oldTrackLow;
+      let external = false; // 被替换的流是否是外部流
+   
+      if (options.mediaType === "screen"){   
+        if (this.mediaHelper.screen.screenVideoTrack){
+          oldTrack = this.mediaHelper.screen.screenVideoTrack;
+          this.mediaHelper.screen.screenVideoTrack = null
+        }else if (this.mediaHelper.screen.screenVideoSource){
+          external = true
+          oldTrack = this.mediaHelper.screen.screenVideoSource;
+          this.mediaHelper.screen.screenVideoSource = null
+        }
+        if (oldTrack){
+          if (options.external){
+            this.mediaHelper.screen.screenVideoSource = options.track;
+          }else{
+            this.mediaHelper.screen.screenVideoTrack = options.track;
+          }
+          emptyStreamWith(this.mediaHelper.screen.screenVideoStream, options.track);
+          emptyStreamWith(this.mediaHelper.screen.renderStream, options.track);
+          if (
+            this.mediaHelper.screen.screenVideoStream.getVideoTracks().length &&
+            typeof this.mediaHelper.screen.encoderConfig.high.contentHint === "string" &&
+            // @ts-ignore
+            this.mediaHelper.screen.screenVideoStream.getVideoTracks()[0].contentHint !== this.mediaHelper.screen.encoderConfig.high.contentHint
+          ){
+            this.logger.log(`应用 contentHint screen high`, this.mediaHelper.screen.encoderConfig.high.contentHint)
+            // @ts-ignore
+            this.mediaHelper.screen.screenVideoStream.getVideoTracks()[0].contentHint = this.mediaHelper.screen.encoderConfig.high.contentHint
+          }
+          oldTrackLow = this.mediaHelper.screen.screenVideoTrackLow;
+          this.mediaHelper.screen.screenVideoTrackLow = null
+        }
+      }else if (options.mediaType === "video"){
+        if (this.mediaHelper.video.cameraTrack){
+          oldTrack = this.mediaHelper.video.cameraTrack;
+          this.mediaHelper.video.cameraTrack = null;
+        }else if (this.mediaHelper.video.videoSource){
+          external = true
+          oldTrack = this.mediaHelper.video.videoSource;
+          this.mediaHelper.video.videoSource = null;
+        }
+        if (oldTrack){
+          if (options.external){
+            this.mediaHelper.video.videoSource = options.track;
+          }else{
+            this.mediaHelper.video.cameraTrack = options.track;
+          }
+          emptyStreamWith(this.mediaHelper.video.videoStream, options.track);
+          emptyStreamWith(this.mediaHelper.video.renderStream, options.track);
+          if (
+            this.mediaHelper.video.videoStream.getVideoTracks().length &&
+            typeof this.mediaHelper.video.encoderConfig.high.contentHint === "string" &&
+            // @ts-ignore
+            this.mediaHelper.video.videoStream.getVideoTracks()[0].contentHint !== this.mediaHelper.video.encoderConfig.high.contentHint
+          ){
+            this.logger.log(`应用 contentHint video high`, this.mediaHelper.video.encoderConfig.high.contentHint)
+            // @ts-ignore
+            this.mediaHelper.video.videoStream.getVideoTracks()[0].contentHint = this.mediaHelper.video.encoderConfig.high.contentHint
+          }
+          oldTrackLow = this.mediaHelper.video.videoTrackLow;
+          this.mediaHelper.video.videoTrackLow = null
+        }
+      }
+      if (oldTrack){
+        this.logger.log(`replaceTrack ${options.mediaType} dual:${!!oldTrackLow}【external: ${external} ${oldTrack.label}】=>【external: ${options.external} ${options.track.label}】`)
+        watchTrack(options.track)
+        this.mediaHelper.listenToTrackEnded(options.track);
+      }else{
+        this.logger.error(`replaceTrack ${options.mediaType} 当前没有可替换的流`)
+        return null
+      }
+     
+      const sender = this.getSender(options.mediaType, "high")
+      const senderLow = this.getSender(options.mediaType, "low")
+      if (sender){
+        sender.replaceTrack(options.track)
+        this.logger.log(`replaceTrack ${options.mediaType} 成功替换上行`)
+      }
+      if (senderLow && oldTrackLow){
+        const newTrackLow = await this.mediaHelper.createTrackLow(options.mediaType)
+        if (newTrackLow){
+          senderLow.replaceTrack(newTrackLow);  
+          oldTrackLow.stop();
+          oldTrackLow = null; 
+          this.logger.log(`replaceTrack ${options.mediaType} 成功替换上行小流`)
+        }
+      }
+      if (this.replaceTags.isMuted) {
+        if(this.mediaHelper.video.cameraTrack){
+          this.mediaHelper.video.cameraTrack.enabled = false;
+        }
+        if(this.mediaHelper.video.videoTrackLow){
+          this.mediaHelper.video.videoTrackLow.enabled = false;
+        }
+      }
+      return {
+        oldTrack,
+        oldTrackLow,
+        external,
+      }
+    }
   
     async transformTrack(enable:boolean, processor: VirtualBackground | AdvancedBeauty | null) {
       if (!processor) {
         return
       }
-      let videoTrackLow;
       if (this.mediaHelper && this.mediaHelper.video.cameraTrack) {
+        const hasWaterMark = this.replaceTags.waterMark;
+        if(hasWaterMark){
+          this.mediaHelper.disablePreProcessing("video");
+        }
         this._cameraTrack  = this.mediaHelper.video.cameraTrack;
         this._transformedTrack = await processor.setTrack(enable, this._cameraTrack ) as MediaStreamTrack;
-        videoTrackLow = this.mediaHelper.video.videoTrackLow;
-         // 替换 track
-        await this.replaceTrack({
+        //替换 track
+        await this.replacePluginTrack({
               mediaType: "video",
               //@ts-ignore
               track: this._transformedTrack,
-              external: false
-        });
-        if (videoTrackLow){
-          videoTrackLow.stop();
-          this.mediaHelper.video.videoTrackLow = null;
-        }
+              external: false,
+        });      
         //重新开启水印
-        if(this.encoderWatermarkOptions) {
-          this.setEncoderWatermarkConfigs(this.encoderWatermarkOptions);
-        }
-        if(this.canvasWatermarkOptions) {
-          this.setCanvasWatermarkConfigs(this.canvasWatermarkOptions);
-        }
+        if (hasWaterMark){
+          this.mediaHelper.enablePreProcessing("video")
+        }  
       } else {
         this.logger.log("此时还没有有视频track");
       }
@@ -3842,7 +3951,6 @@ class LocalStream extends RTCEventEmitter {
         })
       }     
     } catch(e) {
-      console.log(e);
       this.logger.error(`create plugin ${options.key} error`);
     } 
 
@@ -3862,7 +3970,7 @@ class LocalStream extends RTCEventEmitter {
   }
 
   // 临时挂起视频后处理
-  async suspendVideoPostProcess(){
+  async suspendVideoPostProcess(closeTrackLow: boolean = false){
     const {isBeautyTrack, isBodySegmentTrack, isAdvBeautyTrack} = this.videoPostProcessTags;
     if(isBeautyTrack){
       await this.setBeautyEffect(false);
@@ -3876,6 +3984,12 @@ class LocalStream extends RTCEventEmitter {
       await this._cancelAdvancedBeauty();
       this.videoPostProcessTags.isAdvBeautyTrack = true;
     }
+
+    let videoTrackLow = this.mediaHelper.video.videoTrackLow;
+    if(videoTrackLow && closeTrackLow) {
+        videoTrackLow.stop();
+        videoTrackLow = null;
+    }   
   }
 
   // 恢复挂起的视频后处理
@@ -3904,6 +4018,93 @@ class LocalStream extends RTCEventEmitter {
       this.logger.log(`开启失败: ${error}`);
     }
   }
+
+  // 兼容 safari 15.3 以下版本抓流红黑屏及其他问题
+  private async replaceCanvas(){
+    if(!this._play) return;
+    if(!env.IS_ANY_SAFARI) return;
+    if(env.SAFARI_VERSION && parseFloat(env.SAFARI_VERSION) > 15.2) return;
+    const localVideoDom = this._play.getVideoDom?.querySelector('video');
+    const videoDom = this._play.getVideoDom;
+    if(localVideoDom && videoDom){
+      const filters = this.videoPostProcess.filters;
+      const video = this.videoPostProcess.video;
+
+      const vppOn = this.replaceTags.videoPost;
+      const wmOn = this.replaceTags.waterMark;
+      if(vppOn){
+        const canvas = filters.canvas;
+        canvas.style.height = '0px';
+        canvas.style.width = '0px';
+        document.body.appendChild(canvas);
+         // safari 13.1 浏览器 需要 <video> 和 <canvas> 在可视区域才能正常播放
+         if(env.SAFARI_MAJOR_VERSION! < 14 && video){
+          video.style.height = '0px';
+          video.style.width = '0px';
+          document.body.appendChild(video);
+        }
+
+        if(!wmOn && filters.canvas.parentElement !== videoDom){
+          const canvas = filters.canvas;
+
+          localVideoDom.style.display = 'none';
+          // safari在使用canvas.captureStream获取webgl渲染后的视频流，在本地播放时可能出现红屏或黑屏
+          // filters.canvas.style.height = '100%';
+          // filters.canvas.style.width = 'auto';
+          canvas.style.position = 'absolute';
+          // filters.canvas.style.left = '50%';
+          // filters.canvas.style.top = '50%';
+          // filters.canvas.style.transform = 'translate(-50%,-50%)';
+
+          const rect = videoDom.getBoundingClientRect();
+          const pr = rect.width / rect.height;
+          const cr = canvas.width / canvas.height;
+          const {width, height, cut} = this.renderMode.local.video as {width:number, height: number, cut:boolean};
+          const vcr = width / height;
+
+          if(cut){
+            // 上下裁切
+            if(vcr > cr){
+              canvas.style.width = `100%`;
+              canvas.style.left = '0px';
+              const hRatio = rect.width / cr / rect.height;
+              canvas.style.height = `${hRatio * 100}%`;
+              canvas.style.top = `${-(hRatio - 1) * 50}%`;
+            }else{ // 左右裁切
+              canvas.style.height = `100%`;
+              canvas.style.top = '0px';
+              const wRatio = rect.height * cr / rect.width;
+              canvas.style.width = `${wRatio * 100}%`;
+              canvas.style.left = `${-(wRatio - 1) * 50}%`;
+            }
+          }else{
+            // 左右留白
+            if(pr > cr){
+              canvas.style.height = `100%`;
+              canvas.style.top = '0px';
+              const wRatio = rect.height * cr / rect.width;
+              canvas.style.width = `${wRatio * 100}%`;
+              canvas.style.left = `${(1 - wRatio) * 50}%`;
+            }else{ // 上下留白
+              canvas.style.width = `100%`;
+              canvas.style.left = '0px';
+              const hRatio = rect.width / cr / rect.height;
+              canvas.style.height = `${hRatio * 100}%`;
+              canvas.style.top = `${(1 - hRatio) * 50}%`;
+            }
+          }
+
+          // safari下，本地<video>切换成<canvas>
+          videoDom.appendChild(filters.canvas);
+        }else if(wmOn){
+          localVideoDom.style.display = '';
+        }
+      }else{
+        localVideoDom.style.display = '';
+        filters.canvas.parentNode?.removeChild(filters.canvas);
+      }
+    }
+  }
   
   /**
    *  销毁实例
@@ -3922,9 +4123,9 @@ class LocalStream extends RTCEventEmitter {
       }
     })
     this.logger.log(`uid ${this.stringStreamID} 销毁 Stream 实例`)
+    await this.close({type:'video'});
     this.stop()
     this._reset()
-    await this.suspendVideoPostProcess();
     this.destroyed = true;
     this.lastEffects = null;
     this.lastFilter = null;

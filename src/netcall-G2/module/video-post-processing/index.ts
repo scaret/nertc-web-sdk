@@ -68,7 +68,7 @@ export default class VideoPostProcess extends EventEmitter {
     private advBeautyData: number[] | Int16Array = [];
 
     // 后处理 track
-    private sourceTrack: MediaStreamTrack | null = null;
+    sourceTrack: MediaStreamTrack | null = null;
     private trackInstance: MediaStreamTrack | null = null;
 
     private get taskReady(){
@@ -223,8 +223,9 @@ export default class VideoPostProcess extends EventEmitter {
                 this.filters.update(false);
                 // 获取下一帧原图的 imageData
                 this.sourceMap = this.filters.normal.getImageData(
-                    this.filters.srcMap, 
-                    env.IS_ANY_SAFARI && env.SAFARI_MAJOR_VERSION!<14
+                    this.filters.srcMap,
+                    (env.IS_ANY_SAFARI && env.SAFARI_MAJOR_VERSION!<14) ||
+                    (env.IS_CHROME && env.CHROME_MAJOR_VERSION!<80)
                 );
             }else{
                 this.filters.update(true);
@@ -238,15 +239,20 @@ export default class VideoPostProcess extends EventEmitter {
                     logger.error('VirtualBackground plugin is null.');
                 }else{
                     const {width, height} = this.filters.canvas;
-                    // 背景替换推理
-                    plugin.process(this.sourceMap!, width, height, (result)=>{
-                        this.maskData = this.taskSet.has('VirtualBackground') ? result : null;
+                    // 屏蔽空帧
+                    if(width > 16 && height > 16){
+                        // 背景替换推理
+                        plugin.process(this.sourceMap!, width, height, (result)=>{
+                            this.maskData = this.taskSet.has('VirtualBackground') ? result : null;
+                            this.readyTaskSet.add('VirtualBackground');
+                            if(this.frameCount[1] < this.frameCount[0]){
+                                this.updateTimer();
+                                this.update(false);
+                            }
+                        });
+                    }else{
                         this.readyTaskSet.add('VirtualBackground');
-                        if(this.frameCount[1] < this.frameCount[0]){
-                            this.updateTimer();
-                            this.update(false);
-                        }
-                    });
+                    }
                 }
             }
             // 高级美颜任务

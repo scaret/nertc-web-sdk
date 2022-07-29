@@ -77,6 +77,7 @@ export class VirtualBackFilter extends Filter {
         program.setUniform('size',[size.width, size.height]);
         program.setUniform('bkSize',[0, 0]);
         program.setUniform('backType',0);
+        program.setUniform('emptyFrame', 0);
         this.programs.main = program;
         this.framebuffers.main = framebuffer;
     }
@@ -89,6 +90,10 @@ export class VirtualBackFilter extends Filter {
             this._map = map;
             this.programs.main.setUniform('map', this._map);
         }
+    }
+
+    set emptyFrame(isEmptyFrame: boolean){
+        this.programs.main.setUniform('emptyFrame', isEmptyFrame ? 1 : 0);
     }
 
     setMaskMap(source: TexImageSource | null){
