@@ -4123,7 +4123,6 @@ class LocalStream extends RTCEventEmitter {
       }
     })
     this.logger.log(`uid ${this.stringStreamID} 销毁 Stream 实例`)
-    await this.close({type:'video'});
     this.stop()
     this._reset()
     this.destroyed = true;
