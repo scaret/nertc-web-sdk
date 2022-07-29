@@ -950,9 +950,9 @@ declare interface Client{
   ) => void): void;
 
   /**
-   * `audioVideoBanned` 事件表示音频/视频被服务器禁言
-   * state: true 表示被服务器禁言，为 false 表示服务器解禁。
-   * duration: 服务器禁言事件，单位为 s
+   * `audioVideoBanned` 事件表示音频或视频被服务器禁言
+   * * state: true 表示被服务器禁言，false 表示服务器解禁
+   * * duration: 服务器禁言事件，单位为秒
    */
    on(event: "audioVideoBanned", callback: (
     evt: {
