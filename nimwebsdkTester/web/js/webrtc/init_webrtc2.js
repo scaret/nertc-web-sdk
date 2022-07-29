@@ -591,60 +591,59 @@ function initEvents() {
     if (currentSpeaker.uid == evt.uid) {
       currentSpeaker.uid = null;
     }
-    $(`#subList option[value=${evt.uid}]`).remove()
-  })
+    $(`#subList option[value=${evt.uid}]`).remove();
+  });
 
-  rtc.client.on('mute-audio', evt => {
-    console.warn(`${evt.uid} mute自己的音频`)
-    addLog(`${evt.uid} mute自己的音频`)
-    getRemoteView(evt.uid).audio.muted = true
-  })
+  rtc.client.on("mute-audio", (evt) => {
+    console.warn(`${evt.uid} mute自己的音频`);
+    addLog(`${evt.uid} mute自己的音频`);
+    getRemoteView(evt.uid).audio.muted = true;
+  });
 
-  rtc.client.on('unmute-audio', evt => {
-    console.warn(`${evt.uid} unmute自己的音频`)
-    addLog(`${evt.uid} unmute自己的音频`)
-    getRemoteView(evt.uid).audio.muted = false
-  })
+  rtc.client.on("unmute-audio", (evt) => {
+    console.warn(`${evt.uid} unmute自己的音频`);
+    addLog(`${evt.uid} unmute自己的音频`);
+    getRemoteView(evt.uid).audio.muted = false;
+  });
 
-  rtc.client.on('mute-audio-slave', evt => {
-    console.warn(`${evt.uid} mute自己的音频辅流`)
-    addLog(`${evt.uid} mute自己的音频辅流`)
-    getRemoteView(evt.uid).audioSlave.muted = true
-  })
+  rtc.client.on("mute-audio-slave", (evt) => {
+    console.warn(`${evt.uid} mute自己的音频辅流`);
+    addLog(`${evt.uid} mute自己的音频辅流`);
+    getRemoteView(evt.uid).audioSlave.muted = true;
+  });
 
-  rtc.client.on('unmute-audio-slave', evt => {
-    console.warn(`${evt.uid} unmute自己的音频辅流`)
-    addLog(`${evt.uid} unmute自己的音频辅流`)
-    getRemoteView(evt.uid).audioSlave.muted = false
-  })
+  rtc.client.on("unmute-audio-slave", (evt) => {
+    console.warn(`${evt.uid} unmute自己的音频辅流`);
+    addLog(`${evt.uid} unmute自己的音频辅流`);
+    getRemoteView(evt.uid).audioSlave.muted = false;
+  });
 
-  rtc.client.on('mute-video', evt => {
-    console.warn(`${evt.uid} mute自己的视频`)
-    addLog(`${evt.uid} mute自己的视频`)
-    getRemoteView(evt.uid).video.muted = true
-  })
+  rtc.client.on("mute-video", (evt) => {
+    console.warn(`${evt.uid} mute自己的视频`);
+    addLog(`${evt.uid} mute自己的视频`);
+    getRemoteView(evt.uid).video.muted = true;
+  });
 
-  rtc.client.on('unmute-video', evt => {
-    console.warn(`${evt.uid} unmute自己的视频`)
-    addLog(`${evt.uid} unmute自己的视频`)
-    getRemoteView(evt.uid).video.muted = false
-  })
+  rtc.client.on("unmute-video", (evt) => {
+    console.warn(`${evt.uid} unmute自己的视频`);
+    addLog(`${evt.uid} unmute自己的视频`);
+    getRemoteView(evt.uid).video.muted = false;
+  });
 
+  rtc.client.on("mute-screen", (evt) => {
+    console.warn(`${evt.uid} mute自己的辅流`);
+    addLog(`${evt.uid} mute自己的辅流`);
+    getRemoteView(evt.uid).screen.muted = true;
+  });
 
-  rtc.client.on('mute-screen', evt => {
-    console.warn(`${evt.uid} mute自己的辅流`)
-    addLog(`${evt.uid} mute自己的辅流`)
-    getRemoteView(evt.uid).screen.muted = true
-  })
+  rtc.client.on("unmute-screen", (evt) => {
+    console.warn(`${evt.uid} unmute自己的辅流`);
+    addLog(`${evt.uid} unmute自己的辅流`);
+    getRemoteView(evt.uid).screen.muted = false;
+  });
 
-  rtc.client.on('unmute-screen', evt => {
-    console.warn(`${evt.uid} unmute自己的辅流`)
-    addLog(`${evt.uid} unmute自己的辅流`)
-    getRemoteView(evt.uid).screen.muted = false
-  })
-  
-  rtc.client.on('crypt-error', evt => {
-    console.warn(`加密失败：`,evt);
+  rtc.client.on("crypt-error", (evt) => {
+    console.warn(`加密失败：`, evt);
     addLog(`加密失败：` + evt.cryptType);
   });
 
@@ -4516,21 +4515,15 @@ const showStats = async () => {
   const localAudioStats = await rtc.client.getLocalAudioStats();
   const localAudioSlaveStats = await rtc.client.getLocalAudioSlaveStats();
   str += `本地音频\n`;
-<<<<<<< HEAD
-  for (let key in localAudioStats[0]){
-    str += `${key}:${localAudioStats[0][key]}\n`
-  };
-
-  str += `本地音频辅流\n`;
-  for (let key in localAudioSlaveStats[0]){
-    str += `${key}:${localAudioSlaveStats[0][key]}\n`
-  };
-
-=======
   for (let key in localAudioStats[0]) {
     str += `${key}:${localAudioStats[0][key]}\n`;
   }
->>>>>>> e94ff024 (fix: server ban emit)
+
+  str += `本地音频辅流\n`;
+  for (let key in localAudioSlaveStats[0]) {
+    str += `${key}:${localAudioSlaveStats[0][key]}\n`;
+  }
+
   const localVideoStats = await rtc.client.getLocalVideoStats();
   for (let i = 0; i < localVideoStats.length; i++) {
     if (!localVideoStats[i].TotalDuration) {
@@ -4548,14 +4541,9 @@ const showStats = async () => {
   str += `</pre>`;
   //////////////
   const remoteAudioStats = await rtc.client.getRemoteAudioStats();
-<<<<<<< HEAD
   const remoteAudioSlaveStats = await rtc.client.getRemoteAudioSlaveStats();
-  const remoteVideoStats = await rtc.client.getRemoteVideoStats('video');
-  const remoteScreenStats = await rtc.client.getRemoteVideoStats('screen');
-=======
   const remoteVideoStats = await rtc.client.getRemoteVideoStats("video");
   const remoteScreenStats = await rtc.client.getRemoteVideoStats("screen");
->>>>>>> e94ff024 (fix: server ban emit)
   // uid求交集
   const uids = Object.keys(remoteAudioStats).concat(
     Object.keys(remoteVideoStats).filter(
@@ -4569,8 +4557,8 @@ const showStats = async () => {
       str += `${key}:${remoteAudioStats[uid][key]}\n`;
     }
     str += `远端音频辅流 ${uid}\n`;
-    for (var key in remoteAudioSlaveStats[uid]){
-      str += `${key}:${remoteAudioSlaveStats[uid][key]}\n`
+    for (var key in remoteAudioSlaveStats[uid]) {
+      str += `${key}:${remoteAudioSlaveStats[uid][key]}\n`;
     }
     str += `远端视频 ${uid}\n`;
     for (var key in remoteVideoStats[uid]) {
