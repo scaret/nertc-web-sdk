@@ -950,6 +950,20 @@ declare interface Client{
   ) => void): void;
 
   /**
+   * `audioVideoBanned` 事件表示音频或视频被服务器禁言
+   * * state: true 表示被服务器禁言，false 表示服务器解禁
+   * * duration: 服务器禁言事件，单位为秒
+   */
+   on(event: "audioVideoBanned", callback: (
+    evt: {
+      uid: number,
+      mediaType: "audio"|"video",
+      state: boolean,
+      duration?:number
+    },
+  ) => void): void;
+
+  /**
    * `recording-device-changed` 回调通知应用有音频输入设备被添加、更改或移除。
    * * `ACTIVE`: 新增设备
    * * `INACTIVE`: 设备被移除

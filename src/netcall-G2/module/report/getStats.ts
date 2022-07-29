@@ -119,6 +119,7 @@ class GetStats extends EventEmitter{
         if(localDatasMap_.has(local[item].type)) {
           if(item.indexOf('ssrc') > -1){
             let key;
+            
             if( item.indexOf('audio') > 0 || item.indexOf('video') > 0) {
               key = `${local[item].mediaType}_ssrc`
             }else if(item.indexOf('screen') > 0) {

@@ -1044,10 +1044,20 @@ class MediaHelper extends EventEmitter {
     try{
 
       if (this.audio.micTrack){
-        settings.mic = {
-          settings: this.audio.micTrack.getSettings(),
-          label: this.audio.micTrack.label,
-          readyState: this.audio.micTrack.readyState,
+        const track = compatAudioInputList.findSource(this.audio.micTrack.id)
+        if (track){
+          settings.mic = {
+            compat: true,
+            settings: track.getSettings(),
+            label: track.label,
+            readyState: track.readyState,
+          }
+        }else{
+          settings.mic = {
+            settings: this.audio.micTrack.getSettings(),
+            label: this.audio.micTrack.label,
+            readyState: this.audio.micTrack.readyState,
+          }
         }
       }
       if (this.audio.audioSource){
@@ -1123,8 +1133,8 @@ class MediaHelper extends EventEmitter {
       this.screenAudio.screenAudioTrack = track;
       emptyStreamWith(this.screenAudio.screenAudioStream, track);
       // Safari：即使前后属性相同，也需要重新设一遍srcObject
-      if (this.stream._play?.audioDom){
-        this.stream._play.audioDom.srcObject = this.audio.audioStream
+      if (this.stream._play?.audioSlaveDom){
+        this.stream._play.audioSlaveDom.srcObject = this.audio.audioStream
       }
     } else if (kind === 'video') {
       this.video.cameraTrack = track;

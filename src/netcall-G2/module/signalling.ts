@@ -436,7 +436,11 @@ class Signalling extends EventEmitter {
           this.adapterRef.instance.safeEmit('stream-added', {stream: remoteStream, 'mediaType': mediaTypeShort})
         }
         if (mute) {
-          this.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {uid})
+          if (mediaTypeShort === 'audioSlave') {
+            this.adapterRef.instance.safeEmit('mute-audio-slave', {uid: remoteStream.getId()})
+          } else {
+            this.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
+          }
         }
         break
       }
@@ -515,11 +519,7 @@ class Signalling extends EventEmitter {
         } else if (mediaTypeShort === 'audioSlave') {
           remoteStream.mediaHelper.screenAudio.screenAudioTrack = null;
           emptyStreamWith(remoteStream.mediaHelper.screenAudio.screenAudioStream, null);
-          /*delete this.adapterRef.remoteAudioStats[uid];
-          if (data) {
-            data.recvFirstAudioFrame = false
-            data.recvFirstAudioPackage = false
-          }*/
+          delete this.adapterRef.remoteAudioSlaveStats[uid];
         } else if (mediaTypeShort === 'video') {
           remoteStream.mediaHelper.video.cameraTrack = null;
           emptyStreamWith(remoteStream.mediaHelper.video.videoStream, null)
@@ -671,6 +671,7 @@ class Signalling extends EventEmitter {
       }
       case 'OnUserData': {
         let { type, data, } = notification.data.externData;
+        //console.warn('收到userData通知: ', notification.data.externData)
         if (type === 'StreamStatus') {
           this._handleStreamStatusNotify(data)
         } else if (type === 'NetStatus') {
@@ -725,16 +726,50 @@ class Signalling extends EventEmitter {
           this._handleAbility(notification.data.externData.data);
         } else if (type === 'ChangeRight') {
           // 服务器禁用音频/视频: 1 禁用   2 取消禁用  0 无需处理
+          let uid = data.uid;
+          let audioDuration, videoDuration;
           if(data.audioRight === 1) {
             this.adapterRef.isAudioBanned = true;
+            audioDuration = data.audioDuration;
+            let mediaType = 'audio';
+            let state = true;
+            const rtcError = new RtcError({
+              code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+              message: 'ChangeRight audio is banned by server'
+            })
+            this.adapterRef.instance.safeEmit('audioVideoBanned', {rtcError, uid, mediaType, state, duration:audioDuration})
           }else if(data.audioRight === 2) {
             this.adapterRef.isAudioBanned = false;
+            audioDuration = data.audioDuration;
+            let mediaType = 'audio';
+            let state = false;
+            const rtcError = new RtcError({
+              code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+              message: 'ChangeRight audio is unbanned by server '
+            })
+            this.adapterRef.instance.safeEmit('audioVideoBanned', {rtcError, uid, mediaType, state, duration:audioDuration})
           }
 
           if(data.videoRight === 1) {
             this.adapterRef.isVideoBanned = true;
+            videoDuration = data.videoDuration;
+            let mediaType = 'video';
+            let state = true;
+            const rtcError = new RtcError({
+              code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+              message: 'ChangeRight video is banned by server'
+            })
+            this.adapterRef.instance.safeEmit('audioVideoBanned', {rtcError, uid, mediaType, state, duration:videoDuration})
           }else if(data.videoRight === 2) {
             this.adapterRef.isVideoBanned = false;
+            videoDuration = data.videoDuration;
+            let mediaType = 'video';
+            let state = false;
+            const rtcError = new RtcError({
+              code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+              message: 'ChangeRight video is unbanned by server'
+            })
+            this.adapterRef.instance.safeEmit('audioVideoBanned', {rtcError, uid, mediaType, state, duration:videoDuration})
           }
 
           if(this.adapterRef.isAudioBanned && this.adapterRef.isVideoBanned) {
@@ -925,16 +960,30 @@ class Signalling extends EventEmitter {
         this._joinFailed(response.code, errMsg)
         return
       } 
-      
+      let uid = this.adapterRef.channelInfo.uid;
       // 服务器禁用音视频: 1 禁用   0 和 2 取消禁用
       if(response.externData.audioRight === 1){
         this.adapterRef.isAudioBanned = true;
+        let mediaType = 'audio';
+        let state = true;
+        const rtcError = new RtcError({
+          code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+          message: 'Join() audio is banned by server'
+        })
+        this.adapterRef.instance.safeEmit('audioVideoBanned', {rtcError, uid, mediaType, state})
       }else {
         this.adapterRef.isAudioBanned = false;
       }
 
       if(response.externData.videoRight === 1){
         this.adapterRef.isVideoBanned = true;
+        let mediaType = 'video';
+        let state = true;
+        const rtcError = new RtcError({
+          code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+          message: 'Join() video is banned by server'
+        })
+        this.adapterRef.instance.safeEmit('audioVideoBanned', {rtcError, uid, mediaType, state})
       }else {
         this.adapterRef.isVideoBanned = false;
       }
@@ -946,6 +995,12 @@ class Signalling extends EventEmitter {
           isAudioBanned: true,
           isVideoBanned: true
         })
+        this.logger.error("服务器禁止发送音频流")
+        if (this._reconnectionTimer) {
+          clearTimeout(this._reconnectionTimer)
+          this._reconnectionTimer = null
+        }
+        return;
       }
 
       if(!this.adapterRef.isAudioBanned && this.adapterRef.isVideoBanned) {
@@ -1140,7 +1195,11 @@ class Signalling extends EventEmitter {
                   that.adapterRef.instance.safeEmit('stream-added', {stream: remoteStream, 'mediaType': mediaTypeShort})
                 }
                 if (mute) {
-                  that.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
+                  if (mediaTypeShort === 'audioSlave') {
+                    that.adapterRef.instance.safeEmit(`mute-audio-slave`, {uid: remoteStream.getId()})
+                  } else {
+                    that.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
+                  }
                 }
               }, 0);
             }
@@ -1517,14 +1576,22 @@ class Signalling extends EventEmitter {
     const producerId = data.producerId;
     const mute = data.mute;
     Object.values(this.adapterRef.remoteStreamMap).forEach(stream => {
-      const mediaTypeList:MediaTypeShort[] = ["audio", "video", "screen"]
+      const mediaTypeList:MediaTypeShort[] = ["audio", "video", "screen", "audioSlave"]
       mediaTypeList.forEach((mediaTypeShort)=>{
         if (stream.pubStatus[mediaTypeShort].producerId === producerId){
           stream.muteStatus[mediaTypeShort].send = mute
           if (mute) {
-            this.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {uid: stream.getId()})
+            if (mediaTypeShort === 'audioSlave') {
+              this.adapterRef.instance.safeEmit('mute-audio-slave', {uid: stream.getId()})
+            } else {
+              this.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {uid: stream.getId()})
+            }
           } else {
-            this.adapterRef.instance.safeEmit(`unmute-${mediaTypeShort}`, {uid: stream.getId()})
+            if (mediaTypeShort === 'audioSlave') {
+              this.adapterRef.instance.safeEmit('unmute-audio-slave', {uid: stream.getId()})
+            } else {
+              this.adapterRef.instance.safeEmit(`unmute-${mediaTypeShort}`, {uid: stream.getId()})
+            }
           }
         }
       })
