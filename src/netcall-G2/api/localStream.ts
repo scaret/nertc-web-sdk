@@ -137,9 +137,10 @@ class LocalStream extends RTCEventEmitter {
     isBodySegmentTrack: false,
     isAdvBeautyTrack: false
   };
-  private canvasReplaceTags = {
+  private replaceTags = {
     videoPost: false,
-    waterMark: false
+    waterMark: false,
+    isMuted: false
   };
 
   _play: Play|null;
@@ -207,7 +208,7 @@ class LocalStream extends RTCEventEmitter {
   public destroyed:boolean = false;
   private canvasWatermarkOptions:NERtcCanvasWatermarkConfig | null = null;
   private encoderWatermarkOptions: NERtcEncoderWatermarkConfig | null = null;
-  
+
   constructor (options:LocalStreamOptions) {
     super()
     this.localStreamId = localStreamCnt++;
@@ -328,7 +329,7 @@ class LocalStream extends RTCEventEmitter {
     })
     
     this.videoPostProcess.on('taskSwitch', (isOn)=>{
-      this.canvasReplaceTags.videoPost = isOn;
+      this.replaceTags.videoPost = isOn;
       this.replaceCanvas();
       if(isOn && parseFloat(env.SAFARI_VERSION || '0') === 15.3){
         this.logger.warn('当前版本的 Safari 下，开启美颜背替相关功能会导致内存泄露(Safari 内核 bug：从 WebGL 抓取视频流会内存泄露)。');
@@ -337,7 +338,7 @@ class LocalStream extends RTCEventEmitter {
 
     this.mediaHelper.on('preProcessChange', (info)=>{
       if(info.mediaType === 'video'){
-        this.canvasReplaceTags.waterMark = info.isOn;
+        this.replaceTags.waterMark = info.isOn;
         this.replaceCanvas();
       }
     })
@@ -2247,6 +2248,10 @@ class LocalStream extends RTCEventEmitter {
       if (this.mediaHelper.video.cameraTrack){
         this.mediaHelper.video.cameraTrack.enabled = true
       }
+      // 避免在 mute 状态下，开启美颜功能，导致原始track被禁用后无法重新开启的问题
+      if (this.videoPostProcess.sourceTrack){
+        this.videoPostProcess.sourceTrack.enabled = true;
+      }
       if (this.mediaHelper.video.videoTrackLow){
         this.mediaHelper.video.videoTrackLow.enabled = true
       }
@@ -2265,6 +2270,7 @@ class LocalStream extends RTCEventEmitter {
           isRemote: false
         }, null, ' ')
       })
+      this.replaceTags.isMuted = false;
     } catch (e) {
       this.logger.error('API调用失败：Stream:unmuteVideo' ,e.name, e.message, e);
       this.client.apiFrequencyControl({
@@ -2287,6 +2293,7 @@ class LocalStream extends RTCEventEmitter {
    */
   async muteVideo () {
     this.logger.log(`禁用 ${this.stringStreamID} 的视频轨道`)
+    
     //开启背景替换时mute后视频为纯背景
     let tempOptions = this.virtualBackgroundOptions;
     if(this.videoPostProcessTags.isBodySegmentTrack) {
@@ -2315,6 +2322,9 @@ class LocalStream extends RTCEventEmitter {
       if (this.mediaHelper.video.videoTrackLow){
         this.mediaHelper.video.videoTrackLow.enabled = false
       }
+      if (this.videoPostProcess.sourceTrack){
+        this.videoPostProcess.sourceTrack.enabled = false;
+      }
       this.muteStatus.video.send = true
       this.client.apiFrequencyControl({
         name: 'muteVideo',
@@ -2324,6 +2334,7 @@ class LocalStream extends RTCEventEmitter {
           isRemote: false
         }, null, ' ')
       })
+      this.replaceTags.isMuted = true;
     } catch (e) {
       this.logger.error('API调用失败：Stream:muteVideo' ,e.name, e.message, e);
       this.client.apiFrequencyControl({
@@ -2335,6 +2346,7 @@ class LocalStream extends RTCEventEmitter {
           reason: e.message
         }, null, ' ')
       })
+      this.replaceTags.isMuted = false;
     }
   }
 
@@ -2348,6 +2360,7 @@ class LocalStream extends RTCEventEmitter {
   async unmuteScreen () {
     this.logger.log(`启用 ${this.stringStreamID} 的视频轨道`)
     try {
+      
       if (this.getAdapterRef()){
         this.client.adapterRef._mediasoup?.unmuteScreen()
       }
@@ -2654,6 +2667,15 @@ class LocalStream extends RTCEventEmitter {
         }
       }
     }
+    if (this.replaceTags.isMuted) {
+      if(this.mediaHelper.video.cameraTrack){
+        this.mediaHelper.video.cameraTrack.enabled = false;
+      }
+      if(this.mediaHelper.video.videoTrackLow){
+        this.mediaHelper.video.videoTrackLow.enabled = false;
+      }
+    }
+
     return {
       oldTrack,
       oldTrackLow,
@@ -3524,6 +3546,11 @@ class LocalStream extends RTCEventEmitter {
    async setBeautyEffect(isStart:boolean){
     const basicBeauty  = this.basicBeauty;
     if (this.mediaHelper && this.mediaHelper.video.cameraTrack) {
+      const hasWaterMark = this.replaceTags.waterMark;
+      if(hasWaterMark){
+        this.mediaHelper.disablePreProcessing("video");
+      }
+
       this.videoPostProcessTags.isBeautyTrack = isStart;
       this._cameraTrack  = this.mediaHelper.video.cameraTrack;
       this._transformedTrack = await basicBeauty.setBeauty(isStart, this._cameraTrack) as MediaStreamTrack;
@@ -3534,8 +3561,9 @@ class LocalStream extends RTCEventEmitter {
             track: this._transformedTrack,
             external: false,
       });
+
       //重新开启水印
-      if (this.mediaHelper.video.preProcessingEnabled){
+      if(hasWaterMark){
         this.mediaHelper.enablePreProcessing("video")
       }
       if(isStart){
@@ -3831,7 +3859,14 @@ class LocalStream extends RTCEventEmitter {
           this.logger.log(`replaceTrack ${options.mediaType} 成功替换上行小流`)
         }
       }
-      
+      if (this.replaceTags.isMuted) {
+        if(this.mediaHelper.video.cameraTrack){
+          this.mediaHelper.video.cameraTrack.enabled = false;
+        }
+        if(this.mediaHelper.video.videoTrackLow){
+          this.mediaHelper.video.videoTrackLow.enabled = false;
+        }
+      }
       return {
         oldTrack,
         oldTrackLow,
@@ -3844,6 +3879,10 @@ class LocalStream extends RTCEventEmitter {
         return
       }
       if (this.mediaHelper && this.mediaHelper.video.cameraTrack) {
+        const hasWaterMark = this.replaceTags.waterMark;
+        if(hasWaterMark){
+          this.mediaHelper.disablePreProcessing("video");
+        }
         this._cameraTrack  = this.mediaHelper.video.cameraTrack;
         this._transformedTrack = await processor.setTrack(enable, this._cameraTrack ) as MediaStreamTrack;
         //替换 track
@@ -3854,7 +3893,7 @@ class LocalStream extends RTCEventEmitter {
               external: false,
         });      
         //重新开启水印
-        if (this.mediaHelper.video.preProcessingEnabled){
+        if (hasWaterMark){
           this.mediaHelper.enablePreProcessing("video")
         }  
       } else {
@@ -3984,8 +4023,8 @@ class LocalStream extends RTCEventEmitter {
       const filters = this.videoPostProcess.filters;
       const video = this.videoPostProcess.video;
 
-      const vppOn = this.canvasReplaceTags.videoPost;
-      const wmOn = this.canvasReplaceTags.waterMark;
+      const vppOn = this.replaceTags.videoPost;
+      const wmOn = this.replaceTags.waterMark;
       if(vppOn){
         const canvas = filters.canvas;
         canvas.style.height = '0px';

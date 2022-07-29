@@ -68,7 +68,7 @@ export default class VideoPostProcess extends EventEmitter {
     private advBeautyData: number[] | Int16Array = [];
 
     // 后处理 track
-    private sourceTrack: MediaStreamTrack | null = null;
+    sourceTrack: MediaStreamTrack | null = null;
     private trackInstance: MediaStreamTrack | null = null;
 
     private get taskReady(){
