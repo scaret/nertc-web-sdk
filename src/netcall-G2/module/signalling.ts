@@ -1000,7 +1000,6 @@ class Signalling extends EventEmitter {
           clearTimeout(this._reconnectionTimer)
           this._reconnectionTimer = null
         }
-        return;
       }
 
       if(!this.adapterRef.isAudioBanned && this.adapterRef.isVideoBanned) {
