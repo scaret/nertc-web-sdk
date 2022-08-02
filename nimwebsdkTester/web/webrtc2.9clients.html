@@ -452,14 +452,14 @@
       //背景分割
       const virtualBackgroundPluginConfig = {
         development: {
-          chrome: {
+          simd: {
             key: "VirtualBackground",
             pluginUrl: "./js/nim/NIM_Web_VirtualBackground.js",
             wasmUrl:
               "https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal.wasm" +
               `?time=${Math.random()}`,
           },
-          safari: {
+          nosimd: {
             key: "VirtualBackground",
             pluginUrl: "./js/nim/NIM_Web_VirtualBackground.js",
             wasmUrl:
@@ -468,14 +468,14 @@
           },
         },
         production: {
-          chrome: {
+          simd: {
             key: "VirtualBackground",
             pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}.js`,
             wasmUrl:
               "https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal.wasm" +
               `?time=${Math.random()}`,
           },
-          safari: {
+          nosimd: {
             key: "VirtualBackground",
             pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}.js`,
             wasmUrl:
@@ -484,14 +484,14 @@
           },
         },
         test: {
-          chrome: {
+          simd: {
             key: "VirtualBackground",
             pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}_test.js`,
              wasmUrl:
               "https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal.wasm" +
               `?time=${Math.random()}`,
           },
-          safari: {
+          nosimd: {
             key: "VirtualBackground",
             pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}_test.js`,
              wasmUrl:
@@ -500,21 +500,20 @@
           },
         },
       };
-      console.log('wasmFeatureDetect', wasmFeatureDetect)
-      const type = (await wasmFeatureDetect.simd()) ? "chrome" : "safari";
+      const type = (await wasmFeatureDetect.simd()) ? "simd" : "nosimd";
       const segment_config = virtualBackgroundPluginConfig[NERTC.ENV][type];
 
       //高级美颜
       const advancedBeautyPluginConfig = {
         development: {
-          chrome: {
+          simd: {
             key: "AdvancedBeauty",
             pluginUrl: "./js/nim/NIM_Web_AdvancedBeauty.js",
             wasmUrl:
               "https://yx-web-nosdn.netease.im/sdk-release/ne_face_points.wasm" +
               `?time=${Math.random()}`,
           },
-          safari: {
+          nosimd: {
             key: "AdvancedBeauty",
             pluginUrl: "./js/nim/NIM_Web_AdvancedBeauty.js",
             wasmUrl:
@@ -523,14 +522,14 @@
           },
         },
         production: {
-          chrome: {
+          simd: {
             key: "AdvancedBeauty",
             pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}.js`,
             wasmUrl:
               "https://yx-web-nosdn.netease.im/sdk-release/ne_face_points.wasm" +
               `?time=${Math.random()}`,
           },
-          safari: {
+          nosimd: {
             key: "AdvancedBeauty",
             pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}.js`,
             wasmUrl:
@@ -539,14 +538,14 @@
           },
         },
         test: {
-          chrome: {
+          simd: {
             key: "AdvancedBeauty",
             pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}_test.js`,
             wasmUrl:
               "https://yx-web-nosdn.netease.im/sdk-release/ne_face_points.wasm" +
               `?time=${Math.random()}`,
           },
-          safari: {
+          nosimd: {
             key: "AdvancedBeauty",
             pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}_test.js`,
             wasmUrl:
