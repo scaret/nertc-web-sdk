@@ -40,14 +40,14 @@ var WEBRTC2_ENV = {
 //背景分割
 const virtualBackgroundPluginConfig = {
   development: {
-    chrome: {
+    simd: {
       key: "VirtualBackground",
       pluginUrl: "./js/nim/NIM_Web_VirtualBackground.js",
       wasmUrl:
         "https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal.wasm" +
         `?time=${Math.random()}`,
     },
-    safari: {
+    nosimd: {
       key: "VirtualBackground",
       pluginUrl: "./js/nim/NIM_Web_VirtualBackground.js",
       wasmUrl:
@@ -56,14 +56,14 @@ const virtualBackgroundPluginConfig = {
     },
   },
   production: {
-    chrome: {
+    simd: {
       key: "VirtualBackground",
       pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}.js`,
       wasmUrl:
         "https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal.wasm" +
         `?time=${Math.random()}`,
     },
-    safari: {
+    nosimd: {
       key: "VirtualBackground",
       pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}.js`,
       wasmUrl:
@@ -72,14 +72,14 @@ const virtualBackgroundPluginConfig = {
     },
   },
   test: {
-    chrome: {
+    simd: {
       key: "VirtualBackground",
       pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}_test.js`,
       wasmUrl:
         "https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal.wasm" +
         `?time=${Math.random()}`,
     },
-    safari: {
+    nosimd: {
       key: "VirtualBackground",
       pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}_test.js`,
       wasmUrl:
@@ -93,14 +93,14 @@ let segment_config = null;
 //高级美颜
 const advancedBeautyPluginConfig = {
   development: {
-    chrome: {
+    simd: {
       key: "AdvancedBeauty",
       pluginUrl: "./js/nim/NIM_Web_AdvancedBeauty.js",
       wasmUrl:
         "https://yx-web-nosdn.netease.im/sdk-release/ne_face_points.wasm" +
         `?time=${Math.random()}`,
     },
-    safari: {
+    nosimd: {
       key: "AdvancedBeauty",
       pluginUrl: "./js/nim/NIM_Web_AdvancedBeauty.js",
       wasmUrl:
@@ -109,14 +109,14 @@ const advancedBeautyPluginConfig = {
     },
   },
   production: {
-    chrome: {
+    simd: {
       key: "AdvancedBeauty",
       pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}.js`,
       wasmUrl:
         "https://yx-web-nosdn.netease.im/sdk-release/ne_face_points.wasm" +
         `?time=${Math.random()}`,
     },
-    safari: {
+    nosimd: {
       key: "AdvancedBeauty",
       pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}.js`,
       wasmUrl:
@@ -125,14 +125,14 @@ const advancedBeautyPluginConfig = {
     },
   },
   test: {
-    chrome: {
+    simd: {
       key: "AdvancedBeauty",
       pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}_test.js`,
       wasmUrl:
         "https://yx-web-nosdn.netease.im/sdk-release/ne_face_points.wasm" +
         `?time=${Math.random()}`,
     },
-    safari: {
+    nosimd: {
       key: "AdvancedBeauty",
       pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}_test.js`,
       wasmUrl:
@@ -1564,16 +1564,20 @@ $("#preSetBeauty").on("click", () => {
 });
 
 $("#startBeauty").on("click", async () => {
-  await rtc.localStream.setBeautyEffect(true);
-  console.warn("开启美颜功能");
-  if (preEffects) {
-    rtc.localStream.setBeautyEffectOptions(preEffects);
+  if (rtc.localStream) {
+    await rtc.localStream.setBeautyEffect(true);
+    console.warn("开启美颜功能");
+    if (preEffects) {
+      rtc.localStream.setBeautyEffectOptions(preEffects);
+    }
   }
 });
 
 $("#closeBeauty").on("click", async () => {
-  await rtc.localStream.setBeautyEffect(false);
-  console.warn("关闭美颜功能");
+  if (rtc.localStream) {
+    await rtc.localStream.setBeautyEffect(false);
+    console.warn("关闭美颜功能");
+  }
 });
 
 // const lut = $('#setBeautyFilter').val();
@@ -1648,17 +1652,18 @@ function onPluginLoaded(name) {
 }
 
 $("#registerVitrualBackground").on("click", async () => {
-  $("#segmentStatus").html("loading").show();
-  const type = (await wasmFeatureDetect.simd()) ? "chrome" : "safari";
-  segment_config = virtualBackgroundPluginConfig[NERTC.ENV][type];
-  rtc.localStream.registerPlugin(segment_config);
+  if (rtc.localStream) {
+    $("#segmentStatus").html("loading").show();
+    const type = (await wasmFeatureDetect.simd()) ? "simd" : "nosimd";
+    segment_config = virtualBackgroundPluginConfig[NERTC.ENV][type];
+    console.error(virtualBackgroundPluginConfig[NERTC.ENV], type, segment_config);
+    rtc.localStream.registerPlugin(segment_config);
+  }
 });
 
 $("#enableSegment").on("click", () => {
-  if (rtc.localStream && rtc.enableBodySegment) {
+  if (rtc.localStream) {
     rtc.localStream.enableBodySegment();
-  } else {
-    //console.warn('当前没有启动localStream，先记录状态');
   }
 });
 
@@ -1666,30 +1671,30 @@ $("#disableSegment").on("click", () => {
   if (rtc.localStream) {
     console.warn("关闭背景分割");
     rtc.localStream.disableBodySegment();
-  } else {
-    console.warn("当前没有启动localStream，先记录状态");
   }
 });
 
 $("#unregisterVitrualBackground").on("click", () => {
   $("#segmentStatus").html("loading").hide();
-  rtc.localStream.unregisterPlugin(segment_config.key);
-  rtc.enableBodySegment = false;
+  if (segment_config) {
+    rtc.localStream.unregisterPlugin(segment_config.key);
+    rtc.enableBodySegment = false;
+  }
 });
 
 $("#registerAdvancedBeauty").on("click", async () => {
-  $("#advancedBeautyStatus").html("loading").show();
-  const type = (await wasmFeatureDetect.simd()) ? "chrome" : "safari";
-  beauty_config = advancedBeautyPluginConfig[NERTC.ENV][type];
-  rtc.localStream.registerPlugin(beauty_config);
+  if (rtc.localStream) {
+    $("#advancedBeautyStatus").html("loading").show();
+    const type = (await wasmFeatureDetect.simd()) ? "simd" : "nosimd";
+    beauty_config = advancedBeautyPluginConfig[NERTC.ENV][type];
+    rtc.localStream.registerPlugin(beauty_config);
+  }
 });
 
 $("#advancedBeauty").on("click", () => {
-  if (rtc.localStream && rtc.enableAdvancedBeauty) {
+  if (rtc.localStream) {
     const maxFaceSize = document.getElementById("adv-face-size");
     rtc.localStream.enableAdvancedBeauty(Number(maxFaceSize.value));
-  } else {
-    //console.warn('当前没有启动localStream，先记录状态');
   }
 });
 
@@ -1730,9 +1735,13 @@ $("#presetAdvBeauty").on("click", () => {
 });
 
 $("#unregisterAdvancedBeauty").on("click", () => {
-  $("#advancedBeautyStatus").html("loading").hide();
-  rtc.localStream.unregisterPlugin(beauty_config.key);
-  rtc.enableAdvancedBeauty = false;
+  if (rtc.localStream) {
+    $("#advancedBeautyStatus").html("loading").hide();
+    if (beauty_config) {
+      rtc.localStream.unregisterPlugin(beauty_config.key);
+      rtc.enableAdvancedBeauty = false;
+    }
+  }
 });
 
 document.getElementById("select").onchange = function () {

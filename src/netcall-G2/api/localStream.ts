@@ -3574,6 +3574,22 @@ class LocalStream extends RTCEventEmitter {
 
    async setBeautyEffect(isStart:boolean){
     const basicBeauty  = this.basicBeauty;
+    if(isStart && basicBeauty.isEnable){
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.NOT_ALLOWED,
+          message: 'setBeautyEffect: basicBeauty is already opened'
+        })
+      )
+    }
+    if(!isStart && !basicBeauty.isEnable){
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.NOT_ALLOWED,
+          message: 'setBeautyEffect: basicBeauty is already closed'
+        })
+      )
+    }
     if (this.mediaHelper && this.mediaHelper.video.cameraTrack) {
       const hasWaterMark = this.replaceTags.waterMark;
       if(hasWaterMark){
@@ -3645,32 +3661,47 @@ class LocalStream extends RTCEventEmitter {
 
     //打开背景分割
     async enableBodySegment() {
-      this.logger.log("enableBodySegment() 开启背景分割功能");   
-      if(!this._segmentProcessor && this.videoPostProcess.getPlugin('VirtualBackground')){
-        this.client.apiFrequencyControl({
-          name: 'enableBodySegment',
-          code: 0,
-          param: {
-            streamID: this.stringStreamID
-          }
-        })
-        this._segmentProcessor = this.virtualBackground;
-        this._segmentProcessor.init();
-        this._segmentProcessor.once('segment-load', () => {
-          this._startBodySegment();
-        })
-        // 低版本兼容提示
-        if(env.IS_ANY_SAFARI && parseFloat(env.SAFARI_VERSION || '0') < 15.0){
-          this.logger.warn('In the current version of Safari, wasm has low execution efficiency, '+
-          'which will result in low frame rate when background-segmentation is enabled.');
+      this.logger.log("enableBodySegment() 开启背景分割功能");
+      if(!this.videoPostProcess.getPlugin('VirtualBackground')){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.NOT_ALLOWED,
+            message: 'enableBodySegment: virtualBackgroundPlugin is not register'
+          })
+        )
+      }
+      if(this._segmentProcessor){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.NOT_ALLOWED,
+            message: 'enableBodySegment: bodySegment is already opened'
+          })
+        )
+      }
+      this.client.apiFrequencyControl({
+        name: 'enableBodySegment',
+        code: 0,
+        param: {
+          streamID: this.stringStreamID
         }
-      } 
+      })
+      this._segmentProcessor = this.virtualBackground;
+      this._segmentProcessor.init();
+      this._segmentProcessor.once('segment-load', () => {
+        this._startBodySegment();
+      })
+       // 低版本兼容提示
+      if(env.IS_ANY_SAFARI && parseFloat(env.SAFARI_VERSION || '0') < 15.0){
+        this.logger.warn('In the current version of Safari, wasm has low execution efficiency, '+
+        'which will result in low frame rate when background-segmentation is enabled.');
+      }
     }
   
     //关闭背景分割
     async disableBodySegment() {
-      await this._cancelBodySegment();
+      this.logger.log("disableBodySegment() 关闭背景分割功能");
       if(this._segmentProcessor) {
+        await this._cancelBodySegment();
         this._segmentProcessor.destroy();
         this._segmentProcessor = null;
         this.client.apiFrequencyControl({
@@ -3680,8 +3711,14 @@ class LocalStream extends RTCEventEmitter {
             streamID: this.stringStreamID
           }
         })
+      }else{
+        Promise.reject(
+          new RtcError({
+            code: ErrorCode.NOT_ALLOWED,
+            message: 'disableBodySegment: bodySegment is already closed'
+          })
+        )
       }
-      this.logger.log("disableBodySegment() 关闭背景分割功能");
     }
   
     async _startBodySegment() {  
@@ -3702,8 +3739,8 @@ class LocalStream extends RTCEventEmitter {
     
     // 设置背景
     setBackGround(options: BackGroundOptions) {
-      this.logger.log('setBackGround() options: ', options)
       if(this.virtualBackground) {
+        this.logger.log('setBackGround() options: ', options)
         this.virtualBackground.setVirtualBackGround(options);
         this.client.apiFrequencyControl({
           name: 'setBackGround',
@@ -3719,31 +3756,46 @@ class LocalStream extends RTCEventEmitter {
     // 开启高级美颜
     async enableAdvancedBeauty(faceSize?:number) {
       this.logger.log("enableAdvancedBeauty() 开启高级美颜功能");
-      if(!this._advancedBeautyProcessor && this.videoPostProcess.getPlugin('AdvancedBeauty')){ 
-        this.client.apiFrequencyControl({
-          name: 'enableAdvancedBeauty',
-          code: 0,
-          param: {
-            streamID: this.stringStreamID
-          }
-        })
-        this._advancedBeautyProcessor = this.advancedBeauty;
-        this._advancedBeautyProcessor.init(faceSize);
-        this._advancedBeautyProcessor.once('facePoints-load', () => {
-          this.logger.log('facePoints-load')
-          this._startAdvancedBeauty();
-        })
-        // 低版本兼容提示
-        if(env.IS_ANY_SAFARI && parseFloat(env.SAFARI_VERSION || '0') < 15.0){
-          this.logger.warn('In the current version of Safari, wasm has low execution efficiency, '+
-          'which will result in low frame rate when advanced-beauty is enabled.');
+      if(!this.videoPostProcess.getPlugin('AdvancedBeauty')){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.NOT_ALLOWED,
+            message: 'enableAdvancedBeauty: advancedBeautyPlugin is not register'
+          })
+        )
+      }
+      if(this._advancedBeautyProcessor){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.NOT_ALLOWED,
+            message: 'enableAdvancedBeauty: advancedBeauty is already opened'
+          })
+        )
+      }
+      this.client.apiFrequencyControl({
+        name: 'enableAdvancedBeauty',
+        code: 0,
+        param: {
+          streamID: this.stringStreamID
         }
-      } 
+      })
+      this._advancedBeautyProcessor = this.advancedBeauty;
+      this._advancedBeautyProcessor.init(faceSize);
+      this._advancedBeautyProcessor.once('facePoints-load', () => {
+        this.logger.log('facePoints-load')
+        this._startAdvancedBeauty();
+      })
+       // 低版本兼容提示
+      if(env.IS_ANY_SAFARI && parseFloat(env.SAFARI_VERSION || '0') < 15.0){
+        this.logger.warn('In the current version of Safari, wasm has low execution efficiency, '+
+        'which will result in low frame rate when advanced-beauty is enabled.');
+      }
     }
     // 关闭高级美颜
     async disableAdvancedBeauty() {
-      await this._cancelAdvancedBeauty();
+      this.logger.log("disableAdvancedBeauty() 关闭高级美颜功能");
       if(this._advancedBeautyProcessor){ 
+        await this._cancelAdvancedBeauty();
         this._advancedBeautyProcessor.destroy();
         this._advancedBeautyProcessor = null;
         this.client.apiFrequencyControl({
@@ -3753,8 +3805,14 @@ class LocalStream extends RTCEventEmitter {
             streamID: this.stringStreamID
           }
         })
+      }else{
+        Promise.reject(
+          new RtcError({
+            code: ErrorCode.NOT_ALLOWED,
+            message: 'disableAdvancedBeauty: advancedBeauty is already closed'
+          })
+        )
       }
-      this.logger.log("disableAdvancedBeauty() 关闭高级美颜功能");
     }
   
     async _startAdvancedBeauty() {  
@@ -3989,12 +4047,10 @@ class LocalStream extends RTCEventEmitter {
 
   async unregisterPlugin(key: PluginType) {
     if(this.videoPostProcess){
-      if(key === 'VirtualBackground'){
+      if(key === 'VirtualBackground' && this._segmentProcessor){
         await this.disableBodySegment();
-      }else if(key === 'AdvancedBeauty'){
+      }else if(key === 'AdvancedBeauty' && this._advancedBeautyProcessor){
         await this.disableAdvancedBeauty();
-      }else {
-        this.logger.warn(`unregisterPlugin key '${key}' error`)
       }
       this.videoPostProcess.unregisterPlugin(key);
     }
