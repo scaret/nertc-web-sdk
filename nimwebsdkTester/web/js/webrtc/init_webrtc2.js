@@ -1564,16 +1564,20 @@ $("#preSetBeauty").on("click", () => {
 });
 
 $("#startBeauty").on("click", async () => {
-  await rtc.localStream.setBeautyEffect(true);
-  console.warn("开启美颜功能");
-  if (preEffects) {
-    rtc.localStream.setBeautyEffectOptions(preEffects);
+  if (rtc.localStream) {
+    await rtc.localStream.setBeautyEffect(true);
+    console.warn("开启美颜功能");
+    if (preEffects) {
+      rtc.localStream.setBeautyEffectOptions(preEffects);
+    }
   }
 });
 
 $("#closeBeauty").on("click", async () => {
-  await rtc.localStream.setBeautyEffect(false);
-  console.warn("关闭美颜功能");
+  if (rtc.localStream) {
+    await rtc.localStream.setBeautyEffect(false);
+    console.warn("关闭美颜功能");
+  }
 });
 
 // const lut = $('#setBeautyFilter').val();
@@ -1648,17 +1652,17 @@ function onPluginLoaded(name) {
 }
 
 $("#registerVitrualBackground").on("click", async () => {
-  $("#segmentStatus").html("loading").show();
-  const type = (await wasmFeatureDetect.simd()) ? "simd" : "nosimd";
-  segment_config = virtualBackgroundPluginConfig[NERTC.ENV][type];
-  rtc.localStream.registerPlugin(segment_config);
+  if (rtc.localStream) {
+    $("#segmentStatus").html("loading").show();
+    const type = (await wasmFeatureDetect.simd()) ? "chrome" : "safari";
+    segment_config = virtualBackgroundPluginConfig[NERTC.ENV][type];
+    rtc.localStream.registerPlugin(segment_config);
+  }
 });
 
 $("#enableSegment").on("click", () => {
-  if (rtc.localStream && rtc.enableBodySegment) {
+  if (rtc.localStream) {
     rtc.localStream.enableBodySegment();
-  } else {
-    //console.warn('当前没有启动localStream，先记录状态');
   }
 });
 
@@ -1666,30 +1670,30 @@ $("#disableSegment").on("click", () => {
   if (rtc.localStream) {
     console.warn("关闭背景分割");
     rtc.localStream.disableBodySegment();
-  } else {
-    console.warn("当前没有启动localStream，先记录状态");
   }
 });
 
 $("#unregisterVitrualBackground").on("click", () => {
   $("#segmentStatus").html("loading").hide();
-  rtc.localStream.unregisterPlugin(segment_config.key);
-  rtc.enableBodySegment = false;
+  if (segment_config) {
+    rtc.localStream.unregisterPlugin(segment_config.key);
+    rtc.enableBodySegment = false;
+  }
 });
 
 $("#registerAdvancedBeauty").on("click", async () => {
-  $("#advancedBeautyStatus").html("loading").show();
-  const type = (await wasmFeatureDetect.simd()) ? "simd" : "nosimd";
-  beauty_config = advancedBeautyPluginConfig[NERTC.ENV][type];
-  rtc.localStream.registerPlugin(beauty_config);
+  if (rtc.localStream) {
+    $("#advancedBeautyStatus").html("loading").show();
+    const type = (await wasmFeatureDetect.simd()) ? "chrome" : "safari";
+    beauty_config = advancedBeautyPluginConfig[NERTC.ENV][type];
+    rtc.localStream.registerPlugin(beauty_config);
+  }
 });
 
 $("#advancedBeauty").on("click", () => {
-  if (rtc.localStream && rtc.enableAdvancedBeauty) {
+  if (rtc.localStream) {
     const maxFaceSize = document.getElementById("adv-face-size");
     rtc.localStream.enableAdvancedBeauty(Number(maxFaceSize.value));
-  } else {
-    //console.warn('当前没有启动localStream，先记录状态');
   }
 });
 
@@ -1730,9 +1734,13 @@ $("#presetAdvBeauty").on("click", () => {
 });
 
 $("#unregisterAdvancedBeauty").on("click", () => {
-  $("#advancedBeautyStatus").html("loading").hide();
-  rtc.localStream.unregisterPlugin(beauty_config.key);
-  rtc.enableAdvancedBeauty = false;
+  if (rtc.localStream) {
+    $("#advancedBeautyStatus").html("loading").hide();
+    if (beauty_config) {
+      rtc.localStream.unregisterPlugin(beauty_config.key);
+      rtc.enableAdvancedBeauty = false;
+    }
+  }
 });
 
 document.getElementById("select").onchange = function () {
