@@ -24,10 +24,11 @@
 </script>
 <script src="./js/nim/NIM_Web_NERTC.js"></script>
 <script src="./js/lib/jquery.min.js"></script>
+<script src="./js//lib/wasmFeatureDetect.js"></script>
 <script>
   window.clients = {}
   const channelName = Math.floor(Math.random() * 9000) + 1000
-  const main = ()=>{
+  const main = async ()=>{
     for (let i = 0; i < COUNT; i++){
       const wrapper = document.createElement('div')
       
@@ -448,46 +449,113 @@
       getStatsOffBtn.onclick = ()=>{
         statsStatus = "getStatsOff"
       }
-      
       //背景分割
-        const virtualBackgroundPluginConfig = {
+      const virtualBackgroundPluginConfig = {
         development: {
-            key: 'VirtualBackground',
-            pluginUrl: './js/nim/NIM_Web_VirtualBackground.js',
-            wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/nn_segment_normal.wasm' + `?time=${Math.random()}`,
-        }, 
+          simd: {
+            key: "VirtualBackground",
+            pluginUrl: "./js/nim/NIM_Web_VirtualBackground.js",
+            wasmUrl:
+              "https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal.wasm" +
+              `?time=${Math.random()}`,
+          },
+          nosimd: {
+            key: "VirtualBackground",
+            pluginUrl: "./js/nim/NIM_Web_VirtualBackground.js",
+            wasmUrl:
+              "https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal_nosimd.wasm" +
+              `?time=${Math.random()}`,
+          },
+        },
         production: {
-            key: 'VirtualBackground',
+          simd: {
+            key: "VirtualBackground",
             pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}.js`,
-            wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/nn_segment_normal.wasm' + `?time=${Math.random()}`,
+            wasmUrl:
+              "https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal.wasm" +
+              `?time=${Math.random()}`,
+          },
+          nosimd: {
+            key: "VirtualBackground",
+            pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}.js`,
+            wasmUrl:
+              "https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal_nosimd.wasm" +
+              `?time=${Math.random()}`,
+          },
         },
         test: {
-            key: 'VirtualBackground',
+          simd: {
+            key: "VirtualBackground",
             pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}_test.js`,
-            wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/nn_segment_normal.wasm' + `?time=${Math.random()}`,
-        } 
-        };
-        const segment_config = virtualBackgroundPluginConfig[NERTC.ENV];
+             wasmUrl:
+              "https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal.wasm" +
+              `?time=${Math.random()}`,
+          },
+          nosimd: {
+            key: "VirtualBackground",
+            pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}_test.js`,
+             wasmUrl:
+              "https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal_nosimd.wasm" +
+              `?time=${Math.random()}`,
+          },
+        },
+      };
+      const type = (await wasmFeatureDetect.simd()) ? "simd" : "nosimd";
+      const segment_config = virtualBackgroundPluginConfig[NERTC.ENV][type];
 
-        //高级美颜
-        const advancedBeautyPluginConfig = {
+      //高级美颜
+      const advancedBeautyPluginConfig = {
         development: {
-            key: 'AdvancedBeauty',
-            pluginUrl: './js/nim/NIM_Web_AdvancedBeauty.js',
-            wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/ne_face_points.wasm' + `?time=${Math.random()}`,
-        }, 
+          simd: {
+            key: "AdvancedBeauty",
+            pluginUrl: "./js/nim/NIM_Web_AdvancedBeauty.js",
+            wasmUrl:
+              "https://yx-web-nosdn.netease.im/sdk-release/ne_face_points.wasm" +
+              `?time=${Math.random()}`,
+          },
+          nosimd: {
+            key: "AdvancedBeauty",
+            pluginUrl: "./js/nim/NIM_Web_AdvancedBeauty.js",
+            wasmUrl:
+              "https://yx-web-nosdn.netease.im/sdk-release/ne_face_points_nosimd.wasm" +
+              `?time=${Math.random()}`,
+          },
+        },
         production: {
-            key: 'AdvancedBeauty',
+          simd: {
+            key: "AdvancedBeauty",
             pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}.js`,
-            wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/ne_face_points.wasm' + `?time=${Math.random()}`,
+            wasmUrl:
+              "https://yx-web-nosdn.netease.im/sdk-release/ne_face_points.wasm" +
+              `?time=${Math.random()}`,
+          },
+          nosimd: {
+            key: "AdvancedBeauty",
+            pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}.js`,
+            wasmUrl:
+              "https://yx-web-nosdn.netease.im/sdk-release/ne_face_points_nosimd.wasm" +
+              `?time=${Math.random()}`,
+          },
         },
         test: {
-            key: 'AdvancedBeauty',
+          simd: {
+            key: "AdvancedBeauty",
             pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}_test.js`,
-            wasmUrl: 'https://yx-web-nosdn.netease.im/sdk-release/ne_face_points.wasm' + `?time=${Math.random()}`,
-        } 
-        };
-        const beauty_config = advancedBeautyPluginConfig[NERTC.ENV];
+            wasmUrl:
+              "https://yx-web-nosdn.netease.im/sdk-release/ne_face_points.wasm" +
+              `?time=${Math.random()}`,
+          },
+          nosimd: {
+            key: "AdvancedBeauty",
+            pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}_test.js`,
+            wasmUrl:
+              "https://yx-web-nosdn.netease.im/sdk-release/ne_face_points_nosimd.wasm" +
+              `?time=${Math.random()}`,
+          },
+        },
+      };
+      const beauty_config = advancedBeautyPluginConfig[NERTC.ENV][type];
+
         //高级美颜
         registerAdvBeautyInput.onclick = async () => {
             $('#advancedBeautyStatus').html('高级美颜loading').show();
