@@ -330,10 +330,31 @@ class LocalStream extends RTCEventEmitter {
     this.videoPostProcess.on('taskSwitch', (isOn)=>{
       this.replaceTags.videoPost = isOn;
       this.replaceCanvas();
-      if(isOn && parseFloat(env.SAFARI_VERSION || '0') === 15.3){
-        this.logger.warn('当前版本的 Safari 下，开启美颜背替相关功能会导致内存泄露(Safari 内核 bug：从 WebGL 抓取视频流会内存泄露)。');
+      if(isOn && env.IS_ANY_SAFARI){
+        const safariVersion = parseFloat(env.SAFARI_VERSION || '0');
+        if(safariVersion < 15.4){
+          this.logger.warn('It is detected that you are using safari and the version is lower than 15.4. '+
+          'For a better experience, it is recommended to use version 15.4 and above.');
+        }
+        if(safariVersion === 15.3){
+          this.logger.warn('In the current version of Safari, enabling video post-processing related functions will cause memory leaks '+
+          '(Safari kernel bug: capturing video streams from WebGL will cause memory leaks).');
+        }
+        if(safariVersion === 15.0){
+          this.logger.warn('In the current version of Safari, enabling video post-processing related functions will cause the page to crash '+
+          '(Safari kernel bug: WebGL rendering WebCam will cause the page to crash).');
+        }
       }
     })
+
+    if(env.IS_ANY_SAFARI && env.SAFARI_MAJOR_VERSION! < 15){
+      document.addEventListener("visibilitychange", () => {
+        if(document.visibilityState === 'visible' && this.replaceTags.videoPost){
+          this.logger.warn('In the current version of Safari, the page with the video post-processing function is restored from the background, '+
+          'the sending frame rate will slowly return to the normal frame rate from a lower value.');
+        }
+      });
+    }
 
     this.mediaHelper.on('preProcessChange', (info)=>{
       if(info.mediaType === 'video'){
@@ -3669,6 +3690,11 @@ class LocalStream extends RTCEventEmitter {
       this._segmentProcessor.once('segment-load', () => {
         this._startBodySegment();
       })
+       // 低版本兼容提示
+      if(env.IS_ANY_SAFARI && parseFloat(env.SAFARI_VERSION || '0') < 15.0){
+        this.logger.warn('In the current version of Safari, wasm has low execution efficiency, '+
+        'which will result in low frame rate when background-segmentation is enabled.');
+      }
     }
   
     //关闭背景分割
@@ -3759,6 +3785,11 @@ class LocalStream extends RTCEventEmitter {
         this.logger.log('facePoints-load')
         this._startAdvancedBeauty();
       })
+       // 低版本兼容提示
+      if(env.IS_ANY_SAFARI && parseFloat(env.SAFARI_VERSION || '0') < 15.0){
+        this.logger.warn('In the current version of Safari, wasm has low execution efficiency, '+
+        'which will result in low frame rate when advanced-beauty is enabled.');
+      }
     }
     // 关闭高级美颜
     async disableAdvancedBeauty() {

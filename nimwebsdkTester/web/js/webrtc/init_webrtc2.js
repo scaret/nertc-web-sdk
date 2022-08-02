@@ -1654,8 +1654,9 @@ function onPluginLoaded(name) {
 $("#registerVitrualBackground").on("click", async () => {
   if (rtc.localStream) {
     $("#segmentStatus").html("loading").show();
-    const type = (await wasmFeatureDetect.simd()) ? "chrome" : "safari";
+    const type = (await wasmFeatureDetect.simd()) ? "simd" : "nosimd";
     segment_config = virtualBackgroundPluginConfig[NERTC.ENV][type];
+    console.error(virtualBackgroundPluginConfig[NERTC.ENV], type, segment_config);
     rtc.localStream.registerPlugin(segment_config);
   }
 });
@@ -1684,7 +1685,7 @@ $("#unregisterVitrualBackground").on("click", () => {
 $("#registerAdvancedBeauty").on("click", async () => {
   if (rtc.localStream) {
     $("#advancedBeautyStatus").html("loading").show();
-    const type = (await wasmFeatureDetect.simd()) ? "chrome" : "safari";
+    const type = (await wasmFeatureDetect.simd()) ? "simd" : "nosimd";
     beauty_config = advancedBeautyPluginConfig[NERTC.ENV][type];
     rtc.localStream.registerPlugin(beauty_config);
   }
