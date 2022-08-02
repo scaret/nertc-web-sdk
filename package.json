@@ -31,7 +31,7 @@
     "pack:test:g2": "cross-env PLATFORM=all NODE_ENV=test npm run pack:g2",
     "jenkins:g2": "npm run clean && cross-env PLATFORM=g2 NODE_ENV=development npm run build:sdk:g2 && npm run build:api",
     "pack:pre": "cross-env PLATFORM=all NODE_ENV=pre npm run pack",
-    "pack:prod:advBeauty:g2": "cross-env PLATFORM=all NODE_ENV=production npm run pack:g2 && npm run zip:sdk:advBeauty:g2",
+    "pack:prod:plugin:g2": "cross-env PLATFORM=all NODE_ENV=production npm run pack:g2 && npm run zip:sdk:advBeauty:g2",
     "pack:prod:g2": "cross-env PLATFORM=all NODE_ENV=production npm run pack:g2 && npm run zip:sdk:g2",
     "pack:custom": "cross-env PLATFORM=all NODE_ENV=custom npm run pack",
     "deploy": "node build/deploy.js",
