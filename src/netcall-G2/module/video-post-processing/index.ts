@@ -100,6 +100,8 @@ export default class VideoPostProcess extends EventEmitter {
             workerTimer.clearTimeout(this.timerId);
             this.timerId = -1;
             this.sourceMap = null;
+            this.trackInstance?.stop();
+            this.trackInstance = null;
             this.emit('taskSwitch', false);
         }
         // 新任务移除，马上渲染一次
@@ -139,6 +141,9 @@ export default class VideoPostProcess extends EventEmitter {
                 this.trackInstance.stop();
                 this.trackInstance = null;
             }
+            if(settings.width && settings.height){
+                this.filters.setSize(settings.width, settings.height);
+            }
             const stream = (<any>this.filters.canvas).captureStream(this.frameRate);
             this.trackInstance = stream.getVideoTracks()[0];
 
@@ -149,10 +154,6 @@ export default class VideoPostProcess extends EventEmitter {
 
             const resizeHandler = (video: HTMLVideoElement)=>{
                 const { videoWidth: width, videoHeight: height } = video!;
-                if (env.IS_ANY_SAFARI) {
-                    this.filters.canvas.style.height = width + '';
-                    this.filters.canvas.style.width = height + '';
-                }
                 this.filters.setSize(width, height);
             }
 
@@ -185,6 +186,9 @@ export default class VideoPostProcess extends EventEmitter {
     private frameCount = [0, 0];
     // task render loop
     update = (updateFrameCount = true) => {
+        if(env.IS_ANY_SAFARI && document.visibilityState === 'hidden'){
+            return;
+        }
         if(!this.taskSet.size){
             if( this.filters ){
                 return this.filters.update(false);
