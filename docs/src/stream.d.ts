@@ -35,7 +35,7 @@ declare interface Stream {
      * // 例子1：订阅大流
      * rtc.client.on("stream-added", (evt)=>{
      *   console.log(`远端${evt.stream.getId()}发布了 ${evt.mediaType} 流`)
-     *   rtc.client.setSubscribeConfig({
+     *   evt.stream.setSubscribeConfig({
      *     audio: true,
      *     video: true,
      *     screen: true,
@@ -387,7 +387,8 @@ declare interface Stream {
      * 
      * @note 注意
      * 1. 已经发布的流，切换后不用重新发流。
-     * 2. 以摄像头为例，未打开摄像头时，
+     * 2. 以摄像头为例，未打开摄像头时，应使用 [[Stream.open]] 打开设备。
+     * 3. 部分移动端设备由于无法同时打开两个摄像头，因此会导致设备切换失败。此时可通过关闭摄像头（[[Stream.close]] ）再打开新的摄像头（[Stream.open]）的方式完成切换
      * 
      * @example
      * ```javascript
@@ -463,8 +464,16 @@ declare interface Stream {
 
     /**
      * 设置视频属性。
+     * 
+     * 从 V4.6.20 起，可以在打开摄像头后继续通过调用该方法动态修改分辨率。该功能由于浏览器和摄像头的限制，可能出现以下情况：
+     * - 从低分辨率切换到高分辨率失败
+     * - 从高分辨率切换到低分辨率时长宽比不完全符合profile设定
+     * - 在多个页面开启摄像头或者打开大小流的情况下，分辨率切换失败
+     *  SDK仅保证在这些情况下的设备可用及码率切换正常。
+     * 
      * @example
      * ```javascript
+     * // init前，设置分辨率及帧率
      * rtc.localStream = createStream({
      *   video: true,
      *   audio: true,
@@ -476,6 +485,12 @@ declare interface Stream {
      *   frameRate: NERTC.VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_15,
      * })
      * await rtc.localStream.init()
+     * 
+     * 
+     * // init后，动态下调分辨率
+     * rtc.localStream.setVideoProfile({
+     *   resolution: NERTC.VIDEO_QUALITY.VIDEO_QUALITY_720p,
+     * })
      * ```
      */
     setVideoProfile(options: {
@@ -505,6 +520,12 @@ declare interface Stream {
      * 设置屏幕共享中的屏幕属性。
      * 
      * 该方法设置屏幕共享时屏幕的显示属性，必须在 Stream.init 之前调用。
+     * 
+     * 从 V4.6.20 起，可以在打开屏幕共享后继续通过调用该方法动态修改分辨率。该功能由于浏览器的限制，可能出现以下情况：
+     * - 从低分辨率切换到高分辨率失败
+     * - 从高分辨率切换到低分辨率时长宽比不完全符合profile设定
+     * - 屏幕共享的边缘被切断
+     *  SDK仅保证在这些情况下的设备可用及码率切换正常。
      * 
      * @note 该方法仅可对本地流调用。
      * 
@@ -1050,7 +1071,8 @@ declare interface Stream {
      * 添加视频编码水印。
      *
      * @note 注意事项
-     * * setEncoderWatermarkConfigs 方法仅作用于本地视频画布，且直接影响视频流。视频流截图时，图片中包含水印。
+     * * setEncoderWatermarkConfigs 方法仅作用于本地Stream对象，且直接影响视频流。视频流截图时，图片中包含水印。
+     * * 编码水印坐标是按原始摄像头采集计算的。如播放时画布通过cut=true参数做了裁剪，可能也会裁剪一部分水印。此时需要自行计算坐标偏移。
      * * 水印数量最多为1个。如有图文组合水印需求，可自行合成为1个图片。
      * * 由于浏览器策略限制，图片必须存于同一域名下。
      * * 文字水印不具备折行功能。

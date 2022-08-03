@@ -1,5 +1,3 @@
-
-import { EventEmitter } from "eventemitter3";
 import {
   VIDEO_FRAME_RATE,
   NERTC_VIDEO_QUALITY} from "../constant/videoQuality";
@@ -19,6 +17,7 @@ import {
   LocalStreamOptions, StreamPlayOptions,
   VideoProfileOptions,
   BeautyEffectOptions,
+  PluginOptions,
   AudioEffectOptions, GetStreamConstraints, Client as IClient, NERtcEncoderWatermarkConfig
 } from "../types";
 import {MediaHelper} from "../module/media";
@@ -36,9 +35,19 @@ import {ILogger} from "../types";
 import { isHttpProtocol } from '../util/rtcUtil/rtcSupport'
 import {emptyStreamWith, watchTrack} from "../util/gum";
 import {getParameters} from "../module/parameters";
-import {makePrintable} from "../util/util";
-import {startBeauty, closeBeauty, transformTrack, setBeautyFilter} from "../util/beauty";
 import * as env from '../util/rtcUtil/rtcEnvironment';
+import {makePrintable} from "../util/rtcUtil/utils";
+import {applyResolution} from '../util/rtcUtil/applyResolution'
+import {RTCEventEmitter} from "../util/rtcUtil/RTCEventEmitter";
+import {alerter} from "../module/alerter";
+import { BackGroundOptions } from '../plugin/segmentation/src/types';
+import { loadPlugin } from "../plugin";
+import VideoPostProcess from "../module/video-post-processing";
+import BasicBeauty from "../module/video-post-processing/basic-beauty";
+import VirtualBackground from "../module/video-post-processing/virtual-background";
+import AdvancedBeauty from "../module/video-post-processing/advanced-beauty";
+import { PluginType } from "../plugin/plugin-list";
+import {DeviceInfo, Device} from "../module/device";
 
 /**
  *  请使用 {@link NERTC.createStream} 通过NERTC.createStream创建
@@ -50,14 +59,14 @@ let localStreamCnt = 0;
 
 export interface LocalStreamOpenOptions{
   type: MediaTypeShort|"screenAudio",
-    deviceId?: string,
-    sourceId?: string,
-    facingMode?: string,
-    screenAudio?: boolean,
-    audioSource?: MediaStreamTrack,
-    videoSource?: MediaStreamTrack,
-    screenAudioSource?: MediaStreamTrack,
-    screenVideoSource?: MediaStreamTrack,
+  deviceId?: string,
+  sourceId?: string,
+  facingMode?: string,
+  screenAudio?: boolean,
+  audioSource?: MediaStreamTrack,
+  videoSource?: MediaStreamTrack,
+  screenAudioSource?: MediaStreamTrack,
+  screenVideoSource?: MediaStreamTrack,
 }
 
 export interface LocalStreamCloseOptions{
@@ -95,7 +104,7 @@ export interface LocalStreamCloseOptions{
  *  @param {MeidaTrack} [options.videoSource] 自定义的视频的track
  *  @returns {Stream}  
  */
-class LocalStream extends EventEmitter {
+class LocalStream extends RTCEventEmitter {
   public streamID:number|string;
   public stringStreamID:string;
   public audio: boolean;
@@ -107,19 +116,39 @@ class LocalStream extends EventEmitter {
   public video: boolean;
   public screen: boolean;
   public screenAudio: boolean;
+  public audioSlave: boolean;
   public client: Client;
   private audioSource: MediaStreamTrack|null
   private videoSource:MediaStreamTrack|null
   private screenVideoSource:MediaStreamTrack|null
   private screenAudioSource:MediaStreamTrack|null
   public mediaHelper:MediaHelper;
+  // 美颜相关实例对象
+  private videoPostProcess = new VideoPostProcess();
+  private basicBeauty = new BasicBeauty(this.videoPostProcess);
+  private virtualBackground = new VirtualBackground(this.videoPostProcess);
+  private advancedBeauty = new AdvancedBeauty(this.videoPostProcess);
+  private _segmentProcessor: VirtualBackground|null;
+  private _advancedBeautyProcessor: AdvancedBeauty | null = null;
+  private lastEffects:any;
+  private lastFilter:any;
+  private videoPostProcessTags = {
+    isBeautyTrack: false,
+    isBodySegmentTrack: false,
+    isAdvBeautyTrack: false
+  };
+  private replaceTags = {
+    videoPost: false,
+    waterMark: false,
+    isMuted: false
+  };
+
   _play: Play|null;
   private _record: Record|null;
   public audioLevelHelper: AudioLevel|null = null;
   public audioProfile:string;
   private _cameraTrack:MediaStreamTrack|null;
   private _transformedTrack:MediaStreamTrack|null;
-  private lastEffects:any;
   public videoProfile: {
     frameRate: number;
     resolution: number;
@@ -152,17 +181,20 @@ class LocalStream extends EventEmitter {
   };
   public pubStatus: {
     audio: {audio: boolean},
+    audioSlave: {audio: boolean},
     video: {video: boolean},
     screen: {screen: boolean},
-  } = {audio: {audio: false}, video: {video: false}, screen: {screen: false}};
+  } = {audio: {audio: false}, audioSlave: {audio: false}, video: {video: false}, screen: {screen: false}};
   public muteStatus: {
     // localStream只有send
     // remoteStream的send表示发送端的mute状态，recv表示接收端的mute状态
     audio: {send: boolean};
+    audioSlave: {send: boolean};
     video: {send: boolean};
     screen: {send: boolean};
   } = {
     audio: {send: false},
+    audioSlave: {send: false},
     video: {send: false},
     screen: {send: false},
   }
@@ -174,8 +206,9 @@ class LocalStream extends EventEmitter {
   public logger:ILogger;
   public localStreamId: number;
   public destroyed:boolean = false;
-  private isBeautyTrack: boolean = false;
-  
+  private canvasWatermarkOptions:NERtcCanvasWatermarkConfig | null = null;
+  private encoderWatermarkOptions: NERtcEncoderWatermarkConfig | null = null;
+
   constructor (options:LocalStreamOptions) {
     super()
     this.localStreamId = localStreamCnt++;
@@ -245,6 +278,7 @@ class LocalStream extends EventEmitter {
     this.video = options.video || false
     this.screen = options.screen || false
     this.screenAudio = options.screenAudio || false
+    this.audioSlave = this.screenAudio
     this.sourceId = options.sourceId || ''
     this.facingMode = options.facingMode || ''
     this.client = options.client
@@ -252,6 +286,7 @@ class LocalStream extends EventEmitter {
     this.videoSource = options.videoSource || null
     this.screenAudioSource = options.screenAudioSource || null
     this.screenVideoSource = options.screenVideoSource || null
+    this._segmentProcessor = null
     this._cameraTrack = null
     this._transformedTrack = null
     this.mediaHelper = new MediaHelper({
@@ -270,6 +305,10 @@ class LocalStream extends EventEmitter {
       this.audioProfile = 'speech_low_quality'
     }
     
+    if (getParameters().enableAlerter !== "never"){
+      alerter.watchLocalStream(this)
+    }
+    
     this.logger.log(`创建 本地 Stream: `, JSON.stringify({
       streamID: this.stringStreamID,
       audio: options.audio,
@@ -286,6 +325,42 @@ class LocalStream extends EventEmitter {
         video: this.video,
         screen: this.screen,
         screenProfile: this.screenProfile
+      }
+    })
+    
+    this.videoPostProcess.on('taskSwitch', (isOn)=>{
+      this.replaceTags.videoPost = isOn;
+      this.replaceCanvas();
+      if(isOn && env.IS_ANY_SAFARI){
+        const safariVersion = parseFloat(env.SAFARI_VERSION || '0');
+        if(safariVersion < 15.4){
+          this.logger.warn('It is detected that you are using safari and the version is lower than 15.4. '+
+          'For a better experience, it is recommended to use version 15.4 and above.');
+        }
+        if(safariVersion === 15.3){
+          this.logger.warn('In the current version of Safari, enabling video post-processing related functions will cause memory leaks '+
+          '(Safari kernel bug: capturing video streams from WebGL will cause memory leaks).');
+        }
+        if(safariVersion === 15.0){
+          this.logger.warn('In the current version of Safari, enabling video post-processing related functions will cause the page to crash '+
+          '(Safari kernel bug: WebGL rendering WebCam will cause the page to crash).');
+        }
+      }
+    })
+
+    if(env.IS_ANY_SAFARI && env.SAFARI_MAJOR_VERSION! < 15){
+      document.addEventListener("visibilitychange", () => {
+        if(document.visibilityState === 'visible' && this.replaceTags.videoPost){
+          this.logger.warn('In the current version of Safari, the page with the video post-processing function is restored from the background, '+
+          'the sending frame rate will slowly return to the normal frame rate from a lower value.');
+        }
+      });
+    }
+
+    this.mediaHelper.on('preProcessChange', (info)=>{
+      if(info.mediaType === 'video'){
+        this.replaceTags.waterMark = info.isOn;
+        this.replaceCanvas();
       }
     })
   }
@@ -318,6 +393,7 @@ class LocalStream extends EventEmitter {
     this.cameraId = ''
     this.screen = false
     this.screenAudio = false
+    this.audioSlave = false
     this.sourceId = ''
     this.facingMode = ''
     this.videoView = null
@@ -331,6 +407,9 @@ class LocalStream extends EventEmitter {
       audio: {
         audio: false,
       },
+      audioSlave: {
+        audio: false
+      },
       video: {
         video: false,
       },
@@ -341,6 +420,7 @@ class LocalStream extends EventEmitter {
 
     this.muteStatus = {
       audio: {send: false},
+      audioSlave: {send: false},
       video: {send: false},
       screen: {send: false},
     }
@@ -362,6 +442,10 @@ class LocalStream extends EventEmitter {
       this.audioLevelHelper.destroy()
     }
     this.audioLevelHelper = null
+  }
+
+  get segmentProcessor() {
+    return this._segmentProcessor
   }
 
   get Play() {
@@ -518,14 +602,30 @@ class LocalStream extends EventEmitter {
       this.client.adapterRef.channelInfo.sessionConfig.videoQuality = this.videoProfile.resolution
       this.client.adapterRef.channelInfo.sessionConfig.videoFrameRate = this.videoProfile.frameRate
     }
-    if((<any>window).isAudioBanned && (<any>window).isVideoBanned) {
-      return;
+    if(this.client.adapterRef.isAudioBanned && this.client.adapterRef.isVideoBanned) {
+      const reason = `服务器禁止发送音视频流`;
+      this.logger.error(reason);
+      this.client.apiFrequencyControl({
+        name: 'init',
+        code: -1,
+        param: JSON.stringify({
+          reason: reason,
+        }, null, ' ')
+      });
+      this.audio = false;
+      this.screenAudio = false;
+      this.video = false;
+      this.screen = false;
+      throw new RtcError({
+        code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+        message: 'audio and video are banned by server'
+      })
     }
-    if((<any>window).isAudioBanned) {
+    if(this.client.adapterRef.isAudioBanned && !this.client.adapterRef.isVideoBanned) {
       const reason = `服务器禁止发送音频流`;
       this.logger.error(reason);
       this.client.apiFrequencyControl({
-        name: 'open',
+        name: 'init',
         code: -1,
         param: JSON.stringify({
           reason: reason,
@@ -535,11 +635,11 @@ class LocalStream extends EventEmitter {
       this.screenAudio = false;
     }
     
-    if((<any>window).isVideoBanned) {
+    if(!this.client.adapterRef.isAudioBanned && this.client.adapterRef.isVideoBanned) {
       const reason = `服务器禁止发送视频流`;
       this.logger.error(reason);
       this.client.apiFrequencyControl({
-        name: 'open',
+        name: 'init',
         code: -1,
         param: JSON.stringify({
           reason: reason,
@@ -705,6 +805,8 @@ class LocalStream extends EventEmitter {
             this.videoPlay_ = false;
             this.logger.log('localStream play video error ', error);
           }
+          // 重新开启视频后期处理
+          await this.resumeVideoPostProcess();
         }  
       }
       if (playOptions.screen){
@@ -726,7 +828,7 @@ class LocalStream extends EventEmitter {
     }
     if (playOptions.audio){
       let param:ReportParamEnableEarback;
-      if((<any>window).isAudioBanned) {
+      if(this.client.adapterRef.isAudioBanned) {
         param = {
           enable: false
         }
@@ -814,6 +916,7 @@ class LocalStream extends EventEmitter {
         this._play.setVideoRender(options)
       }
       this.renderMode.local.video = options;
+      this.replaceCanvas();
     }
     if (!mediaType || mediaType === "screen"){
       this.renderMode.local.screen = options;
@@ -938,7 +1041,7 @@ class LocalStream extends EventEmitter {
     })
     const onOpenFinished = (data: {code: number, param: {}})=>{
       hookOpenFinished()
-      const param = makePrintable(Object.assign({}, options, data.param), 4)
+      const param = makePrintable(Object.assign({}, options, data.param), 1)
       this.client.apiFrequencyControl({
         name: 'open',
         code: data.code,
@@ -972,9 +1075,13 @@ class LocalStream extends EventEmitter {
     }
     
     try {
+      if (!this.getAdapterRef()) {
+        this.logger.log('Stream.open: 绑定 localStream ', type);
+        this.client.bindLocalStream(this)
+      } 
       switch(type) {
         case 'audio':
-          if((<any>window).isAudioBanned){
+          if(this.client.adapterRef.isAudioBanned){
             const reason = `服务器禁止发送音频流`;
             this.logger.error(reason);
             onOpenFinished({
@@ -1009,27 +1116,26 @@ class LocalStream extends EventEmitter {
             )
           }
           this.audio = true
-          if(this.mediaHelper){
+          if (this.mediaHelper) {
             const constraint = {audio: true, audioDeviceId: deviceId, audioSource};
             await this.mediaHelper.getStream(constraint);
             if (this.audioLevelHelper && this.mediaHelper.audio.audioStream) {
               this.audioLevelHelper.updateStream(this.mediaHelper.audio.audioStream)
             }
-            if (deviceId){
+            if (deviceId) {
               this.microphoneId = deviceId;
             }
-            if (!this.getAdapterRef()){
-              this.logger.log('Stream.open:localStream未发布，无需发布', type, constraint);
-            } else if (this.client.adapterRef.connectState.curState !== "CONNECTED"){
+            
+            if (this.client.adapterRef.connectState.curState !== "CONNECTED") {
               this.logger.log('Stream.open:client不在频道中，无需发布。', constraint);
-            }else{
+            } else {
               this.logger.log('Stream.open:开始发布', constraint);
               await this.client.adapterRef._mediasoup?.createProduce(this, "audio")
             }
           }
           break
         case 'screenAudio':
-          if((<any>window).isAudioBanned){
+          if (this.client.adapterRef.isAudioBanned) {
             const reason = `服务器禁止发送音频流`;
             this.logger.error(reason);
             onOpenFinished({
@@ -1046,12 +1152,12 @@ class LocalStream extends EventEmitter {
               })
             );
           }
-          if (!screenAudioSource){
+          if (!screenAudioSource) {
             this.logger.error(`open(): 不允许单独开启屏幕共享音频功能。`);
             return;
           }
           this.logger.log(`open(): 开启自定义屏幕共享音频 ${screenAudioSource.label}`);
-          if (this.mediaHelper.screenAudio.screenAudioTrack || this.mediaHelper.screenAudio.screenAudioSource){
+          if (this.mediaHelper.screenAudio.screenAudioTrack || this.mediaHelper.screenAudio.screenAudioSource) {
             this.logger.error('请先关闭屏幕共享音频')
             onOpenFinished({
               code: -1,
@@ -1068,22 +1174,20 @@ class LocalStream extends EventEmitter {
             )
           }
           this.screenAudio = true
-          if(this.mediaHelper){
+          if (this.mediaHelper) {
             const constraint = {screenAudio: true, screenAudioSource};
             await this.mediaHelper.getStream(constraint);
-            if (!this.getAdapterRef()){
-              this.logger.log('Stream.open:localStream未发布，无需发布', type, constraint);
-            } else if (this.client.adapterRef.connectState.curState !== "CONNECTED"){
+            if (this.client.adapterRef.connectState.curState !== "CONNECTED") {
               this.logger.log('Stream.open:client不在频道中，无需发布。', constraint);
-            }else{
+            } else {
               this.logger.log('Stream.open:开始发布', constraint);
-              await this.client.adapterRef._mediasoup?.createProduce(this, "audio")
+              await this.client.adapterRef._mediasoup?.createProduce(this, "audioSlave")
             }
           }
           break
         case 'video':
         case 'screen':
-          if((<any>window).isVideoBanned){
+          if (this.client.adapterRef.isVideoBanned) {
             const reason = `服务器禁止发送视频流`;
             this.logger.error(reason);
             onOpenFinished({
@@ -1100,7 +1204,7 @@ class LocalStream extends EventEmitter {
               })
             );
           }
-          if(options.screenAudio && (<any>window).isAudioBanned){
+          if (options.screenAudio && this.client.adapterRef.isAudioBanned) {
             const reason = `服务器禁止发送音频流`;
             this.logger.error(reason);
             onOpenFinished({
@@ -1208,16 +1312,15 @@ class LocalStream extends EventEmitter {
             if (type === "video"){
               this.cameraId = deviceId
             }
-          }
-          if (!this.getAdapterRef()){
-            this.logger.log('Stream.open:localStream未发布，无需发布', type, constraint);
-          } else if (this.client.adapterRef.connectState.curState !== "CONNECTED"){
+          } 
+          
+          if (this.client.adapterRef.connectState.curState !== "CONNECTED"){
             this.logger.log('Stream.open:client不在频道中，无需发布。', constraint);
           }else{
             this.logger.log('Stream.open:开始发布', constraint);
             await this.client.adapterRef._mediasoup?.createProduce(this, type)
             if (options.screenAudio){
-              await this.client.adapterRef._mediasoup?.createProduce(this, "audio")
+              await this.client.adapterRef._mediasoup?.createProduce(this, "audioSlave")
             }
           }
           break
@@ -1230,7 +1333,7 @@ class LocalStream extends EventEmitter {
           type
         }
       })
-    } catch (e) {
+    } catch (e: any) {
       if (["audio", "video", "screen"].indexOf(type) > -1){
         this[type] = false
         if (type === "screen" && options.screenAudio){
@@ -1324,10 +1427,6 @@ class LocalStream extends EventEmitter {
     })
   }
 
-
-
-
-
   /**
    * 关闭音视频输入设备，如麦克风、摄像头、屏幕共享，并且停止发布
    * @function close
@@ -1382,12 +1481,15 @@ class LocalStream extends EventEmitter {
         this.screenAudio = false
         this.mediaHelper.stopStream('screenAudio')
         if (this.getAdapterRef()){
-          if (this.mediaHelper.getAudioInputTracks().length > 0){
+          /*if (this.mediaHelper.getAudioInputTracks().length > 0){
             this.logger.log('Stream.close:关闭音频，保留发布：', type);
           }else{
             this.logger.log('Stream.close:停止发布音频');
-            await this.client.adapterRef._mediasoup?.destroyProduce('audio');
-          }
+            await this.client.adapterRef._mediasoup?.destroyProduce('audioSlave');
+          }*/
+
+          this.logger.log('Stream.close:停止发布音频辅流');
+          await this.client.adapterRef._mediasoup?.destroyProduce('audioSlave');
         }else{
           this.logger.log('Stream.close:未发布音频，无需停止发布');
         }
@@ -1399,6 +1501,8 @@ class LocalStream extends EventEmitter {
           reason = 'NOT_OPEN_CAMERA_YET'
           break
         }
+        await this.suspendVideoPostProcess(true);
+        // 释放当前 track
         if(this._transformedTrack && this._cameraTrack){
           this._cameraTrack.stop();
           this._cameraTrack = null;
@@ -1426,6 +1530,11 @@ class LocalStream extends EventEmitter {
         }else{
           this.logger.log('Stream.close:停止发布视频');
           await this.client.adapterRef._mediasoup?.destroyProduce('video');
+        }
+        // mute 状态下，关闭摄像头需要将相关标志位初始化
+        if(this.replaceTags.isMuted){
+          this.replaceTags.isMuted = false;
+          this.virtualBackground.emptyFrame = false;
         }
         break
       case 'screen':
@@ -1637,6 +1746,98 @@ class LocalStream extends EventEmitter {
   }
 
   /**
+   * 启用音频轨道
+   * @function unmuteAudioSlave
+   * @memberOf Stream#
+   * @return {Promise}
+   */
+  async unmuteAudioSlave () {
+    this.logger.log('启用音频辅流轨道: ', this.stringStreamID)
+    try {
+      if (this.getAdapterRef()){
+        // unmuteLocalAudio1: unmute Mediasoup
+        await this.client.adapterRef._mediasoup?.unmuteAudioSlave()
+      }
+      // unmuteLocalAudio2: unmute发送track
+      const tracks = this.mediaHelper.screenAudio.screenAudioStream.getAudioTracks();
+      if (tracks && tracks.length) {
+        tracks.forEach((track)=>{
+          track.enabled = true;
+        })
+      }
+      // unmuteLocalAudio3. unmute设备
+      /*this.mediaHelper.getAudioInputTracks().forEach((track)=>{
+        track.enabled = true;
+      })*/
+      
+      this.muteStatus.audioSlave.send = false;
+      this.client.apiFrequencyControl({
+        name: 'unmuteAudioSlave',
+        code: 0,
+        param: JSON.stringify({
+          streamID: this.stringStreamID
+        }, null, ' ')
+      })
+    } catch (e) {
+      this.logger.error('API调用失败：Stream:unmuteAudio' ,e.name, e.message, e);
+      this.client.apiFrequencyControl({
+        name: 'unmuteAudioSlave',
+        code: -1,
+        param: JSON.stringify({
+          streamID: this.stringStreamID,
+          reason: e
+        }, null, ' ')
+      })
+    }
+  }
+
+  /**
+   * 禁用音频轨道
+   * @function muteAudioSlave
+   * @memberOf Stream#
+   * @return {Promise}
+   */
+  async muteAudioSlave () {
+    this.logger.log('禁用音频辅流轨道: ', this.stringStreamID)
+
+    try {
+      // muteLocalAudio1: mute mediasoup
+      if (this.getAdapterRef()){
+        await this.client.adapterRef._mediasoup?.muteAudioSlave()
+      }
+      // muteLocalAudio2: mute发送的track
+      const tracks = this.mediaHelper.screenAudio.screenAudioStream.getAudioTracks();
+      if (tracks && tracks.length) {
+        tracks.forEach((track)=>{
+          track.enabled = false;
+        })
+      }
+      // muteLocalAudio3: mute麦克风设备track
+      /*this.mediaHelper.getAudioInputTracks().forEach(track=>{
+        track.enabled = false;
+      })*/
+      this.muteStatus.audioSlave.send = true
+      this.client.apiFrequencyControl({
+        name: 'muteAudioSlave',
+        code: 0,
+        param: JSON.stringify({
+          streamID: this.stringStreamID
+        }, null, ' ')
+      })
+    } catch (e) {
+      this.logger.error('API调用失败：Stream:muteAudioSlave' ,e.name, e.message, e);
+      this.client.apiFrequencyControl({
+        name: 'muteAudioSlave',
+        code: -1,
+        param: JSON.stringify({
+          streamID: this.stringStreamID,
+          reason: e
+        }, null, ' ')
+      })
+    }
+  }
+
+  /**
    * 当前Stream是否有音频
    * @function hasAudio
    * @memberOf Stream#
@@ -1647,6 +1848,16 @@ class LocalStream extends EventEmitter {
   }
 
   /**
+   * 当前Stream是否有音频
+   * @function hasAudioSlave
+   * @memberOf Stream#
+   * @return {Boolean}
+   */
+  hasAudioSlave () {
+    return this.mediaHelper.getAudioSlaveInputTracks().length > 0
+  }
+
+  /**
    * 当前从麦克风中采集的音量
    * @function getAudioLevel
    * @memberOf Stream#
@@ -1654,9 +1865,21 @@ class LocalStream extends EventEmitter {
    */
   getAudioLevel () {
     if (!this.audioLevelHelper && this.mediaHelper.getAudioTrack()){
-      this.audioLevelHelper = new AudioLevel({adapterRef: this.client.adapterRef, stream: this.mediaHelper.audio.audioStream})
+      this.audioLevelHelper = new AudioLevel({
+        stream: this.mediaHelper.audio.audioStream,
+        logger: this.logger})
     }
     return this.audioLevelHelper?.getAudioLevel() || 0
+  }
+
+  /**
+   * 当前从麦克风中采集的音量
+   * @function getAudioLevel
+   * @memberOf Stream#
+   * @return {volume}
+   */
+  getAudioSlaveLevel () {
+    return this.mediaHelper.getGain()
   }
 
   /**
@@ -1845,7 +2068,7 @@ class LocalStream extends EventEmitter {
     }
     if (type === 'audio') {
       // server ban
-      if((<any>window).isAudioBanned) {
+      if(this.client.adapterRef.isAudioBanned) {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
@@ -1890,7 +2113,7 @@ class LocalStream extends EventEmitter {
       this.microphoneId = deviceId
     } else if (type === 'video') {
       // server ban
-      if((<any>window).isVideoBanned){
+      if(this.client.adapterRef.isVideoBanned){
         return Promise.reject(
           new RtcError({
             code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
@@ -1900,6 +2123,9 @@ class LocalStream extends EventEmitter {
       }
 
       const cameraTrack = this.mediaHelper.video.cameraTrack
+      // 关闭视频后期处理
+      await this.suspendVideoPostProcess();
+
       //关闭美颜track, 切换后的回调中再重新开启美颜
       if(this._transformedTrack){
         this._transformedTrack.stop();
@@ -1964,6 +2190,11 @@ class LocalStream extends EventEmitter {
         constraint = this.mediaHelper.video.cameraConstraint
       }
       this.cameraId = deviceId
+      // mute 状态下，切换摄像头需要将相关标志位初始化
+      if(this.replaceTags.isMuted){
+        this.replaceTags.isMuted = false;
+        this.virtualBackground.emptyFrame = false;
+      }
     } else {
       this.logger.error(`switchDevice: unknown type ${type}`)
       return Promise.reject(
@@ -1999,6 +2230,7 @@ class LocalStream extends EventEmitter {
         code: 0,
         param: JSON.stringify(this.mediaHelper.getTrackSettings())
       })
+      await this.resumeVideoPostProcess();
     } catch (e) {
       this.logger.error('API调用失败：Stream:switchDevice' ,e.name, e.message, e);
       this.inSwitchDevice[type] = false
@@ -2033,6 +2265,9 @@ class LocalStream extends EventEmitter {
   async unmuteVideo () {
     this.logger.log(`启用 ${this.stringStreamID} 的视频轨道`)
     try {
+      if (this.virtualBackground) {
+        this.virtualBackground.emptyFrame = false;
+      }
       if (this.getAdapterRef()){
         this.client.adapterRef._mediasoup?.unmuteVideo()
       }
@@ -2041,6 +2276,19 @@ class LocalStream extends EventEmitter {
       }
       if (this.mediaHelper.video.cameraTrack){
         this.mediaHelper.video.cameraTrack.enabled = true
+      }
+      // 避免在 mute 状态下，开启美颜功能，导致原始track被禁用后无法重新开启的问题
+      if (this.videoPostProcess.sourceTrack){
+        this.videoPostProcess.sourceTrack.enabled = true;
+      }
+      if (this.mediaHelper.video.videoTrackLow){
+        this.mediaHelper.video.videoTrackLow.enabled = true
+      }
+      if(env.IS_SAFARI){
+        const videoDom = this._play?.getVideoDom;
+        if(videoDom){
+          videoDom.style.backgroundColor = '';
+        }
       }
       this.muteStatus.video.send = false
       this.client.apiFrequencyControl({
@@ -2051,6 +2299,7 @@ class LocalStream extends EventEmitter {
           isRemote: false
         }, null, ' ')
       })
+      this.replaceTags.isMuted = false;
     } catch (e) {
       this.logger.error('API调用失败：Stream:unmuteVideo' ,e.name, e.message, e);
       this.client.apiFrequencyControl({
@@ -2073,7 +2322,16 @@ class LocalStream extends EventEmitter {
    */
   async muteVideo () {
     this.logger.log(`禁用 ${this.stringStreamID} 的视频轨道`)
-    try {
+    try { 
+      if (this.virtualBackground) {
+        this.virtualBackground.emptyFrame = true;
+      }
+      if(env.IS_SAFARI){
+        const videoDom = this._play?.getVideoDom;
+        if(videoDom){
+          videoDom.style.backgroundColor = 'black';
+        }
+      }
       if (this.getAdapterRef()){
         await this.client.adapterRef._mediasoup?.muteVideo()
       }
@@ -2082,6 +2340,12 @@ class LocalStream extends EventEmitter {
       }
       if (this.mediaHelper.video.cameraTrack){
         this.mediaHelper.video.cameraTrack.enabled = false
+      }
+      if (this.mediaHelper.video.videoTrackLow){
+        this.mediaHelper.video.videoTrackLow.enabled = false
+      }
+      if (this.videoPostProcess.sourceTrack){
+        this.videoPostProcess.sourceTrack.enabled = false;
       }
       this.muteStatus.video.send = true
       this.client.apiFrequencyControl({
@@ -2092,6 +2356,7 @@ class LocalStream extends EventEmitter {
           isRemote: false
         }, null, ' ')
       })
+      this.replaceTags.isMuted = true;
     } catch (e) {
       this.logger.error('API调用失败：Stream:muteVideo' ,e.name, e.message, e);
       this.client.apiFrequencyControl({
@@ -2103,6 +2368,7 @@ class LocalStream extends EventEmitter {
           reason: e.message
         }, null, ' ')
       })
+      this.replaceTags.isMuted = false;
     }
   }
 
@@ -2116,6 +2382,7 @@ class LocalStream extends EventEmitter {
   async unmuteScreen () {
     this.logger.log(`启用 ${this.stringStreamID} 的视频轨道`)
     try {
+      
       if (this.getAdapterRef()){
         this.client.adapterRef._mediasoup?.unmuteScreen()
       }
@@ -2210,14 +2477,69 @@ class LocalStream extends EventEmitter {
    * @param {Number} [options.frameRate] 设置本端视频帧率：NERTC.CHAT_VIDEO_FRAME_RATE_5、NERTC.CHAT_VIDEO_FRAME_RATE_10、NERTC.CHAT_VIDEO_FRAME_RATE_15、NERTC.CHAT_VIDEO_FRAME_RATE_20、NERTC.CHAT_VIDEO_FRAME_RATE_25
    * @returns {Null}  
   */
-  setVideoProfile (options:VideoProfileOptions) {
-    Object.assign(this.videoProfile, options)
+  async setVideoProfile (options:VideoProfileOptions) {
+    if (options.resolution > -1){
+      this.videoProfile.resolution = options.resolution
+    }
+    if (options.frameRate > -1){
+      this.videoProfile.frameRate = options.frameRate
+    }
     this.mediaHelper.video.captureConfig.high = this.mediaHelper.convert(this.videoProfile);
-    this.mediaHelper.video.encoderConfig.high.maxBitrate = this.getVideoBW()
+    this.mediaHelper.video.encoderConfig.high.maxBitrate = this.getVideoBW() || this.mediaHelper.video.encoderConfig.high.maxBitrate
     this.logger.log(`setVideoProfile ${JSON.stringify(options)} 视频采集参数 ${JSON.stringify(this.mediaHelper.video.captureConfig.high)} 编码参数 ${JSON.stringify(this.mediaHelper.video.encoderConfig.high)}`)
     this.client.adapterRef.channelInfo.sessionConfig.maxVideoQuality = NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p
     this.client.adapterRef.channelInfo.sessionConfig.videoQuality = this.videoProfile.resolution
     this.client.adapterRef.channelInfo.sessionConfig.videoFrameRate = this.videoProfile.frameRate
+    let cameraTrack = this.mediaHelper.video.cameraTrack
+    let cameraSettings = cameraTrack?.getSettings()
+    const deviceInfo = Device.deviceHistory.video.find((d:DeviceInfo)=>{
+      return d.deviceId === (cameraSettings && cameraSettings.deviceId)
+    })
+    if (cameraSettings && !cameraSettings.width || !deviceInfo){
+      // 尝试寻找美颜的cameraTrack。不要直接判断是否是CanvasCaptureMediaStreamTrack因为Firefox不支持
+      cameraSettings = this._cameraTrack?.getSettings()
+      if (cameraSettings?.width && this._cameraTrack?.readyState === "live"){
+        this.logger.log(`setVideoProfile 侦测到美颜在开启状态`)
+        cameraTrack = this._cameraTrack
+      }
+    }
+     
+    if (cameraTrack){
+      try{
+        this.logger.log(`setVideoProfile 尝试动态修改分辨率【${cameraTrack.label}】`)
+        await applyResolution({
+          track: cameraTrack,
+          targetWidth: this.mediaHelper.video.captureConfig.high.width,
+          targetHeight: this.mediaHelper.video.captureConfig.high.height,
+          keepAspectRatio: getParameters().keepAspectRatio,
+          logger: this.logger,
+        })
+        const settings = cameraTrack.getSettings()
+        if (settings.width && settings.height){
+          this.mediaHelper.video.cameraConstraint.video.width = settings.width
+          this.mediaHelper.video.cameraConstraint.video.height = settings.height
+        }
+      }catch(e){
+        this.logger.error(`无法使用动态分辨率:`, e.name, e.message)
+      }
+    }
+    const sender = this.getSender("video", "high")
+     if (sender){
+       const parameters:RTCRtpParameters = sender.getParameters()
+       // @ts-ignore
+       const encodings:RTCRtpEncodingParameters = parameters.encodings && parameters.encodings[0]
+       if (encodings?.maxBitrate !== this.mediaHelper.video.encoderConfig.high.maxBitrate){
+         this.logger.log(`setVideoProfile调整上行码率 ${encodings.maxBitrate} => ${this.mediaHelper.video.encoderConfig.high.maxBitrate}`)
+         encodings.maxBitrate = this.mediaHelper.video.encoderConfig.high.maxBitrate
+         try{
+           sender.setParameters(parameters)
+         }catch(e){
+           this.logger.error(`setVideoProfile无法调整上行码率`, e.name, e.message)
+         }
+       }else{
+         this.logger.log(`setVideoProfile无需调整上行码率 ${encodings?.maxBitrate}`)
+       }
+     }
     this.client.apiFrequencyControl({
       name: 'setVideoProfile',
       code: 0,
@@ -2258,6 +2580,14 @@ class LocalStream extends EventEmitter {
       // 如果当前正在发送，则直接应用最新码率
       this.applyEncoderConfig(options.mediaType, options.streamType)
     }
+    this.client.apiFrequencyControl({
+      name: 'setVideoEncoderConfiguration',
+      code: 0,
+      param: {
+        streamID: this.stringStreamID,
+        options
+      }
+    })
   }
   
   async replaceTrack(options: {
@@ -2370,6 +2700,15 @@ class LocalStream extends EventEmitter {
         }
       }
     }
+    if (this.replaceTags.isMuted) {
+      if(this.mediaHelper.video.cameraTrack){
+        this.mediaHelper.video.cameraTrack.enabled = false;
+      }
+      if(this.mediaHelper.video.videoTrackLow){
+        this.mediaHelper.video.videoTrackLow.enabled = false;
+      }
+    }
+
     return {
       oldTrack,
       oldTrackLow,
@@ -2391,11 +2730,44 @@ class LocalStream extends EventEmitter {
    * @returns {Void}  
   */
   setScreenProfile (profile: ScreenProfileOptions) {
-    Object.assign(this.screenProfile, profile)
+    if (profile.frameRate > -1){
+      this.screenProfile.frameRate = profile.frameRate
+    }
+    if (profile.resolution > -1){
+      this.screenProfile.resolution = profile.resolution
+    }
     this.mediaHelper.screen.captureConfig.high = this.mediaHelper.convert(this.screenProfile)
     this.mediaHelper.screen.encoderConfig.high.maxBitrate = this.getScreenBW()
     this.logger.log(`setScreenProfile ${JSON.stringify(profile)} 屏幕共享采集参数 ${JSON.stringify(this.mediaHelper.screen.captureConfig.high)} 编码参数 ${JSON.stringify(this.mediaHelper.screen.encoderConfig.high)}`)
     this.client.adapterRef.channelInfo.sessionConfig.screenQuality = profile
+    if (this.mediaHelper.screen.screenVideoTrack){
+      applyResolution({
+          track: this.mediaHelper.screen.screenVideoTrack,
+          targetWidth: this.mediaHelper.screen.captureConfig.high.width,
+          targetHeight: this.mediaHelper.screen.captureConfig.high.height,
+          keepAspectRatio: getParameters().keepAspectRatio,
+          logger: this.logger,
+      })
+    }
+
+    const sender = this.getSender("screen", "high")
+    if (sender){
+      const parameters:RTCRtpParameters = sender.getParameters()
+      // @ts-ignore
+      const encodings:RTCRtpEncodingParameters = parameters.encodings && parameters.encodings[0]
+      if (encodings?.maxBitrate !== this.mediaHelper.screen.encoderConfig.high.maxBitrate){
+        this.logger.log(`setScreenProfile 调整上行码率 ${encodings.maxBitrate} => ${this.mediaHelper.screen.encoderConfig.high.maxBitrate}`)
+        encodings.maxBitrate = this.mediaHelper.screen.encoderConfig.high.maxBitrate
+        try{
+          sender.setParameters(parameters)
+        }catch(e){
+          this.logger.error(`setScreenProfile 无法调整上行码率`, e.name, e.message)
+        }
+      }else{
+        this.logger.log(`setScreenProfile 无需调整上行码率 ${encodings?.maxBitrate}`)
+      }
+    }
+    
     this.client.apiFrequencyControl({
       name: 'setScreenProfile',
       code: 0,
@@ -2406,18 +2778,19 @@ class LocalStream extends EventEmitter {
     })
   }
 
-  getSender (mediaTypeShort: "audio"|"video"|"screen", streamType: "high"|"low"){
+  getSender (mediaTypeShort: "audio"|"video"|"screen"|"audioSlave", streamType: "high"|"low"){
     const peer = this.getAdapterRef()?._mediasoup?._sendTransport?.handler._pc
     let sender = null;
     if (peer) {
       if (mediaTypeShort === "audio") {
         sender = (streamType === "high" ? peer.audioSender : null)
-      }
-      if (mediaTypeShort === "video") {
+      } if (mediaTypeShort === "video") {
         sender = (streamType === "high" ? peer.videoSender : peer.videoSenderLow)
       } else if (mediaTypeShort === "screen") {
         sender = (streamType === "high" ? peer.screenSender : peer.screenSenderLow)
-      }
+      } else if (mediaTypeShort === "audioSlave") {
+        sender = peer.audioSlaveSender
+      } 
     }
     return sender || null;
   }
@@ -2472,7 +2845,10 @@ class LocalStream extends EventEmitter {
       return 1200 * 1000
     } else if (this.videoProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p) {
       return 1500 * 1000
-    } return 0
+    } else {
+      this.logger.warn(`发现不支持的 NERTC_VIDEO_QUALITY ${this.videoProfile.resolution}`)
+      return 800 * 1000
+    }
   }
   
   getScreenBW(){
@@ -2490,7 +2866,10 @@ class LocalStream extends EventEmitter {
       return 1200 * 1000
     } else if (this.screenProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p) {
       return 1500 * 1000
-    } return 0
+    } else {
+      this.logger.warn(`发现不支持的 NERTC_VIDEO_QUALITY ${this.screenProfile.resolution}`)
+      return 1500 * 1000
+    }
   }
   
   /**
@@ -2741,7 +3120,7 @@ class LocalStream extends EventEmitter {
    * @returns {Promise}
    */
   startAudioMixing (options:AudioMixingOptions) {
-    if((<any>window).isAudioBanned){
+    if(this.client.adapterRef.isAudioBanned){
       return Promise.reject(
         new RtcError({
           code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
@@ -2858,7 +3237,7 @@ class LocalStream extends EventEmitter {
    * @returns {Promise}
    */
    async playEffect (options:AudioEffectOptions) {
-    if((<any>window).isAudioBanned){
+    if(this.client.adapterRef.isAudioBanned){
       return Promise.reject(
         new RtcError({
           code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
@@ -3074,6 +3453,7 @@ class LocalStream extends EventEmitter {
       }
       watermarkControl.checkWatermarkParams(options);
       watermarkControl.updateWatermarks(options);
+      this.canvasWatermarkOptions = options;
 
       this.client.apiFrequencyControl({
         name: 'setLocalCanvasWatermarkConfigs',
@@ -3097,16 +3477,30 @@ class LocalStream extends EventEmitter {
       let watermarkControl = null;
       if (!options.mediaType || options.mediaType === "video"){
         watermarkControl = this._play.watermark.video.encoderControl;
-        this._play.watermark.video.encoderControl.handler.enabled = true
-        if (!this.mediaHelper.video.preProcessingEnabled){
-          this.mediaHelper.enablePreProcessing("video")
+        if (options.textWatermarks?.length || options.timestampWatermarks || options.imageWatermarks?.length){
+          this._play.watermark.video.encoderControl.handler.enabled = true
+          if (!this.mediaHelper.video.preProcessingEnabled){
+            this.mediaHelper.enablePreProcessing("video")
+          }
+        }else{
+          this._play.watermark.video.encoderControl.handler.enabled = false
+          if (this.mediaHelper.canDisablePreProcessing('video')){
+            this.mediaHelper.disablePreProcessing("video")
+          }
         }
       }
       else if (options.mediaType === "screen"){
         watermarkControl = this._play.watermark.screen.encoderControl;
-        this._play.watermark.screen.encoderControl.handler.enabled = true
-        if (!this.mediaHelper.screen.preProcessingEnabled){
-          this.mediaHelper.enablePreProcessing("screen")
+        if (options.textWatermarks?.length || options.timestampWatermarks || options.imageWatermarks?.length){
+          this._play.watermark.screen.encoderControl.handler.enabled = true
+          if (!this.mediaHelper.screen.preProcessingEnabled){
+            this.mediaHelper.enablePreProcessing("screen")
+          }
+        }else{
+          this._play.watermark.screen.encoderControl.handler.enabled = false
+          if (this.mediaHelper.canDisablePreProcessing('screen')){
+            this.mediaHelper.disablePreProcessing("screen")
+          }
         }
       }
       if (!watermarkControl){
@@ -3135,6 +3529,7 @@ class LocalStream extends EventEmitter {
       }
       watermarkControl.checkWatermarkParams(options);
       watermarkControl.updateWatermarks(options);
+      this.encoderWatermarkOptions = options;
 
       this.client.apiFrequencyControl({
         name: 'setEncoderWatermarkConfigs',
@@ -3170,12 +3565,8 @@ class LocalStream extends EventEmitter {
    */
 
    setBeautyEffectOptions(effects:BeautyEffectOptions) {
-    if(!this.isBeautyTrack){
-      return;
-    }
-    this.lastEffects = effects;
-    this.logger.log('setBeautyEffectOptions() 设置美颜效果', effects)
-    startBeauty(true, effects);
+    this.lastEffects = {...this.lastEffects, ...effects};
+    this.basicBeauty.setBeautyOptions(effects);
   }
 
   /**
@@ -3185,20 +3576,46 @@ class LocalStream extends EventEmitter {
    * @return {Promise}
    */
 
-  async setBeautyEffect(isStart:boolean){
-    if(isStart && this._transformedTrack){
-      this.logger.log('美颜已经开启');
-      return;
+   async setBeautyEffect(isStart:boolean){
+    const basicBeauty  = this.basicBeauty;
+    if(isStart && basicBeauty.isEnable){
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.NOT_ALLOWED,
+          message: 'setBeautyEffect: basicBeauty is already opened'
+        })
+      )
     }
-    await this.startBeautyEffect(isStart);
-    this.logger.log('setBeautyEffect()', isStart);
-  }
-
-  async startBeautyEffect(isStart:boolean){
+    if(!isStart && !basicBeauty.isEnable){
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.NOT_ALLOWED,
+          message: 'setBeautyEffect: basicBeauty is already closed'
+        })
+      )
+    }
     if (this.mediaHelper && this.mediaHelper.video.cameraTrack) {
-      if(isStart) {
-        this.logger.log('startBeautyEffect() 开启美颜');
-        this.isBeautyTrack = true;
+      const hasWaterMark = this.replaceTags.waterMark;
+      if(hasWaterMark){
+        this.mediaHelper.disablePreProcessing("video");
+      }
+
+      this.videoPostProcessTags.isBeautyTrack = isStart;
+      this._cameraTrack  = this.mediaHelper.video.cameraTrack;
+      this._transformedTrack = await basicBeauty.setBeauty(isStart, this._cameraTrack) as MediaStreamTrack;
+       // 替换 track
+      await this.replacePluginTrack({
+            mediaType: "video",
+            //@ts-ignore
+            track: this._transformedTrack,
+            external: false,
+      });
+
+      //重新开启水印
+      if(hasWaterMark){
+        this.mediaHelper.enablePreProcessing("video")
+      }
+      if(isStart){
         let effects;
         if(this.lastEffects){
           effects = this.lastEffects;
@@ -3209,53 +3626,27 @@ class LocalStream extends EventEmitter {
             smoothnessLevel:0
           }
         }
-        this._cameraTrack = this.mediaHelper.video.cameraTrack
-        //@ts-ignore
-        this._transformedTrack = transformTrack(this._cameraTrack);
-        const videoTrackLow = this.mediaHelper.video.videoTrackLow;
-        await this.replaceTrack({
-          mediaType: "video",
-          //@ts-ignore
-          track: this._transformedTrack,
-          external: false
-        });
-        if (videoTrackLow){
-          videoTrackLow.stop();
-        }
-        startBeauty(true, effects);
-        if(env.IS_ANY_SAFARI){
-          let localVideoDom = document.getElementsByClassName('nertc-video-container-local')[0].querySelector('video');
-          localVideoDom!.style.display = 'none';
-        }
+        basicBeauty.setBeautyOptions(effects);
+        this.client.apiFrequencyControl({
+          name: 'setBeautyEffect',
+          code: 0,
+          param: {
+            streamID: this.stringStreamID,
+            isRemote: false
+          }
+        })
       }else {
-        if(!this.isBeautyTrack){
-          return;
-        }
-        this.logger.log('startBeautyEffect() 关闭美颜');
-        const videoTrackLow = this.mediaHelper.video.videoTrackLow;
-        await this.replaceTrack({
-          mediaType: "video",
-          //@ts-ignore
-          track: this._cameraTrack,
-          external: false
-        });
-        if (videoTrackLow){
-          videoTrackLow.stop();
-        }
-        if(this._transformedTrack){
-          this._transformedTrack.stop();
-          this._transformedTrack = null;
-        }
-        this.isBeautyTrack = false;
-        closeBeauty();
-        if(env.IS_ANY_SAFARI){
-          let localVideoDom = document.getElementsByClassName('nertc-video-container-local')[0].querySelector('video');
-          localVideoDom!.style.display = 'block';
-        }
+        this.client.apiFrequencyControl({
+          name: 'setBeautyEffect',
+          code: -1,
+          param: {
+            streamID: this.stringStreamID,
+            isRemote: false
+          }
+        })
       }
-
-    }else {
-      this.logger.log("beautyTrack() 此时还没有有视频track");
+    } else {
+      this.logger.log("此时还没有有视频track");
     }
   }
 
@@ -3265,10 +3656,545 @@ class LocalStream extends EventEmitter {
    *  @memberOf Stream#
    *  @param {Void}
    */
-  setFilter(options:string|null, intensity?:number) {
+   setFilter(options:string|null, intensity?:number) {
     // intensity不填写就是默认值
+    this.lastFilter = options;
     this.logger.log('setFilter() set beauty filter', options, intensity);
-    setBeautyFilter(options,intensity);
+    this.basicBeauty.setFilter(options, intensity);
+  }
+
+    //打开背景分割
+    async enableBodySegment() {
+      this.logger.log("enableBodySegment() 开启背景分割功能");
+      if(!this.videoPostProcess.getPlugin('VirtualBackground')){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.NOT_ALLOWED,
+            message: 'enableBodySegment: virtualBackgroundPlugin is not register'
+          })
+        )
+      }
+      if(this._segmentProcessor){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.NOT_ALLOWED,
+            message: 'enableBodySegment: bodySegment is already opened'
+          })
+        )
+      }
+      this.client.apiFrequencyControl({
+        name: 'enableBodySegment',
+        code: 0,
+        param: {
+          streamID: this.stringStreamID
+        }
+      })
+      this._segmentProcessor = this.virtualBackground;
+      this._segmentProcessor.init();
+      this._segmentProcessor.once('segment-load', () => {
+        this._startBodySegment();
+      })
+       // 低版本兼容提示
+      if(env.IS_ANY_SAFARI && parseFloat(env.SAFARI_VERSION || '0') < 15.0){
+        this.logger.warn('In the current version of Safari, wasm has low execution efficiency, '+
+        'which will result in low frame rate when background-segmentation is enabled.');
+      }
+    }
+  
+    //关闭背景分割
+    async disableBodySegment() {
+      this.logger.log("disableBodySegment() 关闭背景分割功能");
+      if(this._segmentProcessor) {
+        await this._cancelBodySegment();
+        this._segmentProcessor.destroy();
+        this._segmentProcessor = null;
+        this.client.apiFrequencyControl({
+          name: 'disableBodySegment',
+          code: 0,
+          param: {
+            streamID: this.stringStreamID
+          }
+        })
+      }else{
+        Promise.reject(
+          new RtcError({
+            code: ErrorCode.NOT_ALLOWED,
+            message: 'disableBodySegment: bodySegment is already closed'
+          })
+        )
+      }
+    }
+  
+    async _startBodySegment() {  
+      if(this._segmentProcessor){
+        this.logger.log("_startBodySegment() 打开背景分割功能");
+        await this.transformTrack(true, this._segmentProcessor);
+        this.videoPostProcessTags.isBodySegmentTrack = true;
+      }
+    }
+  
+    async _cancelBodySegment() {
+      this.logger.log("_cancelBodySegment() 取消背景分割功能");
+      this.videoPostProcessTags.isBodySegmentTrack = false;  
+      if(this._segmentProcessor){
+        await this.transformTrack(false, this._segmentProcessor)
+      }
+    }
+    
+    // 设置背景
+    setBackGround(options: BackGroundOptions) {
+      if(this.virtualBackground) {
+        this.logger.log('setBackGround() options: ', options)
+        this.virtualBackground.setVirtualBackGround(options);
+        this.client.apiFrequencyControl({
+          name: 'setBackGround',
+          code: 0,
+          param: {
+            streamID: this.stringStreamID,
+            type: options.type,
+          } 
+        })
+      }
+    }
+  
+    // 开启高级美颜
+    async enableAdvancedBeauty(faceSize?:number) {
+      this.logger.log("enableAdvancedBeauty() 开启高级美颜功能");
+      if(!this.videoPostProcess.getPlugin('AdvancedBeauty')){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.NOT_ALLOWED,
+            message: 'enableAdvancedBeauty: advancedBeautyPlugin is not register'
+          })
+        )
+      }
+      if(this._advancedBeautyProcessor){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.NOT_ALLOWED,
+            message: 'enableAdvancedBeauty: advancedBeauty is already opened'
+          })
+        )
+      }
+      this.client.apiFrequencyControl({
+        name: 'enableAdvancedBeauty',
+        code: 0,
+        param: {
+          streamID: this.stringStreamID
+        }
+      })
+      this._advancedBeautyProcessor = this.advancedBeauty;
+      this._advancedBeautyProcessor.init(faceSize);
+      this._advancedBeautyProcessor.once('facePoints-load', () => {
+        this.logger.log('facePoints-load')
+        this._startAdvancedBeauty();
+      })
+       // 低版本兼容提示
+      if(env.IS_ANY_SAFARI && parseFloat(env.SAFARI_VERSION || '0') < 15.0){
+        this.logger.warn('In the current version of Safari, wasm has low execution efficiency, '+
+        'which will result in low frame rate when advanced-beauty is enabled.');
+      }
+    }
+    // 关闭高级美颜
+    async disableAdvancedBeauty() {
+      this.logger.log("disableAdvancedBeauty() 关闭高级美颜功能");
+      if(this._advancedBeautyProcessor){ 
+        await this._cancelAdvancedBeauty();
+        this._advancedBeautyProcessor.destroy();
+        this._advancedBeautyProcessor = null;
+        this.client.apiFrequencyControl({
+          name: 'disableAdvancedBeauty',
+          code: 0,
+          param: {
+            streamID: this.stringStreamID
+          }
+        })
+      }else{
+        Promise.reject(
+          new RtcError({
+            code: ErrorCode.NOT_ALLOWED,
+            message: 'disableAdvancedBeauty: advancedBeauty is already closed'
+          })
+        )
+      }
+    }
+  
+    async _startAdvancedBeauty() {  
+      if(this._advancedBeautyProcessor){
+        this.logger.log("_startAdvancedBeauty() 打开高级美颜功能");
+        await this.transformTrack(true, this._advancedBeautyProcessor)
+        this.videoPostProcessTags.isAdvBeautyTrack = true
+      }
+    }
+  
+    async _cancelAdvancedBeauty() {
+      this.logger.log("_cancelAdvancedBeauty() 取消高级美颜功能");
+      this.videoPostProcessTags.isAdvBeautyTrack = false;  
+      if(this._advancedBeautyProcessor){
+        await this.transformTrack(false, this._advancedBeautyProcessor)
+      }
+    }
+    // 设置高级美颜
+    setAdvBeautyEffect:AdvancedBeauty['setAdvEffect'] = (...args) => {
+      if(this.advancedBeauty) {
+        this._advancedBeautyProcessor?.setAdvEffect(...args);
+        this.client.apiFrequencyControl({
+          name: 'setAdvBeautyEffect',
+          code: 0,
+          param: {
+            streamID: this.stringStreamID,
+            options: JSON.stringify(args)
+          } 
+        })
+      }
+    };
+
+    // 预设高级美颜参数
+    presetAdvBeautyEffect:AdvancedBeauty['presetAdvEffect'] = (...args) => {
+      if(this.advancedBeauty) {
+        this._advancedBeautyProcessor?.presetAdvEffect(...args);
+        this.client.apiFrequencyControl({
+          name: 'presetAdvBeautyEffect',
+          code: 0,
+          param: {
+            streamID: this.stringStreamID,
+            options: JSON.stringify(args)
+          } 
+        })
+      }
+    }
+
+    async replacePluginTrack(options: {
+      mediaType: "video"|"screen",
+      track: MediaStreamTrack,
+      external: boolean,
+    }){
+      // replaceTrack不会主动关掉原来的track，包括大小流
+      let oldTrack;
+      let oldTrackLow;
+      let external = false; // 被替换的流是否是外部流
+   
+      if (options.mediaType === "screen"){   
+        if (this.mediaHelper.screen.screenVideoTrack){
+          oldTrack = this.mediaHelper.screen.screenVideoTrack;
+          this.mediaHelper.screen.screenVideoTrack = null
+        }else if (this.mediaHelper.screen.screenVideoSource){
+          external = true
+          oldTrack = this.mediaHelper.screen.screenVideoSource;
+          this.mediaHelper.screen.screenVideoSource = null
+        }
+        if (oldTrack){
+          if (options.external){
+            this.mediaHelper.screen.screenVideoSource = options.track;
+          }else{
+            this.mediaHelper.screen.screenVideoTrack = options.track;
+          }
+          emptyStreamWith(this.mediaHelper.screen.screenVideoStream, options.track);
+          emptyStreamWith(this.mediaHelper.screen.renderStream, options.track);
+          if (
+            this.mediaHelper.screen.screenVideoStream.getVideoTracks().length &&
+            typeof this.mediaHelper.screen.encoderConfig.high.contentHint === "string" &&
+            // @ts-ignore
+            this.mediaHelper.screen.screenVideoStream.getVideoTracks()[0].contentHint !== this.mediaHelper.screen.encoderConfig.high.contentHint
+          ){
+            this.logger.log(`应用 contentHint screen high`, this.mediaHelper.screen.encoderConfig.high.contentHint)
+            // @ts-ignore
+            this.mediaHelper.screen.screenVideoStream.getVideoTracks()[0].contentHint = this.mediaHelper.screen.encoderConfig.high.contentHint
+          }
+          oldTrackLow = this.mediaHelper.screen.screenVideoTrackLow;
+          this.mediaHelper.screen.screenVideoTrackLow = null
+        }
+      }else if (options.mediaType === "video"){
+        if (this.mediaHelper.video.cameraTrack){
+          oldTrack = this.mediaHelper.video.cameraTrack;
+          this.mediaHelper.video.cameraTrack = null;
+        }else if (this.mediaHelper.video.videoSource){
+          external = true
+          oldTrack = this.mediaHelper.video.videoSource;
+          this.mediaHelper.video.videoSource = null;
+        }
+        if (oldTrack){
+          if (options.external){
+            this.mediaHelper.video.videoSource = options.track;
+          }else{
+            this.mediaHelper.video.cameraTrack = options.track;
+          }
+          emptyStreamWith(this.mediaHelper.video.videoStream, options.track);
+          emptyStreamWith(this.mediaHelper.video.renderStream, options.track);
+          if (
+            this.mediaHelper.video.videoStream.getVideoTracks().length &&
+            typeof this.mediaHelper.video.encoderConfig.high.contentHint === "string" &&
+            // @ts-ignore
+            this.mediaHelper.video.videoStream.getVideoTracks()[0].contentHint !== this.mediaHelper.video.encoderConfig.high.contentHint
+          ){
+            this.logger.log(`应用 contentHint video high`, this.mediaHelper.video.encoderConfig.high.contentHint)
+            // @ts-ignore
+            this.mediaHelper.video.videoStream.getVideoTracks()[0].contentHint = this.mediaHelper.video.encoderConfig.high.contentHint
+          }
+          oldTrackLow = this.mediaHelper.video.videoTrackLow;
+          this.mediaHelper.video.videoTrackLow = null
+        }
+      }
+      if (oldTrack){
+        this.logger.log(`replaceTrack ${options.mediaType} dual:${!!oldTrackLow}【external: ${external} ${oldTrack.label}】=>【external: ${options.external} ${options.track.label}】`)
+        watchTrack(options.track)
+        this.mediaHelper.listenToTrackEnded(options.track);
+      }else{
+        this.logger.error(`replaceTrack ${options.mediaType} 当前没有可替换的流`)
+        return null
+      }
+     
+      const sender = this.getSender(options.mediaType, "high")
+      const senderLow = this.getSender(options.mediaType, "low")
+      if (sender){
+        sender.replaceTrack(options.track)
+        this.logger.log(`replaceTrack ${options.mediaType} 成功替换上行`)
+      }
+      if (senderLow && oldTrackLow){
+        const newTrackLow = await this.mediaHelper.createTrackLow(options.mediaType)
+        if (newTrackLow){
+          senderLow.replaceTrack(newTrackLow);  
+          oldTrackLow.stop();
+          oldTrackLow = null; 
+          this.logger.log(`replaceTrack ${options.mediaType} 成功替换上行小流`)
+        }
+      }
+      if (this.replaceTags.isMuted) {
+        if(this.mediaHelper.video.cameraTrack){
+          this.mediaHelper.video.cameraTrack.enabled = false;
+        }
+        if(this.mediaHelper.video.videoTrackLow){
+          this.mediaHelper.video.videoTrackLow.enabled = false;
+        }
+      }
+      return {
+        oldTrack,
+        oldTrackLow,
+        external,
+      }
+    }
+  
+    async transformTrack(enable:boolean, processor: VirtualBackground | AdvancedBeauty | null) {
+      if (!processor) {
+        return
+      }
+      if (this.mediaHelper && this.mediaHelper.video.cameraTrack) {
+        const hasWaterMark = this.replaceTags.waterMark;
+        if(hasWaterMark){
+          this.mediaHelper.disablePreProcessing("video");
+        }
+        this._cameraTrack  = this.mediaHelper.video.cameraTrack;
+        this._transformedTrack = await processor.setTrack(enable, this._cameraTrack ) as MediaStreamTrack;
+        //替换 track
+        await this.replacePluginTrack({
+              mediaType: "video",
+              //@ts-ignore
+              track: this._transformedTrack,
+              external: false,
+        });      
+        //重新开启水印
+        if (hasWaterMark){
+          this.mediaHelper.enablePreProcessing("video")
+        }  
+      } else {
+        this.logger.log("此时还没有有视频track");
+      }
+    }
+
+  /**
+   * 注册插件
+   * @param options 
+   */
+   async registerPlugin(options: PluginOptions) {
+    if (this.videoPostProcess.getPlugin(options.key as any)) {
+      this.logger.log(`Plugin ${options.key} exist`);
+      return
+    }
+    let plugin: any = null;
+    try {
+      if(options.pluginUrl) {
+        await loadPlugin(options.key as any, options.pluginUrl);
+        plugin = eval(`new window.${options.key}(options)`);
+      } else if(options.pluginObj) {
+        plugin = new options.pluginObj(options);
+      }
+      if(plugin) {
+        plugin.once('plugin-load', () => {
+          this.videoPostProcess.registerPlugin(options.key as any, plugin);
+          this.logger.log(`Plugin ${options.key} loaded`);
+          this.emit('plugin-load', options.key);
+          this.client.apiFrequencyControl({
+            name: 'registerPlugin',
+            code: 0,
+            param: {
+              streamID: this.stringStreamID,
+              plugin: options.key
+            }
+          })
+        }) 
+      } else {
+        this.logger.error(`can't get plugin ${options.key}`);
+        this.client.apiFrequencyControl({
+          name: 'registerPlugin',
+          code: -1,
+          param: {
+            streamID: this.stringStreamID,
+            plugin: options.key
+          }
+        })
+      }     
+    } catch(e) {
+      this.logger.error(`create plugin ${options.key} error`);
+    } 
+
+  }
+
+  async unregisterPlugin(key: PluginType) {
+    if(this.videoPostProcess){
+      if(key === 'VirtualBackground' && this._segmentProcessor){
+        await this.disableBodySegment();
+      }else if(key === 'AdvancedBeauty' && this._advancedBeautyProcessor){
+        await this.disableAdvancedBeauty();
+      }
+      this.videoPostProcess.unregisterPlugin(key);
+    }
+  }
+
+  // 临时挂起视频后处理
+  async suspendVideoPostProcess(closeTrackLow: boolean = false){
+    const {isBeautyTrack, isBodySegmentTrack, isAdvBeautyTrack} = this.videoPostProcessTags;
+    if(isBeautyTrack){
+      await this.setBeautyEffect(false);
+      this.videoPostProcessTags.isBeautyTrack = true;
+    }
+    if(isBodySegmentTrack) {
+      await this._cancelBodySegment();
+      this.videoPostProcessTags.isBodySegmentTrack = true;
+    }
+    if(isAdvBeautyTrack) {
+      await this._cancelAdvancedBeauty();
+      this.videoPostProcessTags.isAdvBeautyTrack = true;
+    }
+
+    let videoTrackLow = this.mediaHelper.video.videoTrackLow;
+    if(videoTrackLow && closeTrackLow) {
+        videoTrackLow.stop();
+        videoTrackLow = null;
+    }   
+  }
+
+  // 恢复挂起的视频后处理
+  async resumeVideoPostProcess(){
+    try{
+      const {isBeautyTrack, isBodySegmentTrack, isAdvBeautyTrack} = this.videoPostProcessTags;
+      // 打开基础美颜
+      if(isBeautyTrack){
+        await this.setBeautyEffect(true);
+        if(this.lastEffects){
+          this.setBeautyEffectOptions(this.lastEffects);
+        }
+        if(this.lastFilter){
+          this.setFilter(this.lastFilter);
+        }
+      }
+      // 打开背景分割
+      if(isBodySegmentTrack) {
+        await this._startBodySegment();
+      }
+      // 打开高级美颜
+      if(isAdvBeautyTrack) {
+        await this._startAdvancedBeauty();
+      }
+    }catch(error){
+      this.logger.log(`开启失败: ${error}`);
+    }
+  }
+
+  // 兼容 safari 15.3 以下版本抓流红黑屏及其他问题
+  private async replaceCanvas(){
+    if(!this._play) return;
+    if(!env.IS_ANY_SAFARI) return;
+    if(env.SAFARI_VERSION && parseFloat(env.SAFARI_VERSION) > 15.2) return;
+    const localVideoDom = this._play.getVideoDom?.querySelector('video');
+    const videoDom = this._play.getVideoDom;
+    if(localVideoDom && videoDom){
+      const filters = this.videoPostProcess.filters;
+      const video = this.videoPostProcess.video;
+
+      const vppOn = this.replaceTags.videoPost;
+      const wmOn = this.replaceTags.waterMark;
+      if(vppOn){
+        const canvas = filters.canvas;
+        canvas.style.height = '0px';
+        canvas.style.width = '0px';
+        document.body.appendChild(canvas);
+         // safari 13.1 浏览器 需要 <video> 和 <canvas> 在可视区域才能正常播放
+         if(env.SAFARI_MAJOR_VERSION! < 14 && video){
+          video.style.height = '0px';
+          video.style.width = '0px';
+          document.body.appendChild(video);
+        }
+
+        if(!wmOn && filters.canvas.parentElement !== videoDom){
+          const canvas = filters.canvas;
+
+          localVideoDom.style.display = 'none';
+          // safari在使用canvas.captureStream获取webgl渲染后的视频流，在本地播放时可能出现红屏或黑屏
+          // filters.canvas.style.height = '100%';
+          // filters.canvas.style.width = 'auto';
+          canvas.style.position = 'absolute';
+          // filters.canvas.style.left = '50%';
+          // filters.canvas.style.top = '50%';
+          // filters.canvas.style.transform = 'translate(-50%,-50%)';
+
+          const rect = videoDom.getBoundingClientRect();
+          const pr = rect.width / rect.height;
+          const cr = canvas.width / canvas.height;
+          const {width, height, cut} = this.renderMode.local.video as {width:number, height: number, cut:boolean};
+          const vcr = width / height;
+
+          if(cut){
+            // 上下裁切
+            if(vcr > cr){
+              canvas.style.width = `100%`;
+              canvas.style.left = '0px';
+              const hRatio = rect.width / cr / rect.height;
+              canvas.style.height = `${hRatio * 100}%`;
+              canvas.style.top = `${-(hRatio - 1) * 50}%`;
+            }else{ // 左右裁切
+              canvas.style.height = `100%`;
+              canvas.style.top = '0px';
+              const wRatio = rect.height * cr / rect.width;
+              canvas.style.width = `${wRatio * 100}%`;
+              canvas.style.left = `${-(wRatio - 1) * 50}%`;
+            }
+          }else{
+            // 左右留白
+            if(pr > cr){
+              canvas.style.height = `100%`;
+              canvas.style.top = '0px';
+              const wRatio = rect.height * cr / rect.width;
+              canvas.style.width = `${wRatio * 100}%`;
+              canvas.style.left = `${(1 - wRatio) * 50}%`;
+            }else{ // 上下留白
+              canvas.style.width = `100%`;
+              canvas.style.left = '0px';
+              const hRatio = rect.width / cr / rect.height;
+              canvas.style.height = `${hRatio * 100}%`;
+              canvas.style.top = `${(1 - hRatio) * 50}%`;
+            }
+          }
+
+          // safari下，本地<video>切换成<canvas>
+          videoDom.appendChild(filters.canvas);
+        }else if(wmOn){
+          localVideoDom.style.display = '';
+        }
+      }else{
+        localVideoDom.style.display = '';
+        filters.canvas.parentNode?.removeChild(filters.canvas);
+      }
+    }
   }
   
   /**
@@ -3277,7 +4203,7 @@ class LocalStream extends EventEmitter {
    *  @memberOf Stream#
    *  @param {Void}
    */
-  destroy () {
+  async destroy () {
     if(!this.client) return
     this.client.apiFrequencyControl({
       name: 'destroy',
@@ -3292,6 +4218,28 @@ class LocalStream extends EventEmitter {
     this._reset()
     this.destroyed = true;
     this.lastEffects = null;
+    this.lastFilter = null;
+    // 销毁虚拟背景 wasm 的 process
+    if (this._segmentProcessor) {
+      this._segmentProcessor.destroy();
+      this._segmentProcessor = null;
+    }
+    // 销毁高级美颜 wasm 的 process
+    if(this._advancedBeautyProcessor){
+      this._advancedBeautyProcessor.destroy();
+      this._advancedBeautyProcessor = null;
+    }
+    // 销毁基础美颜, 释放当前track
+    if(this._cameraTrack){
+      this._cameraTrack.stop();
+      this._cameraTrack = null;
+    }
+    if(this._transformedTrack){
+      this._transformedTrack.stop();
+      this._transformedTrack = null;
+    }
+    // 销毁美颜相关 webgl 管线
+    this.videoPostProcess.destroy();
   }
 }
 

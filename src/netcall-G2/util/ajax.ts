@@ -12,7 +12,7 @@ var JSONbig = require('json-bigint');
  * @param {obj} option.header 请求header特殊参数
  * @param {data} option.data 请求数据
  */
-const getFormData = (data:AjaxFormData) =>
+export const getFormData = (data:AjaxFormData) =>
   Object.keys(data)
     .map(
       key =>
@@ -30,7 +30,7 @@ export interface AjaxFormData{
 
 export interface AjaxOptions{
   url: string;
-  dataType?: string;
+  dataType?: XMLHttpRequestResponseType;
   type?: string;
   contentType?: string;
   header?: {[prop: string]: string};

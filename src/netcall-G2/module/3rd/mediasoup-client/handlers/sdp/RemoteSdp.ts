@@ -17,6 +17,7 @@ import { MediaKind, RtpParameters } from '../../RtpParameters';
 import { SctpParameters } from '../../SctpParameters';
 import RtcError from '../../../../../util/error/rtcError';
 import ErrorCode  from '../../../../../util/error/errorCode';
+import {getParameters} from "../../../../parameters";
 
 const prefix = 'RemoteSdp';
 
@@ -145,13 +146,15 @@ export class RemoteSdp
 
   getNextMediaSectionIdx(): { idx: number; reuseMid?: string }
   {
-    // If a closed media section is found, return its index.
-    for (let idx = 0; idx < this._mediaSections.length; ++idx)
-    {
-      const mediaSection = this._mediaSections[idx];
+    if (getParameters().reuseMid){
+      // If a closed media section is found, return its index.
+      for (let idx = 0; idx < this._mediaSections.length; ++idx)
+      {
+        const mediaSection = this._mediaSections[idx];
 
-      if (mediaSection.closed)
-        return { idx, reuseMid: mediaSection.mid };
+        if (mediaSection.closed)
+          return { idx, reuseMid: mediaSection.mid };
+      }
     }
 
     // If no closed media section is found, return next one.

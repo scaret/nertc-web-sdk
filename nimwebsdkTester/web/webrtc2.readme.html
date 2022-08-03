@@ -8,12 +8,27 @@
 </head>
 
 <body>
-  <h1>1. 如何生成主分支的最新build</h1>
-  <pre>
-  1. 打开 http://yunxin-jenkins.netease.im:8080/view/WebSDK/job/nertc-web-sdk-daily-build/
-  2. 按一下 Build Now
+
+<h1>1. 一些常用链接</h1>
+<ol>
+  <li><a href="./webrtc2.html">大白页</a></li>
+  <li><a href="./webrtc2.html?joinFirstTimeout=30000&reconnectionFirstTimeout=30000">joinFirstTimeout=30000&reconnectionFirstTimeout=30000 - 媒体服务器建连及重连超时由2秒改到30秒</a></li>
+  <li><a href="./webrtc2.html?enableUdpCandidate=false">enableUdpCandidate=false - 只允许TCP传输</a></li>
+  <li><a href="./webrtc2.html?enableTcpCandidate=false">enableTcpCandidate=false - 只允许UDP传输</a></li>
+  <li><a href="./webrtc2.html?enableAlerter=nolistener">enableAlerter=nolistener - 没有监听指定事件时弹窗</a></li>
+  <li><a href="./webrtc2.html?enableAlerter=always">enableAlerter=always - 总是弹窗（chrome版本过低时、意外退出频道时、自动播放被阻止时）</a></li>
+  <li><a href="./webrtc2.html?disableLBSService=true">disableLBSService=true - 不使用LBS服务返回的地址</a></li>
+
+</ol>
+
+<h1>2. 改进日志上传查看体验</h1>
+<pre>
+      1. 将这个超链接拖拽到书签栏： <a id="logBookmark" href="javascript: alert('Hi')">日志上传打印</a>
+      2. 用Chrome打开一个 Kibana 日志页面，按【option+Command+I】打开Console。
+      3. 点击刚刚拖拽上去的书签。点击后，Kibana 日志会转化到Chrome的Console内。
 </pre>
-  <h1>2. 如何测试Electron</h1>
+
+  <h1>3. 如何测试Electron</h1>
   <pre>
   0. 参考文章：https://www.electronjs.org/docs/tutorial/application-distribution#with-an-app-source-code-archive
   1. 下载对应版本的Electron Release：https://www.electronjs.org/docs/tutorial/application-distribution
@@ -22,11 +37,10 @@
   4. 双击图标
 </pre>
 
-  <h1>3. 改进日志上传查看体验</h1>
-  <pre>
-      1. 将这个超链接拖拽到书签栏： <a id="logBookmark" href="javascript: alert('Hi')">日志上传打印</a>
-      2. 用Chrome打开一个 Kibana 日志页面，按【option+Command+I】打开Console。
-      3. 点击刚刚拖拽上去的书签。点击后，Kibana 日志会转化到Chrome的Console内。
+<h1>4. 如何生成主分支的最新build</h1>
+<pre>
+  1. 打开 http://yunxin-jenkins.netease.im:8080/view/WebSDK/job/nertc-web-sdk-daily-build/
+  2. 按一下 Build Now
 </pre>
   
 <script id="printLogScript" type="text">

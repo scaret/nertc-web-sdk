@@ -29,6 +29,9 @@
           <div class="line" id="wechatBrowserBox" style="display: none">
             安卓微信内嵌浏览器内核: <span id="wechatBrowser"></span>
           </div>
+          <div class="line vconsole">
+            <button type="button" id="toggleVConsole">打开vconsole</button>
+          </div>
           <div class="line" style="display: none">
             <label>
               <input type="radio" id="test-env" name="env" value="DEV"> 测试</label>
@@ -68,7 +71,7 @@
 
           <div class="line">
             网关地址:
-            <input type="text" id="getwayAddr" value='webrtcgwcn.netease.im/?ip=59.111.239.249:38001'>
+            <input type="text" id="getwayAddr" value='webrtcgwcn.netease.im/?ip=59.111.239.249:30105'>
             是否使用：<input type="checkbox" id="isGetwayAddrConf" />
           </div>
           <!-- <div class="line">
@@ -237,6 +240,153 @@
           <div class="line">
             <label for="r1">平滑: </label><input type="range" id="r4" value="0"/>
           </div>
+
+          <p class="block-header">背景分割</p>
+        <div class="line">
+          <button type="button" id="registerVitrualBackground">注册</button>
+          <button type="button" id="enableSegment">打开</button> 
+          <button type="button" id="disableSegment">关闭</button> 
+          <button type="button" id="unregisterVitrualBackground">销毁</button> 
+          <label id="segmentStatus" style="display: none;">loading</label>
+          <br>
+          <!-- <button type="button" id="startSegment">启动</button> 
+          <button type="button" id="cancelSegment">取消</button>  -->
+          <br>   
+          <button id="red">红色</button>
+          <button id="green">绿色</button>
+          <button id="blue">蓝色</button>      
+        </div>
+        <div class="line">
+            背景图<input id="select" type="file" accept="image/png, image/jpeg"></input>
+        </div>
+         <div class="line">
+          <button id="blur">虚化</button>
+          <label for='level'>level</label>
+          <select id="level">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+          </select>
+        </div>
+        <p class="block-header">高级美颜</p>
+        <div class="line">
+          <label>
+            最大人脸数：
+            <input id="adv-face-size" type="number" step="0" min="1" max="5" value="1">
+          </label> 
+        </div>
+        <div class="line">
+          <button type="button" id="registerAdvancedBeauty">注册</button>
+          <button type="button" id="advancedBeauty">打开</button>
+          <button type="button" id="closeAdvancedBeauty">关闭</button>
+          <button type="button" id="presetAdvBeauty">预设</button>
+          <button type="button" id="resetAdvBeauty">重置</button>
+          <button type="button" id="unregisterAdvancedBeauty">销毁</button> 
+          <label id="advancedBeautyStatus" style="display: none;">loading</label>
+        </div>
+        <div class="line">
+          <label>
+            大眼:
+            <input id="adv-enlarge-eye" type="range" step="0.01" min="0" max="1" value="0">
+          </label>
+          <br>
+          <label>
+            圆眼:
+            <input id="adv-rounded-eye" type="range" step="0.01" min="0" max="1" value="0">
+          </label> 
+          <br>
+          <label>
+            开眼角:
+            <input id="adv-open-canthus" type="range" step="0.01" min="0" max="1" value="0">
+          </label>
+          <br>
+          <label>
+            眼距:
+            <input id="adv-eye-distance" type="range" step="0.01" min="0" max="1" value="0.5">
+          </label>
+          <br>
+          <label>
+            眼睛角度:
+            <input id="adv-eye-angle" type="range" step="0.01" min="0" max="1" value="0.5">
+          </label>
+          <br>
+          <label>
+            瘦鼻:
+            <input id="adv-shrink-nose" type="range" step="0.01" min="0" max="1" value="0">
+          </label>
+          <br>
+          <label>
+            长鼻:
+            <input id="adv-lengthen-nose" type="range" step="0.01" min="0" max="1" value="0.5">
+          </label>
+          <br>
+          <label>
+            嘴巴大小:
+            <input id="adv-shrink-mouth" type="range" step="0.01" min="0" max="1" value="0.5">
+          </label>
+          <br>
+          <label>
+            嘴角调整:
+            <input id="adv-mouth-corners" type="range" step="0.01" min="0" max="1" value="0.5">
+          </label>
+          <br>
+          <label>
+            人中:
+            <input id="adv-adjust-philtrum" type="range" step="0.01" min="0" max="1" value="0.5">
+          </label>
+          <br>
+          <label>
+            瘦下颌:
+            <input id="adv-shrink-underjaw" type="range" step="0.01" min="0" max="1" value="0.0">
+          </label>
+          <br>
+          <label>
+            瘦颧骨:
+            <input id="adv-shrink-cheekbone" type="range" step="0.01" min="0" max="1" value="0.0">
+          </label>
+          <br>
+          <label>
+            下巴:
+            <input id="adv-lengthen-jaw" type="range" step="0.01" min="0" max="1" value="0.5">
+          </label>
+          <br>
+          <label>
+            窄脸:
+            <input id="adv-narrowed-face" type="range" step="0.01" min="0" max="1" value="0.0">
+          </label>
+          <br>
+          <label>
+            瘦脸:
+            <input id="adv-shrink-face" type="range" step="0.01" min="0" max="1" value="0.0">
+          </label>
+          <br>
+          <label>
+            V 脸:
+            <input id="adv-vshaped-face" type="range" step="0.01" min="0" max="1" value="0.0">
+          </label>
+          <br>
+          <label>
+            小脸:
+            <input id="adv-minify-face" type="range" step="0.01" min="0" max="1" value="0.0">
+          </label>
+          <br>
+          <label>
+            亮眼:
+            <input id="adv-brighten-eye" type="range" step="0.01" min="0" max="1" value="0.0">
+          </label>
+          <br>
+          <label>
+            美牙:
+            <input id="adv-whiten-teeth" type="range" step="0.01" min="0" max="1" value="0.0">
+          </label>
+        </div>
         </div>
       </div>
       <div class="block">
@@ -307,6 +457,12 @@
               <option value="true">增益控制AGC:true</option>
               <option value="false">增益控制AGC:false</option>
             </select>
+          </div>
+          <div class="line">
+            双声道兼容模式（进频道前可选）：
+            <button id="enableCompatMode">开启</button>
+            <button id="disableCompatMode">关闭</button>
+            <button id="clearCompatList">清除支持列表</button>
           </div>
 
           <h5 class="line">视频采集配置（主流）</h5>
@@ -434,6 +590,9 @@
             订阅audio
             <input type="checkbox" id="subAudio" checked>
 
+            订阅audioSlave
+            <input type="checkbox" id="subAudioSlave" checked>
+
             订阅video
             <input type="checkbox" id="subVideo" checked>
 
@@ -464,6 +623,7 @@
             <button type="button" id="sub">订阅</button>
             <button type="button" id="unsub">停止订阅</button>
             <button type="button" id="unsubAudio">停止订阅音频</button>
+            <button type="button" id="unsubAudioSlave">停止订阅音频辅流</button>
             <button type="button" id="unsubVideo">停止订阅视频</button>
             <button type="button" id="unsubScreen">停止订阅辅流</button>
             <button type="button" id="subUpdateResolution">订阅大小流</button>
@@ -497,6 +657,10 @@
             <div class="line">
               <button id="muteAudio">muteAudio</button>
               <button id="unmuteAudio">unmuteAudio</button>
+            </div>
+            <div class="line">
+              <button id="muteAudioSlave">muteAudioSlave</button>
+              <button id="unmuteAudioSlave">unmuteAudioSlave</button>
             </div>
             <div class="line">
               <button id="muteVideo">muteVideo</button>
@@ -534,14 +698,17 @@
             </div>
             <div class="line">
               uid<input type="text" id="stopUid" class="input-40">
-              <select id="stopMediaType" class="input-40">
+              <select id="stopMediaType" style="width: 30%">
                 <option value="">默认</option>
                 <option value="audio">audio</option>
+                <option value="audioSlave">audioSlave</option>
                 <option value="video">video</option>
                 <option value="screen">screen</option>
               </select>
+              <br/>
               <button id="startPlay">播放</button>
               <button id="stopPlay">停止播放</button>
+              <button id="isPlaying">正在播放</button>
             </div>
           </div>
           <div class="part">
@@ -586,6 +753,11 @@
             <span>播放音量[扬声器](0-100)：</span>
             <input type="text" id="playVolumeInput">
             <button id="setPlayVolume">设置</button>
+          </div>
+          <div class="line">
+            <span>播放音频辅流音量[扬声器](0-100)：</span>
+            <input type="text" id="playAudioSlaveVolumeInput">
+            <button id="setAudioSlavePlayVolume">设置</button>
           </div>
           <div class="line">
             <span>采集音量：
@@ -672,16 +844,21 @@
               <option value="low">小流</option>
             </select>
             <br/>
-            最大编码比特率/kbps<input type="number" id="bitrateMax" value="5000" style="width: 25%" step="1000">
+            <label>
+              <input type="checkbox" id="enableBitrateMax">
+              最大编码比特率/kbps
+            </label>
+            <input type="number" id="bitrateMax" value="5000" style="width: 25%" step="1000">
             <br/>
             <label>
+              <input type="checkbox" id="enableContentHint">
               优先模式
-              <select id="contentHint">
-                <option value="">默认</option>
-                <option value="motion">流畅优先</option>
-                <option value="detail">画质优先</option>
-              </select>
             </label>
+            <select id="contentHint" style="width: 33%">
+              <option value="">默认</option>
+              <option value="motion">流畅优先</option>
+              <option value="detail">画质优先</option>
+            </select>
             <br/>
             <button id="encoderConfigBtn">设置</button>
             </div>
@@ -884,7 +1061,7 @@
 
 
         <p class="block-header" id="automask">自动打码</p>
-        <div class="part" id='automask'>
+        <div class="part hide">
           <div class="line">
             模拟打码下发:
             <br/>
@@ -1020,7 +1197,7 @@
         </div>
 
         <p class="block-header" id="watermark">水印功能</p>
-        <div class="part" id='watermarkFeature1'>
+        <div class="part hide" id='watermarkFeature1'>
           <div class="line">
             ID水印
             <input type="checkbox" id="idWatermark" checked>
@@ -1179,6 +1356,31 @@
         <p class="block-header">插件</p>
         <div class="part hide" id="nePluginContainer">
         </div>
+
+        <p class="block-header">去除事件监听</p>
+        <div class="part" id="removeListeners">
+          <label>
+            事件监听白名单<br/>
+            <select id="event-whitelist" multiple>
+              <option value="stream-added" selected>stream-added</option>
+              <option value="stream-subscribed" selected>stream-subscribed</option>
+            </select>
+          </label>
+          <button id="removeMostListeners">去除所有事件（除白名单）</button>
+        </div>
+
+        <p class="block-header">LBS服务</p>
+        <div class="part">
+          当前配置状态：<span id="lbsState"></span><br/>
+          远端配置过期时间：<span id="lbsExpireTime"></span>
+          <br/>
+          <button id="lbsRemoveLocalConfig">删除localStorage配置</button>
+          <br/>
+          <button id="lbsLoadBuiltinConfig">载入内置配置</button>
+          <button id="lbsLoadLocalConfig">载入localStorage配置</button>
+          <button id="lbsStartUpdate">载入远端配置</button>
+        </div>
+        
         
         <p class="block-header">检查视频卡顿</p>
         <div class="part">
@@ -1201,11 +1403,8 @@
           <h5>自己的画面</h5>
         </div>
         <div id="remote-container" class="video-container">
-          <h5>其他人的画面</h5>
+          <h5 id="remote-container-title" style="clear: both">其他人的画面</h5>
 
-        </div>
-        <div id="manual-container" class="video-container">
-          
         </div>
       </div>
       <div class="block3 hide" id="statsPanel">
@@ -1235,11 +1434,11 @@
 
   <script src="./js/nim/NIM_Web_NERTC.js"></script>
   <script src="./js/webrtc/config.js"></script>
-  <script src="./js/webrtc/init_event_pairing.js"></script>
+<!--  <script src="./js/webrtc/init_event_pairing.js"></script>-->
   <script src="./js/webrtc/init_customcrypt.js"></script>
   <script src="./js/webrtc/init_transceiver_info.js"></script>
   <script src="./js/webrtc/init_webrtc2.js"></script>
-
+  <script src="./js//lib/wasmFeatureDetect.js"></script>
 </body>
 
 </html>

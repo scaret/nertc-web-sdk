@@ -925,7 +925,7 @@ declare interface Client{
    * `accessDenied` 事件表示获取设备权限被拒绝。
    */
   on(event: "accessDenied", callback: (
-    mediaType: "audio"|"video"
+    mediaType: "audio"|"video"|"screen"
   ) => void): void;
 
   /**
@@ -947,6 +947,20 @@ declare interface Client{
    */
   on(event: "beOccupied", callback: (
     mediaType: "audio"|"video"
+  ) => void): void;
+
+  /**
+   * `audioVideoBanned` 事件表示音频或视频被服务器禁言
+   * * state: true 表示被服务器禁言，false 表示服务器解禁
+   * * duration: 服务器禁言事件，单位为秒
+   */
+   on(event: "audioVideoBanned", callback: (
+    evt: {
+      uid: number,
+      mediaType: "audio"|"video",
+      state: boolean,
+      duration?:number
+    },
   ) => void): void;
 
   /**

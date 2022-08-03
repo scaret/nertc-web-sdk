@@ -2,11 +2,27 @@ import {MediaHelper} from "./media";
 import {PreProcessingConfig, PreProcessingHistoryInfo} from "../types";
 import {emptyStreamWith} from "../util/gum";
 import {getRTCTimer} from "../util/RTCTimer";
+import {RTCCanvas} from "../util/rtcUtil/rtcCanvas";
 
-export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: "video"|"screen" = "video", fps?: number){
+export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: "video"|"screen", fps?: number){
   if (!fps){
     fps = mediaHelper[mediaType].captureConfig.high.frameRate
   }
+
+  let videoTrack:MediaStreamTrack|null;
+  let oldTrackLow: MediaStreamTrack|null;
+  if (mediaType === "video"){
+    videoTrack = mediaHelper.video.cameraTrack || mediaHelper.video.videoSource;
+    oldTrackLow = mediaHelper.video.videoTrackLow
+  }else{
+    videoTrack = mediaHelper.screen.screenVideoTrack || mediaHelper.screen.screenVideoSource;
+    oldTrackLow = mediaHelper.screen.screenVideoTrackLow
+  }
+  if(!videoTrack){
+    mediaHelper.logger.warn(`enablePreProcessing：当前没有视频输入 ${mediaType}`)
+    return
+  }
+  
   let preProcessing = mediaHelper[mediaType].preProcessing
   
   // 1.初始化预处理环境
@@ -14,16 +30,16 @@ export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: 
     mediaHelper.logger.log(`enablePreProcessing:初始化 mediaType ${mediaType}`)
     const videoElem = document.createElement("video")
     // document.body.appendChild(videoElem)
-    const canvasElem = document.createElement("canvas")
-    const canvasCtx = canvasElem.getContext("2d")
+    let rtcCanvas = new RTCCanvas('canvas')
+    let canvasElem = rtcCanvas._canvas
+    let canvasCtx = rtcCanvas._ctx
     if (!canvasCtx){
       throw new Error("无法创建canvasCtx 2d")
     }
     // @ts-ignore
     const canvasStream:MediaStream = canvasElem.captureStream()
     videoElem.onresize = ()=>{
-      canvasElem.width = videoElem.videoWidth
-      canvasElem.height = videoElem.videoHeight
+      rtcCanvas.setSize(videoElem.videoWidth, videoElem.videoHeight)
       videoElem.play()
     }
     const canvasTrack = canvasStream.getVideoTracks()[0]
@@ -32,6 +48,7 @@ export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: 
       canvasCtx,
       videoTrack: null,
       videoElem,
+      //@ts-ignore
       canvasElem,
       handlers: [
         {
@@ -57,31 +74,25 @@ export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: 
     }
     mediaHelper[mediaType].preProcessing = preProcessing
   }
+  if(!preProcessing){
+    return;
+  }
   
   // 2. 为防止之前曾经调用过enablePreProcessing，须重新连接一遍
-  let videoTrack:MediaStreamTrack|null;
-  let oldTrackLow: MediaStreamTrack|null;
   if (mediaType === "video"){
-    videoTrack = mediaHelper.video.cameraTrack || mediaHelper.video.videoSource;
-    oldTrackLow = mediaHelper.video.videoTrackLow
     emptyStreamWith(mediaHelper.video.videoStream, preProcessing.canvasTrack)
   }else{
-    videoTrack = mediaHelper.screen.screenVideoTrack || mediaHelper.screen.screenVideoSource;
-    oldTrackLow = mediaHelper.video.videoTrackLow
     emptyStreamWith(mediaHelper.screen.screenVideoStream, preProcessing.canvasTrack)
   }
-  if (!videoTrack){
-    mediaHelper.logger.warn(`enablePreProcessing：当前没有视频输入 ${mediaType}`)
-    preProcessing.videoElem.srcObject = new MediaStream([])
-  }else{
-    preProcessing.videoElem.srcObject = new MediaStream([videoTrack])
-  }
+  preProcessing.videoElem.srcObject = new MediaStream([videoTrack])
   preProcessing.videoTrack = videoTrack
 
   // 3. 处理上行发送
   let sender, senderLow
   if (!mediaHelper.stream.isRemote){
+    //@ts-ignore
     sender = mediaHelper.stream.getSender(mediaType, "high")
+    //@ts-ignore
     senderLow = mediaHelper.stream.getSender(mediaType, "low")
   }
   if (sender){
@@ -153,6 +164,11 @@ export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: 
   }
   preProcessing.timer = getRTCTimer().setInterval(drawFrame, interval)
   mediaHelper[mediaType].preProcessingEnabled = true
+  // 添加该事件，用以解决与美颜的冲突问题
+  mediaHelper.emit('preProcessChange', {
+    mediaType,
+    isOn: true
+  });
 }
 
 // 当没有前处理勾子时，前处理可关闭
@@ -203,7 +219,9 @@ export async function disablePreProcessing(mediaHelper: MediaHelper, mediaType: 
   // 3. 处理上行发送
   let sender, senderLow
   if (!mediaHelper.stream.isRemote){
+    //@ts-ignore
     sender = mediaHelper.stream.getSender(mediaType, "high")
+    //@ts-ignore
     senderLow = mediaHelper.stream.getSender(mediaType, "low")
   }
   if (sender){
@@ -231,6 +249,10 @@ export async function disablePreProcessing(mediaHelper: MediaHelper, mediaType: 
   if (!keepFlag){
     mediaHelper[mediaType].preProcessingEnabled = false
   }
+  mediaHelper.emit('preProcessChange', {
+    mediaType,
+    isOn: false
+  });
 }
 
 export function preProcessingSyncState(mediaHelper: MediaHelper, mediaType: "video"|"screen", config: PreProcessingConfig){

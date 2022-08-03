@@ -94,7 +94,7 @@ const bindEvents = ()=>{
     evt.stream.play(remote.dom.children(`.remote-${evt.mediaType}-container`)[0])
   })
 
-  rtc.client.on("stream-unsubscribed", (evt)=>{
+  rtc.client.on("@stream-unsubscribed", (evt)=>{
     const uid = evt.stream.streamID;
     let remote = rtc.remotes[uid]
     if (remote){

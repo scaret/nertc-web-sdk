@@ -14,8 +14,8 @@ import log, {loglevels} from '../netcall-G2/util/log/logger';
 import RtcError from '../netcall-G2/util/error/rtcError';
 import ErrorCode from '../netcall-G2/util/error/errorCode';
 import {getParameters} from "../netcall-G2/module/parameters";
-import { isBrowserSupported } from '../netcall-G2/util/rtcUtil/rtcSupport'
 import {pluginManager} from "../netcall-G2/api/pluginManager";
+import {checkSystemRequirements} from "../netcall-G2/util/checkSystemRequirements";
 
 /**
  * {@link NERTC} 
@@ -256,27 +256,7 @@ getSpeakers(requestPerm: boolean = false) {
  * @memberOf NERTC#
  * 
  */
-checkSystemRequirements() {
-  let PC = window.RTCPeerConnection || (window as any).mozRTCPeerConnection || (window as any).webkitRTCPeerConnection;
-  if (!PC){
-    console.warn(`checkSystemRequirements: 没有 RTCPeerConnection 对象。`)
-    return false
-  }
-  let getUserMedia = navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
-  if (!getUserMedia){
-    console.warn(`checkSystemRequirements: 没有 getUserMedia 方法。请检查https是否启用。`)
-    return false
-  }
-  if (!window.WebSocket){
-    console.warn(`checkSystemRequirements: 没有 WebSocket 对象。`)
-    return false
-  }
-  if (!isBrowserSupported()){
-    console.warn(`checkSystemRequirements: 不支持的浏览器。当前的 UserAgent为 ${navigator.userAgent}`)
-    return false
-  }
-  return true
-},
+checkSystemRequirements,
 /**
  * 获取 SDK 对当前浏览器支持的编解码格式。
  * @function getSupportedCodec

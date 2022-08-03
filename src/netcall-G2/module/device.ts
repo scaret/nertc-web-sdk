@@ -1,9 +1,11 @@
-import { EventEmitter } from "eventemitter3";
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
 import {ILogger, Timer} from "../types";
 import {Logger} from "../util/webrtcLogger";
 import {getParameters} from "./parameters";
+import {RTCEventEmitter} from "../util/rtcUtil/RTCEventEmitter";
+import {alerter} from "./alerter";
+import {compatAudioInputList} from "./compatAudioInputList";
 
 export interface DeviceInfo {
   deviceId: string;
@@ -11,7 +13,7 @@ export interface DeviceInfo {
   groupId?: string;
 }
 
-class DeviceManager extends EventEmitter {
+class DeviceManager extends RTCEventEmitter {
   private deviceChangeDetectionTimer: Timer|null = null;
   public deviceInited = false;
   public hasPerm: {
@@ -25,8 +27,13 @@ class DeviceManager extends EventEmitter {
     audioOut: DeviceInfo[],
   } = {audioIn: [], video: [], audioOut: []};
   private logger: ILogger;
+  private compatAudioInputList = compatAudioInputList
   private handleDeviceChange: ()=>any
-  private userGestureUI: HTMLElement|null = null
+  /**
+   * onUserGestureNeeded 是一个提供给客户实现的属性。
+   * 客户应该给这个属性赋值一个函数，在这个函数内调用Device.emit(`user-gesture-fired`)
+   * SDK默认提供的实现会弹出一个黄色的框
+   */
   public onUserGestureNeeded: ((e: Error)=>any)|null = null
   
   constructor() {
@@ -39,6 +46,9 @@ class DeviceManager extends EventEmitter {
     });
     this.handleDeviceChange = this.detectDeviceChange.bind(this);
     this.onUserGestureNeeded = this.defaultHandleUserGestureNeeded.bind(this)
+    alerter.addListener('@user-gesture-fired', ()=>{
+      this.safeEmit('user-gesture-fired')
+    })
   }
   async getDevices (options: {
     audioinput?: boolean,
@@ -101,7 +111,8 @@ class DeviceManager extends EventEmitter {
         }
         result.video.push(deviceInfo)
       } else if (options.audioinput && device.kind === 'audioinput') {
-        let deviceInfo:DeviceInfo = {
+        let deviceInfo:DeviceInfo
+        deviceInfo = {
           deviceId: device.deviceId,
           label: device.label || (options.noFillLabel ? device.label : 'microphone ' + (result.audioIn.length + 1)),
         }
@@ -342,27 +353,24 @@ class DeviceManager extends EventEmitter {
     this.hasPerm.video = false;
     this.hasPerm.audioOut = false;
   }
+  
+  enableCompatMode(){
+    this.logger.log(`开启兼容模式`)
+    compatAudioInputList.enabled = true
+    this.handleDeviceChange()
+  }
+  disableCompatMode(){
+    this.logger.log(`关闭兼容模式。`)
+    compatAudioInputList.enabled = false
+    this.handleDeviceChange()
+  }
 
   defaultHandleUserGestureNeeded(e: {name: string, message: string}){
-    if (!this.userGestureUI){
-      this.userGestureUI = document.createElement("div")
-      this.userGestureUI.style.fontSize = "20px";
-      this.userGestureUI.style.position = "fixed";
-      this.userGestureUI.style.background = "yellow";
-      this.userGestureUI.style.margin = "auto";
-      this.userGestureUI.style.width = "100%";
-      this.userGestureUI.style.zIndex = "9999";
-      this.userGestureUI.style.top = "0";
-      this.userGestureUI.onclick = ()=>{
-        if (this.userGestureUI){
-          this.userGestureUI.parentNode?.removeChild(this.userGestureUI)
-        }
-        this.emit("user-gesture-fired")
-      }
-    }
-    this.userGestureUI.style.display = "block";
-    this.userGestureUI.innerHTML = `由于浏览器限制，该操作需手势触发。<br/>点击此处以继续<br/>详细信息：${e.name}<br/>${e.message}`
-    document.body.appendChild(this.userGestureUI)
+    const innerHTML = `由于浏览器限制，该操作需手势触发。`
+    + `<br/>${e.name}<br/>${e.message}`
+    + `<br/>点击此处以继续`
+    alerter.alert(innerHTML)
+    this.logger.warn(`为避免看到这个消息，您应该实现 Device.onUserGestureNeeded 方法，引导用户作出手势，并触发 Device.on("user-gesture-fired")事件。`)
   }
 
   clean() {

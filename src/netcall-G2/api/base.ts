@@ -25,12 +25,14 @@ import {Record} from '../module/record'
 import {Client as ICLient} from "../types"
 import logger, {loglevels} from "../util/log/logger";
 import  md5 = require('md5');
+import {RTCEventEmitter} from "../util/rtcUtil/RTCEventEmitter";
+import {LBSManager} from "../module/LBSManager";
 let clientCnt = 0;
 
 /**
  * 基础框架
  */
-class Base extends EventEmitter {
+class Base extends RTCEventEmitter {
   public _params: {
     mode: "rtc" | "live";
     appkey: string;
@@ -58,6 +60,7 @@ class Base extends EventEmitter {
     this.clientId = clientCnt++;
     // @ts-ignore typescript成员初始化
     this.adapterRef = {// adapter对象内部成员与方法挂载的引用
+      datareportCache: [],
       channelInfo: {
         sessionConfig: {}
       },
@@ -102,8 +105,9 @@ class Base extends EventEmitter {
     this._reset();
     this.adapterRef.encryption = new Encryption(this.adapterRef)
 
-    //@ts-ignore
-    window.debugG2 = options.debug ? true : false
+    if (options.debug){
+      getParameters().debugG2 = true
+    }
     this.adapterRef.testConf = {}; //内部测试配置
     this.sdkRef = options.ref;
   }
@@ -111,6 +115,11 @@ class Base extends EventEmitter {
   _reset() {
     this.sdkRef = null; // SDK对象的this指针
     this.adapterRef = {// adapter对象内部成员与方法挂载的引用
+      datareportCache: [],
+      audioAsl: {
+        enabled: "unknown",
+        aslActiveNum: -1,
+      },
       channelInfo: {
         sessionConfig: {}
       },
@@ -135,6 +144,9 @@ class Base extends EventEmitter {
     this.adapterRef.encryption = new Encryption(this.adapterRef);
     
     this._resetState(); // 内部状态对象
+    
+    this.adapterRef.lbsManager = new LBSManager(this as unknown as ICLient),
+    
     this._destroyModule();
   }
 
@@ -271,9 +283,11 @@ class Base extends EventEmitter {
         UserCount: 0
       },
       localAudioStats: [],
+      localAudioSlaveStats: [],
       localVideoStats: [],
       localScreenStats: [],
       remoteAudioStats: {},
+      remoteAudioSlaveStats: {},
       remoteVideoStats: {},
       remoteScreenStats: {},
     })
@@ -406,7 +420,7 @@ class Base extends EventEmitter {
     this.logger.log(`${uid}离开房间`);
     const remotStream = this.adapterRef.remoteStreamMap[uid];
     if (remotStream?.active) {
-      const mediaTypeList:MediaTypeShort[] = ["audio", "video", "screen"]
+      const mediaTypeList:MediaTypeShort[] = ["audio", "video", "screen", "audioSlave"]
       for (let mediaType of mediaTypeList){
         if (remotStream.pubStatus[mediaType].producerId){
           this.adapterRef.instance.safeEmit('stream-removed', {stream: remotStream, 'mediaType': mediaType, reason: "onPeerLeave"})
@@ -416,6 +430,7 @@ class Base extends EventEmitter {
       delete this.adapterRef.remoteStreamMap[uid];
       delete this.adapterRef.memberMap[uid];
       delete this.adapterRef.remoteAudioStats[uid];
+      delete this.adapterRef.remoteAudioSlaveStats[uid];
       delete this.adapterRef.remoteVideoStats[uid];
       delete this.adapterRef.remoteScreenStats[uid];
       for (let mediaType of mediaTypeList){
@@ -459,7 +474,7 @@ class Base extends EventEmitter {
     const sessionDuration =
       this.adapterRef.state.endSessionTime -
       this.adapterRef.state.startSessionTime;
-    this.emit('sessionDuration', sessionDuration);
+    this.adapterRef.instance.safeEmit('@sessionDuration', sessionDuration);
     this.adapterRef.state.startSessionTime = 0;
     this.adapterRef.state.endSessionTime = 0;
   }
@@ -478,7 +493,7 @@ class Base extends EventEmitter {
         message: 'media server error 3'
       })
     }
-    this.emit('pairing-reBuildRecvTransport-start');
+    this.adapterRef.instance.safeEmit('@pairing-reBuildRecvTransport-start');
     if (this.adapterRef._mediasoup._recvTransport) {
       this.adapterRef._mediasoup._recvTransport.close();
       this.adapterRef._mediasoup.getIceStatus("recv")
@@ -505,13 +520,13 @@ class Base extends EventEmitter {
       } catch (e) {
         this.logger.error('重连逻辑订阅 error: ', e, e.name, e.message)
         hasError = true
-        this.emit('pairing-reBuildRecvTransport-error');
+        this.adapterRef.instance.safeEmit('@pairing-reBuildRecvTransport-error');
         break
       }
       this.logger.log('重连逻辑订阅 over: ', stream.stringStreamID)
     }
     if(!hasError){
-      this.emit('pairing-reBuildRecvTransport-success');
+      this.adapterRef.instance.safeEmit('@pairing-reBuildRecvTransport-success');
     }
   }
 
@@ -590,14 +605,22 @@ class Base extends EventEmitter {
       cid: '' + this.adapterRef.channelInfo.cid,
       time: Date.now()
     }, value))
-    datareport.send()
+    if (this.adapterRef.channelInfo.cid && this.adapterRef.channelInfo.uid){
+      datareport.send()
+    }else{
+      // 没有cid/uid不要上报
+      this.adapterRef.datareportCache.push({func, datareport})
+      if (this.adapterRef.datareportCache.length > 20){
+        this.adapterRef.datareportCache.shift()
+      }
+    }
   }
 
   /*** 用户成员uid和ssrc对应的list ***/
   // 不支持 firefox
   getUidAndKindBySsrc(ssrc:number) {
     // 发送端
-    const mediaTypeList:MediaTypeShort[] = ["audio", "video", "screen"]
+    const mediaTypeList:MediaTypeShort[] = ["audio", "video", "screen", "audioSlave"]
     const streamTypeList: ("high"|"low")[] = ["high", "low"]
     for (let mediaType of mediaTypeList){
       for (let streamType of streamTypeList){
@@ -614,6 +637,8 @@ class Base extends EventEmitter {
     for (let i in this.adapterRef.uid2SscrList) {
       if(this.adapterRef.uid2SscrList[i].audio.ssrc == ssrc){
         return {uid: i, kind: 'audio', streamType: "high"}
+      } else if(this.adapterRef.uid2SscrList[i].audioSlave.ssrc == ssrc){
+        return {uid: i, kind: 'audioSlave', streamType: "high"}
       } else if(this.adapterRef.uid2SscrList[i].video && this.adapterRef.uid2SscrList[i].video.ssrc == ssrc){
         return {uid: i, kind: 'video', streamType: "high"}
       } else if(this.adapterRef.uid2SscrList[i].screen && this.adapterRef.uid2SscrList[i].screen.ssrc == ssrc){
@@ -631,6 +656,7 @@ class Base extends EventEmitter {
     if (!this.adapterRef.uid2SscrList[uid]) {
       this.adapterRef.uid2SscrList[uid] = {
         audio: {ssrc: 0},
+        audioSlave: {ssrc: 0},
         video: {ssrc: 0},
         screen: {ssrc: 0},
       };

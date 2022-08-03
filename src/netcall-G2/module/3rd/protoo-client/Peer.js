@@ -1,6 +1,7 @@
 const Logger = require('./Logger');
 const EnhancedEventEmitter = require('./EnhancedEventEmitter');
 const Message = require('./Message');
+const {getParameters} = require("../../parameters");
 
 const logger = new Logger('Peer');
 
@@ -151,7 +152,7 @@ class Peer extends EnhancedEventEmitter
 
 		return new Promise((pResolve, pReject) =>
 		{
-			const timeout = 6 * 1000; /*15000 * (15 + (0.1 * this._sents.size));*/
+			const timeout = getParameters().protooMessageTimeout; /*15000 * (15 + (0.1 * this._sents.size));*/
 			const sent =
 			{
 				id      : request.id,
@@ -183,17 +184,17 @@ class Peer extends EnhancedEventEmitter
 				}, timeout),
 				close : () =>
 				{
-					console.error('主动关闭了 sent: ', sent)
-					clearTimeout(sent.timer);
-					console.log(`向edge的 ${sent.method} 请求, id ${sent.id} 被取消：连接 #${this.id} 已被关闭。连接建立时间：${this._data.openTs - this._data.createTs}ms, 请求时间：${Date.now() - sent.startTs}ms`)
-          return pResolve({})
+					// //this._logger.debug('主动关闭了 sent: ', sent)
+					// clearTimeout(sent.timer);
+					// this._logger.debug(`向edge的 ${sent.method} 请求, id ${sent.id} 被取消：连接 #${this.id} 已被关闭。连接建立时间：${this._data.openTs - this._data.createTs}ms, 请求时间：${Date.now() - sent.startTs}ms`)
+          // return pResolve({errMsg: 'peer closed'})
 
-          /*let err = new Error();
+          let err = new Error();
           err.name = 'peer closed'
           if (sent.method) {
             err.message = `向edge的 ${sent.method} 请求被取消：连接 #${this.id} 已被关闭。连接建立时间：${this._data.openTs - this._data.createTs}ms, 请求时间：${Date.now() - sent.startTs}ms`
           }
-          pReject(err);*/
+          pReject(err);
 				}
 			};
 
@@ -353,7 +354,7 @@ class Peer extends EnhancedEventEmitter
 		if (!sent)
 		{
 			logger.error(
-				'received response does not match any sent request', response.id, response);
+				'received response does not match any sent request', response.id, JSON.stringify(response));
 
 			return;
 		}

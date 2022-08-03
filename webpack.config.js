@@ -1,5 +1,6 @@
 const env = require('./build/env')
 const git = require('./build/git')
+const CopyPlugin = require('copy-webpack-plugin')
 
 if (env.isProduction() && git.hasChange()) {
   // throw new Error('please commit all changes')
@@ -38,6 +39,19 @@ const genFileName = (type = '', tagversion = '') => {
     : `NIM_Web_[name]${type}_v${tagversion}${suffix}.js`
 }
 
+const getWasmFileName = (type = '', tagversion = '') => {
+  if (type !== '') {
+    type = '_' + type
+  } 
+  if (tagversion == '') {
+    tagversion = version
+  }
+
+  return env.isDevelopment()
+    ? `NIM_Web_[name]${type}.wasm`
+    : `NIM_Web_[name]${type}_v${tagversion}${suffix}.wasm`
+}
+
 let config = require('./webpack.config.base')({})
 
 config = merge(config, {
@@ -54,7 +68,7 @@ config = merge(config, {
   module: {
     rules: [
       {
-        test: /netcall-G2\/Config\/index\.ts$/,
+        test: /netcall-G2[\/\\]Config[\/\\]index\.ts$/,
         loader: 'string-replace-loader',
         options: {
           multiple: [
@@ -72,6 +86,10 @@ config = merge(config, {
             },
           ]
         }
+      },
+      {
+        test: /netcall-G2[\/\\]module[\/\\]blobs[\/\\]raw[\/\\].*\.js$/,
+        use: 'raw-loader'
       },
       {
         test: /\.tsx?$/,
@@ -121,7 +139,9 @@ if (env.isDevelopment()) {
 // 设置webrtcG2相关的配置
 let configWebrtcG2 = merge(config, {
   entry: {
-    NERTC: './src/entry/netcall-webrtc2'
+    NERTC: './src/entry/netcall-webrtc2',
+    VirtualBackground: './src/entry/virtual-background',
+    AdvancedBeauty: './src/entry/advanced-beauty'
   },
   output: {
     devtoolNamespace: 'nertc',
@@ -141,6 +161,10 @@ let configWebrtcG2 = merge(config, {
     new webpack.BannerPlugin({
       banner: `NeRTC ${webrtcG2Version}|BUILD ${git.describe()} ${process.env.NODE_ENV}`
     }),
+    new CopyPlugin([{ 
+      from: './src/**/*.wasm',
+      to: path.join(cwd, './dist/lib/', webrtcG2Version, nodeEnv, '/wasm/') + getWasmFileName('', webrtcG2Version),
+    }]),
   ],
   resolve: {
     alias: {

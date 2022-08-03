@@ -6,14 +6,16 @@ import {
 import RtcError from '../util/error/rtcError';
 import ErrorCode  from '../util/error/errorCode';
 import {getParameters} from "./parameters";
-import {getDomInfo} from "../util/util";
+import {getDomInfo} from "../util/rtcUtil/utils";
 import {LocalStream} from "../api/localStream";
 import {RemoteStream} from "../api/remoteStream";
 import {CanvasWatermarkControl, createCanvasWatermarkControl} from "./watermark/CanvasWatermarkControl";
 import {createEncoderWatermarkControl, EncoderWatermarkControl} from "./watermark/EncoderWatermarkControl";
+import {RTCCanvas} from "../util/rtcUtil/rtcCanvas";
 
 class Play extends EventEmitter {
   private volume:number | null;
+  private audioSlaveVolume:number | null;
   private index:number;
   private audioSinkId:string;
   private videoRenderMode:RenderMode;
@@ -24,6 +26,7 @@ class Play extends EventEmitter {
   public videoDom: HTMLVideoElement | null;
   public screenDom: HTMLVideoElement | null;
   public audioDom: HTMLAudioElement | null;
+  public audioSlaveDom: HTMLAudioElement | null;
   public videoContainerDom: HTMLElement | null;
   public screenContainerDom: HTMLElement | null;
   public videoView:HTMLElement | null;
@@ -58,6 +61,10 @@ class Play extends EventEmitter {
       if (this.audioDom?.paused){
         tag += " audio_paused"
       }
+
+      if (this.audioSlaveDom?.paused){
+        tag += " audioSlave_paused"
+      }
       
       if (this.stream._play !== this){
         tag += " DETACHED"
@@ -67,11 +74,13 @@ class Play extends EventEmitter {
     this.videoDom = null;
     this.screenDom = null;
     this.audioDom = null;
+    this.audioSlaveDom = null;
     this.videoContainerDom = null;
     this.screenContainerDom = null;
     this.videoView = null;
     this.screenView = null;
     this.volume = null;
+    this.audioSlaveVolume = null;
     this.index = 0;
     this.videoRenderMode = {
       width: 0,
@@ -97,6 +106,10 @@ class Play extends EventEmitter {
     this.autoPlayType = 0;
   }
 
+  get getVideoDom() {
+    return this.videoContainerDom;
+  }
+
   _reset() {
     this.videoDom = null
     this.screenDom = null
@@ -105,6 +118,7 @@ class Play extends EventEmitter {
     this.videoView = null
     this.screenView = null
     this.audioDom = null
+    this.audioSlaveDom = null
     this.volume = null
     this.index = 0
     this.videoRenderMode = { // 外部存在开启流之后，再设置画面大小，如果先预设一个大小的话，会导致画面跳动
@@ -247,6 +261,11 @@ class Play extends EventEmitter {
       this.logger.log("侦测到视频点击，尝试恢复音频播放");
       this.audioDom.play()
     }
+
+    if (this.audioSlaveDom && this.audioSlaveDom.paused){
+      this.logger.log("侦测到视频点击，尝试恢复音频辅流播放");
+      this.audioSlaveDom.play()
+    }
   }
   
   handleVideoScreenPlay(){
@@ -364,12 +383,16 @@ class Play extends EventEmitter {
   async resume(){
     const mediaIsPaused = {
       audio: this.audioDom && this.audioDom.paused,
+      audioSlave: this.audioSlaveDom && this.audioSlaveDom.paused,
       video: this.videoDom && this.videoDom.paused,
       screen: this.screenDom && this.screenDom.paused,
     };
     const promises = [];
     if (this.audioDom && this.audioDom.paused){
       promises.push(this.audioDom.play())
+    }
+    if (this.audioSlaveDom && this.audioSlaveDom.paused){
+      promises.push(this.audioSlaveDom.play())
     }
     if (this.videoDom && this.videoDom.paused){
       promises.push(this.videoDom.play())
@@ -391,6 +414,9 @@ class Play extends EventEmitter {
     }
     if(mediaIsPaused.audio){
       this.logger.log(`恢复播放音频${this.audioDom && !this.audioDom.paused ? "成功": "失败"}`)
+    }
+    if(mediaIsPaused.audioSlave){
+      this.logger.log(`恢复播放音辅流${this.audioSlaveDom && !this.audioSlaveDom.paused ? "成功": "失败"}`)
     }
     if(mediaIsPaused.video){
       this.logger.log(`恢复播放视频${this.videoDom && !this.videoDom.paused ? "成功": "失败"}`)
@@ -446,9 +472,62 @@ class Play extends EventEmitter {
     }
   }
 
+  async playAudioSlaveStream(stream:MediaStream, ismuted?:boolean) {
+    if(!stream) return
+    if (!this.audioSlaveDom) {
+      this.audioSlaveDom = document.createElement('audio')
+    }
+    if(!ismuted){
+      this.audioSlaveDom.muted = false;
+    }else {
+      this.audioSlaveDom.muted = true;
+    }
+    
+    this.audioSlaveDom.srcObject = stream
+    if (this.audioSinkId && stream.getAudioTracks().length) {
+      try {
+        this.logger.log(`音频辅流尝试使用输出设备`, this.audioSinkId);
+        await (this.audioDom as any).setSinkId(this.audioSinkId);
+        this.logger.log(`音频辅流使用输出设备成功`, this.audioSinkId);
+      } catch (e) {
+        this.logger.error('音频辅流输出设备切换失败', e.name, e.message, e);
+      }
+    }
+    if(!stream.active) return
+    const isPlaying = await this.isPlayAudioSlaveStream()
+    if (isPlaying) {
+      this.logger.log(`音频辅流播放正常`)
+    }
+    try {
+      this.audioSlaveDom.muted = false;
+      await this.audioSlaveDom.play()
+      this.logger.log(`播放音频完成，当前播放状态:`, this.audioSlaveDom && this.audioSlaveDom.played && this.audioSlaveDom.played.length)
+    } catch (error) {
+      this.logger.warn('播放音频出现问题: ', error.name, error.message, error)
+
+      if(error.name === 'notAllowedError' || error.name === 'NotAllowedError') { // 兼容临时版本客户
+        this.autoPlayType = 1;
+        throw new RtcError({
+          code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
+          message: error.toString(),
+          url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082'
+        })
+        
+      }
+    }
+  }
+
   async stopPlayAudioStream() {
     if (this.audioDom) {
       this.audioDom.muted = true
+      this.audioDom.srcObject = null
+    }
+  }
+
+  async stopPlayAudioSlaveStream() {
+    if (this.audioSlaveDom) {
+      this.audioSlaveDom.muted = true
+      this.audioSlaveDom.srcObject = null
     }
   }
 
@@ -458,7 +537,13 @@ class Play extends EventEmitter {
     this.audioDom.volume = volume / 255
   }
 
-  async isPlayAudioStream() {
+  setPlayAudioSlaveVolume(volume:number) {
+    this.audioSlaveVolume = volume
+    if (!this.audioSlaveDom) return
+    this.audioSlaveDom.volume = volume / 255
+  }
+
+  async isPlayAudioStream(musthasDom = true) {
     const getTimeRanges = async (time:number) => {
       if(time){
         await new Promise((resolve)=>{setTimeout(resolve, time)});
@@ -481,14 +566,49 @@ class Play extends EventEmitter {
     if (!firstTimeRanges) {
       return false;
     }
-    const interval = 50
-    for (let i = 0; i <3000; i += interval){
-      const secondTimeRanges = await getTimeRanges(interval)
-      if (secondTimeRanges > firstTimeRanges){
+    //this.logger.log('firstTimeRanges: ', firstTimeRanges)
+    const secondTimeRanges  = await getTimeRanges(500)
+    if (!secondTimeRanges) {
+      return false;
+    }
+    //this.logger.log('secondTimeRanges: ', secondTimeRanges)
+    return secondTimeRanges > firstTimeRanges
+  }
+
+  async isPlayAudioSlaveStream(musthasDom = true) {
+    const getTimeRanges = async (time:number) => {
+      if(time){
+        await new Promise((resolve)=>{setTimeout(resolve, time)});
+      }
+      if (!this.audioSlaveDom) {
+        return 0
+      } else {
+        let length = this.audioSlaveDom.played.length;
+        if (length >= 1) {
+          return this.audioSlaveDom.played.end(length - 1);
+        } else {
+          return 0;
+        }
+      }
+    }
+    if (!this.audioSlaveDom || !this.audioSlaveDom.srcObject) {
+      if (musthasDom) {
+        return false
+      } else {
         return true
       }
     }
-    return false
+    const firstTimeRanges  = await getTimeRanges(0)
+    if (!firstTimeRanges) {
+      return false;
+    }
+    //this.logger.log('firstTimeRanges: ', firstTimeRanges)
+    const secondTimeRanges  = await getTimeRanges(500)
+    if (!secondTimeRanges) {
+      return false;
+    }
+    //this.logger.log('secondTimeRanges: ', secondTimeRanges)
+    return secondTimeRanges > firstTimeRanges
   }
 
   async isPlayVideoStream() {
@@ -598,6 +718,14 @@ class Play extends EventEmitter {
       }).catch((e)=>{
         if (e.name === "AbortError"){
           // The play() request was interrupted by a new load request. https://goo.gl/LdLk22
+        } else if (e.name === 'NotAllowedError') {
+          this.logger.error(e.name, e.message)
+          const rtcError = new RtcError({
+            code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
+            message: e.toString(),
+            url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082'
+          })
+          this.stream.safeEmit('notAllowedError', rtcError)
         }else{
           console.error(e);
         }
@@ -646,6 +774,20 @@ class Play extends EventEmitter {
         if (this.screenDom?.paused && getParameters()["controlOnPaused"]){
           //给微信的Workaround。微信会play()执行成功但不播放
           this.showControlIfVideoPause();
+        }
+      }).catch((e)=>{
+        if (e.name === "AbortError"){
+          // The play() request was interrupted by a new load request. https://goo.gl/LdLk22
+        } else if (e.name === 'NotAllowedError') {
+          this.logger.error(e.name, e.message)
+          const rtcError = new RtcError({
+            code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
+            message: e.toString(),
+            url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082'
+          })
+          this.stream.safeEmit('notAllowedError', rtcError)
+        }else{
+          console.error(e);
         }
       })
     } catch (e) {
@@ -787,6 +929,11 @@ class Play extends EventEmitter {
       await (this.audioDom as any).setSinkId(audioSinkId);
       this.logger.log('设置通话音频输出设备成功')
     }
+
+    if (this.audioSlaveDom?.srcObject && (this.audioSlaveDom?.srcObject as MediaStream).getAudioTracks().length) {
+      await (this.audioSlaveDom as any).setSinkId(audioSinkId);
+      this.logger.log('设置通话音频辅流输出设备成功')
+    }
   }
 
   /**
@@ -796,12 +943,19 @@ class Play extends EventEmitter {
     let snapshotVideo = (!options.mediaType && this.videoDom) || options.mediaType === 'video';
     let snapshotScreen = (!options.mediaType && this.screenDom) || options.mediaType === 'screen';
 
-    let canvas = document.createElement("canvas")
-    let ctx = canvas.getContext("2d");
+    let rtcCanvas = new RTCCanvas('canvas');
+    let canvas = rtcCanvas._canvas;
+    let ctx = rtcCanvas._ctx;
     if (!ctx){
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
         message: 'no context of canvas'
+      })
+    }
+    if(!canvas){
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'no canvas'
       })
     }
 
@@ -816,12 +970,12 @@ class Play extends EventEmitter {
         })
       }
       ctx.fillRect(0, 0, this.videoDom.videoWidth, this.videoDom.videoHeight)
-      canvas.width = this.videoDom.videoWidth
-      canvas.height = this.videoDom.videoHeight
+      rtcCanvas.setSize(this.videoDom.videoWidth, this.videoDom.videoHeight)
       ctx.drawImage(this.videoDom, 0, 0, this.videoDom.videoWidth, this.videoDom.videoHeight, 0, 0, this.videoDom.videoWidth, this.videoDom.videoHeight)
       const fileUrl = await new Promise((resolve, reject)=>{
-        canvas.toBlob(blob => {
+        canvas!.toBlob(blob => {
           this.logger.log('takeSnapshot, 获取到截图的blob: ', blob)
+          //@ts-ignore
           let url = URL.createObjectURL(blob)
           this.logger.log('截图的url: ', url)
           let a = document.createElement('a')
@@ -836,6 +990,7 @@ class Play extends EventEmitter {
       })
 
       if (!snapshotScreen){
+        rtcCanvas.destroy();
         return fileUrl;
       }
 
@@ -852,12 +1007,12 @@ class Play extends EventEmitter {
         })
       }
       ctx.fillRect(0, 0, this.screenDom.videoWidth, this.screenDom.videoHeight)
-      canvas.width = this.screenDom.videoWidth
-      canvas.height = this.screenDom.videoHeight
+      rtcCanvas.setSize(this.screenDom.videoWidth, this.screenDom.videoHeight)
       ctx.drawImage(this.screenDom, 0, 0, this.screenDom.videoWidth, this.screenDom.videoHeight, 0, 0, this.screenDom.videoWidth, this.screenDom.videoHeight)
       const fileUrl = await new Promise((resolve, reject)=>{
-        canvas.toBlob(blob => {
+        canvas!.toBlob(blob => {
           this.logger.log('takeSnapshot, 获取到截图的blob: ', blob)
+          //@ts-ignore
           let url = URL.createObjectURL(blob)
           this.logger.log('截图的url: ', url)
           let a = document.createElement('a')
@@ -870,8 +1025,11 @@ class Play extends EventEmitter {
           resolve(name + '.png')
         })
       })
+      rtcCanvas.destroy();
       return fileUrl;
     }
+
+    
   }
 
   /**
@@ -880,12 +1038,19 @@ class Play extends EventEmitter {
   takeSnapshotBase64 (options:SnapshotBase64Options){
       let snapshotVideo = (!options.mediaType && this.videoDom) || options.mediaType === 'video';
       let snapshotScreen = (!options.mediaType && this.screenDom) || options.mediaType === 'screen';
-      let canvas = document.createElement("canvas")
-      let ctx = canvas.getContext("2d");
+      let rtcCanvas = new RTCCanvas('canvas');
+      let canvas = rtcCanvas._canvas;
+      let ctx = rtcCanvas._ctx;
       if (!ctx){
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
           message: 'no context of canvas'
+        })
+      }
+      if(!canvas){
+        throw new RtcError({
+          code: ErrorCode.NOT_FOUND,
+          message: 'no canvas'
         })
       }
       // video
@@ -898,11 +1063,11 @@ class Play extends EventEmitter {
           })
         }
         ctx.fillRect(0, 0, this.videoDom.videoWidth, this.videoDom.videoHeight)
-        canvas.width = this.videoDom.videoWidth
-        canvas.height = this.videoDom.videoHeight
+        rtcCanvas.setSize(this.videoDom.videoWidth, this.videoDom.videoHeight)
         ctx.drawImage(this.videoDom, 0, 0, this.videoDom.videoWidth, this.videoDom.videoHeight, 0, 0, this.videoDom.videoWidth, this.videoDom.videoHeight)
         const fileUrl = this.getBase64Image(canvas);
         if (!snapshotScreen){
+          rtcCanvas.destroy();
           return fileUrl;
         }
       }
@@ -916,10 +1081,10 @@ class Play extends EventEmitter {
           })
         }
         ctx.fillRect(0, 0, this.screenDom.videoWidth, this.screenDom.videoHeight)
-        canvas.width = this.screenDom.videoWidth
-        canvas.height = this.screenDom.videoHeight
+        rtcCanvas.setSize(this.screenDom.videoWidth, this.screenDom.videoHeight)
         ctx.drawImage(this.screenDom, 0, 0, this.screenDom.videoWidth, this.screenDom.videoHeight, 0, 0, this.screenDom.videoWidth, this.screenDom.videoHeight)
         const fileUrl = this.getBase64Image(canvas);
+        rtcCanvas.destroy();
         return fileUrl;
       }
    }

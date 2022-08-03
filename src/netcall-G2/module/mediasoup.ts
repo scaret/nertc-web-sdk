@@ -2,7 +2,9 @@ import { EventEmitter } from 'eventemitter3'
 import * as mediasoupClient from './3rd/mediasoup-client/'
 import {
   AdapterRef, ILogger,
-  MediasoupManagerOptions, MediaType, MediaTypeShort,
+  MediasoupManagerOptions,
+  MediasoupManagerInitOptions,
+  MediaType, MediaTypeShort,
   ProduceConsumeInfo,
   Timer, VideoCodecType
 } from "../types";
@@ -15,9 +17,9 @@ import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
 import {RemoteStream} from "../api/remoteStream";
 import {getParameters} from "./parameters";
-import { RtcSystem } from '../util/rtcUtil/rtcSystem'
 import {NeRTCPeerConnection} from "../interfaces/NeRTCPeerConnection";
 
+import * as env from '../util/rtcUtil/rtcEnvironment';
 
 class Mediasoup extends EventEmitter {
   private adapterRef:AdapterRef;
@@ -27,6 +29,8 @@ class Mediasoup extends EventEmitter {
   private _mediasoupDevice:Device|null = null;
   private _sendTransportIceParameters:null = null;
   private _recvTransportIceParameters:null = null;
+  private _audioSlaveProducer:Producer|null = null;
+  private _audioSlaveProducerId:string|null = null;
   public _micProducer:Producer|null = null;
   private _micProducerId:string|null = null;
   public _webcamProducer:Producer|null = null;
@@ -49,6 +53,11 @@ class Mediasoup extends EventEmitter {
       // 目前未使用low
       low: {ssrc: number, dtx: boolean}|null,
     },
+    audioSlave: {
+      high: {ssrc: number, dtx: boolean}|null,
+      // 目前未使用low
+      low: {ssrc: number, dtx: boolean}|null,
+    },
     video: {
       high: {ssrc: number, rtx: {ssrc: number}}|null,
       low: {ssrc: number, rtx: {ssrc: number}}|null,
@@ -60,6 +69,7 @@ class Mediasoup extends EventEmitter {
   } = {
     ssrcList: [],
     audio: {high: null, low: null},
+    audioSlave: {high: null, low: null},
     video: {high: null, low: null},
     screen: {high: null, low: null},
   };
@@ -155,6 +165,7 @@ class Mediasoup extends EventEmitter {
     this._sendTransportIceParameters = null
     this._recvTransportIceParameters = null
     this._micProducer = null
+    this._audioSlaveProducer = null
     this._micProducerId = null
     this._webcamProducer = null
     this._webcamProducerId = null
@@ -185,8 +196,8 @@ class Mediasoup extends EventEmitter {
     this.resetConsumeRequestStatus();
   }
 
-  async init() {
-    this.logger.log('初始化 devices、transport')
+  async init(turnParameters?: MediasoupManagerInitOptions|undefined) {
+    this.logger.warn('初始化 devices、transport: ', turnParameters)
     if (this.adapterRef._enableRts) {
       return
     }
@@ -209,10 +220,9 @@ class Mediasoup extends EventEmitter {
         })
       })
       //firefox浏览器在relay模式（存在bug）
-      if (RtcSystem.browser.ua !== 'firefox'){
+      if(!env.IS_FIREFOX){
         iceTransportPolicy = 'relay'
       }
-      
     }
     if (this.adapterRef.testConf.turnAddr) {
       iceServers.length = 0
@@ -223,13 +233,39 @@ class Mediasoup extends EventEmitter {
       })
       iceTransportPolicy = 'relay'
     }
-    if (this.adapterRef.testConf.iceServers){
+    if (this.adapterRef.testConf.iceServers) {
       iceServers = this.adapterRef.testConf.iceServers
       iceTransportPolicy = this.adapterRef.testConf.iceTransportPolicy || "relay"
     }
-    if (iceServers.length){
+    if (iceServers.length) {
       this.logger.log("iceTransportPolicy ", iceTransportPolicy, " iceServers ", JSON.stringify(iceServers))
     }
+
+    const iceServersSender = []
+    const iceServersRecv = []
+    if (turnParameters) { //服务器反馈turn server，sdk更新ice Server
+      let iceTransportPolicy:RTCIceTransportPolicy = 'all';
+      iceServersSender.push({
+        urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=udp',
+        credential: turnParameters.password,
+        username: `${turnParameters.username}#Send`
+      }, {
+        urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=tcp',
+        credential: turnParameters.password,
+        username: `${turnParameters.username}#Send`
+      })
+
+      iceServersRecv.push({
+        urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=udp',
+        credential: turnParameters.password,
+        username: `${turnParameters.username}#Recv`
+      }, {
+        urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=tcp',
+        credential: turnParameters.password,
+        username: `${turnParameters.username}#Recv`
+      })
+    }
+
     if (!this._sendTransport && this._mediasoupDevice) {
       this._sendTransport = this._mediasoupDevice.createSendTransport({
         id            : this.adapterRef.channelInfo.uid,
@@ -237,11 +273,8 @@ class Mediasoup extends EventEmitter {
         iceCandidates      : undefined,
         dtlsParameters      : undefined,
         sctpParameters      : undefined,
-        iceServers,
+        iceServers: iceServersSender.length ? iceServersSender: iceServers,
         iceTransportPolicy,
-        proprietaryConstraints   : {
-          optional: [ { googDscp: true }, { googIPv6: false } ]
-        },
         appData: {
           cid: this.adapterRef.channelInfo.cid,
           uid: this.adapterRef.channelInfo.uid,
@@ -250,6 +283,7 @@ class Mediasoup extends EventEmitter {
       })
       this.senderEncodingParameter = {
         ssrcList: [],
+        audioSlave: {high: null, low: null},
         audio: {high: null, low: null},
         video: {high: null, low: null},
         screen: {high: null, low: null},
@@ -267,11 +301,8 @@ class Mediasoup extends EventEmitter {
         iceCandidates: undefined,
         dtlsParameters: undefined,
         sctpParameters: undefined,
-        iceServers,
+        iceServers: iceServersRecv.length ? iceServersRecv: iceServers,
         iceTransportPolicy,
-        proprietaryConstraints: {
-          optional: [ { googDscp: true } ]
-        },
         appData: {
           cid: this.adapterRef.channelInfo.cid,
           uid: this.adapterRef.channelInfo.uid,
@@ -382,7 +413,7 @@ class Mediasoup extends EventEmitter {
         this.adapterRef._signalling._reconnection()
       } else {
         this.loggerSend.error('媒体上行传输通道建立失败，抛错错误')
-        this.adapterRef.instance.emit('error', 'SOCKET_ERROR')
+        this.adapterRef.instance.safeEmit('error', 'SOCKET_ERROR')
       }
     }
   }
@@ -397,19 +428,20 @@ class Mediasoup extends EventEmitter {
         this.adapterRef._signalling._reconnection()
       }else{
         this.loggerRecv.error('媒体下行传输通道建立失败，抛错错误')
-        this.adapterRef.instance.emit('error', 'SOCKET_ERROR')
+        this.adapterRef.instance.safeEmit('error', 'SOCKET_ERROR')
       }
     }
   }
 
   async _reconnectTransportConnectTimeout(){
     this.loggerRecv.error('媒体传输通道一直重连失败，主动退出房间')
-    this.adapterRef.instance.emit('error', 'MEDIA_TRANSPORT_DISCONNECT')
+    this.adapterRef.instance.safeEmit('error', 'MEDIA_TRANSPORT_DISCONNECT')
     this.adapterRef.instance.leave()
   }
 
-  async createProduce (stream:LocalStream, mediaTypeInput: "all"|"audio"|"video"|"screen") {
-    this.loggerSend.log('发布音视频: ', stream.getId(), mediaTypeInput)
+  async createProduce (stream:LocalStream, mediaTypeInput: "all"|"audio"|"audioSlave"|"video"|"screen") {
+    stream.logger.log('发布音视频: ', stream.getId(), mediaTypeInput)
+    //this._sendTransport.removeListener()
     if (!this._sendTransport){
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
@@ -432,7 +464,7 @@ class Mediasoup extends EventEmitter {
         let simulcastEnable = false;
         if (mediaTypeShort === "video" && this.adapterRef.channelInfo.videoLow){
           simulcastEnable = true
-        }else if (mediaTypeShort === "screen" && this.adapterRef.channelInfo.screenLow){
+        } else if (mediaTypeShort === "screen" && this.adapterRef.channelInfo.screenLow){
           simulcastEnable = true
         }
         const iceUfragRegLocal = offer.sdp.match(/a=ice-ufrag:([0-9a-zA-Z#=+-_\/\\\\]+)/)
@@ -449,8 +481,8 @@ class Mediasoup extends EventEmitter {
             //mediaProfile: [{'ssrc':123, 'res':"320*240", 'fps':30, 'spatialLayer':0, 'maxBitrate':1000}],
             externData    : {
               producerInfo  : {
-                mediaType   : appData.mediaType,
-                subStream  : appData.mediaType === 'screenShare',
+                mediaType   : appData.mediaType === 'audioSlave' ? 'subAudio': appData.mediaType, //信令协商的mediaType为: audio、subAudio、video、screenShare
+                subStream  : appData.mediaType === 'screenShare' || appData.mediaType === 'audioSlave',
                 simulcastEnable  : simulcastEnable,
                 spatialLayerCount : simulcastEnable ? 2 : 1,
                 mute: false, //  false
@@ -467,8 +499,8 @@ class Mediasoup extends EventEmitter {
           let encodingLow = this.senderEncodingParameter[mediaTypeShort].low;
           let mLineIndex = offer.sdp.indexOf(appData.deviceId);
           let mLineIndexLow = offer.sdp.indexOf(appData.deviceIdLow);
-          if (!encoding){
-            if (rtpParameters.encodings){
+          if (!encoding) {
+            if (rtpParameters.encodings) {
               // 2. 使用rtpParameter中的值
               encoding = rtpParameters.encodings[0];
               if (encoding && this.senderEncodingParameter.ssrcList.indexOf(encoding.ssrc) > -1){
@@ -500,10 +532,10 @@ class Mediasoup extends EventEmitter {
                 encoding = null;
               }
               // 小流
-              if (!encodingLow && appData.deviceIdLow && mLineIndexLow > -1){
+              if (!encodingLow && appData.deviceIdLow && mLineIndexLow > -1) {
                 let mLinePieceLow = offer.sdp.substring(mLineIndexLow);
                 const match = mLinePieceLow.match(/a=ssrc-group:FID (\d+) (\d+)/);
-                if (match){
+                if (match) {
                   encodingLow = {
                     ssrc: parseInt(match[1]),
                     rtx: {
@@ -511,13 +543,13 @@ class Mediasoup extends EventEmitter {
                     }
                   };
                 }
-                if (encodingLow && this.senderEncodingParameter.ssrcList.indexOf(encodingLow.ssrc) > -1){
+                if (encodingLow && this.senderEncodingParameter.ssrcList.indexOf(encodingLow.ssrc) > -1) {
                   // 已被其他占据，丢弃
                   encodingLow = null;
                 }
               }
             }
-            if (!encoding){
+            if (!encoding) {
               this.loggerSend.log('使用sdp中第一个ssrc');
               encoding = {
                 ssrc: parseInt(offer.sdp.match(/a=ssrc:(\d+)/)[1]),//历史遗留
@@ -559,13 +591,20 @@ class Mediasoup extends EventEmitter {
               maxBitrate: 1000
             });
           }
+          
+          // 去除RED http://jira.netease.com/browse/NRTCG2-16502
+          for(let codecId = producerData.rtpParameters.codecs.length -1; codecId >= 0; codecId--){
+            if (producerData.rtpParameters.codecs[codecId].mimeType === "audio/red"){
+              producerData.rtpParameters.codecs.splice(codecId, 1)
+            }
+          }
 
-          if (localDtlsParameters === undefined){
+          if (localDtlsParameters === undefined) {
             producerData.transportId = this._sendTransport.id;
           } else {
             producerData.dtlsParameters = localDtlsParameters;
           }
-          if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
+          if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
             throw new RtcError({
               code: ErrorCode.NOT_FOUND,
               message: 'No _protoo 2'
@@ -578,9 +617,12 @@ class Mediasoup extends EventEmitter {
             this._sendTransport._id = transportId;
           }
           this.loggerSend.log(`produce请求反馈结果, code: ${code}, kind: ${kind}, producerId:`, producerId)
+
           let codecInfo = {codecParam: null, codecName: null};
           if (appData.mediaType === 'audio') {
             this._micProducerId = producerId
+          } else if (appData.mediaType === 'audioSlave') {
+            this._audioSlaveProducerId = producerId
           } else if (appData.mediaType === 'video') {
             this._webcamProducerId = producerId
             //@ts-ignore
@@ -602,7 +644,7 @@ class Mediasoup extends EventEmitter {
             })
           }
           let codecOptions: ProducerCodecOptions[] = [];
-          if (appData.mediaType === "audio"){
+          if (appData.mediaType === "audio" || appData.mediaType === "audioSlave"){
             codecOptions.push(Object.assign({}, getParameters().codecOptions.audio));
           }else if (appData.mediaType === "video"){
             if (rtpParameters.encodings.length >= 2){
@@ -653,7 +695,7 @@ class Mediasoup extends EventEmitter {
       } else {
         const audioTrack = stream.mediaHelper.audio.audioStream.getAudioTracks()[0]
         if (audioTrack){
-          this.loggerSend.log('发布 audioTrack: ', audioTrack.id, audioTrack.label)
+          this.loggerSend.log('发布音频流 audioTrack: ', audioTrack.id, audioTrack.label)
           stream.pubStatus.audio.audio = true
           this._micProducer = await this._sendTransport.produce({
             track: audioTrack,
@@ -677,6 +719,32 @@ class Mediasoup extends EventEmitter {
         }
       }
     }
+
+    if (mediaTypeInput  === "audioSlave" || mediaTypeInput === "all"){
+      if (this._audioSlaveProducer) {
+        this.loggerSend.log('音频辅流已经publish，忽略')
+      } else {
+        const audioTrack = stream.mediaHelper.screenAudio.screenAudioStream.getAudioTracks()[0]
+        if (audioTrack){
+          this.loggerSend.log('发布音频辅流 audioSlaveTrack: ', audioTrack.id, audioTrack.label)
+          stream.pubStatus.audioSlave.audio = true
+          this._audioSlaveProducer = await this._sendTransport.produce({
+            track: audioTrack,
+            trackLow: null,
+            codecOptions:{
+              opusStereo: true,
+              opusDtx: true
+            },
+            appData: {
+              deviceId: audioTrack.id,
+              deviceIdLow: null,
+              mediaType: 'audioSlave',
+            }
+          });
+          this.watchProducerState(this._audioSlaveProducer, "_audioSlaveProducer");
+        }
+      }
+    }
     
     if (mediaTypeInput === "video" || mediaTypeInput === "all"){
       const mediaType = "video";
@@ -696,7 +764,7 @@ class Mediasoup extends EventEmitter {
           this.senderEncodingParameter.video.low = null
         }
         const videoTrack = stream.mediaHelper.video.videoStream.getVideoTracks()[0]
-        this.loggerSend.log('发布 videoTrack: ', videoTrack.id, videoTrack.label)
+        this.loggerSend.log('发布视频 videoTrack: ', videoTrack.id, videoTrack.label)
         stream.pubStatus.video.video = true
         //@ts-ignore
         const codecInfo = this.adapterRef.mediaCapability.getCodecSend("video", this._sendTransport.handler._sendingRtpParametersByKind["video"]);
@@ -746,7 +814,7 @@ class Mediasoup extends EventEmitter {
           this.senderEncodingParameter.screen.low = null
         }
         const screenTrack = stream.mediaHelper.screen.screenVideoStream.getVideoTracks()[0]
-        this.loggerSend.log('发布 screenTrack: ', screenTrack.id, screenTrack.label)
+        this.loggerSend.log('发布屏幕共享 screenTrack: ', screenTrack.id, screenTrack.label)
         stream.pubStatus.screen.screen = true
         //@ts-ignore
         const codecInfo = this.adapterRef.mediaCapability.getCodecSend("screen", this._sendTransport.handler._sendingRtpParametersByKind["video"]);
@@ -864,6 +932,17 @@ class Mediasoup extends EventEmitter {
         })
       }
       this.adapterRef.localStream.pubStatus.audio.audio = false
+    } else if (kind === 'audioSlave') {
+      producer = this._audioSlaveProducer
+      producerId = this._audioSlaveProducerId
+      this._audioSlaveProducer = this._audioSlaveProducerId = null
+      if (!this.adapterRef.localStream){
+        throw new RtcError({
+          code: ErrorCode.NO_LOCALSTREAM,
+          message: 'localStream not found'
+        })
+      }
+      this.adapterRef.localStream.pubStatus.audioSlave.audio = false
     } else if (kind === 'video') {
       producer = this._webcamProducer
       producerId = this._webcamProducerId
@@ -909,7 +988,7 @@ class Mediasoup extends EventEmitter {
   }
 
   async createConsumer(uid:number|string, kind:'audio'|'video',mediaType: MediaType, id:string, preferredSpatialLayer:number = 0){
-    this.adapterRef.instance.emit('pairing-createConsumer-start')
+    this.adapterRef.instance.safeEmit('@pairing-createConsumer-start')
     return new Promise((resolve, reject)=>{
       this._eventQueue.push({uid, kind, id, mediaType, preferredSpatialLayer, resolve, reject});
       if (this._eventQueue.length > 1) {
@@ -988,10 +1067,14 @@ class Mediasoup extends EventEmitter {
   async _createConsumer(info:ProduceConsumeInfo): Promise<"checkConsumerList"> {
     const {uid, kind, mediaType, id, preferredSpatialLayer = 0} = info;
     const mediaTypeShort = (mediaType === 'screenShare' ? 'screen' : mediaType);
-    this.loggerRecv.log(`开始订阅 ${uid} 的 ${mediaTypeShort} 媒体: ${id} 大小流: `, preferredSpatialLayer)
+    if (mediaTypeShort === "audio"){
+      this.loggerRecv.log(`开始订阅 ${uid} 的 ${mediaTypeShort} 媒体: ${id}`)
+    }else{
+      this.loggerRecv.log(`开始订阅 ${uid} 的 ${mediaTypeShort} 媒体: ${id} preferredSpatialLayer: ${preferredSpatialLayer} 大小流: `, preferredSpatialLayer === 1 ? "大流" : "小流")
+    }
 
     if (!id) {
-      this.adapterRef.instance.emit('pairing-createConsumer-error')
+      this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
       return this.checkConsumerList(info)
     } else if (this.unsupportedProducers[id]){
       const unsupportedProducerInfo = this.unsupportedProducers[id]
@@ -1012,7 +1095,7 @@ class Mediasoup extends EventEmitter {
     //@ts-ignore
     if (!remoteStream || !remoteStream.pubStatus[mediaTypeShort][mediaTypeShort] || !remoteStream.pubStatus[mediaTypeShort].producerId) {
       //this._eventQueue = this._eventQueue.filter((item)=>{item.uid != uid })
-      this.adapterRef.instance.emit('pairing-createConsumer-error')
+      this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
       return this.checkConsumerList(info)
     }
 
@@ -1025,7 +1108,7 @@ class Mediasoup extends EventEmitter {
 
       if (isPlaying) {
         this.loggerRecv.log('当前播放正常，直接返回')
-        this.adapterRef.instance.emit('pairing-createConsumer-skip')
+        this.adapterRef.instance.safeEmit('@pairing-createConsumer-skip')
         return this.checkConsumerList(info)
       } else if (remoteStream.pubStatus[mediaTypeShort].stopconsumerStatus !== 'start') {
         this.loggerRecv.log('先停止之前的订阅')
@@ -1049,17 +1132,17 @@ class Mediasoup extends EventEmitter {
     }
 
     let codecOptions = null;
-    if (mediaTypeShort === 'audio') {
+    if (mediaTypeShort === 'audio' || mediaTypeShort === 'audioSlave') {
       codecOptions = {
         opusStereo: 1
       }
     }
-    if (!this._mediasoupDevice || !this._mediasoupDevice.loaded){
+    if (!this._mediasoupDevice || !this._mediasoupDevice.loaded) {
       this.loggerRecv.error('createConsumer：Waiting for Transport Ready');
       await waitForEvent(this, 'transportReady', 3000);
     }
     if (!this._recvTransport) {
-      this.adapterRef.instance.emit('pairing-createConsumer-error')
+      this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
       info.resolve(null);
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
@@ -1106,6 +1189,8 @@ class Mediasoup extends EventEmitter {
       mid,
       pause: false,
       iceUfrag: iceUfragRegRemote[1],
+      // WebASL 1.0协议迷思：实际audioAslFlag对整个Transport生效。只有第一次Consume时的audioAslFlag有效，且覆盖整个Transport。Video也要带。
+      audioAslFlag: this.adapterRef.audioAsl.enabled === "yes" && getParameters().audioAslFlag,
       appData: {
         enableTcpCandidate: true
       }
@@ -1118,9 +1203,9 @@ class Mediasoup extends EventEmitter {
     })
     if (localDtlsParameters === undefined) {
       data.transportId = this._recvTransport.id;
-    }
-    else
+    } else {
       data.dtlsParameters = localDtlsParameters;
+    }
     this.loggerRecv.log(`发送consume请求, uid: ${uid}, kind: ${kind}, mediaTypeShort: ${mediaTypeShort}, producerId: ${data.producerId}, transportId: ${data.transportId}, requestId: ${data.requestId}`);
     if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
       info.resolve(null);
@@ -1130,8 +1215,24 @@ class Mediasoup extends EventEmitter {
       })
     }
     const recvPC = this._recvTransport.handler._pc
-    const consumeRes = await this.adapterRef._signalling._protoo.request('Consume', data);
-    if (id != remoteStream.pubStatus[mediaTypeShort].producerId){
+    const _protoo = this.adapterRef._signalling._protoo
+    let consumeRes:any = null
+    try{
+      consumeRes = await this.adapterRef._signalling._protoo.request('Consume', data);
+    }catch(e){
+      if (e.message === 'request timeout' && this.adapterRef._signalling._protoo === _protoo){
+        this.logger.error(`Consume消息Timeout，尝试信令重连：${e.name}/${e.message}。当前的连接状态：${this.adapterRef.connectState.curState}。原始请求：`, JSON.stringify(data))
+        this.adapterRef.channelStatus = 'connectioning'
+        this.adapterRef._signalling._reconnection()
+      }else{
+        this.logger.error(`Consume消息错误：${e.name}/${e.message}。当前的连接状态：${this.adapterRef.connectState.curState}。原始请求：`, JSON.stringify(data))
+      }
+      throw new RtcError({
+        code: ErrorCode.UNKNOWN,
+        message: e.message
+      })
+    }
+    if (id != remoteStream.pubStatus[mediaTypeShort].producerId) {
       this.loggerRecv.warn(`收到consumeRes后Producer已经更新。触发重建下行。uid: ${remoteStream.streamID} mediaType: ${mediaTypeShort} ProducerId: ${id} => ${remoteStream.pubStatus[mediaTypeShort].producerId} ，Consume结果忽略：`, consumeRes);
       this.resetConsumeRequestStatus()
       if (this._recvTransport) {
@@ -1141,7 +1242,7 @@ class Mediasoup extends EventEmitter {
       return this.checkConsumerList(info);
     }
     let { transportId, iceParameters, iceCandidates, dtlsParameters, probeSSrc, rtpParameters, producerId, consumerId, code, errMsg } = consumeRes;
-    if (code === 200){
+    if (code === 200) {
       this.loggerRecv.log(`consume反馈结果: code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
     } else if (code === 601){
       // 某些情况下的Producer换了个Transport之后是可以订阅的。这个时候需要拉黑的是Producer+Transport的组合
@@ -1157,7 +1258,7 @@ class Mediasoup extends EventEmitter {
         }
       };
       return this.checkConsumerList(info);
-    }else{
+    } else {
       this.loggerRecv.error(`consume请求失败，将Producer拉入黑名单:  uid: ${uid}, mediaType: ${mediaTypeShort}, producerId ${data.producerId} code: ${code}, errMsg: ${errMsg}`, consumeRes);
       this.unsupportedProducers[data.producerId] = {
         consumeRes: {
@@ -1176,7 +1277,6 @@ class Mediasoup extends EventEmitter {
     }
     try {
       const peerId = consumeRes.uid
-
       if (code !== 200 || !this.adapterRef.remoteStreamMap[uid]) {
         this.loggerRecv.warn('remoteStream.pubStatus: ', remoteStream.pubStatus)
         
@@ -1196,12 +1296,12 @@ class Mediasoup extends EventEmitter {
         if (remoteStream.pubStatus[mediaTypeShort].producerId && id != remoteStream.pubStatus[mediaTypeShort].producerId) {
           this.loggerRecv.log('此前的订阅已经失效，重新订阅')
           this.adapterRef.instance.doSubscribe(remoteStream).then(()=>{
-            this.adapterRef.instance.emit('pairing-createConsumer-success')
+            this.adapterRef.instance.safeEmit('@pairing-createConsumer-success')
           }).catch(()=>{
-            this.adapterRef.instance.emit('pairing-createConsumer-error')
+            this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
           })
-        }else{
-          this.adapterRef.instance.emit('pairing-createConsumer-skip')
+        } else {
+          this.adapterRef.instance.safeEmit('@pairing-createConsumer-skip')
         }
         return this.checkConsumerList(info)
 
@@ -1213,7 +1313,6 @@ class Mediasoup extends EventEmitter {
         this.adapterRef.instance.reBuildRecvTransport()
         return*/
       } 
-
       if (rtpParameters && rtpParameters.encodings && rtpParameters.encodings.length && rtpParameters.encodings[0].ssrc) {
         this.adapterRef.instance.addSsrc(uid, mediaTypeShort, rtpParameters.encodings[0].ssrc)
       }
@@ -1282,10 +1381,10 @@ class Mediasoup extends EventEmitter {
           })
         }
         remoteStream.mediaHelper.updateStream(mediaTypeShort, consumer.track)
-        this.adapterRef.instance.emit('pairing-createConsumer-success')
+        this.adapterRef.instance.safeEmit('@pairing-createConsumer-success')
         this.adapterRef.instance.safeEmit('stream-subscribed', {stream: remoteStream, 'mediaType': mediaTypeShort})
       } else {
-        this.adapterRef.instance.emit('pairing-createConsumer-error')
+        this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
         this.loggerRecv.log('该次consume状态错误： ', JSON.stringify(remoteStream['pubStatus'], null, ''))
       }
       return this.checkConsumerList(info)
@@ -1329,19 +1428,19 @@ class Mediasoup extends EventEmitter {
     }
 
     if (!id) {
-      this.adapterRef.instance.emit('pairing-createConsumer-error')
+      this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
       return this.checkConsumerList(info)
     }
     let remoteStream = this.adapterRef.remoteStreamMap[uid]
     //@ts-ignore
     if (!remoteStream || !remoteStream.pubStatus[mediaTypeShort][mediaTypeShort] || !remoteStream.pubStatus[mediaTypeShort].producerId) {
       //this._eventQueue = this._eventQueue.filter((item)=>{item.uid != uid })
-      this.adapterRef.instance.emit('pairing-createConsumer-error')
+      this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
       return this.checkConsumerList(info)
     }
     if (remoteStream['pubStatus'][mediaTypeShort]['consumerId']) {
       this.loggerRecv.log('已经订阅过，返回')
-      this.adapterRef.instance.emit('pairing-createConsumer-skip')
+      this.adapterRef.instance.safeEmit('@pairing-createConsumer-skip')
       return this.checkConsumerList(info)
     }
     const data = {
@@ -1398,10 +1497,10 @@ class Mediasoup extends EventEmitter {
         remoteStream['pubStatus'][mediaTypeShort][mediaTypeShort] = true
         remoteStream['pubStatus'][mediaTypeShort]['consumerId'] = consumerId
         remoteStream['pubStatus'][mediaTypeShort]['producerId'] = producerId
-        this.adapterRef.instance.emit('pairing-createConsumer-success')
+        this.adapterRef.instance.safeEmit('@pairing-createConsumer-success')
       } else {
         this.loggerRecv.log('该次consume状态错误： ', JSON.stringify(remoteStream['pubStatus'], null, ''))
-        this.adapterRef.instance.emit('pairing-createConsumer-error')
+        this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
       }
       return this.checkConsumerList(info)
     } catch (error) {
@@ -1431,7 +1530,7 @@ class Mediasoup extends EventEmitter {
           })
         await consumer.close();
         if (remoteStream && mediaType){
-          this.adapterRef.instance.safeEmit('stream-unsubscribed', {stream: remoteStream, mediaType})
+          this.adapterRef.instance.safeEmit('@stream-unsubscribed', {stream: remoteStream, mediaType})
         }
       }catch(e){
         this.logger.error("CloseConsumer失败", e.name, e.message, e)
@@ -1462,7 +1561,6 @@ class Mediasoup extends EventEmitter {
       this.logger.error('closeTransport() | failed:', error.name, error.message, error);
     }
   }
-
 
   async muteAudio(){
     this.loggerSend.log('mute音频')
@@ -1531,6 +1629,83 @@ class Mediasoup extends EventEmitter {
             uid: muteUid,
             data: {
               producerId: this._micProducer.id,
+              mute: false 
+            }
+          } 
+        });
+    } catch (e: any) {
+      this.loggerSend.error('muteMic() | failed: ', e.name, e.message, e);
+      return Promise.reject(e)
+    }
+  }
+
+  async muteAudioSlave(){
+    this.loggerSend.log('mute音频辅流')
+    if (!this._audioSlaveProducer){
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'No _audioSlaveProducer'
+      })
+    }
+    this._audioSlaveProducer.pause();
+    try{
+      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
+        throw new RtcError({
+          code: ErrorCode.NOT_FOUND,
+          message: 'No _protoo 8'
+        })
+      }
+      let muteUid = this.adapterRef.channelInfo.uid
+      if (this.adapterRef.channelInfo.uidType === 'string') {
+        //@ts-ignore
+        muteUid = new BigNumber(muteUid)
+      } 
+      await this.adapterRef._signalling._protoo.request(
+        'SendUserData', {
+          externData: {
+            'type': 'Mute',
+            cid: this.adapterRef.channelInfo.cid,
+            uid: muteUid,
+            data: {
+              producerId: this._audioSlaveProducer.id,
+              mute: true 
+            }
+          } 
+        });
+    } catch (e) {
+      this.loggerSend.error('muteMic() | failed:', e.name, e.message, e);
+    }
+  }
+
+  async unmuteAudioSlave(){
+    this.loggerSend.log('resume音频辅流')
+    if (!this._audioSlaveProducer){
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND,
+        message: 'No _audioSlaveProducer'
+      })
+    }
+    this._audioSlaveProducer.resume();
+    try{
+      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
+        throw new RtcError({
+          code: ErrorCode.NOT_FOUND,
+          message: 'No _protoo 9'
+        })
+      }
+      let muteUid = this.adapterRef.channelInfo.uid
+      if (this.adapterRef.channelInfo.uidType === 'string') {
+        //@ts-ignore
+        muteUid = new BigNumber(muteUid)
+      } 
+      await this.adapterRef._signalling._protoo.request(
+        'SendUserData', { 
+          externData: {
+            type: 'Mute',
+            cid: this.adapterRef.channelInfo.cid,
+            uid: muteUid,
+            data: {
+              producerId: this._audioSlaveProducer.id,
               mute: false 
             }
           } 
@@ -1852,7 +2027,7 @@ class Mediasoup extends EventEmitter {
         code,
         param: JSON.stringify(iceStatus)
       })
-      this.adapterRef.instance.safeEmit('ice-change', iceStatus)
+      this.adapterRef.instance.safeEmit('@ice-change', iceStatus)
     }
     this.iceStatusHistory[direction].status = iceStatus
     

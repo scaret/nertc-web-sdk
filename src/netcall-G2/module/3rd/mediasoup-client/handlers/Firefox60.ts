@@ -318,6 +318,9 @@ export class Firefox60 extends HandlerInterface
       {
         encoding.rid = `r${idx}`;
       });
+      // Clone the encodings and reverse them because Firefox likes them
+			// from high to low.
+			encodings!.reverse();
     }
 
     const sendingRtpParameters =
@@ -467,10 +470,11 @@ export class Firefox60 extends HandlerInterface
 
       sendingRtpParameters.encodings = newEncodings;
     }
-    // Otherwise if more than 1 encoding are given use them verbatim.
+    // Otherwise if more than 1 encoding are given use them verbatim (but
+		// reverse them back since we reversed them above to satisfy Firefox).
     else
     {
-      sendingRtpParameters.encodings = encodings;
+      sendingRtpParameters.encodings = encodings.reverse();
     }
 
     // If VP8 or H264 and there is effective simulcast, add scalabilityMode to
@@ -482,6 +486,12 @@ export class Firefox60 extends HandlerInterface
         sendingRtpParameters.codecs[0].mimeType.toLowerCase() === 'video/h264'
       )
     )
+    {
+			// for (const encoding of sendingRtpParameters.encodings)
+			// {
+			// 	encoding.scalabilityMode = 'S1T3';
+			// }
+		}
     
     localSdpObject.media.forEach(media => {
       if (media.type === 'audio' && media.ext && media.rtcpFb) {
@@ -620,8 +630,11 @@ export class Firefox60 extends HandlerInterface
       }
     } else {
       transceiver.sender.replaceTrack(null);
+      this._pc.removeTrack(transceiver.sender);
       // this._pc.removeTrack(transceiver.sender);
+      // NOTE: Cannot use closeMediaSection() due to the the note above in send() method.
       // this._remoteSdp!.closeMediaSection(transceiver.mid!);
+      this._remoteSdp!.disableMediaSection(transceiver.mid!);
     }
 
     const offer = await this._pc.createOffer();
@@ -656,6 +669,7 @@ export class Firefox60 extends HandlerInterface
       answer);
 
     await this._pc.setRemoteDescription(answer);
+    this._mapMidTransceiver.delete(localId);
   }
 
   async replaceTrack(
@@ -705,10 +719,15 @@ export class Firefox60 extends HandlerInterface
 
     const parameters = transceiver.sender.getParameters();
 
+    // NOTE: We require encodings given from low to high, however Firefox
+		// requires them in reverse order, so do magic here.
+    //@ts-ignore
+		spatialLayer = parameters.encodings.length - 1 - spatialLayer;
+
     //@ts-ignore
     parameters.encodings.forEach((encoding: RTCRtpEncodingParameters, idx: number) =>
     {
-      if (idx <= spatialLayer)
+      if (idx >= spatialLayer)
         encoding.active = true;
       else
         encoding.active = false;

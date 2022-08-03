@@ -1,7 +1,7 @@
 import {getParameters} from "../../parameters";
 import {loglevels} from "../../../util/log/logger";
 import {updateLogIndex} from "../../../util/webrtcLogger";
-import {formatSingleArg} from "../../../util/util";
+import {formatSingleArg} from "../../../util/rtcUtil/utils";
 
 const APP_NAME = 'mediasoup-client';
 
@@ -13,7 +13,7 @@ export const Logger = {
     if (getParameters().logLevel <= loglevels.DEBUG){
       console.debug.apply(console, args);
     }
-    (<any>window).logUpload && (<any>window).wsTransport.sendLog(args);
+    (<any>window).logUpload && (<any>window).wsTransport && (<any>window).wsTransport.sendLog(args);
 
   },
 
@@ -24,7 +24,7 @@ export const Logger = {
     if (getParameters().logLevel <= loglevels.WARNING){
       console.warn.apply(console, args);
     }
-    (<any>window).logUpload && (<any>window).wsTransport.sendLog(args);
+    (<any>window).logUpload && (<any>window).wsTransport && (<any>window).wsTransport.sendLog(args);
 
 	},
 
@@ -35,7 +35,7 @@ export const Logger = {
     if (getParameters().logLevel <= loglevels.ERROR){
       console.error.apply(console, args);
     }
-    (<any>window).logUpload && (<any>window).wsTransport.sendLog(args);
+    (<any>window).logUpload && (<any>window).wsTransport && (<any>window).wsTransport.sendLog(args);
 
 	},
 

@@ -1,14 +1,4 @@
-let workerBlobUrl:any = null
-export function getWorkerBlobUrl(){
-  if (!workerBlobUrl){
-    const workerBlob = new Blob(
-      [`setInterval(()=>{self.postMessage("RTCTimer")}, 8)`],
-      { type: 'text/js-worker' }
-    )
-    workerBlobUrl = URL.createObjectURL(workerBlob)
-  }
-  return workerBlobUrl
-}
+import {getBlobUrl} from "../module/blobs/getBlobUrl";
 
 export interface OfflineTimerOptions{
   from: {
@@ -85,7 +75,7 @@ class RTCTimer {
       }, this.options.minInterval)
     }
     if (options.from.worker && typeof Worker !== undefined){
-      this.worker = new Worker(getWorkerBlobUrl());
+      this.worker = new Worker(getBlobUrl('rtcTimer'));
       this.worker.onmessage = ()=>{
         trigger("worker")
       }

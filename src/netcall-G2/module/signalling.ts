@@ -1,8 +1,7 @@
-import { EventEmitter } from 'eventemitter3'
-import { RemoteStream } from '../api/remoteStream'
-import { RtcSystem } from '../util/rtcUtil/rtcSystem'
-import BigNumber from 'bignumber.js'
-import {ENGINE_VERSION} from '../Config/index'
+import { EventEmitter } from 'eventemitter3';
+import { RemoteStream } from '../api/remoteStream';
+import BigNumber from 'bignumber.js';
+import {ENGINE_VERSION} from '../Config/index';
 import {
   AdapterRef, ILogger, MaskUserSetting, MediaTypeShort, NetStatusItem, SignalingConnectionConfig,
   SignallingOptions,
@@ -17,7 +16,7 @@ import {RTSTransport} from "./rtsTransport";
 import { parseBase64 } from "../util/crypto-ts/base64";
 import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
-import {getOSName, getBrowserInfo} from '../util/rtcUtil/rtcSupport'
+import {getOSInfo, getBrowserInfo} from '../util/rtcUtil/rtcPlatform';
 import {getParameters} from "./parameters";
 const protooClient = require('./3rd/protoo-client/')
 
@@ -78,7 +77,7 @@ class Signalling extends EventEmitter {
     this._reset()
     // 设置对象引用
     this.adapterRef = options.adapterRef
-    this.browserDevice = getOSName()+ '-' + getBrowserInfo().browserName + '-' + getBrowserInfo().browserVersion;
+    this.browserDevice = getOSInfo().osName + '-' + getBrowserInfo().browserName + '-' + getBrowserInfo().browserVersion;
   }
 
   async _reset() {
@@ -169,7 +168,7 @@ class Signalling extends EventEmitter {
         this._reconnectionTimer = null
         this._destroyProtoo()
         if (isReconnectMeeting) {
-          this.adapterRef.instance.emit('pairing-websocket-reconnection-error');
+          this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-error');
           this._reconnection()
         } else {
           this._connection()
@@ -194,7 +193,7 @@ class Signalling extends EventEmitter {
       this.adapterRef.logger.error(`所有的服务器地址都连接失败, 主动离开房间`)
       this.adapterRef.channelInfo.wssArrIndex = 0
       this.adapterRef.instance.leave()
-      this.adapterRef.instance.emit('error', 'SOCKET_ERROR')
+      this.adapterRef.instance.safeEmit('error', 'SOCKET_ERROR')
       this._reject && this._reject('timeout')
     }
   }
@@ -210,7 +209,7 @@ class Signalling extends EventEmitter {
     if (this.adapterRef.connectState.prevState !== this.adapterRef.connectState.curState){
       this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
     }
-    this.adapterRef.instance.emit('pairing-websocket-reconnection-start');
+    this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-start');
     this._destroyProtoo()
 
 
@@ -241,11 +240,11 @@ class Signalling extends EventEmitter {
     }
 
     if (this.reconnectionControl.next && this.reconnectionControl.next.times > getParameters().reconnectionMaxRetry){
-      this.adapterRef.instance.emit('pairing-websocket-reconnection-skip');
+      this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-skip');
       this.adapterRef.logger.error('所有的服务器地址都连接失败, 主动离开房间')
       this.adapterRef.channelInfo.wssArrIndex = 0
       this.adapterRef.instance.leave()
-      this.adapterRef.instance.emit('error', 'SOCKET_ERROR')
+      this.adapterRef.instance.safeEmit('error', 'SOCKET_ERROR')
     }else{
       this.init(true, true)
     }
@@ -338,6 +337,7 @@ class Signalling extends EventEmitter {
           remoteStream = new RemoteStream({
             uid,
             audio: false,
+            audioSlave: false,
             video: false,
             screen: false,
             client: this.adapterRef.instance,
@@ -393,6 +393,9 @@ class Signalling extends EventEmitter {
           case "audio":
             mediaTypeShort = 'audio';
             break;
+          case "subAudio":
+            mediaTypeShort = 'audioSlave';
+            break;
           default:
             this.logger.warn(`OnNewProducer 不支持的媒体类型:${mediaType}, uid ${uid}`)
             return
@@ -402,6 +405,7 @@ class Signalling extends EventEmitter {
           remoteStream = new RemoteStream({
             uid,
             audio: mediaTypeShort === 'audio',
+            audioSlave: mediaTypeShort === 'audioSlave',
             video: mediaTypeShort === 'video',
             screen: mediaTypeShort === 'screen',
             client: this.adapterRef.instance,
@@ -432,7 +436,11 @@ class Signalling extends EventEmitter {
           this.adapterRef.instance.safeEmit('stream-added', {stream: remoteStream, 'mediaType': mediaTypeShort})
         }
         if (mute) {
-          this.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {uid})
+          if (mediaTypeShort === 'audioSlave') {
+            this.adapterRef.instance.safeEmit('mute-audio-slave', {uid: remoteStream.getId()})
+          } else {
+            this.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
+          }
         }
         break
       }
@@ -465,6 +473,9 @@ class Signalling extends EventEmitter {
             break;
           case "audio":
             mediaTypeShort = 'audio';
+            break;
+          case "subAudio":
+            mediaTypeShort = 'audioSlave';
             break;
           default:
             this.logger.warn(`OnProducerClose 不支持的媒体类型 ${mediaType} ${uid}`)
@@ -505,6 +516,10 @@ class Signalling extends EventEmitter {
             data.recvFirstAudioFrame = false
             data.recvFirstAudioPackage = false
           }
+        } else if (mediaTypeShort === 'audioSlave') {
+          remoteStream.mediaHelper.screenAudio.screenAudioTrack = null;
+          emptyStreamWith(remoteStream.mediaHelper.screenAudio.screenAudioStream, null);
+          delete this.adapterRef.remoteAudioSlaveStats[uid];
         } else if (mediaTypeShort === 'video') {
           remoteStream.mediaHelper.video.cameraTrack = null;
           emptyStreamWith(remoteStream.mediaHelper.video.videoStream, null)
@@ -656,6 +671,7 @@ class Signalling extends EventEmitter {
       }
       case 'OnUserData': {
         let { type, data, } = notification.data.externData;
+        //console.warn('收到userData通知: ', notification.data.externData)
         if (type === 'StreamStatus') {
           this._handleStreamStatusNotify(data)
         } else if (type === 'NetStatus') {
@@ -680,7 +696,7 @@ class Signalling extends EventEmitter {
         } else if (type === 'MediaCapability') {
           this.logger.warn('MediaCapability房间能力变更: ', JSON.stringify(data, null, ''))
           this.adapterRef.mediaCapability.parseRoom(data);
-          this.adapterRef.instance.safeEmit('mediaCapabilityChange');
+          this.adapterRef.instance.safeEmit('@mediaCapabilityChange');
           if (this.adapterRef._mediasoup && this.adapterRef.mediaCapability.room.videoCodecType && this.adapterRef.localStream){
             //@ts-ignore
             const targetCodecVideo = this.adapterRef.mediaCapability.getCodecSend("video", this.adapterRef._mediasoup._sendTransport.handler._sendingRtpParametersByKind["video"]);
@@ -710,20 +726,54 @@ class Signalling extends EventEmitter {
           this._handleAbility(notification.data.externData.data);
         } else if (type === 'ChangeRight') {
           // 服务器禁用音频/视频: 1 禁用   2 取消禁用  0 无需处理
+          let uid = data.uid;
+          let audioDuration, videoDuration;
           if(data.audioRight === 1) {
-            (<any>window).isAudioBanned = true;
+            this.adapterRef.isAudioBanned = true;
+            audioDuration = data.audioDuration;
+            let mediaType = 'audio';
+            let state = true;
+            const rtcError = new RtcError({
+              code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+              message: 'ChangeRight audio is banned by server'
+            })
+            this.adapterRef.instance.safeEmit('audioVideoBanned', {rtcError, uid, mediaType, state, duration:audioDuration})
           }else if(data.audioRight === 2) {
-            (<any>window).isAudioBanned = false;
+            this.adapterRef.isAudioBanned = false;
+            audioDuration = data.audioDuration;
+            let mediaType = 'audio';
+            let state = false;
+            const rtcError = new RtcError({
+              code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+              message: 'ChangeRight audio is unbanned by server '
+            })
+            this.adapterRef.instance.safeEmit('audioVideoBanned', {rtcError, uid, mediaType, state, duration:audioDuration})
           }
 
           if(data.videoRight === 1) {
-            (<any>window).isVideoBanned = true;
+            this.adapterRef.isVideoBanned = true;
+            videoDuration = data.videoDuration;
+            let mediaType = 'video';
+            let state = true;
+            const rtcError = new RtcError({
+              code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+              message: 'ChangeRight video is banned by server'
+            })
+            this.adapterRef.instance.safeEmit('audioVideoBanned', {rtcError, uid, mediaType, state, duration:videoDuration})
           }else if(data.videoRight === 2) {
-            (<any>window).isVideoBanned = false;
+            this.adapterRef.isVideoBanned = false;
+            videoDuration = data.videoDuration;
+            let mediaType = 'video';
+            let state = false;
+            const rtcError = new RtcError({
+              code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+              message: 'ChangeRight video is unbanned by server'
+            })
+            this.adapterRef.instance.safeEmit('audioVideoBanned', {rtcError, uid, mediaType, state, duration:videoDuration})
           }
 
-          if((<any>window).isAudioBanned && (<any>window).isVideoBanned) {
-            this.adapterRef.instance.apiEventReport('setFunction', {
+          if(this.adapterRef.isAudioBanned && this.adapterRef.isVideoBanned) {
+            this.adapterRef.instance.apiEventReport('setAudioVideoBanned', {
               name: 'set_mediaRightChange',
               oper: '1',
               isAudioBanned: true,
@@ -731,8 +781,8 @@ class Signalling extends EventEmitter {
             })
           }
     
-          if(!(<any>window).isAudioBanned && (<any>window).isVideoBanned) {
-            this.adapterRef.instance.apiEventReport('setFunction', {
+          if(!this.adapterRef.isAudioBanned && this.adapterRef.isVideoBanned) {
+            this.adapterRef.instance.apiEventReport('setAudioVideoBanned', {
               name: 'set_mediaRightChange',
               oper: '1',
               isAudioBanned: false,
@@ -740,8 +790,8 @@ class Signalling extends EventEmitter {
             })
           }
     
-          if((<any>window).isAudioBanned && !(<any>window).isVideoBanned) {
-            this.adapterRef.instance.apiEventReport('setFunction', {
+          if(this.adapterRef.isAudioBanned && !this.adapterRef.isVideoBanned) {
+            this.adapterRef.instance.apiEventReport('setAudioVideoBanned', {
               name: 'set_mediaRightChange',
               oper: '1',
               isAudioBanned: true,
@@ -749,8 +799,8 @@ class Signalling extends EventEmitter {
             })
           }
     
-          if(!(<any>window).isAudioBanned && !(<any>window).isVideoBanned) {
-            this.adapterRef.instance.apiEventReport('setFunction', {
+          if(!this.adapterRef.isAudioBanned && !this.adapterRef.isVideoBanned) {
+            this.adapterRef.instance.apiEventReport('setAudioVideoBanned', {
               name: 'set_mediaRightChange',
               oper: '1',
               isAudioBanned: false,
@@ -758,7 +808,7 @@ class Signalling extends EventEmitter {
             })
           }
 
-          if((<any>window).isAudioBanned){
+          if(this.adapterRef.isAudioBanned){
             if(!this.adapterRef.localStream){
               return;
             }
@@ -781,7 +831,7 @@ class Signalling extends EventEmitter {
           if(!this.adapterRef.localStream){
             return;
           }
-          if((<any>window).isVideoBanned){
+          if(this.adapterRef.isVideoBanned){
             let isVideoOn = this.adapterRef.localStream.video;
             let isScreenOn = this.adapterRef.localStream.screen;
             // 关掉所有视频相关 (辅流跟随视频流同步禁止)
@@ -822,8 +872,6 @@ class Signalling extends EventEmitter {
   }
 
   async join () {
-    
-
     let gmEnable;
     if (!this.adapterRef.encryption.encryptionSecret) {
       gmEnable = false;
@@ -836,6 +884,8 @@ class Signalling extends EventEmitter {
     const requestData = {
       method: 'Join',
       requestId: `${Math.ceil(Math.random() * 1e9)}`,
+      supportStdRed: true,
+      supportTurn: !this.adapterRef.proxyServer.enable,
       externData: {
         userName: `${this.adapterRef.channelInfo.uid}`,
         token: this.adapterRef.channelInfo.token,
@@ -859,8 +909,8 @@ class Signalling extends EventEmitter {
         },
         mediaCapabilitySet: this.adapterRef.mediaCapability.stringify(),
         browser: {                       
-          name: RtcSystem.browser.ua,       
-          version: `${RtcSystem.browser.version}`
+          name: getBrowserInfo().browserName,       
+          version: `${getBrowserInfo().browserVersion}`
         },
         gmEnable: gmEnable,
         gmMode: encryptionModeToInt(this.adapterRef.encryption.encryptionMode),
@@ -885,10 +935,7 @@ class Signalling extends EventEmitter {
       let response
       let thisProtoo = this._protoo
       try{
-        response = await this._protoo.request('Join', {
-          requestId: requestData.requestId,
-          externData: requestData.externData
-        }) as SignalJoinRes;
+        response = await this._protoo.request('Join', requestData) as SignalJoinRes;
       }catch(e){
         if (thisProtoo !== this._protoo){
           this.logger.warn(`过期的信令通道消息：【${e.name}】`, e.message)
@@ -909,34 +956,54 @@ class Signalling extends EventEmitter {
           'Signalling: 加入房间失败, reason = ',
           response.code, errMsg
         )
-        this.adapterRef.instance.emit('pairing-websocket-reconnection-error');
+        this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-error');
         this._joinFailed(response.code, errMsg)
         return
-      }
+      } 
+      let uid = this.adapterRef.channelInfo.uid;
       // 服务器禁用音视频: 1 禁用   0 和 2 取消禁用
       if(response.externData.audioRight === 1){
-        (<any>window).isAudioBanned = true;
+        this.adapterRef.isAudioBanned = true;
+        let mediaType = 'audio';
+        let state = true;
+        const rtcError = new RtcError({
+          code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+          message: 'Join() audio is banned by server'
+        })
+        this.adapterRef.instance.safeEmit('audioVideoBanned', {rtcError, uid, mediaType, state})
       }else {
-        (<any>window).isAudioBanned = false;
+        this.adapterRef.isAudioBanned = false;
       }
 
       if(response.externData.videoRight === 1){
-        (<any>window).isVideoBanned = true;
+        this.adapterRef.isVideoBanned = true;
+        let mediaType = 'video';
+        let state = true;
+        const rtcError = new RtcError({
+          code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
+          message: 'Join() video is banned by server'
+        })
+        this.adapterRef.instance.safeEmit('audioVideoBanned', {rtcError, uid, mediaType, state})
       }else {
-        (<any>window).isVideoBanned = false;
+        this.adapterRef.isVideoBanned = false;
       }
 
-      if((<any>window).isAudioBanned && (<any>window).isVideoBanned) {
-        this.adapterRef.instance.apiEventReport('setFunction', {
+      if(this.adapterRef.isAudioBanned && this.adapterRef.isVideoBanned) {
+        this.adapterRef.instance.apiEventReport('setAudioVideoBanned', {
           name: 'set_mediaRightChange',
           oper: '1',
           isAudioBanned: true,
           isVideoBanned: true
         })
+        this.logger.error("服务器禁止发送音频流")
+        if (this._reconnectionTimer) {
+          clearTimeout(this._reconnectionTimer)
+          this._reconnectionTimer = null
+        }
       }
 
-      if(!(<any>window).isAudioBanned && (<any>window).isVideoBanned) {
-        this.adapterRef.instance.apiEventReport('setFunction', {
+      if(!this.adapterRef.isAudioBanned && this.adapterRef.isVideoBanned) {
+        this.adapterRef.instance.apiEventReport('setAudioVideoBanned', {
           name: 'set_mediaRightChange',
           oper: '1',
           isAudioBanned: false,
@@ -944,8 +1011,8 @@ class Signalling extends EventEmitter {
         })
       }
 
-      if((<any>window).isAudioBanned && !(<any>window).isVideoBanned) {
-        this.adapterRef.instance.apiEventReport('setFunction', {
+      if(this.adapterRef.isAudioBanned && !this.adapterRef.isVideoBanned) {
+        this.adapterRef.instance.apiEventReport('setAudioVideoBanned', {
           name: 'set_mediaRightChange',
           oper: '1',
           isAudioBanned: true,
@@ -953,8 +1020,8 @@ class Signalling extends EventEmitter {
         })
       }
 
-      if(!(<any>window).isAudioBanned && !(<any>window).isVideoBanned) {
-        this.adapterRef.instance.apiEventReport('setFunction', {
+      if(!this.adapterRef.isAudioBanned && !this.adapterRef.isVideoBanned) {
+        this.adapterRef.instance.apiEventReport('setAudioVideoBanned', {
           name: 'set_mediaRightChange',
           oper: '1',
           isAudioBanned: false,
@@ -970,6 +1037,22 @@ class Signalling extends EventEmitter {
       this.logger.log('Signalling:加入房间成功')
       this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
       this.adapterRef.connectState.curState = 'CONNECTED'
+      
+      this.adapterRef.audioAsl.enabled = response.supportWebAsl ? "yes" : "no"
+      this.adapterRef.audioAsl.aslActiveNum = response.aslActiveNum
+      if (response.supportWebAsl){
+        if (response.aslActiveNum){
+          this.logger.log(`aslActiveNum数量： ${response.aslActiveNum}`)
+        }else{
+          this.logger.warn(`服务端支持ASL但没有返回ASL数量`)
+        }
+      }else{
+        this.logger.log(`服务端未开启ASL`)
+      }
+      this.adapterRef.instance.safeEmit('aslStatus', {
+        enabled: !!response.supportWebAsl,
+        aslActiveNum: response.aslActiveNum
+      })
       
       if (this.adapterRef.channelStatus === 'connectioning') {
         this.adapterRef.connectState.reconnect = true
@@ -994,12 +1077,12 @@ class Signalling extends EventEmitter {
         }
         this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities;
         this.adapterRef.mediaCapability.parseRoom(response.externData.roomCapability);
-        this.adapterRef.instance.emit('mediaCapabilityChange');
-        await this.adapterRef._mediasoup.init()
+        this.adapterRef.instance.safeEmit('@mediaCapabilityChange');
+        await this.adapterRef._mediasoup.init(response.supportTurn ? response.turnParameters: undefined)
         if (this.adapterRef.localStream) {
           if (this.adapterRef.localStream.audio || this.adapterRef.localStream.video
             || this.adapterRef.localStream.screen || this.adapterRef.localStream.screenAudio
-            || getParameters().allowEmptyMedia
+            || getParameters().allowEmptyMedia || this.adapterRef.localStream.audioSlave
           ){
             this.logger.log(`重连成功，重新publish本端流:audio ${this.adapterRef.localStream.hasAudio()}, video ${this.adapterRef.localStream.hasVideo()}, screen ${this.adapterRef.localStream.hasScreen()}`)
             this.adapterRef.instance.doPublish(this.adapterRef.localStream)
@@ -1033,8 +1116,9 @@ class Signalling extends EventEmitter {
         }
         this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities;
         this.adapterRef.mediaCapability.parseRoom(response.externData.roomCapability);
-        this.adapterRef.instance.emit('mediaCapabilityChange');
-        await this.adapterRef._mediasoup.init()
+        this.adapterRef.instance.safeEmit('@mediaCapabilityChange');
+        console.log('init response : ', response)
+        await this.adapterRef._mediasoup.init(response.supportTurn ? response.turnParameters: undefined)
       }
           
       this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
@@ -1058,6 +1142,7 @@ class Signalling extends EventEmitter {
             remoteStream = new RemoteStream({
               uid: uid,
               audio: false,
+              audioSlave: false,
               video: false,
               screen: false,
               client: this.adapterRef.instance,
@@ -1085,6 +1170,9 @@ class Signalling extends EventEmitter {
                 case "audio":
                   mediaTypeShort = "audio";
                   break;
+                case "subAudio":
+                  mediaTypeShort = "audioSlave";
+                  break;
                 default:
                   this.logger.warn(`join: 不支持的媒体类型 ${mediaType} ${uid}`)
                   continue
@@ -1106,7 +1194,11 @@ class Signalling extends EventEmitter {
                   that.adapterRef.instance.safeEmit('stream-added', {stream: remoteStream, 'mediaType': mediaTypeShort})
                 }
                 if (mute) {
-                  that.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
+                  if (mediaTypeShort === 'audioSlave') {
+                    that.adapterRef.instance.safeEmit(`mute-audio-slave`, {uid: remoteStream.getId()})
+                  } else {
+                    that.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
+                  }
                 }
               }, 0);
             }
@@ -1127,7 +1219,7 @@ class Signalling extends EventEmitter {
         this._reject = null
       } else {
         // 重连成功
-        this.adapterRef.instance.emit('pairing-websocket-reconnection-success');
+        this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-success');
         if (this.reconnectionControl.resumers.length){
           this.reconnectionControl.resumers.forEach((resolve)=> resolve({reason: "reconnection-success"}))
           this.reconnectionControl.resumers = []
@@ -1187,7 +1279,7 @@ class Signalling extends EventEmitter {
           this.logger.error('网络重连时，加入房间失败，主动离开。重连失败原因：', errMsg)
       }
       this.logger.error('网络重连时，加入房间失败，主动离开。重连失败原因：', errMsg)
-      this.adapterRef.instance.emit('error', 'RELOGIN_ERROR')
+      this.adapterRef.instance.safeEmit('error', 'RELOGIN_ERROR')
       this.adapterRef.instance.leave()
     }
   }
@@ -1483,14 +1575,22 @@ class Signalling extends EventEmitter {
     const producerId = data.producerId;
     const mute = data.mute;
     Object.values(this.adapterRef.remoteStreamMap).forEach(stream => {
-      const mediaTypeList:MediaTypeShort[] = ["audio", "video", "screen"]
+      const mediaTypeList:MediaTypeShort[] = ["audio", "video", "screen", "audioSlave"]
       mediaTypeList.forEach((mediaTypeShort)=>{
         if (stream.pubStatus[mediaTypeShort].producerId === producerId){
           stream.muteStatus[mediaTypeShort].send = mute
           if (mute) {
-            this.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {uid: stream.getId()})
+            if (mediaTypeShort === 'audioSlave') {
+              this.adapterRef.instance.safeEmit('mute-audio-slave', {uid: stream.getId()})
+            } else {
+              this.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {uid: stream.getId()})
+            }
           } else {
-            this.adapterRef.instance.safeEmit(`unmute-${mediaTypeShort}`, {uid: stream.getId()})
+            if (mediaTypeShort === 'audioSlave') {
+              this.adapterRef.instance.safeEmit('unmute-audio-slave', {uid: stream.getId()})
+            } else {
+              this.adapterRef.instance.safeEmit(`unmute-${mediaTypeShort}`, {uid: stream.getId()})
+            }
           }
         }
       })
@@ -1520,6 +1620,7 @@ class Signalling extends EventEmitter {
         remoteStream = new RemoteStream({
           uid,
           audio: false,
+          audioSlave: false,
           video: false,
           screen: false,
           client: this.adapterRef.instance,
@@ -1533,7 +1634,7 @@ class Signalling extends EventEmitter {
   }
   
   _handleAbility (data:{code:number, msg:string}){
-    this.adapterRef.instance.emit('warning', {
+    this.adapterRef.instance.safeEmit('warning', {
       code: data.code,
       msg: data.msg
     })

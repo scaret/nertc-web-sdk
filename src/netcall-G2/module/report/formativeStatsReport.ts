@@ -12,10 +12,10 @@ import {
 import {
   DataReport,
 } from "./dataReport";
-import {platform} from "../../util/platform";
 import RtcError from '../../util/error/rtcError';
 import ErrorCode  from '../../util/error/errorCode';
 import * as env from '../../util/rtcUtil/rtcEnvironment';
+import {getOSInfo, getBrowserInfo} from '../../util/rtcUtil/rtcPlatform';
 
 let url = 'https://statistic.live.126.net/statistic/realtime/sdkinfo'
 type UIDTYPE = number | string;
@@ -29,7 +29,7 @@ class FormativeStatsReport {
   public LocalAudioEnable: boolean;
   public localVideoEnable: boolean;
   public localScreenEnable: boolean;
-  private _audioLevel: {uid:number|string, level: number}[];
+  private _audioLevel: {uid:number|string, level: number, type: 'audio' | 'audioSlave'}[];
   private infos: {
     cid?: number;
     uid?: number|string;
@@ -52,9 +52,11 @@ class FormativeStatsReport {
   private infos2: {[key: string]: any};
   private paramSecond: {
     upAudioCache: any,
+    upAudioSlaveCache: any,
     upVideoCache: any,
     upScreenCache: any,
     downAudioCache: any,
+    downAudioSlaveCache: any,
     downVideoCache: any,
     downScreenCache: any,
   };
@@ -88,9 +90,11 @@ class FormativeStatsReport {
     this.infos2 = {};
     this.paramSecond = {
       upAudioCache: {},
+      upAudioSlaveCache: {},
       upVideoCache: {},
       upScreenCache: {},
       downAudioCache: {},
+      downAudioSlaveCache: {},
       downVideoCache: {},
       downScreenCache: {},
     };
@@ -120,8 +124,8 @@ class FormativeStatsReport {
       device: -1,
       isp: -1,
       platform:
-        tool.convertPlatform(platform.os.family) + '-' + platform.os.version + '- webrtc',
-      browser: platform.name + '-' + platform.version,
+        tool.convertPlatform(getOSInfo().osName) + '-' + getOSInfo().osVersion + '- webrtc',
+      browser: getBrowserInfo().browserName + '-' + getBrowserInfo().browserVersion,
       sdk_ver: '3.6.0',
       appkey: appkey,
       // 上报时间间隔
@@ -259,9 +263,11 @@ class FormativeStatsReport {
   clearSecond () {
     this.paramSecond = {
       upAudioCache: {},
+      upAudioSlaveCache: {},
       upVideoCache: {},
       upScreenCache: {},
       downAudioCache: {},
+      downAudioSlaveCache: {},
       downVideoCache: {},
       downScreenCache: {},
     }
@@ -291,9 +297,11 @@ class FormativeStatsReport {
   update (data:any, time: number) {
     data = Object.assign({}, data.local, data.remote)
     let upAudioList = []
+    let upAudioSlaveList = []
     let upVideoList = []
     let upScreenList = []
     let downAudioList = []
+    let downAudioSlaveList = []
     let downVideoList = []
     let downScreenList = []
     if (this.webrtcStats.length == 2) {
@@ -304,6 +312,14 @@ class FormativeStatsReport {
       send: {
         uid: 0,
         audio: {
+          prevLost: 0,
+          nextLost: 0,
+          prevPacket: 0,
+          nextPacket: 0,
+          rtt: 0,
+          jitter: 0
+        }, 
+        audioSlave: {
           prevLost: 0,
           nextLost: 0,
           prevPacket: 0,
@@ -338,6 +354,14 @@ class FormativeStatsReport {
           rtt: 0,
           jitter: 0
         }, 
+        audioSlave: {
+          prevLost: 0,
+          nextLost: 0,
+          prevPacket: 0,
+          nextPacket: 0,
+          rtt: 0,
+          jitter: 0
+        }, 
         video: {
           prevLost: 0,
           nextLost: 0,
@@ -361,6 +385,7 @@ class FormativeStatsReport {
     if (this._audioLevel) {
       this._audioLevel.length = 0
     }
+    //console.log('update: ', data)
     for (let i in data) {
       //let uid = parseInt(i.split('_')[3] || "");
       let uid;
@@ -378,7 +403,22 @@ class FormativeStatsReport {
       /*if (!(uid - 0)){
         uid = 0;
       }*/
-      if (i.indexOf('_send_') !== -1 && i.indexOf('_audio') !== -1) {
+      if (i.indexOf('_send_') !== -1 && i.indexOf('_audioSlave') !== -1) {
+        if (this.paramSecond.upAudioSlaveCache[uid]) {
+          currentData.send.audioSlave.prevLost = this.paramSecond.upAudioSlaveCache[uid].packetsLost
+          currentData.send.audioSlave.prevPacket = this.paramSecond.upAudioSlaveCache[uid].packetsSent
+          data[i].alr = this.getPacketLossRate(this.paramSecond.upAudioSlaveCache[uid], data[i], true)
+          this.dispatchExceptionEventSendAudio(this.paramSecond.upAudioSlaveCache[uid], data[i], uid)
+        } 
+        bytesSent += parseInt(data[i].bytesSent) 
+        this.paramSecond.upAudioSlaveCache[uid] = data[i]
+        currentData.send.uid = this.adapterRef.channelInfo.uid
+        currentData.send.audioSlave.nextLost = data[i].packetsLost
+        currentData.send.audioSlave.nextPacket = data[i].packetsSent
+        currentData.send.audioSlave.rtt = currentData.recv.audioSlave.rtt = data[i].googRtt
+        currentData.send.audioSlave.jitter = currentData.recv.audioSlave.jitter = data[i].googJitterReceived || 0
+        upAudioSlaveList.push(data[i])
+      } else if (i.indexOf('_send_') !== -1 && i.indexOf('_audio') !== -1) {
         if (!this.firstData.sendFirstAudioPackage && data[i].packetsSent > 0) {
           this.firstData.sendFirstAudioPackage = true
           this.adapterRef.instance.apiEventReport('setSendFirstPackage', {
@@ -453,6 +493,48 @@ class FormativeStatsReport {
         currentData.send.screen.rtt = currentData.recv.screen.rtt = data[i].googRtt
         currentData.send.screen.jitter = currentData.recv.screen.jitter = data[i].googJitterReceived || 0
         upScreenList.push(data[i])
+      } else if (i.indexOf('_recv_') !== -1 && i.indexOf('_audioSlave') !== -1) {
+
+        if (this.paramSecond.downAudioSlaveCache[uid]) {
+          currentData.recv.audio.prevLost = this.paramSecond.downAudioSlaveCache[uid].packetsLost
+          currentData.recv.audio.prevPacket = this.paramSecond.downAudioSlaveCache[uid].packetsReceived
+          data[i].alr = this.getPacketLossRate(this.paramSecond.downAudioSlaveCache[uid], data[i])
+        }
+        let stats = this.getRemoteAudioFreezeStats(this.paramSecond.downAudioSlaveCache[uid], data[i], uid)
+        data[i].freezeTime = stats.freezeTime
+        data[i].totalFreezeTime = stats.totalFreezeTime
+        bytesReceived += parseInt(data[i].bytesReceived) 
+        this.paramSecond.downAudioSlaveCache[uid] = data[i]
+        currentData.recv.uid = +uid
+        currentData.recv.audioSlave.nextLost = data[i].packetsLost
+        currentData.recv.audioSlave.nextPacket = data[i].packetsReceived
+        downAudioSlaveList.push(data[i])
+
+        let audioLevel:number = 0;
+        if (data[i].audioOutputLevel >= 0) {
+          // Chrome， 0-32767
+          audioLevel = data[i].audioOutputLevel;
+        } else if (data[i].audioLevel >= 0) {
+          // Safari， 0-1，正好与Chrome呈线性关系
+          audioLevel = Math.floor(data[i].audioLevel * 32768);
+        }
+        const remoteStream = this.adapterRef.remoteStreamMap[uid]
+        const muteStatus = remoteStream && (remoteStream.muteStatus.audioSlave.send || remoteStream.muteStatus.audioSlave.recv)
+        let isPlaying = true
+        if (muteStatus) {
+          isPlaying = false 
+        }
+
+        if (!remoteStream || !remoteStream.Play || !remoteStream.Play.audioSlaveDom || !remoteStream.Play.audioSlaveDom.srcObject || remoteStream.Play.audioSlaveDom.muted) {
+          isPlaying = false 
+        }
+
+        this._audioLevel.push({
+          uid,
+          level: isPlaying ? (+audioLevel || 0) : 0,
+          type: 'audioSlave'
+        })
+
       } else if (i.indexOf('_recv_') !== -1 && i.indexOf('_audio') !== -1) {
         if (!this.firstData.recvFirstData[uid]) {
           this.firstData.recvFirstData[uid] = {
@@ -505,9 +587,22 @@ class FormativeStatsReport {
           // Safari， 0-1，正好与Chrome呈线性关系
           audioLevel = Math.floor(data[i].audioLevel * 32768);
         }
+
+        const remoteStream = this.adapterRef.remoteStreamMap[uid]
+        const muteStatus = remoteStream && (remoteStream.muteStatus.audio.send || remoteStream.muteStatus.audio.recv)
+        let isPlaying = true
+        if (muteStatus) {
+          isPlaying = false 
+        }
+
+        if (!remoteStream || !remoteStream.Play || !remoteStream.Play.audioDom || !remoteStream.Play.audioDom.srcObject || remoteStream.Play.audioDom.muted) {
+          isPlaying = false 
+        }
+
         this._audioLevel.push({
           uid,
-          level: +audioLevel || 0,
+          level: isPlaying ? (+audioLevel || 0) : 0,
+          type: 'audio'
         })
       } else if (i.indexOf('_recv_') !== -1 && i.indexOf('_video') !== -1) {
         //主流
@@ -636,9 +731,9 @@ class FormativeStatsReport {
     if (time % 2 === 0) {
       this.adapterRef.instance.safeEmit('volume-indicator', this._audioLevel)
       // 更新上行信息
-      this.updateTxMediaInfo(upAudioList, upVideoList, upScreenList);
+      this.updateTxMediaInfo(upAudioList, upAudioSlaveList, upVideoList, upScreenList);
       // 更新下行信息
-      this.updateRxMediaInfo(downAudioList, downVideoList, downScreenList)
+      this.updateRxMediaInfo(downAudioList, downAudioSlaveList, downVideoList, downScreenList)
       let length = this.infos2.tx2 && this.infos2.tx2[0].v_res.length
       if ( length === this.infos.interval / 2) {
         this.send()
@@ -653,7 +748,7 @@ class FormativeStatsReport {
   }
 
   // 组装下行的媒体信息
-  updateRxMediaInfo (downAudioList: DownAudioItem[], downVideoList: DownVideoItem[], downScreenList: DownVideoItem[]) {
+  updateRxMediaInfo (downAudioList: DownAudioItem[], downAudioSlaveList: DownAudioItem[], downVideoList: DownVideoItem[], downScreenList: DownVideoItem[]) {
     let audio2:AudioRtxInfo = {
       uid: [],
       a_p_volume: [],
@@ -692,6 +787,29 @@ class FormativeStatsReport {
     }
 
     let RecvBitrate = 0
+
+    downAudioSlaveList.map(item => {
+      let uid='0';
+      if (item.id) {
+        uid = item.id.split('_')[3]
+      }
+
+      if (this.adapterRef.remoteAudioSlaveStats[uid]) {
+        this.adapterRef.remoteAudioSlaveStats[uid] = {TotalFreezeTime: 0}
+      }
+      const remoteStream = this.adapterRef.remoteStreamMap[uid]
+      this.adapterRef.remoteAudioSlaveStats[uid] = {
+        CodecType: 'Opus',
+        End2EndDelay: (parseInt(item.googCurrentDelayMs) || 0) + (parseInt(item.googJitterBufferMs) || 0),
+        MuteState: remoteStream && (remoteStream.muteStatus.audio.send || remoteStream.muteStatus.audio.recv),
+        PacketLossRate: item.alr || 0,
+        RecvBitrate: item.bitsReceivedPerSecond || 0,
+        RecvLevel: parseInt(item.audioOutputLevel) || +item.audioLevel || 0,
+        TotalFreezeTime: item.totalFreezeTime || 0,
+        TotalPlayDuration: parseInt(item.totalSamplesDuration) || 0,
+        TransportDelay: parseInt(item.googCurrentDelayMs) || 0
+      }
+    })
 
     downAudioList.map(item => {
       let uid='0';
@@ -849,7 +967,7 @@ class FormativeStatsReport {
 
   // 获取本地上行的媒体信息
 
-  getLocalMediaStats (upAudioList: UpAudioItem[], upVideoList: UpVideoItem[], upScreenList: UpVideoItem[]) {
+  getLocalMediaStats (upAudioList: UpAudioItem[], upAudioSlaveList: UpAudioItem[], upVideoList: UpVideoItem[], upScreenList: UpVideoItem[]) {
     let result = {
       a_lost: (upAudioList[0] && upAudioList[0].alr) || 0, // 音频丢包百分比
       v_lost: (upVideoList[0] && upVideoList[0].vlr) || 0, // 视频丢包百分比
@@ -909,6 +1027,15 @@ class FormativeStatsReport {
       SamplingRate: SamplingRate,
       SendBitrate: result.real_a_kbps_n,
       SendLevel: result.a_volume
+    }
+
+    this.adapterRef.localAudioSlaveStats[0] = {
+      CodecType: 'Opus',
+      MuteState: this.adapterRef.localStream.muteStatus.audioSlave.send,
+      RecordingLevel: parseInt(upAudioSlaveList[0] && upAudioSlaveList[0].audioInputLevel) || 0,
+      SamplingRate: SamplingRate,
+      SendBitrate: upAudioSlaveList[0] ? upAudioSlaveList[0].bitsSentPerSecond : 0,
+      SendLevel: parseInt(upAudioSlaveList[0] && upAudioSlaveList[0].audioInputLevel) || 0,
     }
 
     this.adapterRef.localVideoStats[0] = {
@@ -977,9 +1104,9 @@ class FormativeStatsReport {
   }
 
   // 组装上行的媒体信息
-  updateTxMediaInfo (upAudioList:UpAudioItem[], upVideoList:UpVideoItem[], upScreenList:UpVideoItem[]) {
+  updateTxMediaInfo (upAudioList:UpAudioItem[], upAudioSlaveCache:UpAudioItem[], upVideoList:UpVideoItem[], upScreenList:UpVideoItem[]) {
     if(!this.adapterRef.localStream) return
-    let tmp = this.getLocalMediaStats(upAudioList, upVideoList, upScreenList)
+    let tmp = this.getLocalMediaStats(upAudioList, upAudioSlaveCache, upVideoList, upScreenList)
     // 更新其他信息
     // @ts-ignore
     let systemNetworkType = ((navigator.connection || {}).type || 'unknown').toString().toLowerCase()
@@ -1000,7 +1127,7 @@ class FormativeStatsReport {
     }
 
     if (0 === parseInt(next.audioInputLevel)) {
-      this.adapterRef.instance.emit('exception', {
+      this.adapterRef.instance.safeEmit('exception', {
         msg: 'AUDIO_INPUT_LEVEL_TOO_LOW',
         code: 2001,
         uid:uid,
@@ -1009,7 +1136,7 @@ class FormativeStatsReport {
 
     let audioSendBytesDelta = parseInt(next.bytesSent) - parseInt(prev.bytesSent)
     if (0 === audioSendBytesDelta) {
-      this.adapterRef.instance.emit('exception', {
+      this.adapterRef.instance.safeEmit('exception', {
         msg: 'SEND_AUDIO_BITRATE_TOO_LOW',
         code: 2003,
         uid
@@ -1031,7 +1158,7 @@ class FormativeStatsReport {
     this.adapterRef.logger.warn('前一周期 video prev.bytesSent: ', prev.bytesSent)
     this.adapterRef.logger.warn('当前节点 video next.bytesSent: ', next.bytesSent)*/
     if (parseInt(next.googFrameRateInput) > 5 && parseInt(next.googFrameRateSent) <= 1) {
-      this.adapterRef.instance.emit('exception', {
+      this.adapterRef.instance.safeEmit('exception', {
         msg: 'FRAMERATE_SENT_TOO_LOW',
         code: 1002,
         uid
@@ -1039,7 +1166,7 @@ class FormativeStatsReport {
     }
     let videoSendBytesDelta = parseInt(next.bytesSent) - parseInt(prev.bytesSent)
     if (videoSendBytesDelta === 0) {
-      this.adapterRef.instance.emit('exception', {
+      this.adapterRef.instance.safeEmit('exception', {
         msg: 'FRAMERATE_VIDEO_BITRATE_TOO_LOW',
         code: 1003,
         uid
@@ -1056,6 +1183,10 @@ class FormativeStatsReport {
     if (remoteStream && muteStatus) {
       return
     }
+
+    if (!remoteStream || !remoteStream.Play || !remoteStream.Play.audioDom || !remoteStream.Play.audioDom.srcObject || remoteStream.Play.audioDom.muted) {
+      return
+    }
     /*this.adapterRef.logger.warn('前一周期 audio prev.bytesReceived: ', prev.bytesReceived)
     this.adapterRef.logger.warn('当前节点 audio next.bytesReceived: ', next.bytesReceived)
     this.adapterRef.logger.warn('前一周期 audio prev.googDecodingNormal: ', prev.googDecodingNormal)
@@ -1065,7 +1196,7 @@ class FormativeStatsReport {
     let audioDecodingNormalDelta = parseInt(next.googDecodingNormal) - parseInt(prev.googDecodingNormal)
 
     if (audioRecvBytesDelta > 0 && audioDecodingNormalDelta === 0) {
-      this.adapterRef.instance.emit('exception', {
+      this.adapterRef.instance.safeEmit('exception', {
         msg: 'RECV_AUDIO_DECODE_FAILED',
         code: 2005,
         uid
@@ -1074,7 +1205,7 @@ class FormativeStatsReport {
     if((audioRecvBytesDelta > 0 && audioDecodingNormalDelta > 0 && 0 === +(next.audioOutputLevel || next.audioLevel))) {
       const volume = remoteStream && remoteStream.Play && remoteStream.Play.audioDom && remoteStream.Play.audioDom.volume
       if (volume && volume > 0) {
-        this.adapterRef.instance.emit('exception', {
+        this.adapterRef.instance.safeEmit('exception', {
           msg: 'AUDIO_OUTPUT_LEVEL_TOO_LOW',
           code: 2002,
           uid
@@ -1097,7 +1228,7 @@ class FormativeStatsReport {
     this.adapterRef.logger.warn('当前节点 video next.googFrameRateDecoded: ', next.googFrameRateDecoded)*/
     let videoRecvBytesDelta = parseInt(next.bytesReceived) - parseInt(prev.bytesReceived)
     if (videoRecvBytesDelta > 0 && parseInt(next.googFrameRateDecoded) === 0) {
-      this.adapterRef.instance.emit('exception', {
+      this.adapterRef.instance.safeEmit('exception', {
         msg: 'RECV_VIDEO_DECODE_FAILED',
         code: 1005,
         uid
@@ -1119,7 +1250,7 @@ class FormativeStatsReport {
     this.adapterRef.logger.warn('当前节点 video next.googFrameRateDecoded: ', next.googFrameRateDecoded)*/
     let screenRecvBytesDelta = parseInt(next.bytesReceived) - parseInt(prev.bytesReceived)
     if (screenRecvBytesDelta > 0 && parseInt(next.googFrameRateDecoded) === 0) {
-      this.adapterRef.instance.emit('exception', {
+      this.adapterRef.instance.safeEmit('exception', {
         msg: 'RECV_SCREEN_DECODE_FAILED',
         code: 1005,
         uid
@@ -1417,11 +1548,6 @@ class FormativeStatsReport {
 
   send () {
     if (!this.infos.uid || !this.infos.cid) return
-
-    if (navigator.onLine === false){
-      console.warn("侦测到网络不在线，暂停上报")
-      return
-    }
       //上报G2的数据
       let datareport = new DataReport({
           adapterRef: this.adapterRef

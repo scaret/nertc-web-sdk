@@ -148,16 +148,16 @@ export class SpatialManager {
     }
   }
   init(){
-    this.client.on("stream-added", (evt: { stream: RemoteStream, mediaType: MediaTypeShort })=>{
+    this.client.addListener("@stream-added", (evt: { stream: RemoteStream, mediaType: MediaTypeShort })=>{
       const remote = this.getUserData(evt.stream.getId());
       evt.stream.setSubscribeConfig(this.options.subConfig);
       this.updatePosition(evt.stream.getId(), remote.position)
     })
-    this.client.on("stream-unsubscribed", (evt: { stream: RemoteStream, mediaType: MediaTypeShort })=>{
+    this.client.addListener("@stream-unsubscribed", (evt: { stream: RemoteStream, mediaType: MediaTypeShort })=>{
       const remote = this.getUserData(evt.stream.getId());
       this.updatePosition(evt.stream.getId(), remote.position)
     })
-    this.client.on("stream-subscribed", async (evt: {stream: RemoteStream, mediaType: MediaTypeShort})=>{
+    this.client.addListener("@stream-subscribed", async (evt: {stream: RemoteStream, mediaType: MediaTypeShort})=>{
       this.logger.log("Subscribed to", evt.stream.streamID, evt.mediaType);
       const remote = this.getUserData(evt.stream.getId());
       if (evt.mediaType === "audio"){

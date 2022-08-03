@@ -10,14 +10,14 @@ import {
   StatsReportOptions
 } from "../../types";
 import { SDK_VERSION } from '../../Config'
-import { generateUUID } from '../../util/rtcUtil/utilsId';
+import { generateUUID } from '../../util/rtcUtil/utils';
 import isEmpty from "../../util/rtcUtil/isEmpty";
 const sha1 =  require('js-sha1');
 
 const wsURL = 'wss://statistic.live.126.net/lps-websocket/websocket/collect';
 const DEV = 1; // 测试
 const PROD = 0; // 线上
-const deviceId = generateUUID();
+
 const platform = 'web';
 const sdktype = 'webrtc';
 const timestamp = new Date().getTime();
@@ -93,7 +93,7 @@ class StatsReport extends EventEmitter {
   }
 
   start () {
-    
+    let deviceId = generateUUID();
     let checkSum = sha1(`${PROD}${timestamp}${SDK_VERSION}${platform}${sdktype}${deviceId}${salt}`);
     let url = `${wsURL}?deviceId=${deviceId}&isTest=${PROD}&sdkVer=${SDK_VERSION}&sdktype=${sdktype}&timestamp=${timestamp}&platform=${platform}&checkSum=${checkSum}`;
     this.wsTransport_ = (<any>window).wsTransport = new WSTransport({
@@ -123,15 +123,16 @@ class StatsReport extends EventEmitter {
     try {
       if(this.isStartGetStats) { // 数据上报部分
         let data = await this.stats?.getAllStats();
+        //console.log('原始 data--->', data)
         let reportData = this.calculateReport(data);
-        // console.log('data--->', reportData)
+        //console.log('data--->', reportData)
         if(!env.IS_ELECTRON){ // Electron 上报的数据和 Chrome 不同，暂时不上报，后续需要再进行单独处理
           this.wsTransport_.sendPB(reportData);
         }
         
       }
     } catch (error) {
-      this.adapterRef.logger.error('getStats失败：' , error);
+      this.adapterRef.logger.log('doHeartbeat: ' , error);
     }
     
     

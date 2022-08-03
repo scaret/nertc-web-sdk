@@ -87,7 +87,7 @@ class Meeting extends EventEmitter {
     let curtime = Date.parse(new Date())/1000
     const md5str = appkey + "." + uid + "." + curtime
     try{
-      const data = await ajax({
+      const data = await this.adapterRef.lbsManager.ajax({
         url,
         type: 'POST',
         //contentType: 'application/x-www-form-urlencoded',
@@ -154,7 +154,7 @@ class Meeting extends EventEmitter {
       this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
       this.adapterRef.connectState.curState = 'DISCONNECTED'
       this.adapterRef.connectState.reconnect = false
-      this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
+      this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
       //上报getCloudProxyInfo失败事件
       this.adapterRef.instance.apiFrequencyControl({
         name: 'startProxyServer',
@@ -213,7 +213,7 @@ class Meeting extends EventEmitter {
       appkey
     })
     try{
-      let data = await ajax({
+      let data = await this.adapterRef.lbsManager.ajax({
         url, //'https://webtest.netease.im/nrtcproxy/nrtc/getChannelInfos.action'
         type: 'POST',
         contentType: 'application/x-www-form-urlencoded',
@@ -420,7 +420,7 @@ class Meeting extends EventEmitter {
         }
       }) 
       try {
-        const data:any = await ajax({
+        const data:any = await this.adapterRef.lbsManager.ajax({
           url, 
           type: 'POST',
           contentType: 'application/json;charset=utf-8',
@@ -505,7 +505,7 @@ class Meeting extends EventEmitter {
     for (let i=0; i < taskIds.length; i++) {
       this.logger.log('deleteTasks: ', taskIds[i])
       try {
-        const data:any = await ajax({
+        const data:any = await this.adapterRef.lbsManager.ajax({
           url, 
           type: 'POST',
           contentType: 'application/json;charset=utf-8',
@@ -620,7 +620,7 @@ class Meeting extends EventEmitter {
         }
       }) 
       try {
-        const data:any = await ajax({
+        const data:any = await this.adapterRef.lbsManager.ajax({
           url, 
           type: 'POST',
           contentType: 'application/json;charset=utf-8',

@@ -36,6 +36,7 @@ import {getParameters} from "../module/parameters";
 import {FormatMedia} from "../module/formatMedia"
 import {Record} from '../module/record'
 import * as env from '../util/rtcUtil/rtcEnvironment';
+import {alerter} from "../module/alerter";
 const BigNumber = require("bignumber.js");
 
 /**
@@ -127,42 +128,45 @@ class Client extends Base {
     };
     this._init(options)
     this.logger.info(`NERTC ${SDK_VERSION} ${BUILD}: 客户端创建成功。`);
-    this.on('connection-state-change', (evt)=>{
+    this.on('@connection-state-change', (evt)=>{
       if (evt.prevState === "CONNECTED"){
         if (this.recordManager.record?._status.isRecording && this.recordManager.record?._status.state === 'started'){
           this.logger.log("自动停止客户端录制功能")
           this.recordManager.record.download()
         }
       }
+      if (evt.curState === "CONNECTED" && evt.prevState === "CONNECTING"){
+        if (evt.reconnect){
+          this.adapterRef.lbsManager.startUpdate("reconnect")
+        }
+        if (this.adapterRef.datareportCache?.length){
+          this.logger.log(`上报进频道前事件：${this.adapterRef.datareportCache.length}条: ${this.adapterRef.datareportCache.map(e => e.func).join()}`)
+          this.adapterRef.datareportCache.forEach((cache)=>{
+            // @ts-ignore
+            const eventData:any = cache.datareport[cache.func]
+            if (eventData){
+              eventData.cid = eventData.cid || this.adapterRef.channelInfo.cid
+              eventData.uid = eventData.uid || this.adapterRef.channelInfo.uid
+            }
+            cache.datareport.send()
+          })
+          this.adapterRef.datareportCache = []
+        }
+      }
     })
-  }
-  
-  safeEmit (eventName:string, ...args: any[]){
-    // 对客户抛出的事件请使用这个函数
-    try{
-      this.emit(eventName, ...args);
-    }catch(e){
-      this.logger.error(`Error on event ${eventName}: ${e.name} ${e.message}`, e.stack);
-    }
   }
   
   // 初始化nrtc
   _init (options:ClientOptions) {
-    this.initWebSocket();
-    // let checkSum = sha1(`${wsParams.PROD}${wsParams.timestamp}${SDK_VERSION}${wsParams.platform}${wsParams.sdktype}${wsParams.deviceId}${wsParams.salt}`);
-    // let url = `${wsParams.wsURL}?deviceId=${wsParams.deviceId}&isTest=${wsParams.PROD}&sdkVer=${SDK_VERSION}&sdktype=${wsParams.sdktype}&timestamp=${wsParams.timestamp}&platform=${wsParams.platform}&checkSum=${checkSum}`;
-    // (<any>window).wsTransport = new WSTransport({
-    //   url: url,
-    //   adapterRef: this.adapterRef
-    // });
-    // (<any>window).wsTransport.init();
     const { appkey = '', token } = options
     if (!appkey) {
       this.logger.error('Client: init error: 请传入appkey')
-      // this.logStorage.log('log','Client: init error: 请传入appkey')
       throw new RtcError({code: ErrorCode.INVALID_PARAMETER, message:'请传入appkey'})
     }
     this._params.appkey = appkey
+    
+    this.adapterRef.lbsManager.loadBuiltinConfig("oninit")
+    
     this._params.token = token
     this._roleInfo = {
       userRole: 0, // 0:主播，1：观众
@@ -196,11 +200,15 @@ class Client extends Base {
         this.logger.debug('孤立的join完成回调')
       }
     }
-    this.on('pairing-join-success', handleJoinFinish);
-    this.on('pairing-join-error', handleJoinFinish);
+    this.addListener('@pairing-join-success', handleJoinFinish);
+    this.addListener('@pairing-join-error', handleJoinFinish);
+    
+    if (getParameters().enableAlerter !== "never"){
+      alerter.watchClient(this.adapterRef.instance)
+    }
   }
 
-  getUid() {
+  getUid() :number|undefined{
     return this.adapterRef.channelInfo && this.adapterRef.channelInfo.uid
   }
 
@@ -333,6 +341,21 @@ class Client extends Base {
    */
   async join (options: JoinOptions) {
     this.logger.log('join() 加入频道, options: ', JSON.stringify(options, null, ' '))
+    
+    // join执行同时发起lbs请求。向getChannelInfo的请求不会被
+    const localConfig = this.adapterRef.lbsManager.loadLocalConfig("onjoin")
+    if (localConfig.config){
+      // 载入LBS本地配置成功
+      const expireTime = localConfig.config.ts + localConfig.config.config.ttl * 1000 - Date.now()
+      if (expireTime < localConfig.config.config.preloadTimeSec * 1000){
+        this.logger.log(`LBS在 ${Math.floor(expireTime / 1000)} 秒后过期。preloadTimeSec: ${localConfig.config.config.preloadTimeSec}。发起异步刷新请求`)
+        this.adapterRef.lbsManager.startUpdate("renew")
+      }
+    }else{
+      // 载入本地配置失败=>载入内置配置，同时发起远程请求
+      this.adapterRef.lbsManager.startUpdate(localConfig.reason)
+    }
+    
     try {
       if (!options.channelName || options.channelName === '') { 
         throw new RtcError({code: ErrorCode.INVALID_PARAMETER, message:'join: 请填写房间名称'})
@@ -376,12 +399,12 @@ class Client extends Base {
         method: "join",
         options,
       })
-      this.emit('pairing-join-start')
+      this.safeEmit('@pairing-join-start')
       if(!this.adapterRef._statsReport){
         this.initWebSocket();
       }
       if (this.adapterRef.channelStatus === 'join' || this.adapterRef.channelStatus === 'connectioning') {
-        this.emit('pairing-join-error')
+        this.safeEmit('@pairing-join-error')
         return Promise.reject(
           new RtcError({
             code: ErrorCode.REPEAT_JOIN,
@@ -435,14 +458,14 @@ class Client extends Base {
         }
       }
       if (!this.adapterRef._meetings){
-        this.emit('pairing-join-error')
+        this.safeEmit('@pairing-join-error')
         throw new RtcError({
           code: ErrorCode.NO_MEETINGS,
           message: 'meetings error'
         })
       }
       const joinResult = await this.adapterRef._meetings.joinChannel(this._params.JoinChannelRequestParam4WebRTC2)
-      this.emit('pairing-join-success')
+      this.safeEmit('@pairing-join-success')
       this.apiFrequencyControl({
         name: 'join',
         code: 0,
@@ -452,7 +475,7 @@ class Client extends Base {
       })
       return joinResult
     } catch (e){
-      this.emit('pairing-join-error')
+      this.safeEmit('@pairing-join-error')
       this.apiFrequencyControl({
         name: 'join',
         code: -1,
@@ -573,7 +596,6 @@ class Client extends Base {
       options: stream,
     })
     let reason = ''
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     const onPublishFinish = ()=>{
       hookPublishFinish()
       const param: any = {
@@ -727,6 +749,7 @@ class Client extends Base {
         })
       }
       await this.adapterRef._mediasoup.destroyProduce('audio');
+      await this.adapterRef._mediasoup.destroyProduce('audioSlave');
       await this.adapterRef._mediasoup.destroyProduce('video');
       await this.adapterRef._mediasoup.destroyProduce('screen');
       this.adapterRef.localStream = null;
@@ -757,6 +780,7 @@ class Client extends Base {
     if (mediaType === "all"){
       const info = [
         this.getSubStatus(stream, "audio"),
+        this.getSubStatus(stream, "audioSlave"),
         this.getSubStatus(stream, "video"),
         this.getSubStatus(stream,"screen"),
       ];
@@ -858,6 +882,42 @@ class Client extends Base {
               data.recvFirstAudioFrame = false
               data.recvFirstAudioPackage = false
             }
+          }
+          this.logger.log('取消订阅音频流完成')
+        }
+      }
+
+      if (stream.subConf.audioSlave) {
+        // 应该订阅音频
+        if (stream.pubStatus.audioSlave.audioSlave && !stream.pubStatus.audioSlave.consumerId) {
+          if (stream.pubStatus.audioSlave.consumerStatus !== 'start') {
+            this.logger.log(`subscribe() [开始订阅 ${stream.getId()} 音频辅流]`)
+            stream.pubStatus.audioSlave.consumerStatus = 'start'
+            await this.adapterRef._mediasoup.createConsumer(uid, 'audio', 'audioSlave', stream.pubStatus.audioSlave.producerId);
+            stream.pubStatus.audioSlave.consumerStatus = 'end'
+            this.logger.log(`subscribe() [订阅 ${stream.getId()} 音频辅流完成]`)
+          }
+        }
+      } else {
+        // 不应该订阅音频
+        if (stream.pubStatus.audioSlave.consumerId && stream.pubStatus.audioSlave.stopconsumerStatus !== 'start') {
+          this.logger.log('开始取消订阅音频流')
+          stream.pubStatus.audioSlave.stopconsumerStatus = 'start'
+          if (!this.adapterRef._mediasoup){
+            throw new RtcError({
+              code: ErrorCode.NO_MEDIASERVER,
+              message: 'media server error 7'
+            })
+          }
+          await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.audioSlave.consumerId, stream, 'audioSlave');
+          this.adapterRef.instance.removeSsrc(stream.getId(), 'audioSlave')
+          stream.pubStatus.audioSlave.consumerId = '';
+          stream.stop('audioSlave')
+          stream.pubStatus.audioSlave.stopconsumerStatus = 'end'
+          stream.subStatus.audioSlave = false
+          const uid = stream.getId()
+          if(uid){
+            delete this.adapterRef.remoteAudioSlaveStats[uid];
           }
           this.logger.log('取消订阅音频流完成')
         }
@@ -1002,15 +1062,15 @@ class Client extends Base {
    * @param {Stream} Stream类型
    * @returns {Promise}  
    */
-  async unsubscribe (stream:RemoteStream) {
+  async unsubscribe (stream:RemoteStream, mediaType?: 'audio'|'audioSlave'|'video'|'screen') {
     checkExists({tag: 'client.unsubscribe:stream', value: stream});
-    return this.doUnsubscribe(stream)
+    return this.doUnsubscribe(stream, mediaType)
   }
 
-  async doUnsubscribe (stream:RemoteStream) {
-    this.logger.log('取消订阅远端音视频流: ', stream)
+  async doUnsubscribe (stream:RemoteStream, mediaType?: 'audio'|'audioSlave'|'video'|'screen') {
+    this.logger.log(`unsubscribe() [取消订阅远端音视频流: ${stream.stringStreamID}, mediaType: ${mediaType ? mediaType : 'all'}]`)
     try {
-      if (stream.pubStatus.audio.consumerId && stream.pubStatus.audio.stopconsumerStatus !== 'start') {
+      if ((mediaType === undefined || mediaType === 'audio') && stream.pubStatus.audio.consumerId && stream.pubStatus.audio.stopconsumerStatus !== 'start') {
         this.logger.log('开始取消订阅音频流')
         stream.pubStatus.audio.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup){
@@ -1021,6 +1081,7 @@ class Client extends Base {
         }
         await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.audio.consumerId, stream, 'audio');
         this.adapterRef.instance.removeSsrc(stream.getId(), 'audio')
+        stream.mediaHelper.updateStream('audio', null)
         stream.pubStatus.audio.consumerId = '';
         stream.stop('audio')
         stream.pubStatus.audio.stopconsumerStatus = 'end'
@@ -1037,7 +1098,30 @@ class Client extends Base {
         this.logger.log('取消订阅音频流完成')
       }
 
-      if (stream.pubStatus.video.consumerId && stream.pubStatus.video.stopconsumerStatus !== 'start'){
+      if ((mediaType === undefined || mediaType === 'audioSlave') && stream.pubStatus.audioSlave.consumerId && stream.pubStatus.audioSlave.stopconsumerStatus !== 'start') {
+        this.logger.log('开始取消订阅音频流')
+        stream.pubStatus.audioSlave.stopconsumerStatus = 'start'
+        if (!this.adapterRef._mediasoup){
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIASERVER,
+            message: 'media server error 7'
+          })
+        }
+        await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.audioSlave.consumerId, stream, 'audioSlave');
+        this.adapterRef.instance.removeSsrc(stream.getId(), 'audioSlave')
+        stream.mediaHelper.updateStream('audioSlave', null)
+        stream.pubStatus.audioSlave.consumerId = '';
+        stream.stop('audioSlave')
+        stream.pubStatus.audioSlave.stopconsumerStatus = 'end'
+        stream.subStatus.audioSlave = false
+        const uid = stream.getId()
+        if(uid){
+          delete this.adapterRef.remoteAudioSlaveStats[uid];
+        }
+        this.logger.log('取消订阅音频流完成')
+      }
+
+      if ((mediaType === undefined || mediaType === 'video') && stream.pubStatus.video.consumerId && stream.pubStatus.video.stopconsumerStatus !== 'start'){
         this.logger.log('开始取消订阅视频流')
         stream.pubStatus.video.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup){
@@ -1048,6 +1132,7 @@ class Client extends Base {
         }
         await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.video.consumerId, stream, 'video');
         this.adapterRef.instance.removeSsrc(stream.getId(), 'video')
+        stream.mediaHelper.updateStream('video', null)
         stream.pubStatus.video.consumerId = '';
         stream.stop('video')
         stream.pubStatus.video.stopconsumerStatus = 'end'
@@ -1065,7 +1150,7 @@ class Client extends Base {
         this.logger.log('取消订阅视频流完成')
       }
 
-      if (stream.pubStatus.screen.consumerId && stream.pubStatus.screen.stopconsumerStatus !== 'start'){
+      if ((mediaType === undefined || mediaType === 'screen') && stream.pubStatus.screen.consumerId && stream.pubStatus.screen.stopconsumerStatus !== 'start'){
         this.logger.log('开始取消订阅辅流')
         stream.pubStatus.screen.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup){
@@ -1076,6 +1161,7 @@ class Client extends Base {
         }
         await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.screen.consumerId, stream, 'screen');
         this.adapterRef.instance.removeSsrc(stream.getId(), 'screen')
+        stream.mediaHelper.updateStream('screen', null)
         stream.pubStatus.screen.consumerId = '';
         stream.stop('screen')
         stream.pubStatus.screen.stopconsumerStatus = 'end'
@@ -1378,8 +1464,9 @@ class Client extends Base {
   bindLocalStream(localStream: LocalStream){
     this.adapterRef.localStream = localStream
     localStream.client = this as IClient;
+    localStream.logger.parent = this.logger;
     const uid = this.getUid();
-    if (localStream.streamID !== uid){
+    if (uid && localStream.streamID !== uid){
       this.logger.warn('localStream更换streamID', localStream.streamID, '=>', uid);
       localStream.streamID = uid;
       localStream.stringStreamID = uid.toString();
@@ -1483,6 +1570,18 @@ class Client extends Base {
     })
   }
 
+  /**
+   * 获取本地发布流的音频辅流统计数据
+   * @function getLocalAudioSlaveStats
+   * @memberOf Client#
+   * @return {Promise}
+   */
+   getLocalAudioSlaveStats(){
+    return new Promise((resolve, reject) =>{
+      resolve(this.adapterRef.localAudioSlaveStats)
+    })
+  }
+
  /**
    * 获取本地发布流的音频统计数据
    * @function getLocalVideoStats
@@ -1509,6 +1608,12 @@ class Client extends Base {
   getRemoteAudioStats(){
     return new Promise((resolve, reject) =>{
       resolve(this.adapterRef.remoteAudioStats)
+    })
+  }
+
+  getRemoteAudioSlaveStats(){
+    return new Promise((resolve, reject) =>{
+      resolve(this.adapterRef.remoteAudioSlaveStats)
     })
   }
 
@@ -1607,18 +1712,20 @@ class Client extends Base {
     try {
         await this.adapterRef._meetings?.addTasks(options)
         this.adapterRef.instance.apiFrequencyControl({
-          name: 'addTasks',
+          name: 'onAddTasks',
           code: 0,
           param: {
+            lbsAddrs: this.adapterRef.lbsManager.getReportField("call"),
             clientUid: this.getUid()
           }
         })
     } catch (e) {
         this.adapterRef.instance.apiFrequencyControl({
-        name: 'addTasks',
+        name: 'onAddTasks',
         code: -1,
         param: {
           clientUid: this.getUid(),
+          lbsAddrs: this.adapterRef.lbsManager.getReportField("call"),
           reason: e.message
         }
       })
@@ -1662,18 +1769,20 @@ class Client extends Base {
     try {
         await this.adapterRef._meetings?.deleteTasks(options)
         this.adapterRef.instance.apiFrequencyControl({
-          name: 'deleteTasks',
+          name: 'onDeleteTasks',
           code: 0,
           param: {
+            lbsAddrs: this.adapterRef.lbsManager.getReportField("call"),
             clientUid: this.getUid()
           }
         })
     } catch (e) {
         this.adapterRef.instance.apiFrequencyControl({
-        name: 'deleteTasks',
+        name: 'onDeleteTasks',
         code: -1,
         param: {
           clientUid: this.getUid(),
+          lbsAddrs: this.adapterRef.lbsManager.getReportField("call"),
           reason: e.message
         }
       })
@@ -1717,18 +1826,20 @@ class Client extends Base {
     try {
         await this.adapterRef._meetings?.updateTasks(options)
         this.adapterRef.instance.apiFrequencyControl({
-          name: 'updateTasks',
+          name: 'onUpdateTasks',
           code: 0,
           param: {
-            clientUid: this.getUid()
+            clientUid: this.getUid(),
+            lbsAddrs: this.adapterRef.lbsManager.getReportField('call')
           }
         })
     } catch (e) {
         this.adapterRef.instance.apiFrequencyControl({
-        name: 'updateTasks',
+        name: 'onUpdateTasks',
         code: -1,
         param: {
           clientUid: this.getUid(),
+          lbsAddrs: this.adapterRef.lbsManager.getReportField("call"),
           reason: e.message
         }
       })
@@ -1905,7 +2016,7 @@ class Client extends Base {
         client: this.adapterRef.instance,
       })
       this.recordManager.record.on('media-recording-stopped', (evt)=>{
-        this.safeEmit('media-recording-stopped')
+        this.safeEmit('@media-recording-stopped')
       })
     }
     if (!this.recordManager.formatMedia) {

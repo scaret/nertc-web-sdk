@@ -7,17 +7,28 @@ import {ProducerCodecOptions} from "./3rd/mediasoup-client/Producer";
 
 interface IParameters{
 
+  // 存储了所有通过SDK的MediaStreamTrack，包括SDK开启的、外部输入的、小流等
   tracks: {
     audio: (MediaStreamTrack|null)[],
     video: (MediaStreamTrack|null)[],
   },
-  // 储存了通过createClient创建的客户端
+
   shimVideoOrientation: "never"|"ios151"|"allsafari",
+  
+  // ios15.1上行直接通过摄像头发送H264会导致页面崩溃，需要在canvas绘制后传输  
   shimCanvas: "never"|"ios151"|"always",
+
+  // 存储了通过createClient创建的客户端
   clients: Client[];
   
   // 存储了通过createStream创建的客户端
   localStreams: LocalStream[],
+  
+  // debugG2
+  debugG2: boolean,
+  
+  // 是否开启UI提示
+  enableAlerter: "never"|"nolistener"|"always",
   
   // 主流开开启小流时的视频采集参数
   videoLowDefaultConstraints: MediaTrackConstraints,
@@ -35,6 +46,8 @@ interface IParameters{
   
   // 最大PeerConnection重连次数
   maxTransportRebuildCnt: number,
+
+  // 整个页面打印在console里的最低logLevel等级
   logLevel: loglevels,
   
   // mediasoup中的编码选项
@@ -85,6 +98,20 @@ interface IParameters{
   enableUdpCandidate: boolean,
   // 最大事件循环卡顿提示次数
   maxEventLoopLagWarning: number,
+  // 兼容模式下怎么决定用哪个声道
+  audioInputcompatMode: "left"|"right"|"auto",
+  // 主链路无响应多久后启用备用链路
+  fireBackupDelay: number,
+  // audioAslFlag设为false时强制关闭ASL功能
+  audioAslFlag: boolean,
+  // 动态修改分辨率时是否尽量保留长宽比（即使保留长宽比，也会有zoom影响）
+  keepAspectRatio: boolean,
+  // 是否关闭LBS服务
+  disableLBSService: boolean,
+  // protoo单条消息的timeout时间。
+  protooMessageTimeout: number,
+  //是否复用已经取消订阅的远端媒体流的mid
+  reuseMid: boolean,
   // 修补Safari本地canvas track无法播放的问题
   shimLocalCanvas: "safari"|"all"|"never"
 }
@@ -98,6 +125,8 @@ let parameters:IParameters = {
   shimCanvas: "ios151",
   clients: [],
   localStreams: [],
+  debugG2: false,
+  enableAlerter: "never",
   videoLowDefaultConstraints: {width: {max: 320}, height: {max: 180}},
   screenLowDefaultConstraints: {width: {max: 320}, height: {max: 180}},
   controlOnPaused: true,
@@ -128,7 +157,7 @@ let parameters:IParameters = {
     },
   },
   screenFocus: true,
-  allowEmptyMedia: false,
+  allowEmptyMedia: true,
   keepLocalstreamOnLeave: false,
   joinFirstTimeout: 2000,
   joinMaxRetry: 3,
@@ -145,8 +174,52 @@ let parameters:IParameters = {
   enableTcpCandidate: true,
   enableUdpCandidate: true,
   maxEventLoopLagWarning: 3,
+  audioInputcompatMode: "auto",
+  fireBackupDelay: 5000,
+  audioAslFlag: true,
+  keepAspectRatio: false,
+  disableLBSService: false,
+  protooMessageTimeout: 30000,
+  reuseMid: true,
   shimLocalCanvas: "safari",
 }
+
+try{
+  if (location.search && typeof URLSearchParams === "function"){
+    const searchParams = new URLSearchParams(location.search)
+
+    let key:keyof typeof parameters
+    for(key in parameters){
+      const builtinValue = parameters[key]
+      const searchStr = searchParams.get(key)
+      if (searchStr){
+        let queryValue:number|string|boolean|null = null
+        if (typeof builtinValue === "string"){
+          queryValue = searchStr
+        } else if (typeof builtinValue === "boolean"){
+          if (searchStr === "true" || searchStr === "false"){
+            queryValue = (searchStr === "true")
+          }
+        } else if (typeof builtinValue === "number"){
+          queryValue = Number(searchStr)
+          if (Number(searchStr) > Number.MIN_SAFE_INTEGER){
+            queryValue = Number(searchStr)
+          }
+        }
+        if (queryValue !== null && builtinValue !== queryValue){
+          console.warn(`NERTC 通过URL改变了私有化变量：${key}:`, builtinValue, "=>",  queryValue)
+          // @ts-ignore
+          parameters[key] = queryValue
+        }
+      }
+    }
+  }  
+}catch(e){
+  // console.error(e)
+}
+
+
+
 
 // 注意：getParameters是一些私有全局变量，仅用于调试和私有接口，不用于正常业务
 export const getParameters = ()=>{

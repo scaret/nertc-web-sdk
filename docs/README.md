@@ -201,7 +201,6 @@ table th:nth-of-type(2) {
 
 通过 [[Client.on]] 和 [[Stream.on]] 方法监听 [[Client]] 和 [[Stream]] 方法触发的事件。
 
-
 ## <span id="errorCode">错误代码</span>
 以下为 SDK 可能抛出的错误，请参考下表进行处理
 
@@ -238,6 +237,6 @@ NO_RECORD | 41027 | 没有实例化 Record
 NOT_FOUND | 41028 | 未获取，可以通过 console 日志查看原因
 APPDATA_ERROR | 41029 | appData 错误，可以通过 console 日志查看原因
 AUTO_PLAY_NOT_ALLOWED | 41030 | 自动播放受限
-MEDIA_OPEN_BANNED_BY_SERVER ｜ 41032 ｜ 被服务器禁言
+MEDIA_OPEN_BANNED_BY_SERVER | 41032 | 被服务器禁言
 UNKNOWN | 99999 | 未知错误
 

@@ -1,5 +1,6 @@
 import {getParameters} from "../../module/parameters";
-import {RtcSystem} from "./rtcSystem";
+import * as env from "./rtcEnvironment";
+import {RTCCanvas} from "./rtcCanvas";
 
 
 export function canShimCanvas(){
@@ -9,7 +10,7 @@ export function canShimCanvas(){
   }else if (getParameters().shimCanvas === "always"){
     result = true;
   }else if (getParameters().shimCanvas === "ios151") {
-    if (RtcSystem.ios() && navigator.userAgent.indexOf(" OS 15_1") > -1){
+    if (env.IS_IOS && navigator.userAgent.indexOf(" OS 15_1") > -1){
       return true;
     }else{
       return false;
@@ -19,11 +20,13 @@ export function canShimCanvas(){
 }
 
 export function shimCanvas(trackInput: MediaStreamTrack){
-  const canvasElem = document.createElement("canvas");
+  let rtcCanvas = new RTCCanvas('canvas');
   const videoElem = document.createElement("video");
+  let canvasElem = rtcCanvas._canvas;
+
   let settings = trackInput.getSettings()
   let frameRate = settings.frameRate || 15
-  const ctx = canvasElem.getContext("2d");
+  let ctx = rtcCanvas._ctx;
   
   // 新建一个videoElem
   const ms = new MediaStream([trackInput]);
@@ -35,8 +38,7 @@ export function shimCanvas(trackInput: MediaStreamTrack){
   videoElem.style.display = "none"
   videoElem.onresize = ()=>{
     if (videoElem.videoWidth && videoElem.videoHeight){
-      canvasElem.width = videoElem.videoWidth;
-      canvasElem.height = videoElem.videoHeight;
+      rtcCanvas.setSize(videoElem.videoWidth, videoElem.videoHeight)
     }
   }
   if (ctx){
@@ -67,7 +69,8 @@ export function shimCanvas(trackInput: MediaStreamTrack){
         ctx.drawImage(videoElem, 0, 0);
       }
     }, 1000 / (frameRate))
-    document.body.appendChild(videoElem)
+    document.body.appendChild(videoElem);
+    rtcCanvas.destroy();
     return canvasTrack;
   }else{
     throw new Error("Ctx not supported")

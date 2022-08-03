@@ -12,12 +12,20 @@ import {LocalStream} from "./api/localStream";
 import {SpatialManager} from "./api/spatialManager";
 import {OperationQueue} from "./util/OperationQueue";
 import {NERTC_VIDEO_QUALITY_ENUM, VIDEO_FRAME_RATE_ENUM} from "./constant/videoQuality";
+import {LBSManager} from "./module/LBSManager";
+import {DataReport} from "./module/report/dataReport";
 
 type UIDTYPE = number | string;
 
 export interface AdapterRef {
+  datareportCache: {func: string, datareport: DataReport}[];
+  audioAsl: {
+    enabled: "yes"|"no"|"unknown",
+    aslActiveNum: number,
+  },
   uid2SscrList: {[uid in UIDTYPE]:{
       audio:{ssrc: number},
+      audioSlave: {ssrc: number},
       video:{ssrc: number},
       screen:{ssrc: number},
     }
@@ -50,6 +58,7 @@ export interface AdapterRef {
   mediaCapability: MediaCapability;
   nim?: any;
   instance: Client;
+  lbsManager: LBSManager,
   channelInfo?: any;
   apiEvent: {
     [prop: string]: APIEventItem[];
@@ -75,6 +84,9 @@ export interface AdapterRef {
   remoteAudioStats: {
     [uid in UIDTYPE]: MediaStats
   }
+  remoteAudioSlaveStats: {
+    [uid in UIDTYPE]: MediaStats
+  }
   remoteVideoStats: {
     [uid in UIDTYPE]: MediaStats
   } 
@@ -87,6 +99,9 @@ export interface AdapterRef {
   // 未发布localStream时，该值指向null
   localStream: LocalStream|null;
   localAudioStats: {
+    [uid in UIDTYPE]: LocalAudioStats
+  } 
+  localAudioSlaveStats: {
     [uid in UIDTYPE]: LocalAudioStats
   } 
   localVideoStats: [LocalVideoStats];
@@ -120,13 +135,15 @@ export interface AdapterRef {
   userPriority: MediaPriorityOptions;
   proxyServer: ProxyServerOptions;
   encryption: Encryption,
+  isAudioBanned: boolean,
+  isVideoBanned: boolean
 }
 
 export type ConnectionState = 'DISCONNECTED'|'CONNECTING'|'CONNECTED'|'DISCONNECTING';
 
 // screenShare 为服务端协议叫法，但代码中有大量screen叫法，故使用这种不好的类型名做区分。
-export type MediaType = 'audio'|'video'|'screenShare';
-export type MediaTypeShort = 'audio'|'video'|'screen';
+export type MediaType = 'audio'|'video'|'screenShare'|'audioSlave';
+export type MediaTypeShort = 'audio'|'video'|'screen'|'audioSlave';
 
 export interface NetStatusItem{
   uid: number|string;
@@ -142,6 +159,7 @@ export interface ILogger{
   warn: (...msg:any)=>void
   error: (...msg:any)=>void
   getChild: (tagGen: ()=>string)=>ILogger;
+  parent?: ILogger;
 }
 
 export interface LogStorage{
@@ -189,6 +207,7 @@ export interface LoginEvent extends DataEvent{
   supported_codec_recv?: string;
   preferred_codec_send?: string;
   roomCodecType?: string;
+  lbs_addrs: any;
 }
 
 export interface ReloginEvent extends DataEvent{
@@ -246,6 +265,23 @@ export interface HeartbeatEvent extends DataEvent {
   sys?:string;
   tx?:string;
   rx?:string;
+}
+
+export interface RequestLBSEvent extends DataEvent{
+  app_key: string;
+  request_id: string;
+  err_code: number;
+  err_msg: string;
+  rtt: number;
+  time: number;
+}
+
+export interface AudioVideoBannedEvent extends DataEvent{
+  cid: string;
+  uid: string;
+  isAudioBanned: boolean;
+  isVideoBanned: boolean;
+  time: number;
 }
 
 export interface WholeStatsReportOptions{
@@ -540,7 +576,8 @@ export interface StatsReportOptions{
 
 export interface AudioLevelOptions{
   stream: MediaStream;
-  adapterRef: AdapterRef;
+  logger: ILogger;
+  sourceNode?: AudioNode;
 }
 
 export interface WebAudioOptions{
@@ -728,6 +765,14 @@ export interface MediasoupManagerOptions{
   logger: ILogger;
 }
 
+export interface MediasoupManagerInitOptions{
+  ip: string;
+  port: number;
+  username: string;
+  password: string;
+  protocol: string[]
+};
+
 export interface ProduceConsumeInfo{
   uid: number|string;
   kind: 'audio'|'video';
@@ -766,6 +811,7 @@ export interface LocalStreamOptions{
 export interface RemoteStreamOptions{
   uid: number|string;
   audio: boolean;
+  audioSlave: boolean;
   video: boolean;
   screen: boolean;
   client: Client;
@@ -804,7 +850,7 @@ export interface Client{
   }
   spatialManager: SpatialManager|null;
   operationQueue: OperationQueue
-  apiEventReport: (eventName: string, eventData: any)=>void
+  apiEventReport: (eventName: keyof DataReport, eventData: any)=>void
   getPeer: (sendOrRecv: 'send'|'recv')=>any
   leave: ()=>any
   addSsrc: (uid:number|string, kind:MediaTypeShort, ssrc:number)=>any
@@ -815,17 +861,19 @@ export interface Client{
   removeSsrc: (uid:number|string, kind?:MediaTypeShort) => void
   stopSession: ()=>void
   startSession: ()=>void
-  on: (eventName: string, listener: (evt: any)=>void)=>void
+  addListener: (eventName: string, listener: (evt: any)=>void)=>void
   isPublished: (stream: LocalStream) => boolean
   getSubStatus: (stream: RemoteStream, mediaType: MediaTypeShort|"all") => MediaSubStatus
   clearMember: (uid: number | string) => void
   resetChannel: ()=>void
+  bindLocalStream: (stream: LocalStream)=>void
   // 注：当前接口不应存在只有用户调用的方法，以避免SDK内部调用。
   // 例如，开启空间音频时禁止用户Subscribe，此时SDK内部应调用doSubscribe。
   doSubscribe: (stream: RemoteStream)=>Promise<void>
   doUnsubscribe: (stream: RemoteStream)=>void
   doPublish: (stream: LocalStream)=>void
   updateRecordingAudioStream: ()=>void
+  _events?: {[eventName: string]: any}
 }
 
 export type ConsumerStatus = "init"|"start"|"end"
@@ -839,6 +887,15 @@ export type MediaSubStatus = {
 export interface PubStatus{
   audio: {
     audio: boolean;
+    producerId: string;
+    consumerId: string;
+    consumerStatus: ConsumerStatus;
+    stopconsumerStatus: string;
+    mute: boolean;
+    simulcastEnable: boolean;
+  },
+  audioSlave: {
+    audioSlave: boolean;
     producerId: string;
     consumerId: string;
     consumerStatus: ConsumerStatus;
@@ -868,6 +925,7 @@ export interface PubStatus{
 
 export interface SubscribeOptions{
   audio?: boolean;
+  audioSlave: boolean;
   video?: boolean|"high"|"low";
   screen?: boolean|"high"|"low";
   highOrLow?: number;
@@ -875,6 +933,7 @@ export interface SubscribeOptions{
 
 export interface SubscribeConfig{
   audio: boolean;
+  audioSlave: boolean;
   video: boolean;
   screen: boolean;
   highOrLow: {
@@ -1001,6 +1060,7 @@ export type AudioCodecType = "OPUS";
 export interface SpatialInitOptions {
   subConfig: {
     audio: boolean;
+    audioSlave: boolean;
     video: boolean;
     screen: boolean;
   }
@@ -1309,6 +1369,7 @@ export interface ExistsOptions{
 
 export interface StreamPlayOptions{
   audio?: boolean;
+  audioSlave?: boolean;
   audioType?: "voice"|"music"|"mixing";
   video?: boolean;
   screen?: boolean;
@@ -1354,6 +1415,51 @@ export interface PreProcessingHistoryInfo{
   }[]
 }
 
+export interface GUMAudioConstraints{
+  channelCount: number;
+  deviceId?: {
+    exact: string
+  },
+  
+  echoCancellation?: boolean;
+  googEchoCancellation?: boolean;
+  googEchoCancellation2?: boolean;
+
+  noiseSuppression?: boolean;
+  googNoiseSuppression?: boolean;
+  googNoiseSuppression2?: boolean;
+
+  autoGainControl?: boolean;
+  googAutoGainControl?: boolean;
+  googAutoGainControl2?: boolean;
+  
+  
+}
+
+export interface GUMVideoConstraints{
+  mandatory?: any;
+  width?: {
+    ideal: number;
+  }
+  height?:{
+    ideal: number;
+  }
+  frameRate?:{
+    ideal: number;
+  }
+  facingMode?: {
+    exact: string;
+  }
+  deviceId?: {
+    exact: string
+  }
+}
+
+export interface GUMConstaints{
+  audio?: GUMAudioConstraints
+  video?: GUMVideoConstraints
+}
+
 export interface FormatMediaOptions{
   adapterRef: AdapterRef;
 }
@@ -1362,4 +1468,21 @@ export interface BeautyEffectOptions {
   brightnessLevel: number;
   rednessLevel: number;
   smoothnessLevel: number;
+}
+
+export interface AdvancedBeautyEffectOptions {
+  thinFaceLevel: number;
+  bigEyesLevel: number;
+}
+
+export interface PluginOptions {
+  key: string;
+  pluginUrl?: string;
+  pluginObj?: AnyClass;
+  wasmUrl?: string;
+}
+
+type AnyClass = {
+  new(...args: any): AnyClass;
+  [key:string]: any
 }

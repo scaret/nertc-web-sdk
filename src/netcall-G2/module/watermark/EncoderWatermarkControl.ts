@@ -526,10 +526,7 @@ export class EncoderWatermarkControl extends EventEmitter{
       });
     }
   }
-
-  start(mediaHelper: MediaHelper){
-    mediaHelper.enablePreProcessing()
-  }
+  
 }
 
 export function createEncoderWatermarkControl(logger:ILogger){

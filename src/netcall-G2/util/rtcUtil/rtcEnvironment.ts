@@ -4,12 +4,14 @@ export const IS_IPHONE = /iPhone/i.test(USER_AGENT) && !IS_IPAD;
 export const IS_IPOD = /iPod/i.test(USER_AGENT);
 export const IS_IOS = IS_IPHONE || IS_IPAD || IS_IPOD;
 
+
+
 export const IOS_VERSION =
   IS_IOS &&
   (function() {
     const match = USER_AGENT.match(/\b[0-9]+_[0-9]+(?:_[0-9]+)?\b/)||[''];
     if (match && match[0]) {
-        return parseFloat(match[0].replace(/_/g,'.'));
+        return match[0].replace(/_/g,'.');
     }
     return null;
   })();
@@ -26,11 +28,14 @@ export const ANDROID_VERSION =
       return null;
     }
 
-    const major = match[1] && parseFloat(match[1]);
-    const minor = match[2] && parseFloat(match[2]);
+    const major = match[1];
+    const minor = match[2];
+    const minor2 = match[3];
 
-    if (major && minor) {
-      return parseFloat(match[1] + '.' + match[2]);
+    if(major && minor && minor2){
+      return major + '.' + minor + '.' + minor2;
+    }else if (major && minor) {
+      return major + '.' + minor;
     } else if (major) {
       return major;
     }
@@ -223,15 +228,46 @@ export const IPADQQB_VERSION =
 
 // window system
 export const IS_WIN = /Windows/i.test(USER_AGENT);
+export const WIN_VERSION =
+  IS_WIN &&
+  (function() {
+    const match = USER_AGENT.match(/Windows NT (\d+)(?:\.(\d+))?(?:\.(\d+))*/i);
+    const major = match && match[1];
+    const minor = match && match[2];
+
+    if (major && minor) {
+      return major + '.' + minor;
+    } else if (major) {
+      return major;
+    }
+    return null;
+  })();
 // MAC system，先检查 IOS
 export const IS_MAC = !IS_IOS && /MAC OS X/i.test(USER_AGENT);
+
+export const MACOS_VERSION = 
+  IS_MAC &&
+  (function() {
+    const match = USER_AGENT.match(/\b[0-9]+_[0-9]+(?:_[0-9]+)?\b/)||[''];
+    if (match && match[0]) {
+        return match[0].replace(/_/g,'.');
+    }
+    return null;
+  })();
+
 export const IS_LINUX = !IS_ANDROID && /Linux/i.test(USER_AGENT);
 // weixin
 export const IS_WX = /MicroMessenger/i.test(USER_AGENT);
 export const IS_UCBROWSER = /UCBrowser/i.test(USER_AGENT);
 // electron
 export const IS_ELECTRON = /Electron/i.test(USER_AGENT);
-
+export const ELECTRON_VERSION =
+IS_ELECTRON && 
+(function() {
+  const match = USER_AGENT.match(/Electron\/([\d.]+)/);
+  if (match && match[1]) return match[1];
+  return null;
+})();
 // xiaomi
 export const IS_MIBROWSER = /MiuiBrowser/i.test(USER_AGENT);
 export const MI_VERSION =

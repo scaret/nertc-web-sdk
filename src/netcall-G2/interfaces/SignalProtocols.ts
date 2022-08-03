@@ -71,6 +71,8 @@ const VideoCodecInt2Str = {
 export {VideoCodecStr2Int, VideoCodecInt2Str}
 
 export interface SignalJoinRes extends SignalResBase{
+  aslActiveNum: number;
+  supportWebAsl?: boolean;
   appid: string;
   mode: SignalChannelMode;
   edgeMode: number;
@@ -112,6 +114,14 @@ export interface SignalJoinRes extends SignalResBase{
   edgeRtpCapabilities: {
     codecs: any[],
     headerExtensions: any[],
+  };
+  supportTurn?: boolean;
+  turnParameters?: {
+    ip: string;
+    port: number;
+    username: string;
+    password: string;
+    protocol: string[]
   };
   supportRandomIceUfrag?: boolean;
 }
