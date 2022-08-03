@@ -1167,6 +1167,12 @@ function getRemoteView(uid) {
 function updateRemoteViewInfo() {
   for (let i = 0; i < remoteViews.length; i++) {
     const view = remoteViews[i];
+    if (rtc.client && rtc.client.adapterRef.connectState.curState === "DISCONNECTED"){
+      if (view.$div.is(":visible")){
+        console.log(`侦测到客户端离线，隐藏远端视图：`, view.uid)
+        view.$div.hide()
+      }
+    }
     let title = `${view.platformType || "remote"} ${view.uid}`;
     ["audio", "video", "screen", "audioSlave"].forEach((mediaType) => {
       let infoStr = "";
