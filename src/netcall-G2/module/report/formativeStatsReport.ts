@@ -1318,6 +1318,12 @@ class FormativeStatsReport {
     let n = parseInt(data.googFrameRateInput)
     let i = parseInt(data.googFrameRateSent)
 
+    if (n <=0 || i <= 0) {
+      return {
+        totalFreezeTime: 2000,
+        freezeTime: 6
+      }
+    }
     //let stuckRate = (n - i) / n
 
     let value = Math.abs(n-i-2)
@@ -1373,6 +1379,13 @@ class FormativeStatsReport {
 
     let n = parseInt(data.googFrameRateInput)
     let i = parseInt(data.googFrameRateSent)
+
+    if (n <=0 || i <= 0) {
+      return {
+        totalFreezeTime: 2000,
+        freezeTime: 6
+      }
+    }
 
     //let stuckRate = (n - i) / n
     let value = Math.abs(n-i-2)
@@ -1433,6 +1446,14 @@ class FormativeStatsReport {
 
     let n = parseInt(next.googFrameRateReceived) || 0
     let i = parseInt(next.googFrameRateDecoded)
+
+    if (n <=0 || i <= 0) {
+      return {
+        totalFreezeTime: 2000,
+        freezeTime: 6
+      }
+    }
+
     let value = Math.abs(i-n-2)
     if (n > 15) {
       return {
@@ -1498,6 +1519,13 @@ class FormativeStatsReport {
 
     let n = parseInt(next.googFrameRateReceived)
     let i = parseInt(next.googFrameRateDecoded)
+
+    if (n <=0 || i <= 0) {
+      return {
+        totalFreezeTime: 2000,
+        freezeTime: 6
+      }
+    }
     // if (n >10 && i-n <= 3) {
     //   return {
     //     totalFreezeTime: 0,
