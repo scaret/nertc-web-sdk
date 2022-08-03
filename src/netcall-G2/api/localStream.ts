@@ -48,6 +48,7 @@ import VirtualBackground from "../module/video-post-processing/virtual-backgroun
 import AdvancedBeauty from "../module/video-post-processing/advanced-beauty";
 import { PluginType } from "../plugin/plugin-list";
 import {DeviceInfo, Device} from "../module/device";
+import {syncTrackState} from "../util/syncTrackState";
 
 /**
  *  请使用 {@link NERTC.createStream} 通过NERTC.createStream创建
@@ -1403,7 +1404,6 @@ class LocalStream extends RTCEventEmitter {
         if (!replaceResult.external){
           replaceResult.oldTrack.stop()
         }
-        replaceResult.oldTrackLow?.stop()
       }else{
         reason = "当前没有screen流"
         this.client.adapterRef.logger.error(`switchScreenStream: 无法切换到${external ? "自定义辅流": "屏幕共享"}: ${reason}`);
@@ -2595,7 +2595,7 @@ class LocalStream extends RTCEventEmitter {
     track: MediaStreamTrack,
     external: boolean,
   }){
-    // replaceTrack不会主动关掉原来的track，包括大小流
+    // 注意：replaceTrack不会主动关掉原来的track，但会关闭原先小流的Track
     let oldTrack;
     let oldTrackLow;
     let external = false; // 被替换的流是否是外部流
@@ -2697,6 +2697,8 @@ class LocalStream extends RTCEventEmitter {
         if (newTrackLow){
           senderLow.replaceTrack(newTrackLow);
           this.logger.log(`replaceTrack ${options.mediaType} 成功替换上行小流`)
+          oldTrackLow.stop()
+          syncTrackState(options.track, newTrackLow, "oneway")
         }
       }
     }
@@ -2711,7 +2713,6 @@ class LocalStream extends RTCEventEmitter {
 
     return {
       oldTrack,
-      oldTrackLow,
       external,
     }
   }

@@ -98,7 +98,7 @@ async function getStream (constraint:GUMConstaints, logger:ILogger) {
               source: track,
               dest: destTrack,
             }))
-            syncTrackState(track, destTrack)
+            syncTrackState(track, destTrack, "bidirectional")
             stream.removeTrack(track)
             stream.addTrack(destTrack)
             logger.log(`getStream：启用兼容模式成功`)
