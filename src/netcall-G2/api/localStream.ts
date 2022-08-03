@@ -47,6 +47,7 @@ import BasicBeauty from "../module/video-post-processing/basic-beauty";
 import VirtualBackground from "../module/video-post-processing/virtual-background";
 import AdvancedBeauty from "../module/video-post-processing/advanced-beauty";
 import { PluginType } from "../plugin/plugin-list";
+import {DeviceInfo, Device} from "../module/device";
 
 /**
  *  请使用 {@link NERTC.createStream} 通过NERTC.createStream创建
@@ -2491,7 +2492,10 @@ class LocalStream extends RTCEventEmitter {
     this.client.adapterRef.channelInfo.sessionConfig.videoFrameRate = this.videoProfile.frameRate
     let cameraTrack = this.mediaHelper.video.cameraTrack
     let cameraSettings = cameraTrack?.getSettings()
-    if (cameraSettings && !cameraSettings.width){
+    const deviceInfo = Device.deviceHistory.video.find((d:DeviceInfo)=>{
+      return d.deviceId === (cameraSettings && cameraSettings.deviceId)
+    })
+    if (cameraSettings && !cameraSettings.width || !deviceInfo){
       // 尝试寻找美颜的cameraTrack。不要直接判断是否是CanvasCaptureMediaStreamTrack因为Firefox不支持
       cameraSettings = this._cameraTrack?.getSettings()
       if (cameraSettings?.width && this._cameraTrack?.readyState === "live"){
