@@ -197,7 +197,7 @@ class Mediasoup extends EventEmitter {
   }
 
   async init(turnParameters?: MediasoupManagerInitOptions|undefined) {
-    this.logger.warn('初始化 devices、transport: ', turnParameters)
+    this.logger.warn('init() 初始化 devices、transport')
     if (this.adapterRef._enableRts) {
       return
     }
@@ -989,6 +989,18 @@ class Mediasoup extends EventEmitter {
 
   async createConsumer(uid:number|string, kind:'audio'|'video',mediaType: MediaType, id:string, preferredSpatialLayer:number = 0){
     this.adapterRef.instance.safeEmit('@pairing-createConsumer-start')
+    let isExist = false
+    //重复调用的问题在这里兼容去重，不再通过consumerStatus
+    this._eventQueue.forEach(item => {
+      if (item.id === id) {
+        this.loggerRecv.log(`[subscribe] 已经在订阅任务队列中，忽略该次请求, uid: ${uid}, mediaType: ${mediaType}, producerId: ${id}`)
+        isExist = true
+        return
+      }
+    })
+    if (isExist) {
+      return
+    }
     return new Promise((resolve, reject)=>{
       this._eventQueue.push({uid, kind, id, mediaType, preferredSpatialLayer, resolve, reject});
       if (this._eventQueue.length > 1) {
@@ -1034,12 +1046,12 @@ class Mediasoup extends EventEmitter {
 
   removeUselessConsumeRequest( options: {producerId?: string, uid?: number|string}) {
     const {producerId, uid} = options
-    if(!producerId || !uid) return
-    this.loggerRecv.log(`removeUselessConsumeRequest：producerId ${producerId}, uid ${uid}`)
-    for (let i = 0; i < this._eventQueue.length; i++){
+    if(!producerId && !uid) return
+    //清除订阅队列中已经无用的订阅任务，直接忽略当前的订阅任务，因为已经在流程中了，无法终止，即使错误了内部会兼容掉（伪造M行）
+    for (let i = 1; i < this._eventQueue.length; i++){
       const info:ProduceConsumeInfo = this._eventQueue[i];
-      this.loggerRecv.log(`removeUselessConsumeRequest：uid ${info.uid}, uid ${info.uid}, kind ${info.kind}, id ${info.id}`)
       if (info.id === producerId || info.uid === uid) {
+        this.loggerRecv.log(`removeUselessConsumeRequest：uid ${info.uid}, uid ${info.uid}, kind ${info.kind}, id ${info.id}`)
         this._eventQueue.splice(i, 1)
         i++
       }
@@ -1067,51 +1079,40 @@ class Mediasoup extends EventEmitter {
   async _createConsumer(info:ProduceConsumeInfo): Promise<"checkConsumerList"> {
     const {uid, kind, mediaType, id, preferredSpatialLayer = 0} = info;
     const mediaTypeShort = (mediaType === 'screenShare' ? 'screen' : mediaType);
-    if (mediaTypeShort === "audio"){
-      this.loggerRecv.log(`开始订阅 ${uid} 的 ${mediaTypeShort} 媒体: ${id}`)
-    }else{
-      this.loggerRecv.log(`开始订阅 ${uid} 的 ${mediaTypeShort} 媒体: ${id} preferredSpatialLayer: ${preferredSpatialLayer} 大小流: `, preferredSpatialLayer === 1 ? "大流" : "小流")
+    if (mediaTypeShort === "audio") {
+      this.loggerRecv.log(`[Subscribe] 开始订阅 ${uid} 的 ${mediaTypeShort} 媒体: ${id}`)
+    } else {
+      this.loggerRecv.log(`[Subscribe] 开始订阅 ${uid} 的 ${mediaTypeShort} 媒体: ${id} preferredSpatialLayer: ${preferredSpatialLayer} 大小流: `, preferredSpatialLayer === 1 ? "大流" : "小流")
     }
 
     if (!id) {
       this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
       return this.checkConsumerList(info)
     } else if (this.unsupportedProducers[id]){
-      const unsupportedProducerInfo = this.unsupportedProducers[id]
-      if (unsupportedProducerInfo.pc){
-        if (this._recvTransport?.handler._pc === unsupportedProducerInfo.pc){
-          this.loggerRecv.warn(`_createConsumer: 跳过不支持的Producer+Transport组合。ProducerId: ${id} transportId: ${this._recvTransport?._id}`, JSON.stringify(unsupportedProducerInfo.consumeRes))
-          return this.checkConsumerList(info)
-        }else{
-          this.loggerRecv.warn(`_createConsumer: 订阅黑名单中已更新的Producer：${unsupportedProducerInfo.pc.pcid} => ${this._recvTransport?.handler._pc.pcid}。ProducerId: ${id} transportId: ${this._recvTransport?._id}`, JSON.stringify(unsupportedProducerInfo.consumeRes))
-        }
-      }else{
-        this.loggerRecv.warn("_createConsumer: 跳过不支持的Producer", id, JSON.stringify(unsupportedProducerInfo.consumeRes))
-        return this.checkConsumerList(info)
-      }
+      this.loggerRecv.warn("[Subscribe] createConsumer: 跳过不支持的Producer", id, JSON.stringify(this.unsupportedProducers[id]))
+      return this.checkConsumerList(info)
     }
 
     const remoteStream = this.adapterRef.remoteStreamMap[uid]
     //@ts-ignore
     if (!remoteStream || !remoteStream.pubStatus[mediaTypeShort][mediaTypeShort] || !remoteStream.pubStatus[mediaTypeShort].producerId) {
-      //this._eventQueue = this._eventQueue.filter((item)=>{item.uid != uid })
-      this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
+      this.adapterRef.instance.safeEmit('@pairing-createConsumer-skip')
       return this.checkConsumerList(info)
     }
 
     if (remoteStream['pubStatus'][mediaTypeShort]['consumerId']) {
-      this.loggerRecv.log('已经订阅过')
+      this.loggerRecv.log('[Subscribe] 已经订阅过')
       let isPlaying = true
       if (remoteStream.Play) {
         isPlaying = await remoteStream.Play.isPlayStreamError(mediaTypeShort)
       }
 
       if (isPlaying) {
-        this.loggerRecv.log('当前播放正常，直接返回')
+        this.loggerRecv.log('[Subscribe] 当前播放正常，直接返回')
         this.adapterRef.instance.safeEmit('@pairing-createConsumer-skip')
         return this.checkConsumerList(info)
       } else if (remoteStream.pubStatus[mediaTypeShort].stopconsumerStatus !== 'start') {
-        this.loggerRecv.log('先停止之前的订阅')
+        this.loggerRecv.log('[Subscribe] 先停止之前的订阅')
         try {
           remoteStream.pubStatus[mediaTypeShort].stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup){
@@ -1126,7 +1127,7 @@ class Mediasoup extends EventEmitter {
           remoteStream.stop(mediaTypeShort)
           remoteStream.pubStatus[mediaTypeShort].stopconsumerStatus = 'end'
         } catch (e) {
-          this.loggerRecv.error('停止之前的订阅出现错误: ', e.name, e.message)
+          this.loggerRecv.error('[Subscribe] 停止之前的订阅出现错误: ', e.name, e.message)
         }
       }
     }
@@ -1138,7 +1139,7 @@ class Mediasoup extends EventEmitter {
       }
     }
     if (!this._mediasoupDevice || !this._mediasoupDevice.loaded) {
-      this.loggerRecv.error('createConsumer：Waiting for Transport Ready');
+      this.loggerRecv.warn('[Subscribe] createConsumer：Waiting for Transport Ready');
       await waitForEvent(this, 'transportReady', 3000);
     }
     if (!this._recvTransport) {
@@ -1150,9 +1151,9 @@ class Mediasoup extends EventEmitter {
       })
     }
 
-    this.loggerRecv.log(`prepareLocalSdp [kind: ${kind}, mediaTypeShort: ${mediaTypeShort}, uid: ${uid}]`);
+    this.loggerRecv.log(`[Subscribe] prepareLocalSdp [kind: ${kind}, mediaTypeShort: ${mediaTypeShort}, uid: ${uid}]`);
     if (this._recvTransport.id === this.adapterRef.channelInfo.uid) {
-      this.loggerRecv.log('transporth还没有协商，需要dtls消息')
+      this.loggerRecv.log('[Subscribe] transporth还没有协商，需要dtls消息')
       this._recvTransport._handler._transportReady = false
     }
     const prepareRes = 
@@ -1160,20 +1161,24 @@ class Mediasoup extends EventEmitter {
     if(!this.adapterRef || this.adapterRef.connectState.curState == 'DISCONNECTING' || this.adapterRef.connectState.curState == 'DISCONNECTED'){
       this.checkConsumerList(info)
     }
-    this.loggerRecv.log('获取本地sdp，mid =', prepareRes.mid);
+    this.loggerRecv.log('[Subscribe] 获取本地sdp，mid =', prepareRes.mid);
     let { rtpCapabilities, offer, iceUfragReg} = prepareRes;
     let mid:number|string|undefined = prepareRes.mid;
     const localDtlsParameters = prepareRes.dtlsParameters;
 
-    if (typeof mid === "number" && mid< 0) {
+    if (typeof mid === "number" && mid < 0) {
       mid = undefined
     } else {
       mid = `${mid}`
     }
     const iceUfragRegRemote = offer.sdp.match(/a=ice-ufrag:([0-9a-zA-Z=#+-_\/\\\\]+)/)
-    if (!iceUfragRegRemote){
-      throw new Error("iceUfragRegRemote is null");
+    if (!iceUfragRegRemote) {
+      throw new RtcError({
+        code: ErrorCode.UNKNOWN,
+        message: 'iceUfragRegRemote is null'
+      })
     }
+
     let subUid = uid
     if (this.adapterRef.channelInfo.uidType === 'string') {
       //@ts-ignore
@@ -1206,7 +1211,7 @@ class Mediasoup extends EventEmitter {
     } else {
       data.dtlsParameters = localDtlsParameters;
     }
-    this.loggerRecv.log(`发送consume请求, uid: ${uid}, kind: ${kind}, mediaTypeShort: ${mediaTypeShort}, producerId: ${data.producerId}, transportId: ${data.transportId}, requestId: ${data.requestId}`);
+    this.loggerRecv.log(`[Subscribe] 发送consume请求, uid: ${uid}, kind: ${kind}, mediaTypeShort: ${mediaTypeShort}, producerId: ${data.producerId}, transportId: ${data.transportId}, requestId: ${data.requestId}`);
     if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
       info.resolve(null);
       throw new RtcError({
@@ -1217,109 +1222,73 @@ class Mediasoup extends EventEmitter {
     const recvPC = this._recvTransport.handler._pc
     const _protoo = this.adapterRef._signalling._protoo
     let consumeRes:any = null
-    try{
+    try {
       consumeRes = await this.adapterRef._signalling._protoo.request('Consume', data);
-    }catch(e){
-      if (e.message === 'request timeout' && this.adapterRef._signalling._protoo === _protoo){
-        this.logger.error(`Consume消息Timeout，尝试信令重连：${e.name}/${e.message}。当前的连接状态：${this.adapterRef.connectState.curState}。原始请求：`, JSON.stringify(data))
+    } catch(e:any) {
+      if (e.message === 'request timeout' && this.adapterRef._signalling._protoo === _protoo) {
+        this.logger.error(`[Subscribe] Consume消息Timeout，尝试信令重连：${e.name}/${e.message}。当前的连接状态：${this.adapterRef.connectState.curState}。原始请求：`, JSON.stringify(data))
         this.adapterRef.channelStatus = 'connectioning'
         this.adapterRef._signalling._reconnection()
-      }else{
-        this.logger.error(`Consume消息错误：${e.name}/${e.message}。当前的连接状态：${this.adapterRef.connectState.curState}。原始请求：`, JSON.stringify(data))
+      } else {
+        this.logger.error(`[Subscribe] Consume消息错误：${e.name}/${e.message}。当前的连接状态：${this.adapterRef.connectState.curState}。原始请求：`, JSON.stringify(data))
       }
       throw new RtcError({
         code: ErrorCode.UNKNOWN,
         message: e.message
       })
     }
-    if (id != remoteStream.pubStatus[mediaTypeShort].producerId) {
-      this.loggerRecv.warn(`收到consumeRes后Producer已经更新。触发重建下行。uid: ${remoteStream.streamID} mediaType: ${mediaTypeShort} ProducerId: ${id} => ${remoteStream.pubStatus[mediaTypeShort].producerId} ，Consume结果忽略：`, consumeRes);
-      this.resetConsumeRequestStatus()
-      if (this._recvTransport) {
-        await this.closeTransport(this._recvTransport);
-      }
-      this.adapterRef.instance.reBuildRecvTransport()
-      return this.checkConsumerList(info);
-    }
     let { transportId, iceParameters, iceCandidates, dtlsParameters, probeSSrc, rtpParameters, producerId, consumerId, code, errMsg } = consumeRes;
-    if (code === 200) {
-      this.loggerRecv.log(`consume反馈结果: code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
-    } else if (code === 601){
-      // 某些情况下的Producer换了个Transport之后是可以订阅的。这个时候需要拉黑的是Producer+Transport的组合
-      this.loggerRecv.error(`consume请求失败，将Producer+Transport拉入黑名单:  uid: ${uid}, mediaType: ${mediaTypeShort}, producerId ${data.producerId} transportId ${this._recvTransport._id} code: ${code}, errMsg: ${errMsg}`, consumeRes);
-      this.unsupportedProducers[data.producerId] = {
-        pc: recvPC,
-        consumeRes: {
-          producerId: consumeRes.producerId,
-          code: code,
-          uid: uid,
-          mediaType: mediaTypeShort,
-          errMsg: errMsg,
-        }
-      };
-      return this.checkConsumerList(info);
-    } else {
-      this.loggerRecv.error(`consume请求失败，将Producer拉入黑名单:  uid: ${uid}, mediaType: ${mediaTypeShort}, producerId ${data.producerId} code: ${code}, errMsg: ${errMsg}`, consumeRes);
-      this.unsupportedProducers[data.producerId] = {
-        consumeRes: {
-          producerId: consumeRes.producerId,
-          code: code,
-          uid: uid,
-          mediaType: mediaTypeShort,
-          errMsg: errMsg,
-        }
-      };
-      return this.checkConsumerList(info);
-    }
+    this.loggerRecv.log(`[Subscribe] consume反馈结果 code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
+    // if (code === 200) {
+    //   //this.loggerRecv.log(`[Consume] consume反馈结果: code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
+    // } else if (code === 601){
+    //   //通过伪造M行的方式，当然第一次订阅就失败的话，由重连cover，这里就不再执行黑名单的逻辑了
+    //   // 某些情况下的Producer换了个Transport之后是可以订阅的。这个时候需要拉黑的是Producer+Transport的组合
+    //   // this.loggerRecv.error(`consume请求失败，将Producer+Transport拉入黑名单:  uid: ${uid}, mediaType: ${mediaTypeShort}, producerId ${data.producerId} transportId ${this._recvTransport._id} code: ${code}, errMsg: ${errMsg}`, consumeRes);
+    //   // this.unsupportedProducers[data.producerId] = {
+    //   //   pc: recvPC,
+    //   //   consumeRes: {
+    //   //     producerId: consumeRes.producerId,
+    //   //     code: code,
+    //   //     uid: uid,
+    //   //     mediaType: mediaTypeShort,
+    //   //     errMsg: errMsg,
+    //   //   }
+    //   // };
+    //   // return this.checkConsumerList(info);
+    // } else if (this._recvTransport?._handler._pc.remoteDescription === null){
+    //   //通过伪造M行的方式，当然第一次订阅就失败的话，由重连cover，这里就不再执行黑名单的逻辑了，由于是首次订阅进行的重连，应该不影响用户体验
+    //   // this.loggerRecv.error(`[Subscribe] consume请求失败，将Producer拉入黑名单:  uid: ${uid}, mediaType: ${mediaTypeShort}, producerId ${data.producerId} code: ${code}, errMsg: ${errMsg}`, consumeRes);
+    //   // this.unsupportedProducers[data.producerId] = {
+    //   //   producerId: consumeRes.producerId,
+    //   //   code: code,
+    //   //   uid: uid,
+    //   //   mediaType: mediaTypeShort,
+    //   //   errMsg: errMsg,
+    //   // };
+    //   // return this.checkConsumerList(info);
+    //   //this.loggerRecv.log(`consume反馈结果: code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
+    // } 
+    
+    // if (id != remoteStream.pubStatus[mediaTypeShort].producerId) {
+    //   //这里不用关心，其实只要是producerId不一致，就会进入订阅队列
+    //   this.loggerRecv.log('[Subscribe] 此前的订阅已经失效，重新订阅')
+    //   this.adapterRef.instance.doSubscribe(remoteStream)
+    // }
+
     if (!this._recvTransport) {
-      this.loggerRecv.error(`transport undefined，直接返回`)
+      this.loggerRecv.error(`[Subscribe] transport undefined，直接返回`)
       return this.checkConsumerList(info)
     }
+
     try {
       const peerId = consumeRes.uid
-      if (code !== 200 || !this.adapterRef.remoteStreamMap[uid]) {
-        this.loggerRecv.warn('remoteStream.pubStatus: ', remoteStream.pubStatus)
-        
-        if (peerId && uid != peerId) {
-          this.loggerRecv.log('peerId: ', peerId)
-          this.loggerRecv.log('id 不匹配不处理')
-        }
-        //@ts-ignore
-        if (!remoteStream[mediaTypeShort] || !remoteStream.pubStatus[mediaTypeShort][mediaTypeShort] || !remoteStream.pubStatus[mediaTypeShort].producerId) {
-          this.loggerRecv.log(`${uid} 的 ${mediaTypeShort} 的媒体已经停止发布了，直接返回`)
-        }
-        //底层做了M行伪造处理，所以遇到非2oo的回复，不用关心
-        await this._recvTransport.recoverLocalSdp(uid, mid, kind)
-        
-        this.loggerRecv.log('发送请求的 producerId: ', id)
-        this.loggerRecv.log('当前的 producerId：', remoteStream.pubStatus[mediaTypeShort].producerId)
-        if (remoteStream.pubStatus[mediaTypeShort].producerId && id != remoteStream.pubStatus[mediaTypeShort].producerId) {
-          this.loggerRecv.log('此前的订阅已经失效，重新订阅')
-          this.adapterRef.instance.doSubscribe(remoteStream).then(()=>{
-            this.adapterRef.instance.safeEmit('@pairing-createConsumer-success')
-          }).catch(()=>{
-            this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
-          })
-        } else {
-          this.adapterRef.instance.safeEmit('@pairing-createConsumer-skip')
-        }
-        return this.checkConsumerList(info)
-
-        /*this.loggerRecv.warn('订阅 %s 的 %s 媒体失败, errcode: %s, reason: %s ，做容错处理: 重新建立下行连接', uid, kind, code, errMsg)
-        if (this._recvTransport) {
-          await this.closeTransport(this._recvTransport);
-        }
-        this.resetConsumeRequestStatus()
-        this.adapterRef.instance.reBuildRecvTransport()
-        return*/
-      } 
       if (rtpParameters && rtpParameters.encodings && rtpParameters.encodings.length && rtpParameters.encodings[0].ssrc) {
         this.adapterRef.instance.addSsrc(uid, mediaTypeShort, rtpParameters.encodings[0].ssrc)
       }
       if (transportId !== undefined) {
         this._recvTransport._id = transportId;
       }
-
       if (probeSSrc !== undefined) {
         this._probeSSrc = probeSSrc;
       }
@@ -1327,36 +1296,36 @@ class Mediasoup extends EventEmitter {
         this._recvTransportIceParameters = iceParameters
       } 
       
-      let appData = {};
-      if(rtpParameters.mid != undefined) {
+      if(rtpParameters && rtpParameters.mid != undefined) {
         rtpParameters.mid = rtpParameters.mid + '' 
       }
       
       const consumer = await this._recvTransport.consume({
-        id: consumerId,
-        producerId,
+        id: consumerId || producerId || id, //服务器400的错误中，response是不反馈consumerId和producerId，这里使用本地保存的id
+        producerId: producerId || id,
         kind,
         mediaType: mediaTypeShort,
         uid: uid || peerId,
         rtpParameters,
         codecOptions,
-        appData: { ...appData, peerId, remoteUid: uid }, // Trick.
+        appData: { peerId, remoteUid: uid, mid}, // Trick.
         offer,
         iceParameters,
         iceCandidates,
         dtlsParameters,
         sctpParameters: undefined,
         probeSSrc: this._probeSSrc
-      });
-      if ((this.adapterRef.encryption.encodedInsertableStreams) && consumer.rtpReceiver){
+      })
+      if ((this.adapterRef.encryption.encodedInsertableStreams) && consumer.rtpReceiver) {
         this.enableRecvTransform(consumer.rtpReceiver, uid, mediaTypeShort)
       }
       this._consumers[consumer.id] = consumer;
 
       consumer.on('transportclose', () => {
-        this._consumers && delete this._consumers[consumer.id];
-      });
-      this.loggerRecv.log('订阅consume完成 peerId =', peerId);
+        this._consumers && delete this._consumers[consumer.id]
+      })
+
+      this.loggerRecv.log('[Subscribe] 订阅consume完成 peerId =', peerId)
       if (remoteStream && remoteStream['pubStatus'][mediaTypeShort]['producerId']) {
         remoteStream['subStatus'][mediaTypeShort] = true
         //@ts-ignore
@@ -1364,13 +1333,13 @@ class Mediasoup extends EventEmitter {
         remoteStream['pubStatus'][mediaTypeShort]['consumerId'] = consumerId
         remoteStream['pubStatus'][mediaTypeShort]['producerId'] = producerId
         if (remoteStream.getMuteStatus(mediaTypeShort).muted){
-          this.loggerRecv.log(`远端流处于mute状态：uid ${remoteStream.getId()}, ${mediaTypeShort}, ${JSON.stringify(remoteStream.getMuteStatus(mediaTypeShort))}`);
+          this.loggerRecv.log(`[Subscribe] 远端流处于mute状态：uid ${remoteStream.getId()}, ${mediaTypeShort}, ${JSON.stringify(remoteStream.getMuteStatus(mediaTypeShort))}`);
           const muteStatus = remoteStream.getMuteStatus(mediaTypeShort);
           if (muteStatus.send){
-            this.loggerRecv.log(`远端流把自己mute了：uid ${remoteStream.getId()}, ${mediaTypeShort}, ${JSON.stringify(muteStatus)}`);
+            this.loggerRecv.log(`[Subscribe] 远端流把自己mute了：uid ${remoteStream.getId()}, ${mediaTypeShort}, ${JSON.stringify(muteStatus)}`);
           }
           if (muteStatus.recv){
-            this.loggerRecv.log(`本端把远端流mute了：uid ${remoteStream.getId()}, ${mediaTypeShort}, ${JSON.stringify(muteStatus)}`);
+            this.loggerRecv.log(`[Subscribe] 本端把远端流mute了：uid ${remoteStream.getId()}, ${mediaTypeShort}, ${JSON.stringify(muteStatus)}`);
             consumer.track.enabled = false
           }
         }
@@ -1385,17 +1354,16 @@ class Mediasoup extends EventEmitter {
         this.adapterRef.instance.safeEmit('stream-subscribed', {stream: remoteStream, 'mediaType': mediaTypeShort})
       } else {
         this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
-        this.loggerRecv.log('该次consume状态错误： ', JSON.stringify(remoteStream['pubStatus'], null, ''))
+        this.loggerRecv.log('[Subscribe] 该次consume状态错误： ', JSON.stringify(remoteStream['pubStatus'], null, ''))
       }
       return this.checkConsumerList(info)
-    } catch (error) {
-      this.adapterRef && this.loggerRecv.error(`订阅 ${uid} 的 ${kind} 媒体失败, error name: ${error.name}, error.message: ${error.message}`);
-      if (error.name === 'peer closed') {
-        this.loggerRecv.log('订阅 ${uid} 的 ${kind} 媒体失败，信令通道已经销毁，忽略改成请求')
+    } catch (e:any) {
+      this.adapterRef && this.loggerRecv.error(`订阅 ${uid} 的 ${kind} 媒体失败, error.name: ${e.name}, error.message: ${e.message}`);
+      if (e.name === 'peer closed') {
+        this.loggerRecv.log('[Subscribe] 订阅 ${uid} 的 ${kind} 媒体失败，信令通道已经销毁，忽略改成请求')
         return this.checkConsumerList(info)
       }
-      this.loggerRecv.error(`订阅 ${uid} 的 ${kind} 媒体失败，做容错处理: 重新建立下行连接`)
-      
+      this.loggerRecv.error(`[Subscribe] 订阅 ${uid} 的 ${kind} 媒体失败，做容错处理: 重新建立下行连接`)
       this.resetConsumeRequestStatus()
       if (this._recvTransport) {
         await this.closeTransport(this._recvTransport);

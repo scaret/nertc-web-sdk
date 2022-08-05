@@ -71,6 +71,7 @@ export type HandlerReceiveOptions =
   probeSSrc?: number|string;
   remoteUid: number|string;
   extendedRtpCapabilities: any;
+  appData?: any
 };
 
 export type HandlerReceiveResult =

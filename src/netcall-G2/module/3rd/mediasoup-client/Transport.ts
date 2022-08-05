@@ -233,7 +233,7 @@ export class Transport extends EnhancedEventEmitter
   {
     super();
 
-    Logger.debug(prefix, 'constructor() [id:%s, direction:%s]', id, direction);
+    Logger.debug(prefix, `constructor() [id: ${id}, direction: ${direction}]`);
 
     this._id = id;
     this._direction = direction;
@@ -759,14 +759,14 @@ export class Transport extends EnhancedEventEmitter
       async () =>
       {
         // Ensure the device can consume it.
-        const canConsume = ortc.canReceive(rtpParameters, this._extendedRtpCapabilities);
+        // const canConsume = ortc.canReceive(rtpParameters, this._extendedRtpCapabilities);
         // 屏蔽canConsume的两个原因：  
         // 1. 本地的extendedRtpCapabilities是来自编码而非解码的，这会导致某些能解的情况下这里报错。  
         // 2. Native经常会不遵守声明的codec  
         // if (!canConsume)  
         //     throw new errors_1.UnsupportedError('cannot consume this Producer');  
         const { localId, rtpReceiver, track } = await this._handler.receive({ iceParameters, iceCandidates, dtlsParameters, sctpParameters,
-          trackId: id, kind, rtpParameters, offer, probeSSrc, remoteUid: appData.remoteUid, extendedRtpCapabilities: this._extendedRtpCapabilities});
+          trackId: id, kind, rtpParameters, offer, probeSSrc, remoteUid: appData.remoteUid, extendedRtpCapabilities: this._extendedRtpCapabilities, appData});
         
         if (rtpReceiver){
           this.updateReceiverInfo(

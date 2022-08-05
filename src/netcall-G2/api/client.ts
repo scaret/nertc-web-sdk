@@ -259,6 +259,7 @@ class Client extends Base {
     this.adapterRef.logger.log('stopProxyServer')
     if(this.adapterRef.proxyServer){
       this.adapterRef.proxyServer.enable = false
+      this.adapterRef.proxyServer.wsProxyArray = null
     }
     this.apiFrequencyControl({
       name: 'stopProxyServer',
@@ -823,10 +824,10 @@ class Client extends Base {
    */
   async subscribe (stream:RemoteStream) {
     if (this.spatialManager){
-      this.logger.warn(`subscribe() 已开启空间音频，跳过用户订阅步骤`);
+      this.logger.warn(`[Subscribe] 已开启空间音频，跳过用户订阅步骤`);
     }else{
       checkExists({tag: 'client.subscribe:stream', value: stream});
-      this.logger.log(`subscribe() [订阅远端: ${stream.stringStreamID}]`)
+      this.logger.log(`[Subscribe] [订阅远端: ${stream.stringStreamID}]`)
       return this.doSubscribe(stream)
     }
   }
@@ -849,13 +850,12 @@ class Client extends Base {
       if (stream.subConf.audio) {
         // 应该订阅音频
         if (stream.pubStatus.audio.audio && !stream.pubStatus.audio.consumerId) {
-          if (stream.pubStatus.audio.consumerStatus !== 'start') {
-            this.logger.log(`subscribe() [开始订阅 ${stream.getId()} 音频流]`)
-            stream.pubStatus.audio.consumerStatus = 'start'
-            await this.adapterRef._mediasoup.createConsumer(uid, 'audio', 'audio', stream.pubStatus.audio.producerId);
-            stream.pubStatus.audio.consumerStatus = 'end'
-            this.logger.log(`subscribe() [订阅 ${stream.getId()} 音频流完成]`)
-          }
+          //重复调用的问题不再通过consumerStatus来保障，有后续的流程负责
+          this.logger.log(`[Subscribe] 开始订阅 ${stream.getId()} 音频流`)
+          stream.pubStatus.audio.consumerStatus = 'start'
+          await this.adapterRef._mediasoup.createConsumer(uid, 'audio', 'audio', stream.pubStatus.audio.producerId);
+          stream.pubStatus.audio.consumerStatus = 'end'
+          this.logger.log(`[Subscribe] 订阅 ${stream.getId()} 音频流完成`)
         }
       } else {
         // 不应该订阅音频
@@ -888,18 +888,14 @@ class Client extends Base {
       }
 
       if (stream.subConf.audioSlave) {
-        // 应该订阅音频
         if (stream.pubStatus.audioSlave.audioSlave && !stream.pubStatus.audioSlave.consumerId) {
-          if (stream.pubStatus.audioSlave.consumerStatus !== 'start') {
-            this.logger.log(`subscribe() [开始订阅 ${stream.getId()} 音频辅流]`)
-            stream.pubStatus.audioSlave.consumerStatus = 'start'
-            await this.adapterRef._mediasoup.createConsumer(uid, 'audio', 'audioSlave', stream.pubStatus.audioSlave.producerId);
-            stream.pubStatus.audioSlave.consumerStatus = 'end'
-            this.logger.log(`subscribe() [订阅 ${stream.getId()} 音频辅流完成]`)
-          }
+          this.logger.log(`[Subscribe] 开始订阅 ${stream.getId()} 音频辅流`)
+          stream.pubStatus.audioSlave.consumerStatus = 'start'
+          await this.adapterRef._mediasoup.createConsumer(uid, 'audio', 'audioSlave', stream.pubStatus.audioSlave.producerId);
+          stream.pubStatus.audioSlave.consumerStatus = 'end'
+          this.logger.log(`[Subscribe] 订阅 ${stream.getId()} 音频辅流完成`)
         }
       } else {
-        // 不应该订阅音频
         if (stream.pubStatus.audioSlave.consumerId && stream.pubStatus.audioSlave.stopconsumerStatus !== 'start') {
           this.logger.log('开始取消订阅音频流')
           stream.pubStatus.audioSlave.stopconsumerStatus = 'start'
@@ -926,24 +922,17 @@ class Client extends Base {
       if (stream.subConf.video) {
         // 应该订阅视频
         if (stream.pubStatus.video.video && !stream.pubStatus.video.consumerId) {
-          this.logger.log('应该订阅视频 stream.pubStatus.video.consumerStatus: ', stream.pubStatus.video.consumerStatus)
-          if (stream.pubStatus.video.consumerStatus !== 'start') {
-            this.logger.log(`subscribe() [开始订阅 ${stream.getId()} 视频流]`)
-            stream.pubStatus.video.consumerStatus = 'start'
-            // preferredSpatialLayer是从小到大的，即0是小流，1是大流
-            // API层面与声网和Native对齐，即0是大流，1是小流
-            let preferredSpatialLayer;
-            if (stream.subConf.highOrLow.video === STREAM_TYPE.LOW){
-              preferredSpatialLayer = 0;
-            }else{
-              preferredSpatialLayer = 1;
-            }
-            await this.adapterRef._mediasoup.createConsumer(uid, 'video', 'video', stream.pubStatus.video.producerId, preferredSpatialLayer);
-            stream.pubStatus.video.consumerStatus = 'end'
-            this.logger.log(`subscribe() [订阅 ${stream.getId()} 视频流完成]`)
-          } else {
-            this.logger.log('stream.pubStatus.video.consumerStatus: ', JSON.stringify(stream.pubStatus.video.consumerStatus))
+          this.logger.log(`[Subscribe] 开始订阅 ${stream.getId()} 视频流`)
+          // preferredSpatialLayer是从小到大的，即0是小流，1是大流
+          // API层面与声网和Native对齐，即0是大流，1是小流
+          let preferredSpatialLayer;
+          if (stream.subConf.highOrLow.video === STREAM_TYPE.LOW){
+            preferredSpatialLayer = 0;
+          }else{
+            preferredSpatialLayer = 1;
           }
+          await this.adapterRef._mediasoup.createConsumer(uid, 'video', 'video', stream.pubStatus.video.producerId, preferredSpatialLayer);
+          this.logger.log(`[Subscribe] 订阅 ${stream.getId()} 视频流完成`)
         } else {
           this.logger.log('stream.pubStatus.video: ', JSON.stringify(stream.pubStatus.video))
         }
@@ -980,21 +969,17 @@ class Client extends Base {
       if (stream.subConf.screen) {
         // 应该订阅辅流
         if (stream.pubStatus.screen.screen && !stream.pubStatus.screen.consumerId){
-          if (stream.pubStatus.screen.consumerStatus !== 'start') {
-            this.logger.log(`subscribe() [开始订阅 ${stream.getId()} 辅流]`)
-            stream.pubStatus.screen.consumerStatus = 'start'
-            // preferredSpatialLayer是从小到大的，即0是小流，1是大流
-            // API层面与声网和Native对齐，即0是大流，1是小流
-            let preferredSpatialLayer;
-            if (stream.subConf.highOrLow.screen === STREAM_TYPE.LOW){
-              preferredSpatialLayer = 0;
-            }else{
-              preferredSpatialLayer = 1;
-            }
-            await this.adapterRef._mediasoup.createConsumer(uid, 'video', 'screenShare', stream.pubStatus.screen.producerId, preferredSpatialLayer);
-            stream.pubStatus.screen.consumerStatus = 'end'
-            this.logger.log(`subscribe() [订阅 ${stream.getId()} 辅流完成]`)
+          this.logger.log(`[Subscribe] 开始订阅 ${stream.getId()} 辅流`)
+          // preferredSpatialLayer是从小到大的，即0是小流，1是大流
+          // API层面与声网和Native对齐，即0是大流，1是小流
+          let preferredSpatialLayer;
+          if (stream.subConf.highOrLow.screen === STREAM_TYPE.LOW){
+            preferredSpatialLayer = 0;
+          }else{
+            preferredSpatialLayer = 1;
           }
+          await this.adapterRef._mediasoup.createConsumer(uid, 'video', 'screenShare', stream.pubStatus.screen.producerId, preferredSpatialLayer);
+          this.logger.log(`[Subscribe] 订阅 ${stream.getId()} 辅流完成`)
         }
       } else {
         // 不应该订阅辅流

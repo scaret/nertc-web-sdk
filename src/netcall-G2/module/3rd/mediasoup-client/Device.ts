@@ -256,7 +256,7 @@ export class Device
       { routerRtpCapabilities: RtpCapabilities }
   ): Promise<void>
   {
-    Logger.debug(prefix, 'load() [routerRtpCapabilities:%o]', routerRtpCapabilities);
+    Logger.debug(prefix, 'load()');
 
     routerRtpCapabilities = utils.clone(routerRtpCapabilities, undefined);
 
@@ -276,7 +276,7 @@ export class Device
       const nativeRtpCapabilities = await handler.getNativeRtpCapabilities();
 
       Logger.debug(prefix, 
-        'load() | got native RTP capabilities:%o', nativeRtpCapabilities);
+        'load() | got native RTP capabilities');
 
       // This may throw.
       ortc.validateRtpCapabilities(nativeRtpCapabilities);
@@ -286,8 +286,7 @@ export class Device
         nativeRtpCapabilities, routerRtpCapabilities);
 
       Logger.debug(prefix, 
-        'load() | got extended RTP capabilities:%o',
-        this._extendedRtpCapabilities);
+        'load() | got extended RTP capabilities');
 
       // Check whether we can produce audio/video.
       this._canProduceByKind.audio =
@@ -303,14 +302,13 @@ export class Device
       ortc.validateRtpCapabilities(this._recvRtpCapabilities);
 
       Logger.debug(prefix, 
-        'load() | got receiving RTP capabilities:%o',
-        this._recvRtpCapabilities);
+        'load() | got receiving RTP capabilities');
 
       // Generate our SCTP capabilities.
       this._sctpCapabilities = await handler.getNativeSctpCapabilities();
 
       Logger.debug(prefix, 
-        'load() | got native SCTP capabilities:%o', this._sctpCapabilities);
+        'load() | got native SCTP capabilities');
 
       // This may throw.
       ortc.validateSctpCapabilities(this._sctpCapabilities);

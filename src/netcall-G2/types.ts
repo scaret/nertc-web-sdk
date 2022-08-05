@@ -1042,7 +1042,7 @@ export interface AudioInConfig{
 export interface ProxyServerOptions{
   enable: boolean;
   type: number;
-  wsProxyArray?: string[];
+  wsProxyArray?: string[] | null;
   mediaProxyArray?: string[];
   mediaProxyToken?: string;
   credential?: string;

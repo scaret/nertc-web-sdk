@@ -134,7 +134,7 @@ export class RemoteSdp
 
   updateDtlsRole(role: DtlsRole): void
   {
-    Logger.debug(prefix, 'updateDtlsRole() [role:%s]', role);
+    Logger.debug(prefix, `updateDtlsRole() [role: ${role}]`);
 
     this._dtlsParameters!.role = role;
 
@@ -225,17 +225,26 @@ export class RemoteSdp
       streamId,
       trackId,
       reuseMid = null,
+      reuseMediaSection = undefined
     }:
     {
       mid: string;
       kind: MediaKind;
-      offerRtpParameters: RtpParameters;
+      offerRtpParameters?: RtpParameters;
       streamId?: string;
       trackId?: string;
       reuseMid?: any;
+      reuseMediaSection?: OfferMediaSection | undefined;
     }
   ): void
   {
+
+    if (reuseMediaSection && mid) {
+      reuseMediaSection.mid = mid
+      console.log('重新使用: ', reuseMediaSection)
+      this._replaceMediaSection(reuseMediaSection, mid);
+      return
+    }
     const idx = this._midToIndex.get(mid);
     let mediaSection: OfferMediaSection | undefined;
 

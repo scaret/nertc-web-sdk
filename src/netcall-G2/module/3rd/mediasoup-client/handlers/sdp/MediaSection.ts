@@ -85,9 +85,18 @@ export abstract class MediaSection
     return String(this._mediaObject.mid);
   }
 
+  get type(): string
+  {
+    return String(this._mediaObject.type);
+  }
+
   get closed(): boolean
   {
     return this._mediaObject.port === 0;
+  }
+
+  set mid(mid: string){
+    this._mediaObject.mid = mid
   }
 
   getObject(): object

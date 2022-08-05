@@ -165,10 +165,10 @@ class RemoteStream extends RTCEventEmitter {
     })
 
     if (typeof options.uid === 'string' || BigNumber.isBigNumber(options.uid)) {
-      this.logger.log('uid是string类型')
+      //this.logger.log('uid是string类型')
       options.client.adapterRef.channelInfo.uidType = 'string'
     } else if (typeof options.uid === 'number') {
-      this.logger.log('uid是number类型')
+      //this.logger.log('uid是number类型')
       options.client.adapterRef.channelInfo.uidType = 'number'
       if(options.uid > Number.MAX_SAFE_INTEGER){
         throw new RtcError({
@@ -230,12 +230,6 @@ class RemoteStream extends RTCEventEmitter {
     if (getParameters().enableAlerter !=="never"){
       alerter.watchRemoteStream(this)
     }
-    
-    this.logger.log(`创建远端Stream: `, JSON.stringify({
-      streamID: this.stringStreamID,
-      audio: options.audio,
-      video: options.video,
-    }))
     this.client.apiFrequencyControl({
       name: 'createRemoteStream',
       code: 0,

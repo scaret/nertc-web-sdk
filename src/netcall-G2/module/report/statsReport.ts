@@ -161,16 +161,16 @@ class StatsReport extends EventEmitter {
       if(isEmpty(this.prevStats_) || (la.length !== pla.length) || (lv.length !== plv.length) || (ls.length !== pls.length) || (ra.length !== pra.length) || (rv.length !== prv.length) || (rs.length !== prs.length) ) {
         this.prevStats_ = result;
         if(Object.keys(this.prevStats_.local).length){
-          this.prevStats_.local.audio_ssrc && (this.prevStats_.local.audio_ssrc[0].bytesSentPerSecond = this.prevStats_.local.audio_ssrc[0].bytesSent);
-          this.prevStats_.local.video_ssrc && (this.prevStats_.local.video_ssrc[0].bytesSentPerSecond = this.prevStats_.local.video_ssrc[0].bytesSent);
+          this.prevStats_.local.audio_ssrc && (this.prevStats_.local.audio_ssrc[0].bytesSentPerSecond = Math.abs(this.prevStats_.local.audio_ssrc[0].bytesSent));
+          this.prevStats_.local.video_ssrc && (this.prevStats_.local.video_ssrc[0].bytesSentPerSecond = Math.abs(this.prevStats_.local.video_ssrc[0].bytesSent));
           this.prevStats_.local.video_ssrc && (this.prevStats_.local.video_ssrc[0].framesEncodedPerSecond = this.prevStats_.local.video_ssrc[0].framesEncoded);
-          this.prevStats_.local.screen_ssrc && (this.prevStats_.local.screen_ssrc[0].bytesSentPerSecond = this.prevStats_.local.screen_ssrc[0].bytesSent);
+          this.prevStats_.local.screen_ssrc && (this.prevStats_.local.screen_ssrc[0].bytesSentPerSecond = Math.abs(this.prevStats_.local.screen_ssrc[0].bytesSent));
           this.prevStats_.local.screen_ssrc && (this.prevStats_.local.screen_ssrc[0].framesEncodedPerSecond = this.prevStats_.local.screen_ssrc[0].framesEncoded);
         }
         for(let item in this.prevStats_.remote){
           if(item.indexOf('ssrc') > -1) {
             for(let i = 0; i < this.prevStats_.remote[item].length; i++){
-              this.prevStats_.remote[item][i].bytesReceivedPerSecond = this.prevStats_.remote[item][i].bytesReceived;
+              this.prevStats_.remote[item][i].bytesReceivedPerSecond = Math.abs(this.prevStats_.remote[item][i].bytesReceived);
               this.prevStats_.remote[item][i].packetsLostPerSecond = this.prevStats_.remote[item][i].packetsLost;
               if(this.prevStats_.remote[item][i].mediaType === ('video' || 'screen')) {
                 this.prevStats_.remote[item][i].framesDecodedPerSecond = Math.round(this.prevStats_.remote[item][i].framesDecoded);
@@ -187,7 +187,7 @@ class StatsReport extends EventEmitter {
           // 当local为0时， bytesSentPerSecond等都为0。
           if(local.audio_ssrc){
             if((local.audio_ssrc[0].bytesSent - 0) > 0 && (local.audio_ssrc[0].bytesSent - 0 - prevLocal.audio_ssrc[0].bytesSent) > 0){
-              local.audio_ssrc[0].bytesSentPerSecond = (local.audio_ssrc[0].bytesSent - 0 - prevLocal.audio_ssrc[0].bytesSent)/2;
+              local.audio_ssrc[0].bytesSentPerSecond = Math.abs((local.audio_ssrc[0].bytesSent - 0 - prevLocal.audio_ssrc[0].bytesSent)/2);
             }else {
               local.audio_ssrc[0].bytesSentPerSecond = 0;
             }
@@ -195,7 +195,7 @@ class StatsReport extends EventEmitter {
           }
           if(local.video_ssrc){
             if((local.video_ssrc[0].bytesSent - 0) > 0 && (local.video_ssrc[0].bytesSent - 0 - prevLocal.video_ssrc[0].bytesSent) > 0){
-              local.video_ssrc[0].bytesSentPerSecond = (local.video_ssrc[0].bytesSent - 0 - prevLocal.video_ssrc[0].bytesSent)/2;
+              local.video_ssrc[0].bytesSentPerSecond = Math.abs((local.video_ssrc[0].bytesSent - 0 - prevLocal.video_ssrc[0].bytesSent)/2);
             }else {
               local.video_ssrc[0].bytesSentPerSecond = 0;
             }
@@ -207,7 +207,7 @@ class StatsReport extends EventEmitter {
           }
           if(local.screen_ssrc){
             if((local.screen_ssrc[0].bytesSent - 0) > 0 && (local.screen_ssrc[0].bytesSent - 0 - prevLocal.screen_ssrc[0].bytesSent) > 0){
-              local.screen_ssrc[0].bytesSentPerSecond = (local.screen_ssrc[0].bytesSent - 0 - prevLocal.screen_ssrc[0].bytesSent)/2;
+              local.screen_ssrc[0].bytesSentPerSecond = Math.abs((local.screen_ssrc[0].bytesSent - 0 - prevLocal.screen_ssrc[0].bytesSent)/2);
             }else {
               local.screen_ssrc[0].bytesSentPerSecond = 0;
             }
@@ -222,7 +222,7 @@ class StatsReport extends EventEmitter {
           if(item.indexOf('ssrc') > -1) {
             for(let i = 0; i < remote[item].length; i++){
               if((remote[item][i].bytesReceived - 0) > 0 && (remote[item][i].bytesReceived - 0 - prevRemote[item][i].bytesReceived) > 0){
-                remote[item][i].bytesReceivedPerSecond = (remote[item][i].bytesReceived - 0 - prevRemote[item][i].bytesReceived)/2;
+                remote[item][i].bytesReceivedPerSecond = Math.abs((remote[item][i].bytesReceived - 0 - prevRemote[item][i].bytesReceived)/2);
               }else {
                 remote[item][i].bytesReceivedPerSecond = 0;
               }
@@ -274,7 +274,7 @@ class StatsReport extends EventEmitter {
         for(let item in this.prevStats_.remote){
           if(item.indexOf('inbound_rtp') > -1) {
             for(let i = 0; i < this.prevStats_.remote[item].length; i++){
-              this.prevStats_.remote[item][i].bytesReceivedPerSecond = this.prevStats_.remote[item][i].bytesReceived;
+              this.prevStats_.remote[item][i].bytesReceivedPerSecond = Math.abs(this.prevStats_.remote[item][i].bytesReceived);
               this.prevStats_.remote[item][i].packetsLostPerSecond = this.prevStats_.remote[item][i].packetsLost;
               if(this.prevStats_.remote[item][i].mediaType === 'video') {
                 this.prevStats_.remote[item][i].framesDecodedPerSecond = Math.round(this.prevStats_.remote[item][i].framesDecoded);

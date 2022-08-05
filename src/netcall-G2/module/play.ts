@@ -144,7 +144,7 @@ class Play extends EventEmitter {
           return
         }else{
           this.videoContainerDom.appendChild(this.videoDom)
-          this.logger.log('Play: _initVideoNode, videoContainerDom: ', this.videoContainerDom.outerHTML)
+          this.logger.log('Play: initVideoNode')
         }
       }
     }
@@ -348,7 +348,7 @@ class Play extends EventEmitter {
         this.logger.log('出现多余的dom节点')
         this._removeUselessDom()
       }*/
-      this.logger.log('Play: _mountVideoToDom: videoContainerDom: ', this.videoContainerDom.outerHTML)
+      this.logger.log('Play: mountVideoToDom')
       if (this.videoView){
         this.videoView.appendChild(this.videoContainerDom)
         this.logger.log(`视频主流dom节点挂载成功。父节点：${getDomInfo(this.videoView)}`)
