@@ -595,14 +595,14 @@ class LocalStream extends RTCEventEmitter {
     let initErr:any = null
     
     this.state = "INITING"
-    this.logger.log('初始化音视频流对象')
+    this.logger.log('init() 初始化音视频流对象')
     //设置分辨率和码率
     this.client.adapterRef.channelInfo.sessionConfig.maxVideoQuality = NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p
     if (this.videoProfile){
       this.client.adapterRef.channelInfo.sessionConfig.videoQuality = this.videoProfile.resolution
       this.client.adapterRef.channelInfo.sessionConfig.videoFrameRate = this.videoProfile.frameRate
     }
-    if(this.client.adapterRef.isAudioBanned && this.client.adapterRef.isVideoBanned) {
+    if (this.client.adapterRef.isAudioBanned && this.client.adapterRef.isVideoBanned) {
       const reason = `服务器禁止发送音视频流`;
       this.logger.error(reason);
       this.client.apiFrequencyControl({
@@ -621,7 +621,7 @@ class LocalStream extends RTCEventEmitter {
         message: 'audio and video are banned by server'
       })
     }
-    if(this.client.adapterRef.isAudioBanned && !this.client.adapterRef.isVideoBanned) {
+    if (this.client.adapterRef.isAudioBanned && !this.client.adapterRef.isVideoBanned) {
       const reason = `服务器禁止发送音频流`;
       this.logger.error(reason);
       this.client.apiFrequencyControl({
@@ -635,7 +635,7 @@ class LocalStream extends RTCEventEmitter {
       this.screenAudio = false;
     }
     
-    if(!this.client.adapterRef.isAudioBanned && this.client.adapterRef.isVideoBanned) {
+    if (!this.client.adapterRef.isAudioBanned && this.client.adapterRef.isVideoBanned) {
       const reason = `服务器禁止发送视频流`;
       this.logger.error(reason);
       this.client.apiFrequencyControl({
@@ -650,21 +650,21 @@ class LocalStream extends RTCEventEmitter {
     }
     
     try {
-      if (this.audio){
+      if (this.audio) {
         await this.mediaHelper.getStream({
           audio: this.audio,
           audioDeviceId: this.microphoneId,
           audioSource: this.audioSource
         })
       }
-    } catch (e) {
-      this.logger.log('打开mic失败: ', e.name, e.message)
+    } catch (e: any) {
+      this.logger.log(`init() 打开mic失败: ${e.message}`)
       initErr = e;
       this.audio = false
     }
 
     try {
-      if (this.video){
+      if (this.video) {
         await this.mediaHelper.getStream({
           video: this.video,
           videoSource: this.videoSource,
@@ -675,14 +675,14 @@ class LocalStream extends RTCEventEmitter {
           this.mediaHelper.enablePreProcessing("video")
         }
       }
-    } catch (e) {
-      this.logger.log('打开camera失败: ', e.name, e.message)
+    } catch (e: any) {
+      this.logger.log(`init() 打开camera失败: ${e.message}`)
       initErr = e
       this.video = false
     }
 
     try {
-      if (this.screen){
+      if (this.screen) {
         const constraints = {
           sourceId: this.sourceId,
           screen: this.screen,
@@ -695,12 +695,13 @@ class LocalStream extends RTCEventEmitter {
           this.mediaHelper.enablePreProcessing("screen")
         }
       }
-    } catch (e) {
-      this.logger.log('打开屏幕共享失败: ', e.name, e.message)
+    } catch (e: any) {
+      this.logger.log(`init() 打开screen失败: ${e.message}`)
       initErr = e
       this.screen = true
     }
-    if (this.audio||this.video||this.screen){
+
+    if (this.audio||this.video||this.screen) {
       this.state = "INITED"
     } else if (initErr) {
       this.state = "UNINIT";
@@ -708,12 +709,12 @@ class LocalStream extends RTCEventEmitter {
       onInitFinished();
       throw initErr;
     } else {
-      if (getParameters().allowEmptyMedia){
-        this.logger.log("当前模式下localStream允许初始化时无任何音视频");
+      if (getParameters().allowEmptyMedia) {
+        this.logger.log("init() 当前模式下localStream允许初始化时无任何音视频");
         this.state = "INITED"
-      }else{
+      } else {
         this.state = "UNINIT";
-        this.logger.error("localStream不允许初始化时无任何音视频");
+        this.logger.warn("init() localStream不允许初始化时无任何音视频");
         onInitFinished()
         throw new RtcError({
           code: ErrorCode.NO_MEDIA,

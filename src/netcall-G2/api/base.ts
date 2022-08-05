@@ -352,7 +352,7 @@ class Base extends RTCEventEmitter {
         message: 'no cid'
       })
     }
-    this.logger.log(`开始连接服务器: ${this.adapterRef.channelInfo.wssArrIndex}, url:`, wssArr)
+    this.logger.log(`开始连接服务器: ${this.adapterRef.channelInfo.wssArrIndex}, url: ${wssArr[this.adapterRef.channelInfo.wssArrIndex]}`)
     if (this.adapterRef.channelInfo.wssArrIndex >= wssArr.length) {
       this.logger.error('所有的服务器地址都连接失败')
       this.adapterRef.channelInfo.wssArrIndex = 0

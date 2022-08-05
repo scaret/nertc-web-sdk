@@ -418,7 +418,7 @@ class Signalling extends EventEmitter {
           this.adapterRef._mediasoup?.destroyConsumer(remoteStream.pubStatus[mediaTypeShort].consumerId, remoteStream, mediaTypeShort);
           //remoteStream.pubStatus[mediaTypeShort].consumerId = '';
         } else {
-          this.adapterRef._mediasoup?.removeUselessConsumeRequest({producerId: remoteStream.pubStatus[mediaTypeShort].producerId})
+          this.adapterRef._mediasoup?.removeUselessConsumeRequest({producerId: remoteStream.pubStatus[mediaTypeShort].producerId, uid})
         }
 
         remoteStream[mediaTypeShort] = true
@@ -495,7 +495,7 @@ class Signalling extends EventEmitter {
           })
         }
 
-        this.adapterRef._mediasoup.removeUselessConsumeRequest({producerId})
+        this.adapterRef._mediasoup.removeUselessConsumeRequest({producerId, uid})
         if (remoteStream.pubStatus[mediaTypeShort].consumerId){
           this.adapterRef._mediasoup.destroyConsumer(remoteStream.pubStatus[mediaTypeShort].consumerId, remoteStream, mediaTypeShort)
           remoteStream.pubStatus[mediaTypeShort].consumerId = '';
@@ -920,7 +920,7 @@ class Signalling extends EventEmitter {
       }
     }
 
-    this.logger.log('Signalling: 向edge的WebSocket连接已打开，开始放送Join请求 -> ', JSON.stringify(requestData, null, ''))
+    this.logger.log('Signalling: socket连接成功，开始发送Join请求')
     if (!this._protoo){
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
@@ -932,7 +932,7 @@ class Signalling extends EventEmitter {
     this._protoo.clear()
 
     try {
-      let response
+      let response = null
       let thisProtoo = this._protoo
       try{
         response = await this._protoo.request('Join', requestData) as SignalJoinRes;
@@ -944,7 +944,9 @@ class Signalling extends EventEmitter {
           throw e;
         }
       }
-      this.logger.log('Signalling:加入房间 ack ->  ', JSON.stringify(response, (k, v)=>{return k === "edgeRtpCapabilities" ? null : v;}));
+      //this.logger.log('Signalling:Join请求 收到ack -> ', JSON.stringify(response, (k, v)=>{return k === "edgeRtpCapabilities" ? null : v;}));
+      this.logger.log('Signalling:Join请求收到response');
+
       if (response.code != 200) {
         let errMsg = "Unknown Error"
         if (response.externData){
@@ -952,17 +954,14 @@ class Signalling extends EventEmitter {
         } else if (response.errMsg){
           errMsg = response.errMsg
         }
-        this.logger.error(
-          'Signalling: 加入房间失败, reason = ',
-          response.code, errMsg
-        )
+        this.logger.error(`Signalling: 加入房间失败, code = ${response.code}, reason = ${errMsg}`)
         this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-error');
         this._joinFailed(response.code, errMsg)
         return
       } 
       let uid = this.adapterRef.channelInfo.uid;
       // 服务器禁用音视频: 1 禁用   0 和 2 取消禁用
-      if(response.externData.audioRight === 1){
+      if (response.externData.audioRight === 1) {
         this.adapterRef.isAudioBanned = true;
         let mediaType = 'audio';
         let state = true;
@@ -971,11 +970,11 @@ class Signalling extends EventEmitter {
           message: 'Join() audio is banned by server'
         })
         this.adapterRef.instance.safeEmit('audioVideoBanned', {rtcError, uid, mediaType, state})
-      }else {
+      } else {
         this.adapterRef.isAudioBanned = false;
       }
 
-      if(response.externData.videoRight === 1){
+      if (response.externData.videoRight === 1) {
         this.adapterRef.isVideoBanned = true;
         let mediaType = 'video';
         let state = true;
@@ -984,69 +983,40 @@ class Signalling extends EventEmitter {
           message: 'Join() video is banned by server'
         })
         this.adapterRef.instance.safeEmit('audioVideoBanned', {rtcError, uid, mediaType, state})
-      }else {
+      } else {
         this.adapterRef.isVideoBanned = false;
       }
 
-      if(this.adapterRef.isAudioBanned && this.adapterRef.isVideoBanned) {
-        this.adapterRef.instance.apiEventReport('setAudioVideoBanned', {
-          name: 'set_mediaRightChange',
-          oper: '1',
-          isAudioBanned: true,
-          isVideoBanned: true
-        })
-        this.logger.error("服务器禁止发送音频流")
-        if (this._reconnectionTimer) {
-          clearTimeout(this._reconnectionTimer)
-          this._reconnectionTimer = null
-        }
-      }
+      this.adapterRef.instance.apiEventReport('setAudioVideoBanned', {
+        name: 'set_mediaRightChange',
+        oper: '1',
+        isAudioBanned: !!this.adapterRef.isAudioBanned,
+        isVideoBanned: !!this.adapterRef.isVideoBanned
+      })
 
-      if(!this.adapterRef.isAudioBanned && this.adapterRef.isVideoBanned) {
-        this.adapterRef.instance.apiEventReport('setAudioVideoBanned', {
-          name: 'set_mediaRightChange',
-          oper: '1',
-          isAudioBanned: false,
-          isVideoBanned: true
-        })
-      }
-
-      if(this.adapterRef.isAudioBanned && !this.adapterRef.isVideoBanned) {
-        this.adapterRef.instance.apiEventReport('setAudioVideoBanned', {
-          name: 'set_mediaRightChange',
-          oper: '1',
-          isAudioBanned: true,
-          isVideoBanned: false
-        })
-      }
-
-      if(!this.adapterRef.isAudioBanned && !this.adapterRef.isVideoBanned) {
-        this.adapterRef.instance.apiEventReport('setAudioVideoBanned', {
-          name: 'set_mediaRightChange',
-          oper: '1',
-          isAudioBanned: false,
-          isVideoBanned: false
-        })
+      if (this.adapterRef.isAudioBanned && this.adapterRef.isVideoBanned) {
+        this.logger.warn("服务器禁止发送音频流")
       }
 
       if (this._reconnectionTimer) {
         clearTimeout(this._reconnectionTimer)
         this._reconnectionTimer = null
       }
+
       this.reconnectionControl.next = null
-      this.logger.log('Signalling:加入房间成功')
+      this.logger.log('Signalling: 加入房间成功')
       this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
       this.adapterRef.connectState.curState = 'CONNECTED'
       
       this.adapterRef.audioAsl.enabled = response.supportWebAsl ? "yes" : "no"
       this.adapterRef.audioAsl.aslActiveNum = response.aslActiveNum
-      if (response.supportWebAsl){
-        if (response.aslActiveNum){
+      if (response.supportWebAsl) {
+        if (response.aslActiveNum) {
           this.logger.log(`aslActiveNum数量： ${response.aslActiveNum}`)
-        }else{
+        } else {
           this.logger.warn(`服务端支持ASL但没有返回ASL数量`)
         }
-      }else{
+      } else {
         this.logger.log(`服务端未开启ASL`)
       }
       this.adapterRef.instance.safeEmit('aslStatus', {
@@ -1056,7 +1026,7 @@ class Signalling extends EventEmitter {
       
       if (this.adapterRef.channelStatus === 'connectioning') {
         this.adapterRef.connectState.reconnect = true
-        this.logger.log('重连成功，清除之前的媒体的通道')
+        this.logger.log('Signalling: 重连成功, 清除之前的媒体的通道')
         this.adapterRef.channelStatus = 'join'
         this.adapterRef.instance.apiEventReport('setRelogin', {
           a_record: this.adapterRef.channelInfo.sessionConfig.recordAudio,
@@ -1069,7 +1039,7 @@ class Signalling extends EventEmitter {
         })
 
         this.adapterRef.instance.resetChannel()
-        if (!this.adapterRef._mediasoup){
+        if (!this.adapterRef._mediasoup) {
           throw new RtcError({
             code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 25'
@@ -1084,7 +1054,7 @@ class Signalling extends EventEmitter {
             || this.adapterRef.localStream.screen || this.adapterRef.localStream.screenAudio
             || getParameters().allowEmptyMedia || this.adapterRef.localStream.audioSlave
           ){
-            this.logger.log(`重连成功，重新publish本端流:audio ${this.adapterRef.localStream.hasAudio()}, video ${this.adapterRef.localStream.hasVideo()}, screen ${this.adapterRef.localStream.hasScreen()}`)
+            this.logger.log(`重连成功，重新publish本端流: audio ${this.adapterRef.localStream.hasAudio()}, video ${this.adapterRef.localStream.hasVideo()}, screen ${this.adapterRef.localStream.hasScreen()}`)
             this.adapterRef.instance.doPublish(this.adapterRef.localStream)
           } else {
             this.logger.log(`重连成功，当前没有媒体流，无需发布`)
@@ -1117,7 +1087,6 @@ class Signalling extends EventEmitter {
         this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities;
         this.adapterRef.mediaCapability.parseRoom(response.externData.roomCapability);
         this.adapterRef.instance.safeEmit('@mediaCapabilityChange');
-        console.log('init response : ', response)
         await this.adapterRef._mediasoup.init(response.supportTurn ? response.turnParameters: undefined)
       }
           
@@ -1126,7 +1095,7 @@ class Signalling extends EventEmitter {
         await this.createRTSTransport()
         this.adapterRef.instance.emit('connected')
       }
-      this.logger.log('加入房间成功, 查看房间其他人的发布信息: ', JSON.stringify(response.externData.userList))
+      this.logger.log(`Signalling: 查看房间其他人的发布信息: ${JSON.stringify(response.externData.userList)}`)
       if (response.externData !== undefined && response.externData.userList && response.externData.userList.length) {
         //兼容喜欢把箭头函数transpile成ES5的客户
         let that = this;
@@ -1187,12 +1156,13 @@ class Signalling extends EventEmitter {
               
               setTimeout(()=>{
                 // join response中的事件应该延迟到join发生后再抛出
-                that.logger.log('通知房间成员发布信息: ', JSON.stringify(remoteStream.pubStatus))
+                that.logger.log(`Signalling: 通知房间成员发布信息: ${JSON.stringify(remoteStream.pubStatus)}`)
                 if (that.adapterRef._enableRts && that.adapterRef._rtsTransport) {
                   that.adapterRef.instance.emit('rts-stream-added', {stream: remoteStream, kind: mediaTypeShort})
                 } else if (remoteStream.pubStatus.audio.audio || remoteStream.pubStatus.video.video || remoteStream.pubStatus.screen.screen) {
                   that.adapterRef.instance.safeEmit('stream-added', {stream: remoteStream, 'mediaType': mediaTypeShort})
                 }
+
                 if (mute) {
                   if (mediaTypeShort === 'audioSlave') {
                     that.adapterRef.instance.safeEmit(`mute-audio-slave`, {uid: remoteStream.getId()})
@@ -1226,8 +1196,8 @@ class Signalling extends EventEmitter {
         }
       }
       this.doSendKeepAliveTask()
-    } catch (e) {
-      this.logger.error('join() 登录失败, ' + e.name + ': ' + e.message)
+    } catch (e:any) {
+      this.logger.error('Signalling: 登录失败, ' + e.name + ': ' + e.message)
       this._joinFailed(-1, 'LOGIN_ERROR')
     }
   }
@@ -1278,7 +1248,6 @@ class Signalling extends EventEmitter {
         default:
           this.logger.error('网络重连时，加入房间失败，主动离开。重连失败原因：', errMsg)
       }
-      this.logger.error('网络重连时，加入房间失败，主动离开。重连失败原因：', errMsg)
       this.adapterRef.instance.safeEmit('error', 'RELOGIN_ERROR')
       this.adapterRef.instance.leave()
     }
@@ -1300,13 +1269,13 @@ class Signalling extends EventEmitter {
     try {
       const response = await this._protoo.request('Heartbeat');
       //this.logger.log('包活信令回包: ', response)
-    } catch (e) {
-      this.logger.error("信令包保活失败", transportId, e.name, e.message)
-      if (this.keepAliveTimer) {
-        this._handleDisconnected(this._protoo)
-        clearInterval(this.keepAliveTimer)
-        this.keepAliveTimer = null
-      }
+    } catch (e:any) {
+      this.logger.error(`信令包保活失败, reanson: ${e.message}`)
+      // if (this.keepAliveTimer) {
+      //   this._handleDisconnected(this._protoo)
+      //   clearInterval(this.keepAliveTimer)
+      //   this.keepAliveTimer = null
+      // }
     }
   }
 
@@ -1438,7 +1407,6 @@ class Signalling extends EventEmitter {
 
   async doSendLogout () {
     this.logger.log('doSendLogout begin')
-
     /*if (this.adapterRef._mediasoup) {
       this.adapterRef._mediasoup._sendTransport && this.adapterRef._mediasoup._sendTransport.close()
       this.adapterRef._mediasoup._recvTransport && this.adapterRef._mediasoup._recvTransport.close()
