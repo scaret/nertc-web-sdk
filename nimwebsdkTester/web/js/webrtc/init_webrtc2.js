@@ -1218,6 +1218,12 @@ function updateRemoteViewInfo() {
       view.$div.children(".remote-view-title").html(title);
     }
   }
+  if (rtc.client && rtc.client.adapterRef._signalling && rtc.client.adapterRef._signalling._protoo){
+    let info = `信令:${rtc.client.adapterRef._signalling._protoo.id}。下行：${rtc.client.transportRebuildCnt}`
+    if ($("#reconnectionCnt").text() !== info){
+      $("#reconnectionCnt").text(info)
+    }
+  }
 }
 
 const updateRemoteViewInfoTimer = setInterval(updateRemoteViewInfo, 200);
