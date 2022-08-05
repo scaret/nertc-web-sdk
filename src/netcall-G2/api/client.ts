@@ -259,6 +259,7 @@ class Client extends Base {
     this.adapterRef.logger.log('stopProxyServer')
     if(this.adapterRef.proxyServer){
       this.adapterRef.proxyServer.enable = false
+      this.adapterRef.proxyServer.wsProxyArray = null
     }
     this.apiFrequencyControl({
       name: 'stopProxyServer',

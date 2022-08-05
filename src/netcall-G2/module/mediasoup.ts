@@ -17,6 +17,8 @@ import RtcError from '../util/error/rtcError';
 import ErrorCode from '../util/error/errorCode';
 import {RemoteStream} from "../api/remoteStream";
 import {getParameters} from "./parameters";
+import {NeRTCPeerConnection} from "../interfaces/NeRTCPeerConnection";
+
 import * as env from '../util/rtcUtil/rtcEnvironment';
 
 class Mediasoup extends EventEmitter {
@@ -74,11 +76,14 @@ class Mediasoup extends EventEmitter {
   private _probeSSrc?: string;
   public unsupportedProducers: {
     [producerId: string]: {
+      pc?: NeRTCPeerConnection,
+      consumeRes: {
         producerId: string,
         code: number,
         uid: string|number,
         mediaType: MediaTypeShort,
         errMsg: string
+      }
     }
   } = {};
   private logger: ILogger;
@@ -1214,6 +1219,7 @@ class Mediasoup extends EventEmitter {
         message: 'No _protoo 4'
       })
     }
+    const recvPC = this._recvTransport.handler._pc
     const _protoo = this.adapterRef._signalling._protoo
     let consumeRes:any = null
     try {
@@ -1233,22 +1239,37 @@ class Mediasoup extends EventEmitter {
     }
     let { transportId, iceParameters, iceCandidates, dtlsParameters, probeSSrc, rtpParameters, producerId, consumerId, code, errMsg } = consumeRes;
     this.loggerRecv.log(`[Subscribe] consume反馈结果 code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
-    if (code === 200) {
-      //this.loggerRecv.log(`[Consume] consume反馈结果: code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
-    } else if (this._recvTransport?._handler._pc.remoteDescription === null){
-      //通过伪造M行的方式，当然第一次订阅就失败的话，由重连cover，这里就不再执行黑名单的逻辑了，不然伪造M行那里，逻辑会复杂很多
-
-      // this.loggerRecv.error(`[Subscribe] consume请求失败，将Producer拉入黑名单:  uid: ${uid}, mediaType: ${mediaTypeShort}, producerId ${data.producerId} code: ${code}, errMsg: ${errMsg}`, consumeRes);
-      // this.unsupportedProducers[data.producerId] = {
-      //   producerId: consumeRes.producerId,
-      //   code: code,
-      //   uid: uid,
-      //   mediaType: mediaTypeShort,
-      //   errMsg: errMsg,
-      // };
-      // return this.checkConsumerList(info);
-    }
-
+    // if (code === 200) {
+    //   //this.loggerRecv.log(`[Consume] consume反馈结果: code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
+    // } else if (code === 601){
+    //   //通过伪造M行的方式，当然第一次订阅就失败的话，由重连cover，这里就不再执行黑名单的逻辑了
+    //   // 某些情况下的Producer换了个Transport之后是可以订阅的。这个时候需要拉黑的是Producer+Transport的组合
+    //   // this.loggerRecv.error(`consume请求失败，将Producer+Transport拉入黑名单:  uid: ${uid}, mediaType: ${mediaTypeShort}, producerId ${data.producerId} transportId ${this._recvTransport._id} code: ${code}, errMsg: ${errMsg}`, consumeRes);
+    //   // this.unsupportedProducers[data.producerId] = {
+    //   //   pc: recvPC,
+    //   //   consumeRes: {
+    //   //     producerId: consumeRes.producerId,
+    //   //     code: code,
+    //   //     uid: uid,
+    //   //     mediaType: mediaTypeShort,
+    //   //     errMsg: errMsg,
+    //   //   }
+    //   // };
+    //   // return this.checkConsumerList(info);
+    // } else if (this._recvTransport?._handler._pc.remoteDescription === null){
+    //   //通过伪造M行的方式，当然第一次订阅就失败的话，由重连cover，这里就不再执行黑名单的逻辑了，由于是首次订阅进行的重连，应该不影响用户体验
+    //   // this.loggerRecv.error(`[Subscribe] consume请求失败，将Producer拉入黑名单:  uid: ${uid}, mediaType: ${mediaTypeShort}, producerId ${data.producerId} code: ${code}, errMsg: ${errMsg}`, consumeRes);
+    //   // this.unsupportedProducers[data.producerId] = {
+    //   //   producerId: consumeRes.producerId,
+    //   //   code: code,
+    //   //   uid: uid,
+    //   //   mediaType: mediaTypeShort,
+    //   //   errMsg: errMsg,
+    //   // };
+    //   // return this.checkConsumerList(info);
+    //   //this.loggerRecv.log(`consume反馈结果: code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
+    // } 
+    
     // if (id != remoteStream.pubStatus[mediaTypeShort].producerId) {
     //   //这里不用关心，其实只要是producerId不一致，就会进入订阅队列
     //   this.loggerRecv.log('[Subscribe] 此前的订阅已经失效，重新订阅')

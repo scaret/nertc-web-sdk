@@ -775,7 +775,11 @@ export class Safari12 extends HandlerInterface
         break;
       }
     }
-    let offer = this._pc.localDescription;
+    /**
+     *  不要这么写，因为这里的 localDescription是个 RTCSessionDescription 对象，sdp属性为readonly状态：
+     *  let offer = this._pc.localDescription;
+     */
+    let offer = null;
     let transceiver = null
     if (true /*!offer || !offer.sdp || !offer.sdp.includes(`m=${kind}`)*/) {
       if (mid === -1) {
@@ -785,6 +789,11 @@ export class Safari12 extends HandlerInterface
         offer.sdp = offer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`)
         Logger.debug(prefix, 'prepareLocalSdp() | calling pc.setLocalDescription()');
         await this._pc.setLocalDescription(offer);
+      }else if (this._pc.localDescription){
+        offer = {
+          type: this._pc.localDescription.type,
+          sdp: this._pc.localDescription.sdp,
+        }
       }
     }
     const localSdpObject = sdpTransform.parse(offer.sdp);

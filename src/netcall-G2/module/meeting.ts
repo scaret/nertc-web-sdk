@@ -282,7 +282,7 @@ class Meeting extends EventEmitter {
           token: data.token,
           turnToken: ips.token,
           channelName,
-          wssArr: wssArr || this.adapterRef.proxyServer.wsProxyArray || ips.webrtcarray || [], //优先启用云代理的地址
+          wssArr: wssArr || (this.adapterRef.proxyServer.enable && this.adapterRef.proxyServer.wsProxyArray) || ips.webrtcarray || [], //优先启用云代理的地址
           // 中继使用 服务器返回以下2个字段则需要走中继
           relayaddrs: this.adapterRef.proxyServer.mediaProxyArray || ips.relayaddrs || null,
           relaytoken: this.adapterRef.proxyServer.mediaProxyToken || ips.relaytoken || null,

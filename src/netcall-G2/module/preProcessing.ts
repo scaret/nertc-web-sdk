@@ -3,6 +3,7 @@ import {PreProcessingConfig, PreProcessingHistoryInfo} from "../types";
 import {emptyStreamWith} from "../util/gum";
 import {getRTCTimer} from "../util/RTCTimer";
 import {RTCCanvas} from "../util/rtcUtil/rtcCanvas";
+import {syncTrackState} from "../util/syncTrackState";
 
 export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: "video"|"screen", fps?: number){
   if (!fps){
@@ -103,6 +104,7 @@ export async function enablePreProcessing (mediaHelper: MediaHelper, mediaType: 
     const newTrackLow = await mediaHelper.createTrackLow(mediaType)
     if (newTrackLow){
       senderLow.replaceTrack(newTrackLow);
+      syncTrackState(preProcessing.canvasTrack, newTrackLow, "oneway")
       oldTrackLow.stop()
       mediaHelper.logger.log(`enablePreProcessing ${mediaType} 成功替换上行小流`)
     }
@@ -238,6 +240,7 @@ export async function disablePreProcessing(mediaHelper: MediaHelper, mediaType: 
       const newTrackLow = await mediaHelper.createTrackLow(mediaType)
       if (newTrackLow){
         senderLow.replaceTrack(newTrackLow);
+        syncTrackState(videoTrack, newTrackLow, "oneway")
         oldTrackLow.stop()
         mediaHelper.logger.log(`disablePreProcessing ${mediaType} 成功替换上行小流`)
       }
