@@ -10,6 +10,7 @@ class mHumanSegmenter {
     initMem = false;
     inputPtr = null;
     outputPtr = null;
+    outputArrayBuffer = new ArrayBuffer(256*256*4);
 
     init(binary) {
         global.Module = {
@@ -54,7 +55,7 @@ class mHumanSegmenter {
     }
 
     alphaToImageData(data) {
-        const imageData = new Uint8ClampedArray(data.length * 4);
+        const imageData = new Uint8ClampedArray(this.outputArrayBuffer);
         for(let i =0; i < data.length; i++) {
             imageData[i * 4 + 3] = data[i];
         }
@@ -84,7 +85,7 @@ class mHumanSegmenter {
         global.postMessage({
             type: 'mask',
             maskData: segment_mask,
-        }, [segment_mask.buffer])
+        })
     }
 }
 
