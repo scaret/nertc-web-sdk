@@ -79,14 +79,16 @@ class Segmentation extends EventEmitter {
         }
     }
 
-    process(imageData: ImageData, width: number, height: number,  callback: (result: ImageData) => void) {
+    process(imageData: Uint8Array, width: number, height: number,  callback: (result: ImageData) => void) {
         this.width = width;
         this.height = height;
-        this.onMaskDataCallback = callback;
+        this.onMaskDataCallback = callback; 
         this.segmentWorker && this.segmentWorker.postMessage({
             type: 'process',
-            frame: imageData
-        })
+            frame: imageData,
+            width,
+            height
+        }, [imageData.buffer])  
     }
 }
 

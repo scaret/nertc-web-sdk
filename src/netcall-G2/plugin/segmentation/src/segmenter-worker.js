@@ -2,7 +2,6 @@ const global = self;
 
 class mHumanSegmenter {
     mHumanSegmenter = null;
-    isProcessing = false;
     buffer = [];
     buffer_length = 1;
     width = 0;
@@ -11,6 +10,8 @@ class mHumanSegmenter {
     inputPtr = null;
     outputPtr = null;
     outputArrayBuffer = new ArrayBuffer(256*256*4);
+    frameArrayBuffer = new ArrayBuffer(1920*1080 * 4)
+    segment_mask = new ImageData(256,256);
 
     init(binary) {
         global.Module = {
@@ -24,8 +25,7 @@ class mHumanSegmenter {
         require('../lib/ne_segment_normal.js');
     }
 
-    async process(frame) {
-        this.isProcessing = true;
+    async process(frame, width, height) {
         if (!this.initMem || frame.width !== this.width || frame.height !== this.height) {
             if (this.inputPtr != null) {
                 Module._free(this.inputPtr);
@@ -35,23 +35,19 @@ class mHumanSegmenter {
                 Module._free(this.outputPtr);
                 this.outputPtr = null;
             }
-            this.inputPtr = global.Module._malloc(frame.data.length);
-            this.outputPtr = global.Module._malloc(frame.data.length);
+            this.inputPtr = global.Module._malloc(frame.length);
+            this.outputPtr = global.Module._malloc(frame.length);
 
             this.initMem = true;
-            this.width = frame.width;
-            this.height = frame.height;
+            this.width = width;
+            this.height = height;
         }
-        Module.HEAPU8.set(frame.data, this.inputPtr);
+     
+        Module.HEAPU8.set(frame, this.inputPtr);
         this.mHumanSegmenter.process(this.inputPtr, this.outputPtr, this.width, this.height);
-        const result = Module.HEAPU8.subarray(this.outputPtr, this.outputPtr + 256 * 256);
-        const segment_mask = new ImageData(this.alphaToImageData(result), 256, 256);
-        this.handleMaskData(segment_mask);
-        this.isProcessing = false;
-        if (this.buffer.length) {
-            const buffer = this.buffer.shift();
-            this.process(buffer);
-        }
+        let result = Module.HEAPU8.subarray(this.outputPtr, this.outputPtr + 256 * 256);
+        this.segment_mask.data.set(this.alphaToImageData(result))
+        this.handleMaskData(this.segment_mask);
     }
 
     alphaToImageData(data) {
@@ -101,18 +97,9 @@ const segmenterWorker = function () {
                 segmenter.init(option.wasmBinary);
                 break;
             case 'process':
-                if (segmenter.isProcessing) {
-                    if (segmenter.buffer.length >= segmenter.buffer_length) {
-                        //console.log('processing, skip this frame');
-                        segmenter.buffer.shift();
-                        segmenter.buffer.push(data.frame);
-                        return;
-                    } else {
-                        segmenter.buffer.push(data.frame);
-                    }
-                } else {
-                    segmenter.process(data.frame);
-                }
+                let frame = new Uint8Array(segmenter.frameArrayBuffer);
+                frame.set(data.frame, 0);
+                segmenter.process(frame, data.width, data.height); 
                 break;
             case 'destroy':
                 if (segmenter) {
