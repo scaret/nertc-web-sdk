@@ -44,6 +44,7 @@ export class NormalFilter extends Filter {
         this.programs.main = program;
     }
 
+    private pixels: Uint8Array | null = null;
     getImageData(srcMap: ReturnType<typeof createTexture>){
         if(srcMap !== this._srcMap){
             this._srcMap = srcMap;
@@ -57,10 +58,12 @@ export class NormalFilter extends Filter {
         const gl = renderer.gl!;
         this.framebuffers.imgData.bind();
         renderer.render(this.programs.imgData);
-        const pixels = new Uint8Array(width * height * 4);
-        gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+        if(!this.pixels || this.pixels.length !== width * height * 4){
+            this.pixels = new Uint8Array(width * height * 4);
+        }
+        gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, this.pixels);
         this.framebuffers.imgData.bind(true);
-        return pixels;
+        return this.pixels;
     }
 
     get map() {

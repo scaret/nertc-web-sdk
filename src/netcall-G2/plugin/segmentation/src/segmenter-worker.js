@@ -2,15 +2,12 @@ const global = self;
 
 class mHumanSegmenter {
     mHumanSegmenter = null;
-    buffer = [];
-    buffer_length = 1;
     width = 0;
     height = 0;
     initMem = false;
     inputPtr = null;
     outputPtr = null;
     outputArrayBuffer = new ArrayBuffer(256*256*4);
-    frameArrayBuffer = new ArrayBuffer(1920*1080 * 4)
     segment_mask = new ImageData(256,256);
 
     init(binary) {
@@ -26,7 +23,7 @@ class mHumanSegmenter {
     }
 
     async process(frame, width, height) {
-        if (!this.initMem || frame.width !== this.width || frame.height !== this.height) {
+        if (!this.initMem || width !== this.width || height !== this.height) {
             if (this.inputPtr != null) {
                 Module._free(this.inputPtr);
                 this.inputPtr = null;
@@ -42,7 +39,6 @@ class mHumanSegmenter {
             this.width = width;
             this.height = height;
         }
-     
         Module.HEAPU8.set(frame, this.inputPtr);
         this.mHumanSegmenter.process(this.inputPtr, this.outputPtr, this.width, this.height);
         let result = Module.HEAPU8.subarray(this.outputPtr, this.outputPtr + 256 * 256);
@@ -60,7 +56,6 @@ class mHumanSegmenter {
 
     destroy() {
         this.mHumanSegmenter = null;
-        this.buffer.length = 0;
         if (this.inputPtr != null) {
             Module._free(this.inputPtr);
             this.inputPtr = null;
@@ -85,6 +80,15 @@ class mHumanSegmenter {
     }
 }
 
+function force_gc() {
+    // 强制 GC
+    try{
+        new WebAssembly.Memory({initial: 128})
+    }catch(e){
+        console.error('gc error', e);
+    }
+}
+
 const segmenterWorker = function () {
     let segmenter = new mHumanSegmenter();
 
@@ -97,9 +101,10 @@ const segmenterWorker = function () {
                 segmenter.init(option.wasmBinary);
                 break;
             case 'process':
-                let frame = new Uint8Array(segmenter.frameArrayBuffer);
-                frame.set(data.frame, 0);
-                segmenter.process(frame, data.width, data.height); 
+                segmenter.process(data.frame, data.width, data.height);
+                if(data.forceGC){
+                    force_gc();
+                }
                 break;
             case 'destroy':
                 if (segmenter) {

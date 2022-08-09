@@ -2,8 +2,6 @@ const global = self;
 
 class mHumanSegmenter {
     mHumanSegmenter = null;
-    buffer = [];
-    buffer_length = 1;
     width = 0;
     height = 0;
     initMem = false;
@@ -11,7 +9,6 @@ class mHumanSegmenter {
     max_face_size = 1;
     keyPointSize = 0;
     outputArrayBuffer = null;
-    frameArrayBuffer = new ArrayBuffer(1920 * 1080 * 4);
 
     async init(binary) {
         global.Module = {
@@ -64,7 +61,6 @@ class mHumanSegmenter {
 
     destroy() {
         this.mHumanSegmenter = null;
-        this.buffer.length = 0;
         if (this.inputPtr != null) {
             Module._free(this.inputPtr);
             this.inputPtr = null;
@@ -80,13 +76,22 @@ class mHumanSegmenter {
     handleFacePointsData = (facePoints) => {
         global.postMessage({
             type: 'facePoints',
-            faceData: facePoints,
+            faceData: facePoints
         })
     }
 
     setFaceSize(faceSize){
         this.mHumanSegmenter.setMaxFaceSize(faceSize);
         this.outputArrayBuffer = new ArrayBuffer(faceSize * this.keyPointSize * 2 * 2) 
+    }
+}
+
+function force_gc() {
+    // 强制 GC
+    try{
+        new WebAssembly.Memory({initial: 128})
+    }catch(e){
+        console.error('gc error', e);
     }
 }
 
@@ -102,9 +107,10 @@ const segmenterWorker = function () {
                 segmenter.init(option.wasmBinary);
                 break;
             case 'process':
-                let frame = new Uint8Array(segmenter.frameArrayBuffer);
-                frame.set(data.frame, 0);
-                segmenter.process(frame, data.width, data.height); 
+                segmenter.process(data.frame, data.width, data.height);
+                if(data.forceGC){
+                    force_gc();
+                }
                 break;
             case 'destroy':
                 if (segmenter) {

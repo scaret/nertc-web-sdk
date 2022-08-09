@@ -6,8 +6,6 @@ import { ILogger } from '../../types';
 
 class Segmentation extends EventEmitter { 
     private modelParam: modelOptions;
-    private width: number = 0;
-    private height: number = 0;
     private segmentWorker: any;
     private _segmentWorkerDestroying: boolean = false;
     private logger: ILogger;
@@ -79,16 +77,15 @@ class Segmentation extends EventEmitter {
         }
     }
 
-    process(imageData: Uint8Array, width: number, height: number,  callback: (result: ImageData) => void) {
-        this.width = width;
-        this.height = height;
-        this.onMaskDataCallback = callback; 
+    process(imageData: Uint8Array, width: number, height: number,  callback: (result: ImageData) => void, forceGC = false) {
+        this.onMaskDataCallback = callback;
         this.segmentWorker && this.segmentWorker.postMessage({
             type: 'process',
             frame: imageData,
             width,
-            height
-        }, [imageData.buffer])  
+            height,
+            forceGC
+        },[imageData.buffer])
     }
 }
 

@@ -130,7 +130,6 @@ export default class VideoPostProcess extends EventEmitter {
 
             const settings = track.getSettings();
             this.frameRate = settings.frameRate || 15;
-            console.warn('settings', settings)
             if(this.frameRate > 30){
                 logger.warn('In chrome, webgl drawing video which framerate greater than 30fps may cause memory leak.');
                 this.frameRate = 30;
@@ -233,7 +232,6 @@ export default class VideoPostProcess extends EventEmitter {
             if(needImgData){
                 this.filters.update(false);
                 // 获取下一帧原图的 imageData
-              //  console.warn('获取下一帧原图的 imageData', Date.now())
                 this.sourceMap = this.filters.normal.getImageData(this.filters.srcMap);
             }else{
                 this.filters.update(true);
