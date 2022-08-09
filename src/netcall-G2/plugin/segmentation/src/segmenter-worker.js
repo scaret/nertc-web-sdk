@@ -45,8 +45,8 @@ class mHumanSegmenter {
         Module.HEAPU8.set(frame.data, this.inputPtr);
         this.mHumanSegmenter.process(this.inputPtr, this.outputPtr, this.width, this.height);
         const result = Module.HEAPU8.subarray(this.outputPtr, this.outputPtr + 256 * 256);
-        const segment_mask = this.alphaToImageData(result);
-        this.handleMaskData(segment_mask, frame);
+        const segment_mask = new ImageData(this.alphaToImageData(result), 256, 256);
+        this.handleMaskData(segment_mask);
         this.isProcessing = false;
         if (this.buffer.length) {
             const buffer = this.buffer.shift();
