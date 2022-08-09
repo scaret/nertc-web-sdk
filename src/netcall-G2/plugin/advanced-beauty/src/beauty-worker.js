@@ -2,7 +2,6 @@ const global = self;
 
 class mHumanSegmenter {
     mHumanSegmenter = null;
-    isProcessing = false;
     buffer = [];
     buffer_length = 1;
     width = 0;
@@ -11,6 +10,8 @@ class mHumanSegmenter {
     inputPtr = null;
     max_face_size = 1;
     keyPointSize = 0;
+    outputArrayBuffer = null;
+    frameArrayBuffer = new ArrayBuffer(1920 * 1080 * 4);
 
     async init(binary) {
         global.Module = {
@@ -26,51 +27,39 @@ class mHumanSegmenter {
         require('../lib/ne_face_points.js');
     }
 
-    async process(frame) {
-        this.isProcessing = true;
-        if (!this.initMem || frame.width !== this.width || frame.height !== this.height) {
+    async process(frame, width, height) {
+        if (!this.initMem || width !== this.width || height !== this.height) {
             if (this.inputPtr != null) {
                 Module._free(this.inputPtr);
                 this.inputPtr = null;
             }
-            this.inputPtr = global.Module._malloc(frame.data.length);
+            this.inputPtr = Module._malloc(frame.length);
             this.initMem = true;
-            this.width = frame.width;
-            this.height = frame.height;
+            this.width = width;
+            this.height = height;
         }
-        Module.HEAPU8.set(frame.data, this.inputPtr);
+        Module.HEAPU8.set(frame, this.inputPtr);
         this.mHumanSegmenter.process(this.inputPtr, this.width, this.height);
-
-        let det_face_size = this.mHumanSegmenter.getDetFaceSize(); //返回实际检测到的人脸数量
-        let pointsArrayBuffer = new Int16Array(det_face_size * this.keyPointSize * 2);
-        for (var i = 0; i < det_face_size; i++) {
-            var mResult = this.mHumanSegmenter.getFaceResult(i);
-            //this.getFaceBox(mResult.box, mResult.threshold, mResult.smooth)
-            let points = this.getFacePoints(mResult.points);
-            pointsArrayBuffer.set(points, this.keyPointSize * 2 * i);
-        }
-        this.handleFacePointsData(pointsArrayBuffer, frame);
-        this.isProcessing = false;
-
-        if (this.buffer.length) {
-            const buffer = this.buffer.shift();
-            this.process(buffer);
-        }
+        const faceData = this.getFacePoints();
+        this.handleFacePointsData(faceData);
     }
 
     getFaceBox(box, threshold, smooth) {
 
     }
 
-    getFacePoints(points) {
-        let array = new Int16Array(this.keyPointSize * 2);
-        for (let j = 0; j < this.keyPointSize; ++j) {
-            let x = points.get(j * 2 + 0);
-            let y = points.get(j * 2 + 1);
-            array[j * 2 + 0] = x;
-            array[j * 2 + 1] = y;
+    getFacePoints() {
+        let det_face_size = this.mHumanSegmenter.getDetFaceSize(); //返回实际检测到的人脸数量
+        let pointsArrayBuffer = new Int16Array(this.outputArrayBuffer, 0, det_face_size * this.keyPointSize * 2);
+        for (let i = 0; i < det_face_size; i++) {
+            let mResult = this.mHumanSegmenter.getFaceResult(i);
+            //this.getFaceBox(mResult.box, mResult.threshold, mResult.smooth)
+            for (let j = 0; j < this.keyPointSize; j++) {
+                pointsArrayBuffer[i * this.keyPointSize * 2 + j * 2] = mResult.points.get(j * 2);
+                pointsArrayBuffer[i * this.keyPointSize * 2  + j * 2 + 1] = mResult.points.get(j * 2 + 1);
+            }
         }
-        return array;
+        return pointsArrayBuffer;
     }
 
     destroy() {
@@ -88,16 +77,16 @@ class mHumanSegmenter {
         })
     }
 
-    handleFacePointsData = (facePoints, frame) => {
+    handleFacePointsData = (facePoints) => {
         global.postMessage({
             type: 'facePoints',
             faceData: facePoints,
-            imageData: frame
-        }, [facePoints.buffer, frame.data.buffer])
+        })
     }
 
     setFaceSize(faceSize){
         this.mHumanSegmenter.setMaxFaceSize(faceSize);
+        this.outputArrayBuffer = new ArrayBuffer(faceSize * this.keyPointSize * 2 * 2) 
     }
 }
 
@@ -113,18 +102,9 @@ const segmenterWorker = function () {
                 segmenter.init(option.wasmBinary);
                 break;
             case 'process':
-                if (segmenter.isProcessing) {
-                    if (segmenter.buffer.length >= segmenter.buffer_length) {
-                        //console.log('processing, skip this frame');
-                        segmenter.buffer.shift();
-                        segmenter.buffer.push(data.frame);
-                        return;
-                    } else {
-                        segmenter.buffer.push(data.frame);
-                    }
-                } else {
-                    segmenter.process(data.frame);
-                }
+                let frame = new Uint8Array(segmenter.frameArrayBuffer);
+                frame.set(data.frame, 0);
+                segmenter.process(frame, data.width, data.height); 
                 break;
             case 'destroy':
                 if (segmenter) {
@@ -133,16 +113,15 @@ const segmenterWorker = function () {
                 }
                 global.postMessage({ type: 'destroyed' });
                 break;
-                case 'faceSize':
-                    if(segmenter){
-                        segmenter.setFaceSize(option.faceSize);
-                    }
+            case 'faceSize':
+                if(segmenter){
+                    segmenter.setFaceSize(option.faceSize);
+                }
                 break;
             default:
                 break;
         }
     }
-
 };
 
 export default segmenterWorker;
