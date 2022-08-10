@@ -156,7 +156,7 @@ let privatizationConfig = null;
   "nosUploadSever":"https://yunxinent-demo.netease.im",
   "nosTokenServer":"https://yunxinent-demo.netease.im/report/sdklog/getToken",
   "webSocketProxyServer":"www.testg2proxy.com",
-   "mediaProxyServer":"59.111.58.216:3478",
+  "mediaProxyServer":"59.111.58.216:3478",
   "useIPv6":false
 }*/
 

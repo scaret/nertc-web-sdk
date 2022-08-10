@@ -399,7 +399,6 @@ class MediaHelper extends EventEmitter {
       this.audio.audioSource = audioSource;
       emptyStreamWith(this.audio.audioSourceStream, audioSource);
       this.updateWebAudio();
-      this.stream.client.updateRecordingAudioStream()
       if (!this.audio.audioRoutingEnabled){
         if (this.getAudioInputTracks().length > 1){
           this.enableAudioRouting();
@@ -409,6 +408,7 @@ class MediaHelper extends EventEmitter {
         }
       }
       audio = false
+      this.stream.client.updateRecordingAudioStream()
     }
 
     if (videoSource) {
@@ -650,7 +650,6 @@ class MediaHelper extends EventEmitter {
           this.listenToTrackEnded(this.audio.micTrack);
           emptyStreamWith(this.audio.micStream, this.audio.micTrack);
           this.updateWebAudio();
-          this.stream.client.updateRecordingAudioStream()
           if (!this.audio.audioRoutingEnabled){
             if (this.getAudioInputTracks().length > 1){
               this.enableAudioRouting();
@@ -682,6 +681,7 @@ class MediaHelper extends EventEmitter {
           if (typeof config.audio === "object"){
             this.audio.micConstraint = {audio: config.audio}
           }
+          this.stream.client.updateRecordingAudioStream()
         }
         if (cameraTrack){
           this.video.cameraTrack = cameraTrack;
@@ -787,7 +787,6 @@ class MediaHelper extends EventEmitter {
         this._stopTrack(this.audio.micStream)
         emptyStreamWith(this.audio.micStream, this.audio.micTrack)
         this.listenToTrackEnded(this.audio.micTrack);
-        this.stream.client.updateRecordingAudioStream()
         this.updateWebAudio();
         if (!this.audio.audioRoutingEnabled){
           if (this.getAudioInputTracks().length > 1){
@@ -812,7 +811,7 @@ class MediaHelper extends EventEmitter {
           this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
           this.audio.deviceInfo.mic.groupId = micSettings.groupId;
         }
-
+        this.stream.client.updateRecordingAudioStream()
         this.stream.client.apiEventReport('setFunction', {
           name: 'set_mic',
           oper: '1',
