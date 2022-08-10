@@ -109,6 +109,10 @@ declare interface Stream {
      * 
      * @param view div 标签，播放画面的 dom 容器节点。
      * @param playOptions 播放的音视频选项。
+     * 
+     * @note 注意
+     * * 采用自定义视频输入时，部分 safari 版本不支持播放 CanvasCaptureMediaStreamTrack，请升级系统。详见 [https://bugs.webkit.org/show_bug.cgi?id=181663](https://bugs.webkit.org/show_bug.cgi?id=181663)
+     * 
      * @example
      * ```javascript
      *    // 本地流

@@ -14,6 +14,7 @@ import {OperationQueue} from "./util/OperationQueue";
 import {NERTC_VIDEO_QUALITY_ENUM, VIDEO_FRAME_RATE_ENUM} from "./constant/videoQuality";
 import {LBSManager} from "./module/LBSManager";
 import {DataReport} from "./module/report/dataReport";
+import {Consumer} from "./module/3rd/mediasoup-client/Consumer";
 
 type UIDTYPE = number | string;
 
@@ -1462,6 +1463,13 @@ export interface GUMConstaints{
 
 export interface FormatMediaOptions{
   adapterRef: AdapterRef;
+}
+
+export interface RecvInfo{
+  uid: string,
+  mediaType: MediaTypeShort,
+  remoteStream: RemoteStream,
+  consumer: Consumer,
 }
 
 export interface BeautyEffectOptions {

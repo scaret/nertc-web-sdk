@@ -197,6 +197,8 @@ export interface RTMPTaskState{
  * * AUDIO_OUTPUT_LEVEL_TOO_LOW
  * * RECV_VIDEO_DECODE_FAILED
  * * RECV_SCREEN_DECODE_FAILED
+ * 
+ * 注意：当远端音频数量过多时SDK会按需开启音频选路模式（ASL），此时 RECV_AUDIO_DECODE_FAILED 及 AUDIO_OUTPUT_LEVEL_TOO_LOW 提示不再生效。
  */
 export interface ClientExceptionEvt{
   /**

@@ -573,7 +573,20 @@ class FormativeStatsReport {
         data[i].freezeTime = stats.freezeTime
         data[i].totalFreezeTime = stats.totalFreezeTime
         bytesReceived += parseInt(data[i].bytesReceived) 
-        this.dispatchExceptionEventRecvAudio(this.paramSecond.downAudioCache[uid], data[i], uid)
+        
+        if (this.adapterRef.audioAsl.enabled === "yes" && this.adapterRef._mediasoup){
+          const audioReceivers = this.adapterRef._mediasoup.getReceivers({}).filter((r)=>{
+            return r.mediaType === "audio" || r.mediaType === "audioSlave"
+          })
+          if (audioReceivers.length > this.adapterRef.audioAsl.aslActiveNum){
+            // 正在ASL选路的状态下不提示Exception信息
+          }else{
+            this.dispatchExceptionEventRecvAudio(this.paramSecond.downAudioCache[uid], data[i], uid)
+          }
+        }else{
+          this.dispatchExceptionEventRecvAudio(this.paramSecond.downAudioCache[uid], data[i], uid)
+        }
+        
         this.paramSecond.downAudioCache[uid] = data[i]
         currentData.recv.uid = +uid
         currentData.recv.audio.nextLost = data[i].packetsLost

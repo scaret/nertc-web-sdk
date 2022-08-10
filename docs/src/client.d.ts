@@ -149,7 +149,7 @@ declare interface Client{
      * * 接收端大小流通过 [[Client.subscribe]] 和 [[Client.setRemoteStreamType]] 进行调用和切换。
      * * 视频小流的目标码率为100kbps，屏幕共享小流的目标码率为200kbps。
      * * SDK会尝试使用接近 180p(240x180) 的低分辨率进行重新采集以提高编解码效率。浏览器会尽量在保证长宽比的情况下使小流的采集接近180p。但由于浏览器和摄像头的限制，小流的分辨率也会出现240p、480p甚至与大流一致的情况，这些都为正常现象。
-     * 
+     * * 部分H5设备开启小流异常时，建议在[[Client.subscribe]]时选择订阅大流，再通过[[Client.setRemoteStreamType]]切换为小流。
      * 
      * ```javascript
      * // 加入频道后
