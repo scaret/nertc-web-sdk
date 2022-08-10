@@ -6,7 +6,7 @@ import {
   MediasoupManagerInitOptions,
   MediaType, MediaTypeShort,
   ProduceConsumeInfo,
-  Timer, VideoCodecType
+  Timer, VideoCodecType, RecvInfo
 } from "../types";
 import {Consumer, Device, Producer, ProducerCodecOptions, Transport} from "./3rd/mediasoup-client/types";
 import {Peer} from "./3rd/protoo-client";
@@ -2000,6 +2000,40 @@ class Mediasoup extends EventEmitter {
     this.iceStatusHistory[direction].status = iceStatus
     
     return iceStatus
+  }
+  
+  getReceivers(options: {
+    uid?: number,
+    mediaType?: MediaTypeShort
+  } = {}){
+    
+    const recvInfos:RecvInfo[] = []
+    
+    for (let uid in this.adapterRef.remoteStreamMap){
+      const remoteStream = this.adapterRef.remoteStreamMap[uid]
+      if (options.uid && options.uid.toString() !== uid){
+        continue
+      }
+      let mediaTypes:MediaTypeShort[] = ["audio", "video", "screen", "audioSlave"]
+      mediaTypes.forEach((mediaType)=>{
+        if (options.mediaType && options.mediaType !== mediaType){
+          return
+        }
+        if (!remoteStream.active || !remoteStream.pubStatus[mediaType].consumerId){
+          return
+        }
+        const consumer = this._consumers[remoteStream.pubStatus[mediaType].consumerId]
+        if (consumer){
+          recvInfos.push({
+            uid,
+            mediaType,
+            remoteStream,
+            consumer,
+          })
+        }
+      })
+    }
+    return recvInfos
   }
 
   destroy() {
