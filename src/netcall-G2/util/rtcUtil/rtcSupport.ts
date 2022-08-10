@@ -209,7 +209,7 @@ export const isBrowserSupported = function() {
     return true;
   }else if (env.IS_IOS && env.IS_MQQB ) { // ios qq
     return true;
-  }else if (env.IS_IOS && (env.IOS_VERSION as any) >= MIN_IOS_WECHAT_PULL_PUSH_VERSION && env.IS_WECHAT && (env.WECHAT_VERSION as any) >=  MIN_IOS_WECHAT_VERSION) { // ios 14.3+ && wechat 6.5+
+  }else if (env.IS_IOS && env.IOS_VERSION && parseFloat(env.IOS_VERSION) >= MIN_IOS_WECHAT_PULL_PUSH_VERSION && env.IS_WECHAT && env.WECHAT_VERSION && parseFloat(env.WECHAT_VERSION) >=  MIN_IOS_WECHAT_VERSION) { // ios 14.3+ && wechat 6.5+
     return true;
   }else if (env.IS_ANDROID && (env.IS_TBS || env.IS_XWEB) ) { // android wechat TBS & XWEB
     return true;
