@@ -6,8 +6,6 @@ import { ILogger } from '../../types';
 
 class AdvancedBeauty extends EventEmitter { 
     private modelParam: modelOptions;
-    private width: number = 0;
-    private height: number = 0;
     private advancedBeautyWorker: any;
     private _advancedBeautyWorkerDestroying: boolean = false;
     private logger: ILogger;
@@ -58,8 +56,7 @@ class AdvancedBeauty extends EventEmitter {
                     this.emit('facePoints-load');
                     break;
                 case 'facePoints':
-                    const { faceData, imageData } = data;
-                    this.onFaceDataCallback(faceData);
+                    this.onFaceDataCallback(data.faceData);
                     break;
                 case 'destroyed':
                     if (this._advancedBeautyWorkerDestroying) {
@@ -81,14 +78,15 @@ class AdvancedBeauty extends EventEmitter {
         }
     }
 
-    process(imageData: ImageData, width: number, height: number,  callback: (result: ImageData) => void) {
-        this.width = width;
-        this.height = height;
+    process(imageData: Uint8Array, width: number, height: number,  callback: (result: ImageData) => void, forceGC = false) {
         this.onFaceDataCallback = callback;
         this.advancedBeautyWorker && this.advancedBeautyWorker.postMessage({
             type: 'process',
-            frame: imageData
-        })
+            frame: imageData,
+            width,
+            height,
+            forceGC
+        },[imageData.buffer])
     }
 
     setFaceSize(decFaceSize: number){

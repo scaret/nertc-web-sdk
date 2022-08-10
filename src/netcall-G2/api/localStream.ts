@@ -2225,13 +2225,13 @@ class LocalStream extends RTCEventEmitter {
             streamID: this.stringStreamID
           }
         })
+        await this.resumeVideoPostProcess();
       }
       this.client.apiFrequencyControl({
         name: '_trackSettings',
         code: 0,
         param: JSON.stringify(this.mediaHelper.getTrackSettings())
       })
-      await this.resumeVideoPostProcess();
     } catch (e) {
       this.logger.error('API调用失败：Stream:switchDevice' ,e.name, e.message, e);
       this.inSwitchDevice[type] = false
@@ -3578,28 +3578,31 @@ class LocalStream extends RTCEventEmitter {
    * @return {Promise}
    */
 
-   async setBeautyEffect(isStart:boolean){
+   async setBeautyEffect(isStart:boolean, isAuto = false){
     const basicBeauty  = this.basicBeauty;
-    if(isStart && basicBeauty.isEnable){
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.NOT_ALLOWED,
-          message: 'setBeautyEffect: basicBeauty is already opened'
-        })
-      )
+
+    if(!isAuto){
+      if(isStart && basicBeauty.isEnable){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.NOT_ALLOWED,
+            message: 'setBeautyEffect: basicBeauty is already opened'
+          })
+        )
+      }
+      if(!isStart && !basicBeauty.isEnable){
+        return Promise.reject(
+          new RtcError({
+            code: ErrorCode.NOT_ALLOWED,
+            message: 'setBeautyEffect: basicBeauty is already closed'
+          })
+        )
+      }
     }
-    if(!isStart && !basicBeauty.isEnable){
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.NOT_ALLOWED,
-          message: 'setBeautyEffect: basicBeauty is already closed'
-        })
-      )
-    }
+
     if (this.mediaHelper && this.mediaHelper.video.cameraTrack) {
-      const hasWaterMark = this.replaceTags.waterMark;
-      if(hasWaterMark){
-        this.mediaHelper.disablePreProcessing("video");
+      if(this.replaceTags.waterMark){
+        this.mediaHelper.disablePreProcessing("video", true);
       }
 
       this.videoPostProcessTags.isBeautyTrack = isStart;
@@ -3614,7 +3617,7 @@ class LocalStream extends RTCEventEmitter {
       });
 
       //重新开启水印
-      if(hasWaterMark){
+      if(this.mediaHelper.video.preProcessingEnabled){
         this.mediaHelper.enablePreProcessing("video")
       }
       if(isStart){
@@ -3981,9 +3984,8 @@ class LocalStream extends RTCEventEmitter {
         return
       }
       if (this.mediaHelper && this.mediaHelper.video.cameraTrack) {
-        const hasWaterMark = this.replaceTags.waterMark;
-        if(hasWaterMark){
-          this.mediaHelper.disablePreProcessing("video");
+        if(this.replaceTags.waterMark){
+          this.mediaHelper.disablePreProcessing("video", true);
         }
         this._cameraTrack  = this.mediaHelper.video.cameraTrack;
         this._transformedTrack = await processor.setTrack(enable, this._cameraTrack ) as MediaStreamTrack;
@@ -3993,9 +3995,9 @@ class LocalStream extends RTCEventEmitter {
               //@ts-ignore
               track: this._transformedTrack,
               external: false,
-        });      
+        });     
         //重新开启水印
-        if (hasWaterMark){
+        if (this.mediaHelper.video.preProcessingEnabled){
           this.mediaHelper.enablePreProcessing("video")
         }  
       } else {
@@ -4066,7 +4068,7 @@ class LocalStream extends RTCEventEmitter {
   async suspendVideoPostProcess(closeTrackLow: boolean = false){
     const {isBeautyTrack, isBodySegmentTrack, isAdvBeautyTrack} = this.videoPostProcessTags;
     if(isBeautyTrack){
-      await this.setBeautyEffect(false);
+      await this.setBeautyEffect(false, true);
       this.videoPostProcessTags.isBeautyTrack = true;
     }
     if(isBodySegmentTrack) {
@@ -4091,7 +4093,7 @@ class LocalStream extends RTCEventEmitter {
       const {isBeautyTrack, isBodySegmentTrack, isAdvBeautyTrack} = this.videoPostProcessTags;
       // 打开基础美颜
       if(isBeautyTrack){
-        await this.setBeautyEffect(true);
+        await this.setBeautyEffect(true, true);
         if(this.lastEffects){
           this.setBeautyEffectOptions(this.lastEffects);
         }

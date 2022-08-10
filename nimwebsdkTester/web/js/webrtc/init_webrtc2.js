@@ -1668,7 +1668,6 @@ $("#registerVitrualBackground").on("click", async () => {
     $("#segmentStatus").html("loading").show();
     const type = (await wasmFeatureDetect.simd()) ? "simd" : "nosimd";
     segment_config = virtualBackgroundPluginConfig[NERTC.ENV][type];
-    console.error(virtualBackgroundPluginConfig[NERTC.ENV], type, segment_config);
     rtc.localStream.registerPlugin(segment_config);
   }
 });

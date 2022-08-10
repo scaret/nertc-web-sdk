@@ -20,15 +20,17 @@ export default class VideoPostProcess extends EventEmitter {
     private pluginModules:{
         VirtualBackground:{
             process:(
-                    imgData: ImageData, width: number, height:number, 
-                    callback: (result: ImageData) => void
+                    imgData: Uint8Array, width: number, height:number, 
+                    callback: (result: ImageData) => void,
+                    forceGC?: boolean
                 ) => void;
             destroy:() => void;
         } | null;
         AdvancedBeauty:{
             process:(
-                    imgData: ImageData, width: number, height:number, 
-                    callback:(result: number[]) => void
+                    imgData: Uint8Array, width: number, height:number, 
+                    callback:(result: number[]) => void,
+                    forceGC?: boolean
                 ) => void;
             destroy:() => void
         } | null
@@ -63,7 +65,7 @@ export default class VideoPostProcess extends EventEmitter {
     private taskSet = new Set<TaskType>();
     private taskSnapshot = new Set<TaskType>();
     private readyTaskSet = new Set<TaskType>(['BasicBeauty']);
-    private sourceMap: ImageData | null = null;
+    private sourceMap: Uint8Array | null = null;
     private maskData: ImageData | null = null;
     private advBeautyData: number[] | Int16Array = [];
 
@@ -204,17 +206,21 @@ export default class VideoPostProcess extends EventEmitter {
 
         if(this.taskReady){
             let needImgData = false;
+            let needCopy = false;
             // 设置虚拟背景参数
             if(this.taskSet.has('VirtualBackground')){
                 this.filters.virtualBackground.setMaskMap(this.maskData);
                 this.maskData = null;
                 needImgData = true;
+                needCopy = true;
             }
             // 设置高级美颜参数
             if(this.taskSet.has('AdvancedBeauty')){
                 this.filters.advBeauty.setAdvData(this.advBeautyData as Int16Array);
                 this.advBeautyData = [];
                 needImgData = true;
+            }else{
+                needCopy = false;
             }
 
             // 新的任务处理
@@ -226,11 +232,7 @@ export default class VideoPostProcess extends EventEmitter {
             if(needImgData){
                 this.filters.update(false);
                 // 获取下一帧原图的 imageData
-                this.sourceMap = this.filters.normal.getImageData(
-                    this.filters.srcMap,
-                    (env.IS_ANY_SAFARI && env.SAFARI_MAJOR_VERSION!<14) ||
-                    (env.IS_CHROME && env.CHROME_MAJOR_VERSION!<80)
-                );
+                this.sourceMap = this.filters.normal.getImageData(this.filters.srcMap);
             }else{
                 this.filters.update(true);
             }
@@ -246,14 +248,14 @@ export default class VideoPostProcess extends EventEmitter {
                     // 屏蔽空帧
                     if(width > 16 && height > 16){
                         // 背景替换推理
-                        plugin.process(this.sourceMap!, width, height, (result)=>{
+                        plugin.process(needCopy ? this.sourceMap!.slice() : this.sourceMap!, width, height, (result)=>{
                             this.maskData = this.taskSet.has('VirtualBackground') ? result : null;
                             this.readyTaskSet.add('VirtualBackground');
                             if(this.frameCount[1] < this.frameCount[0]){
                                 this.updateTimer();
                                 this.update(false);
                             }
-                        });
+                        }, env.IS_CHROME && env.CHROME_MAJOR_VERSION===104);
                     }else{
                         this.readyTaskSet.add('VirtualBackground');
                     }
@@ -275,7 +277,7 @@ export default class VideoPostProcess extends EventEmitter {
                             this.updateTimer();
                             this.update(false);
                         }
-                    });
+                    }, env.IS_CHROME && env.CHROME_MAJOR_VERSION===104);
                 }
             }
         }

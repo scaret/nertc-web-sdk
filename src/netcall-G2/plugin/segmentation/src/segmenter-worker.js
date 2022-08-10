@@ -2,14 +2,13 @@ const global = self;
 
 class mHumanSegmenter {
     mHumanSegmenter = null;
-    isProcessing = false;
-    buffer = [];
-    buffer_length = 1;
     width = 0;
     height = 0;
     initMem = false;
     inputPtr = null;
     outputPtr = null;
+    outputArrayBuffer = new ArrayBuffer(256*256*4);
+    segment_mask = new ImageData(256,256);
 
     init(binary) {
         global.Module = {
@@ -23,9 +22,8 @@ class mHumanSegmenter {
         require('../lib/ne_segment_normal.js');
     }
 
-    async process(frame) {
-        this.isProcessing = true;
-        if (!this.initMem || frame.width !== this.width || frame.height !== this.height) {
+    async process(frame, width, height) {
+        if (!this.initMem || width !== this.width || height !== this.height) {
             if (this.inputPtr != null) {
                 Module._free(this.inputPtr);
                 this.inputPtr = null;
@@ -34,27 +32,22 @@ class mHumanSegmenter {
                 Module._free(this.outputPtr);
                 this.outputPtr = null;
             }
-            this.inputPtr = global.Module._malloc(frame.data.length);
-            this.outputPtr = global.Module._malloc(frame.data.length);
+            this.inputPtr = global.Module._malloc(frame.length);
+            this.outputPtr = global.Module._malloc(frame.length);
 
             this.initMem = true;
-            this.width = frame.width;
-            this.height = frame.height;
+            this.width = width;
+            this.height = height;
         }
-        Module.HEAPU8.set(frame.data, this.inputPtr);
+        Module.HEAPU8.set(frame, this.inputPtr);
         this.mHumanSegmenter.process(this.inputPtr, this.outputPtr, this.width, this.height);
-        const result = Module.HEAPU8.subarray(this.outputPtr, this.outputPtr + 256 * 256);
-        const segment_mask = this.alphaToImageData(result);
-        this.handleMaskData(segment_mask, frame);
-        this.isProcessing = false;
-        if (this.buffer.length) {
-            const buffer = this.buffer.shift();
-            this.process(buffer);
-        }
+        let result = Module.HEAPU8.subarray(this.outputPtr, this.outputPtr + 256 * 256);
+        this.segment_mask.data.set(this.alphaToImageData(result))
+        this.handleMaskData(this.segment_mask);
     }
 
     alphaToImageData(data) {
-        const imageData = new Uint8ClampedArray(data.length * 4);
+        const imageData = new Uint8ClampedArray(this.outputArrayBuffer);
         for(let i =0; i < data.length; i++) {
             imageData[i * 4 + 3] = data[i];
         }
@@ -63,7 +56,6 @@ class mHumanSegmenter {
 
     destroy() {
         this.mHumanSegmenter = null;
-        this.buffer.length = 0;
         if (this.inputPtr != null) {
             Module._free(this.inputPtr);
             this.inputPtr = null;
@@ -84,7 +76,16 @@ class mHumanSegmenter {
         global.postMessage({
             type: 'mask',
             maskData: segment_mask,
-        }, [segment_mask.buffer])
+        })
+    }
+}
+
+function force_gc() {
+    // 强制 GC
+    try{
+        new WebAssembly.Memory({initial: 128})
+    }catch(e){
+        console.error('gc error', e);
     }
 }
 
@@ -100,17 +101,9 @@ const segmenterWorker = function () {
                 segmenter.init(option.wasmBinary);
                 break;
             case 'process':
-                if (segmenter.isProcessing) {
-                    if (segmenter.buffer.length >= segmenter.buffer_length) {
-                        //console.log('processing, skip this frame');
-                        segmenter.buffer.shift();
-                        segmenter.buffer.push(data.frame);
-                        return;
-                    } else {
-                        segmenter.buffer.push(data.frame);
-                    }
-                } else {
-                    segmenter.process(data.frame);
+                segmenter.process(data.frame, data.width, data.height);
+                if(data.forceGC){
+                    force_gc();
                 }
                 break;
             case 'destroy':
