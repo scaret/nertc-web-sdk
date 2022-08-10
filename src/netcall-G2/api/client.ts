@@ -1924,7 +1924,7 @@ class Client extends Base {
       const remoteStream = this.adapterRef.remoteStreamMap[uid]
       this.logger.warn('refreshRemoteEvents peer-online', uid)
       this.safeEmit('peer-online', {uid: uid})
-      const MediaTypeList:MediaTypeShort[] = ["audio", "video", "screen"];
+      const MediaTypeList:MediaTypeShort[] = ["audio", "video", "screen", "audioSlave"];
       MediaTypeList.forEach((mediaTypeShort)=>{
         if (remoteStream.pubStatus[mediaTypeShort].producerId){
           this.logger.warn('refreshRemoteEvents stream-added', uid, mediaTypeShort)
