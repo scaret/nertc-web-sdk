@@ -328,6 +328,12 @@ class LocalStream extends RTCEventEmitter {
         screenProfile: this.screenProfile
       }
     })
+
+    // 对外抛出基础美颜加载完成事件
+    // failUrls[] 返回失败的资源路径
+    this.videoPostProcess.on('beautyResComplete', (failUrls: string[])=>{
+      this.emit('basic-beauty-res-complete', failUrls);
+    })
     
     this.videoPostProcess.on('taskSwitch', (isOn)=>{
       this.replaceTags.videoPost = isOn;

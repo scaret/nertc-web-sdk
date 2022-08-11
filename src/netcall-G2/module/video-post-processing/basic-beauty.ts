@@ -14,16 +14,30 @@ export default class BasicBeauty {
 
     constructor(videPostProcess: VideoPostProcess){
         this.videPostProcess = videPostProcess;
+        this.startLut();
     }
 
     // 配置美颜lut
-    private lutLoaded = false;
     private startLut() {
         const filters = this.videPostProcess.filters;
+        let queueLen = 2;
+        const failUrls: string[] = [];
+        const checkComplete = ()=>{
+            queueLen -= 1;
+            if(queueLen <= 0){
+                this.videPostProcess.emit('beautyResComplete', failUrls);
+            }
+        }
+
+        // 加载基础美颜资源
         filters.beauty.setLutsSrc({
             whiten: 'https://yx-web-nosdn.netease.im/common/cab8e4f0696d3d8e29ee10d6dccc1204/meibai.png',
             redden: 'https://yx-web-nosdn.netease.im/common/c614e2af82da88807067926d7ff3be3d/hongrun.png'
+        },(_failUrls)=>{
+            failUrls.push(..._failUrls);
+            checkComplete();
         });
+
         // 配置滤镜 luts
         filters.lut.setLutsSrc({
             ziran: {
@@ -101,8 +115,10 @@ export default class BasicBeauty {
                 src: 'https://yx-web-nosdn.netease.im/common/941270f2948218ea19f2d79db5e7d349/heibai.png',
                 intensity: 1
             }
+        },(_failUrls)=>{
+            failUrls.push(..._failUrls);
+            checkComplete();
         });
-        this.lutLoaded = true;
     }
 
     /**
@@ -131,9 +147,6 @@ export default class BasicBeauty {
      * isEnable 为 true 时， track 必须赋值
      */
     setBeauty(isEnable: boolean, track?: MediaStreamTrack){
-        if(isEnable && !this.lutLoaded){
-            this.startLut();
-        }
         return new Promise((resolve, reject)=>{
             this.videPostProcess.setTaskAndTrack('BasicBeauty', isEnable, track)
             .then((track)=>{

@@ -1,7 +1,7 @@
 import { Renderer } from '../gl-utils/renderer';
 import { Program } from '../gl-utils/program';
 import { createAttributeBuffer } from '../gl-utils/buffer-attribute';
-import { createTexture, loadImage } from '../gl-utils/texture';
+import { createTexture, retryLoadImage } from '../gl-utils/texture';
 import { createFrameBuffer } from '../gl-utils/framebuffer';
 import { baseTextureShader } from '../shaders/base-texture-shader.glsl';
 import { beautyBlurShader } from '../shaders/beauty/blur.glsl';
@@ -177,20 +177,39 @@ export class BeautyFilter extends Filter {
         }
     }
 
-    setLutsSrc(opts: { whiten?: string; redden?: string }) {
+    setLutsSrc(opts: { whiten: string; redden: string }, 
+        onComplete?:(failUrls: string[]) => void) {
         const { whiten, redden } = opts;
-        if (whiten) {
-            loadImage(whiten, (img) => {
-                this.whitenMap!.source = img;
-                this.whitenMap!.refresh();
-            });
+        let queueLen = 2;
+        const failUrls: string[] = [];
+        const checkComplete = ()=>{
+            queueLen -= 1;
+            if(queueLen <= 0){
+                onComplete?.(failUrls);
+            }
         }
-        if (redden) {
-            loadImage(redden, (img) => {
-                this.reddenMap!.source = img;
-                this.reddenMap!.refresh();
-            });
-        }
+        retryLoadImage(whiten, 3, (img)=>{
+            this.whitenMap!.source = img;
+            this.whitenMap!.refresh();
+            const whiten = this._whiten;
+            this._whiten = 0;
+            this.whiten = whiten;
+            checkComplete();
+        },()=>{
+            failUrls.push(whiten);
+            checkComplete();
+        })
+        retryLoadImage(redden, 3, (img)=>{
+            this.reddenMap!.source = img;
+            this.reddenMap!.refresh();
+            const redden = this._redden;
+            this._redden = 0;
+            this.redden = redden;
+            checkComplete();
+        },()=>{
+            failUrls.push(redden);
+            checkComplete();
+        })
     }
 
     private get smoothOut(){
@@ -223,7 +242,7 @@ export class BeautyFilter extends Filter {
     set whiten(whiten: number) {
         if (this._whiten !== whiten) {
             this._whiten = whiten;
-            this.programs['whiten'].setUniform('intensity', this._whiten);
+            this.programs['whiten'].setUniform('intensity', this.whitenMap && this.whitenMap.source ? this._whiten : 0);
             this.mapChange();
         }
     }
@@ -234,7 +253,7 @@ export class BeautyFilter extends Filter {
     set redden(redden: number) {
         if (this._redden !== redden) {
             this._redden = redden;
-            this.programs['redden'].setUniform('intensity', this._redden);
+            this.programs['redden'].setUniform('intensity', this.reddenMap && this.reddenMap.source ? this._redden : 0);
         }
     }
 

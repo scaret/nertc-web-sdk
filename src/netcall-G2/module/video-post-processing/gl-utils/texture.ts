@@ -181,10 +181,11 @@ export function createTexture(
 /**
  * 加载图片
  * @param {string} url
- * @param {(img: HTMLImageElement) => void} cb
+ * @param {(img: HTMLImageElement) => void} onSuccess
+ * @param {(err: any) => void} onFail
  * @returns {void}
  */
-export function loadImage(url: string, cb: (img: HTMLImageElement) => void) {
+export function loadImage(url: string, onSuccess?: (img: HTMLImageElement) => void, onFail?:(err: any) => void) {
     fetch(url + `?rdn=${Date.now()}`)
         .then((response) => {
             return response.arrayBuffer();
@@ -203,22 +204,63 @@ export function loadImage(url: string, cb: (img: HTMLImageElement) => void) {
             img.onload = () => {
                 if (!loaded) {
                     loaded = true;
-                    cb(img);
+                    onSuccess?.(img);
                 }
             };
             img.onerror = (err) => {
-                console.error('image load error', err);
+                onFail?.(err);
             };
             img.src = URL.createObjectURL(blob);
             // 部分版本 safari 在某些情况下不触发 onload 事件
             setTimeout(() => {
                 if (!loaded && img.complete && img.naturalHeight > 0) {
                     loaded = true;
-                    cb(img);
+                    onSuccess?.(img);
                 }
             }, 0);
         })
         .catch((err) => {
-            console.error('image request error', err);
+            onFail?.(err);
         });
+}
+
+// 加载图片，且允许失败重试
+export function retryLoadImage(url: string, retries = 3, onSuccess?: (img: HTMLImageElement) => void, onFail?:(err: any) => void) {
+    let err: any = null;
+    const load = (retryNum = 0)=>{
+        retryNum += 1;
+        if(retryNum <= retries){
+            loadImage(url,(img)=>{
+                onSuccess?.(img);
+            },(_err)=>{
+                err = _err;
+                load(retryNum);
+            })
+        }else{
+            onFail?.(err);
+        }
+    }
+    load();
+}
+
+// 批量加载图片，且允许失败重试
+export function loadImageBatch(urls: string[], retries = 3, onComplete?:(imgs:{[key:string]:HTMLImageElement}, failUrls:string[]) => void){
+    let imgs: {[key:string]:HTMLImageElement} = {};
+    let failUrls: string[] = [];
+
+    const checkComplete = ()=>{
+        if(Object.keys(imgs).length + failUrls.length === urls.length){
+            onComplete?.(imgs, failUrls);
+        }
+    }
+
+    urls.forEach((url)=>{
+        retryLoadImage(url, retries, (img)=>{
+            imgs[url] = img;
+            checkComplete();
+        },()=>{
+            failUrls.push(url);
+            checkComplete();
+        })
+    })
 }
