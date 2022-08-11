@@ -851,6 +851,7 @@ export class Firefox60 extends HandlerInterface
   {
     this._assertRecvDirection();
     Logger.debug(prefix, `receive() [trackId: ${trackId}, kind: ${kind}, remoteUid: ${remoteUid}]`);
+    console.log('dtlsParameters: ', dtlsParameters)
     if (!this._remoteSdp) {
       this._remoteSdp = new RemoteSdp({
         iceParameters,
@@ -860,7 +861,7 @@ export class Firefox60 extends HandlerInterface
       });
       this._remoteSdp.updateDtlsRole('client');
     }
-  
+    //调试日志，上线前后面清除
     console.log('rtpParameters: ', rtpParameters)
     let localId = rtpParameters && rtpParameters.mid || appData.mid
     Logger.debug(prefix, `receive() mid: ${localId}`)
@@ -969,17 +970,19 @@ export class Firefox60 extends HandlerInterface
         //console.warn('似乎不需要处理也可以')
       }
     }
-    offer.sdp = offer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`)
-    if (offer.sdp.indexOf('a=fmtp:111')) {
-      offer.sdp = offer.sdp.replace(/a=fmtp:111 ([0-9=;a-zA-Z]*)/, 'a=fmtp:111 minptime=10;stereo=1;sprop-stereo=1;useinbandfec=1')
-    }
+    // offer.sdp = offer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`)
+    // if (offer.sdp.indexOf('a=fmtp:111')) {
+    //   offer.sdp = offer.sdp.replace(/a=fmtp:111 ([0-9=;a-zA-Z]*)/, 'a=fmtp:111 minptime=10;stereo=1;sprop-stereo=1;useinbandfec=1')
+    // }
 
     const answer = { type: 'answer', sdp: this._remoteSdp.getSdp() };
     if (answer.sdp.indexOf('a=fmtp:111')) {
       answer.sdp = answer.sdp.replace(/a=fmtp:111 ([0-9=;a-zA-Z]*)/, 'a=fmtp:111 minptime=10;stereo=1;sprop-stereo=1;useinbandfec=1')
     }
-
+    //调试日志
+    console.log('this._pc.signalingState: ', this._pc.signalingState)
     if (this._pc.signalingState === 'stable') {
+      await this._pc.createOffer()
       await this._pc.setLocalDescription(offer);
       Logger.debug(prefix, 'receive() | calling pc.setLocalDescription()');
     }

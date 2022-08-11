@@ -646,6 +646,7 @@ export interface GetStreamConstraints{
   video?: boolean;
   videoDeviceId?: string;
   screen?: boolean;
+  recordName?: string;
   sourceId?: string;
   facingMode?: string;
   audioSource?: MediaStreamTrack|null;

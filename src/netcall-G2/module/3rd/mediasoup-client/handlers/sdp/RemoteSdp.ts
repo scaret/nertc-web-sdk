@@ -239,12 +239,12 @@ export class RemoteSdp
   ): void
   {
 
-    if (reuseMediaSection && mid) {
-      reuseMediaSection.mid = mid
-      console.log('重新使用: ', reuseMediaSection)
-      this._replaceMediaSection(reuseMediaSection, mid);
-      return
-    }
+    // if (reuseMediaSection && mid) {
+    //   reuseMediaSection.mid = mid
+    //   console.error('重新使用: ', reuseMediaSection)
+    //   this._replaceMediaSection(reuseMediaSection, mid);
+    //   return
+    // }
     const idx = this._midToIndex.get(mid);
     let mediaSection: OfferMediaSection | undefined;
 
