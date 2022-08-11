@@ -2346,6 +2346,9 @@ function initLocalStream() {
     });
   //插件
   rtc.localStream.on("plugin-load", onPluginLoaded);
+  rtc.localStream.on("plugin-load-error", e => {
+    console.error('plugin-load-error', e)
+  })
 }
 
 function updateLocalWatermark() {

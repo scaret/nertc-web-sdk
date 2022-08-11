@@ -4036,8 +4036,14 @@ class LocalStream extends RTCEventEmitter {
             }
           })
         }) 
-      } else {
-        this.logger.error(`can't get plugin ${options.key}`);
+        plugin.once('plugin-load-error', () => {
+          this.logger.error(`Load ${options.wasmUrl} error`);  
+          this.emit('plugin-load-error', {
+            key: options.key,
+            msg: `Load ${options.wasmUrl} error`
+          });
+        })
+      } else {     
         this.client.apiFrequencyControl({
           name: 'registerPlugin',
           code: -1,
@@ -4046,11 +4052,16 @@ class LocalStream extends RTCEventEmitter {
             plugin: options.key
           }
         })
+        this.logger.error(`unsupport plugin ${options.key}`);  
+        throw `unsupport plugin ${options.key}`
       }     
     } catch(e) {
       this.logger.error(`create plugin ${options.key} error`);
+      this.emit('plugin-load-error', {
+        key: options.key,
+        msg: e
+      });
     } 
-
   }
 
   async unregisterPlugin(key: PluginType) {
