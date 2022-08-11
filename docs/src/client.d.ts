@@ -677,7 +677,7 @@ declare interface Client{
   }) => void): void;
 
   /**
-   * `active-speaker` 事件会返回当前房间内音量最大的用户的 uid。
+   * `active-speaker` 事件会返回当前房间内音量最大的用户的 uid（iOS 微信浏览器暂不支持该事件）。
    */
   on(event: "active-speaker", callback: (evt: {
     /**
@@ -687,7 +687,7 @@ declare interface Client{
   }) => void): void;
 
   /**
-   * `volume-indicator` 事件会返回当前房间内除自己以外的用户的音量。
+   * `volume-indicator` 事件会返回当前房间内除自己以外的用户的音量（iOS 微信浏览器暂不支持该事件）。
    * @example
    * ```javascript
    * rtc.client.on("volume-indicator", (userList)=>{
