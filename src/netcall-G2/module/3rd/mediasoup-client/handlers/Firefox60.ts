@@ -37,6 +37,7 @@ export class Firefox60 extends HandlerInterface
 {
   // Handler direction.
   private _direction?: 'send' | 'recv';
+  
   // Remote SDP handler.
   private _remoteSdp?: RemoteSdp;
   // Generic sending RTP parameters for audio and video.
@@ -55,6 +56,8 @@ export class Firefox60 extends HandlerInterface
   public _transportReady = false;
 
   public _appData:any = {};
+
+  public signalingState: string;
   
   /**
    * Creates a factory function.
@@ -67,6 +70,7 @@ export class Firefox60 extends HandlerInterface
   constructor()
   {
     super();
+    this.signalingState = 'stable'
   }
 
   get name(): string
@@ -272,14 +276,14 @@ export class Firefox60 extends HandlerInterface
       offer.sdp = sdpTransform.write(localSdpObject)
       Logger.debug(prefix, 'restartIce() | calling pc.setLocalDescription()');
 
+      this.signalingState = 'have-local-offer'
       await this._pc.setLocalDescription(offer);
 
       const answer = { type: 'answer', sdp: this._remoteSdp!.getSdp() };
 
-      Logger.debug(prefix, 
-        'restartIce() | calling pc.setRemoteDescription() [answer:%o]',
-        answer);
-
+      Logger.debug(prefix, 'restartIce() | calling pc.setRemoteDescription()');
+      
+      this.signalingState = 'stable'
       await this._pc.setRemoteDescription(answer);
     }
     else
@@ -287,9 +291,9 @@ export class Firefox60 extends HandlerInterface
       const offer = { type: 'offer', sdp: this._remoteSdp!.getSdp() };
 
       Logger.debug(prefix, 
-        'restartIce() | calling pc.setRemoteDescription() [offer:%o]',
-        offer);
-
+        'restartIce() | calling pc.setRemoteDescription()');
+      
+      this.signalingState = 'stable'
       await this._pc.setRemoteDescription(offer);
 
       const answer = await this._pc.createAnswer();
@@ -297,7 +301,7 @@ export class Firefox60 extends HandlerInterface
       Logger.debug(prefix, 
         'restartIce() | calling pc.setLocalDescription() [answer:%o]',
         answer);
-
+      this.signalingState = 'have-local-offer'
       await this._pc.setLocalDescription(answer);
     }
   }
@@ -313,10 +317,9 @@ export class Firefox60 extends HandlerInterface
   {
     this._assertSendDirection();
 
-    Logger.debug(prefix, 'send() [kind:%s, track.id:%s]', track.kind, track.id, encodings, appData);
+    Logger.debug(prefix, `[Produce] send() [kind: ${track.kind}, track.id: ${track.id}, appData: ${JSON.stringify(appData)}]`)
 
-    if (encodings && encodings.length > 1)
-    {
+    if (encodings && encodings.length > 1) {
       encodings.forEach((encoding: RtpEncodingParameters, idx: number) =>
       {
         encoding.rid = `r${idx}`;
@@ -336,20 +339,20 @@ export class Firefox60 extends HandlerInterface
     let transceiverLow: any = {};
     const mediaStream = new MediaStream();
     if (appData.mediaType === 'audio' && this._pc.audioSender) {
-      Logger.debug(prefix, 'audioSender更新track: ', this._pc.audioSender)
+      Logger.debug(prefix, '[Produce] audioSender更新track: ', this._pc.audioSender)
       this._pc.audioSender.replaceTrack(track)
     } else if (appData.mediaType === 'video' && this._pc.videoSender) {
-      Logger.debug(prefix, 'videoSender更新track: ', this._pc.videoSender)
+      Logger.debug(prefix, '[Produce] videoSender更新track: ', this._pc.videoSender)
       this._pc.videoSender.replaceTrack(track)
       if (this._pc.videoSenderLow && trackLow){
-        Logger.debug(prefix, 'videoSenderLow更新track: ', this._pc.videoSenderLow)
+        Logger.debug(prefix, '[Produce] videoSenderLow更新track: ', this._pc.videoSenderLow)
         this._pc.videoSenderLow.replaceTrack(trackLow)
       }
     } else if (appData.mediaType === 'screenShare' && this._pc.screenSender) {
-      Logger.debug(prefix, 'screenSender更新track: ', this._pc.screenSender)
+      Logger.debug(prefix, '[Produce] screenSender更新track: ', this._pc.screenSender)
       this._pc.screenSender.replaceTrack(track)
       if (this._pc.screenSenderLow && trackLow){
-        Logger.debug(prefix, 'screenSenderLow更新track: ', this._pc.screenSenderLow)
+        Logger.debug(prefix, '[Produce] screenSenderLow更新track: ', this._pc.screenSenderLow)
         this._pc.screenSenderLow.replaceTrack(trackLow)
       }
     } else {
@@ -376,7 +379,7 @@ export class Firefox60 extends HandlerInterface
         this._pc.screenSenderLow = transceiverLow.sender
       }
     }
-    Logger.debug(prefix, 'send() | [transceivers:%d]', this._pc.getTransceivers().length);
+    Logger.debug(prefix, '[Produce] send() | [transceivers:%d]', this._pc.getTransceivers().length);
     
     let offer = await this._pc.createOffer();
     if (offer.sdp.indexOf(`a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#`) < 0) {
@@ -439,12 +442,9 @@ export class Firefox60 extends HandlerInterface
     
     // Set MID.
     sendingRtpParameters.mid = localId;
-    Logger.debug(prefix, '要检查M行: ', offerMediaObject)
-
     // Set RTCP CNAME.
     sendingRtpParameters.rtcp.cname =
       sdpCommonUtils.getCname({ offerMediaObject });
-
     // Set RTP encodings by parsing the SDP offer if no encodings are given.
     if (!encodings)
     {
@@ -595,8 +595,7 @@ export class Firefox60 extends HandlerInterface
       }
       answer.sdp = answer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=maxptime:60`)
     }
-    Logger.debug(prefix, 'fillRemoteRecvSdp() | calling pc.setRemoteDescription() [answer]: ', answer.sdp);
-    
+    Logger.debug(prefix, 'fillRemoteRecvSdp() | calling pc.setRemoteDescription()');
     await this._pc.setRemoteDescription(answer);
   }
 
@@ -667,9 +666,7 @@ export class Firefox60 extends HandlerInterface
     }
     const answer = { type: 'answer', sdp: this._remoteSdp!.getSdp() };
 
-    Logger.debug(prefix, 
-      'stopSending() | calling pc.setRemoteDescription() [answer:%o]',
-      answer);
+    Logger.debug(prefix, 'stopSending() | calling pc.setRemoteDescription()');
 
     await this._pc.setRemoteDescription(answer);
     this._mapMidTransceiver.delete(localId);
@@ -799,7 +796,7 @@ export class Firefox60 extends HandlerInterface
     return;
   }
   async prepareLocalSdp(kind: "video"|"audio", remoteUid: number|string) {
-    Logger.debug(prefix, 'prepareLocalSdp() [kind:%s, remoteUid:%s]', kind, remoteUid);
+    Logger.debug(prefix, `prepareLocalSdp() [kind: ${kind}, remoteUid: ${remoteUid}]`);
     let mid = -1
     for (const key of this._mapMidTransceiver.keys()) {
       const transceiver:EnhancedTransceiver|undefined = this._mapMidTransceiver.get(key)
@@ -807,7 +804,7 @@ export class Firefox60 extends HandlerInterface
         continue;
       }
       const mediaType = transceiver.receiver && transceiver.receiver.track && transceiver.receiver.track.kind || kind
-      Logger.debug(prefix, 'prepareLocalSdp() transceiver M行信息 [mid: %s, mediaType: %s, isUseless: %s]', transceiver.mid || key, mediaType, transceiver.isUseless);
+      //Logger.debug(prefix, 'prepareLocalSdp() transceiver M行信息 [mid: %s, mediaType: %s, isUseless: %s]', transceiver.mid || key, mediaType, transceiver.isUseless);
       if (transceiver.isUseless && mediaType === kind) {
         //@ts-ignore
         mid = key - 0;
@@ -827,6 +824,7 @@ export class Firefox60 extends HandlerInterface
           offer.sdp = offer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`)
         }
         Logger.debug(prefix, 'prepareLocalSdp() | calling pc.setLocalDescription()');
+        this.signalingState = 'have-local-offer'
         await this._pc.setLocalDescription(offer);
       }
     }
@@ -850,8 +848,9 @@ export class Firefox60 extends HandlerInterface
   ): Promise<HandlerReceiveResult>
   {
     this._assertRecvDirection();
-    Logger.debug(prefix, `receive() [trackId: ${trackId}, kind: ${kind}, remoteUid: ${remoteUid}]`);
+    Logger.debug(prefix, `[Consume] receive() [trackId: ${trackId}, kind: ${kind}, remoteUid: ${remoteUid}]`);
     console.log('dtlsParameters: ', dtlsParameters)
+    console.log('_remoteSdp: ', this._remoteSdp)
     if (!this._remoteSdp) {
       this._remoteSdp = new RemoteSdp({
         iceParameters,
@@ -864,93 +863,32 @@ export class Firefox60 extends HandlerInterface
     //调试日志，上线前后面清除
     console.log('rtpParameters: ', rtpParameters)
     let localId = rtpParameters && rtpParameters.mid || appData.mid
-    Logger.debug(prefix, `receive() mid: ${localId}`)
-    const offerMediaSessionLength = this._pc.getTransceivers().length
-    let answerMediaSessionLength = this._remoteSdp._mediaSections.length
-    Logger.debug(prefix, `offerMediaSessionLength: ${offerMediaSessionLength}，answerMediaSessionLength: ${answerMediaSessionLength}`)
-    if (offerMediaSessionLength < answerMediaSessionLength) {
-      /*let mid = -1  
-      for (const transceiver of this._mapMidTransceiver.values()) {  
-        const mediaType = transceiver.receiver.track && transceiver.receiver.track.kind || kind  
-        Logger.debug(prefix, 'prepareLocalSdp() transceiver M行信息 [mid: %s, mediaType: %s, isUseless: %s]', transceiver.mid, mediaType, transceiver.isUseless)  
-        if (transceiver.isUseless && mediaType === kind) {  
-        mid = transceiver.mid;  
-        transceiver.isUseless = false  
-        break;  
-        }  
-      }  
-      if (mid === -1) {  
-        Logger.debug(prefix, 'prepareLocalSdp() 添加一个M行')  
-        this._pc.addTransceiver(kind, { direction: "recvonly" });  
-      }  
-      offer = await this._pc.createOffer(); */
-    } else if (offerMediaSessionLength > answerMediaSessionLength) {}
+    Logger.debug(prefix, `[Consume] receive() mid: ${localId}`)
     
     if (!rtpParameters.mid) {
-      Logger.debug(prefix, 'receive() 容错逻辑')
-      const missMediaSessions:{mid: any, kind: "video"|"audio"}[] = []
-      let missMediaSession:OfferMediaSection|undefined = undefined
-      const localSdpObject = sdpTransform.parse(offer.sdp)
-      //调试日志，先保留，上线前处理
-      console.log('localSdpObject.media: ', localSdpObject.media)
-      console.log('_mediaSections: ', this._remoteSdp._mediaSections)
-      localSdpObject.media.forEach(media => {
-        let isExist = false
-        this._remoteSdp!._mediaSections.forEach(mediaSession => {
-          //这里使用隐式转换，因为_remoteSdp的mid格式是string，localSdpObject解析出来是的number类型  
-          if (media.mid == mediaSession.mid) {
-            isExist = true
-            return
-          }
-          if(kind == mediaSession.type){
-            missMediaSession = mediaSession as OfferMediaSection
-          }
-        })
-        if (!isExist) {
-          // @ts-ignore
-          missMediaSessions.push({mid: media.mid, kind: media.type})
+      Logger.debug(prefix, '[Consume] receive() 容错流程')
+      const filteredCodecs:any[] = []
+      extendedRtpCapabilities.codecs.forEach((codec: any)=>{
+        if (codec.kind === kind){
+          const codecCopy = Object.assign({}, codec)
+          codecCopy.parameters = codecCopy.parameters || codecCopy.localParameters
+          codecCopy.payloadType = codecCopy.payloadType || codecCopy.localPayloadType
+          filteredCodecs.push(codecCopy)
         }
       })
-      console.log('missMediaSession: ', missMediaSession)
-      Logger.debug(prefix, 'receive() 检索出来了缺失的media Session: ', missMediaSessions)
-
       const data = {
         mid: localId,
-        // reuseMid: localId,
         kind,
         offerRtpParameters: {
-          codecs: [],
-          encodings:[{ssrc: 0}],
-          headerExtensions:[],
-          rtcp:{},
-          mid: localId
-        },
-        streamId: kind,
-        trackId,
-        reuseMediaSection: undefined
-      }
-
-      if (missMediaSession && false) {
-        //不能这么用，需要deepclone才行
-        //data.reuseMediaSection = missMediaSession
-      } else {
-        const filteredCodecs:any[] = []
-        extendedRtpCapabilities.codecs.forEach((codec: any)=>{
-          if (codec.kind === kind){
-            const codecCopy = Object.assign({}, codec)
-            codecCopy.parameters = codecCopy.parameters || codecCopy.localParameters
-            codecCopy.payloadType = codecCopy.payloadType || codecCopy.localPayloadType
-            filteredCodecs.push(codecCopy)
-          }
-        })
-        data.offerRtpParameters = {
-          //@ts-ignore
           codecs: filteredCodecs,
           encodings:[{ssrc: 0}],
           headerExtensions:[],
           rtcp:{},
           mid: localId
-        } 
+        }, 
+        streamId: kind,
+        trackId,
+        reuseMediaSection: undefined
       }
       this._remoteSdp!.receive(data)
       this._remoteSdp!.disableMediaSection(`${localId}`)
@@ -962,29 +900,10 @@ export class Firefox60 extends HandlerInterface
         streamId           : rtpParameters.rtcp!.cname!,
         trackId
       });
-
-      let answerMediaSessionLength = this._remoteSdp._mediaSections.length
-      Logger.debug(prefix, `正常的流程 offerMediaSessionLength: ${offerMediaSessionLength}，answerMediaSessionLength: ${answerMediaSessionLength}`)
-      if (offerMediaSessionLength > answerMediaSessionLength) {
-        //似乎不需要处理也可以，这种场景直接走重连吧，理论上只有订阅第一路流出现非200的场景才会出现，这种场景下走重连也不要紧
-        //console.warn('似乎不需要处理也可以')
-      }
     }
-    // offer.sdp = offer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`)
-    // if (offer.sdp.indexOf('a=fmtp:111')) {
-    //   offer.sdp = offer.sdp.replace(/a=fmtp:111 ([0-9=;a-zA-Z]*)/, 'a=fmtp:111 minptime=10;stereo=1;sprop-stereo=1;useinbandfec=1')
-    // }
-
     const answer = { type: 'answer', sdp: this._remoteSdp.getSdp() };
     if (answer.sdp.indexOf('a=fmtp:111')) {
       answer.sdp = answer.sdp.replace(/a=fmtp:111 ([0-9=;a-zA-Z]*)/, 'a=fmtp:111 minptime=10;stereo=1;sprop-stereo=1;useinbandfec=1')
-    }
-    //调试日志
-    console.log('this._pc.signalingState: ', this._pc.signalingState)
-    if (this._pc.signalingState === 'stable') {
-      await this._pc.createOffer()
-      await this._pc.setLocalDescription(offer);
-      Logger.debug(prefix, 'receive() | calling pc.setLocalDescription()');
     }
     if (!getParameters().enableUdpCandidate){
       answer.sdp = answer.sdp.replace(/\r\na=candidate:udpcandidate[^\r]+/g, '')
@@ -993,8 +912,18 @@ export class Firefox60 extends HandlerInterface
       answer.sdp = answer.sdp.replace(/\r\na=candidate:tcpcandidate[^\r]+/g, '')
     }
 
-    Logger.debug(prefix, 'receive() | calling pc.setRemoteDescription()');
+    //调试日志
+    console.log('pc.signalingState: ', this._pc.signalingState)
+    if (this._pc.signalingState === 'stable') {
+      await this._pc.createOffer()
+      this.signalingState = 'have-local-offer'
+      await this._pc.setLocalDescription(offer);
+      Logger.debug(prefix, '[Consume] receive() | calling pc.setLocalDescription()');
+    }
+    Logger.debug(prefix, '[Consume] receive() | calling pc.setRemoteDescription()');
+    this.signalingState = 'stable'
     await this._pc.setRemoteDescription(answer);
+  
     const transceiver = this._pc.getTransceivers()
       .find((t: RTCRtpTransceiver) => t.mid === localId);
 
@@ -1005,6 +934,7 @@ export class Firefox60 extends HandlerInterface
       })
     }
 
+    transceiver.isUseless = !rtpParameters.mid
     // Store in the map.
     this._mapMidTransceiver.set(localId, transceiver);
 
@@ -1039,15 +969,26 @@ export class Firefox60 extends HandlerInterface
     /*  
     这里不使用createOffer的原因是：创建consumer的时候，prepareLocalSdp接口的使用在mediasoup.js中，该方法不受_awaitQueue队列控制，做不到完全的同步策略  
     */
-    const offer = this._pc.localDescription
-    if (offer.sdp.indexOf(`a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#`) < 0) {
-      offer.sdp = offer.sdp.replace(/a=ice-ufrag:([0-9a-zA-Z=+-_\/\\\\]+)/g, `a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#recv`)
+    // firefox 连续调用 setLocalDescription 后，在执行 setRemoteDescription 会有报错，这里的逻辑不受_awaitQueue队列控制，所以修改sdp就行，不一定非要设置一边
+    try {
+      if (this._pc.signalingState === 'stable' && this.signalingState === 'stable') {
+        const offer = this._pc.localDescription
+        if (offer.sdp.indexOf(`a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#`) < 0) {
+          offer.sdp = offer.sdp.replace(/a=ice-ufrag:([0-9a-zA-Z=+-_\/\\\\]+)/g, `a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#recv`)
+        }
+        Logger.debug(prefix, 'stopReceiving() | calling pc.setLocalDescription()');
+        this.signalingState = 'have-local-offer'
+        this._pc.setLocalDescription(offer);
+        const answer = { type: 'answer', sdp: this._remoteSdp!.getSdp() };
+        Logger.debug(prefix, 'stopReceiving() | calling pc.setRemoteDescription()');
+        this.signalingState = 'stable'
+        this._pc.setRemoteDescription(answer);
+      }
+    } catch(e: any) {
+      //这里的流程对主流程没有影响，可以不用太关注
+      Logger.debug(prefix, 'stopReceiving() | error message: ', e.message);
     }
-    Logger.debug(prefix, 'stopReceiving() | calling pc.setLocalDescription()');
-    await this._pc.setLocalDescription(offer);
-    const answer = { type: 'answer', sdp: this._remoteSdp!.getSdp() };
-    Logger.debug(prefix, 'stopReceiving() | calling pc.setRemoteDescription() [answer:%s]', answer.sdp);
-    await this._pc.setRemoteDescription(answer);
+    
   }
 
   async getReceiverStats(localId: string): Promise<RTCStatsReport>
