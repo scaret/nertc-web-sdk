@@ -90,7 +90,7 @@ const base = {
   GetUserMedia: !!getUserMedia && !!navigator.mediaDevices,
   DataChannel: !!(
     RTCPeerConnection &&
-    RTCDataChannel &&
+    typeof RTCDataChannel !== 'undefined' &&
     RTCPeerConnection.prototype &&
     RTCPeerConnection.prototype.createDataChannel
   ),

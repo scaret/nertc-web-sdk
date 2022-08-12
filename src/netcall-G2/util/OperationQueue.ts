@@ -94,7 +94,7 @@ export class OperationQueue{
       if (!this.current){
         this.fire("instant")
       }else{
-        this.logger.log(`操作等位中，目前有其他操作。前面还有${this.queue.length}位：${args.method}#${this.cnt}。参数：`, args.options)
+        this.logger.log(`操作等位中，目前有其他操作。前面还有${this.queue.length}位：${args.method}#${this.cnt}。`)
       }
     })
   }
