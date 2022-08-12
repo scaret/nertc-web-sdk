@@ -144,7 +144,7 @@ class Peer extends EnhancedEventEmitter
 	{
 		const request = Message.createRequest(method, data);
 		if(method != 'Heartbeat') {
-			this._logger.debug('request() [method:%s, id:%s]', method, request.id);
+			this._logger.debug(`request() [method: ${method}, id: ${request.id}]`);
 		}
 
 		// This may throw.

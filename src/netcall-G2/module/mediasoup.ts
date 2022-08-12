@@ -197,7 +197,7 @@ class Mediasoup extends EventEmitter {
   }
 
   async init(turnParameters?: MediasoupManagerInitOptions|undefined) {
-    this.logger.warn('init() 初始化 devices、transport')
+    this.logger.log('init() 初始化 devices、transport')
     if (this.adapterRef._enableRts) {
       return
     }
@@ -1240,7 +1240,7 @@ class Mediasoup extends EventEmitter {
     let { transportId, iceParameters, iceCandidates, dtlsParameters, probeSSrc, rtpParameters, producerId, consumerId, code, errMsg } = consumeRes;
     this.loggerRecv.log(`[Subscribe] consume反馈结果 code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
     // if (code === 200) {
-    //   //this.loggerRecv.log(`[Consume] consume反馈结果: code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
+    //   //this.loggerRecv.log(`[Subscribe] consume反馈结果: code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
     // } else if (code === 601){
     //   //通过伪造M行的方式，当然第一次订阅就失败的话，由重连cover，这里就不再执行黑名单的逻辑了
     //   // 某些情况下的Producer换了个Transport之后是可以订阅的。这个时候需要拉黑的是Producer+Transport的组合

@@ -156,7 +156,7 @@ export class Chrome74 extends HandlerInterface
     }: HandlerRunOptions
   ): void
   {
-    Logger.debug(prefix, 'run()', appData);
+    Logger.debug(prefix, 'run()');
     
     this._appData = appData;
 
@@ -182,7 +182,7 @@ export class Chrome74 extends HandlerInterface
       video : ortc.getSendingRemoteRtpParameters('video', extendedRtpCapabilities)
     };
 
-    Logger.debug(prefix, 'iceServers: %o', iceServers)
+    Logger.debug(prefix, 'iceServers: ', iceServers)
     const pcConfig:any = {
       iceServers         : iceServers || [],
       iceTransportPolicy : iceTransportPolicy || 'all',
@@ -229,7 +229,7 @@ export class Chrome74 extends HandlerInterface
     console.error('peer的状态: ', event)  
     }*/
     this._pc.onicecandidateerror = (e: any) => {
-      console.error('地址收集失败: ', e)
+      Logger.warn('onicecandidateerror: ', e)
     }
   }
 
@@ -278,8 +278,7 @@ export class Chrome74 extends HandlerInterface
       const answer = { type: 'answer', sdp: this._remoteSdp!.getSdp() };
 
       Logger.debug(prefix, 
-        'restartIce() | calling pc.setRemoteDescription() [answer:%o]',
-        answer);
+        'restartIce() | calling pc.setRemoteDescription() [answer]');
 
       await this._pc.setRemoteDescription(answer);
     }
@@ -288,16 +287,14 @@ export class Chrome74 extends HandlerInterface
       const offer = { type: 'offer', sdp: this._remoteSdp!.getSdp() };
 
       Logger.debug(prefix, 
-        'restartIce() | calling pc.setRemoteDescription() [offer:%o]',
-        offer);
+        'restartIce() | calling pc.setRemoteDescription()');
 
       await this._pc.setRemoteDescription(offer);
 
       const answer = await this._pc.createAnswer();
 
       Logger.debug(prefix, 
-        'restartIce() | calling pc.setLocalDescription() [answer:%o]',
-        answer);
+        'restartIce() | calling pc.setLocalDescription()');
 
       await this._pc.setLocalDescription(answer);
     }
@@ -313,7 +310,7 @@ export class Chrome74 extends HandlerInterface
   ): Promise<HandlerSendResult>
   {
     this._assertSendDirection();
-    Logger.debug(prefix, 'send() [kind:%s, track.id:%s]', track.kind, track.id, encodings, appData);
+    Logger.debug(prefix, `send() [kind: ${track.kind}, track.id: ${track.id}, appData: ${JSON.stringify(appData)}]`);
 
     if (encodings && encodings.length > 1)
     {
@@ -333,34 +330,34 @@ export class Chrome74 extends HandlerInterface
     let transceiverLow: any = {};
     const mediaStream = new MediaStream();
     if (appData.mediaType === 'audio' && this._pc.audioSender) {
-      Logger.debug(prefix, 'audioSender更新track: ', this._pc.audioSender.track, "=>", track)
+      Logger.debug(prefix, 'audioSender 更新 track: ', this._pc.audioSender.track, "=>", track)
       this._pc.audioSender.replaceTrack(track)
     } else if (appData.mediaType === 'audioSlave' && this._pc.audioSlaveSender) {
-      Logger.debug(prefix, 'audioSlaveSender更新track: ', this._pc.audioSlaveSender.track, "=>", track)
+      Logger.debug(prefix, 'audioSlaveSender 更新 track: ', this._pc.audioSlaveSender.track, "=>", track)
       this._pc.audioSlaveSender.replaceTrack(track)
     } else if (appData.mediaType === 'video' && this._pc.videoSender) {
-      Logger.debug(prefix, 'videoSender更新track: ', this._pc.videoSender.track, "=>", track)
+      Logger.debug(prefix, 'videoSender 更新 track: ', this._pc.videoSender.track, "=>", track)
       this._pc.videoSender.replaceTrack(track)
       if (this._pc.videoSenderLow && trackLow){
-        Logger.debug(prefix, 'videoSenderLow更新track: ', this._pc.videoSenderLow)
+        Logger.debug(prefix, 'videoSenderLow 更新 track: ', this._pc.videoSenderLow)
         this._pc.videoSenderLow.replaceTrack(trackLow)
       }
     } else if (appData.mediaType === 'screenShare' && this._pc.screenSender) {
-      Logger.debug(prefix, 'screenSender更新track: ', this._pc.screenSender.track, "=>", track)
+      Logger.debug(prefix, 'screenSender 更新 track: ', this._pc.screenSender.track, "=>", track)
       this._pc.screenSender.replaceTrack(track)
       if (this._pc.screenSenderLow && trackLow){
-        Logger.debug(prefix, 'screenSenderLow更新track: ', this._pc.screenSenderLow)
+        Logger.debug(prefix, 'screenSenderLow 更新 track: ', this._pc.screenSenderLow)
         this._pc.screenSenderLow.replaceTrack(trackLow)
       }
     } else {
-      mediaStream.addTrack(track);
+      mediaStream.addTrack(track)
       //P2P上行的ssrc顺序：大流在前，小流在后
       transceiver = this._pc.addTransceiver(track, {
         direction     : 'sendonly',
         streams       : [ mediaStream ],
         sendEncodings : encodings
       });
-      if (trackLow){
+      if (trackLow) {
         transceiverLow = this._pc.addTransceiver(trackLow, {
           direction     : 'sendonly',
           streams       : [ this._sendStream ],
@@ -379,7 +376,7 @@ export class Chrome74 extends HandlerInterface
         this._pc.screenSenderLow = transceiverLow.sender
       }
     }
-    Logger.debug(prefix, 'send() | [transceivers:%d]', this._pc.getTransceivers().length);
+    Logger.debug(prefix, `send() | [transceivers: ${ this._pc.getTransceivers().length}]`)
     
     let offer = await this._pc.createOffer();
     let localSdpObject = sdpTransform.parse(offer.sdp);
@@ -387,41 +384,41 @@ export class Chrome74 extends HandlerInterface
     let offerMediaObject, offerMediaObjectLow;
     // NERTC把setLocalDescription的过程置后了。这个时候transceiver的mid还没生成，
     // 导致这里只能猜mediaObject和transceiver的关系。
-    const mediaCandidates = localSdpObject.media.filter((mediaObject)=>{
+    const mediaCandidates = localSdpObject.media.filter((mediaObject) => {
       const transceiver = this._mapMidTransceiver.get("" + mediaObject.mid);
       if (mediaObject.type !== track.kind){
         return false;
-      }else if (!transceiver || !transceiver.sender || !transceiver.sender.track){
+      }else if (!transceiver || !transceiver.sender || !transceiver.sender.track) {
         return true;
       }else if (transceiver.sender.track.id === track.id){
         offerMediaObject = mediaObject;
         return false
-      }else if (trackLow && transceiver.sender.track.id === trackLow.id){
+      }else if (trackLow && transceiver.sender.track.id === trackLow.id) {
         offerMediaObjectLow = mediaObject;
         return false
       }else{
         return true
       }
     });
-    if (!offerMediaObject){
+    if (!offerMediaObject) {
       offerMediaObject = mediaCandidates.pop();
     }
     if (trackLow && !offerMediaObjectLow){
       offerMediaObjectLow = mediaCandidates.pop();
     }
-    if (!offerMediaObject){
+    if (!offerMediaObject) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
         message: 'offerMediaObject with track id not found: ' + track.id
       })
     }
     
-    if (!this._transportReady)
+    if (!this._transportReady) {
       dtlsParameters = await this._setupTransport({ localDtlsRole: 'server', localSdpObject });
-    
+    }
     // We can now get the transceiver.mid.
     let localId = offerMediaObject.mid;
-    if (typeof localId === "number"){
+    if (typeof localId === "number") {
       //sdp-transform的mid返回是number，但.d.ts中被声明为string
       localId = "" + localId;
     }
@@ -439,7 +436,7 @@ export class Chrome74 extends HandlerInterface
     
     // Set MID.
     sendingRtpParameters.mid = localId;
-    Logger.debug(prefix, '要检查M行: ', offerMediaObject)
+    //Logger.debug(prefix, '要检查M行: ', offerMediaObject)
 
     // Set RTCP CNAME.
     sendingRtpParameters.rtcp.cname =
@@ -589,7 +586,7 @@ export class Chrome74 extends HandlerInterface
       }
       answer.sdp = answer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=maxptime:60`)
     }
-    Logger.debug(prefix, 'fillRemoteRecvSdp() | calling pc.setRemoteDescription() [answer]: ', answer.sdp);
+    Logger.debug(prefix, 'fillRemoteRecvSdp() | calling pc.setRemoteDescription()');
     if (!getParameters().enableUdpCandidate){
       answer.sdp = answer.sdp.replace(/\r\na=candidate:udpcandidate[^\r]+/g, '')
     }
@@ -603,7 +600,7 @@ export class Chrome74 extends HandlerInterface
   {
     this._assertSendDirection();
 
-    Logger.debug(prefix, 'stopSending() [localId:%s]', localId);
+    Logger.debug(prefix, `stopSending() [kind: ${kind}, localId: ${localId}]`);
 
     const transceiver = this._mapMidTransceiver.get(localId);
 
@@ -657,13 +654,12 @@ export class Chrome74 extends HandlerInterface
     Logger.debug(prefix, 'stopSending() | calling pc.setLocalDescription()');
     try {
       await this._pc.setLocalDescription(offer);
-    }catch(error){
-      Logger.debug(prefix, 'setLocalDescription error = %o', error);
+    }catch(error: any){
+      Logger.debug(prefix, 'setLocalDescription error: ', error.message);
     }
     const answer = { type: 'answer', sdp: this._remoteSdp!.getSdp() };
 
-    Logger.debug(prefix, 
-      'stopSending() | calling pc.setRemoteDescription()')
+    Logger.debug(prefix, 'stopSending() | calling pc.setRemoteDescription()')
     await this._pc.setRemoteDescription(answer);
   }
 
@@ -788,7 +784,7 @@ export class Chrome74 extends HandlerInterface
 
 
   async prepareLocalSdp(kind: "video"|"audio", remoteUid: number|string) {
-    Logger.debug(prefix, `prepareLocalSdp() [kind: ${kind}, remoteUid: ${remoteUid}]`);
+    Logger.debug(prefix, `[Subscribe] prepareLocalSdp() [kind: ${kind}, remoteUid: ${remoteUid}]`);
     let mid = -1
     for (const key of this._mapMidTransceiver.keys()) {
       const transceiver:EnhancedTransceiver|undefined = this._mapMidTransceiver.get(key)
@@ -807,14 +803,14 @@ export class Chrome74 extends HandlerInterface
     let offer = this._pc.localDescription;
     let transceiver = null
     if (mid === -1) {
-      Logger.debug(prefix, 'prepareLocalSdp() 添加一个M行')
+      Logger.debug(prefix, '[Subscribe] prepareLocalSdp() 添加一个M行')
       transceiver = this._pc.addTransceiver(kind, { direction: "recvonly" });
       offer = await this._pc.createOffer();
       offer.sdp = offer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`)
       if (offer.sdp.indexOf('a=fmtp:111')) {
         offer.sdp = offer.sdp.replace(/a=fmtp:111 ([0-9=;a-zA-Z-]*)/, 'a=fmtp:111 minptime=10;stereo=1;sprop-stereo=1;useinbandfec=1')
       }
-      Logger.debug(prefix, 'prepareLocalSdp() | calling pc.setLocalDescription()');
+      Logger.debug(prefix, '[Subscribe] prepareLocalSdp() | calling pc.setLocalDescription()');
       await this._pc.setLocalDescription(offer);
     }
     const localSdpObject = sdpTransform.parse(offer.sdp);
@@ -837,7 +833,7 @@ export class Chrome74 extends HandlerInterface
   ): Promise<HandlerReceiveResult>
   {
     this._assertRecvDirection();
-    Logger.debug(prefix, `receive() [trackId: ${trackId}, kind: ${kind}, remoteUid: ${remoteUid}]`);
+    Logger.debug(prefix, `[Subscribe] receive() [trackId: ${trackId}, kind: ${kind}, remoteUid: ${remoteUid}]`);
     if (!this._remoteSdp) {
       this._remoteSdp = new RemoteSdp({
         iceParameters,
@@ -848,95 +844,34 @@ export class Chrome74 extends HandlerInterface
       this._remoteSdp.updateDtlsRole('client');
     }
   
-    console.log('rtpParameters: ', rtpParameters)
+
     let localId = rtpParameters && rtpParameters.mid || appData.mid
-    Logger.debug(prefix, `receive() mid: ${localId}`)
-    const offerMediaSessionLength = this._pc.getTransceivers().length
-    let answerMediaSessionLength = this._remoteSdp._mediaSections.length
-    Logger.debug(prefix, `offerMediaSessionLength: ${offerMediaSessionLength}，answerMediaSessionLength: ${answerMediaSessionLength}`)
-    if (offerMediaSessionLength < answerMediaSessionLength) {
-      /*let mid = -1  
-      for (const transceiver of this._mapMidTransceiver.values()) {  
-        const mediaType = transceiver.receiver.track && transceiver.receiver.track.kind || kind  
-        Logger.debug(prefix, 'prepareLocalSdp() transceiver M行信息 [mid: %s, mediaType: %s, isUseless: %s]', transceiver.mid, mediaType, transceiver.isUseless)  
-        if (transceiver.isUseless && mediaType === kind) {  
-        mid = transceiver.mid;  
-        transceiver.isUseless = false  
-        break;  
-        }  
-      }  
-      if (mid === -1) {  
-        Logger.debug(prefix, 'prepareLocalSdp() 添加一个M行')  
-        this._pc.addTransceiver(kind, { direction: "recvonly" });  
-      }  
-      offer = await this._pc.createOffer(); */
-    } else if (offerMediaSessionLength > answerMediaSessionLength) {}
+    Logger.debug(prefix, `[Subscribe] receive() mid: ${localId}`)
     
     if (!rtpParameters.mid) {
-      Logger.debug(prefix, 'receive() 容错逻辑')
-      const missMediaSessions:{mid: any, kind: "video"|"audio"}[] = []
-      let missMediaSession:OfferMediaSection|undefined = undefined
-      const localSdpObject = sdpTransform.parse(offer.sdp)
-      //调试日志，先保留，上线前处理
-      console.log('localSdpObject.media: ', localSdpObject.media)
-      console.log('_mediaSections: ', this._remoteSdp._mediaSections)
-      localSdpObject.media.forEach(media => {
-        let isExist = false
-        this._remoteSdp!._mediaSections.forEach(mediaSession => {
-          //这里使用隐式转换，因为_remoteSdp的mid格式是string，localSdpObject解析出来是的number类型  
-          if (media.mid == mediaSession.mid) {
-            isExist = true
-            return
-          }
-          if(kind == mediaSession.type){
-            missMediaSession = mediaSession as OfferMediaSection
-          }
-        })
-        if (!isExist) {
-          // @ts-ignore
-          missMediaSessions.push({mid: media.mid, kind: media.type})
+      Logger.debug(prefix, '[Subscribe] receive() 容错流程')
+      const filteredCodecs:any[] = []
+      extendedRtpCapabilities.codecs.forEach((codec: any)=>{
+        if (codec.kind === kind){
+          const codecCopy = Object.assign({}, codec)
+          codecCopy.parameters = codecCopy.parameters || codecCopy.localParameters
+          codecCopy.payloadType = codecCopy.payloadType || codecCopy.localPayloadType
+          filteredCodecs.push(codecCopy)
         }
       })
-      console.log('missMediaSession: ', missMediaSession)
-      Logger.debug(prefix, 'receive() 检索出来了缺失的media Session: ', missMediaSessions)
-
       const data = {
         mid: localId,
-        // reuseMid: localId,
         kind,
         offerRtpParameters: {
-          codecs: [],
-          encodings:[{ssrc: 0}],
-          headerExtensions:[],
-          rtcp:{},
-          mid: localId
-        },
-        streamId: kind,
-        trackId,
-        reuseMediaSection: undefined
-      }
-
-      if (missMediaSession && false) {
-        //不能这么用，需要deepclone才行
-        //data.reuseMediaSection = missMediaSession
-      } else {
-        const filteredCodecs:any[] = []
-        extendedRtpCapabilities.codecs.forEach((codec: any)=>{
-          if (codec.kind === kind){
-            const codecCopy = Object.assign({}, codec)
-            codecCopy.parameters = codecCopy.parameters || codecCopy.localParameters
-            codecCopy.payloadType = codecCopy.payloadType || codecCopy.localPayloadType
-            filteredCodecs.push(codecCopy)
-          }
-        })
-        data.offerRtpParameters = {
-          //@ts-ignore
           codecs: filteredCodecs,
           encodings:[{ssrc: 0}],
           headerExtensions:[],
           rtcp:{},
           mid: localId
-        } 
+        }, 
+        streamId: kind,
+        trackId,
+        reuseMediaSection: undefined
       }
       this._remoteSdp!.receive(data)
       this._remoteSdp!.disableMediaSection(`${localId}`)
@@ -948,14 +883,8 @@ export class Chrome74 extends HandlerInterface
         streamId           : rtpParameters.rtcp!.cname!,
         trackId
       });
-
-      let answerMediaSessionLength = this._remoteSdp._mediaSections.length
-      Logger.debug(prefix, `正常的流程 offerMediaSessionLength: ${offerMediaSessionLength}，answerMediaSessionLength: ${answerMediaSessionLength}`)
-      if (offerMediaSessionLength > answerMediaSessionLength) {
-        //似乎不需要处理也可以，这种场景直接走重连吧，理论上只有订阅第一路流出现非200的场景才会出现，这种场景下走重连也不要紧
-        //console.warn('似乎不需要处理也可以')
-      }
     }
+
     offer.sdp = offer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`)
     if (offer.sdp.indexOf('a=fmtp:111')) {
       offer.sdp = offer.sdp.replace(/a=fmtp:111 ([0-9=;a-zA-Z]*)/, 'a=fmtp:111 minptime=10;stereo=1;sprop-stereo=1;useinbandfec=1')
@@ -968,7 +897,7 @@ export class Chrome74 extends HandlerInterface
 
     if (this._pc.signalingState === 'stable') {
       await this._pc.setLocalDescription(offer);
-      Logger.debug(prefix, 'receive() | calling pc.setLocalDescription()');
+      Logger.debug(prefix, '[Subscribe] receive() | calling pc.setLocalDescription()');
     }
     if (!getParameters().enableUdpCandidate){
       answer.sdp = answer.sdp.replace(/\r\na=candidate:udpcandidate[^\r]+/g, '')
@@ -977,7 +906,7 @@ export class Chrome74 extends HandlerInterface
       answer.sdp = answer.sdp.replace(/\r\na=candidate:tcpcandidate[^\r]+/g, '')
     }
 
-    Logger.debug(prefix, 'receive() | calling pc.setRemoteDescription()');
+    Logger.debug(prefix, '[Subscribe] receive() | calling pc.setRemoteDescription()');
     await this._pc.setRemoteDescription(answer);
     const transceiver = this._pc.getTransceivers()
       .find((t: RTCRtpTransceiver) => t.mid === localId);

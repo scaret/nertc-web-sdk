@@ -229,7 +229,7 @@ export class Firefox60 extends HandlerInterface
     console.error('peer的状态: ', event)  
     }*/
     this._pc.onicecandidateerror = (e: any) => {
-      console.error('地址收集失败: ', e)
+      Logger.debug('onicecandidateerror: ', e)
     }
   }
 
@@ -796,7 +796,7 @@ export class Firefox60 extends HandlerInterface
     return;
   }
   async prepareLocalSdp(kind: "video"|"audio", remoteUid: number|string) {
-    Logger.debug(prefix, `prepareLocalSdp() [kind: ${kind}, remoteUid: ${remoteUid}]`);
+    Logger.debug(prefix, `[Subscribe] prepareLocalSdp() [kind: ${kind}, remoteUid: ${remoteUid}]`);
     let mid = -1
     for (const key of this._mapMidTransceiver.keys()) {
       const transceiver:EnhancedTransceiver|undefined = this._mapMidTransceiver.get(key)
@@ -816,14 +816,14 @@ export class Firefox60 extends HandlerInterface
     let transceiver = null
     if (true /*!offer || !offer.sdp || !offer.sdp.includes(`m=${kind}`)*/) {
       if (mid === -1) {
-        Logger.debug(prefix, 'prepareLocalSdp() 添加一个M行')
+        Logger.debug(prefix, '[Subscribe] prepareLocalSdp() 添加一个M行')
         transceiver = this._pc.addTransceiver(kind, { direction: "recvonly" });
         offer = await this._pc.createOffer();
         if (offer.sdp.indexOf(`a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#`) < 0) {
           offer.sdp = offer.sdp.replace(/a=ice-ufrag:([0-9a-zA-Z=+-_\/\\\\]+)/g, `a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#recv`)
           offer.sdp = offer.sdp.replace(/a=rtcp-fb:111 transport-cc/g, `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`)
         }
-        Logger.debug(prefix, 'prepareLocalSdp() | calling pc.setLocalDescription()');
+        Logger.debug(prefix, '[Subscribe] prepareLocalSdp() | calling pc.setLocalDescription()');
         this.signalingState = 'have-local-offer'
         await this._pc.setLocalDescription(offer);
       }
@@ -848,9 +848,7 @@ export class Firefox60 extends HandlerInterface
   ): Promise<HandlerReceiveResult>
   {
     this._assertRecvDirection();
-    Logger.debug(prefix, `[Consume] receive() [trackId: ${trackId}, kind: ${kind}, remoteUid: ${remoteUid}]`);
-    console.log('dtlsParameters: ', dtlsParameters)
-    console.log('_remoteSdp: ', this._remoteSdp)
+    Logger.debug(prefix, `[Subscribe] receive() [trackId: ${trackId}, kind: ${kind}, remoteUid: ${remoteUid}]`);
     if (!this._remoteSdp) {
       this._remoteSdp = new RemoteSdp({
         iceParameters,
@@ -860,13 +858,12 @@ export class Firefox60 extends HandlerInterface
       });
       this._remoteSdp.updateDtlsRole('client');
     }
-    //调试日志，上线前后面清除
-    console.log('rtpParameters: ', rtpParameters)
+
     let localId = rtpParameters && rtpParameters.mid || appData.mid
-    Logger.debug(prefix, `[Consume] receive() mid: ${localId}`)
+    Logger.debug(prefix, `[Subscribe] receive() mid: ${localId}`)
     
     if (!rtpParameters.mid) {
-      Logger.debug(prefix, '[Consume] receive() 容错流程')
+      Logger.debug(prefix, '[Subscribe] receive() 容错流程')
       const filteredCodecs:any[] = []
       extendedRtpCapabilities.codecs.forEach((codec: any)=>{
         if (codec.kind === kind){
@@ -912,15 +909,13 @@ export class Firefox60 extends HandlerInterface
       answer.sdp = answer.sdp.replace(/\r\na=candidate:tcpcandidate[^\r]+/g, '')
     }
 
-    //调试日志
-    console.log('pc.signalingState: ', this._pc.signalingState)
     if (this._pc.signalingState === 'stable') {
       await this._pc.createOffer()
       this.signalingState = 'have-local-offer'
       await this._pc.setLocalDescription(offer);
-      Logger.debug(prefix, '[Consume] receive() | calling pc.setLocalDescription()');
+      Logger.debug(prefix, '[Subscribe] receive() | calling pc.setLocalDescription()');
     }
-    Logger.debug(prefix, '[Consume] receive() | calling pc.setRemoteDescription()');
+    Logger.debug(prefix, '[Subscribe] receive() | calling pc.setRemoteDescription()');
     this.signalingState = 'stable'
     await this._pc.setRemoteDescription(answer);
   
@@ -970,25 +965,25 @@ export class Firefox60 extends HandlerInterface
     这里不使用createOffer的原因是：创建consumer的时候，prepareLocalSdp接口的使用在mediasoup.js中，该方法不受_awaitQueue队列控制，做不到完全的同步策略  
     */
     // firefox 连续调用 setLocalDescription 后，在执行 setRemoteDescription 会有报错，这里的逻辑不受_awaitQueue队列控制，所以修改sdp就行，不一定非要设置一边
-    try {
-      if (this._pc.signalingState === 'stable' && this.signalingState === 'stable') {
-        const offer = this._pc.localDescription
-        if (offer.sdp.indexOf(`a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#`) < 0) {
-          offer.sdp = offer.sdp.replace(/a=ice-ufrag:([0-9a-zA-Z=+-_\/\\\\]+)/g, `a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#recv`)
-        }
-        Logger.debug(prefix, 'stopReceiving() | calling pc.setLocalDescription()');
-        this.signalingState = 'have-local-offer'
-        this._pc.setLocalDescription(offer);
-        const answer = { type: 'answer', sdp: this._remoteSdp!.getSdp() };
-        Logger.debug(prefix, 'stopReceiving() | calling pc.setRemoteDescription()');
-        this.signalingState = 'stable'
-        this._pc.setRemoteDescription(answer);
-      }
-    } catch(e: any) {
-      //这里的流程对主流程没有影响，可以不用太关注
-      Logger.debug(prefix, 'stopReceiving() | error message: ', e.message);
-    }
-    
+    //这里的流程对主流程没有影响，可以不用太关注
+    // try {
+    //   if (this._pc.signalingState === 'stable' && this.signalingState === 'stable') {
+    //     const offer = this._pc.localDescription
+    //     if (offer.sdp.indexOf(`a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#`) < 0) {
+    //       offer.sdp = offer.sdp.replace(/a=ice-ufrag:([0-9a-zA-Z=+-_\/\\\\]+)/g, `a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#recv`)
+    //     }
+    //     Logger.debug(prefix, 'stopReceiving() | calling pc.setLocalDescription()');
+    //     this.signalingState = 'have-local-offer'
+    //     this._pc.setLocalDescription(offer);
+    //     const answer = { type: 'answer', sdp: this._remoteSdp!.getSdp() };
+    //     Logger.debug(prefix, 'stopReceiving() | calling pc.setRemoteDescription()');
+    //     this.signalingState = 'stable'
+    //     this._pc.setRemoteDescription(answer);
+    //   }
+    // } catch(e: any) {
+    //   Logger.debug(prefix, 'stopReceiving() | error message: ', e.message);
+    //   debugger
+    // }
   }
 
   async getReceiverStats(localId: string): Promise<RTCStatsReport>

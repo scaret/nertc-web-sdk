@@ -451,7 +451,7 @@ class GetStats extends EventEmitter{
       if (!res || !res[1]) return tmp;
       const ssrc = res[1]
       if (!this.adapterRef){
-        console.error("getStats行为没有client关联")
+        //console.error("getStats行为没有client关联")
         return;
       }
       const uidAndKindBySsrc = this.adapterRef.instance.getUidAndKindBySsrc(parseInt(ssrc));
