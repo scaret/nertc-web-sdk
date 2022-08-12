@@ -2349,6 +2349,13 @@ function initLocalStream() {
   rtc.localStream.on("plugin-load-error", e => {
     console.error('plugin-load-error', e)
   })
+  rtc.localStream.on('basic-beauty-res-complete',(failUrls)=>{
+    if(failUrls.length){
+      console.error('基础美资源加载失败，失败的连接地址为：',failUrls);
+    }else{
+      console.log('基础美颜资源记载完毕');
+    }
+  })
 }
 
 function updateLocalWatermark() {

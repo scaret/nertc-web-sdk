@@ -14,11 +14,14 @@ export default class BasicBeauty {
 
     constructor(videPostProcess: VideoPostProcess){
         this.videPostProcess = videPostProcess;
-        this.startLut();
     }
 
     // 配置美颜lut
+    private lutLoaded = false;
     private startLut() {
+        if(this.lutLoaded){
+            return;
+        }
         const filters = this.videPostProcess.filters;
         let queueLen = 2;
         const failUrls: string[] = [];
@@ -119,6 +122,7 @@ export default class BasicBeauty {
             failUrls.push(..._failUrls);
             checkComplete();
         });
+        this.lutLoaded = true;
     }
 
     /**
@@ -147,6 +151,9 @@ export default class BasicBeauty {
      * isEnable 为 true 时， track 必须赋值
      */
     setBeauty(isEnable: boolean, track?: MediaStreamTrack){
+        if(isEnable){
+            this.startLut();
+        }
         return new Promise((resolve, reject)=>{
             this.videPostProcess.setTaskAndTrack('BasicBeauty', isEnable, track)
             .then((track)=>{
