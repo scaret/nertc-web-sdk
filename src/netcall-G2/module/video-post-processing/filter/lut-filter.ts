@@ -1,7 +1,7 @@
 import { Renderer } from '../gl-utils/renderer';
 import { Program } from '../gl-utils/program';
 import { createAttributeBuffer } from '../gl-utils/buffer-attribute';
-import { createTexture, loadImage } from '../gl-utils/texture';
+import { createTexture, retryLoadImage } from '../gl-utils/texture';
 import { createFrameBuffer } from '../gl-utils/framebuffer';
 import { baseTextureShader } from '../shaders/base-texture-shader.glsl';
 import { lutShader } from '../shaders/lut-shader.glsl';
@@ -69,23 +69,33 @@ export class LutFilter extends Filter {
             src: string;
             intensity?: number;
         };
-    }) {
+    }, onComplete?:(failUrls: string[]) => void) {
+        let queueLen = Object.keys(opts).length;
+        const failUrls: string[] = [];
+        const checkComplete = ()=>{
+            queueLen -= 1;
+            if(queueLen <= 0){
+                onComplete?.(failUrls);
+            }
+        }
+        
         for (const key in opts) {
             const { src, intensity = 0.5 } = opts[key];
             this.lutImgs[key] = {
                 img: null,
-                intensity: 0
+                intensity: intensity
             };
-            loadImage(src, (img) => {
-                this.lutImgs[key] = {
-                    img,
-                    intensity
-                };
+            retryLoadImage(src, 3, (img)=>{
+                this.lutImgs[key].img = img;
                 if (key === this.curLutName) {
                     this.curLutName = null;
                     this.setlut(key);
                 }
-            });
+                checkComplete();
+            },()=>{
+                failUrls.push(src);
+                checkComplete();
+            })
         }
     }
 
@@ -132,7 +142,11 @@ export class LutFilter extends Filter {
             return;
         }
         curLut.intensity = intensity;
-        this.programs.main.setUniform('intensity', this.intensity);
+        if(!curLut.img){
+            this.programs.main.setUniform('intensity', 0);
+        }else{
+            this.programs.main.setUniform('intensity', this.intensity);
+        }
     }
 
     render() {

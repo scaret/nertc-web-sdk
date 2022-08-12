@@ -328,6 +328,12 @@ class LocalStream extends RTCEventEmitter {
         screenProfile: this.screenProfile
       }
     })
+
+    // 对外抛出基础美颜加载完成事件
+    // failUrls[] 返回失败的资源路径
+    this.videoPostProcess.on('beautyResComplete', (failUrls: string[])=>{
+      this.emit('basic-beauty-res-complete', failUrls);
+    })
     
     this.videoPostProcess.on('taskSwitch', (isOn)=>{
       this.replaceTags.videoPost = isOn;
@@ -4036,8 +4042,14 @@ class LocalStream extends RTCEventEmitter {
             }
           })
         }) 
-      } else {
-        this.logger.error(`can't get plugin ${options.key}`);
+        plugin.once('plugin-load-error', () => {
+          this.logger.error(`Load ${options.wasmUrl} error`);  
+          this.emit('plugin-load-error', {
+            key: options.key,
+            msg: `Load ${options.wasmUrl} error`
+          });
+        })
+      } else {     
         this.client.apiFrequencyControl({
           name: 'registerPlugin',
           code: -1,
@@ -4046,11 +4058,16 @@ class LocalStream extends RTCEventEmitter {
             plugin: options.key
           }
         })
+        this.logger.error(`unsupport plugin ${options.key}`);  
+        throw `unsupport plugin ${options.key}`
       }     
     } catch(e) {
       this.logger.error(`create plugin ${options.key} error`);
+      this.emit('plugin-load-error', {
+        key: options.key,
+        msg: e
+      });
     } 
-
   }
 
   async unregisterPlugin(key: PluginType) {
