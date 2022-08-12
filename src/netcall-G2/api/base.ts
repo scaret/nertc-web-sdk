@@ -500,7 +500,7 @@ class Base extends RTCEventEmitter {
       this.adapterRef._mediasoup._recvTransport = null
     }
     this.adapterRef._mediasoup.init()
-    this.logger.log('下行通道异常, remoteStreamMap', this.adapterRef.remoteStreamMap)
+    this.logger.log('下行通道异常, remoteStreamMap', Object.keys(this.adapterRef.remoteStreamMap))
     this.logger.log('this._eventQueue: ', this.adapterRef._mediasoup._eventQueue)
     let hasError = false;
     for (const streamId in this.adapterRef.remoteStreamMap) {
