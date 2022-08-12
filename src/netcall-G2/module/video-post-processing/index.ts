@@ -330,7 +330,7 @@ export default class VideoPostProcess extends EventEmitter {
         this.sourceTrack = null;
         this.trackInstance?.stop();
         this.trackInstance = null;
-        this.filters.destroy();
+        this.filters?.destroy();
         (<any>this.filters) = null;
         this.sourceMap = null;
         this.maskData = null;

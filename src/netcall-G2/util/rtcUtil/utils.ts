@@ -61,7 +61,7 @@ export function deepCopy(param: Object){
  }
  
  export function formatSingleArg(arg:any) : any {
-   if (arg instanceof RTCRtpSender){
+   if (window.RTCRtpSender && arg instanceof RTCRtpSender){
      const sender = arg as RTCRtpSender
      const formatted = `[RTCRtpSender track: ${formatSingleArg(sender.track)}]`
      return formatted

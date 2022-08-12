@@ -33,6 +33,8 @@ const prefix = 'Firefox60';
 
 const SCTP_NUM_STREAMS = { OS: 1024, MIS: 1024 };
 
+let pcid = 0
+
 export class Firefox60 extends HandlerInterface
 {
   // Handler direction.
@@ -198,6 +200,7 @@ export class Firefox60 extends HandlerInterface
     this._pc = new (RTCPeerConnection as any)(
       pcConfig,
       proprietaryConstraints);
+    this._pc.pcid = pcid++
 
     // Handle RTCPeerConnection connection status.
     //使用onconnectionstatechange接口判断peer的状态，废弃使用 iceconnectionstatechange  

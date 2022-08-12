@@ -93,18 +93,20 @@ class Mediasoup extends EventEmitter {
     send: {
       promises: ((value: unknown)=>void)[]
       status: {
+        ts: number,
         info: string,
       }
     },
     recv: {
       promises: ((value: unknown)=>void)[],
       status: {
+        ts: number,
         info: string,
       }
     },
   } = {
-    send: {promises: [], status: {info: ""}},
-    recv: {promises: [], status: {info: ""}},
+    send: {promises: [], status: {ts: 0, info: ""}},
+    recv: {promises: [], status: {ts: 0, info: ""}},
   }
   constructor (options:MediasoupManagerOptions) {
     super()
@@ -315,15 +317,20 @@ class Mediasoup extends EventEmitter {
         this.getIceStatus("recv")
       })
     }
+    const interval = 1000
     let timer = setInterval(()=>{
-      const iceStatus = this.getIceStatus()
+      const now = Date.now()
+      if (now - this.iceStatusHistory.send.status.ts > interval * 1.5){
+        this.getIceStatus("send")
+      }
+      if (now - this.iceStatusHistory.recv.status.ts > interval * 1.5){
+        this.getIceStatus("recv")
+      }
       if (!this._mediasoupDevice){
         // destroyed
         clearInterval(timer)
-      }else{
-        const iceStatus = this.getIceStatus()
       }
-    }, 1000)
+    }, interval)
     this.emit('transportReady');
   }
 
@@ -1870,6 +1877,7 @@ class Mediasoup extends EventEmitter {
   async getIceStatus(direction: "send"|"recv" = "send"){
     const start = Date.now()
     const iceStatus:any = {
+      ts: Date.now(),
       direction,
       iceConnectionState: "uninit",
       info: "",
@@ -1921,10 +1929,15 @@ class Mediasoup extends EventEmitter {
         })
       }
       
-      const stats = await pc.getStats(null)
+      let stats:RTCStatsReport|null = null
+      try{
+        stats = await pc.getStats(null)
+      }catch(e){
+        // do nothing
+      }
       const statsArr:RTCStats[] = []
       const transports:RTCTransportStats[] = []
-      stats.forEach((item, key)=>{
+      stats && stats.forEach((item, key)=>{
         statsArr.push(item)
         if (item.type === "transport"){
           transports.push(item)
