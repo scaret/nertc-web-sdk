@@ -6,6 +6,10 @@ const pathNpmRepo = path.join(__dirname, '../../../nertc-npm-test');
 const VERSION = require('../../package.json').webrtcG2Version;
 const sdkSrc = path.join(__dirname, `../../dist/lib/${VERSION}/test/NIM_Web_NERTC_v${VERSION}_test.js`);
 const sdkDest = path.join(pathNpmRepo, 'NERTC.js')
+const VirtualBackgroundSrc = path.join(__dirname, `../../dist/lib/${VERSION}/test/NIM_Web_VirtualBackground_v${VERSION}_test.js`);
+const VirtualBackgroundDest = path.join(pathNpmRepo, 'NERTC_VirtualBackground.js')
+const AdvancedBeautySrc = path.join(__dirname, `../../dist/lib/${VERSION}/test/NIM_Web_AdvancedBeauty_v${VERSION}_test.js`);
+const AdvancedBeautyDest = path.join(pathNpmRepo, 'NERTC_AdvancedBeauty.js')
 
 // 1. 验证SDK版本
 const commentLine = await $`head -n 1 ${sdkSrc}`;
@@ -26,6 +30,8 @@ if (!match){
 
 // 2. 拷贝SDK
 await $`cp -f ${sdkSrc} ${sdkDest}`
+await $`cp -f ${VirtualBackgroundSrc} ${VirtualBackgroundDest}`
+await $`cp -f ${AdvancedBeautySrc} ${AdvancedBeautyDest}`
 
 // 3. 拷贝文档
 await $`rm -rf ${path.join(pathNpmRepo, 'types')}`
