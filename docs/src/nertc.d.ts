@@ -12,6 +12,29 @@ import { DeviceInfo } from "./browser";
  */
 export as namespace NERTC
 declare namespace NERTC {
+  namespace Device {
+    /**
+     * 开启设备兼容模式
+     * 
+     * 一部分支持双声道的音频采集设备，采集的音频数据左右声道是相反的。这类设备如果采用单声道采集模式，或者播放端不支持双声道播放的情况下，
+     * 会出现音量过小或者没有音量的情况。从v4.6.20起，通过本函数，SDK会在双声道麦克风中开启选路模式，在损失一部分音质体验的情况下保证
+     * 这类设备的可用性。
+     * 
+     * @example
+     * ```javascript
+     * // 在createStream之前调用
+     * NERTC.Device.enableCompatMode()
+     * rtc.localStream = NERTC.createStream({
+     *   audio: true
+     * })
+     * ```
+     */
+    function enableCompatMode() : void
+    /**
+     * 关闭设备兼容模式
+     */
+    function disableCompatMode() : void
+  }
   namespace Logger {
     /**
      * 开启日志上传。

@@ -1038,7 +1038,10 @@ declare interface Stream {
   /**
    * 视频上行参数设置。
    *
-   * @note setVideoEncoderConfiguration 方法只作用于本地视频流。
+   * 
+   * @note
+   * * setVideoEncoderConfiguration 方法只作用于本地视频流。
+   * * 在v4.6.20之后，该方法可以在会中使用，可动态调整参数。
    * 
    * @example 设置上行屏幕共享最大编码比特率为3M，流畅度优先：
    * 
