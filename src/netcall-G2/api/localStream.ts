@@ -43,7 +43,7 @@ import {alerter} from "../module/alerter";
 import { BackGroundOptions } from '../plugin/segmentation/src/types';
 import { loadPlugin } from "../plugin";
 import VideoPostProcess from "../module/video-post-processing";
-import BasicBeauty from "../module/video-post-processing/basic-beauty";
+import BasicBeauty, {BasicResType} from "../module/video-post-processing/basic-beauty";
 import VirtualBackground from "../module/video-post-processing/virtual-background";
 import AdvancedBeauty from "../module/video-post-processing/advanced-beauty";
 import { PluginType } from "../plugin/plugin-list";
@@ -125,10 +125,10 @@ class LocalStream extends RTCEventEmitter {
   private screenAudioSource:MediaStreamTrack|null
   public mediaHelper:MediaHelper;
   // 美颜相关实例对象
-  private videoPostProcess = new VideoPostProcess();
-  private basicBeauty = new BasicBeauty(this.videoPostProcess);
-  private virtualBackground = new VirtualBackground(this.videoPostProcess);
-  private advancedBeauty = new AdvancedBeauty(this.videoPostProcess);
+  private videoPostProcess: VideoPostProcess;
+  private basicBeauty: BasicBeauty;
+  private virtualBackground: VirtualBackground;
+  private advancedBeauty: AdvancedBeauty;
   private _segmentProcessor: VirtualBackground|null;
   private _advancedBeautyProcessor: AdvancedBeauty | null = null;
   private lastEffects:any;
@@ -329,6 +329,10 @@ class LocalStream extends RTCEventEmitter {
       }
     })
 
+    this.videoPostProcess = new VideoPostProcess(this.logger);
+    this.basicBeauty = new BasicBeauty(this.videoPostProcess);
+    this.virtualBackground = new VirtualBackground(this.videoPostProcess);
+    this.advancedBeauty = new AdvancedBeauty(this.videoPostProcess);
     // 对外抛出基础美颜加载完成事件
     // failUrls[] 返回失败的资源路径
     this.videoPostProcess.on('beautyResComplete', (failUrls: string[])=>{
@@ -527,7 +531,7 @@ class LocalStream extends RTCEventEmitter {
             }
           }
         });
-      } catch (error) {
+      } catch (error: any) {
         this.logger.error('failed to get localStats', error.name, error.message);
       }
       return stats;
@@ -1686,7 +1690,7 @@ class LocalStream extends RTCEventEmitter {
           isRemote: false
         }, null, ' ')
       })
-    } catch (e) {
+    } catch (e: any) {
       this.logger.error('API调用失败：Stream:unmuteAudio' ,e.name, e.message, e);
       this.client.apiFrequencyControl({
         name: 'unmuteAudio',
@@ -1738,7 +1742,7 @@ class LocalStream extends RTCEventEmitter {
           isRemote: false
         }, null, ' ')
       })
-    } catch (e) {
+    } catch (e: any) {
       this.logger.error('API调用失败：Stream:muteAudio' ,e.name, e.message, e);
       this.client.apiFrequencyControl({
         name: 'muteAudio',
@@ -1785,7 +1789,7 @@ class LocalStream extends RTCEventEmitter {
           streamID: this.stringStreamID
         }, null, ' ')
       })
-    } catch (e) {
+    } catch (e: any) {
       this.logger.error('API调用失败：Stream:unmuteAudio' ,e.name, e.message, e);
       this.client.apiFrequencyControl({
         name: 'unmuteAudioSlave',
@@ -1831,7 +1835,7 @@ class LocalStream extends RTCEventEmitter {
           streamID: this.stringStreamID
         }, null, ' ')
       })
-    } catch (e) {
+    } catch (e: any) {
       this.logger.error('API调用失败：Stream:muteAudioSlave' ,e.name, e.message, e);
       this.client.apiFrequencyControl({
         name: 'muteAudioSlave',
@@ -2027,7 +2031,7 @@ class LocalStream extends RTCEventEmitter {
     if (this._play) {
       try {
         await this._play.setAudioOutput(deviceId);
-      } catch (e) {
+      } catch (e: any) {
         if (callback) {
           setTimeout(() => {
             callback(e);
@@ -2238,7 +2242,7 @@ class LocalStream extends RTCEventEmitter {
         code: 0,
         param: JSON.stringify(this.mediaHelper.getTrackSettings())
       })
-    } catch (e) {
+    } catch (e:any) {
       this.logger.error('API调用失败：Stream:switchDevice' ,e.name, e.message, e);
       this.inSwitchDevice[type] = false
       if (type === "video"){
@@ -2307,7 +2311,7 @@ class LocalStream extends RTCEventEmitter {
         }, null, ' ')
       })
       this.replaceTags.isMuted = false;
-    } catch (e) {
+    } catch (e: any) {
       this.logger.error('API调用失败：Stream:unmuteVideo' ,e.name, e.message, e);
       this.client.apiFrequencyControl({
         name: 'unmuteVideo',
@@ -2364,7 +2368,7 @@ class LocalStream extends RTCEventEmitter {
         }, null, ' ')
       })
       this.replaceTags.isMuted = true;
-    } catch (e) {
+    } catch (e: any) {
       this.logger.error('API调用失败：Stream:muteVideo' ,e.name, e.message, e);
       this.client.apiFrequencyControl({
         name: 'muteVideo',
@@ -2409,7 +2413,7 @@ class LocalStream extends RTCEventEmitter {
           isRemote: false
         }, null, ' ')
       })
-    } catch (e) {
+    } catch (e: any) {
       this.logger.error('API调用失败：Stream:unmuteScreen' ,e.name, e.message, e);
       this.client.apiFrequencyControl({
         name: 'unmuteScreen',
@@ -2451,7 +2455,7 @@ class LocalStream extends RTCEventEmitter {
           isRemote: false
         }, null, ' ')
       })
-    } catch (e) {
+    } catch (e: any) {
       this.logger.error('API调用失败：Stream:muteScreen' ,e, ...arguments);
       this.client.apiFrequencyControl({
         name: 'muteScreen',
@@ -2526,7 +2530,7 @@ class LocalStream extends RTCEventEmitter {
           this.mediaHelper.video.cameraConstraint.video.width = settings.width
           this.mediaHelper.video.cameraConstraint.video.height = settings.height
         }
-      }catch(e){
+      }catch(e: any){
         this.logger.error(`无法使用动态分辨率:`, e.name, e.message)
       }
     }
@@ -2540,7 +2544,7 @@ class LocalStream extends RTCEventEmitter {
          encodings.maxBitrate = this.mediaHelper.video.encoderConfig.high.maxBitrate
          try{
            sender.setParameters(parameters)
-         }catch(e){
+         }catch(e: any){
            this.logger.error(`setVideoProfile无法调整上行码率`, e.name, e.message)
          }
        }else{
@@ -2768,7 +2772,7 @@ class LocalStream extends RTCEventEmitter {
         encodings.maxBitrate = this.mediaHelper.screen.encoderConfig.high.maxBitrate
         try{
           sender.setParameters(parameters)
-        }catch(e){
+        }catch(e: any){
           this.logger.error(`setScreenProfile 无法调整上行码率`, e.name, e.message)
         }
       }else{
@@ -3565,6 +3569,15 @@ class LocalStream extends RTCEventEmitter {
     }
   }
 
+  // 配置基础美颜静态资源地址
+  static basicBeautyStaticRes: typeof BasicBeauty.configStaticRes = (config)=>{
+    BasicBeauty.configStaticRes(config);
+  }
+
+  // 配置高级美颜静态资源地址
+  static advBeautyStaticRes:typeof AdvancedBeauty.configStaticRes = (config)=>{
+    AdvancedBeauty.configStaticRes(config);
+  }
   /**
    * 设置美颜效果
    * @function setBeautyEffectOptions
