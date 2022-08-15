@@ -43,7 +43,7 @@ import {alerter} from "../module/alerter";
 import { BackGroundOptions } from '../plugin/segmentation/src/types';
 import { loadPlugin } from "../plugin";
 import VideoPostProcess from "../module/video-post-processing";
-import BasicBeauty, {BasicResType} from "../module/video-post-processing/basic-beauty";
+import BasicBeauty from "../module/video-post-processing/basic-beauty";
 import VirtualBackground from "../module/video-post-processing/virtual-background";
 import AdvancedBeauty from "../module/video-post-processing/advanced-beauty";
 import { PluginType } from "../plugin/plugin-list";
@@ -3570,12 +3570,12 @@ class LocalStream extends RTCEventEmitter {
   }
 
   // 配置基础美颜静态资源地址
-  static basicBeautyStaticRes: typeof BasicBeauty.configStaticRes = (config)=>{
+  basicBeautyStaticRes: typeof BasicBeauty.configStaticRes = (config)=>{
     BasicBeauty.configStaticRes(config);
   }
 
   // 配置高级美颜静态资源地址
-  static advBeautyStaticRes:typeof AdvancedBeauty.configStaticRes = (config)=>{
+  advBeautyStaticRes:typeof AdvancedBeauty.configStaticRes = (config)=>{
     AdvancedBeauty.configStaticRes(config);
   }
   /**
@@ -4273,7 +4273,8 @@ class LocalStream extends RTCEventEmitter {
       this._transformedTrack = null;
     }
     // 销毁美颜相关 webgl 管线
-    this.videoPostProcess.destroy();
+    this.videoPostProcess?.destroy();
+    (<any>this.videoPostProcess) = null;
   }
 }
 

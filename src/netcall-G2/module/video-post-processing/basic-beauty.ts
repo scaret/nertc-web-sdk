@@ -1,7 +1,7 @@
 import { BeautyEffectOptions } from '../../types';
 import VideoPostProcess from '.';
 
-export type BasicResType = {
+type BasicResType = {
     beauty?:{
         whiten: string;
         redden: string
@@ -98,11 +98,14 @@ const resSet: BasicResType = {
     }
 }
 
+const instances: Set<BasicBeauty> = new Set<BasicBeauty>();
+
 export default class BasicBeauty {
     private videPostProcess: VideoPostProcess;
 
     constructor(videPostProcess: VideoPostProcess){
         this.videPostProcess = videPostProcess;
+        instances.add(this);
     }
 
     private get logger(){
@@ -229,11 +232,22 @@ export default class BasicBeauty {
 
     // 配置静态资源地址
     static configStaticRes(resConfig: BasicResType){
+        let isUpdate = false;
         if(resConfig.beauty){
             resSet.beauty = {...resConfig.beauty};
+            isUpdate = true;
         }
         if(resConfig.filters){
             resSet.filters = {...resConfig.filters};
+            isUpdate = true;
+        }
+        if(isUpdate){
+            instances.forEach((instance)=>{
+                try {
+                    instance.lutLoaded = false;
+                    instance.startLut();
+                } catch (error) {}
+            })
         }
     }
 }

@@ -11,13 +11,13 @@ import { advFaceMaskShader } from '../shaders/adv-beauty/adv-facemask-shader.gls
 import { Filter } from './filter';
 import { Vector2, preHandle, handlers, HandleKey, Matrix3x3 } from './adv-beauty-math';
 
-export type AdvBeautyResType = {
+type AdvBeautyResType = {
     faceMask?: string,
     eyeTeethMask?: string,
     teethWhiten?: string
 }
 
-const resSet = {
+export const resSet = {
     faceMask:'https://yx-web-nosdn.netease.im/common/c4e1b30c74ae5dad6e605ec332775b14/facemask.png',
     eyeTeethMask:'https://yx-web-nosdn.netease.im/common/655421269305cac5c1e48d62f0fac8de/eye-teeth-mask-02.png',
     teethWhiten:'https://yx-web-nosdn.netease.im/common/ca8a6b0be3427ead9b19bcf9ae1245a8/teath.png'
@@ -632,7 +632,7 @@ export class AdvBeautyFilter extends Filter {
     }
 
     static configStaticRes(resConfig: AdvBeautyResType){
-        if(resConfig.faceMask){
+        if(resConfig.faceMask && !faceMaskImg){
             resSet.faceMask = resConfig.faceMask;
             retryLoadImage(resConfig.faceMask, 3, (img)=>{
                 faceMaskImg = img;
@@ -642,7 +642,7 @@ export class AdvBeautyFilter extends Filter {
                 })
             })
         }
-        if(resConfig.eyeTeethMask){
+        if(resConfig.eyeTeethMask && !eyeTeethMaskImg){
             resSet.eyeTeethMask = resConfig.eyeTeethMask;
             retryLoadImage(resSet.eyeTeethMask, 3, (img)=>{
                 eyeTeethMaskImg = img;
@@ -652,7 +652,7 @@ export class AdvBeautyFilter extends Filter {
                 })
             })
         }
-        if(resConfig.teethWhiten){
+        if(resConfig.teethWhiten && !whiteTeethLutImg){
             resSet.teethWhiten = resConfig.teethWhiten;
             retryLoadImage(resSet.teethWhiten, 3, (img)=>{
                 whiteTeethLutImg = img;
@@ -672,6 +672,3 @@ export class AdvBeautyFilter extends Filter {
         instances.delete(this);
     }
 }
-
-// 提前预加载一次资源
-AdvBeautyFilter.configStaticRes(resSet);

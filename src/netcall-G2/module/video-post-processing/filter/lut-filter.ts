@@ -7,6 +7,7 @@ import { baseTextureShader } from '../shaders/base-texture-shader.glsl';
 import { lutShader } from '../shaders/lut-shader.glsl';
 import { Filter } from './filter';
 
+const loadedImg:{[key:string]:HTMLImageElement} = {};
 export class LutFilter extends Filter {
     private lutMap: ReturnType<typeof createTexture>;
     private lutImgs: {
@@ -78,24 +79,33 @@ export class LutFilter extends Filter {
                 onComplete?.(failUrls);
             }
         }
-        
         for (const key in opts) {
             const { src, intensity = 0.5 } = opts[key];
             this.lutImgs[key] = {
                 img: null,
                 intensity: intensity
             };
-            retryLoadImage(src, 3, (img)=>{
-                this.lutImgs[key].img = img;
+            if(loadedImg[key]){
+                this.lutImgs[key].img = loadedImg[key];
                 if (key === this.curLutName) {
                     this.curLutName = null;
                     this.setlut(key);
                 }
                 checkComplete();
-            },()=>{
-                failUrls.push(src);
-                checkComplete();
-            })
+            }else{
+                retryLoadImage(src, 3, (img)=>{
+                    loadedImg[key] = img;
+                    this.lutImgs[key].img = img;
+                    if (key === this.curLutName) {
+                        this.curLutName = null;
+                        this.setlut(key);
+                    }
+                    checkComplete();
+                },()=>{
+                    failUrls.push(src);
+                    checkComplete();
+                })
+            }
         }
     }
 

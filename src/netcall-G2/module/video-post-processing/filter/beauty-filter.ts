@@ -10,6 +10,7 @@ import { beautyShader } from '../shaders/beauty/beauty.glsl';
 import { lutShader } from '../shaders/lut-shader.glsl';
 import { Filter } from './filter';
 
+const loadedImg:{[key:string]:HTMLImageElement} = {};
 export class BeautyFilter extends Filter {
     private whitenMap: ReturnType<typeof createTexture>;
     private reddenMap: ReturnType<typeof createTexture>;
@@ -188,28 +189,48 @@ export class BeautyFilter extends Filter {
                 onComplete?.(failUrls);
             }
         }
-        retryLoadImage(whiten, 3, (img)=>{
-            this.whitenMap!.source = img;
+        if(loadedImg.whiten){
+            this.whitenMap!.source = loadedImg.whiten;
             this.whitenMap!.refresh();
             const whiten = this._whiten;
             this._whiten = 0;
             this.whiten = whiten;
             checkComplete();
-        },()=>{
-            failUrls.push(whiten);
-            checkComplete();
-        })
-        retryLoadImage(redden, 3, (img)=>{
-            this.reddenMap!.source = img;
+        }else{
+            retryLoadImage(whiten, 3, (img)=>{
+                loadedImg.whiten = img;
+                this.whitenMap!.source = img;
+                this.whitenMap!.refresh();
+                const whiten = this._whiten;
+                this._whiten = 0;
+                this.whiten = whiten;
+                checkComplete();
+            },()=>{
+                failUrls.push(whiten);
+                checkComplete();
+            })
+        }
+        if(loadedImg.redden){
+            this.reddenMap!.source = loadedImg.redden;
             this.reddenMap!.refresh();
             const redden = this._redden;
             this._redden = 0;
             this.redden = redden;
             checkComplete();
-        },()=>{
-            failUrls.push(redden);
-            checkComplete();
-        })
+        }else{
+            retryLoadImage(redden, 3, (img)=>{
+                loadedImg.redden = img;
+                this.reddenMap!.source = img;
+                this.reddenMap!.refresh();
+                const redden = this._redden;
+                this._redden = 0;
+                this.redden = redden;
+                checkComplete();
+            },()=>{
+                failUrls.push(redden);
+                checkComplete();
+            })
+        }
     }
 
     private get smoothOut(){
