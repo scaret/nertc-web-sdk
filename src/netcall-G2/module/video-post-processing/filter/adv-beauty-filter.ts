@@ -1,7 +1,7 @@
 import { Renderer } from '../gl-utils/renderer';
 import { Program } from '../gl-utils/program';
 import { createAttributeBuffer } from '../gl-utils/buffer-attribute';
-import { createTexture, loadImage } from '../gl-utils/texture';
+import { createTexture, retryLoadImage } from '../gl-utils/texture';
 import { createFrameBuffer } from '../gl-utils/framebuffer';
 import { baseTextureShader } from '../shaders/base-texture-shader.glsl';
 import { advBeautyWireShader } from '../shaders/adv-beauty/adv-beauty-wire-shader.glsl';
@@ -10,6 +10,18 @@ import { advBeautyEyeShader } from '../shaders/adv-beauty/adv-beauty-eye-shader.
 import { advFaceMaskShader } from '../shaders/adv-beauty/adv-facemask-shader.glsl';
 import { Filter } from './filter';
 import { Vector2, preHandle, handlers, HandleKey, Matrix3x3 } from './adv-beauty-math';
+
+export type AdvBeautyResType = {
+    faceMask?: string,
+    eyeTeethMask?: string,
+    teethWhiten?: string
+}
+
+const resSet = {
+    faceMask:'https://yx-web-nosdn.netease.im/common/c4e1b30c74ae5dad6e605ec332775b14/facemask.png',
+    eyeTeethMask:'https://yx-web-nosdn.netease.im/common/655421269305cac5c1e48d62f0fac8de/eye-teeth-mask-02.png',
+    teethWhiten:'https://yx-web-nosdn.netease.im/common/ca8a6b0be3427ead9b19bcf9ae1245a8/teath.png'
+}
 
 const advBtyFaceMesh = {
     // 插值出额头部分的 facemesh
@@ -80,27 +92,6 @@ const instances = new Set<AdvBeautyFilter>();
 let faceMaskImg: HTMLImageElement | null = null;
 let eyeTeethMaskImg: HTMLImageElement | null = null;
 let whiteTeethLutImg: HTMLImageElement | null = null;
-loadImage('https://yx-web-nosdn.netease.im/common/c4e1b30c74ae5dad6e605ec332775b14/facemask.png', (img)=>{
-    faceMaskImg = img;
-    instances.forEach((instance)=>{
-        instance.faceMaskMap!.source = img;
-        instance.faceMaskMap!.refresh();
-    })
-})
-loadImage('https://yx-web-nosdn.netease.im/common/655421269305cac5c1e48d62f0fac8de/eye-teeth-mask-02.png',(img)=>{
-    eyeTeethMaskImg = img;
-    instances.forEach((instance)=>{
-        instance.eyeTeethMaskMap!.source = img;
-        instance.eyeTeethMaskMap!.refresh();
-    })
-})
-loadImage('https://yx-web-nosdn.netease.im/common/ca8a6b0be3427ead9b19bcf9ae1245a8/teath.png',(img)=>{
-    whiteTeethLutImg = img;
-    instances.forEach((instance)=>{
-        instance.whiteTeethLutMap!.source = img;
-        instance.whiteTeethLutMap!.refresh();
-    })
-})
 export class AdvBeautyFilter extends Filter {
     // 调试参数，是否打开线框显示
     private isShowWire = false;
@@ -640,6 +631,39 @@ export class AdvBeautyFilter extends Filter {
         }
     }
 
+    static configStaticRes(resConfig: AdvBeautyResType){
+        if(resConfig.faceMask){
+            resSet.faceMask = resConfig.faceMask;
+            retryLoadImage(resConfig.faceMask, 3, (img)=>{
+                faceMaskImg = img;
+                instances.forEach((instance)=>{
+                    instance.faceMaskMap!.source = img;
+                    instance.faceMaskMap!.refresh();
+                })
+            })
+        }
+        if(resConfig.eyeTeethMask){
+            resSet.eyeTeethMask = resConfig.eyeTeethMask;
+            retryLoadImage(resSet.eyeTeethMask, 3, (img)=>{
+                eyeTeethMaskImg = img;
+                instances.forEach((instance)=>{
+                    instance.eyeTeethMaskMap!.source = img;
+                    instance.eyeTeethMaskMap!.refresh();
+                })
+            })
+        }
+        if(resConfig.teethWhiten){
+            resSet.teethWhiten = resConfig.teethWhiten;
+            retryLoadImage(resSet.teethWhiten, 3, (img)=>{
+                whiteTeethLutImg = img;
+                instances.forEach((instance)=>{
+                    instance.whiteTeethLutMap!.source = img;
+                    instance.whiteTeethLutMap!.refresh();
+                })
+            })
+        }
+    }
+
     destroy() {
         super.destroy();
         this.renderer.gl?.deleteTexture(this.faceMaskMap!.glTexture!);
@@ -648,3 +672,6 @@ export class AdvBeautyFilter extends Filter {
         instances.delete(this);
     }
 }
+
+// 提前预加载一次资源
+AdvBeautyFilter.configStaticRes(resSet);

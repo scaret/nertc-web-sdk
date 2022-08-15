@@ -1,14 +1,6 @@
-import { ILogger } from '../../types';
-import { Logger } from '../../util/webrtcLogger';
 import VideoPostProcess from '.';
-import { AdvBeautyFilter } from './filter/adv-beauty-filter';
+import { AdvBeautyFilter, AdvBeautyResType } from './filter/adv-beauty-filter';
 import { EventEmitter } from "eventemitter3";
-
-const logger: ILogger = new Logger({
-    tagGen: () => {
-        return 'AdvancedBeauty';
-    }
-});
 
 export default class AdvancedBeauty extends EventEmitter{
     private videPostProcess: VideoPostProcess;
@@ -19,7 +11,11 @@ export default class AdvancedBeauty extends EventEmitter{
     }
 
     private get advancedBeautyProcess(){
-        return this.videPostProcess.getPlugin('AdvancedBeauty') as any;
+        const plugin = this.videPostProcess.getPlugin('AdvancedBeauty') as any;
+        if (!plugin) {
+            this.logger.error('Can not get AdvancedBeauty plugin')
+        }
+        return plugin;
     }
 
     init(decFaceSize?: number) {
@@ -35,6 +31,9 @@ export default class AdvancedBeauty extends EventEmitter{
         this.advancedBeautyProcess.destroy();
     }
 
+    private get logger(){
+        return this.videPostProcess.logger;
+    }
     /**
      * 开启、关闭高级美颜
      * isEnable 为 true 时， track 必须赋值
@@ -55,15 +54,21 @@ export default class AdvancedBeauty extends EventEmitter{
     }
 
     setAdvEffect: AdvBeautyFilter['setAdvEffect'] = (...args) => {
-        logger.log(`set adv beauty effect：[${args[0]}, ${args[1]}]`);
+        this.logger.log(`set advbeauty effect：[${args[0]}, ${args[1]}]`);
         this.videPostProcess.filters.advBeauty.setAdvEffect(...args);
     };
 
     presetAdvEffect: AdvBeautyFilter['presetAdvEffect'] = (...args) => {
+        this.logger.log(`preset advbeauty effect：${JSON.stringify(args[0])}`);
         this.videPostProcess.filters.advBeauty.presetAdvEffect(...args);
     }
 
     get isEnable() {
         return this.videPostProcess.hasTask('AdvancedBeauty');
     }
+
+    // 配置静态资源地址
+    static configStaticRes(resConfig: AdvBeautyResType){
+        AdvBeautyFilter.configStaticRes(resConfig);
+    } 
 }

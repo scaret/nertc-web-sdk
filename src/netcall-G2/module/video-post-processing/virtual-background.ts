@@ -1,15 +1,7 @@
-import { ILogger } from '../../types';
-import { Logger } from '../../util/webrtcLogger';
 import VideoPostProcess from '.';
 import { BackGroundOptions } from '../../plugin/segmentation/src/types';
 import { EventEmitter } from "eventemitter3";
 import { loadImage } from './gl-utils/texture';
-
-const logger: ILogger = new Logger({
-    tagGen: () => {
-        return 'VirtualBackground';
-    }
-});
 
 export default class VirtualBackground extends EventEmitter{
     private videPostProcess: VideoPostProcess;
@@ -19,11 +11,15 @@ export default class VirtualBackground extends EventEmitter{
         this.videPostProcess = videPostProcess;
     }
 
+    private get logger(){
+        return this.videPostProcess.logger;
+    }
+
     private bgOption: BackGroundOptions = { type: 'color', color: '#e7ad3c' }
     private get segmentProcess(){
         const plugin = this.videPostProcess.getPlugin('VirtualBackground') as any;
         if (!plugin) {
-            logger.error('Can not get VirtualBackground plugin')
+            this.logger.error('Can not get VirtualBackground plugin')
         }
         return plugin;
     }
@@ -101,16 +97,16 @@ export default class VirtualBackground extends EventEmitter{
     //-------------------------------------------------以下是测试代码,同时也是对外暴漏的接口-------------------------------------------------
     setBackGround(bk: HTMLImageElement | HTMLVideoElement | string | null){
         this.videPostProcess.filters.virtualBackground.setBackground(bk);
-        logger.log(`设置背景${bk}`);
+        this.logger.log(`set Virtual background:${bk}`);
 
     }
 
     setBlurIntensity(intensity: number){
         if(!this.isEnable){
-            return logger.log('请先开启虚拟背景');
+            return this.logger.log('Please enable virtualBackground first.');
         }
         this.videPostProcess.filters.virtualBackground.setBlurIntensity(intensity);
-        logger.log(`背景虚化：${intensity}`);
+        this.logger.log(`Background blur：${intensity}`);
     }
 
     get isEnable() {

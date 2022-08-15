@@ -2,16 +2,8 @@ import * as env from '../../util/rtcUtil/rtcEnvironment';
 import { EventEmitter } from "eventemitter3";
 import { ILogger } from '../../types';
 import { PluginType } from '../../plugin/plugin-list';
-import { Logger } from '../../util/webrtcLogger';
 import { Filters } from './filter';
 import workerTimer from '../../util/rtcUtil/webWorkerTimer';
-
-// 日志
-const logger: ILogger = new Logger({
-    tagGen: () => {
-        return 'VideoPostProcess';
-    }
-});
 
 type TaskType = 'BasicBeauty' | 'VirtualBackground' | 'AdvancedBeauty';
 
@@ -72,6 +64,12 @@ export default class VideoPostProcess extends EventEmitter {
     // 后处理 track
     sourceTrack: MediaStreamTrack | null = null;
     private trackInstance: MediaStreamTrack | null = null;
+    logger: ILogger;
+
+    constructor(logger: ILogger){
+        super();
+        this.logger = logger;
+    }
 
     private get taskReady(){
         for(const task of this.taskSnapshot){
@@ -85,7 +83,7 @@ export default class VideoPostProcess extends EventEmitter {
     private addTask(task: TaskType){
         if(!this.taskSet.has(task)){
             this.taskSet.add(task);
-            logger.info(`task ${task} is added.`);
+            this.logger.info(`task ${task} is added.`);
             // 新任务入列，马上渲染一次
             this.update();
             if(this.taskSet.size === 1){
@@ -97,7 +95,7 @@ export default class VideoPostProcess extends EventEmitter {
 
     private removeTask(task: TaskType){
         this.taskSet.delete(task);
-        logger.info(`task ${task} is removed.`);
+        this.logger.info(`task ${task} is removed.`);
         if(this.taskSet.size === 0){
             workerTimer.clearTimeout(this.timerId);
             this.timerId = -1;
@@ -123,15 +121,15 @@ export default class VideoPostProcess extends EventEmitter {
     private createTrack(track: MediaStreamTrack){
         return new Promise((resolve, reject)=>{
             if(this.trackInstance && this.trackInstance === track){
-                logger.log("VideoPostProcess track transform unnecessary");
+                this.logger.log("VideoPostProcess track transform unnecessary");
                 return resolve(0);
             }
-            logger.log("VideoPostProcess track transform");
+            this.logger.log("VideoPostProcess track transform");
 
             const settings = track.getSettings();
             this.frameRate = settings.frameRate || 15;
             if(this.frameRate > 30){
-                logger.warn('In chrome, webgl drawing video which framerate greater than 30fps may cause memory leak.');
+                this.logger.warn('In chrome, webgl drawing video which framerate greater than 30fps may cause memory leak.');
                 this.frameRate = 30;
             }
             
@@ -167,7 +165,7 @@ export default class VideoPostProcess extends EventEmitter {
                         resolve(0);
                     })
                     .catch((err) => {
-                        logger.error('video element play error', err);
+                        this.logger.error('video element play error', err);
                         reject(err);
                     });
             };
@@ -177,11 +175,11 @@ export default class VideoPostProcess extends EventEmitter {
     private get track(){
         // 任务队列不为空
         if(this.taskSet.size){
-            logger.log('返回 video post procss track.');
+            this.logger.log('return video post procss track.');
             return this.trackInstance;
         }
         // 任务队列为空
-        logger.log('返回原始 track.');
+        this.logger.log('return origin track.');
         return this.sourceTrack;
     }
 
@@ -242,7 +240,7 @@ export default class VideoPostProcess extends EventEmitter {
                 const plugin = this.pluginModules.VirtualBackground;
 
                 if(!plugin){
-                    logger.error('VirtualBackground plugin is null.');
+                    this.logger.error('VirtualBackground plugin is null.');
                 }else{
                     const {width, height} = this.filters.canvas;
                     // 屏蔽空帧
@@ -266,7 +264,7 @@ export default class VideoPostProcess extends EventEmitter {
                 const plugin = this.pluginModules.AdvancedBeauty;
 
                 if(!plugin){
-                    logger.error('AdvancedBeauty plugin is null.');
+                    this.logger.error('AdvancedBeauty plugin is null.');
                 }else{
                     const {width, height} = this.filters.canvas;
                     // 高级美颜推理
@@ -295,7 +293,7 @@ export default class VideoPostProcess extends EventEmitter {
         return new Promise((resolve, reject)=>{
             if(isEnable){
                 if(this.hasTask(task)){
-                    logger.log(`${task}已经开启`);
+                    this.logger.log(`${task} already opened`);
                     return resolve(this.track!);
                 }
                 // 创建 track，track创建是异步的
@@ -308,12 +306,12 @@ export default class VideoPostProcess extends EventEmitter {
                         }, time as number);
                     })
                     .catch((err)=>{
-                        logger.error('create track error.');
+                        this.logger.error('create track error.');
                         reject(err);
                     })
             }else{
                 if(!this.hasTask(task)){
-                    logger.log(`${task}已经关闭`);
+                    this.logger.log(`${task} already closed`);
                     return resolve(this.track!); 
                 }
                 // 从任务队列移除
@@ -337,6 +335,6 @@ export default class VideoPostProcess extends EventEmitter {
         (<any>this.advBeautyData) = null;
         (<any>this.pluginModules) = null;
         this.frameCount = [0, 0];
-        logger.log('videoPostProcess destroyed');
+        this.logger.log('videoPostProcess destroyed');
     }
 }
