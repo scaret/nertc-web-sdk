@@ -609,7 +609,7 @@ declare interface Client{
     /**
      * 远端流新增的媒体类型
      */
-    mediaType: "audio"|"video"|"screen";
+    mediaType: "audio"|"audioSlave"|"video"|"screen";
   }) => void): void;
 
 
@@ -644,7 +644,7 @@ declare interface Client{
     /**
      * 音视频轨道类型。
      */
-    mediaType: "audio"|"video"|"screen";
+    mediaType: "audio"|"audioSlave"|"video"|"screen";
   }) => void): void;
 
   /**
@@ -673,7 +673,7 @@ declare interface Client{
     /**
      * 远端流被关闭的媒体类型
      */
-    mediaType: "audio"|"video"|"screen";
+    mediaType: "audio"|"audioSlave"|"video"|"screen";
   }) => void): void;
 
   /**
@@ -707,6 +707,10 @@ declare interface Client{
      * 用户音量。
      */
     level: number;
+    /**
+     * 音频类型。
+     */
+     type: "audio"|"audioSlave";
   }[]) => void): void;
 
   /**
@@ -759,6 +763,27 @@ declare interface Client{
    * `unmute-audio` 事件表示远端用户取消静音，即打开自己的声音。
    */
   on(event: "unmute-audio", callback: (evt: {
+    /**
+     * 远端用户 ID。
+     */
+    uid: number|string;
+  }) => void): void;
+
+  /**
+   * `unmute-audio-slave` 事件表示远端用户静音其音频辅流，即关掉自己的系统共享的声音。
+   */
+   on(event: "mute-audio-slave", callback: (evt: {
+    /**
+     * 远端用户 ID。
+     */
+    uid: number|string;
+  }) => void): void;
+
+
+  /**
+   * `unmute-audio` 事件表示远端用户取消静音音频辅流，即打开自己的系统共享的声音。
+   */
+  on(event: "unmute-audio-slave", callback: (evt: {
     /**
      * 远端用户 ID。
      */

@@ -417,6 +417,9 @@ class Mediasoup extends EventEmitter {
         this.loggerSend.log('媒体上行传输通道连接失败，尝试整体重连')
         this.adapterRef.channelStatus = 'connectioning'
         this.adapterRef._signalling.reconnectionControl.next = this.adapterRef._signalling.reconnectionControl.copynext
+        this.adapterRef.instance.apiEventReport('setDisconnect', {
+          reason: 'send peer ice failed' 
+        })
         this.adapterRef._signalling._reconnection()
       } else {
         this.loggerSend.error('媒体上行传输通道建立失败，抛错错误')
@@ -432,6 +435,9 @@ class Mediasoup extends EventEmitter {
         this.loggerRecv.error('媒体下行传输通道连接失败，尝试整体重连')
         this.adapterRef.channelStatus = 'connectioning'
         this.adapterRef._signalling.reconnectionControl.next = this.adapterRef._signalling.reconnectionControl.copynext
+        this.adapterRef.instance.apiEventReport('setDisconnect', {
+          reason: 'recv peer ice failed' 
+        })
         this.adapterRef._signalling._reconnection()
       }else{
         this.loggerRecv.error('媒体下行传输通道建立失败，抛错错误')
@@ -1235,6 +1241,9 @@ class Mediasoup extends EventEmitter {
       if (e.message === 'request timeout' && this.adapterRef._signalling._protoo === _protoo) {
         this.logger.error(`[Subscribe] Consume消息Timeout，尝试信令重连：${e.name}/${e.message}。当前的连接状态：${this.adapterRef.connectState.curState}。原始请求：`, JSON.stringify(data))
         this.adapterRef.channelStatus = 'connectioning'
+        this.adapterRef.instance.apiEventReport('setDisconnect', {
+          reason: 'consumeRequestTimeout' 
+        })
         this.adapterRef._signalling._reconnection()
       } else {
         this.logger.error(`[Subscribe] Consume消息错误：${e.name}/${e.message}。当前的连接状态：${this.adapterRef.connectState.curState}。原始请求：`, JSON.stringify(data))

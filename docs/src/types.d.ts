@@ -21,7 +21,7 @@ export declare type ConnectionState = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED
  * - `video`：视频。
  * - `screen`：屏幕共享。
  */
-export declare type MediaType = 'audio' | 'video' | 'screen';
+export declare type MediaType = 'audio' | 'audioSlave' | 'video' | 'screen';
 
 /**
  * 加密方案，在调用 [[Client.setEncryptionMode]] 时使用。可设置为：
@@ -533,6 +533,10 @@ export interface SubscribeOptions {
   * 是否订阅屏幕共享。
    */
   screen?: boolean;
+  /**
+  * 是否订阅音频辅流。
+   */
+   audioSlave?: boolean;
   /**
    * 订阅大流或小流。
    * 
