@@ -6,7 +6,15 @@ const pathNpmRepo = path.join(__dirname, '../../../nertc-npm');
 const VERSION = require('../../package.json').webrtcG2Version;
 const sdkSrc = path.join(__dirname, `../../dist/lib/${VERSION}/production/NIM_Web_NERTC_v${VERSION}.js`);
 const sdkDest = path.join(pathNpmRepo, 'NERTC.js')
+const VirtualBackgroundSrc = path.join(__dirname, `../../dist/lib/${VERSION}/production/NIM_Web_VirtualBackground_v${VERSION}.js`);
+const VirtualBackgroundDest = path.join(pathNpmRepo, 'NERTC_Web_SDK_VirtualBackground.js')
+const VirtualBackgroundWasmSrc = path.join(__dirname, `../../dist/lib/${VERSION}/production/wasm/NIM_Web_VirtualBackground_v${VERSION}.wasm`);
+const VirtualBackgroundWasmDest = path.join(pathNpmRepo, 'NERTC_Web_SDK_VirtualBackground.wasm');
 
+const AdvancedBeautySrc = path.join(__dirname, `../../dist/lib/${VERSION}/production/NIM_Web_AdvancedBeauty_v${VERSION}.js`);
+const AdvancedBeautyDest = path.join(pathNpmRepo, 'NERTC_Web_SDK_AdvancedBeauty.js')
+const AdvancedBeautyWasmSrc = path.join(__dirname, `../../dist/lib/${VERSION}/production/wasm/NIM_Web_AdvancedBeauty_v${VERSION}.wasm`);
+const AdvancedBeautyWasmDest = path.join(pathNpmRepo, 'NERTC_Web_SDK_AdvancedBeauty.wasm');
 // 1. 验证SDK版本
 const commentLine = await $`head -n 1 ${sdkSrc}`;
 const match = commentLine.stdout.match(/NeRTC ([^ ]*)\|BUILD ([^ ]*) ([^ ]*)/);
@@ -26,6 +34,10 @@ if (!match){
 
 // 2. 拷贝SDK
 await $`cp -f ${sdkSrc} ${sdkDest}`
+await $`cp -f ${VirtualBackgroundSrc} ${VirtualBackgroundDest}`
+await $`cp -f ${AdvancedBeautySrc} ${AdvancedBeautyDest}`
+await $`cp -f ${VirtualBackgroundWasmSrc} ${VirtualBackgroundWasmDest}`
+await $`cp -f ${AdvancedBeautyWasmSrc} ${AdvancedBeautyWasmDest}`
 
 // 3. 拷贝文档
 await $`rm -rf ${path.join(pathNpmRepo, 'types')}`
