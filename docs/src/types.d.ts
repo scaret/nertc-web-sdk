@@ -93,7 +93,29 @@ export interface pluginOptions{
  * - `brightenEye`：亮眼。
  * 
  */
-export declare type advBeautyEffects = 'enlargeEye' | 'roundedEye' | 'openCanthus' | 'eyeDistance' | 'eyeAngle' | 'shrinkNose' | 'lengthenNose' | 'shrinkMouth' | 'mouthCorners' | 'adjustPhiltrum' | 'shrinkUnderjaw' | 'shrinkCheekbone' | 'lengthenJaw' | 'narrowedFace' | 'shrinkFace' | 'vShapedFace' | 'minifyFace' | 'whitenTeeth' | 'brightenEye';
+export declare type AdvBeautyEffects = 'enlargeEye' | 'roundedEye' | 'openCanthus' | 'eyeDistance' | 'eyeAngle' | 'shrinkNose' | 'lengthenNose' | 'shrinkMouth' | 'mouthCorners' | 'adjustPhiltrum' | 'shrinkUnderjaw' | 'shrinkCheekbone' | 'lengthenJaw' | 'narrowedFace' | 'shrinkFace' | 'vShapedFace' | 'minifyFace' | 'whitenTeeth' | 'brightenEye';
+
+export declare type AdvBeautyPreset = {
+  'enlargeEye'?: number;
+  'roundedEye'?: number;
+  'openCanthus'?: number;
+  'eyeDistance'?: number;
+  'eyeAngle'?: number;
+  'shrinkNose'?: number;
+  'lengthenNose'?: number;
+  'shrinkMouth'?: number;
+  'mouthCorners'?: number;
+  'adjustPhiltrum'?: number;
+  'shrinkUnderjaw'?: number;
+  'shrinkCheekbone'?: number;
+  'lengthenJaw'?: number;
+  'narrowedFace'?: number;
+  'shrinkFace'?: number;
+  'vShapedFace'?: number;
+  'minifyFace'?: number;
+  'whitenTeeth'?: number;
+  'brightenEye'?: number
+}
 
 /**
  * 背景设置参数。

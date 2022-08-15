@@ -9,7 +9,8 @@ import {
   RenderMode,
   BeautyFilters,
   pluginOptions,
-  advBeautyEffects,
+  AdvBeautyEffects,
+  AdvBeautyPreset,
   BackGroundOptions,
   RecordStatus, STREAM_TYPE, NERtcEncoderWatermarkConfig
 } from "./types";
@@ -1159,7 +1160,7 @@ declare interface Stream {
      * 
      */
     setEncoderWatermarkConfigs(options: NERtcEncoderWatermarkConfig): void;
-    
+
     /**
      * 开启/关闭美颜
      * @param {Boolean} option 设置 true 表示开启美颜，设置 false 表示关闭美颜。
@@ -1230,7 +1231,13 @@ declare interface Stream {
      * @param {advBeautyEffects} key 高级美颜效果选项。
      * @param {Number} intensity 高级美颜效果强度。取值范围 [0,1]
      */
-    setAdvBeautyEffect(key:advBeautyEffects, intensity?:number): void;
+    setAdvBeautyEffect(key:AdvBeautyEffects, intensity?:number): void;
+
+    /**
+     * 预设高级美颜参数
+     * @param {AdvBeautyPreset} preset 预设参数
+     */
+    presetAdvBeautyEffect(preset: AdvBeautyPreset): void;
 
     /**
      * 开启背景分割
@@ -1285,11 +1292,11 @@ declare interface Stream {
     ) => void): void;
     
     /**
-   * 基础美颜资源加载失败通知。
+   * 基础美颜资源加载通知，成功时 failUrls 为空数组。
    * 
    */
     on(event: "basic-beauty-res-complete", callback: (
-      error:any
+      failUrls: string[]
     ) => void): void;
 
   /**

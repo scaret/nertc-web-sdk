@@ -1,5 +1,5 @@
 import VideoPostProcess from '.';
-import { AdvBeautyFilter, AdvBeautyResType } from './filter/adv-beauty-filter';
+import { AdvBeautyFilter, resSet } from './filter/adv-beauty-filter';
 import { EventEmitter } from "eventemitter3";
 
 export default class AdvancedBeauty extends EventEmitter{
@@ -39,6 +39,9 @@ export default class AdvancedBeauty extends EventEmitter{
      * isEnable 为 true 时， track 必须赋值
      */
     setTrack(isEnable: boolean, track?: MediaStreamTrack){
+        if(isEnable){
+            AdvancedBeauty.configStaticRes(resSet);
+        }
         return new Promise((resolve, reject)=>{
             this.videPostProcess.setTaskAndTrack('AdvancedBeauty', isEnable, track)
             .then((track)=>{
@@ -68,7 +71,7 @@ export default class AdvancedBeauty extends EventEmitter{
     }
 
     // 配置静态资源地址
-    static configStaticRes(resConfig: AdvBeautyResType){
+    static configStaticRes: typeof AdvBeautyFilter.configStaticRes = (resConfig)=>{
         AdvBeautyFilter.configStaticRes(resConfig);
     } 
 }
