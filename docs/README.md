@@ -31,6 +31,8 @@ table th:nth-of-type(2) {
 [[NERTC.getSpeakers]] | 获取可用的音频输出设备。
 [[NERTC.Logger.enableLogUpload]] | 开启日志上传。
 [[NERTC.Logger.disableLogUpload]] | 关闭日志上传。
+[[NERTC.Device.enableCompatMode]] | 开启音频采集设备兼容模式。
+[[NERTC.Device.disableCompatMode]] | 关闭音频采集设备兼容模式。
 
 ## <span id="Client 客户端对象">Client 客户端对象</span>
 
