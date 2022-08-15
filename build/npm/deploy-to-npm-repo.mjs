@@ -6,6 +6,21 @@ const pathNpmRepo = path.join(__dirname, '../../../nertc-npm');
 const VERSION = require('../../package.json').webrtcG2Version;
 const sdkSrc = path.join(__dirname, `../../dist/lib/${VERSION}/production/NIM_Web_NERTC_v${VERSION}.js`);
 const sdkDest = path.join(pathNpmRepo, 'NERTC.js')
+const VirtualBackgroundSrc = path.join(__dirname, `../../dist/lib/${VERSION}/production/NIM_Web_VirtualBackground_v${VERSION}.js`);
+const VirtualBackgroundDest = path.join(pathNpmRepo, 'NERTC_Web_SDK_VirtualBackground.js')
+const VirtualBackgroundSimdWasmSrc = path.join(__dirname, `../../dist/lib/${VERSION}/production/wasm/NIM_Web_VirtualBackground_simd_v${VERSION}.wasm`);
+const VirtualBackgroundSimdWasmDest = path.join(pathNpmRepo, './wasm/NERTC_Web_SDK_VirtualBackground_simd.wasm');
+const VirtualBackgroundNoSimdWasmSrc = path.join(__dirname, `../../dist/lib/${VERSION}/production/wasm/NIM_Web_VirtualBackground_nosimd_v${VERSION}.wasm`);
+const VirtualBackgroundNoSimdWasmDest = path.join(pathNpmRepo, './wasm/NERTC_Web_SDK_VirtualBackground_nosimd.wasm');
+
+const AdvancedBeautySrc = path.join(__dirname, `../../dist/lib/${VERSION}/production/NIM_Web_AdvancedBeauty_v${VERSION}.js`);
+const AdvancedBeautyDest = path.join(pathNpmRepo, 'NERTC_Web_SDK_AdvancedBeauty.js')
+const AdvancedBeautySimdWasmSrc = path.join(__dirname, `../../dist/lib/${VERSION}/production/wasm/NIM_Web_AdvancedBeauty_simd_v${VERSION}.wasm`);
+const AdvancedBeautySimdWasmDest = path.join(pathNpmRepo, './wasm/NERTC_Web_SDK_AdvancedBeauty_simd.wasm');
+const AdvancedBeautyNoSimdWasmSrc = path.join(__dirname, `../../dist/lib/${VERSION}/production/wasm/NIM_Web_AdvancedBeauty_nosimd_v${VERSION}.wasm`);
+const AdvancedBeautyNoSimdWasmDest = path.join(pathNpmRepo, './wasm/NERTC_Web_SDK_AdvancedBeauty_nosimd.wasm');
+
+const wasmDir = path.join(pathNpmRepo, 'wasm');
 
 // 1. 验证SDK版本
 const commentLine = await $`head -n 1 ${sdkSrc}`;
@@ -26,6 +41,15 @@ if (!match){
 
 // 2. 拷贝SDK
 await $`cp -f ${sdkSrc} ${sdkDest}`
+// 拷贝插件
+await $`cp -f ${VirtualBackgroundSrc} ${VirtualBackgroundDest}`
+await $`cp -f ${AdvancedBeautySrc} ${AdvancedBeautyDest}`
+await $`rm -rf ${wasmDir}`
+await $`mkdir ${wasmDir}`
+await $`cp -f ${VirtualBackgroundSimdWasmSrc} ${VirtualBackgroundSimdWasmDest}`
+await $`cp -f ${VirtualBackgroundNoSimdWasmSrc} ${VirtualBackgroundNoSimdWasmDest}`
+await $`cp -f ${AdvancedBeautySimdWasmSrc} ${AdvancedBeautySimdWasmDest}`
+await $`cp -f ${AdvancedBeautyNoSimdWasmSrc} ${AdvancedBeautyNoSimdWasmDest}`
 
 // 3. 拷贝文档
 await $`rm -rf ${path.join(pathNpmRepo, 'types')}`
