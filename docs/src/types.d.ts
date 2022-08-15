@@ -52,6 +52,71 @@ export declare type EncryptionMode = 'none' | 'sm4-128-ecb';
 export declare type BeautyFilters = 'ziran' | 'baixi' | 'fennen' | 'weimei' | 'langman' | 'rixi' | 'landiao' | 'qingliang' | 'huaijiu' | 'qingcheng' | 'wuhou' | 'zhigan' | 'mopian' | 'dianying' | 'heibai';
 
 /**
+ * 注册插件参数。
+ */
+export interface pluginOptions{
+  /**
+   *  插件标识
+  */
+  key: 'AdvancedBeauty' | 'VirtualBackground';
+  /**
+   *  插件 js 地址
+  */
+  pluginUrl: string;
+  /**
+   *  插件 wasm 地址
+  */
+   wasmUrl: string;
+}
+
+
+/**
+ * 高级美颜效果类型。包括：
+ * - `enlargeEye`：大眼。
+ * - `roundedEye`：圆眼。
+ * - `openCanthus`：开眼角。
+ * - `eyeDistance`：眼距。
+ * - `eyeAngle`：眼睛角度。
+ * - `shrinkNose`：瘦鼻。
+ * - `lengthenNose`：长鼻。
+ * - `shrinkMouth`：嘴巴调整。
+ * - `mouthCorners`：嘴角调整。
+ * - `adjustPhiltrum`：人中调整。
+ * - `shrinkUnderjaw`：瘦下颌。
+ * - `shrinkCheekbone`：瘦颧骨。
+ * - `lengthenJaw`：下巴长度调整。
+ * - `narrowedFace`：窄脸。
+ * - `shrinkFace`：瘦脸。
+ * - `vShapedFace`：V 脸。
+ * - `minifyFace`：小脸。
+ * - `whitenTeeth`：美牙。
+ * - `brightenEye`：亮眼。
+ * 
+ */
+export declare type advBeautyEffects = 'enlargeEye' | 'roundedEye' | 'openCanthus' | 'eyeDistance' | 'eyeAngle' | 'shrinkNose' | 'lengthenNose' | 'shrinkMouth' | 'mouthCorners' | 'adjustPhiltrum' | 'shrinkUnderjaw' | 'shrinkCheekbone' | 'lengthenJaw' | 'narrowedFace' | 'shrinkFace' | 'vShapedFace' | 'minifyFace' | 'whitenTeeth' | 'brightenEye';
+
+/**
+ * 背景设置参数。
+ */
+export interface BackGroundOptions{
+  /**
+   *  背景设置类型
+  */
+  type: 'image' | 'color' | 'blur';
+  /**
+   *  背景图片
+  */
+  source?: HTMLImageElement | string;
+  /**
+   *  背景颜色
+  */
+  color?: string;
+  /**
+   *  背景虚化程度
+  */
+  level?: number;
+}
+/**
  * 视频画布设置。
  */
 export interface RenderMode {

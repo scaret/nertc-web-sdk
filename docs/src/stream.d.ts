@@ -8,6 +8,9 @@ import {
   MediaType,
   RenderMode,
   BeautyFilters,
+  pluginOptions,
+  advBeautyEffects,
+  BackGroundOptions,
   RecordStatus, STREAM_TYPE, NERtcEncoderWatermarkConfig
 } from "./types";
 /**
@@ -1142,6 +1145,7 @@ declare interface Stream {
      */
      smoothnessLevel: number;
     }): void;
+
     /**
      * 设置滤镜
      * 
@@ -1149,6 +1153,63 @@ declare interface Stream {
      * @param {Number} intensity 滤镜强度。取值范围 [0,1]
      */
     setFilter(options:BeautyFilters, intensity?:number): void;
+
+    /**
+     * 注册(高级美颜/背景替换)插件
+     * @param {pluginOptions} options 插件参数说明
+     *
+     */
+    registerPlugin(options:pluginOptions):Promise<void>;
+
+    /**
+     * 注销(高级美颜/背景替换)插件
+     * @param key 插件标识，可设置为：
+     * * AdvancedBeauty (表示注销高级美颜插件)
+     * * VirtualBackground (表示注销背景替换插件)
+     *
+     */
+    unregisterPlugin(key:string):Promise<void>;
+
+    /**
+     * 开启高级美颜
+     * @param faceNumber 取值范围 [1,5]，表示可支持的人脸识别数，最多可以支持 5 张人脸。
+     *
+     */
+    enableAdvancedBeauty(faceNumber:number):Promise<void>;
+
+    /**
+     * 关闭高级美颜
+     *
+     */
+    disableAdvancedBeauty():Promise<void>;
+
+    /**
+     * 设置高级美颜效果
+     * 
+     * @param {advBeautyEffects} key 高级美颜效果选项。
+     * @param {Number} intensity 高级美颜效果强度。取值范围 [0,1]
+     */
+    setAdvBeautyEffect(key:advBeautyEffects, intensity?:number): void;
+
+    /**
+     * 开启背景分割
+     *
+     */
+    enableBodySegment():Promise<void>;
+
+    /**
+     * 关闭背景分割
+     *
+     */
+    disableBodySegment():Promise<void>;
+
+    /**
+     * 设置背景
+     * @param {BackGroundOptions} options 背景设置说明。
+     *
+     */
+    setBackGround(options:BackGroundOptions): void;
+
     /**
      *  销毁音视频流对象。
      */
@@ -1165,6 +1226,30 @@ declare interface Stream {
       error: any
     ) => void): void;
 
+  /**
+   * 高级美颜/背景分割插件加载通知。
+   * 
+   */
+    on(event: "plugin-load", callback: (
+      type: "AdvancedBeauty" | "VirtualBackground"
+    ) => void): void;
+
+    /**
+   * 高级美颜/背景分割插件加载失败通知。
+   * 
+   */
+    on(event: "plugin-load-error", callback: (
+      key:any,
+      msg:any
+    ) => void): void;
+    
+    /**
+   * 基础美颜资源加载失败通知。
+   * 
+   */
+    on(event: "basic-beauty-res-complete", callback: (
+      error:any
+    ) => void): void;
 
   /**
    * `notAllowedError` 事件表示浏览器自动播放受限
