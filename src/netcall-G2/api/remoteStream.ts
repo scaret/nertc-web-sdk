@@ -413,7 +413,7 @@ class RemoteStream extends RTCEventEmitter {
    * @returns {Null}  
   */
   setSubscribeConfig (conf:SubscribeOptions) {
-    this.logger.log('设置订阅规则：', JSON.stringify(conf))
+    this.logger.log(`[Subscribe] 设置 ${this.stringStreamID} 订阅规则：${JSON.stringify(conf)}`)
     if (typeof conf.highOrLow === "number"){
       this.subConf.highOrLow.video = conf.highOrLow;
       this.subConf.highOrLow.screen = conf.highOrLow;
@@ -472,7 +472,7 @@ class RemoteStream extends RTCEventEmitter {
       this.subConf.screen = false
     }
 
-    this.logger.log('订阅规则：', JSON.stringify(this.subConf))
+    this.logger.log(`[Subscribe] 设置 ${this.stringStreamID} 订阅规则结果：${JSON.stringify(this.subConf)}`)
     this.client.apiFrequencyControl({
       name: 'setSubscribeConfig',
       code: 0,
@@ -546,12 +546,12 @@ class RemoteStream extends RTCEventEmitter {
       playOptions.screen = true;
     }
     
-    this.logger.log(`uid ${this.stringStreamID} Stream.play::`, JSON.stringify(playOptions))
+    this.logger.log(`[play] play() uid ${this.stringStreamID} 播放, Stream.pla::`, JSON.stringify(playOptions))
     if(playOptions.audio && this._play && this.mediaHelper.audio.audioStream.getTracks().length){
       if (this.client.spatialManager){
-        this.logger.log(`启用了空间音频，跳过本地音频播放。`)
+        this.logger.log(`[play] 启用了空间音频，跳过本地音频播放。`)
       }else{
-        this.logger.log(`uid ${this.stringStreamID} 开始播放远端音频`)
+        this.logger.log(`[play] uid ${this.stringStreamID} 开始播放远端音频`)
         try{
           await this._play.playAudioStream(this.mediaHelper.audio.audioStream, playOptions.muted)
           this.audioPlay_ = true;
@@ -566,9 +566,9 @@ class RemoteStream extends RTCEventEmitter {
 
     if(playOptions.audioSlave && this._play && this.mediaHelper.screenAudio.screenAudioStream.getTracks().length){
       if (this.client.spatialManager){
-        this.logger.log(`启用了空间音频，跳过本地音频辅流播放。`)
+        this.logger.log(`[play] 启用了空间音频，跳过本地音频辅流播放。`)
       }else{
-        this.logger.log(`uid ${this.stringStreamID} 开始播放远端音频辅流`)
+        this.logger.log(`[play] uid ${this.stringStreamID} 开始播放远端音频辅流`)
         try{
           await this._play.playAudioSlaveStream(this.mediaHelper.screenAudio.screenAudioStream, playOptions.muted)
           this.audioSlavePlay_ = true;
@@ -594,7 +594,7 @@ class RemoteStream extends RTCEventEmitter {
       if (playOptions.video) {
         this.videoView = view;
         if (this._play && this.mediaHelper.video.videoStream.getVideoTracks().length) {
-          this.logger.log(`uid ${this.stringStreamID} 开始启动视频播放 主流 远端`);
+          this.logger.log(`[play] uid ${this.stringStreamID} 开始启动视频播放 主流 远端`);
           try{
             let end = 'remote';
             await this._play.playVideoStream(this.mediaHelper.video.renderStream, view, end)
@@ -618,7 +618,7 @@ class RemoteStream extends RTCEventEmitter {
       if (playOptions.screen) {
         this.screenView = view;
         if(this._play && this.mediaHelper && this.mediaHelper.screen.screenVideoStream.getVideoTracks().length){
-          this.logger.log(`uid ${this.stringStreamID} 开始启动视频播放 辅流 远端`);
+          this.logger.log(`[play] uid ${this.stringStreamID} 开始启动视频播放 辅流 远端`);
           try{
             await this._play.playScreenStream(this.mediaHelper.screen.renderStream, view)
             if ("width" in this.renderMode.remote.screen){

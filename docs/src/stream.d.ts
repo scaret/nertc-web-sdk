@@ -37,6 +37,7 @@ declare interface Stream {
      *   console.log(`远端${evt.stream.getId()}发布了 ${evt.mediaType} 流`)
      *   evt.stream.setSubscribeConfig({
      *     audio: true,
+     *     audioSlave: true,
      *     video: true,
      *     screen: true,
      *     highOrLow: NERTC.STREAM_TYPE.HIGH
@@ -55,6 +56,10 @@ declare interface Stream {
        * 是否订阅音频。
        */
       audio?: boolean;
+      /**
+      * 是否订阅音频辅流。
+      */
+      audioSlave?: boolean;
       /**
        * 是否订阅视频。
        */
@@ -120,6 +125,7 @@ declare interface Stream {
      *    await rtc.localStream.init();
      *    rtc.localStream.play(document.getElementById("local-video-wrapper"), {
      *      audio: false,
+     *      audioSlave: false,
      *      video: true,
      *      screen: true,
      *    });
@@ -134,6 +140,7 @@ declare interface Stream {
      *    rtc.client.on("stream-subscribed", (evt)=>{
      *        evt.stream.play(document.getElementById("remote-video-wrapper", {
      *          audio: true,
+     *          audioSlave: true,
      *          video: true,
      *          screen: true,
      *        });
@@ -149,9 +156,15 @@ declare interface Stream {
       /**
        * 是否播放音频流。
        * 
-       * 默认播放本地音频流，不播放远端音频流。
+       * 默认播放不本地音频流，播放远端音频流。
        */
       audio?: boolean;
+      /**
+       * 是否播放音频辅流。
+       * 
+       * 默认不播放本地音频辅流，播放远端音频辅流。
+       */
+       audioSlave?: boolean;
       /**
        * 是否播放视频流。
        * 
@@ -322,6 +335,14 @@ declare interface Stream {
      */
     muteAudio(): Promise<void>;
     /**
+     * 启用音频辅流轨道。
+     */
+     unmuteAudioSlave(): Promise<void>;
+     /**
+      * 禁用音频辅流轨道。
+      */
+      muteAudioSlave(): Promise<void>;
+    /**
      * 获取音频 flag。
      * 
      * 该方法用于确认当前音视频流对象（Stream）中是否包含音频资源。
@@ -333,6 +354,18 @@ declare interface Stream {
      * - false: 该音视频流对象中不包含音频资源。
      */
     hasAudio(): boolean;
+    /**
+     * 获取音频辅流 flag。
+     * 
+     * 该方法用于确认当前音视频流对象（Stream）中是否包含音频辅流资源。
+     * 
+     * @note 该方法仅对本地流有效。
+     * 
+     * @return 
+     * - true: 该音视频流对象中包含音频辅流资源。
+     * - false: 该音视频流对象中不包含音频辅流资源。
+     */
+     hasAudioSlave(): boolean;
     /**
      * 获取从麦克风中采集的当前音量。
      */
@@ -354,9 +387,17 @@ declare interface Stream {
      * @param volume 要设置的远端音频的播放音量，范围为 [0-100]。0 表示静音。
      * 
      * @note 注意
-     * 由于系统限制，ios上目前不支持设置远端音量。
+     * 由于系统限制，ios上目前不支持设置远端音频音量。
      */
     setAudioVolume(volume?: number): string | undefined;
+    /**
+     * 设置音频辅流播放的音量。
+     * @param volume 要设置的远端音频辅流的播放音量，范围为 [0-100]。0 表示静音。
+     * 
+     * @note 注意
+     * 由于系统限制，ios上目前不支持设置远端音频辅流音量。
+     */
+     setAudioSlaveVolume(volume?: number): string | undefined;
     /**
      * 设置麦克风采集的音量。
      * @param volume 要设置的采集音量。范围为 [0-100]。0 表示静音。

@@ -1156,7 +1156,7 @@ class Signalling extends EventEmitter {
               
               setTimeout(()=>{
                 // join response中的事件应该延迟到join发生后再抛出
-                that.logger.log(`Signalling: 通知房间成员发布信息: ${JSON.stringify(remoteStream.pubStatus)}`)
+                that.logger.log(`Signalling: 通知 ${remoteStream.getId()} 发布信息: ${JSON.stringify(remoteStream.pubStatus, null, '')}`)
                 if (that.adapterRef._enableRts && that.adapterRef._rtsTransport) {
                   that.adapterRef.instance.emit('rts-stream-added', {stream: remoteStream, kind: mediaTypeShort})
                 } else if (remoteStream.pubStatus.audio.audio || remoteStream.pubStatus.video.video || remoteStream.pubStatus.screen.screen) {

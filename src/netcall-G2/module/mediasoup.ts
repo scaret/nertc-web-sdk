@@ -199,7 +199,7 @@ class Mediasoup extends EventEmitter {
   }
 
   async init(turnParameters?: MediasoupManagerInitOptions|undefined) {
-    this.logger.warn('init() 初始化 devices、transport')
+    this.logger.log('init() 初始化 devices、transport')
     if (this.adapterRef._enableRts) {
       return
     }
@@ -417,6 +417,9 @@ class Mediasoup extends EventEmitter {
         this.loggerSend.log('媒体上行传输通道连接失败，尝试整体重连')
         this.adapterRef.channelStatus = 'connectioning'
         this.adapterRef._signalling.reconnectionControl.next = this.adapterRef._signalling.reconnectionControl.copynext
+        this.adapterRef.instance.apiEventReport('setDisconnect', {
+          reason: 'send peer ice failed' 
+        })
         this.adapterRef._signalling._reconnection()
       } else {
         this.loggerSend.error('媒体上行传输通道建立失败，抛错错误')
@@ -432,6 +435,9 @@ class Mediasoup extends EventEmitter {
         this.loggerRecv.error('媒体下行传输通道连接失败，尝试整体重连')
         this.adapterRef.channelStatus = 'connectioning'
         this.adapterRef._signalling.reconnectionControl.next = this.adapterRef._signalling.reconnectionControl.copynext
+        this.adapterRef.instance.apiEventReport('setDisconnect', {
+          reason: 'recv peer ice failed' 
+        })
         this.adapterRef._signalling._reconnection()
       }else{
         this.loggerRecv.error('媒体下行传输通道建立失败，抛错错误')
@@ -1235,6 +1241,9 @@ class Mediasoup extends EventEmitter {
       if (e.message === 'request timeout' && this.adapterRef._signalling._protoo === _protoo) {
         this.logger.error(`[Subscribe] Consume消息Timeout，尝试信令重连：${e.name}/${e.message}。当前的连接状态：${this.adapterRef.connectState.curState}。原始请求：`, JSON.stringify(data))
         this.adapterRef.channelStatus = 'connectioning'
+        this.adapterRef.instance.apiEventReport('setDisconnect', {
+          reason: 'consumeRequestTimeout' 
+        })
         this.adapterRef._signalling._reconnection()
       } else {
         this.logger.error(`[Subscribe] Consume消息错误：${e.name}/${e.message}。当前的连接状态：${this.adapterRef.connectState.curState}。原始请求：`, JSON.stringify(data))
@@ -1247,7 +1256,7 @@ class Mediasoup extends EventEmitter {
     let { transportId, iceParameters, iceCandidates, dtlsParameters, probeSSrc, rtpParameters, producerId, consumerId, code, errMsg } = consumeRes;
     this.loggerRecv.log(`[Subscribe] consume反馈结果 code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
     // if (code === 200) {
-    //   //this.loggerRecv.log(`[Consume] consume反馈结果: code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
+    //   //this.loggerRecv.log(`[Subscribe] consume反馈结果: code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
     // } else if (code === 601){
     //   //通过伪造M行的方式，当然第一次订阅就失败的话，由重连cover，这里就不再执行黑名单的逻辑了
     //   // 某些情况下的Producer换了个Transport之后是可以订阅的。这个时候需要拉黑的是Producer+Transport的组合
