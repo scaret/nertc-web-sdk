@@ -19,6 +19,10 @@ type OperationArgs = {
   method: "unpublish",
   options: null,
 }|{
+  caller: Client,
+  method: "destroy",
+  options: null,
+}|{
   caller: LocalStream,
   method: "open",
   options: LocalStreamOpenOptions,
