@@ -2089,11 +2089,17 @@ class Client extends Base {
    *  @memberOf Client
    *  @param {Void}
    */
-  destroy () {
+  async destroy () {
+    const onDestroyFinish = await this.operationQueue.enqueue({
+      caller: this as IClient,
+      method: 'destroy',
+      options: null,
+    })
     this.logger && this.logger.warn('清除 Client 实例中')
     this._reset();
     this.destroyed = true;
     this.logger && this.logger.warn('已清除 Client 实例')
+    onDestroyFinish()
   }
 }
 
