@@ -1,6 +1,6 @@
 export const stretchShader = {
-    // TODO: 需要优化算法
-    fShader: `
+  // TODO: 需要优化算法
+  fShader: `
     #ifdef GL_FRAGMENT_PRECISION_HIGH
         precision highp float;
     #else
@@ -35,4 +35,4 @@ export const stretchShader = {
         gl_FragColor = vec4(R, G, B, 1.0);
     }
     `
-};
+}

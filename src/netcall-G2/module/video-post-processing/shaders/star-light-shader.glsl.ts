@@ -1,5 +1,6 @@
-export const starLightShader = { //TODO: 待优化
-    fShader: `
+export const starLightShader = {
+  //TODO: 待优化
+  fShader: `
     #ifdef GL_FRAGMENT_PRECISION_HIGH
         precision highp float;
     #else
@@ -20,7 +21,7 @@ export const starLightShader = { //TODO: 待优化
     void main() {
         uv = vuv;
         gl_FragColor = texture2D(map, uv);
-    
+
         uv  = vec2(0.5 - uv.x, uv.y) * 3.0;
 
         vec3 vuv = vec3(sin(time * 0.3), 1.0, cos(time));
@@ -44,7 +45,7 @@ export const starLightShader = { //TODO: 待优化
             float v = max(0.0, abs(dot(normalize(flarePos), rd)));
 
             flareIntensivity += pow(v, 30000.0) * 4.0;
-            flareIntensivity += pow(v, 1e2) * 0.15; 
+            flareIntensivity += pow(v, 1e2) * 0.15;
             flareIntensivity *= 1.0 - flarePos.z / 25.0;
             flareCol += vec3(flareIntensivity) * (vec3(sin(r * 3.12 - k), r, cos(k) * 2.0)) * 0.3;
         }

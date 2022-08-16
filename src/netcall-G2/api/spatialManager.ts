@@ -1,59 +1,59 @@
 // https://xie.infoq.cn/article/9f4f2fab8d9c6427b099b358d
-import {Client, ILogger, MediaTypeShort, SpatialInitOptions} from "../types";
-import {RemoteStream} from "./remoteStream";
-import {Device} from "../module/device";
+import { Device } from '../module/device'
+import { Client, ILogger, MediaTypeShort, SpatialInitOptions } from '../types'
+import { RemoteStream } from './remoteStream'
 
-export interface PannerManagerOptions{
-  client: Client;
-  context: AudioContext;
-  options: SpatialInitOptions;
+export interface PannerManagerOptions {
+  client: Client
+  context: AudioContext
+  options: SpatialInitOptions
 }
 
 export class SpatialManager {
-  client: Client;
-  context: AudioContext;
-  destination: MediaStreamAudioDestinationNode;
-  elem: HTMLAudioElement = document.createElement("audio");
-  fakeElem: HTMLAudioElement = document.createElement("audio");
+  client: Client
+  context: AudioContext
+  destination: MediaStreamAudioDestinationNode
+  elem: HTMLAudioElement = document.createElement('audio')
+  fakeElem: HTMLAudioElement = document.createElement('audio')
   data: {
-    [uid:string]: {
+    [uid: string]: {
       audioNodes?: {
-        source: AudioNode,
-        gainNode: GainNode,
-        pannerNode: PannerNode,
+        source: AudioNode
+        gainNode: GainNode
+        pannerNode: PannerNode
       }
       position: {
-        x: number,
-        y: number,
+        x: number
+        y: number
       }
     }
   } = {}
-  private logger: ILogger;
-  private options: SpatialInitOptions;
-  
+  private logger: ILogger
+  private options: SpatialInitOptions
+
   constructor(options: PannerManagerOptions) {
-    this.context = options.context;
-    this.client = options.client;
-    this.options = options.options;
-    this.logger = options.client.adapterRef.logger.getChild(()=>{
-      const tag = "spatial";
-      return tag;
+    this.context = options.context
+    this.client = options.client
+    this.options = options.options
+    this.logger = options.client.adapterRef.logger.getChild(() => {
+      const tag = 'spatial'
+      return tag
     })
-    
-    try{
-      this.destination = new MediaStreamAudioDestinationNode(this.context);
-    }catch(e){
-      if (e.name === "TypeError"){
-        this.destination = this.context.createMediaStreamDestination();
-      }else{
-        throw e;
+
+    try {
+      this.destination = new MediaStreamAudioDestinationNode(this.context)
+    } catch (e: any) {
+      if (e.name === 'TypeError') {
+        this.destination = this.context.createMediaStreamDestination()
+      } else {
+        throw e
       }
     }
-    this.elem.setAttribute("playsinline", "playsinline");
-    this.elem.setAttribute("autoplay", "autoplay");
-    this.elem.className = "nertc-panner-manager";
-    this.elem.srcObject = this.destination.stream;
-    
+    this.elem.setAttribute('playsinline', 'playsinline')
+    this.elem.setAttribute('autoplay', 'autoplay')
+    this.elem.className = 'nertc-panner-manager'
+    this.elem.srcObject = this.destination.stream
+
     this.fakeElem.muted = true
     this.fakeElem.volume = 0
     this.fakeElem.autoplay = true
@@ -62,158 +62,179 @@ export class SpatialManager {
     // this.context.listener.positionY.value = 0;
     // this.context.listener.positionZ.value = 0;
   }
-  
-  getUserData(uid: string|number){
-    const stringUid = "" + uid;
-    if ("" + parseInt(stringUid) !== stringUid){
-      this.logger.warn("getUserData:异常的uid：", uid);
+
+  getUserData(uid: string | number) {
+    const stringUid = '' + uid
+    if ('' + parseInt(stringUid) !== stringUid) {
+      this.logger.warn('getUserData:异常的uid：', uid)
     }
-    let remote = this.data[stringUid];
-    if (!remote){
+    let remote = this.data[stringUid]
+    if (!remote) {
       remote = {
         position: {
           x: 0,
-          y: 0,
+          y: 0
         }
       }
       this.data[stringUid] = remote
     }
     return remote
   }
-  
-  shouldSubscribe(uid: string|number) : boolean{
-    const remote = this.getUserData(uid);
+
+  shouldSubscribe(uid: string | number): boolean {
+    const remote = this.getUserData(uid)
     // 给定一个uid，判断是否应该订阅
-    if (Math.abs(remote.position.x) <= 64 && Math.abs(remote.position.y) <= 64){
+    if (Math.abs(remote.position.x) <= 64 && Math.abs(remote.position.y) <= 64) {
       // 64x64以内subscribe
-      return true;
-    }else{
-      return false;
+      return true
+    } else {
+      return false
     }
   }
 
-  async updatePosition(uid: string|number, position: {x: number, y: number}){
+  async updatePosition(uid: string | number, position: { x: number; y: number }) {
     // 只要有uid就可以更新，可以先于remoteStream到达
-    const remote = this.getUserData(uid);
-    const remoteStream = this.client.adapterRef.remoteStreamMap[uid];
-    if (!remoteStream){
-      this.logger.log(`updatePosition: 更新未到的stream: ${uid} ( ${position.x}, ${position.y})`);
+    const remote = this.getUserData(uid)
+    const remoteStream = this.client.adapterRef.remoteStreamMap[uid]
+    if (!remoteStream) {
+      this.logger.log(`updatePosition: 更新未到的stream: ${uid} ( ${position.x}, ${position.y})`)
       remote.position.x = position.x
       remote.position.y = position.y
-    }else{
-      const subStatus = this.client.getSubStatus(remoteStream, "all")
+    } else {
+      const subStatus = this.client.getSubStatus(remoteStream, 'all')
       if (this.shouldSubscribe(uid)) {
-        if (!subStatus.subscribable){
+        if (!subStatus.subscribable) {
           // 界内+没有可订阅，仅更新位置
-          if (remote.position.x === position.x && remote.position.y === position.y){
-            return;
+          if (remote.position.x === position.x && remote.position.y === position.y) {
+            return
           }
-          this.logger.log(`[remote#${uid} status:${subStatus.status}]界内，即将更新remoteStream位置: (${remote.position.x}, ${remote.position.y}) => (${position.x}, ${position.y})`);
+          this.logger.log(
+            `[remote#${uid} status:${subStatus.status}]界内，即将更新remoteStream位置: (${remote.position.x}, ${remote.position.y}) => (${position.x}, ${position.y})`
+          )
           remote.position.x = position.x
           remote.position.y = position.y
           if (remote.audioNodes) {
-            remote.audioNodes.pannerNode.positionX.value = position.x;
-            remote.audioNodes.pannerNode.positionY.value = position.y;
+            remote.audioNodes.pannerNode.positionX.value = position.x
+            remote.audioNodes.pannerNode.positionY.value = position.y
           }
-        }else{
+        } else {
           // 界内+有未订阅，订阅
-          this.logger.log(`[remote#${uid} status:${subStatus.status}]界内，【即将订阅】: (${remote.position.x}, ${remote.position.y}) => (${position.x}, ${position.y})`);
+          this.logger.log(
+            `[remote#${uid} status:${subStatus.status}]界内，【即将订阅】: (${remote.position.x}, ${remote.position.y}) => (${position.x}, ${position.y})`
+          )
           remote.position.x = position.x
           remote.position.y = position.y
-          await this.client.doSubscribe(remoteStream);
+          await this.client.doSubscribe(remoteStream)
           this.updatePosition(uid, remote.position)
         }
-      }else{
-        if (subStatus.status === "subscribed"){
+      } else {
+        if (subStatus.status === 'subscribed') {
           // 界外+已订阅，取消订阅
-          this.logger.log(`[remote#${uid} status:${subStatus.status}]界外，【即将取消订阅】:  (${remote.position.x}, ${remote.position.y}) => (${position.x}, ${position.y})`);
+          this.logger.log(
+            `[remote#${uid} status:${subStatus.status}]界外，【即将取消订阅】:  (${remote.position.x}, ${remote.position.y}) => (${position.x}, ${position.y})`
+          )
           remote.position.x = position.x
           remote.position.y = position.y
-          await this.client.doUnsubscribe(remoteStream);
+          await this.client.doUnsubscribe(remoteStream)
           this.updatePosition(uid, remote.position)
-        }else{
+        } else {
           // 界外+非已订阅，仅更新位置
-          if (remote.position.x === position.x && remote.position.y === position.y){
-            return;
+          if (remote.position.x === position.x && remote.position.y === position.y) {
+            return
           }
-          this.logger.log(`[remote#${uid} status:${subStatus.status}]界外，即将更新remoteStream位置:  (${remote.position.x}, ${remote.position.y}) => (${position.x}, ${position.y})`);
+          this.logger.log(
+            `[remote#${uid} status:${subStatus.status}]界外，即将更新remoteStream位置:  (${remote.position.x}, ${remote.position.y}) => (${position.x}, ${position.y})`
+          )
           remote.position.x = position.x
           remote.position.y = position.y
           if (remote.audioNodes) {
-            remote.audioNodes.pannerNode.positionX.value = position.x;
-            remote.audioNodes.pannerNode.positionY.value = position.y;
+            remote.audioNodes.pannerNode.positionX.value = position.x
+            remote.audioNodes.pannerNode.positionY.value = position.y
           }
         }
       }
     }
   }
-  init(){
-    this.client.addListener("@stream-added", (evt: { stream: RemoteStream, mediaType: MediaTypeShort })=>{
-      const remote = this.getUserData(evt.stream.getId());
-      evt.stream.setSubscribeConfig(this.options.subConfig);
-      this.updatePosition(evt.stream.getId(), remote.position)
-    })
-    this.client.addListener("@stream-unsubscribed", (evt: { stream: RemoteStream, mediaType: MediaTypeShort })=>{
-      const remote = this.getUserData(evt.stream.getId());
-      this.updatePosition(evt.stream.getId(), remote.position)
-    })
-    this.client.addListener("@stream-subscribed", async (evt: {stream: RemoteStream, mediaType: MediaTypeShort})=>{
-      this.logger.log("Subscribed to", evt.stream.streamID, evt.mediaType);
-      const remote = this.getUserData(evt.stream.getId());
-      if (evt.mediaType === "audio"){
-        if (remote.audioNodes){
-          remote.audioNodes.pannerNode.disconnect()
-          remote.audioNodes.source.disconnect()
-          remote.audioNodes.gainNode.disconnect()
-        }
-        remote.audioNodes = {
-          source: this.context.createMediaStreamSource(evt.stream.mediaHelper.audio.audioStream),
-          gainNode: this.context.createGain(),
-          pannerNode: new PannerNode(this.context, {
-            panningModel: "HRTF",  // 音频空间化算法模型
-            distanceModel: "linear",  // 远离时的音量衰减算法
-            rolloffFactor: 1,  // 衰减速度
-            coneInnerAngle: 360, // 声音 360 度扩散
-            positionX: remote.position.x,
-            positionY: remote.position.y,
-            positionZ: 0,
-            maxDistance: 100,
-          })
-        }
-        remote.audioNodes.source.connect(remote.audioNodes.gainNode)
-        remote.audioNodes.gainNode.connect(remote.audioNodes.pannerNode)
-        remote.audioNodes.pannerNode.connect(this.destination)
-        this.fakeElem.srcObject = evt.stream.mediaHelper.audio.audioStream;
-        this.fakeElem.play().catch((e)=>{
-          if (Device.onUserGestureNeeded){
-            Device.onUserGestureNeeded(e);
-            Device.once('user-gesture-fired', ()=>{
-              this.fakeElem.play()
+  init() {
+    this.client.addListener(
+      '@stream-added',
+      (evt: { stream: RemoteStream; mediaType: MediaTypeShort }) => {
+        const remote = this.getUserData(evt.stream.getId())
+        evt.stream.setSubscribeConfig(this.options.subConfig)
+        this.updatePosition(evt.stream.getId(), remote.position)
+      }
+    )
+    this.client.addListener(
+      '@stream-unsubscribed',
+      (evt: { stream: RemoteStream; mediaType: MediaTypeShort }) => {
+        const remote = this.getUserData(evt.stream.getId())
+        this.updatePosition(evt.stream.getId(), remote.position)
+      }
+    )
+    this.client.addListener(
+      '@stream-subscribed',
+      async (evt: { stream: RemoteStream; mediaType: MediaTypeShort }) => {
+        this.logger.log('Subscribed to', evt.stream.streamID, evt.mediaType)
+        const remote = this.getUserData(evt.stream.getId())
+        if (evt.mediaType === 'audio') {
+          if (remote.audioNodes) {
+            remote.audioNodes.pannerNode.disconnect()
+            remote.audioNodes.source.disconnect()
+            remote.audioNodes.gainNode.disconnect()
+          }
+          remote.audioNodes = {
+            source: this.context.createMediaStreamSource(evt.stream.mediaHelper.audio.audioStream),
+            gainNode: this.context.createGain(),
+            pannerNode: new PannerNode(this.context, {
+              panningModel: 'HRTF', // 音频空间化算法模型
+              distanceModel: 'linear', // 远离时的音量衰减算法
+              rolloffFactor: 1, // 衰减速度
+              coneInnerAngle: 360, // 声音 360 度扩散
+              positionX: remote.position.x,
+              positionY: remote.position.y,
+              positionZ: 0,
+              maxDistance: 100
             })
           }
-        });
-        this.logger.log("Connected", evt.stream.getId, evt.stream.mediaHelper.audio.audioStream.getAudioTracks()[0])
+          remote.audioNodes.source.connect(remote.audioNodes.gainNode)
+          remote.audioNodes.gainNode.connect(remote.audioNodes.pannerNode)
+          remote.audioNodes.pannerNode.connect(this.destination)
+          this.fakeElem.srcObject = evt.stream.mediaHelper.audio.audioStream
+          this.fakeElem.play().catch((e) => {
+            if (Device.onUserGestureNeeded) {
+              Device.onUserGestureNeeded(e)
+              Device.once('user-gesture-fired', () => {
+                this.fakeElem.play()
+              })
+            }
+          })
+          this.logger.log(
+            'Connected',
+            evt.stream.getId,
+            evt.stream.mediaHelper.audio.audioStream.getAudioTracks()[0]
+          )
+        }
+        this.updatePosition(evt.stream.getId(), remote.position)
       }
-      this.updatePosition(evt.stream.getId(), remote.position)
-    });
+    )
   }
-  play(){
-    this.elem.controls = true;
-    if (this.context.state === "suspended"){
-      if (Device.onUserGestureNeeded){
-        Device.onUserGestureNeeded(new Error("恢复AudioContext"));
-        Device.once('user-gesture-fired', ()=>{
+  play() {
+    this.elem.controls = true
+    if (this.context.state === 'suspended') {
+      if (Device.onUserGestureNeeded) {
+        Device.onUserGestureNeeded(new Error('恢复AudioContext'))
+        Device.once('user-gesture-fired', () => {
           this.context.resume()
         })
       }
     }
-    this.elem.play().catch((e)=>{
-      if (Device.onUserGestureNeeded){
-        Device.onUserGestureNeeded(e);
-        Device.once('user-gesture-fired', ()=>{
+    this.elem.play().catch((e) => {
+      if (Device.onUserGestureNeeded) {
+        Device.onUserGestureNeeded(e)
+        Device.once('user-gesture-fired', () => {
           this.elem.play()
         })
       }
-    });
+    })
   }
 }

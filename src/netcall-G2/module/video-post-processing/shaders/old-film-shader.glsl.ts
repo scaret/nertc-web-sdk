@@ -1,5 +1,5 @@
 export const oldFilmShader = {
-    fShader: `
+  fShader: `
     #ifdef GL_FRAGMENT_PRECISION_HIGH
         precision highp float;
     #else
@@ -8,7 +8,7 @@ export const oldFilmShader = {
 
     #define SEQUENCE_LENGTH 24.0
     #define FPS 24.0
-    
+
     uniform sampler2D map;
     uniform sampler2D dirtMap;
     uniform float time;
@@ -104,4 +104,4 @@ export const oldFilmShader = {
         gl_FragColor = vec4(image * dirt * vig, 1.0);
     }
 `
-};
+}

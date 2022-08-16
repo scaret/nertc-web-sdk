@@ -1,5 +1,5 @@
 export const advFaceMaskShader = {
-    vShader: `
+  vShader: `
     uniform vec2 size;
 
     attribute vec2 tPosition;
@@ -34,7 +34,7 @@ export const advFaceMaskShader = {
         vuv = uv;
     }
 `,
-    fShader: `
+  fShader: `
     #ifdef GL_FRAGMENT_PRECISION_HIGH
         precision highp float;
     #else
@@ -53,4 +53,4 @@ export const advFaceMaskShader = {
         gl_FragColor = vec4(1.0, 0.0, 0.0, a);
     }
 `
-};
+}

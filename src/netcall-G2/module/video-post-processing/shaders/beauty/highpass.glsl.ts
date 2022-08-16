@@ -1,11 +1,11 @@
 export const beautyHighPassShader = {
-    fShader: `
+  fShader: `
     #ifdef GL_FRAGMENT_PRECISION_HIGH
         precision highp float;
     #else
         precision mediump float;
     #endif
-    
+
     uniform sampler2D map;
     uniform sampler2D blurMap;
 
@@ -20,4 +20,4 @@ export const beautyHighPassShader = {
         gl_FragColor = vec4(diffColor, 1.0);
     }
 `
-};
+}

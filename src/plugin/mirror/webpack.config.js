@@ -14,14 +14,13 @@ const webpack = require('webpack')
 const WebpackOnBuildPlugin = require('../../../build/webpackOnBuildPlugin')
 const HappyPack = require('happypack')
 const os = require('os')
-const HappyThreadPool = HappyPack.ThreadPool({size: os.cpus().length - 1})
+const HappyThreadPool = HappyPack.ThreadPool({ size: os.cpus().length - 1 })
 
 const version = require('./package.json').version
 const webrtcG2Version = require('../../../package.json').webrtcG2Version
 const nodeEnv = env.getNodeEnv()
 //const hashInfo = git.getFirstCommitHash()
 const suffix = env.isProduction() ? '' : '_' + nodeEnv
-
 
 const genFileName = (type = '', tagversion = '') => {
   return 'MirrorPlugin.js'
@@ -30,38 +29,39 @@ const genFileName = (type = '', tagversion = '') => {
 let config = require('./webpack.config.base')({})
 
 config = merge(config, {
-  entry: {
-  },
+  entry: {},
   output: {
     path: path.join(__dirname, '../../../dist/lib/', version, nodeEnv),
     filename: genFileName(),
     library: '[name]',
-    libraryTarget: 'umd',
+    libraryTarget: 'umd'
   },
   module: {
     rules: [
       {
         test: /\.tsx?$/,
         use: 'ts-loader',
-        exclude: /node_modules/,
-      },
+        exclude: /node_modules/
+      }
     ]
   },
   resolve: {
-    extensions: [ '.tsx', '.ts', '.js' ],
+    extensions: ['.tsx', '.ts', '.js']
   },
   plugins: [
     new HappyPack({
       id: 'babel',
       threadPool: HappyThreadPool,
-      loaders: [{
-        loader: 'babel-loader?cacheDirectory=true'
-      }],
+      loaders: [
+        {
+          loader: 'babel-loader?cacheDirectory=true'
+        }
+      ],
       // 允许 HappyPack 输出日志
       verbose: true
     })
   ],
-  mode: (env.isDevelopment()) ? 'development' : 'production'
+  mode: env.isDevelopment() ? 'development' : 'production'
 })
 
 if (env.isDevelopment()) {
@@ -87,13 +87,13 @@ if (env.isDevelopment()) {
 // 设置webrtcG2相关的配置
 let configWebrtcG2 = merge(config, {
   entry: {
-    MirrorPlugin: path.join(__dirname, './MirrorPlugin.ts'),
+    MirrorPlugin: path.join(__dirname, './MirrorPlugin.ts')
   },
   output: {
     devtoolNamespace: 'MirrorPlugin',
     path: path.join(__dirname, '../../../dist/lib/', webrtcG2Version, nodeEnv),
     filename: genFileName('', webrtcG2Version),
-    libraryTarget: 'umd',
+    libraryTarget: 'umd'
   },
   plugins: [
     new WebpackOnBuildPlugin(() => {
@@ -102,9 +102,11 @@ let configWebrtcG2 = merge(config, {
       fse.copySync(configWebrtcG2.output.path, dir)
     }),
     new webpack.BannerPlugin({
-      banner: `NeRTC MirrorPlugin ${webrtcG2Version}|BUILD ${git.describe()} ${process.env.NODE_ENV}`
-    }),
-  ],
+      banner: `NeRTC MirrorPlugin ${webrtcG2Version}|BUILD ${git.describe()} ${
+        process.env.NODE_ENV
+      }`
+    })
+  ]
 })
 
 let out

@@ -1,5 +1,5 @@
 export const magnifierShader = {
-    fShader: `
+  fShader: `
     #ifdef GL_FRAGMENT_PRECISION_HIGH
         precision highp float;
     #else
@@ -7,7 +7,7 @@ export const magnifierShader = {
     #endif
 
     #define pi 3.1415926
-    
+
     uniform sampler2D map;
     uniform vec2 size;
     uniform vec2 pos;
@@ -17,8 +17,8 @@ export const magnifierShader = {
 
     float atan2(float y, float x){
         if(x>0.) return atan(y/x);
-        if(y>=0. && x<0.) return atan(y/x) + pi; 
-        if(y<0. && x<0.) return atan(y/x) - pi; 
+        if(y>=0. && x<0.) return atan(y/x) + pi;
+        if(y<0. && x<0.) return atan(y/x) - pi;
         if(y>0. && x==0.) return pi/2.;
         if(y<0. && x==0.) return -pi/2.;
         if(y==0. && x==0.) return pi/2.; // undefined usually
@@ -56,15 +56,15 @@ export const magnifierShader = {
         float yOffset = (size.x - size.y)/size.x/2.0;
         maxScale /= (2.0 * size.x);
         float scale = (maxScale * 0.3 + (maxScale * 0.7) * intensity);
-        
+
         vec2 pos = mix(vec2(0.0 + scale, 0.0 + scale + yOffset), vec2(1.0-scale, 1.0 - scale - yOffset), pos);
-        
+
         vec2 uv_lens_distorted = uv_lens_half_sphere(uv_correct, pos, scale, (1.5 + intensity * intensity * 0.5));
-        
+
         uv_lens_distorted = 0.5 + (uv_lens_distorted - 0.5) / aspect;
 
         float ring = circle(uv_correct, pos, scale, 2.0/max(size.x, size.y));
         gl_FragColor = vec4(mix(vec3(0.0), texture2D(map, uv_lens_distorted).rgb, ring), 1.0);
     }
 `
-};
+}

@@ -1,5 +1,5 @@
 export const advBeautyWireShader = {
-    vShader: `
+  vShader: `
     uniform vec2 size;
 
     attribute vec2 position;
@@ -26,7 +26,7 @@ export const advBeautyWireShader = {
         gl_Position = vec4(ndcPos, 0.0, 1.0);
     }
 `,
-    fShader: `
+  fShader: `
     #ifdef GL_FRAGMENT_PRECISION_HIGH
         precision highp float;
     #else
@@ -36,4 +36,4 @@ export const advBeautyWireShader = {
         gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
     }
 `
-};
+}

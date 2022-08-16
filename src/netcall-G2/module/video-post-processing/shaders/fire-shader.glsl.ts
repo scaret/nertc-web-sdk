@@ -1,5 +1,5 @@
 export const fireShader = {
-    fShader: `
+  fShader: `
     #ifdef GL_FRAGMENT_PRECISION_HIGH
         precision highp float;
     #else
@@ -22,19 +22,19 @@ export const fireShader = {
 
         float scaleY = scale.y * (1.0 - intensity * 0.75);
         float time = time * (intensity + 1.0) * 0.5;
-        
+
         float dist = texture2D(fireMap, vec2(vuv.x * scale.x - time * 1.1, vuv.y * scaleY - time * 1.8)).r;
-        
+
         float tex = texture2D(fireMap, vec2(vuv.x * scale.x + dist*0.2, vuv.y * scaleY - time * 1.5)).r;
-        
+
         tex += vuv.y * .5;
         float fire = pow(1. - tex, 2.3);
         fire -= (1.-(abs(vuv.x-.5)*2.))*.5;
-        
+
         fireColor += fire * 5. * mix(vec3(1.0, .3, 0), vec3(.0, .3, 1.0), sin(vuv.x * 3.1415926));
         fireColor = clamp(fireColor, vec3(0.0), vec3(1.0));
 
         gl_FragColor = vec4(mix(color, fireColor, pow((fireColor.r+fireColor.g+fireColor.b)/3.0, 3.0) * (1.0 + intensity*3.0)), 1.0);
     }
 `
-};
+}

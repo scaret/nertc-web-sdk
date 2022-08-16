@@ -1,38 +1,35 @@
-export type SctpCapabilities =
-{
-  numStreams: NumSctpStreams;
+export type SctpCapabilities = {
+  numStreams: NumSctpStreams
 }
 
-export type NumSctpStreams =
-{
+export type NumSctpStreams = {
   /**
    * Initially requested number of outgoing SCTP streams.
    */
-  OS: number;
+  OS: number
   /**
    * Maximum number of incoming SCTP streams.
    */
-  MIS: number;
+  MIS: number
 }
 
-export type SctpParameters =
-{
+export type SctpParameters = {
   /**
    * Must always equal 5000.
    */
-  port: number;
+  port: number
   /**
    * Initially requested number of outgoing SCTP streams.
    */
-  OS: number;
+  OS: number
   /**
    * Maximum number of incoming SCTP streams.
    */
-  MIS: number;
+  MIS: number
   /**
    * Maximum allowed size for SCTP messages.
    */
-  maxMessageSize: number;
+  maxMessageSize: number
 }
 
 /**
@@ -42,33 +39,32 @@ export type SctpParameters =
  * If ordered if false, only one of maxPacketLifeTime or maxRetransmits
  * can be true.
  */
-export type SctpStreamParameters =
-{
+export type SctpStreamParameters = {
   /**
    * SCTP stream id.
    */
-  streamId?: number;
+  streamId?: number
   /**
    * Whether data messages must be received in order. if true the messages will
    * be sent reliably. Default true.
    */
-  ordered?: boolean;
+  ordered?: boolean
   /**
    * When ordered is false indicates the time (in milliseconds) after which a
    * SCTP packet will stop being retransmitted.
    */
-  maxPacketLifeTime?: number;
+  maxPacketLifeTime?: number
   /**
    * When ordered is false indicates the maximum number of times a packet will
    * be retransmitted.
    */
-  maxRetransmits?: number;
+  maxRetransmits?: number
   /**
    * A label which can be used to distinguish this DataChannel from others.
    */
-  label?: string;
+  label?: string
   /**
    * Name of the sub-protocol used by this DataChannel.
    */
-  protocol?: string;
+  protocol?: string
 }

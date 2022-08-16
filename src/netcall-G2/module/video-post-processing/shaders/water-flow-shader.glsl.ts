@@ -1,5 +1,5 @@
 export const waterFlowShader = {
-    fShader: `
+  fShader: `
     #ifdef GL_FRAGMENT_PRECISION_HIGH
         precision highp float;
     #else
@@ -50,29 +50,29 @@ export const waterFlowShader = {
     void main() {
         vec2 uv= vuv;
         vec2 uv0= uv;
-        
+
         float d= 0.01;
-        float d0= depthf(uv);    
+        float d0= depthf(uv);
         vec2 grad= (vec2(
             depthf(uv+vec2(d,0)),
             depthf(uv+vec2(0,d))
         )-d0)/d;
         vec3 N= normalize(vec3(grad.x,grad.y,1.));
-        
+
         float L= max(0., reflect(LIGHT, N).z );
 
         float sun= min(1.,pow(L*1.5,5.));
         float sky= min(1.,pow(L+.4,1.2));
         vec3 specular= vec3(COLOR_SUN)*sun + vec3(COLOR_SKY)*sky;
-        
+
         uv+= refract(vec3(0.,0.,1.), N, 1.4).xy*DEPTH;
-        
+
         vec3 col= pow(texture2D(map, uv).rgb, vec3(1./2.2));
         col+= specular*4.5;
         col= pow(col-.25,vec3(2.3));
-        
-        
+
+
         gl_FragColor = vec4(col, 1.0);
     }
 `
-};
+}

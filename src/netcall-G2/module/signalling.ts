@@ -1,83 +1,94 @@
-import { EventEmitter } from 'eventemitter3';
-import { RemoteStream } from '../api/remoteStream';
-import BigNumber from 'bignumber.js';
-import {ENGINE_VERSION} from '../Config/index';
+import BigNumber from 'bignumber.js'
+import { EventEmitter } from 'eventemitter3'
+
+import { RemoteStream } from '../api/remoteStream'
+import { ENGINE_VERSION } from '../Config/index'
+import { SignalJoinRes } from '../interfaces/SignalProtocols'
 import {
-  AdapterRef, ILogger, MaskUserSetting, MediaTypeShort, NetStatusItem, SignalingConnectionConfig,
+  AdapterRef,
+  ILogger,
+  MaskUserSetting,
+  MediaTypeShort,
+  NetStatusItem,
+  SignalingConnectionConfig,
   SignallingOptions,
   Timer
-} from "../types";
-import {Peer, ProtooNotification} from "./3rd/protoo-client";
-import {Consumer} from "./3rd/mediasoup-client/Consumer";
-import {emptyStreamWith} from "../util/gum";
-import {SignalJoinRes} from "../interfaces/SignalProtocols";
-import {encryptionModeToInt} from "./encryption";
-import {RTSTransport} from "./rtsTransport";
-import { parseBase64 } from "../util/crypto-ts/base64";
-import RtcError from '../util/error/rtcError';
-import ErrorCode from '../util/error/errorCode';
-import {getOSInfo, getBrowserInfo} from '../util/rtcUtil/rtcPlatform';
-import {getParameters} from "./parameters";
+} from '../types'
+import { parseBase64 } from '../util/crypto-ts/base64'
+import ErrorCode from '../util/error/errorCode'
+import RtcError from '../util/error/rtcError'
+import { emptyStreamWith } from '../util/gum'
+import { getBrowserInfo, getOSInfo } from '../util/rtcUtil/rtcPlatform'
+import { Consumer } from './3rd/mediasoup-client/Consumer'
+import { Peer, ProtooNotification } from './3rd/protoo-client'
+import { encryptionModeToInt } from './encryption'
+import { getParameters } from './parameters'
+import { RTSTransport } from './rtsTransport'
 const protooClient = require('./3rd/protoo-client/')
 
 class Signalling extends EventEmitter {
-  private adapterRef: AdapterRef;
-  private _reconnectionTimer:Timer|null = null
-  public _protoo: Peer|null = null;
-  private _url: string|null = null;
-  private _resolve: ((data:any)=>void)|null = null;
-  private _reject: ((data:any)=>void)|null = null;
-  private consumers: {[consumerId: string]: Consumer } = {};
-  private keepAliveTimer: Timer|null = null;
-  public browserDevice: String;
-  private logger: ILogger;
-  private _reconnectionTimeout: number = 30 * 1000;
-  public reconnectionControl:{
-    current: SignalingConnectionConfig|null,
-    next: SignalingConnectionConfig|null,
-    copynext: SignalingConnectionConfig|null, //这里实时存储备份一下next的重连参数，在ice断开重连时用到
-    blocker: any,
-    pausers: ((info: any)=>void)[],
-    resumers: ((info: any)=>void)[],
+  private adapterRef: AdapterRef
+  private _reconnectionTimer: Timer | null = null
+  public _protoo: Peer | null = null
+  private _url: string | null = null
+  private _resolve: ((data: any) => void) | null = null
+  private _reject: ((data: any) => void) | null = null
+  private consumers: { [consumerId: string]: Consumer } = {}
+  private keepAliveTimer: Timer | null = null
+  public browserDevice: String
+  private logger: ILogger
+  private _reconnectionTimeout: number = 30 * 1000
+  public reconnectionControl: {
+    current: SignalingConnectionConfig | null
+    next: SignalingConnectionConfig | null
+    copynext: SignalingConnectionConfig | null //这里实时存储备份一下next的重连参数，在ice断开重连时用到
+    blocker: any
+    pausers: ((info: any) => void)[]
+    resumers: ((info: any) => void)[]
   } = {
     current: null,
     next: null,
     copynext: null,
     blocker: null,
     pausers: [],
-    resumers: [],
+    resumers: []
   }
   public autoMask: {
-    timer: Timer|null,
-    data: MaskUserSetting[],
+    timer: Timer | null
+    data: MaskUserSetting[]
   } = {
     timer: null,
     data: []
   }
-  
-  constructor (options: SignallingOptions) {
+
+  constructor(options: SignallingOptions) {
     super()
-    this.logger = options.logger.getChild(()=>{
-      let tag = "signal"
-      if (!this._protoo){
-        tag += " PROTOO_UNINIT"
-      }else{
-        if (this._protoo.id){
-          tag += "#" + this._protoo.id + "_" + this._protoo._transport?.wsid
+    this.logger = options.logger.getChild(() => {
+      let tag = 'signal'
+      if (!this._protoo) {
+        tag += ' PROTOO_UNINIT'
+      } else {
+        if (this._protoo.id) {
+          tag += '#' + this._protoo.id + '_' + this._protoo._transport?.wsid
         }
-        if(!this._protoo.connected){
-          tag += "!connected"
+        if (!this._protoo.connected) {
+          tag += '!connected'
         }
       }
-      if (options.adapterRef._signalling !== this){
-        tag += " DETACHED";
+      if (options.adapterRef._signalling !== this) {
+        tag += ' DETACHED'
       }
       return tag
     })
     this._reset()
     // 设置对象引用
     this.adapterRef = options.adapterRef
-    this.browserDevice = getOSInfo().osName + '-' + getBrowserInfo().browserName + '-' + getBrowserInfo().browserVersion;
+    this.browserDevice =
+      getOSInfo().osName +
+      '-' +
+      getBrowserInfo().browserName +
+      '-' +
+      getBrowserInfo().browserVersion
   }
 
   async _reset() {
@@ -97,78 +108,96 @@ class Signalling extends EventEmitter {
   //isReconnect: 当前是否在重连连接websocket
   //isReconnectMeeting： 是否是websocket链接成功之后，发生的断开重连
   //sdk的重连策略：http://doc.hz.netease.com/pages/editpage.action?pageId=332806101
-  init(isReconnect:boolean, isReconnectMeeting:boolean) {
-    if(this._reconnectionTimer) return Promise.resolve()
-    
-    return new Promise((resolve, reject) =>{
-      if(!isReconnect) {
+  init(isReconnect: boolean, isReconnectMeeting: boolean) {
+    if (this._reconnectionTimer) return Promise.resolve()
+
+    return new Promise((resolve, reject) => {
+      if (!isReconnect) {
         this._resolve = resolve
       }
-      if(!isReconnect){
+      if (!isReconnect) {
         this._reject = reject
       }
 
-      const prevConfig = this.reconnectionControl.current;
-      const connConfig:SignalingConnectionConfig = this.reconnectionControl.next || {
+      const prevConfig = this.reconnectionControl.current
+      const connConfig: SignalingConnectionConfig = this.reconnectionControl.next || {
         timeout: isReconnectMeeting ? getParameters().reconnectionFirstTimeout : 0,
         url: this.adapterRef.channelInfo.wssArr[0],
         serverIndex: 0,
         times: isReconnectMeeting ? 1 : 0,
         isJoinRetry: isReconnect,
-        isReconnection: isReconnectMeeting,
-      };
-      this.adapterRef.channelInfo.wssArrIndex = connConfig.serverIndex;
-      if (isReconnect){
-        if (isReconnectMeeting){
+        isReconnection: isReconnectMeeting
+      }
+      this.adapterRef.channelInfo.wssArrIndex = connConfig.serverIndex
+      if (isReconnect) {
+        if (isReconnectMeeting) {
           // 重连期间
-          this.adapterRef.logger.error(`Signalling 开始尝试第 ${connConfig.serverIndex + 1}/${this.adapterRef.channelInfo.wssArr.length} 台服务器的第 ${connConfig.times}/${getParameters().reconnectionMaxRetry} 次重连，退避时间：${connConfig.timeout}毫秒，服务器地址：${connConfig.url}`)
-        }else{
+          this.adapterRef.logger.error(
+            `Signalling 开始尝试第 ${connConfig.serverIndex + 1}/${
+              this.adapterRef.channelInfo.wssArr.length
+            } 台服务器的第 ${connConfig.times}/${
+              getParameters().reconnectionMaxRetry
+            } 次重连，退避时间：${connConfig.timeout}毫秒，服务器地址：${connConfig.url}`
+          )
+        } else {
           // join期间
-          this.adapterRef.logger.error(`Join: 正在尝试第 ${connConfig.serverIndex + 1}/${this.adapterRef.channelInfo.wssArr.length} 台服务器的第 ${connConfig.times}/${getParameters().joinMaxRetry} 次重连，退避时间：${connConfig.timeout}毫秒，服务器地址：${connConfig.url}`)
+          this.adapterRef.logger.error(
+            `Join: 正在尝试第 ${connConfig.serverIndex + 1}/${
+              this.adapterRef.channelInfo.wssArr.length
+            } 台服务器的第 ${connConfig.times}/${getParameters().joinMaxRetry} 次重连，退避时间：${
+              connConfig.timeout
+            }毫秒，服务器地址：${connConfig.url}`
+          )
         }
-      }else{
+      } else {
         // 第一次join
-        this.adapterRef.logger.log(`Join: 正在尝试第 ${connConfig.serverIndex + 1} / ${this.adapterRef.channelInfo.wssArr.length} 个服务器的第 ${connConfig.times} / ${getParameters().joinMaxRetry} 次连接`)
+        this.adapterRef.logger.log(
+          `Join: 正在尝试第 ${connConfig.serverIndex + 1} / ${
+            this.adapterRef.channelInfo.wssArr.length
+          } 个服务器的第 ${connConfig.times} / ${getParameters().joinMaxRetry} 次连接`
+        )
       }
       this.reconnectionControl.current = connConfig
       this.reconnectionControl.next = null
-      
+
       this._init(connConfig.url)
 
       //开始安排下一次重连的设置
       let nextConnConfig = Object.assign({}, connConfig)
-      if (!connConfig.times){
+      if (!connConfig.times) {
         nextConnConfig.times = 1
         nextConnConfig.serverIndex = 1 //首次重连的场景下，next记录下个websocket服务器地址，不记录第一个
-      }else{
+      } else {
         nextConnConfig.serverIndex++
       }
-      if (nextConnConfig.serverIndex >= this.adapterRef.channelInfo.wssArr.length){
+      if (nextConnConfig.serverIndex >= this.adapterRef.channelInfo.wssArr.length) {
         nextConnConfig.times++
         nextConnConfig.serverIndex = 0
       }
-      if (isReconnect){
-        nextConnConfig.timeout = getParameters().joinFirstTimeout + (nextConnConfig.times - 1) * 2000
-      }else if (isReconnectMeeting){
-        nextConnConfig.timeout = getParameters().reconnectionFirstTimeout + (nextConnConfig.times - 1) * 2000
+      if (isReconnect) {
+        nextConnConfig.timeout =
+          getParameters().joinFirstTimeout + (nextConnConfig.times - 1) * 2000
+      } else if (isReconnectMeeting) {
+        nextConnConfig.timeout =
+          getParameters().reconnectionFirstTimeout + (nextConnConfig.times - 1) * 2000
       }
       nextConnConfig.timeout = nextConnConfig.times * 2000
       nextConnConfig.isJoinRetry = isReconnect
       nextConnConfig.isReconnection = isReconnectMeeting
       nextConnConfig.url = this.adapterRef.channelInfo.wssArr[nextConnConfig.serverIndex]
       this.reconnectionControl.next = this.reconnectionControl.copynext = nextConnConfig
-      if (this._reconnectionTimer){
+      if (this._reconnectionTimer) {
         clearTimeout(this._reconnectionTimer)
       }
 
-      this._reconnectionTimer = setTimeout(()=>{
-        if (this._reconnectionTimer){
+      this._reconnectionTimer = setTimeout(() => {
+        if (this._reconnectionTimer) {
           clearTimeout(this._reconnectionTimer)
         }
         this._reconnectionTimer = null
         this._destroyProtoo()
         if (isReconnectMeeting) {
-          this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-error');
+          this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-error')
           this._reconnection()
         } else {
           this._connection()
@@ -180,14 +209,14 @@ class Signalling extends EventEmitter {
   async _connection() {
     // _connection指的是join期间的重试
     this._destroyProtoo()
-    const prevConfig = this.reconnectionControl.current;
-    const connConfig = this.reconnectionControl.next;
-    if (!connConfig){
+    const prevConfig = this.reconnectionControl.current
+    const connConfig = this.reconnectionControl.next
+    if (!connConfig) {
       // 不应该走到这里
       this.adapterRef.logger.error('Join结束')
       return
     }
-    if(!prevConfig || connConfig.times <= getParameters().joinMaxRetry){
+    if (!prevConfig || connConfig.times <= getParameters().joinMaxRetry) {
       this.init(true, false)
     } else {
       this.adapterRef.logger.error(`所有的服务器地址都连接失败, 主动离开房间`)
@@ -206,77 +235,81 @@ class Signalling extends EventEmitter {
     this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
     this.adapterRef.connectState.curState = 'CONNECTING'
     this.adapterRef.connectState.reconnect = true //增加是否在重来的标志位
-    if (this.adapterRef.connectState.prevState !== this.adapterRef.connectState.curState){
-      this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
+    if (this.adapterRef.connectState.prevState !== this.adapterRef.connectState.curState) {
+      this.adapterRef.instance.safeEmit('connection-state-change', this.adapterRef.connectState)
     }
-    this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-start');
+    this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-start')
     this._destroyProtoo()
 
-
-    if (this.adapterRef.connectState.prevState === "CONNECTED"){
+    if (this.adapterRef.connectState.prevState === 'CONNECTED') {
       // 更新上下行状态为unknown，因为此时服务端无法下发上下行状态
-      this.adapterRef.netStatusList.forEach((netStatus)=>{
+      this.adapterRef.netStatusList.forEach((netStatus) => {
         netStatus.uplinkNetworkQuality = 0
         netStatus.downlinkNetworkQuality = 0
       })
       this.adapterRef.instance.safeEmit('network-quality', this.adapterRef.netStatusList)
     }
 
-    if (this.reconnectionControl.pausers.length){
-      this.logger.log(`重连过程暂停`);
-      this.reconnectionControl.pausers.forEach((resolve)=> resolve({reason: "reconnection-start"}))
+    if (this.reconnectionControl.pausers.length) {
+      this.logger.log(`重连过程暂停`)
+      this.reconnectionControl.pausers.forEach((resolve) =>
+        resolve({ reason: 'reconnection-start' })
+      )
       this.reconnectionControl.pausers = []
-      await new Promise((resolve)=>{
-        this.reconnectionControl.blocker = resolve;
+      await new Promise((resolve) => {
+        this.reconnectionControl.blocker = resolve
       })
     }
 
-    for (let uid in this.adapterRef.remoteStreamMap){
-      const remoteStream = this.adapterRef.remoteStreamMap[uid];
-      if (remoteStream._play){
-        this.logger.warn('Destroy Remote Player', uid);
-        remoteStream._play.destroy();
+    for (let uid in this.adapterRef.remoteStreamMap) {
+      const remoteStream = this.adapterRef.remoteStreamMap[uid]
+      if (remoteStream._play) {
+        this.logger.warn('Destroy Remote Player', uid)
+        remoteStream._play.destroy()
       }
     }
 
-    if (this.reconnectionControl.next && this.reconnectionControl.next.times > getParameters().reconnectionMaxRetry){
-      this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-skip');
+    if (
+      this.reconnectionControl.next &&
+      this.reconnectionControl.next.times > getParameters().reconnectionMaxRetry
+    ) {
+      this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-skip')
       this.adapterRef.logger.error('所有的服务器地址都连接失败, 主动离开房间')
       this.adapterRef.channelInfo.wssArrIndex = 0
       this.adapterRef.instance.leave()
       this.adapterRef.instance.safeEmit('error', 'SOCKET_ERROR')
-    }else{
+    } else {
       this.init(true, true)
     }
   }
 
-  _init(url:string) {
-    if (url.indexOf("?") === -1){
-      url += "?"
+  _init(url: string) {
+    if (url.indexOf('?') === -1) {
+      url += '?'
     }
-    this.logger.log('Signalling: init url=',  url)
+    this.logger.log('Signalling: init url=', url)
     this.adapterRef.channelInfo._protooUrl = url
-    this._url = `${url.indexOf('://') === -1 ? "wss://" : ""}${url}&cid=${this.adapterRef.channelInfo.cid}&uid=${this.adapterRef.channelInfo.uid}&deviceid=${this.adapterRef.deviceId}`
+    this._url = `${url.indexOf('://') === -1 ? 'wss://' : ''}${url}&cid=${
+      this.adapterRef.channelInfo.cid
+    }&uid=${this.adapterRef.channelInfo.uid}&deviceid=${this.adapterRef.deviceId}`
     this.logger.log('连接的url: ', this._url)
 
-
     const protooTransport = new protooClient.WebSocketTransport(this._url, {
-
       retry: {
-        retries    : 0,
-        factor     : 2,
-        minTimeout : 1 * 1000,
-        maxTimeout : 2 * 1000,
-        forever    : false,
+        retries: 0,
+        factor: 2,
+        minTimeout: 1 * 1000,
+        maxTimeout: 2 * 1000,
+        forever: false,
         maxRetryTime: 2000
       }
-    });
-    this._protoo = new protooClient.Peer(protooTransport);
+    })
+    this._protoo = new protooClient.Peer(protooTransport)
     this._bindEvent()
   }
 
   _bindEvent() {
-    if (!this._protoo){
+    if (!this._protoo) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
         message: 'No this._protoo 1'
@@ -291,29 +324,29 @@ class Signalling extends EventEmitter {
 
   //原来叫_unbindEvent
   _destroyProtoo() {
-    if (this._protoo){
+    if (this._protoo) {
       this.logger.debug(`信令通道#${this._protoo.id}_${this._protoo._transport?.wsid} 被主动关闭。`)
       this._protoo.removeAllListeners()
-      try{
-        if (this._protoo){
+      try {
+        if (this._protoo) {
           this._protoo.close()
         }
-      }catch(e){
+      } catch (e) {
         // this.logger.error('无法关闭：', e)
       }
       this._protoo = null
     }
   }
 
-  async _handleMessage (notification:ProtooNotification) {
+  async _handleMessage(notification: ProtooNotification) {
     /*this.logger.log(
       'proto "notification" event [method:%s, data:%o]',
       notification.method, notification.data);*/
 
     switch (notification.method) {
       case 'OnPeerJoin': {
-        const { requestId, externData } = notification.data;
-        this.logger.log('收到OnPeerJoin成员加入消息 uid =', externData.uid);
+        const { requestId, externData } = notification.data
+        this.logger.log('收到OnPeerJoin成员加入消息 uid =', externData.uid)
         /*if (typeof externData.uid === 'string') {
           this.logger.log('对端uid是string类型')
           this.adapterRef.channelInfo.uidType = 'string'
@@ -344,58 +377,55 @@ class Signalling extends EventEmitter {
             platformType: externData.platformType
           })
           this.adapterRef.remoteStreamMap[uid] = remoteStream
-          this.adapterRef.memberMap[uid] = uid;
+          this.adapterRef.memberMap[uid] = uid
         }
-        this.adapterRef.instance._roleInfo.audienceList[uid] = false;
-        this.adapterRef.instance.safeEmit('peer-online', {uid})
+        this.adapterRef.instance._roleInfo.audienceList[uid] = false
+        this.adapterRef.instance.safeEmit('peer-online', { uid })
         break
       }
       case 'OnPeerLeave': {
-        const { requestId, externData } = notification.data;
-        this.logger.log('OnPeerLeave externData =', externData);
+        const { requestId, externData } = notification.data
+        this.logger.log('OnPeerLeave externData =', externData)
         if (externData.userList) {
-          externData.userList.forEach((item:any) =>{
+          externData.userList.forEach((item: any) => {
             let uid = item.uid
             if (this.adapterRef.channelInfo.uidType === 'string') {
               uid = new BigNumber(uid)
               uid = uid.toString()
             }
-            this.adapterRef._mediasoup?.removeUselessConsumeRequest({uid})
+            this.adapterRef._mediasoup?.removeUselessConsumeRequest({ uid })
             this.adapterRef.instance.clearMember(uid)
             this.adapterRef.instance.removeSsrc(uid)
-            delete this.adapterRef.instance._roleInfo.audienceList[uid];
+            delete this.adapterRef.instance._roleInfo.audienceList[uid]
           })
         }
         break
       }
       case 'OnNewProducer': {
-        const { requestId, externData } = notification.data;
-        this.logger.log('收到OnNewProducer发布消息 externData =', JSON.stringify(externData.producerInfo))
-        let {
-          uid,
-          producerId,
-          mediaType,
-          mute,
-          simulcastEnable
-        } = externData.producerInfo;
+        const { requestId, externData } = notification.data
+        this.logger.log(
+          '收到OnNewProducer发布消息 externData =',
+          JSON.stringify(externData.producerInfo)
+        )
+        let { uid, producerId, mediaType, mute, simulcastEnable } = externData.producerInfo
         if (this.adapterRef.channelInfo.uidType === 'string') {
           uid = new BigNumber(uid)
           uid = uid.toString()
         }
-        let mediaTypeShort: MediaTypeShort;
-        switch (mediaType){
-          case "video":
-            mediaTypeShort = 'video';
-            break;
-          case "screenShare":
-            mediaTypeShort = 'screen';
-            break;
-          case "audio":
-            mediaTypeShort = 'audio';
-            break;
-          case "subAudio":
-            mediaTypeShort = 'audioSlave';
-            break;
+        let mediaTypeShort: MediaTypeShort
+        switch (mediaType) {
+          case 'video':
+            mediaTypeShort = 'video'
+            break
+          case 'screenShare':
+            mediaTypeShort = 'screen'
+            break
+          case 'audio':
+            mediaTypeShort = 'audio'
+            break
+          case 'subAudio':
+            mediaTypeShort = 'audioSlave'
+            break
           default:
             this.logger.warn(`OnNewProducer 不支持的媒体类型:${mediaType}, uid ${uid}`)
             return
@@ -409,16 +439,23 @@ class Signalling extends EventEmitter {
             video: mediaTypeShort === 'video',
             screen: mediaTypeShort === 'screen',
             client: this.adapterRef.instance,
-            platformType: externData.platformType,
+            platformType: externData.platformType
           })
           this.adapterRef.remoteStreamMap[uid] = remoteStream
-          this.adapterRef.memberMap[uid] = uid;
+          this.adapterRef.memberMap[uid] = uid
         }
-        if (remoteStream.pubStatus[mediaTypeShort].consumerId){
-          this.adapterRef._mediasoup?.destroyConsumer(remoteStream.pubStatus[mediaTypeShort].consumerId, remoteStream, mediaTypeShort);
+        if (remoteStream.pubStatus[mediaTypeShort].consumerId) {
+          this.adapterRef._mediasoup?.destroyConsumer(
+            remoteStream.pubStatus[mediaTypeShort].consumerId,
+            remoteStream,
+            mediaTypeShort
+          )
           //remoteStream.pubStatus[mediaTypeShort].consumerId = '';
         } else {
-          this.adapterRef._mediasoup?.removeUselessConsumeRequest({producerId: remoteStream.pubStatus[mediaTypeShort].producerId, uid})
+          this.adapterRef._mediasoup?.removeUselessConsumeRequest({
+            producerId: remoteStream.pubStatus[mediaTypeShort].producerId,
+            uid
+          })
         }
 
         remoteStream[mediaTypeShort] = true
@@ -429,76 +466,86 @@ class Signalling extends EventEmitter {
         remoteStream.pubStatus[mediaTypeShort].simulcastEnable = simulcastEnable
         //旧的consumer已经失效了
         remoteStream.pubStatus[mediaTypeShort].consumerId = ''
-        
+
         if (this.adapterRef._enableRts && this.adapterRef._rtsTransport) {
-          this.adapterRef.instance.emit('rts-stream-added', {stream: remoteStream, kind: mediaType})
+          this.adapterRef.instance.emit('rts-stream-added', {
+            stream: remoteStream,
+            kind: mediaType
+          })
         } else {
-          this.adapterRef.instance.safeEmit('stream-added', {stream: remoteStream, 'mediaType': mediaTypeShort})
+          this.adapterRef.instance.safeEmit('stream-added', {
+            stream: remoteStream,
+            mediaType: mediaTypeShort
+          })
         }
         if (mute) {
           if (mediaTypeShort === 'audioSlave') {
-            this.adapterRef.instance.safeEmit('mute-audio-slave', {uid: remoteStream.getId()})
+            this.adapterRef.instance.safeEmit('mute-audio-slave', { uid: remoteStream.getId() })
           } else {
-            this.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
+            this.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {
+              uid: remoteStream.getId()
+            })
           }
         }
         break
       }
-      case 'OnProducerClose': { 
-        const { requestId, code, errMsg, externData } = notification.data;
-        let {
-          uid,
-          producerId,
-          mediaType,
-          cid
-        } = externData;
+      case 'OnProducerClose': {
+        const { requestId, code, errMsg, externData } = notification.data
+        let { uid, producerId, mediaType, cid } = externData
         if (this.adapterRef.channelInfo.uidType === 'string') {
           uid = new BigNumber(uid)
           uid = uid.toString()
         }
         let remoteStream = this.adapterRef.remoteStreamMap[uid]
-        if (remoteStream){
-          this.logger.log(`收到OnProducerClose消息 code = ${code}, errMsg = ${errMsg}, uid = ${uid}, mediaType = ${mediaType}, producerId: ${producerId}`);
-        }else{
-          this.logger.warn(`收到OnProducerClose消息，但是当前没有该Producer： code = ${code}, errMsg = ${errMsg}, uid = ${uid}, mediaType = ${mediaType}, producerId: ${producerId}`);
-          return;
+        if (remoteStream) {
+          this.logger.log(
+            `收到OnProducerClose消息 code = ${code}, errMsg = ${errMsg}, uid = ${uid}, mediaType = ${mediaType}, producerId: ${producerId}`
+          )
+        } else {
+          this.logger.warn(
+            `收到OnProducerClose消息，但是当前没有该Producer： code = ${code}, errMsg = ${errMsg}, uid = ${uid}, mediaType = ${mediaType}, producerId: ${producerId}`
+          )
+          return
         }
-        let mediaTypeShort:MediaTypeShort;
-        switch (mediaType){
-          case "video":
-            mediaTypeShort = 'video';
-            break;
-          case "screenShare":
-            mediaTypeShort = 'screen';
-            break;
-          case "audio":
-            mediaTypeShort = 'audio';
-            break;
-          case "subAudio":
-            mediaTypeShort = 'audioSlave';
-            break;
+        let mediaTypeShort: MediaTypeShort
+        switch (mediaType) {
+          case 'video':
+            mediaTypeShort = 'video'
+            break
+          case 'screenShare':
+            mediaTypeShort = 'screen'
+            break
+          case 'audio':
+            mediaTypeShort = 'audio'
+            break
+          case 'subAudio':
+            mediaTypeShort = 'audioSlave'
+            break
           default:
             this.logger.warn(`OnProducerClose 不支持的媒体类型 ${mediaType} ${uid}`)
-            return;
+            return
         }
-        
+
         if (remoteStream.pubStatus[mediaTypeShort].producerId !== producerId) {
           this.logger.log('该 producerId 已经无效，不处理')
           return
         }
 
-
-        if (!this.adapterRef._mediasoup){
+        if (!this.adapterRef._mediasoup) {
           throw new RtcError({
             code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 22'
           })
         }
 
-        this.adapterRef._mediasoup.removeUselessConsumeRequest({producerId, uid})
-        if (remoteStream.pubStatus[mediaTypeShort].consumerId){
-          this.adapterRef._mediasoup.destroyConsumer(remoteStream.pubStatus[mediaTypeShort].consumerId, remoteStream, mediaTypeShort)
-          remoteStream.pubStatus[mediaTypeShort].consumerId = '';
+        this.adapterRef._mediasoup.removeUselessConsumeRequest({ producerId, uid })
+        if (remoteStream.pubStatus[mediaTypeShort].consumerId) {
+          this.adapterRef._mediasoup.destroyConsumer(
+            remoteStream.pubStatus[mediaTypeShort].consumerId,
+            remoteStream,
+            mediaTypeShort
+          )
+          remoteStream.pubStatus[mediaTypeShort].consumerId = ''
         }
         this.adapterRef.instance.removeSsrc(uid, mediaTypeShort)
         remoteStream.subStatus[mediaTypeShort] = false
@@ -507,32 +554,35 @@ class Signalling extends EventEmitter {
         remoteStream[mediaTypeShort] = false
         remoteStream.pubStatus[mediaTypeShort].consumerId = ''
         remoteStream.pubStatus[mediaTypeShort].producerId = ''
-        const data = this.adapterRef._statsReport && this.adapterRef._statsReport.formativeStatsReport && this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
+        const data =
+          this.adapterRef._statsReport &&
+          this.adapterRef._statsReport.formativeStatsReport &&
+          this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
         if (mediaTypeShort === 'audio') {
-          remoteStream.mediaHelper.audio.micTrack = null;
-          emptyStreamWith(remoteStream.mediaHelper.audio.audioStream, null);
-          delete this.adapterRef.remoteAudioStats[uid];
+          remoteStream.mediaHelper.audio.micTrack = null
+          emptyStreamWith(remoteStream.mediaHelper.audio.audioStream, null)
+          delete this.adapterRef.remoteAudioStats[uid]
           if (data) {
             data.recvFirstAudioFrame = false
             data.recvFirstAudioPackage = false
           }
         } else if (mediaTypeShort === 'audioSlave') {
-          remoteStream.mediaHelper.screenAudio.screenAudioTrack = null;
-          emptyStreamWith(remoteStream.mediaHelper.screenAudio.screenAudioStream, null);
-          delete this.adapterRef.remoteAudioSlaveStats[uid];
+          remoteStream.mediaHelper.screenAudio.screenAudioTrack = null
+          emptyStreamWith(remoteStream.mediaHelper.screenAudio.screenAudioStream, null)
+          delete this.adapterRef.remoteAudioSlaveStats[uid]
         } else if (mediaTypeShort === 'video') {
-          remoteStream.mediaHelper.video.cameraTrack = null;
+          remoteStream.mediaHelper.video.cameraTrack = null
           emptyStreamWith(remoteStream.mediaHelper.video.videoStream, null)
-          delete this.adapterRef.remoteVideoStats[uid];
+          delete this.adapterRef.remoteVideoStats[uid]
           if (data) {
             data.recvFirstVideoFrame = false
             data.recvFirstVideoPackage = false
             data.videoTotalPlayDuration = 0
           }
-        }else if (mediaTypeShort === 'screen'){
-          remoteStream.mediaHelper.screen.screenVideoTrack = null;
+        } else if (mediaTypeShort === 'screen') {
+          remoteStream.mediaHelper.screen.screenVideoTrack = null
           emptyStreamWith(remoteStream.mediaHelper.screen.screenVideoStream, null)
-          delete this.adapterRef.remoteScreenStats[uid];
+          delete this.adapterRef.remoteScreenStats[uid]
           if (data) {
             data.recvFirstScreenFrame = false
             data.recvFirstScreenPackage = false
@@ -541,25 +591,29 @@ class Signalling extends EventEmitter {
         }
 
         if (this.adapterRef._enableRts) {
-          this.adapterRef.instance.emit('rts-stream-removed', {stream: remoteStream})
+          this.adapterRef.instance.emit('rts-stream-removed', { stream: remoteStream })
         } else {
-          this.adapterRef.instance.safeEmit('stream-removed', {stream: remoteStream, 'mediaType': mediaTypeShort})
+          this.adapterRef.instance.safeEmit('stream-removed', {
+            stream: remoteStream,
+            mediaType: mediaTypeShort
+          })
         }
         break
       }
       case 'OnConsumerClose': {
-        const { requestId, code, errMsg, consumerId, producerId } = notification.data;
-        this.logger.log(`chence OnConsumerClose code = ${code} errMsg = ${errMsg} producerId = ${producerId}`);
-        const consumer = this.consumers[consumerId];
-        if (!consumer)
-            break;
-          consumer.close();
+        const { requestId, code, errMsg, consumerId, producerId } = notification.data
+        this.logger.log(
+          `chence OnConsumerClose code = ${code} errMsg = ${errMsg} producerId = ${producerId}`
+        )
+        const consumer = this.consumers[consumerId]
+        if (!consumer) break
+        consumer.close()
         break
       }
       case 'consumerPaused': {
-        const { consumerId } = notification.data;
-        const consumer = this.consumers[consumerId];
-        if(!consumer) break;
+        const { consumerId } = notification.data
+        const consumer = this.consumers[consumerId]
+        if (!consumer) break
 
         // TODO fixme
         // @ts-ignore
@@ -573,65 +627,70 @@ class Signalling extends EventEmitter {
         break
       }
       case 'OnTransportClose': {
-        const { requestId, code, errMsg, transportId } = notification.data;
-          this.logger.warn(`chence OnTransportClose: code = ${code}, errMsg = ${errMsg}, transportId = ${transportId}`);
-          if (!this.adapterRef._mediasoup){
-            throw new RtcError({
-              code: ErrorCode.NO_MEDIASERVER,
-              message: 'media server error 23'
-            })
-          }
-          if (this.adapterRef._mediasoup._sendTransport 
-            && (this.adapterRef._mediasoup._micProducer || this.adapterRef._mediasoup._webcamProducer)) {
-            this.logger.warn('服务器媒体进程crash，上行媒体和下行媒体同时重连')
-            this.adapterRef.channelStatus = 'connectioning'
-            this.adapterRef.instance.apiEventReport('setDisconnect', {
-              reason: 'OnTransportClose' 
-            })
-            this._reconnection()
-          } else {
-            this.logger.warn('服务器发送了错误信息')
-          }
-        break
-      }
-      case 'OnConsumerClose': {
-        const { requestId, code, errMsg, consumerId, producerId } = notification.data;
-          this.logger.warn(`chence OnConsumerClose: code = ${code}, errMsg = ${errMsg} consumerId = ${consumerId}, producerId = ${producerId}`);
-          if (!this.adapterRef._mediasoup){
-            throw new RtcError({
-              code: ErrorCode.NO_MEDIASERVER,
-              message: 'media server error 24'
-            })
-          }
-          if (this.adapterRef._mediasoup._recvTransport) {
-            this.logger.warn('下行媒体同时重连')
-            this.adapterRef.channelStatus = 'connectioning'
-            this.adapterRef.instance.apiEventReport('setDisconnect', {
-              reason: 'OnConsumerClose' 
-            })
-            this._reconnection()
-          } else {
-            this.logger.warn('服务器发送了错误信息')
-          }
-        break
-      }
-      case 'OnSignalRestart': {
-        const { requestId, code, errMsg } = notification.data;
-          this.logger.warn(`chence OnSignalRestart code = ${code} errMsg = ${errMsg}`);
-          this.logger.warn('服务器信令进程crash，重连')
+        const { requestId, code, errMsg, transportId } = notification.data
+        this.logger.warn(
+          `chence OnTransportClose: code = ${code}, errMsg = ${errMsg}, transportId = ${transportId}`
+        )
+        if (!this.adapterRef._mediasoup) {
+          throw new RtcError({
+            code: ErrorCode.NO_MEDIASERVER,
+            message: 'media server error 23'
+          })
+        }
+        if (
+          this.adapterRef._mediasoup._sendTransport &&
+          (this.adapterRef._mediasoup._micProducer || this.adapterRef._mediasoup._webcamProducer)
+        ) {
+          this.logger.warn('服务器媒体进程crash，上行媒体和下行媒体同时重连')
+          this.adapterRef.channelStatus = 'connectioning'
           this.adapterRef.instance.apiEventReport('setDisconnect', {
-              reason: 'OnSignalRestart' 
-            })
-          if (!this._protoo){
-            throw new RtcError({
-              code: ErrorCode.NOT_FOUND,
-              message: 'No this._protoo 2'
-            })
-          }
-          if (this._protoo.connected && this.adapterRef.connectState.curState === 'CONNECTED') {
-            //sdk内部已经在重连中，不主动执行
-            
-            /*this.logger.log('OnSignalRestart即将在3秒后执行重连')
+            reason: 'OnTransportClose'
+          })
+          this._reconnection()
+        } else {
+          this.logger.warn('服务器发送了错误信息')
+        }
+        break
+      }
+      // case 'OnConsumerClose': {
+      //   const { requestId, code, errMsg, consumerId, producerId } = notification.data
+      //   this.logger.warn(
+      //     `chence OnConsumerClose: code = ${code}, errMsg = ${errMsg} consumerId = ${consumerId}, producerId = ${producerId}`
+      //   )
+      //   if (!this.adapterRef._mediasoup) {
+      //     throw new RtcError({
+      //       code: ErrorCode.NO_MEDIASERVER,
+      //       message: 'media server error 24'
+      //     })
+      //   }
+      //   if (this.adapterRef._mediasoup._recvTransport) {
+      //     this.logger.warn('下行媒体同时重连')
+      //     this.adapterRef.channelStatus = 'connectioning'
+      //     this.adapterRef.instance.apiEventReport('setDisconnect', {
+      //       reason: 'OnConsumerClose'
+      //     })
+      //     this._reconnection()
+      //   } else {
+      //     this.logger.warn('服务器发送了错误信息')
+      //   }
+      //   break
+      // }
+      case 'OnSignalRestart': {
+        const { requestId, code, errMsg } = notification.data
+        this.logger.warn(`chence OnSignalRestart code = ${code} errMsg = ${errMsg}`)
+        this.logger.warn('服务器信令进程crash，重连')
+        this.adapterRef.instance.apiEventReport('setDisconnect', {
+          reason: 'OnSignalRestart'
+        })
+        if (!this._protoo) {
+          throw new RtcError({
+            code: ErrorCode.NOT_FOUND,
+            message: 'No this._protoo 2'
+          })
+        }
+        if (this._protoo.connected && this.adapterRef.connectState.curState === 'CONNECTED') {
+          //sdk内部已经在重连中，不主动执行
+          /*this.logger.log('OnSignalRestart即将在3秒后执行重连')
             const _protoo = this._protoo;
             setTimeout(()=>{
               if (_protoo !== this._protoo){
@@ -647,10 +706,10 @@ class Signalling extends EventEmitter {
                 this.logger.log('OnSignalRestart取消重连。channelStatus：', this.adapterRef.channelStatus)
               }
             }, 3 * 1000)*/
-          } else {
-            this._reconnection()
-          }
-          
+        } else {
+          this._reconnection()
+        }
+
         break
       }
       case 'activeSpeaker': {
@@ -665,12 +724,12 @@ class Signalling extends EventEmitter {
         break
       }
       case 'OnKickOff': {
-        let { msg, reason } = notification.data.externData;
+        let { msg, reason } = notification.data.externData
         this._handleKickedNotify(reason)
         break
       }
       case 'OnUserData': {
-        let { type, data, } = notification.data.externData;
+        let { type, data } = notification.data.externData
         //console.warn('收到userData通知: ', notification.data.externData)
         if (type === 'StreamStatus') {
           this._handleStreamStatusNotify(data)
@@ -685,94 +744,149 @@ class Signalling extends EventEmitter {
         } else if (type === 'RtmpTaskStatus') {
           this.logger.log('RtmpTaskStatus变更: ', JSON.stringify(data, null, ''))
           this.adapterRef.instance.safeEmit('rtmp-state', data)
-        } else if (type === "AutoMaskUid"){
-          const userData = data as MaskUserSetting;
-          this.logger.log(`收到打码通知：`, userData.maskUid, "时长", userData.duration, "秒")
-          if (userData.maskUid && userData.duration){
+        } else if (type === 'AutoMaskUid') {
+          const userData = data as MaskUserSetting
+          this.logger.log(`收到打码通知：`, userData.maskUid, '时长', userData.duration, '秒')
+          if (userData.maskUid && userData.duration) {
             userData.targetEndMs = Date.now() + userData.duration * 1000
             this.autoMask.data.push(userData)
-            this.updateMaskStatus()            
+            this.updateMaskStatus()
           }
         } else if (type === 'MediaCapability') {
           this.logger.warn('MediaCapability房间能力变更: ', JSON.stringify(data, null, ''))
-          this.adapterRef.mediaCapability.parseRoom(data);
-          this.adapterRef.instance.safeEmit('@mediaCapabilityChange');
-          if (this.adapterRef._mediasoup && this.adapterRef.mediaCapability.room.videoCodecType && this.adapterRef.localStream){
+          this.adapterRef.mediaCapability.parseRoom(data)
+          this.adapterRef.instance.safeEmit('@mediaCapabilityChange')
+          if (
+            this.adapterRef._mediasoup &&
+            this.adapterRef.mediaCapability.room.videoCodecType &&
+            this.adapterRef.localStream
+          ) {
             //@ts-ignore
-            const targetCodecVideo = this.adapterRef.mediaCapability.getCodecSend("video", this.adapterRef._mediasoup._sendTransport.handler._sendingRtpParametersByKind["video"]);
+            const targetCodecVideo = this.adapterRef.mediaCapability.getCodecSend(
+              'video',
+              //@ts-ignore
+              this.adapterRef._mediasoup._sendTransport.handler._sendingRtpParametersByKind['video']
+            )
             //@ts-ignore
-            const targetCodecScreen = this.adapterRef.mediaCapability.getCodecSend("screen", this.adapterRef._mediasoup._sendTransport.handler._sendingRtpParametersByKind["video"]);
-            const switchVideoCodec = this.adapterRef._mediasoup._webcamProducerCodec && this.adapterRef._mediasoup._webcamProducerCodec !== targetCodecVideo.codecName;
-            if (switchVideoCodec){
-              this.logger.warn(`将视频的Codec切走：`, this.adapterRef._mediasoup._webcamProducerCodec, "=>", targetCodecVideo.codecName);
+            const targetCodecScreen = this.adapterRef.mediaCapability.getCodecSend(
+              'screen',
+              //@ts-ignore
+              this.adapterRef._mediasoup._sendTransport.handler._sendingRtpParametersByKind['video']
+            )
+            const switchVideoCodec =
+              this.adapterRef._mediasoup._webcamProducerCodec &&
+              this.adapterRef._mediasoup._webcamProducerCodec !== targetCodecVideo.codecName
+            if (switchVideoCodec) {
+              this.logger.warn(
+                `将视频的Codec切走：`,
+                this.adapterRef._mediasoup._webcamProducerCodec,
+                '=>',
+                targetCodecVideo.codecName
+              )
             }
-            const switchScreenCodec = this.adapterRef._mediasoup._screenProducerCodec && this.adapterRef._mediasoup._screenProducerCodec !== targetCodecVideo.codecName;
-            if (switchScreenCodec){
-              this.logger.error(`将辅流的Codec切走：`, this.adapterRef._mediasoup._screenProducerCodec, "=>", targetCodecScreen.codecName);
+            const switchScreenCodec =
+              this.adapterRef._mediasoup._screenProducerCodec &&
+              this.adapterRef._mediasoup._screenProducerCodec !== targetCodecVideo.codecName
+            if (switchScreenCodec) {
+              this.logger.error(
+                `将辅流的Codec切走：`,
+                this.adapterRef._mediasoup._screenProducerCodec,
+                '=>',
+                targetCodecScreen.codecName
+              )
             }
-            if (switchVideoCodec || switchScreenCodec){
+            if (switchVideoCodec || switchScreenCodec) {
               // TODO 目前不知道如何在不重新协商的情况下直接切换Codec
               //  Workaround: 主动触发一次重连，导致重新建立RTC连接。
               // @ts-ignore
-              if (this._protoo && this._protoo._transport && this._protoo._transport._ws){
+              if (this._protoo && this._protoo._transport && this._protoo._transport._ws) {
                 // @ts-ignore
                 this._protoo._transport._ws.close()
               }
-            }else{
-              this.logger.log(`Codec保持不动。video:`, this.adapterRef._mediasoup._webcamProducerCodec, `, screen:`, this.adapterRef._mediasoup._screenProducerCodec);
+            } else {
+              this.logger.log(
+                `Codec保持不动。video:`,
+                this.adapterRef._mediasoup._webcamProducerCodec,
+                `, screen:`,
+                this.adapterRef._mediasoup._screenProducerCodec
+              )
             }
           }
-        } else if (type === "Ability"){
-          this._handleAbility(notification.data.externData.data);
+        } else if (type === 'Ability') {
+          this._handleAbility(notification.data.externData.data)
         } else if (type === 'ChangeRight') {
           // 服务器禁用音频/视频: 1 禁用   2 取消禁用  0 无需处理
-          let uid = data.uid;
-          let audioDuration, videoDuration;
-          if(data.audioRight === 1) {
-            this.adapterRef.isAudioBanned = true;
-            audioDuration = data.audioDuration;
-            let mediaType = 'audio';
-            let state = true;
+          let uid = data.uid
+          let audioDuration, videoDuration
+          if (data.audioRight === 1) {
+            this.adapterRef.isAudioBanned = true
+            audioDuration = data.audioDuration
+            let mediaType = 'audio'
+            let state = true
             const rtcError = new RtcError({
               code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
               message: 'ChangeRight audio is banned by server'
             })
-            this.adapterRef.instance.safeEmit('audioVideoBanned', {rtcError, uid, mediaType, state, duration:audioDuration})
-          }else if(data.audioRight === 2) {
-            this.adapterRef.isAudioBanned = false;
-            audioDuration = data.audioDuration;
-            let mediaType = 'audio';
-            let state = false;
+            this.adapterRef.instance.safeEmit('audioVideoBanned', {
+              rtcError,
+              uid,
+              mediaType,
+              state,
+              duration: audioDuration
+            })
+          } else if (data.audioRight === 2) {
+            this.adapterRef.isAudioBanned = false
+            audioDuration = data.audioDuration
+            let mediaType = 'audio'
+            let state = false
             const rtcError = new RtcError({
               code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
               message: 'ChangeRight audio is unbanned by server '
             })
-            this.adapterRef.instance.safeEmit('audioVideoBanned', {rtcError, uid, mediaType, state, duration:audioDuration})
+            this.adapterRef.instance.safeEmit('audioVideoBanned', {
+              rtcError,
+              uid,
+              mediaType,
+              state,
+              duration: audioDuration
+            })
           }
 
-          if(data.videoRight === 1) {
-            this.adapterRef.isVideoBanned = true;
-            videoDuration = data.videoDuration;
-            let mediaType = 'video';
-            let state = true;
+          if (data.videoRight === 1) {
+            this.adapterRef.isVideoBanned = true
+            videoDuration = data.videoDuration
+            let mediaType = 'video'
+            let state = true
             const rtcError = new RtcError({
               code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
               message: 'ChangeRight video is banned by server'
             })
-            this.adapterRef.instance.safeEmit('audioVideoBanned', {rtcError, uid, mediaType, state, duration:videoDuration})
-          }else if(data.videoRight === 2) {
-            this.adapterRef.isVideoBanned = false;
-            videoDuration = data.videoDuration;
-            let mediaType = 'video';
-            let state = false;
+            this.adapterRef.instance.safeEmit('audioVideoBanned', {
+              rtcError,
+              uid,
+              mediaType,
+              state,
+              duration: videoDuration
+            })
+          } else if (data.videoRight === 2) {
+            this.adapterRef.isVideoBanned = false
+            videoDuration = data.videoDuration
+            let mediaType = 'video'
+            let state = false
             const rtcError = new RtcError({
               code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
               message: 'ChangeRight video is unbanned by server'
             })
-            this.adapterRef.instance.safeEmit('audioVideoBanned', {rtcError, uid, mediaType, state, duration:videoDuration})
+            this.adapterRef.instance.safeEmit('audioVideoBanned', {
+              rtcError,
+              uid,
+              mediaType,
+              state,
+              duration: videoDuration
+            })
           }
 
-          if(this.adapterRef.isAudioBanned && this.adapterRef.isVideoBanned) {
+          if (this.adapterRef.isAudioBanned && this.adapterRef.isVideoBanned) {
             this.adapterRef.instance.apiEventReport('setAudioVideoBanned', {
               name: 'set_mediaRightChange',
               oper: '1',
@@ -780,8 +894,8 @@ class Signalling extends EventEmitter {
               isVideoBanned: true
             })
           }
-    
-          if(!this.adapterRef.isAudioBanned && this.adapterRef.isVideoBanned) {
+
+          if (!this.adapterRef.isAudioBanned && this.adapterRef.isVideoBanned) {
             this.adapterRef.instance.apiEventReport('setAudioVideoBanned', {
               name: 'set_mediaRightChange',
               oper: '1',
@@ -789,8 +903,8 @@ class Signalling extends EventEmitter {
               isVideoBanned: true
             })
           }
-    
-          if(this.adapterRef.isAudioBanned && !this.adapterRef.isVideoBanned) {
+
+          if (this.adapterRef.isAudioBanned && !this.adapterRef.isVideoBanned) {
             this.adapterRef.instance.apiEventReport('setAudioVideoBanned', {
               name: 'set_mediaRightChange',
               oper: '1',
@@ -798,8 +912,8 @@ class Signalling extends EventEmitter {
               isVideoBanned: false
             })
           }
-    
-          if(!this.adapterRef.isAudioBanned && !this.adapterRef.isVideoBanned) {
+
+          if (!this.adapterRef.isAudioBanned && !this.adapterRef.isVideoBanned) {
             this.adapterRef.instance.apiEventReport('setAudioVideoBanned', {
               name: 'set_mediaRightChange',
               oper: '1',
@@ -808,35 +922,37 @@ class Signalling extends EventEmitter {
             })
           }
 
-          if(this.adapterRef.isAudioBanned){
-            if(!this.adapterRef.localStream){
-              return;
+          if (this.adapterRef.isAudioBanned) {
+            if (!this.adapterRef.localStream) {
+              return
             }
-            let isAudioOn = this.adapterRef.localStream.audio;
-            let isScreenAudioOn = this.adapterRef.localStream.screenAudio;
+            let isAudioOn = this.adapterRef.localStream.audio
+            let isScreenAudioOn = this.adapterRef.localStream.screenAudio
             // 关掉所有音频相关
-            (!!isAudioOn) && this.adapterRef.localStream.close({type: "audio"});
-            (!!isScreenAudioOn) && this.adapterRef.localStream.close({type: "screenAudio"});
-            
-            this.adapterRef.localStream.stopAllEffects(); // 关掉所有音效
-            let localAudio = this.adapterRef.localStream.mediaHelper.audio;
-            if(!!localAudio.webAudio 
-              && !!localAudio.webAudio.context 
-              && !!localAudio.webAudio.mixAudioConf 
-              && !!localAudio.webAudio.mixAudioConf.audioSource) {
+            !!isAudioOn && this.adapterRef.localStream.close({ type: 'audio' })
+            !!isScreenAudioOn && this.adapterRef.localStream.close({ type: 'screenAudio' })
+
+            this.adapterRef.localStream.stopAllEffects() // 关掉所有音效
+            let localAudio = this.adapterRef.localStream.mediaHelper.audio
+            if (
+              !!localAudio.webAudio &&
+              !!localAudio.webAudio.context &&
+              !!localAudio.webAudio.mixAudioConf &&
+              !!localAudio.webAudio.mixAudioConf.audioSource
+            ) {
               // 关掉伴音
-              this.adapterRef.localStream.stopAudioMixing();
+              this.adapterRef.localStream.stopAudioMixing()
             }
           }
-          if(!this.adapterRef.localStream){
-            return;
+          if (!this.adapterRef.localStream) {
+            return
           }
-          if(this.adapterRef.isVideoBanned){
-            let isVideoOn = this.adapterRef.localStream.video;
-            let isScreenOn = this.adapterRef.localStream.screen;
+          if (this.adapterRef.isVideoBanned) {
+            let isVideoOn = this.adapterRef.localStream.video
+            let isScreenOn = this.adapterRef.localStream.screen
             // 关掉所有视频相关 (辅流跟随视频流同步禁止)
-            (!!isVideoOn) && this.adapterRef.localStream.close({type: "video"});
-            (!!isScreenOn) && this.adapterRef.localStream.close({type: "screen"});
+            !!isVideoOn && this.adapterRef.localStream.close({ type: 'video' })
+            !!isScreenOn && this.adapterRef.localStream.close({ type: 'screen' })
           }
         } else {
           this.logger.error(`收到OnUserData通知消息 type = ${type}, data: `, data)
@@ -845,24 +961,32 @@ class Signalling extends EventEmitter {
     }
   }
 
-  _handleFailed () {
+  _handleFailed() {
     this.logger.log('Signalling:_handleFailed')
   }
 
-  _handleClose () {
-    
-  }
-  
-  _handleDisconnected (_protoo: Peer) {
+  _handleClose() {}
+
+  _handleDisconnected(_protoo: Peer) {
     this.logger.log('Signalling:_handleDisconnected')
-    if (this._reconnectionTimer && (this.adapterRef.channelStatus === 'connectioning' || this.adapterRef.channelStatus === 'join')) {
-      if (_protoo.closed){
-        this.logger.warn(`信令通道#${_protoo.id}_${_protoo._transport?.wsid} 在建立过程中被关闭。当前正在重连中，等待下次重连过程。`)
+    if (
+      this._reconnectionTimer &&
+      (this.adapterRef.channelStatus === 'connectioning' ||
+        this.adapterRef.channelStatus === 'join')
+    ) {
+      if (_protoo.closed) {
+        this.logger.warn(
+          `信令通道#${_protoo.id}_${_protoo._transport?.wsid} 在建立过程中被关闭。当前正在重连中，等待下次重连过程。`
+        )
       } else {
-        this.logger.warn(`信令通道#${_protoo.id}_${_protoo._transport?.wsid} 在建立过程中被关闭。信令通道会自动重试。连接地址：${_protoo._transport?._url}`)
+        this.logger.warn(
+          `信令通道#${_protoo.id}_${_protoo._transport?.wsid} 在建立过程中被关闭。信令通道会自动重试。连接地址：${_protoo._transport?._url}`
+        )
       }
     } else {
-      this.logger.warn(`信令通道#${_protoo.id}_${_protoo._transport?.wsid} 收到关闭信号，即将开始重连过程。`);
+      this.logger.warn(
+        `信令通道#${_protoo.id}_${_protoo._transport?.wsid} 收到关闭信号，即将开始重连过程。`
+      )
       this.adapterRef.channelStatus = 'connectioning'
       this._reconnection()
     }
@@ -871,16 +995,16 @@ class Signalling extends EventEmitter {
     })
   }
 
-  async join () {
-    let gmEnable;
+  async join() {
+    let gmEnable
     if (!this.adapterRef.encryption.encryptionSecret) {
-      gmEnable = false;
-    } else if (this.adapterRef.encryption.encryptionMode === "none"){
-      gmEnable = false;
+      gmEnable = false
+    } else if (this.adapterRef.encryption.encryptionMode === 'none') {
+      gmEnable = false
     } else {
-      gmEnable = true;
+      gmEnable = true
     }
-    
+
     const requestData = {
       method: 'Join',
       requestId: `${Math.ceil(Math.random() * 1e9)}`,
@@ -890,38 +1014,40 @@ class Signalling extends EventEmitter {
         userName: `${this.adapterRef.channelInfo.uid}`,
         token: this.adapterRef.channelInfo.token,
         cname: `${this.adapterRef.channelInfo.channelName}`,
-        subType: 'select', 
-        role: 'part', 
-        version: '2.0', 
-        sessionMode: 'meeting', 
+        subType: 'select',
+        role: 'part',
+        version: '2.0',
+        sessionMode: 'meeting',
         engineVersion: ENGINE_VERSION,
         userRole: this.adapterRef.instance._roleInfo.userRole, // 0:主播，1:观众
         userType: 3,
-        platformType: 16, 
-        rtmp: {      
-          support: this.adapterRef.channelInfo.sessionConfig.liveEnable       
+        platformType: 16,
+        rtmp: {
+          support: this.adapterRef.channelInfo.sessionConfig.liveEnable
         },
-        record: {   
-          host: this.adapterRef.channelInfo.sessionConfig.isHostSpeaker,                  
+        record: {
+          host: this.adapterRef.channelInfo.sessionConfig.isHostSpeaker,
           supportVideo: this.adapterRef.channelInfo.sessionConfig.recordVideo,
           supportAuido: this.adapterRef.channelInfo.sessionConfig.recordAudio,
-          recordType: this.adapterRef.channelInfo.sessionConfig.recordType - 0      
+          recordType: this.adapterRef.channelInfo.sessionConfig.recordType - 0
         },
         mediaCapabilitySet: this.adapterRef.mediaCapability.stringify(),
-        browser: {                       
-          name: getBrowserInfo().browserName,       
+        browser: {
+          name: getBrowserInfo().browserName,
           version: `${getBrowserInfo().browserVersion}`
         },
         gmEnable: gmEnable,
         gmMode: encryptionModeToInt(this.adapterRef.encryption.encryptionMode),
         gmKey: this.adapterRef.encryption.encryptionSecret,
-        customEncryption: getParameters().forceCustomEncryptionOff ? false : this.adapterRef.encryption.encodedInsertableStreams,
+        customEncryption: getParameters().forceCustomEncryptionOff
+          ? false
+          : this.adapterRef.encryption.encodedInsertableStreams,
         userPriority: this.adapterRef.userPriority
       }
     }
 
     this.logger.log('Signalling: socket连接成功，开始发送Join请求')
-    if (!this._protoo){
+    if (!this._protoo) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
         message: 'No this._protoo 3'
@@ -934,57 +1060,57 @@ class Signalling extends EventEmitter {
     try {
       let response = null
       let thisProtoo = this._protoo
-      try{
-        response = await this._protoo.request('Join', requestData) as SignalJoinRes;
-      }catch(e){
-        if (thisProtoo !== this._protoo){
+      try {
+        response = (await this._protoo.request('Join', requestData)) as SignalJoinRes
+      } catch (e: any) {
+        if (thisProtoo !== this._protoo) {
           this.logger.warn(`过期的信令通道消息：【${e.name}】`, e.message)
-          return;
-        }else{
-          throw e;
+          return
+        } else {
+          throw e
         }
       }
       //this.logger.log('Signalling:Join请求 收到ack -> ', JSON.stringify(response, (k, v)=>{return k === "edgeRtpCapabilities" ? null : v;}));
-      this.logger.log('Signalling:Join请求收到response');
+      this.logger.log('Signalling:Join请求收到response')
 
       if (response.code != 200) {
-        let errMsg = "Unknown Error"
-        if (response.externData){
+        let errMsg = 'Unknown Error'
+        if (response.externData) {
           errMsg = response.externData.errMsg
-        } else if (response.errMsg){
+        } else if (response.errMsg) {
           errMsg = response.errMsg
         }
         this.logger.error(`Signalling: 加入房间失败, code = ${response.code}, reason = ${errMsg}`)
-        this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-error');
+        this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-error')
         this._joinFailed(response.code, errMsg)
         return
-      } 
-      let uid = this.adapterRef.channelInfo.uid;
+      }
+      let uid = this.adapterRef.channelInfo.uid
       // 服务器禁用音视频: 1 禁用   0 和 2 取消禁用
       if (response.externData.audioRight === 1) {
-        this.adapterRef.isAudioBanned = true;
-        let mediaType = 'audio';
-        let state = true;
+        this.adapterRef.isAudioBanned = true
+        let mediaType = 'audio'
+        let state = true
         const rtcError = new RtcError({
           code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
           message: 'Join() audio is banned by server'
         })
-        this.adapterRef.instance.safeEmit('audioVideoBanned', {rtcError, uid, mediaType, state})
+        this.adapterRef.instance.safeEmit('audioVideoBanned', { rtcError, uid, mediaType, state })
       } else {
-        this.adapterRef.isAudioBanned = false;
+        this.adapterRef.isAudioBanned = false
       }
 
       if (response.externData.videoRight === 1) {
-        this.adapterRef.isVideoBanned = true;
-        let mediaType = 'video';
-        let state = true;
+        this.adapterRef.isVideoBanned = true
+        let mediaType = 'video'
+        let state = true
         const rtcError = new RtcError({
           code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
           message: 'Join() video is banned by server'
         })
-        this.adapterRef.instance.safeEmit('audioVideoBanned', {rtcError, uid, mediaType, state})
+        this.adapterRef.instance.safeEmit('audioVideoBanned', { rtcError, uid, mediaType, state })
       } else {
-        this.adapterRef.isVideoBanned = false;
+        this.adapterRef.isVideoBanned = false
       }
 
       this.adapterRef.instance.apiEventReport('setAudioVideoBanned', {
@@ -995,7 +1121,7 @@ class Signalling extends EventEmitter {
       })
 
       if (this.adapterRef.isAudioBanned && this.adapterRef.isVideoBanned) {
-        this.logger.warn("服务器禁止发送音频流")
+        this.logger.warn('服务器禁止发送音频流')
       }
 
       if (this._reconnectionTimer) {
@@ -1007,8 +1133,8 @@ class Signalling extends EventEmitter {
       this.logger.log('Signalling: 加入房间成功')
       this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
       this.adapterRef.connectState.curState = 'CONNECTED'
-      
-      this.adapterRef.audioAsl.enabled = response.supportWebAsl ? "yes" : "no"
+
+      this.adapterRef.audioAsl.enabled = response.supportWebAsl ? 'yes' : 'no'
       this.adapterRef.audioAsl.aslActiveNum = response.aslActiveNum
       if (response.supportWebAsl) {
         if (response.aslActiveNum) {
@@ -1023,7 +1149,7 @@ class Signalling extends EventEmitter {
         enabled: !!response.supportWebAsl,
         aslActiveNum: response.aslActiveNum
       })
-      
+
       if (this.adapterRef.channelStatus === 'connectioning') {
         this.adapterRef.connectState.reconnect = true
         this.logger.log('Signalling: 重连成功, 清除之前的媒体的通道')
@@ -1045,16 +1171,24 @@ class Signalling extends EventEmitter {
             message: 'media server error 25'
           })
         }
-        this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities;
-        this.adapterRef.mediaCapability.parseRoom(response.externData.roomCapability);
-        this.adapterRef.instance.safeEmit('@mediaCapabilityChange');
-        await this.adapterRef._mediasoup.init(response.supportTurn ? response.turnParameters: undefined)
+        this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities
+        this.adapterRef.mediaCapability.parseRoom(response.externData.roomCapability)
+        this.adapterRef.instance.safeEmit('@mediaCapabilityChange')
+        await this.adapterRef._mediasoup.init(
+          response.supportTurn ? response.turnParameters : undefined
+        )
         if (this.adapterRef.localStream) {
-          if (this.adapterRef.localStream.audio || this.adapterRef.localStream.video
-            || this.adapterRef.localStream.screen || this.adapterRef.localStream.screenAudio
-            || getParameters().allowEmptyMedia || this.adapterRef.localStream.audioSlave
-          ){
-            this.logger.log(`重连成功，重新publish本端流: audio ${this.adapterRef.localStream.hasAudio()}, video ${this.adapterRef.localStream.hasVideo()}, screen ${this.adapterRef.localStream.hasScreen()}`)
+          if (
+            this.adapterRef.localStream.audio ||
+            this.adapterRef.localStream.video ||
+            this.adapterRef.localStream.screen ||
+            this.adapterRef.localStream.screenAudio ||
+            getParameters().allowEmptyMedia ||
+            this.adapterRef.localStream.audioSlave
+          ) {
+            this.logger.log(
+              `重连成功，重新publish本端流: audio ${this.adapterRef.localStream.hasAudio()}, video ${this.adapterRef.localStream.hasVideo()}, screen ${this.adapterRef.localStream.hasScreen()}`
+            )
             this.adapterRef.instance.doPublish(this.adapterRef.localStream)
           } else {
             this.logger.log(`重连成功，当前没有媒体流，无需发布`)
@@ -1066,7 +1200,8 @@ class Signalling extends EventEmitter {
         this.adapterRef.connectState.reconnect = false
         const webrtc2Param = this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2
         const currentTime = Date.now()
-        this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.joinedSuccessedTime = currentTime
+        this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.joinedSuccessedTime =
+          currentTime
         this.adapterRef.instance.apiEventReport('setLogin', {
           a_record: this.adapterRef.channelInfo.sessionConfig.recordAudio,
           v_record: this.adapterRef.channelInfo.sessionConfig.recordVideo,
@@ -1078,27 +1213,35 @@ class Signalling extends EventEmitter {
           time_elapsed: currentTime - webrtc2Param.startJoinTime,
           model: this.browserDevice
         })
-        if (!this.adapterRef._mediasoup){
+        if (!this.adapterRef._mediasoup) {
           throw new RtcError({
             code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 26'
           })
         }
-        this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities;
-        this.adapterRef.mediaCapability.parseRoom(response.externData.roomCapability);
-        this.adapterRef.instance.safeEmit('@mediaCapabilityChange');
-        await this.adapterRef._mediasoup.init(response.supportTurn ? response.turnParameters: undefined)
+        this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities
+        this.adapterRef.mediaCapability.parseRoom(response.externData.roomCapability)
+        this.adapterRef.instance.safeEmit('@mediaCapabilityChange')
+        await this.adapterRef._mediasoup.init(
+          response.supportTurn ? response.turnParameters : undefined
+        )
       }
-          
-      this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
+
+      this.adapterRef.instance.safeEmit('connection-state-change', this.adapterRef.connectState)
       if (this.adapterRef._enableRts) {
         await this.createRTSTransport()
         this.adapterRef.instance.emit('connected')
       }
-      this.logger.log(`Signalling: 查看房间其他人的发布信息: ${JSON.stringify(response.externData.userList)}`)
-      if (response.externData !== undefined && response.externData.userList && response.externData.userList.length) {
+      this.logger.log(
+        `Signalling: 查看房间其他人的发布信息: ${JSON.stringify(response.externData.userList)}`
+      )
+      if (
+        response.externData !== undefined &&
+        response.externData.userList &&
+        response.externData.userList.length
+      ) {
         //兼容喜欢把箭头函数transpile成ES5的客户
-        let that = this;
+        let that = this
         for (const peer of response.externData.userList) {
           let uid = peer.uid
           if (this.adapterRef.channelInfo.uidType === 'string') {
@@ -1115,33 +1258,33 @@ class Signalling extends EventEmitter {
               video: false,
               screen: false,
               client: this.adapterRef.instance,
-              platformType: peer.platformType,
+              platformType: peer.platformType
             })
             this.adapterRef.remoteStreamMap[uid] = remoteStream
-            this.adapterRef.memberMap[uid] = "" + uid;
-            this.adapterRef.instance.safeEmit('peer-online', {uid})
+            this.adapterRef.memberMap[uid] = '' + uid
+            this.adapterRef.instance.safeEmit('peer-online', { uid })
           } else {
-            remoteStream.active = true;
-            this.adapterRef.memberMap[uid] = "" + uid;
-            this.adapterRef.instance.safeEmit('peer-online', {uid})
+            remoteStream.active = true
+            this.adapterRef.memberMap[uid] = '' + uid
+            this.adapterRef.instance.safeEmit('peer-online', { uid })
           }
           if (peer.producerInfoList) {
             for (const peoducerInfo of peer.producerInfoList) {
-              const { mediaType, producerId, mute, simulcastEnable } = peoducerInfo;
-              let mediaTypeShort: MediaTypeShort;
-              switch (mediaType){
-                case "video":
-                  mediaTypeShort = "video";
-                  break;
-                case "screenShare":
-                  mediaTypeShort = "screen";
-                  break;
-                case "audio":
-                  mediaTypeShort = "audio";
-                  break;
-                case "subAudio":
-                  mediaTypeShort = "audioSlave";
-                  break;
+              const { mediaType, producerId, mute, simulcastEnable } = peoducerInfo
+              let mediaTypeShort: MediaTypeShort
+              switch (mediaType) {
+                case 'video':
+                  mediaTypeShort = 'video'
+                  break
+                case 'screenShare':
+                  mediaTypeShort = 'screen'
+                  break
+                case 'audio':
+                  mediaTypeShort = 'audio'
+                  break
+                case 'subAudio':
+                  mediaTypeShort = 'audioSlave'
+                  break
                 default:
                   this.logger.warn(`join: 不支持的媒体类型 ${mediaType} ${uid}`)
                   continue
@@ -1153,32 +1296,52 @@ class Signalling extends EventEmitter {
               remoteStream['pubStatus'][mediaTypeShort]['mute'] = mute
               remoteStream['muteStatus'][mediaTypeShort].send = mute
               remoteStream['pubStatus'][mediaTypeShort]['simulcastEnable'] = simulcastEnable
-              
-              setTimeout(()=>{
+
+              setTimeout(() => {
                 // join response中的事件应该延迟到join发生后再抛出
-                that.logger.log(`Signalling: 通知 ${remoteStream.getId()} 发布信息: ${JSON.stringify(remoteStream.pubStatus, null, '')}`)
+                that.logger.log(
+                  `Signalling: 通知 ${remoteStream.getId()} 发布信息: ${JSON.stringify(
+                    remoteStream.pubStatus,
+                    null,
+                    ''
+                  )}`
+                )
                 if (that.adapterRef._enableRts && that.adapterRef._rtsTransport) {
-                  that.adapterRef.instance.emit('rts-stream-added', {stream: remoteStream, kind: mediaTypeShort})
-                } else if (remoteStream.pubStatus.audio.audio || remoteStream.pubStatus.video.video || remoteStream.pubStatus.screen.screen) {
-                  that.adapterRef.instance.safeEmit('stream-added', {stream: remoteStream, 'mediaType': mediaTypeShort})
+                  that.adapterRef.instance.emit('rts-stream-added', {
+                    stream: remoteStream,
+                    kind: mediaTypeShort
+                  })
+                } else if (
+                  remoteStream.pubStatus.audio.audio ||
+                  remoteStream.pubStatus.video.video ||
+                  remoteStream.pubStatus.screen.screen
+                ) {
+                  that.adapterRef.instance.safeEmit('stream-added', {
+                    stream: remoteStream,
+                    mediaType: mediaTypeShort
+                  })
                 }
 
                 if (mute) {
                   if (mediaTypeShort === 'audioSlave') {
-                    that.adapterRef.instance.safeEmit(`mute-audio-slave`, {uid: remoteStream.getId()})
+                    that.adapterRef.instance.safeEmit(`mute-audio-slave`, {
+                      uid: remoteStream.getId()
+                    })
                   } else {
-                    that.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
+                    that.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {
+                      uid: remoteStream.getId()
+                    })
                   }
                 }
-              }, 0);
+              }, 0)
             }
-          } 
+          }
         }
         for (let uid in this.adapterRef.remoteStreamMap) {
-          let remoteStream = this.adapterRef.remoteStreamMap[uid];
+          let remoteStream = this.adapterRef.remoteStreamMap[uid]
           if (!remoteStream.active) {
-            this.logger.warn(`重连期间远端流停止发布：${uid}`);
-            delete this.adapterRef.remoteStreamMap[uid];
+            this.logger.warn(`重连期间远端流停止发布：${uid}`)
+            delete this.adapterRef.remoteStreamMap[uid]
           }
         }
       }
@@ -1189,30 +1352,34 @@ class Signalling extends EventEmitter {
         this._reject = null
       } else {
         // 重连成功
-        this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-success');
-        if (this.reconnectionControl.resumers.length){
-          this.reconnectionControl.resumers.forEach((resolve)=> resolve({reason: "reconnection-success"}))
+        this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-success')
+        if (this.reconnectionControl.resumers.length) {
+          this.reconnectionControl.resumers.forEach((resolve) =>
+            resolve({ reason: 'reconnection-success' })
+          )
           this.reconnectionControl.resumers = []
         }
       }
       this.doSendKeepAliveTask()
-    } catch (e:any) {
+    } catch (e: any) {
       this.logger.error('Signalling: 登录失败, ' + e.name + ': ' + e.message)
       this._joinFailed(-1, 'LOGIN_ERROR')
     }
   }
 
-  _joinFailed (reasonCode:string|undefined|number, errMsg: string) {
+  _joinFailed(reasonCode: string | undefined | number, errMsg: string) {
     this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
     this.adapterRef.connectState.curState = 'DISCONNECTED'
     this.adapterRef.connectState.reconnect = false
     this.adapterRef.channelStatus = 'init'
-    this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
+    this.adapterRef.instance.safeEmit('connection-state-change', this.adapterRef.connectState)
 
-    if (reasonCode === 4009){
-      this.adapterRef.instance.safeEmit("crypt-error", {cryptType: this.adapterRef.encryption.encryptionMode});
+    if (reasonCode === 4009) {
+      this.adapterRef.instance.safeEmit('crypt-error', {
+        cryptType: this.adapterRef.encryption.encryptionMode
+      })
     }
-    
+
     //上报login事件
     const currentTime = Date.now()
     const webrtc2Param = this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2
@@ -1241,9 +1408,13 @@ class Signalling extends EventEmitter {
       this.adapterRef.channelStatus = 'leave'
       this.adapterRef.instance.stopSession()
     } else {
-      switch (errMsg){
-        case "room not found":
-          this.logger.error('网络重连时，加入房间失败，主动离开。重连失败原因：', errMsg, '，这通常是因为房间内其他人都已离开，房间关闭引起的')
+      switch (errMsg) {
+        case 'room not found':
+          this.logger.error(
+            '网络重连时，加入房间失败，主动离开。重连失败原因：',
+            errMsg,
+            '，这通常是因为房间内其他人都已离开，房间关闭引起的'
+          )
           break
         default:
           this.logger.error('网络重连时，加入房间失败，主动离开。重连失败原因：', errMsg)
@@ -1253,7 +1424,7 @@ class Signalling extends EventEmitter {
     }
   }
 
-  doSendKeepAliveTask () {
+  doSendKeepAliveTask() {
     if (this.keepAliveTimer) {
       clearInterval(this.keepAliveTimer)
       this.keepAliveTimer = null
@@ -1263,13 +1434,13 @@ class Signalling extends EventEmitter {
     }, 6 * 1000)
   }
 
-  async doSendKeepAlive () {
-    if(!this._protoo?.connected) return
+  async doSendKeepAlive() {
+    if (!this._protoo?.connected) return
     const transportId = `#${this._protoo.id}_${this._protoo._transport?.wsid}`
     try {
-      const response = await this._protoo.request('Heartbeat');
+      const response = await this._protoo.request('Heartbeat')
       //this.logger.log('包活信令回包: ', response)
-    } catch (e:any) {
+    } catch (e: any) {
       this.logger.error(`信令包保活失败, reanson: ${e.message}`)
       // if (this.keepAliveTimer) {
       //   this._handleDisconnected(this._protoo)
@@ -1280,7 +1451,7 @@ class Signalling extends EventEmitter {
   }
 
   async createRTSTransport() {
-    this.logger.log(`createRTSTransport()`);
+    this.logger.log(`createRTSTransport()`)
     if (!this._protoo) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
@@ -1294,13 +1465,13 @@ class Signalling extends EventEmitter {
     }
 
     try {
-      const response = await this._protoo.request('CreateWsTrasnport');
+      const response = await this._protoo.request('CreateWsTrasnport')
       this.logger.warn('CreateWsTrasnport response: ', JSON.stringify(response, null, ''))
-      const { code, errMsg, transportId, wsPort='6666' } = response;
+      const { code, errMsg, transportId, wsPort = '6666' } = response
       if (code == 200) {
         /*if (this.adapterRef._rtsTransport && wsPort == this.adapterRef._rtsTransport._port) {
           this.logger.log('CreateWsTrasnport: 已经创建')
-          return 
+          return
         } */
         if (this.adapterRef._rtsTransport) {
           this.logger.log('CreateWsTrasnport: 需要更新')
@@ -1317,14 +1488,14 @@ class Signalling extends EventEmitter {
       } else {
         this.logger.error(`createWsTrasnport failed, code: ${code}, reason: ${errMsg}`)
       }
-    } catch (e) {
-      this.logger.error('createRTSTransport failed:', e.name, e.message);
-      throw e;
+    } catch (e: any) {
+      this.logger.error('createRTSTransport failed:', e.name, e.message)
+      throw e
     }
   }
 
   async rtsRequestKeyFrame(consumerId: string) {
-    this.logger.log(`rtsRequestKeyFrame(): `, consumerId);
+    this.logger.log(`rtsRequestKeyFrame(): `, consumerId)
     if (!this._protoo) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
@@ -1337,38 +1508,37 @@ class Signalling extends EventEmitter {
       })
     }
     try {
-      const response = await this._protoo.request('RequestKeyFrame', {consumerId});
+      const response = await this._protoo.request('RequestKeyFrame', { consumerId })
       this.logger.warn('rtsRequestKeyFrame response: ', response)
-      let { code, errMsg } = response;
+      let { code, errMsg } = response
       if (code == 200) {
         this.logger.log('RTS 关键帧请求完成')
       } else {
         this.logger.error(`RTS 关键帧请求失败, code: ${code}, reason: ${errMsg}`)
       }
     } catch (e) {
-      this.logger.error('rtsRequestKeyFrame failed:', e);
-      throw e;
+      this.logger.error('rtsRequestKeyFrame failed:', e)
+      throw e
     }
   }
 
-  updateMaskStatus(){
+  updateMaskStatus() {
     let now = Date.now()
-    for (let i = this.autoMask.data.length - 1; i >=0; i--){
+    for (let i = this.autoMask.data.length - 1; i >= 0; i--) {
       let userData = this.autoMask.data[i]
-      if (now >= userData.targetEndMs){
-        
+      if (now >= userData.targetEndMs) {
         const localUid = this.adapterRef.channelInfo.uid
-        if (localUid === userData.maskUid && this.adapterRef.localStream){
-          this.logger.log("updateMaskStatus 本地用户去除打码", userData.maskUid)
+        if (localUid === userData.maskUid && this.adapterRef.localStream) {
+          this.logger.log('updateMaskStatus 本地用户去除打码', userData.maskUid)
           this.adapterRef.localStream._play?.disableMask()
-        }else{
-          const remoteStream = this.adapterRef.remoteStreamMap[userData.maskUid];
-          if (remoteStream){
-            if (remoteStream._play?.mask.enabled){
-              this.logger.log("updateMaskStatus 远端用户去除打码", userData.maskUid)
+        } else {
+          const remoteStream = this.adapterRef.remoteStreamMap[userData.maskUid]
+          if (remoteStream) {
+            if (remoteStream._play?.mask.enabled) {
+              this.logger.log('updateMaskStatus 远端用户去除打码', userData.maskUid)
               remoteStream._play.disableMask()
             }
-          }else{
+          } else {
             // 该用户已离开频道
           }
         }
@@ -1376,36 +1546,48 @@ class Signalling extends EventEmitter {
         this.autoMask.data.splice(i, 1)
       }
     }
-    
+
     let nextTs = Number.MAX_SAFE_INTEGER
-    for (let i = 0; i < this.autoMask.data.length; i++){
+    for (let i = 0; i < this.autoMask.data.length; i++) {
       let userData = this.autoMask.data[i]
       nextTs = Math.min(nextTs, userData.targetEndMs)
       const localUid = this.adapterRef.channelInfo.uid
-      if (localUid == userData.maskUid && this.adapterRef.localStream){
-        this.logger.log("updateMaskStatus 本地用户增加打码", userData.maskUid)
+      if (localUid == userData.maskUid && this.adapterRef.localStream) {
+        this.logger.log('updateMaskStatus 本地用户增加打码', userData.maskUid)
         this.adapterRef.localStream._play?.enableMask()
-      }else{
-        const remoteStream = this.adapterRef.remoteStreamMap[userData.maskUid];
-        if (remoteStream){
-          if (remoteStream._play && !remoteStream._play.mask.enabled){
-            this.logger.log("updateMaskStatus 远端用户增加打码", userData.maskUid, "打码时长", userData.duration, "秒")
+      } else {
+        const remoteStream = this.adapterRef.remoteStreamMap[userData.maskUid]
+        if (remoteStream) {
+          if (remoteStream._play && !remoteStream._play.mask.enabled) {
+            this.logger.log(
+              'updateMaskStatus 远端用户增加打码',
+              userData.maskUid,
+              '打码时长',
+              userData.duration,
+              '秒'
+            )
             remoteStream._play.enableMask()
           }
-        }else{
-          this.logger.log("updateMaskStatus 远端用户不在频道中", userData.maskUid, "打码时长", userData.duration, "秒")
+        } else {
+          this.logger.log(
+            'updateMaskStatus 远端用户不在频道中',
+            userData.maskUid,
+            '打码时长',
+            userData.duration,
+            '秒'
+          )
         }
       }
     }
-    if (this.autoMask.timer){
+    if (this.autoMask.timer) {
       clearTimeout(this.autoMask.timer)
     }
-    this.autoMask.timer = setTimeout(()=>{
+    this.autoMask.timer = setTimeout(() => {
       this.updateMaskStatus()
     }, nextTs - now)
   }
 
-  async doSendLogout () {
+  async doSendLogout() {
     this.logger.log('doSendLogout begin')
     /*if (this.adapterRef._mediasoup) {
       this.adapterRef._mediasoup._sendTransport && this.adapterRef._mediasoup._sendTransport.close()
@@ -1416,34 +1598,32 @@ class Signalling extends EventEmitter {
       clearInterval(this.keepAliveTimer)
       this.keepAliveTimer = null
     }
-    if(!this._protoo || !this._protoo.connected) return
+    if (!this._protoo || !this._protoo.connected) return
 
     let producerData = {
       requestId: `${Math.ceil(Math.random() * 1e9)}`,
       externData: {
-      reason: 0
+        reason: 0
       }
-    };
-    this._protoo.notify('Leave', producerData);
+    }
+    this._protoo.notify('Leave', producerData)
     this.logger.log('doSendLogout success')
   }
 
-  _handleStreamStatusNotify(data:any) {
+  _handleStreamStatusNotify(data: any) {}
 
-  }
-
-  _handleNetStatusNotify(data: {netStatusList: string}) {
-    const netStatusList = data.netStatusList;
+  _handleNetStatusNotify(data: { netStatusList: string }) {
+    const netStatusList = data.netStatusList
     //this.logger.warn('_handleNetStatusNotify: _userNetStatusUpdateEvent 网络状态: %s', netStatusList)
     const base64 = parseBase64(netStatusList)
     let str = base64.toString()
     //let str = '02001a080000000000000003001b08000000000000000200'
-    let networkQuality:NetStatusItem[] = []
+    let networkQuality: NetStatusItem[] = []
     let count = str.substr(2, 2) + str.substr(0, 2)
     count = parseInt(count, 16)
     str = str.substr(4)
     for (let i = 0; i < count; i++) {
-      let uidString = str.substr(0, 16);
+      let uidString = str.substr(0, 16)
       uidString = reverse(uidString)
       const serverToClientNetStatusString = str.substr(16, 2)
       const clientToServerNetStatusString = str.substr(18, 2)
@@ -1458,70 +1638,75 @@ class Signalling extends EventEmitter {
       }
       //item.uid = parseInt(uidString, 16)
       const item = {
-        uid: this.adapterRef.channelInfo.uidType === 'string' ? hex2int2String(uidString) : parseInt(uidString, 16),
+        uid:
+          this.adapterRef.channelInfo.uidType === 'string'
+            ? hex2int2String(uidString)
+            : parseInt(uidString, 16),
         //uid: parseInt(uidString, 16),
         downlinkNetworkQuality: parseInt(serverToClientNetStatusString, 16),
         uplinkNetworkQuality: parseInt(clientToServerNetStatusString, 16),
-        receiveTs: Date.now(),
-      };
+        receiveTs: Date.now()
+      }
       networkQuality.push(item)
       str = str.substr(22 + extLen)
     }
-    function reverse(str:string) {
-      let stack = [] 
-      for(var len = str.length, i = len; i >= 1; i = i-2){
-        stack.push(str[i-2], str[i-1])
+    function reverse(str: string) {
+      let stack = []
+      for (var len = str.length, i = len; i >= 1; i = i - 2) {
+        stack.push(str[i - 2], str[i - 1])
       }
-      return stack.join('');  
+      return stack.join('')
     }
 
-    function hex2int2String(hex:string) {
+    function hex2int2String(hex: string) {
       const len = hex.length
       let a = new Array(len)
-      let code;
+      let code
       let value = new BigNumber(0)
       for (let i = 0; i < len; i++) {
-          code = hex.charCodeAt(i);
-          if (48<=code && code < 58) {
-              code -= 48;
-          } else {
-              code = (code & 0xdf) - 65 + 10;
-          }
-          a[i] = code;
+        code = hex.charCodeAt(i)
+        if (48 <= code && code < 58) {
+          code -= 48
+        } else {
+          code = (code & 0xdf) - 65 + 10
+        }
+        a[i] = code
       }
-      for(let i = 0; i < a.length; i++ ){
-          const c = a[i]
-          const x = multiply(value, 16)
-          value = plus(x, c)
+      for (let i = 0; i < a.length; i++) {
+        const c = a[i]
+        const x = multiply(value, 16)
+        value = plus(x, c)
       }
       return value.toString()
     }
 
-    function multiply(x: BigNumber, y:BigNumber|number) {
-      if(x.toNumber() ==0) return x
+    function multiply(x: BigNumber, y: BigNumber | number) {
+      if (x.toNumber() == 0) return x
       //x = new BigNumber(x)
       const z = x.multipliedBy(y)
-      //@ts-ignore          
-      BigNumber('7e+500').times(y)    // '1.26e+501'
-      x.multipliedBy('-a', 16)  
+      //@ts-ignore
+      BigNumber('7e+500').times(y) // '1.26e+501'
+      x.multipliedBy('-a', 16)
       return z
     }
 
-    function plus(x:BigNumber, y:BigNumber|number){
-        //x = new BigNumber(x)
-        y = x.plus(y)
-        //@ts-ignore                  
-        BigNumber(0.7).plus(x).plus(y)  
-        x.plus('0.1', 8)
-        return y 
+    function plus(x: BigNumber, y: BigNumber | number) {
+      //x = new BigNumber(x)
+      y = x.plus(y)
+      //@ts-ignore
+      BigNumber(0.7).plus(x).plus(y)
+      x.plus('0.1', 8)
+      return y
     }
     let isExit = true
-    let newList:NetStatusItem[] = []
+    let newList: NetStatusItem[] = []
     //this.logger.log('服务器下发的网络状态通知: %o', networkQuality)
-    networkQuality = networkQuality.filter((item)=>{return item.uid != 0})
-    this.adapterRef.netStatusList.map(statusItem => {
+    networkQuality = networkQuality.filter((item) => {
+      return item.uid != 0
+    })
+    this.adapterRef.netStatusList.map((statusItem) => {
       isExit = true
-      networkQuality.map(qualityItem => {
+      networkQuality.map((qualityItem) => {
         if (statusItem.uid == qualityItem.uid || qualityItem.uid == 0) {
           isExit = false
         }
@@ -1533,31 +1718,31 @@ class Signalling extends EventEmitter {
     let result = newList.concat(networkQuality)
     result = result.filter((item) => {
       // https://jira.netease.com/browse/NRTCG2-6269
-      return this.adapterRef.memberMap[item.uid] || item.uid == this.adapterRef.channelInfo.uid; 
-    });
+      return this.adapterRef.memberMap[item.uid] || item.uid == this.adapterRef.channelInfo.uid
+    })
     this.adapterRef.netStatusList = result
     this.adapterRef.instance.safeEmit('network-quality', this.adapterRef.netStatusList)
   }
 
-  _handleMuteNotify (data: {producerId: string, mute: boolean}) {
-    const producerId = data.producerId;
-    const mute = data.mute;
-    Object.values(this.adapterRef.remoteStreamMap).forEach(stream => {
-      const mediaTypeList:MediaTypeShort[] = ["audio", "video", "screen", "audioSlave"]
-      mediaTypeList.forEach((mediaTypeShort)=>{
-        if (stream.pubStatus[mediaTypeShort].producerId === producerId){
+  _handleMuteNotify(data: { producerId: string; mute: boolean }) {
+    const producerId = data.producerId
+    const mute = data.mute
+    Object.values(this.adapterRef.remoteStreamMap).forEach((stream) => {
+      const mediaTypeList: MediaTypeShort[] = ['audio', 'video', 'screen', 'audioSlave']
+      mediaTypeList.forEach((mediaTypeShort) => {
+        if (stream.pubStatus[mediaTypeShort].producerId === producerId) {
           stream.muteStatus[mediaTypeShort].send = mute
           if (mute) {
             if (mediaTypeShort === 'audioSlave') {
-              this.adapterRef.instance.safeEmit('mute-audio-slave', {uid: stream.getId()})
+              this.adapterRef.instance.safeEmit('mute-audio-slave', { uid: stream.getId() })
             } else {
-              this.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {uid: stream.getId()})
+              this.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, { uid: stream.getId() })
             }
           } else {
             if (mediaTypeShort === 'audioSlave') {
-              this.adapterRef.instance.safeEmit('unmute-audio-slave', {uid: stream.getId()})
+              this.adapterRef.instance.safeEmit('unmute-audio-slave', { uid: stream.getId() })
             } else {
-              this.adapterRef.instance.safeEmit(`unmute-${mediaTypeShort}`, {uid: stream.getId()})
+              this.adapterRef.instance.safeEmit(`unmute-${mediaTypeShort}`, { uid: stream.getId() })
             }
           }
         }
@@ -1565,24 +1750,23 @@ class Signalling extends EventEmitter {
     })
   }
 
-  _handleUserRoleNotify (externData:any) {
-
+  _handleUserRoleNotify(externData: any) {
     let uid = externData.uid
     if (this.adapterRef.channelInfo.uidType === 'string') {
       uid = new BigNumber(uid)
       uid = uid.toString()
     }
-    const userRole = externData.data && externData.data.userRole;
-    this.logger.warn(`用户${uid}角色变为${userRole ? "观众" : "主播"}`);
+    const userRole = externData.data && externData.data.userRole
+    this.logger.warn(`用户${uid}角色变为${userRole ? '观众' : '主播'}`)
     if (uid && userRole === 1) {
       //主播变为观众，照抄 onPeerLeave 逻辑
-      this.adapterRef.instance.clearMember(uid);
-      this.adapterRef.instance.removeSsrc(uid);
-      this.adapterRef.instance._roleInfo.audienceList[uid] = true;
+      this.adapterRef.instance.clearMember(uid)
+      this.adapterRef.instance.removeSsrc(uid)
+      this.adapterRef.instance._roleInfo.audienceList[uid] = true
     }
     if (uid && userRole === 0) {
       //观众变为主播，照抄 onPeerJoin 逻辑
-      this.adapterRef.instance.safeEmit('peer-online', {uid: uid})
+      this.adapterRef.instance.safeEmit('peer-online', { uid: uid })
       let remoteStream = this.adapterRef.remoteStreamMap[uid]
       if (!remoteStream) {
         remoteStream = new RemoteStream({
@@ -1595,20 +1779,20 @@ class Signalling extends EventEmitter {
           platformType: externData.platformType
         })
         this.adapterRef.remoteStreamMap[uid] = remoteStream
-        this.adapterRef.memberMap[uid] = uid;
+        this.adapterRef.memberMap[uid] = uid
       }
-      this.adapterRef.instance._roleInfo.audienceList[uid] = false;
+      this.adapterRef.instance._roleInfo.audienceList[uid] = false
     }
   }
-  
-  _handleAbility (data:{code:number, msg:string}){
+
+  _handleAbility(data: { code: number; msg: string }) {
     this.adapterRef.instance.safeEmit('warning', {
       code: data.code,
       msg: data.msg
     })
   }
-  
-  _handleKickedNotify (reason:number, uid = this.adapterRef.channelInfo.uid) {
+
+  _handleKickedNotify(reason: number, uid = this.adapterRef.channelInfo.uid) {
     if (this.adapterRef.channelInfo.uidType === 'string') {
       uid = new BigNumber(uid)
       uid = uid.toString()
@@ -1618,8 +1802,7 @@ class Signalling extends EventEmitter {
       this.logger.warn('房间被关闭')
       this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason = 30207
       this.adapterRef.instance.leave()
-      this.adapterRef.instance.safeEmit('channel-closed', {
-      })
+      this.adapterRef.instance.safeEmit('channel-closed', {})
     } else if (reason == 2) {
       this.logger.warn(`${uid}被提出房间`)
       if (uid.toString() == this.adapterRef.channelInfo.uid.toString()) {
@@ -1629,7 +1812,7 @@ class Signalling extends EventEmitter {
       this.adapterRef.instance.safeEmit('client-banned', {
         uid
       })
-    } 
+    }
   }
 
   destroy() {

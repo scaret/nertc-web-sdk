@@ -1,5 +1,5 @@
 export const smoothShader = {
-    fShader: `
+  fShader: `
     #ifdef GL_FRAGMENT_PRECISION_HIGH
         precision highp float;
     #else
@@ -11,7 +11,7 @@ export const smoothShader = {
     uniform vec2 size;
     uniform sampler2D map;
     uniform float intensity;
-    
+
     varying vec2 vuv;
 
     // 0.0 - 1.0
@@ -32,16 +32,16 @@ export const smoothShader = {
         vec3 color = vec3(0.0);
         float radius = sqrt(samples);
         float sampleRadius = 0.5/(radius*radius);
-        vec2  samplePixel = 1.0/resolution; 
+        vec2  samplePixel = 1.0/resolution;
         vec3  sampleCenter = texture2D(image, uv).rgb;
         vec3  sampleCenterNorm = normalize(sampleCenter);
         float sampleCenterSat = length(sampleCenter);
-        
+
         float influenceSum = 0.0;
         float brightnessSum = 0.0;
-        
+
         vec2 pixelRotated = vec2(0.,1.);
-        
+
         for (float x = 0.0; x <= 80.0; x++) {
             pixelRotated *= sampleMat;
             vec2  pixelOffset = pixelMulti*pixelRotated*sqrt(x)*0.5;
@@ -49,16 +49,16 @@ export const smoothShader = {
             pixelOffset *= samplePixel;
             vec3 thisDenoisedColor = texture2D(image, uv + pixelOffset).rgb;
             pixelInfluence *= pixelInfluence*pixelInfluence;
-            pixelInfluence *= pow(0.5 + 0.5 * dot(sampleCenterNorm,normalize(thisDenoisedColor)), invHueTol) 
+            pixelInfluence *= pow(0.5 + 0.5 * dot(sampleCenterNorm,normalize(thisDenoisedColor)), invHueTol)
             * pow(1.0 - abs(length(thisDenoisedColor)-length(sampleCenterSat)),8.);
-                
+
             influenceSum += pixelInfluence;
             color += thisDenoisedColor*pixelInfluence;
             if(x >= samples){
                 return color/influenceSum;
             }
         }
-        
+
         return color/influenceSum;
     }
 
@@ -67,4 +67,4 @@ export const smoothShader = {
         gl_FragColor = vec4(smColor, 1.0);
     }
 `
-};
+}

@@ -1,5 +1,5 @@
-export type PluginType = 'VirtualBackground' | 'AdvancedBeauty';
+export type PluginType = 'VirtualBackground' | 'AdvancedBeauty'
 
-const Pluggins = ['VirtualBackground', 'AdvancedBeauty'] as const;
+const Pluggins = ['VirtualBackground', 'AdvancedBeauty'] as const
 
-export default Pluggins;
+export default Pluggins

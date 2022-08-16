@@ -1,5 +1,5 @@
 export const flatShader = {
-    fShader: `
+  fShader: `
     #ifdef GL_FRAGMENT_PRECISION_HIGH
         precision highp float;
     #else
@@ -24,7 +24,7 @@ export const flatShader = {
         for(float i = 0.; i < 10.; i += 0.5)
         {
             float k = weight(i, log2(radius), gamma);
-            pix += k * texture2D(mipMap, uv, i).rgb; 
+            pix += k * texture2D(mipMap, uv, i).rgb;
             norm += k;
         }
         return pix*pow(norm,-0.95);
@@ -73,4 +73,4 @@ export const flatShader = {
         gl_FragColor.rgb *= sample_blured(vuv, blur_radius, 0.5) * (2.0 - avg);
     }
 `
-};
+}

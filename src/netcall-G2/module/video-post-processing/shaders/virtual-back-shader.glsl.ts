@@ -1,11 +1,11 @@
 export const virtualBackShader = {
-    fShader: `
+  fShader: `
     #ifdef GL_FRAGMENT_PRECISION_HIGH
         precision highp float;
     #else
         precision mediump float;
     #endif
-    
+
     uniform sampler2D map;
     uniform sampler2D maskMap;
     uniform sampler2D backMap;
@@ -16,7 +16,7 @@ export const virtualBackShader = {
     uniform int emptyFrame;
 
     varying vec2 vuv;
-    
+
     void main() {
         if(emptyFrame > 0){
             gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
@@ -42,4 +42,4 @@ export const virtualBackShader = {
         }
     }
 `
-};
+}

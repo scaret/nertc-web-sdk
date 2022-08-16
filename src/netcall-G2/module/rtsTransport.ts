@@ -1,20 +1,17 @@
 import { EventEmitter } from 'eventemitter3'
-import {
-  RTSTransportOptions,
-  AdapterRef
-} from "../types"
-import RtcError from '../util/error/rtcError';
-import ErrorCode  from '../util/error/errorCode';
+
+import { AdapterRef, RTSTransportOptions } from '../types'
+import ErrorCode from '../util/error/errorCode'
+import RtcError from '../util/error/rtcError'
 
 class RTSTransport extends EventEmitter {
-  private adapterRef:AdapterRef;
-  private _url: string | null;
-  public _port: number | null;
-  private _transportId: string | null;
-  private _ws: WebSocket | null;
-  
-  
-  constructor (options:RTSTransportOptions) {
+  private adapterRef: AdapterRef
+  private _url: string | null
+  public _port: number | null
+  private _transportId: string | null
+  private _ws: WebSocket | null
+
+  constructor(options: RTSTransportOptions) {
     super()
     this._reset()
     this.adapterRef = options.adapterRef
@@ -25,7 +22,7 @@ class RTSTransport extends EventEmitter {
     this.initSocket()
   }
 
-  get transportId(){
+  get transportId() {
     return this._transportId
   }
   _reset() {
@@ -34,16 +31,16 @@ class RTSTransport extends EventEmitter {
     this._ws = null
   }
 
-  initSocket () {
+  initSocket() {
     this.adapterRef.logger.log('RTSTransport建立连接, url: ', this._url)
-    if(!this._url){
+    if (!this._url) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
         message: 'RTSTransport: No _url'
       })
     }
     this._ws = new WebSocket(this._url, ['protoo'])
-    this._ws.binaryType = "arraybuffer"
+    this._ws.binaryType = 'arraybuffer'
     // 事件监听
     const ws = this._ws
     ws.onopen = this._onOpen.bind(this)
@@ -52,21 +49,21 @@ class RTSTransport extends EventEmitter {
     ws.onerror = this._onError.bind(this)
   }
 
-  _onOpen (event: any) {
+  _onOpen(event: any) {
     this.adapterRef.logger.log('RTSTransport:_onOpen')
     this.emit('open', event)
   }
 
-  _onMessage (event: any) {
+  _onMessage(event: any) {
     this.adapterRef.instance.emit('rts-stream-data', event)
   }
 
-  _onClose (event: any) {
+  _onClose(event: any) {
     this.adapterRef.logger.log('RTSTransport:onClose <- ', event)
     this.emit('close', event)
   }
 
-  _onError (event: any) {
+  _onError(event: any) {
     this.adapterRef.logger.log('RTSTransport:onError <- ', event)
     this.emit('error', event)
   }
@@ -74,7 +71,7 @@ class RTSTransport extends EventEmitter {
   /**
    * 发送数据
    */
-  send (data?: any) {
+  send(data?: any) {
     if (this._ws && this._ws.readyState === WebSocket.OPEN) {
       this._ws.send(JSON.stringify(data))
     } else {
@@ -82,7 +79,7 @@ class RTSTransport extends EventEmitter {
     }
   }
 
-  _close () {
+  _close() {
     this.adapterRef.logger.log('RTSTransport:close')
     if (this._ws) {
       this._ws.onclose = null
@@ -93,7 +90,6 @@ class RTSTransport extends EventEmitter {
       this._ws = null
     }
   }
-
 
   destroy() {
     this.adapterRef.logger.log('WSTransport:destroy')

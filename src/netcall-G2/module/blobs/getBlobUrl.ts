@@ -1,28 +1,28 @@
+import rtcTimer from './raw/rtcTimer'
 import volumeProcessor from './raw/volumeProcessor.js'
 import webWorkerTimer from './raw/webWorkerTimer.js'
-import rtcTimer from "./raw/rtcTimer";
 
 const moduleMap = {
-  'volumeProcessor': {
+  volumeProcessor: {
     blobParts: [volumeProcessor],
-    options: {type: 'text/javascript; charset=utf-8'},
-    url: '',
+    options: { type: 'text/javascript; charset=utf-8' },
+    url: ''
   },
-  'webWorkerTimer': {
+  webWorkerTimer: {
     blobParts: [webWorkerTimer],
-    options: {type: 'text/javascript; charset=utf-8'},
-    url: '',
+    options: { type: 'text/javascript; charset=utf-8' },
+    url: ''
   },
-  'rtcTimer': {
+  rtcTimer: {
     blobParts: [rtcTimer],
-    options: {type: 'text/js-worker'},
-    url: '',
+    options: { type: 'text/js-worker' },
+    url: ''
   }
 }
 
-export function getBlobUrl(moduleName: keyof typeof moduleMap){
-  if (!moduleMap[moduleName].url){
-    const blob = new Blob(moduleMap[moduleName].blobParts, moduleMap[moduleName].options);
+export function getBlobUrl(moduleName: keyof typeof moduleMap) {
+  if (!moduleMap[moduleName].url) {
+    const blob = new Blob(moduleMap[moduleName].blobParts, moduleMap[moduleName].options)
     moduleMap[moduleName].url = window.URL.createObjectURL(blob)
   }
   return moduleMap[moduleName].url

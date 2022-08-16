@@ -1,129 +1,140 @@
-import {logHelper} from "./logHelper";
-import {LoggerOptions} from "../types";
-import {getParameters} from "../module/parameters";
-import {loglevels} from "./log/logger";
-import {formatSingleArg} from "./rtcUtil/utils";
-import {getBrowserInfo} from "./rtcUtil/rtcPlatform";
+import { getParameters } from '../module/parameters'
+import { LoggerOptions } from '../types'
+import { loglevels } from './log/logger'
+import { logHelper } from './logHelper'
+import { getBrowserInfo } from './rtcUtil/rtcPlatform'
+import { formatSingleArg } from './rtcUtil/utils'
 
 let logIndex = 0
-let cachedLogs:any[] = [];
+let cachedLogs: any[] = []
 
-export function updateLogIndex(){
+export function updateLogIndex() {
   logIndex++
-  return ("" + logIndex).padStart(4, "0");
+  return ('' + logIndex).padStart(4, '0')
 }
 
-export class Logger{
-  private options:LoggerOptions;
-  private api:string;
-  private style:string = 'color:#1cb977;';
-  private logHelper?:logHelper;
-  private supportedBrowsers: string[];
-  private cs:Console;
-  public parent?: Logger;
-  private tagGen?: ()=>string;
-  constructor(options:LoggerOptions) {
-    this.options = options;
-    this.api = 'log';
+export class Logger {
+  private options: LoggerOptions
+  private api: string
+  private style = 'color:#1cb977;'
+  private logHelper?: logHelper
+  private supportedBrowsers: string[]
+  private cs: Console
+  public parent?: Logger
+  private tagGen?: () => string
+  constructor(options: LoggerOptions) {
+    this.options = options
+    this.api = 'log'
     this.tagGen = options.tagGen
-    if(options.isSavedLogs) {
+    if (options.isSavedLogs) {
       this.logHelper = new logHelper(options)
     }
-    this.supportedBrowsers = ['Chrome', 'Safari', 'Firefox', 'Chrome Mobile', 'Electron'];
-    this.cs = console;
+    this.supportedBrowsers = ['Chrome', 'Safari', 'Firefox', 'Chrome Mobile', 'Electron']
+    this.cs = console
   }
 
-  getChild(tagGenerator: ()=>string){
-    const newOptions = Object.assign({}, this.options);
-    const newLogger = new Logger(newOptions);
-    newLogger.tagGen = tagGenerator;
-    newLogger.parent = this;
+  getChild(tagGenerator: () => string) {
+    const newOptions = Object.assign({}, this.options)
+    const newLogger = new Logger(newOptions)
+    newLogger.tagGen = tagGenerator
+    newLogger.parent = this
     return newLogger
   }
-  
-  debug(){
-    var logger = this;
+
+  debug() {
+    var logger = this
     this.logHelper && this.logHelper.log(arguments)
-    var args = logger.formatArgs("DEBUG", [].slice.call(arguments, 0))
+    var args = logger.formatArgs('DEBUG', [].slice.call(arguments, 0))
     // if (this.supportedBrowsers.indexOf(getBrowserInfo().browserName) !== -1 && typeof args[0] === "string") {
     //   args[0] = '%c' + args[0]
     //   args.splice(1, 0, logger.style)
     // }
-    if(getParameters().logLevel <= loglevels.DEBUG){
-      logger._log('debug', args);
+    if (getParameters().logLevel <= loglevels.DEBUG) {
+      logger._log('debug', args)
     }
-    logCache(args);
+    logCache(args)
   }
-  
-  log(){
-    var logger = this;
+
+  log() {
+    var logger = this
     this.logHelper && this.logHelper.log(arguments)
-    var args = logger.formatArgs("LOG", [].slice.call(arguments, 0))
-    if (this.supportedBrowsers.indexOf(getBrowserInfo().browserName) !== -1 && typeof args[0] === "string") {
+    var args = logger.formatArgs('LOG', [].slice.call(arguments, 0))
+    if (
+      this.supportedBrowsers.indexOf(getBrowserInfo().browserName) !== -1 &&
+      typeof args[0] === 'string'
+    ) {
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
-      for (let i = 2; i < args.length; i++){
-        if (typeof args[i] === "string"){
-          args[0] += "%c" + args[i]
-          args[i] = ""
-        }else{
-          break;
+      for (let i = 2; i < args.length; i++) {
+        if (typeof args[i] === 'string') {
+          args[0] += '%c' + args[i]
+          args[i] = ''
+        } else {
+          break
         }
       }
     }
-    if(getParameters().logLevel <= loglevels.INFO){
-      logger._log('log', args);
+    if (getParameters().logLevel <= loglevels.INFO) {
+      logger._log('log', args)
     }
-    logCache(args);
+    logCache(args)
   }
-  
-  info(){
-    var logger = this;
+
+  info() {
+    var logger = this
     this.logHelper && this.logHelper.log(arguments)
-    var args = logger.formatArgs("INFO", [].slice.call(arguments, 0))
-    if (this.supportedBrowsers.indexOf(getBrowserInfo().browserName) !== -1 && typeof args[0] === "string") {
+    var args = logger.formatArgs('INFO', [].slice.call(arguments, 0))
+    if (
+      this.supportedBrowsers.indexOf(getBrowserInfo().browserName) !== -1 &&
+      typeof args[0] === 'string'
+    ) {
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
     }
-    if(getParameters().logLevel <= loglevels.INFO) {
-      logger._log('info', args);
+    if (getParameters().logLevel <= loglevels.INFO) {
+      logger._log('info', args)
     }
-    logCache(args);
+    logCache(args)
   }
-  
-  warn(){
-    var logger = this;
+
+  warn() {
+    var logger = this
     this.logHelper && this.logHelper.log(arguments)
-    var args = logger.formatArgs("WARN", [].slice.call(arguments, 0))
-    if (this.supportedBrowsers.indexOf(getBrowserInfo().browserName) !== -1 && typeof args[0] === "string") {
+    var args = logger.formatArgs('WARN', [].slice.call(arguments, 0))
+    if (
+      this.supportedBrowsers.indexOf(getBrowserInfo().browserName) !== -1 &&
+      typeof args[0] === 'string'
+    ) {
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
     }
-    if(getParameters().logLevel <= loglevels.WARNING) {
-      logger._log('warn', args);
+    if (getParameters().logLevel <= loglevels.WARNING) {
+      logger._log('warn', args)
     }
-    logCache(args);
+    logCache(args)
   }
-  
-  error(){
-    var logger = this;
+
+  error() {
+    var logger = this
     this.logHelper && this.logHelper.log(arguments)
-    var args = logger.formatArgs("ERROR", [].slice.call(arguments, 0))
-    if (this.supportedBrowsers.indexOf(getBrowserInfo().browserName) !== -1 && typeof args[0] === "string") {
+    var args = logger.formatArgs('ERROR', [].slice.call(arguments, 0))
+    if (
+      this.supportedBrowsers.indexOf(getBrowserInfo().browserName) !== -1 &&
+      typeof args[0] === 'string'
+    ) {
       args[0] = '%c' + args[0]
       args.splice(1, 0, logger.style)
     }
 
-    if(getParameters().logLevel <= loglevels.ERROR) {
-      logger._log('error', args);
+    if (getParameters().logLevel <= loglevels.ERROR) {
+      logger._log('error', args)
     }
-    logCache(args);
+    logCache(args)
   }
 
-  _log(name:string, args:any[]) {
-    var logger = this;
-    
-    
+  _log(name: string, args: any[]) {
+    var logger = this
+
     // @ts-ignore
     let isIE8 = '\v' == 'v'
     // 使用开发者传入的方法来记录日志
@@ -133,7 +144,7 @@ export class Logger{
       if (logFuncObj[name]) {
         logFunc = logFuncObj[name]
       }
-      if (typeof logFunc === "function") {
+      if (typeof logFunc === 'function') {
         //@ts-ignore
         logFunc.apply(logFuncObj, args)
         return
@@ -156,50 +167,61 @@ export class Logger{
   }
 
   // use this form to skip drop_console of uglify
-  chrome(func:string, args:any[]) {
-    let name = getBrowserInfo().browserName;
+  chrome(func: string, args: any[]) {
+    let name = getBrowserInfo().browserName
     //@ts-ignore
-    if (this.cs[func]){
+    if (this.cs[func]) {
       //@ts-ignore
       this.cs[func].apply(this.cs, args)
-    }else if (this.cs.log){
+    } else if (this.cs.log) {
       this.cs.log.apply(this.cs, args)
-    }else{
+    } else {
       this.ie(func, args)
     }
   }
 
-  ie(func:string, args:any[]) {
-    var self = this;
+  ie(func: string, args: any[]) {
+    var self = this
     args.forEach(function (arg) {
       //@ts-ignore
       self.cs[func](JSON.stringify(arg, null, 4))
     })
   }
 
-  formatArgs(logLevel: "DEBUG"|"LOG"|"INFO"|"WARN"|"ERROR", args:any[]) {
+  formatArgs(logLevel: 'DEBUG' | 'LOG' | 'INFO' | 'WARN' | 'ERROR', args: any[]) {
     var date = new Date()
-    var dateStr = formatTimeUnit('' + (date.getMonth() + 1)) + '-' + formatTimeUnit('' + date.getDate()) + ' ' + formatTimeUnit('' + date.getHours()) + ':' + formatTimeUnit('' + date.getMinutes()) + ':' + formatTimeUnit('' + date.getSeconds()) + ':' + formatTimeUnit('' + date.getMilliseconds(), 3)
-    let logger:Logger = this
-    let prefix = "";
-    for (let i = 0; i < 3; i++){
+    var dateStr =
+      formatTimeUnit('' + (date.getMonth() + 1)) +
+      '-' +
+      formatTimeUnit('' + date.getDate()) +
+      ' ' +
+      formatTimeUnit('' + date.getHours()) +
+      ':' +
+      formatTimeUnit('' + date.getMinutes()) +
+      ':' +
+      formatTimeUnit('' + date.getSeconds()) +
+      ':' +
+      formatTimeUnit('' + date.getMilliseconds(), 3)
+    let logger: Logger = this
+    let prefix = ''
+    for (let i = 0; i < 3; i++) {
       // 最多上溯3层tag
-      if (logger.tagGen){
-        prefix = `[${logger.tagGen()}]` + prefix;
+      if (logger.tagGen) {
+        prefix = `[${logger.tagGen()}]` + prefix
       }
-      if (logger.parent){
-        logger = logger.parent;
-      }else{
-        break;
+      if (logger.parent) {
+        logger = logger.parent
+      } else {
+        break
       }
     }
-    prefix = `[NERTC:${logLevel}:${updateLogIndex()} ${dateStr}]${prefix}`;
+    prefix = `[NERTC:${logLevel}:${updateLogIndex()} ${dateStr}]${prefix}`
     args.splice(0, 0, prefix)
     args.forEach(function (arg, index) {
-      arg = formatSingleArg(arg);
-      if (typeof arg === "object") {
+      arg = formatSingleArg(arg)
+      if (typeof arg === 'object') {
         args[index] = simpleClone(arg)
-      }else{
+      } else {
         args[index] = arg
       }
     })
@@ -207,9 +229,7 @@ export class Logger{
   }
 }
 
-
-
-var formatTimeUnit = function (num:string, count?:number) {
+var formatTimeUnit = function (num: string, count?: number) {
   count = count || 2
   var str = '' + num
   while (str.length < count) {
@@ -218,25 +238,25 @@ var formatTimeUnit = function (num:string, count?:number) {
   return str
 }
 
-function simpleClone (obj:any, cache: any[] = []) {
+function simpleClone(obj: any, cache: any[] = []) {
   obj = formatSingleArg(obj)
-  if (!obj || typeof obj !== "object"){
+  if (!obj || typeof obj !== 'object') {
     return obj
   }
-  let clonedObj = {};
-  for (let key in obj){
+  let clonedObj = {}
+  for (let key in obj) {
     // 有些来自Object.create(null)的方法没有 obj.hasOwnProperty属性
     if (!obj.hasOwnProperty || obj.hasOwnProperty(key)) {
-      if (obj[key] && typeof obj[key] === "object"){
-        if (cache.indexOf(obj[key]) !== -1){
+      if (obj[key] && typeof obj[key] === 'object') {
+        if (cache.indexOf(obj[key]) !== -1) {
           // @ts-ignore
-          clonedObj[key] = "[Circular obj]"
-        }else{
+          clonedObj[key] = '[Circular obj]'
+        } else {
           cache.push(obj[key])
           // @ts-ignore
           clonedObj[key] = simpleClone(obj[key], cache)
         }
-      }else{
+      } else {
         // @ts-ignore
         clonedObj[key] = obj[key]
       }
@@ -245,18 +265,18 @@ function simpleClone (obj:any, cache: any[] = []) {
   return clonedObj
 }
 
-function logCache(args:any) {
-  if((<any>window).logUpload){
-    if(!(<any>window).wsTransport){
+function logCache(args: any) {
+  if ((<any>window).logUpload) {
+    if (!(<any>window).wsTransport) {
       // ws创建前 缓存日志
-      let time = Date.now();
-      try{
+      let time = Date.now()
+      try {
         // @ts-ignore
-        if (cachedLogs.length){
+        if (cachedLogs.length) {
           // @ts-ignore
-          cachedLogs[cachedLogs.length - 1].args[0].replace("[NERTC", "[缓存][NERTC")
+          cachedLogs[cachedLogs.length - 1].args[0].replace('[NERTC', '[缓存][NERTC')
         }
-      }catch(e){
+      } catch (e) {
         // do noting
       }
       cachedLogs.push({
@@ -264,14 +284,14 @@ function logCache(args:any) {
         args
       })
       // console.error('cachedLogs: ',cachedLogs)
-    }else {
-      if(cachedLogs.length){
-        cachedLogs.forEach(item => {
-          (<any>window).wsTransport && (<any>window).wsTransport.sendLog(item.args);
+    } else {
+      if (cachedLogs.length) {
+        cachedLogs.forEach((item) => {
+          ;(<any>window).wsTransport && (<any>window).wsTransport.sendLog(item.args)
         })
-        cachedLogs = [];
+        cachedLogs = []
       }
-      (<any>window).wsTransport && (<any>window).wsTransport.sendLog(args);
+      ;(<any>window).wsTransport && (<any>window).wsTransport.sendLog(args)
     }
   }
 }
