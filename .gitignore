@@ -11,6 +11,7 @@ nimwebsdkTester/*.lock
 .DS_Store
 .idea/*
 .vscode/
+.husky/
 *.lock
 ssh/
 *.bk
