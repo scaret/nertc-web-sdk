@@ -1,5 +1,5 @@
 export const waveShader = {
-    fShader: `
+  fShader: `
     #ifdef GL_FRAGMENT_PRECISION_HIGH
         precision highp float;
     #else
@@ -18,4 +18,4 @@ export const waveShader = {
         gl_FragColor = texture2D(map, uv);
     }
     `
-};
+}

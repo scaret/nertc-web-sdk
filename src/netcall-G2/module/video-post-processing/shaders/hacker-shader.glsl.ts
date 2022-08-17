@@ -1,11 +1,11 @@
 export const hackerShader = {
-    fShader: `
+  fShader: `
     #ifdef GL_FRAGMENT_PRECISION_HIGH
         precision highp float;
     #else
         precision mediump float;
     #endif
-    
+
     uniform sampler2D map;
     uniform sampler2D textMap;
     uniform sampler2D rndMap;
@@ -26,7 +26,7 @@ export const hackerShader = {
         uv.x = -uv.x;
         return pow(texture2D(textMap, uv).r, 3.0) * 2.0;
     }
-    
+
     vec3 rain(vec2 fragCoord)
     {
         fragCoord.x -= mod(fragCoord.x, 16.);
@@ -43,4 +43,4 @@ export const hackerShader = {
         gl_FragColor = vec4(mix(color, color2, 0.35 + intensity * 0.05), 1.0);
     }
 `
-};
+}

@@ -3,87 +3,87 @@
 // Definitions by: Marks Polakovs <https://github.com/markspolakovs>
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
 
-import * as http from 'http';
-import * as retry from 'retry';
-import * as websocket from 'websocket';
+import * as http from 'http'
+import * as retry from 'retry'
+import * as websocket from 'websocket'
 
 export interface ProtooRequest {
-  request: true;
-  id: number;
-  method: string;
-  data?: any;
+  request: true
+  id: number
+  method: string
+  data?: any
 }
 
 export type ProtooResponse =
   | { response: true; id: number; ok: true; data: any }
-  | { response: true; id: number; ok: false; errorCode: number; errorReason: string };
+  | { response: true; id: number; ok: false; errorCode: number; errorReason: string }
 
 export interface ProtooNotification {
-  notification: true;
-  method: string;
-  data?: any;
+  notification: true
+  method: string
+  data?: any
 }
 
 export class WebSocketTransport {
   constructor(
     url: string,
     options?: {
-      protocols?: string | string[];
-      origin?: string;
-      headers?: http.OutgoingHttpHeaders;
-      requestOptions?: object;
-      clientConfig?: websocket.IClientConfig;
-      retry?: retry.OperationOptions;
-    },
-  );
+      protocols?: string | string[]
+      origin?: string
+      headers?: http.OutgoingHttpHeaders
+      requestOptions?: object
+      clientConfig?: websocket.IClientConfig
+      retry?: retry.OperationOptions
+    }
+  )
 
-  readonly wsid: number;
-  
-  readonly closed: boolean;
+  readonly wsid: number
 
-  readonly _url: string|null;
-  
-  close(): void;
+  readonly closed: boolean
 
-  send(message: any): Promise<void>;
+  readonly _url: string | null
+
+  close(): void
+
+  send(message: any): Promise<void>
 }
 
 export class Peer {
-  constructor(transport: WebSocketTransport);
+  constructor(transport: WebSocketTransport)
 
-  id: number;
-  
-  _transport: WebSocketTransport|null;
-  
-  data: any;
+  id: number
 
-  readonly closed: boolean;
-  readonly connected: boolean;
+  _transport: WebSocketTransport | null
 
-  request(method: string, data?: any): Promise<any>;
+  data: any
 
-  clear(): void;
+  readonly closed: boolean
+  readonly connected: boolean
 
-  notify(method: string, data?: any): Promise<any>;
+  request(method: string, data?: any): Promise<any>
 
-  close(): void;
+  clear(): void
 
-  on(evt: 'open' | 'disconnected' | 'close', handler: () => any): void;
+  notify(method: string, data?: any): Promise<any>
 
-  on(evt: 'failed', handler: (currentAttempt: number) => any): void;
+  close(): void
+
+  on(evt: 'open' | 'disconnected' | 'close', handler: () => any): void
+
+  on(evt: 'failed', handler: (currentAttempt: number) => any): void
 
   on(
     evt: 'request',
     handler: (
       request: ProtooRequest,
       accept: (data?: ProtooResponse) => void,
-      reject: (error?: Error | number, errorReason?: string) => void,
-    ) => any,
-  ): void;
+      reject: (error?: Error | number, errorReason?: string) => void
+    ) => any
+  ): void
 
-  on(evt: 'notification', handler: (notif: ProtooNotification) => any): void;
+  on(evt: 'notification', handler: (notif: ProtooNotification) => any): void
 
-  removeListener: (evt: any, listener: (...args:any)=>void)=>void;
+  removeListener: (evt: any, listener: (...args: any) => void) => void
 
-  removeAllListeners: ()=>void
+  removeAllListeners: () => void
 }

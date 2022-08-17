@@ -1,5 +1,5 @@
 export const snowShader = {
-    fShader: `
+  fShader: `
     #ifdef GL_FRAGMENT_PRECISION_HIGH
         precision highp float;
     #else
@@ -7,7 +7,7 @@ export const snowShader = {
     #endif
 
     #define _NUMSHEETS 10.
-    
+
     uniform sampler2D map;
     uniform float time;
     uniform vec2 size;
@@ -35,18 +35,18 @@ export const snowShader = {
         for (float i = 1.; i <= _NUMSHEETS; i++){
             for (float j = 1.; j <= 100.0; j++){
                 if (j > nums || j > nums/i) break;
-                
-                float size = 0.002 * i * (1. + rnd(j)/2.);            
+
+                float size = 0.002 * i * (1. + rnd(j)/2.);
                 float speed = size * .75 + rnd(i) / 1.5;
-                
+
                 vec2 center = vec2(0., 0.);
                 center.x = -.3 + rnd(j*i) * 1.4 + 0.1*cos(time + sin(j*i));
                 center.y = fract(sin(j) - speed * time) / 1.3;
-    
+
                 col += vec3( (1. - i/_NUMSHEETS) * drawFlake(center, size));
             }
         }
         gl_FragColor = vec4(col,1.0);
     }
 `
-};
+}

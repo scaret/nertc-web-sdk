@@ -1,11 +1,11 @@
 export const lutShader = {
-    fShader: `
+  fShader: `
     #ifdef GL_FRAGMENT_PRECISION_HIGH
         precision highp float;
     #else
         precision mediump float;
     #endif
-    
+
     uniform sampler2D map;
     uniform sampler2D lut;
 
@@ -19,7 +19,7 @@ export const lutShader = {
 
         if(intensity > 0.0){
             float blue = color.b * 63.0;
-            
+
             vec2 q1;
             float fb = floor(blue);
             q1.y = floor(fb * 0.125);
@@ -42,4 +42,4 @@ export const lutShader = {
         }
         gl_FragColor = vec4(color, 1.0);
     }`
-};
+}

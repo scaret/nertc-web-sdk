@@ -1,5 +1,5 @@
 export const advBeautyShader = {
-    vShader: `
+  vShader: `
     uniform vec2 size;
 
     attribute vec2 position;
@@ -38,7 +38,7 @@ export const advBeautyShader = {
         vuv.y = 1.0 - vuv.y;
     }
 `,
-    fShader: `
+  fShader: `
     #ifdef GL_FRAGMENT_PRECISION_HIGH
         precision highp float;
     #else
@@ -57,7 +57,7 @@ export const advBeautyShader = {
 
     vec3 lut64(vec3 color, sampler2D lut){
         float blue = color.b * 63.0;
-            
+
         vec2 q1;
         float fb = floor(blue);
         q1.y = floor(fb * 0.125);
@@ -116,7 +116,7 @@ export const advBeautyShader = {
                 sumColor += texture2D(map, vuv + 2.0 * step1).rgb;
                 sumColor += texture2D(map, vuv + 2.0 * step1 + 1.0 * step2).rgb;
                 sumColor += texture2D(map, vuv + 2.0 * step1 + 2.0 * step2).rgb;
-                
+
                 sumColor = sumColor * 0.04;
                 sumColor = clamp(sumColor + (color.rgb - sumColor) * 2.0, 0.0, 1.0);
                 sumColor = max(color.rgb, sumColor);
@@ -133,12 +133,12 @@ export const advBeautyShader = {
         }
     }
 `
-};
+}
 
 // lut16 滤镜转换
 // vec3 lut16(vec3 color, sampler2D lut){
 //     float blue = color.b * 15.0;
-        
+
 //     vec2 q1;
 //     float fb = floor(blue);
 //     q1.y = floor(fb * 0.25);

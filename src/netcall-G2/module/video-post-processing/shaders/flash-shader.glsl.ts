@@ -1,5 +1,5 @@
 export const flashShader = {
-    fShader: `
+  fShader: `
     #ifdef GL_FRAGMENT_PRECISION_HIGH
         precision highp float;
     #else
@@ -20,13 +20,13 @@ export const flashShader = {
         float count = floor(time/duration);
 
         float time = mod(count, 10.0) > 1.0 ? 0.0 : mod(time, duration);
-        
+
         vec4 whiteMask = vec4(1.0, 1.0, 1.0, 1.0);
         float amplitude = abs(sin(time * (PI / duration)));
-        
+
         vec4 mask = texture2D(map, vuv);
-        
+
         gl_FragColor = mask * (1.0 - amplitude) + whiteMask * amplitude;
     }
     `
-};
+}

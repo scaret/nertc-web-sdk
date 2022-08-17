@@ -12,25 +12,24 @@ export const Hex = {
    *
    *     var hexString = CryptoJS.enc.Hex.stringify(wordArray);
    */
-  stringify(wordArray: WordArray){
+  stringify(wordArray: WordArray) {
     // Shortcuts
-    var words = wordArray.words;
-    var sigBytes = wordArray.sigBytes;
+    var words = wordArray.words
+    var sigBytes = wordArray.sigBytes
 
     // Convert
-    var hexChars = [];
+    var hexChars = []
     for (var i = 0; i < sigBytes; i++) {
-      var bite = (words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff;
-      hexChars.push((bite >>> 4).toString(16));
-      hexChars.push((bite & 0x0f).toString(16));
+      var bite = (words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff
+      hexChars.push((bite >>> 4).toString(16))
+      hexChars.push((bite & 0x0f).toString(16))
     }
 
-    return hexChars.join('');
+    return hexChars.join('')
   }
 }
 
-export class WordArray
-{
+export class WordArray {
   /**
    * Initializes a newly created word array.
    *
@@ -43,15 +42,15 @@ export class WordArray
    *     var wordArray = CryptoJS.lib.WordArray.create([0x00010203, 0x04050607]);
    *     var wordArray = CryptoJS.lib.WordArray.create([0x00010203, 0x04050607], 6);
    */
-  words: number[];
-  sigBytes: number;
-  constructor(words: number[], sigBytes?:number) {
-    words = this.words = words || [];
+  words: number[]
+  sigBytes: number
+  constructor(words: number[], sigBytes?: number) {
+    words = this.words = words || []
 
     if (sigBytes != undefined) {
-      this.sigBytes = sigBytes;
+      this.sigBytes = sigBytes
     } else {
-      this.sigBytes = words.length * 4;
+      this.sigBytes = words.length * 4
     }
   }
 
@@ -68,8 +67,8 @@ export class WordArray
    *     var string = wordArray.toString();
    *     var string = wordArray.toString(CryptoJS.enc.Utf8);
    */
-  toString (encoder?: any) {
-    return (encoder || Hex).stringify(this);
+  toString(encoder?: any) {
+    return (encoder || Hex).stringify(this)
   }
 
   /**
@@ -83,33 +82,33 @@ export class WordArray
    *
    *     wordArray1.concat(wordArray2);
    */
-  concat (wordArray: WordArray) {
+  concat(wordArray: WordArray) {
     // Shortcuts
-    var thisWords = this.words;
-    var thatWords = wordArray.words;
-    var thisSigBytes = this.sigBytes;
-    var thatSigBytes = wordArray.sigBytes;
+    var thisWords = this.words
+    var thatWords = wordArray.words
+    var thisSigBytes = this.sigBytes
+    var thatSigBytes = wordArray.sigBytes
 
     // Clamp excess bits
-    this.clamp();
+    this.clamp()
 
     // Concat
     if (thisSigBytes % 4) {
       // Copy one byte at a time
       for (var i = 0; i < thatSigBytes; i++) {
-        var thatByte = (thatWords[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff;
-        thisWords[(thisSigBytes + i) >>> 2] |= thatByte << (24 - ((thisSigBytes + i) % 4) * 8);
+        var thatByte = (thatWords[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff
+        thisWords[(thisSigBytes + i) >>> 2] |= thatByte << (24 - ((thisSigBytes + i) % 4) * 8)
       }
     } else {
       // Copy one word at a time
       for (var j = 0; j < thatSigBytes; j += 4) {
-        thisWords[(thisSigBytes + j) >>> 2] = thatWords[j >>> 2];
+        thisWords[(thisSigBytes + j) >>> 2] = thatWords[j >>> 2]
       }
     }
-    this.sigBytes += thatSigBytes;
+    this.sigBytes += thatSigBytes
 
     // Chainable
-    return this;
+    return this
   }
 
   /**
@@ -121,11 +120,11 @@ export class WordArray
    */
   clamp() {
     // Shortcuts
-    var words = this.words;
-    var sigBytes = this.sigBytes;
+    var words = this.words
+    var sigBytes = this.sigBytes
 
     // Clamp
-    words[sigBytes >>> 2] &= 0xffffffff << (32 - (sigBytes % 4) * 8);
-    words.length = Math.ceil(sigBytes / 4);
+    words[sigBytes >>> 2] &= 0xffffffff << (32 - (sigBytes % 4) * 8)
+    words.length = Math.ceil(sigBytes / 4)
   }
 }

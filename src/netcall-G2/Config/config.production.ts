@@ -1,7 +1,7 @@
-import {IConfig, SDK_VERSION, BUILD} from "./index";
+import { BUILD, IConfig, SDK_VERSION } from './index'
 
-export const Config:IConfig = {
-  lbsUrl: "https://wecan-lbs.netease.im/api/v1/web_domains",
+export const Config: IConfig = {
+  lbsUrl: 'https://wecan-lbs.netease.im/api/v1/web_domains',
   checkSumUrl: 'https://nrtc.netease.im/demo/getChecksum.action',
   // appkey: '4c418f22935f1e2cf8488ff1c84229c0',
   createChannelUrl: 'https://nrtc.netease.im/nrtc/createChannel.action',
@@ -13,22 +13,10 @@ export const Config:IConfig = {
 export const LBS_BUILD_CONFIG: {
   [tag: string]: [string, string]
 } = {
-  "lbs": [
-    "wecan-lbs.netease.im",
-    "wecan-lbs.yunxinvcloud.com",
-  ],
-  "nrtc": [
-    "nrtc.netease.im",
-    "wecan-gw.yunxinvcloud.com",
-  ],
-  "call": [
-    "roomserver.netease.im",
-    "wecan-sdk.yunxinvcloud.com",
-  ],
-  "tracking": [
-    "statistic.live.126.net",
-    "apm.yunxinhi.com"
-  ]
+  lbs: ['wecan-lbs.netease.im', 'wecan-lbs.yunxinvcloud.com'],
+  nrtc: ['nrtc.netease.im', 'wecan-gw.yunxinvcloud.com'],
+  call: ['roomserver.netease.im', 'wecan-sdk.yunxinvcloud.com'],
+  tracking: ['statistic.live.126.net', 'apm.yunxinhi.com']
 }
 
-export const ENV = "production";
+export const ENV = 'production'

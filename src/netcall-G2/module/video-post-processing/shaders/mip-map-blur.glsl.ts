@@ -1,11 +1,11 @@
 export const mipMapBlurShader = {
-    fShader: `
+  fShader: `
     #ifdef GL_FRAGMENT_PRECISION_HIGH
         precision highp float;
     #else
         precision mediump float;
     #endif
-    
+
     uniform sampler2D map;
     uniform float intensity;
     uniform float radius;
@@ -23,7 +23,7 @@ export const mipMapBlurShader = {
         for(float i = 0.; i < 10.; i += 0.5)
         {
             float k = weight(i, log2(radius), gamma);
-            pix += k * texture2D(map, uv, i).rgb; 
+            pix += k * texture2D(map, uv, i).rgb;
             norm += k;
         }
         return pix*pow(norm,-0.95);
@@ -33,4 +33,4 @@ export const mipMapBlurShader = {
         gl_FragColor = vec4(sample_blured(vuv, mix(8.0, radius, intensity), intensity), 1.0);
     }
 `
-};
+}

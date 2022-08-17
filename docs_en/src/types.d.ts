@@ -2,7 +2,7 @@
  * Copyright (c) 2021 NetEase, Inc.  All rights reserved.
  */
 
-import { Client } from "./client";
+import { Client } from './client'
 
 /**
  * 网络连接状态。包括：
@@ -10,10 +10,10 @@ import { Client } from "./client";
  * - `CONNECTING`：建立网络连接中。
  * - `CONNECTED`：网络已连接。
  * - `DISCONNECTING`：网络连接断开中。
- * 
+ *
  * 参考 [[Client.getConnectionState]]
  */
-export declare type ConnectionState = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'DISCONNECTING';
+export declare type ConnectionState = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'DISCONNECTING'
 
 /**
  * 媒体流类型。包括：
@@ -21,14 +21,14 @@ export declare type ConnectionState = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED
  * - `video`：视频。
  * - `screen`：屏幕共享。
  */
-export declare type MediaType = 'audio' | 'video' | 'screen';
+export declare type MediaType = 'audio' | 'video' | 'screen'
 
 /**
  * 加密方案，在调用 [[Client.setEncryptionMode]] 时使用。可设置为：
  * - `none`：不加密。
  * - `sm4-128-ecb`：128 位 SM4 加密，ECB 模式。
  */
-export declare type EncryptionMode = 'none' | 'sm4-128-ecb';
+export declare type EncryptionMode = 'none' | 'sm4-128-ecb'
 
 /**
  * 视频画布设置。
@@ -37,100 +37,99 @@ export interface RenderMode {
   /**
    * 宽度
    */
-  width: number;
+  width: number
   /**
    * 高度
    */
-  height: number;
+  height: number
   /**
    * 是否裁剪
    */
-  cut: boolean;
+  cut: boolean
 }
 
 /*
  * 录制状态。
  */
 export interface RecordStatus {
-  recordedChunks: Blob[];
+  recordedChunks: Blob[]
   /**
    * 是否正在录制。
    */
-  isRecording: boolean;
+  isRecording: boolean
   /**
    * 录制的视频流。
    */
-  stream: MediaStream | MediaStream[] | null;
+  stream: MediaStream | MediaStream[] | null
   /**
    * 录制配置。
    */
-  option: RecordStartOptions | null;
-  contentTypes: string[];
-  mimeType: string;
-  audioController: null;
-  opStream: MediaStream | null;
+  option: RecordStartOptions | null
+  contentTypes: string[]
+  mimeType: string
+  audioController: null
+  opStream: MediaStream | null
   /**
    * 状态。
    */
-  state: string;
+  state: string
   /**
    * 录制文件名称。
    */
-  fileName: string | null;
+  fileName: string | null
   /**
    * 录制 ID。
    */
-  recordId: number;
+  recordId: number
   /**
    * 录制状态。
    */
-  recordStatus: string;
+  recordStatus: string
   /**
    * 录制文件的 URL 地址。
    */
-  recordUrl: string | null;
+  recordUrl: string | null
   /**
    * 录制开始时间。
    */
-  startTime: number | null;
+  startTime: number | null
   /**
    * 录制结束时间。
    */
-  endTime: number | null;
+  endTime: number | null
 }
-
 
 export interface RecordStartOptions {
-  stream: MediaStream | MediaStream[];
-  uid: number|string;
-  type: string;
-  reset: boolean;
+  stream: MediaStream | MediaStream[]
+  uid: number | string
+  type: string
+  reset: boolean
 }
 
-  /**
-   * 互动直播推流任务状态。
-   */
-export interface RTMPTaskState{
+/**
+ * 互动直播推流任务状态。
+ */
+export interface RTMPTaskState {
   /**
    * 互动直播推流任务状态码。
    */
-  code: number;
+  code: number
   /**
    * 主讲人的用户 ID。
    */
-  hostUid: number;
+  hostUid: number
   /**
    * 互动直播推流任务状态信息。
    */
-  msg: string;
+  msg: string
   /**
    * 推流地址。
    */
-  streamUrl: string;
+  streamUrl: string
   /**
    * 互动直播任务 ID。
    */
-  taskId: string;
+  taskId: string
 }
 
 /**
@@ -144,47 +143,47 @@ export interface RTMPTaskState{
  * * RECV_VIDEO_DECODE_FAILED
  * * RECV_SCREEN_DECODE_FAILED
  */
-export interface ClientExceptionEvt{
+export interface ClientExceptionEvt {
   /**
    * 房间内的异常事件信息。
    */
-  msg: 'string';
+  msg: 'string'
   /**
    * 用户 ID。
    */
-  uid: number|string;
+  uid: number | string
 }
 
 export enum NetworkStatus {
-  UNKNOWN= 0,
-  EXCELLENT= 1,
-  GOOD= 2,
-  POOR= 3,
-  BAD= 4,
-  VERYBAD= 5,
-  DOWN= 6,
+  UNKNOWN = 0,
+  EXCELLENT = 1,
+  GOOD = 2,
+  POOR = 3,
+  BAD = 4,
+  VERYBAD = 5,
+  DOWN = 6
 }
 
-  /***
-   * 房间中所有成员的上下行网络质量。
-   */
+/***
+ * 房间中所有成员的上下行网络质量。
+ */
 export interface NetStatusItem {
   /**
    * 用户 ID。
    */
-  uid: number|string;
-  downlinkNetworkQuality: NetworkStatus;
-  uplinkNetworkQuality: NetworkStatus;
+  uid: number | string
+  downlinkNetworkQuality: NetworkStatus
+  uplinkNetworkQuality: NetworkStatus
 }
 
-  /**
-   * 推流任务选项。
-   */
+/**
+ * 推流任务选项。
+ */
 export interface AddTaskOptions {
-    /**
+  /**
    * 推流任务信息。
    */
-  rtmpTasks: RTMPTask[];
+  rtmpTasks: RTMPTask[]
 }
 
 /**
@@ -194,15 +193,15 @@ export interface RTMPTask {
   /**
    * 自定义的推流任务 ID。请保证此 ID 唯一。字母数字下划线组成的64位以内的字符串。
    */
-  taskId: string;
+  taskId: string
   /**
    * 流地址，例如 `rtmp://test.url`。此处的推流地址可设置为网易云信直播产品中服务端API创建房间的返回参数pushUrl。
    */
-  streamUrl: string;
+  streamUrl: string
   /**
    * 旁路推流是否需要进行音视频录制。
    */
-  record: boolean;
+  record: boolean
   /**
    * 互动直播中的布局相关参数。详细参数说明请参考layout。布局参数的配置方式及典型配置示例请参考旁路推流画面布局。
    */
@@ -214,16 +213,16 @@ export interface RTMPTask {
       /**
        * 整体画布的宽度，单位为 px。取值范围为 0~1920，若设置为奇数值，会自动向下取偶。
        */
-      width: number;
+      width: number
       /**
        * 整体画布的高度，单位为 px。取值范围为 0~1920，若设置为奇数值，会自动向下取偶。
        */
-      height: number;
+      height: number
       /**
        * 画面背景颜色，格式为 256 ✖ 256 ✖ R + 256 ✖ G + B的和。请将对应 RGB 的值分别带入此公式计算即可。若未设置，则默认为0。
        */
-      color: number;
-    };
+      color: number
+    }
     /**
      * 用于设置混流视频中每个参与者对应的画面属性。
      */
@@ -231,53 +230,53 @@ export interface RTMPTask {
       /**
        * 将指定uid对应用户的视频流拉入直播。如果添加多个 users，则 uid 不能重复。
        */
-      uid: number|string;
+      uid: number | string
       /**
        * 通过 x 和 y 指定画布坐标中的一个点，该点将作为用户图像的左上角。x 参数用于设置画布的横轴坐标值。取值范围为 0~1920，若设置为奇数值，会自动向下取偶。
        */
-      x: number;
+      x: number
       /**
        * 通过 x 和 y 指定画布坐标中的一个点，该点将作为用户图像的左上角。y 参数用于设置画布的纵轴坐标值。取值范围为 0~1920，若设置为奇数值，会自动向下取偶。
        */
-      y: number;
+      y: number
       /**
        * 该用户图像在画布中的宽度。取值范围为 0~1920，若设置为奇数值，会自动向下取偶。
        */
-      width: number;
+      width: number
       /**
        * 该用户图像在画布中的高度。取值范围为 0~1920，若设置为奇数值，会自动向下取偶。
        */
-      height: number;
+      height: number
       /**
        * 用于设置占位图片和指定区域的适应属性。可设置为：
        * * 0：适应图片。即保证视频内容全部显示，未覆盖区域默认填充背景色
        * * 1：适应区域。即保证所有区域被填满，视频超出部分会被裁剪。
-       * 
+       *
        * 若未设置，则默认为1。
        */
-      adaption: 0|1;
+      adaption: 0 | 1
       /**
        * 是否在直播中混流该用户的对应音频流。可设置为：
        * * true：在直播中混流该用户的对应音频流。
        * * false：在直播中将该用户设置为静音。
        */
-      pushAudio: boolean;
+      pushAudio: boolean
       /**
        * 是否在直播中向观看者播放该用户的对应视频流。可设置为：
        * * true：在直播中播放该用户的视频流。
        * * false：在直播中不播放该用户的视频流。
        */
-      pushVideo: boolean;
+      pushVideo: boolean
       /**
        * 直播视频上用户视频帧的图层编号，用来决定渲染层级。
-       * 
+       *
        * 取值范围为 0~100，默认为 0。
-       * 
+       *
        * - 最小值为 0（默认值），表示该区域图像位于最底层。
        * - 最大值为 100，表示该区域图像位于最顶层。
        */
-      zOrder: number;
-    }[];
+      zOrder: number
+    }[]
     /**
      * 用于设置混流视频中占位图片属性。若参数 users 指定的用户未上线，会在其对应的区域展示占位图片。
      */
@@ -285,23 +284,23 @@ export interface RTMPTask {
       /**
        * 占位图片的URL。
        */
-      url: string;
+      url: string
       /**
        * 通过 x 和 y 指定画布坐标中的一个点，该点将作为占位图片的左上角。x 参数用于设置画布的横轴坐标值。取值范围为 0~1920，若设置为奇数值，会自动向下取偶。
        */
-      x: number;
+      x: number
       /**
        * 通过 x 和 y 指定画布坐标中的一个点，该点将作为占位图片的左上角。y 参数用于设置画布的纵轴坐标值。取值范围为 0~1920，若设置为奇数值，会自动向下取偶。
        */
-      y: number;
+      y: number
       /**
        * 该占位图片在画布中的宽度。取值范围为 0~1920，若设置为奇数值，会自动向下取偶。
        */
-      width: number;
+      width: number
       /**
        * 该占位图片在画布中的高度。取值范围为 0~1920，若设置为奇数值，会自动向下取偶。
        */
-      height: number;
+      height: number
       /**
        * 用于设置占位图片和指定区域的适应属性。可设置为：
        * * 0：适应图片。即保证视频内容全部显示，未覆盖区域默认填充背景色
@@ -309,9 +308,9 @@ export interface RTMPTask {
        *
        * 若未设置，则默认为 1。
        */
-      adaption: 0|1;
-    }[];
-  };
+      adaption: 0 | 1
+    }[]
+  }
   /**
    * 其他设置
    */
@@ -319,7 +318,7 @@ export interface RTMPTask {
     /**
      * 单视频直推不转码。开启后推流服务器会透传用户的视频编码，不再对视频做转码。
      */
-    singleVideoNoTrans?: boolean;
+    singleVideoNoTrans?: boolean
     /**
      * 音频参数
      */
@@ -327,46 +326,46 @@ export interface RTMPTask {
       /**
        * 自定义音频比特率。取值范围为 10～192。语音场景建议64以上，音乐场景建议128。
        */
-      bitRate?: number;
+      bitRate?: number
       /**
        * 音频推流采样率。可以设置为以下值。
        * * `NERTC.LIVE_STREAM_AUDIO_SAMPLE_RATE.SAMPLE_RATE_32000` : 32000
        * * `NERTC.LIVE_STREAM_AUDIO_SAMPLE_RATE.SAMPLE_RATE_44100` : 44100
        * * `NERTC.LIVE_STREAM_AUDIO_SAMPLE_RATE.SAMPLE_RATE_48000` : 48000（默认）
        */
-      sampleRate?: number;
+      sampleRate?: number
       /**
        * 音频推流声道数。可以设置为`1`（mono）或者`2`（stereo）。默认为`2`。
        */
-      channels?: number;
+      channels?: number
       /**
        * 音频编码规格。可以设置为以下值。
        * * `NERTC.LIVE_STREAM_AUDIO_CODEC_PROFILE.LC_AAC`: 表示基本音频编码规格（默认）
        * * `NERTC.LIVE_STREAM_AUDIO_CODEC_PROFILE.HE_AAC`: 表示高效音频编码规格
        */
-      codecProfile?: number;
-    };
-  };
-  extraInfo?: string;
+      codecProfile?: number
+    }
+  }
+  extraInfo?: string
 }
 
 export interface StreamOptions {
   /**
    * 用户 ID，与client的id一致。
    */
-  uid?: number|string;
+  uid?: number | string
   /**
    * 是否从麦克风采集音频
    */
-  audio: boolean;
+  audio: boolean
   /**
    * 是否开启/关闭音频处理接口（3A接口)。
-   * 
+   *
    * @note
    * 音频处理接口取决于浏览器支持情况。
-   * 
+   *
    * 目前Safari不支持AGC及ANS设置。
-   * 
+   *
    * `AEC`: 是否开启声学回声消除。默认为 true。
    * * `true`：开启声学回声消除。
    * * `false`：关闭声学回声消除。
@@ -380,37 +379,37 @@ export interface StreamOptions {
    * * `false`：关闭自动噪声抑制。
    */
   audioProcessing?: {
-    ANS?: boolean;
-    AEC?: boolean;
-    AGC?: boolean;
-  };
+    ANS?: boolean
+    AEC?: boolean
+    AGC?: boolean
+  }
   /**
    * 麦克风设备 deviceId，通过 [[NERTC.getMicrophones]] 获取。
    */
-  microphoneId?: string;
+  microphoneId?: string
   /**
    * 摄像头设备 deviceId，通过 [[NERTC.getCameras]] 获取。
    */
-  cameraId?: string;
+  cameraId?: string
   /**
    * 是否从摄像头采集视频。
    */
-  video: boolean;
+  video: boolean
   /**
    * 是否采集屏幕共享流。
    */
-  screen?: boolean;
+  screen?: boolean
   /**
    * 是否采集屏幕分享流的共享音频。
-   * 
+   *
    * @since V4.3.0
-   * 
+   *
    * screenAudio 字段用于指定该屏幕共享流中是否包含本地播放的声音。
-   * 
+   *
    * 可设置为：
    * - true：屏幕共享同时共享本地播放的背景音。
    * - false：（默认）屏幕共享时不共享本地播放的背景音。
-   * 
+   *
    * @note
    * - 如需使用屏幕共享背景音功能，还需要在屏幕共享的弹出框中，勾选 **分享音频**（Share audio）。
    * - 该功能仅支持 Windows 和 macOS 平台 Chrome 浏览器 74 及以上版本。需要注意的是:
@@ -419,79 +418,79 @@ export interface StreamOptions {
    * - 如需使用屏幕共享背景音功能，必须将 screen 设为 true。如此时audio设为true，则输出为麦克风与屏幕共享背景音的混音。[[Stream.setAudioProfile]] 推荐设置为 `high_quality_stereo`。
    * - 在V4.4.0版本之前，screenAudio和audio不能同时开启。
    */
- screenAudio?: boolean;
+  screenAudio?: boolean
   /**
    * 要Stream绑定的client实例对象。默认是最初使用用createClient创建的client实例（多实例场景使用）
    */
-  client?: Client;
+  client?: Client
   /**
    * 自定义的音频的track
    */
-  audioSource?: MediaStreamTrack;
+  audioSource?: MediaStreamTrack
   /**
    * 自定义的视频的track
    */
-  videoSource?: MediaStreamTrack;
+  videoSource?: MediaStreamTrack
   /**
    * Electron 屏幕共享的数据源 ID，您可以参考[这篇文章](https://www.electronjs.org/docs/api/desktop-capturer)。
    */
-  sourceId?: string;
+  sourceId?: string
   /**
-  * 指定使用前置/后置摄像头来采集视频
+   * 指定使用前置/后置摄像头来采集视频
    */
-  facingMode?: "user"|"environment"
+  facingMode?: 'user' | 'environment'
 }
 
-  /*
-  * 视频订阅配置参数。
-  */
+/*
+ * 视频订阅配置参数。
+ */
 export interface SubscribeOptions {
   /**
-  * 是否订阅音频。
-  */
-  audio?: boolean;
-  /**
-  * 是否订阅视频。
+   * 是否订阅音频。
    */
-  video?: boolean;
+  audio?: boolean
   /**
-  * 是否订阅屏幕共享。
+   * 是否订阅视频。
    */
-  screen?: boolean;
+  video?: boolean
+  /**
+   * 是否订阅屏幕共享。
+   */
+  screen?: boolean
   /**
    * 订阅大流或小流。
-   * 
+   *
    * 0 表示小流，1 表示大流。
    */
-  highOrLow?: 0|1;
+  highOrLow?: 0 | 1
 }
 
 export interface LiveConfig {
   /**
    * 互动直播开关。加入房间时此开关默认开启。
    */
-  liveEnable: boolean;
+  liveEnable: boolean
 }
 export interface RecordConfig {
   /**
    * 当前用户是否是主讲人。
    */
-  isHostSpeaker: boolean;
+  isHostSpeaker: boolean
   /**
    * 是否开启音频实时音录制，`false` 不需要，`true` 需要。默认 `false`。
    */
-  recordAudio: boolean;
+  recordAudio: boolean
   /**
    * 是否开启视频实时音录制，`false` 不需要，`true` 需要。默认 `false`。
    */
-  recordVideo: boolean;
+  recordVideo: boolean
   /**
    * 录制模式。
    * - 0：合流录制 + 单流录制。
    * - 1：合流录制模式。只产生混合录制文件。
    * - 2：单流录制模式。只产生单独录制文件。
    */
-  recordType: 0|1|2;
+  recordType: 0 | 1 | 2
 }
 
 export interface MediaPriorityOptions {
@@ -500,44 +499,44 @@ export interface MediaPriorityOptions {
    * - 50：高优先级。
    * - 100：（默认）普通优先级。
    */
-  priority: number;
+  priority: number
   /**
    * 是否开启抢占模式。默认为 false，即不开启。
    * - 抢占模式开启后，本地用户可以抢占其他用户的高优先级，被抢占的用户的媒体优先级变为普通优先级，在抢占者退出房间后，其他用户的优先级仍旧维持普通优先级。
    * - 抢占模式关闭时，如果房间中已有高优先级用户，则本地用户的高优先级设置不生效，仍旧为普通优先级。
    */
-  preemtiveMode?: boolean;
+  preemtiveMode?: boolean
 }
 
 export interface JoinOptions {
   /**
    * 房间名称。
    */
-  channelName: string;
+  channelName: string
   /**
    * 用户的唯一标识 id，房间内每个用户的 uid 必须是唯一的。
-   * 
+   *
    * uid 可选。如果不指定，SDK 会自动分配一个随机 uid，您可以通过 getUid 查看，App 层必须记住该值并维护，SDK 不对该值进行维护。
    */
-  uid?: number|string;
+  uid?: number | string
   /**
    * 安全认证签名。详细信息请参考 [NERTC Token](/docs/jcyOTA0ODM/Dc4NTE4OTY)。
    * - 调试模式下：无需设置 Token。
    * - 安全模式下：必须设置为已获取的 NERTC Token。
-   * 
-   * @note 
+   *
+   * @note
    * - 应用测试期间，为便于调试，可以使用调试模式，此时无需 Token 鉴权即可加入房间。
    * - 出于安全起见，应用正式上线时，应转为安全模式，并在加入房间时使用 Token 鉴权。
    */
-  token?: string;
+  token?: string
   /**
    * 互动直播相关参数。
    */
-  joinChannelLiveConfig?: LiveConfig;
+  joinChannelLiveConfig?: LiveConfig
   /**
    * 云端录制相关参数。
    */
-  joinChannelRecordConfig?: RecordConfig;
+  joinChannelRecordConfig?: RecordConfig
   /**
    * 私有化服务器地址对象。
    */
@@ -546,30 +545,30 @@ export interface JoinOptions {
 
 /**
  * 画布水印设置。
- * 
+ *
  * 同时设置文字、时间戳或图片水印时，如果不同类型的水印位置有重叠，会按照图片、文本、时间戳的顺序进行图层覆盖。
  */
 export interface NERtcCanvasWatermarkConfig {
   /**
    * 视频流类型。支持设置为主流（video）或辅流（screen）。
    */
-  mediaType: 'video'|'screen';
+  mediaType: 'video' | 'screen'
   /**
    * 文字水印。最多可以添加 10 个文字水印。
    */
-  textWatermarks: NERtcTextWatermarkConfig[];
+  textWatermarks: NERtcTextWatermarkConfig[]
   /**
    * 时间戳水印。只能添加 1 个时间戳水印。
    */
-  timestampWatermarks: NERtcTimestampWatermarkConfig;
+  timestampWatermarks: NERtcTimestampWatermarkConfig
   /**
    * 图片水印，最多可以添加 4 个图片水印。
    */
-  imageWatermarks: NERtcImageWatermarkConfig[];
+  imageWatermarks: NERtcImageWatermarkConfig[]
 }
 /**
  * 文字水印设置参数。
- * 
+ *
  * 最多可添加 10 个文字水印。
  */
 export interface NERtcTextWatermarkConfig {
@@ -579,35 +578,35 @@ export interface NERtcTextWatermarkConfig {
    * - 如果设置了水印框宽度，当文字内容长度超过水印框宽度时，会自动换行，如果超出水印框高度，超出部分不显示。
    * - 未设置水印框宽度和高度时，文字不换行，超出水印框的部分不显示。
    */
-  content: string;
+  content: string
   /**
    * 字体大小。默认值为 10，相当于 144 dpi 设备上的 10 x 15 磅。
    */
-  fontSize?: number;
+  fontSize?: number
   /**
    * 字体颜色。默认为白色。
    */
-  fontColor?: number;
+  fontColor?: number
   /**
    * 水印左上角与视频画布左上角的水平距离。单位为像素（pixel）。默认为 0。
    */
-  offsetX?: number;
+  offsetX?: number
   /**
    * 水印左上角与视频画布左上角的垂直距离。单位为像素（pixel）。默认为 0。
    */
-  offsetY?: number;
+  offsetY?: number
   /**
    * 水印框内背景颜色。默认为灰色。支持透明度设置。
    */
-  wmColor?: number;
+  wmColor?: number
   /**
    * 水印框的宽度。单位为像素（pixel），默认值为 0，表示没有水印框。
    */
-  wmWidth?: number;
+  wmWidth?: number
   /**
    * 水印框的高度。单位为像素（pixel），默认值为 0，表示没有水印框。
    */
-  wmHeight?: number;
+  wmHeight?: number
 }
 /**
  * 时间戳水印设置。
@@ -618,86 +617,86 @@ export interface NERtcTimestampWatermarkConfig {
   /**
    * 字体大小。默认值为 10，相当于 144 dpi 设备上的 10 x 15 磅。
    */
-  fontSize?: number;
+  fontSize?: number
   /**
    * 字体颜色。默认为白色。
    */
-  fontColor?: number;
+  fontColor?: number
   /**
    * 水印左上角与视频画布左上角的水平距离。单位为像素（pixel）。默认为 0。
    */
-  offsetX?: number;
+  offsetX?: number
   /**
    * 水印左上角与视频画布左上角的垂直距离。单位为像素（pixel）。默认为 0。
    */
-  offsetY?: number;
+  offsetY?: number
   /**
    * 水印框内背景颜色。默认为灰色。支持透明度设置。
    */
-  wmColor?: number;
+  wmColor?: number
   /**
    * 水印框的宽度。单位为像素（pixel），默认值为 0，表示没有水印框。
    */
-  wmWidth?: number;
+  wmWidth?: number
   /**
    * 水印框的高度。单位为像素（pixel），默认值为 0，表示没有水印框。
    */
-  wmHeight?: number;
+  wmHeight?: number
 }
 /**
  * 图片水印设置参数。
- * 
+ *
  * 支持添加 4 个图片水印。
  */
 export interface NERtcImageWatermarkConfig {
   /**
    * 水印图片。
    */
-  imageUrls: string[];
+  imageUrls: string[]
   /**
    * 水印图片左上角与视频画布左上角的水平距离。单位为像素（pixel），默认值为 0。
    */
-  offsetX?: number;
+  offsetX?: number
   /**
    * 水印图片左上角与视频画布左上角的垂直距离。单位为像素（pixel），默认值为 0。
    */
-  offsetY?: number;
+  offsetY?: number
   /**
    * 水印图片的宽度。单位为像素（pixel），默认值为 0 表示按原始图宽。
    */
-  wmWidth?: number;
+  wmWidth?: number
   /**
    * 水印图片的高度。单位为像素（pixel），默认值为 0 表示按原始图高。
    */
-  wmHeight?: number;
+  wmHeight?: number
   /**
    * 播放帧率。默认 0 帧/秒，即不自动切换图片，图片单帧静态显示。
    */
-  fps?: number;
+  fps?: number
   /**
    * 是否设置循环。默认循环，设置为 false 后水印数组播放完毕后消失。
    */
-  loop?: boolean;
+  loop?: boolean
 }
 
-  /**
-   * 私有化服务器相关配置参数。
-   */
-export interface NeRtcServerAddresses{
+/**
+ * 私有化服务器相关配置参数。
+ */
+export interface NeRtcServerAddresses {
   /**
    * 通道信息服务器地址。
    */
-  channelServer?: string;
+  channelServer?: string
   /**
    * 统计上报服务器地址。
    */
-  statisticsServer?: string;
+  statisticsServer?: string
   /**
    * roomServer服务器地址。
    */
-  roomServer?: string;
+  roomServer?: string
   /**
    * mediaServer服务器地址。
    */
-  mediaServer?: string;
+  mediaServer?: string
 }

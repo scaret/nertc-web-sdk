@@ -1,5 +1,5 @@
 export const advBeautyEyeShader = {
-    fShader: `
+  fShader: `
     #ifdef GL_FRAGMENT_PRECISION_HIGH
         precision highp float;
     #else
@@ -65,4 +65,4 @@ export const advBeautyEyeShader = {
         gl_FragColor = texture2D(map, uv);
     }
 `
-};
+}

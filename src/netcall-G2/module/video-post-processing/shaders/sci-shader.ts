@@ -1,11 +1,11 @@
 export const sciShader = {
-    fShader: `
+  fShader: `
     #ifdef GL_FRAGMENT_PRECISION_HIGH
         precision highp float;
     #else
         precision mediump float;
     #endif
-    
+
     uniform sampler2D map;
     uniform vec2 size;
     uniform float time;
@@ -36,7 +36,7 @@ export const sciShader = {
         float x = n21(i);
         return vec2(x, n21(i+x));
     }
-    
+
     vec2 getPoint (vec2 id, vec2 offset) {
         return offset + sin(n22(id + offset) * time * 1.0) * 0.4;
     }
@@ -44,10 +44,10 @@ export const sciShader = {
     float layer (vec2 uv) {
         float m = 0.0;
         float t = time * 2.0;
-       
+
         vec2 gv = fract(uv) - 0.5;
         vec2 id = floor(uv) - 0.5;
-        
+
         vec2 p[9];
         p[0] = getPoint(id, vec2(-1.0, -1.0));
         p[1] = getPoint(id, vec2(-1.0, 0.0));
@@ -58,18 +58,18 @@ export const sciShader = {
         p[6] = getPoint(id, vec2(1.0, -1.0));
         p[7] = getPoint(id, vec2(1.0, 0.0));
         p[8] = getPoint(id, vec2(1.0, 1.0));
-        
+
         for (int i = 0; i < 9; i++) {
             m += drawLine(gv, p[4], p[i]);
             float sparkle = 1.0 / pow(length(gv - p[i]), 1.5) * 0.002;
             m += sparkle * (sin(t + fract(p[i].x) * 12.23) * 0.4 + 0.6);
         }
-        
+
         m += drawLine(gv, p[1], p[3]);
         m += drawLine(gv, p[1], p[5]);
         m += drawLine(gv, p[7], p[3]);
         m += drawLine(gv, p[7], p[5]);
-         
+
         return m;
     }
 
@@ -78,14 +78,14 @@ export const sciShader = {
         vec3 c = sin(time * 2.0 * vec3(0.0, .324,.768)) * 0.4 + 0.6;
         vec3 col = texture2D(map, vuv).rgb;
         c.g += (uv.x + 0.5);
-        
+
         float m = 0.0;
         float x = sin(time * 0.1);
         float y = cos(time * 0.2);
-        
+
         mat2 rotMat = mat2(x, y, -y, x);
         uv *= rotMat;
-        
+
         for (float i = 0.0; i <= 1.0; i+= 1.0/4.0) {
             float z = fract(i + time * 0.05);
             float size = mix(15.0, .1, z);
@@ -96,4 +96,4 @@ export const sciShader = {
         gl_FragColor = vec4(mix(col, c * (0.5 + 2.5 * intensity), 0.3),1.0);
     }
 `
-};
+}

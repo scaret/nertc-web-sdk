@@ -1,1 +1,3 @@
-setInterval(()=>{self.postMessage("RTCTimer")}, 8)
+setInterval(() => {
+  self.postMessage('RTCTimer')
+}, 8)

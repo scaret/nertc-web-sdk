@@ -1,50 +1,47 @@
-
-import { Base } from './base'
-import {
-  AddTaskOptions,
-  ClientOptions,
-  MediaPriorityOptions,
-  JoinOptions,
-  LocalVideoStats,
-  MediaTypeShort,
-  RTMPTask,
-  Client as IClient,
-  SpatialInitOptions, 
-  MediaSubStatus,
-  ClientMediaRecordingOptions,
-  ClientRecordConfig
-} from "../types";
-import {LocalStream} from "./localStream";
-import {checkExists, checkValidBoolean, checkValidInteger, checkValidString} from "../util/param";
+import { BUILD, SDK_VERSION } from '../Config'
+import { STREAM_TYPE } from '../constant/videoQuality'
 import {
   ReportParamEnableEncryption,
   ReportParamGetConnectionState,
   ReportParamSetChannelProfile,
   ReportParamSetClientRole
-} from "../interfaces/ApiReportParam";
-import {EncryptionMode, EncryptionModes, encryptionModeToInt} from "../module/encryption";
-import RtcError from '../util/error/rtcError';
-import ErrorCode  from '../util/error/errorCode';
-import { SDK_VERSION, BUILD } from "../Config";
-import {STREAM_TYPE} from "../constant/videoQuality";
-import {RemoteStream} from "./remoteStream";
-import {Device} from "../module/device";
-import {OperationQueue} from "../util/OperationQueue";
-import {SpatialManager} from "./spatialManager";
-import {getAudioContext} from "../module/webAudio";
-import {getParameters} from "../module/parameters";
-import {FormatMedia} from "../module/formatMedia"
-import {Record} from '../module/record'
-import * as env from '../util/rtcUtil/rtcEnvironment';
-import {alerter} from "../module/alerter";
-const BigNumber = require("bignumber.js");
+} from '../interfaces/ApiReportParam'
+import { alerter, Device } from '../module/device'
+import { EncryptionMode, EncryptionModes, encryptionModeToInt } from '../module/encryption'
+import { FormatMedia } from '../module/formatMedia'
+import { getParameters } from '../module/parameters'
+import { Record } from '../module/record'
+import { getAudioContext } from '../module/webAudio'
+import {
+  AddTaskOptions,
+  Client as IClient,
+  ClientMediaRecordingOptions,
+  ClientOptions,
+  ClientRecordConfig,
+  JoinOptions,
+  LocalVideoStats,
+  MediaPriorityOptions,
+  MediaSubStatus,
+  MediaTypeShort,
+  RTMPTask,
+  SpatialInitOptions
+} from '../types'
+import ErrorCode from '../util/error/errorCode'
+import RtcError from '../util/error/rtcError'
+import { OperationQueue } from '../util/OperationQueue'
+import { checkExists, checkValidBoolean, checkValidInteger, checkValidString } from '../util/param'
+import * as env from '../util/rtcUtil/rtcEnvironment'
+import { Base } from './base'
+import { LocalStream } from './localStream'
+import { RemoteStream } from './remoteStream'
+import { SpatialManager } from './spatialManager'
+const BigNumber = require('bignumber.js')
 
 /**
  *  请使用 {@link WEBRTC2.createClient} 通过WEBRTC2.createClient创建 Client对象，client对象指通话中的本地或远程用户，提供云信sdk的核心功能。
  *  @class
  *  @name Client
  */
-
 
 /**
  *  Client类构造函数
@@ -56,15 +53,15 @@ const BigNumber = require("bignumber.js");
  *  @return {Client}
  */
 class Client extends Base {
-  public _roleInfo: { userRole: number; audienceList: {} };
-  public upLoadParam:any;
-  public destroyed: boolean = false;
-  public operationQueue: OperationQueue;
-  private onJoinFinish: (() => void)|null = null;
-  public spatialManager : SpatialManager|null = null;
-  private handlePageUnload: (evt?: any) => void;
-  private handleOnOnlineOffline: (evt?: any) => void;
-  constructor (options:ClientOptions) {
+  public _roleInfo: { userRole: number; audienceList: {} }
+  public upLoadParam: any
+  public destroyed = false
+  public operationQueue: OperationQueue
+  private onJoinFinish: (() => void) | null = null
+  public spatialManager: SpatialManager | null = null
+  private handlePageUnload: (evt?: any) => void
+  private handleOnOnlineOffline: (evt?: any) => void
+  constructor(options: ClientOptions) {
     super(options)
     this.apiFrequencyControl({
       name: 'createClient',
@@ -82,69 +79,81 @@ class Client extends Base {
      * 注意：移动端safair不识别beforeunload事件
      */
     this.handlePageUnload = (evt?: any) => {
-      if (this.adapterRef.channelStatus === 'join' || this.adapterRef.channelStatus === 'connectioning') {
-        this.logger.warn(`收到 ${evt?.type} 事件，当前状态：${this.adapterRef.channelStatus}，即将离开房间`);
+      if (
+        this.adapterRef.channelStatus === 'join' ||
+        this.adapterRef.channelStatus === 'connectioning'
+      ) {
+        this.logger.warn(
+          `收到 ${evt?.type} 事件，当前状态：${this.adapterRef.channelStatus}，即将离开房间`
+        )
         this.leave()
       }
     }
-    this.handleOnOnlineOffline = (evt?: any) =>{
+    this.handleOnOnlineOffline = (evt?: any) => {
       // 测试功能：重连依赖 window.ononline 和 window.onoffline 事件，更快发现断开和连上
-      if (evt?.type === "online"){
-        if (this.adapterRef.connectState.curState === "CONNECTING"){
+      if (evt?.type === 'online') {
+        if (this.adapterRef.connectState.curState === 'CONNECTING') {
           //正在重连
-          this.logger.warn("侦测到网络恢复，恢复重连过程");
+          this.logger.warn('侦测到网络恢复，恢复重连过程')
           this.resumeReconnection()
-        }else{
-          this.logger.warn("侦测到网络恢复");
+        } else {
+          this.logger.warn('侦测到网络恢复')
         }
-      }else if (evt?.type === "offline"){
-        if (this.adapterRef.connectState.curState === "CONNECTED"){
+      } else if (evt?.type === 'offline') {
+        if (this.adapterRef.connectState.curState === 'CONNECTED') {
           //还没发现网络断开 / 正在重连
-          this.logger.warn("侦测到网络断开，主动断开连接");
+          this.logger.warn('侦测到网络断开，主动断开连接')
           this.pauseReconnection()
           this.adapterRef._mediasoup?._sendTransport?.close()
           this.adapterRef._mediasoup?._recvTransport?.close()
-          this.adapterRef.channelStatus = "connectioning"
+          this.adapterRef.channelStatus = 'connectioning'
           this.adapterRef._signalling?._reconnection()
-        }else{
-          this.logger.warn("侦测到网络断开");
+        } else {
+          this.logger.warn('侦测到网络断开')
         }
       }
     }
-    
-    if (getParameters().leaveOnUnload){
+
+    if (getParameters().leaveOnUnload) {
       window.addEventListener('pagehide', this.handlePageUnload)
       window.addEventListener('beforeunload', this.handlePageUnload)
     }
-    if (getParameters().trustOnOnline){
+    if (getParameters().trustOnOnline) {
       window.addEventListener('online', this.handleOnOnlineOffline)
       window.addEventListener('offline', this.handleOnOnlineOffline)
     }
-      
+
     //typescript constructor requirement
     this._roleInfo = {
       userRole: 0, // 0:主播，1：观众
-      audienceList: {}, // Workaround，用于处理仍然收到的观众端消息
-    };
+      audienceList: {} // Workaround，用于处理仍然收到的观众端消息
+    }
     this._init(options)
-    this.logger.info(`NERTC ${SDK_VERSION} ${BUILD}: 客户端创建成功。`);
-    this.on('@connection-state-change', (evt)=>{
-      if (evt.prevState === "CONNECTED"){
-        if (this.recordManager.record?._status.isRecording && this.recordManager.record?._status.state === 'started'){
-          this.logger.log("自动停止客户端录制功能")
+    this.logger.info(`NERTC ${SDK_VERSION} ${BUILD}: 客户端创建成功。`)
+    this.on('@connection-state-change', (evt) => {
+      if (evt.prevState === 'CONNECTED') {
+        if (
+          this.recordManager.record?._status.isRecording &&
+          this.recordManager.record?._status.state === 'started'
+        ) {
+          this.logger.log('自动停止客户端录制功能')
           this.recordManager.record.download()
         }
       }
-      if (evt.curState === "CONNECTED" && evt.prevState === "CONNECTING"){
-        if (evt.reconnect){
-          this.adapterRef.lbsManager.startUpdate("reconnect")
+      if (evt.curState === 'CONNECTED' && evt.prevState === 'CONNECTING') {
+        if (evt.reconnect) {
+          this.adapterRef.lbsManager.startUpdate('reconnect')
         }
-        if (this.adapterRef.datareportCache?.length){
-          this.logger.log(`上报进频道前事件：${this.adapterRef.datareportCache.length}条: ${this.adapterRef.datareportCache.map(e => e.func).join()}`)
-          this.adapterRef.datareportCache.forEach((cache)=>{
+        if (this.adapterRef.datareportCache?.length) {
+          this.logger.log(
+            `上报进频道前事件：${
+              this.adapterRef.datareportCache.length
+            }条: ${this.adapterRef.datareportCache.map((e) => e.func).join()}`
+          )
+          this.adapterRef.datareportCache.forEach((cache) => {
             // @ts-ignore
-            const eventData:any = cache.datareport[cache.func]
-            if (eventData){
+            const eventData: any = cache.datareport[cache.func]
+            if (eventData) {
               eventData.cid = eventData.cid || this.adapterRef.channelInfo.cid
               eventData.uid = eventData.uid || this.adapterRef.channelInfo.uid
             }
@@ -155,60 +164,60 @@ class Client extends Base {
       }
     })
   }
-  
+
   // 初始化nrtc
-  _init (options:ClientOptions) {
+  _init(options: ClientOptions) {
     const { appkey = '', token } = options
     if (!appkey) {
       this.logger.error('Client: init error: 请传入appkey')
-      throw new RtcError({code: ErrorCode.INVALID_PARAMETER, message:'请传入appkey'})
+      throw new RtcError({ code: ErrorCode.INVALID_PARAMETER, message: '请传入appkey' })
     }
     this._params.appkey = appkey
-    
-    this.adapterRef.lbsManager.loadBuiltinConfig("oninit")
-    
+
+    this.adapterRef.lbsManager.loadBuiltinConfig('oninit')
+
     this._params.token = token
     this._roleInfo = {
       userRole: 0, // 0:主播，1：观众
-      audienceList: {}, // Workaround，用于处理仍然收到的观众端消息
-    };
-    if (!Device.deviceInited){
-      Device.startDeviceChangeDetection();
+      audienceList: {} // Workaround，用于处理仍然收到的观众端消息
     }
-    Device.on('recording-device-changed', (evt)=>{
-      if (!this.destroyed){
-        this.safeEmit("recording-device-changed", evt);
+    if (!Device.deviceInited) {
+      Device.startDeviceChangeDetection()
+    }
+    Device.on('recording-device-changed', (evt) => {
+      if (!this.destroyed) {
+        this.safeEmit('recording-device-changed', evt)
       }
     })
-    Device.on('camera-changed', (evt)=>{
-      if (!this.destroyed){
-        this.safeEmit("camera-changed", evt);
+    Device.on('camera-changed', (evt) => {
+      if (!this.destroyed) {
+        this.safeEmit('camera-changed', evt)
       }
     })
-    Device.on('playout-device-changed', (evt)=>{
-      if (!this.destroyed){
-        this.safeEmit("playout-device-changed", evt);
+    Device.on('playout-device-changed', (evt) => {
+      if (!this.destroyed) {
+        this.safeEmit('playout-device-changed', evt)
       }
     })
-    
-    const handleJoinFinish = ()=>{
+
+    const handleJoinFinish = () => {
       // 表示又用户调用的api层面的加入成功/失败，不算重连之类的。
-      if (this.onJoinFinish){
+      if (this.onJoinFinish) {
         this.onJoinFinish()
         this.onJoinFinish = null
-      }else{
+      } else {
         this.logger.debug('孤立的join完成回调')
       }
     }
-    this.addListener('@pairing-join-success', handleJoinFinish);
-    this.addListener('@pairing-join-error', handleJoinFinish);
-    
-    if (getParameters().enableAlerter !== "never"){
+    this.addListener('@pairing-join-success', handleJoinFinish)
+    this.addListener('@pairing-join-error', handleJoinFinish)
+
+    if (getParameters().enableAlerter !== 'never') {
       alerter.watchClient(this.adapterRef.instance)
     }
   }
 
-  getUid() :number|undefined{
+  getUid(): number | undefined {
     return this.adapterRef.channelInfo && this.adapterRef.channelInfo.uid
   }
 
@@ -223,17 +232,19 @@ class Client extends Base {
       name: 'getChannelInfo',
       code: 0,
       param: {
-        clientUid: this.adapterRef.channelInfo.uid || '',
+        clientUid: this.adapterRef.channelInfo.uid || ''
       }
     })
     return this.adapterRef.channelInfo || {}
   }
 
-  
   startProxyServer(type?: number) {
     let reason = null
     this.adapterRef.logger.log('startProxyServer, type: ', type)
-    if (this.adapterRef.channelStatus === 'join' || this.adapterRef.channelStatus === 'connectioning') {
+    if (
+      this.adapterRef.channelStatus === 'join' ||
+      this.adapterRef.channelStatus === 'connectioning'
+    ) {
       this.adapterRef.logger.error('startProxyServer: 请在加入房间前调用')
       reason = 'INVALID_OPERATION'
     }
@@ -245,19 +256,19 @@ class Client extends Base {
         reason
       }
     })
-    if(reason) {
+    if (reason) {
       throw new RtcError({
         code: ErrorCode.INVALID_PARAMETER,
         message: 'startProxyServer: 请在加入房间前调用'
       })
     }
     this.adapterRef.proxyServer.enable = true
-    type ? this.adapterRef.proxyServer.type = type : null
+    type ? (this.adapterRef.proxyServer.type = type) : null
   }
 
   stopProxyServer() {
     this.adapterRef.logger.log('stopProxyServer')
-    if(this.adapterRef.proxyServer){
+    if (this.adapterRef.proxyServer) {
       this.adapterRef.proxyServer.enable = false
       this.adapterRef.proxyServer.wsProxyArray = null
     }
@@ -285,16 +296,19 @@ class Client extends Base {
    * @return {null}
    */
 
-  setLocalMediaPriority (options: MediaPriorityOptions) {
+  setLocalMediaPriority(options: MediaPriorityOptions) {
     this.logger.log('setLocalMediaPriority, options: ', JSON.stringify(options))
     let reason = null
-    if (this.adapterRef.channelStatus === 'join' || this.adapterRef.channelStatus === 'connectioning') {
+    if (
+      this.adapterRef.channelStatus === 'join' ||
+      this.adapterRef.channelStatus === 'connectioning'
+    ) {
       this.logger.error('setLocalMediaPriority: 请在加入房间前调用')
       reason = 'setLocalMediaPriority: 请在加入房间前调用'
     }
 
-    const {priority = 100, preemtiveMode = false} = options
-    if(typeof priority !== 'number' || isNaN(priority)){
+    const { priority = 100, preemtiveMode = false } = options
+    if (typeof priority !== 'number' || isNaN(priority)) {
       reason = 'setLocalMediaPriority: priority is not Number'
     }
 
@@ -318,8 +332,6 @@ class Client extends Base {
     this.adapterRef.userPriority = options
   }
 
-
-
   /**
    * 加入频道
    * @function join
@@ -340,35 +352,39 @@ class Client extends Base {
    * @param {String} [options.neRtcServerAddresses.roomServer]  roomServer服务器
    * @return {Promise}
    */
-  async join (options: JoinOptions) {
+  async join(options: JoinOptions) {
     this.logger.log('join() 加入频道, options: ', JSON.stringify(options, null, ' '))
-    
+
     // join执行同时发起lbs请求。向getChannelInfo的请求不会被
-    const localConfig = this.adapterRef.lbsManager.loadLocalConfig("onjoin")
-    if (localConfig.config){
+    const localConfig = this.adapterRef.lbsManager.loadLocalConfig('onjoin')
+    if (localConfig.config) {
       // 载入LBS本地配置成功
       const expireTime = localConfig.config.ts + localConfig.config.config.ttl * 1000 - Date.now()
-      if (expireTime < localConfig.config.config.preloadTimeSec * 1000){
-        this.logger.log(`LBS在 ${Math.floor(expireTime / 1000)} 秒后过期。preloadTimeSec: ${localConfig.config.config.preloadTimeSec}。发起异步刷新请求`)
-        this.adapterRef.lbsManager.startUpdate("renew")
+      if (expireTime < localConfig.config.config.preloadTimeSec * 1000) {
+        this.logger.log(
+          `LBS在 ${Math.floor(expireTime / 1000)} 秒后过期。preloadTimeSec: ${
+            localConfig.config.config.preloadTimeSec
+          }。发起异步刷新请求`
+        )
+        this.adapterRef.lbsManager.startUpdate('renew')
       }
-    }else{
+    } else {
       // 载入本地配置失败=>载入内置配置，同时发起远程请求
       this.adapterRef.lbsManager.startUpdate(localConfig.reason)
     }
-    
+
     try {
-      if (!options.channelName || options.channelName === '') { 
-        throw new RtcError({code: ErrorCode.INVALID_PARAMETER, message:'join: 请填写房间名称'})
+      if (!options.channelName || options.channelName === '') {
+        throw new RtcError({ code: ErrorCode.INVALID_PARAMETER, message: 'join: 请填写房间名称' })
       }
       if (options.joinChannelRecordConfig) {
         checkValidBoolean({
-          tag: "joinOptions.joinChannelRecordConfig.recordAudio should be boolean",
-          value: options.joinChannelRecordConfig.recordAudio,
+          tag: 'joinOptions.joinChannelRecordConfig.recordAudio should be boolean',
+          value: options.joinChannelRecordConfig.recordAudio
         })
         checkValidBoolean({
-          tag: "joinOptions.joinChannelRecordConfig.recordVideo should be boolean",
-          value: options.joinChannelRecordConfig.recordVideo,
+          tag: 'joinOptions.joinChannelRecordConfig.recordVideo should be boolean',
+          value: options.joinChannelRecordConfig.recordVideo
         })
       }
 
@@ -378,7 +394,7 @@ class Client extends Base {
       } else if (typeof options.uid === 'number') {
         this.logger.log('uid是number类型')
         this.adapterRef.channelInfo.uidType = 'number'
-        if(options.uid > Number.MAX_SAFE_INTEGER){
+        if (options.uid > Number.MAX_SAFE_INTEGER) {
           throw new RtcError({
             code: ErrorCode.INVALID_PARAMETER,
             message: 'join: uid is exceeds the scope of Number'
@@ -397,14 +413,17 @@ class Client extends Base {
       // join行为排队
       this.onJoinFinish = await this.operationQueue.enqueue({
         caller: this as IClient,
-        method: "join",
-        options,
+        method: 'join',
+        options
       })
       this.safeEmit('@pairing-join-start')
-      if(!this.adapterRef._statsReport){
-        this.initWebSocket();
+      if (!this.adapterRef._statsReport) {
+        this.initWebSocket()
       }
-      if (this.adapterRef.channelStatus === 'join' || this.adapterRef.channelStatus === 'connectioning') {
+      if (
+        this.adapterRef.channelStatus === 'join' ||
+        this.adapterRef.channelStatus === 'connectioning'
+      ) {
         this.safeEmit('@pairing-join-error')
         return Promise.reject(
           new RtcError({
@@ -416,12 +435,12 @@ class Client extends Base {
       //正式开始join行为
       this.adapterRef.connectState.curState = 'CONNECTING'
       this.adapterRef.connectState.prevState = 'DISCONNECTED'
-      this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
-      if (options.spatial){
+      this.adapterRef.instance.safeEmit('connection-state-change', this.adapterRef.connectState)
+      if (options.spatial) {
         this.initSpatialManager(options.spatial)
       }
-      if (options.token){
-        this._params.token = options.token;
+      if (options.token) {
+        this._params.token = options.token
       }
       this._params.JoinChannelRequestParam4WebRTC2 = {
         startJoinTime: Date.now(),
@@ -431,15 +450,15 @@ class Client extends Base {
         wssArr: options.wssArr,
         uid: options.uid,
         token: this._params.token,
-        joinChannelLiveConfig: options.joinChannelLiveConfig || {liveEnable: false},
+        joinChannelLiveConfig: options.joinChannelLiveConfig || { liveEnable: false },
         joinChannelRecordConfig: options.joinChannelRecordConfig || {
           recordAudio: false, // 是否开启音频实时音录制，0不需要，1需要（默认0）
           recordVideo: false, // 是否开启视频实时音录制，0不需要，1需要（默认0）
           recordType: 0, // 录制模式，0混单（产生混合录制文件+单独录制文件） 1只混（只产生混合录制文件） 2只单（只产生单独录制文件）
           isHostSpeaker: false // 主讲人
-        },
+        }
       }
-      if(options.neRtcServerAddresses){
+      if (options.neRtcServerAddresses) {
         this._params.neRtcServerAddresses = {
           channelServer: options.neRtcServerAddresses.channelServer || '',
           statisticsServer: options.neRtcServerAddresses.statisticsServer || '',
@@ -448,24 +467,29 @@ class Client extends Base {
           mediaProxyServer: options.neRtcServerAddresses.mediaProxyServer || ''
         }
       }
-      
+
       this.setStartSessionTime()
       this.initMode()
-      if (!this.adapterRef.mediaCapability.supportedCodecRecv || !this.adapterRef.mediaCapability.supportedCodecSend){
-        try{
-          await this.adapterRef.mediaCapability.detect();
-        }catch(e){
-          this.logger.error('Failed to detect mediaCapability', e.name, e.message);
+      if (
+        !this.adapterRef.mediaCapability.supportedCodecRecv ||
+        !this.adapterRef.mediaCapability.supportedCodecSend
+      ) {
+        try {
+          await this.adapterRef.mediaCapability.detect()
+        } catch (e: any) {
+          this.logger.error('Failed to detect mediaCapability', e.name, e.message)
         }
       }
-      if (!this.adapterRef._meetings){
+      if (!this.adapterRef._meetings) {
         this.safeEmit('@pairing-join-error')
         throw new RtcError({
           code: ErrorCode.NO_MEETINGS,
           message: 'meetings error'
         })
       }
-      const joinResult = await this.adapterRef._meetings.joinChannel(this._params.JoinChannelRequestParam4WebRTC2)
+      const joinResult = await this.adapterRef._meetings.joinChannel(
+        this._params.JoinChannelRequestParam4WebRTC2
+      )
       this.safeEmit('@pairing-join-success')
       this.apiFrequencyControl({
         name: 'join',
@@ -475,7 +499,7 @@ class Client extends Base {
         }
       })
       return joinResult
-    } catch (e){
+    } catch (e: any) {
       this.safeEmit('@pairing-join-error')
       this.apiFrequencyControl({
         name: 'join',
@@ -485,7 +509,7 @@ class Client extends Base {
           reason: e && e.message
         }
       })
-      throw e;
+      throw e
     }
   }
 
@@ -496,25 +520,28 @@ class Client extends Base {
    * @param {Void}
    * @return {null}
    */
-  async leave () {
+  async leave() {
     const onLeaveFinish = await this.operationQueue.enqueue({
       caller: this as IClient,
       method: 'leave',
-      options: null,
+      options: null
     })
     this.logger.log('leave() 离开频道')
-    if (this.adapterRef.channelStatus !== 'join' && this.adapterRef.channelStatus !== 'connectioning') {
+    if (
+      this.adapterRef.channelStatus !== 'join' &&
+      this.adapterRef.channelStatus !== 'connectioning'
+    ) {
       this.logger.log('房间状态: ', this.adapterRef.channelStatus)
       //return Promise.reject('ERR_REPEAT_LEAVE')
     }
     this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
     this.adapterRef.connectState.curState = 'DISCONNECTING'
     this.adapterRef.connectState.reconnect = false
-    this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
+    this.adapterRef.instance.safeEmit('connection-state-change', this.adapterRef.connectState)
     this.setEndSessionTime()
     if (this.adapterRef._meetings) {
       this.adapterRef._meetings.leaveChannel().then(onLeaveFinish)
-    }else{
+    } else {
       onLeaveFinish()
     }
     this.apiFrequencyControl({
@@ -524,56 +551,58 @@ class Client extends Base {
         clientUid: this.getUid()
       }
     })
-
   }
 
-  async leaveRts () {
+  async leaveRts() {
     this.logger.log('离开频道')
-    if (this.adapterRef.channelStatus !== 'join' && this.adapterRef.channelStatus !== 'connectioning') {
+    if (
+      this.adapterRef.channelStatus !== 'join' &&
+      this.adapterRef.channelStatus !== 'connectioning'
+    ) {
       this.logger.log(' 状态: ', this.adapterRef.channelStatus)
     }
     this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
     this.adapterRef.connectState.curState = 'DISCONNECTING'
     this.adapterRef.connectState.reconnect = false
-    this.adapterRef.instance.safeEmit("connection-state-change", this.adapterRef.connectState);
+    this.adapterRef.instance.safeEmit('connection-state-change', this.adapterRef.connectState)
     this.setEndSessionTime()
     if (this.adapterRef._meetings) {
       this.adapterRef._meetings.leaveChannel()
     }
   }
 
-  enableCustomTransform(enable?: boolean){
-    let errMsg: string = ""
-    if (this.adapterRef.connectState.curState !== 'DISCONNECTED'){
+  enableCustomTransform(enable?: boolean) {
+    let errMsg = ''
+    if (this.adapterRef.connectState.curState !== 'DISCONNECTED') {
       errMsg = 'enableCustomTransform必须在加入频道前调用'
-    // @ts-ignore
-    }else if (typeof window.TransformStream !== "function") {
+      // @ts-ignore
+    } else if (typeof window.TransformStream !== 'function') {
       errMsg = '浏览器不支持自定义加解密: 未找到TransformStream'
     }
     // @ts-ignore
-    else if (typeof window.RTCRtpReceiver?.prototype.createEncodedStreams !== "function"){
+    else if (typeof window.RTCRtpReceiver?.prototype.createEncodedStreams !== 'function') {
       errMsg = '浏览器不支持自定义加解密: 未找到createEncodedStreams'
-    }else if (this.adapterRef.encryption.encryptionMode !== "none"){
+    } else if (this.adapterRef.encryption.encryptionMode !== 'none') {
       errMsg = '自定义加密功能与国密加密功能不兼容'
     }
-    if (errMsg){
-      this.logger.error(errMsg);
+    if (errMsg) {
+      this.logger.error(errMsg)
       throw new RtcError({
         code: ErrorCode.NOT_SUPPORT,
         message: errMsg
       })
-    }else{
-      if (enable === false){
+    } else {
+      if (enable === false) {
         this.adapterRef.encryption.encodedInsertableStreams = false
         this.logger.log('已关闭自定义加解密')
-      }else{
+      } else {
         this.adapterRef.encryption.encodedInsertableStreams = true
         this.logger.log('已开启自定义加解密')
       }
       this.apiFrequencyControl({
         name: 'enableCustomTransform',
         code: 0,
-        param: JSON.stringify({enable})
+        param: JSON.stringify({ enable })
       })
     }
   }
@@ -585,28 +614,31 @@ class Client extends Base {
    * @param {Stream} Stream类型
    * @returns {Promise}
    */
-  async publish (stream:LocalStream) {
-    checkExists({tag: 'client.publish:stream', value: stream});
-    await this.doPublish(stream);
+  async publish(stream: LocalStream) {
+    checkExists({ tag: 'client.publish:stream', value: stream })
+    await this.doPublish(stream)
   }
 
-  async doPublish (stream:LocalStream) {
+  async doPublish(stream: LocalStream) {
     const hookPublishFinish = await this.operationQueue.enqueue({
       caller: this as IClient,
       method: 'publish',
-      options: stream,
+      options: stream
     })
     let reason = ''
-    const onPublishFinish = ()=>{
+    const onPublishFinish = () => {
       hookPublishFinish()
       const param: any = {
         reason,
         pubStatus: stream.pubStatus
-      };
-      if (stream.mediaHelper.video.cameraTrack || stream.mediaHelper.video.videoSource){
+      }
+      if (stream.mediaHelper.video.cameraTrack || stream.mediaHelper.video.videoSource) {
         param.webcamProducerCodec = this.adapterRef._mediasoup?._webcamProducerCodec
       }
-      if (stream.mediaHelper.screen.screenVideoTrack || stream.mediaHelper.screen.screenVideoSource){
+      if (
+        stream.mediaHelper.screen.screenVideoTrack ||
+        stream.mediaHelper.screen.screenVideoSource
+      ) {
         param.screenProducerCodec = this.adapterRef._mediasoup?._screenProducerCodec
       }
       this.apiFrequencyControl({
@@ -622,26 +654,25 @@ class Client extends Base {
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     if (!stream || (!stream.audio && !stream.video && !stream.screen && !stream.screenAudio)) {
-      if(stream && getParameters().allowEmptyMedia){
+      if (stream && getParameters().allowEmptyMedia) {
         this.logger.log('publish: 当前模式允许发布没有媒体流的localStream')
-      }else{
+      } else {
         this.logger.error('publish: 传入的 stream 格式非法，没有媒体数据')
         reason = 'INVALID_LOCAL_STREAM'
       }
     } else if (this._roleInfo.userRole === 1) {
-      this.logger.error(`publish：观众禁止Publish，请先使用setClientRole设为主播`);
+      this.logger.error(`publish：观众禁止Publish，请先使用setClientRole设为主播`)
       reason = 'INVALID_OPERATION'
     } else if (this.adapterRef.connectState.curState === 'CONNECTING') {
       this.logger.error('publish: 当前正在连接，将在连接成功后发布媒体流')
       reason = 'PUBLISH_ON_CONNECTING'
       this.bindLocalStream(stream)
-    }
-    else if (this.adapterRef.connectState.curState !== 'CONNECTED') {
+    } else if (this.adapterRef.connectState.curState !== 'CONNECTED') {
       this.logger.error('publish: 当前不在频道中，可能是没有加入频道或者是网络波动导致暂时断开连接')
       reason = 'INVALID_OPERATION'
     }
     if (reason) {
-      if(reason === 'INVALID_OPERATION') {
+      if (reason === 'INVALID_OPERATION') {
         onPublishFinish()
         return Promise.reject(
           new RtcError({
@@ -649,7 +680,7 @@ class Client extends Base {
             message: 'invalid operation'
           })
         )
-      }else if(reason === 'INVALID_LOCAL_STREAM') {
+      } else if (reason === 'INVALID_LOCAL_STREAM') {
         onPublishFinish()
         return Promise.reject(
           new RtcError({
@@ -657,12 +688,12 @@ class Client extends Base {
             message: 'no localStream'
           })
         )
-      }else{
+      } else {
         onPublishFinish()
         return
       }
     }
-    
+
     try {
       if (!this.adapterRef._mediasoup) {
         onPublishFinish()
@@ -672,10 +703,10 @@ class Client extends Base {
         })
       }
       this.bindLocalStream(stream)
-      await this.adapterRef._mediasoup.createProduce(stream, "all");
+      await this.adapterRef._mediasoup.createProduce(stream, 'all')
       onPublishFinish()
-    } catch (e) {
-      this.logger.error('API调用失败：Client:publish' ,e.name, e.message, e.stack, ...arguments);
+    } catch (e: any) {
+      this.logger.error('API调用失败：Client:publish', e.name, e.message, e.stack, ...arguments)
       reason = e.message
       onPublishFinish()
     }
@@ -686,29 +717,34 @@ class Client extends Base {
    * @method unpublish
    * @memberOf Client#
    * @param {Stream} Stream类型
-   * @returns {Promise}  
+   * @returns {Promise}
    */
-  async unpublish (stream?:LocalStream) {
-    checkExists({tag: 'client.unpublish:stream', value: stream});
+  async unpublish(stream?: LocalStream) {
+    checkExists({ tag: 'client.unpublish:stream', value: stream })
     const onUnpublishFinish = await this.operationQueue.enqueue({
       caller: this as IClient,
       method: 'unpublish',
-      options: null,
+      options: null
     })
     let reason = ''
     if (this.adapterRef.connectState.curState === 'CONNECTING') {
       this.logger.error('unpublish: 当前正在连接，连接成功后将不再发送媒体流')
       reason = 'UNPUBLISH_ON_CONNECTING'
       this.adapterRef.localStream = null
-    }
-    else if (this.adapterRef.connectState.curState !== 'CONNECTED') {
-      this.logger.error('unpublish: 当前不在频道中，可能是没有加入频道或者是网络波动导致暂时断开连接')
+    } else if (this.adapterRef.connectState.curState !== 'CONNECTED') {
+      this.logger.error(
+        'unpublish: 当前不在频道中，可能是没有加入频道或者是网络波动导致暂时断开连接'
+      )
       reason = 'INVALID_OPERATION'
     }
-    const param = JSON.stringify({
-      pubStatus: stream && stream.pubStatus,
-      reason
-    }, null, ' ')
+    const param = JSON.stringify(
+      {
+        pubStatus: stream && stream.pubStatus,
+        reason
+      },
+      null,
+      ' '
+    )
     if (reason) {
       this.apiFrequencyControl({
         name: 'unpublish',
@@ -719,7 +755,7 @@ class Client extends Base {
           reason
         }
       })
-      if(reason === 'INVALID_OPERATION') {
+      if (reason === 'INVALID_OPERATION') {
         onUnpublishFinish()
         return Promise.reject(
           new RtcError({
@@ -727,7 +763,7 @@ class Client extends Base {
             message: 'invalid operation'
           })
         )
-      }else if (reason === 'INVALID_LOCAL_STREAM') {
+      } else if (reason === 'INVALID_LOCAL_STREAM') {
         onUnpublishFinish()
         return Promise.reject(
           new RtcError({
@@ -735,7 +771,7 @@ class Client extends Base {
             message: 'no localStream'
           })
         )
-      }else{
+      } else {
         onUnpublishFinish()
         return
       }
@@ -743,96 +779,106 @@ class Client extends Base {
 
     this.logger.log(`开始取消发布本地流`)
     try {
-      if (!this.adapterRef._mediasoup){
+      if (!this.adapterRef._mediasoup) {
         throw new RtcError({
           code: ErrorCode.NO_MEDIASERVER,
           message: 'media server error 5'
         })
       }
-      await this.adapterRef._mediasoup.destroyProduce('audio');
-      await this.adapterRef._mediasoup.destroyProduce('audioSlave');
-      await this.adapterRef._mediasoup.destroyProduce('video');
-      await this.adapterRef._mediasoup.destroyProduce('screen');
-      this.adapterRef.localStream = null;
+      await this.adapterRef._mediasoup.destroyProduce('audio')
+      await this.adapterRef._mediasoup.destroyProduce('audioSlave')
+      await this.adapterRef._mediasoup.destroyProduce('video')
+      await this.adapterRef._mediasoup.destroyProduce('screen')
+      this.adapterRef.localStream = null
       this.apiFrequencyControl({
         name: 'unpublish',
         code: 0,
-        param: JSON.stringify({
-          pubStatus: stream && stream.pubStatus
-        }, null, ' ')
+        param: JSON.stringify(
+          {
+            pubStatus: stream && stream.pubStatus
+          },
+          null,
+          ' '
+        )
       })
       onUnpublishFinish()
-    } catch (e) {
-      this.logger.error('API调用失败：Client:unpublish' ,e, ...arguments);
+    } catch (e: any) {
+      this.logger.error('API调用失败：Client:unpublish', e, ...arguments)
       onUnpublishFinish()
       this.apiFrequencyControl({
         name: 'unpublish',
         code: -1,
-        param: JSON.stringify({
-          reason: e.message,
-          pubStatus: stream && stream.pubStatus
-        }, null, ' ')
+        param: JSON.stringify(
+          {
+            reason: e.message,
+            pubStatus: stream && stream.pubStatus
+          },
+          null,
+          ' '
+        )
       })
     }
   }
 
-  getSubStatus(stream: RemoteStream, mediaType: MediaTypeShort|"all"){
-    let result:MediaSubStatus = {status: "unsubscribed", subscribable: false};
-    if (mediaType === "all"){
+  getSubStatus(stream: RemoteStream, mediaType: MediaTypeShort | 'all') {
+    let result: MediaSubStatus = { status: 'unsubscribed', subscribable: false }
+    if (mediaType === 'all') {
       const info = [
-        this.getSubStatus(stream, "audio"),
-        this.getSubStatus(stream, "audioSlave"),
-        this.getSubStatus(stream, "video"),
-        this.getSubStatus(stream,"screen"),
-      ];
-      if (info.find(status => status.status === "unsubscribing")){
-        result.status = "unsubscribing"
+        this.getSubStatus(stream, 'audio'),
+        this.getSubStatus(stream, 'audioSlave'),
+        this.getSubStatus(stream, 'video'),
+        this.getSubStatus(stream, 'screen')
+      ]
+      if (info.find((status) => status.status === 'unsubscribing')) {
+        result.status = 'unsubscribing'
+      } else if (info.find((status) => status.status === 'subscribing')) {
+        result.status = 'subscribing'
       }
-      else if (info.find(status => status.status === "subscribing")){
-        result.status = "subscribing"
+      if (info.find((status) => status.status === 'subscribed')) {
+        result.status = 'subscribed'
       }
-      if (info.find(status => status.status === "subscribed")){
-        result.status = "subscribed"
-      }
-      if (result.status === "subscribed" || result.status === "unsubscribed"){
-        if (info.find(status => status.subscribable)){
+      if (result.status === 'subscribed' || result.status === 'unsubscribed') {
+        if (info.find((status) => status.subscribable)) {
           result.subscribable = true
         }
       }
-    }
-    else if (stream.pubStatus[mediaType].stopconsumerStatus === "start"){
-      result.status = "unsubscribing"
-    }else if (stream.pubStatus[mediaType].consumerStatus === "start"){
-      result.status = "subscribing"
-    }else if (stream.pubStatus[mediaType].consumerId) {
-      result.status = "subscribed"
-    }else{
+    } else if (stream.pubStatus[mediaType].stopconsumerStatus === 'start') {
+      result.status = 'unsubscribing'
+    } else if (stream.pubStatus[mediaType].consumerStatus === 'start') {
+      result.status = 'subscribing'
+    } else if (stream.pubStatus[mediaType].consumerId) {
+      result.status = 'subscribed'
+    } else {
       // 可订阅 = 未订阅+有远端+订阅设置打开
-      if (result.status === "unsubscribed" && stream.pubStatus[mediaType].producerId && stream.subConf[mediaType]){
+      if (
+        result.status === 'unsubscribed' &&
+        stream.pubStatus[mediaType].producerId &&
+        stream.subConf[mediaType]
+      ) {
         result.subscribable = true
       }
     }
     return result
   }
-  
+
   /**
    * 订阅远端音视频流
    * @method subscribe
    * @memberOf Client#
    * @param {Stream} Stream类型
-   * @returns {Promise}  
+   * @returns {Promise}
    */
-  async subscribe (stream:RemoteStream) {
-    if (this.spatialManager){
-      this.logger.warn(`[Subscribe] 已开启空间音频，跳过用户订阅步骤`);
-    }else{
-      checkExists({tag: 'client.subscribe:stream', value: stream});
+  async subscribe(stream: RemoteStream) {
+    if (this.spatialManager) {
+      this.logger.warn(`[Subscribe] 已开启空间音频，跳过用户订阅步骤`)
+    } else {
+      checkExists({ tag: 'client.subscribe:stream', value: stream })
       this.logger.log(`[Subscribe] [订阅远端: ${stream.stringStreamID}]`)
       return this.doSubscribe(stream)
     }
   }
 
-  async doSubscribe (stream:RemoteStream) {
+  async doSubscribe(stream: RemoteStream) {
     const uid = stream.getId()
     if (!uid) {
       throw new RtcError({
@@ -853,31 +899,46 @@ class Client extends Base {
           //重复调用的问题不再通过consumerStatus来保障，有后续的流程负责
           this.logger.log(`[Subscribe] 开始订阅 ${stream.getId()} 音频流`)
           stream.pubStatus.audio.consumerStatus = 'start'
-          await this.adapterRef._mediasoup.createConsumer(uid, 'audio', 'audio', stream.pubStatus.audio.producerId);
+          await this.adapterRef._mediasoup.createConsumer(
+            uid,
+            'audio',
+            'audio',
+            stream.pubStatus.audio.producerId
+          )
           stream.pubStatus.audio.consumerStatus = 'end'
           this.logger.log(`[Subscribe] 订阅 ${stream.getId()} 音频流完成`)
         }
       } else {
         // 不应该订阅音频
-        if (stream.pubStatus.audio.consumerId && stream.pubStatus.audio.stopconsumerStatus !== 'start'){
+        if (
+          stream.pubStatus.audio.consumerId &&
+          stream.pubStatus.audio.stopconsumerStatus !== 'start'
+        ) {
           this.logger.log('开始取消订阅音频流')
           stream.pubStatus.audio.stopconsumerStatus = 'start'
-          if (!this.adapterRef._mediasoup){
+          if (!this.adapterRef._mediasoup) {
             throw new RtcError({
               code: ErrorCode.NO_MEDIASERVER,
               message: 'media server error 7'
             })
           }
-          await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.audio.consumerId, stream, 'audio');
+          await this.adapterRef._mediasoup.destroyConsumer(
+            stream.pubStatus.audio.consumerId,
+            stream,
+            'audio'
+          )
           this.adapterRef.instance.removeSsrc(stream.getId(), 'audio')
-          stream.pubStatus.audio.consumerId = '';
+          stream.pubStatus.audio.consumerId = ''
           stream.stop('audio')
           stream.pubStatus.audio.stopconsumerStatus = 'end'
           stream.subStatus.audio = false
           const uid = stream.getId()
-          if(uid){
-            delete this.adapterRef.remoteAudioStats[uid];
-            const data = this.adapterRef._statsReport && this.adapterRef._statsReport.formativeStatsReport && this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
+          if (uid) {
+            delete this.adapterRef.remoteAudioStats[uid]
+            const data =
+              this.adapterRef._statsReport &&
+              this.adapterRef._statsReport.formativeStatsReport &&
+              this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
             if (data) {
               data.recvFirstAudioFrame = false
               data.recvFirstAudioPackage = false
@@ -891,29 +952,41 @@ class Client extends Base {
         if (stream.pubStatus.audioSlave.audioSlave && !stream.pubStatus.audioSlave.consumerId) {
           this.logger.log(`[Subscribe] 开始订阅 ${stream.getId()} 音频辅流`)
           stream.pubStatus.audioSlave.consumerStatus = 'start'
-          await this.adapterRef._mediasoup.createConsumer(uid, 'audio', 'audioSlave', stream.pubStatus.audioSlave.producerId);
+          await this.adapterRef._mediasoup.createConsumer(
+            uid,
+            'audio',
+            'audioSlave',
+            stream.pubStatus.audioSlave.producerId
+          )
           stream.pubStatus.audioSlave.consumerStatus = 'end'
           this.logger.log(`[Subscribe] 订阅 ${stream.getId()} 音频辅流完成`)
         }
       } else {
-        if (stream.pubStatus.audioSlave.consumerId && stream.pubStatus.audioSlave.stopconsumerStatus !== 'start') {
+        if (
+          stream.pubStatus.audioSlave.consumerId &&
+          stream.pubStatus.audioSlave.stopconsumerStatus !== 'start'
+        ) {
           this.logger.log('开始取消订阅音频流')
           stream.pubStatus.audioSlave.stopconsumerStatus = 'start'
-          if (!this.adapterRef._mediasoup){
+          if (!this.adapterRef._mediasoup) {
             throw new RtcError({
               code: ErrorCode.NO_MEDIASERVER,
               message: 'media server error 7'
             })
           }
-          await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.audioSlave.consumerId, stream, 'audioSlave');
+          await this.adapterRef._mediasoup.destroyConsumer(
+            stream.pubStatus.audioSlave.consumerId,
+            stream,
+            'audioSlave'
+          )
           this.adapterRef.instance.removeSsrc(stream.getId(), 'audioSlave')
-          stream.pubStatus.audioSlave.consumerId = '';
+          stream.pubStatus.audioSlave.consumerId = ''
           stream.stop('audioSlave')
           stream.pubStatus.audioSlave.stopconsumerStatus = 'end'
           stream.subStatus.audioSlave = false
           const uid = stream.getId()
-          if(uid){
-            delete this.adapterRef.remoteAudioSlaveStats[uid];
+          if (uid) {
+            delete this.adapterRef.remoteAudioSlaveStats[uid]
           }
           this.logger.log('取消订阅音频流完成')
         }
@@ -925,38 +998,54 @@ class Client extends Base {
           this.logger.log(`[Subscribe] 开始订阅 ${stream.getId()} 视频流`)
           // preferredSpatialLayer是从小到大的，即0是小流，1是大流
           // API层面与声网和Native对齐，即0是大流，1是小流
-          let preferredSpatialLayer;
-          if (stream.subConf.highOrLow.video === STREAM_TYPE.LOW){
-            preferredSpatialLayer = 0;
-          }else{
-            preferredSpatialLayer = 1;
+          let preferredSpatialLayer
+          if (stream.subConf.highOrLow.video === STREAM_TYPE.LOW) {
+            preferredSpatialLayer = 0
+          } else {
+            preferredSpatialLayer = 1
           }
-          await this.adapterRef._mediasoup.createConsumer(uid, 'video', 'video', stream.pubStatus.video.producerId, preferredSpatialLayer);
+          await this.adapterRef._mediasoup.createConsumer(
+            uid,
+            'video',
+            'video',
+            stream.pubStatus.video.producerId,
+            preferredSpatialLayer
+          )
           this.logger.log(`[Subscribe] 订阅 ${stream.getId()} 视频流完成`)
         } else {
           this.logger.log('stream.pubStatus.video: ', JSON.stringify(stream.pubStatus.video))
         }
       } else {
         // 不应该订阅视频
-        if (stream.pubStatus.video.consumerId && stream.pubStatus.video.stopconsumerStatus !== 'start') {
+        if (
+          stream.pubStatus.video.consumerId &&
+          stream.pubStatus.video.stopconsumerStatus !== 'start'
+        ) {
           this.logger.log('开始取消订阅视频流')
           stream.pubStatus.video.stopconsumerStatus = 'start'
-          if (!this.adapterRef._mediasoup){
+          if (!this.adapterRef._mediasoup) {
             throw new RtcError({
               code: ErrorCode.NO_MEDIASERVER,
               message: 'media server error 8'
             })
           }
-          await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.video.consumerId, stream, 'video');
+          await this.adapterRef._mediasoup.destroyConsumer(
+            stream.pubStatus.video.consumerId,
+            stream,
+            'video'
+          )
           this.adapterRef.instance.removeSsrc(stream.getId(), 'video')
-          stream.pubStatus.video.consumerId = '';
+          stream.pubStatus.video.consumerId = ''
           stream.stop('video')
           stream.pubStatus.video.stopconsumerStatus = 'end'
           stream.subStatus.video = false
           const uid = stream.getId()
-          if(uid){
-            delete this.adapterRef.remoteVideoStats[uid];
-            const data = this.adapterRef._statsReport && this.adapterRef._statsReport.formativeStatsReport && this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
+          if (uid) {
+            delete this.adapterRef.remoteVideoStats[uid]
+            const data =
+              this.adapterRef._statsReport &&
+              this.adapterRef._statsReport.formativeStatsReport &&
+              this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
             if (data) {
               data.recvFirstVideoFrame = false
               data.recvFirstVideoPackage = false
@@ -968,40 +1057,56 @@ class Client extends Base {
       }
       if (stream.subConf.screen) {
         // 应该订阅辅流
-        if (stream.pubStatus.screen.screen && !stream.pubStatus.screen.consumerId){
+        if (stream.pubStatus.screen.screen && !stream.pubStatus.screen.consumerId) {
           this.logger.log(`[Subscribe] 开始订阅 ${stream.getId()} 辅流`)
           // preferredSpatialLayer是从小到大的，即0是小流，1是大流
           // API层面与声网和Native对齐，即0是大流，1是小流
-          let preferredSpatialLayer;
-          if (stream.subConf.highOrLow.screen === STREAM_TYPE.LOW){
-            preferredSpatialLayer = 0;
-          }else{
-            preferredSpatialLayer = 1;
+          let preferredSpatialLayer
+          if (stream.subConf.highOrLow.screen === STREAM_TYPE.LOW) {
+            preferredSpatialLayer = 0
+          } else {
+            preferredSpatialLayer = 1
           }
-          await this.adapterRef._mediasoup.createConsumer(uid, 'video', 'screenShare', stream.pubStatus.screen.producerId, preferredSpatialLayer);
+          await this.adapterRef._mediasoup.createConsumer(
+            uid,
+            'video',
+            'screenShare',
+            stream.pubStatus.screen.producerId,
+            preferredSpatialLayer
+          )
           this.logger.log(`[Subscribe] 订阅 ${stream.getId()} 辅流完成`)
         }
       } else {
         // 不应该订阅辅流
-        if (stream.pubStatus.screen.consumerId && stream.pubStatus.screen.stopconsumerStatus !== 'start') {
+        if (
+          stream.pubStatus.screen.consumerId &&
+          stream.pubStatus.screen.stopconsumerStatus !== 'start'
+        ) {
           this.logger.log('开始取消订阅辅流')
           stream.pubStatus.screen.stopconsumerStatus = 'start'
-          if (!this.adapterRef._mediasoup){
+          if (!this.adapterRef._mediasoup) {
             throw new RtcError({
               code: ErrorCode.NO_MEDIASERVER,
               message: 'media server error 9'
             })
           }
-          await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.screen.consumerId, stream, 'screen');
+          await this.adapterRef._mediasoup.destroyConsumer(
+            stream.pubStatus.screen.consumerId,
+            stream,
+            'screen'
+          )
           this.adapterRef.instance.removeSsrc(stream.getId(), 'screen')
-          stream.pubStatus.screen.consumerId = '';
+          stream.pubStatus.screen.consumerId = ''
           stream.stop('screen')
           stream.pubStatus.screen.stopconsumerStatus = 'end'
           stream.subStatus.screen = false
           const uid = stream.getId()
-          if(uid){
-            delete this.adapterRef.remoteScreenStats[uid];
-            const data = this.adapterRef._statsReport && this.adapterRef._statsReport.formativeStatsReport && this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
+          if (uid) {
+            delete this.adapterRef.remoteScreenStats[uid]
+            const data =
+              this.adapterRef._statsReport &&
+              this.adapterRef._statsReport.formativeStatsReport &&
+              this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
             if (data) {
               data.recvFirstScreenFrame = false
               data.recvFirstScreenPackage = false
@@ -1014,28 +1119,36 @@ class Client extends Base {
       this.apiFrequencyControl({
         name: 'subscribe',
         code: 0,
-        param: JSON.stringify({
-          reason: '',
-          subStatus: stream.subStatus,
-          subConf: stream.subConf,
-          pubStatus: stream.pubStatus
-        }, null, ' ')
+        param: JSON.stringify(
+          {
+            reason: '',
+            subStatus: stream.subStatus,
+            subConf: stream.subConf,
+            pubStatus: stream.pubStatus
+          },
+          null,
+          ' '
+        )
       })
-    } catch (e) {
-      if (e === "resetConsumeRequestStatus") {
-        this.logger.warn(`API调用被打断：Client:subscribe`, e);
-        return;
+    } catch (e: any) {
+      if (e === 'resetConsumeRequestStatus') {
+        this.logger.warn(`API调用被打断：Client:subscribe`, e)
+        return
       }
-      this.logger.error(`API调用失败：Client:subscribe`, e, e.name, e.message, ...arguments);
+      this.logger.error(`API调用失败：Client:subscribe`, e, e.name, e.message, ...arguments)
       this.apiFrequencyControl({
         name: 'subscribe',
         code: -1,
-        param: JSON.stringify({
-          reason: e.message,
-          subStatus: stream.subStatus,
-          subConf: stream.subConf,
-          pubStatus: stream.pubStatus
-        }, null, ' ')
+        param: JSON.stringify(
+          {
+            reason: e.message,
+            subStatus: stream.subStatus,
+            subConf: stream.subConf,
+            pubStatus: stream.pubStatus
+          },
+          null,
+          ' '
+        )
       })
     }
   }
@@ -1045,36 +1158,54 @@ class Client extends Base {
    * @method unsubscribe
    * @memberOf Client#
    * @param {Stream} Stream类型
-   * @returns {Promise}  
+   * @returns {Promise}
    */
-  async unsubscribe (stream:RemoteStream, mediaType?: 'audio'|'audioSlave'|'video'|'screen') {
-    checkExists({tag: 'client.unsubscribe:stream', value: stream});
+  async unsubscribe(stream: RemoteStream, mediaType?: 'audio' | 'audioSlave' | 'video' | 'screen') {
+    checkExists({ tag: 'client.unsubscribe:stream', value: stream })
     return this.doUnsubscribe(stream, mediaType)
   }
 
-  async doUnsubscribe (stream:RemoteStream, mediaType?: 'audio'|'audioSlave'|'video'|'screen') {
-    this.logger.log(`unsubscribe() [取消订阅远端音视频流: ${stream.stringStreamID}, mediaType: ${mediaType ? mediaType : 'all'}]`)
+  async doUnsubscribe(
+    stream: RemoteStream,
+    mediaType?: 'audio' | 'audioSlave' | 'video' | 'screen'
+  ) {
+    this.logger.log(
+      `unsubscribe() [取消订阅远端音视频流: ${stream.stringStreamID}, mediaType: ${
+        mediaType ? mediaType : 'all'
+      }]`
+    )
     try {
-      if ((mediaType === undefined || mediaType === 'audio') && stream.pubStatus.audio.consumerId && stream.pubStatus.audio.stopconsumerStatus !== 'start') {
+      if (
+        (mediaType === undefined || mediaType === 'audio') &&
+        stream.pubStatus.audio.consumerId &&
+        stream.pubStatus.audio.stopconsumerStatus !== 'start'
+      ) {
         this.logger.log('开始取消订阅音频流')
         stream.pubStatus.audio.stopconsumerStatus = 'start'
-        if (!this.adapterRef._mediasoup){
+        if (!this.adapterRef._mediasoup) {
           throw new RtcError({
             code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 10'
           })
         }
-        await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.audio.consumerId, stream, 'audio');
+        await this.adapterRef._mediasoup.destroyConsumer(
+          stream.pubStatus.audio.consumerId,
+          stream,
+          'audio'
+        )
         this.adapterRef.instance.removeSsrc(stream.getId(), 'audio')
         stream.mediaHelper.updateStream('audio', null)
-        stream.pubStatus.audio.consumerId = '';
+        stream.pubStatus.audio.consumerId = ''
         stream.stop('audio')
         stream.pubStatus.audio.stopconsumerStatus = 'end'
         stream.subStatus.audio = false
         const uid = stream.getId()
-        if(uid){
-          delete this.adapterRef.remoteAudioStats[uid];
-          const data = this.adapterRef._statsReport && this.adapterRef._statsReport.formativeStatsReport && this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
+        if (uid) {
+          delete this.adapterRef.remoteAudioStats[uid]
+          const data =
+            this.adapterRef._statsReport &&
+            this.adapterRef._statsReport.formativeStatsReport &&
+            this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
           if (data) {
             data.recvFirstAudioFrame = false
             data.recvFirstAudioPackage = false
@@ -1083,49 +1214,68 @@ class Client extends Base {
         this.logger.log('取消订阅音频流完成')
       }
 
-      if ((mediaType === undefined || mediaType === 'audioSlave') && stream.pubStatus.audioSlave.consumerId && stream.pubStatus.audioSlave.stopconsumerStatus !== 'start') {
+      if (
+        (mediaType === undefined || mediaType === 'audioSlave') &&
+        stream.pubStatus.audioSlave.consumerId &&
+        stream.pubStatus.audioSlave.stopconsumerStatus !== 'start'
+      ) {
         this.logger.log('开始取消订阅音频流')
         stream.pubStatus.audioSlave.stopconsumerStatus = 'start'
-        if (!this.adapterRef._mediasoup){
+        if (!this.adapterRef._mediasoup) {
           throw new RtcError({
             code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 7'
           })
         }
-        await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.audioSlave.consumerId, stream, 'audioSlave');
+        await this.adapterRef._mediasoup.destroyConsumer(
+          stream.pubStatus.audioSlave.consumerId,
+          stream,
+          'audioSlave'
+        )
         this.adapterRef.instance.removeSsrc(stream.getId(), 'audioSlave')
         stream.mediaHelper.updateStream('audioSlave', null)
-        stream.pubStatus.audioSlave.consumerId = '';
+        stream.pubStatus.audioSlave.consumerId = ''
         stream.stop('audioSlave')
         stream.pubStatus.audioSlave.stopconsumerStatus = 'end'
         stream.subStatus.audioSlave = false
         const uid = stream.getId()
-        if(uid){
-          delete this.adapterRef.remoteAudioSlaveStats[uid];
+        if (uid) {
+          delete this.adapterRef.remoteAudioSlaveStats[uid]
         }
         this.logger.log('取消订阅音频流完成')
       }
 
-      if ((mediaType === undefined || mediaType === 'video') && stream.pubStatus.video.consumerId && stream.pubStatus.video.stopconsumerStatus !== 'start'){
+      if (
+        (mediaType === undefined || mediaType === 'video') &&
+        stream.pubStatus.video.consumerId &&
+        stream.pubStatus.video.stopconsumerStatus !== 'start'
+      ) {
         this.logger.log('开始取消订阅视频流')
         stream.pubStatus.video.stopconsumerStatus = 'start'
-        if (!this.adapterRef._mediasoup){
+        if (!this.adapterRef._mediasoup) {
           throw new RtcError({
             code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 11'
           })
         }
-        await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.video.consumerId, stream, 'video');
+        await this.adapterRef._mediasoup.destroyConsumer(
+          stream.pubStatus.video.consumerId,
+          stream,
+          'video'
+        )
         this.adapterRef.instance.removeSsrc(stream.getId(), 'video')
         stream.mediaHelper.updateStream('video', null)
-        stream.pubStatus.video.consumerId = '';
+        stream.pubStatus.video.consumerId = ''
         stream.stop('video')
         stream.pubStatus.video.stopconsumerStatus = 'end'
         stream.subStatus.video = false
         const uid = stream.getId()
-        if(uid){
-          delete this.adapterRef.remoteVideoStats[uid];
-          const data = this.adapterRef._statsReport && this.adapterRef._statsReport.formativeStatsReport && this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
+        if (uid) {
+          delete this.adapterRef.remoteVideoStats[uid]
+          const data =
+            this.adapterRef._statsReport &&
+            this.adapterRef._statsReport.formativeStatsReport &&
+            this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
           if (data) {
             data.recvFirstVideoFrame = false
             data.recvFirstVideoPackage = false
@@ -1135,26 +1285,37 @@ class Client extends Base {
         this.logger.log('取消订阅视频流完成')
       }
 
-      if ((mediaType === undefined || mediaType === 'screen') && stream.pubStatus.screen.consumerId && stream.pubStatus.screen.stopconsumerStatus !== 'start'){
+      if (
+        (mediaType === undefined || mediaType === 'screen') &&
+        stream.pubStatus.screen.consumerId &&
+        stream.pubStatus.screen.stopconsumerStatus !== 'start'
+      ) {
         this.logger.log('开始取消订阅辅流')
         stream.pubStatus.screen.stopconsumerStatus = 'start'
-        if (!this.adapterRef._mediasoup){
+        if (!this.adapterRef._mediasoup) {
           throw new RtcError({
             code: ErrorCode.NO_MEDIASERVER,
             message: 'media server error 12'
           })
         }
-        await this.adapterRef._mediasoup.destroyConsumer(stream.pubStatus.screen.consumerId, stream, 'screen');
+        await this.adapterRef._mediasoup.destroyConsumer(
+          stream.pubStatus.screen.consumerId,
+          stream,
+          'screen'
+        )
         this.adapterRef.instance.removeSsrc(stream.getId(), 'screen')
         stream.mediaHelper.updateStream('screen', null)
-        stream.pubStatus.screen.consumerId = '';
+        stream.pubStatus.screen.consumerId = ''
         stream.stop('screen')
         stream.pubStatus.screen.stopconsumerStatus = 'end'
         stream.subStatus.screen = false
         const uid = stream.getId()
-        if(uid){
-          delete this.adapterRef.remoteScreenStats[uid];
-          const data = this.adapterRef._statsReport && this.adapterRef._statsReport.formativeStatsReport && this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
+        if (uid) {
+          delete this.adapterRef.remoteScreenStats[uid]
+          const data =
+            this.adapterRef._statsReport &&
+            this.adapterRef._statsReport.formativeStatsReport &&
+            this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
           if (data) {
             data.recvFirstScreenFrame = false
             data.recvFirstScreenPackage = false
@@ -1163,30 +1324,38 @@ class Client extends Base {
         }
         this.logger.log('取消订阅辅助流完成')
       }
-      
+
       this.apiFrequencyControl({
         name: 'unsubscribe',
         code: 0,
-        param: JSON.stringify({
-          clientUid: this.getUid(),
-          streamId: stream.stringStreamID,
-          reason: '',
-          subStatus: stream.subStatus,
-          subConf: stream.subConf
-        }, null, ' ')
+        param: JSON.stringify(
+          {
+            clientUid: this.getUid(),
+            streamId: stream.stringStreamID,
+            reason: '',
+            subStatus: stream.subStatus,
+            subConf: stream.subConf
+          },
+          null,
+          ' '
+        )
       })
-    } catch (e) {
-      this.logger.error('API调用失败：Client:unsubscribe' ,e.name, e.message, e, ...arguments);
+    } catch (e: any) {
+      this.logger.error('API调用失败：Client:unsubscribe', e.name, e.message, e, ...arguments)
       this.apiFrequencyControl({
         name: 'unsubscribe',
         code: -1,
-        param: JSON.stringify({
-          clientUid: this.getUid(),
-          streamId: stream.stringStreamID,
-          reason: e.message,
-          subStatus: stream.subStatus,
-          subConf: stream.subConf
-        }, null, ' ')
+        param: JSON.stringify(
+          {
+            clientUid: this.getUid(),
+            streamId: stream.stringStreamID,
+            reason: e.message,
+            subStatus: stream.subStatus,
+            subConf: stream.subConf
+          },
+          null,
+          ' '
+        )
       })
     }
   }
@@ -1197,50 +1366,64 @@ class Client extends Base {
    * @memberOf Client#
    * @param {Stream} stream 参数
    * @param {Number} highOrLow: 0是大流，1是小流
-   * @returns {Promise}  
-  */
-  async setRemoteVideoStreamType (stream:RemoteStream, highOrLow:number) {
+   * @returns {Promise}
+   */
+  async setRemoteVideoStreamType(stream: RemoteStream, highOrLow: number) {
     this.logger.log(`uid ${stream.getId()} 订阅成员的${highOrLow ? '小' : '大'}流`, highOrLow)
 
     try {
-      if (!this.adapterRef._mediasoup){
+      if (!this.adapterRef._mediasoup) {
         throw new RtcError({
           code: ErrorCode.NO_MEDIASERVER,
           message: 'media server error 13'
         })
       }
-      const streamId = stream.getId();
-      if (!streamId){
+      const streamId = stream.getId()
+      if (!streamId) {
         throw new RtcError({
           code: ErrorCode.INVALID_PARAMETER,
           message: 'No stream Id'
         })
       }
-      await this.adapterRef._mediasoup.setConsumerPreferredLayer(stream, highOrLow ? 0 : 1, "video");
-      stream.subConf.highOrLow.video = highOrLow;
+      await this.adapterRef._mediasoup.setConsumerPreferredLayer(stream, highOrLow ? 0 : 1, 'video')
+      stream.subConf.highOrLow.video = highOrLow
       this.apiFrequencyControl({
         name: 'setRemoteVideoStreamType',
-        param: JSON.stringify({
-          clientUid: this.getUid(),
-          streamId: stream.stringStreamID,
-          highOrLow: highOrLow
-        }, null, ' ')
+        param: JSON.stringify(
+          {
+            clientUid: this.getUid(),
+            streamId: stream.stringStreamID,
+            highOrLow: highOrLow
+          },
+          null,
+          ' '
+        )
       })
-    } catch (e) {
-      this.logger.error('API调用失败：Client:setRemoteVideoStreamType' ,e.name, e.message, e, ...arguments);
+    } catch (e: any) {
+      this.logger.error(
+        'API调用失败：Client:setRemoteVideoStreamType',
+        e.name,
+        e.message,
+        e,
+        ...arguments
+      )
       this.apiFrequencyControl({
         name: 'setRemoteVideoStreamType',
         code: -1,
-        param: JSON.stringify({
-          clientUid: this.getUid(),
-          streamId: stream.stringStreamID,
-          reason: e.message,
-          highOrLow: highOrLow
-        }, null, ' ')
+        param: JSON.stringify(
+          {
+            clientUid: this.getUid(),
+            streamId: stream.stringStreamID,
+            reason: e.message,
+            highOrLow: highOrLow
+          },
+          null,
+          ' '
+        )
       })
     }
   }
-  
+
   /**
    * 中途更新订阅的音视频流分辨率。
    * @method setRemoteStreamType
@@ -1249,24 +1432,36 @@ class Client extends Base {
    * @param {Number} highOrLow: 0是大流，1是小流
    * @returns {Promise}
    */
-  async setRemoteStreamType (stream:RemoteStream, highOrLow:number, mediaType: "video"|"screen") {
-    this.logger.log(`setRemoteStreamType: 订阅${stream.getId()}成员的${highOrLow ? '小' : '大'}流`, mediaType, highOrLow)
+  async setRemoteStreamType(
+    stream: RemoteStream,
+    highOrLow: number,
+    mediaType: 'video' | 'screen'
+  ) {
+    this.logger.log(
+      `setRemoteStreamType: 订阅${stream.getId()}成员的${highOrLow ? '小' : '大'}流`,
+      mediaType,
+      highOrLow
+    )
     try {
-      if (!this.adapterRef._mediasoup){
+      if (!this.adapterRef._mediasoup) {
         throw new RtcError({
           code: ErrorCode.NO_MEDIASERVER,
           message: 'media server error 27'
         })
       }
-      const streamId = stream.getId();
-      if (!streamId){
+      const streamId = stream.getId()
+      if (!streamId) {
         throw new RtcError({
           code: ErrorCode.INVALID_PARAMETER,
           message: 'No stream Id'
         })
       }
-      await this.adapterRef._mediasoup.setConsumerPreferredLayer(stream, highOrLow ? 0 : 1, mediaType);
-      stream.subConf.highOrLow[mediaType] = highOrLow;
+      await this.adapterRef._mediasoup.setConsumerPreferredLayer(
+        stream,
+        highOrLow ? 0 : 1,
+        mediaType
+      )
+      stream.subConf.highOrLow[mediaType] = highOrLow
       this.apiFrequencyControl({
         name: 'setRemoteStreamType',
         code: 0,
@@ -1277,28 +1472,34 @@ class Client extends Base {
           streamID: stream.stringStreamID
         }
       })
-    } catch (e) {
-      this.logger.error('API调用失败：Client:setRemoteStreamType' ,e, ...arguments);
+    } catch (e: any) {
+      this.logger.error('API调用失败：Client:setRemoteStreamType', e, ...arguments)
       this.apiFrequencyControl({
         name: 'setRemoteVideoStreamType',
         code: -1,
-        param: JSON.stringify({
-          reason: e.message,
-          highOrLow,
-          mediaType,
-          streamID: stream.stringStreamID
-        }, null, ' ')
+        param: JSON.stringify(
+          {
+            reason: e.message,
+            highOrLow,
+            mediaType,
+            streamID: stream.stringStreamID
+          },
+          null,
+          ' '
+        )
       })
     }
   }
 
-  enableAudioVolumeIndicator () {
+  enableAudioVolumeIndicator() {
     this.logger.log('开启音量提醒')
   }
 
-  enableDualStream (dualStreamSetting: {video: boolean; screen: boolean} = {video: true, screen: false}) {
-    this.adapterRef.channelInfo.videoLow = dualStreamSetting.video;
-    this.adapterRef.channelInfo.screenLow = dualStreamSetting.screen;
+  enableDualStream(
+    dualStreamSetting: { video: boolean; screen: boolean } = { video: true, screen: false }
+  ) {
+    this.adapterRef.channelInfo.videoLow = dualStreamSetting.video
+    this.adapterRef.channelInfo.screenLow = dualStreamSetting.screen
     this.logger.log('开启双流模式')
     this.apiFrequencyControl({
       name: 'enableDualStream',
@@ -1312,10 +1513,12 @@ class Client extends Base {
     })
   }
 
-  disableDualStream (dualStreamSetting: {video: boolean; screen: boolean} = {video: false, screen: false}) {
+  disableDualStream(
+    dualStreamSetting: { video: boolean; screen: boolean } = { video: false, screen: false }
+  ) {
     this.logger.log('关闭双流模式')
-    this.adapterRef.channelInfo.videoLow = false;
-    this.adapterRef.channelInfo.screenLow = false;
+    this.adapterRef.channelInfo.videoLow = false
+    this.adapterRef.channelInfo.screenLow = false
     this.apiFrequencyControl({
       name: 'disableDualStream',
       code: 0,
@@ -1327,7 +1530,7 @@ class Client extends Base {
       }
     })
   }
-  
+
   /**
    * 设置用户频道角色
    * @function setClientRole
@@ -1359,63 +1562,69 @@ class Client extends Base {
    * @description 本地用户角色发生了变化
    */
 
-  async setClientRole(role:string) {
-    let userRole;
-    let reason;
-    if (role === "host" || role === "broadcaster") {
+  async setClientRole(role: string) {
+    let userRole
+    let reason
+    if (role === 'host' || role === 'broadcaster') {
       // broadcaster为云信Native叫法。这里做了兼容，以host为准。
       // http://doc.hz.netease.com/pages/viewpage.action?pageId=267631447
-      userRole = 0;
-    } else if (role === "audience") {
-      userRole = 1;
+      userRole = 0
+    } else if (role === 'audience') {
+      userRole = 1
     } else {
-      this.logger.error(`setClientRole: 无法识别的角色：${role}`);
-      reason = `INVALID_OPERATION`;
+      this.logger.error(`setClientRole: 无法识别的角色：${role}`)
+      reason = `INVALID_OPERATION`
       userRole = -1
     }
-    
-    if (!reason){
-      const localUser = this.adapterRef.channelInfo ? this.adapterRef.channelInfo.uid || "" : "";
+
+    if (!reason) {
+      const localUser = this.adapterRef.channelInfo ? this.adapterRef.channelInfo.uid || '' : ''
       if (userRole === this._roleInfo.userRole) {
-        this.logger.warn(`setClientRole: 用户${localUser}的角色已经是${role}了`);
-      }else{
+        this.logger.warn(`setClientRole: 用户${localUser}的角色已经是${role}了`)
+      } else {
         switch (this.adapterRef.connectState.curState) {
-          case "CONNECTED":
-            if (userRole === 1 && this.adapterRef.localStream && this.isPublished(this.adapterRef.localStream)) {
+          case 'CONNECTED':
+            if (
+              userRole === 1 &&
+              this.adapterRef.localStream &&
+              this.isPublished(this.adapterRef.localStream)
+            ) {
               // 主播变为观众时会自动Unpublish所有流
-              this.logger.info(`setClientRole：主播 ${localUser}将设为观众，自动Unpublish中`);
-              await this.unpublish(this.adapterRef.localStream);
+              this.logger.info(`setClientRole：主播 ${localUser}将设为观众，自动Unpublish中`)
+              await this.unpublish(this.adapterRef.localStream)
             }
-            if (!this.adapterRef._mediasoup){
+            if (!this.adapterRef._mediasoup) {
               throw new RtcError({
                 code: ErrorCode.NO_MEDIASERVER,
                 message: 'media server error 14'
               })
             }
-            await this.adapterRef._mediasoup.updateUserRole(userRole);
+            await this.adapterRef._mediasoup.updateUserRole(userRole)
             if (this._roleInfo.userRole !== userRole) {
-              this._roleInfo.userRole = userRole;
-              this.logger.info(`setClientRole：本地用户${localUser} 设置角色为 ${role}`);
-              this.safeEmit('client-role-changed', {role: role});
+              this._roleInfo.userRole = userRole
+              this.logger.info(`setClientRole：本地用户${localUser} 设置角色为 ${role}`)
+              this.safeEmit('client-role-changed', { role: role })
             }
-            break;
-          case "DISCONNECTED":
+            break
+          case 'DISCONNECTED':
             if (this._roleInfo.userRole !== userRole) {
-              this._roleInfo.userRole = userRole;
-              this.logger.info(`setClientRole：本地用户${localUser}设置角色为 ${role}`);
-              this.safeEmit('client-role-changed', {role: role});
+              this._roleInfo.userRole = userRole
+              this.logger.info(`setClientRole：本地用户${localUser}设置角色为 ${role}`)
+              this.safeEmit('client-role-changed', { role: role })
             }
-            break;
+            break
           default:
-            this.logger.error(`setClientRole: 本地用户${localUser}当前不在频道中，可能是网络波动导致暂时断开连接`);
-            reason = 'USER_NOT_IN_CHANNEL';
+            this.logger.error(
+              `setClientRole: 本地用户${localUser}当前不在频道中，可能是网络波动导致暂时断开连接`
+            )
+            reason = 'USER_NOT_IN_CHANNEL'
         }
       }
     }
-    const param:ReportParamSetClientRole = {
+    const param: ReportParamSetClientRole = {
       reason,
       role: userRole
-    };
+    }
     this.apiFrequencyControl({
       name: 'setClientRole',
       code: reason ? -1 : 0,
@@ -1424,15 +1633,15 @@ class Client extends Base {
         reason
       }
     })
-    if (reason){
-      if(reason === 'INVALID_OPERATION') {
+    if (reason) {
+      if (reason === 'INVALID_OPERATION') {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.INVALID_OPERATION,
             message: 'invalid operation'
           })
         )
-      }else if (reason === 'USER_NOT_IN_CHANNEL') {
+      } else if (reason === 'USER_NOT_IN_CHANNEL') {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.NO_LOCALSTREAM,
@@ -1446,15 +1655,15 @@ class Client extends Base {
   /**
    * 绑定localStream对象。多次绑定无副作用
    */
-  bindLocalStream(localStream: LocalStream){
+  bindLocalStream(localStream: LocalStream) {
     this.adapterRef.localStream = localStream
-    localStream.client = this as IClient;
-    localStream.logger.parent = this.logger;
-    const uid = this.getUid();
-    if (uid && localStream.streamID !== uid){
-      this.logger.warn('localStream更换streamID', localStream.streamID, '=>', uid);
-      localStream.streamID = uid;
-      localStream.stringStreamID = uid.toString();
+    localStream.client = this as IClient
+    localStream.logger.parent = this.logger
+    const uid = this.getUid()
+    if (uid && localStream.streamID !== uid) {
+      this.logger.warn('localStream更换streamID', localStream.streamID, '=>', uid)
+      localStream.streamID = uid
+      localStream.stringStreamID = uid.toString()
     }
   }
 
@@ -1466,7 +1675,7 @@ class Client extends Base {
    推荐用于以下场景：
    + 在 App 异常重启时，可以调用本接口主动获取当前客户端与服务器的连接状态，以做到本地与服务器状态的对齐。
    + 在实时音视频通话等业务场景中，主动获取房间的网络连接状态，以此完成上层业务逻辑。
-   
+
    SDK 与服务器的连接状态，共有以下 4 种：
    + `DISCONNECTED`：网络连接断开。
    该状态表示 SDK 处于：
@@ -1483,13 +1692,13 @@ class Client extends Base {
    * @memberOf Client#
    * @returns {String}
    */
-  getConnectionState () {
+  getConnectionState() {
     this.apiFrequencyControl({
       name: 'getConnectionState',
       code: 0,
       param: JSON.stringify({} as ReportParamGetConnectionState, null, ' ')
     })
-    return this.adapterRef.connectState.curState;
+    return this.adapterRef.connectState.curState
   }
 
   /**
@@ -1498,7 +1707,7 @@ class Client extends Base {
    * @memberOf Client#
    * @return {Promise}
    */
-  getSystemStats(){
+  getSystemStats() {
     //@ts-ignore
     if (!navigator.getBattery) {
       return Promise.reject(
@@ -1509,11 +1718,11 @@ class Client extends Base {
         })
       )
     }
-    return new Promise((resolve, reject) =>{
+    return new Promise((resolve, reject) => {
       //@ts-ignore
-      navigator.getBattery().then(function(battery) {
+      navigator.getBattery().then(function (battery) {
         resolve(battery.level * 100)
-      });
+      })
     })
   }
 
@@ -1523,10 +1732,11 @@ class Client extends Base {
    * @memberOf Client#
    * @return {Promise}
    */
-  getSessionStats(){
-    return new Promise((resolve, reject) =>{
-      this.adapterRef.sessionStats.Duration = (Date.now() - this.adapterRef.state.startSessionTime)/1000
-      this.adapterRef.sessionStats.UserCount =  Object.keys(this.adapterRef.memberMap).length + 1
+  getSessionStats() {
+    return new Promise((resolve, reject) => {
+      this.adapterRef.sessionStats.Duration =
+        (Date.now() - this.adapterRef.state.startSessionTime) / 1000
+      this.adapterRef.sessionStats.UserCount = Object.keys(this.adapterRef.memberMap).length + 1
       resolve(this.adapterRef.sessionStats)
     })
   }
@@ -1537,8 +1747,8 @@ class Client extends Base {
    * @memberOf Client#
    * @return {Promise}
    */
-  getTransportStats(){
-    return new Promise((resolve, reject) =>{
+  getTransportStats() {
+    return new Promise((resolve, reject) => {
       resolve(this.adapterRef.transportStats)
     })
   }
@@ -1549,8 +1759,8 @@ class Client extends Base {
    * @memberOf Client#
    * @return {Promise}
    */
-  getLocalAudioStats(){
-    return new Promise((resolve, reject) =>{
+  getLocalAudioStats() {
+    return new Promise((resolve, reject) => {
       resolve(this.adapterRef.localAudioStats)
     })
   }
@@ -1561,27 +1771,27 @@ class Client extends Base {
    * @memberOf Client#
    * @return {Promise}
    */
-   getLocalAudioSlaveStats(){
-    return new Promise((resolve, reject) =>{
+  getLocalAudioSlaveStats() {
+    return new Promise((resolve, reject) => {
       resolve(this.adapterRef.localAudioSlaveStats)
     })
   }
 
- /**
+  /**
    * 获取本地发布流的音频统计数据
    * @function getLocalVideoStats
    * @memberOf Client#
    * @return {Promise}
    */
-  getLocalVideoStats(mediaType?: MediaTypeShort){
-    let data:any = [];
-    if (!mediaType || mediaType === "video"){
-      data = data.concat(this.adapterRef.localVideoStats);
+  getLocalVideoStats(mediaType?: MediaTypeShort) {
+    let data: any = []
+    if (!mediaType || mediaType === 'video') {
+      data = data.concat(this.adapterRef.localVideoStats)
     }
-    if (!mediaType || mediaType === "screen"){
-      data = data.concat(this.adapterRef.localScreenStats);
+    if (!mediaType || mediaType === 'screen') {
+      data = data.concat(this.adapterRef.localScreenStats)
     }
-    return Promise.resolve(data);
+    return Promise.resolve(data)
   }
 
   /**
@@ -1590,14 +1800,14 @@ class Client extends Base {
    * @memberOf Client#
    * @return {Promise}
    */
-  getRemoteAudioStats(){
-    return new Promise((resolve, reject) =>{
+  getRemoteAudioStats() {
+    return new Promise((resolve, reject) => {
       resolve(this.adapterRef.remoteAudioStats)
     })
   }
 
-  getRemoteAudioSlaveStats(){
-    return new Promise((resolve, reject) =>{
+  getRemoteAudioSlaveStats() {
+    return new Promise((resolve, reject) => {
       resolve(this.adapterRef.remoteAudioSlaveStats)
     })
   }
@@ -1608,15 +1818,15 @@ class Client extends Base {
    * @memberOf Client#
    * @return {Promise}
    */
-  getRemoteVideoStats(mediaType?: MediaTypeShort){
-    let data:any = {};
-    if (!mediaType || mediaType === "screen"){
-      data = Object.assign(data ,this.adapterRef.remoteScreenStats)
+  getRemoteVideoStats(mediaType?: MediaTypeShort) {
+    let data: any = {}
+    if (!mediaType || mediaType === 'screen') {
+      data = Object.assign(data, this.adapterRef.remoteScreenStats)
     }
-    if (!mediaType || mediaType === "video"){
-      data = Object.assign(data ,this.adapterRef.remoteVideoStats)
+    if (!mediaType || mediaType === 'video') {
+      data = Object.assign(data, this.adapterRef.remoteVideoStats)
     }
-    return Promise.resolve(data);
+    return Promise.resolve(data)
   }
 
   /**
@@ -1627,22 +1837,22 @@ class Client extends Base {
    * @param {Object} [options.mode] 房间属性，"rtc": 通信场景，"live": 直播场景
    * @return {null}
    */
-  setChannelProfile(options:{mode: 'rtc'|'live'}) {
-    let reason = null;
+  setChannelProfile(options: { mode: 'rtc' | 'live' }) {
+    let reason = null
     this.logger.log('setChannelProfile, options: ', JSON.stringify(options, null, ' '))
-    if (this.adapterRef.connectState.curState !== "DISCONNECTED") {
+    if (this.adapterRef.connectState.curState !== 'DISCONNECTED') {
       this.logger.warn('setChannelProfile: 请在加入房间前调用')
       reason = 'setChannelProfile: 请在加入房间前调用'
     } else {
-      const mode = options.mode || 'rtc';
+      const mode = options.mode || 'rtc'
       if (this.adapterRef.localStream) {
-        if (mode === 'live'){
+        if (mode === 'live') {
           this.adapterRef.localStream.audioProfile = 'music_standard'
-        }else if (mode === 'rtc'){
+        } else if (mode === 'rtc') {
           this.adapterRef.localStream.audioProfile = 'speech_low_quality'
         }
       }
-      this._params.mode = mode  
+      this._params.mode = mode
     }
     this.apiFrequencyControl({
       name: 'setChannelProfile',
@@ -1652,7 +1862,7 @@ class Client extends Base {
         reason
       }
     })
-    if (reason){
+    if (reason) {
       throw new RtcError({
         code: ErrorCode.INVALID_OPERATION,
         message: reason
@@ -1668,11 +1878,11 @@ class Client extends Base {
    * @param {Array} [options.rtmpTasks] 推流任务
    * @return {Promise}
    */
-  async addTasks (options:AddTaskOptions) {
+  async addTasks(options: AddTaskOptions) {
     this.logger.log('addTasks() 增加互动直播推流任务, options: ', JSON.stringify(options))
     let reason = null
     if (this._roleInfo.userRole === 1) {
-      this.logger.error(`addTasks: 观众不允许进行直播推流操作`);
+      this.logger.error(`addTasks: 观众不允许进行直播推流操作`)
       reason = 'addTasks: 观众不允许进行直播推流操作'
     }
     if (!this.adapterRef._meetings) {
@@ -1695,22 +1905,22 @@ class Client extends Base {
     }
 
     try {
-        await this.adapterRef._meetings?.addTasks(options)
-        this.adapterRef.instance.apiFrequencyControl({
-          name: 'onAddTasks',
-          code: 0,
-          param: {
-            lbsAddrs: this.adapterRef.lbsManager.getReportField("call"),
-            clientUid: this.getUid()
-          }
-        })
-    } catch (e) {
-        this.adapterRef.instance.apiFrequencyControl({
+      await this.adapterRef._meetings?.addTasks(options)
+      this.adapterRef.instance.apiFrequencyControl({
+        name: 'onAddTasks',
+        code: 0,
+        param: {
+          lbsAddrs: this.adapterRef.lbsManager.getReportField('call'),
+          clientUid: this.getUid()
+        }
+      })
+    } catch (e: any) {
+      this.adapterRef.instance.apiFrequencyControl({
         name: 'onAddTasks',
         code: -1,
         param: {
           clientUid: this.getUid(),
-          lbsAddrs: this.adapterRef.lbsManager.getReportField("call"),
+          lbsAddrs: this.adapterRef.lbsManager.getReportField('call'),
           reason: e.message
         }
       })
@@ -1726,17 +1936,17 @@ class Client extends Base {
    * @param {Array} [options.taskId] 该推流任务的id要求唯一
    * @return {Promise}
    */
-  async deleteTasks (options:{taskIds: string[]}) {
+  async deleteTasks(options: { taskIds: string[] }) {
     this.logger.log('deleteTasks() 删除互动直播推流任务, options: ', options)
     let reason = null
     if (this._roleInfo.userRole === 1) {
       reason = 'deleteTasks: 观众不允许进行直播推流操作'
     }
-    if (!this.adapterRef._meetings){
+    if (!this.adapterRef._meetings) {
       reason = 'deleteTasks: 加入房间后进行直播推流操作'
     }
     if (reason) {
-      this.logger.error(reason);
+      this.logger.error(reason)
       this.adapterRef.instance.apiFrequencyControl({
         name: 'deleteTasks',
         code: -1,
@@ -1752,22 +1962,22 @@ class Client extends Base {
     }
 
     try {
-        await this.adapterRef._meetings?.deleteTasks(options)
-        this.adapterRef.instance.apiFrequencyControl({
-          name: 'onDeleteTasks',
-          code: 0,
-          param: {
-            lbsAddrs: this.adapterRef.lbsManager.getReportField("call"),
-            clientUid: this.getUid()
-          }
-        })
-    } catch (e) {
-        this.adapterRef.instance.apiFrequencyControl({
+      await this.adapterRef._meetings?.deleteTasks(options)
+      this.adapterRef.instance.apiFrequencyControl({
+        name: 'onDeleteTasks',
+        code: 0,
+        param: {
+          lbsAddrs: this.adapterRef.lbsManager.getReportField('call'),
+          clientUid: this.getUid()
+        }
+      })
+    } catch (e: any) {
+      this.adapterRef.instance.apiFrequencyControl({
         name: 'onDeleteTasks',
         code: -1,
         param: {
           clientUid: this.getUid(),
-          lbsAddrs: this.adapterRef.lbsManager.getReportField("call"),
+          lbsAddrs: this.adapterRef.lbsManager.getReportField('call'),
           reason: e.message
         }
       })
@@ -1783,17 +1993,17 @@ class Client extends Base {
    * @param {Array} [options.rtmpTasks] 推流任务
    * @return {Promise}
    */
-  async updateTasks (options : {rtmpTasks: RTMPTask[]}) {
+  async updateTasks(options: { rtmpTasks: RTMPTask[] }) {
     this.logger.log('updateTasks() 更新互动直播推流任务, options: ', options)
     let reason = null
     if (this._roleInfo.userRole === 1) {
       reason = 'updateTasks: 观众不允许进行直播推流操作'
     }
-    if (!this.adapterRef._meetings){
+    if (!this.adapterRef._meetings) {
       reason = 'updateTasks: 加入房间后进行直播推流操作'
     }
     if (reason) {
-      this.logger.error(reason);
+      this.logger.error(reason)
       this.adapterRef.instance.apiFrequencyControl({
         name: 'updateTasks',
         code: -1,
@@ -1809,22 +2019,22 @@ class Client extends Base {
     }
 
     try {
-        await this.adapterRef._meetings?.updateTasks(options)
-        this.adapterRef.instance.apiFrequencyControl({
-          name: 'onUpdateTasks',
-          code: 0,
-          param: {
-            clientUid: this.getUid(),
-            lbsAddrs: this.adapterRef.lbsManager.getReportField('call')
-          }
-        })
-    } catch (e) {
-        this.adapterRef.instance.apiFrequencyControl({
+      await this.adapterRef._meetings?.updateTasks(options)
+      this.adapterRef.instance.apiFrequencyControl({
+        name: 'onUpdateTasks',
+        code: 0,
+        param: {
+          clientUid: this.getUid(),
+          lbsAddrs: this.adapterRef.lbsManager.getReportField('call')
+        }
+      })
+    } catch (e: any) {
+      this.adapterRef.instance.apiFrequencyControl({
         name: 'onUpdateTasks',
         code: -1,
         param: {
           clientUid: this.getUid(),
-          lbsAddrs: this.adapterRef.lbsManager.getReportField("call"),
+          lbsAddrs: this.adapterRef.lbsManager.getReportField('call'),
           reason: e.message
         }
       })
@@ -1832,25 +2042,25 @@ class Client extends Base {
     }
   }
 
-  setEncryptionMode(encryptionMode: EncryptionMode){
+  setEncryptionMode(encryptionMode: EncryptionMode) {
     checkValidInteger({
       tag: 'Valid encryptionModes are: ' + Object.keys(EncryptionModes).join(','),
-      value: encryptionModeToInt(encryptionMode),
+      value: encryptionModeToInt(encryptionMode)
     })
-    if (this.adapterRef.encryption.encodedInsertableStreams){
+    if (this.adapterRef.encryption.encodedInsertableStreams) {
       const errMsg = '自定义加密功能与国密加密功能不兼容'
-      this.logger.error(errMsg);
+      this.logger.error(errMsg)
       throw new RtcError({
         code: ErrorCode.NOT_SUPPORT,
         message: errMsg
       })
     }
-    this.logger.log('设置加密模式：', encryptionMode);
-    this.adapterRef.encryption.setEncryptionMode(encryptionMode);
-    const param:ReportParamEnableEncryption = {
-      enable: encryptionMode !== "none",
+    this.logger.log('设置加密模式：', encryptionMode)
+    this.adapterRef.encryption.setEncryptionMode(encryptionMode)
+    const param: ReportParamEnableEncryption = {
+      enable: encryptionMode !== 'none',
       mode: encryptionModeToInt(encryptionMode)
-    };
+    }
     this.apiFrequencyControl({
       name: 'setEncryptionMode',
       code: 0,
@@ -1858,80 +2068,88 @@ class Client extends Base {
     })
   }
 
-  setEncryptionSecret(encryptionSecret: string){
-    switch (this.adapterRef.encryption.encryptionMode){
-      case "none":
+  setEncryptionSecret(encryptionSecret: string) {
+    switch (this.adapterRef.encryption.encryptionMode) {
+      case 'none':
         throw new RtcError({
           code: ErrorCode.INVALID_OPERATION,
           message: 'Client.setEncryptionSecret: please set encryptionMode first'
         })
-      case "sm4-128-ecb":
+      case 'sm4-128-ecb':
         checkValidString({
           tag: 'client.setEncryptionSecret:encryptionSecret',
-          value:encryptionSecret,
-          min:1,
-          max:128
-        });
+          value: encryptionSecret,
+          min: 1,
+          max: 128
+        })
     }
-    this.logger.log('设置加密密钥');
-    this.adapterRef.encryption.setEncryptionSecret(encryptionSecret);
+    this.logger.log('设置加密密钥')
+    this.adapterRef.encryption.setEncryptionSecret(encryptionSecret)
     this.apiFrequencyControl({
       name: 'setEncryptionSecret',
       code: 0,
-      param: JSON.stringify({
-        encryptionSecret
-      }, null, ' ')
+      param: JSON.stringify(
+        {
+          encryptionSecret
+        },
+        null,
+        ' '
+      )
     })
   }
-  
-  async pauseReconnection(){
-    this.logger.log("pauseReconnection：下一次重连行为会被暂停，直到调用resumeReconnection()方法")
-    const info = await new Promise(resolve=>{
-      if (this.adapterRef._signalling){
+
+  async pauseReconnection() {
+    this.logger.log('pauseReconnection：下一次重连行为会被暂停，直到调用resumeReconnection()方法')
+    const info = await new Promise((resolve) => {
+      if (this.adapterRef._signalling) {
         this.adapterRef._signalling.reconnectionControl.pausers.push(resolve)
       }
     })
     this.logger.log(`pauseReconnection：重连已被暂停：${JSON.stringify(info)}`)
-    return info;
+    return info
   }
-  
-  async resumeReconnection(){
+
+  async resumeReconnection() {
     if (this.adapterRef._signalling) {
       if (this.adapterRef._signalling.reconnectionControl.blocker) {
-        this.logger.log("resumeReconnection：即将恢复重连过程")
+        this.logger.log('resumeReconnection：即将恢复重连过程')
         this.adapterRef._signalling.reconnectionControl.blocker()
-        this.adapterRef._signalling.reconnectionControl.pausers.forEach((resolve)=>resolve({reason: "reconnection-resume"}))
+        this.adapterRef._signalling.reconnectionControl.pausers.forEach((resolve) =>
+          resolve({ reason: 'reconnection-resume' })
+        )
         this.adapterRef._signalling.reconnectionControl.pausers = []
       } else if (this.adapterRef._signalling.reconnectionControl.pausers.length) {
-        this.logger.log("resumeReconnection：取消之前的 pauseReconnection 操作。")
-        this.adapterRef._signalling.reconnectionControl.pausers.forEach((resolve)=>resolve({reason: "cancelled"}))
+        this.logger.log('resumeReconnection：取消之前的 pauseReconnection 操作。')
+        this.adapterRef._signalling.reconnectionControl.pausers.forEach((resolve) =>
+          resolve({ reason: 'cancelled' })
+        )
         this.adapterRef._signalling.reconnectionControl.pausers = []
       } else {
-        this.logger.warn("resumeReconnection：未发现pauseReconnection操作")
+        this.logger.warn('resumeReconnection：未发现pauseReconnection操作')
       }
-      const info = await new Promise((resolve)=>{
+      const info = await new Promise((resolve) => {
         this.adapterRef._signalling?.reconnectionControl.resumers.push(resolve)
       })
       this.logger.log(`resumeReconnection：恢复重连成功${JSON.stringify(info)}`)
       return info
     }
   }
-  
-  refreshRemoteEvents(){
+
+  refreshRemoteEvents() {
     // 供网易会议使用
     // 将频道内的peer-online/stream-added/mute消息重新发一遍
-    for (let uid in this.adapterRef.remoteStreamMap){
+    for (let uid in this.adapterRef.remoteStreamMap) {
       const remoteStream = this.adapterRef.remoteStreamMap[uid]
       this.logger.warn('refreshRemoteEvents peer-online', uid)
-      this.safeEmit('peer-online', {uid: uid})
-      const MediaTypeList:MediaTypeShort[] = ["audio", "video", "screen", "audioSlave"];
-      MediaTypeList.forEach((mediaTypeShort)=>{
-        if (remoteStream.pubStatus[mediaTypeShort].producerId){
+      this.safeEmit('peer-online', { uid: uid })
+      const MediaTypeList: MediaTypeShort[] = ['audio', 'video', 'screen', 'audioSlave']
+      MediaTypeList.forEach((mediaTypeShort) => {
+        if (remoteStream.pubStatus[mediaTypeShort].producerId) {
           this.logger.warn('refreshRemoteEvents stream-added', uid, mediaTypeShort)
-          this.safeEmit('stream-added', {stream: remoteStream, mediaType: mediaTypeShort})
-          if (remoteStream.muteStatus[mediaTypeShort].send){
+          this.safeEmit('stream-added', { stream: remoteStream, mediaType: mediaTypeShort })
+          if (remoteStream.muteStatus[mediaTypeShort].send) {
             this.logger.warn(`refreshRemoteEvents mute-${mediaTypeShort}`, uid, mediaTypeShort)
-            this.safeEmit(`mute-${mediaTypeShort}`, {uid: remoteStream.getId()})
+            this.safeEmit(`mute-${mediaTypeShort}`, { uid: remoteStream.getId() })
           }
         }
       })
@@ -1939,11 +2157,11 @@ class Client extends Base {
   }
 
   initSpatialManager(options: SpatialInitOptions) {
-    if (!this.spatialManager){
-      const context = getAudioContext();
+    if (!this.spatialManager) {
+      const context = getAudioContext()
       if (!context) {
-        this.logger.error("当前环境不支持WebAudio");
-        return;
+        this.logger.error('当前环境不支持WebAudio')
+        return
       }
       this.spatialManager = new SpatialManager({
         client: this as IClient,
@@ -1957,28 +2175,31 @@ class Client extends Base {
 
   syncUserList() {
     // 提供给智慧树客户 获取远端用户列表
-    return this.adapterRef.memberMap;
+    return this.adapterRef.memberMap
   }
-
 
   /**
    * ************************ 客户端录制相关 *****************************
    */
-  
+
   updateRecordingAudioStream() {
-    if (!this.recordManager || !this.recordManager.formatMedia || !this.recordManager.formatMedia.destination) {
+    if (
+      !this.recordManager ||
+      !this.recordManager.formatMedia ||
+      !this.recordManager.formatMedia.destination
+    ) {
       return
     }
     this.logger.log('updateRecordingAudioStream() [更新录制的音频]')
     const audioStreams = []
     if (this.adapterRef.remoteStreamMap) {
-      for (var uid in this.adapterRef.remoteStreamMap){
-        const remoteStream = this.adapterRef.remoteStreamMap[uid];
-        audioStreams.push(remoteStream.mediaHelper.audio.audioStream);
+      for (var uid in this.adapterRef.remoteStreamMap) {
+        const remoteStream = this.adapterRef.remoteStreamMap[uid]
+        audioStreams.push(remoteStream.mediaHelper.audio.audioStream)
       }
     }
-    if(this.adapterRef.localStream){
-      audioStreams.push(this.adapterRef.localStream.mediaHelper.audio.audioStream);
+    if (this.adapterRef.localStream) {
+      audioStreams.push(this.adapterRef.localStream.mediaHelper.audio.audioStream)
     }
     this.recordManager.formatMedia.updateStream(audioStreams)
   }
@@ -1992,15 +2213,15 @@ class Client extends Base {
    * @param {recorder} param.recorder ['local': 录制自己，'all': 录制本地和远端]
    * @returns {Promise} 包含recordId值，用于下载等操作
    */
-  async startMediaRecording (options: ClientMediaRecordingOptions) {
-    const {recorder, recordConfig} = options
+  async startMediaRecording(options: ClientMediaRecordingOptions) {
+    const { recorder, recordConfig } = options
 
     if (!this.recordManager.record) {
       this.recordManager.record = new Record({
         logger: this.logger,
-        client: this.adapterRef.instance,
+        client: this.adapterRef.instance
       })
-      this.recordManager.record.on('media-recording-stopped', (evt)=>{
+      this.recordManager.record.on('media-recording-stopped', (evt) => {
         this.safeEmit('@media-recording-stopped')
       })
     }
@@ -2010,17 +2231,17 @@ class Client extends Base {
       })
     }
     const audioStreams = []
-    if(this.adapterRef.localStream){
-      audioStreams.push(this.adapterRef.localStream.mediaHelper.audio.audioStream);
+    if (this.adapterRef.localStream) {
+      audioStreams.push(this.adapterRef.localStream.mediaHelper.audio.audioStream)
     }
-    
+
     if (recorder === 'all' && this.adapterRef.remoteStreamMap) {
-      for (var uid in this.adapterRef.remoteStreamMap){
-        const remoteStream = this.adapterRef.remoteStreamMap[uid];
-        audioStreams.push(remoteStream.mediaHelper.audio.audioStream);
+      for (var uid in this.adapterRef.remoteStreamMap) {
+        const remoteStream = this.adapterRef.remoteStreamMap[uid]
+        audioStreams.push(remoteStream.mediaHelper.audio.audioStream)
       }
     }
-    
+
     const audioStream = await this.recordManager.formatMedia.formatAudio(audioStreams)
     const videoStream = await this.recordManager.formatMedia.formatVideo(recorder, recordConfig)
 
@@ -2028,7 +2249,7 @@ class Client extends Base {
     streams.push(audioStream, videoStream)
     if (streams.length === 0) {
       this.logger.log('没有没发现要录制的媒体流')
-      return 
+      return
     }
 
     return this.recordManager.record.start({
@@ -2038,14 +2259,12 @@ class Client extends Base {
       reset: true,
       stream: streams
     })
-
-
   }
   /**
    * 结束视频录制
    */
-  stopMediaRecording (options: {recordId?: string}) {
-    if (!this.recordManager.record){
+  stopMediaRecording(options: { recordId?: string }) {
+    if (!this.recordManager.record) {
       throw new RtcError({
         code: ErrorCode.NO_RECORD,
         message: '操作非法：没有开始录制'
@@ -2058,8 +2277,8 @@ class Client extends Base {
   /**
    * 清除录制的音视频
    */
-  cleanMediaRecording () {
-    if (!this.recordManager.record){
+  cleanMediaRecording() {
+    if (!this.recordManager.record) {
       throw new RtcError({
         code: ErrorCode.NO_RECORD,
         message: '操作非法：没有开始录制'
@@ -2070,8 +2289,8 @@ class Client extends Base {
   /**
    * 下载录制的音视频
    */
-  downloadMediaRecording () {
-    if (!this.recordManager.record){
+  downloadMediaRecording() {
+    if (!this.recordManager.record) {
       throw new RtcError({
         code: ErrorCode.NO_RECORD,
         message: '操作非法：没有开始录制'
@@ -2080,24 +2299,21 @@ class Client extends Base {
     return this.recordManager.record.download()
   }
 
-
-
-
   /**
    *  销毁实例
    *  @method destroy
    *  @memberOf Client
    *  @param {Void}
    */
-  async destroy () {
+  async destroy() {
     const onDestroyFinish = await this.operationQueue.enqueue({
       caller: this as IClient,
       method: 'destroy',
-      options: null,
+      options: null
     })
     this.logger && this.logger.warn('清除 Client 实例中')
-    this._reset();
-    this.destroyed = true;
+    this._reset()
+    this.destroyed = true
     this.logger && this.logger.warn('已清除 Client 实例')
     onDestroyFinish()
   }

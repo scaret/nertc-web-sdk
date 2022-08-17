@@ -1,5 +1,5 @@
 export const beautyBlurShader = {
-    vShader: `
+  vShader: `
     uniform vec2 size;
     uniform float isVertical;
 
@@ -29,13 +29,13 @@ export const beautyBlurShader = {
 		vTextureShift4 = vec4(uv - 4.0 * stepOffset, uv + 4.0 * stepOffset);
     }
 `,
-    fShader: `
+  fShader: `
     #ifdef GL_FRAGMENT_PRECISION_HIGH
         precision highp float;
     #else
         precision mediump float;
     #endif
-    
+
     uniform sampler2D map;
 
     varying vec2 vuv;
@@ -60,4 +60,4 @@ export const beautyBlurShader = {
         gl_FragColor = vec4(sum * 0.1111, 1.0);
     }
 `
-};
+}

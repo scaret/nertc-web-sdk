@@ -1,12 +1,12 @@
 export const sketchShader = {
-    fShader: `
+  fShader: `
     #ifdef GL_FRAGMENT_PRECISION_HIGH
         precision highp float;
     #else
         precision mediump float;
     #endif
     const float PI = 3.1415926;
-    
+
     uniform sampler2D gridMap;
     uniform sampler2D pencilMap;
     uniform sampler2D edgeMap;
@@ -24,4 +24,4 @@ export const sketchShader = {
         gl_FragColor = vec4(mix(bkColor, color * color * color, edgeColor.r), 1.0);
     }
 `
-};
+}

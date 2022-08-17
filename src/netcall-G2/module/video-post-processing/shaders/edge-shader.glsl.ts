@@ -1,11 +1,11 @@
 export const edgeShader = {
-    fShader: `
+  fShader: `
     #ifdef GL_FRAGMENT_PRECISION_HIGH
         precision highp float;
     #else
         precision mediump float;
     #endif
-    
+
     uniform sampler2D map;
     uniform vec2 size;
     uniform float intensity;
@@ -16,7 +16,7 @@ export const edgeShader = {
         float  gray = 0.299 * fragColor.x + 0.587 * fragColor.y + 0.114 * fragColor.z;
         return gray;
     }
-    
+
     vec2 sobel(in vec2 uv, in vec2 t) {
         float tleft = lumi(texture2D(map,uv + vec2(-t.x,t.y)));
         float left = lumi(texture2D(map,uv + vec2(-t.x,0)));
@@ -44,4 +44,4 @@ export const edgeShader = {
         gl_FragColor = vec4(col, 1.0);
     }
 `
-};
+}
