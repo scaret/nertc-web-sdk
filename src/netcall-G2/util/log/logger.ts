@@ -2,6 +2,7 @@ import * as loglevel from 'loglevel'
 
 import { getParameters } from '../../module/parameters'
 
+let win: any = window
 // 与声网对齐
 export enum loglevels {
   DEBUG = 0,
@@ -32,10 +33,10 @@ const logger = {
     }
   },
   enableLogUpload() {
-    ;(<any>window).logUpload = true
+    win.logUpload = true
   },
   disableLogUpload() {
-    ;(<any>window).logUpload = false
+    win.logUpload = false
   }
 }
 

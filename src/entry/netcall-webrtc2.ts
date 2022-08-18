@@ -46,6 +46,7 @@ import { getSupportedCodecs } from '../netcall-G2/util/rtcUtil/codec'
  *  @memberOf NERTC
  */
 let client: Client | null
+let win: any = window
 
 export const NERTC = {
   Logger: {
@@ -335,5 +336,4 @@ export const NERTC = {
   ENV
 }
 
-module.exports = NERTC
-;(<any>window).WebRTC2 = NERTC
+module.exports = win.WebRTC2 = NERTC

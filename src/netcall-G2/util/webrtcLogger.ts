@@ -266,8 +266,9 @@ function simpleClone(obj: any, cache: any[] = []) {
 }
 
 function logCache(args: any) {
-  if ((<any>window).logUpload) {
-    if (!(<any>window).wsTransport) {
+  let win: any = window
+  if (win.logUpload) {
+    if (!win.wsTransport) {
       // ws创建前 缓存日志
       let time = Date.now()
       try {
@@ -287,11 +288,11 @@ function logCache(args: any) {
     } else {
       if (cachedLogs.length) {
         cachedLogs.forEach((item) => {
-          ;(<any>window).wsTransport && (<any>window).wsTransport.sendLog(item.args)
+          win.wsTransport && win.wsTransport.sendLog(item.args)
         })
         cachedLogs = []
       }
-      ;(<any>window).wsTransport && (<any>window).wsTransport.sendLog(args)
+      win.wsTransport && win.wsTransport.sendLog(args)
     }
   }
 }

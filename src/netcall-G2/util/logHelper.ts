@@ -298,10 +298,8 @@ class logHelper {
           self.currentResult += lines[i] + '\n'
         }
         return self.currentResult
-        break
       case 'RegExp':
         return '/' + obj.source + '/'
-        break
       case 'Date':
       case 'string':
         if (self.depth > 0 || obj.length == 0) {
@@ -314,7 +312,6 @@ class logHelper {
         else return 'false'
       case 'number':
         return obj + ''
-        break
     }
   }
 

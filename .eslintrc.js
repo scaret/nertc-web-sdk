@@ -29,6 +29,8 @@ module.exports = {
     'no-constant-condition': 'off',
     'no-case-declarations': 'off',
     'no-empty': 'off',
+    'no-unreachable': 'error',
+    'no-unexpected-multiline': 'error',
     // 'simple-import-sort/imports': 'error',
     // 'simple-import-sort/exports': 'error',
     '@typescript-eslint/no-explicit-any': 'off',
