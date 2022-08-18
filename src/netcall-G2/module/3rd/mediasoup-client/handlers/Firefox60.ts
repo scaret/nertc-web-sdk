@@ -327,14 +327,14 @@ export class Firefox60 extends HandlerInterface {
     } else if (appData.mediaType === 'video' && this._pc.videoSender) {
       Logger.debug(prefix, '[Produce] videoSender更新track: ', this._pc.videoSender)
       this._pc.videoSender.replaceTrack(track)
-      if (this._pc.videoSenderLow && trackLow) {
+      if (this._pc.videoSenderLow && this._pc.videoSenderLow.track !== trackLow) {
         Logger.debug(prefix, '[Produce] videoSenderLow更新track: ', this._pc.videoSenderLow)
         this._pc.videoSenderLow.replaceTrack(trackLow)
       }
     } else if (appData.mediaType === 'screenShare' && this._pc.screenSender) {
       Logger.debug(prefix, '[Produce] screenSender更新track: ', this._pc.screenSender)
       this._pc.screenSender.replaceTrack(track)
-      if (this._pc.screenSenderLow && trackLow) {
+      if (this._pc.screenSenderLow && this._pc.screenSenderLow.track !== trackLow) {
         Logger.debug(prefix, '[Produce] screenSenderLow更新track: ', this._pc.screenSenderLow)
         this._pc.screenSenderLow.replaceTrack(trackLow)
       }
@@ -613,14 +613,12 @@ export class Firefox60 extends HandlerInterface {
     } else if (kind === 'video') {
       this._pc.videoSender.replaceTrack(null)
       if (this._pc.videoSenderLow) {
-        this._pc.videoSenderLow.track?.stop()
         this._pc.videoSenderLow.replaceTrack(null)
       }
       //this._remoteSdp.closeMediaSection('1');
     } else if (kind === 'screenShare') {
       this._pc.screenSender.replaceTrack(null)
       if (this._pc.screenSenderLow) {
-        this._pc.screenSenderLow.track?.stop()
         this._pc.screenSenderLow.replaceTrack(null)
       }
     } else {

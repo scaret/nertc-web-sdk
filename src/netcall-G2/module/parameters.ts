@@ -29,10 +29,19 @@ interface IParameters {
   // 是否开启UI提示
   enableAlerter: 'never' | 'nolistener' | 'always'
 
-  // 主流开开启小流时的视频采集参数
-  videoLowDefaultConstraints: MediaTrackConstraints
-  // 辅流开开启小流时的视频采集参数
-  screenLowDefaultConstraints: MediaTrackConstraints
+  // 主流小流最大宽度
+  videoLowMaxWidth: number
+  // 主流小流最大高度
+  videoLowMaxHeight: number
+  // 主流小流帧率
+  videoLowFramerate: number
+
+  // 辅流小流最大宽度
+  screenLowMaxWidth: number
+  // 辅流小流最大高度
+  screenLowMaxHeight: number
+  // 辅流小流帧率
+  screenLowFramerate: number
 
   // 播放时如果遇到自动播放问题，是否显示video控件的默认控制选项
   controlOnPaused: boolean
@@ -126,8 +135,12 @@ let parameters: IParameters = {
   localStreams: [],
   debugG2: false,
   enableAlerter: 'never',
-  videoLowDefaultConstraints: { width: { max: 320 }, height: { max: 180 } },
-  screenLowDefaultConstraints: { width: { max: 320 }, height: { max: 180 } },
+  videoLowMaxWidth: 320,
+  videoLowMaxHeight: 180,
+  videoLowFramerate: 15,
+  screenLowMaxWidth: 320,
+  screenLowMaxHeight: 180,
+  screenLowFramerate: 15,
   controlOnPaused: true,
   hideControlOnResume: true,
   maxTransportRebuildCnt: Number.MAX_SAFE_INTEGER,

@@ -1601,7 +1601,7 @@ class LocalStream extends RTCEventEmitter {
           reason = 'NOT_OPEN_CAMERA_YET'
           break
         }
-        await this.suspendVideoPostProcess(true)
+        await this.suspendVideoPostProcess()
         // 释放当前 track
         if (this._transformedTrack && this._cameraTrack) {
           this._cameraTrack.stop()
@@ -2441,9 +2441,6 @@ class LocalStream extends RTCEventEmitter {
       if (this.videoPostProcess.sourceTrack) {
         this.videoPostProcess.sourceTrack.enabled = true
       }
-      if (this.mediaHelper.video.videoTrackLow) {
-        this.mediaHelper.video.videoTrackLow.enabled = true
-      }
       if (env.IS_SAFARI) {
         const videoDom = this._play?.getVideoDom
         if (videoDom) {
@@ -2508,9 +2505,6 @@ class LocalStream extends RTCEventEmitter {
       }
       if (this.mediaHelper.video.cameraTrack) {
         this.mediaHelper.video.cameraTrack.enabled = false
-      }
-      if (this.mediaHelper.video.videoTrackLow) {
-        this.mediaHelper.video.videoTrackLow.enabled = false
       }
       if (this.videoPostProcess.sourceTrack) {
         this.videoPostProcess.sourceTrack.enabled = false
@@ -2816,9 +2810,7 @@ class LocalStream extends RTCEventEmitter {
     track: MediaStreamTrack
     external: boolean
   }) {
-    // 注意：replaceTrack不会主动关掉原来的track，但会关闭原先小流的Track
     let oldTrack
-    let oldTrackLow
     let external = false // 被替换的流是否是外部流
     let preProcessingEnabled = false
     let preProcessingMediaType: 'video' | 'screen' = 'video'
@@ -2859,8 +2851,6 @@ class LocalStream extends RTCEventEmitter {
           this.mediaHelper.screen.screenVideoStream.getVideoTracks()[0].contentHint =
             this.mediaHelper.screen.encoderConfig.high.contentHint
         }
-        oldTrackLow = this.mediaHelper.screen.screenVideoTrackLow
-        this.mediaHelper.screen.screenVideoTrackLow = null
       }
     } else if (options.mediaType === 'video') {
       const preProcessingEnabled = this.mediaHelper.video.preProcessingEnabled
@@ -2899,8 +2889,6 @@ class LocalStream extends RTCEventEmitter {
           this.mediaHelper.video.videoStream.getVideoTracks()[0].contentHint =
             this.mediaHelper.video.encoderConfig.high.contentHint
         }
-        oldTrackLow = this.mediaHelper.video.videoTrackLow
-        this.mediaHelper.video.videoTrackLow = null
         if (this.mediaHelper.video.preProcessingEnabled) {
           this.mediaHelper.enablePreProcessing('video')
         }
@@ -2908,9 +2896,7 @@ class LocalStream extends RTCEventEmitter {
     }
     if (oldTrack) {
       this.logger.log(
-        `replaceTrack ${options.mediaType} dual:${!!oldTrackLow}【external: ${external} ${
-          oldTrack.label
-        }】=>【external: ${options.external} ${options.track.label}】`
+        `replaceTrack ${options.mediaType}【external: ${external} ${oldTrack.label}】=>【external: ${options.external} ${options.track.label}】`
       )
       watchTrack(options.track)
       this.mediaHelper.listenToTrackEnded(options.track)
@@ -2922,27 +2908,14 @@ class LocalStream extends RTCEventEmitter {
       this.mediaHelper.enablePreProcessing(preProcessingMediaType)
     } else {
       const sender = this.getSender(options.mediaType, 'high')
-      const senderLow = this.getSender(options.mediaType, 'low')
       if (sender) {
         sender.replaceTrack(options.track)
         this.logger.log(`replaceTrack ${options.mediaType} 成功替换上行`)
-      }
-      if (senderLow && oldTrackLow) {
-        const newTrackLow = await this.mediaHelper.createTrackLow(options.mediaType)
-        if (newTrackLow) {
-          senderLow.replaceTrack(newTrackLow)
-          this.logger.log(`replaceTrack ${options.mediaType} 成功替换上行小流`)
-          oldTrackLow.stop()
-          syncTrackState(options.track, newTrackLow, 'oneway')
-        }
       }
     }
     if (this.replaceTags.isMuted) {
       if (this.mediaHelper.video.cameraTrack) {
         this.mediaHelper.video.cameraTrack.enabled = false
-      }
-      if (this.mediaHelper.video.videoTrackLow) {
-        this.mediaHelper.video.videoTrackLow.enabled = false
       }
     }
 
@@ -4180,7 +4153,6 @@ class LocalStream extends RTCEventEmitter {
   }) {
     // replaceTrack不会主动关掉原来的track，包括大小流
     let oldTrack
-    let oldTrackLow
     let external = false // 被替换的流是否是外部流
 
     if (options.mediaType === 'screen') {
@@ -4215,8 +4187,6 @@ class LocalStream extends RTCEventEmitter {
           this.mediaHelper.screen.screenVideoStream.getVideoTracks()[0].contentHint =
             this.mediaHelper.screen.encoderConfig.high.contentHint
         }
-        oldTrackLow = this.mediaHelper.screen.screenVideoTrackLow
-        this.mediaHelper.screen.screenVideoTrackLow = null
       }
     } else if (options.mediaType === 'video') {
       if (this.mediaHelper.video.cameraTrack) {
@@ -4250,15 +4220,11 @@ class LocalStream extends RTCEventEmitter {
           this.mediaHelper.video.videoStream.getVideoTracks()[0].contentHint =
             this.mediaHelper.video.encoderConfig.high.contentHint
         }
-        oldTrackLow = this.mediaHelper.video.videoTrackLow
-        this.mediaHelper.video.videoTrackLow = null
       }
     }
     if (oldTrack) {
       this.logger.log(
-        `replaceTrack ${options.mediaType} dual:${!!oldTrackLow}【external: ${external} ${
-          oldTrack.label
-        }】=>【external: ${options.external} ${options.track.label}】`
+        `replaceTrack ${options.mediaType}【external: ${external} ${oldTrack.label}】=>【external: ${options.external} ${options.track.label}】`
       )
       watchTrack(options.track)
       this.mediaHelper.listenToTrackEnded(options.track)
@@ -4268,31 +4234,17 @@ class LocalStream extends RTCEventEmitter {
     }
 
     const sender = this.getSender(options.mediaType, 'high')
-    const senderLow = this.getSender(options.mediaType, 'low')
     if (sender) {
       sender.replaceTrack(options.track)
       this.logger.log(`replaceTrack ${options.mediaType} 成功替换上行`)
-    }
-    if (senderLow && oldTrackLow) {
-      const newTrackLow = await this.mediaHelper.createTrackLow(options.mediaType)
-      if (newTrackLow) {
-        senderLow.replaceTrack(newTrackLow)
-        oldTrackLow.stop()
-        oldTrackLow = null
-        this.logger.log(`replaceTrack ${options.mediaType} 成功替换上行小流`)
-      }
     }
     if (this.replaceTags.isMuted) {
       if (this.mediaHelper.video.cameraTrack) {
         this.mediaHelper.video.cameraTrack.enabled = false
       }
-      if (this.mediaHelper.video.videoTrackLow) {
-        this.mediaHelper.video.videoTrackLow.enabled = false
-      }
     }
     return {
       oldTrack,
-      oldTrackLow,
       external
     }
   }
@@ -4397,7 +4349,7 @@ class LocalStream extends RTCEventEmitter {
   }
 
   // 临时挂起视频后处理
-  async suspendVideoPostProcess(closeTrackLow = false) {
+  async suspendVideoPostProcess() {
     const { isBeautyTrack, isBodySegmentTrack, isAdvBeautyTrack } = this.videoPostProcessTags
     if (isBeautyTrack) {
       await this.setBeautyEffect(false, true)
@@ -4410,12 +4362,6 @@ class LocalStream extends RTCEventEmitter {
     if (isAdvBeautyTrack) {
       await this._cancelAdvancedBeauty()
       this.videoPostProcessTags.isAdvBeautyTrack = true
-    }
-
-    let videoTrackLow = this.mediaHelper.video.videoTrackLow
-    if (videoTrackLow && closeTrackLow) {
-      videoTrackLow.stop()
-      videoTrackLow = null
     }
   }
 

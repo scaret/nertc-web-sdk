@@ -38,6 +38,7 @@ import {
   preProcessingCopy
 } from './preProcessing'
 import { WebAudio } from './webAudio'
+import { VideoTrackLow } from './videoTrackLow'
 class MediaHelper extends EventEmitter {
   stream: LocalStream | RemoteStream
   public audio: {
@@ -93,7 +94,7 @@ class MediaHelper extends EventEmitter {
     // 2. 由于Safari的CanvasCaptureMediaStreamTrack的本地播放问题，Safari开启前处理时是个remoteTrack https://bugs.webkit.org/show_bug.cgi?id=181663
     renderStream: MediaStream
     // videoTrackLow可能是cameraTrack或者videoSource的小流
-    videoTrackLow: MediaStreamTrack | null
+    low: VideoTrackLow | null
     cameraTrack: MediaStreamTrack | null
     cameraConstraint: { video: MediaTrackConstraints }
     videoSource: MediaStreamTrack | null
@@ -104,7 +105,7 @@ class MediaHelper extends EventEmitter {
   } = {
     videoStream: new MediaStream(),
     renderStream: new MediaStream(),
-    videoTrackLow: null,
+    low: null,
     cameraTrack: null,
     cameraConstraint: { video: {} },
     videoSource: null,
@@ -125,9 +126,7 @@ class MediaHelper extends EventEmitter {
     // 1. 大多数情况下与videoStream内用于发送的track一样
     // 2. 由于Safari的CanvasCaptureMediaStreamTrack的本地播放问题，Safari开启前处理时是个remoteTrack https://bugs.webkit.org/show_bug.cgi?id=181663
     renderStream: MediaStream
-    // screenVideoTrackLow可能是screenVideoTrack或者screenVideoSource的小流
-    screenVideoTrackLow: MediaStreamTrack | null
-
+    low: VideoTrackLow | null
     screenVideoTrack: MediaStreamTrack | null
     screenVideoSource: MediaStreamTrack | null
     preProcessingEnabled: boolean
@@ -137,7 +136,7 @@ class MediaHelper extends EventEmitter {
   } = {
     screenVideoStream: new MediaStream(),
     renderStream: new MediaStream(),
-    screenVideoTrackLow: null,
+    low: null,
     screenVideoTrack: null,
     screenVideoSource: null,
     preProcessingEnabled: false,
@@ -286,9 +285,9 @@ class MediaHelper extends EventEmitter {
         this.audio.micTrack.stop()
         this.audio.micTrack = null
       }
-      if (this.video.videoTrackLow) {
-        this.video.videoTrackLow.stop()
-        this.video.videoTrackLow = null
+      if (this.video.low) {
+        this.video.low.destroy()
+        this.video.low = null
       }
       this.video.videoSource = null
       if (this.video.cameraTrack) {
@@ -298,10 +297,6 @@ class MediaHelper extends EventEmitter {
       if (this.screen.screenVideoTrack) {
         this.screen.screenVideoTrack.stop()
         this.screen.screenVideoTrack = null
-      }
-      if (this.screen.screenVideoTrackLow) {
-        this.screen.screenVideoTrackLow.stop()
-        this.screen.screenVideoTrackLow = null
       }
       this.video.cameraConstraint = { video: {} }
       if (this.screenAudio.screenAudioTrack) {
@@ -934,16 +929,6 @@ class MediaHelper extends EventEmitter {
         } else {
           this.logger.warn('getSecondStream video: 此时未发布流')
         }
-        //@ts-ignore
-        const videoSenderLow = this.stream.getSender('video', 'low')
-        const historyVideoTrackLow = this.video.videoTrackLow
-        this.video.videoTrackLow?.stop()
-        this.video.videoTrackLow = null
-        if (videoSenderLow?.track === historyVideoTrackLow) {
-          await this.createTrackLow('video')
-          this.logger.log('getSecondStream 切换小流', this.video.videoTrackLow)
-          videoSenderLow.replaceTrack(this.video.videoTrackLow)
-        }
       }
     } catch (e: any) {
       this.logger.error('getStream error', e.message)
@@ -955,95 +940,6 @@ class MediaHelper extends EventEmitter {
       })
       return Promise.reject(e)
     }
-  }
-
-  async createTrackLow(mediaType: 'video' | 'screen'): Promise<MediaStreamTrack | null> {
-    let constraintsLow: MediaTrackConstraints, trackHigh
-    if (mediaType === 'video') {
-      constraintsLow = JSON.parse(JSON.stringify(getParameters().videoLowDefaultConstraints))
-      // trackHigh可能来自于摄像头或自定义视频
-      trackHigh = this.video.videoStream.getVideoTracks()[0]
-    } else {
-      constraintsLow = JSON.parse(JSON.stringify(getParameters().screenLowDefaultConstraints))
-      // trackHigh可能来自于摄像头或自定义视频
-      trackHigh = this.screen.screenVideoStream.getVideoTracks()[0]
-    }
-
-    if (!trackHigh) {
-      this.logger.error(`创建小流失败：当前没有大流`)
-      this.stream.client.safeEmit('track-low-init-fail', { mediaType })
-      return null
-    } else if (trackHigh.readyState !== 'live') {
-      this.logger.error(`创建小流失败：大流已在停止状态`, trackHigh.label)
-      this.stream.client.safeEmit('track-low-init-fail', { mediaType })
-      return null
-    }
-    const videoTrackLow = trackHigh.clone()
-    if (this[mediaType].encoderConfig.low.contentHint) {
-      this.logger.log(
-        '创建小流',
-        mediaType,
-        this[mediaType].encoderConfig.low.contentHint,
-        trackHigh.label,
-        constraintsLow
-      )
-      // @ts-ignore
-      this.logger.log(
-        '应用 contentHint',
-        mediaType,
-        'low',
-        // @ts-ignore
-        videoTrackLow.contentHint,
-        '=>',
-        this[mediaType].encoderConfig.low.contentHint
-      )
-      // @ts-ignore
-      videoTrackLow.contentHint = this[mediaType].encoderConfig.low.contentHint
-    } else {
-      this.logger.log('创建小流', mediaType, trackHigh.label, constraintsLow)
-    }
-    const settings = trackHigh.getSettings()
-    if (mediaType === 'screen' && env.IS_SAFARI) {
-      this.logger.log(
-        `创建小流：${mediaType} + Safari 使用与大流一样的分辨率 ${settings.width}x${settings.height}`
-      )
-    } else if (settings.width && settings.height) {
-      try {
-        constraintsLow.aspectRatio = settings.width / settings.height
-        await videoTrackLow.applyConstraints(constraintsLow)
-      } catch (e: any) {
-        this.logger.warn(
-          `创建小流：无法应用配置。小流与大流使用一样的分辨率。${settings.width}x${
-            settings.height
-          }。${JSON.stringify(constraintsLow)} ${e.name} ${e.message}`
-        )
-      }
-      const settingsHigh2 = trackHigh.getSettings()
-      if (settingsHigh2.width !== settings.width || settingsHigh2.height !== settings.height) {
-        this.logger.warn(
-          `创建小流：applyConstraints影响了大流宽高。${settings.width}x${settings.height} => ${settingsHigh2.width}x${settingsHigh2.height}。回滚大流配置，小流与大流使用一样的分辨率。`
-        )
-        await trackHigh.applyConstraints(settings)
-        await videoTrackLow.applyConstraints(settings)
-      } else {
-        const settingsLow = videoTrackLow.getSettings()
-        this.logger.log(
-          `创建小流成功。大流宽高：${settings.width}x${settings.height} 小流宽高：${settingsLow.width}x${settingsLow.height}`
-        )
-      }
-    } else {
-      this.logger.warn(
-        `创建小流：无法获取原始视频宽高。大流和小流使用同样的分辨率。${JSON.stringify(settings)}`
-      )
-    }
-    watchTrack(videoTrackLow)
-    if (mediaType === 'video') {
-      this.video.videoTrackLow = videoTrackLow
-    } else {
-      this.screen.screenVideoTrackLow = videoTrackLow
-    }
-    this.stream.client.safeEmit('track-low-init-success', { mediaType })
-    return videoTrackLow
   }
 
   convert(options: { resolution: NERTC_VIDEO_QUALITY_ENUM; frameRate: VIDEO_FRAME_RATE_ENUM }) {
@@ -1351,19 +1247,9 @@ class MediaHelper extends EventEmitter {
       }
       if (this.video.cameraTrack === track) {
         this.video.cameraTrack = null
-        if (this.video.videoTrackLow) {
-          this.logger.log('停止视频小流:', this.video.videoTrackLow)
-          this.video.videoTrackLow.stop()
-          this.video.videoTrackLow = null
-        }
       }
       if (this.screen.screenVideoTrack === track) {
         this.screen.screenVideoTrack = null
-        if (this.screen.screenVideoTrackLow) {
-          this.logger.log('停止辅流小流:', this.screen.screenVideoTrackLow)
-          this.screen.screenVideoTrackLow.stop()
-          this.screen.screenVideoTrackLow = null
-        }
       }
     })
   }

@@ -2,7 +2,6 @@ import { PreProcessingConfig, PreProcessingHistoryInfo } from '../types'
 import { emptyStreamWith } from '../util/gum'
 import { getRTCTimer } from '../util/RTCTimer'
 import { RTCCanvas } from '../util/rtcUtil/rtcCanvas'
-import { syncTrackState } from '../util/syncTrackState'
 import { MediaHelper } from './media'
 
 export async function enablePreProcessing(
@@ -15,13 +14,10 @@ export async function enablePreProcessing(
   }
 
   let videoTrack: MediaStreamTrack | null
-  let oldTrackLow: MediaStreamTrack | null
   if (mediaType === 'video') {
     videoTrack = mediaHelper.video.cameraTrack || mediaHelper.video.videoSource
-    oldTrackLow = mediaHelper.video.videoTrackLow
   } else {
     videoTrack = mediaHelper.screen.screenVideoTrack || mediaHelper.screen.screenVideoSource
-    oldTrackLow = mediaHelper.screen.screenVideoTrackLow
   }
   if (!videoTrack) {
     mediaHelper.logger.warn(`enablePreProcessing：当前没有视频输入 ${mediaType}`)
@@ -93,25 +89,14 @@ export async function enablePreProcessing(
   preProcessing.videoTrack = videoTrack
 
   // 3. 处理上行发送
-  let sender, senderLow
+  let sender
   if (!mediaHelper.stream.isRemote) {
     //@ts-ignore
     sender = mediaHelper.stream.getSender(mediaType, 'high')
-    //@ts-ignore
-    senderLow = mediaHelper.stream.getSender(mediaType, 'low')
   }
   if (sender) {
     sender.replaceTrack(preProcessing.canvasTrack)
     mediaHelper.logger.log(`enablePreProcessing ${mediaType} 成功替换上行`)
-  }
-  if (senderLow && oldTrackLow) {
-    const newTrackLow = await mediaHelper.createTrackLow(mediaType)
-    if (newTrackLow) {
-      senderLow.replaceTrack(newTrackLow)
-      syncTrackState(preProcessing.canvasTrack, newTrackLow, 'oneway')
-      oldTrackLow.stop()
-      mediaHelper.logger.log(`enablePreProcessing ${mediaType} 成功替换上行小流`)
-    }
   }
 
   // 4. 处理具体的前处理钩子
@@ -219,14 +204,12 @@ export async function disablePreProcessing(
   }
 
   // 2. 处理本地videoTrack连接
-  let videoTrack: MediaStreamTrack | null, oldTrackLow
+  let videoTrack: MediaStreamTrack | null
   if (mediaType === 'video') {
     videoTrack = mediaHelper.video.cameraTrack || mediaHelper.video.videoSource
-    oldTrackLow = mediaHelper.video.videoTrackLow
     emptyStreamWith(mediaHelper.video.videoStream, videoTrack)
   } else {
     videoTrack = mediaHelper.screen.screenVideoTrack || mediaHelper.screen.screenVideoSource
-    oldTrackLow = mediaHelper.screen.screenVideoTrackLow
     emptyStreamWith(mediaHelper.screen.screenVideoStream, videoTrack)
   }
   if (preProcessing.videoElem.srcObject) {
@@ -234,12 +217,10 @@ export async function disablePreProcessing(
   }
 
   // 3. 处理上行发送
-  let sender, senderLow
+  let sender
   if (!mediaHelper.stream.isRemote) {
     //@ts-ignore
     sender = mediaHelper.stream.getSender(mediaType, 'high')
-    //@ts-ignore
-    senderLow = mediaHelper.stream.getSender(mediaType, 'low')
   }
   if (sender) {
     if (videoTrack?.readyState === 'live') {
@@ -250,20 +231,6 @@ export async function disablePreProcessing(
     } else {
       sender.replaceTrack(null)
       mediaHelper.logger.warn(`disablePreProcessing 删除上行`)
-    }
-  }
-  if (senderLow && oldTrackLow) {
-    if (videoTrack?.readyState === 'live') {
-      const newTrackLow = await mediaHelper.createTrackLow(mediaType)
-      if (newTrackLow) {
-        senderLow.replaceTrack(newTrackLow)
-        syncTrackState(videoTrack, newTrackLow, 'oneway')
-        oldTrackLow.stop()
-        mediaHelper.logger.log(`disablePreProcessing ${mediaType} 成功替换上行小流`)
-      }
-    } else {
-      senderLow.replaceTrack(null)
-      mediaHelper.logger.warn(`disablePreProcessing 删除上行小流`)
     }
   }
   if (!keepFlag) {

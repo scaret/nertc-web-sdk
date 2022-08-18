@@ -30,6 +30,7 @@ import {
 } from './3rd/mediasoup-client/types'
 import { Peer } from './3rd/protoo-client'
 import { getParameters } from './parameters'
+import { VideoTrackLow } from './videoTrackLow'
 
 class Mediasoup extends EventEmitter {
   private adapterRef: AdapterRef
@@ -833,19 +834,20 @@ class Mediasoup extends EventEmitter {
       if (this._webcamProducer) {
         this.loggerSend.log('视频已经publish，跳过')
       } else if (stream.mediaHelper.video.videoStream.getVideoTracks().length) {
+        let trackLow: MediaStreamTrack | null = null
         if (this.adapterRef.channelInfo.videoLow) {
-          if (
-            !stream.mediaHelper.video.videoTrackLow ||
-            stream.mediaHelper.video.videoTrackLow.readyState === 'ended'
-          ) {
-            await stream.mediaHelper.createTrackLow('video')
+          if (!stream.mediaHelper.video.low) {
+            stream.mediaHelper.video.low = new VideoTrackLow({
+              logger: this.logger,
+              mediaType: 'video'
+            })
           }
+          trackLow = stream.mediaHelper.video.low.track
         } else {
-          // 不发布小流。此处如果发现上次有小流，则将小流回收。
-          if (stream.mediaHelper.video.videoTrackLow?.readyState === 'live') {
-            stream.mediaHelper.video.videoTrackLow.stop()
+          // 不发布小流。此处如果发现上次有小流，则取消绑定关系，但不回收。
+          if (stream.mediaHelper.video.low) {
+            stream.mediaHelper.video.low.bindSender(null)
           }
-          stream.mediaHelper.video.videoTrackLow = null
           this.senderEncodingParameter.video.low = null
         }
         const videoTrack = stream.mediaHelper.video.videoStream.getVideoTracks()[0]
@@ -859,19 +861,20 @@ class Mediasoup extends EventEmitter {
         )
         this._webcamProducer = await this._sendTransport.produce({
           track: videoTrack,
-          trackLow: stream.mediaHelper.video.videoTrackLow,
+          trackLow,
           codec: codecInfo.codecParam,
           codecOptions: {
             videoGoogleStartBitrate: 1000
           },
           appData: {
             deviceId: videoTrack.id,
-            deviceIdLow: stream.mediaHelper.video.videoTrackLow
-              ? stream.mediaHelper.video.videoTrackLow.id
-              : null,
+            deviceIdLow: trackLow?.id || null,
             mediaType: 'video'
           }
         })
+        if (this._webcamProducer._rtpSender && stream.mediaHelper.video.low) {
+          stream.mediaHelper.video.low.bindSender(this._webcamProducer._rtpSender)
+        }
         this.watchProducerState(this._webcamProducer, '_webcamProducer')
         if (this.adapterRef.encryption.encodedInsertableStreams) {
           if (this._webcamProducer._rtpSender) {
@@ -892,19 +895,20 @@ class Mediasoup extends EventEmitter {
       if (this._screenProducer) {
         this.loggerSend.log('屏幕共享已经publish，跳过')
       } else if (stream.mediaHelper.screen.screenVideoStream.getVideoTracks().length) {
+        let trackLow: MediaStreamTrack | null = null
         if (this.adapterRef.channelInfo.screenLow) {
-          if (
-            !stream.mediaHelper.screen.screenVideoTrackLow ||
-            stream.mediaHelper.screen.screenVideoTrackLow.readyState === 'ended'
-          ) {
-            await stream.mediaHelper.createTrackLow('screen')
+          if (!stream.mediaHelper.screen.low) {
+            stream.mediaHelper.screen.low = new VideoTrackLow({
+              logger: stream.logger,
+              mediaType: 'screen'
+            })
           }
+          trackLow = stream.mediaHelper.screen.low.track
         } else {
-          // 不发布小流。此处如果发现上次有小流，则将小流回收。
-          if (stream.mediaHelper.screen.screenVideoTrackLow?.readyState === 'live') {
-            stream.mediaHelper.screen.screenVideoTrackLow.stop()
+          // 不发布小流。此处如果发现上次有小流，则取消小流绑定（但不回收）
+          if (stream.mediaHelper.screen.low) {
+            stream.mediaHelper.screen.low.bindSender(null)
           }
-          stream.mediaHelper.screen.screenVideoTrackLow = null
           this.senderEncodingParameter.screen.low = null
         }
         const screenTrack = stream.mediaHelper.screen.screenVideoStream.getVideoTracks()[0]
@@ -918,16 +922,14 @@ class Mediasoup extends EventEmitter {
         )
         this._screenProducer = await this._sendTransport.produce({
           track: screenTrack,
-          trackLow: stream.mediaHelper.screen.screenVideoTrackLow,
+          trackLow,
           codec: codecInfo.codecParam,
           codecOptions: {
             videoGoogleStartBitrate: 1000
           },
           appData: {
             deviceId: screenTrack.id,
-            deviceIdLow: stream.mediaHelper.screen.screenVideoTrackLow
-              ? stream.mediaHelper.screen.screenVideoTrackLow.id
-              : null,
+            deviceIdLow: trackLow?.id || null,
             mediaType: 'screenShare'
           }
         })
