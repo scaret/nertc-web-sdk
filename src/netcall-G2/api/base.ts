@@ -149,8 +149,8 @@ class Base extends RTCEventEmitter {
     this.adapterRef.encryption = new Encryption(this.adapterRef)
 
     this._resetState() // 内部状态对象
-    ;(this.adapterRef.lbsManager = new LBSManager(this as unknown as ICLient)),
-      this._destroyModule()
+    this.adapterRef.lbsManager = new LBSManager(this as unknown as ICLient)
+    this._destroyModule()
   }
 
   _getSupportedCodecs() {

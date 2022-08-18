@@ -4,6 +4,7 @@ import { updateLogIndex } from '../../../util/webrtcLogger'
 import { getParameters } from '../../parameters'
 
 const APP_NAME = 'mediasoup-client'
+let win: any = window
 
 export const Logger = {
   debug(option?: any, ...args: any[]) {
@@ -13,7 +14,7 @@ export const Logger = {
     if (getParameters().logLevel <= loglevels.DEBUG) {
       console.debug.apply(console, args)
     }
-    ;(<any>window).logUpload && (<any>window).wsTransport && (<any>window).wsTransport.sendLog(args)
+    win.logUpload && win.wsTransport && win.wsTransport.sendLog(args)
   },
 
   warn(option?: any, ...args: any[]) {
@@ -23,7 +24,7 @@ export const Logger = {
     if (getParameters().logLevel <= loglevels.WARNING) {
       console.warn.apply(console, args)
     }
-    ;(<any>window).logUpload && (<any>window).wsTransport && (<any>window).wsTransport.sendLog(args)
+    win.logUpload && win.wsTransport && win.wsTransport.sendLog(args)
   },
 
   error(option?: any, ...args: any[]) {
@@ -33,7 +34,7 @@ export const Logger = {
     if (getParameters().logLevel <= loglevels.ERROR) {
       console.error.apply(console, args)
     }
-    ;(<any>window).logUpload && (<any>window).wsTransport && (<any>window).wsTransport.sendLog(args)
+    win.logUpload && win.wsTransport && win.wsTransport.sendLog(args)
   },
 
   formatArgs(logLevel: 'DEBUG' | 'WARN' | 'ERROR', args: any[], param?: any) {

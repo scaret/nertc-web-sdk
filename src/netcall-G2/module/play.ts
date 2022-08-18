@@ -722,12 +722,10 @@ class Play extends EventEmitter {
     switch (mediaType) {
       case 'audio':
         return this.isPlayAudioStream()
-        break
       case 'video':
         return this.isPlayVideoStream()
       case 'screen':
         return this.isPlayScreenStream()
-        break
       default:
         return true
     }

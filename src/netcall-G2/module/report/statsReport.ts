@@ -93,7 +93,8 @@ class StatsReport extends EventEmitter {
     let deviceId = generateUUID()
     let checkSum = sha1(`${PROD}${timestamp}${SDK_VERSION}${platform}${sdktype}${deviceId}${salt}`)
     let url = `${wsURL}?deviceId=${deviceId}&isTest=${PROD}&sdkVer=${SDK_VERSION}&sdktype=${sdktype}&timestamp=${timestamp}&platform=${platform}&checkSum=${checkSum}`
-    this.wsTransport_ = (<any>window).wsTransport = new WSTransport({
+    let win: any = window
+    this.wsTransport_ = win.wsTransport = new WSTransport({
       url: url,
       adapterRef: this.adapterRef
     })
