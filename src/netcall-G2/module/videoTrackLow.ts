@@ -32,7 +32,7 @@ export class VideoTrackLow {
 
   private timer: number | null = null
   private lastDrawAt = 0
-  private lastState: 'frame' | 'clear' | 'black' = 'clear'
+  private lastState: 'frame' | 'clear' | 'black' | 'paused' = 'clear'
 
   private high: {
     sender: RTCRtpSender | null
@@ -160,11 +160,16 @@ export class VideoTrackLow {
     } else if (this.track.readyState !== 'live') {
       this.logger.error(`小流 Track 已停止`)
     } else if (this.high.track?.enabled === false) {
-      if (this.lastState !== 'black') {
+      if (this.lastState === 'frame') {
         this.logger.log(`track处在mute状态`)
         this.lastState = 'black'
         this.context.fillStyle = 'black'
         this.context.fillRect(0, 0, this.width, this.height)
+      }
+    } else if (this.high.videoDom.paused) {
+      if (this.lastState === 'frame') {
+        this.logger.log(`track处在 Paused 状态`)
+        this.lastState = 'paused'
       }
     } else if (this.high.track?.readyState === 'live') {
       if (this.lastState !== 'frame') {
@@ -174,7 +179,7 @@ export class VideoTrackLow {
       this.context.drawImage(this.high.videoDom, 0, 0, this.width, this.height)
       this.lastDrawAt = Date.now()
     } else {
-      if (this.lastState !== 'clear') {
+      if (this.lastState === 'frame') {
         this.logger.log(`track失效，清除小流`)
         this.lastState = 'clear'
         this.context.clearRect(0, 0, this.width, this.height)
@@ -191,7 +196,9 @@ export class VideoTrackLow {
       }
       this.high.track = newTrack
       this.high.videoDom.srcObject = this.high.stream
-      this.high.videoDom.play()
+      this.high.videoDom.play().catch((e) => {
+        // ignore
+      })
     }
   }
   bindSender(sender: RTCRtpSender | null) {
