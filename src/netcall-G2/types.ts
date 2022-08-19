@@ -1326,6 +1326,7 @@ export interface NeRtcServerAddresses {
   cloudProxyServer?: string
   webSocketProxyServer?: string
   mediaProxyServer?: string
+  statisticsWebSocketServer?: string
 }
 
 export interface ValidStringOptions {
