@@ -73,15 +73,15 @@ function copy (srcFolder, destFolder, allowPath, excludePath) {
       obj.filter = file => file == 'webrtc2.html'
       obj.filter = file => /webrtc2/i.test(file)
     })*/
-    
-    
+
+
     obj.filter = (src, dest) =>{
-      /*console.log('src: ', src)
-      console.log('dest: ', dest)*/
+      // console.log('src: ', src)
+      // console.log('dest: ', dest)
       let stat = fs.lstatSync(src)
       let isDirectory = stat.isDirectory()
       if (isDirectory) {
-        if (/css$/i.test(src) || /js/.test(src) || /web$/.test(src) || /auido$/.test(src) || /img/.test(src)) {
+        if (/css$/i.test(src) || /js/.test(src) || /web$/.test(src) || /auido$/.test(src) || /img/.test(src) || /wasm/.test(src)) {
           return true;
         } else {
           return false;
@@ -95,7 +95,7 @@ function copy (srcFolder, destFolder, allowPath, excludePath) {
           }
         })*/
       } else {
-        if (/webrtc2/i.test(src) || /rtc2Rtmp/i.test(src) || /css/i.test(src) || /\.js/i.test(src) || /web$/.test(src) || /img/.test(src) || /mp3|aac|flac/.test(src)) {
+        if (/webrtc2/i.test(src) || /rtc2Rtmp/i.test(src) || /css/i.test(src) || /\.js/i.test(src) || /web$/.test(src) || /img/.test(src) || /mp3|aac|flac/.test(src) || /\.wasm/i.test(src)) {
           return true;
         } else {
           return false
