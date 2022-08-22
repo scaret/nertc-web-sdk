@@ -41,106 +41,83 @@ var WEBRTC2_ENV = {
 const virtualBackgroundPluginConfig = {
   development: {
     simd: {
-      key: "VirtualBackground",
-      pluginUrl: "./js/nim/NIM_Web_VirtualBackground.js",
-      wasmUrl:
-        "https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal.wasm" +
-        `?time=${Math.random()}`,
+      key: 'VirtualBackground',
+      pluginUrl: './js/nim/NIM_Web_VirtualBackground.js',
+      wasmUrl: './js/nim/wasm/NIM_Web_VirtualBackground_simd.wasm' + `?time=${Math.random()}`
     },
     nosimd: {
-      key: "VirtualBackground",
-      pluginUrl: "./js/nim/NIM_Web_VirtualBackground.js",
-      wasmUrl:
-        "https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal_nosimd.wasm" +
-        `?time=${Math.random()}`,
-    },
+      key: 'VirtualBackground',
+      pluginUrl: './js/nim/NIM_Web_VirtualBackground.js',
+      wasmUrl: './js/nim/wasm/NIM_Web_VirtualBackground_nosimd.wasm'
+    }
   },
   production: {
     simd: {
-      key: "VirtualBackground",
+      key: 'VirtualBackground',
       pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}.js`,
-      wasmUrl:
-        "https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal.wasm" +
-        `?time=${Math.random()}`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_VirtualBackground_simd_v${NERTC.VERSION}.wasm`
     },
     nosimd: {
-      key: "VirtualBackground",
+      key: 'VirtualBackground',
       pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}.js`,
-      wasmUrl:
-        "https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal_nosimd.wasm" +
-        `?time=${Math.random()}`,
-    },
+      wasmUrl: `./js/nim/wasm/NIM_Web_VirtualBackground_nosimd_v${NERTC.VERSION}.wasm`
+    }
   },
   test: {
     simd: {
-      key: "VirtualBackground",
+      key: 'VirtualBackground',
       pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}_test.js`,
-      wasmUrl:
-        "https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal.wasm" +
-        `?time=${Math.random()}`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_VirtualBackground_simd_v${NERTC.VERSION}_test.wasm`
     },
     nosimd: {
-      key: "VirtualBackground",
+      key: 'VirtualBackground',
       pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}_test.js`,
-      wasmUrl:
-        "https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal_nosimd.wasm" +
-        `?time=${Math.random()}`,
-    },
-  },
-};
-let segment_config = null;
+      wasmUrl: `./js/nim/wasm/NIM_Web_VirtualBackground_nosimd_v${NERTC.VERSION}_test.wasm`
+    }
+  }
+}
+let segment_config = null
 
 //高级美颜
 const advancedBeautyPluginConfig = {
   development: {
     simd: {
-      key: "AdvancedBeauty",
-      pluginUrl: "./js/nim/NIM_Web_AdvancedBeauty.js",
-      wasmUrl:
-        "https://yx-web-nosdn.netease.im/sdk-release/ne_face_points.wasm" +
-        `?time=${Math.random()}`,
+      key: 'AdvancedBeauty',
+      pluginUrl: './js/nim/NIM_Web_AdvancedBeauty.js',
+      wasmUrl: './js/nim/wasm/NIM_Web_AdvancedBeauty_simd.wasm'
     },
     nosimd: {
-      key: "AdvancedBeauty",
-      pluginUrl: "./js/nim/NIM_Web_AdvancedBeauty.js",
-      wasmUrl:
-        "https://yx-web-nosdn.netease.im/sdk-release/ne_face_points_nosimd.wasm" +
-        `?time=${Math.random()}`,
-    },
+      key: 'AdvancedBeauty',
+      pluginUrl: './js/nim/NIM_Web_AdvancedBeauty.js',
+      wasmUrl: './js/nim/wasm/NIM_Web_AdvancedBeauty_nosimd.wasm'
+    }
   },
   production: {
     simd: {
-      key: "AdvancedBeauty",
+      key: 'AdvancedBeauty',
       pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}.js`,
-      wasmUrl:
-        "https://yx-web-nosdn.netease.im/sdk-release/ne_face_points.wasm" +
-        `?time=${Math.random()}`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AdvancedBeauty_simd_v${NERTC.VERSION}.wasm`
     },
     nosimd: {
-      key: "AdvancedBeauty",
+      key: 'AdvancedBeauty',
       pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}.js`,
-      wasmUrl:
-        "https://yx-web-nosdn.netease.im/sdk-release/ne_face_points_nosimd.wasm" +
-        `?time=${Math.random()}`,
-    },
+      wasmUrl: `./js/nim/wasm/NIM_Web_AdvancedBeauty_nosimd_v${NERTC.VERSION}.wasm`
+    }
   },
   test: {
     simd: {
-      key: "AdvancedBeauty",
+      key: 'AdvancedBeauty',
       pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}_test.js`,
-      wasmUrl:
-        "https://yx-web-nosdn.netease.im/sdk-release/ne_face_points.wasm" +
-        `?time=${Math.random()}`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AdvancedBeauty_simd_v${NERTC.VERSION}_test.wasm`
     },
     nosimd: {
-      key: "AdvancedBeauty",
+      key: 'AdvancedBeauty',
       pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}_test.js`,
-      wasmUrl:
-        "https://yx-web-nosdn.netease.im/sdk-release/ne_face_points_nosimd.wasm" +
-        `?time=${Math.random()}`,
-    },
-  },
-};
+      wasmUrl: `./js/nim/wasm/NIM_Web_AdvancedBeauty_nosimd_v${NERTC.VERSION}_test.js`
+    }
+  }
+}
+
 
 let beauty_config = null;
 
@@ -2057,7 +2034,7 @@ function getVideoSource(mediaType) {
   const optionsStr =
     prompt(
       `自定义${mediaType}配置：【宽x高x帧率x类型
-  类型1：时钟; 
+  类型1：时钟;
   类型2：背景替换;
   类型3：随机颜色;
   类型4：屏幕共享;
