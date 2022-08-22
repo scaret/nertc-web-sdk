@@ -7,7 +7,6 @@ import { NeRTCPeerConnection } from '../interfaces/NeRTCPeerConnection'
 import {
   AdapterRef,
   ILogger,
-  MediasoupManagerInitOptions,
   MediasoupManagerOptions,
   MediaType,
   MediaTypeShort,
@@ -209,7 +208,7 @@ class Mediasoup extends EventEmitter {
     this.resetConsumeRequestStatus()
   }
 
-  async init(turnParameters?: MediasoupManagerInitOptions | undefined) {
+  async init() {
     this.logger.log('init() 初始化 devices、transport')
     if (this.adapterRef._enableRts) {
       return
@@ -227,7 +226,13 @@ class Mediasoup extends EventEmitter {
     if (this.adapterRef.channelInfo.relaytoken && this.adapterRef.channelInfo.relayaddrs) {
       this.adapterRef.channelInfo.relayaddrs.forEach((item: string) => {
         iceServers.push({
-          urls: 'turn:' + item, // + '?transport=udp',
+          urls: 'turn:' + item + '?transport=udp',
+          credential:
+            this.adapterRef.proxyServer.credential ||
+            this.adapterRef.channelInfo.uid + '/' + this.adapterRef.channelInfo.cid,
+          username: this.adapterRef.channelInfo.relaytoken
+        }, {
+          urls: 'turn:' + item + '?transport=tcp',
           credential:
             this.adapterRef.proxyServer.credential ||
             this.adapterRef.channelInfo.uid + '/' + this.adapterRef.channelInfo.cid,
@@ -261,38 +266,6 @@ class Mediasoup extends EventEmitter {
       )
     }
 
-    const iceServersSender = []
-    const iceServersRecv = []
-    if (turnParameters) {
-      //服务器反馈turn server，sdk更新ice Server
-      let iceTransportPolicy: RTCIceTransportPolicy = 'all'
-      iceServersSender.push(
-        {
-          urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=udp',
-          credential: turnParameters.password,
-          username: `${turnParameters.username}#Send`
-        },
-        {
-          urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=tcp',
-          credential: turnParameters.password,
-          username: `${turnParameters.username}#Send`
-        }
-      )
-
-      iceServersRecv.push(
-        {
-          urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=udp',
-          credential: turnParameters.password,
-          username: `${turnParameters.username}#Recv`
-        },
-        {
-          urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=tcp',
-          credential: turnParameters.password,
-          username: `${turnParameters.username}#Recv`
-        }
-      )
-    }
-
     if (!this._sendTransport && this._mediasoupDevice) {
       this._sendTransport = this._mediasoupDevice.createSendTransport({
         id: this.adapterRef.channelInfo.uid,
@@ -300,8 +273,7 @@ class Mediasoup extends EventEmitter {
         iceCandidates: undefined,
         dtlsParameters: undefined,
         sctpParameters: undefined,
-        iceServers: iceServersSender.length ? iceServersSender : iceServers,
-        iceTransportPolicy,
+        iceServers,
         appData: {
           cid: this.adapterRef.channelInfo.cid,
           uid: this.adapterRef.channelInfo.uid,
@@ -331,7 +303,7 @@ class Mediasoup extends EventEmitter {
         iceCandidates: undefined,
         dtlsParameters: undefined,
         sctpParameters: undefined,
-        iceServers: iceServersRecv.length ? iceServersRecv : iceServers,
+        iceServers,
         iceTransportPolicy,
         appData: {
           cid: this.adapterRef.channelInfo.cid,
@@ -679,16 +651,28 @@ class Mediasoup extends EventEmitter {
                 message: 'No _protoo 2'
               })
             }
-            const { code, transportId, iceParameters, iceCandidates, dtlsParameters, producerId } =
+            const { code, transportId, iceParameters, iceCandidates, turnParameters, dtlsParameters, producerId } =
               await this.adapterRef._signalling._protoo.request('Produce', producerData)
 
             if (transportId !== undefined) {
               this._sendTransport._id = transportId
             }
-            this.loggerSend.log(
-              `produce请求反馈结果, code: ${code}, kind: ${kind}, producerId:`,
-              producerId
-            )
+            this.loggerSend.log(`produce请求反馈结果, code: ${code}, kind: ${kind}, producerId: ${producerId}`)
+            if (turnParameters) { //服务器反馈turn server，sdk更新ice Server
+              let iceServers = [];
+              let iceTransportPolicy:RTCIceTransportPolicy = 'all';
+              iceServers.push({
+                urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=udp',
+                credential: turnParameters.password,
+                username: turnParameters.username
+              }, {
+                urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=tcp',
+                credential: turnParameters.password,
+                username: turnParameters.username
+              })
+              await this._sendTransport.updateIceServers({iceServers})
+            }
+  
 
             let codecInfo = { codecParam: null, codecName: null }
             if (appData.mediaType === 'audio') {
@@ -1415,6 +1399,7 @@ class Mediasoup extends EventEmitter {
       dtlsParameters,
       probeSSrc,
       rtpParameters,
+      turnParameters,
       producerId,
       consumerId,
       code,
@@ -1427,6 +1412,21 @@ class Mediasoup extends EventEmitter {
         consumeRes.requestId
       }, errMsg: ${errMsg}`
     )
+    if (turnParameters) { //服务器反馈turn server，sdk更新ice Server
+      let iceServers = [];
+      let iceTransportPolicy:RTCIceTransportPolicy = 'all';
+      iceServers.push({
+        urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=udp',
+        credential: turnParameters.password,
+        username: turnParameters.username
+      }, {
+        urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=tcp',
+        credential: turnParameters.password,
+        username: turnParameters.username
+      })
+      await this._recvTransport.updateIceServers({iceServers})
+    }
+
     // if (code === 200) {
     //   //this.loggerRecv.log(`[Subscribe] consume反馈结果: code: ${code} uid: ${uid}, mid: ${rtpParameters && rtpParameters.mid}, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${consumeRes.requestId}, errMsg: ${errMsg}`);
     // } else if (code === 601){
