@@ -100,7 +100,7 @@ class Record extends EventEmitter {
       })
       throw new RtcError({
         code: ErrorCode.INVALID_OPERATION,
-        message: '浏览器不支持本地录制'
+        message: 'start: media recording is not supported in this browser'
       })
     }
 
@@ -159,7 +159,7 @@ class Record extends EventEmitter {
       return Promise.reject(
         new RtcError({
           code: ErrorCode.RECORD_API_ERROR,
-          message: 'record api error'
+          message: 'start: record api error'
         })
       )
     }
@@ -195,8 +195,8 @@ class Record extends EventEmitter {
       if (!this._recorder) {
         return reject(
           new RtcError({
-            code: ErrorCode.NO_RECORDER_FOUND,
-            message: 'no record found'
+            code: ErrorCode.NOT_FOUND,
+            message: 'stop: record is not found'
           })
         )
       }
@@ -415,7 +415,8 @@ class Record extends EventEmitter {
         return reject(
           new RtcError({
             code: ErrorCode.NOT_DEFINED,
-            message: 'stream not defined'
+            message: '_format: stream not defined',
+            proposal: 'please make sure stream exists'
           })
         )
       }
@@ -478,8 +479,8 @@ class Record extends EventEmitter {
     if (!this._status.opStream) {
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.NOT_AVALIABLE,
-          message: 'no stream avaliable'
+          code: ErrorCode.NOT_AVAILABLE,
+          message: '_start: the stream is unavailable'
         })
       )
     }
@@ -565,7 +566,7 @@ class Record extends EventEmitter {
       return Promise.reject(
         new RtcError({
           code: ErrorCode.NOT_SUPPORT,
-          message: `Unsupported MIME type ${this._status.mimeType}`
+          message: `MIME type ${this._status.mimeType} is not support in this browser`
         })
       )
     }
@@ -573,7 +574,8 @@ class Record extends EventEmitter {
       return Promise.reject(
         new RtcError({
           code: ErrorCode.NOT_DEFINED,
-          message: 'record url is unfefined'
+          message: '_play: record url is unfefined',
+          proposal: 'please make sure record url exists'
         })
       )
     }

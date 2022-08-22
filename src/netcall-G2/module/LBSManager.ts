@@ -567,7 +567,7 @@ export class LBSManager {
             return reject(
               new RtcError({
                 code: ErrorCode.INVALID_PARAMETER,
-                message: 'could not send request due to invalid parameter'
+                message: 'LBS: could not send request due to invalid parameter'
               })
             )
           }

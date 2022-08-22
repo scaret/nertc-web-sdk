@@ -312,7 +312,7 @@ class Signalling extends EventEmitter {
     if (!this._protoo) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'No this._protoo 1'
+        message: '_bindEvent: _protoo is not found'
       })
     }
     this._protoo.on('open', this.join.bind(this))
@@ -533,8 +533,8 @@ class Signalling extends EventEmitter {
 
         if (!this.adapterRef._mediasoup) {
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASERVER,
-            message: 'media server error 22'
+            code: ErrorCode.NO_SERVER_ADDRESS,
+            message: 'OnProducerClose: media server error'
           })
         }
 
@@ -633,8 +633,8 @@ class Signalling extends EventEmitter {
         )
         if (!this.adapterRef._mediasoup) {
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASERVER,
-            message: 'media server error 23'
+            code: ErrorCode.NO_SERVER_ADDRESS,
+            message: 'OnTransportClose media server error'
           })
         }
         if (
@@ -659,7 +659,7 @@ class Signalling extends EventEmitter {
       //   )
       //   if (!this.adapterRef._mediasoup) {
       //     throw new RtcError({
-      //       code: ErrorCode.NO_MEDIASERVER,
+      //       code: ErrorCode.NO_SERVER_ADDRESS,
       //       message: 'media server error 24'
       //     })
       //   }
@@ -685,7 +685,7 @@ class Signalling extends EventEmitter {
         if (!this._protoo) {
           throw new RtcError({
             code: ErrorCode.NOT_FOUND,
-            message: 'No this._protoo 2'
+            message: 'OnSignalRestart: _protoo is not found'
           })
         }
         if (this._protoo.connected && this.adapterRef.connectState.curState === 'CONNECTED') {
@@ -825,7 +825,7 @@ class Signalling extends EventEmitter {
             let state = true
             const rtcError = new RtcError({
               code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-              message: 'ChangeRight audio is banned by server'
+              message: 'ChangeRight: audio is banned by server'
             })
             this.adapterRef.instance.safeEmit('audioVideoBanned', {
               rtcError,
@@ -841,7 +841,7 @@ class Signalling extends EventEmitter {
             let state = false
             const rtcError = new RtcError({
               code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-              message: 'ChangeRight audio is unbanned by server '
+              message: 'ChangeRight: audio is unbanned by server '
             })
             this.adapterRef.instance.safeEmit('audioVideoBanned', {
               rtcError,
@@ -859,7 +859,7 @@ class Signalling extends EventEmitter {
             let state = true
             const rtcError = new RtcError({
               code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-              message: 'ChangeRight video is banned by server'
+              message: 'ChangeRight: video is banned by server'
             })
             this.adapterRef.instance.safeEmit('audioVideoBanned', {
               rtcError,
@@ -875,7 +875,7 @@ class Signalling extends EventEmitter {
             let state = false
             const rtcError = new RtcError({
               code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-              message: 'ChangeRight video is unbanned by server'
+              message: 'ChangeRight: video is unbanned by server'
             })
             this.adapterRef.instance.safeEmit('audioVideoBanned', {
               rtcError,
@@ -1050,7 +1050,7 @@ class Signalling extends EventEmitter {
     if (!this._protoo) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'No this._protoo 3'
+        message: 'join: _protoo is not found'
       })
     }
 
@@ -1167,8 +1167,8 @@ class Signalling extends EventEmitter {
         this.adapterRef.instance.resetChannel()
         if (!this.adapterRef._mediasoup) {
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASERVER,
-            message: 'media server error 25'
+            code: ErrorCode.NO_SERVER_ADDRESS,
+            message: 'join: media server error 1'
           })
         }
         this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities
@@ -1213,8 +1213,8 @@ class Signalling extends EventEmitter {
         })
         if (!this.adapterRef._mediasoup) {
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASERVER,
-            message: 'media server error 26'
+            code: ErrorCode.NO_SERVER_ADDRESS,
+            message: 'join: media server error 2'
           })
         }
         this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities
@@ -1451,12 +1451,12 @@ class Signalling extends EventEmitter {
     if (!this._protoo) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'createRTSTransport: _protoo is null'
+        message: 'createRTSTransport: _protoo is not found'
       })
     } else if (!this._url) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'createRTSTransport: _url is null'
+        message: 'createRTSTransport: _url is not found'
       })
     }
 
@@ -1495,12 +1495,12 @@ class Signalling extends EventEmitter {
     if (!this._protoo) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'rtsRequestKeyFrame: no _proto'
+        message: 'rtsRequestKeyFrame: _proto is not found'
       })
     } else if (!consumerId) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'rtsRequestKeyFrame: no consumerId'
+        message: 'rtsRequestKeyFrame: consumerId is not found'
       })
     }
     try {

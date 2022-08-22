@@ -174,14 +174,14 @@ class RemoteStream extends RTCEventEmitter {
       if (options.uid > Number.MAX_SAFE_INTEGER) {
         throw new RtcError({
           code: ErrorCode.INVALID_PARAMETER,
-          message: 'uid is exceeds the scope of Number'
+          message: 'remoteStream: uid is exceeds the scope of Number'
         })
       }
     } else {
       this.logger.error('uid参数格式非法')
       throw new RtcError({
         code: ErrorCode.INVALID_PARAMETER,
-        message: 'uid is invalid'
+        message: 'remoteStream: uid is invalid'
       })
     }
     this.videoView = null
@@ -850,7 +850,8 @@ class RemoteStream extends RTCEventEmitter {
       return Promise.reject(
         new RtcError({
           code: ErrorCode.UNKNOWN_TYPE,
-          message: 'unknown type'
+          message: 'remoteStream.isPlaying: unknown type',
+          proposal: 'please make sure the parameter(type) is correct'
         })
       )
     }
@@ -883,7 +884,7 @@ class RemoteStream extends RTCEventEmitter {
       if (!this._play) {
         throw new RtcError({
           code: ErrorCode.NO_PLAY,
-          message: 'no play'
+          message: 'unmuteAudio: Play is not instantiated'
         })
       }
       this.muteStatus.audio.recv = false
@@ -931,7 +932,7 @@ class RemoteStream extends RTCEventEmitter {
       if (!this._play) {
         throw new RtcError({
           code: ErrorCode.NO_PLAY,
-          message: 'no play'
+          message: 'muteAudio: Play is not instantiated'
         })
       }
       this.muteStatus.audio.recv = true
@@ -978,7 +979,7 @@ class RemoteStream extends RTCEventEmitter {
       if (!this._play) {
         throw new RtcError({
           code: ErrorCode.NO_PLAY,
-          message: 'no play'
+          message: 'unmuteAudioSlave: Play is not instantiated'
         })
       }
       this.muteStatus.audioSlave.recv = false
@@ -1026,7 +1027,7 @@ class RemoteStream extends RTCEventEmitter {
       if (!this._play) {
         throw new RtcError({
           code: ErrorCode.NO_PLAY,
-          message: 'no play'
+          message: 'muteAudioSlave: Play is not instantiated'
         })
       }
       this.muteStatus.audioSlave.recv = true
@@ -1101,7 +1102,7 @@ class RemoteStream extends RTCEventEmitter {
       if (!this._play) {
         throw new RtcError({
           code: ErrorCode.NO_PLAY,
-          message: 'no play'
+          message: 'setAudioVolume: Play is not instantiated'
         })
       }
       this._play.setPlayVolume(volume)
@@ -1151,7 +1152,7 @@ class RemoteStream extends RTCEventEmitter {
       if (!this._play) {
         throw new RtcError({
           code: ErrorCode.NO_PLAY,
-          message: 'no play'
+          message: 'setAudioSlaveVolume: Play is not instantiated'
         })
       }
       this._play.setPlayAudioSlaveVolume(volume)
@@ -1240,13 +1241,14 @@ class RemoteStream extends RTCEventEmitter {
       if (!this._play) {
         throw new RtcError({
           code: ErrorCode.NO_PLAY,
-          message: 'no play'
+          message: 'unmuteVideo: Play is not instantiated'
         })
       }
       if (!this.videoView) {
         throw new RtcError({
-          code: ErrorCode.NO_MEDIAHELPER,
-          message: 'no this.view'
+          code: ErrorCode.NOT_AVAILABLE,
+          message: 'unmuteVideo: videoView is not exist',
+          proposal: 'please make sure videoView exists'
         })
       }
 
@@ -1296,7 +1298,7 @@ class RemoteStream extends RTCEventEmitter {
       if (!this._play) {
         throw new RtcError({
           code: ErrorCode.NO_PLAY,
-          message: 'no play'
+          message: 'muteVideo: Play is not instantiated'
         })
       }
       this.muteStatus.video.recv = true
@@ -1346,13 +1348,14 @@ class RemoteStream extends RTCEventEmitter {
       if (!this._play) {
         throw new RtcError({
           code: ErrorCode.NO_PLAY,
-          message: 'no play'
+          message: 'unmuteScreen: Play is not instantiated'
         })
       }
       if (!this.screenView) {
         throw new RtcError({
-          code: ErrorCode.NO_MEDIAHELPER,
-          message: 'no this.screenView'
+          code: ErrorCode.NOT_AVAILABLE,
+          message: 'unmuteScreen: screenView is not exist',
+          proposal: 'please make sure screenView exists'
         })
       }
       this.muteStatus.screen.recv = false
@@ -1401,7 +1404,7 @@ class RemoteStream extends RTCEventEmitter {
       if (!this._play) {
         throw new RtcError({
           code: ErrorCode.NO_PLAY,
-          message: 'no play'
+          message: 'muteScreen: Play is not instantiated'
         })
       }
       if (this.mediaHelper && this.mediaHelper.screen.screenVideoTrack) {
@@ -1465,7 +1468,7 @@ class RemoteStream extends RTCEventEmitter {
       if (!this._play) {
         throw new RtcError({
           code: ErrorCode.NO_PLAY,
-          message: 'no play'
+          message: 'takeSnapshot: Play is not instantiated'
         })
       }
       await this._play.takeSnapshot(options, this.streamID)
@@ -1510,7 +1513,7 @@ class RemoteStream extends RTCEventEmitter {
       if (!this._play) {
         throw new RtcError({
           code: ErrorCode.NO_PLAY,
-          message: 'no play'
+          message: 'takeSnapshotBase64: Play is not instantiated'
         })
       }
       let base64Url = this._play.takeSnapshotBase64(options)
@@ -1560,8 +1563,8 @@ class RemoteStream extends RTCEventEmitter {
     const streams = []
     if (!this.mediaHelper) {
       throw new RtcError({
-        code: ErrorCode.NO_MEDIAHELPER,
-        message: 'no media helper'
+        code: ErrorCode.NOT_AVAILABLE,
+        message: 'startMediaRecording: no media helper'
       })
     }
     switch (options.type) {
@@ -1613,7 +1616,7 @@ class RemoteStream extends RTCEventEmitter {
     if (!this._record) {
       throw new RtcError({
         code: ErrorCode.NO_RECORD,
-        message: 'no record'
+        message: 'stopMediaRecording: no record'
       })
     }
     //FIXME
@@ -1633,7 +1636,7 @@ class RemoteStream extends RTCEventEmitter {
     if (!this._record) {
       throw new RtcError({
         code: ErrorCode.NO_RECORD,
-        message: 'no record'
+        message: 'playMediaRecording: no record'
       })
     }
     return this._record.play(options.view)
@@ -1649,7 +1652,7 @@ class RemoteStream extends RTCEventEmitter {
     if (!this._record) {
       throw new RtcError({
         code: ErrorCode.NO_RECORD,
-        message: 'no record'
+        message: 'listMediaRecording: no record'
       })
     }
     const recordStatus = this._record.getRecordStatus()
@@ -1670,7 +1673,7 @@ class RemoteStream extends RTCEventEmitter {
     if (!this._record) {
       throw new RtcError({
         code: ErrorCode.NO_RECORD,
-        message: 'no record'
+        message: 'cleanMediaRecording: no record'
       })
     }
     return this._record.clean()
@@ -1688,7 +1691,7 @@ class RemoteStream extends RTCEventEmitter {
     if (!this._record) {
       throw new RtcError({
         code: ErrorCode.NO_RECORD,
-        message: 'no record'
+        message: 'downloadMediaRecording: no record'
       })
     }
     return this._record.download()
@@ -1741,7 +1744,7 @@ class RemoteStream extends RTCEventEmitter {
         )
         throw new RtcError({
           code: ErrorCode.INVALID_PARAMETER,
-          message: 'watermark exceeds limit'
+          message: 'setCanvasWatermarkConfigs: text watermark exceeds limit'
         })
       }
       if (options.imageWatermarks && options.imageWatermarks.length > LIMITS.IMAGE) {
@@ -1750,7 +1753,7 @@ class RemoteStream extends RTCEventEmitter {
         )
         throw new RtcError({
           code: ErrorCode.INVALID_PARAMETER,
-          message: 'watermark exceeds limit'
+          message: 'setCanvasWatermarkConfigs: image watermark exceeds limit'
         })
       }
       watermarkControl.checkWatermarkParams(options)

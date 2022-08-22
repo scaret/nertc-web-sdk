@@ -36,7 +36,7 @@ class RTSTransport extends EventEmitter {
     if (!this._url) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'RTSTransport: No _url'
+        message: 'initSocket: url of RTSTransport is not found'
       })
     }
     this._ws = new WebSocket(this._url, ['protoo'])

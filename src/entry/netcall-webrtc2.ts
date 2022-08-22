@@ -164,7 +164,7 @@ export const NERTC = {
       if (!options.screen) {
         throw new RtcError({
           code: ErrorCode.INVALID_OPERATION,
-          message: 'createStream:screenAudio要与screen一起开启'
+          message: 'createStream: screenAudio should be open together with screen'
         })
       }
     }

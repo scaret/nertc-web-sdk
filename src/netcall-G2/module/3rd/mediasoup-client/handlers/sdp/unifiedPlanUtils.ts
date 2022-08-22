@@ -18,7 +18,7 @@ export function getRtpEncodings({
   if (ssrcs.size === 0) {
     throw new RtcError({
       code: ErrorCode.NOT_FOUND,
-      message: 'no a=ssrc lines found'
+      message: 'getRtpEncodings: no a=ssrc lines found'
     })
   }
 
@@ -82,7 +82,7 @@ export function addLegacySimulcast({
   if (!ssrcMsidLine) {
     throw new RtcError({
       code: ErrorCode.NOT_FOUND,
-      message: 'a=ssrc line with msid information not found'
+      message: 'addLegacySimulcast: a=ssrc line with msid information is not found'
     })
   }
 
@@ -110,7 +110,7 @@ export function addLegacySimulcast({
   if (!ssrcCnameLine) {
     throw new RtcError({
       code: ErrorCode.NOT_FOUND,
-      message: 'a=ssrc line with cname information not found'
+      message: 'addLegacySimulcast: a=ssrc line with cname information is not found'
     })
   }
 

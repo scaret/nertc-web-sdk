@@ -44,7 +44,7 @@ function ajax(option: AjaxOptions) {
     return Promise.reject(
       new RtcError({
         code: ErrorCode.INVALID_PARAMETER,
-        message: 'could not send request due to invalid parameter'
+        message: 'ajax1: could not send request due to invalid parameter'
       })
     )
   }
@@ -71,7 +71,7 @@ function ajax(option: AjaxOptions) {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.INVALID_PARAMETER,
-            message: 'could not send request due to invalid parameter'
+            message: 'ajax2: could not send request due to invalid parameter'
           })
         )
       }

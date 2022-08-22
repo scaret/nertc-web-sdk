@@ -225,19 +225,22 @@ class Mediasoup extends EventEmitter {
 
     if (this.adapterRef.channelInfo.relaytoken && this.adapterRef.channelInfo.relayaddrs) {
       this.adapterRef.channelInfo.relayaddrs.forEach((item: string) => {
-        iceServers.push({
-          urls: 'turn:' + item + '?transport=udp',
-          credential:
-            this.adapterRef.proxyServer.credential ||
-            this.adapterRef.channelInfo.uid + '/' + this.adapterRef.channelInfo.cid,
-          username: this.adapterRef.channelInfo.relaytoken
-        }, {
-          urls: 'turn:' + item + '?transport=tcp',
-          credential:
-            this.adapterRef.proxyServer.credential ||
-            this.adapterRef.channelInfo.uid + '/' + this.adapterRef.channelInfo.cid,
-          username: this.adapterRef.channelInfo.relaytoken
-        })
+        iceServers.push(
+          {
+            urls: 'turn:' + item + '?transport=udp',
+            credential:
+              this.adapterRef.proxyServer.credential ||
+              this.adapterRef.channelInfo.uid + '/' + this.adapterRef.channelInfo.cid,
+            username: this.adapterRef.channelInfo.relaytoken
+          },
+          {
+            urls: 'turn:' + item + '?transport=tcp',
+            credential:
+              this.adapterRef.proxyServer.credential ||
+              this.adapterRef.channelInfo.uid + '/' + this.adapterRef.channelInfo.cid,
+            username: this.adapterRef.channelInfo.relaytoken
+          }
+        )
       })
       //firefox浏览器在relay模式（存在bug）
       if (!env.IS_FIREFOX) {
@@ -473,7 +476,7 @@ class Mediasoup extends EventEmitter {
     if (!this._sendTransport) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'No send trasnport 1'
+        message: 'createProduce: send transport is not found 1'
       })
     }
 
@@ -486,7 +489,7 @@ class Mediasoup extends EventEmitter {
           if (!this._sendTransport) {
             throw new RtcError({
               code: ErrorCode.NOT_FOUND,
-              message: 'No send trasnport 2'
+              message: 'createProduce: send transport is not found 2'
             })
           }
           const mediaTypeShort: MediaTypeShort =
@@ -648,31 +651,43 @@ class Mediasoup extends EventEmitter {
             if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
               throw new RtcError({
                 code: ErrorCode.NOT_FOUND,
-                message: 'No _protoo 2'
+                message: 'createProduce: _protoo is not found'
               })
             }
-            const { code, transportId, iceParameters, iceCandidates, turnParameters, dtlsParameters, producerId } =
-              await this.adapterRef._signalling._protoo.request('Produce', producerData)
+            const {
+              code,
+              transportId,
+              iceParameters,
+              iceCandidates,
+              turnParameters,
+              dtlsParameters,
+              producerId
+            } = await this.adapterRef._signalling._protoo.request('Produce', producerData)
 
             if (transportId !== undefined) {
               this._sendTransport._id = transportId
             }
-            this.loggerSend.log(`produce请求反馈结果, code: ${code}, kind: ${kind}, producerId: ${producerId}`)
-            if (turnParameters) { //服务器反馈turn server，sdk更新ice Server
-              let iceServers = [];
-              let iceTransportPolicy:RTCIceTransportPolicy = 'all';
-              iceServers.push({
-                urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=udp',
-                credential: turnParameters.password,
-                username: turnParameters.username
-              }, {
-                urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=tcp',
-                credential: turnParameters.password,
-                username: turnParameters.username
-              })
-              await this._sendTransport.updateIceServers({iceServers})
+            this.loggerSend.log(
+              `produce请求反馈结果, code: ${code}, kind: ${kind}, producerId: ${producerId}`
+            )
+            if (turnParameters) {
+              //服务器反馈turn server，sdk更新ice Server
+              let iceServers = []
+              let iceTransportPolicy: RTCIceTransportPolicy = 'all'
+              iceServers.push(
+                {
+                  urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=udp',
+                  credential: turnParameters.password,
+                  username: turnParameters.username
+                },
+                {
+                  urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=tcp',
+                  credential: turnParameters.password,
+                  username: turnParameters.username
+                }
+              )
+              await this._sendTransport.updateIceServers({ iceServers })
             }
-  
 
             let codecInfo = { codecParam: null, codecName: null }
             if (appData.mediaType === 'audio') {
@@ -703,8 +718,9 @@ class Mediasoup extends EventEmitter {
             }
             if (!this.adapterRef.localStream) {
               throw new RtcError({
-                code: ErrorCode.NO_LOCALSTREAM,
-                message: 'localStream not found'
+                code: ErrorCode.NOT_FOUND,
+                message: 'createProduce: localStream not found',
+                proposal: 'please make sure localStream exists'
               })
             }
             let codecOptions: ProducerCodecOptions[] = []
@@ -1027,8 +1043,9 @@ class Mediasoup extends EventEmitter {
       this._micProducer = this._micProducerId = null
       if (!this.adapterRef.localStream) {
         throw new RtcError({
-          code: ErrorCode.NO_LOCALSTREAM,
-          message: 'localStream not found'
+          code: ErrorCode.NOT_FOUND,
+          message: 'destroyProduce audio: localStream is not found',
+          proposal: 'please make sure localStream exists'
         })
       }
       this.adapterRef.localStream.pubStatus.audio.audio = false
@@ -1038,8 +1055,9 @@ class Mediasoup extends EventEmitter {
       this._audioSlaveProducer = this._audioSlaveProducerId = null
       if (!this.adapterRef.localStream) {
         throw new RtcError({
-          code: ErrorCode.NO_LOCALSTREAM,
-          message: 'localStream not found'
+          code: ErrorCode.NOT_FOUND,
+          message: 'destroyProduce audioSlave: localStream not found',
+          proposal: 'please make sure localStream exists'
         })
       }
       this.adapterRef.localStream.pubStatus.audioSlave.audio = false
@@ -1049,8 +1067,9 @@ class Mediasoup extends EventEmitter {
       this._webcamProducer = this._webcamProducerId = null
       if (!this.adapterRef.localStream) {
         throw new RtcError({
-          code: ErrorCode.NO_LOCALSTREAM,
-          message: 'localStream not found'
+          code: ErrorCode.NOT_FOUND,
+          message: 'destroyProduce video: localStream not found',
+          proposal: 'please make sure localStream exists'
         })
       }
       this.adapterRef.localStream.pubStatus.video.video = false
@@ -1060,8 +1079,9 @@ class Mediasoup extends EventEmitter {
       this._screenProducer = this._screenProducerId = null
       if (!this.adapterRef.localStream) {
         throw new RtcError({
-          code: ErrorCode.NO_LOCALSTREAM,
-          message: 'localStream not found'
+          code: ErrorCode.NOT_FOUND,
+          message: 'destroyProduce screen: localStream not found',
+          proposal: 'please make sure localStream exists'
         })
       }
       this.adapterRef.localStream.pubStatus.screen.screen = false
@@ -1132,7 +1152,7 @@ class Mediasoup extends EventEmitter {
     if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'No _protoo'
+        message: 'setConsumerPreferredLayer: _protoo is not found'
       })
     }
     this.loggerSend.log(
@@ -1252,8 +1272,8 @@ class Mediasoup extends EventEmitter {
           remoteStream.pubStatus[mediaTypeShort].stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup) {
             throw new RtcError({
-              code: ErrorCode.NO_MEDIASERVER,
-              message: 'media server error 21'
+              code: ErrorCode.NO_SERVER_ADDRESS,
+              message: '_createConsumer: media server error'
             })
           }
           await this.destroyConsumer(remoteStream.pubStatus.audio.consumerId, null, null)
@@ -1282,7 +1302,7 @@ class Mediasoup extends EventEmitter {
       info.resolve(null)
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'No receive transport'
+        message: '_createConsumer: receive transport is not found'
       })
     }
 
@@ -1319,7 +1339,7 @@ class Mediasoup extends EventEmitter {
     if (!iceUfragRegRemote) {
       throw new RtcError({
         code: ErrorCode.UNKNOWN,
-        message: 'iceUfragRegRemote is null'
+        message: '_createConsumer: iceUfragRegRemote is null'
       })
     }
 
@@ -1362,7 +1382,7 @@ class Mediasoup extends EventEmitter {
       info.resolve(null)
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'No _protoo 4'
+        message: '_createConsumer: _protoo is not found'
       })
     }
     const recvPC = this._recvTransport.handler._pc
@@ -1389,7 +1409,7 @@ class Mediasoup extends EventEmitter {
       }
       throw new RtcError({
         code: ErrorCode.UNKNOWN,
-        message: e.message
+        message: `_createConsumer: ${e.message}`
       })
     }
     let {
@@ -1412,19 +1432,23 @@ class Mediasoup extends EventEmitter {
         consumeRes.requestId
       }, errMsg: ${errMsg}`
     )
-    if (turnParameters) { //服务器反馈turn server，sdk更新ice Server
-      let iceServers = [];
-      let iceTransportPolicy:RTCIceTransportPolicy = 'all';
-      iceServers.push({
-        urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=udp',
-        credential: turnParameters.password,
-        username: turnParameters.username
-      }, {
-        urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=tcp',
-        credential: turnParameters.password,
-        username: turnParameters.username
-      })
-      await this._recvTransport.updateIceServers({iceServers})
+    if (turnParameters) {
+      //服务器反馈turn server，sdk更新ice Server
+      let iceServers = []
+      let iceTransportPolicy: RTCIceTransportPolicy = 'all'
+      iceServers.push(
+        {
+          urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=udp',
+          credential: turnParameters.password,
+          username: turnParameters.username
+        },
+        {
+          urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=tcp',
+          credential: turnParameters.password,
+          username: turnParameters.username
+        }
+      )
+      await this._recvTransport.updateIceServers({ iceServers })
     }
 
     // if (code === 200) {
@@ -1550,8 +1574,8 @@ class Mediasoup extends EventEmitter {
         }
         if (!remoteStream.mediaHelper) {
           throw new RtcError({
-            code: ErrorCode.NO_MEDIAHELPER,
-            message: 'No remoteStream.mediaHelper'
+            code: ErrorCode.NOT_AVAILABLE,
+            message: '_createConsumer: No remoteStream.mediaHelper'
           })
         }
         remoteStream.mediaHelper.updateStream(mediaTypeShort, consumer.track)
@@ -1601,7 +1625,7 @@ class Mediasoup extends EventEmitter {
     if (!this.adapterRef._rtsTransport) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: '_createConsumerRts: _rtsTransport is null'
+        message: '_createConsumerRts: _rtsTransport is not found'
       })
     } else if (
       !this.adapterRef._signalling ||
@@ -1610,7 +1634,7 @@ class Mediasoup extends EventEmitter {
     ) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: '_createConsumerRts: _protoo is null'
+        message: '_createConsumerRts: _protoo is not found'
       })
     } else if (
       mediaTypeShort !== 'audio' &&
@@ -1619,7 +1643,8 @@ class Mediasoup extends EventEmitter {
     ) {
       throw new RtcError({
         code: ErrorCode.UNKNOWN_TYPE,
-        message: '_createConsumerRts: mediaType type error'
+        message: '_createConsumerRts: mediaType type error',
+        proposal: 'please make sure mediaType is correct'
       })
     }
 
@@ -1673,7 +1698,7 @@ class Mediasoup extends EventEmitter {
       info.resolve(null)
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'No _protoo 5'
+        message: '_createConsumerRts: _protoo is not found 2'
       })
     }
     const consumeRes = await this.adapterRef._signalling._protoo.request('WsConsume', data)
@@ -1777,7 +1802,7 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: 'No _protoo 7'
+          message: 'closeTransport: _protoo is not found'
         })
       }
       const result = await this.adapterRef._signalling._protoo.request('CloseTransport', {
@@ -1798,7 +1823,7 @@ class Mediasoup extends EventEmitter {
     if (!this._micProducer) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'No _micProducer'
+        message: 'muteAudio: _micProducer is not found'
       })
     }
     this._micProducer.pause()
@@ -1806,7 +1831,7 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: 'No _protoo 8'
+          message: 'muteAudio: _protoo is not found'
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
@@ -1835,7 +1860,7 @@ class Mediasoup extends EventEmitter {
     if (!this._micProducer) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'No _micProducer'
+        message: 'unmuteAudio: _micProducer is not found'
       })
     }
     this._micProducer.resume()
@@ -1843,7 +1868,7 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: 'No _protoo 9'
+          message: 'unmuteAudio: _protoo is not found'
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
@@ -1873,7 +1898,7 @@ class Mediasoup extends EventEmitter {
     if (!this._audioSlaveProducer) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'No _audioSlaveProducer'
+        message: 'muteAudioSlave: _audioSlaveProducer is not found'
       })
     }
     this._audioSlaveProducer.pause()
@@ -1881,7 +1906,7 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: 'No _protoo 8'
+          message: 'muteAudioSlave: _protoo is not found'
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
@@ -1910,7 +1935,7 @@ class Mediasoup extends EventEmitter {
     if (!this._audioSlaveProducer) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'No _audioSlaveProducer'
+        message: 'unmuteAudioSlave: _audioSlaveProducer is not found'
       })
     }
     this._audioSlaveProducer.resume()
@@ -1918,7 +1943,7 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: 'No _protoo 9'
+          message: 'unmuteAudioSlave: _protoo is not found'
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
@@ -1948,7 +1973,7 @@ class Mediasoup extends EventEmitter {
     if (!this._webcamProducer) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'No _webcamProducer'
+        message: 'muteVideo: _webcamProducer is not found'
       })
     }
     this._webcamProducer.pause()
@@ -1956,7 +1981,7 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: 'No _protoo 10'
+          message: 'muteVideo: _protoo is not found'
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
@@ -1985,7 +2010,7 @@ class Mediasoup extends EventEmitter {
     if (!this._webcamProducer) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'No _webcamProducer'
+        message: 'unmuteVideo: _webcamProducer is not found'
       })
     }
     this._webcamProducer.resume()
@@ -1993,7 +2018,7 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: 'No _protoo 11'
+          message: 'unmuteVideo: _protoo is not found'
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
@@ -2022,7 +2047,7 @@ class Mediasoup extends EventEmitter {
     if (!this._screenProducer) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'No _screenProducer 1'
+        message: 'muteScreen: _screenProducer is not found'
       })
     }
     this._screenProducer.pause()
@@ -2030,7 +2055,7 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: 'No _protoo 12'
+          message: 'muteScreen: _protoo is not found'
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
@@ -2059,7 +2084,7 @@ class Mediasoup extends EventEmitter {
     if (!this._screenProducer) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'No _screenProducer 2'
+        message: 'unmuteScreen: _screenProducer is not found'
       })
     }
     this._screenProducer.resume()
@@ -2067,7 +2092,7 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: 'No _protoo 13'
+          message: 'unmuteScreen: _protoo is not found'
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
@@ -2097,7 +2122,7 @@ class Mediasoup extends EventEmitter {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: 'No _protoo 14'
+          message: 'updateUserRole: _protoo is not found'
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid

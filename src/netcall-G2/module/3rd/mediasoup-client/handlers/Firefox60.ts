@@ -401,7 +401,7 @@ export class Firefox60 extends HandlerInterface {
     if (!offerMediaObject) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'offerMediaObject with track id not found: ' + track.id
+        message: 'send: offerMediaObject with track id is not found: ' + track.id
       })
     }
 
@@ -417,7 +417,7 @@ export class Firefox60 extends HandlerInterface {
     if (!localId) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'No localId'
+        message: 'send: localId is not found'
       })
     }
 
@@ -603,7 +603,7 @@ export class Firefox60 extends HandlerInterface {
     if (!transceiver) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'associated RTCRtpTransceiver not found'
+        message: 'stopSending: associated RTCRtpTransceiver is not found'
       })
     }
 
@@ -682,7 +682,7 @@ export class Firefox60 extends HandlerInterface {
     if (!transceiver) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'associated RTCRtpTransceiver not found'
+        message: 'replaceTrack: associated RTCRtpTransceiver is not found'
       })
     }
 
@@ -704,7 +704,7 @@ export class Firefox60 extends HandlerInterface {
     if (!transceiver) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'associated RTCRtpTransceiver not found'
+        message: 'setMaxSpatialLayer: associated RTCRtpTransceiver is not found'
       })
     }
 
@@ -734,7 +734,7 @@ export class Firefox60 extends HandlerInterface {
     if (!transceiver) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'associated RTCRtpTransceiver not found'
+        message: 'setRtpEncodingParameters: associated RTCRtpTransceiver is not found'
       })
     }
 
@@ -757,7 +757,7 @@ export class Firefox60 extends HandlerInterface {
     if (!transceiver) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'associated RTCRtpTransceiver not found'
+        message: 'getSenderStats: associated RTCRtpTransceiver is not found'
       })
     }
 
@@ -934,7 +934,7 @@ export class Firefox60 extends HandlerInterface {
     if (!transceiver) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'new RTCRtpTransceiver not found'
+        message: 'receive: new RTCRtpTransceiver is not found'
       })
     }
 
@@ -958,7 +958,7 @@ export class Firefox60 extends HandlerInterface {
     if (!transceiver || !transceiver.mid) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'associated RTCRtpTransceiver not found'
+        message: 'stopReceiving: associated RTCRtpTransceiver is not found'
       })
     }
     if (
@@ -1007,7 +1007,7 @@ export class Firefox60 extends HandlerInterface {
     if (!transceiver) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'associated RTCRtpTransceiver not found'
+        message: 'getReceiverStats: associated RTCRtpTransceiver is not found'
       })
     }
 
@@ -1044,7 +1044,8 @@ export class Firefox60 extends HandlerInterface {
     if (this._direction !== 'send') {
       throw new RtcError({
         code: ErrorCode.INVALID_OPERATION,
-        message: 'method can just be called for handlers with "send" direction'
+        message:
+          '_assertSendDirection: method can just be called for handlers with "send" direction'
       })
     }
   }
@@ -1053,7 +1054,8 @@ export class Firefox60 extends HandlerInterface {
     if (this._direction !== 'recv') {
       throw new RtcError({
         code: ErrorCode.INVALID_OPERATION,
-        message: 'method can just be called for handlers with "recv" direction'
+        message:
+          '_assertRecvDirection: method can just be called for handlers with "recv" direction'
       })
     }
   }
