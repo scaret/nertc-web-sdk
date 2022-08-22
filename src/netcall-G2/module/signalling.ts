@@ -1174,9 +1174,7 @@ class Signalling extends EventEmitter {
         this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities
         this.adapterRef.mediaCapability.parseRoom(response.externData.roomCapability)
         this.adapterRef.instance.safeEmit('@mediaCapabilityChange')
-        await this.adapterRef._mediasoup.init(
-          response.supportTurn ? response.turnParameters : undefined
-        )
+        await this.adapterRef._mediasoup.init()
         if (this.adapterRef.localStream) {
           if (
             this.adapterRef.localStream.audio ||
@@ -1222,9 +1220,7 @@ class Signalling extends EventEmitter {
         this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities
         this.adapterRef.mediaCapability.parseRoom(response.externData.roomCapability)
         this.adapterRef.instance.safeEmit('@mediaCapabilityChange')
-        await this.adapterRef._mediasoup.init(
-          response.supportTurn ? response.turnParameters : undefined
-        )
+        await this.adapterRef._mediasoup.init()
       }
 
       this.adapterRef.instance.safeEmit('connection-state-change', this.adapterRef.connectState)
