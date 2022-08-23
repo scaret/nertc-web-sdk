@@ -25,6 +25,7 @@ class mHumanSegmenter {
     }
 
     async process(frame, width, height) {
+      try {
         if (!this.initMem || width !== this.width || height !== this.height) {
             if (this.inputPtr != null) {
                 Module._free(this.inputPtr);
@@ -39,6 +40,10 @@ class mHumanSegmenter {
         this.mHumanSegmenter.process(this.inputPtr, this.width, this.height);
         const faceData = this.getFacePoints();
         this.handleFacePointsData(faceData);
+      } catch (e) {
+        console.error(e)
+        this.handleFacePointsData(new Uint16Array());
+      }
     }
 
     getFaceBox(box, threshold, smooth) {

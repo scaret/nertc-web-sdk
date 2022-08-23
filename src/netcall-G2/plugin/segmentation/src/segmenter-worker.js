@@ -23,6 +23,7 @@ class mHumanSegmenter {
     }
 
     async process(frame, width, height) {
+      try {
         if (!this.initMem || width !== this.width || height !== this.height) {
             if (this.inputPtr != null) {
                 Module._free(this.inputPtr);
@@ -44,6 +45,10 @@ class mHumanSegmenter {
         let result = Module.HEAPU8.subarray(this.outputPtr, this.outputPtr + 256 * 256);
         this.segment_mask.data.set(this.alphaToImageData(result))
         this.handleMaskData(this.segment_mask);
+      } catch (e) {
+        console.error(e)
+        this.handleMaskData(new Uint8ClampedArray());
+      }
     }
 
     alphaToImageData(data) {
