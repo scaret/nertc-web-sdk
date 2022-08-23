@@ -41,8 +41,8 @@ class mHumanSegmenter {
         const faceData = this.getFacePoints();
         this.handleFacePointsData(faceData);
       } catch (e) {
-        console.error(e)
         this.handleFacePointsData(new Uint16Array());
+        global.postMessage({type: 'error', message: `AdvancedBeauty wasm error: ${e.message}`});
       }
     }
 

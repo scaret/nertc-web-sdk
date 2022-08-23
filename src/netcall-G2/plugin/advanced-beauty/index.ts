@@ -71,6 +71,8 @@ class AdvancedBeauty extends EventEmitter {
                         this.advancedBeautyWorker.terminate();
                         this.advancedBeautyWorker = null;
                     }
+                    case 'error':
+                        this.emit('error', data.message);
                     break;
             }
         });

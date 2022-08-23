@@ -45,7 +45,7 @@ export default class VideoPostProcess extends EventEmitter {
     }
 
     // 初始化视频滤镜管线
-    filters: Filters = new Filters();
+    filters: Filters | null = null;
     // 视频源
     video: HTMLVideoElement | null = null;
     // 帧率
@@ -69,6 +69,13 @@ export default class VideoPostProcess extends EventEmitter {
     constructor(logger: ILogger){
         super();
         this.logger = logger;
+        try {
+            this.filters = new Filters();   
+        } catch (error) {}
+    }
+
+    get available(){
+        return this.filters ? true : false;
     }
 
     private get taskReady(){
@@ -142,9 +149,9 @@ export default class VideoPostProcess extends EventEmitter {
                 this.trackInstance = null;
             }
             if(settings.width && settings.height){
-                this.filters.setSize(settings.width, settings.height);
+                this.filters?.setSize(settings.width, settings.height);
             }
-            const stream = (<any>this.filters.canvas).captureStream(this.frameRate);
+            const stream = (<any>this.filters?.canvas).captureStream(this.frameRate);
             this.trackInstance = stream.getVideoTracks()[0];
 
             // 初始化 video，以供管线获取 imageData
@@ -154,13 +161,13 @@ export default class VideoPostProcess extends EventEmitter {
 
             const resizeHandler = (video: HTMLVideoElement)=>{
                 const { videoWidth: width, videoHeight: height } = video!;
-                this.filters.setSize(width, height);
+                this.filters?.setSize(width, height);
             }
 
             this.video.onloadedmetadata = () => {
                 this.video!.play()
                     .then(() => {
-                        this.filters.mapSource = this.video;
+                        this.filters!.mapSource = this.video;
                         resizeHandler(this.video!);
                         resolve(0);
                     })
@@ -186,6 +193,7 @@ export default class VideoPostProcess extends EventEmitter {
     private frameCount = [0, 0];
     // task render loop
     update = (updateFrameCount = true) => {
+        if(!this.filters) return;
         if(env.IS_ANY_SAFARI && document.visibilityState === 'hidden'){
             return;
         }
@@ -247,13 +255,14 @@ export default class VideoPostProcess extends EventEmitter {
                     if(width > 16 && height > 16){
                         // 背景替换推理
                         plugin.process(needCopy ? this.sourceMap!.slice() : this.sourceMap!, width, height, (result)=>{
-                            this.maskData = this.taskSet.has('VirtualBackground') ? result : null;
+                            const len = (result.data || result).length;
+                            this.maskData = this.taskSet.has('VirtualBackground') ? (len > 0 ? result : null) : null;
                             this.readyTaskSet.add('VirtualBackground');
                             if(this.frameCount[1] < this.frameCount[0]){
                                 this.updateTimer();
                                 this.update(false);
                             }
-                        }, env.IS_CHROME && env.CHROME_MAJOR_VERSION===104);
+                        }, env.IS_CHROME && (env.CHROME_MAJOR_VERSION || 0)>=104);
                     }else{
                         this.readyTaskSet.add('VirtualBackground');
                     }
@@ -275,7 +284,7 @@ export default class VideoPostProcess extends EventEmitter {
                             this.updateTimer();
                             this.update(false);
                         }
-                    }, env.IS_CHROME && env.CHROME_MAJOR_VERSION===104);
+                    }, env.IS_CHROME && (env.CHROME_MAJOR_VERSION || 0)>=104); 
                 }
             }
         }
@@ -291,6 +300,9 @@ export default class VideoPostProcess extends EventEmitter {
 
     setTaskAndTrack = (task: TaskType, isEnable: boolean, track?: MediaStreamTrack)=>{
         return new Promise((resolve, reject)=>{
+            if(!this.filters){
+                return reject('The current runtime environment does not support webgl.');
+            }
             if(isEnable){
                 if(this.hasTask(task)){
                     this.logger.log(`${task} already opened`);

@@ -46,8 +46,8 @@ class mHumanSegmenter {
         this.segment_mask.data.set(this.alphaToImageData(result))
         this.handleMaskData(this.segment_mask);
       } catch (e) {
-        console.error(e)
         this.handleMaskData(new Uint8ClampedArray());
+        global.postMessage({type: 'error', message: `VirtualBackground wasm error: ${e.message}`});
       }
     }
 

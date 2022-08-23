@@ -70,6 +70,8 @@ class Segmentation extends EventEmitter {
                         this.segmentWorker.terminate();
                         this.segmentWorker = null;
                     }
+                case 'error':
+                    this.emit('error', data.message);
                     break;
             }
         });

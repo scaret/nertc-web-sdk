@@ -3571,11 +3571,17 @@ class LocalStream extends RTCEventEmitter {
 
   // 配置基础美颜静态资源地址
   basicBeautyStaticRes: typeof BasicBeauty.configStaticRes = (config)=>{
+    if(!this.videoPostProcess.available){
+      return this.logger.error('The current environment does not support webgl');
+    };
     BasicBeauty.configStaticRes(config);
   }
 
   // 配置高级美颜静态资源地址
   advBeautyStaticRes:typeof AdvancedBeauty.configStaticRes = (config)=>{
+    if(!this.videoPostProcess.available){
+      return this.logger.error('The current environment does not support webgl');
+    };
     AdvancedBeauty.configStaticRes(config);
   }
   /**
@@ -3586,6 +3592,7 @@ class LocalStream extends RTCEventEmitter {
    */
 
    setBeautyEffectOptions(effects:BeautyEffectOptions) {
+    if(!this.videoPostProcess.available) return;
     this.lastEffects = {...this.lastEffects, ...effects};
     this.basicBeauty.setBeautyOptions(effects);
   }
@@ -3598,8 +3605,10 @@ class LocalStream extends RTCEventEmitter {
    */
 
    async setBeautyEffect(isStart:boolean, isAuto = false){
+    if(!this.videoPostProcess.available){
+      return this.logger.error('The current environment does not support webgl');
+    };
     const basicBeauty  = this.basicBeauty;
-
     if(!isAuto){
       if(isStart && basicBeauty.isEnable){
         return Promise.reject(
@@ -3681,6 +3690,7 @@ class LocalStream extends RTCEventEmitter {
    *  @param {Void}
    */
    setFilter(options:string|null, intensity?:number) {
+    if(!this.videoPostProcess.available) return;
     // intensity不填写就是默认值
     this.lastFilter = options;
     this.logger.log('setFilter() set beauty filter', options, intensity);
@@ -3690,6 +3700,9 @@ class LocalStream extends RTCEventEmitter {
     //打开背景分割
     async enableBodySegment() {
       this.logger.log("enableBodySegment() 开启背景分割功能");
+      if(!this.videoPostProcess.available){
+        return this.logger.error('The current environment does not support webgl');
+      };
       if(!this.videoPostProcess.getPlugin('VirtualBackground')){
         return Promise.reject(
           new RtcError({
@@ -3728,6 +3741,9 @@ class LocalStream extends RTCEventEmitter {
     //关闭背景分割
     async disableBodySegment() {
       this.logger.log("disableBodySegment() 关闭背景分割功能");
+      if(!this.videoPostProcess.available){
+        return this.logger.error('The current environment does not support webgl');
+      };
       if(this._segmentProcessor) {
         await this._cancelBodySegment();
         this._segmentProcessor.destroy();
@@ -3750,6 +3766,7 @@ class LocalStream extends RTCEventEmitter {
     }
   
     async _startBodySegment() {  
+      if(!this.videoPostProcess.available) return;
       if(this._segmentProcessor){
         this.logger.log("_startBodySegment() 打开背景分割功能");
         await this.transformTrack(true, this._segmentProcessor);
@@ -3758,6 +3775,7 @@ class LocalStream extends RTCEventEmitter {
     }
   
     async _cancelBodySegment() {
+      if(!this.videoPostProcess.available) return;
       this.logger.log("_cancelBodySegment() 取消背景分割功能");
       this.videoPostProcessTags.isBodySegmentTrack = false;  
       if(this._segmentProcessor){
@@ -3767,6 +3785,7 @@ class LocalStream extends RTCEventEmitter {
     
     // 设置背景
     setBackGround(options: BackGroundOptions) {
+      if(!this.videoPostProcess.available) return;
       if(this.virtualBackground) {
         this.logger.log('setBackGround() options: ', options)
         this.virtualBackground.setVirtualBackGround(options);
@@ -3784,6 +3803,9 @@ class LocalStream extends RTCEventEmitter {
     // 开启高级美颜
     async enableAdvancedBeauty(faceSize?:number) {
       this.logger.log("enableAdvancedBeauty() 开启高级美颜功能");
+      if(!this.videoPostProcess.available){
+        return this.logger.error('The current environment does not support webgl');
+      };
       if(!this.videoPostProcess.getPlugin('AdvancedBeauty')){
         return Promise.reject(
           new RtcError({
@@ -3822,6 +3844,9 @@ class LocalStream extends RTCEventEmitter {
     // 关闭高级美颜
     async disableAdvancedBeauty() {
       this.logger.log("disableAdvancedBeauty() 关闭高级美颜功能");
+      if(!this.videoPostProcess.available){
+        return this.logger.error('The current environment does not support webgl');
+      };
       if(this._advancedBeautyProcessor){ 
         await this._cancelAdvancedBeauty();
         this._advancedBeautyProcessor.destroy();
@@ -3843,7 +3868,8 @@ class LocalStream extends RTCEventEmitter {
       }
     }
   
-    async _startAdvancedBeauty() {  
+    async _startAdvancedBeauty() {
+      if(!this.videoPostProcess.available) return;
       if(this._advancedBeautyProcessor){
         this.logger.log("_startAdvancedBeauty() 打开高级美颜功能");
         await this.transformTrack(true, this._advancedBeautyProcessor)
@@ -3852,6 +3878,7 @@ class LocalStream extends RTCEventEmitter {
     }
   
     async _cancelAdvancedBeauty() {
+      if(!this.videoPostProcess.available) return;
       this.logger.log("_cancelAdvancedBeauty() 取消高级美颜功能");
       this.videoPostProcessTags.isAdvBeautyTrack = false;  
       if(this._advancedBeautyProcessor){
@@ -3860,6 +3887,7 @@ class LocalStream extends RTCEventEmitter {
     }
     // 设置高级美颜
     setAdvBeautyEffect:AdvancedBeauty['setAdvEffect'] = (...args) => {
+      if(!this.videoPostProcess.available) return;
       if(this.advancedBeauty) {
         this._advancedBeautyProcessor?.setAdvEffect(...args);
         this.client.apiFrequencyControl({
@@ -3875,6 +3903,7 @@ class LocalStream extends RTCEventEmitter {
 
     // 预设高级美颜参数
     presetAdvBeautyEffect:AdvancedBeauty['presetAdvEffect'] = (...args) => {
+      if(!this.videoPostProcess.available) return;
       if(this.advancedBeauty) {
         this._advancedBeautyProcessor?.presetAdvEffect(...args);
         this.client.apiFrequencyControl({
@@ -3893,6 +3922,7 @@ class LocalStream extends RTCEventEmitter {
       track: MediaStreamTrack,
       external: boolean,
     }){
+      if(!this.videoPostProcess.available) return;
       // replaceTrack不会主动关掉原来的track，包括大小流
       let oldTrack;
       let oldTrackLow;
@@ -3999,6 +4029,7 @@ class LocalStream extends RTCEventEmitter {
     }
   
     async transformTrack(enable:boolean, processor: VirtualBackground | AdvancedBeauty | null) {
+      if(!this.videoPostProcess.available) return;
       if (!processor) {
         return
       }
@@ -4062,6 +4093,9 @@ class LocalStream extends RTCEventEmitter {
             msg: `Load ${options.wasmUrl} error`
           });
         })
+        plugin.once('error',(message: string)=>{
+          this.logger.error(message);
+        })
       } else {     
         this.client.apiFrequencyControl({
           name: 'registerPlugin',
@@ -4096,6 +4130,7 @@ class LocalStream extends RTCEventEmitter {
 
   // 临时挂起视频后处理
   async suspendVideoPostProcess(closeTrackLow: boolean = false){
+    if(!this.videoPostProcess.available) return;
     const {isBeautyTrack, isBodySegmentTrack, isAdvBeautyTrack} = this.videoPostProcessTags;
     if(isBeautyTrack){
       await this.setBeautyEffect(false, true);
@@ -4119,6 +4154,7 @@ class LocalStream extends RTCEventEmitter {
 
   // 恢复挂起的视频后处理
   async resumeVideoPostProcess(){
+    if(!this.videoPostProcess.available) return;
     try{
       const {isBeautyTrack, isBodySegmentTrack, isAdvBeautyTrack} = this.videoPostProcessTags;
       // 打开基础美颜
@@ -4146,13 +4182,14 @@ class LocalStream extends RTCEventEmitter {
 
   // 兼容 safari 15.3 以下版本抓流红黑屏及其他问题
   private async replaceCanvas(){
+    if(!this.videoPostProcess.available) return;
     if(!this._play) return;
     if(!env.IS_ANY_SAFARI) return;
     if(env.SAFARI_VERSION && parseFloat(env.SAFARI_VERSION) > 15.2) return;
     const localVideoDom = this._play.getVideoDom?.querySelector('video');
     const videoDom = this._play.getVideoDom;
     if(localVideoDom && videoDom){
-      const filters = this.videoPostProcess.filters;
+      const filters = this.videoPostProcess.filters!;
       const video = this.videoPostProcess.video;
 
       const vppOn = this.replaceTags.videoPost;
