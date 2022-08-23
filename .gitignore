@@ -10,6 +10,7 @@ nimwebsdkTester/*.lock
 *.sublime-workspace
 .DS_Store
 .idea/*
+.husky/
 .vscode/
 *.lock
 ssh/
