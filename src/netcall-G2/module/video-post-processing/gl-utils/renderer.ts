@@ -160,10 +160,9 @@ export class Renderer {
      * @param {Program} program
      */
     render(program: Program) {
-        if(this.gl){
-            const gl = this.gl;
-            gl.enable(gl.CULL_FACE);
-        }
+        if(!this.gl) return;
+        const gl = this.gl;
+        gl.enable(gl.CULL_FACE);
         program.render();
     }
 }

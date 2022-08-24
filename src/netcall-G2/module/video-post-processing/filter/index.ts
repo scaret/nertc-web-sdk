@@ -22,12 +22,16 @@ export class Filters {
     // styled: StyledFilters;
     normal: NormalFilter;
     virtualBackground: VirtualBackFilter;
+    webglLostContext: {
+        loseContext: () => void;
+        restoreContext: () => void;
+    } | null = null
 
-    constructor() {
-        this._renderer = new Renderer({antialias: true});
+    constructor(canvas?: HTMLCanvasElement) {
+        this._renderer = new Renderer({canvas, antialias: true});
         this.map = createTexture(this._renderer.gl!, null);
         const gl = this._renderer.gl!;
-
+        this.webglLostContext = gl.getExtension('WEBGL_lose_context');
         const { 
             posArray,
             uvArray, 
@@ -136,6 +140,24 @@ export class Filters {
         );
     }
 
+    clone(){
+        try {
+            const filters = new Filters(this._renderer.canvas);
+            filters.mapSource = this.srcMap?.source || null;
+            this.advBeauty.remove();
+            filters.advBeauty.presetAdvEffect({...this.advBeauty.params});
+            const vbInfo = this.virtualBackground.lastSetInfo;
+            if(vbInfo.type === 'bk'){
+                filters.virtualBackground.setBackground(vbInfo.value);
+            }else if(vbInfo.type === 'blur'){
+                filters.virtualBackground.setBlurIntensity(vbInfo.value);
+            }
+            return filters;   
+        } catch (error) {
+            return null;
+        }
+    }
+
     private get filters() {
         return [this.advBeauty, this.beauty, /*this.styled,*/ this.lut, this.virtualBackground, this.normal];
     }
@@ -146,6 +168,10 @@ export class Filters {
      */
     get canvas() {
         return this._renderer.canvas;
+    }
+
+    get gl(){
+        return this._renderer.gl;
     }
 
     get srcMap(){

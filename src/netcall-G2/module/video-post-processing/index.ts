@@ -70,12 +70,46 @@ export default class VideoPostProcess extends EventEmitter {
         super();
         this.logger = logger;
         try {
-            this.filters = new Filters();   
+            this.filters = new Filters();
+            const canvas = this.filters.canvas;
+            canvas.addEventListener('webglcontextlost', (e)=>{
+                e.preventDefault();
+                this.logger.error('webgl context lost, related functions will not be available.\n'+
+                'waiting for restored event and try to reinitialize webgl pipeline ……\n'+
+                'see why: https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/isContextLost#usage_notes.');
+                this.emit('contextlost');
+            }, false);
+            canvas.addEventListener('webglcontextrestored', (e)=>{
+                e.preventDefault();
+                this.logger.warn('webgl context restored, try to reinitialize webgl pipeline.');
+                this.filters = this.filters?.clone() || null;
+                if(!this.filters){
+                    this.logger.warn('webgl reinitialize failed.');
+                }
+                this.emit('contextrestored');
+            }, false);
         } catch (error) {}
     }
 
-    get available(){
-        return this.filters ? true : false;
+    /**
+     * 0: webgl 不支持
+     * 1: 上下文丢失
+     * 2: 可用
+     */
+    get availableCode(){
+        if(!this.filters) return 0;
+        if(!this.filters.gl) return 0;
+        return this.filters.gl.isContextLost() ? 1 : 2;
+    }
+
+    get glErrorTip(){
+        switch (this.availableCode) {
+            case 0:
+                return 'The current environment does not support webgl.';
+            case 1: 
+                return 'webgl context has been lost.';
+        }
+        return '';
     }
 
     private get taskReady(){
@@ -193,13 +227,14 @@ export default class VideoPostProcess extends EventEmitter {
     private frameCount = [0, 0];
     // task render loop
     update = (updateFrameCount = true) => {
-        if(!this.filters) return;
+        if(this.availableCode < 2) return;
         if(env.IS_ANY_SAFARI && document.visibilityState === 'hidden'){
             return;
         }
+        const filters = this.filters!;
         if(!this.taskSet.size){
-            if( this.filters ){
-                return this.filters.update(false);
+            if(filters){
+                return filters.update(false);
             } else {
                  // 任务队列为空, 且 filters 已被销毁，但 timer 没停止，兼容此类错误
                 return workerTimer.clearTimeout(this.timerId);
@@ -215,14 +250,14 @@ export default class VideoPostProcess extends EventEmitter {
             let needCopy = false;
             // 设置虚拟背景参数
             if(this.taskSet.has('VirtualBackground')){
-                this.filters.virtualBackground.setMaskMap(this.maskData);
+                filters.virtualBackground.setMaskMap(this.maskData);
                 this.maskData = null;
                 needImgData = true;
                 needCopy = true;
             }
             // 设置高级美颜参数
             if(this.taskSet.has('AdvancedBeauty')){
-                this.filters.advBeauty.setAdvData(this.advBeautyData as Int16Array);
+                filters.advBeauty.setAdvData(this.advBeautyData as Int16Array);
                 this.advBeautyData = [];
                 needImgData = true;
             }else{
@@ -236,11 +271,11 @@ export default class VideoPostProcess extends EventEmitter {
 
             this.frameCount[1] = this.frameCount[0];
             if(needImgData){
-                this.filters.update(false);
+                filters.update(false);
                 // 获取下一帧原图的 imageData
-                this.sourceMap = this.filters.normal.getImageData(this.filters.srcMap);
+                this.sourceMap = filters.normal.getImageData(filters.srcMap);
             }else{
-                this.filters.update(true);
+                filters.update(true);
             }
             // 虚拟背景任务
             if(this.taskSet.has('VirtualBackground')){
@@ -250,7 +285,7 @@ export default class VideoPostProcess extends EventEmitter {
                 if(!plugin){
                     this.logger.error('VirtualBackground plugin is null.');
                 }else{
-                    const {width, height} = this.filters.canvas;
+                    const {width, height} = filters.canvas;
                     // 屏蔽空帧
                     if(width > 16 && height > 16){
                         // 背景替换推理
@@ -275,7 +310,7 @@ export default class VideoPostProcess extends EventEmitter {
                 if(!plugin){
                     this.logger.error('AdvancedBeauty plugin is null.');
                 }else{
-                    const {width, height} = this.filters.canvas;
+                    const {width, height} = filters.canvas;
                     // 高级美颜推理
                     plugin.process(this.sourceMap!, width, height, (result)=>{
                         this.advBeautyData = this.taskSet.has('AdvancedBeauty') ? result : [];
@@ -300,8 +335,8 @@ export default class VideoPostProcess extends EventEmitter {
 
     setTaskAndTrack = (task: TaskType, isEnable: boolean, track?: MediaStreamTrack)=>{
         return new Promise((resolve, reject)=>{
-            if(!this.filters){
-                return reject('The current runtime environment does not support webgl.');
+            if(this.availableCode === 0){
+                return reject(this.glErrorTip);
             }
             if(isEnable){
                 if(this.hasTask(task)){

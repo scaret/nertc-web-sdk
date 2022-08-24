@@ -1550,6 +1550,19 @@ $("#refreshDevices").on("click", () => {
  *              基础美颜
  * ----------------------------------------
  */
+ $("#loseContext").on("click", () => {
+  if (!rtc.localStream) {
+    return
+  }
+  rtc.localStream.loseContext();
+});
+ $("#restoreContext").on("click", () => {
+  if (!rtc.localStream) {
+    return
+  }
+  rtc.localStream.restoreContext();
+});
+
 
 const range0 = document.getElementById("filterIntensity"); // 滤镜明亮度
 const range1 = document.getElementById("r1"); // 明亮度

@@ -21,6 +21,8 @@ export class VirtualBackFilter extends Filter {
     // 背景模糊强度
     private intensity = 0.1;
 
+    lastSetInfo: any = {}
+
     constructor(
         renderer: Renderer,
         map: ReturnType<typeof createTexture>,
@@ -168,6 +170,10 @@ export class VirtualBackFilter extends Filter {
             this.programs.main.setUniform('backMap', this.bkMap);
             this.programs.main.setUniform('bkSize', info.size);
         }
+        this.lastSetInfo = {
+            type: 'bk',
+            value: source
+        }
     }
 
     setBlurIntensity(intensity: number){
@@ -177,6 +183,10 @@ export class VirtualBackFilter extends Filter {
         this.programs.main.setUniform('backMap', this.framebuffers.blur.targetTexture);
         this.programs.main.setUniform('bkSize', [size.width, size.height]);
         this.programs.main.setUniform('backType', 1);
+        this.lastSetInfo = {
+            type:'blur',
+            value: intensity
+        }
     }
 
     get output() {
