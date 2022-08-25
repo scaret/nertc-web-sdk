@@ -106,7 +106,7 @@ export default class BasicBeauty {
     constructor(videPostProcess: VideoPostProcess){
         this.videPostProcess = videPostProcess;
         // 上下文丢失时，将对应参数进行初始化
-        this.videPostProcess.on('contextlost', ()=>{
+        this.videPostProcess.on('contextLost', ()=>{
             this.lutLoaded = false;
         })
         instances.add(this);

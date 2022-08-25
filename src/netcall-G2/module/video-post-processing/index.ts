@@ -77,16 +77,18 @@ export default class VideoPostProcess extends EventEmitter {
                 this.logger.error('webgl context lost, related functions will not be available.\n'+
                 'waiting for restored event and try to reinitialize webgl pipeline ……\n'+
                 'see why: https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/isContextLost#usage_notes.');
-                this.emit('contextlost');
+                this.emit('contextLost');
             }, false);
             canvas.addEventListener('webglcontextrestored', (e)=>{
                 e.preventDefault();
-                this.logger.warn('webgl context restored, try to reinitialize webgl pipeline.');
+                let success = true;
+                this.logger.log('webgl context restored, try to reinitialize webgl pipeline.');
                 this.filters = this.filters?.clone() || null;
                 if(!this.filters){
-                    this.logger.warn('webgl reinitialize failed.');
+                    this.logger.error('webgl reinitialize failed.');
+                    success = false;
                 }
-                this.emit('contextrestored');
+                this.emit('contextRestored', success);
             }, false);
         } catch (error) {}
     }

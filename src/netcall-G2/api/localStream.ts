@@ -335,13 +335,25 @@ class LocalStream extends RTCEventEmitter {
     this.advancedBeauty = new AdvancedBeauty(this.videoPostProcess);
 
     // 处理 webgl 上下文丢失
-    this.videoPostProcess.on('contextlost',()=>{
+    this.videoPostProcess.on('contextLost',()=>{
       this.suspendVideoPostProcess();
+      this.emit('video-post-context-lost');
+      this.client.apiFrequencyControl({
+        name: 'videoPostContextLost',
+        code: 0,
+        param: JSON.stringify({}, null, ' ')
+      })
     })
     
     // 处理 webgl 上下文恢复
-    this.videoPostProcess.on('contextrestored',()=>{
+    this.videoPostProcess.on('contextRestored',(success)=>{
       this.resumeVideoPostProcess();
+      this.emit('video-post-context-restored', success);
+      this.client.apiFrequencyControl({
+        name: 'videoPostContextRestored',
+        code: 0,
+        param: JSON.stringify({success: success}, null, ' ')
+      })
     })
 
     // 对外抛出基础美颜加载完成事件
