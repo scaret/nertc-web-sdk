@@ -62,14 +62,14 @@ class DeviceManager extends RTCEventEmitter {
       this.logger.error(`navigator.mediaDevices is ${navigator.mediaDevices}`)
       throw new RtcError({
         code: ErrorCode.NOT_SUPPORT,
-        message: 'mediaDevices is not support in your browser',
+        message: 'getDevices: mediaDevices is not support in your browser',
         url: 'https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/enumerateDevices'
       })
     } else if (!navigator.mediaDevices.enumerateDevices) {
       this.logger.error(`navigator.mediaDevices is ${navigator.mediaDevices.enumerateDevices}`)
       throw new RtcError({
         code: ErrorCode.NOT_SUPPORT,
-        message: 'enumerateDevices is not support in your browser',
+        message: 'getDevices: enumerateDevices is not support in your browser',
         url: 'https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/enumerateDevices'
       })
     }

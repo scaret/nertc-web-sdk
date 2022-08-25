@@ -221,7 +221,7 @@ export class Producer extends EnhancedEventEmitter {
   ) {
     throw new RtcError({
       code: ErrorCode.APPDATA_ERROR,
-      message: 'cannot override appData object'
+      message: 'producer: cannot override appData object'
     })
   }
 

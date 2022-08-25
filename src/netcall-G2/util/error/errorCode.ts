@@ -28,7 +28,7 @@ const ErrorCode = {
    * 找不到信令
    *
    */
-  NO_SIGNALLING: 41004,
+  // NO_SIGNALLING: 41004,
   /*
    * 找不到 statsReport 数据
    *
@@ -38,17 +38,17 @@ const ErrorCode = {
    * 找不到 mediasoup 数据
    *
    */
-  NO_MEDIASERVER: 41006,
+  // NO_MEDIASERVER: 41006,
   /*
    * 找不到 meetings 数据
    *
    */
-  NO_MEETINGS: 41007,
+  // NO_MEETINGS: 41007,
   /*
    * 找不到 localStream 数据
    *
    */
-  NO_LOCALSTREAM: 41008,
+  // NO_LOCALSTREAM: 41008,
   /*
    * 非法操作，可以通过 console 日志查看原因,一般是状态不对
    *
@@ -63,7 +63,7 @@ const ErrorCode = {
    * 本地用户不再频道中
    *
    */
-  USER_NOT_IN_CHANNEL: 41011,
+  // USER_NOT_IN_CHANNEL: 41011,
   /*
    * 当前不支持，可以通过 console 日志查看原因
    *
@@ -118,7 +118,7 @@ const ErrorCode = {
    * 没有进行录制
    *
    */
-  NO_RECORDER_FOUND: 41022,
+  // NO_RECORDER_FOUND: 41022,
   /*
    * 未定义，可以通过 console 日志查看原因
    *
@@ -128,19 +128,19 @@ const ErrorCode = {
    * 不可用，可以通过 console 日志查看原因
    *
    */
-  NOT_AVALIABLE: 41024,
+  NOT_AVAILABLE: 41024,
   /*
    * 没有 mediaHelper 数据
    *
    */
-  NO_MEDIAHELPER: 41025,
+  // NO_MEDIAHELPER: 41025,
   /*
-   * 没有实例化 Play
+   * 没有开启播放
    *
    */
   NO_PLAY: 41026,
   /*
-   * 没有实例化 Record
+   * 没有开启录制
    *
    */
   NO_RECORD: 41027,
@@ -165,7 +165,7 @@ const ErrorCode = {
    * 没有媒体
    *
    */
-  NO_MEDIA: 41031,
+  // NO_MEDIA: 41031,
 
   /*
    * 被服务器禁言
