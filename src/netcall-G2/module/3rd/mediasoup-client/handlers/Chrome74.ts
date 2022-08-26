@@ -25,8 +25,9 @@ import * as sdpCommonUtils from './sdp/commonUtils'
 import { OfferMediaSection } from './sdp/MediaSection'
 import { RemoteSdp } from './sdp/RemoteSdp'
 import * as sdpUnifiedPlanUtils from './sdp/unifiedPlanUtils'
+import * as env from '../../../../util/rtcUtil/rtcEnvironment'
 
-const prefix = 'Chrome74'
+const prefix = 'Chrome_'
 
 const SCTP_NUM_STREAMS = { OS: 1024, MIS: 1024 }
 
@@ -388,7 +389,7 @@ export class Chrome74 extends HandlerInterface {
     }
     if (!offerMediaObject) {
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
+        code: ErrorCode.SDP_ERROR,
         message: 'send: offerMediaObject with track id not found: ' + track.id
       })
     }
@@ -403,9 +404,16 @@ export class Chrome74 extends HandlerInterface {
       localId = '' + localId
     }
     if (!localId) {
+      let enMessage = `Chrome.send: localId is not found`,
+        zhMessage = `Chrome.send: localId 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'send: localId is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -595,9 +603,16 @@ export class Chrome74 extends HandlerInterface {
     const transceiver = this._mapMidTransceiver.get(localId)
 
     if (!transceiver) {
+      let enMessage = `Chrome.stopSending: associated RTCRtpTransceiver is not found`,
+        zhMessage = `Chrome.stopSending: RTCRtpTransceiver 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'stopSending: associated RTCRtpTransceiver is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -665,9 +680,16 @@ export class Chrome74 extends HandlerInterface {
     const transceiver = this._mapMidTransceiver.get(localId)
 
     if (!transceiver) {
+      let enMessage = `Chrome.replaceTrack: associated RTCRtpTransceiver is not found`,
+        zhMessage = `Chrome.replaceTrack: RTCRtpTransceiver 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'replaceTrack: associated RTCRtpTransceiver is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -687,9 +709,16 @@ export class Chrome74 extends HandlerInterface {
     const transceiver = this._mapMidTransceiver.get(localId)
 
     if (!transceiver) {
+      let enMessage = `Chrome.setMaxSpatialLayer: associated RTCRtpTransceiver is not found`,
+        zhMessage = `Chrome.setMaxSpatialLayer: RTCRtpTransceiver 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'setMaxSpatialLayer: associated RTCRtpTransceiver is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -712,9 +741,16 @@ export class Chrome74 extends HandlerInterface {
     const transceiver = this._mapMidTransceiver.get(localId)
 
     if (!transceiver) {
+      let enMessage = `Chrome.setRtpEncodingParameters: associated RTCRtpTransceiver is not found`,
+        zhMessage = `Chrome.setRtpEncodingParameters: RTCRtpTransceiver 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'setRtpEncodingParameters: associated RTCRtpTransceiver is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -735,9 +771,16 @@ export class Chrome74 extends HandlerInterface {
     const transceiver = this._mapMidTransceiver.get(localId)
 
     if (!transceiver) {
+      let enMessage = `Chrome.getSenderStats: associated RTCRtpTransceiver is not found`,
+        zhMessage = `Chrome.getSenderStats: RTCRtpTransceiver 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'getSenderStats: associated RTCRtpTransceiver is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -903,7 +946,7 @@ export class Chrome74 extends HandlerInterface {
         'a=fmtp:111 minptime=10;stereo=1;sprop-stereo=1;useinbandfec=1'
       )
     }
-    
+
     // if (this._pc.signalingState === 'stable') {
     //   await this._pc.setLocalDescription(offer)
     //   Logger.debug(prefix, '[Subscribe] receive() | calling pc.setLocalDescription()')
@@ -922,9 +965,16 @@ export class Chrome74 extends HandlerInterface {
     const transceiver = this._pc.getTransceivers().find((t: RTCRtpTransceiver) => t.mid === localId)
 
     if (!transceiver) {
+      let enMessage = `Chrome.receive: new RTCRtpTransceiver is not found`,
+        zhMessage = `Chrome.receive: RTCRtpTransceiver 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'receive: new RTCRtpTransceiver is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -946,9 +996,16 @@ export class Chrome74 extends HandlerInterface {
     const transceiver: EnhancedTransceiver | undefined = this._mapMidTransceiver.get(localId)
 
     if (!transceiver || !transceiver.mid) {
+      let enMessage = `Chrome.stopReceiving: associated RTCRtpTransceiver is not found`,
+        zhMessage = `Chrome.stopReceiving: RTCRtpTransceiver 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'stopReceiving: associated RTCRtpTransceiver is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
     if (
@@ -981,9 +1038,16 @@ export class Chrome74 extends HandlerInterface {
     const transceiver = this._mapMidTransceiver.get(localId)
 
     if (!transceiver) {
+      let enMessage = `Chrome.getReceiverStats: associated RTCRtpTransceiver is not found`,
+        zhMessage = `Chrome.getReceiverStats: RTCRtpTransceiver 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'getReceiverStats: associated RTCRtpTransceiver is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -1018,20 +1082,32 @@ export class Chrome74 extends HandlerInterface {
 
   private _assertSendDirection(): void {
     if (this._direction !== 'send') {
+      let enMessage = '_assertSendDirection: invalid operation',
+        zhMessage = '_assertSendDirection: 操作异常',
+        enAdvice = `method can just be called for handlers with send direction`,
+        zhAdvice = `只能在 send 方向中调用`
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.INVALID_OPERATION,
-        message:
-          '_assertSendDirection: method can just be called for handlers with "send" direction'
+        code: ErrorCode.INVALID_OPERATION_ERROR,
+        message,
+        advice
       })
     }
   }
 
   private _assertRecvDirection(): void {
     if (this._direction !== 'recv') {
+      let enMessage = '_assertRecvDirection: invalid operation',
+        zhMessage = '_assertRecvDirection: 操作异常',
+        enAdvice = `method can just be called for handlers with recv direction`,
+        zhAdvice = `只能在 recv 方向中调用`
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.INVALID_OPERATION,
-        message:
-          '_assertRecvDirection: method can just be called for handlers with "recv" direction'
+        code: ErrorCode.INVALID_OPERATION_ERROR,
+        message,
+        advice
       })
     }
   }

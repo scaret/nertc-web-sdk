@@ -364,7 +364,7 @@ class Mediasoup extends EventEmitter {
           if (this._protoo && this._protoo.connected) {
             if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
               throw new RtcError({
-                code: ErrorCode.NOT_FOUND,
+                code: ErrorCode.NOT_FOUND_ERROR,
                 message: 'No _protoo 1'
               })
             }
@@ -474,9 +474,16 @@ class Mediasoup extends EventEmitter {
     stream.logger.log('发布音视频: ', stream.getId(), mediaTypeInput)
     //this._sendTransport.removeListener()
     if (!this._sendTransport) {
+      let enMessage = `createProduce: send transport is not found 1`,
+        zhMessage = `createProduce: 发送端 transport 未找到 1`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'createProduce: send transport is not found 1'
+        code: ErrorCode.NOT_FOUND_ERROR,
+        message,
+        advice
       })
     }
 
@@ -487,9 +494,16 @@ class Mediasoup extends EventEmitter {
         async ({ kind, rtpParameters, appData, localDtlsParameters, offer }, callback, errback) => {
           this.loggerSend.log(`produce 反馈 [kind= ${kind}, appData= ${JSON.stringify(appData)}]`)
           if (!this._sendTransport) {
+            let enMessage = `createProduce: send transport is not found 2`,
+              zhMessage = `createProduce: 发送端 transport 未找到 2`,
+              enAdvice = 'Please contact CommsEase technical support',
+              zhAdvice = '请联系云信技术支持'
+            let message = env.IS_ZH ? zhMessage : enMessage,
+              advice = env.IS_ZH ? zhAdvice : enAdvice
             throw new RtcError({
-              code: ErrorCode.NOT_FOUND,
-              message: 'createProduce: send transport is not found 2'
+              code: ErrorCode.NOT_FOUND_ERROR,
+              message,
+              advice
             })
           }
           const mediaTypeShort: MediaTypeShort =
@@ -649,9 +663,16 @@ class Mediasoup extends EventEmitter {
               producerData.dtlsParameters = localDtlsParameters
             }
             if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
+              let enMessage = `createProduce: _protoo is not found`,
+                zhMessage = `createProduce: _protoo 未找到`,
+                enAdvice = 'Please contact CommsEase technical support',
+                zhAdvice = '请联系云信技术支持'
+              let message = env.IS_ZH ? zhMessage : enMessage,
+                advice = env.IS_ZH ? zhAdvice : enAdvice
               throw new RtcError({
-                code: ErrorCode.NOT_FOUND,
-                message: 'createProduce: _protoo is not found'
+                code: ErrorCode.NOT_FOUND_ERROR,
+                message,
+                advice
               })
             }
             const {
@@ -717,10 +738,16 @@ class Mediasoup extends EventEmitter {
               this._sendTransportIceParameters = iceParameters
             }
             if (!this.adapterRef.localStream) {
+              let enMessage = 'createProduce: localStream is not found',
+                zhMessage = 'createProduce: 未找到 localStream',
+                enAdvice = 'Please contact CommsEase technical support',
+                zhAdvice = '请联系云信技术支持'
+              let message = env.IS_ZH ? zhMessage : enMessage,
+                advice = env.IS_ZH ? zhAdvice : enAdvice
               throw new RtcError({
-                code: ErrorCode.NOT_FOUND,
-                message: 'createProduce: localStream not found',
-                proposal: 'please make sure localStream exists'
+                code: ErrorCode.LOCALSTREAM_NOT_FOUND_ERROR,
+                message,
+                advice
               })
             }
             let codecOptions: ProducerCodecOptions[] = []
@@ -1042,10 +1069,16 @@ class Mediasoup extends EventEmitter {
       producerId = this._micProducerId
       this._micProducer = this._micProducerId = null
       if (!this.adapterRef.localStream) {
+        let enMessage = 'destroyProduce.audio: localStream is not found',
+          zhMessage = 'destroyProduce.audio: 未找到 localStream',
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NOT_FOUND,
-          message: 'destroyProduce audio: localStream is not found',
-          proposal: 'please make sure localStream exists'
+          code: ErrorCode.LOCALSTREAM_NOT_FOUND_ERROR,
+          message,
+          advice
         })
       }
       this.adapterRef.localStream.pubStatus.audio.audio = false
@@ -1054,10 +1087,16 @@ class Mediasoup extends EventEmitter {
       producerId = this._audioSlaveProducerId
       this._audioSlaveProducer = this._audioSlaveProducerId = null
       if (!this.adapterRef.localStream) {
+        let enMessage = 'destroyProduce.audioSlave: localStream is not found',
+          zhMessage = 'destroyProduce.audioSlave: 未找到 localStream',
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NOT_FOUND,
-          message: 'destroyProduce audioSlave: localStream not found',
-          proposal: 'please make sure localStream exists'
+          code: ErrorCode.LOCALSTREAM_NOT_FOUND_ERROR,
+          message,
+          advice
         })
       }
       this.adapterRef.localStream.pubStatus.audioSlave.audio = false
@@ -1066,10 +1105,16 @@ class Mediasoup extends EventEmitter {
       producerId = this._webcamProducerId
       this._webcamProducer = this._webcamProducerId = null
       if (!this.adapterRef.localStream) {
+        let enMessage = 'destroyProduce.video: localStream is not found',
+          zhMessage = 'destroyProduce.video: 未找到 localStream',
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NOT_FOUND,
-          message: 'destroyProduce video: localStream not found',
-          proposal: 'please make sure localStream exists'
+          code: ErrorCode.LOCALSTREAM_NOT_FOUND_ERROR,
+          message,
+          advice
         })
       }
       this.adapterRef.localStream.pubStatus.video.video = false
@@ -1078,10 +1123,16 @@ class Mediasoup extends EventEmitter {
       producerId = this._screenProducerId
       this._screenProducer = this._screenProducerId = null
       if (!this.adapterRef.localStream) {
+        let enMessage = 'destroyProduce.screen: localStream is not found',
+          zhMessage = 'destroyProduce.screen: 未找到 localStream',
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NOT_FOUND,
-          message: 'destroyProduce screen: localStream not found',
-          proposal: 'please make sure localStream exists'
+          code: ErrorCode.LOCALSTREAM_NOT_FOUND_ERROR,
+          message,
+          advice
         })
       }
       this.adapterRef.localStream.pubStatus.screen.screen = false
@@ -1150,9 +1201,16 @@ class Mediasoup extends EventEmitter {
     mediaType: MediaTypeShort
   ) {
     if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
+      let enMessage = `setConsumerPreferredLayer: _protoo is not found`,
+        zhMessage = `setConsumerPreferredLayer: _protoo 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'setConsumerPreferredLayer: _protoo is not found'
+        code: ErrorCode.NOT_FOUND_ERROR,
+        message,
+        advice
       })
     }
     this.loggerSend.log(
@@ -1271,9 +1329,16 @@ class Mediasoup extends EventEmitter {
         try {
           remoteStream.pubStatus[mediaTypeShort].stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup) {
+            let enMessage = '_createConsumer:  media server error',
+              zhMessage = '_createConsumer: 媒体服务器异常',
+              enAdvice = 'Please contact CommsEase technical support',
+              zhAdvice = '请联系云信技术支持'
+            let message = env.IS_ZH ? zhMessage : enMessage,
+              advice = env.IS_ZH ? zhAdvice : enAdvice
             throw new RtcError({
-              code: ErrorCode.NO_SERVER_ADDRESS,
-              message: '_createConsumer: media server error'
+              code: ErrorCode.MEDIA_SERVER_ERROR,
+              message,
+              advice
             })
           }
           await this.destroyConsumer(remoteStream.pubStatus.audio.consumerId, null, null)
@@ -1300,9 +1365,16 @@ class Mediasoup extends EventEmitter {
     if (!this._recvTransport) {
       this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
       info.resolve(null)
+      let enMessage = `_createConsumer: receive transport is not found`,
+        zhMessage = `_createConsumer: 接收端 transport 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: '_createConsumer: receive transport is not found'
+        code: ErrorCode.NOT_FOUND_ERROR,
+        message,
+        advice
       })
     }
 
@@ -1380,9 +1452,16 @@ class Mediasoup extends EventEmitter {
     )
     if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
       info.resolve(null)
+      let enMessage = `_createConsumer: _protoo is not found`,
+        zhMessage = `_createConsumer: _protoo 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: '_createConsumer: _protoo is not found'
+        code: ErrorCode.NOT_FOUND_ERROR,
+        message,
+        advice
       })
     }
     const recvPC = this._recvTransport.handler._pc
@@ -1573,9 +1652,16 @@ class Mediasoup extends EventEmitter {
           }
         }
         if (!remoteStream.mediaHelper) {
+          let enMessage = '_createConsumer: media helper is unavailable',
+            zhMessage = '_createConsumer: media helper 不可用',
+            enAdvice = 'Please contact CommsEase technical support',
+            zhAdvice = '请联系云信技术支持'
+          let message = env.IS_ZH ? zhMessage : enMessage,
+            advice = env.IS_ZH ? zhAdvice : enAdvice
           throw new RtcError({
-            code: ErrorCode.NOT_AVAILABLE,
-            message: '_createConsumer: No remoteStream.mediaHelper'
+            code: ErrorCode.UNAVAILABLE_ERROR,
+            message,
+            advice
           })
         }
         remoteStream.mediaHelper.updateStream(mediaTypeShort, consumer.track)
@@ -1623,28 +1709,48 @@ class Mediasoup extends EventEmitter {
       `开始订阅 ${uid} 的 ${mediaTypeShort} 媒体: ${id} 大小流: ${preferredSpatialLayer}`
     )
     if (!this.adapterRef._rtsTransport) {
+      let enMessage = `_createConsumerRts: _rtsTransport is not found`,
+        zhMessage = `_createConsumerRts: _rtsTransport 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: '_createConsumerRts: _rtsTransport is not found'
+        code: ErrorCode.NOT_FOUND_ERROR,
+        message,
+        advice
       })
     } else if (
       !this.adapterRef._signalling ||
       !this.adapterRef._signalling._protoo ||
       !this.adapterRef._signalling._protoo.request
     ) {
+      let enMessage = `_createConsumerRts: _protoo is not found 1`,
+        zhMessage = `_createConsumerRts: _protoo 未找到 1`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: '_createConsumerRts: _protoo is not found'
+        code: ErrorCode.NOT_FOUND_ERROR,
+        message,
+        advice
       })
     } else if (
       mediaTypeShort !== 'audio' &&
       mediaTypeShort !== 'video' &&
       mediaTypeShort !== 'screen'
     ) {
+      let enMessage = '_createConsumerRts: mediaType type is unknown',
+        zhMessage = '_createConsumerRts: mediaType 参数类型非法',
+        enAdvice = 'please make sure the parameter(mediaType) is correct',
+        zhAdvice = '请输入正确的参数类型'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.UNKNOWN_TYPE,
+        code: ErrorCode.UNKNOWN_TYPE_ERROR,
         message: '_createConsumerRts: mediaType type error',
-        proposal: 'please make sure mediaType is correct'
+        advice: 'please make sure mediaType is correct'
       })
     }
 
@@ -1696,9 +1802,16 @@ class Mediasoup extends EventEmitter {
     this.loggerRecv.log('发送consume请求 =', JSON.stringify(data))
     if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
       info.resolve(null)
+      let enMessage = `_createConsumerRts: _protoo is not found 2`,
+        zhMessage = `_createConsumerRts: _protoo 未找到 2`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: '_createConsumerRts: _protoo is not found 2'
+        code: ErrorCode.NOT_FOUND_ERROR,
+        message,
+        advice
       })
     }
     const consumeRes = await this.adapterRef._signalling._protoo.request('WsConsume', data)
@@ -1800,9 +1913,16 @@ class Mediasoup extends EventEmitter {
     try {
       this.logger.log(`closeTransport() [停止通道 transportId= ${transport.id}]`)
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
+        let enMessage = `closeTransport: _protoo is not found`,
+          zhMessage = `closeTransport: _protoo 未找到`,
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NOT_FOUND,
-          message: 'closeTransport: _protoo is not found'
+          code: ErrorCode.NOT_FOUND_ERROR,
+          message,
+          advice
         })
       }
       const result = await this.adapterRef._signalling._protoo.request('CloseTransport', {
@@ -1821,17 +1941,31 @@ class Mediasoup extends EventEmitter {
   async muteAudio() {
     this.loggerSend.log('mute音频')
     if (!this._micProducer) {
+      let enMessage = `muteAudio: _micProducer is not found`,
+        zhMessage = `muteAudio: _micProducer 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'muteAudio: _micProducer is not found'
+        code: ErrorCode.NOT_FOUND_ERROR,
+        message,
+        advice
       })
     }
     this._micProducer.pause()
     try {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
+        let enMessage = `muteAudio: _protoo is not found`,
+          zhMessage = `muteAudio: _protoo 未找到`,
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NOT_FOUND,
-          message: 'muteAudio: _protoo is not found'
+          code: ErrorCode.NOT_FOUND_ERROR,
+          message,
+          advice
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
@@ -1858,17 +1992,31 @@ class Mediasoup extends EventEmitter {
   async unmuteAudio() {
     this.loggerSend.log('resume音频')
     if (!this._micProducer) {
+      let enMessage = `unmuteAudio: _micProducer is not found`,
+        zhMessage = `unmuteAudio: _micProducer 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'unmuteAudio: _micProducer is not found'
+        code: ErrorCode.NOT_FOUND_ERROR,
+        message,
+        advice
       })
     }
     this._micProducer.resume()
     try {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
+        let enMessage = `unmuteAudio: _protoo is not found`,
+          zhMessage = `unmuteAudio: _protoo 未找到`,
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NOT_FOUND,
-          message: 'unmuteAudio: _protoo is not found'
+          code: ErrorCode.NOT_FOUND_ERROR,
+          message,
+          advice
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
@@ -1896,17 +2044,31 @@ class Mediasoup extends EventEmitter {
   async muteAudioSlave() {
     this.loggerSend.log('mute音频辅流')
     if (!this._audioSlaveProducer) {
+      let enMessage = `muteAudioSlave: _audioSlaveProducer is not found`,
+        zhMessage = `muteAudioSlave: _audioSlaveProducer 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'muteAudioSlave: _audioSlaveProducer is not found'
+        code: ErrorCode.NOT_FOUND_ERROR,
+        message,
+        advice
       })
     }
     this._audioSlaveProducer.pause()
     try {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
+        let enMessage = `muteAudioSlave: _protoo is not found`,
+          zhMessage = `muteAudioSlave: _protoo 未找到`,
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NOT_FOUND,
-          message: 'muteAudioSlave: _protoo is not found'
+          code: ErrorCode.NOT_FOUND_ERROR,
+          message,
+          advice
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
@@ -1933,17 +2095,31 @@ class Mediasoup extends EventEmitter {
   async unmuteAudioSlave() {
     this.loggerSend.log('resume音频辅流')
     if (!this._audioSlaveProducer) {
+      let enMessage = `unmuteAudioSlave: _audioSlaveProducer is not found`,
+        zhMessage = `unmuteAudioSlave: _audioSlaveProducer 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'unmuteAudioSlave: _audioSlaveProducer is not found'
+        code: ErrorCode.NOT_FOUND_ERROR,
+        message,
+        advice
       })
     }
     this._audioSlaveProducer.resume()
     try {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
+        let enMessage = `unmuteAudioSlave: _protoo is not found`,
+          zhMessage = `unmuteAudioSlave: _protoo 未找到`,
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NOT_FOUND,
-          message: 'unmuteAudioSlave: _protoo is not found'
+          code: ErrorCode.NOT_FOUND_ERROR,
+          message,
+          advice
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
@@ -1971,17 +2147,31 @@ class Mediasoup extends EventEmitter {
   async muteVideo() {
     this.loggerSend.log('mute视频')
     if (!this._webcamProducer) {
+      let enMessage = `muteVideo: _webcamProducer is not found`,
+        zhMessage = `muteVideo: _webcamProducer 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'muteVideo: _webcamProducer is not found'
+        code: ErrorCode.NOT_FOUND_ERROR,
+        message,
+        advice
       })
     }
     this._webcamProducer.pause()
     try {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
+        let enMessage = `muteVideo: _protoo is not found`,
+          zhMessage = `muteVideo: _protoo 未找到`,
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NOT_FOUND,
-          message: 'muteVideo: _protoo is not found'
+          code: ErrorCode.NOT_FOUND_ERROR,
+          message,
+          advice
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
@@ -2008,17 +2198,31 @@ class Mediasoup extends EventEmitter {
   async unmuteVideo() {
     this.loggerSend.log('resume视频')
     if (!this._webcamProducer) {
+      let enMessage = `unmuteVideo: _webcamProducer is not found`,
+        zhMessage = `unmuteVideo: _webcamProducer 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'unmuteVideo: _webcamProducer is not found'
+        code: ErrorCode.NOT_FOUND_ERROR,
+        message,
+        advice
       })
     }
     this._webcamProducer.resume()
     try {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
+        let enMessage = `unmuteVideo: _protoo is not found`,
+          zhMessage = `unmuteVideo: _protoo 未找到`,
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NOT_FOUND,
-          message: 'unmuteVideo: _protoo is not found'
+          code: ErrorCode.NOT_FOUND_ERROR,
+          message,
+          advice
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
@@ -2045,17 +2249,31 @@ class Mediasoup extends EventEmitter {
   async muteScreen() {
     this.loggerSend.log('mute视频')
     if (!this._screenProducer) {
+      let enMessage = `muteScreen: _screenProducer is not found`,
+        zhMessage = `muteScreen: _screenProducer 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'muteScreen: _screenProducer is not found'
+        code: ErrorCode.NOT_FOUND_ERROR,
+        message,
+        advice
       })
     }
     this._screenProducer.pause()
     try {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
+        let enMessage = `muteScreen: _protoo is not found`,
+          zhMessage = `muteScreen: _protoo 未找到`,
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NOT_FOUND,
-          message: 'muteScreen: _protoo is not found'
+          code: ErrorCode.NOT_FOUND_ERROR,
+          message,
+          advice
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
@@ -2082,17 +2300,31 @@ class Mediasoup extends EventEmitter {
   async unmuteScreen() {
     this.loggerSend.log('resume视频')
     if (!this._screenProducer) {
+      let enMessage = `unmuteScreen: _screenProducer is not found`,
+        zhMessage = `unmuteScreen: _screenProducer 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'unmuteScreen: _screenProducer is not found'
+        code: ErrorCode.NOT_FOUND_ERROR,
+        message,
+        advice
       })
     }
     this._screenProducer.resume()
     try {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
+        let enMessage = `unmuteScreen: _protoo is not found`,
+          zhMessage = `unmuteScreen: _protoo 未找到`,
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NOT_FOUND,
-          message: 'unmuteScreen: _protoo is not found'
+          code: ErrorCode.NOT_FOUND_ERROR,
+          message,
+          advice
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
@@ -2120,9 +2352,16 @@ class Mediasoup extends EventEmitter {
     this.loggerSend.log(`updateUserRole:更新用户角色为${userRole}`)
     try {
       if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
+        let enMessage = `updateUserRole: _protoo is not found`,
+          zhMessage = `updateUserRole: _protoo 未找到`,
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NOT_FOUND,
-          message: 'updateUserRole: _protoo is not found'
+          code: ErrorCode.NOT_FOUND_ERROR,
+          message,
+          advice
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid

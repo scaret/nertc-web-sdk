@@ -30,8 +30,9 @@ import * as sdpCommonUtils from './sdp/commonUtils'
 import { OfferMediaSection } from './sdp/MediaSection'
 import { RemoteSdp } from './sdp/RemoteSdp'
 import * as sdpUnifiedPlanUtils from './sdp/unifiedPlanUtils'
+import * as env from '../../../../util/rtcUtil/rtcEnvironment'
 
-const prefix = 'Safari12'
+const prefix = 'Safari_'
 
 const SCTP_NUM_STREAMS = { OS: 1024, MIS: 1024 }
 
@@ -362,9 +363,16 @@ export class Safari12 extends HandlerInterface {
       offerMediaObjectLow = mediaCandidates.pop()
     }
     if (!offerMediaObject) {
+      let enMessage = `Safari.send: offerMediaObject with track id not found: ${track.id}`,
+        zhMessage = `Safari.send: 有 track id 的 offerMediaObject 未找到: ${track.id}`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'send: offerMediaObject with track id not found: ' + track.id
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -377,9 +385,16 @@ export class Safari12 extends HandlerInterface {
       localId = '' + localId
     }
     if (!localId) {
+      let enMessage = `Safari.send: localId is not found`,
+        zhMessage = `Safari.send: localId 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'send: localId is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -575,9 +590,16 @@ export class Safari12 extends HandlerInterface {
     const transceiver = this._mapMidTransceiver.get(localId)
 
     if (!transceiver) {
+      let enMessage = `Safari.stopSending: associated RTCRtpTransceiver is not found`,
+        zhMessage = `Safari.stopSending: RTCRtpTransceiver 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'stopSending: associated RTCRtpTransceiver is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
     if (kind === 'audio') {
@@ -644,9 +666,16 @@ export class Safari12 extends HandlerInterface {
     const transceiver = this._mapMidTransceiver.get(localId)
 
     if (!transceiver) {
+      let enMessage = `Safari.replaceTrack: associated RTCRtpTransceiver is not found`,
+        zhMessage = `Safari.replaceTrack: RTCRtpTransceiver 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'replaceTrack: associated RTCRtpTransceiver is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -666,9 +695,16 @@ export class Safari12 extends HandlerInterface {
     const transceiver = this._mapMidTransceiver.get(localId)
 
     if (!transceiver) {
+      let enMessage = `Safari.setMaxSpatialLayer: associated RTCRtpTransceiver is not found`,
+        zhMessage = `Safari.setMaxSpatialLayer: RTCRtpTransceiver 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'setMaxSpatialLayer: associated RTCRtpTransceiver is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -691,9 +727,16 @@ export class Safari12 extends HandlerInterface {
     const transceiver = this._mapMidTransceiver.get(localId)
 
     if (!transceiver) {
+      let enMessage = `Safari.setRtpEncodingParameters: associated RTCRtpTransceiver is not found`,
+        zhMessage = `Safari.setRtpEncodingParameters: RTCRtpTransceiver 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'setRtpEncodingParameters: associated RTCRtpTransceiver is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -713,9 +756,16 @@ export class Safari12 extends HandlerInterface {
     const transceiver = this._mapMidTransceiver.get(localId)
 
     if (!transceiver) {
+      let enMessage = `Safari.getSenderStats: associated RTCRtpTransceiver is not found`,
+        zhMessage = `Safari.getSenderStats: RTCRtpTransceiver 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'getSenderStats: associated RTCRtpTransceiver is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -890,9 +940,16 @@ export class Safari12 extends HandlerInterface {
     const transceiver = this._pc.getTransceivers().find((t: RTCRtpTransceiver) => t.mid === localId)
 
     if (!transceiver) {
+      let enMessage = `Safari.receive: associated RTCRtpTransceiver is not found`,
+        zhMessage = `Safari.receive: RTCRtpTransceiver 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'receive: new RTCRtpTransceiver is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -914,9 +971,16 @@ export class Safari12 extends HandlerInterface {
     const transceiver: EnhancedTransceiver | undefined = this._mapMidTransceiver.get(localId)
 
     if (!transceiver || !transceiver.mid) {
+      let enMessage = `Safari.stopReceiving: associated RTCRtpTransceiver is not found`,
+        zhMessage = `Safari.stopReceiving: RTCRtpTransceiver 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'stopReceiving: associated RTCRtpTransceiver is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -952,9 +1016,16 @@ export class Safari12 extends HandlerInterface {
     const transceiver = this._mapMidTransceiver.get(localId)
 
     if (!transceiver) {
+      let enMessage = `Safari.getReceiverStats: associated RTCRtpTransceiver is not found`,
+        zhMessage = `Safari.getReceiverStats: RTCRtpTransceiver 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'getReceiverStats: associated RTCRtpTransceiver is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -989,20 +1060,32 @@ export class Safari12 extends HandlerInterface {
 
   private _assertSendDirection(): void {
     if (this._direction !== 'send') {
+      let enMessage = '_assertSendDirection: invalid operation',
+        zhMessage = '_assertSendDirection: 操作异常',
+        enAdvice = `method can just be called for handlers with send direction`,
+        zhAdvice = `只能在 send 方向中调用`
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.INVALID_OPERATION,
-        message:
-          '_assertSendDirection: method can just be called for handlers with "send" direction'
+        code: ErrorCode.INVALID_OPERATION_ERROR,
+        message,
+        advice
       })
     }
   }
 
   private _assertRecvDirection(): void {
     if (this._direction !== 'recv') {
+      let enMessage = '_assertRecvDirection: invalid operation',
+        zhMessage = '_assertRecvDirection: 操作异常',
+        enAdvice = `method can just be called for handlers with recv direction`,
+        zhAdvice = `只能在 recv 方向中调用`
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.INVALID_OPERATION,
-        message:
-          '_assertSendDirection: method can just be called for handlers with "recv" direction'
+        code: ErrorCode.INVALID_OPERATION_ERROR,
+        message,
+        advice
       })
     }
   }

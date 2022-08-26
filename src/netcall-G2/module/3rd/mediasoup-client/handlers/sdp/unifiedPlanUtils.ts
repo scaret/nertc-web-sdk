@@ -1,5 +1,6 @@
 import ErrorCode from '../../../../../util/error/errorCode'
 import RtcError from '../../../../../util/error/rtcError'
+import * as env from '../../../../../util/rtcUtil/rtcEnvironment'
 import { RtpEncodingParameters } from '../../RtpParameters'
 
 export function getRtpEncodings({
@@ -16,9 +17,16 @@ export function getRtpEncodings({
   }
 
   if (ssrcs.size === 0) {
+    let enMessage = 'getRtpEncodings: no a=ssrc lines found',
+      zhMessage = 'getRtpEncodings: a=ssrc 行未找到',
+      enAdvice = 'Please contact CommsEase technical support',
+      zhAdvice = '请联系云信技术支持'
+    let message = env.IS_ZH ? zhMessage : enMessage,
+      advice = env.IS_ZH ? zhAdvice : enAdvice
     throw new RtcError({
-      code: ErrorCode.NOT_FOUND,
-      message: 'getRtpEncodings: no a=ssrc lines found'
+      code: ErrorCode.SDP_ERROR,
+      message,
+      advice
     })
   }
 
@@ -80,9 +88,16 @@ export function addLegacySimulcast({
   const ssrcMsidLine = (offerMediaObject.ssrcs || []).find((line: any) => line.attribute === 'msid')
 
   if (!ssrcMsidLine) {
+    let enMessage = 'addLegacySimulcast: a=ssrc line with msid information is not found',
+      zhMessage = 'addLegacySimulcast: a=ssrc 行的 msid 信息未找到',
+      enAdvice = 'Please contact CommsEase technical support',
+      zhAdvice = '请联系云信技术支持'
+    let message = env.IS_ZH ? zhMessage : enMessage,
+      advice = env.IS_ZH ? zhAdvice : enAdvice
     throw new RtcError({
-      code: ErrorCode.NOT_FOUND,
-      message: 'addLegacySimulcast: a=ssrc line with msid information is not found'
+      code: ErrorCode.SDP_ERROR,
+      message,
+      advice
     })
   }
 
@@ -108,9 +123,16 @@ export function addLegacySimulcast({
   const ssrcCnameLine = offerMediaObject.ssrcs.find((line: any) => line.attribute === 'cname')
 
   if (!ssrcCnameLine) {
+    let enMessage = 'addLegacySimulcast: a=ssrc line with cname information is not found',
+      zhMessage = 'addLegacySimulcast: a=ssrc 行的 cname 信息未找到',
+      enAdvice = 'Please contact CommsEase technical support',
+      zhAdvice = '请联系云信技术支持'
+    let message = env.IS_ZH ? zhMessage : enMessage,
+      advice = env.IS_ZH ? zhAdvice : enAdvice
     throw new RtcError({
-      code: ErrorCode.NOT_FOUND,
-      message: 'addLegacySimulcast: a=ssrc line with cname information is not found'
+      code: ErrorCode.SDP_ERROR,
+      message,
+      advice
     })
   }
 

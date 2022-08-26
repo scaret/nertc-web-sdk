@@ -24,6 +24,7 @@ import { Peer, ProtooNotification } from './3rd/protoo-client'
 import { encryptionModeToInt } from './encryption'
 import { getParameters } from './parameters'
 import { RTSTransport } from './rtsTransport'
+import * as env from '../util/rtcUtil/rtcEnvironment'
 const protooClient = require('./3rd/protoo-client/')
 
 class Signalling extends EventEmitter {
@@ -310,9 +311,16 @@ class Signalling extends EventEmitter {
 
   _bindEvent() {
     if (!this._protoo) {
+      let enMessage = '_bindEvent: _protoo is not found',
+        zhMessage = '_bindEvent: _protoo 未找到',
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: '_bindEvent: _protoo is not found'
+        code: ErrorCode.SIGNALLING_ERROR,
+        message,
+        advice
       })
     }
     this._protoo.on('open', this.join.bind(this))
@@ -532,9 +540,16 @@ class Signalling extends EventEmitter {
         }
 
         if (!this.adapterRef._mediasoup) {
+          let enMessage = 'OnProducerClose:  media server error',
+            zhMessage = 'OnProducerClose: 媒体服务器异常',
+            enAdvice = 'Please contact CommsEase technical support',
+            zhAdvice = '请联系云信技术支持'
+          let message = env.IS_ZH ? zhMessage : enMessage,
+            advice = env.IS_ZH ? zhAdvice : enAdvice
           throw new RtcError({
-            code: ErrorCode.NO_SERVER_ADDRESS,
-            message: 'OnProducerClose: media server error'
+            code: ErrorCode.MEDIA_SERVER_ERROR,
+            message,
+            advice
           })
         }
 
@@ -632,9 +647,16 @@ class Signalling extends EventEmitter {
           `chence OnTransportClose: code = ${code}, errMsg = ${errMsg}, transportId = ${transportId}`
         )
         if (!this.adapterRef._mediasoup) {
+          let enMessage = 'OnTransportClose:  media server error',
+            zhMessage = 'OnTransportClose: 媒体服务器异常',
+            enAdvice = 'Please contact CommsEase technical support',
+            zhAdvice = '请联系云信技术支持'
+          let message = env.IS_ZH ? zhMessage : enMessage,
+            advice = env.IS_ZH ? zhAdvice : enAdvice
           throw new RtcError({
-            code: ErrorCode.NO_SERVER_ADDRESS,
-            message: 'OnTransportClose media server error'
+            code: ErrorCode.MEDIA_SERVER_ERROR,
+            message,
+            advice
           })
         }
         if (
@@ -659,7 +681,7 @@ class Signalling extends EventEmitter {
       //   )
       //   if (!this.adapterRef._mediasoup) {
       //     throw new RtcError({
-      //       code: ErrorCode.NO_SERVER_ADDRESS,
+      //       code: ErrorCode.MEDIA_SERVER_ERROR,
       //       message: 'media server error 24'
       //     })
       //   }
@@ -683,9 +705,16 @@ class Signalling extends EventEmitter {
           reason: 'OnSignalRestart'
         })
         if (!this._protoo) {
+          let enMessage = 'OnSignalRestart: _protoo is not found',
+            zhMessage = 'OnSignalRestart: _protoo 未找到',
+            enAdvice = 'Please contact CommsEase technical support',
+            zhAdvice = '请联系云信技术支持'
+          let message = env.IS_ZH ? zhMessage : enMessage,
+            advice = env.IS_ZH ? zhAdvice : enAdvice
           throw new RtcError({
-            code: ErrorCode.NOT_FOUND,
-            message: 'OnSignalRestart: _protoo is not found'
+            code: ErrorCode.SIGNALLING_ERROR,
+            message,
+            advice
           })
         }
         if (this._protoo.connected && this.adapterRef.connectState.curState === 'CONNECTED') {
@@ -823,9 +852,12 @@ class Signalling extends EventEmitter {
             audioDuration = data.audioDuration
             let mediaType = 'audio'
             let state = true
+            let enMessage = 'ChangeRight: audio is banned by server',
+              zhMessage = 'ChangeRight: audio 被服务器禁言'
+            let message = env.IS_ZH ? zhMessage : enMessage
             const rtcError = new RtcError({
-              code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-              message: 'ChangeRight: audio is banned by server'
+              code: ErrorCode.BANNED_BY_SERVER,
+              message
             })
             this.adapterRef.instance.safeEmit('audioVideoBanned', {
               rtcError,
@@ -839,9 +871,12 @@ class Signalling extends EventEmitter {
             audioDuration = data.audioDuration
             let mediaType = 'audio'
             let state = false
+            let enMessage = 'ChangeRight: audio is unbanned by server',
+              zhMessage = 'ChangeRight: audio 服务器解开禁言'
+            let message = env.IS_ZH ? zhMessage : enMessage
             const rtcError = new RtcError({
-              code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-              message: 'ChangeRight: audio is unbanned by server '
+              code: ErrorCode.BANNED_BY_SERVER,
+              message
             })
             this.adapterRef.instance.safeEmit('audioVideoBanned', {
               rtcError,
@@ -857,9 +892,12 @@ class Signalling extends EventEmitter {
             videoDuration = data.videoDuration
             let mediaType = 'video'
             let state = true
+            let enMessage = 'ChangeRight: video is banned by server',
+              zhMessage = 'ChangeRight: video 被服务器禁言'
+            let message = env.IS_ZH ? zhMessage : enMessage
             const rtcError = new RtcError({
-              code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-              message: 'ChangeRight: video is banned by server'
+              code: ErrorCode.BANNED_BY_SERVER,
+              message
             })
             this.adapterRef.instance.safeEmit('audioVideoBanned', {
               rtcError,
@@ -873,9 +911,12 @@ class Signalling extends EventEmitter {
             videoDuration = data.videoDuration
             let mediaType = 'video'
             let state = false
+            let enMessage = 'ChangeRight: video is unbanned by server',
+              zhMessage = 'ChangeRight: video 服务器解开禁言'
+            let message = env.IS_ZH ? zhMessage : enMessage
             const rtcError = new RtcError({
-              code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-              message: 'ChangeRight: video is unbanned by server'
+              code: ErrorCode.BANNED_BY_SERVER,
+              message
             })
             this.adapterRef.instance.safeEmit('audioVideoBanned', {
               rtcError,
@@ -1048,9 +1089,16 @@ class Signalling extends EventEmitter {
 
     this.logger.log('Signalling: socket连接成功，开始发送Join请求')
     if (!this._protoo) {
+      let enMessage = 'join: _protoo is not found',
+        zhMessage = 'join: _protoo 未找到',
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'join: _protoo is not found'
+        code: ErrorCode.SIGNALLING_ERROR,
+        message,
+        advice
       })
     }
 
@@ -1091,9 +1139,12 @@ class Signalling extends EventEmitter {
         this.adapterRef.isAudioBanned = true
         let mediaType = 'audio'
         let state = true
+        let enMessage = 'Join: audio is banned by server',
+          zhMessage = 'Join: audio 被服务器禁言'
+        let message = env.IS_ZH ? zhMessage : enMessage
         const rtcError = new RtcError({
-          code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-          message: 'Join() audio is banned by server'
+          code: ErrorCode.BANNED_BY_SERVER,
+          message
         })
         this.adapterRef.instance.safeEmit('audioVideoBanned', { rtcError, uid, mediaType, state })
       } else {
@@ -1104,9 +1155,12 @@ class Signalling extends EventEmitter {
         this.adapterRef.isVideoBanned = true
         let mediaType = 'video'
         let state = true
+        let enMessage = 'Join: video is banned by server',
+          zhMessage = 'Join: video 被服务器禁言'
+        let message = env.IS_ZH ? zhMessage : enMessage
         const rtcError = new RtcError({
-          code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-          message: 'Join() video is banned by server'
+          code: ErrorCode.BANNED_BY_SERVER,
+          message
         })
         this.adapterRef.instance.safeEmit('audioVideoBanned', { rtcError, uid, mediaType, state })
       } else {
@@ -1166,9 +1220,16 @@ class Signalling extends EventEmitter {
 
         this.adapterRef.instance.resetChannel()
         if (!this.adapterRef._mediasoup) {
+          let enMessage = 'signalling_join:  media server error 1',
+            zhMessage = 'signalling_join: 媒体服务器异常 1',
+            enAdvice = 'Please contact CommsEase technical support',
+            zhAdvice = '请联系云信技术支持'
+          let message = env.IS_ZH ? zhMessage : enMessage,
+            advice = env.IS_ZH ? zhAdvice : enAdvice
           throw new RtcError({
-            code: ErrorCode.NO_SERVER_ADDRESS,
-            message: 'join: media server error 1'
+            code: ErrorCode.MEDIA_SERVER_ERROR,
+            message,
+            advice
           })
         }
         this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities
@@ -1212,9 +1273,16 @@ class Signalling extends EventEmitter {
           model: this.browserDevice
         })
         if (!this.adapterRef._mediasoup) {
+          let enMessage = 'signalling_join:  media server error 2',
+            zhMessage = 'signalling_join: 媒体服务器异常 2',
+            enAdvice = 'Please contact CommsEase technical support',
+            zhAdvice = '请联系云信技术支持'
+          let message = env.IS_ZH ? zhMessage : enMessage,
+            advice = env.IS_ZH ? zhAdvice : enAdvice
           throw new RtcError({
-            code: ErrorCode.NO_SERVER_ADDRESS,
-            message: 'join: media server error 2'
+            code: ErrorCode.MEDIA_SERVER_ERROR,
+            message,
+            advice
           })
         }
         this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities
@@ -1449,14 +1517,28 @@ class Signalling extends EventEmitter {
   async createRTSTransport() {
     this.logger.log(`createRTSTransport()`)
     if (!this._protoo) {
+      let enMessage = 'createRTSTransport: _protoo is not found',
+        zhMessage = 'createRTSTransport: _protoo 未找到',
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'createRTSTransport: _protoo is not found'
+        code: ErrorCode.SIGNALLING_ERROR,
+        message,
+        advice
       })
     } else if (!this._url) {
+      let enMessage = 'createRTSTransport: _url is not found',
+        zhMessage = 'createRTSTransport: _url 未找到',
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'createRTSTransport: _url is not found'
+        code: ErrorCode.SIGNALLING_ERROR,
+        message,
+        advice
       })
     }
 
@@ -1493,14 +1575,28 @@ class Signalling extends EventEmitter {
   async rtsRequestKeyFrame(consumerId: string) {
     this.logger.log(`rtsRequestKeyFrame(): `, consumerId)
     if (!this._protoo) {
+      let enMessage = 'rtsRequestKeyFrame: _protoo is not found',
+        zhMessage = 'rtsRequestKeyFrame: _protoo 未找到',
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'rtsRequestKeyFrame: _proto is not found'
+        code: ErrorCode.SIGNALLING_ERROR,
+        message,
+        advice
       })
     } else if (!consumerId) {
+      let enMessage = 'rtsRequestKeyFrame: consumerId is not found',
+        zhMessage = 'rtsRequestKeyFrame: consumerId 未找到',
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'rtsRequestKeyFrame: consumerId is not found'
+        code: ErrorCode.SIGNALLING_ERROR,
+        message,
+        advice
       })
     }
     try {

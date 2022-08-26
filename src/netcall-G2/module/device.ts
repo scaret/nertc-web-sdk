@@ -6,6 +6,7 @@ import { Logger } from '../util/webrtcLogger'
 import { alerter } from './alerter'
 import { compatAudioInputList } from './compatAudioInputList'
 import { getParameters } from './parameters'
+import * as env from '../util/rtcUtil/rtcEnvironment'
 
 export interface DeviceInfo {
   deviceId: string
@@ -60,16 +61,30 @@ class DeviceManager extends RTCEventEmitter {
   }) {
     if (!navigator.mediaDevices) {
       this.logger.error(`navigator.mediaDevices is ${navigator.mediaDevices}`)
+      let enMessage = 'getDevices: mediaDevices is not support in your browser',
+        zhMessage = 'getDevices: 当前浏览器不支持 mediaDevices',
+        enAdvice = 'The latest version of the Chrome browser is recommended',
+        zhAdvice = '建议使用最新版的 Chrome 浏览器'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_SUPPORT,
-        message: 'getDevices: mediaDevices is not support in your browser',
+        code: ErrorCode.NOT_SUPPORT_ERROR,
+        message,
+        advice,
         url: 'https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/enumerateDevices'
       })
     } else if (!navigator.mediaDevices.enumerateDevices) {
       this.logger.error(`navigator.mediaDevices is ${navigator.mediaDevices.enumerateDevices}`)
+      let enMessage = 'getDevices: enumerateDevices is not support in your browser',
+        zhMessage = 'getDevices: 当前浏览器不支持 enumerateDevices',
+        enAdvice = 'The latest version of the Chrome browser is recommended',
+        zhAdvice = '建议使用最新版的 Chrome 浏览器'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_SUPPORT,
-        message: 'getDevices: enumerateDevices is not support in your browser',
+        code: ErrorCode.NOT_SUPPORT_ERROR,
+        message,
+        advice,
         url: 'https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/enumerateDevices'
       })
     }

@@ -170,9 +170,16 @@ class Client extends Base {
     const { appkey = '', token } = options
     if (!appkey) {
       this.logger.error('Client: init error: 请传入appkey')
+      let enMessage = 'Client_init: appkey is not found',
+        zhMessage = 'Client_init: appkey 参数缺失',
+        enAdvice = 'Please input appkey',
+        zhAdvice = '请输入 appkey'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.INVALID_PARAMETER,
-        message: 'init: please input appkey'
+        code: ErrorCode.INVALID_PARAMETER_ERROR,
+        message,
+        advice
       })
     }
     this._params.appkey = appkey
@@ -260,9 +267,16 @@ class Client extends Base {
       }
     })
     if (reason) {
+      let enMessage = 'startProxyServer: API call sequence error',
+        zhMessage = 'startProxyServer: 接口调用顺序异常',
+        enAdvice = 'Please call startProxyServer() before join()',
+        zhAdvice = '请在加入房间前调用'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.INVALID_PARAMETER,
-        message: 'startProxyServer: please invoke before join()'
+        code: ErrorCode.API_CALL_SEQUENCE_ERROR,
+        message,
+        advice
       })
     }
     this.adapterRef.proxyServer.enable = true
@@ -327,9 +341,16 @@ class Client extends Base {
     })
 
     if (reason) {
+      let enMessage = 'setLocalMediaPriority: parameter(priority) is not Number',
+        zhMessage = 'setLocalMediaPriority: priority 参数不是 Number',
+        enAdvice = 'Please input the correct parameter type',
+        zhAdvice = '请输入正确的参数类型'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.INVALID_PARAMETER,
-        message: 'setLocalMediaPriority: parameter(priority) is not Number'
+        code: ErrorCode.INVALID_PARAMETER_ERROR,
+        message,
+        advice
       })
     }
     this.adapterRef.userPriority = options
@@ -361,9 +382,16 @@ class Client extends Base {
     try {
       if (!options.channelName || options.channelName === '') {
         this.logger.log('join: 请填写房间名称')
+        let enMessage = 'join: parameter(channelName) is not found',
+          zhMessage = 'join: 没有找到房间名称',
+          enAdvice = 'Please input the parameter(channelName)',
+          zhAdvice = '请填写房间名称'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.INVALID_PARAMETER,
-          message: 'join: please input room number'
+          code: ErrorCode.INVALID_PARAMETER_ERROR,
+          message,
+          advice
         })
       }
       if (options.joinChannelRecordConfig) {
@@ -385,17 +413,32 @@ class Client extends Base {
         this.adapterRef.channelInfo.uidType = 'number'
         if (options.uid > Number.MAX_SAFE_INTEGER) {
           this.logger.log('uid 参数越界')
+          let enMessage = 'join: parameter(uid) out of bounds',
+            zhMessage = 'join: uid 参数越界',
+            enAdvice =
+              'The maximum range of the Number type is 2^53 - 1, please input the correct parameter',
+            zhAdvice = 'Number 类型的 uid 最大值是 2^53 - 1， 请输入正确的参数'
+          let message = env.IS_ZH ? zhMessage : enMessage,
+            advice = env.IS_ZH ? zhAdvice : enAdvice
           throw new RtcError({
-            code: ErrorCode.INVALID_PARAMETER,
-            message: 'join: uid is exceeds the scope of Number'
+            code: ErrorCode.INVALID_PARAMETER_ERROR,
+            message,
+            advice
           })
         }
       } else {
         this.logger.error('uid参数格式非法')
+        let enMessage = 'join: The type of parameter(uid) is not invalid',
+          zhMessage = 'join: uid 参数类型非法',
+          enAdvice = 'Please input the correct parameter type',
+          zhAdvice = '请输入正确的参数类型'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_PARAMETER,
-            message: 'join: uid is invalid'
+            code: ErrorCode.INVALID_PARAMETER_ERROR,
+            message,
+            advice
           })
         )
       }
@@ -417,8 +460,9 @@ class Client extends Base {
         this.safeEmit('@pairing-join-error')
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.REPEAT_JOIN,
-            message: 'join: repeatedly join'
+            code: ErrorCode.REPEAT_JOIN_ERROR,
+            message: 'join: repeatedly join',
+            advice: '请检查登录逻辑，确保再次登录房间前已成功登出房间'
           })
         )
       }
@@ -491,9 +535,16 @@ class Client extends Base {
       }
       if (!this.adapterRef._meetings) {
         this.safeEmit('@pairing-join-error')
+        let enMessage = 'join:  meeting error',
+          zhMessage = 'join: 会控异常',
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NO_STATS,
-          message: 'join: meetings error'
+          code: ErrorCode.MEETING_ERROR,
+          message,
+          advice
         })
       }
       const joinResult = await this.adapterRef._meetings.joinChannel(
@@ -597,7 +648,7 @@ class Client extends Base {
     if (errMsg) {
       this.logger.error(errMsg)
       throw new RtcError({
-        code: ErrorCode.NOT_SUPPORT,
+        code: ErrorCode.SET_ENCRYPTION_MODE_ERROR,
         message: errMsg
       })
     } else {
@@ -683,20 +734,32 @@ class Client extends Base {
     if (reason) {
       if (reason === 'INVALID_OPERATION') {
         onPublishFinish()
+        let enMessage = 'doPublish: invalid operation',
+          zhMessage = 'doPublish: 操作异常',
+          enAdvice = 'please make sure the client role is anchor',
+          zhAdvice = '请确认当前的 role 是主播'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION,
-            message: 'doPublish: invalid operation',
-            proposal: 'please make sure the client role is anchor'
+            code: ErrorCode.INVALID_OPERATION_ERROR,
+            message,
+            advice
           })
         )
       } else if (reason === 'INVALID_LOCAL_STREAM') {
         onPublishFinish()
+        let enMessage = 'doPublish: The stream format is illegal',
+          zhMessage = 'doPublish: 传入的 stream 格式非法，没有媒体数据',
+          enAdvice = 'Please input the correct stream',
+          zhAdvice = '请输入正确的 stream 参数'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.NOT_FOUND,
-            message: 'doPublish: localStream is not found',
-            proposal: 'please make sure the parameter(stream) is valid'
+            code: ErrorCode.LOCALSTREAM_ERROR,
+            message,
+            advice
           })
         )
       } else {
@@ -708,9 +771,16 @@ class Client extends Base {
     try {
       if (!this.adapterRef._mediasoup) {
         onPublishFinish()
+        let enMessage = 'doPublish:  media server error',
+          zhMessage = 'doPublish: 媒体服务器异常',
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NO_SERVER_ADDRESS,
-          message: 'doPublish: media server error'
+          code: ErrorCode.MEDIA_SERVER_ERROR,
+          message,
+          advice
         })
       }
       this.bindLocalStream(stream)
@@ -768,20 +838,17 @@ class Client extends Base {
       })
       if (reason === 'INVALID_OPERATION') {
         onUnpublishFinish()
+        let enMessage = 'unpublish: invalid operation',
+          zhMessage = 'unpublish: 操作异常',
+          enAdvice = 'This may caused by a temporary network failure connection',
+          zhAdvice = '可能是临时网络异常引起的'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION,
-            message: 'unpublish: invalid operation',
-            proposal: 'may caused by a temporary network failure connection'
-          })
-        )
-      } else if (reason === 'INVALID_LOCAL_STREAM') {
-        onUnpublishFinish()
-        return Promise.reject(
-          new RtcError({
-            code: ErrorCode.NOT_FOUND,
-            message: 'unpublish: localStream is not found',
-            proposal: 'please make sure the parameter(stream) is valid'
+            code: ErrorCode.INVALID_OPERATION_ERROR,
+            message,
+            advice
           })
         )
       } else {
@@ -794,7 +861,7 @@ class Client extends Base {
     try {
       if (!this.adapterRef._mediasoup) {
         throw new RtcError({
-          code: ErrorCode.NO_SERVER_ADDRESS,
+          code: ErrorCode.MEDIA_SERVER_ERROR,
           message: 'unpublish: media server error'
         })
       }
@@ -893,16 +960,17 @@ class Client extends Base {
 
   async doSubscribe(stream: RemoteStream) {
     const uid = stream.getId()
-    // if (!uid) {
-    //   throw new RtcError({
-    //     code: ErrorCode.INVALID_PARAMETER,
-    //     message: 'doSubscribe: no uid'
-    //   })
-    // }
     if (!this.adapterRef._mediasoup) {
+      let enMessage = 'doSubscribe:  media server error 1',
+        zhMessage = 'doSubscribe: 媒体服务器异常 1',
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NO_SERVER_ADDRESS,
-        message: 'doSubscribe: media server error 1'
+        code: ErrorCode.MEDIA_SERVER_ERROR,
+        message,
+        advice
       })
     }
     try {
@@ -930,9 +998,16 @@ class Client extends Base {
           this.logger.log('开始取消订阅音频流')
           stream.pubStatus.audio.stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup) {
+            let enMessage = 'doSubscribe:  media server error 2',
+              zhMessage = 'doSubscribe: 媒体服务器异常 2',
+              enAdvice = 'Please contact CommsEase technical support',
+              zhAdvice = '请联系云信技术支持'
+            let message = env.IS_ZH ? zhMessage : enMessage,
+              advice = env.IS_ZH ? zhAdvice : enAdvice
             throw new RtcError({
-              code: ErrorCode.NO_SERVER_ADDRESS,
-              message: 'doSubscribe: media server error 2'
+              code: ErrorCode.MEDIA_SERVER_ERROR,
+              message,
+              advice
             })
           }
           await this.adapterRef._mediasoup.destroyConsumer(
@@ -982,9 +1057,16 @@ class Client extends Base {
           this.logger.log('开始取消订阅音频流')
           stream.pubStatus.audioSlave.stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup) {
+            let enMessage = 'doSubscribe:  media server error 3',
+              zhMessage = 'doSubscribe: 媒体服务器异常 3',
+              enAdvice = 'Please contact CommsEase technical support',
+              zhAdvice = '请联系云信技术支持'
+            let message = env.IS_ZH ? zhMessage : enMessage,
+              advice = env.IS_ZH ? zhAdvice : enAdvice
             throw new RtcError({
-              code: ErrorCode.NO_SERVER_ADDRESS,
-              message: 'doSubscribe: media server error 3'
+              code: ErrorCode.MEDIA_SERVER_ERROR,
+              message,
+              advice
             })
           }
           await this.adapterRef._mediasoup.destroyConsumer(
@@ -1037,9 +1119,16 @@ class Client extends Base {
           this.logger.log('开始取消订阅视频流')
           stream.pubStatus.video.stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup) {
+            let enMessage = 'doSubscribe:  media server error 4',
+              zhMessage = 'doSubscribe: 媒体服务器异常 4',
+              enAdvice = 'Please contact CommsEase technical support',
+              zhAdvice = '请联系云信技术支持'
+            let message = env.IS_ZH ? zhMessage : enMessage,
+              advice = env.IS_ZH ? zhAdvice : enAdvice
             throw new RtcError({
-              code: ErrorCode.NO_SERVER_ADDRESS,
-              message: 'doSubscribe: media server error 4'
+              code: ErrorCode.MEDIA_SERVER_ERROR,
+              message,
+              advice
             })
           }
           await this.adapterRef._mediasoup.destroyConsumer(
@@ -1098,9 +1187,16 @@ class Client extends Base {
           this.logger.log('开始取消订阅辅流')
           stream.pubStatus.screen.stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup) {
+            let enMessage = 'doSubscribe:  media server error 5',
+              zhMessage = 'doSubscribe: 媒体服务器异常 5',
+              enAdvice = 'Please contact CommsEase technical support',
+              zhAdvice = '请联系云信技术支持'
+            let message = env.IS_ZH ? zhMessage : enMessage,
+              advice = env.IS_ZH ? zhAdvice : enAdvice
             throw new RtcError({
-              code: ErrorCode.NO_SERVER_ADDRESS,
-              message: 'doSubscribe: media server error 5'
+              code: ErrorCode.MEDIA_SERVER_ERROR,
+              message,
+              advice
             })
           }
           await this.adapterRef._mediasoup.destroyConsumer(
@@ -1196,9 +1292,16 @@ class Client extends Base {
         this.logger.log('开始取消订阅音频流')
         stream.pubStatus.audio.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup) {
+          let enMessage = 'doUnsubscribe:  media server error 1',
+            zhMessage = 'doUnsubscribe: 媒体服务器异常 1',
+            enAdvice = 'Please contact CommsEase technical support',
+            zhAdvice = '请联系云信技术支持'
+          let message = env.IS_ZH ? zhMessage : enMessage,
+            advice = env.IS_ZH ? zhAdvice : enAdvice
           throw new RtcError({
-            code: ErrorCode.NO_SERVER_ADDRESS,
-            message: 'doUnsubscribe: media server error 1'
+            code: ErrorCode.MEDIA_SERVER_ERROR,
+            message,
+            advice
           })
         }
         await this.adapterRef._mediasoup.destroyConsumer(
@@ -1235,9 +1338,16 @@ class Client extends Base {
         this.logger.log('开始取消订阅音频流')
         stream.pubStatus.audioSlave.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup) {
+          let enMessage = 'doUnsubscribe:  media server error 2',
+            zhMessage = 'doUnsubscribe: 媒体服务器异常 2',
+            enAdvice = 'Please contact CommsEase technical support',
+            zhAdvice = '请联系云信技术支持'
+          let message = env.IS_ZH ? zhMessage : enMessage,
+            advice = env.IS_ZH ? zhAdvice : enAdvice
           throw new RtcError({
-            code: ErrorCode.NO_SERVER_ADDRESS,
-            message: 'doUnsubscribe: media server error 2'
+            code: ErrorCode.MEDIA_SERVER_ERROR,
+            message,
+            advice
           })
         }
         await this.adapterRef._mediasoup.destroyConsumer(
@@ -1266,9 +1376,16 @@ class Client extends Base {
         this.logger.log('开始取消订阅视频流')
         stream.pubStatus.video.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup) {
+          let enMessage = 'doUnsubscribe:  media server error 3',
+            zhMessage = 'doUnsubscribe: 媒体服务器异常 3',
+            enAdvice = 'Please contact CommsEase technical support',
+            zhAdvice = '请联系云信技术支持'
+          let message = env.IS_ZH ? zhMessage : enMessage,
+            advice = env.IS_ZH ? zhAdvice : enAdvice
           throw new RtcError({
-            code: ErrorCode.NO_SERVER_ADDRESS,
-            message: 'doUnsubscribe: media server error 3'
+            code: ErrorCode.MEDIA_SERVER_ERROR,
+            message,
+            advice
           })
         }
         await this.adapterRef._mediasoup.destroyConsumer(
@@ -1306,9 +1423,16 @@ class Client extends Base {
         this.logger.log('开始取消订阅辅流')
         stream.pubStatus.screen.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup) {
+          let enMessage = 'doUnsubscribe:  media server error 4',
+            zhMessage = 'doUnsubscribe: 媒体服务器异常 4',
+            enAdvice = 'Please contact CommsEase technical support',
+            zhAdvice = '请联系云信技术支持'
+          let message = env.IS_ZH ? zhMessage : enMessage,
+            advice = env.IS_ZH ? zhAdvice : enAdvice
           throw new RtcError({
-            code: ErrorCode.NO_SERVER_ADDRESS,
-            message: 'doUnsubscribe: media server error 4'
+            code: ErrorCode.MEDIA_SERVER_ERROR,
+            message,
+            advice
           })
         }
         await this.adapterRef._mediasoup.destroyConsumer(
@@ -1386,18 +1510,18 @@ class Client extends Base {
 
     try {
       if (!this.adapterRef._mediasoup) {
+        let enMessage = 'setRemoteVideoStreamType:  media server error',
+          zhMessage = 'setRemoteVideoStreamType: 媒体服务器异常',
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NO_SERVER_ADDRESS,
-          message: 'setRemoteVideoStreamType: media server error'
+          code: ErrorCode.MEDIA_SERVER_ERROR,
+          message,
+          advice
         })
       }
-      // const streamId = stream.getId()
-      // if (!streamId) {
-      //   throw new RtcError({
-      //     code: ErrorCode.INVALID_PARAMETER,
-      //     message: 'setRemoteVideoStreamType: no stream Id'
-      //   })
-      // }
       await this.adapterRef._mediasoup.setConsumerPreferredLayer(stream, highOrLow ? 0 : 1, 'video')
       stream.subConf.highOrLow.video = highOrLow
       this.apiFrequencyControl({
@@ -1457,18 +1581,18 @@ class Client extends Base {
     )
     try {
       if (!this.adapterRef._mediasoup) {
+        let enMessage = 'setRemoteStreamType:  media server error',
+          zhMessage = 'setRemoteStreamType: 媒体服务器异常',
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NO_SERVER_ADDRESS,
-          message: 'setRemoteStreamType: media server error'
+          code: ErrorCode.MEDIA_SERVER_ERROR,
+          message,
+          advice
         })
       }
-      // const streamId = stream.getId()
-      // if (!streamId) {
-      //   throw new RtcError({
-      //     code: ErrorCode.INVALID_PARAMETER,
-      //     message: 'No stream Id'
-      //   })
-      // }
       await this.adapterRef._mediasoup.setConsumerPreferredLayer(
         stream,
         highOrLow ? 0 : 1,
@@ -1607,9 +1731,16 @@ class Client extends Base {
               await this.unpublish(this.adapterRef.localStream)
             }
             if (!this.adapterRef._mediasoup) {
+              let enMessage = 'setClientRole:  media server error',
+                zhMessage = 'setClientRole: 媒体服务器异常',
+                enAdvice = 'Please contact CommsEase technical support',
+                zhAdvice = '请联系云信技术支持'
+              let message = env.IS_ZH ? zhMessage : enMessage,
+                advice = env.IS_ZH ? zhAdvice : enAdvice
               throw new RtcError({
-                code: ErrorCode.NO_SERVER_ADDRESS,
-                message: 'setClientRole: media server error'
+                code: ErrorCode.MEDIA_SERVER_ERROR,
+                message,
+                advice
               })
             }
             await this.adapterRef._mediasoup.updateUserRole(userRole)
@@ -1648,20 +1779,31 @@ class Client extends Base {
     })
     if (reason) {
       if (reason === 'INVALID_OPERATION') {
+        let enMessage = 'setClientRole: invalid operation',
+          zhMessage = 'setClientRole: 操作异常',
+          enAdvice = 'please make sure the role is valid',
+          zhAdvice = '请确认 role 是合法的'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION,
-            message: 'setClientRole: invalid operation',
-            proposal: 'please make sure the role is valid'
+            code: ErrorCode.INVALID_OPERATION_ERROR,
+            message,
+            advice
           })
         )
       } else if (reason === 'USER_NOT_IN_CHANNEL') {
+        let enMessage = 'setClientRole: the current user id not in the channel',
+          zhMessage = 'setClientRole: 当前用户不在频道中',
+          enAdvice = 'This may caused by a temporary network failure connection',
+          zhAdvice = '可能是临时网络异常引起的'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.NOT_FOUND,
-            message: 'setClientRole: user is not in the channel',
-            proposal:
-              'the current user id not in the channel, may caused by a temporary network failure connection'
+            code: ErrorCode.USER_NOT_IN_CHANNEL_ERROR,
+            message,
+            advice
           })
         )
       }
@@ -1726,11 +1868,18 @@ class Client extends Base {
   getSystemStats() {
     //@ts-ignore
     if (!navigator.getBattery) {
+      let enMessage = 'getSystemStats: navigator.getBattery is not support in your browser',
+        zhMessage = 'getSystemStats: 当前浏览器不支持 navigator.getBattery',
+        enAdvice = 'The latest version of the Chrome browser is recommended',
+        zhAdvice = '建议使用最新版的 Chrome 浏览器'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.NOT_SUPPORTED_YET,
-          message: 'getSystemStats: navigator.getBattery is not support in your browser',
-          url: 'https://developer.mozilla.org/en-US/docs/Web/API/Navigator/getBattery'
+          code: ErrorCode.NOT_SUPPORT_ERROR,
+          url: 'https://developer.mozilla.org/en-US/docs/Web/API/Navigator/getBattery',
+          message,
+          advice
         })
       )
     }
@@ -1879,9 +2028,16 @@ class Client extends Base {
       }
     })
     if (reason) {
+      let enMessage = 'setChannelProfile: invalid operation',
+        zhMessage = 'setChannelProfile: 操作异常',
+        enAdvice = 'please invoke this function before join()',
+        zhAdvice = '请在进房前调用'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.INVALID_OPERATION,
-        message: reason
+        code: ErrorCode.INVALID_OPERATION_ERROR,
+        message,
+        advice
       })
     }
   }
@@ -1897,11 +2053,25 @@ class Client extends Base {
   async addTasks(options: AddTaskOptions) {
     this.logger.log('addTasks() 增加互动直播推流任务, options: ', JSON.stringify(options))
     let reason = null
+    let enMessage, zhMessage, enAdvice, zhAdvice, message, advice
     if (this._roleInfo.userRole === 1) {
       this.logger.error(`addTasks: 观众不允许进行直播推流操作`)
+      enMessage = 'addTasks: audience is not allowed to addTasks'
+      zhMessage = 'addTasks: 观众不允许进行直播推流操作'
+      enAdvice = 'please make sure role is correct'
+      zhAdvice = '请输入正确的 role 类型'
+      message = env.IS_ZH ? zhMessage : enMessage
+      advice = env.IS_ZH ? zhAdvice : enAdvice
       reason = 'addTasks: 观众不允许进行直播推流操作'
     }
     if (!this.adapterRef._meetings) {
+      this.logger.error(`addTasks: 加入房间后进行直播推流操作`)
+      enMessage = 'addTasks: addTasks is not allowed before join()'
+      zhMessage = 'addTasks: 加入房间后进行直播推流操作'
+      enAdvice = 'please join first'
+      zhAdvice = '请先加入房间'
+      message = env.IS_ZH ? zhMessage : enMessage
+      advice = env.IS_ZH ? zhAdvice : enAdvice
       reason = 'addTasks: 加入房间后进行直播推流操作'
     }
 
@@ -1915,8 +2085,9 @@ class Client extends Base {
         }
       })
       throw new RtcError({
-        code: ErrorCode.NOT_ALLOWED,
-        message: reason
+        code: ErrorCode.TASK_ERROR,
+        message,
+        advice
       })
     }
 
@@ -1955,11 +2126,26 @@ class Client extends Base {
   async deleteTasks(options: { taskIds: string[] }) {
     this.logger.log('deleteTasks() 删除互动直播推流任务, options: ', options)
     let reason = null
+    let enMessage, zhMessage, enAdvice, zhAdvice, message, advice
     if (this._roleInfo.userRole === 1) {
+      this.logger.error(`addTasks: 观众不允许进行直播推流操作`)
       reason = 'deleteTasks: 观众不允许进行直播推流操作'
+      enMessage = 'deleteTasks: audience is not allowed to deleteTasks'
+      zhMessage = 'deleteTasks: 观众不允许进行直播推流操作'
+      enAdvice = 'please make sure role is correct'
+      zhAdvice = '请输入正确的 role 类型'
+      message = env.IS_ZH ? zhMessage : enMessage
+      advice = env.IS_ZH ? zhAdvice : enAdvice
     }
     if (!this.adapterRef._meetings) {
+      this.logger.error(`deleteTasks: 加入房间后进行直播推流操作`)
       reason = 'deleteTasks: 加入房间后进行直播推流操作'
+      enMessage = 'deleteTasks: deleteTasks is not allowed before join()'
+      zhMessage = 'deleteTasks: 加入房间后进行直播推流操作'
+      enAdvice = 'please join first'
+      zhAdvice = '请先加入房间'
+      message = env.IS_ZH ? zhMessage : enMessage
+      advice = env.IS_ZH ? zhAdvice : enAdvice
     }
     if (reason) {
       this.logger.error(reason)
@@ -1972,8 +2158,9 @@ class Client extends Base {
         }
       })
       throw new RtcError({
-        code: ErrorCode.NOT_ALLOWED,
-        message: reason
+        code: ErrorCode.TASK_ERROR,
+        message,
+        advice
       })
     }
 
@@ -2012,11 +2199,26 @@ class Client extends Base {
   async updateTasks(options: { rtmpTasks: RTMPTask[] }) {
     this.logger.log('updateTasks() 更新互动直播推流任务, options: ', options)
     let reason = null
+    let enMessage, zhMessage, enAdvice, zhAdvice, message, advice
     if (this._roleInfo.userRole === 1) {
       reason = 'updateTasks: 观众不允许进行直播推流操作'
+      this.logger.error(`updateTasks: 观众不允许进行直播推流操作`)
+      enMessage = 'updateTasks: audience is not allowed to updateTasks'
+      zhMessage = 'updateTasks: 观众不允许进行直播推流操作'
+      enAdvice = 'please make sure role is correct'
+      zhAdvice = '请输入正确的 role 类型'
+      message = env.IS_ZH ? zhMessage : enMessage
+      advice = env.IS_ZH ? zhAdvice : enAdvice
     }
     if (!this.adapterRef._meetings) {
       reason = 'updateTasks: 加入房间后进行直播推流操作'
+      this.logger.error(`updateTasks: 加入房间后进行直播推流操作`)
+      enMessage = 'updateTasks: updateTasks is not allowed before join()'
+      zhMessage = 'updateTasks: 加入房间后进行直播推流操作'
+      enAdvice = 'please join first'
+      zhAdvice = '请先加入房间'
+      message = env.IS_ZH ? zhMessage : enMessage
+      advice = env.IS_ZH ? zhAdvice : enAdvice
     }
     if (reason) {
       this.logger.error(reason)
@@ -2029,8 +2231,9 @@ class Client extends Base {
         }
       })
       throw new RtcError({
-        code: ErrorCode.NOT_ALLOWED,
-        message: reason
+        code: ErrorCode.TASK_ERROR,
+        message,
+        advice
       })
     }
 
@@ -2067,7 +2270,7 @@ class Client extends Base {
       const errMsg = '自定义加密功能与国密加密功能不兼容'
       this.logger.error(errMsg)
       throw new RtcError({
-        code: ErrorCode.NOT_SUPPORT,
+        code: ErrorCode.SET_ENCRYPTION_MODE_ERROR,
         message: errMsg
       })
     }
@@ -2087,9 +2290,16 @@ class Client extends Base {
   setEncryptionSecret(encryptionSecret: string) {
     switch (this.adapterRef.encryption.encryptionMode) {
       case 'none':
+        let enMessage = 'Client.setEncryptionSecret: invalid operation',
+          zhMessage = 'Client.setEncryptionSecret: 操作异常',
+          enAdvice = 'please set encryptionMode first',
+          zhAdvice = '请先设置加密模式'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.INVALID_OPERATION,
-          message: 'Client.setEncryptionSecret: please set encryptionMode first'
+          code: ErrorCode.INVALID_OPERATION_ERROR,
+          message,
+          advice
         })
       case 'sm4-128-ecb':
         checkValidString({
@@ -2281,9 +2491,16 @@ class Client extends Base {
    */
   stopMediaRecording(options: { recordId?: string }) {
     if (!this.recordManager.record) {
+      let enMessage = 'Client.stopMediaRecording: recording is not start',
+        zhMessage = 'Client.stopMediaRecording: 录制未开始',
+        enAdvice = 'Please start recording first',
+        zhAdvice = '请先开启录制'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NO_RECORD,
-        message: 'stopMediaRecording: recording is not start'
+        code: ErrorCode.RECORDING_NOT_START_ERROR,
+        message,
+        advice
       })
     }
     //FIXME
@@ -2295,9 +2512,16 @@ class Client extends Base {
    */
   cleanMediaRecording() {
     if (!this.recordManager.record) {
+      let enMessage = 'Client.cleanMediaRecording: recording is not start',
+        zhMessage = 'Client.cleanMediaRecording: 录制未开始',
+        enAdvice = 'Please start recording first',
+        zhAdvice = '请先开启录制'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NO_RECORD,
-        message: 'cleanMediaRecording: recording is not start'
+        code: ErrorCode.RECORDING_NOT_START_ERROR,
+        message,
+        advice
       })
     }
     return this.recordManager.record.clean()
@@ -2307,9 +2531,16 @@ class Client extends Base {
    */
   downloadMediaRecording() {
     if (!this.recordManager.record) {
+      let enMessage = 'Client.downloadMediaRecording: recording is not start',
+        zhMessage = 'Client.downloadMediaRecording: 录制未开始',
+        enAdvice = 'Please start recording first',
+        zhAdvice = '请先开启录制'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NO_RECORD,
-        message: 'downloadMediaRecording: recording is not start'
+        code: ErrorCode.RECORDING_NOT_START_ERROR,
+        message,
+        advice
       })
     }
     return this.recordManager.record.download()

@@ -17,6 +17,7 @@ import {
 } from '../types'
 import ErrorCode from '../util/error/errorCode'
 import RtcError from '../util/error/rtcError'
+import * as env from '../util/rtcUtil/rtcEnvironment'
 
 /**
  * 会控相关
@@ -175,9 +176,16 @@ class Meeting extends EventEmitter {
           reason: e.message
         }
       })
+      let enMessage = `getCloudProxyInfo: proxy error: ${e.message}`,
+        zhMessage = `getCloudProxyInfo: proxy 异常: ${e.message}`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.PROXY_SERVER_ERROR,
-        message: 'getCloudProxyInfo: ' + e.message
+        code: ErrorCode.PROXY_ERROR,
+        message,
+        advice
       })
     }
   }
@@ -357,10 +365,17 @@ class Meeting extends EventEmitter {
           serverIp:
             data.ips && data.ips.turnaddrs && data.ips.turnaddrs.length && data.ips.turnaddrs[0]
         })
+        let enMessage = 'joinChannel:  media server error',
+          zhMessage = 'joinChannel: 媒体服务器异常',
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: data.code || ErrorCode.NO_SERVER_ADDRESS,
-            message: errorMessage
+            code: ErrorCode.MEDIA_SERVER_ERROR,
+            message: errorMessage,
+            advice
           })
         )
       }
@@ -395,9 +410,16 @@ class Meeting extends EventEmitter {
       reason: this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason || 0
     })
     if (!this.adapterRef._signalling) {
+      let enMessage = 'leaveChannel: signalling server error',
+        zhMessage = 'leaveChannel: 信令服务器异常',
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.SOCKET_ERROR,
-        message: 'leaveChannel: no signalling'
+        code: ErrorCode.SIGNALLING_SERVER_ERROR,
+        message,
+        advice
       })
     }
     return this.adapterRef._signalling.doSendLogout().then(() => {
@@ -414,16 +436,30 @@ class Meeting extends EventEmitter {
   async addTasks(options: AddTaskOptions) {
     const { rtmpTasks = [] } = options
     let reason = null
+    let enMessage, zhMessage, enAdvice, zhAdvice, message, advice
     if (!this.adapterRef.channelInfo.cid) {
       reason = 'addTasks: 请在加入房间后进行直播推流操作'
+      enMessage = 'addTasks: invalid operation'
+      zhMessage = 'addTasks: 操作异常'
+      enAdvice = `please join room before addTasks`
+      zhAdvice = `请在加入房间后进行直播推流操作`
+      message = env.IS_ZH ? zhMessage : enMessage
+      advice = env.IS_ZH ? zhAdvice : enAdvice
     } else if (!rtmpTasks || !Array.isArray(rtmpTasks) || !rtmpTasks.length) {
       reason = 'addTasks: 参数格式错误，rtmpTasks为空，或者该数组长度为空'
+      enMessage = 'addTasks: invalid operation'
+      zhMessage = 'addTasks: 操作异常'
+      enAdvice = `parameters is invalid`
+      zhAdvice = `参数格式错误, rtmpTasks为空, 或者该数组长度为空`
+      message = env.IS_ZH ? zhMessage : enMessage
+      advice = env.IS_ZH ? zhAdvice : enAdvice
     }
     if (reason) {
       this.logger.error(reason)
       throw new RtcError({
-        code: ErrorCode.INVALID_OPERATION,
-        message: reason
+        code: ErrorCode.INVALID_OPERATION_ERROR,
+        message,
+        advice
       })
     }
     let url = roomsTaskUrl
@@ -471,19 +507,33 @@ class Meeting extends EventEmitter {
           this.logger.log('添加推流任务完成')
         } else {
           this.logger.error('添加推流任务失败: ', data)
+          let enMessage = `addTasks: add task failed: ${data.code}`,
+            zhMessage = `addTasks: 添加推流任务失败: ${data.code}`,
+            enAdvice = 'Please contact CommsEase technical support',
+            zhAdvice = '请联系云信技术支持'
+          let message = env.IS_ZH ? zhMessage : enMessage,
+            advice = env.IS_ZH ? zhAdvice : enAdvice
           return Promise.reject(
             new RtcError({
-              code: ErrorCode.ADD_TASK_FAILED,
-              message: 'addTasks: 服务器反馈错误码 ' + data.code
+              code: ErrorCode.ADD_TASK_FAILED_ERROR,
+              message,
+              advice
             })
           )
         }
       } catch (e: any) {
         this.logger.error('addTasks: ', e.name, e.message)
+        let enMessage = `addTasks: add task error: ${e.name} ${e.message}`,
+          zhMessage = `addTasks: 添加推流任务异常: ${e.name} ${e.message}`,
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.ADD_TASK_FAILED,
-            message: 'addTasks: 异常 ' + e.name + ', ' + e.message
+            code: ErrorCode.ADD_TASK_FAILED_ERROR,
+            message,
+            advice
           })
         )
       }
@@ -508,18 +558,32 @@ class Meeting extends EventEmitter {
         )
       })
       this.logger.error('请先加入房间')
+      let enMessage = 'deleteTasks: invalid operation',
+        zhMessage = 'deleteTasks: 操作异常',
+        enAdvice = `please join room first`,
+        zhAdvice = `请先加入房间`
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.INVALID_OPERATION,
-          message: 'deleteTasks: please join room first'
+          code: ErrorCode.INVALID_OPERATION_ERROR,
+          message,
+          advice
         })
       )
     } else if (!taskIds || !Array.isArray(taskIds) || !taskIds.length) {
       this.logger.error('删除推流任务失败: 参数格式错误，taskIds为空，或者该数组长度为空')
+      let enMessage = 'deleteTasks: invalid parameters',
+        zhMessage = 'deleteTasks: 参数异常',
+        enAdvice = 'Please make sure the parameters correct',
+        zhAdvice = '请确认参数填写正确'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.INVALID_PARAMETER,
-          message: 'deleteTasks: invalid parameter'
+          code: ErrorCode.INVALID_PARAMETER_ERROR,
+          message,
+          advice
         })
       )
     }
@@ -574,10 +638,17 @@ class Meeting extends EventEmitter {
               ' '
             )
           })
+          let enMessage = `deleteTasks: delete task failed: ${data.code}`,
+            zhMessage = `deleteTasks: 删除推流任务失败: ${data.code}`,
+            enAdvice = 'Please contact CommsEase technical support',
+            zhAdvice = '请联系云信技术支持'
+          let message = env.IS_ZH ? zhMessage : enMessage,
+            advice = env.IS_ZH ? zhAdvice : enAdvice
           return Promise.reject(
             new RtcError({
-              code: ErrorCode.DELETE_TASK_FAILED,
-              message: 'deleteTasks: delete task failed'
+              code: ErrorCode.DELETE_TASK_FAILED_ERROR,
+              message,
+              advice
             })
           )
         }
@@ -595,10 +666,17 @@ class Meeting extends EventEmitter {
             ' '
           )
         })
+        let enMessage = `deleteTasks: delete task failed: ${e.name}  ${e.message}`,
+          zhMessage = `deleteTasks: 删除推流任务失败:  ${e.name}  ${e.message}`,
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.DELETE_TASK_FAILED,
-            message: 'deleteTasks: delete task failed'
+            code: ErrorCode.DELETE_TASK_FAILED_ERROR,
+            message,
+            advice
           })
         )
       }
@@ -630,18 +708,32 @@ class Meeting extends EventEmitter {
         )
       })
       this.logger.error('请先加入房间')
+      let enMessage = 'updateTasks: invalid operation',
+        zhMessage = 'updateTasks: 操作异常',
+        enAdvice = `please join room first`,
+        zhAdvice = `请先加入房间`
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.INVALID_OPERATION,
-          message: 'updateTasks: please join room first'
+          code: ErrorCode.INVALID_OPERATION_ERROR,
+          message,
+          advice
         })
       )
     } else if (!rtmpTasks || !Array.isArray(rtmpTasks) || !rtmpTasks.length) {
       this.logger.error('更新推流任务失败: 参数格式错误，rtmpTasks为空，或者该数组长度为空')
+      let enMessage = 'updateTasks: invalid parameters',
+        zhMessage = 'updateTasks: 参数异常',
+        enAdvice = 'Please make sure the parameters correct',
+        zhAdvice = '请确认参数填写正确'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.INVALID_PARAMETER,
-          message: 'updateTasks: invalid parameter'
+          code: ErrorCode.INVALID_PARAMETER_ERROR,
+          message,
+          advice
         })
       )
     }
@@ -723,10 +815,17 @@ class Meeting extends EventEmitter {
               ' '
             )
           })
+          let enMessage = `updateTasks: update task failed`,
+            zhMessage = `updateTasks: 删除推流任务失败`,
+            enAdvice = 'Please contact CommsEase technical support',
+            zhAdvice = '请联系云信技术支持'
+          let message = env.IS_ZH ? zhMessage : enMessage,
+            advice = env.IS_ZH ? zhAdvice : enAdvice
           return Promise.reject(
             new RtcError({
-              code: ErrorCode.UPDATE_TASKS_FAILED,
-              message: 'updateTasks: update task failed'
+              code: ErrorCode.UPDATE_TASKS_FAILED_ERROR,
+              message,
+              advice
             })
           )
         }
@@ -750,10 +849,17 @@ class Meeting extends EventEmitter {
             ' '
           )
         })
+        let enMessage = `updateTasks: update task failed ${e.name} ${e.message}`,
+          zhMessage = `updateTasks: 删除推流任务失败 ${e.name} ${e.message}`,
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.UPDATE_TASKS_FAILED,
-            message: 'updateTasks: update task failed'
+            code: ErrorCode.UPDATE_TASKS_FAILED_ERROR,
+            message,
+            advice
           })
         )
       }

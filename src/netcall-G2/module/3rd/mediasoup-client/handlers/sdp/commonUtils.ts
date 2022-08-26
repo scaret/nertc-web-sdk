@@ -1,5 +1,5 @@
 import * as sdpTransform from 'sdp-transform'
-
+import * as env from '../../../../../util/rtcUtil/rtcEnvironment'
 import ErrorCode from '../../../../../util/error/errorCode'
 import RtcError from '../../../../../util/error/rtcError'
 import {
@@ -117,9 +117,16 @@ export function extractDtlsParameters({ sdpObject }: { sdpObject: any }): DtlsPa
   )
 
   if (!mediaObject) {
+    let enMessage = `extractDtlsParameters: active media section is found`,
+      zhMessage = `extractDtlsParameters: active media 未找到`,
+      enAdvice = 'Please contact CommsEase technical support',
+      zhAdvice = '请联系云信技术支持'
+    let message = env.IS_ZH ? zhMessage : enMessage,
+      advice = env.IS_ZH ? zhAdvice : enAdvice
     throw new RtcError({
-      code: ErrorCode.NOT_FOUND,
-      message: 'extractDtlsParameters: active media section is found'
+      code: ErrorCode.SDP_ERROR,
+      message,
+      advice
     })
   }
 

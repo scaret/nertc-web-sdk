@@ -32,6 +32,7 @@ import ErrorCode from '../util/error/errorCode'
 import RtcError from '../util/error/rtcError'
 import { isExistOptions } from '../util/param'
 import { RTCEventEmitter } from '../util/rtcUtil/RTCEventEmitter'
+import * as env from '../util/rtcUtil/rtcEnvironment'
 
 let remoteStreamCnt = 0
 
@@ -172,16 +173,31 @@ class RemoteStream extends RTCEventEmitter {
       //this.logger.log('uid是number类型')
       options.client.adapterRef.channelInfo.uidType = 'number'
       if (options.uid > Number.MAX_SAFE_INTEGER) {
+        let enMessage = 'remoteStream: parameter(uid) out of bounds',
+          zhMessage = 'remoteStream: uid 参数越界',
+          enAdvice =
+            'The maximum range of the Number type is 2^53 - 1, please input the correct parameter',
+          zhAdvice = 'Number 类型的 uid 最大值是 2^53 - 1， 请输入正确的参数'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.INVALID_PARAMETER,
-          message: 'remoteStream: uid is exceeds the scope of Number'
+          code: ErrorCode.INVALID_PARAMETER_ERROR,
+          message,
+          advice
         })
       }
     } else {
       this.logger.error('uid参数格式非法')
+      let enMessage = 'remoteStream: The type of parameter(uid) is not invalid',
+        zhMessage = 'remoteStream: uid 参数类型非法',
+        enAdvice = 'Please input the correct parameter type',
+        zhAdvice = '请输入正确的参数类型'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.INVALID_PARAMETER,
-        message: 'remoteStream: uid is invalid'
+        code: ErrorCode.INVALID_PARAMETER_ERROR,
+        message,
+        advice
       })
     }
     this.videoView = null
@@ -847,11 +863,17 @@ class RemoteStream extends RTCEventEmitter {
       isPlaying = await this._play.isPlayScreenStream()
     } else {
       this.logger.warn('isPlaying: unknown type')
+      let enMessage = 'remoteStream.isPlaying: The type of parameter(uid) is unknown',
+        zhMessage = 'remoteStream.isPlaying: uid 参数类型非法',
+        enAdvice = 'please make sure the parameter(type) is correct',
+        zhAdvice = '请输入正确的参数类型'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.UNKNOWN_TYPE,
-          message: 'remoteStream.isPlaying: unknown type',
-          proposal: 'please make sure the parameter(type) is correct'
+          code: ErrorCode.UNKNOWN_TYPE_ERROR,
+          message,
+          advice
         })
       )
     }
@@ -882,9 +904,16 @@ class RemoteStream extends RTCEventEmitter {
     this.logger.log('启用音频轨道: ', this.stringStreamID)
     try {
       if (!this._play) {
+        let enMessage = 'remoteStream.unmuteAudio: Play is not start',
+          zhMessage = 'remoteStream.unmuteAudio: 播放未开始',
+          enAdvice = 'Please start playing first',
+          zhAdvice = '请先开启播放'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NO_PLAY,
-          message: 'unmuteAudio: Play is not instantiated'
+          code: ErrorCode.PLAY_NOT_START_ERROR,
+          message,
+          advice
         })
       }
       this.muteStatus.audio.recv = false
@@ -930,9 +959,16 @@ class RemoteStream extends RTCEventEmitter {
 
     try {
       if (!this._play) {
+        let enMessage = 'remoteStream.muteAudio: Play is not start',
+          zhMessage = 'remoteStream.muteAudio: 播放未开始',
+          enAdvice = 'Please start playing first',
+          zhAdvice = '请先开启播放'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NO_PLAY,
-          message: 'muteAudio: Play is not instantiated'
+          code: ErrorCode.PLAY_NOT_START_ERROR,
+          message,
+          advice
         })
       }
       this.muteStatus.audio.recv = true
@@ -977,9 +1013,16 @@ class RemoteStream extends RTCEventEmitter {
     this.logger.log('启用音频辅流轨道: ', this.stringStreamID)
     try {
       if (!this._play) {
+        let enMessage = 'remoteStream.unmuteAudioSlave: Play is not start',
+          zhMessage = 'remoteStream.unmuteAudioSlave: 播放未开始',
+          enAdvice = 'Please start playing first',
+          zhAdvice = '请先开启播放'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NO_PLAY,
-          message: 'unmuteAudioSlave: Play is not instantiated'
+          code: ErrorCode.PLAY_NOT_START_ERROR,
+          message,
+          advice
         })
       }
       this.muteStatus.audioSlave.recv = false
@@ -1025,9 +1068,16 @@ class RemoteStream extends RTCEventEmitter {
 
     try {
       if (!this._play) {
+        let enMessage = 'remoteStream.muteAudioSlave: Play is not start',
+          zhMessage = 'remoteStream.muteAudioSlave: 播放未开始',
+          enAdvice = 'Please start playing first',
+          zhAdvice = '请先开启播放'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NO_PLAY,
-          message: 'muteAudioSlave: Play is not instantiated'
+          code: ErrorCode.PLAY_NOT_START_ERROR,
+          message,
+          advice
         })
       }
       this.muteStatus.audioSlave.recv = true
@@ -1100,9 +1150,16 @@ class RemoteStream extends RTCEventEmitter {
 
     if (this.audio) {
       if (!this._play) {
+        let enMessage = 'remoteStream.setAudioVolume: Play is not start',
+          zhMessage = 'remoteStream.setAudioVolume: 播放未开始',
+          enAdvice = 'Please start playing first',
+          zhAdvice = '请先开启播放'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NO_PLAY,
-          message: 'setAudioVolume: Play is not instantiated'
+          code: ErrorCode.PLAY_NOT_START_ERROR,
+          message,
+          advice
         })
       }
       this._play.setPlayVolume(volume)
@@ -1150,9 +1207,16 @@ class RemoteStream extends RTCEventEmitter {
 
     if (this.audioSlave) {
       if (!this._play) {
+        let enMessage = 'remoteStream.setAudioSlaveVolume: Play is not start',
+          zhMessage = 'remoteStream.setAudioSlaveVolume: 播放未开始',
+          enAdvice = 'Please start playing first',
+          zhAdvice = '请先开启播放'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NO_PLAY,
-          message: 'setAudioSlaveVolume: Play is not instantiated'
+          code: ErrorCode.PLAY_NOT_START_ERROR,
+          message,
+          advice
         })
       }
       this._play.setPlayAudioSlaveVolume(volume)
@@ -1239,16 +1303,29 @@ class RemoteStream extends RTCEventEmitter {
     this.logger.log(`启用 ${this.stringStreamID} 的视频轨道`)
     try {
       if (!this._play) {
+        let enMessage = 'remoteStream.unmuteVideo: Play is not start',
+          zhMessage = 'remoteStream.unmuteVideo: 播放未开始',
+          enAdvice = 'Please start playing first',
+          zhAdvice = '请先开启播放'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NO_PLAY,
-          message: 'unmuteVideo: Play is not instantiated'
+          code: ErrorCode.PLAY_NOT_START_ERROR,
+          message,
+          advice
         })
       }
       if (!this.videoView) {
+        let enMessage = 'remoteStream.unmuteVideo: videoView is unavailable',
+          zhMessage = 'remoteStream.unmuteVideo: videoView 不可用',
+          enAdvice = 'please make sure videoView available',
+          zhAdvice = '请确保 videoView 可用'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NOT_AVAILABLE,
-          message: 'unmuteVideo: videoView is not exist',
-          proposal: 'please make sure videoView exists'
+          code: ErrorCode.UNAVAILABLE_ERROR,
+          message,
+          advice
         })
       }
 
@@ -1296,9 +1373,16 @@ class RemoteStream extends RTCEventEmitter {
     this.logger.log(`禁用 ${this.stringStreamID} 的视频轨道`)
     try {
       if (!this._play) {
+        let enMessage = 'remoteStream.muteVideo: Play is not start',
+          zhMessage = 'remoteStream.muteVideo: 播放未开始',
+          enAdvice = 'Please start playing first',
+          zhAdvice = '请先开启播放'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NO_PLAY,
-          message: 'muteVideo: Play is not instantiated'
+          code: ErrorCode.PLAY_NOT_START_ERROR,
+          message,
+          advice
         })
       }
       this.muteStatus.video.recv = true
@@ -1346,16 +1430,29 @@ class RemoteStream extends RTCEventEmitter {
     this.logger.log(`启用 ${this.stringStreamID} 的视频轨道`)
     try {
       if (!this._play) {
+        let enMessage = 'remoteStream.unmuteScreen: Play is not start',
+          zhMessage = 'remoteStream.unmuteScreen: 播放未开始',
+          enAdvice = 'Please start playing first',
+          zhAdvice = '请先开启播放'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NO_PLAY,
-          message: 'unmuteScreen: Play is not instantiated'
+          code: ErrorCode.PLAY_NOT_START_ERROR,
+          message,
+          advice
         })
       }
       if (!this.screenView) {
+        let enMessage = 'remoteStream.unmuteScreen: screenView is unavailable',
+          zhMessage = 'remoteStream.unmuteScreen: screenView 不可用',
+          enAdvice = 'please make sure screenView available',
+          zhAdvice = '请确保 screenView 可用'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NOT_AVAILABLE,
-          message: 'unmuteScreen: screenView is not exist',
-          proposal: 'please make sure screenView exists'
+          code: ErrorCode.UNAVAILABLE_ERROR,
+          message,
+          advice
         })
       }
       this.muteStatus.screen.recv = false
@@ -1402,9 +1499,16 @@ class RemoteStream extends RTCEventEmitter {
     this.logger.log(`禁用 ${this.stringStreamID} 的视频轨道`)
     try {
       if (!this._play) {
+        let enMessage = 'remoteStream.muteScreen: Play is not start',
+          zhMessage = 'remoteStream.muteScreen: 播放未开始',
+          enAdvice = 'Please start playing first',
+          zhAdvice = '请先开启播放'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NO_PLAY,
-          message: 'muteScreen: Play is not instantiated'
+          code: ErrorCode.PLAY_NOT_START_ERROR,
+          message,
+          advice
         })
       }
       if (this.mediaHelper && this.mediaHelper.screen.screenVideoTrack) {
@@ -1465,10 +1569,17 @@ class RemoteStream extends RTCEventEmitter {
    */
   async takeSnapshot(options: SnapshotOptions) {
     if (this.video || this.screen) {
+      let enMessage = 'remoteStream.takeSnapshot: Play is not start',
+        zhMessage = 'remoteStream.takeSnapshot: 播放未开始',
+        enAdvice = 'Please start playing first',
+        zhAdvice = '请先开启播放'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       if (!this._play) {
         throw new RtcError({
-          code: ErrorCode.NO_PLAY,
-          message: 'takeSnapshot: Play is not instantiated'
+          code: ErrorCode.PLAY_NOT_START_ERROR,
+          message,
+          advice
         })
       }
       await this._play.takeSnapshot(options, this.streamID)
@@ -1511,9 +1622,16 @@ class RemoteStream extends RTCEventEmitter {
   takeSnapshotBase64(options: SnapshotBase64Options) {
     if (this.video || this.screen) {
       if (!this._play) {
+        let enMessage = 'remoteStream.takeSnapshotBase64: Play is not start',
+          zhMessage = 'remoteStream.takeSnapshotBase64: 播放未开始',
+          enAdvice = 'Please start playing first',
+          zhAdvice = '请先开启播放'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NO_PLAY,
-          message: 'takeSnapshotBase64: Play is not instantiated'
+          code: ErrorCode.PLAY_NOT_START_ERROR,
+          message,
+          advice
         })
       }
       let base64Url = this._play.takeSnapshotBase64(options)
@@ -1562,9 +1680,16 @@ class RemoteStream extends RTCEventEmitter {
   async startMediaRecording(options: MediaRecordingOptions) {
     const streams = []
     if (!this.mediaHelper) {
+      let enMessage = 'remoteStream.startMediaRecording: media helper is unavailable',
+        zhMessage = 'remoteStream.startMediaRecording: media helper 不可用',
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_AVAILABLE,
-        message: 'startMediaRecording: no media helper'
+        code: ErrorCode.UNAVAILABLE_ERROR,
+        message,
+        advice
       })
     }
     switch (options.type) {
@@ -1586,9 +1711,16 @@ class RemoteStream extends RTCEventEmitter {
       return
     }
     if (!this._record || !this.streamID || !streams) {
+      let enMessage = 'remoteStream_startMediaRecording: invalid parameter when start recording',
+        zhMessage = 'remoteStream_startMediaRecording: 开始录制时参数异常',
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.INVALID_PARAMETER,
-        message: 'startMediaRecording: invalid parameter'
+        code: ErrorCode.RECORDING_ERROR,
+        message,
+        advice
       })
     }
     return (
@@ -1614,9 +1746,16 @@ class RemoteStream extends RTCEventEmitter {
    */
   stopMediaRecording(options: { recordId?: string }) {
     if (!this._record) {
+      let enMessage = 'remoteStream.stopMediaRecording: recording is not start',
+        zhMessage = 'remoteStream.stopMediaRecording: 录制未开始',
+        enAdvice = 'Please start recording first',
+        zhAdvice = '请先开启录制'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NO_RECORD,
-        message: 'stopMediaRecording: no record'
+        code: ErrorCode.RECORDING_NOT_START_ERROR,
+        message,
+        advice
       })
     }
     //FIXME
@@ -1634,9 +1773,16 @@ class RemoteStream extends RTCEventEmitter {
    */
   playMediaRecording(options: { recordId: string; view: HTMLElement }) {
     if (!this._record) {
+      let enMessage = 'remoteStream.playMediaRecording: recording is not start',
+        zhMessage = 'remoteStream.playMediaRecording: 录制未开始',
+        enAdvice = 'Please start recording first',
+        zhAdvice = '请先开启录制'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NO_RECORD,
-        message: 'playMediaRecording: no record'
+        code: ErrorCode.RECORDING_NOT_START_ERROR,
+        message,
+        advice
       })
     }
     return this._record.play(options.view)
@@ -1650,9 +1796,16 @@ class RemoteStream extends RTCEventEmitter {
   listMediaRecording() {
     let list = []
     if (!this._record) {
+      let enMessage = 'remoteStream.listMediaRecording: recording is not start',
+        zhMessage = 'remoteStream.listMediaRecording: 录制未开始',
+        enAdvice = 'Please start recording first',
+        zhAdvice = '请先开启录制'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NO_RECORD,
-        message: 'listMediaRecording: no record'
+        code: ErrorCode.RECORDING_NOT_START_ERROR,
+        message,
+        advice
       })
     }
     const recordStatus = this._record.getRecordStatus()
@@ -1671,9 +1824,16 @@ class RemoteStream extends RTCEventEmitter {
    */
   cleanMediaRecording(options: { recordId: string }) {
     if (!this._record) {
+      let enMessage = 'remoteStream.cleanMediaRecording: recording is not start',
+        zhMessage = 'remoteStream.cleanMediaRecording: 录制未开始',
+        enAdvice = 'Please start recording first',
+        zhAdvice = '请先开启录制'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NO_RECORD,
-        message: 'cleanMediaRecording: no record'
+        code: ErrorCode.RECORDING_NOT_START_ERROR,
+        message,
+        advice
       })
     }
     return this._record.clean()
@@ -1689,9 +1849,16 @@ class RemoteStream extends RTCEventEmitter {
    */
   downloadMediaRecording(options: { recordId: string }) {
     if (!this._record) {
+      let enMessage = 'remoteStream.downloadMediaRecording: recording is not start',
+        zhMessage = 'remoteStream.downloadMediaRecording: 录制未开始',
+        enAdvice = 'Please start recording first',
+        zhAdvice = '请先开启录制'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NO_RECORD,
-        message: 'downloadMediaRecording: no record'
+        code: ErrorCode.RECORDING_NOT_START_ERROR,
+        message,
+        advice
       })
     }
     return this._record.download()
@@ -1742,18 +1909,36 @@ class RemoteStream extends RTCEventEmitter {
         this.logger.error(
           `目前的文字水印数量：${options.textWatermarks.length}。允许的数量：${LIMITS.TEXT}`
         )
+        let enMessage =
+            'remoteStream_setCanvasWatermarkConfigs: The number of text watermarks exceeds the limit',
+          zhMessage = 'remoteStream_setCanvasWatermarkConfigs: 文字水印数量超限',
+          enAdvice =
+            'The number of text watermarks can be set up to 10, please make sure not to exceed the limit',
+          zhAdvice = '最多可以设置 10 个文字水印'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.INVALID_PARAMETER,
-          message: 'setCanvasWatermarkConfigs: text watermark exceeds limit'
+          code: ErrorCode.WATERMARKS_EXCEEDED_ERROR,
+          message,
+          advice
         })
       }
       if (options.imageWatermarks && options.imageWatermarks.length > LIMITS.IMAGE) {
         this.logger.error(
           `目前的图片水印数量：${options.imageWatermarks.length}。允许的数量：${LIMITS.IMAGE}`
         )
+        let enMessage =
+            'remoteStream_setCanvasWatermarkConfigs: The number of image watermarks exceeds the limit',
+          zhMessage = 'remoteStream_setCanvasWatermarkConfigs: 文字水印数量超限',
+          enAdvice =
+            'The number of image watermarks can be set up to 4, please make sure not to exceed the limit',
+          zhAdvice = '最多可以设置 4 个文字水印'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.INVALID_PARAMETER,
-          message: 'setCanvasWatermarkConfigs: image watermark exceeds limit'
+          code: ErrorCode.WATERMARKS_EXCEEDED_ERROR,
+          message,
+          advice
         })
       }
       watermarkControl.checkWatermarkParams(options)

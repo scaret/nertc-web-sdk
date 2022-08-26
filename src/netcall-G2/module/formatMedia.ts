@@ -1,5 +1,6 @@
 import { EventEmitter } from 'eventemitter3'
-
+import ErrorCode from '../util/error/errorCode'
+import RtcError from '../util/error/rtcError'
 import { AdapterRef, ClientRecordConfig, FormatMediaOptions, ILogger, Timer } from '../types'
 
 /*
@@ -39,7 +40,13 @@ class FormatMedia extends EventEmitter {
       return this.destination.stream
     } catch (e: any) {
       this.logger.error('媒体设备获取失败: ', e.name, e.message)
-      return Promise.reject(e)
+      // return Promise.reject(e)
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.FORMAT_AUDIO_ERROR,
+          message: `混音: 媒体设备获取失败: ${e.name}`
+        })
+      )
     }
   }
 
