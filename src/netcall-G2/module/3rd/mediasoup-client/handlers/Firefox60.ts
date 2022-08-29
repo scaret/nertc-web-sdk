@@ -820,9 +820,9 @@ export class Firefox60 extends HandlerInterface {
             `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`
           )
         }
-        Logger.debug(prefix, '[Subscribe] prepareLocalSdp() | calling pc.setLocalDescription()')
-        this.signalingState = 'have-local-offer'
-        await this._pc.setLocalDescription(offer)
+        // Logger.debug(prefix, '[Subscribe] prepareLocalSdp() | calling pc.setLocalDescription()')
+        // this.signalingState = 'have-local-offer'
+        // await this._pc.setLocalDescription(offer)
       }
     }
     const localSdpObject = sdpTransform.parse(offer.sdp)
@@ -919,12 +919,16 @@ export class Firefox60 extends HandlerInterface {
       answer.sdp = answer.sdp.replace(/\r\na=candidate:tcpcandidate[^\r]+/g, '')
     }
 
-    if (this._pc.signalingState === 'stable') {
-      await this._pc.createOffer()
-      this.signalingState = 'have-local-offer'
-      await this._pc.setLocalDescription(offer)
-      Logger.debug(prefix, '[Subscribe] receive() | calling pc.setLocalDescription()')
-    }
+    // if (this._pc.signalingState === 'stable') {
+    //   await this._pc.createOffer()
+    //   this.signalingState = 'have-local-offer'
+    //   await this._pc.setLocalDescription(offer)
+    //   Logger.debug(prefix, '[Subscribe] receive() | calling pc.setLocalDescription()')
+    // }
+
+    Logger.debug(prefix, '[Subscribe] receive() | calling pc.setLocalDescription()')
+    this.signalingState = 'have-local-offer'
+    await this._pc.setLocalDescription(offer)
     Logger.debug(prefix, '[Subscribe] receive() | calling pc.setRemoteDescription()')
     this.signalingState = 'stable'
     await this._pc.setRemoteDescription(answer)
