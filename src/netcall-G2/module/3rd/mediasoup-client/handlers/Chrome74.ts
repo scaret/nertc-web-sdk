@@ -800,8 +800,9 @@ export class Chrome74 extends HandlerInterface {
           'a=fmtp:111 minptime=10;stereo=1;sprop-stereo=1;useinbandfec=1'
         )
       }
-      Logger.debug(prefix, '[Subscribe] prepareLocalSdp() | calling pc.setLocalDescription()')
-      await this._pc.setLocalDescription(offer)
+      //移动到receive中执行setLocalDescription，防止与stopReceiving流程产生冲突
+      // Logger.debug(prefix, '[Subscribe] prepareLocalSdp() | calling pc.setLocalDescription()')
+      // await this._pc.setLocalDescription(offer)
     }
     const localSdpObject = sdpTransform.parse(offer.sdp)
     let dtlsParameters = undefined
@@ -902,11 +903,11 @@ export class Chrome74 extends HandlerInterface {
         'a=fmtp:111 minptime=10;stereo=1;sprop-stereo=1;useinbandfec=1'
       )
     }
-
-    if (this._pc.signalingState === 'stable') {
-      await this._pc.setLocalDescription(offer)
-      Logger.debug(prefix, '[Subscribe] receive() | calling pc.setLocalDescription()')
-    }
+    
+    // if (this._pc.signalingState === 'stable') {
+    //   await this._pc.setLocalDescription(offer)
+    //   Logger.debug(prefix, '[Subscribe] receive() | calling pc.setLocalDescription()')
+    // }
     if (!getParameters().enableUdpCandidate) {
       answer.sdp = answer.sdp.replace(/\r\na=candidate:udpcandidate[^\r]+/g, '')
     }
@@ -914,6 +915,8 @@ export class Chrome74 extends HandlerInterface {
       answer.sdp = answer.sdp.replace(/\r\na=candidate:tcpcandidate[^\r]+/g, '')
     }
 
+    Logger.debug(prefix, '[Subscribe] receive() | calling pc.setLocalDescription()')
+    await this._pc.setLocalDescription(offer)
     Logger.debug(prefix, '[Subscribe] receive() | calling pc.setRemoteDescription()')
     await this._pc.setRemoteDescription(answer)
     const transceiver = this._pc.getTransceivers().find((t: RTCRtpTransceiver) => t.mid === localId)
