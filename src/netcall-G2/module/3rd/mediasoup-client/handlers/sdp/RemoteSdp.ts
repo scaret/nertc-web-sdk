@@ -260,7 +260,7 @@ export class RemoteSdp {
     if (idx === undefined) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: `no media section found with mid '${mid}'`
+        message: `disableMediaSection: no media section found with mid '${mid}'`
       })
     }
 
@@ -275,7 +275,7 @@ export class RemoteSdp {
     if (idx === undefined) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: `no media section found with mid '${mid}'`
+        message: `closeMediaSection: no media section found with mid '${mid}'`
       })
     }
 
@@ -313,7 +313,7 @@ export class RemoteSdp {
     if (idx === undefined) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: `no media section found with mid '${mid}'`
+        message: `planBStopReceiving: no media section found with mid '${mid}'`
       })
     }
 
@@ -387,7 +387,7 @@ export class RemoteSdp {
       if (idx === undefined) {
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: `no media section found for reuseMid '${reuseMid}'`
+          message: `_replaceMediaSection: no media section found for reuseMid '${reuseMid}'`
         })
       }
 
@@ -411,7 +411,7 @@ export class RemoteSdp {
       if (idx === undefined) {
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: `no media section found with mid '${newMediaSection.mid}'`
+          message: `_replaceMediaSection: no media section found with mid '${newMediaSection.mid}'`
         })
       }
 

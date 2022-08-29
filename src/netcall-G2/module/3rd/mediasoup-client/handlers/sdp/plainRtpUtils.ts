@@ -18,7 +18,7 @@ export function extractPlainRtpParameters({
   if (!mediaObject) {
     throw new RtcError({
       code: ErrorCode.NOT_FOUND,
-      message: `m=${kind} section not found`
+      message: `extractPlainRtpParameters: m=${kind} section is not found`
     })
   }
 
@@ -43,7 +43,7 @@ export function getRtpEncodings({
   if (!mediaObject) {
     throw new RtcError({
       code: ErrorCode.NOT_FOUND,
-      message: `m=${kind} section not found`
+      message: `getRtpEncodings: m=${kind} section is not found`
     })
   }
 

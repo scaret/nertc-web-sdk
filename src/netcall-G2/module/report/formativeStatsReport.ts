@@ -1157,8 +1157,9 @@ class FormativeStatsReport {
     this.adapterRef.sessionStats.SendBitrate = result.real_v_kbps_n + result.real_a_kbps_n
     if (!this.adapterRef.localStream) {
       throw new RtcError({
-        code: ErrorCode.NO_LOCALSTREAM,
-        message: 'No localStream'
+        code: ErrorCode.NOT_FOUND,
+        message: 'getLocalMediaStats: localStream is not found',
+        proposal: 'please make sure localStream exists'
       })
     }
     this.adapterRef.localAudioStats[0] = {

@@ -119,7 +119,7 @@ export function extractDtlsParameters({ sdpObject }: { sdpObject: any }): DtlsPa
   if (!mediaObject) {
     throw new RtcError({
       code: ErrorCode.NOT_FOUND,
-      message: 'no active media section found'
+      message: 'extractDtlsParameters: active media section is found'
     })
   }
 

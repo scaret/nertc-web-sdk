@@ -343,7 +343,7 @@ class Base extends RTCEventEmitter {
       this.adapterRef.channelStatus = 'leave'
       throw new RtcError({
         code: ErrorCode.NO_SERVER_ADDRESS,
-        message: 'no server address'
+        message: 'startSession: no server address'
       })
     }
 
@@ -352,7 +352,7 @@ class Base extends RTCEventEmitter {
       this.adapterRef.channelStatus = 'leave'
       throw new RtcError({
         code: ErrorCode.INVALID_PARAMETER,
-        message: 'no cid'
+        message: 'startSession: no cid assigned by server'
       })
     }
     this.logger.log(
@@ -372,8 +372,8 @@ class Base extends RTCEventEmitter {
     let url = wssArr[this.adapterRef.channelInfo.wssArrIndex]
     if (!this.adapterRef._signalling) {
       throw new RtcError({
-        code: ErrorCode.NO_SIGNALLING,
-        message: 'signalling error'
+        code: ErrorCode.SOCKET_ERROR,
+        message: 'startSession: signalling error'
       })
     }
     try {
@@ -392,7 +392,7 @@ class Base extends RTCEventEmitter {
     if (!this.adapterRef._statsReport) {
       throw new RtcError({
         code: ErrorCode.NO_STATS,
-        message: 'no stats'
+        message: 'startSession: no format stats'
       })
     }
     this.adapterRef._statsReport.statsStart()
@@ -510,8 +510,8 @@ class Base extends RTCEventEmitter {
     this.logger.warn(`下行通道异常，重新建立 #${this.transportRebuildCnt}`)
     if (!this.adapterRef._mediasoup) {
       throw new RtcError({
-        code: ErrorCode.NO_MEDIASERVER,
-        message: 'media server error 3'
+        code: ErrorCode.NO_SERVER_ADDRESS,
+        message: 'reBuildRecvTransport: media server error'
       })
     }
     this.adapterRef.instance.safeEmit('@pairing-reBuildRecvTransport-start')
@@ -598,13 +598,13 @@ class Base extends RTCEventEmitter {
       ) {
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: `No apiEvent Named ${name}`
+          message: `apiFrequencyControl: no apiEvent named ${name}`
         })
       }
       if (!this.adapterRef.apiEvent[name][0].time) {
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: 'Invalid time for '
+          message: 'apiFrequencyControl: invalid time'
         })
       }
       if (Date.now() - this.adapterRef.apiEvent[name][0].time < 10000) {

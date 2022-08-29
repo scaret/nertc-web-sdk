@@ -193,38 +193,39 @@ table th:nth-of-type(2) {
 
 以下为 SDK 可能抛出的错误，请参考下表进行处理
 
-| 错误代码                    | 值    | 描述                                        |
-| --------------------------- | ----- | ------------------------------------------- |
-| INVALID_PARAMETER           | 41000 | 无效参数，可以通过 console 日志查看原因     |
-| NOT_SUPPORT                 | 41001 | 浏览器不支持，请使用 SDK 支持的浏览器       |
-| NO_SERVER_ADDRESS           | 41002 | 没有找到服务器地址                          |
-| SOCKET_ERROR                | 41003 | 服务器地址连接失败                          |
-| NO_SIGNALLING               | 41004 | 找不到信令                                  |
-| NO_STATS                    | 41005 | 找不到 stats 数据                           |
-| NO_MEDIASERVER              | 41006 | 找不到 media server 数据                    |
-| NO_MEETINGS                 | 41007 | 找不到 meetings 数据                        |
-| NO_LOCALSTREAM              | 41008 | 找不到 localStream 数据                     |
-| INVALID_OPERATION           | 41009 | 非法操作，可以通过 console 日志查看原因     |
-| REPEAT_JOIN                 | 41010 | 重复进房                                    |
-| USER_NOT_IN_CHANNEL         | 41011 | 本地用户不再频道中                          |
-| NOT_SUPPORTED_YET           | 41012 | 当前不支持，可以通过 console 日志查看原因   |
-| UNKNOWN_TYPE                | 41013 | 未知类型，可以通过 console 日志查看原因     |
-| NOT_ALLOWED                 | 41014 | 无权限，禁止操作                            |
-| STATE_ERROR                 | 41015 | 状态错误，可以通过 console 日志查看原因     |
-| NO_FILE                     | 41016 | 找不到文件，可以通过 console 日志查看原因   |
-| DECODE_FAILED               | 41017 | 解码失败                                    |
-| ADD_TASK_FAILED             | 41018 | 添加推流任务失败                            |
-| DELETE_TASK_FAILED          | 41019 | 删除推流任务请求失败                        |
-| UPDATE_TASKS_FAILED         | 41020 | 更新推流任务失败                            |
-| RECORD_API_ERROR            | 41021 | 录制接口出错                                |
-| NO_RECORDER_FOUND           | 41022 | 没有进行录制                                |
-| NOT_DEFINED                 | 41023 | 未定义，可以通过 console 日志查看原因       |
-| NOT_AVALIABLE               | 41024 | 不可用，可以通过 console 日志查看原因       |
-| NO_MEDIAHELPER              | 41025 | 没有 mediaHelper 数据                       |
-| NO_PLAY                     | 41026 | 没有实例化 Play                             |
-| NO_RECORD                   | 41027 | 没有实例化 Record                           |
-| NOT_FOUND                   | 41028 | 未获取，可以通过 console 日志查看原因       |
-| APPDATA_ERROR               | 41029 | appData 错误，可以通过 console 日志查看原因 |
-| AUTO_PLAY_NOT_ALLOWED       | 41030 | 自动播放受限                                |
-| MEDIA_OPEN_BANNED_BY_SERVER | 41032 | 被服务器禁言                                |
-| UNKNOWN                     | 99999 | 未知错误                                    |
+| key                         | 错误码 | 描述                         | 可能原因及处理建议                                                                  |
+| --------------------------- | :----- | :--------------------------- | :---------------------------------------------------------------------------------- |
+| INVALID_PARAMETER           | 41000  | 无效参数                     | 一般是参数错误，可以通过 console 日志查看错误原因及处理方式                         |
+| NOT_SUPPORT                 | 41001  | 浏览器不支持                 | 一般是浏览器不支持，可以通过 console 日志查看错误原因及处理方式                     |
+| NO_SERVER_ADDRESS           | 41002  | 没有找到服务器地址           | 一般是服务器错误，请联系云信技术支持                                                |
+| SOCKET_ERROR                | 41003  | 服务器地址连接失败           | 一般是服务器地址连接失败，请联系云信技术支持                                        |
+| NO_SIGNALLING               | 41004  | 找不到信令                   | 一般是信令错误，请联系云信技术支持                                                  |
+| NO_STATS                    | 41005  | 数据格式错误                 | 一般是数据格式错误，请联系云信技术支持                                              |
+| NO_MEDIASERVER              | 41006  | 找不到媒体服务               | 一般是媒体服务器错误，请联系云信技术支持                                            |
+| NO_MEETINGS                 | 41007  | 找不到会议信息               | 一般是会控错误，请联系云信技术支持                                                  |
+| NO_LOCALSTREAM              | 41008  | 找不到 localStream 数据      | 可以通过 console 日志查看错误原因及处理方式                                         |
+| INVALID_OPERATION           | 41009  | 非法操作                     | 一般是接口操作错误，可以通过 console 日志查看错误原因及处理方式                     |
+| REPEAT_JOIN                 | 41010  | 重复加入房间                 | 一般是重复加入房间导致的错误                                                        |
+| USER_NOT_IN_CHANNEL         | 41011  | 本地用户不在频道中           | 可以通过 console 日志查看错误原因及处理方式，或联系云信技术支持                     |
+| NOT_SUPPORTED_YET           | 41012  | 当前不支持                   | 一般是当前操作浏览器不支持                                                          |
+| UNKNOWN_TYPE                | 41013  | 位置类型                     | 一般是当前参数类型错误，可以通过 console 日志查看错误原因及处理方式                 |
+| NOT_ALLOWED                 | 41014  | 权限错误                     | 一般是没有权限进行操作，可以通过 console 日志查看错误原因及处理方式                 |
+| STATE_ERROR                 | 41015  | 状态错误                     | 请联系云信技术支持                                                                  |
+| NO_FILE                     | 41016  | 找不到文件                   | 可以通过 console 日志查看错误原因及处理方式                                         |
+| DECODE_FAILED               | 41017  | 解码失败                     | 可以通过 console 日志查看错误原因及处理方式                                         |
+| ADD_TASK_FAILED             | 41018  | 添加推流任务失败             | 可以通过 console 日志查看错误原因及处理方式                                         |
+| DELETE_TASK_FAILED          | 41019  | 删除推流任务请求失败         | 可以通过 console 日志查看错误原因及处理方式                                         |
+| UPDATE_TASKS_FAILED         | 41020  | 更新推流任务请求失败         | 可以通过 console 日志查看错误原因及处理方式                                         |
+| RECORD_API_ERROR            | 41021  | 录制接口出错                 | 可以通过 console 日志查看错误原因及处理方式                                         |
+| NO_RECORDER_FOUND           | 41022  | 没有进行录制                 | 可以通过 console 日志查看错误原因及处理方式                                         |
+| NOT_DEFINED                 | 41023  | 未定义错误                   | 可以通过 console 日志查看错误原因及处理方式                                         |
+| NOT_AVAILABLE               | 41024  | 不可用错误                   | 可以通过 console 日志查看错误原因及处理方式                                         |
+| NO_MEDIAHELPER              | 41025  | 一般是某些媒体数据错误       | 可以通过 console 日志查看错误原因及处理方式，或联系云信技术支持                     |
+| NO_PLAY                     | 41026  | 一般是没有开启播放导致的错误 | 可以通过 console 日志查看错误原因及处理方式，或联系云信技术支持                     |
+| NO_RECORD                   | 41027  | 一般是没有开启录制导致的错误 | 可以通过 console 日志查看错误原因及处理方式                                         |
+| NOT_FOUND                   | 41028  | 相关信息无法获取             | 一般是参数设置问题，可以通过 console 日志查看错误原因及处理方式，或联系云信技术支持 |
+| APPDATA_ERROR               | 41029  | 一般是媒体数据错误           | 请联系云信技术支持                                                                  |
+| AUTO_PLAY_NOT_ALLOWED       | 41030  | 一般是浏览器自动播放受限错误 | 可以通过 console 日志查看错误原因及处理方式                                         |
+| MEDIA_OPEN_BANNED_BY_SERVER | 41032  | 音视频被服务器禁言           | 可以通过 console 日志查看错误原因及处理方式                                         |
+| PROXY_SERVER_ERROR          | 41033  | 云代理失败                   | 可以通过 console 日志查看错误原因及处理方式，或联系云信技术支持                     |
+| UNKNOWN                     | 99999  | 一般是未知原因错误           | 请联系云信技术支持                                                                  |

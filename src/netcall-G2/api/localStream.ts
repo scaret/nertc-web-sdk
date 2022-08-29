@@ -273,7 +273,7 @@ class LocalStream extends RTCEventEmitter {
       this.logger.error('uid参数格式非法')
       throw new RtcError({
         code: ErrorCode.INVALID_PARAMETER,
-        message: 'uid is invalid'
+        message: 'localStream: uid is invalid'
       })
     }
     this._reset()
@@ -652,7 +652,7 @@ class LocalStream extends RTCEventEmitter {
       this.screen = false
       throw new RtcError({
         code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-        message: 'audio and video are banned by server'
+        message: 'init: audio and video are banned by server'
       })
     }
     if (this.client.adapterRef.isAudioBanned && !this.client.adapterRef.isVideoBanned) {
@@ -759,8 +759,9 @@ class LocalStream extends RTCEventEmitter {
         this.logger.warn('init() localStream不允许初始化时无任何音视频')
         onInitFinished()
         throw new RtcError({
-          code: ErrorCode.NO_MEDIA,
-          messsage: 'localStream不允许初始化时无任何音视频'
+          code: ErrorCode.NOT_ALLOWED,
+          message: 'init: localStream is not allowed to init without audio or video',
+          proposal: 'please make sure audio or video exists when init localStream'
         })
       }
     }
@@ -1068,7 +1069,8 @@ class LocalStream extends RTCEventEmitter {
       return Promise.reject(
         new RtcError({
           code: ErrorCode.UNKNOWN_TYPE,
-          message: 'unknown type'
+          message: 'localStream.isPlaying: unknown type',
+          proposal: 'please make sure the parameter(type) is correct'
         })
       )
     }
@@ -1150,7 +1152,7 @@ class LocalStream extends RTCEventEmitter {
       return Promise.reject(
         new RtcError({
           code: ErrorCode.INVALID_OPERATION,
-          message: 'audience is not allowed to open'
+          message: 'Stream.open: audience is not allowed to open'
         })
       )
     }
@@ -1175,7 +1177,7 @@ class LocalStream extends RTCEventEmitter {
             return Promise.reject(
               new RtcError({
                 code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-                message: 'audio is banned by server'
+                message: 'open: audio is banned by server'
               })
             )
           }
@@ -1192,7 +1194,7 @@ class LocalStream extends RTCEventEmitter {
             return Promise.reject(
               new RtcError({
                 code: ErrorCode.INVALID_OPERATION,
-                message: 'please close mic first'
+                message: 'Stream.open: please close mic first'
               })
             )
           }
@@ -1229,7 +1231,7 @@ class LocalStream extends RTCEventEmitter {
             return Promise.reject(
               new RtcError({
                 code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-                message: 'audio is banned by server'
+                message: 'open: audio is banned by server'
               })
             )
           }
@@ -1253,7 +1255,7 @@ class LocalStream extends RTCEventEmitter {
             return Promise.reject(
               new RtcError({
                 code: ErrorCode.INVALID_OPERATION,
-                message: 'please close screenAudio first'
+                message: 'Stream.open: please close screenAudio first'
               })
             )
           }
@@ -1284,7 +1286,7 @@ class LocalStream extends RTCEventEmitter {
             return Promise.reject(
               new RtcError({
                 code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-                message: 'video is banned by server'
+                message: 'open: video is banned by server'
               })
             )
           }
@@ -1302,7 +1304,7 @@ class LocalStream extends RTCEventEmitter {
             return Promise.reject(
               new RtcError({
                 code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-                message: 'audio is banned by server'
+                message: 'open: audio is banned by server'
               })
             )
           }
@@ -1321,7 +1323,7 @@ class LocalStream extends RTCEventEmitter {
               return Promise.reject(
                 new RtcError({
                   code: ErrorCode.INVALID_OPERATION,
-                  message: 'please close video first'
+                  message: 'Stream.open: please close video first'
                 })
               )
             } else {
@@ -1348,7 +1350,7 @@ class LocalStream extends RTCEventEmitter {
               return Promise.reject(
                 new RtcError({
                   code: ErrorCode.INVALID_OPERATION,
-                  message: 'please close screen-sharing first'
+                  message: 'Stream.open: please close screen-sharing first'
                 })
               )
             }
@@ -1369,7 +1371,7 @@ class LocalStream extends RTCEventEmitter {
             return Promise.reject(
               new RtcError({
                 code: ErrorCode.INVALID_OPERATION,
-                message: 'please close screenAudio first'
+                message: 'open: please close screenAudio first'
               })
             )
           }
@@ -1450,7 +1452,7 @@ class LocalStream extends RTCEventEmitter {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.NOT_ALLOWED,
-            message: e.message
+            message: `open: ${e.message}`
           })
         )
       } else {
@@ -1621,7 +1623,7 @@ class LocalStream extends RTCEventEmitter {
           onCloseFinished()
           throw new RtcError({
             code: ErrorCode.NO_PLAY,
-            message: 'no play'
+            message: 'close.video: Play is not instantiated'
           })
         }
         this._play.stopPlayVideoStream()
@@ -1653,7 +1655,7 @@ class LocalStream extends RTCEventEmitter {
         if (!this._play) {
           throw new RtcError({
             code: ErrorCode.NO_PLAY,
-            message: 'no play'
+            message: 'close.screen: Play is not instantiated'
           })
         }
         this._play.stopPlayScreenStream()
@@ -1702,7 +1704,7 @@ class LocalStream extends RTCEventEmitter {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.INVALID_OPERATION,
-            message: 'mic is not open'
+            message: 'Stream.close: mic is not open'
           })
         )
       } else if (reason === 'NOT_OPEN_CAMERA_YET') {
@@ -1710,7 +1712,7 @@ class LocalStream extends RTCEventEmitter {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.INVALID_OPERATION,
-            message: 'camera is not open'
+            message: 'Stream.close: camera is not open'
           })
         )
       } else if (reason === 'NOT_OPEN_SCREEN_YET') {
@@ -1718,7 +1720,7 @@ class LocalStream extends RTCEventEmitter {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.INVALID_OPERATION,
-            message: 'screen-sharing is not open'
+            message: 'Stream.close: screen-sharing is not open'
           })
         )
       } else {
@@ -2072,7 +2074,7 @@ class LocalStream extends RTCEventEmitter {
       if (!this._play) {
         throw new RtcError({
           code: ErrorCode.NO_PLAY,
-          message: 'no play'
+          message: 'setAudioVolume: Play is not instantiated'
         })
       }
       this._play.setPlayVolume(volume)
@@ -2217,7 +2219,7 @@ class LocalStream extends RTCEventEmitter {
       return Promise.reject(
         new RtcError({
           code: ErrorCode.INVALID_OPERATION,
-          message: 'switching ' + type
+          message: `switchDevice: switching ${type}`
         })
       )
     } else {
@@ -2229,7 +2231,7 @@ class LocalStream extends RTCEventEmitter {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-            message: 'audio is banned by server'
+            message: 'switchDevice: audio is banned by server'
           })
         )
       }
@@ -2244,7 +2246,7 @@ class LocalStream extends RTCEventEmitter {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.INVALID_OPERATION,
-            message: 'no audio input device'
+            message: 'switchDevice: no audio input device'
           })
         )
       } else if (this.audioSource) {
@@ -2253,7 +2255,7 @@ class LocalStream extends RTCEventEmitter {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.INVALID_OPERATION,
-            message: 'cannot switch user-defined audio input'
+            message: 'switchDevice: cannot switch user-defined audio input'
           })
         )
       }
@@ -2274,7 +2276,7 @@ class LocalStream extends RTCEventEmitter {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-            message: 'video is banned by server'
+            message: 'switchDevice: video is banned by server'
           })
         )
       }
@@ -2313,7 +2315,7 @@ class LocalStream extends RTCEventEmitter {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.INVALID_OPERATION,
-            message: 'no video input device'
+            message: 'switchDevice: no video input device'
           })
         )
       } else if (this.videoSource) {
@@ -2337,7 +2339,7 @@ class LocalStream extends RTCEventEmitter {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.INVALID_OPERATION,
-            message: 'cannot switch user-defined video input'
+            message: 'switchDevice: cannot switch user-defined video input'
           })
         )
       }
@@ -3074,7 +3076,7 @@ class LocalStream extends RTCEventEmitter {
     if (!this.videoProfile) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'no this.videoProfile'
+        message: 'getVideoBW: videoProfile is not found'
       })
     }
     if (this.videoProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_180p) {
@@ -3095,7 +3097,7 @@ class LocalStream extends RTCEventEmitter {
     if (!this.screenProfile) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'no this.screenProfile'
+        message: 'getScreenBW: screenProfile is not found'
       })
     }
     if (this.screenProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_180p) {
@@ -3125,7 +3127,7 @@ class LocalStream extends RTCEventEmitter {
       if (!this._play) {
         throw new RtcError({
           code: ErrorCode.NO_PLAY,
-          message: 'no play'
+          message: 'takeSnapshot: Play is not instantiated'
         })
       }
       await this._play.takeSnapshot(options, this.streamID)
@@ -3170,7 +3172,7 @@ class LocalStream extends RTCEventEmitter {
       if (!this._play) {
         throw new RtcError({
           code: ErrorCode.NO_PLAY,
-          message: 'no play'
+          message: 'takeSnapshotBase64: Play is not instantiated'
         })
       }
       let base64Url = this._play.takeSnapshotBase64(options)
@@ -3273,7 +3275,7 @@ class LocalStream extends RTCEventEmitter {
     if (!this._record) {
       throw new RtcError({
         code: ErrorCode.NO_RECORD,
-        message: 'no record'
+        message: 'stopMediaRecording: no record'
       })
     }
     //FIXME
@@ -3293,7 +3295,7 @@ class LocalStream extends RTCEventEmitter {
     if (!this._record) {
       throw new RtcError({
         code: ErrorCode.NO_RECORD,
-        message: 'no record'
+        message: 'playMediaRecording: no record'
       })
     }
     return this._record.play(options.view)
@@ -3309,7 +3311,7 @@ class LocalStream extends RTCEventEmitter {
     if (!this._record) {
       throw new RtcError({
         code: ErrorCode.NO_RECORD,
-        message: 'no record'
+        message: 'listMediaRecording: no record'
       })
     }
     const recordStatus = this._record.getRecordStatus()
@@ -3330,7 +3332,7 @@ class LocalStream extends RTCEventEmitter {
     if (!this._record) {
       throw new RtcError({
         code: ErrorCode.NO_RECORD,
-        message: 'no record'
+        message: 'cleanMediaRecording: no record'
       })
     }
     return this._record.clean()
@@ -3348,7 +3350,7 @@ class LocalStream extends RTCEventEmitter {
     if (!this._record) {
       throw new RtcError({
         code: ErrorCode.NO_RECORD,
-        message: 'no record'
+        message: 'downloadMediaRecording: no record'
       })
     }
     return this._record.download()
@@ -3377,7 +3379,7 @@ class LocalStream extends RTCEventEmitter {
       return Promise.reject(
         new RtcError({
           code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-          message: 'audio is banned by server'
+          message: 'startAudioMixing: audio is banned by server'
         })
       )
     }
@@ -3492,7 +3494,7 @@ class LocalStream extends RTCEventEmitter {
       return Promise.reject(
         new RtcError({
           code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-          message: 'audio is banned by server'
+          message: 'playEffect: audio is banned by server'
         })
       )
     }
@@ -3692,7 +3694,7 @@ class LocalStream extends RTCEventEmitter {
         )
         throw new RtcError({
           code: ErrorCode.INVALID_PARAMETER,
-          message: 'watermark exceeds limit'
+          message: 'setCanvasWatermarkConfigs: text watermark exceeds limit'
         })
       }
       if (options.imageWatermarks && options.imageWatermarks.length > LIMITS.IMAGE) {
@@ -3701,7 +3703,7 @@ class LocalStream extends RTCEventEmitter {
         )
         throw new RtcError({
           code: ErrorCode.INVALID_PARAMETER,
-          message: 'watermark exceeds limit'
+          message: 'setCanvasWatermarkConfigs: image watermark exceeds limit'
         })
       }
       watermarkControl.checkWatermarkParams(options)
@@ -3778,7 +3780,7 @@ class LocalStream extends RTCEventEmitter {
         )
         throw new RtcError({
           code: ErrorCode.INVALID_PARAMETER,
-          message: 'watermark exceeds limit'
+          message: 'setEncoderWatermarkConfigs: text watermark exceeds limit'
         })
       }
       if (options.imageWatermarks && options.imageWatermarks.length > LIMITS.IMAGE) {
@@ -3787,7 +3789,7 @@ class LocalStream extends RTCEventEmitter {
         )
         throw new RtcError({
           code: ErrorCode.INVALID_PARAMETER,
-          message: 'watermark exceeds limit'
+          message: 'setEncoderWatermarkConfigs: image watermark exceeds limit'
         })
       }
       watermarkControl.checkWatermarkParams(options)
