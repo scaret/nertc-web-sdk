@@ -127,6 +127,10 @@ export class LBSManager {
       this.logger.error(`无法更新域名配置：缺少appkey`)
       return
     }
+    if (this.client?._params?.neRtcServerAddresses?.channelServer) {
+      this.logger.log(`忽略更新LBS配置请求：当前为私有化配置`)
+      return
+    }
     const now = Date.now()
     const lastUpdatedDuration = now - this.lastUpdateStartAt
     if (lastUpdatedDuration < 3000) {
@@ -348,6 +352,10 @@ export class LBSManager {
     if (!this.client._params.appkey) {
       this.logger.error(`loadLocalConfig: 缺少appkey`)
       return { reason: 'appkeyNotFound', config: null }
+    }
+    if (this.client._params?.neRtcServerAddresses?.channelServer) {
+      this.logger.log(`忽略 loadLocalConfig 请求：当前为私有化配置`)
+      return { reason: 'privilization', config: null }
     }
     let data: LBS_CONFIG | null = null
     try {
