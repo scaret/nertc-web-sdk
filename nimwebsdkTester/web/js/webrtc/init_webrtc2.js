@@ -156,6 +156,7 @@ let privatizationConfig = null;
   "nosUploadSever":"https://yunxinent-demo.netease.im",
   "nosTokenServer":"https://yunxinent-demo.netease.im/report/sdklog/getToken",
   "webSocketProxyServer":"www.testg2proxy.com",
+  "statisticsWebSocketServer": "wss://yunxin-solution.netease.im/lps-websocket/websocket/collect",
   "mediaProxyServer":"59.111.58.216:3478",
   "useIPv6":false
 }*/
@@ -1266,6 +1267,7 @@ $("#joinChannel-btn").on("click", async () => {
 
   let channelServer = null;
   statisticsServer = null;
+  statisticsWebSocketServer = null;
   roomServer = null;
   demoServer = null;
   appkey = null;
@@ -1303,6 +1305,7 @@ $("#joinChannel-btn").on("click", async () => {
       demoServer = $("#demoServer").val() || privatizationConfig.demoServer;
       webSocketProxyServer = privatizationConfig.webSocketProxyServer;
       mediaProxyServer = privatizationConfig.mediaProxyServer;
+      statisticsWebSocketServer = privatizationConfig.statisticsWebSocketServer;
     }
 
     if (appkey) {
@@ -1377,6 +1380,7 @@ $("#joinChannel-btn").on("click", async () => {
         statisticsServer,
         roomServer,
         cloudProxyServer: "",
+        statisticsWebSocketServer,
         webSocketProxyServer,
         mediaProxyServer,
       },
