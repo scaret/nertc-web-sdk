@@ -358,24 +358,6 @@ class Client extends Base {
   async join(options: JoinOptions) {
     this.logger.log('join() 加入频道, options: ', JSON.stringify(options, null, ' '))
 
-    // join执行同时发起lbs请求。向getChannelInfo的请求不会被
-    const localConfig = this.adapterRef.lbsManager.loadLocalConfig('onjoin')
-    if (localConfig.config) {
-      // 载入LBS本地配置成功
-      const expireTime = localConfig.config.ts + localConfig.config.config.ttl * 1000 - Date.now()
-      if (expireTime < localConfig.config.config.preloadTimeSec * 1000) {
-        this.logger.log(
-          `LBS在 ${Math.floor(expireTime / 1000)} 秒后过期。preloadTimeSec: ${
-            localConfig.config.config.preloadTimeSec
-          }。发起异步刷新请求`
-        )
-        this.adapterRef.lbsManager.startUpdate('renew')
-      }
-    } else {
-      // 载入本地配置失败=>载入内置配置，同时发起远程请求
-      this.adapterRef.lbsManager.startUpdate(localConfig.reason)
-    }
-
     try {
       if (!options.channelName || options.channelName === '') {
         this.logger.log('join: 请填写房间名称')
@@ -475,6 +457,24 @@ class Client extends Base {
           webSocketProxyServer: options.neRtcServerAddresses.webSocketProxyServer || '',
           mediaProxyServer: options.neRtcServerAddresses.mediaProxyServer || ''
         }
+      }
+
+      // join执行同时发起lbs请求。向getChannelInfo的请求不会被
+      const localConfig = this.adapterRef.lbsManager.loadLocalConfig('onjoin')
+      if (localConfig.config) {
+        // 载入LBS本地配置成功
+        const expireTime = localConfig.config.ts + localConfig.config.config.ttl * 1000 - Date.now()
+        if (expireTime < localConfig.config.config.preloadTimeSec * 1000) {
+          this.logger.log(
+            `LBS在 ${Math.floor(expireTime / 1000)} 秒后过期。preloadTimeSec: ${
+              localConfig.config.config.preloadTimeSec
+            }。发起异步刷新请求`
+          )
+          this.adapterRef.lbsManager.startUpdate('renew')
+        }
+      } else {
+        // 载入本地配置失败=>载入内置配置，同时发起远程请求
+        this.adapterRef.lbsManager.startUpdate(localConfig.reason)
       }
 
       this.setStartSessionTime()

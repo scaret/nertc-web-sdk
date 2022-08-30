@@ -266,14 +266,19 @@ export default class WSTransport {
     this.isConnecting_ = true
     this.reconnectionCount_++
 
-    const urlSettings = this.adapterRef.lbsManager.getURLSettings(this.url_)
-    const urlSetting = urlSettings[this.reconnectionCount_ % urlSettings.length]
-    if (urlSetting.url !== this.url_) {
-      this.logger.warn(
-        `${urlSetting.seqId} WebSocket切换备用线路 ${this.url_} => ${urlSetting.url}`
-      )
-      this.url_ = urlSetting.url
-      this.urlSetting = urlSetting
+    if (this.adapterRef.instance?._params?.neRtcServerAddresses?.channelServer) {
+      this.logger.log(`WebSocket不启用备用线路：当前为私有化配置`)
+      return
+    } else {
+      const urlSettings = this.adapterRef.lbsManager.getURLSettings(this.url_)
+      const urlSetting = urlSettings[this.reconnectionCount_ % urlSettings.length]
+      if (urlSetting.url !== this.url_) {
+        this.logger.warn(
+          `${urlSetting.seqId} WebSocket切换备用线路 ${this.url_} => ${urlSetting.url}`
+        )
+        this.url_ = urlSetting.url
+        this.urlSetting = urlSetting
+      }
     }
 
     this.socket_ = new WebSocket(this.url_)
