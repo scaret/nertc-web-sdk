@@ -1023,13 +1023,13 @@ class Play extends EventEmitter {
     if (!ctx) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'no context of canvas'
+        message: 'takeSnapshot: context of canvas is not found'
       })
     }
     if (!canvas) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'no canvas'
+        message: 'takeSnapshot: canvas is not found'
       })
     }
 
@@ -1040,7 +1040,7 @@ class Play extends EventEmitter {
       if (!this.videoDom) {
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: 'no videoDom'
+          message: 'takeSnapshot: videoDom is not found'
         })
       }
       ctx.fillRect(0, 0, this.videoDom.videoWidth, this.videoDom.videoHeight)
@@ -1085,7 +1085,7 @@ class Play extends EventEmitter {
       if (!this.screenDom) {
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: 'no screenDom'
+          message: 'takeSnapshot: screenDom is not found'
         })
       }
       ctx.fillRect(0, 0, this.screenDom.videoWidth, this.screenDom.videoHeight)
@@ -1134,13 +1134,13 @@ class Play extends EventEmitter {
     if (!ctx) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'no context of canvas'
+        message: 'takeSnapshotBase64: context of canvas is not found'
       })
     }
     if (!canvas) {
       throw new RtcError({
         code: ErrorCode.NOT_FOUND,
-        message: 'no canvas'
+        message: 'takeSnapshotBase64: canvas is not found'
       })
     }
     // video
@@ -1149,7 +1149,7 @@ class Play extends EventEmitter {
       if (!this.videoDom) {
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: 'no videoDom'
+          message: 'takeSnapshotBase64: videoDom is not found'
         })
       }
       ctx.fillRect(0, 0, this.videoDom.videoWidth, this.videoDom.videoHeight)
@@ -1177,7 +1177,7 @@ class Play extends EventEmitter {
       if (!this.screenDom) {
         throw new RtcError({
           code: ErrorCode.NOT_FOUND,
-          message: 'no screenDom'
+          message: 'takeSnapshotBase64: screenDom is not found'
         })
       }
       ctx.fillRect(0, 0, this.screenDom.videoWidth, this.screenDom.videoHeight)

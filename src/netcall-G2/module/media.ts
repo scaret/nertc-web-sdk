@@ -264,7 +264,7 @@ class MediaHelper extends EventEmitter {
         this._reset()
         let err = new RtcError({
           code: ErrorCode.INVALID_OPERATION,
-          message: '本地流已经被销毁'
+          message: 'assertLive: localStream is destroyed'
         })
         throw err
       }
@@ -1350,21 +1350,21 @@ class MediaHelper extends EventEmitter {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.INVALID_OPERATION,
-            message: 'file path not found'
+            message: 'startAudioMixing: file path not found'
           })
         )
       } else if (reason === 'NOT_PUBLIST_AUDIO_YET') {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.INVALID_OPERATION,
-            message: 'audio source is not published'
+            message: 'startAudioMixing: audio source is not published'
           })
         )
       } else if (reason === 'BROWSER_NOT_SUPPORT') {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.NOT_SUPPORT,
-            message: 'audio mixing is not supported in this browser'
+            message: 'startAudioMixing: audio mixing is not supported in this browser'
           })
         )
       }
@@ -1420,7 +1420,7 @@ class MediaHelper extends EventEmitter {
             reject(
               new RtcError({
                 code: ErrorCode.NOT_SUPPORT,
-                message: 'webAudio lost'
+                message: 'loadRemoteAudioFile: webAudio lost'
               })
             )
             return
@@ -1433,7 +1433,7 @@ class MediaHelper extends EventEmitter {
                 reject(
                   new RtcError({
                     code: ErrorCode.STATE_ERROR,
-                    message: 'state error'
+                    message: 'loadRemoteAudioFile: state error'
                   })
                 )
                 return
@@ -1448,7 +1448,7 @@ class MediaHelper extends EventEmitter {
               reject(
                 new RtcError({
                   code: ErrorCode.STATE_ERROR,
-                  message: 'create buffersource failed'
+                  message: 'loadRemoteAudioFile: create buffersource failed'
                 })
               )
             }
@@ -1460,7 +1460,7 @@ class MediaHelper extends EventEmitter {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.STATE_ERROR,
-            message: 'load audio failed'
+            message: 'loadRemoteAudioFile: load audio failed'
           })
         )
       })
@@ -1512,7 +1512,7 @@ class MediaHelper extends EventEmitter {
       return Promise.reject(
         new RtcError({
           code: ErrorCode.INVALID_PARAMETER,
-          message: 'startMix parameter error'
+          message: 'startMix: parameter error'
         })
       )
     }
@@ -1823,7 +1823,7 @@ class MediaHelper extends EventEmitter {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.INVALID_PARAMETER,
-            message: 'setAudioMixingVolume: volume must be an integer with scope (0 - 255)'
+            message: 'setAudioMixingVolume: volume must be an integer in the range of (0 - 255)'
           })
         )
       }
@@ -1910,7 +1910,7 @@ class MediaHelper extends EventEmitter {
             return Promise.reject(
               new RtcError({
                 code: ErrorCode.NOT_SUPPORT,
-                message: 'webAudio is not supported in this browser'
+                message: 'setAudioMixingPlayTime: webAudio is not supported in this browser'
               })
             )
           }
@@ -2513,7 +2513,8 @@ class MediaHelper extends EventEmitter {
       return Promise.reject(
         new RtcError({
           code: ErrorCode.INVALID_OPERATION,
-          message: 'unloadEffect: invalid operation'
+          message: 'unloadEffect: invalid operation',
+          proposal: 'this audioEffect file is playing, please use stopEffect method'
         })
       )
     }
@@ -2689,7 +2690,7 @@ class MediaHelper extends EventEmitter {
             reject(
               new RtcError({
                 code: ErrorCode.STATE_ERROR,
-                message: 'webAudio lost'
+                message: 'loadAudioBuffer: webAudio lost'
               })
             )
             return
@@ -2706,7 +2707,7 @@ class MediaHelper extends EventEmitter {
               reject(
                 new RtcError({
                   code: ErrorCode.DECODE_FAILED,
-                  message: 'create buffersource failed'
+                  message: 'loadRemoteAudioFile: create buffersource failed'
                 })
               )
             }
@@ -2718,7 +2719,7 @@ class MediaHelper extends EventEmitter {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.STATE_ERROR,
-            message: 'load audio failed'
+            message: 'loadAudioBuffer: load audio failed'
           })
         )
       })

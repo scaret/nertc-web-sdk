@@ -38,7 +38,7 @@ const checkValidInteger = (param: ValidIntegerOptions) => {
   } else {
     throw new RtcError({
       code: ErrorCode.INVALID_PARAMETER,
-      message: `参数错误 ${param.tag}:${data.msg}`
+      message: `invalid parameter: ${param.tag}:${data.msg}`
     })
   }
 }
@@ -63,7 +63,7 @@ const checkValidBoolean = (param: ValidBooleanOptions) => {
   } else {
     throw new RtcError({
       code: ErrorCode.INVALID_PARAMETER,
-      message: `参数错误 ${param.tag}:${data.msg}`
+      message: `invalid parameter: ${param.tag}:${data.msg}`
     })
   }
 }
@@ -98,7 +98,7 @@ const checkValidString = (param: ValidStringOptions) => {
   } else {
     throw new RtcError({
       code: ErrorCode.INVALID_PARAMETER,
-      message: `参数错误 ${param.tag}:${data.msg}`
+      message: `invalid parameter: ${param.tag}:${data.msg}`
     })
   }
 }
@@ -133,7 +133,7 @@ const checkValidFloat = (param: ValidFloatOptions) => {
   } else {
     throw new RtcError({
       code: ErrorCode.INVALID_PARAMETER,
-      message: `参数错误 ${param.tag}:${data.msg}`
+      message: `invalid parameter: ${param.tag}:${data.msg}`
     })
   }
 }
@@ -158,7 +158,7 @@ const checkExists = (param: ExistsOptions) => {
   } else {
     throw new RtcError({
       code: ErrorCode.INVALID_PARAMETER,
-      message: `参数错误：${param.tag} ${data.msg}`
+      message: `invalid parameter: ${param.tag}:${data.msg}`
     })
   }
 }

@@ -396,8 +396,8 @@ class Meeting extends EventEmitter {
     })
     if (!this.adapterRef._signalling) {
       throw new RtcError({
-        code: ErrorCode.NO_SIGNALLING,
-        message: 'No _signalling'
+        code: ErrorCode.SOCKET_ERROR,
+        message: 'leaveChannel: no signalling'
       })
     }
     return this.adapterRef._signalling.doSendLogout().then(() => {
@@ -511,7 +511,7 @@ class Meeting extends EventEmitter {
       return Promise.reject(
         new RtcError({
           code: ErrorCode.INVALID_OPERATION,
-          message: 'please join room first'
+          message: 'deleteTasks: please join room first'
         })
       )
     } else if (!taskIds || !Array.isArray(taskIds) || !taskIds.length) {
@@ -519,7 +519,7 @@ class Meeting extends EventEmitter {
       return Promise.reject(
         new RtcError({
           code: ErrorCode.INVALID_PARAMETER,
-          message: 'invalid parameter'
+          message: 'deleteTasks: invalid parameter'
         })
       )
     }
@@ -577,7 +577,7 @@ class Meeting extends EventEmitter {
           return Promise.reject(
             new RtcError({
               code: ErrorCode.DELETE_TASK_FAILED,
-              message: 'delete task failed'
+              message: 'deleteTasks: delete task failed'
             })
           )
         }
@@ -598,7 +598,7 @@ class Meeting extends EventEmitter {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.DELETE_TASK_FAILED,
-            message: 'delete task failed'
+            message: 'deleteTasks: delete task failed'
           })
         )
       }
@@ -633,7 +633,7 @@ class Meeting extends EventEmitter {
       return Promise.reject(
         new RtcError({
           code: ErrorCode.INVALID_OPERATION,
-          message: 'please join room first'
+          message: 'updateTasks: please join room first'
         })
       )
     } else if (!rtmpTasks || !Array.isArray(rtmpTasks) || !rtmpTasks.length) {
@@ -641,7 +641,7 @@ class Meeting extends EventEmitter {
       return Promise.reject(
         new RtcError({
           code: ErrorCode.INVALID_PARAMETER,
-          message: 'invalid parameter'
+          message: 'updateTasks: invalid parameter'
         })
       )
     }
@@ -726,7 +726,7 @@ class Meeting extends EventEmitter {
           return Promise.reject(
             new RtcError({
               code: ErrorCode.UPDATE_TASKS_FAILED,
-              message: 'update task failed'
+              message: 'updateTasks: update task failed'
             })
           )
         }
@@ -753,7 +753,7 @@ class Meeting extends EventEmitter {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.UPDATE_TASKS_FAILED,
-            message: 'update task failed'
+            message: 'updateTasks: update task failed'
           })
         )
       }

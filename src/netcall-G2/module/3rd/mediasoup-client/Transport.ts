@@ -310,7 +310,7 @@ export class Transport extends EnhancedEventEmitter {
   ) {
     throw new RtcError({
       code: ErrorCode.APPDATA_ERROR,
-      message: 'cannot override appData object'
+      message: 'transport: cannot override appData object'
     })
   }
 

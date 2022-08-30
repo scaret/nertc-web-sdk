@@ -763,14 +763,6 @@ export interface MediasoupManagerOptions {
   logger: ILogger
 }
 
-export interface MediasoupManagerInitOptions {
-  ip: string
-  port: number
-  username: string
-  password: string
-  protocol: string[]
-}
-
 export interface ProduceConsumeInfo {
   uid: number | string
   kind: 'audio' | 'video'

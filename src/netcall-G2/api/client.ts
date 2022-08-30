@@ -170,7 +170,10 @@ class Client extends Base {
     const { appkey = '', token } = options
     if (!appkey) {
       this.logger.error('Client: init error: 请传入appkey')
-      throw new RtcError({ code: ErrorCode.INVALID_PARAMETER, message: '请传入appkey' })
+      throw new RtcError({
+        code: ErrorCode.INVALID_PARAMETER,
+        message: 'init: please input appkey'
+      })
     }
     this._params.appkey = appkey
 
@@ -259,7 +262,7 @@ class Client extends Base {
     if (reason) {
       throw new RtcError({
         code: ErrorCode.INVALID_PARAMETER,
-        message: 'startProxyServer: 请在加入房间前调用'
+        message: 'startProxyServer: please invoke before join()'
       })
     }
     this.adapterRef.proxyServer.enable = true
@@ -326,7 +329,7 @@ class Client extends Base {
     if (reason) {
       throw new RtcError({
         code: ErrorCode.INVALID_PARAMETER,
-        message: 'setLocalMediaPriority: priority is not Number'
+        message: 'setLocalMediaPriority: parameter(priority) is not Number'
       })
     }
     this.adapterRef.userPriority = options
@@ -375,7 +378,11 @@ class Client extends Base {
 
     try {
       if (!options.channelName || options.channelName === '') {
-        throw new RtcError({ code: ErrorCode.INVALID_PARAMETER, message: 'join: 请填写房间名称' })
+        this.logger.log('join: 请填写房间名称')
+        throw new RtcError({
+          code: ErrorCode.INVALID_PARAMETER,
+          message: 'join: please input room number'
+        })
       }
       if (options.joinChannelRecordConfig) {
         checkValidBoolean({
@@ -389,12 +396,13 @@ class Client extends Base {
       }
 
       if (typeof options.uid === 'string') {
-        this.logger.log('uid是string类型')
+        this.logger.log('uid 是 string 类型')
         this.adapterRef.channelInfo.uidType = 'string'
       } else if (typeof options.uid === 'number') {
-        this.logger.log('uid是number类型')
+        this.logger.log('uid 是 number 类型')
         this.adapterRef.channelInfo.uidType = 'number'
         if (options.uid > Number.MAX_SAFE_INTEGER) {
+          this.logger.log('uid 参数越界')
           throw new RtcError({
             code: ErrorCode.INVALID_PARAMETER,
             message: 'join: uid is exceeds the scope of Number'
@@ -428,7 +436,7 @@ class Client extends Base {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.REPEAT_JOIN,
-            message: 'repeatedly join'
+            message: 'join: repeatedly join'
           })
         )
       }
@@ -484,8 +492,8 @@ class Client extends Base {
       if (!this.adapterRef._meetings) {
         this.safeEmit('@pairing-join-error')
         throw new RtcError({
-          code: ErrorCode.NO_MEETINGS,
-          message: 'meetings error'
+          code: ErrorCode.NO_STATS,
+          message: 'join: meetings error'
         })
       }
       const joinResult = await this.adapterRef._meetings.joinChannel(
@@ -582,9 +590,9 @@ class Client extends Base {
     }
     // @ts-ignore
     else if (typeof window.RTCRtpReceiver?.prototype.createEncodedStreams !== 'function') {
-      errMsg = '浏览器不支持自定义加解密: 未找到createEncodedStreams'
+      errMsg = 'enableCustomTransform: 浏览器不支持自定义加解密，未找到createEncodedStreams'
     } else if (this.adapterRef.encryption.encryptionMode !== 'none') {
-      errMsg = '自定义加密功能与国密加密功能不兼容'
+      errMsg = 'enableCustomTransform: 自定义加密功能与国密加密功能不兼容'
     }
     if (errMsg) {
       this.logger.error(errMsg)
@@ -678,15 +686,17 @@ class Client extends Base {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.INVALID_OPERATION,
-            message: 'invalid operation'
+            message: 'doPublish: invalid operation',
+            proposal: 'please make sure the client role is anchor'
           })
         )
       } else if (reason === 'INVALID_LOCAL_STREAM') {
         onPublishFinish()
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.NO_LOCALSTREAM,
-            message: 'no localStream'
+            code: ErrorCode.NOT_FOUND,
+            message: 'doPublish: localStream is not found',
+            proposal: 'please make sure the parameter(stream) is valid'
           })
         )
       } else {
@@ -699,8 +709,8 @@ class Client extends Base {
       if (!this.adapterRef._mediasoup) {
         onPublishFinish()
         throw new RtcError({
-          code: ErrorCode.NO_MEDIASERVER,
-          message: 'media server error 4'
+          code: ErrorCode.NO_SERVER_ADDRESS,
+          message: 'doPublish: media server error'
         })
       }
       this.bindLocalStream(stream)
@@ -761,15 +771,17 @@ class Client extends Base {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.INVALID_OPERATION,
-            message: 'invalid operation'
+            message: 'unpublish: invalid operation',
+            proposal: 'may caused by a temporary network failure connection'
           })
         )
       } else if (reason === 'INVALID_LOCAL_STREAM') {
         onUnpublishFinish()
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.NO_LOCALSTREAM,
-            message: 'no localStream'
+            code: ErrorCode.NOT_FOUND,
+            message: 'unpublish: localStream is not found',
+            proposal: 'please make sure the parameter(stream) is valid'
           })
         )
       } else {
@@ -782,8 +794,8 @@ class Client extends Base {
     try {
       if (!this.adapterRef._mediasoup) {
         throw new RtcError({
-          code: ErrorCode.NO_MEDIASERVER,
-          message: 'media server error 5'
+          code: ErrorCode.NO_SERVER_ADDRESS,
+          message: 'unpublish: media server error'
         })
       }
       await this.adapterRef._mediasoup.destroyProduce('audio')
@@ -881,16 +893,16 @@ class Client extends Base {
 
   async doSubscribe(stream: RemoteStream) {
     const uid = stream.getId()
-    if (!uid) {
-      throw new RtcError({
-        code: ErrorCode.INVALID_PARAMETER,
-        message: 'No uid'
-      })
-    }
+    // if (!uid) {
+    //   throw new RtcError({
+    //     code: ErrorCode.INVALID_PARAMETER,
+    //     message: 'doSubscribe: no uid'
+    //   })
+    // }
     if (!this.adapterRef._mediasoup) {
       throw new RtcError({
-        code: ErrorCode.NO_MEDIASERVER,
-        message: 'media server error 6'
+        code: ErrorCode.NO_SERVER_ADDRESS,
+        message: 'doSubscribe: media server error 1'
       })
     }
     try {
@@ -919,8 +931,8 @@ class Client extends Base {
           stream.pubStatus.audio.stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup) {
             throw new RtcError({
-              code: ErrorCode.NO_MEDIASERVER,
-              message: 'media server error 7'
+              code: ErrorCode.NO_SERVER_ADDRESS,
+              message: 'doSubscribe: media server error 2'
             })
           }
           await this.adapterRef._mediasoup.destroyConsumer(
@@ -971,8 +983,8 @@ class Client extends Base {
           stream.pubStatus.audioSlave.stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup) {
             throw new RtcError({
-              code: ErrorCode.NO_MEDIASERVER,
-              message: 'media server error 7'
+              code: ErrorCode.NO_SERVER_ADDRESS,
+              message: 'doSubscribe: media server error 3'
             })
           }
           await this.adapterRef._mediasoup.destroyConsumer(
@@ -1026,8 +1038,8 @@ class Client extends Base {
           stream.pubStatus.video.stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup) {
             throw new RtcError({
-              code: ErrorCode.NO_MEDIASERVER,
-              message: 'media server error 8'
+              code: ErrorCode.NO_SERVER_ADDRESS,
+              message: 'doSubscribe: media server error 4'
             })
           }
           await this.adapterRef._mediasoup.destroyConsumer(
@@ -1087,8 +1099,8 @@ class Client extends Base {
           stream.pubStatus.screen.stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup) {
             throw new RtcError({
-              code: ErrorCode.NO_MEDIASERVER,
-              message: 'media server error 9'
+              code: ErrorCode.NO_SERVER_ADDRESS,
+              message: 'doSubscribe: media server error 5'
             })
           }
           await this.adapterRef._mediasoup.destroyConsumer(
@@ -1185,8 +1197,8 @@ class Client extends Base {
         stream.pubStatus.audio.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup) {
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASERVER,
-            message: 'media server error 10'
+            code: ErrorCode.NO_SERVER_ADDRESS,
+            message: 'doUnsubscribe: media server error 1'
           })
         }
         await this.adapterRef._mediasoup.destroyConsumer(
@@ -1224,8 +1236,8 @@ class Client extends Base {
         stream.pubStatus.audioSlave.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup) {
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASERVER,
-            message: 'media server error 7'
+            code: ErrorCode.NO_SERVER_ADDRESS,
+            message: 'doUnsubscribe: media server error 2'
           })
         }
         await this.adapterRef._mediasoup.destroyConsumer(
@@ -1255,8 +1267,8 @@ class Client extends Base {
         stream.pubStatus.video.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup) {
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASERVER,
-            message: 'media server error 11'
+            code: ErrorCode.NO_SERVER_ADDRESS,
+            message: 'doUnsubscribe: media server error 3'
           })
         }
         await this.adapterRef._mediasoup.destroyConsumer(
@@ -1295,8 +1307,8 @@ class Client extends Base {
         stream.pubStatus.screen.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup) {
           throw new RtcError({
-            code: ErrorCode.NO_MEDIASERVER,
-            message: 'media server error 12'
+            code: ErrorCode.NO_SERVER_ADDRESS,
+            message: 'doUnsubscribe: media server error 4'
           })
         }
         await this.adapterRef._mediasoup.destroyConsumer(
@@ -1375,17 +1387,17 @@ class Client extends Base {
     try {
       if (!this.adapterRef._mediasoup) {
         throw new RtcError({
-          code: ErrorCode.NO_MEDIASERVER,
-          message: 'media server error 13'
+          code: ErrorCode.NO_SERVER_ADDRESS,
+          message: 'setRemoteVideoStreamType: media server error'
         })
       }
-      const streamId = stream.getId()
-      if (!streamId) {
-        throw new RtcError({
-          code: ErrorCode.INVALID_PARAMETER,
-          message: 'No stream Id'
-        })
-      }
+      // const streamId = stream.getId()
+      // if (!streamId) {
+      //   throw new RtcError({
+      //     code: ErrorCode.INVALID_PARAMETER,
+      //     message: 'setRemoteVideoStreamType: no stream Id'
+      //   })
+      // }
       await this.adapterRef._mediasoup.setConsumerPreferredLayer(stream, highOrLow ? 0 : 1, 'video')
       stream.subConf.highOrLow.video = highOrLow
       this.apiFrequencyControl({
@@ -1446,17 +1458,17 @@ class Client extends Base {
     try {
       if (!this.adapterRef._mediasoup) {
         throw new RtcError({
-          code: ErrorCode.NO_MEDIASERVER,
-          message: 'media server error 27'
+          code: ErrorCode.NO_SERVER_ADDRESS,
+          message: 'setRemoteStreamType: media server error'
         })
       }
-      const streamId = stream.getId()
-      if (!streamId) {
-        throw new RtcError({
-          code: ErrorCode.INVALID_PARAMETER,
-          message: 'No stream Id'
-        })
-      }
+      // const streamId = stream.getId()
+      // if (!streamId) {
+      //   throw new RtcError({
+      //     code: ErrorCode.INVALID_PARAMETER,
+      //     message: 'No stream Id'
+      //   })
+      // }
       await this.adapterRef._mediasoup.setConsumerPreferredLayer(
         stream,
         highOrLow ? 0 : 1,
@@ -1596,8 +1608,8 @@ class Client extends Base {
             }
             if (!this.adapterRef._mediasoup) {
               throw new RtcError({
-                code: ErrorCode.NO_MEDIASERVER,
-                message: 'media server error 14'
+                code: ErrorCode.NO_SERVER_ADDRESS,
+                message: 'setClientRole: media server error'
               })
             }
             await this.adapterRef._mediasoup.updateUserRole(userRole)
@@ -1639,14 +1651,17 @@ class Client extends Base {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.INVALID_OPERATION,
-            message: 'invalid operation'
+            message: 'setClientRole: invalid operation',
+            proposal: 'please make sure the role is valid'
           })
         )
       } else if (reason === 'USER_NOT_IN_CHANNEL') {
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.NO_LOCALSTREAM,
-            message: 'user not in channel'
+            code: ErrorCode.NOT_FOUND,
+            message: 'setClientRole: user is not in the channel',
+            proposal:
+              'the current user id not in the channel, may caused by a temporary network failure connection'
           })
         )
       }
@@ -1714,7 +1729,7 @@ class Client extends Base {
       return Promise.reject(
         new RtcError({
           code: ErrorCode.NOT_SUPPORTED_YET,
-          message: 'navigator.getBattery is not support in your browser',
+          message: 'getSystemStats: navigator.getBattery is not support in your browser',
           url: 'https://developer.mozilla.org/en-US/docs/Web/API/Navigator/getBattery'
         })
       )
@@ -1843,7 +1858,7 @@ class Client extends Base {
     this.logger.log('setChannelProfile, options: ', JSON.stringify(options, null, ' '))
     if (this.adapterRef.connectState.curState !== 'DISCONNECTED') {
       this.logger.warn('setChannelProfile: 请在加入房间前调用')
-      reason = 'setChannelProfile: 请在加入房间前调用'
+      reason = 'setChannelProfile: please invoke this function before join()'
     } else {
       const mode = options.mode || 'rtc'
       if (this.adapterRef.localStream) {
@@ -1900,7 +1915,7 @@ class Client extends Base {
         }
       })
       throw new RtcError({
-        code: ErrorCode.NO_MEETINGS,
+        code: ErrorCode.NOT_ALLOWED,
         message: reason
       })
     }
@@ -1957,7 +1972,7 @@ class Client extends Base {
         }
       })
       throw new RtcError({
-        code: ErrorCode.NO_MEETINGS,
+        code: ErrorCode.NOT_ALLOWED,
         message: reason
       })
     }
@@ -2014,7 +2029,7 @@ class Client extends Base {
         }
       })
       throw new RtcError({
-        code: ErrorCode.NO_MEETINGS,
+        code: ErrorCode.NOT_ALLOWED,
         message: reason
       })
     }
@@ -2268,7 +2283,7 @@ class Client extends Base {
     if (!this.recordManager.record) {
       throw new RtcError({
         code: ErrorCode.NO_RECORD,
-        message: '操作非法：没有开始录制'
+        message: 'stopMediaRecording: recording is not start'
       })
     }
     //FIXME
@@ -2282,7 +2297,7 @@ class Client extends Base {
     if (!this.recordManager.record) {
       throw new RtcError({
         code: ErrorCode.NO_RECORD,
-        message: '操作非法：没有开始录制'
+        message: 'cleanMediaRecording: recording is not start'
       })
     }
     return this.recordManager.record.clean()
@@ -2294,7 +2309,7 @@ class Client extends Base {
     if (!this.recordManager.record) {
       throw new RtcError({
         code: ErrorCode.NO_RECORD,
-        message: '操作非法：没有开始录制'
+        message: 'downloadMediaRecording: recording is not start'
       })
     }
     return this.recordManager.record.download()

@@ -13,14 +13,22 @@ const getErrorName = function (code: number) {
 class RtcError extends Error {
   private code_: any
   private message_: any
+  private proposal_?: any
   private extraCode_: any
   constructor(options: any) {
     let defaultUrl =
       'https://doc.yunxin.163.com/docs/interface/NERTC_SDK/Latest/Web/api/index.html#errorCode'
     let url = options.url ? options.url : defaultUrl
-    super(options.message + ` <${getErrorName(options.code)} ${options.code.toString()}> ` + url)
+    let proposalMsg = options.proposal ? ` proposal: ${options.proposal} ` : ''
+    super(
+      options.message +
+        ` <${getErrorName(options.code)} ${options.code.toString()}> ` +
+        proposalMsg +
+        url
+    )
     this.code_ = options.code
     this.message_ = options.message
+    this.proposal_ = options.proposal
     this.extraCode_ = options.extraCode
   }
 
@@ -38,6 +46,10 @@ class RtcError extends Error {
 
   getMessage() {
     return this.message_
+  }
+
+  getProposal() {
+    return this.proposal_
   }
 
   getExtraCode() {

@@ -167,7 +167,7 @@ export class Consumer extends EnhancedEventEmitter {
   ) {
     throw new RtcError({
       code: ErrorCode.APPDATA_ERROR,
-      message: 'cannot override appData object'
+      message: 'consumer: cannot override appData object'
     })
   }
 

@@ -9,7 +9,7 @@ export const Config: IConfig = {
   createChannelUrl: 'https://webtest.netease.im/nrtcproxy/nrtc/createChannel.action',
   getChannelInfoUrl: 'https://webtest.netease.im/nrtcproxy/nrtc/getChannelInfos.action',
   roomsTaskUrl: 'https://roomserver-greytest.netease.im/v2/sdk/rooms/',
-  getCloudProxyInfoUrl: ''
+  getCloudProxyInfoUrl: 'https://ap-qa-jd.netease.im/v1/g2/getCloudProxyInfo'
 }
 
 export const LBS_BUILD_CONFIG: {
