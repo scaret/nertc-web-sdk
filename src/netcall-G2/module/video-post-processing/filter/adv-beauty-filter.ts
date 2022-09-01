@@ -128,6 +128,7 @@ export class AdvBeautyFilter extends Filter {
     shrinkNose: 0,
     lengthenNose: 0.5,
     shrinkMouth: 0.5,
+    widenMouth: 0.5,
     mouthCorners: 0.5,
     adjustPhiltrum: 0.5,
     shrinkUnderjaw: 0,
@@ -137,10 +138,11 @@ export class AdvBeautyFilter extends Filter {
     shrinkFace: 0,
     vShapedFace: 0,
     minifyFace: 0,
+    shortenFace: 0,
     whitenTeeth: 0,
     brightenEye: 0
   }
-  private params: { [key in HandleKey]: number }
+  params: { [key in HandleKey]: number }
 
   constructor(
     renderer: Renderer,
@@ -649,6 +651,10 @@ export class AdvBeautyFilter extends Filter {
     this.renderer.gl?.deleteTexture(this.faceMaskMap!.glTexture!)
     this.renderer.gl?.deleteTexture(this.eyeTeethMaskMap!.glTexture!)
     this.renderer.gl?.deleteTexture(this.whiteTeethLutMap!.glTexture)
+    instances.delete(this)
+  }
+
+  remove() {
     instances.delete(this)
   }
 }

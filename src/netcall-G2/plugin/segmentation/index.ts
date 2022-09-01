@@ -74,6 +74,8 @@ class Segmentation extends EventEmitter {
             this.segmentWorker = null
           }
           break
+        case 'error':
+          this.emit('error', data.message)
       }
     })
   }

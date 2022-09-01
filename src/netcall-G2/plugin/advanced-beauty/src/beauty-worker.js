@@ -25,20 +25,25 @@ class mHumanSegmenter {
   }
 
   async process(frame, width, height) {
-    if (!this.initMem || width !== this.width || height !== this.height) {
-      if (this.inputPtr != null) {
-        Module._free(this.inputPtr)
-        this.inputPtr = null
+    try {
+      if (!this.initMem || width !== this.width || height !== this.height) {
+        if (this.inputPtr != null) {
+          Module._free(this.inputPtr)
+          this.inputPtr = null
+        }
+        this.inputPtr = Module._malloc(frame.length)
+        this.initMem = true
+        this.width = width
+        this.height = height
       }
-      this.inputPtr = Module._malloc(frame.length)
-      this.initMem = true
-      this.width = width
-      this.height = height
+      Module.HEAPU8.set(frame, this.inputPtr)
+      this.mHumanSegmenter.process(this.inputPtr, this.width, this.height)
+      const faceData = this.getFacePoints()
+      this.handleFacePointsData(faceData)
+    } catch (e) {
+      this.handleFacePointsData(new Uint16Array())
+      global.postMessage({ type: 'error', message: `AdvancedBeauty wasm error: ${e.message}` })
     }
-    Module.HEAPU8.set(frame, this.inputPtr)
-    this.mHumanSegmenter.process(this.inputPtr, this.width, this.height)
-    const faceData = this.getFacePoints()
-    this.handleFacePointsData(faceData)
   }
 
   getFaceBox(box, threshold, smooth) {}

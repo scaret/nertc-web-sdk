@@ -339,6 +339,14 @@ export class Matrix3x3 {
     newM.matrix[1][2] = refy * (1 - cos) - refx * sin
     return newM
   }
+
+  static scaleByNormal(normal: Vector2, k: number, refx: number, refy: number) {
+    normal = Vector2.normalize(normal)
+    let a = 1 + (k - 1) * Math.pow(normal.x, 2)
+    let b = (k - 1) * normal.x * normal.y
+    let c = 1 + (k - 1) * Math.pow(normal.y, 2)
+    return new Matrix3x3(a, b, (1 - a) * refx - b * refy, b, c, (1 - c) * refy - b * refx, 0, 0, 1)
+  }
 }
 
 //-------------------------------------------------美颜函数-------------------------------------------------
@@ -359,6 +367,8 @@ export type HandleKey =
   | 'lengthenNose'
   // 嘴巴调整
   | 'shrinkMouth'
+  // 嘴巴宽度
+  | 'widenMouth'
   // 嘴角调整
   | 'mouthCorners'
   // 调整人中
@@ -377,6 +387,8 @@ export type HandleKey =
   | 'vShapedFace'
   // 小脸
   | 'minifyFace'
+  // 短脸
+  | 'shortenFace'
   // 美牙
   | 'whitenTeeth'
   // 亮眼
@@ -616,6 +628,35 @@ export const handlers: {
         innerMouthIdxes[index],
         Vector2.add(mouthCenter, Vector2.scale(Vector2.sub(point, mouthCenter), scale))
       )
+    })
+  },
+  widenMouth: (posData, intensity) => {
+    intensity -= 0.5
+    if (intensity < 0) {
+      intensity *= 0.3
+    } else {
+      intensity *= 0.2
+    }
+
+    const p90 = Vector2.getVec(posData, 90)
+    const p84 = Vector2.getVec(posData, 84)
+
+    const p87 = Vector2.getVec(posData, 87)
+    const p93 = Vector2.getVec(posData, 93)
+
+    // 求交点
+    const pi = Vector2.intersectPoint(p90, p84, p87, p93) || Vector2.center(p87, p93)
+
+    // 求缩放矩阵
+    const lScaleMat = Matrix3x3.scaleByNormal(Vector2.sub(pi!, p84), intensity + 1.0, pi!.x, pi!.y)
+    const rScaleMat = Matrix3x3.scaleByNormal(Vector2.sub(pi!, p90), intensity + 1.0, pi!.x, pi!.y)
+    // 左边点位平移
+    ;[84, 96, 85, 95, 97, 103, 86, 94].forEach((idx) => {
+      Vector2.setPoint(posData, idx, lScaleMat.multiplyPoint(Vector2.getVec(posData, idx)))
+    })
+    // 右边点位平移
+    ;[90, 100, 89, 91, 99, 101, 88, 92].forEach((idx) => {
+      Vector2.setPoint(posData, idx, rScaleMat.multiplyPoint(Vector2.getVec(posData, idx)))
     })
   },
   mouthCorners: (posData, intensity) => {
@@ -922,6 +963,28 @@ export const handlers: {
       )
       Vector2.setPoint(posData, idx, p)
     })
+  },
+  shortenFace: (posData, intensity) => {
+    intensity *= 0.1
+    const p43 = Vector2.getVec(posData, 43)
+    const p49 = Vector2.getVec(posData, 49)
+
+    // 求参照点
+    const pi = Vector2.center(p43, p49) || Vector2.getVec(posData, 45)
+    // 求缩放矩阵
+    const scaleMat = Matrix3x3.scaleByNormal(Vector2.sub(p43, p49), 1 - intensity, pi.x, pi.y)
+    for (let i = 4; i < 30; i += 2) {
+      Vector2.setPoint(posData, i, scaleMat.multiplyPoint(Vector2.getVec(posData, i)))
+    }
+    for (let i = 80; i < 84; i++) {
+      Vector2.setPoint(posData, i, scaleMat.multiplyPoint(Vector2.getVec(posData, i)))
+    }
+    for (let i = 46; i < 52; i++) {
+      Vector2.setPoint(posData, i, scaleMat.multiplyPoint(Vector2.getVec(posData, i)))
+    }
+    for (let i = 84; i < 104; i++) {
+      Vector2.setPoint(posData, i, scaleMat.multiplyPoint(Vector2.getVec(posData, i)))
+    }
   },
   whitenTeeth: (posData, intensity) => {
     let ratio =

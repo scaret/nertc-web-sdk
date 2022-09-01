@@ -23,27 +23,32 @@ class mHumanSegmenter {
   }
 
   async process(frame, width, height) {
-    if (!this.initMem || width !== this.width || height !== this.height) {
-      if (this.inputPtr != null) {
-        Module._free(this.inputPtr)
-        this.inputPtr = null
-      }
-      if (this.outputPtr != null) {
-        Module._free(this.outputPtr)
-        this.outputPtr = null
-      }
-      this.inputPtr = global.Module._malloc(frame.length)
-      this.outputPtr = global.Module._malloc(frame.length)
+    try {
+      if (!this.initMem || width !== this.width || height !== this.height) {
+        if (this.inputPtr != null) {
+          Module._free(this.inputPtr)
+          this.inputPtr = null
+        }
+        if (this.outputPtr != null) {
+          Module._free(this.outputPtr)
+          this.outputPtr = null
+        }
+        this.inputPtr = global.Module._malloc(frame.length)
+        this.outputPtr = global.Module._malloc(frame.length)
 
-      this.initMem = true
-      this.width = width
-      this.height = height
+        this.initMem = true
+        this.width = width
+        this.height = height
+      }
+      Module.HEAPU8.set(frame, this.inputPtr)
+      this.mHumanSegmenter.process(this.inputPtr, this.outputPtr, this.width, this.height)
+      let result = Module.HEAPU8.subarray(this.outputPtr, this.outputPtr + 256 * 256)
+      this.segment_mask.data.set(this.alphaToImageData(result))
+      this.handleMaskData(this.segment_mask)
+    } catch (e) {
+      this.handleMaskData(new Uint8ClampedArray())
+      global.postMessage({ type: 'error', message: `VirtualBackground wasm error: ${e.message}` })
     }
-    Module.HEAPU8.set(frame, this.inputPtr)
-    this.mHumanSegmenter.process(this.inputPtr, this.outputPtr, this.width, this.height)
-    let result = Module.HEAPU8.subarray(this.outputPtr, this.outputPtr + 256 * 256)
-    this.segment_mask.data.set(this.alphaToImageData(result))
-    this.handleMaskData(this.segment_mask)
   }
 
   alphaToImageData(data) {

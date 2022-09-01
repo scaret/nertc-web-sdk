@@ -26,6 +26,7 @@ export default class VirtualBackground extends EventEmitter {
   }
 
   init() {
+    if (this.videPostProcess.availableCode === 0) return
     this.segmentProcess.on('segment-load', () => {
       this.emit('segment-load')
     })
@@ -33,11 +34,13 @@ export default class VirtualBackground extends EventEmitter {
   }
 
   destroy() {
+    if (this.videPostProcess.availableCode === 0) return
     this.segmentProcess.removeAllListeners()
     this.segmentProcess.destroy()
   }
 
   setVirtualBackGround(option: BackGroundOptions) {
+    if (this.videPostProcess.availableCode === 0) return
     this.bgOption = option
     const { type } = option
     switch (type) {
@@ -86,7 +89,7 @@ export default class VirtualBackground extends EventEmitter {
         .setTaskAndTrack('VirtualBackground', isEnable, track)
         .then((track) => {
           if (!isEnable) {
-            this.videPostProcess.filters.virtualBackground.setMaskMap(null)
+            this.videPostProcess.filters?.virtualBackground.setMaskMap(null)
           }
           resolve(track)
         })
@@ -98,15 +101,14 @@ export default class VirtualBackground extends EventEmitter {
 
   //-------------------------------------------------以下是测试代码,同时也是对外暴漏的接口-------------------------------------------------
   setBackGround(bk: HTMLImageElement | HTMLVideoElement | string | null) {
-    this.videPostProcess.filters.virtualBackground.setBackground(bk)
+    if (this.videPostProcess.availableCode === 0) return
+    this.videPostProcess.filters?.virtualBackground.setBackground(bk)
     this.logger.log(`set Virtual background:${bk}`)
   }
 
   setBlurIntensity(intensity: number) {
-    if (!this.isEnable) {
-      return this.logger.log('Please enable virtualBackground first.')
-    }
-    this.videPostProcess.filters.virtualBackground.setBlurIntensity(intensity)
+    if (this.videPostProcess.availableCode === 0) return
+    this.videPostProcess.filters?.virtualBackground.setBlurIntensity(intensity)
     this.logger.log(`Background blur：${intensity}`)
   }
 
@@ -115,8 +117,7 @@ export default class VirtualBackground extends EventEmitter {
   }
 
   set emptyFrame(isEmptyFrame: boolean) {
-    if (this.videPostProcess) {
-      this.videPostProcess.filters.virtualBackground.emptyFrame = isEmptyFrame
-    }
+    if (this.videPostProcess.availableCode === 0) return
+    this.videPostProcess.filters!.virtualBackground.emptyFrame = isEmptyFrame
   }
 }
