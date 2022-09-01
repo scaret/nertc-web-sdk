@@ -1409,9 +1409,16 @@ class Mediasoup extends EventEmitter {
     }
     const iceUfragRegRemote = offer.sdp.match(/a=ice-ufrag:([0-9a-zA-Z=#+-_\/\\\\]+)/)
     if (!iceUfragRegRemote) {
+      let enMessage = `_createConsumer: iceUfragRegRemote is null`,
+        zhMessage = `_createConsumer: iceUfragRegRemote 为空`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.UNKNOWN,
-        message: '_createConsumer: iceUfragRegRemote is null'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -1486,9 +1493,16 @@ class Mediasoup extends EventEmitter {
           JSON.stringify(data)
         )
       }
+      let enMessage = `_createConsumer: ${e.message}`,
+        zhMessage = `_createConsumer: Consume 消息错误:${e.message}`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.UNKNOWN,
-        message: `_createConsumer: ${e.message}`
+        code: ErrorCode.UNKNOWN_TYPE_ERROR,
+        message,
+        advice
       })
     }
     let {
@@ -1749,8 +1763,8 @@ class Mediasoup extends EventEmitter {
         advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
         code: ErrorCode.UNKNOWN_TYPE_ERROR,
-        message: '_createConsumerRts: mediaType type error',
-        advice: 'please make sure mediaType is correct'
+        message,
+        advice
       })
     }
 

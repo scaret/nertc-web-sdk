@@ -193,6 +193,10 @@ table th:nth-of-type(2) {
 
 以下为 SDK 可能抛出的错误，请参考下表进行处理
 
+### ErrorCode
+
+#### 4.6.20 及之前的版本
+
 | key                         | 错误码 | 描述                         | 可能原因及处理建议                                                                  |
 | --------------------------- | :----- | :--------------------------- | :---------------------------------------------------------------------------------- |
 | INVALID_PARAMETER           | 41000  | 无效参数                     | 一般是参数错误，可以通过 console 日志查看错误原因及处理方式                         |
@@ -229,3 +233,68 @@ table th:nth-of-type(2) {
 | MEDIA_OPEN_BANNED_BY_SERVER | 41032  | 音视频被服务器禁言           | 可以通过 console 日志查看错误原因及处理方式                                         |
 | PROXY_SERVER_ERROR          | 41033  | 云代理失败                   | 可以通过 console 日志查看错误原因及处理方式，或联系云信技术支持                     |
 | UNKNOWN                     | 99999  | 一般是未知原因错误           | 请联系云信技术支持                                                                  |
+
+#### 4.6.25 及之后的版本
+
+| key                           | 错误码 | 描述                     | 原因及处理建议                              |
+| ----------------------------- | :----- | :----------------------- | :------------------------------------------ |
+| INVALID_PARAMETER_ERROR       | 10000  | 无效参数                 | 可以通过 console 日志查看错误原因及处理方式 |
+| NOT_SUPPORT_ERROR             | 10001  | 浏览器不支持             | 可以通过 console 日志查看错误原因及处理方式 |
+| NETWORK_ERROR                 | 10002  | 网络环境异常             | 可以通过 console 日志查看错误原因及处理方式 |
+| NETWORK_REQUEST_ERROR         | 10003  | 网络请求异常             | 可以通过 console 日志查看错误原因及处理方式 |
+| SERVER_ERROR                  | 10004  | 云信服务器异常           | 可以通过 console 日志查看错误原因及处理方式 |
+| MEDIA_SERVER_ERROR            | 10005  | 云信媒体服务器异常       | 可以通过 console 日志查看错误原因及处理方式 |
+| SIGNALLING_ERROR              | 10006  | 云信信令异常             | 可以通过 console 日志查看错误原因及处理方式 |
+| SIGNALLING_SERVER_ERROR       | 10007  | 云信信令服务器异常       | 可以通过 console 日志查看错误原因及处理方式 |
+| API_CALL_SEQUENCE_ERROR       | 10008  | 接口调用顺序异常         | 可以通过 console 日志查看错误原因及处理方式 |
+| INVALID_OPERATION_ERROR       | 10009  | 操作异常                 | 可以通过 console 日志查看错误原因及处理方式 |
+| LOCALSTREAM_ERROR             | 10010  | localStream 异常         | 可以通过 console 日志查看错误原因及处理方式 |
+| LOCALSTREAM_NOT_FOUND_ERROR   | 10010  | localStream 未找到       | 可以通过 console 日志查看错误原因及处理方式 |
+| UNKNOWN_TYPE_ERROR            | 10012  | 未知类型异常             | 可以通过 console 日志查看错误原因及处理方式 |
+| UNDEFINED_ERROR               | 10013  | 云信服务器异常           | 可以通过 console 日志查看错误原因及处理方式 |
+| UNAVAILABLE_ERROR             | 10014  | 不可用异常               | 可以通过 console 日志查看错误原因及处理方式 |
+| BANNED_BY_SERVER              | 10015  | 被服务器禁言             | 可以通过 console 日志查看错误原因及处理方式 |
+| SOCKET_INIT_ERROR             | 10016  | socket 异常              | 可以通过 console 日志查看错误原因及处理方式 |
+| REPEAT_JOIN_ERROR             | 10101  | 重复进房错误             | 可以通过 console 日志查看错误原因及处理方式 |
+| MEETING_ERROR                 | 10102  | 会控异常                 | 可以通过 console 日志查看错误原因及处理方式 |
+| ROOM_SERVER_ERROR             | 10103  | 房间服务相关错误         | 可以通过 console 日志查看错误原因及处理方式 |
+| USER_NOT_IN_CHANNEL_ERROR     | 10104  | 用户不在频道中错误       | 可以通过 console 日志查看错误原因及处理方式 |
+| EVENT_UPLOAD_ERROR            | 10105  | 事件上报错误             | 可以通过 console 日志查看错误原因及处理方式 |
+| NOT_FOUND_ERROR               | 10106  | 未找到异常               | 可以通过 console 日志查看错误原因及处理方式 |
+| SDP_ERROR                     | 10107  | SDP 异常                 | 可以通过 console 日志查看错误原因及处理方式 |
+| ADD_TASK_FAILED_ERROR         | 10201  | 添加推流任务失败         | 可以通过 console 日志查看错误原因及处理方式 |
+| DELETE_TASK_FAILED_ERROR      | 10202  | 删除推流任务失败         | 可以通过 console 日志查看错误原因及处理方式 |
+| UPDATE_TASKS_FAILED_ERROR     | 10203  | 更新推流任务失败         | 可以通过 console 日志查看错误原因及处理方式 |
+| TASK_ERROR                    | 10204  | 推流任务异常             | 可以通过 console 日志查看错误原因及处理方式 |
+| PLAY_NOT_START_ERROR          | 10205  | 未开始播放异常           | 可以通过 console 日志查看错误原因及处理方式 |
+| APPDATA_OVERRIDE_ERROR        | 10206  | appData 异常             | 可以通过 console 日志查看错误原因及处理方式 |
+| SET_BEAUTY_ERROR              | 10401  | 开关基础美颜相关异常     | 可以通过 console 日志查看错误原因及处理方式 |
+| SET_ADVANCED_BEAUTY_ERROR     | 10402  | 开关高级美颜相关异常     | 可以通过 console 日志查看错误原因及处理方式 |
+| SET_BODY_SEGMENT_ERROR        | 10403  | 开关背景替换相关异常     | 可以通过 console 日志查看错误原因及处理方式 |
+| FORMAT_AUDIO_ERROR            | 10420  | 音频处理异常             | 可以通过 console 日志查看错误原因及处理方式 |
+| AUDIO_MIX_FILE_ERROR          | 10421  | 伴音相关文件加载状态异常 | 可以通过 console 日志查看错误原因及处理方式 |
+| AUDIO_MIX_STATE_ERROR         | 10422  | 伴音相关操作状态异常     | 可以通过 console 日志查看错误原因及处理方式 |
+| AUDIO_EFFECT_STATE_ERROR      | 10423  | 音效相关操作状态异常     | 可以通过 console 日志查看错误原因及处理方式 |
+| AUDIO_EFFECT_FILE_LOST_ERROR  | 10424  | 音效文件缺失             | 可以通过 console 日志查看错误原因及处理方式 |
+| AUDIO_MIX_DECODE_FAILED_ERROR | 10425  | 伴音解码异常             | 可以通过 console 日志查看错误原因及处理方式 |
+| AUDIO_MIXING_ERROR            | 10426  | 伴音相关异常             | 可以通过 console 日志查看错误原因及处理方式 |
+| AUDIO_EFFECT_ERROR            | 10427  | 音效相关异常             | 可以通过 console 日志查看错误原因及处理方式 |
+| SET_ENCRYPTION_MODE_ERROR     | 10440  | 国密加密相关异常         | 可以通过 console 日志查看错误原因及处理方式 |
+| PROXY_ERROR                   | 10441  | 云代理相关异常           | 可以通过 console 日志查看错误原因及处理方式 |
+| RECORDING_ERROR               | 10450  | 录制时参数异常相关异常   | 可以通过 console 日志查看错误原因及处理方式 |
+| RECORDING_NOT_START_ERROR     | 10451  | 录制未开始异常           | 可以通过 console 日志查看错误原因及处理方式 |
+| WATERMARKS_EXCEEDED_ERROR     | 10460  | 水印数额超限相关异常     | 可以通过 console 日志查看错误原因及处理方式 |
+| LBS_REQUEST_ERROR             | 10461  | LBS 请求相关异常         | 可以通过 console 日志查看错误原因及处理方式 |
+| LBS_JSON_ERROR                | 10462  | LBS json 解析异常        | 可以通过 console 日志查看错误原因及处理方式 |
+| NO_STATS_ERROR                | 10470  | 数据上报相关异常         | 可以通过 console 日志查看错误原因及处理方式 |
+| AUTO_PLAY_NOT_ALLOWED         | 41030  | 自动播放受限异常         | 可以通过 console 日志查看错误原因及处理方式 |
+
+### 其他常见报错及处理方式
+
+| 错误信息                                 | 错误原因                                                           | 处理方案                                            |
+| ---------------------------------------- | :----------------------------------------------------------------- | :-------------------------------------------------- |
+| getUserMedia error: NotAllowedError      | 用户拒绝了当前的浏览器实例访问音频、视频或屏幕分享的请求           | 用户需要授权摄像头/麦克风访问，才能进行音视频通话   |
+| getUserMedia error: NotFoundError        | 找不到满足请求参数的媒体类型，如音频，视频                         | 建议通话前进行设备检测，确认设备状态正常            |
+| getUserMedia error: NotReadableError     | 操作系统上某个硬件、浏览器或者网页层面发生的错误导致设备无法被访问 | 请确保当前麦克风/摄像头没有被其他设备占用           |
+| getUserMedia error: OverconstrainedError | 浏览器无法获取到媒体设备的 deviceId，如 cameraId/microphoneId      | 请确保 cameraId/microphoneId 是符合要求的非空字符串 |
+| getUserMedia error: TypeError            | 当前使用的是 http 协议                                             | 请确保 当前使用的是 https 协议                      |

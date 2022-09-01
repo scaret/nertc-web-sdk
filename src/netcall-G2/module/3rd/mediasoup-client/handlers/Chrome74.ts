@@ -388,9 +388,16 @@ export class Chrome74 extends HandlerInterface {
       offerMediaObjectLow = mediaCandidates.pop()
     }
     if (!offerMediaObject) {
+      let enMessage = `Chrome.send: offerMediaObject with track id not found: ${track.id}`,
+        zhMessage = `Chrome.setRtpEncodingParameters: offerMediaObject 未找到: ${track.id}`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
         code: ErrorCode.SDP_ERROR,
-        message: 'send: offerMediaObject with track id not found: ' + track.id
+        message,
+        advice
       })
     }
 

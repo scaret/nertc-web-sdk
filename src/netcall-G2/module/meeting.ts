@@ -365,16 +365,22 @@ class Meeting extends EventEmitter {
           serverIp:
             data.ips && data.ips.turnaddrs && data.ips.turnaddrs.length && data.ips.turnaddrs[0]
         })
-        let enMessage = 'joinChannel:  media server error',
-          zhMessage = 'joinChannel: 媒体服务器异常',
-          enAdvice = 'Please contact CommsEase technical support',
+        let enMessage =
+          data.desc && data.desc !== ''
+            ? `joinChannel: ${data.desc}`
+            : `joinChannel: server error, code ${data.code}`
+        let zhMessage =
+          data.desc && data.desc !== ''
+            ? `joinChannel: ${data.desc}`
+            : `joinChannel: 服务器不允许加入房间, code ${data.code}`
+        let enAdvice = 'Please contact CommsEase technical support',
           zhAdvice = '请联系云信技术支持'
         let message = env.IS_ZH ? zhMessage : enMessage,
           advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
             code: ErrorCode.MEDIA_SERVER_ERROR,
-            message: errorMessage,
+            message,
             advice
           })
         )
@@ -395,9 +401,16 @@ class Meeting extends EventEmitter {
         result: `join() 语法错误: ${e.message}`,
         serverIp: ''
       })
+      let enMessage = `joinChannel: server error ${e.message}`,
+        zhMessage = `joinChannel: 服务器异常 ${e.message}`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.UNKNOWN,
-        message: `join() 异常: ${e.message}`
+        code: ErrorCode.SERVER_ERROR,
+        message,
+        advice
       })
     }
   }

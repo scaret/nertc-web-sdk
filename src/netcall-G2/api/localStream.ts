@@ -1302,10 +1302,17 @@ class LocalStream extends RTCEventEmitter {
                 type
               }
             })
+            let enMessage = `Stream.open: invalid operation`,
+              zhMessage = `Stream.open: 操作异常`,
+              enAdvice = 'Please close screenAudio first',
+              zhAdvice = '请先关闭 screenAudio'
+            let message = env.IS_ZH ? zhMessage : enMessage,
+              advice = env.IS_ZH ? zhAdvice : enAdvice
             return Promise.reject(
               new RtcError({
                 code: ErrorCode.INVALID_OPERATION_ERROR,
-                message: 'Stream.open: please close screenAudio first'
+                message,
+                advice
               })
             )
           }
@@ -1526,10 +1533,14 @@ class LocalStream extends RTCEventEmitter {
         e.message.indexOf('ermission') > -1 &&
         e.message.indexOf('denied') > -1
       ) {
+        let enAdvice = 'Please enable media permissions and try again',
+          zhAdvice = '请开启媒体权限重试'
+        let advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
             code: ErrorCode.NOT_SUPPORT_ERROR,
-            message: `open: ${e.message}`
+            message: `open: ${e.message}`,
+            advice
           })
         )
       } else {

@@ -458,11 +458,18 @@ class Client extends Base {
         this.adapterRef.channelStatus === 'connectioning'
       ) {
         this.safeEmit('@pairing-join-error')
+        let enMessage = `join: repeatedly join`,
+          zhMessage = `join: 重复登录`,
+          enAdvice =
+            'Please check the login logic to ensure that you have successfully logged out of the room before logging in to the room again',
+          zhAdvice = '请检查登录逻辑，确保再次登录房间前已成功登出房间'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
             code: ErrorCode.REPEAT_JOIN_ERROR,
-            message: 'join: repeatedly join',
-            advice: '请检查登录逻辑，确保再次登录房间前已成功登出房间'
+            message,
+            advice
           })
         )
       }
@@ -496,6 +503,7 @@ class Client extends Base {
         this._params.neRtcServerAddresses = {
           channelServer: options.neRtcServerAddresses.channelServer || '',
           statisticsServer: options.neRtcServerAddresses.statisticsServer || '',
+          //@ts-ignore
           statisticsWebSocketServer: options.neRtcServerAddresses.statisticsWebSocketServer || '',
           roomServer: options.neRtcServerAddresses.roomServer || '',
           webSocketProxyServer: options.neRtcServerAddresses.webSocketProxyServer || '',
@@ -633,23 +641,56 @@ class Client extends Base {
 
   enableCustomTransform(enable?: boolean) {
     let errMsg = ''
+    let enMessage, zhMessage, enAdvice, zhAdvice, message, advice, code
     if (this.adapterRef.connectState.curState !== 'DISCONNECTED') {
       errMsg = 'enableCustomTransform必须在加入频道前调用'
+      enMessage = 'enableCustomTransform: invalid operation'
+      zhMessage = 'enableCustomTransform: 必须在加入频道前调用'
+      enAdvice = `please call before addTasks`
+      zhAdvice = `必须在加入频道前调用`
+      message = env.IS_ZH ? zhMessage : enMessage
+      advice = env.IS_ZH ? zhAdvice : enAdvice
+      code = ErrorCode.API_CALL_SEQUENCE_ERROR
       // @ts-ignore
     } else if (typeof window.TransformStream !== 'function') {
       errMsg = '浏览器不支持自定义加解密: 未找到TransformStream'
+      enMessage =
+        'enableCustomTransform: TransformStream is not found because enableCustomTransform is not support in your browser'
+      zhMessage = 'enableCustomTransform: 浏览器不支持自定义加密, TransformStream 未找到'
+      enAdvice = `The latest version of the Chrome browser is recommended`
+      zhAdvice = `建议使用最新版的 Chrome 浏览器`
+      message = env.IS_ZH ? zhMessage : enMessage
+      advice = env.IS_ZH ? zhAdvice : enAdvice
+      code = ErrorCode.NOT_SUPPORT_ERROR
     }
     // @ts-ignore
     else if (typeof window.RTCRtpReceiver?.prototype.createEncodedStreams !== 'function') {
       errMsg = 'enableCustomTransform: 浏览器不支持自定义加解密，未找到createEncodedStreams'
+      enMessage =
+        'enableCustomTransform: createEncodedStreams is not found because enableCustomTransform is not support in your browser'
+      zhMessage = 'enableCustomTransform: 浏览器不支持自定义加密, createEncodedStreams 未找到'
+      enAdvice = `The latest version of the Chrome browser is recommended`
+      zhAdvice = `建议使用最新版的 Chrome 浏览器`
+      message = env.IS_ZH ? zhMessage : enMessage
+      advice = env.IS_ZH ? zhAdvice : enAdvice
+      code = ErrorCode.NOT_SUPPORT_ERROR
     } else if (this.adapterRef.encryption.encryptionMode !== 'none') {
       errMsg = 'enableCustomTransform: 自定义加密功能与国密加密功能不兼容'
+      enMessage =
+        'enableCustomTransform: Custom encryption and national encryption are not compatible'
+      zhMessage = 'enableCustomTransform: 自定义加密功能与国密加密功能不兼容'
+      enAdvice = `Cannot use custom encryption and national encryption at the same time`
+      zhAdvice = `不能同时使用自定义加密功能与国密加密功能`
+      message = env.IS_ZH ? zhMessage : enMessage
+      advice = env.IS_ZH ? zhAdvice : enAdvice
+      code = ErrorCode.SET_ENCRYPTION_MODE_ERROR
     }
     if (errMsg) {
       this.logger.error(errMsg)
       throw new RtcError({
-        code: ErrorCode.SET_ENCRYPTION_MODE_ERROR,
-        message: errMsg
+        code,
+        message,
+        advice
       })
     } else {
       if (enable === false) {
@@ -860,9 +901,16 @@ class Client extends Base {
     this.logger.log(`开始取消发布本地流`)
     try {
       if (!this.adapterRef._mediasoup) {
+        let enMessage = 'unpublish: media server error',
+          zhMessage = 'unpublish: 媒体服务器异常',
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
           code: ErrorCode.MEDIA_SERVER_ERROR,
-          message: 'unpublish: media server error'
+          message,
+          advice
         })
       }
       await this.adapterRef._mediasoup.destroyProduce('audio')
@@ -2269,9 +2317,17 @@ class Client extends Base {
     if (this.adapterRef.encryption.encodedInsertableStreams) {
       const errMsg = '自定义加密功能与国密加密功能不兼容'
       this.logger.error(errMsg)
+      let enMessage =
+          'enableCustomTransform: Custom encryption and national encryption are not compatible',
+        zhMessage = 'enableCustomTransform: 自定义加密功能与国密加密功能不兼容',
+        enAdvice = `Cannot use custom encryption and national encryption at the same time`,
+        zhAdvice = `不能同时使用自定义加密功能与国密加密功能`
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
         code: ErrorCode.SET_ENCRYPTION_MODE_ERROR,
-        message: errMsg
+        message,
+        advice
       })
     }
     this.logger.log('设置加密模式：', encryptionMode)

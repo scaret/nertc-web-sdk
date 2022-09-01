@@ -181,9 +181,9 @@ const ErrorCode = {
 
   /*
    * 未知错误
-   *
+   * 4.6.25 之后弃用
    */
-  UNKNOWN: 99999,
+  // UNKNOWN: 99999,
 
   // *********************  通用错误码(ErrorCode 范围：10000 - 10100)
 
@@ -286,7 +286,7 @@ const ErrorCode = {
    * socket异常，可通过 console 日志产看具体原因
    *
    */
-  SOCKET_INIT_ERROR: 10002,
+  SOCKET_INIT_ERROR: 10016,
 
   // *********************  房间相关错误码(ErrorCode 范围：10101 - 10200)
 
@@ -305,31 +305,31 @@ const ErrorCode = {
    * 房间服务相关错误
    *
    */
-  ROOM_SERVER_ERROR: 10102,
+  ROOM_SERVER_ERROR: 10103,
 
   /*
    * 用户不在频道中错误
    *
    */
-  USER_NOT_IN_CHANNEL_ERROR: 10103,
+  USER_NOT_IN_CHANNEL_ERROR: 10104,
 
   /*
    * 事件上报错误
    *
    */
-  EVENT_UPLOAD_ERROR: 10103,
+  EVENT_UPLOAD_ERROR: 10105,
 
   /*
    * 未找到异常
    *
    */
-  NOT_FOUND_ERROR: 10104,
+  NOT_FOUND_ERROR: 10106,
 
   /*
    * SDP异常
    *
    */
-  SDP_ERROR: 10105,
+  SDP_ERROR: 10107,
 
   // *********************  推流/拉流相关错误码(ErrorCode 范围：10201 - 10400)
 
@@ -354,7 +354,7 @@ const ErrorCode = {
    */
   TASK_ERROR: 10204,
   /*
-   * 播放位开始异常
+   * 未开始播放异常
    *
    */
   PLAY_NOT_START_ERROR: 10205,
@@ -363,114 +363,112 @@ const ErrorCode = {
    * appData异常
    *
    */
-  APPDATA_OVERRIDE_ERROR: 10215,
+  APPDATA_OVERRIDE_ERROR: 10206,
 
   // *********************  功能模块相关错误码(ErrorCode 范围：10401 - 10600)
 
   /*
-   * 开关基础美颜相关错误
+   * 开关基础美颜相关异常
    *
    */
   SET_BEAUTY_ERROR: 10401,
 
   /*
-   * 开关高级美颜相关错误
+   * 开关高级美颜相关异常
    *
    */
-  SET_ADVANCED_BEAUTY_ERROR: 10411,
+  SET_ADVANCED_BEAUTY_ERROR: 10402,
   /*
-   * 开关背景替换相关错误
+   * 开关背景替换相关异常
    *
    */
-  SET_BODY_SEGMENT_ERROR: 10421,
+  SET_BODY_SEGMENT_ERROR: 10403,
   /*
-   * 混音相关错误
+   * 音频处理异常
    *
    */
-  FORMAT_AUDIO_ERROR: 10431,
+  FORMAT_AUDIO_ERROR: 10420,
 
   /*
    * 伴音相关文件加载状态异常
    *
    */
-  AUDIO_MIX_FILE_ERROR: 10432,
+  AUDIO_MIX_FILE_ERROR: 10421,
   /*
    * 伴音相关操作状态异常
    *
    */
-  AUDIO_MIX_STATE_ERROR: 10433,
+  AUDIO_MIX_STATE_ERROR: 10422,
   /*
    * 音效相关操作状态异常
    *
    */
-  AUDIO_EFFECT_STATE_ERROR: 10434,
+  AUDIO_EFFECT_STATE_ERROR: 10423,
   /*
    * 音效文件缺失
    *
    */
-  AUDIO_EFFECT_FILE_LOST_ERROR: 10435,
+  AUDIO_EFFECT_FILE_LOST_ERROR: 10424,
   /*
    * 伴音解码异常
    *
    */
-  AUDIO_MIX_DECODE_FAILED_ERROR: 10436,
-  /*
-   * 混流相关错误
-   *
-   */
-  FORMAT_VIDEO_ERROR: 10441,
-  /*
-   * 国密加密相关错误
-   *
-   */
-  SET_ENCRYPTION_MODE_ERROR: 10451,
-  /*
-   * 云代理相关错误
-   *
-   */
-  PROXY_ERROR: 10452,
-  /*
-   * 录制时参数异常相关错误
-   *
-   */
-  RECORDING_ERROR: 10453,
+  AUDIO_MIX_DECODE_FAILED_ERROR: 10425,
 
   /*
-   * 录制未开始相关错误
+   * 伴音相关异常
    *
    */
-  RECORDING_NOT_START_ERROR: 10454,
+  AUDIO_MIXING_ERROR: 10426,
+  /*
+   * 音效相关异常
+   *
+   */
+  AUDIO_EFFECT_ERROR: 10427,
 
   /*
-   * 水印数额超限相关错误
+   * 国密加密相关异常
    *
    */
-  WATERMARKS_EXCEEDED_ERROR: 10455,
+  SET_ENCRYPTION_MODE_ERROR: 10440,
   /*
-   * LBS 请求相关错误
+   * 云代理相关异常
    *
    */
-  LBS_REQUEST_ERROR: 10456,
+  PROXY_ERROR: 10441,
   /*
-   * LBS json 解析错误
+   * 录制时参数异常相关异常
    *
    */
-  LBS_JSON_ERROR: 10457,
+  RECORDING_ERROR: 10450,
+
   /*
-   * 伴音相关错误
+   * 录制未开始相关异常
    *
    */
-  AUDIO_MIXING_ERROR: 10458,
+  RECORDING_NOT_START_ERROR: 10451,
+
   /*
-   * 伴音相关错误
+   * 水印数额超限相关异常
    *
    */
-  AUDIO_EFFECT_ERROR: 10459,
+  WATERMARKS_EXCEEDED_ERROR: 10460,
   /*
-   * 数据上报相关错误
+   * LBS 请求相关异常
    *
    */
-  NO_STATS_ERROR: 10460
+  LBS_REQUEST_ERROR: 10461,
+  /*
+   * LBS json 解析异常
+   *
+   */
+  LBS_JSON_ERROR: 10462,
+
+  /*
+   * 数据上报相关异常
+   *
+   */
+  NO_STATS_ERROR: 10470
 }
 
 export default ErrorCode

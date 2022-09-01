@@ -53,7 +53,6 @@ class Play extends EventEmitter {
     enabled: false
   }
 
-  private autoPlayType: Number
   private stream: LocalStream | RemoteStream
   private logger: ILogger
   constructor(options: PlayOptions) {
@@ -108,7 +107,6 @@ class Play extends EventEmitter {
         encoderControl: createEncoderWatermarkControl(this.logger)
       }
     }
-    this.autoPlayType = 0
   }
 
   get getVideoDom() {
@@ -431,9 +429,17 @@ class Play extends EventEmitter {
       this.logger.error(`[Resume] 恢复播放 出现问题:`, error.name, error.message)
       if (error.name === 'notAllowedError' || error.name === 'NotAllowedError') {
         // 兼容临时版本客户
+        let enMessage = `resume: ${error.message}`,
+          zhMessage = `resume: 浏览器自动播放受限: ${error.name}`,
+          enAdvice = 'Please refer to the suggested link for processing --> ',
+          zhAdvice = '请参考提示的链接进行处理 --> '
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
           code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
-          message: error.message
+          url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082',
+          message,
+          advice
         })
       }
     }
@@ -500,11 +506,17 @@ class Play extends EventEmitter {
 
       if (error.name === 'notAllowedError' || error.name === 'NotAllowedError') {
         // 兼容临时版本客户
-        this.autoPlayType = 1
+        let enMessage = `playAudioStream: ${error.message}`,
+          zhMessage = `playAudioStream: 浏览器自动播放受限: ${error.name}`,
+          enAdvice = 'Please refer to the suggested link for processing --> ',
+          zhAdvice = '请参考提示的链接进行处理 --> '
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
           code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
-          message: error.toString(),
-          url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082'
+          url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082',
+          message,
+          advice
         })
       }
     }
@@ -548,11 +560,17 @@ class Play extends EventEmitter {
 
       if (error.name === 'notAllowedError' || error.name === 'NotAllowedError') {
         // 兼容临时版本客户
-        this.autoPlayType = 1
+        let enMessage = `playAudioSlaveStream: ${error.message}`,
+          zhMessage = `playAudioSlaveStream: 浏览器自动播放受限: ${error.name}`,
+          enAdvice = 'Please refer to the suggested link for processing --> ',
+          zhAdvice = '请参考提示的链接进行处理 --> '
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
           code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
-          message: error.toString(),
-          url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082'
+          url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082',
+          message,
+          advice
         })
       }
     }
@@ -760,42 +778,30 @@ class Play extends EventEmitter {
         this.logger.error(`[Play] 加载主流播放视频源失败：没有视频源`)
       }
       this.videoDom.srcObject = stream
-      this.videoDom
-        .play()
-        .then(() => {
-          this.logger.log(
-            `[Play] 成功加载主流播放视频源：当前视频实际分辨率${this.videoDom?.videoWidth}x${this.videoDom?.videoHeight}，显示宽高${this.videoDom?.offsetWidth}x${this.videoDom?.offsetHeight}`
-          )
-          if (this.videoDom?.paused && getParameters()['controlOnPaused']) {
-            //给微信的Workaround。微信会play()执行成功但不播放
-            this.showControlIfVideoPause()
-          }
-        })
-        .catch((e) => {
-          if (e.name === 'AbortError') {
-            // The play() request was interrupted by a new load request. https://goo.gl/LdLk22
-          } else if (e.name === 'NotAllowedError') {
-            this.logger.error(e.name, e.message)
-            const rtcError = new RtcError({
-              code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
-              message: e.toString(),
-              url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082'
-            })
-            this.stream.safeEmit('notAllowedError', rtcError)
-          } else {
-            this.logger.error('[Play] play error: ', e)
-          }
-        })
+      await this.videoDom.play()
+      this.logger.log(
+        `[Play] 成功加载主流播放视频源：当前视频实际分辨率${this.videoDom?.videoWidth}x${this.videoDom?.videoHeight}，显示宽高${this.videoDom?.offsetWidth}x${this.videoDom?.offsetHeight}`
+      )
+      if (this.videoDom?.paused && getParameters()['controlOnPaused']) {
+        //给微信的Workaround。微信会play()执行成功但不播放
+        this.showControlIfVideoPause()
+      }
     } catch (error: any) {
       this.logger.warn('[Play] 播放视频出现问题:', error.name, error.message, error)
 
       if (error.name === 'notAllowedError' || error.name === 'NotAllowedError') {
         // 兼容临时版本客户
-        this.autoPlayType = 2
+        let enMessage = `playVideoStream: ${error.message}`,
+          zhMessage = `playVideoStream: 浏览器自动播放受限: ${error.name}`,
+          enAdvice = 'Please refer to the suggested link for processing --> ',
+          zhAdvice = '请参考提示的链接进行处理 --> '
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
           code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
-          message: error.toString(),
-          url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082'
+          url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082',
+          message,
+          advice
         })
       }
     }
@@ -830,34 +836,31 @@ class Play extends EventEmitter {
         this.logger.error(`[Play] 加载主流播放视频源失败：没有视频源`)
       }
       this.screenDom.srcObject = stream
-      this.screenDom
-        .play()
-        .then(() => {
-          this.logger.log(
-            `[Play] 成功加载辅流播放视频源：当前视频实际分辨率${this.screenDom?.videoWidth}x${this.screenDom?.videoHeight}，显示宽高${this.screenDom?.offsetWidth}x${this.screenDom?.offsetHeight}`
-          )
-          if (this.screenDom?.paused && getParameters()['controlOnPaused']) {
-            //给微信的Workaround。微信会play()执行成功但不播放
-            this.showControlIfVideoPause()
-          }
+      await this.screenDom.play()
+      this.logger.log(
+        `[Play] 成功加载辅流播放视频源：当前视频实际分辨率${this.screenDom?.videoWidth}x${this.screenDom?.videoHeight}，显示宽高${this.screenDom?.offsetWidth}x${this.screenDom?.offsetHeight}`
+      )
+      if (this.screenDom?.paused && getParameters()['controlOnPaused']) {
+        //给微信的Workaround。微信会play()执行成功但不播放
+        this.showControlIfVideoPause()
+      }
+    } catch (error: any) {
+      this.logger.warn('[Play] 播放辅流出现问题:', error.name, error.message, error)
+      if (error.name === 'notAllowedError' || error.name === 'NotAllowedError') {
+        // 兼容临时版本客户
+        let enMessage = `playScreenStream: ${error.message}`,
+          zhMessage = `playScreenStream: 浏览器自动播放受限: ${error.name}`,
+          enAdvice = 'Please refer to the suggested link for processing --> ',
+          zhAdvice = '请参考提示的链接进行处理 --> '
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
+        throw new RtcError({
+          code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
+          url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082',
+          message,
+          advice
         })
-        .catch((e) => {
-          if (e.name === 'AbortError') {
-            // The play() request was interrupted by a new load request. https://goo.gl/LdLk22
-          } else if (e.name === 'NotAllowedError') {
-            this.logger.error(e.name, e.message)
-            const rtcError = new RtcError({
-              code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
-              message: e.toString(),
-              url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082'
-            })
-            this.stream.safeEmit('notAllowedError', rtcError)
-          } else {
-            this.logger.warn('[Play] 播放辅流 error: ', e.name, e.message)
-          }
-        })
-    } catch (e: any) {
-      this.logger.warn('[Play] 播放辅流出现问题: ', e.message)
+      }
     }
   }
 
