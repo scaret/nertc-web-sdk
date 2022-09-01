@@ -1,6 +1,7 @@
 import { MediaTypeShort } from '../../../types'
 import ErrorCode from '../../../util/error/errorCode'
 import RtcError from '../../../util/error/rtcError'
+import * as env from '../../../util/rtcUtil/rtcEnvironment'
 import { EnhancedEventEmitter } from './EnhancedEventEmitter'
 import { InvalidStateError } from './errors'
 import { Logger } from './Logger'
@@ -165,9 +166,16 @@ export class Consumer extends EnhancedEventEmitter {
   set appData(
     appData // eslint-disable-line no-unused-vars
   ) {
+    let enMessage = `Consumer: cannot override appData object`,
+      zhMessage = `Consumer: appData override 异常`,
+      enAdvice = 'Please contact CommsEase technical support',
+      zhAdvice = '请联系云信技术支持'
+    let message = env.IS_ZH ? zhMessage : enMessage,
+      advice = env.IS_ZH ? zhAdvice : enAdvice
     throw new RtcError({
-      code: ErrorCode.APPDATA_ERROR,
-      message: 'consumer: cannot override appData object'
+      code: ErrorCode.APPDATA_OVERRIDE_ERROR,
+      message,
+      advice
     })
   }
 

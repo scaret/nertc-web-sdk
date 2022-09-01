@@ -25,7 +25,8 @@ import * as sdpCommonUtils from './sdp/commonUtils'
 import { OfferMediaSection } from './sdp/MediaSection'
 import { RemoteSdp } from './sdp/RemoteSdp'
 import * as sdpUnifiedPlanUtils from './sdp/unifiedPlanUtils'
-const prefix = 'Firefox60'
+import * as env from '../../../../util/rtcUtil/rtcEnvironment'
+const prefix = 'Firefox_'
 
 const SCTP_NUM_STREAMS = { OS: 1024, MIS: 1024 }
 
@@ -399,9 +400,16 @@ export class Firefox60 extends HandlerInterface {
       offerMediaObjectLow = mediaCandidates.pop()
     }
     if (!offerMediaObject) {
+      let enMessage = `Firefox.send: offerMediaObject with track id not found: ${track.id}`,
+        zhMessage = `Firefox.send: 有 track id 的 offerMediaObject 未找到: ${track.id}`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'send: offerMediaObject with track id is not found: ' + track.id
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -415,9 +423,16 @@ export class Firefox60 extends HandlerInterface {
       localId = '' + localId
     }
     if (!localId) {
+      let enMessage = `Firefox.send: localId is not found`,
+        zhMessage = `Firefox.send: localId 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'send: localId is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -601,9 +616,16 @@ export class Firefox60 extends HandlerInterface {
     const transceiver = this._mapMidTransceiver.get(localId)
 
     if (!transceiver) {
+      let enMessage = `Firefox.stopSending: associated RTCRtpTransceiver is not found`,
+        zhMessage = `Firefox.stopSending: RTCRtpTransceiver 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'stopSending: associated RTCRtpTransceiver is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -680,9 +702,16 @@ export class Firefox60 extends HandlerInterface {
     const transceiver = this._mapMidTransceiver.get(localId)
 
     if (!transceiver) {
+      let enMessage = `Firefox.replaceTrack: associated RTCRtpTransceiver is not found`,
+        zhMessage = `Firefox.replaceTrack: RTCRtpTransceiver 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'replaceTrack: associated RTCRtpTransceiver is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -702,9 +731,16 @@ export class Firefox60 extends HandlerInterface {
     const transceiver = this._mapMidTransceiver.get(localId)
 
     if (!transceiver) {
+      let enMessage = `Firefox.setMaxSpatialLayer: associated RTCRtpTransceiver is not found`,
+        zhMessage = `Firefox.setMaxSpatialLayer: RTCRtpTransceiver 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'setMaxSpatialLayer: associated RTCRtpTransceiver is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -732,9 +768,16 @@ export class Firefox60 extends HandlerInterface {
     const transceiver = this._mapMidTransceiver.get(localId)
 
     if (!transceiver) {
+      let enMessage = `Firefox.setRtpEncodingParameters: associated RTCRtpTransceiver is not found`,
+        zhMessage = `Firefox.setRtpEncodingParameters: RTCRtpTransceiver 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'setRtpEncodingParameters: associated RTCRtpTransceiver is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -755,9 +798,16 @@ export class Firefox60 extends HandlerInterface {
     const transceiver = this._mapMidTransceiver.get(localId)
 
     if (!transceiver) {
+      let enMessage = `Firefox.getSenderStats: associated RTCRtpTransceiver is not found`,
+        zhMessage = `Firefox.getSenderStats: RTCRtpTransceiver 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'getSenderStats: associated RTCRtpTransceiver is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -936,9 +986,16 @@ export class Firefox60 extends HandlerInterface {
     const transceiver = this._pc.getTransceivers().find((t: RTCRtpTransceiver) => t.mid === localId)
 
     if (!transceiver) {
+      let enMessage = `Firefox.receive: associated RTCRtpTransceiver is not found`,
+        zhMessage = `Firefox.receive: RTCRtpTransceiver 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'receive: new RTCRtpTransceiver is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -960,9 +1017,16 @@ export class Firefox60 extends HandlerInterface {
     const transceiver: EnhancedTransceiver | undefined = this._mapMidTransceiver.get(localId)
 
     if (!transceiver || !transceiver.mid) {
+      let enMessage = `Firefox.stopReceiving: associated RTCRtpTransceiver is not found`,
+        zhMessage = `Firefox.stopReceiving: RTCRtpTransceiver 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'stopReceiving: associated RTCRtpTransceiver is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
     if (
@@ -1009,9 +1073,16 @@ export class Firefox60 extends HandlerInterface {
     const transceiver = this._mapMidTransceiver.get(localId)
 
     if (!transceiver) {
+      let enMessage = `Firefox.getReceiverStats: associated RTCRtpTransceiver is not found`,
+        zhMessage = `Firefox.getReceiverStats: RTCRtpTransceiver 未找到`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'getReceiverStats: associated RTCRtpTransceiver is not found'
+        code: ErrorCode.SDP_ERROR,
+        message,
+        advice
       })
     }
 
@@ -1046,20 +1117,32 @@ export class Firefox60 extends HandlerInterface {
 
   private _assertSendDirection(): void {
     if (this._direction !== 'send') {
+      let enMessage = '_assertSendDirection: invalid operation',
+        zhMessage = '_assertSendDirection: 操作异常',
+        enAdvice = `method can just be called for handlers with send direction`,
+        zhAdvice = `只能在 send 方向中调用`
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.INVALID_OPERATION,
-        message:
-          '_assertSendDirection: method can just be called for handlers with "send" direction'
+        code: ErrorCode.INVALID_OPERATION_ERROR,
+        message,
+        advice
       })
     }
   }
 
   private _assertRecvDirection(): void {
     if (this._direction !== 'recv') {
+      let enMessage = '_assertRecvDirection: invalid operation',
+        zhMessage = '_assertRecvDirection: 操作异常',
+        enAdvice = `method can just be called for handlers with recv direction`,
+        zhAdvice = `只能在 recv 方向中调用`
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.INVALID_OPERATION,
-        message:
-          '_assertRecvDirection: method can just be called for handlers with "recv" direction'
+        code: ErrorCode.INVALID_OPERATION_ERROR,
+        message,
+        advice
       })
     }
   }

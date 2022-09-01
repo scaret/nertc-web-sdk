@@ -92,7 +92,9 @@ class StatsReport extends EventEmitter {
   start() {
     let deviceId = generateUUID()
     let checkSum = sha1(`${PROD}${timestamp}${SDK_VERSION}${platform}${sdktype}${deviceId}${salt}`)
-    let url = `${this.adapterRef.instance._params.neRtcServerAddresses.statisticsWebSocketServer || wsURL}?deviceId=${deviceId}&isTest=${PROD}&sdkVer=${SDK_VERSION}&sdktype=${sdktype}&timestamp=${timestamp}&platform=${platform}&checkSum=${checkSum}`
+    let url = `${
+      this.adapterRef.instance._params.neRtcServerAddresses.statisticsWebSocketServer || wsURL
+    }?deviceId=${deviceId}&isTest=${PROD}&sdkVer=${SDK_VERSION}&sdktype=${sdktype}&timestamp=${timestamp}&platform=${platform}&checkSum=${checkSum}`
     let win: any = window
     this.wsTransport_ = win.wsTransport = new WSTransport({
       url: url,

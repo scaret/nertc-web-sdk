@@ -5,6 +5,7 @@ import { RemoteStream } from '../api/remoteStream'
 import { ILogger, PlayOptions, RenderMode, SnapshotBase64Options, SnapshotOptions } from '../types'
 import ErrorCode from '../util/error/errorCode'
 import RtcError from '../util/error/rtcError'
+import * as env from '../util/rtcUtil/rtcEnvironment'
 import { RTCCanvas } from '../util/rtcUtil/rtcCanvas'
 import { getDomInfo } from '../util/rtcUtil/utils'
 import { getParameters } from './parameters'
@@ -1021,15 +1022,29 @@ class Play extends EventEmitter {
     let canvas = rtcCanvas._canvas
     let ctx = rtcCanvas._ctx
     if (!ctx) {
+      let enMessage = 'takeSnapshot: context of canvas is not found',
+        zhMessage = 'takeSnapshot: 未找到 canvas 中的 context',
+        enAdvice = 'The latest version of the Chrome browser is recommended',
+        zhAdvice = '建议使用最新版的 Chrome 浏览器'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'takeSnapshot: context of canvas is not found'
+        code: ErrorCode.NOT_FOUND_ERROR,
+        message,
+        advice
       })
     }
     if (!canvas) {
+      let enMessage = 'takeSnapshot: canvas is not found',
+        zhMessage = 'takeSnapshot: 未找到 canvas',
+        enAdvice = 'The latest version of the Chrome browser is recommended',
+        zhAdvice = '建议使用最新版的 Chrome 浏览器'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'takeSnapshot: canvas is not found'
+        code: ErrorCode.NOT_FOUND_ERROR,
+        message,
+        advice
       })
     }
 
@@ -1038,9 +1053,16 @@ class Play extends EventEmitter {
       const name = options.name || (streamId || this.stream.getId()) + '-' + this.index++
       ctx.fillStyle = '#ffffff'
       if (!this.videoDom) {
+        let enMessage = 'takeSnapshot: videoDom is not found',
+          zhMessage = 'takeSnapshot: 未找到 videoDom',
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NOT_FOUND,
-          message: 'takeSnapshot: videoDom is not found'
+          code: ErrorCode.NOT_FOUND_ERROR,
+          message,
+          advice
         })
       }
       ctx.fillRect(0, 0, this.videoDom.videoWidth, this.videoDom.videoHeight)
@@ -1083,9 +1105,16 @@ class Play extends EventEmitter {
       const name = options.name || (streamId || this.stream.getId()) + '-' + this.index++
       ctx.fillStyle = '#ffffff'
       if (!this.screenDom) {
+        let enMessage = 'takeSnapshot: screenDom is not found',
+          zhMessage = 'takeSnapshot: 未找到 screenDom',
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NOT_FOUND,
-          message: 'takeSnapshot: screenDom is not found'
+          code: ErrorCode.NOT_FOUND_ERROR,
+          message,
+          advice
         })
       }
       ctx.fillRect(0, 0, this.screenDom.videoWidth, this.screenDom.videoHeight)
@@ -1132,24 +1161,45 @@ class Play extends EventEmitter {
     let canvas = rtcCanvas._canvas
     let ctx = rtcCanvas._ctx
     if (!ctx) {
+      let enMessage = 'takeSnapshotBase64: context of canvas is not found',
+        zhMessage = 'takeSnapshotBase64: 未找到 canvas 中的 context',
+        enAdvice = 'The latest version of the Chrome browser is recommended',
+        zhAdvice = '建议使用最新版的 Chrome 浏览器'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'takeSnapshotBase64: context of canvas is not found'
+        code: ErrorCode.NOT_FOUND_ERROR,
+        message,
+        advice
       })
     }
     if (!canvas) {
+      let enMessage = 'takeSnapshotBase64: canvas is not found',
+        zhMessage = 'takeSnapshotBase64: 未找到 canvas',
+        enAdvice = 'The latest version of the Chrome browser is recommended',
+        zhAdvice = '建议使用最新版的 Chrome 浏览器'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'takeSnapshotBase64: canvas is not found'
+        code: ErrorCode.NOT_FOUND_ERROR,
+        message,
+        advice
       })
     }
     // video
     if (snapshotVideo) {
       ctx.fillStyle = '#ffffff'
       if (!this.videoDom) {
+        let enMessage = 'takeSnapshotBase64: videoDom is not found',
+          zhMessage = 'takeSnapshotBase64: 未找到 videoDom',
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NOT_FOUND,
-          message: 'takeSnapshotBase64: videoDom is not found'
+          code: ErrorCode.NOT_FOUND_ERROR,
+          message,
+          advice
         })
       }
       ctx.fillRect(0, 0, this.videoDom.videoWidth, this.videoDom.videoHeight)
@@ -1175,9 +1225,16 @@ class Play extends EventEmitter {
     if (snapshotScreen) {
       ctx.fillStyle = '#ffffff'
       if (!this.screenDom) {
+        let enMessage = 'takeSnapshotBase64: screenDom is not found',
+          zhMessage = 'takeSnapshotBase64: 未找到 screenDom',
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NOT_FOUND,
-          message: 'takeSnapshotBase64: screenDom is not found'
+          code: ErrorCode.NOT_FOUND_ERROR,
+          message,
+          advice
         })
       }
       ctx.fillRect(0, 0, this.screenDom.videoWidth, this.screenDom.videoHeight)

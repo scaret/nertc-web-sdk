@@ -3,6 +3,7 @@ import { EventEmitter } from 'eventemitter3'
 import { AdapterRef, RTSTransportOptions } from '../types'
 import ErrorCode from '../util/error/errorCode'
 import RtcError from '../util/error/rtcError'
+import * as env from '../util/rtcUtil/rtcEnvironment'
 
 class RTSTransport extends EventEmitter {
   private adapterRef: AdapterRef
@@ -34,9 +35,16 @@ class RTSTransport extends EventEmitter {
   initSocket() {
     this.adapterRef.logger.log('RTSTransport建立连接, url: ', this._url)
     if (!this._url) {
+      let enMessage = 'initSocket: url of RTSTransport is not found',
+        zhMessage = 'initSocket: RTSTransport 的 url 未找到',
+        enAdvice = 'Please input the correct url',
+        zhAdvice = '请输入正确的 url'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'initSocket: url of RTSTransport is not found'
+        code: ErrorCode.SOCKET_INIT_ERROR,
+        message,
+        advice
       })
     }
     this._ws = new WebSocket(this._url, ['protoo'])

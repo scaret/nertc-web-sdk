@@ -9,6 +9,7 @@ import ErrorCode from '../util/error/errorCode'
 import RtcError from '../util/error/rtcError'
 import { generateUUID } from '../util/rtcUtil/utils'
 import { getParameters } from './parameters'
+import * as env from '../util/rtcUtil/rtcEnvironment'
 var JSONbig = require('json-bigint')
 
 type URLBackupSourceType = 'builtin' | 'localstorage' | 'lbs' | 'extra'
@@ -572,10 +573,17 @@ export class LBSManager {
             )
             urlSettings[1].fire()
           } else if (this.isAllRequestsFinished(urlSettings)) {
+            let enMessage = 'LBS: request error',
+              zhMessage = 'LBS: 请求错误',
+              enAdvice = 'Please contact CommsEase technical support',
+              zhAdvice = '请联系云信技术支持'
+            let message = env.IS_ZH ? zhMessage : enMessage,
+              advice = env.IS_ZH ? zhAdvice : enAdvice
             return reject(
               new RtcError({
-                code: ErrorCode.INVALID_PARAMETER,
-                message: 'LBS: could not send request due to invalid parameter'
+                code: ErrorCode.LBS_REQUEST_ERROR,
+                message,
+                advice
               })
             )
           }
@@ -590,10 +598,17 @@ export class LBSManager {
             )
             urlSettings[1].fire()
           } else if (this.isAllRequestsFinished(urlSettings)) {
+            let enMessage = 'LBS: json error',
+              zhMessage = 'LBS: json 解析错误',
+              enAdvice = 'Please contact CommsEase technical support',
+              zhAdvice = '请联系云信技术支持'
+            let message = env.IS_ZH ? zhMessage : enMessage,
+              advice = env.IS_ZH ? zhAdvice : enAdvice
             return reject(
               new RtcError({
-                code: LBS_ERR_CODE.JSON_ERROR,
-                message: 'JSON_ERROR'
+                code: ErrorCode.LBS_JSON_ERROR,
+                message,
+                advice
               })
             )
           }
