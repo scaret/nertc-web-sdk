@@ -3,6 +3,7 @@ import { getAutoplayVideo } from '../util/getAutoplayVideo'
 import { getRTCTimer } from '../util/RTCTimer'
 import { watchTrack } from '../util/gum'
 import { getParameters } from './parameters'
+import { get2DContext } from './browser-api/getCanvasContext'
 
 export interface VideoTrackLowOptions {
   logger: ILogger
@@ -26,7 +27,7 @@ export class VideoTrackLow {
   private height = 0
 
   private canvas: HTMLCanvasElement = document.createElement('canvas')
-  private context: CanvasRenderingContext2D | null = this.canvas.getContext('2d')
+  private context: CanvasRenderingContext2D | null = get2DContext(this.canvas)
   private stream: MediaStream | null
   readonly track: MediaStreamTrack | null
 
@@ -90,10 +91,19 @@ export class VideoTrackLow {
 
       return tag
     })
-    this.timer = getRTCTimer().setInterval(() => {
-      this.drawOneFrame()
-    }, 1000 / this.FRAME_RATE)
-    // document.body.prepend(this.canvas)
+
+    if (!this.track) {
+      this.logger.error(`当前浏览器不支持CanvasTrack`)
+    } else if (!this.context) {
+      this.logger.error(`CanvasContext无法顺利启动`)
+      this.stream = null
+      this.track = null
+    } else {
+      this.timer = getRTCTimer().setInterval(() => {
+        this.drawOneFrame()
+      }, 1000 / this.FRAME_RATE)
+      // document.body.prepend(this.canvas)
+    }
   }
   private _correctSize() {
     if (this.high.sender) {
