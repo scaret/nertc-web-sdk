@@ -105,6 +105,10 @@ export default class BasicBeauty {
 
   constructor(videPostProcess: VideoPostProcess) {
     this.videPostProcess = videPostProcess
+    // 上下文丢失时，将对应参数进行初始化
+    this.videPostProcess.on('contextLost', () => {
+      this.lutLoaded = false
+    })
     instances.add(this)
   }
 
@@ -115,10 +119,12 @@ export default class BasicBeauty {
   // 配置美颜lut
   private lutLoaded = false
   private startLut() {
+    if (this.videPostProcess.availableCode === 0) return
     if (this.lutLoaded) {
       return
     }
     const filters = this.videPostProcess.filters
+    if (!filters) return
     let queueLen = 2
     const failUrls: string[] = []
     const checkComplete = () => {
@@ -149,6 +155,7 @@ export default class BasicBeauty {
    * @returns {any}
    */
   setFilter(filterName: string | null, intensity?: number) {
+    if (this.videPostProcess.availableCode === 0) return
     if (!this.isEnable) {
       return this.logger.log('Please enable basicBeauty first.')
     }
@@ -160,7 +167,7 @@ export default class BasicBeauty {
         this.logger.warn('Filter parameter out of bounds:', intensity)
       }
     }
-    this.videPostProcess.filters.lut.setlut(filterName, intensity)
+    this.videPostProcess.filters?.lut.setlut(filterName, intensity)
   }
 
   /**
@@ -177,6 +184,7 @@ export default class BasicBeauty {
         .then((track) => {
           if (!isEnable) {
             const filters = this.videPostProcess.filters
+            if (!filters) return
             filters.beauty.whiten = 0
             filters.beauty.redden = 0
             filters.beauty.smooth = 0
@@ -193,6 +201,7 @@ export default class BasicBeauty {
    * 设置美颜参数
    */
   setBeautyOptions(effects: BeautyEffectOptions) {
+    if (this.videPostProcess.availableCode === 0) return
     if (!this.isEnable) {
       return this.logger.warn('Please enable basicBeauty first.')
     }
@@ -203,7 +212,7 @@ export default class BasicBeauty {
     smoothnessValue = effects.smoothnessLevel || 0
 
     this.logger.log('Set beauty parameters:', effects)
-    const filters = this.videPostProcess.filters
+    const filters = this.videPostProcess.filters!
     if (effects.brightnessLevel !== undefined && typeof brightnessValue === 'number') {
       if (0 <= brightnessValue && brightnessValue <= 1) {
         filters.beauty.whiten = brightnessValue

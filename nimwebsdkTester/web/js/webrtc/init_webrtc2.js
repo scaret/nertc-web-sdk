@@ -1490,6 +1490,18 @@ $('#refreshDevices').on('click', () => {
  *              基础美颜
  * ----------------------------------------
  */
+$('#loseContext').on('click', () => {
+  if (!rtc.localStream) {
+    return
+  }
+  rtc.localStream.loseContext()
+})
+$('#restoreContext').on('click', () => {
+  if (!rtc.localStream) {
+    return
+  }
+  rtc.localStream.restoreContext()
+})
 
 const range0 = document.getElementById('filterIntensity') // 滤镜明亮度
 const range1 = document.getElementById('r1') // 明亮度
@@ -1742,6 +1754,7 @@ const keyMap = {
   shrinkNose: 'adv-shrink-nose',
   lengthenNose: 'adv-lengthen-nose',
   shrinkMouth: 'adv-shrink-mouth',
+  widenMouth: 'adv-widen-mouth',
   mouthCorners: 'adv-mouth-corners',
   adjustPhiltrum: 'adv-adjust-philtrum',
   shrinkUnderjaw: 'adv-shrink-underjaw',
@@ -1751,6 +1764,7 @@ const keyMap = {
   shrinkFace: 'adv-shrink-face',
   vShapedFace: 'adv-vshaped-face',
   minifyFace: 'adv-minify-face',
+  shortenFace: 'adv-shorten-face',
   whitenTeeth: 'adv-whiten-teeth',
   brightenEye: 'adv-brighten-eye'
 }
@@ -3583,16 +3597,8 @@ for (i = 1; i < 4; i++) {
         })
     }
   })
+  // eslint-disable-next-line no-inner-declarations
   function playAuidoEffects(options) {
-    // if (isAudioEffectsEnd) {
-    // console.log('播放结束')
-    // clearInterval(audioEffectsPlayTimer)
-    // audioEffectsPlayTimer = null
-    // audioEffectsProgress.value = 100
-    // audioEffectsProgress.value = 0
-    // audioEffectsProgressInfo.innerText = options.audioEffectsFileName + '   ' + formatSeconds(isAudioEffectsTotalTime) + ' / ' + formatSeconds(isAudioEffectsTotalTime)
-    // return
-    // }
     res = rtc.localStream.getAudioEffectsCurrentPosition(options)
     audioEffectsProgress.value = (res.playedTime / isAudioEffectsTotalTime) * 100
     audioEffectsProgressInfo.innerText =
@@ -4409,15 +4415,15 @@ const showStats = async () => {
       str += `${key}:${remoteAudioStats[uid][key]}\n`
     }
     str += `远端音频辅流 ${uid}\n`
-    for (var key in remoteAudioSlaveStats[uid]) {
+    for (key in remoteAudioSlaveStats[uid]) {
       str += `${key}:${remoteAudioSlaveStats[uid][key]}\n`
     }
     str += `远端视频 ${uid}\n`
-    for (var key in remoteVideoStats[uid]) {
+    for (key in remoteVideoStats[uid]) {
       str += `${key}:${remoteVideoStats[uid][key]}\n`
     }
     str += `远端辅流 ${uid}\n`
-    for (var key in remoteScreenStats[uid]) {
+    for (key in remoteScreenStats[uid]) {
       str += `${key}:${remoteScreenStats[uid][key]}\n`
     }
     str += `</pre>`
@@ -4697,7 +4703,7 @@ function formatSeconds(value) {
   if (parseInt(secondTime) > 9) {
     var result = '00:' + parseInt(secondTime) + ''
   } else {
-    var result = '00:0' + parseInt(secondTime) + ''
+    result = '00:0' + parseInt(secondTime) + ''
   }
 
   if (minuteTime > 0) {
@@ -4727,34 +4733,32 @@ $('#clear-btn').on('click', () => {
 })
 
 function checkRemoteStramStruck() {
-  return
-  let struckGraph
-  let struckSeries
-  let headerrateSeries
-  struckSeries = new TimelineDataSeries()
-  struckGraph = new TimelineGraphView('struckGraph', 'struckCanvas')
-  struckGraph.updateEndDate()
-
-  headerrateSeries = new TimelineDataSeries()
-  headerrateSeries.setColor('green')
-  let videos = document.querySelectorAll('video')
-  let video = videos.length > 0 && videos[1]
-  let num = 0
-  video.ontimeupdate = function (event) {
-    num++
-    console.log('num: ', num)
-  }
-  setInterval(() => {
-    let now = Date.now()
-    console.log(num)
-    let row = 1000 / num
-    // append to chart
-    struckSeries.addPoint(now, row)
-    //headerrateSeries.addPoint(now, headerrate);
-    struckGraph.setDataSeries([struckSeries, headerrateSeries])
-    struckGraph.updateEndDate()
-    num = 0
-  }, 1000)
+  // let struckGraph
+  // let struckSeries
+  // let headerrateSeries
+  // struckSeries = new TimelineDataSeries()
+  // struckGraph = new TimelineGraphView('struckGraph', 'struckCanvas')
+  // struckGraph.updateEndDate()
+  // headerrateSeries = new TimelineDataSeries()
+  // headerrateSeries.setColor('green')
+  // let videos = document.querySelectorAll('video')
+  // let video = videos.length > 0 && videos[1]
+  // let num = 0
+  // video.ontimeupdate = function (event) {
+  //   num++
+  //   console.log('num: ', num)
+  // }
+  // setInterval(() => {
+  //   let now = Date.now()
+  //   console.log(num)
+  //   let row = 1000 / num
+  //   // append to chart
+  //   struckSeries.addPoint(now, row)
+  //   //headerrateSeries.addPoint(now, headerrate);
+  //   struckGraph.setDataSeries([struckSeries, headerrateSeries])
+  //   struckGraph.updateEndDate()
+  //   num = 0
+  // }, 1000)
 }
 
 // Read a page's GET URL variables and return them as an associative array.

@@ -41,10 +41,6 @@ export class Renderer {
     this._gl = getWebGLContext(canvas, ctxOpts) as WebGLRenderingContext | null
     const size = this.setSize(width, height)
     this.setViewport(0, 0, size.width, size.height)
-
-    if (!this._gl) {
-      console.error('The current runtime environment does not support webgl.')
-    }
   }
 
   /**
@@ -157,8 +153,9 @@ export class Renderer {
    * @param {Program} program
    */
   render(program: Program) {
-    const gl = this.gl!
+    if (!this.gl) return
+    const gl = this.gl
     gl.enable(gl.CULL_FACE)
-    program?.render()
+    program.render()
   }
 }
