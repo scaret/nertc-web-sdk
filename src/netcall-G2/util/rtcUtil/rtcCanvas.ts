@@ -1,3 +1,5 @@
+import { get2DContext } from '../../module/browser-api/getCanvasContext'
+
 export class RTCCanvas {
   public title: string
   // public width: number;
@@ -26,7 +28,7 @@ export class RTCCanvas {
   createCanvas() {
     this.canvas = <HTMLCanvasElement>document.createElement('canvas')
     //@ts-ignore
-    this.ctx = this.canvas.getContext('2d')
+    this.ctx = get2DContext(this.canvas)
     // this.canvas.width = this.width;
     // this.canvas.height = this.height;
     if (this.isAppend) {

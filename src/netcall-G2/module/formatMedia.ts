@@ -3,6 +3,7 @@ import ErrorCode from '../util/error/errorCode'
 import RtcError from '../util/error/rtcError'
 import * as env from '../util/rtcUtil/rtcEnvironment'
 import { AdapterRef, ClientRecordConfig, FormatMediaOptions, ILogger, Timer } from '../types'
+import { get2DContext } from './browser-api/getCanvasContext'
 
 /*
   该模块主要的功能是混音和混流
@@ -144,7 +145,7 @@ class FormatMedia extends EventEmitter {
 
     if (!this.canvas) {
       this.canvas = document.createElement('canvas')
-      this.canvasContext = this.canvas.getContext('2d')
+      this.canvasContext = get2DContext(this.canvas)
     }
     this.canvas.width = recordVideoWidth
     this.canvas.height = recordVideoHeight

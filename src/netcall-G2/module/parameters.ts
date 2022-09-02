@@ -120,6 +120,12 @@ interface IParameters {
   protooMessageTimeout: number
   //是否复用已经取消订阅的远端媒体流的mid
   reuseMid: boolean
+  // 是否不启动WebAudio
+  disableWebAudio: boolean
+  // 是否关闭 2D 的 CanvasContext
+  disable2dContext: boolean
+  // 是否关闭 WebGL 的 CanvasContext
+  disableWebGLContext: boolean
   // 修补Safari本地canvas track无法播放的问题
   shimLocalCanvas: 'safari' | 'all' | 'never'
 }
@@ -193,6 +199,9 @@ let parameters: IParameters = {
   disableLBSService: false,
   protooMessageTimeout: 30000,
   reuseMid: true,
+  disableWebAudio: false,
+  disable2dContext: false,
+  disableWebGLContext: false,
   shimLocalCanvas: 'safari'
 }
 
