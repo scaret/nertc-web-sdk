@@ -25,6 +25,7 @@ import ErrorCode from '../util/error/errorCode'
 import RtcError from '../util/error/rtcError'
 import { RtcSupport } from '../util/rtcUtil/rtcSupport'
 import * as env from '../util/rtcUtil/rtcEnvironment'
+import {getParameters} from "./parameters";
 
 /**
  * webaudio 控制
@@ -73,6 +74,8 @@ class AudioIn {
 export function getAudioContext() {
   if (globalAc) {
     return globalAc
+  } else if (getParameters().disableWebAudio) {
+    return null
   } else if (supports.WebAudio && supports.MediaStream) {
     globalAc = new window.AudioContext()
     return globalAc
