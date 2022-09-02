@@ -1,5 +1,6 @@
 import ErrorCode from '../../../util/error/errorCode'
 import RtcError from '../../../util/error/rtcError'
+import * as env from '../../../util/rtcUtil/rtcEnvironment'
 import { getParameters } from '../../parameters'
 import { EnhancedEventEmitter } from './EnhancedEventEmitter'
 import { InvalidStateError, UnsupportedError } from './errors'
@@ -219,9 +220,16 @@ export class Producer extends EnhancedEventEmitter {
   set appData(
     appData // eslint-disable-line @typescript-eslint/no-unused-vars
   ) {
+    let enMessage = `Producer: cannot override appData object`,
+      zhMessage = `Producer: appData override 异常`,
+      enAdvice = 'Please contact CommsEase technical support',
+      zhAdvice = '请联系云信技术支持'
+    let message = env.IS_ZH ? zhMessage : enMessage,
+      advice = env.IS_ZH ? zhAdvice : enAdvice
     throw new RtcError({
-      code: ErrorCode.APPDATA_ERROR,
-      message: 'producer: cannot override appData object'
+      code: ErrorCode.APPDATA_OVERRIDE_ERROR,
+      message,
+      advice
     })
   }
 

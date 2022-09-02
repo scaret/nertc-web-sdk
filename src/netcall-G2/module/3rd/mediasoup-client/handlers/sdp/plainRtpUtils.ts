@@ -1,5 +1,6 @@
 import ErrorCode from '../../../../../util/error/errorCode'
 import RtcError from '../../../../../util/error/rtcError'
+import * as env from '../../../../../util/rtcUtil/rtcEnvironment'
 import { MediaKind, RtpEncodingParameters } from '../../RtpParameters'
 
 export function extractPlainRtpParameters({
@@ -16,9 +17,16 @@ export function extractPlainRtpParameters({
   const mediaObject = (sdpObject.media || []).find((m: any) => m.type === kind)
 
   if (!mediaObject) {
+    let enMessage = `extractPlainRtpParameters: m=${kind} section is not found`,
+      zhMessage = `extractPlainRtpParameters: m=${kind} 未找到`,
+      enAdvice = 'Please contact CommsEase technical support',
+      zhAdvice = '请联系云信技术支持'
+    let message = env.IS_ZH ? zhMessage : enMessage,
+      advice = env.IS_ZH ? zhAdvice : enAdvice
     throw new RtcError({
-      code: ErrorCode.NOT_FOUND,
-      message: `extractPlainRtpParameters: m=${kind} section is not found`
+      code: ErrorCode.SDP_ERROR,
+      message,
+      advice
     })
   }
 
@@ -41,9 +49,16 @@ export function getRtpEncodings({
   const mediaObject = (sdpObject.media || []).find((m: any) => m.type === kind)
 
   if (!mediaObject) {
+    let enMessage = `getRtpEncodings: m=${kind} section is not found`,
+      zhMessage = `getRtpEncodings: m=${kind} 未找到`,
+      enAdvice = 'Please contact CommsEase technical support',
+      zhAdvice = '请联系云信技术支持'
+    let message = env.IS_ZH ? zhMessage : enMessage,
+      advice = env.IS_ZH ? zhAdvice : enAdvice
     throw new RtcError({
-      code: ErrorCode.NOT_FOUND,
-      message: `getRtpEncodings: m=${kind} section is not found`
+      code: ErrorCode.SDP_ERROR,
+      message,
+      advice
     })
   }
 

@@ -25,6 +25,7 @@ import RtcError from '../netcall-G2/util/error/rtcError'
 import log, { loglevels } from '../netcall-G2/util/log/logger'
 import { checkExists, checkValidInteger } from '../netcall-G2/util/param'
 import { getSupportedCodecs } from '../netcall-G2/util/rtcUtil/codec'
+import * as env from '../netcall-G2/util/rtcUtil/rtcEnvironment'
 
 /**
  * {@link NERTC}
@@ -162,9 +163,12 @@ export const NERTC = {
     checkExists({ tag: 'createStream:options', value: options })
     if (options.screenAudio) {
       if (!options.screen) {
+        let zhMessage = 'createStream: screenAudio 要与 screen 一起开启'
+        let enMessage = 'createStream: screenAudio should be open together with screen'
+        let message = env.IS_ZH ? zhMessage : enMessage
         throw new RtcError({
-          code: ErrorCode.INVALID_OPERATION,
-          message: 'createStream: screenAudio should be open together with screen'
+          code: ErrorCode.INVALID_OPERATION_ERROR,
+          message
         })
       }
     }

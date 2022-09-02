@@ -1,4 +1,5 @@
 import { Program } from './program'
+import { getWebGLContext } from '../../browser-api/getCanvasContext'
 
 /**
  * 渲染器设置项
@@ -12,7 +13,7 @@ type GlOpts = {
   alpha?: boolean
   antialias?: boolean
   depth?: boolean
-  powerPreference?: 'default' | 'high-performance' | 'low-power'
+  powerPreference?: WebGLPowerPreference
   premultipliedAlpha?: boolean
   preserveDrawingBuffer?: boolean
   stencil?: boolean
@@ -33,11 +34,11 @@ export class Renderer {
       ...ctxOpts
     } = {
       preserveDrawingBuffer: true,
-      powerPreference: 'high-performance',
+      powerPreference: 'high-performance' as WebGLPowerPreference,
       ...opts
     }
     this._canvas = canvas
-    this._gl = canvas.getContext('webgl', ctxOpts) as WebGLRenderingContext | null
+    this._gl = getWebGLContext(canvas, ctxOpts) as WebGLRenderingContext | null
     const size = this.setSize(width, height)
     this.setViewport(0, 0, size.width, size.height)
   }

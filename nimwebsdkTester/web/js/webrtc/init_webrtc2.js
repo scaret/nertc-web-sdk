@@ -714,7 +714,7 @@ function initEvents() {
     if (!DO_NOT_ADD_EVENTS) {
       // 自动播放受限
       remoteStream.on('notAllowedError', (err) => {
-        console.log('remoteStream notAllowedError', remoteStream)
+        console.warn('remoteStream notAllowedError', remoteStream, err)
         const errorCode = err.getCode()
         const id = remoteStream.getId()
         addView(id)

@@ -1,6 +1,9 @@
 import { EventEmitter } from 'eventemitter3'
-
+import ErrorCode from '../util/error/errorCode'
+import RtcError from '../util/error/rtcError'
+import * as env from '../util/rtcUtil/rtcEnvironment'
 import { AdapterRef, ClientRecordConfig, FormatMediaOptions, ILogger, Timer } from '../types'
+import { get2DContext } from './browser-api/getCanvasContext'
 
 /*
   该模块主要的功能是混音和混流
@@ -39,7 +42,20 @@ class FormatMedia extends EventEmitter {
       return this.destination.stream
     } catch (e: any) {
       this.logger.error('媒体设备获取失败: ', e.name, e.message)
-      return Promise.reject(e)
+      // return Promise.reject(e)
+      let enMessage = `formatAudio: get media device error: ${e.name}`,
+        zhMessage = `formatAudio: 媒体设备获取失败: ${e.name}`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.FORMAT_AUDIO_ERROR,
+          message,
+          advice
+        })
+      )
     }
   }
 
@@ -129,7 +145,7 @@ class FormatMedia extends EventEmitter {
 
     if (!this.canvas) {
       this.canvas = document.createElement('canvas')
-      this.canvasContext = this.canvas.getContext('2d')
+      this.canvasContext = get2DContext(this.canvas)
     }
     this.canvas.width = recordVideoWidth
     this.canvas.height = recordVideoHeight

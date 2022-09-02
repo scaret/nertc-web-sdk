@@ -66,11 +66,33 @@ class Record extends EventEmitter {
     if (!window.MediaRecorder || !MediaRecorder.isTypeSupported || !env.IS_CHROME) {
       this.logger.log('浏览器不支持本地录制')
       reason = 'RecordBrowserNotSupport'
+      let enMessage = 'Record.start: recording is not supported in this browser',
+        zhMessage = 'Record.start: 当前浏览器不支持本地录制',
+        enAdvice = 'The latest version of the Chrome browser is recommended',
+        zhAdvice = '建议使用最新版的 Chrome 浏览器'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
+      throw new RtcError({
+        code: ErrorCode.NOT_SUPPORT_ERROR,
+        message,
+        advice
+      })
     }
 
     if (this._status.isRecording) {
       this.logger.log('当前正在录制中')
       reason = 'RecordInRecording'
+      let enMessage = 'Record.start: invalid operation',
+        zhMessage = 'Record.start: 操作异常',
+        enAdvice = 'in recording',
+        zhAdvice = '当前正在录制中'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
+      throw new RtcError({
+        code: ErrorCode.INVALID_OPERATION_ERROR,
+        message,
+        advice
+      })
     }
 
     if (this._status.recordUrl && this._status.recordStatus !== 'downloaded') {
@@ -81,6 +103,17 @@ class Record extends EventEmitter {
       } else {
         this.logger.log(`MediaRecordHelper: start : 请先下载或重置上一段录制文件`)
         reason = 'RecordFileExsit'
+        let enMessage = 'Record.start: invalid operation',
+          zhMessage = 'Record.start: 操作异常',
+          enAdvice = 'Please download or reset the previous recording first',
+          zhAdvice = '请先下载或重置上一段录制文件'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
+        throw new RtcError({
+          code: ErrorCode.INVALID_OPERATION_ERROR,
+          message,
+          advice
+        })
       }
     }
     if (reason) {
@@ -97,10 +130,6 @@ class Record extends EventEmitter {
           null,
           ' '
         )
-      })
-      throw new RtcError({
-        code: ErrorCode.INVALID_OPERATION,
-        message: 'start: media recording is not supported in this browser'
       })
     }
 
@@ -156,10 +185,17 @@ class Record extends EventEmitter {
           ' '
         )
       })
+      let enMessage = 'Record.start: start interface error',
+        zhMessage = 'Record.start: 录制接口异常',
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.RECORD_API_ERROR,
-          message: 'start: record api error'
+          code: ErrorCode.RECORDING_ERROR,
+          message,
+          advice
         })
       )
     }
@@ -193,10 +229,17 @@ class Record extends EventEmitter {
     this._status.recordStatus = 'stopping'
     return new Promise((resolve, reject) => {
       if (!this._recorder) {
+        let enMessage = 'Record.stop: stop interface error, record is not found',
+          zhMessage = 'Record.stop: 录制接口异常, 未找到 record',
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return reject(
           new RtcError({
-            code: ErrorCode.NOT_FOUND,
-            message: 'stop: record is not found'
+            code: ErrorCode.RECORDING_ERROR,
+            message,
+            advice
           })
         )
       }
@@ -412,11 +455,17 @@ class Record extends EventEmitter {
     return new Promise((resolve, reject) => {
       let opStream = new MediaStream()
       if (!streams) {
+        let enMessage = `Record._format: stream is undefined`,
+          zhMessage = `Record._format: stream 未明确`,
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return reject(
           new RtcError({
-            code: ErrorCode.NOT_DEFINED,
-            message: '_format: stream not defined',
-            proposal: 'please make sure stream exists'
+            code: ErrorCode.UNDEFINED_ERROR,
+            message,
+            advice
           })
         )
       }
@@ -477,10 +526,17 @@ class Record extends EventEmitter {
       mimeType: this._status.mimeType
     }
     if (!this._status.opStream) {
+      let enMessage = `Record._start: stream is undefined`,
+        zhMessage = `Record._start: stream 未明确`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.NOT_AVAILABLE,
-          message: '_start: the stream is unavailable'
+          code: ErrorCode.UNDEFINED_ERROR,
+          message,
+          advice
         })
       )
     }
@@ -563,19 +619,32 @@ class Record extends EventEmitter {
       dom = document.createElement('video')
       dom.autoplay = true
     } else {
+      let enMessage = '_play: MIME type ${this._status.mimeType} is not supported in this browser',
+        zhMessage = `_play: 当前浏览器不支持 MIME type ${this._status.mimeType}`,
+        enAdvice = 'The latest version of the Chrome browser is recommended',
+        zhAdvice = '建议使用最新版的 Chrome 浏览器'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.NOT_SUPPORT,
-          message: `MIME type ${this._status.mimeType} is not support in this browser`
+          code: ErrorCode.NOT_SUPPORT_ERROR,
+          message,
+          advice
         })
       )
     }
     if (!this._status.recordUrl) {
+      let enMessage = `Record._play: record url is undefined`,
+        zhMessage = `Record._play: 录制 url 未明确`,
+        enAdvice = 'please make sure record url exists',
+        zhAdvice = '请确保录制 url 正确'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.NOT_DEFINED,
-          message: '_play: record url is unfefined',
-          proposal: 'please make sure record url exists'
+          code: ErrorCode.UNDEFINED_ERROR,
+          message,
+          advice
         })
       )
     }

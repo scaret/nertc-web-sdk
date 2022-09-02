@@ -1156,10 +1156,16 @@ class FormativeStatsReport {
 
     this.adapterRef.sessionStats.SendBitrate = result.real_v_kbps_n + result.real_a_kbps_n
     if (!this.adapterRef.localStream) {
+      let enMessage = 'getLocalMediaStats: localStream is not found',
+        zhMessage = 'getLocalMediaStats: 未找到 localStream',
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'getLocalMediaStats: localStream is not found',
-        proposal: 'please make sure localStream exists'
+        code: ErrorCode.LOCALSTREAM_NOT_FOUND_ERROR,
+        message,
+        advice
       })
     }
     this.adapterRef.localAudioStats[0] = {

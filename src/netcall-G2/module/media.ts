@@ -262,9 +262,16 @@ class MediaHelper extends EventEmitter {
     if (!this.stream.isRemote) {
       if (this.stream.destroyed) {
         this._reset()
+        let enMessage = 'assertLive: localStream is destroyed',
+          zhMessage = 'assertLive: localStream 已经销毁',
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         let err = new RtcError({
-          code: ErrorCode.INVALID_OPERATION,
-          message: 'assertLive: localStream is destroyed'
+          code: ErrorCode.LOCALSTREAM_ERROR,
+          message,
+          advice
         })
         throw err
       }
@@ -827,11 +834,18 @@ class MediaHelper extends EventEmitter {
   async getSecondStream(constraint: GUMConstaints) {
     let { audio = false, video = false } = constraint
     if (!audio && !video) {
-      this.logger.error('getSecondStream:必须指定一个参数')
+      this.logger.error('getSecondStream: 必须指定一个参数')
+      let enMessage = 'getSecondStream: invalid parameter',
+        zhMessage = 'getSecondStream: 参数缺失',
+        enAdvice = 'Please make sure audio/video is valid',
+        zhAdvice = '必须指定一个参数'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.INVALID_OPERATION,
-          message: 'getSecondStream: audio/video is invalid'
+          code: ErrorCode.INVALID_PARAMETER_ERROR,
+          message,
+          advice
         })
       )
     }
@@ -1347,24 +1361,45 @@ class MediaHelper extends EventEmitter {
         )
       })
       if (reason === 'INVALID_ARGUMENTS') {
+        let enMessage = 'startAudioMixing: audioFilePath not found',
+          zhMessage = 'startAudioMixing: audioFilePath 参数缺失',
+          enAdvice = 'Please make sure audioFilePath is valid',
+          zhAdvice = '必须指定一个 audioFilePath 参数'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION,
-            message: 'startAudioMixing: file path not found'
+            code: ErrorCode.INVALID_PARAMETER_ERROR,
+            message,
+            advice
           })
         )
       } else if (reason === 'NOT_PUBLIST_AUDIO_YET') {
+        let enMessage = 'startAudioMixing: invalid operation',
+          zhMessage = 'startAudioMixing: 操作异常',
+          enAdvice = 'audio source is not published',
+          zhAdvice = '音频还没有 publish'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION,
-            message: 'startAudioMixing: audio source is not published'
+            code: ErrorCode.INVALID_OPERATION_ERROR,
+            message,
+            advice
           })
         )
       } else if (reason === 'BROWSER_NOT_SUPPORT') {
+        let enMessage = 'startAudioMixing: audio mixing is not supported in this browser',
+          zhMessage = 'startAudioMixing: 当前浏览器不支持伴音',
+          enAdvice = 'The latest version of the Chrome browser is recommended',
+          zhAdvice = '建议使用最新版的 Chrome 浏览器'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.NOT_SUPPORT,
-            message: 'startAudioMixing: audio mixing is not supported in this browser'
+            code: ErrorCode.NOT_SUPPORT_ERROR,
+            message,
+            advice
           })
         )
       }
@@ -1417,10 +1452,18 @@ class MediaHelper extends EventEmitter {
         this.logger.log('loadRemoteAudioFile 加载云端音乐成功')
         return new Promise((resolve, reject) => {
           if (!this.audio.webAudio || !this.audio.webAudio.context) {
+            let enMessage =
+                'loadRemoteAudioFile: load remote audio file is not supported in this browser',
+              zhMessage = 'loadRemoteAudioFile: 当前浏览器不支持加载云端音频文件',
+              enAdvice = 'The latest version of the Chrome browser is recommended',
+              zhAdvice = '建议使用最新版的 Chrome 浏览器'
+            let message = env.IS_ZH ? zhMessage : enMessage,
+              advice = env.IS_ZH ? zhAdvice : enAdvice
             reject(
               new RtcError({
-                code: ErrorCode.NOT_SUPPORT,
-                message: 'loadRemoteAudioFile: webAudio lost'
+                code: ErrorCode.NOT_SUPPORT_ERROR,
+                message,
+                advice
               })
             )
             return
@@ -1430,10 +1473,17 @@ class MediaHelper extends EventEmitter {
             (buffer) => {
               this.logger.log('loadRemoteAudioFile 云端音乐解码成功')
               if (!this.audio.mixAudioConf.audioFilePath) {
+                let enMessage = 'loadRemoteAudioFile: audioFilePath error',
+                  zhMessage = 'loadRemoteAudioFile: audioFilePath 异常',
+                  enAdvice = 'Please contact CommsEase technical support',
+                  zhAdvice = '请联系云信技术支持'
+                let message = env.IS_ZH ? zhMessage : enMessage,
+                  advice = env.IS_ZH ? zhAdvice : enAdvice
                 reject(
                   new RtcError({
-                    code: ErrorCode.STATE_ERROR,
-                    message: 'loadRemoteAudioFile: state error'
+                    code: ErrorCode.AUDIO_MIX_FILE_ERROR,
+                    message,
+                    advice
                   })
                 )
                 return
@@ -1445,10 +1495,17 @@ class MediaHelper extends EventEmitter {
             },
             (e) => {
               this.logger.log('loadRemoteAudioFile 云端音乐解码失败：', e)
+              let enMessage = `loadRemoteAudioFile: remoteAudioFile create buffersource failed: ${e}`,
+                zhMessage = `loadRemoteAudioFile: 云端音乐解码失败: ${e}`,
+                enAdvice = 'Please contact CommsEase technical support',
+                zhAdvice = '请联系云信技术支持'
+              let message = env.IS_ZH ? zhMessage : enMessage,
+                advice = env.IS_ZH ? zhAdvice : enAdvice
               reject(
                 new RtcError({
-                  code: ErrorCode.STATE_ERROR,
-                  message: 'loadRemoteAudioFile: create buffersource failed'
+                  code: ErrorCode.AUDIO_MIX_FILE_ERROR,
+                  message,
+                  advice
                 })
               )
             }
@@ -1457,10 +1514,17 @@ class MediaHelper extends EventEmitter {
       })
       .catch((error) => {
         this.logger.log('loadRemoteAudioFile 加载云端音乐失败: ', error.name, error.message, error)
+        let enMessage = `loadRemoteAudioFile: load audio failed: ${error.name} ${error.message}`,
+          zhMessage = `loadRemoteAudioFile: 加载云端音乐失败: ${error.name} ${error.message}`,
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.STATE_ERROR,
-            message: 'loadRemoteAudioFile: load audio failed'
+            code: ErrorCode.AUDIO_MIX_FILE_ERROR,
+            message,
+            advice
           })
         )
       })
@@ -1509,10 +1573,17 @@ class MediaHelper extends EventEmitter {
   startMix(index: number) {
     if (!this.audio.webAudio) {
       this.logger.error('startMix:参数错误')
+      let enMessage = 'startMix: webAudio error',
+        zhMessage = 'startMix: webAudio 异常',
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.INVALID_PARAMETER,
-          message: 'startMix: parameter error'
+          code: ErrorCode.AUDIO_MIXING_ERROR,
+          message,
+          advice
         })
       )
     }
@@ -1580,24 +1651,45 @@ class MediaHelper extends EventEmitter {
         )
       })
       if (reason === 'BROWSER_NOT_SUPPORT') {
+        let enMessage = 'pauseAudioMixing: audio mixing is not supported in this browser',
+          zhMessage = 'pauseAudioMixing: 当前浏览器不支持伴音',
+          enAdvice = 'The latest version of the Chrome browser is recommended',
+          zhAdvice = '建议使用最新版的 Chrome 浏览器'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.NOT_SUPPORT,
-            message: 'pauseAudioMixing: audio mixing is not supported in this browser'
+            code: ErrorCode.NOT_SUPPORT_ERROR,
+            message,
+            advice
           })
         )
       } else if (reason === 'PAUSED') {
+        let enMessage = 'pauseAudioMixing: invalid operation',
+          zhMessage = 'pauseAudioMixing: 操作异常',
+          enAdvice = 'has already been paused',
+          zhAdvice = '伴音已暂停'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION,
-            message: 'pauseAudioMixing: has already been paused'
+            code: ErrorCode.INVALID_OPERATION_ERROR,
+            message,
+            advice
           })
         )
       } else if (reason === 'NOT_PLAY') {
+        let enMessage = 'pauseAudioMixing: invalid operation',
+          zhMessage = 'pauseAudioMixing: 操作异常',
+          enAdvice = 'audio mixing is not open',
+          zhAdvice = '伴音未开启'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION,
-            message: 'pauseAudioMixing: audio mixing is not open'
+            code: ErrorCode.INVALID_OPERATION_ERROR,
+            message,
+            advice
           })
         )
       }
@@ -1638,24 +1730,45 @@ class MediaHelper extends EventEmitter {
         )
       })
       if (reason === 'BROWSER_NOT_SUPPORT') {
+        let enMessage = 'resumeAudioMixing: audio mixing is not supported in this browser',
+          zhMessage = 'resumeAudioMixing: 当前浏览器不支持伴音',
+          enAdvice = 'The latest version of the Chrome browser is recommended',
+          zhAdvice = '建议使用最新版的 Chrome 浏览器'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.NOT_SUPPORT,
-            message: 'resumeAudioMixing: audio mixing is not supported in this browser'
+            code: ErrorCode.NOT_SUPPORT_ERROR,
+            message,
+            advice
           })
         )
       } else if (reason === 'NOT_OPEN') {
+        let enMessage = 'resumeAudioMixing: invalid operation',
+          zhMessage = 'resumeAudioMixing: 操作异常',
+          enAdvice = 'audio mixing is not open',
+          zhAdvice = '伴音未开启'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION,
-            message: 'resumeAudioMixing: audio mixing is not open'
+            code: ErrorCode.INVALID_OPERATION_ERROR,
+            message,
+            advice
           })
         )
       } else if (reason === 'NOT_PAUSED') {
+        let enMessage = 'resumeAudioMixing: invalid operation',
+          zhMessage = 'resumeAudioMixing: 操作异常',
+          enAdvice = 'audio mixing is not paused',
+          zhAdvice = '伴音未暂停'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION,
-            message: 'resumeAudioMixing: audio mixing is not paused'
+            code: ErrorCode.INVALID_OPERATION_ERROR,
+            message,
+            advice
           })
         )
       }
@@ -1739,17 +1852,31 @@ class MediaHelper extends EventEmitter {
         )
       })
       if (reason === 'BROWSER_NOT_SUPPORT') {
+        let enMessage = 'stopAudioMixing: audio mixing is not supported in this browser',
+          zhMessage = 'stopAudioMixing: 当前浏览器不支持伴音',
+          enAdvice = 'The latest version of the Chrome browser is recommended',
+          zhAdvice = '建议使用最新版的 Chrome 浏览器'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.NOT_SUPPORT,
-            message: 'stopAudioMixing: audio mixing is not supported in this browser'
+            code: ErrorCode.NOT_SUPPORT_ERROR,
+            message,
+            advice
           })
         )
       } else if (reason === 'NOT_OPEN') {
+        let enMessage = 'stopAudioMixing: invalid operation',
+          zhMessage = 'stopAudioMixing: 操作异常',
+          enAdvice = 'audio mixing is not open',
+          zhAdvice = '伴音未开启'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION,
-            message: 'stopAudioMixing: audio mixing is not open'
+            code: ErrorCode.INVALID_OPERATION_ERROR,
+            message,
+            advice
           })
         )
       }
@@ -1759,16 +1886,8 @@ class MediaHelper extends EventEmitter {
       code: 0,
       param: JSON.stringify(this.audio.mixAudioConf, null, ' ')
     })
-    if (!this.audio.webAudio) {
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.NOT_SUPPORT,
-          message: 'webAudio is not supported in this browser'
-        })
-      )
-    } else {
-      return this.audio.webAudio.stopAudioMixing(isFinished)
-    }
+
+    return this.audio.webAudio!.stopAudioMixing(isFinished)
   }
 
   /*
@@ -1806,24 +1925,45 @@ class MediaHelper extends EventEmitter {
         )
       })
       if (reason === 'BROWSER_NOT_SUPPORT') {
+        let enMessage = 'setAudioMixingVolume: audio mixing is not supported in this browser',
+          zhMessage = 'setAudioMixingVolume: 当前浏览器不支持伴音',
+          enAdvice = 'The latest version of the Chrome browser is recommended',
+          zhAdvice = '建议使用最新版的 Chrome 浏览器'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.NOT_SUPPORT,
-            message: 'setAudioMixingVolume: audio mixing is not supported in this browser'
+            code: ErrorCode.NOT_SUPPORT_ERROR,
+            message,
+            advice
           })
         )
       } else if (reason === 'NOT_OPEN') {
+        let enMessage = 'setAudioMixingVolume: invalid operation',
+          zhMessage = 'setAudioMixingVolume: 操作异常',
+          enAdvice = 'audio mixing is not open',
+          zhAdvice = '伴音未开启'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION,
-            message: 'setAudioMixingVolume: audio mixing is not open'
+            code: ErrorCode.INVALID_OPERATION_ERROR,
+            message,
+            advice
           })
         )
       } else if (reason === 'INVALID_ARGUMENTS') {
+        let enMessage = 'setAudioMixingVolume: parameter(volume) out of bounds',
+          zhMessage = 'setAudioMixingVolume: volume 参数越界',
+          enAdvice = 'volume must be an integer in the range of (0 - 255)',
+          zhAdvice = 'volume 参数的值在 0 - 255 之间'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_PARAMETER,
-            message: 'setAudioMixingVolume: volume must be an integer in the range of (0 - 255)'
+            code: ErrorCode.INVALID_PARAMETER_ERROR,
+            message,
+            advice
           })
         )
       }
@@ -1849,7 +1989,7 @@ class MediaHelper extends EventEmitter {
       reason = 'BROWSER_NOT_SUPPORT'
     } else if (!this.audio.webAudio.mixAudioConf || !this.audio.webAudio.mixAudioConf.audioSource) {
       this.logger.log('setAudioMixingPlayTime: 当前没有开启伴音')
-      reason = 'INVALID_ARGUMENTS'
+      reason = 'NOT_OPEN'
     } else if (playTime < 0) {
       this.logger.log('setAudioMixingPlayTime: playStartTime小于0')
       reason = 'INVALID_ARGUMENTS'
@@ -1878,24 +2018,45 @@ class MediaHelper extends EventEmitter {
       })
       // return Promise.reject(reason)
       if (reason === 'BROWSER_NOT_SUPPORT') {
+        let enMessage = 'setAudioMixingPlayTime: audio mixing is not supported in this browser',
+          zhMessage = 'setAudioMixingPlayTime: 当前浏览器不支持伴音',
+          enAdvice = 'The latest version of the Chrome browser is recommended',
+          zhAdvice = '建议使用最新版的 Chrome 浏览器'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.NOT_SUPPORT,
-            message: 'setAudioMixingPlayTime: audio mixing is not supported in this browser'
+            code: ErrorCode.NOT_SUPPORT_ERROR,
+            message,
+            advice
           })
         )
       } else if (reason === 'NOT_OPEN') {
+        let enMessage = 'setAudioMixingPlayTime: invalid operation',
+          zhMessage = 'setAudioMixingPlayTime: 操作异常',
+          enAdvice = 'audio mixing is not open',
+          zhAdvice = '伴音未开启'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION,
-            message: 'setAudioMixingPlayTime: audio mixing is not open'
+            code: ErrorCode.INVALID_OPERATION_ERROR,
+            message,
+            advice
           })
         )
       } else if (reason === 'INVALID_ARGUMENTS') {
+        let enMessage = 'setAudioMixingPlayTime: playStartTime exceeds total audio duration',
+          zhMessage = 'setAudioMixingPlayTime: playStartTime 超过音频时长范围',
+          enAdvice = 'playStartTime must be an integer in the range of total audio duration',
+          zhAdvice = 'playStartTime 的值应该在音频总时长范围内'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_PARAMETER,
-            message: 'setAudioMixingPlayTime: playStartTime is invalid'
+            code: ErrorCode.INVALID_PARAMETER_ERROR,
+            message,
+            advice
           })
         )
       }
@@ -1907,10 +2068,17 @@ class MediaHelper extends EventEmitter {
           if (!this.audio.webAudio) {
             const reason = 'webAudio not supported'
             reject(reason)
+            let enMessage = 'setAudioMixingPlayTime: webAudio is not supported in this browser',
+              zhMessage = 'setAudioMixingPlayTime: 当前浏览器不支持 webAudio',
+              enAdvice = 'The latest version of the Chrome browser is recommended',
+              zhAdvice = '建议使用最新版的 Chrome 浏览器'
+            let message = env.IS_ZH ? zhMessage : enMessage,
+              advice = env.IS_ZH ? zhAdvice : enAdvice
             return Promise.reject(
               new RtcError({
-                code: ErrorCode.NOT_SUPPORT,
-                message: 'setAudioMixingPlayTime: webAudio is not supported in this browser'
+                code: ErrorCode.NOT_SUPPORT_ERROR,
+                message,
+                advice
               })
             )
           }
@@ -2108,10 +2276,17 @@ class MediaHelper extends EventEmitter {
 
     if (!this.audio.webAudio || !this.audio.webAudio.context) {
       this.logger.log('playEffect: 浏览器不支持')
+      let enMessage = 'playEffect: audio effect is not supported in this browser',
+        zhMessage = 'playEffect: 当前浏览器不支持音效功能',
+        enAdvice = 'The latest version of the Chrome browser is recommended',
+        zhAdvice = '建议使用最新版的 Chrome 浏览器'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.NOT_SUPPORT,
-          message: 'playEffect: not supported in this browser'
+          code: ErrorCode.NOT_SUPPORT_ERROR,
+          message,
+          advice
         })
       )
     } else if (
@@ -2124,10 +2299,17 @@ class MediaHelper extends EventEmitter {
         `pauseEffect: 该音效文件正处于: ${this.audio.mixAudioConf.sounds[soundId].state} 状态`
       )
       if (playStartTime === undefined) {
+        let enMessage = 'playEffect: playStartTime error',
+          zhMessage = 'playEffect: playStartTime 异常',
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_PARAMETER,
-            message: 'playEffect: parameter is invalid'
+            code: ErrorCode.AUDIO_EFFECT_ERROR,
+            message,
+            advice
           })
         )
       }
@@ -2189,10 +2371,17 @@ class MediaHelper extends EventEmitter {
     let reason = null
     if (!this.audio.webAudio || !this.audio.webAudio.context) {
       this.logger.log('stopEffect: 浏览器不支持')
+      let enMessage = 'stopEffect: audio effect is not supported in this browser',
+        zhMessage = 'stopEffect: 当前浏览器不支持音效功能',
+        enAdvice = 'The latest version of the Chrome browser is recommended',
+        zhAdvice = '建议使用最新版的 Chrome 浏览器'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.NOT_SUPPORT,
-          message: 'stopEffect: not supported in this browser'
+          code: ErrorCode.NOT_SUPPORT_ERROR,
+          message,
+          advice
         })
       )
     }
@@ -2234,31 +2423,59 @@ class MediaHelper extends EventEmitter {
     }
     if (reason) {
       if (reason === 'BROWSER_NOT_SUPPORT') {
+        let enMessage = 'pauseEffect: audio effect is not supported in this browser',
+          zhMessage = 'pauseEffect: 当前浏览器不支持音效功能',
+          enAdvice = 'The latest version of the Chrome browser is recommended',
+          zhAdvice = '建议使用最新版的 Chrome 浏览器'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.NOT_SUPPORT,
-            message: 'pauseEffect: audio effect is not supported in this browser'
+            code: ErrorCode.NOT_SUPPORT_ERROR,
+            message,
+            advice
           })
         )
       } else if (reason === 'NOT_PLAYED') {
+        let enMessage = 'pauseEffect: invalid operation',
+          zhMessage = 'pauseEffect: 操作异常',
+          enAdvice = 'audio effect is not open',
+          zhAdvice = '音效未开启'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION,
-            message: 'pauseEffect: audio effect is not open'
+            code: ErrorCode.INVALID_OPERATION_ERROR,
+            message,
+            advice
           })
         )
       } else if (reason === 'PAUSED') {
+        let enMessage = 'pauseEffect: invalid operation',
+          zhMessage = 'pauseEffect: 操作异常',
+          enAdvice = 'audio effect is paused',
+          zhAdvice = '音效已暂停'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION,
-            message: 'pauseEffect: audio effect is not played'
+            code: ErrorCode.INVALID_OPERATION_ERROR,
+            message,
+            advice
           })
         )
       } else if (reason === 'SOUND_NOT_EXISTS') {
+        let enMessage = 'pauseEffect: audio effect file is not found',
+          zhMessage = 'pauseEffect: 音效文件缺失',
+          enAdvice = 'Please make sure the soundId correct',
+          zhAdvice = '请确认 soundId 无误'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.NO_FILE,
-            message: 'pauseEffect: audio effect file is not found'
+            code: ErrorCode.AUDIO_EFFECT_FILE_LOST_ERROR,
+            message,
+            advice
           })
         )
       }
@@ -2308,24 +2525,45 @@ class MediaHelper extends EventEmitter {
     }
     if (reason) {
       if (reason === 'BROWSER_NOT_SUPPORT') {
+        let enMessage = 'resumeEffect: audio effect is not supported in this browser',
+          zhMessage = 'resumeEffect: 当前浏览器不支持音效功能',
+          enAdvice = 'The latest version of the Chrome browser is recommended',
+          zhAdvice = '建议使用最新版的 Chrome 浏览器'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.NOT_SUPPORT,
-            message: 'resumeEffect: audio effect is not supported in this browser'
+            code: ErrorCode.NOT_SUPPORT_ERROR,
+            message,
+            advice
           })
         )
       } else if (reason === 'NOT_PAUSED') {
+        let enMessage = 'resumeEffect: invalid operation',
+          zhMessage = 'resumeEffect: 操作异常',
+          enAdvice = 'audio effect is not paused',
+          zhAdvice = '音效未暂停'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION,
-            message: 'resumeEffect: audio mixing is not paused'
+            code: ErrorCode.INVALID_OPERATION_ERROR,
+            message,
+            advice
           })
         )
       } else if (reason === 'SOUND_NOT_EXISTS') {
+        let enMessage = 'resumeEffect: audio effect file is not found',
+          zhMessage = 'resumeEffect: 音效文件缺失',
+          enAdvice = 'Please make sure the soundId correct',
+          zhAdvice = '请确认 soundId 无误'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.NO_FILE,
-            message: 'resumeEffect: audio effect file is not found'
+            code: ErrorCode.AUDIO_EFFECT_FILE_LOST_ERROR,
+            message,
+            advice
           })
         )
       }
@@ -2406,10 +2644,17 @@ class MediaHelper extends EventEmitter {
       reason = 'BROWSER_NOT_SUPPORT'
     }
     if (reason) {
+      let enMessage = 'setVolumeOfEffect: audio effect is not supported in this browser',
+        zhMessage = 'setVolumeOfEffect: 当前浏览器不支持音效功能',
+        enAdvice = 'The latest version of the Chrome browser is recommended',
+        zhAdvice = '建议使用最新版的 Chrome 浏览器'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.NOT_SUPPORT,
-          message: 'setVolumeOfEffect: audio effect is not supported in this browser'
+          code: ErrorCode.NOT_SUPPORT_ERROR,
+          message,
+          advice
         })
       )
     }
@@ -2499,10 +2744,17 @@ class MediaHelper extends EventEmitter {
     this.logger.log(`unloadEffect： ${soundId} 音效文件`)
     if (!this.audio.mixAudioConf.sounds[soundId]) {
       this.logger.log('unloadEffect: 没有该音效文件')
+      let enMessage = 'unloadEffect: audio effect file is not found',
+        zhMessage = 'unloadEffect: 音效文件缺失',
+        enAdvice = 'Please make sure the soundId correct',
+        zhAdvice = '请确认 soundId 无误'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.NO_FILE,
-          message: 'unloadEffect: audio effect file is not found'
+          code: ErrorCode.AUDIO_EFFECT_FILE_LOST_ERROR,
+          message,
+          advice
         })
       )
     } else if (
@@ -2510,11 +2762,17 @@ class MediaHelper extends EventEmitter {
       this.audio.mixAudioConf.sounds[soundId].state !== 'STOPED'
     ) {
       this.logger.log('unloadEffect: 该音效文件已经播放，请使用 stopEffect 方法')
+      let enMessage = 'unloadEffect: invalid operation',
+        zhMessage = 'unloadEffect: 操作异常',
+        enAdvice = 'this audioEffect file is playing, please use stopEffect method',
+        zhAdvice = '该音效文件已经播放，请使用 stopEffect 方法'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.INVALID_OPERATION,
-          message: 'unloadEffect: invalid operation',
-          proposal: 'this audioEffect file is playing, please use stopEffect method'
+          code: ErrorCode.INVALID_OPERATION_ERROR,
+          message,
+          advice
         })
       )
     }
@@ -2641,7 +2899,6 @@ class MediaHelper extends EventEmitter {
   }
 
   getAudioEffectsPlayedTime(options: AudioEffectOptions) {
-    // TODO
     const { soundId, filePath, cycle = 1 } = options
     if (!this.audio.mixAudioConf || JSON.stringify(this.audio.mixAudioConf.sounds) === '{}') {
       this.logger.log('getAudioEffectsTotalTime: 当前没有音效文件')
@@ -2687,10 +2944,17 @@ class MediaHelper extends EventEmitter {
         this.logger.log('loadAudioBuffer 加载 audio file 成功')
         return new Promise((resolve, reject) => {
           if (!this.audio.webAudio || !this.audio.webAudio.context) {
+            let enMessage = `loadAudioBuffer:  webAudio lost`,
+              zhMessage = `loadAudioBuffer:  webAudio 丢失`,
+              enAdvice = 'Please contact CommsEase technical support',
+              zhAdvice = '请联系云信技术支持'
+            let message = env.IS_ZH ? zhMessage : enMessage,
+              advice = env.IS_ZH ? zhAdvice : enAdvice
             reject(
               new RtcError({
-                code: ErrorCode.STATE_ERROR,
-                message: 'loadAudioBuffer: webAudio lost'
+                code: ErrorCode.AUDIO_MIX_FILE_ERROR,
+                message,
+                advice
               })
             )
             return
@@ -2703,11 +2967,18 @@ class MediaHelper extends EventEmitter {
               resolve(buffer)
             },
             (e) => {
-              this.logger.log('loadRemoteAudioFile 云端音乐解码失败：', e)
+              this.logger.log('loadAudioBuffer 云端音乐解码失败：', e)
+              let enMessage = `loadAudioBuffer: audio decode failed: ${e.name} ${e.message}`,
+                zhMessage = `loadAudioBuffer: 云端音乐解码失败: ${e.name} ${e.message}`,
+                enAdvice = 'Please contact CommsEase technical support',
+                zhAdvice = '请联系云信技术支持'
+              let message = env.IS_ZH ? zhMessage : enMessage,
+                advice = env.IS_ZH ? zhAdvice : enAdvice
               reject(
                 new RtcError({
-                  code: ErrorCode.DECODE_FAILED,
-                  message: 'loadRemoteAudioFile: create buffersource failed'
+                  code: ErrorCode.AUDIO_MIX_DECODE_FAILED_ERROR,
+                  message,
+                  advice
                 })
               )
             }
@@ -2715,11 +2986,18 @@ class MediaHelper extends EventEmitter {
         })
       })
       .catch((error) => {
-        this.logger.log('loadRemoteAudioFile 加载云端音乐失败: ', error)
+        this.logger.log('loadAudioBuffer 加载云端音乐失败: ', error)
+        let enMessage = `loadAudioBuffer: load audio failed: ${error.name} ${error.message}`,
+          zhMessage = `loadAudioBuffer: 加载云端音乐失败: ${error.name} ${error.message}`,
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.STATE_ERROR,
-            message: 'loadAudioBuffer: load audio failed'
+            code: ErrorCode.AUDIO_MIX_FILE_ERROR,
+            message,
+            advice
           })
         )
       })

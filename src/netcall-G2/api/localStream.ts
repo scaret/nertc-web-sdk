@@ -264,16 +264,31 @@ class LocalStream extends RTCEventEmitter {
       this.logger.log('uid是number类型')
       options.client.adapterRef.channelInfo.uidType = 'number'
       if (options.uid > Number.MAX_SAFE_INTEGER) {
+        let enMessage = 'localStream: parameter(uid) out of bounds',
+          zhMessage = 'localStream: uid 参数越界',
+          enAdvice =
+            'The maximum range of the Number type is 2^53 - 1, please input the correct parameter',
+          zhAdvice = 'Number 类型的 uid 最大值是 2^53 - 1， 请输入正确的参数'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.INVALID_PARAMETER,
-          message: 'uid is exceeds the scope of Number'
+          code: ErrorCode.INVALID_PARAMETER_ERROR,
+          message,
+          advice
         })
       }
     } else {
       this.logger.error('uid参数格式非法')
+      let enMessage = 'localStream: The type of parameter(uid) is not invalid',
+        zhMessage = 'localStream: uid 参数类型非法',
+        enAdvice = 'Please input the correct parameter type',
+        zhAdvice = '请输入正确的参数类型'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.INVALID_PARAMETER,
-        message: 'localStream: uid is invalid'
+        code: ErrorCode.INVALID_PARAMETER_ERROR,
+        message,
+        advice
       })
     }
     this._reset()
@@ -673,9 +688,12 @@ class LocalStream extends RTCEventEmitter {
       this.screenAudio = false
       this.video = false
       this.screen = false
+      let enMessage = 'localStream.init: audio and video are banned by server',
+        zhMessage = 'localStream.init: audio 和 video 被服务器禁言'
+      let message = env.IS_ZH ? zhMessage : enMessage
       throw new RtcError({
-        code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-        message: 'init: audio and video are banned by server'
+        code: ErrorCode.BANNED_BY_SERVER,
+        message
       })
     }
     if (this.client.adapterRef.isAudioBanned && !this.client.adapterRef.isVideoBanned) {
@@ -781,10 +799,16 @@ class LocalStream extends RTCEventEmitter {
         this.state = 'UNINIT'
         this.logger.warn('init() localStream不允许初始化时无任何音视频')
         onInitFinished()
+        let enMessage = 'init: localStream is not allowed to init without audio or video',
+          zhMessage = 'init: localStream init 缺失 audio/video 参数',
+          enAdvice = 'please make sure audio or video exists when init localStream',
+          zhAdvice = '请输入正确的参数'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NOT_ALLOWED,
-          message: 'init: localStream is not allowed to init without audio or video',
-          proposal: 'please make sure audio or video exists when init localStream'
+          code: ErrorCode.LOCALSTREAM_ERROR,
+          message,
+          advice
         })
       }
     }
@@ -1089,11 +1113,17 @@ class LocalStream extends RTCEventEmitter {
       isPlaying = await this._play.isPlayScreenStream()
     } else {
       this.logger.warn('isPlaying: unknown type')
+      let enMessage = 'localStream.isPlaying: The type of parameter(uid) is unknown',
+        zhMessage = 'localStream.isPlaying: uid 参数类型非法',
+        enAdvice = 'please make sure the parameter(type) is correct',
+        zhAdvice = '请输入正确的参数类型'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.UNKNOWN_TYPE,
-          message: 'localStream.isPlaying: unknown type',
-          proposal: 'please make sure the parameter(type) is correct'
+          code: ErrorCode.UNKNOWN_TYPE_ERROR,
+          message,
+          advice
         })
       )
     }
@@ -1172,10 +1202,17 @@ class LocalStream extends RTCEventEmitter {
           type
         }
       })
+      let enMessage = 'Stream.open: invalid operation',
+        zhMessage = 'Stream.open: 操作异常',
+        enAdvice = 'audience is not allowed to open',
+        zhAdvice = '观众模式不允许打开设备'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.INVALID_OPERATION,
-          message: 'Stream.open: audience is not allowed to open'
+          code: ErrorCode.INVALID_OPERATION_ERROR,
+          message,
+          advice
         })
       )
     }
@@ -1197,10 +1234,13 @@ class LocalStream extends RTCEventEmitter {
                 type
               }
             })
+            let enMessage = 'localStream.open.audio: audio is banned by server',
+              zhMessage = 'localStream.open.audio: audio 被服务器禁言'
+            let message = env.IS_ZH ? zhMessage : enMessage
             return Promise.reject(
               new RtcError({
-                code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-                message: 'open: audio is banned by server'
+                code: ErrorCode.BANNED_BY_SERVER,
+                message
               })
             )
           }
@@ -1214,10 +1254,17 @@ class LocalStream extends RTCEventEmitter {
                 type
               }
             })
+            let enMessage = 'Stream.open: invalid operation',
+              zhMessage = 'Stream.open: 操作异常',
+              enAdvice = 'please close mic first',
+              zhAdvice = '请先关闭麦克风'
+            let message = env.IS_ZH ? zhMessage : enMessage,
+              advice = env.IS_ZH ? zhAdvice : enAdvice
             return Promise.reject(
               new RtcError({
-                code: ErrorCode.INVALID_OPERATION,
-                message: 'Stream.open: please close mic first'
+                code: ErrorCode.INVALID_OPERATION_ERROR,
+                message,
+                advice
               })
             )
           }
@@ -1251,10 +1298,13 @@ class LocalStream extends RTCEventEmitter {
                 type
               }
             })
+            let enMessage = 'localStream.open.screenAudio: audio is banned by server',
+              zhMessage = 'localStream.open.screenAudio: audio 被服务器禁言'
+            let message = env.IS_ZH ? zhMessage : enMessage
             return Promise.reject(
               new RtcError({
-                code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-                message: 'open: audio is banned by server'
+                code: ErrorCode.BANNED_BY_SERVER,
+                message
               })
             )
           }
@@ -1275,10 +1325,17 @@ class LocalStream extends RTCEventEmitter {
                 type
               }
             })
+            let enMessage = `Stream.open: invalid operation`,
+              zhMessage = `Stream.open: 操作异常`,
+              enAdvice = 'Please close screenAudio first',
+              zhAdvice = '请先关闭 screenAudio'
+            let message = env.IS_ZH ? zhMessage : enMessage,
+              advice = env.IS_ZH ? zhAdvice : enAdvice
             return Promise.reject(
               new RtcError({
-                code: ErrorCode.INVALID_OPERATION,
-                message: 'Stream.open: please close screenAudio first'
+                code: ErrorCode.INVALID_OPERATION_ERROR,
+                message,
+                advice
               })
             )
           }
@@ -1306,10 +1363,13 @@ class LocalStream extends RTCEventEmitter {
                 type
               }
             })
+            let enMessage = 'localStream.open.video: video is banned by server',
+              zhMessage = 'localStream.open.video: video 被服务器禁言'
+            let message = env.IS_ZH ? zhMessage : enMessage
             return Promise.reject(
               new RtcError({
-                code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-                message: 'open: video is banned by server'
+                code: ErrorCode.BANNED_BY_SERVER,
+                message
               })
             )
           }
@@ -1324,10 +1384,13 @@ class LocalStream extends RTCEventEmitter {
                 screenAudio: options.screenAudio
               }
             })
+            let enMessage = 'localStream.open.screenAudio: audio is banned by server',
+              zhMessage = 'localStream.open.screenAudio: audio 被服务器禁言'
+            let message = env.IS_ZH ? zhMessage : enMessage
             return Promise.reject(
               new RtcError({
-                code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-                message: 'open: audio is banned by server'
+                code: ErrorCode.BANNED_BY_SERVER,
+                message
               })
             )
           }
@@ -1343,10 +1406,17 @@ class LocalStream extends RTCEventEmitter {
                   type
                 }
               })
+              let enMessage = 'Stream.open: invalid operation',
+                zhMessage = 'Stream.open: 操作异常',
+                enAdvice = 'please close video first',
+                zhAdvice = '请先关闭摄像头'
+              let message = env.IS_ZH ? zhMessage : enMessage,
+                advice = env.IS_ZH ? zhAdvice : enAdvice
               return Promise.reject(
                 new RtcError({
-                  code: ErrorCode.INVALID_OPERATION,
-                  message: 'Stream.open: please close video first'
+                  code: ErrorCode.INVALID_OPERATION_ERROR,
+                  message,
+                  advice
                 })
               )
             } else {
@@ -1370,10 +1440,17 @@ class LocalStream extends RTCEventEmitter {
                   type
                 }
               })
+              let enMessage = 'Stream.open: invalid operation',
+                zhMessage = 'Stream.open: 操作异常',
+                enAdvice = 'please close screen-sharing first',
+                zhAdvice = '请先关闭屏幕共享'
+              let message = env.IS_ZH ? zhMessage : enMessage,
+                advice = env.IS_ZH ? zhAdvice : enAdvice
               return Promise.reject(
                 new RtcError({
-                  code: ErrorCode.INVALID_OPERATION,
-                  message: 'Stream.open: please close screen-sharing first'
+                  code: ErrorCode.INVALID_OPERATION_ERROR,
+                  message,
+                  advice
                 })
               )
             }
@@ -1391,10 +1468,17 @@ class LocalStream extends RTCEventEmitter {
                 type
               }
             })
+            let enMessage = 'Stream.open: invalid operation',
+              zhMessage = 'Stream.open: 操作异常',
+              enAdvice = 'please close screenAudio first',
+              zhAdvice = '请先关闭屏幕共享音频'
+            let message = env.IS_ZH ? zhMessage : enMessage,
+              advice = env.IS_ZH ? zhAdvice : enAdvice
             return Promise.reject(
               new RtcError({
-                code: ErrorCode.INVALID_OPERATION,
-                message: 'open: please close screenAudio first'
+                code: ErrorCode.INVALID_OPERATION_ERROR,
+                message,
+                advice
               })
             )
           }
@@ -1472,10 +1556,14 @@ class LocalStream extends RTCEventEmitter {
         e.message.indexOf('ermission') > -1 &&
         e.message.indexOf('denied') > -1
       ) {
+        let enAdvice = 'Please enable media permissions and try again',
+          zhAdvice = '请开启媒体权限重试'
+        let advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.NOT_ALLOWED,
-            message: `open: ${e.message}`
+            code: ErrorCode.NOT_SUPPORT_ERROR,
+            message: `open: ${e.message}`,
+            advice
           })
         )
       } else {
@@ -1644,9 +1732,16 @@ class LocalStream extends RTCEventEmitter {
         }
         if (!this._play) {
           onCloseFinished()
+          let enMessage = 'localStream.close.video: Play is not start',
+            zhMessage = 'localStream.close.video: 播放未开始',
+            enAdvice = 'Please start playing first',
+            zhAdvice = '请先开启播放'
+          let message = env.IS_ZH ? zhMessage : enMessage,
+            advice = env.IS_ZH ? zhAdvice : enAdvice
           throw new RtcError({
-            code: ErrorCode.NO_PLAY,
-            message: 'close.video: Play is not instantiated'
+            code: ErrorCode.PLAY_NOT_START_ERROR,
+            message,
+            advice
           })
         }
         this._play.stopPlayVideoStream()
@@ -1676,9 +1771,16 @@ class LocalStream extends RTCEventEmitter {
         }
         this.mediaHelper.stopStream('screen')
         if (!this._play) {
+          let enMessage = 'localStream.close.screen: Play is not start',
+            zhMessage = 'localStream.close.creen: 播放未开始',
+            enAdvice = 'Please start playing first',
+            zhAdvice = '请先开启播放'
+          let message = env.IS_ZH ? zhMessage : enMessage,
+            advice = env.IS_ZH ? zhAdvice : enAdvice
           throw new RtcError({
-            code: ErrorCode.NO_PLAY,
-            message: 'close.screen: Play is not instantiated'
+            code: ErrorCode.PLAY_NOT_START_ERROR,
+            message,
+            advice
           })
         }
         this._play.stopPlayScreenStream()
@@ -1724,34 +1826,62 @@ class LocalStream extends RTCEventEmitter {
       })
       if (reason === 'NOT_OPEN_MIC_YET') {
         onCloseFinished()
+        let enMessage = 'Stream.close: invalid operation',
+          zhMessage = 'Stream.close: 操作异常',
+          enAdvice = 'mic is not open',
+          zhAdvice = '麦克风没有开启'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION,
-            message: 'Stream.close: mic is not open'
+            code: ErrorCode.INVALID_OPERATION_ERROR,
+            message,
+            advice
           })
         )
       } else if (reason === 'NOT_OPEN_CAMERA_YET') {
         onCloseFinished()
+        let enMessage = 'Stream.close: invalid operation',
+          zhMessage = 'Stream.close: 操作异常',
+          enAdvice = 'camera is not open',
+          zhAdvice = '摄像头没有开启'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION,
-            message: 'Stream.close: camera is not open'
+            code: ErrorCode.INVALID_OPERATION_ERROR,
+            message,
+            advice
           })
         )
       } else if (reason === 'NOT_OPEN_SCREEN_YET') {
         onCloseFinished()
+        let enMessage = 'Stream.close: invalid operation',
+          zhMessage = 'Stream.close: 操作异常',
+          enAdvice = 'screen-sharing is not open',
+          zhAdvice = '屏幕共享没有开启'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION,
-            message: 'Stream.close: screen-sharing is not open'
+            code: ErrorCode.INVALID_OPERATION_ERROR,
+            message,
+            advice
           })
         )
       } else {
         onCloseFinished()
+        let enMessage = 'Stream.close: invalid operation',
+          zhMessage = 'Stream.close: 操作异常',
+          enAdvice = 'Type is unidentified',
+          zhAdvice = 'Type 不能识别'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION,
-            message: reason
+            code: ErrorCode.INVALID_OPERATION_ERROR,
+            message,
+            advice
           })
         )
       }
@@ -2095,9 +2225,16 @@ class LocalStream extends RTCEventEmitter {
 
     if (this.audio) {
       if (!this._play) {
+        let enMessage = 'localStream.setAudioVolume: Play is not start',
+          zhMessage = 'localStream.setAudioVolume: 播放未开始',
+          enAdvice = 'Please start playing first',
+          zhAdvice = '请先开启播放'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NO_PLAY,
-          message: 'setAudioVolume: Play is not instantiated'
+          code: ErrorCode.PLAY_NOT_START_ERROR,
+          message,
+          advice
         })
       }
       this._play.setPlayVolume(volume)
@@ -2239,10 +2376,17 @@ class LocalStream extends RTCEventEmitter {
     let constraint = {}
     if (this.inSwitchDevice[type]) {
       this.logger.error(`switchDevice：正在切换中，重复`, type)
+      let enMessage = 'switchDevice: invalid operation',
+        zhMessage = 'switchDevice: 操作异常',
+        enAdvice = `switching ${type}`,
+        zhAdvice = `正在切换中 ${type}`
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.INVALID_OPERATION,
-          message: `switchDevice: switching ${type}`
+          code: ErrorCode.INVALID_OPERATION_ERROR,
+          message,
+          advice
         })
       )
     } else {
@@ -2251,10 +2395,13 @@ class LocalStream extends RTCEventEmitter {
     if (type === 'audio') {
       // server ban
       if (this.client.adapterRef.isAudioBanned) {
+        let enMessage = 'switchDevice: audio is banned by server',
+          zhMessage = 'switchDevice: audio 被服务器禁言'
+        let message = env.IS_ZH ? zhMessage : enMessage
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-            message: 'switchDevice: audio is banned by server'
+            code: ErrorCode.BANNED_BY_SERVER,
+            message
           })
         )
       }
@@ -2266,19 +2413,33 @@ class LocalStream extends RTCEventEmitter {
       } else if (!this.hasAudio()) {
         this.logger.log(`当前没有开启音频输入设备，无法切换`)
         this.inSwitchDevice[type] = false
+        let enMessage = 'switchDevice: invalid operation',
+          zhMessage = 'switchDevice: 操作异常',
+          enAdvice = `no audio input device`,
+          zhAdvice = `当前没有开启音频输入设备，无法切换`
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION,
-            message: 'switchDevice: no audio input device'
+            code: ErrorCode.INVALID_OPERATION_ERROR,
+            message,
+            advice
           })
         )
       } else if (this.audioSource) {
         this.logger.log(`自定义音频输入不支持，无法切换`)
         this.inSwitchDevice[type] = false
+        let enMessage = 'switchDevice: invalid operation',
+          zhMessage = 'switchDevice: 操作异常',
+          enAdvice = `user-defined audio is not support`,
+          zhAdvice = `自定义音频输入不支持，无法切换`
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION,
-            message: 'switchDevice: cannot switch user-defined audio input'
+            code: ErrorCode.INVALID_OPERATION_ERROR,
+            message,
+            advice
           })
         )
       }
@@ -2296,10 +2457,13 @@ class LocalStream extends RTCEventEmitter {
     } else if (type === 'video') {
       // server ban
       if (this.client.adapterRef.isVideoBanned) {
+        let enMessage = 'switchDevice: video is banned by server',
+          zhMessage = 'switchDevice: video 被服务器禁言'
+        let message = env.IS_ZH ? zhMessage : enMessage
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-            message: 'switchDevice: video is banned by server'
+            code: ErrorCode.BANNED_BY_SERVER,
+            message
           })
         )
       }
@@ -2335,10 +2499,17 @@ class LocalStream extends RTCEventEmitter {
           code: 0,
           param: JSON.stringify(this.mediaHelper.getTrackSettings())
         })
+        let enMessage = 'switchDevice: invalid operation',
+          zhMessage = 'switchDevice: 操作异常',
+          enAdvice = `no video input device`,
+          zhAdvice = `当前没有开启视频输入设备，无法切换`
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION,
-            message: 'switchDevice: no video input device'
+            code: ErrorCode.INVALID_OPERATION_ERROR,
+            message,
+            advice
           })
         )
       } else if (this.videoSource) {
@@ -2359,10 +2530,17 @@ class LocalStream extends RTCEventEmitter {
           code: 0,
           param: JSON.stringify(this.mediaHelper.getTrackSettings())
         })
+        let enMessage = 'switchDevice: invalid operation',
+          zhMessage = 'switchDevice: 操作异常',
+          enAdvice = `user-defined video is not support`,
+          zhAdvice = `自定义视频输入不支持，无法切换`
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION,
-            message: 'switchDevice: cannot switch user-defined video input'
+            code: ErrorCode.INVALID_OPERATION_ERROR,
+            message,
+            advice
           })
         )
       }
@@ -2382,10 +2560,17 @@ class LocalStream extends RTCEventEmitter {
       }
     } else {
       this.logger.error(`switchDevice: unknown type ${type}`)
+      let enMessage = 'switchDevice: invalid operation',
+        zhMessage = 'switchDevice: 操作异常',
+        enAdvice = `unknown type ${type}`,
+        zhAdvice = `未知 type ${type}`
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.INVALID_OPERATION,
-          message: `switchDevice: unknown type ${type}`
+          code: ErrorCode.INVALID_OPERATION_ERROR,
+          message,
+          advice
         })
       )
     }
@@ -3097,9 +3282,16 @@ class LocalStream extends RTCEventEmitter {
 
   getVideoBW() {
     if (!this.videoProfile) {
+      let enMessage = 'getVideoBW: videoProfile is not found',
+        zhMessage = 'getVideoBW: 未找到 videoProfile',
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'getVideoBW: videoProfile is not found'
+        code: ErrorCode.NOT_FOUND_ERROR,
+        message,
+        advice
       })
     }
     if (this.videoProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_180p) {
@@ -3118,9 +3310,16 @@ class LocalStream extends RTCEventEmitter {
 
   getScreenBW() {
     if (!this.screenProfile) {
+      let enMessage = 'getScreenBW: screenProfile is not found',
+        zhMessage = 'getScreenBW: 未找到 screenProfile',
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND,
-        message: 'getScreenBW: screenProfile is not found'
+        code: ErrorCode.NOT_FOUND_ERROR,
+        message,
+        advice
       })
     }
     if (this.screenProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_180p) {
@@ -3148,9 +3347,16 @@ class LocalStream extends RTCEventEmitter {
   async takeSnapshot(options: SnapshotOptions) {
     if (this.video || this.screen) {
       if (!this._play) {
+        let enMessage = 'localStream.takeSnapshot: Play is not start',
+          zhMessage = 'localStream.takeSnapshot: 播放未开始',
+          enAdvice = 'Please start playing first',
+          zhAdvice = '请先开启播放'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NO_PLAY,
-          message: 'takeSnapshot: Play is not instantiated'
+          code: ErrorCode.PLAY_NOT_START_ERROR,
+          message,
+          advice
         })
       }
       await this._play.takeSnapshot(options, this.streamID)
@@ -3193,9 +3399,16 @@ class LocalStream extends RTCEventEmitter {
   takeSnapshotBase64(options: SnapshotBase64Options) {
     if (this.video || this.screen) {
       if (!this._play) {
+        let enMessage = 'localStream.takeSnapshotBase64: Play is not start',
+          zhMessage = 'localStream.takeSnapshotBase64: 播放未开始',
+          enAdvice = 'Please start playing first',
+          zhAdvice = '请先开启播放'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NO_PLAY,
-          message: 'takeSnapshotBase64: Play is not instantiated'
+          code: ErrorCode.PLAY_NOT_START_ERROR,
+          message,
+          advice
         })
       }
       let base64Url = this._play.takeSnapshotBase64(options)
@@ -3268,9 +3481,16 @@ class LocalStream extends RTCEventEmitter {
       return
     }
     if (!this._record || !this.streamID || !streams) {
+      let enMessage = 'localStream_startMediaRecording: invalid parameter when start recording',
+        zhMessage = 'localStream_startMediaRecording: 开始录制时参数异常',
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.INVALID_PARAMETER,
-        message: 'startMediaRecording: invalid parameter'
+        code: ErrorCode.RECORDING_ERROR,
+        message,
+        advice
       })
     }
     return (
@@ -3296,9 +3516,16 @@ class LocalStream extends RTCEventEmitter {
    */
   stopMediaRecording(options: { recordId?: string }) {
     if (!this._record) {
+      let enMessage = 'localStream.stopMediaRecording: recording is not start',
+        zhMessage = 'localStream.stopMediaRecording: 录制未开始',
+        enAdvice = 'Please start recording first',
+        zhAdvice = '请先开启录制'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NO_RECORD,
-        message: 'stopMediaRecording: no record'
+        code: ErrorCode.RECORDING_NOT_START_ERROR,
+        message,
+        advice
       })
     }
     //FIXME
@@ -3316,9 +3543,16 @@ class LocalStream extends RTCEventEmitter {
    */
   playMediaRecording(options: { recordId: string; view: HTMLElement }) {
     if (!this._record) {
+      let enMessage = 'localStream.playMediaRecording: recording is not start',
+        zhMessage = 'localStream.playMediaRecording: 录制未开始',
+        enAdvice = 'Please start recording first',
+        zhAdvice = '请先开启录制'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NO_RECORD,
-        message: 'playMediaRecording: no record'
+        code: ErrorCode.RECORDING_NOT_START_ERROR,
+        message,
+        advice
       })
     }
     return this._record.play(options.view)
@@ -3332,9 +3566,16 @@ class LocalStream extends RTCEventEmitter {
   listMediaRecording() {
     let list = []
     if (!this._record) {
+      let enMessage = 'localStream.listMediaRecording: recording is not start',
+        zhMessage = 'localStream.listMediaRecording: 录制未开始',
+        enAdvice = 'Please start recording first',
+        zhAdvice = '请先开启录制'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NO_RECORD,
-        message: 'listMediaRecording: no record'
+        code: ErrorCode.RECORDING_NOT_START_ERROR,
+        message,
+        advice
       })
     }
     const recordStatus = this._record.getRecordStatus()
@@ -3353,9 +3594,16 @@ class LocalStream extends RTCEventEmitter {
    */
   cleanMediaRecording(options: { recordId: string }) {
     if (!this._record) {
+      let enMessage = 'localStream.cleanMediaRecording: recording is not start',
+        zhMessage = 'localStream.cleanMediaRecording: 录制未开始',
+        enAdvice = 'Please start recording first',
+        zhAdvice = '请先开启录制'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NO_RECORD,
-        message: 'cleanMediaRecording: no record'
+        code: ErrorCode.RECORDING_NOT_START_ERROR,
+        message,
+        advice
       })
     }
     return this._record.clean()
@@ -3371,9 +3619,16 @@ class LocalStream extends RTCEventEmitter {
    */
   downloadMediaRecording(options: { recordId: string }) {
     if (!this._record) {
+      let enMessage = 'localStream.downloadMediaRecording: recording is not start',
+        zhMessage = 'localStream.downloadMediaRecording: 录制未开始',
+        enAdvice = 'Please start recording first',
+        zhAdvice = '请先开启录制'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NO_RECORD,
-        message: 'downloadMediaRecording: no record'
+        code: ErrorCode.RECORDING_NOT_START_ERROR,
+        message,
+        advice
       })
     }
     return this._record.download()
@@ -3399,10 +3654,13 @@ class LocalStream extends RTCEventEmitter {
    */
   startAudioMixing(options: AudioMixingOptions) {
     if (this.client.adapterRef.isAudioBanned) {
+      let enMessage = 'startAudioMixing: audio is banned by server',
+        zhMessage = 'startAudioMixing: audio 被服务器禁言'
+      let message = env.IS_ZH ? zhMessage : enMessage
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-          message: 'startAudioMixing: audio is banned by server'
+          code: ErrorCode.BANNED_BY_SERVER,
+          message
         })
       )
     }
@@ -3514,10 +3772,13 @@ class LocalStream extends RTCEventEmitter {
    */
   async playEffect(options: AudioEffectOptions) {
     if (this.client.adapterRef.isAudioBanned) {
+      let enMessage = 'playEffect: audio is banned by server',
+        zhMessage = 'playEffect: audio 被服务器禁言'
+      let message = env.IS_ZH ? zhMessage : enMessage
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.MEDIA_OPEN_BANNED_BY_SERVER,
-          message: 'playEffect: audio is banned by server'
+          code: ErrorCode.BANNED_BY_SERVER,
+          message
         })
       )
     }
@@ -3715,18 +3976,36 @@ class LocalStream extends RTCEventEmitter {
         this.logger.error(
           `目前的文字水印数量：${options.textWatermarks.length}。允许的数量：${LIMITS.TEXT}`
         )
+        let enMessage =
+            'localStream_setCanvasWatermarkConfigs: The number of text watermarks exceeds the limit',
+          zhMessage = 'localStream_setCanvasWatermarkConfigs: 文字水印数量超限',
+          enAdvice =
+            'The number of text watermarks can be set up to 10, please make sure not to exceed the limit',
+          zhAdvice = '最多可以设置 10 个文字水印'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.INVALID_PARAMETER,
-          message: 'setCanvasWatermarkConfigs: text watermark exceeds limit'
+          code: ErrorCode.WATERMARKS_EXCEEDED_ERROR,
+          message,
+          advice
         })
       }
       if (options.imageWatermarks && options.imageWatermarks.length > LIMITS.IMAGE) {
         this.logger.error(
           `目前的图片水印数量：${options.imageWatermarks.length}。允许的数量：${LIMITS.IMAGE}`
         )
+        let enMessage =
+            'localStream_setCanvasWatermarkConfigs: The number of image watermarks exceeds the limit',
+          zhMessage = 'localStream_setCanvasWatermarkConfigs: 文字水印数量超限',
+          enAdvice =
+            'The number of image watermarks can be set up to 4, please make sure not to exceed the limit',
+          zhAdvice = '最多可以设置 4 个文字水印'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.INVALID_PARAMETER,
-          message: 'setCanvasWatermarkConfigs: image watermark exceeds limit'
+          code: ErrorCode.WATERMARKS_EXCEEDED_ERROR,
+          message,
+          advice
         })
       }
       watermarkControl.checkWatermarkParams(options)
@@ -3801,18 +4080,36 @@ class LocalStream extends RTCEventEmitter {
         this.logger.error(
           `目前的文字水印数量：${options.textWatermarks.length}。允许的数量：${LIMITS.TEXT}`
         )
+        let enMessage =
+            'localStream_setEncoderWatermarkConfigs: The number of text watermarks exceeds the limit',
+          zhMessage = 'localStream_setEncoderWatermarkConfigs: 文字水印数量超限',
+          enAdvice =
+            'The number of text watermarks can be set up to 10, please make sure not to exceed the limit',
+          zhAdvice = '最多可以设置 10 个文字水印'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.INVALID_PARAMETER,
-          message: 'setEncoderWatermarkConfigs: text watermark exceeds limit'
+          code: ErrorCode.WATERMARKS_EXCEEDED_ERROR,
+          message,
+          advice
         })
       }
       if (options.imageWatermarks && options.imageWatermarks.length > LIMITS.IMAGE) {
         this.logger.error(
           `目前的图片水印数量：${options.imageWatermarks.length}。允许的数量：${LIMITS.IMAGE}`
         )
+        let enMessage =
+            'localStream_setEncoderWatermarkConfigs: The number of image watermarks exceeds the limit',
+          zhMessage = 'localStream_setEncoderWatermarkConfigs: 文字水印数量超限',
+          enAdvice =
+            'The number of image watermarks can be set up to 4, please make sure not to exceed the limit',
+          zhAdvice = '最多可以设置 4 个文字水印'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.INVALID_PARAMETER,
-          message: 'setEncoderWatermarkConfigs: image watermark exceeds limit'
+          code: ErrorCode.WATERMARKS_EXCEEDED_ERROR,
+          message,
+          advice
         })
       }
       watermarkControl.checkWatermarkParams(options)
@@ -3890,18 +4187,24 @@ class LocalStream extends RTCEventEmitter {
     const basicBeauty = this.basicBeauty
     if (!isAuto) {
       if (isStart && basicBeauty.isEnable) {
+        let enMessage = 'setBeautyEffect_open: basicBeauty is already opened',
+          zhMessage = 'setBeautyEffect_open: 基础美颜已经开启'
+        let message = env.IS_ZH ? zhMessage : enMessage
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.NOT_ALLOWED,
-            message: 'setBeautyEffect: basicBeauty is already opened'
+            code: ErrorCode.SET_BEAUTY_ERROR,
+            message
           })
         )
       }
       if (!isStart && !basicBeauty.isEnable) {
+        let enMessage = 'setBeautyEffect_close: basicBeauty is already closed',
+          zhMessage = 'setBeautyEffect_close: 基础美颜已经关闭'
+        let message = env.IS_ZH ? zhMessage : enMessage
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.NOT_ALLOWED,
-            message: 'setBeautyEffect: basicBeauty is already closed'
+            code: ErrorCode.SET_BEAUTY_ERROR,
+            message
           })
         )
       }
@@ -3986,18 +4289,24 @@ class LocalStream extends RTCEventEmitter {
       return this.logger.error(this.videoPostProcess.glErrorTip)
     }
     if (!this.videoPostProcess.getPlugin('VirtualBackground')) {
+      let enMessage = 'enableBodySegment: virtualBackgroundPlugin is not register',
+        zhMessage = 'enableBodySegment: 背景分割插件还未注册'
+      let message = env.IS_ZH ? zhMessage : enMessage
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.NOT_ALLOWED,
-          message: 'enableBodySegment: virtualBackgroundPlugin is not register'
+          code: ErrorCode.SET_BODY_SEGMENT_ERROR,
+          message
         })
       )
     }
     if (this._segmentProcessor) {
+      let enMessage = 'enableBodySegment: bodySegment is already opened',
+        zhMessage = 'enableBodySegment: 背景分割已经开启'
+      let message = env.IS_ZH ? zhMessage : enMessage
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.NOT_ALLOWED,
-          message: 'enableBodySegment: bodySegment is already opened'
+          code: ErrorCode.SET_BODY_SEGMENT_ERROR,
+          message
         })
       )
     }
@@ -4040,10 +4349,13 @@ class LocalStream extends RTCEventEmitter {
         }
       })
     } else {
+      let enMessage = 'disableBodySegment: bodySegment is already closed',
+        zhMessage = 'disableBodySegment: 背景分割已经关闭'
+      let message = env.IS_ZH ? zhMessage : enMessage
       Promise.reject(
         new RtcError({
-          code: ErrorCode.NOT_ALLOWED,
-          message: 'disableBodySegment: bodySegment is already closed'
+          code: ErrorCode.SET_BODY_SEGMENT_ERROR,
+          message
         })
       )
     }
@@ -4091,18 +4403,24 @@ class LocalStream extends RTCEventEmitter {
       return this.logger.error(this.videoPostProcess.glErrorTip)
     }
     if (!this.videoPostProcess.getPlugin('AdvancedBeauty')) {
+      let enMessage = 'enableAdvancedBeauty: advancedBeautyPlugin is not register',
+        zhMessage = 'enableAdvancedBeauty: 高级美颜插件还未注册'
+      let message = env.IS_ZH ? zhMessage : enMessage
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.NOT_ALLOWED,
-          message: 'enableAdvancedBeauty: advancedBeautyPlugin is not register'
+          code: ErrorCode.SET_ADVANCED_BEAUTY_ERROR,
+          message
         })
       )
     }
     if (this._advancedBeautyProcessor) {
+      let enMessage = 'enableAdvancedBeauty: advancedBeauty is already opened',
+        zhMessage = 'enableAdvancedBeauty: 高级美颜已经开启'
+      let message = env.IS_ZH ? zhMessage : enMessage
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.NOT_ALLOWED,
-          message: 'enableAdvancedBeauty: advancedBeauty is already opened'
+          code: ErrorCode.SET_ADVANCED_BEAUTY_ERROR,
+          message
         })
       )
     }
@@ -4145,10 +4463,13 @@ class LocalStream extends RTCEventEmitter {
         }
       })
     } else {
+      let enMessage = 'enableAdvancedBeauty: advancedBeauty is already closed',
+        zhMessage = 'enableAdvancedBeauty: 高级美颜已经关闭'
+      let message = env.IS_ZH ? zhMessage : enMessage
       Promise.reject(
         new RtcError({
-          code: ErrorCode.NOT_ALLOWED,
-          message: 'disableAdvancedBeauty: advancedBeauty is already closed'
+          code: ErrorCode.SET_ADVANCED_BEAUTY_ERROR,
+          message
         })
       )
     }

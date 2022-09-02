@@ -30,6 +30,7 @@ import { RemoteStream } from './remoteStream'
 import md5 = require('md5')
 import { LBSManager } from '../module/LBSManager'
 import { RTCEventEmitter } from '../util/rtcUtil/RTCEventEmitter'
+import * as env from '../util/rtcUtil/rtcEnvironment'
 let clientCnt = 0
 
 /**
@@ -341,18 +342,36 @@ class Base extends RTCEventEmitter {
     if (!wssArr || wssArr.length === 0) {
       this.logger.error(`没有找到服务器地址: ${JSON.stringify(this.adapterRef.channelInfo)}`)
       this.adapterRef.channelStatus = 'leave'
+      let enMessage = `startSession: server address is not found: ${JSON.stringify(
+          this.adapterRef.channelInfo
+        )}`,
+        zhMessage = `startSession: 没有找到服务器地址: ${JSON.stringify(
+          this.adapterRef.channelInfo
+        )}`,
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NO_SERVER_ADDRESS,
-        message: 'startSession: no server address'
+        code: ErrorCode.SERVER_ERROR,
+        message,
+        advice
       })
     }
 
     if (!cid) {
       this.logger.error('服务器没有分配cid')
       this.adapterRef.channelStatus = 'leave'
+      let enMessage = 'startSession: no cid assigned by server',
+        zhMessage = 'startSession: 服务器没有分配cid',
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.INVALID_PARAMETER,
-        message: 'startSession: no cid assigned by server'
+        code: ErrorCode.SERVER_ERROR,
+        message,
+        advice
       })
     }
     this.logger.log(
@@ -364,16 +383,30 @@ class Base extends RTCEventEmitter {
       this.logger.error('所有的服务器地址都连接失败')
       this.adapterRef.channelInfo.wssArrIndex = 0
       this.adapterRef.channelStatus = 'leave'
+      let enMessage = 'startSession: All server addresses failed to connect',
+        zhMessage = 'startSession: 所有的服务器地址都连接失败',
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.SOCKET_ERROR,
-        message: 'socket error'
+        code: ErrorCode.SERVER_ERROR,
+        message,
+        advice
       })
     }
     let url = wssArr[this.adapterRef.channelInfo.wssArrIndex]
     if (!this.adapterRef._signalling) {
+      let enMessage = 'startSession: signalling server error',
+        zhMessage = 'startSession: 信令服务器异常',
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.SOCKET_ERROR,
-        message: 'startSession: signalling error'
+        code: ErrorCode.SIGNALLING_SERVER_ERROR,
+        message,
+        advice
       })
     }
     try {
@@ -390,9 +423,16 @@ class Base extends RTCEventEmitter {
 
     // 开始上报format数据
     if (!this.adapterRef._statsReport) {
+      let enMessage = 'startSession: no format stats',
+        zhMessage = 'startSession: 没有 format 数据',
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NO_STATS,
-        message: 'startSession: no format stats'
+        code: ErrorCode.NO_STATS_ERROR,
+        message,
+        advice
       })
     }
     this.adapterRef._statsReport.statsStart()
@@ -509,9 +549,16 @@ class Base extends RTCEventEmitter {
     }
     this.logger.warn(`下行通道异常，重新建立 #${this.transportRebuildCnt}`)
     if (!this.adapterRef._mediasoup) {
+      let enMessage = 'reBuildRecvTransport:  media server error',
+        zhMessage = 'reBuildRecvTransport: 媒体服务器异常',
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NO_SERVER_ADDRESS,
-        message: 'reBuildRecvTransport: media server error'
+        code: ErrorCode.MEDIA_SERVER_ERROR,
+        message,
+        advice
       })
     }
     this.adapterRef.instance.safeEmit('@pairing-reBuildRecvTransport-start')
@@ -596,15 +643,29 @@ class Base extends RTCEventEmitter {
         !this.adapterRef.apiEvent[name] ||
         !this.adapterRef.apiEvent[name].length
       ) {
+        let enMessage = `apiFrequencyControl: no apiEvent named ${name}`,
+          zhMessage = `apiFrequencyControl: 未找到 name 为 ${name} 的 apiEvent`,
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NOT_FOUND,
-          message: `apiFrequencyControl: no apiEvent named ${name}`
+          code: ErrorCode.EVENT_UPLOAD_ERROR,
+          message,
+          advice
         })
       }
       if (!this.adapterRef.apiEvent[name][0].time) {
+        let enMessage = `apiFrequencyControl: invalid time`,
+          zhMessage = `apiFrequencyControl: 无效的 time`,
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.NOT_FOUND,
-          message: 'apiFrequencyControl: invalid time'
+          code: ErrorCode.EVENT_UPLOAD_ERROR,
+          message,
+          advice
         })
       }
       if (Date.now() - this.adapterRef.apiEvent[name][0].time < 10000) {

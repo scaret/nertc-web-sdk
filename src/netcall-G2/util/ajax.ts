@@ -1,5 +1,6 @@
 import ErrorCode from '../util/error/errorCode'
 import RtcError from '../util/error/rtcError'
+import * as env from '../util/rtcUtil/rtcEnvironment'
 /** 异步请求api */
 var JSONbig = require('json-bigint')
 /**
@@ -41,10 +42,17 @@ export interface AjaxOptions {
 
 function ajax(option: AjaxOptions) {
   if (!option || !option.url) {
+    let enMessage = 'ajax: parameter is not valid',
+      zhMessage = 'ajax: 参数异常',
+      enAdvice = 'Please input the correct parameter',
+      zhAdvice = '请输入正确的参数'
+    let message = env.IS_ZH ? zhMessage : enMessage,
+      advice = env.IS_ZH ? zhAdvice : enAdvice
     return Promise.reject(
       new RtcError({
-        code: ErrorCode.INVALID_PARAMETER,
-        message: 'ajax1: could not send request due to invalid parameter'
+        code: ErrorCode.NETWORK_REQUEST_ERROR,
+        message,
+        advice
       })
     )
   }
@@ -68,10 +76,17 @@ function ajax(option: AjaxOptions) {
   return new Promise((resolve, reject) => {
     xhr.onload = function () {
       if (xhr.status > 400) {
+        let enMessage = 'ajax: response error',
+          zhMessage = 'ajax: 相应异常',
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_PARAMETER,
-            message: 'ajax2: could not send request due to invalid parameter'
+            code: ErrorCode.NETWORK_REQUEST_ERROR,
+            message,
+            advice
           })
         )
       }

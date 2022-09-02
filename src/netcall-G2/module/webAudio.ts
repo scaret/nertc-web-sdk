@@ -24,6 +24,8 @@ import {
 import ErrorCode from '../util/error/errorCode'
 import RtcError from '../util/error/rtcError'
 import { RtcSupport } from '../util/rtcUtil/rtcSupport'
+import * as env from '../util/rtcUtil/rtcEnvironment'
+import {getParameters} from "./parameters";
 
 /**
  * webaudio 控制
@@ -72,6 +74,8 @@ class AudioIn {
 export function getAudioContext() {
   if (globalAc) {
     return globalAc
+  } else if (getParameters().disableWebAudio) {
+    return null
   } else if (supports.WebAudio && supports.MediaStream) {
     globalAc = new window.AudioContext()
     return globalAc
@@ -443,11 +447,18 @@ class WebAudio extends EventEmitter {
 
   startMix(options: AudioMixingOptions) {
     if (!this.context || !this.destination || !this.gainFilter) {
-      this.logger.error('initMonitor:参数不够')
+      this.logger.error('startMix:不支持伴音')
+      let enMessage = 'webAudio_startMix: webAudio is not supported in this browser',
+        zhMessage = 'webAudio_startMix: 当前浏览器不支持 webAudio',
+        enAdvice = 'The latest version of the Chrome browser is recommended',
+        zhAdvice = '建议使用最新版的 Chrome 浏览器'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.INVALID_PARAMETER,
-          message: 'initMonitor: invalid parameter'
+          code: ErrorCode.NOT_SUPPORT_ERROR,
+          message,
+          advice
         })
       )
     }
@@ -557,11 +568,19 @@ class WebAudio extends EventEmitter {
   */
   stopAudioMixing(isFinished = true) {
     if (!this.mixAudioConf.audioSource || !this.mixAudioConf.gainFilter) {
-      this.logger.error('stopAudioMixing:参数不够')
+      this.logger.error('stopAudioMixing: 接口调用逻辑异常')
+      let enMessage = 'webAudio_stopAudioMixing: Interface call logic exception',
+        zhMessage = 'webAudio_stopAudioMixing: 接口调用逻辑异常',
+        enAdvice =
+          'Please make sure to call this interface after the audioMixing is started/paused',
+        zhAdvice = '请确保在开启/暂停伴音的状态下再调用该接口'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.INVALID_PARAMETER,
-          message: 'stopAudioMixing: invalid parameter'
+          code: ErrorCode.AUDIO_MIX_STATE_ERROR,
+          message,
+          advice
         })
       )
     }
@@ -658,10 +677,17 @@ class WebAudio extends EventEmitter {
 
   createAudioBufferSource(buffer: AudioBuffer) {
     if (!this.context || !this.destination || !this.gainFilter) {
-      this.logger.error('initMonitor:参数不够')
+      this.logger.error('webAudio_createAudioBufferSource: 接口调用状态异常')
+      let enMessage = 'webAudio_createAudioBufferSource: Interface call status exception',
+        zhMessage = 'webAudio_createAudioBufferSource: 接口调用状态异常',
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.INVALID_PARAMETER,
-        message: 'createAudioBufferSource: invalid parameter'
+        code: ErrorCode.AUDIO_EFFECT_STATE_ERROR,
+        message,
+        advice
       })
     }
     const sourceNode = this.context.createBufferSource()
@@ -674,11 +700,18 @@ class WebAudio extends EventEmitter {
 
   startAudioEffectMix(options: soundsConf) {
     if (!this.context || !this.destination || !this.gainFilter) {
-      this.logger.error('initMonitor:参数不够')
+      this.logger.error('webAudio_startAudioEffectMix: 接口调用状态异常')
+      let enMessage = 'webAudio_startAudioEffectMix: Interface call status exception',
+        zhMessage = 'webAudio_startAudioEffectMix: 接口调用状态异常',
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.INVALID_PARAMETER,
-          message: 'initMonitor: invalid parameter'
+          code: ErrorCode.AUDIO_EFFECT_STATE_ERROR,
+          message,
+          advice
         })
       )
     }
@@ -709,11 +742,18 @@ class WebAudio extends EventEmitter {
   stopAudioEffectMix(options: soundsConf) {
     const { sourceNode, gainNode, playOverTime, playStartTime, volume, cycle } = options
     if (!gainNode || !sourceNode) {
-      this.logger.error('stopAudioEffectMix: 参数不够')
+      this.logger.error('webAudio_stopAudioEffectMix: 接口调用状态异常')
+      let enMessage = 'webAudio_stopAudioEffectMix: Interface call status exception',
+        zhMessage = 'webAudio_startAudioEffectMix: 接口调用状态异常',
+        enAdvice = 'Please contact CommsEase technical support',
+        zhAdvice = '请联系云信技术支持'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.INVALID_PARAMETER,
-          message: 'stopAudioEffectMix: invalid parameter'
+          code: ErrorCode.AUDIO_EFFECT_STATE_ERROR,
+          message,
+          advice
         })
       )
     }
