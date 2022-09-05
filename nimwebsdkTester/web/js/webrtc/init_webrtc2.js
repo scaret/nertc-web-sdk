@@ -43,48 +43,36 @@ const virtualBackgroundPluginConfig = {
     simd: {
       key: 'VirtualBackground',
       pluginUrl: './js/nim/NIM_Web_VirtualBackground.js',
-      wasmUrl:
-        'https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal.wasm' +
-        `?time=${Math.random()}`
+      wasmUrl: './js/nim/wasm/NIM_Web_VirtualBackground_simd.wasm' + `?time=${Math.random()}`
     },
     nosimd: {
       key: 'VirtualBackground',
       pluginUrl: './js/nim/NIM_Web_VirtualBackground.js',
-      wasmUrl:
-        'https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal_nosimd.wasm' +
-        `?time=${Math.random()}`
+      wasmUrl: './js/nim/wasm/NIM_Web_VirtualBackground_nosimd.wasm'
     }
   },
   production: {
     simd: {
       key: 'VirtualBackground',
       pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}.js`,
-      wasmUrl:
-        'https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal.wasm' +
-        `?time=${Math.random()}`
+      wasmUrl: `./js/nim/wasm/NIM_Web_VirtualBackground_simd_v${NERTC.VERSION}.wasm`
     },
     nosimd: {
       key: 'VirtualBackground',
       pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}.js`,
-      wasmUrl:
-        'https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal_nosimd.wasm' +
-        `?time=${Math.random()}`
+      wasmUrl: `./js/nim/wasm/NIM_Web_VirtualBackground_nosimd_v${NERTC.VERSION}.wasm`
     }
   },
   test: {
     simd: {
       key: 'VirtualBackground',
       pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}_test.js`,
-      wasmUrl:
-        'https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal.wasm' +
-        `?time=${Math.random()}`
+      wasmUrl: `./js/nim/wasm/NIM_Web_VirtualBackground_simd_v${NERTC.VERSION}_test.wasm`
     },
     nosimd: {
       key: 'VirtualBackground',
       pluginUrl: `./js/nim/NIM_Web_VirtualBackground_v${NERTC.VERSION}_test.js`,
-      wasmUrl:
-        'https://yx-web-nosdn.netease.im/sdk-release/ne_segment_normal_nosimd.wasm' +
-        `?time=${Math.random()}`
+      wasmUrl: `./js/nim/wasm/NIM_Web_VirtualBackground_nosimd_v${NERTC.VERSION}_test.wasm`
     }
   }
 }
@@ -96,45 +84,36 @@ const advancedBeautyPluginConfig = {
     simd: {
       key: 'AdvancedBeauty',
       pluginUrl: './js/nim/NIM_Web_AdvancedBeauty.js',
-      wasmUrl:
-        'https://yx-web-nosdn.netease.im/sdk-release/ne_face_points.wasm' + `?time=${Math.random()}`
+      wasmUrl: './js/nim/wasm/NIM_Web_AdvancedBeauty_simd.wasm'
     },
     nosimd: {
       key: 'AdvancedBeauty',
       pluginUrl: './js/nim/NIM_Web_AdvancedBeauty.js',
-      wasmUrl:
-        'https://yx-web-nosdn.netease.im/sdk-release/ne_face_points_nosimd.wasm' +
-        `?time=${Math.random()}`
+      wasmUrl: './js/nim/wasm/NIM_Web_AdvancedBeauty_nosimd.wasm'
     }
   },
   production: {
     simd: {
       key: 'AdvancedBeauty',
       pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}.js`,
-      wasmUrl:
-        'https://yx-web-nosdn.netease.im/sdk-release/ne_face_points.wasm' + `?time=${Math.random()}`
+      wasmUrl: `./js/nim/wasm/NIM_Web_AdvancedBeauty_simd_v${NERTC.VERSION}.wasm`
     },
     nosimd: {
       key: 'AdvancedBeauty',
       pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}.js`,
-      wasmUrl:
-        'https://yx-web-nosdn.netease.im/sdk-release/ne_face_points_nosimd.wasm' +
-        `?time=${Math.random()}`
+      wasmUrl: `./js/nim/wasm/NIM_Web_AdvancedBeauty_nosimd_v${NERTC.VERSION}.wasm`
     }
   },
   test: {
     simd: {
       key: 'AdvancedBeauty',
       pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}_test.js`,
-      wasmUrl:
-        'https://yx-web-nosdn.netease.im/sdk-release/ne_face_points.wasm' + `?time=${Math.random()}`
+      wasmUrl: `./js/nim/wasm/NIM_Web_AdvancedBeauty_simd_v${NERTC.VERSION}_test.wasm`
     },
     nosimd: {
       key: 'AdvancedBeauty',
       pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}_test.js`,
-      wasmUrl:
-        'https://yx-web-nosdn.netease.im/sdk-release/ne_face_points_nosimd.wasm' +
-        `?time=${Math.random()}`
+      wasmUrl: `./js/nim/wasm/NIM_Web_AdvancedBeauty_nosimd_v${NERTC.VERSION}_test.js`
     }
   }
 }
