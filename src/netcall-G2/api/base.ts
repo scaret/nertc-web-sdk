@@ -178,9 +178,7 @@ class Base extends RTCEventEmitter {
         logger: this.logger
       })
     }
-  }
 
-  initWebSocket() {
     // 原始以及处理过的 stats 数据上报
     if (!this.adapterRef._statsReport) {
       this.adapterRef._statsReport = new StatsReport({

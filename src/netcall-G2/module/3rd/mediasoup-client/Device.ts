@@ -156,7 +156,7 @@ export class Device {
           this._handlerFactory = Firefox60.createFactory()
           break
         default:
-          console.warn(`unknown browser handlerName "${handlerName}, using Chrome 74 as default"`)
+          Logger.warn(`unknown browser handlerName "${handlerName}, using Chrome 74 as default"`)
           this._handlerFactory = Chrome74.createFactory()
           break
       }
