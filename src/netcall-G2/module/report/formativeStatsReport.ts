@@ -410,7 +410,7 @@ class FormativeStatsReport {
     for (let i in data) {
       //let uid = parseInt(i.split('_')[3] || "");
       let uid
-      if (env.IS_SAFARI) {
+      if (env.IS_ANY_SAFARI) {
         uid = i.split('_')[5] || ''
       } else {
         uid = i.split('_')[3] || ''

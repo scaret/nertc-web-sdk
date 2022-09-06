@@ -525,7 +525,7 @@ class Client extends Base {
         // 载入本地配置失败=>载入内置配置，同时发起远程请求
         this.adapterRef.lbsManager.startUpdate(localConfig.reason)
       }
-      
+
       this.setStartSessionTime()
       this.initMode()
       if (
