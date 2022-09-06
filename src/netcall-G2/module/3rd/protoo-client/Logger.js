@@ -2,8 +2,6 @@ import { loglevels } from '../../../util/log/logger'
 import { updateLogIndex } from '../../../util/webrtcLogger'
 import { getParameters } from '../../parameters'
 
-const debug = require('debug')
-
 const APP_NAME = 'protoo-client'
 
 class Logger {

@@ -1,5 +1,5 @@
 import { ajax } from '../../util/ajax'
-import md5 = require('md5')
+import md5 from 'md5'
 import { BUILD, SDK_VERSION } from '../../Config'
 import {
   AdapterRef,
