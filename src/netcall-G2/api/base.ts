@@ -27,7 +27,7 @@ import { getSupportedCodecs } from '../util/rtcUtil/codec'
 import { Logger } from '../util/webrtcLogger'
 import { LocalStream } from './localStream'
 import { RemoteStream } from './remoteStream'
-import md5 = require('md5')
+import md5 from 'md5'
 import { LBSManager } from '../module/LBSManager'
 import { RTCEventEmitter } from '../util/rtcUtil/RTCEventEmitter'
 import * as env from '../util/rtcUtil/rtcEnvironment'

@@ -1,4 +1,5 @@
-const retry = require('retry')
+import * as retry from 'retry'
+
 const Logger = require('../Logger')
 const EnhancedEventEmitter = require('../EnhancedEventEmitter')
 const Message = require('../Message')

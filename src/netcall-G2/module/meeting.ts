@@ -2,7 +2,7 @@ import { EventEmitter } from 'eventemitter3'
 
 import { getChannelInfoUrl, getCloudProxyInfoUrl, roomsTaskUrl, SDK_VERSION } from '../Config'
 import { ajax } from '../util/ajax'
-const md5 = require('md5')
+import md5 from 'md5'
 import BigNumber from 'bignumber.js'
 
 import { SignalGetChannelInfoResponse } from '../interfaces/SignalProtocols'

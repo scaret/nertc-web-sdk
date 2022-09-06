@@ -1,7 +1,5 @@
 /* global RTCRtpTransceiver */
 
-import * as Bowser from 'bowser'
-
 import { EnhancedEventEmitter } from './EnhancedEventEmitter'
 import { InvalidStateError, UnsupportedError } from './errors'
 import { Chrome74 } from './handlers/Chrome74'
@@ -14,6 +12,8 @@ import { MediaKind, RtpCapabilities } from './RtpParameters'
 import { SctpCapabilities } from './SctpParameters'
 import { CanProduceByKind, Transport, TransportOptions } from './Transport'
 import * as utils from './utils'
+import * as env from '../../../util/rtcUtil/rtcEnvironment'
+import { getBrowserInfo, getOSInfo } from '../../../util/rtcUtil/rtcPlatform'
 
 const prefix = 'Device'
 
@@ -41,31 +41,16 @@ interface InternalTransportOptions extends TransportOptions {
 
 export function detectDevice(): BuiltinHandlerName | undefined {
   if (typeof navigator === 'object' && typeof navigator.userAgent === 'string') {
-    const ua = navigator.userAgent
-    const browser = Bowser.getParser(ua)
-    const engine = browser.getEngine()
-
-    // Chrome and Chromium.
-    if (browser.satisfies({ chrome: '>=72', chromium: '>=72' })) {
+    // any Chrome(Edge etc.)
+    if (env.IS_CHROME_ONLY && env.CHROME_MAJOR_VERSION && env.CHROME_MAJOR_VERSION >= 72) {
       return 'Chrome74'
     }
     // Firefox.
-    else if (browser.satisfies({ firefox: '>=60' })) {
+    else if (env.IS_FIREFOX && env.FIREFOX_MAJOR_VERSION && env.FIREFOX_MAJOR_VERSION >= 60) {
       return 'Firefox60'
     }
     // Safari with Unified-Plan support enabled.
-    else if (
-      browser.satisfies({ safari: '>=12.0' }) &&
-      typeof RTCRtpTransceiver !== 'undefined' &&
-      RTCRtpTransceiver.prototype.hasOwnProperty('currentDirection')
-    ) {
-      return 'Safari12'
-    } else if (
-      browser.getBrowserName() === 'WeChat' &&
-      browser.getOS() &&
-      browser.getOS().name === 'iOS'
-    ) {
-      //微信iOS端
+    else if (env.IS_ANY_SAFARI && env.SAFARI_MAJOR_VERSION && env.SAFARI_MAJOR_VERSION >= 12) {
       return 'Safari12'
     }
     // Unsupported browser.
@@ -73,8 +58,8 @@ export function detectDevice(): BuiltinHandlerName | undefined {
       Logger.warn(
         prefix,
         'this._detectDevice() | browser not supported [name:%s, version:%s], using Chrome72 as default',
-        browser.getBrowserName(),
-        browser.getBrowserVersion()
+        getBrowserInfo().browserName,
+        getBrowserInfo().browserVersion
       )
 
       return 'Chrome74'
