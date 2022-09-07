@@ -1,1 +1,1 @@
-import * as $protobuf from 'protobufjs/light'
+import * as $protobuf from 'protobufjs'

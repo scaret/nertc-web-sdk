@@ -35,6 +35,7 @@ import { Base } from './base'
 import { LocalStream } from './localStream'
 import { RemoteStream } from './remoteStream'
 import { SpatialManager } from './spatialManager'
+const BigNumber = require('bignumber.js')
 
 /**
  *  请使用 {@link WEBRTC2.createClient} 通过WEBRTC2.createClient创建 Client对象，client对象指通话中的本地或远程用户，提供云信sdk的核心功能。

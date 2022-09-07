@@ -1,7 +1,6 @@
 const env = require('./build/env')
 const git = require('./build/git')
 const CopyPlugin = require('copy-webpack-plugin')
-const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin
 
 if (env.isProduction() && git.hasChange()) {
   // throw new Error('please commit all changes')
@@ -18,7 +17,7 @@ const webpack = require('webpack')
 const WebpackOnBuildPlugin = require('./build/webpackOnBuildPlugin')
 const HappyPack = require('happypack')
 const os = require('os')
-const HappyThreadPool = HappyPack.ThreadPool({ size: os.cpus().length - 1 })
+const HappyThreadPool = HappyPack.ThreadPool({size: os.cpus().length - 1})
 
 const version = pjson.private ? pjson.privateVersion : pjson.version
 const webrtcG2Version = pjson.webrtcG2Version
@@ -26,10 +25,11 @@ const nodeEnv = env.getNodeEnv()
 //const hashInfo = git.getFirstCommitHash()
 const suffix = env.isProduction() ? '' : '_' + nodeEnv
 
+
 const genFileName = (type = '', tagversion = '') => {
   if (type !== '') {
     type = '_' + type
-  }
+  } 
   if (tagversion == '') {
     tagversion = version
   }
@@ -42,7 +42,7 @@ const genFileName = (type = '', tagversion = '') => {
 const getWasmFileName = (type = '', tagversion = '') => {
   if (type !== '') {
     type = '_' + type
-  }
+  } 
   if (tagversion == '') {
     tagversion = version
   }
@@ -55,13 +55,15 @@ const getWasmFileName = (type = '', tagversion = '') => {
 let config = require('./webpack.config.base')({})
 
 config = merge(config, {
-  entry: {},
+  entry: {
+  },
   output: {
     path: path.join(cwd, './dist/lib/', version, nodeEnv),
     filename: genFileName(),
     library: '[name]',
     libraryTarget: 'umd',
-    jsonpFunction: 'webpackJsonp_NIM_Web_v' + version.replace(/\./gi, '_') + suffix
+    jsonpFunction:
+      'webpackJsonp_NIM_Web_v' + version.replace(/\./gi, '_') + suffix
   },
   module: {
     rules: [
@@ -72,16 +74,16 @@ config = merge(config, {
           multiple: [
             {
               search: /\n.*WEBPACK_STRING_REPLACE_VERSION.*\n/,
-              replace: `\nconst SDK_VERSION="${webrtcG2Version}";\n`
+              replace: `\nconst SDK_VERSION="${webrtcG2Version}";\n`,
             },
             {
               search: /\n.*WEBPACK_STRING_REPLACE_BUILD.*\n/,
-              replace: `\nconst BUILD="${git.describe()}";\n`
+              replace: `\nconst BUILD="${git.describe()}";\n`,
             },
             {
               search: /\n(.*)(development)(.*WEBPACK_STRING_REPLACE_ENV.*)\n/,
-              replace: `\n$1${process.env.NODE_ENV}$3\n`
-            }
+              replace: `\n$1${process.env.NODE_ENV}$3\n`,
+            },
           ]
         }
       },
@@ -92,27 +94,25 @@ config = merge(config, {
       {
         test: /\.tsx?$/,
         use: 'ts-loader',
-        exclude: /node_modules/
-      }
+        exclude: /node_modules/,
+      },
     ]
   },
   resolve: {
-    extensions: ['.tsx', '.ts', '.js']
+    extensions: [ '.tsx', '.ts', '.js' ],
   },
   plugins: [
     new HappyPack({
       id: 'babel',
       threadPool: HappyThreadPool,
-      loaders: [
-        {
-          loader: 'babel-loader?cacheDirectory=true'
-        }
-      ],
+      loaders: [{
+        loader: 'babel-loader?cacheDirectory=true'
+      }],
       // 允许 HappyPack 输出日志
       verbose: true
     })
   ],
-  mode: env.isDevelopment() ? 'development' : 'production'
+  mode: (env.isDevelopment()) ? 'development' : 'production'
 })
 
 if (env.isDevelopment()) {
@@ -135,6 +135,7 @@ if (env.isDevelopment()) {
   config.devtool = 'source-map'
 }
 
+
 // 设置webrtcG2相关的配置
 let configWebrtcG2 = merge(config, {
   entry: {
@@ -148,7 +149,8 @@ let configWebrtcG2 = merge(config, {
     filename: genFileName('', webrtcG2Version),
     library: '[name]',
     libraryTarget: 'umd',
-    jsonpFunction: 'webpackJsonp_NIM_Web_v' + webrtcG2Version.replace(/\./gi, '_') + suffix
+    jsonpFunction:
+      'webpackJsonp_NIM_Web_v' + webrtcG2Version.replace(/\./gi, '_') + suffix
   },
   plugins: [
     new WebpackOnBuildPlugin(() => {
@@ -159,19 +161,10 @@ let configWebrtcG2 = merge(config, {
     new webpack.BannerPlugin({
       banner: `NeRTC ${webrtcG2Version}|BUILD ${git.describe()} ${process.env.NODE_ENV}`
     }),
-    new CopyPlugin([
-      {
-        from: './src/**/*.wasm',
-        to:
-          path.join(cwd, './dist/lib/', webrtcG2Version, nodeEnv, '/wasm/') +
-          getWasmFileName('', webrtcG2Version)
-      }
-    ]),
-    new BundleAnalyzerPlugin({
-      analyzerMode: 'static',
-      reportFilename: 'BundleReport.html',
-      logLevel: 'info'
-    })
+    new CopyPlugin([{ 
+      from: './src/**/*.wasm',
+      to: path.join(cwd, './dist/lib/', webrtcG2Version, nodeEnv, '/wasm/') + getWasmFileName('', webrtcG2Version),
+    }]),
   ],
   resolve: {
     alias: {
@@ -181,6 +174,7 @@ let configWebrtcG2 = merge(config, {
     }
   }
 })
+
 
 let out
 console.warn('webpack PLATFORM: ', process.env.PLATFORM)

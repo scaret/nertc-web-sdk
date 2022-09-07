@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events'
+const { EventEmitter } = require('events')
 const Logger = require('./Logger')
 
 class EnhancedEventEmitter extends EventEmitter {

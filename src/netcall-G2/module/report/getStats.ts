@@ -1,6 +1,7 @@
 /*
  getStats适配器
  */
+import * as bowser from 'bowser'
 import { EventEmitter } from 'eventemitter3'
 
 import { AdapterRef, MediaTypeShort } from '../../types'
@@ -40,12 +41,20 @@ class GetStats extends EventEmitter {
   _reset() {
     this.times = 0
     this.browser = 'chrome'
-    if (env.IS_CHROME_ONLY && env.CHROME_MAJOR_VERSION && env.CHROME_MAJOR_VERSION >= 72) {
+    const ua = navigator.userAgent
+    const temp = bowser.getParser(ua)
+    if (temp.satisfies({ chrome: '>=72', chromium: '>=72' })) {
       this.browser = 'chrome'
-    } else if (env.IS_ANY_SAFARI && env.SAFARI_MAJOR_VERSION && env.SAFARI_MAJOR_VERSION >= 12) {
+    } else if (temp.satisfies({ safari: '>=12.0' })) {
       this.browser = 'safari'
-    } else if (env.IS_FIREFOX && env.FIREFOX_MAJOR_VERSION && env.FIREFOX_MAJOR_VERSION >= 60) {
+    } else if (temp.satisfies({ firefox: '>60' })) {
       this.browser = 'firefox'
+    } else if (temp.getBrowser().name === 'WeChat' && temp.getOS().name === 'iOS') {
+      this.browser = 'safari'
+    } else if (temp.getBrowser().name === 'QQ Browser' && temp.getOS().name === 'iOS') {
+      this.browser = 'safari'
+    } else if (temp.getBrowser().name === 'QQ Browser' && temp.getOS().name === 'Android') {
+      this.browser = 'chrome'
     }
 
     this.KeyTransform = {
