@@ -393,6 +393,12 @@ export type HandleKey =
   | 'whitenTeeth'
   // 亮眼
   | 'brightenEye'
+  // 抬头纹
+  | 'fadeHeadWrinkle'
+  // 黑眼圈
+  | 'fadeEyeRim'
+  // 法令纹
+  | 'fadeNoseLine'
 
 let refineCenter = true
 let lEyeCenter: Vector2

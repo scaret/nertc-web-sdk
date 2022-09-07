@@ -47,10 +47,11 @@ export const advFaceMaskShader = {
     varying vec2 vuv;
 
     void main() {
-        float ca = index==0 ? 0.0 : texture2D(map, vuv).a;
-        float ma = texture2D(maskMap, vuv).a;
-        float a = 1.0 - (1.0 - ca) * (1.0 - ma);
-        gl_FragColor = vec4(1.0, 0.0, 0.0, a);
+      vec4 color = index == 0 ? vec4(0.0) : texture2D(map, vuv);
+      vec4 mask = texture2D(maskMap, vuv);
+      float a = 1.0 - (1.0 - color.a) * (1.0 - mask.a);
+      vec3 rgb = max(color.rgb, mask.rgb);
+      gl_FragColor = vec4(rgb, a);
     }
 `
 }

@@ -1745,7 +1745,10 @@ const keyMap = {
   minifyFace: 'adv-minify-face',
   shortenFace: 'adv-shorten-face',
   whitenTeeth: 'adv-whiten-teeth',
-  brightenEye: 'adv-brighten-eye'
+  brightenEye: 'adv-brighten-eye',
+  fadeHeadWrinkle: 'adv-fade-head-wrinkle',
+  fadeEyeRim: 'adv-fade-eye-rim',
+  fadeNoseLine: 'adv-fade-nose-line'
 }
 
 for (const key in keyMap) {

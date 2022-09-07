@@ -18,7 +18,8 @@ type AdvBeautyResType = {
 }
 
 export const resSet = {
-  faceMask: 'https://yx-web-nosdn.netease.im/common/c4e1b30c74ae5dad6e605ec332775b14/facemask.png',
+  // faceMask: 'https://yx-web-nosdn.netease.im/common/c4e1b30c74ae5dad6e605ec332775b14/facemask.png',
+  faceMask: './img/facemask.png',
   eyeTeethMask:
     'https://yx-web-nosdn.netease.im/common/655421269305cac5c1e48d62f0fac8de/eye-teeth-mask-02.png',
   teethWhiten: 'https://yx-web-nosdn.netease.im/common/ca8a6b0be3427ead9b19bcf9ae1245a8/teath.png'
@@ -140,7 +141,10 @@ export class AdvBeautyFilter extends Filter {
     minifyFace: 0,
     shortenFace: 0,
     whitenTeeth: 0,
-    brightenEye: 0
+    brightenEye: 0,
+    fadeHeadWrinkle: 0,
+    fadeEyeRim: 0,
+    fadeNoseLine: 0
   }
   params: { [key in HandleKey]: number }
 
@@ -373,7 +377,7 @@ export class AdvBeautyFilter extends Filter {
 
   get output() {
     if (this.advData) {
-      // return this.faceMask;
+      // return this.faceMask
       // return this.framebuffers.eyeTeeth.targetTexture;
       return this.framebuffers.rEye.targetTexture
     }
@@ -455,6 +459,21 @@ export class AdvBeautyFilter extends Filter {
       } else {
         this.setAdvEffect(key as HandleKey, this.defParams[key as HandleKey])
       }
+    }
+  }
+
+  get featureParas() {
+    if (!this.advData) {
+      return {
+        forehead: 0,
+        eyeRim: 0,
+        noseLine: 0
+      }
+    }
+    return {
+      forehead: this.params.fadeHeadWrinkle,
+      eyeRim: this.params.fadeEyeRim,
+      noseLine: this.params.fadeNoseLine
     }
   }
 

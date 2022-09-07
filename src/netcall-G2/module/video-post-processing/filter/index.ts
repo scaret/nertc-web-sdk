@@ -180,6 +180,7 @@ export class Filters {
     filters[0].render()
     // face mask 传递
     ;(<BeautyFilter>filters[1]).faceMask = (<AdvBeautyFilter>filters[0]).faceMask
+    ;(<BeautyFilter>filters[1]).featureParas = (<AdvBeautyFilter>filters[0]).featureParas
     for (let i = 1; i < filters.length; i++) {
       filters[i].map = filters[i - 1].output
       filters[i].render()
