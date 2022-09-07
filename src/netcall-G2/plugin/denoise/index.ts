@@ -18,9 +18,10 @@ class AIDenoise extends EventEmitter {
                 return 'AIDenoise'
             }
         });
-        this.modelParam.wasmUrl = 'https://yx-web-nosdn.netease.im/sdk-release/ai_denoise_128.wasm?time=' + Date.now();
+        this.modelParam.wasmUrl = 'https://yx-web-nosdn.netease.im/sdk-release/ai_denoise.wasm?time=' + Date.now();
         this.isLoaded = false;
         this.preload(this.modelParam);
+
     }
 
     async preload(options) {
@@ -82,7 +83,7 @@ class AIDenoise extends EventEmitter {
         }
     }
 
-    process(noiseData: Float32Array, callback: (result: Float32Array) => void) {
+    process(noiseData: Array, callback: (result: Float32Array) => void) {
         this.denoiseCallback = callback
         if(!this.load) {
             return;

@@ -383,11 +383,11 @@ class MediaHelper extends EventEmitter {
         // }, 100)
         if(this.enableAIDenoise) {
           if(this.AIDenoise && this.AIDenoise.load) {
-            this.AIDenoise!.process(evt.inputs[0][0], data => {
-             // console.log('noise data', evt.inputs[0][0])
-             // console.log('denoise data', data)
+            this.AIDenoise!.process(evt.inputs[0], data => {
+             // console.log('noise data', evt.inputs[0])
+           //  console.log(data[0])
               if(data.length) {
-                evt.inputs[0][0] = data;
+                evt.inputs[0] = data;
               }
               this.audio.audioWorkletAgent!.outputData(evt.inputs[0])
             });
