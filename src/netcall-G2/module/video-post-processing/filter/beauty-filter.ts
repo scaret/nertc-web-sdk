@@ -18,6 +18,12 @@ export class BeautyFilter extends Filter {
   private _whiten = 0
   private _redden = 0
   private _faceMask: ReturnType<typeof createTexture> | null = null
+  private _featureParas = {
+    forehead: 0,
+    eyeRim: 0,
+    noseLine: 0
+  }
+  private featureEnable = false
 
   constructor(
     renderer: Renderer,
@@ -47,12 +53,12 @@ export class BeautyFilter extends Filter {
       blurX: {
         vShader: beautyBlurShader.vShader,
         fShader: beautyBlurShader.fShader,
-        size: { width: size.width >> 2, height: size.height >> 2 }
+        size: { width: size.width >> 1, height: size.height >> 1 }
       },
       blurY: {
         vShader: beautyBlurShader.vShader,
         fShader: beautyBlurShader.fShader,
-        size: { width: size.width >> 2, height: size.height >> 2 }
+        size: { width: size.width >> 1, height: size.height >> 1 }
       },
       highPass: {
         vShader: baseTextureShader.vShader,
@@ -113,7 +119,7 @@ export class BeautyFilter extends Filter {
     const map = this.map
     const { width, height } = this.renderer.getSize()
     const size = [width, height]
-    const qSize = [width >> 2, height >> 2]
+    const qSize = [width >> 1, height >> 1]
 
     programs['blurX'].setUniform('map', map)
     programs['blurX'].setUniform('size', qSize)
@@ -137,6 +143,13 @@ export class BeautyFilter extends Filter {
     programs['beauty'].setUniform('blurMap', framebuffers['blurY'].targetTexture)
     programs['beauty'].setUniform('highPassMap', framebuffers['hBlurY'].targetTexture)
     programs['beauty'].setUniform('intensity', 0.0)
+    const featureParas = this.featureParas
+    for (const key in featureParas) {
+      programs['beauty'].setUniform(
+        `${key}Inten`,
+        this._featureParas[key as keyof typeof featureParas]
+      )
+    }
 
     programs['whiten'].setUniform('map', map)
     programs['whiten'].setUniform('lut', this.whitenMap)
@@ -283,6 +296,19 @@ export class BeautyFilter extends Filter {
     }
   }
 
+  set featureParas(params: { forehead: number; eyeRim: number; noseLine: number }) {
+    let sum = 0
+    for (const key in params) {
+      const value = params[key as keyof typeof params]
+      sum += value
+      if (this._featureParas[key as keyof typeof params] !== value) {
+        this.programs.beauty.setUniform(`${key}Inten`, value)
+        this._featureParas[key as keyof typeof params] = value
+      }
+    }
+    this.featureEnable = sum > 0 ? true : false
+  }
+
   get output() {
     if (this.redden) {
       return this.framebuffers['redden'].targetTexture
@@ -290,7 +316,7 @@ export class BeautyFilter extends Filter {
     if (this.whiten) {
       return this.framebuffers['whiten'].targetTexture
     }
-    if (this.smooth) {
+    if (this.smooth || this.featureEnable) {
       return this.framebuffers['beauty'].targetTexture
     }
     return super.output
@@ -299,7 +325,7 @@ export class BeautyFilter extends Filter {
   updateSize() {
     const rsize = this.renderer.getSize()
     const size = [rsize.width, rsize.height]
-    const qSize = [rsize.width >> 2, rsize.height >> 2]
+    const qSize = [rsize.width >> 1, rsize.height >> 1]
     ;['blurX', 'blurY'].forEach((key) => {
       const frameBuffer = (this.framebuffers as any)[key]
       frameBuffer.targetTexture.opts.width = qSize[0]
@@ -325,8 +351,8 @@ export class BeautyFilter extends Filter {
     const { width, height } = renderer.getSize()
     const programs = this.programs
     const framebuffers = this.framebuffers
-    if (this.smooth) {
-      renderer.setViewport(0, 0, width >> 2, height >> 2)
+    if (this.smooth || this.featureEnable) {
+      renderer.setViewport(0, 0, width >> 1, height >> 1)
       // 原图缩小 4 倍模糊
       framebuffers['blurX'].bind()
       renderer.render(programs['blurX'])

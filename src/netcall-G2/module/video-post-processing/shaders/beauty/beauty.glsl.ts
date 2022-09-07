@@ -16,6 +16,9 @@ export const beautyShader = {
 
     // 磨皮度
     uniform float intensity;
+    uniform float foreheadInten;
+    uniform float eyeRimInten;
+    uniform float noseLineInten;
 
     varying vec2 vuv;
 
@@ -23,7 +26,13 @@ export const beautyShader = {
         vec4 originColor = texture2D(map, vuv);
         float _intensity = intensity;
         if(hasMask > 0){
-            _intensity *= texture2D(maskMap, vuv).a;
+            vec4 mask = texture2D(maskMap, vuv);
+            float intens = max(max(mask.r * noseLineInten, mask.g * foreheadInten), mask.b * eyeRimInten);
+            if(intens > 0.0){
+              _intensity = mix(_intensity, 1.5, intens);
+            }else{
+              _intensity *= mask.a;
+            }
         }
         if(_intensity > 0.0){
             vec2 stepOffset = 0.5 / size;
