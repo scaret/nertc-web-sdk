@@ -1,5 +1,5 @@
 import { EventEmitter } from 'eventemitter3'
-import * as protobuf from 'protobufjs'
+import * as protobuf from 'protobufjs/light'
 
 import { getReconnectionTimeout } from '../util/rtcUtil/utils'
 import heartbeatStats = require('../util/proto/heartbeatStats')

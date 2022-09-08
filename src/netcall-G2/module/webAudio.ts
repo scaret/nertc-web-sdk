@@ -25,7 +25,7 @@ import ErrorCode from '../util/error/errorCode'
 import RtcError from '../util/error/rtcError'
 import { RtcSupport } from '../util/rtcUtil/rtcSupport'
 import * as env from '../util/rtcUtil/rtcEnvironment'
-import {getParameters} from "./parameters";
+import { getParameters } from './parameters'
 
 /**
  * webaudio 控制

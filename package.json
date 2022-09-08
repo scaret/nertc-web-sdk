@@ -46,6 +46,7 @@
     "proto": "npx pbjs -t json-module -w commonjs -o src/netcall-G2/util/proto/proto.js  src/netcall-G2/util/proto/*.proto && npx pbts -o src/netcall-G2/util/proto/proto.d.ts src/netcall-G2/util/proto/proto.js",
     "lint": "cross-env ./node_modules/.bin/eslint ./src",
     "lint-fix": "cross-env ./node_modules/.bin/eslint ./src --fix",
+    "analyze": "NODE_ENV=production npm_config_report=true npm run pack:prod:plugin:g2",
     "prepare": "husky install"
   },
   "author": "netease im",
@@ -122,6 +123,7 @@
     "prettyjson": "^1.1.3",
     "raw-loader": "^0.5.1",
     "webpack": "^4.5.0",
+    "webpack-bundle-analyzer": "^4.6.1",
     "webpack-cli": "^4.2.0",
     "webpack-merge": "^4.1.2"
   },

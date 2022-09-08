@@ -242,16 +242,16 @@ table th:nth-of-type(2) {
 | NOT_SUPPORT_ERROR             | 10001  | 浏览器不支持             | 可以通过 console 日志查看错误原因及处理方式 |
 | NETWORK_ERROR                 | 10002  | 网络环境异常             | 可以通过 console 日志查看错误原因及处理方式 |
 | NETWORK_REQUEST_ERROR         | 10003  | 网络请求异常             | 可以通过 console 日志查看错误原因及处理方式 |
-| SERVER_ERROR                  | 10004  | 云信服务器异常           | 可以通过 console 日志查看错误原因及处理方式 |
-| MEDIA_SERVER_ERROR            | 10005  | 云信媒体服务器异常       | 可以通过 console 日志查看错误原因及处理方式 |
+| SERVER_ERROR                  | 10004  | 云信服务异常             | 可以通过 console 日志查看错误原因及处理方式 |
+| MEDIA_SERVER_ERROR            | 10005  | 云信媒体服务异常         | 可以通过 console 日志查看错误原因及处理方式 |
 | SIGNALLING_ERROR              | 10006  | 云信信令异常             | 可以通过 console 日志查看错误原因及处理方式 |
-| SIGNALLING_SERVER_ERROR       | 10007  | 云信信令服务器异常       | 可以通过 console 日志查看错误原因及处理方式 |
+| SIGNALLING_SERVER_ERROR       | 10007  | 云信信令服务异常         | 可以通过 console 日志查看错误原因及处理方式 |
 | API_CALL_SEQUENCE_ERROR       | 10008  | 接口调用顺序异常         | 可以通过 console 日志查看错误原因及处理方式 |
 | INVALID_OPERATION_ERROR       | 10009  | 操作异常                 | 可以通过 console 日志查看错误原因及处理方式 |
 | LOCALSTREAM_ERROR             | 10010  | localStream 异常         | 可以通过 console 日志查看错误原因及处理方式 |
 | LOCALSTREAM_NOT_FOUND_ERROR   | 10010  | localStream 未找到       | 可以通过 console 日志查看错误原因及处理方式 |
 | UNKNOWN_TYPE_ERROR            | 10012  | 未知类型异常             | 可以通过 console 日志查看错误原因及处理方式 |
-| UNDEFINED_ERROR               | 10013  | 云信服务器异常           | 可以通过 console 日志查看错误原因及处理方式 |
+| UNDEFINED_ERROR               | 10013  | 未定义异常               | 可以通过 console 日志查看错误原因及处理方式 |
 | UNAVAILABLE_ERROR             | 10014  | 不可用异常               | 可以通过 console 日志查看错误原因及处理方式 |
 | BANNED_BY_SERVER              | 10015  | 被服务器禁言             | 可以通过 console 日志查看错误原因及处理方式 |
 | SOCKET_INIT_ERROR             | 10016  | socket 异常              | 可以通过 console 日志查看错误原因及处理方式 |
@@ -288,6 +288,7 @@ table th:nth-of-type(2) {
 | LBS_JSON_ERROR                | 10462  | LBS json 解析异常        | 可以通过 console 日志查看错误原因及处理方式 |
 | NO_STATS_ERROR                | 10470  | 数据上报相关异常         | 可以通过 console 日志查看错误原因及处理方式 |
 | AUTO_PLAY_NOT_ALLOWED         | 41030  | 自动播放受限异常         | 可以通过 console 日志查看错误原因及处理方式 |
+| UNKNOWN                       | 99999  | 未知错误                 | 可以通过 console 日志查看错误原因及处理方式 |
 
 ### 其他常见报错及处理方式
 

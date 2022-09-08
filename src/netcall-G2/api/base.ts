@@ -351,7 +351,7 @@ class Base extends RTCEventEmitter {
       let message = env.IS_ZH ? zhMessage : enMessage,
         advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.SERVER_ERROR,
+        code: ErrorCode.UNKNOWN,
         message,
         advice
       })
@@ -367,7 +367,7 @@ class Base extends RTCEventEmitter {
       let message = env.IS_ZH ? zhMessage : enMessage,
         advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.SERVER_ERROR,
+        code: ErrorCode.UNKNOWN,
         message,
         advice
       })
@@ -388,7 +388,7 @@ class Base extends RTCEventEmitter {
       let message = env.IS_ZH ? zhMessage : enMessage,
         advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.SERVER_ERROR,
+        code: ErrorCode.NETWORK_ERROR,
         message,
         advice
       })
@@ -548,7 +548,7 @@ class Base extends RTCEventEmitter {
     this.logger.warn(`下行通道异常，重新建立 #${this.transportRebuildCnt}`)
     if (!this.adapterRef._mediasoup) {
       let enMessage = 'reBuildRecvTransport:  media server error',
-        zhMessage = 'reBuildRecvTransport: 媒体服务器异常',
+        zhMessage = 'reBuildRecvTransport: 媒体服务异常',
         enAdvice = 'Please contact CommsEase technical support',
         zhAdvice = '请联系云信技术支持'
       let message = env.IS_ZH ? zhMessage : enMessage,

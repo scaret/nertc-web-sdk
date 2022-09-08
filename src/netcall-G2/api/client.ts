@@ -35,7 +35,6 @@ import { Base } from './base'
 import { LocalStream } from './localStream'
 import { RemoteStream } from './remoteStream'
 import { SpatialManager } from './spatialManager'
-const BigNumber = require('bignumber.js')
 
 /**
  *  请使用 {@link WEBRTC2.createClient} 通过WEBRTC2.createClient创建 Client对象，client对象指通话中的本地或远程用户，提供云信sdk的核心功能。
@@ -750,7 +749,6 @@ class Client extends Base {
         param: JSON.stringify(stream.mediaHelper.getTrackSettings())
       })
     }
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     if (!stream || (!stream.audio && !stream.video && !stream.screen && !stream.screenAudio)) {
       if (stream && getParameters().allowEmptyMedia) {
         this.logger.log('publish: 当前模式允许发布没有媒体流的localStream')
@@ -810,7 +808,7 @@ class Client extends Base {
       if (!this.adapterRef._mediasoup) {
         onPublishFinish()
         let enMessage = 'doPublish:  media server error',
-          zhMessage = 'doPublish: 媒体服务器异常',
+          zhMessage = 'doPublish: 媒体服务异常',
           enAdvice = 'Please contact CommsEase technical support',
           zhAdvice = '请联系云信技术支持'
         let message = env.IS_ZH ? zhMessage : enMessage,
@@ -899,7 +897,7 @@ class Client extends Base {
     try {
       if (!this.adapterRef._mediasoup) {
         let enMessage = 'unpublish: media server error',
-          zhMessage = 'unpublish: 媒体服务器异常',
+          zhMessage = 'unpublish: 媒体服务异常',
           enAdvice = 'Please contact CommsEase technical support',
           zhAdvice = '请联系云信技术支持'
         let message = env.IS_ZH ? zhMessage : enMessage,
@@ -1007,7 +1005,7 @@ class Client extends Base {
     const uid = stream.getId()
     if (!this.adapterRef._mediasoup) {
       let enMessage = 'doSubscribe:  media server error 1',
-        zhMessage = 'doSubscribe: 媒体服务器异常 1',
+        zhMessage = 'doSubscribe: 媒体服务异常 1',
         enAdvice = 'Please contact CommsEase technical support',
         zhAdvice = '请联系云信技术支持'
       let message = env.IS_ZH ? zhMessage : enMessage,
@@ -1044,7 +1042,7 @@ class Client extends Base {
           stream.pubStatus.audio.stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup) {
             let enMessage = 'doSubscribe:  media server error 2',
-              zhMessage = 'doSubscribe: 媒体服务器异常 2',
+              zhMessage = 'doSubscribe: 媒体服务异常 2',
               enAdvice = 'Please contact CommsEase technical support',
               zhAdvice = '请联系云信技术支持'
             let message = env.IS_ZH ? zhMessage : enMessage,
@@ -1103,7 +1101,7 @@ class Client extends Base {
           stream.pubStatus.audioSlave.stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup) {
             let enMessage = 'doSubscribe:  media server error 3',
-              zhMessage = 'doSubscribe: 媒体服务器异常 3',
+              zhMessage = 'doSubscribe: 媒体服务异常 3',
               enAdvice = 'Please contact CommsEase technical support',
               zhAdvice = '请联系云信技术支持'
             let message = env.IS_ZH ? zhMessage : enMessage,
@@ -1165,7 +1163,7 @@ class Client extends Base {
           stream.pubStatus.video.stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup) {
             let enMessage = 'doSubscribe:  media server error 4',
-              zhMessage = 'doSubscribe: 媒体服务器异常 4',
+              zhMessage = 'doSubscribe: 媒体服务异常 4',
               enAdvice = 'Please contact CommsEase technical support',
               zhAdvice = '请联系云信技术支持'
             let message = env.IS_ZH ? zhMessage : enMessage,
@@ -1233,7 +1231,7 @@ class Client extends Base {
           stream.pubStatus.screen.stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup) {
             let enMessage = 'doSubscribe:  media server error 5',
-              zhMessage = 'doSubscribe: 媒体服务器异常 5',
+              zhMessage = 'doSubscribe: 媒体服务异常 5',
               enAdvice = 'Please contact CommsEase technical support',
               zhAdvice = '请联系云信技术支持'
             let message = env.IS_ZH ? zhMessage : enMessage,
@@ -1338,7 +1336,7 @@ class Client extends Base {
         stream.pubStatus.audio.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup) {
           let enMessage = 'doUnsubscribe:  media server error 1',
-            zhMessage = 'doUnsubscribe: 媒体服务器异常 1',
+            zhMessage = 'doUnsubscribe: 媒体服务异常 1',
             enAdvice = 'Please contact CommsEase technical support',
             zhAdvice = '请联系云信技术支持'
           let message = env.IS_ZH ? zhMessage : enMessage,
@@ -1384,7 +1382,7 @@ class Client extends Base {
         stream.pubStatus.audioSlave.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup) {
           let enMessage = 'doUnsubscribe:  media server error 2',
-            zhMessage = 'doUnsubscribe: 媒体服务器异常 2',
+            zhMessage = 'doUnsubscribe: 媒体服务异常 2',
             enAdvice = 'Please contact CommsEase technical support',
             zhAdvice = '请联系云信技术支持'
           let message = env.IS_ZH ? zhMessage : enMessage,
@@ -1422,7 +1420,7 @@ class Client extends Base {
         stream.pubStatus.video.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup) {
           let enMessage = 'doUnsubscribe:  media server error 3',
-            zhMessage = 'doUnsubscribe: 媒体服务器异常 3',
+            zhMessage = 'doUnsubscribe: 媒体服务异常 3',
             enAdvice = 'Please contact CommsEase technical support',
             zhAdvice = '请联系云信技术支持'
           let message = env.IS_ZH ? zhMessage : enMessage,
@@ -1469,7 +1467,7 @@ class Client extends Base {
         stream.pubStatus.screen.stopconsumerStatus = 'start'
         if (!this.adapterRef._mediasoup) {
           let enMessage = 'doUnsubscribe:  media server error 4',
-            zhMessage = 'doUnsubscribe: 媒体服务器异常 4',
+            zhMessage = 'doUnsubscribe: 媒体服务异常 4',
             enAdvice = 'Please contact CommsEase technical support',
             zhAdvice = '请联系云信技术支持'
           let message = env.IS_ZH ? zhMessage : enMessage,
@@ -1556,7 +1554,7 @@ class Client extends Base {
     try {
       if (!this.adapterRef._mediasoup) {
         let enMessage = 'setRemoteVideoStreamType:  media server error',
-          zhMessage = 'setRemoteVideoStreamType: 媒体服务器异常',
+          zhMessage = 'setRemoteVideoStreamType: 媒体服务异常',
           enAdvice = 'Please contact CommsEase technical support',
           zhAdvice = '请联系云信技术支持'
         let message = env.IS_ZH ? zhMessage : enMessage,
@@ -1627,7 +1625,7 @@ class Client extends Base {
     try {
       if (!this.adapterRef._mediasoup) {
         let enMessage = 'setRemoteStreamType:  media server error',
-          zhMessage = 'setRemoteStreamType: 媒体服务器异常',
+          zhMessage = 'setRemoteStreamType: 媒体服务异常',
           enAdvice = 'Please contact CommsEase technical support',
           zhAdvice = '请联系云信技术支持'
         let message = env.IS_ZH ? zhMessage : enMessage,
@@ -1777,7 +1775,7 @@ class Client extends Base {
             }
             if (!this.adapterRef._mediasoup) {
               let enMessage = 'setClientRole:  media server error',
-                zhMessage = 'setClientRole: 媒体服务器异常',
+                zhMessage = 'setClientRole: 媒体服务异常',
                 enAdvice = 'Please contact CommsEase technical support',
                 zhAdvice = '请联系云信技术支持'
               let message = env.IS_ZH ? zhMessage : enMessage,

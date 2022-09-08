@@ -55,7 +55,7 @@ export function shimCanvas(trackInput: MediaStreamTrack) {
     })
     const timer = setInterval(() => {
       if (videoElem.paused) {
-        console.log('play')
+        // console.log('play')
         videoElem.play()
       } else if (canvasTrack.readyState === 'ended') {
         if (trackInput.readyState === 'live') {

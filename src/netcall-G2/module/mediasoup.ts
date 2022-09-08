@@ -1330,7 +1330,7 @@ class Mediasoup extends EventEmitter {
           remoteStream.pubStatus[mediaTypeShort].stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup) {
             let enMessage = '_createConsumer:  media server error',
-              zhMessage = '_createConsumer: 媒体服务器异常',
+              zhMessage = '_createConsumer: 媒体服务异常',
               enAdvice = 'Please contact CommsEase technical support',
               zhAdvice = '请联系云信技术支持'
             let message = env.IS_ZH ? zhMessage : enMessage,
