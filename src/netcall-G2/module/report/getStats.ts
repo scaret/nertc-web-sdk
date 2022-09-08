@@ -345,6 +345,17 @@ class GetStats extends EventEmitter {
     params.uid = this.adapterRef?.channelInfo.uid
     if (env.IS_EDG) {
       params.browser = 'Edge-' + getBrowserInfo().browserVersion
+    } else if (env.IS_ANY_SAFARI) {
+      params.browser =
+        'Safari-iOS-' + getBrowserInfo().browserName + '-' + getBrowserInfo().browserVersion
+    }
+    //  else if (env.IS_ANDROID && env.IS_WECHAT) {
+    //   params.browser =
+    //     'Chrome-' + getBrowserInfo().browserName + '-' + getBrowserInfo().browserVersion
+    // }
+    else if (env.IS_ANDROID) {
+      params.browser =
+        'Chrome-Android-' + getBrowserInfo().browserName + '-' + getBrowserInfo().browserVersion
     } else {
       params.browser = getBrowserInfo().browserName + '-' + getBrowserInfo().browserVersion
     }
