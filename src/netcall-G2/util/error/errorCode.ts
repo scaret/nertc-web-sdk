@@ -183,7 +183,7 @@ const ErrorCode = {
    * 未知错误
    * 4.6.25 之后弃用
    */
-  // UNKNOWN: 99999,
+  UNKNOWN: 99999,
 
   // *********************  通用错误码(ErrorCode 范围：10000 - 10100)
 
@@ -212,13 +212,13 @@ const ErrorCode = {
   NETWORK_REQUEST_ERROR: 10003,
 
   /*
-   * 云信服务器异常，可通过 console 日志产看具体原因
+   * 云信服务异常，可通过 console 日志产看具体原因
    *
    */
   SERVER_ERROR: 10004,
 
   /*
-   * 云信媒体服务器异常，可通过 console 日志产看具体原因
+   * 云信媒体服务异常，可通过 console 日志产看具体原因
    *
    */
   MEDIA_SERVER_ERROR: 10005,
@@ -229,7 +229,7 @@ const ErrorCode = {
   SIGNALLING_ERROR: 10006,
 
   /*
-   * 云信信令服务器异常，可通过 console 日志产看具体原因
+   * 云信信令服务异常，可通过 console 日志产看具体原因
    *
    */
   SIGNALLING_SERVER_ERROR: 10007,

@@ -541,7 +541,7 @@ class Signalling extends EventEmitter {
 
         if (!this.adapterRef._mediasoup) {
           let enMessage = 'OnProducerClose:  media server error',
-            zhMessage = 'OnProducerClose: 媒体服务器异常',
+            zhMessage = 'OnProducerClose: 媒体服务异常',
             enAdvice = 'Please contact CommsEase technical support',
             zhAdvice = '请联系云信技术支持'
           let message = env.IS_ZH ? zhMessage : enMessage,
@@ -648,7 +648,7 @@ class Signalling extends EventEmitter {
         )
         if (!this.adapterRef._mediasoup) {
           let enMessage = 'OnTransportClose:  media server error',
-            zhMessage = 'OnTransportClose: 媒体服务器异常',
+            zhMessage = 'OnTransportClose: 媒体服务异常',
             enAdvice = 'Please contact CommsEase technical support',
             zhAdvice = '请联系云信技术支持'
           let message = env.IS_ZH ? zhMessage : enMessage,
@@ -1221,7 +1221,7 @@ class Signalling extends EventEmitter {
         this.adapterRef.instance.resetChannel()
         if (!this.adapterRef._mediasoup) {
           let enMessage = 'signalling_join:  media server error 1',
-            zhMessage = 'signalling_join: 媒体服务器异常 1',
+            zhMessage = 'signalling_join: 媒体服务异常 1',
             enAdvice = 'Please contact CommsEase technical support',
             zhAdvice = '请联系云信技术支持'
           let message = env.IS_ZH ? zhMessage : enMessage,
@@ -1274,7 +1274,7 @@ class Signalling extends EventEmitter {
         })
         if (!this.adapterRef._mediasoup) {
           let enMessage = 'signalling_join:  media server error 2',
-            zhMessage = 'signalling_join: 媒体服务器异常 2',
+            zhMessage = 'signalling_join: 媒体服务异常 2',
             enAdvice = 'Please contact CommsEase technical support',
             zhAdvice = '请联系云信技术支持'
           let message = env.IS_ZH ? zhMessage : enMessage,

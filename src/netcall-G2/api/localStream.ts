@@ -1694,13 +1694,6 @@ class LocalStream extends RTCEventEmitter {
         this.screenAudio = false
         this.mediaHelper.stopStream('screenAudio')
         if (this.getAdapterRef()) {
-          /*if (this.mediaHelper.getAudioInputTracks().length > 0){
-            this.logger.log('Stream.close:关闭音频，保留发布：', type);
-          }else{
-            this.logger.log('Stream.close:停止发布音频');
-            await this.client.adapterRef._mediasoup?.destroyProduce('audioSlave');
-          }*/
-
           this.logger.log('Stream.close:停止发布音频辅流')
           await this.client.adapterRef._mediasoup?.destroyProduce('audioSlave')
         } else {
@@ -2048,10 +2041,6 @@ class LocalStream extends RTCEventEmitter {
           track.enabled = true
         })
       }
-      // unmuteLocalAudio3. unmute设备
-      /*this.mediaHelper.getAudioInputTracks().forEach((track)=>{
-        track.enabled = true;
-      })*/
 
       this.muteStatus.audioSlave.send = false
       this.client.apiFrequencyControl({
@@ -2103,10 +2092,6 @@ class LocalStream extends RTCEventEmitter {
           track.enabled = false
         })
       }
-      // muteLocalAudio3: mute麦克风设备track
-      /*this.mediaHelper.getAudioInputTracks().forEach(track=>{
-        track.enabled = false;
-      })*/
       this.muteStatus.audioSlave.send = true
       this.client.apiFrequencyControl({
         name: 'muteAudioSlave',
@@ -2443,7 +2428,6 @@ class LocalStream extends RTCEventEmitter {
           })
         )
       }
-      //constraint = {...this.mediaHelper.audio.micConstraint, ...{audio: {deviceId: {exact: deviceId}}}}
       if (this.mediaHelper.audio.micConstraint && this.mediaHelper.audio.micConstraint.audio) {
         this.mediaHelper.audio.micConstraint.audio.deviceId = { exact: deviceId }
       } else if (this.mediaHelper.audio.micConstraint) {
@@ -2455,7 +2439,6 @@ class LocalStream extends RTCEventEmitter {
       constraint = this.mediaHelper.audio.micConstraint
       this.microphoneId = deviceId
     } else if (type === 'video') {
-      // server ban
       if (this.client.adapterRef.isVideoBanned) {
         let enMessage = 'switchDevice: video is banned by server',
           zhMessage = 'switchDevice: video 被服务器禁言'
@@ -2544,7 +2527,6 @@ class LocalStream extends RTCEventEmitter {
           })
         )
       }
-      //constraint = {...this.mediaHelper.video.cameraConstraint, ...{video: {deviceId: {exact: deviceId}}}}
       if (
         this.mediaHelper.video.cameraConstraint &&
         this.mediaHelper.video.cameraConstraint.video

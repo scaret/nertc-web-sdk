@@ -401,14 +401,14 @@ class Meeting extends EventEmitter {
         result: `join() 语法错误: ${e.message}`,
         serverIp: ''
       })
-      let enMessage = `joinChannel: server error ${e.message}`,
-        zhMessage = `joinChannel: 服务器异常 ${e.message}`,
+      let enMessage = `joinChannel: network error ${e.message}`,
+        zhMessage = `joinChannel: 网络异常 ${e.message}`,
         enAdvice = 'Please contact CommsEase technical support',
         zhAdvice = '请联系云信技术支持'
       let message = env.IS_ZH ? zhMessage : enMessage,
         advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.SERVER_ERROR,
+        code: ErrorCode.NETWORK_ERROR,
         message,
         advice
       })
