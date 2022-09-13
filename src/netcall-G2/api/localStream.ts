@@ -18,7 +18,7 @@ import AdvancedBeauty from '../module/video-post-processing/advanced-beauty'
 import BasicBeauty from '../module/video-post-processing/basic-beauty'
 import VirtualBackground from '../module/video-post-processing/virtual-background'
 import { loadPlugin } from '../plugin'
-import { PluginType } from '../plugin/plugin-list'
+import { AudioPluginType, VideoPluginType, audioPlugins, videoPlugins } from '../plugin/plugin-list'
 import { BackGroundOptions } from '../plugin/segmentation/src/types'
 import {
   AudioEffectOptions,
@@ -134,6 +134,8 @@ class LocalStream extends RTCEventEmitter {
   private advancedBeauty: AdvancedBeauty
   private _segmentProcessor: VirtualBackground | null
   private _advancedBeautyProcessor: AdvancedBeauty | null = null
+  //todo 待音频前处理模块合入后修改
+  private _aiDenoiseProcessor: any
   private lastEffects: any
   private lastFilter: any
   private videoPostProcessTags = {
@@ -4506,6 +4508,107 @@ class LocalStream extends RTCEventEmitter {
     }
   }
 
+  //打开AI降噪
+  //todo 待音频前处理模块合入后修改
+  async enableAIDenoise() {
+    this.logger.log('enableBodySegment() 开启AI降噪功能')
+    if (this.videoPostProcess.availableCode < 2) {
+      return this.logger.error(this.videoPostProcess.glErrorTip)
+    }
+    if (!this.videoPostProcess.getPlugin('VirtualBackground')) {
+      let enMessage = 'enableBodySegment: virtualBackgroundPlugin is not register',
+        zhMessage = 'enableBodySegment: 背景分割插件还未注册'
+      let message = env.IS_ZH ? zhMessage : enMessage
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.SET_BODY_SEGMENT_ERROR,
+          message
+        })
+      )
+    }
+    if (this._segmentProcessor) {
+      let enMessage = 'enableBodySegment: bodySegment is already opened',
+        zhMessage = 'enableBodySegment: 背景分割已经开启'
+      let message = env.IS_ZH ? zhMessage : enMessage
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.SET_BODY_SEGMENT_ERROR,
+          message
+        })
+      )
+    }
+    this.client.apiFrequencyControl({
+      name: 'enableBodySegment',
+      code: 0,
+      param: {
+        streamID: this.stringStreamID
+      }
+    })
+    this._segmentProcessor = this.virtualBackground
+    this._segmentProcessor.init()
+    this._segmentProcessor.once('segment-load', () => {
+      this._startBodySegment()
+    })
+    // 低版本兼容提示
+    if (env.IS_ANY_SAFARI && parseFloat(env.SAFARI_VERSION || '0') < 15.0) {
+      this.logger.warn(
+        'In the current version of Safari, wasm has low execution efficiency, ' +
+          'which will result in low frame rate when background-segmentation is enabled.'
+      )
+    }
+  }
+
+  //关闭打开AI降噪
+  //todo 待音频前处理模块合入后修改
+  async disableAIDenoise() {
+    this.logger.log('disableBodySegment() 关闭背景分割功能')
+    if (this.videoPostProcess.availableCode === 0) {
+      return this.logger.error(this.videoPostProcess.glErrorTip)
+    }
+    if (this._segmentProcessor) {
+      await this._cancelBodySegment()
+      this._segmentProcessor.destroy()
+      this._segmentProcessor = null
+      this.client.apiFrequencyControl({
+        name: 'disableBodySegment',
+        code: 0,
+        param: {
+          streamID: this.stringStreamID
+        }
+      })
+    } else {
+      let enMessage = 'disableBodySegment: bodySegment is already closed',
+        zhMessage = 'disableBodySegment: 背景分割已经关闭'
+      let message = env.IS_ZH ? zhMessage : enMessage
+      Promise.reject(
+        new RtcError({
+          code: ErrorCode.SET_BODY_SEGMENT_ERROR,
+          message
+        })
+      )
+    }
+  }
+
+  //todo 待音频前处理模块合入后修改
+  async _startAIDenoise() {
+    if (this.videoPostProcess.availableCode < 2) return
+    if (this._segmentProcessor) {
+      this.logger.log('_startBodySegment() 打开背景分割功能')
+      await this.transformTrack(true, this._segmentProcessor)
+      this.videoPostProcessTags.isBodySegmentTrack = true
+    }
+  }
+
+  //todo 待音频前处理模块合入后修改
+  async _cancelAIDenoise() {
+    if (this.videoPostProcess.availableCode === 0) return
+    this.logger.log('_cancelBodySegment() 取消背景分割功能')
+    this.videoPostProcessTags.isBodySegmentTrack = false
+    if (this._segmentProcessor) {
+      await this.transformTrack(false, this._segmentProcessor)
+    }
+  }
+
   async replacePluginTrack(options: {
     mediaType: 'video' | 'screen'
     track: MediaStreamTrack
@@ -4645,6 +4748,15 @@ class LocalStream extends RTCEventEmitter {
    * @param options
    */
   async registerPlugin(options: PluginOptions) {
+    if (videoPlugins.indexOf(options.key) == -1 || audioPlugins.indexOf(options.key) == -1) {
+      this.logger.error(`unsupport plugin ${options.key}`)
+      return
+    }
+    if (audioPlugins.indexOf(options.key) !== -1) {
+      //注册audio插件
+      await this._registerAudioPlugin(options)
+      return
+    }
     if (this.videoPostProcess.availableCode === 0) {
       return this.logger.error(this.videoPostProcess.glErrorTip)
     }
@@ -4705,7 +4817,68 @@ class LocalStream extends RTCEventEmitter {
     }
   }
 
-  async unregisterPlugin(key: PluginType) {
+  async _registerAudioPlugin(options: PluginOptions) {
+    let obj: any = null
+    try {
+      if (options.pluginUrl) {
+        await loadPlugin(options.key as any, options.pluginUrl)
+        obj = eval(`window.${options.key}`)
+      } else if (options.pluginObj) {
+        obj = options
+      }
+      //todo 待音频前处理模块接入后实现
+      //this._aiDenoiseProcessor = registerProcessor('audioAIProcessor', obj)
+      // const plugin = this._aiDenoiseProcessor.getPlugin(options.key);
+      // if (plugin) {
+      //   plugin.once('plugin-load', () => {
+      //     this.logger.log(`Plugin ${options.key} loaded`)
+      //     this.emit('plugin-load', options.key)
+      //     this.client.apiFrequencyControl({
+      //       name: 'registerPlugin',
+      //       code: 0,
+      //       param: {
+      //         streamID: this.stringStreamID,
+      //         plugin: options.key
+      //       }
+      //     })
+      //   })
+      //   plugin.once('plugin-load-error', () => {
+      //     this.logger.error(`Load ${options.wasmUrl} error`)
+      //     this.emit('plugin-load-error', {
+      //       key: options.key,
+      //       msg: `Load ${options.wasmUrl} error`
+      //     })
+      //   })
+      //   plugin.once('error', (message: string) => {
+      //     this.logger.error(message)
+      //   })
+      // } else {
+      //   this.client.apiFrequencyControl({
+      //     name: 'registerPlugin',
+      //     code: -1,
+      //     param: {
+      //       streamID: this.stringStreamID,
+      //       plugin: options.key
+      //     }
+      //   })
+      //   this.logger.error(`unsupport plugin ${options.key}`)
+      //   throw `unsupport plugin ${options.key}`
+      // }
+    } catch (e) {
+      this.logger.error(`create plugin ${options.key} error`)
+      this.emit('plugin-load-error', {
+        key: options.key,
+        msg: e
+      })
+    }
+  }
+
+  async unregisterPlugin(key: VideoPluginType | AudioPluginType) {
+    if (audioPlugins.indexOf(key) !== -1) {
+      //注册audio插件
+      await this._unregisterAudioPlugin(key)
+      return
+    }
     if (this.videoPostProcess.availableCode === 0) {
       return this.logger.error(this.videoPostProcess.glErrorTip)
     }
@@ -4715,8 +4888,18 @@ class LocalStream extends RTCEventEmitter {
       } else if (key === 'AdvancedBeauty' && this._advancedBeautyProcessor) {
         await this.disableAdvancedBeauty()
       }
-      this.videoPostProcess.unregisterPlugin(key)
+      this.videoPostProcess.unregisterPlugin(key as VideoPluginType)
     }
+  }
+
+  async _unregisterAudioPlugin(key: VideoPluginType | AudioPluginType) {
+    //todo 待音频前处理模块接入后实现
+    // if (this._aiDenoiseProcessor) {
+    //   if (key === 'AIDenoise') {
+    //     await this.disableAIDenoise()
+    //   }
+    //   this._aiDenoiseProcessor.unregisterProcessor(key as VideoPluginType)
+    // }
   }
 
   // 临时挂起视频后处理

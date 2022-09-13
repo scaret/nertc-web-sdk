@@ -140,7 +140,8 @@ let configWebrtcG2 = merge(config, {
   entry: {
     NERTC: './src/entry/netcall-webrtc2',
     VirtualBackground: './src/entry/virtual-background',
-    AdvancedBeauty: './src/entry/advanced-beauty'
+    AdvancedBeauty: './src/entry/advanced-beauty',
+    AIDenoise: './src/entry/ai-denoise'
   },
   output: {
     devtoolNamespace: 'nertc',
