@@ -37,8 +37,9 @@ import {
   enablePreProcessing,
   preProcessingCopy
 } from './preProcessing'
-import { WebAudio } from './webAudio'
+import { getAudioContext, WebAudio } from './webAudio'
 import { VideoTrackLow } from './videoTrackLow'
+import { AudioPipeline } from './audio-pipeline/AudioPipeline'
 class MediaHelper extends EventEmitter {
   stream: LocalStream | RemoteStream
   public audio: {
@@ -56,12 +57,15 @@ class MediaHelper extends EventEmitter {
     readonly micStream: MediaStream
     // audioSourceStream指自定义音频输入
     readonly audioSourceStream: MediaStream
+    // 音频前处理模块。
+    pipeline: AudioPipeline | null
     audioSource: MediaStreamTrack | null
     micTrack: MediaStreamTrack | null
     // Chrome为default设备做音频切换的时候，已有的track的label不会更新
     deviceInfo: {
       mic: { compatAudio: boolean; label: string; groupId?: string; deviceId?: string }
     }
+
     webAudio: WebAudio | null
     micConstraint: { audio: MediaTrackConstraints } | null
     mixAudioConf: MixAudioConf
@@ -71,6 +75,7 @@ class MediaHelper extends EventEmitter {
     audioSourceStream: new MediaStream(),
     musicStream: new MediaStream(),
     micStream: new MediaStream(),
+    pipeline: null,
     audioSource: null,
     micTrack: null,
     // Chrome为default设备做音频切换的时候，已有的track的label不会更新
@@ -151,10 +156,12 @@ class MediaHelper extends EventEmitter {
     readonly screenAudioStream: MediaStream
     screenAudioTrack: MediaStreamTrack | null
     screenAudioSource: MediaStreamTrack | null
+    pipeline: AudioPipeline | null
   } = {
     screenAudioStream: new MediaStream(),
     screenAudioTrack: null,
-    screenAudioSource: null
+    screenAudioSource: null,
+    pipeline: null
   }
   logger: ILogger
 
@@ -208,6 +215,54 @@ class MediaHelper extends EventEmitter {
         }
       }
     })
+  }
+
+  getOrCreateAudioPipeline(mediaType: 'audio' | 'audioSlave' = 'audio') {
+    let pipeline: AudioPipeline
+    const context = getAudioContext()
+    if (!context) {
+      this.logger.error('getOrCreateAudioPipeline: AudioContext is not supported')
+      return null
+    }
+    if (mediaType === 'audio') {
+      if (!this.audio.pipeline) {
+        pipeline = new AudioPipeline({
+          logger: this.logger,
+          context
+        })
+        this.audio.pipeline = pipeline
+        this.logger.log(`getOrCreateAudioPipeline: 初始化成功`)
+      } else {
+        pipeline = this.audio.pipeline
+      }
+      if (this.stream.isRemote && pipeline.inputs.remote.track !== this.audio.micTrack) {
+        this.logger.log(`getOrCreateAudioPipeline: 更新输入的Track`)
+        pipeline.setInput('remote', this.audio.micTrack, `remote${this.stream.streamID}`)
+      }
+    } else {
+      if (!this.screenAudio.pipeline) {
+        pipeline = new AudioPipeline({
+          logger: this.logger,
+          context
+        })
+        this.screenAudio.pipeline = pipeline
+        this.logger.log(`getOrCreateAudioPipeline/screenAudio: 初始化成功`)
+      } else {
+        pipeline = this.screenAudio.pipeline
+      }
+      if (
+        this.stream.isRemote &&
+        pipeline.inputs.remote.track !== this.screenAudio.screenAudioTrack
+      ) {
+        this.logger.log(`getOrCreateAudioPipeline/screenAudio: 更新输入的Track`)
+        pipeline.setInput(
+          'remote',
+          this.screenAudio.screenAudioTrack,
+          `remote${this.stream.streamID}/screenAudio`
+        )
+      }
+    }
+    return pipeline
   }
 
   bindRenderStream() {

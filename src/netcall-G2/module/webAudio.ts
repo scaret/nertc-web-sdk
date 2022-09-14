@@ -71,8 +71,27 @@ class AudioIn {
   }
 }
 
+/**
+ * 返回值表示当前是否在自动播放受限状态
+ */
+export function tryResumeAudioContext() {
+  if (globalAc) {
+    if (globalAc.state === 'suspended') {
+      globalAc.resume().catch((e) => {
+        // fall through
+      })
+      return true
+    } else {
+      return false
+    }
+  } else {
+    return null
+  }
+}
+
 export function getAudioContext() {
   if (globalAc) {
+    tryResumeAudioContext()
     return globalAc
   } else if (getParameters().disableWebAudio) {
     return null

@@ -207,7 +207,7 @@ class LocalStream extends RTCEventEmitter {
     video: { send: false },
     screen: { send: false }
   }
-  public isRemote: false = false
+  public readonly isRemote: false = false
   private audioPlay_ = false
   private videoPlay_ = false
   private screenPlay_ = false
