@@ -287,6 +287,14 @@ export interface AudioVideoBannedEvent extends DataEvent {
   time: number
 }
 
+export interface StreamExceptionEvent extends DataEvent {
+  cid: string
+  uid: string
+  name: string
+  value: string
+  time: number
+}
+
 export interface WholeStatsReportOptions {
   appkey: string
   adapterRef: AdapterRef

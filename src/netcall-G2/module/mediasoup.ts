@@ -438,6 +438,10 @@ class Mediasoup extends EventEmitter {
       } else {
         this.loggerSend.error('媒体上行传输通道建立失败，抛错错误')
         this.adapterRef.instance.safeEmit('error', 'SOCKET_ERROR')
+        this.adapterRef.instance.apiEventReport('setStreamException', {
+          name: 'pushStreamException',
+          value: `send transport connection failed`
+        })
       }
     }
   }
@@ -457,6 +461,10 @@ class Mediasoup extends EventEmitter {
       } else {
         this.loggerRecv.error('媒体下行传输通道建立失败，抛错错误')
         this.adapterRef.instance.safeEmit('error', 'SOCKET_ERROR')
+        this.adapterRef.instance.apiEventReport('setStreamException', {
+          name: 'pullStreamException',
+          value: `receive transport connection failed`
+        })
       }
     }
   }

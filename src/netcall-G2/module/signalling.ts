@@ -221,6 +221,10 @@ class Signalling extends EventEmitter {
       this.init(true, false)
     } else {
       this.adapterRef.logger.error(`所有的服务器地址都连接失败, 主动离开房间`)
+      this.adapterRef.instance.apiEventReport('setStreamException', {
+        name: 'socketError',
+        value: `signalling server connection failed(timeout)`
+      })
       this.adapterRef.channelInfo.wssArrIndex = 0
       this.adapterRef.instance.leave()
       this.adapterRef.instance.safeEmit('error', 'SOCKET_ERROR')
@@ -276,6 +280,10 @@ class Signalling extends EventEmitter {
     ) {
       this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-skip')
       this.adapterRef.logger.error('所有的服务器地址都连接失败, 主动离开房间')
+      this.adapterRef.instance.apiEventReport('setStreamException', {
+        name: 'socketError',
+        value: `signalling server reconnection failed(timeout)`
+      })
       this.adapterRef.channelInfo.wssArrIndex = 0
       this.adapterRef.instance.leave()
       this.adapterRef.instance.safeEmit('error', 'SOCKET_ERROR')

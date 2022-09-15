@@ -883,24 +883,38 @@ class MediaHelper extends EventEmitter {
         })
       }
 
-      if (
-        e.message &&
-        // 为什么这样写：
-        // Safari和ios的提示是：The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.
-        // Chrome的提示是：Permission Denied. Permission Denied by system
-        e.message.indexOf('ermission') > -1 &&
-        e.message.indexOf('denied') > -1
-      ) {
+      // if (
+      //   e.message &&
+      //   // 为什么这样写：
+      //   // Safari和ios的提示是：The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.
+      //   // Chrome的提示是：Permission Denied. Permission Denied by system
+      //   e.message.indexOf('ermission') > -1 &&
+      //   e.message.indexOf('denied') > -1
+      // ) {
+      //   this.stream.client.safeEmit('accessDenied', mediaType)
+      // } else if (e.message && e.message.indexOf('not found') > -1) {
+      //   this.stream.client.safeEmit('notFound', mediaType)
+      // } else if (e.message && e.message.indexOf('not start video source') > -1) {
+      //   this.stream.client.safeEmit('beOccupied', mediaType)
+      // } else {
+      //   this.stream.client.safeEmit('deviceError', mediaType)
+      // }
+
+      if (e.name === 'NotAllowedError') {
         this.stream.client.safeEmit('accessDenied', mediaType)
-      } else if (e.message && e.message.indexOf('not found') > -1) {
+      } else if (e.name === 'NotFoundError') {
         this.stream.client.safeEmit('notFound', mediaType)
-      } else if (e.message && e.message.indexOf('not start video source') > -1) {
+      } else if (e.name === 'NotReadableError') {
         this.stream.client.safeEmit('beOccupied', mediaType)
-      } else {
+      } else if (e.name === 'OverconstrainedError') {
         this.stream.client.safeEmit('deviceError', mediaType)
       }
       this.stream.emit('device-error', { type: mediaType, error: e })
-
+      this.stream.client.apiEventReport('setStreamException', {
+        name: 'pushStreamException',
+        value: `getUserMediaError: ${e.name} + ${e.message}`,
+        mediaType
+      })
       return Promise.reject(e)
     }
   }
