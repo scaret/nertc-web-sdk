@@ -112,14 +112,9 @@ export default class BasicBeauty {
     instances.add(this)
   }
 
-  private get logger() {
-    return this.videPostProcess.logger
-  }
-
   // 配置美颜lut
   private lutLoaded = false
   private startLut() {
-    if (this.videPostProcess.availableCode === 0) return
     if (this.lutLoaded) {
       return
     }
@@ -155,18 +150,6 @@ export default class BasicBeauty {
    * @returns {any}
    */
   setFilter(filterName: string | null, intensity?: number) {
-    if (this.videPostProcess.availableCode === 0) return
-    if (!this.isEnable) {
-      return this.logger.log('Please enable basicBeauty first.')
-    }
-    if (intensity !== undefined) {
-      if (typeof intensity !== 'number') {
-        this.logger.warn('Filter parameter format error:', intensity)
-      }
-      if (1 < intensity || intensity < 0) {
-        this.logger.warn('Filter parameter out of bounds:', intensity)
-      }
-    }
     this.videPostProcess.filters?.lut.setlut(filterName, intensity)
   }
 
@@ -201,37 +184,16 @@ export default class BasicBeauty {
    * 设置美颜参数
    */
   setBeautyOptions(effects: BeautyEffectOptions) {
-    if (this.videPostProcess.availableCode === 0) return
-    if (!this.isEnable) {
-      return this.logger.warn('Please enable basicBeauty first.')
-    }
-    // 根据设置的美颜参数来选择美颜着色器，并设置value
-    let brightnessValue, rednessValue, smoothnessValue
-    brightnessValue = effects.brightnessLevel || 0
-    rednessValue = effects.rednessLevel || 0
-    smoothnessValue = effects.smoothnessLevel || 0
-
-    this.logger.log('Set beauty parameters:', effects)
-    const filters = this.videPostProcess.filters!
-    if (effects.brightnessLevel !== undefined && typeof brightnessValue === 'number') {
-      if (0 <= brightnessValue && brightnessValue <= 1) {
-        filters.beauty.whiten = brightnessValue
-      } else {
-        this.logger.warn('Whiten parameter out of bounds:', brightnessValue)
+    const filters = this.videPostProcess.filters
+    if (filters) {
+      if ('smoothnessLevel' in effects) {
+        filters.beauty.smooth = effects.smoothnessLevel
       }
-    }
-    if (effects.rednessLevel !== undefined && typeof rednessValue === 'number') {
-      if (0 <= rednessValue && rednessValue <= 1) {
-        filters.beauty.redden = rednessValue
-      } else {
-        this.logger.warn('Redden parameter out of bounds:', rednessValue)
+      if ('brightnessLevel' in effects) {
+        filters.beauty.whiten = effects.brightnessLevel
       }
-    }
-    if (effects.smoothnessLevel !== undefined && typeof smoothnessValue === 'number') {
-      if (0 <= smoothnessValue && smoothnessValue <= 1) {
-        filters.beauty.smooth = smoothnessValue
-      } else {
-        this.logger.warn('Smooth parameter out of bounds:', smoothnessValue)
+      if ('rednessLevel' in effects) {
+        filters.beauty.redden = effects.rednessLevel
       }
     }
   }

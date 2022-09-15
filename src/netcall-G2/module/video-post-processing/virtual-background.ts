@@ -12,21 +12,13 @@ export default class VirtualBackground extends EventEmitter {
     this.videPostProcess = videPostProcess
   }
 
-  private get logger() {
-    return this.videPostProcess.logger
-  }
-
   private bgOption: BackGroundOptions = { type: 'color', color: '#e7ad3c' }
   private get segmentProcess() {
-    const plugin = this.videPostProcess.getPlugin('VirtualBackground') as any
-    if (!plugin) {
-      this.logger.error('Can not get VirtualBackground plugin')
-    }
-    return plugin
+    const plugin = this.videPostProcess.getPlugin('VirtualBackground')
+    return plugin as any
   }
 
   init() {
-    if (this.videPostProcess.availableCode === 0) return
     this.segmentProcess.on('segment-load', () => {
       this.emit('segment-load')
     })
@@ -34,13 +26,11 @@ export default class VirtualBackground extends EventEmitter {
   }
 
   destroy() {
-    if (this.videPostProcess.availableCode === 0) return
     this.segmentProcess.removeAllListeners()
     this.segmentProcess.destroy()
   }
 
   setVirtualBackGround(option: BackGroundOptions) {
-    if (this.videPostProcess.availableCode === 0) return
     this.bgOption = option
     const { type } = option
     switch (type) {
@@ -60,7 +50,6 @@ export default class VirtualBackground extends EventEmitter {
               this.setBackGround(img)
             })
           } else {
-            //logger.error('Not support source: ', source)
             //其他形式的图片源数据都走img加载
             const img = new Image()
             img.onload = () => {
@@ -101,15 +90,11 @@ export default class VirtualBackground extends EventEmitter {
 
   //-------------------------------------------------以下是测试代码,同时也是对外暴漏的接口-------------------------------------------------
   setBackGround(bk: HTMLImageElement | HTMLVideoElement | string | null) {
-    if (this.videPostProcess.availableCode === 0) return
     this.videPostProcess.filters?.virtualBackground.setBackground(bk)
-    this.logger.log(`set Virtual background:${bk}`)
   }
 
   setBlurIntensity(intensity: number) {
-    if (this.videPostProcess.availableCode === 0) return
     this.videPostProcess.filters?.virtualBackground.setBlurIntensity(intensity)
-    this.logger.log(`Background blur：${intensity}`)
   }
 
   get isEnable() {
@@ -117,7 +102,6 @@ export default class VirtualBackground extends EventEmitter {
   }
 
   set emptyFrame(isEmptyFrame: boolean) {
-    if (this.videPostProcess.availableCode === 0) return
     this.videPostProcess.filters!.virtualBackground.emptyFrame = isEmptyFrame
   }
 }

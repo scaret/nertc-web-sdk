@@ -81,11 +81,6 @@ export default class VideoPostProcess extends EventEmitter {
         'webglcontextlost',
         (e) => {
           e.preventDefault()
-          this.logger.error(
-            'webgl context lost, related functions will not be available.\n' +
-              'waiting for restored event and try to reinitialize webgl pipeline ……\n' +
-              'see why: https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/isContextLost#usage_notes.'
-          )
           this.emit('contextLost')
         },
         false
@@ -95,10 +90,8 @@ export default class VideoPostProcess extends EventEmitter {
         (e) => {
           e.preventDefault()
           let success = true
-          this.logger.log('webgl context restored, try to reinitialize webgl pipeline.')
           this.filters = this.filters?.clone() || null
           if (!this.filters) {
-            this.logger.error('webgl reinitialize failed.')
             success = false
           }
           this.emit('contextRestored', success)
@@ -141,7 +134,7 @@ export default class VideoPostProcess extends EventEmitter {
   private addTask(task: TaskType) {
     if (!this.taskSet.has(task)) {
       this.taskSet.add(task)
-      this.logger.info(`task ${task} is added.`)
+      this.logger.log(`task ${task} is added.`)
       // 新任务入列，马上渲染一次
       this.update()
       if (this.taskSet.size === 1) {
@@ -153,7 +146,7 @@ export default class VideoPostProcess extends EventEmitter {
 
   private removeTask(task: TaskType) {
     this.taskSet.delete(task)
-    this.logger.info(`task ${task} is removed.`)
+    this.logger.log(`task ${task} is removed.`)
     if (this.taskSet.size === 0) {
       workerTimer.clearTimeout(this.timerId)
       this.timerId = -1
@@ -225,7 +218,6 @@ export default class VideoPostProcess extends EventEmitter {
             resolve(0)
           })
           .catch((err) => {
-            this.logger.error('video element play error', err)
             reject(err)
           })
       }
@@ -303,9 +295,7 @@ export default class VideoPostProcess extends EventEmitter {
         // 获取对应插件
         const plugin = this.pluginModules.VirtualBackground
 
-        if (!plugin) {
-          this.logger.error('VirtualBackground plugin is null.')
-        } else {
+        if (plugin) {
           const { width, height } = filters.canvas
           // 屏蔽空帧
           if (width > 16 && height > 16) {
@@ -338,9 +328,7 @@ export default class VideoPostProcess extends EventEmitter {
       if (this.taskSet.has('AdvancedBeauty')) {
         const plugin = this.pluginModules.AdvancedBeauty
 
-        if (!plugin) {
-          this.logger.error('AdvancedBeauty plugin is null.')
-        } else {
+        if (plugin) {
           const { width, height } = filters.canvas
           // 高级美颜推理
           plugin.process(
@@ -381,7 +369,6 @@ export default class VideoPostProcess extends EventEmitter {
       }
       if (isEnable) {
         if (this.hasTask(task)) {
-          this.logger.log(`${task} already opened`)
           return resolve(this.track!)
         }
         // 创建 track，track创建是异步的
@@ -394,12 +381,10 @@ export default class VideoPostProcess extends EventEmitter {
             }, time as number)
           })
           .catch((err) => {
-            this.logger.error('create track error.')
             reject(err)
           })
       } else {
         if (!this.hasTask(task)) {
-          this.logger.log(`${task} already closed`)
           return resolve(this.track!)
         }
         // 从任务队列移除
@@ -410,6 +395,7 @@ export default class VideoPostProcess extends EventEmitter {
   }
 
   destroy() {
+    this.removeAllListeners()
     this.taskSet.clear()
     workerTimer.clearTimeout(this.timerId)
     this.sourceTrack?.stop()
@@ -423,6 +409,5 @@ export default class VideoPostProcess extends EventEmitter {
     ;(<any>this.advBeautyData) = null
     ;(<any>this.pluginModules) = null
     this.frameCount = [0, 0]
-    this.logger.log('videoPostProcess destroyed')
   }
 }

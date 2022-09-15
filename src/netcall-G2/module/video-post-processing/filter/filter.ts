@@ -1,10 +1,11 @@
+import { EventEmitter } from 'eventemitter3'
 import { createAttributeBuffer } from '../gl-utils/buffer-attribute'
 import { createFrameBuffer } from '../gl-utils/framebuffer'
 import { Program } from '../gl-utils/program'
 import { Renderer } from '../gl-utils/renderer'
 import { createTexture } from '../gl-utils/texture'
 
-export class Filter {
+export class Filter extends EventEmitter {
   protected renderer: Renderer
   protected _map: ReturnType<typeof createTexture>
   protected posBuffer: ReturnType<typeof createAttributeBuffer>
@@ -20,6 +21,7 @@ export class Filter {
     posBuffer: ReturnType<typeof createAttributeBuffer>,
     uvBuffer: ReturnType<typeof createAttributeBuffer>
   ) {
+    super()
     this.renderer = renderer
     this._map = map
     this.posBuffer = posBuffer
@@ -40,6 +42,7 @@ export class Filter {
   render() {}
 
   destroy(clearBuffer = true) {
+    this.removeAllListeners()
     const gl = this.renderer.gl
     const framebuffers = this.framebuffers
     const programs = this.programs

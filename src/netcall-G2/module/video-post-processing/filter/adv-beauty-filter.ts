@@ -18,8 +18,9 @@ type AdvBeautyResType = {
 }
 
 export const resSet = {
-  // faceMask: 'https://yx-web-nosdn.netease.im/common/c4e1b30c74ae5dad6e605ec332775b14/facemask.png',
-  faceMask: './img/facemask.png',
+  faceMask:
+    'https://yx-web-nosdn.netease.im/common/6947be5d3e5604368401950ca0cf094d/facemask-01.png',
+  // faceMask: './img/facemask.png',
   eyeTeethMask:
     'https://yx-web-nosdn.netease.im/common/655421269305cac5c1e48d62f0fac8de/eye-teeth-mask-02.png',
   teethWhiten: 'https://yx-web-nosdn.netease.im/common/ca8a6b0be3427ead9b19bcf9ae1245a8/teath.png'
@@ -632,37 +633,90 @@ export class AdvBeautyFilter extends Filter {
     }
   }
 
-  static configStaticRes(resConfig: AdvBeautyResType) {
+  static configStaticRes(resConfig: AdvBeautyResType, sender?: AdvBeautyFilter) {
+    const failUrls: string[] = []
+    let count = 1
+    const checkComplete = () => {
+      count -= 1
+      if (count <= 0) {
+        if (sender) {
+          sender.emit('advBeautyResComplete', failUrls)
+        } else {
+          instances.forEach((instance) => {
+            try {
+              instance.emit('advBeautyResComplete', failUrls)
+            } catch (error) {}
+          })
+        }
+      }
+    }
     if (resConfig.faceMask && !faceMaskImg) {
+      count += 1
       resSet.faceMask = resConfig.faceMask
-      retryLoadImage(resConfig.faceMask, 3, (img) => {
-        faceMaskImg = img
-        instances.forEach((instance) => {
-          instance.faceMaskMap!.source = img
-          instance.faceMaskMap!.refresh()
-        })
-      })
+      retryLoadImage(
+        resConfig.faceMask,
+        3,
+        (img) => {
+          faceMaskImg = img
+          instances.forEach((instance) => {
+            try {
+              instance.faceMaskMap!.source = img
+              instance.faceMaskMap!.refresh()
+            } catch (error) {}
+          })
+          checkComplete()
+        },
+        () => {
+          failUrls.push(resConfig.faceMask!)
+          checkComplete()
+        }
+      )
     }
     if (resConfig.eyeTeethMask && !eyeTeethMaskImg) {
+      count += 1
       resSet.eyeTeethMask = resConfig.eyeTeethMask
-      retryLoadImage(resSet.eyeTeethMask, 3, (img) => {
-        eyeTeethMaskImg = img
-        instances.forEach((instance) => {
-          instance.eyeTeethMaskMap!.source = img
-          instance.eyeTeethMaskMap!.refresh()
-        })
-      })
+      retryLoadImage(
+        resSet.eyeTeethMask,
+        3,
+        (img) => {
+          eyeTeethMaskImg = img
+          instances.forEach((instance) => {
+            try {
+              instance.eyeTeethMaskMap!.source = img
+              instance.eyeTeethMaskMap!.refresh()
+            } catch (error) {}
+          })
+          checkComplete()
+        },
+        () => {
+          failUrls.push(resConfig.eyeTeethMask!)
+          checkComplete()
+        }
+      )
     }
     if (resConfig.teethWhiten && !whiteTeethLutImg) {
+      count += 1
       resSet.teethWhiten = resConfig.teethWhiten
-      retryLoadImage(resSet.teethWhiten, 3, (img) => {
-        whiteTeethLutImg = img
-        instances.forEach((instance) => {
-          instance.whiteTeethLutMap!.source = img
-          instance.whiteTeethLutMap!.refresh()
-        })
-      })
+      retryLoadImage(
+        resSet.teethWhiten,
+        3,
+        (img) => {
+          whiteTeethLutImg = img
+          instances.forEach((instance) => {
+            try {
+              instance.whiteTeethLutMap!.source = img
+              instance.whiteTeethLutMap!.refresh()
+            } catch (error) {}
+          })
+          checkComplete()
+        },
+        () => {
+          failUrls.push(resConfig.teethWhiten!)
+          checkComplete()
+        }
+      )
     }
+    checkComplete()
   }
 
   destroy() {

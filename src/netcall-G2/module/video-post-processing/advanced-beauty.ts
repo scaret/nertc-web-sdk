@@ -9,6 +9,9 @@ export default class AdvancedBeauty extends EventEmitter {
   constructor(videPostProcess: VideoPostProcess) {
     super()
     this.videPostProcess = videPostProcess
+    this.videPostProcess.filters?.advBeauty.on('advBeautyResComplete', (failUrls) => {
+      this.videPostProcess.emit('advBeautyResComplete', failUrls)
+    })
   }
 
   private get advancedBeautyProcess() {
@@ -43,7 +46,7 @@ export default class AdvancedBeauty extends EventEmitter {
    */
   setTrack(isEnable: boolean, track?: MediaStreamTrack) {
     if (isEnable) {
-      AdvancedBeauty.configStaticRes(resSet)
+      AdvancedBeauty.configStaticRes(resSet, this.videPostProcess.filters?.advBeauty)
     }
     return new Promise((resolve, reject) => {
       this.videPostProcess
@@ -77,7 +80,7 @@ export default class AdvancedBeauty extends EventEmitter {
   }
 
   // 配置静态资源地址
-  static configStaticRes: typeof AdvBeautyFilter.configStaticRes = (resConfig) => {
-    AdvBeautyFilter.configStaticRes(resConfig)
+  static configStaticRes: typeof AdvBeautyFilter.configStaticRes = (resConfig, sender) => {
+    AdvBeautyFilter.configStaticRes(resConfig, sender)
   }
 }

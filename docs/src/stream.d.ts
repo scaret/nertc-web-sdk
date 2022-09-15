@@ -1171,6 +1171,24 @@ declare interface Stream {
   setEncoderWatermarkConfigs(options: NERtcEncoderWatermarkConfig): void
 
   /**
+   * 配置基础美颜依赖的静态资源路径。
+   * 默认走 cdn 加载且无需调用，
+   * 当需要私有化部署或所在区域无法访问默认 cdn 节点时，需自行下载资源部署，并通过调用该方法进行资源配置。
+   * 下载路径：https://yx-web-nosdn.netease.im/common/5e1e95a883139fe7a0847f3e68b9f1db/basic-beauty-res.zip
+   * @param {BasicBeautyResConfig} config 资源配置信息
+   */
+  basicBeautyStaticRes(config: BasicBeautyResConfig): void
+
+  /**
+   * 配置高级美颜依赖的静态资源路径。
+   * 默认走 cdn 加载且无需调用，
+   * 当需要私有化部署或所在区域无法访问默认 cdn 节点时，需自行下载资源部署，并通过调用该方法进行资源配置。
+   * 下载路径：https://yx-web-nosdn.netease.im/common/407fde90ffeb1147fa93199d346b9d5b/adv-beauty-res-6-25.zip
+   * @param {AdvBeautyResConfig} config 资源配置信息
+   */
+  advBeautyStaticRes(config: AdvBeautyResConfig): void
+
+  /**
    * 开启/关闭美颜
    * @param {Boolean} option 设置 true 表示开启美颜，设置 false 表示关闭美颜。
    *
