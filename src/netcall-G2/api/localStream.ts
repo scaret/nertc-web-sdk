@@ -363,10 +363,12 @@ class LocalStream extends RTCEventEmitter {
     this.videoPostProcess.on('contextLost', () => {
       this.suspendVideoPostProcess()
       this.emit('video-post-context-lost')
-      this.client.apiFrequencyControl({
-        name: 'videoPostContextLost',
-        code: 0,
-        param: JSON.stringify({}, null, ' ')
+      const message = env.IS_ZH
+        ? `webgl 上下文丢失，相关功能将无法使用。\n正在监听恢复事件以尝试重新初始化 webgl 管线……\n丢失原因：https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/isContextLost#usage_notes。`
+        : `webgl context lost, related functions will not be available.\nwaiting for restored event and try to reinitialize webgl pipeline ……\n see why: https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/isContextLost#usage_notes.`
+      throw new RtcError({
+        code: ErrorCode.WEBGL_LOSE_CONTEXT_ERROR,
+        message
       })
     })
 
@@ -374,17 +376,40 @@ class LocalStream extends RTCEventEmitter {
     this.videoPostProcess.on('contextRestored', (success) => {
       this.resumeVideoPostProcess()
       this.emit('video-post-context-restored', success)
-      this.client.apiFrequencyControl({
-        name: 'videoPostContextRestored',
-        code: 0,
-        param: JSON.stringify({ success: success }, null, ' ')
-      })
+      this.logger.log('webgl context restored, try to reinitialize webgl pipeline.')
+      if (!success) {
+        throw new RtcError({
+          code: ErrorCode.WEBGL_RESTORED_FAILD_ERROR,
+          message: env.IS_ZH ? '重新初始化 webgl 失败.' : 'webgl reinitialize failed.'
+        })
+      }
     })
 
     // 对外抛出基础美颜加载完成事件
     // failUrls[] 返回失败的资源路径
     this.videoPostProcess.on('beautyResComplete', (failUrls: string[]) => {
       this.emit('basic-beauty-res-complete', failUrls)
+      if (failUrls.length) {
+        const message = env.IS_ZH
+          ? `基础美颜资源加载失败:${JSON.stringify(failUrls)}`
+          : `failed to load basic-beauty resources:${JSON.stringify(failUrls)}`
+        throw new RtcError({
+          code: ErrorCode.BASIC_BEAUTY_RES_ERROR,
+          message
+        })
+      }
+    })
+    this.videoPostProcess.on('advBeautyResComplete', (failUrls: string[]) => {
+      this.emit('adv-beauty-res-complete', failUrls)
+      if (failUrls.length) {
+        const message = env.IS_ZH
+          ? `高级美颜资源加载失败:${JSON.stringify(failUrls)}`
+          : `failed to load basic-beauty resources:${JSON.stringify(failUrls)}`
+        throw new RtcError({
+          code: ErrorCode.ADV_BEAUTY_RES_ERROR,
+          message
+        })
+      }
     })
 
     this.videoPostProcess.on('taskSwitch', (isOn) => {
@@ -4124,19 +4149,29 @@ class LocalStream extends RTCEventEmitter {
     }
   }
 
+  // 上报 webgl 不支持的错误函数
+  private WebGLSupportError() {
+    if (this.videoPostProcess.availableCode === 0) {
+      throw new RtcError({
+        code: ErrorCode.WEBGL_NOT_SUPPORT_ERROR,
+        message: env.IS_ZH
+          ? '当前环境不支持 WebGL。'
+          : 'the current environment does not support webgl.'
+      })
+    }
+  }
+
   // 配置基础美颜静态资源地址
   basicBeautyStaticRes: typeof BasicBeauty.configStaticRes = (config) => {
-    if (this.videoPostProcess.availableCode === 0) {
-      return this.logger.error(this.videoPostProcess.glErrorTip)
-    }
+    this.logger.log('config basic beauty static resources.')
+    this.WebGLSupportError()
     BasicBeauty.configStaticRes(config)
   }
 
   // 配置高级美颜静态资源地址
   advBeautyStaticRes: typeof AdvancedBeauty.configStaticRes = (config) => {
-    if (this.videoPostProcess.availableCode === 0) {
-      return this.logger.error(this.videoPostProcess.glErrorTip)
-    }
+    this.logger.log('config advanced beauty static resources.')
+    this.WebGLSupportError()
     AdvancedBeauty.configStaticRes(config)
   }
   /**
@@ -4147,7 +4182,19 @@ class LocalStream extends RTCEventEmitter {
    */
 
   setBeautyEffectOptions(effects: BeautyEffectOptions) {
+    this.logger.log('set basic beauty parameters:', effects)
     if (this.videoPostProcess.availableCode === 0) return
+    if (!this.basicBeauty.isEnable) {
+      this.logger.warn('basic beauty is not opened.')
+    }
+    for (const key in effects) {
+      try {
+        ;(<any>effects)[key] = Math.min(Math.max(parseFloat((<any>effects)[key] + ''), 0), 1)
+      } catch (error: any) {
+        ;(<any>effects)[key] = 0
+        this.logger.error(`setBeautyEffectOptions:${error.message}`)
+      }
+    }
     this.lastEffects = { ...this.lastEffects, ...effects }
     this.basicBeauty.setBeautyOptions(effects)
   }
@@ -4160,35 +4207,18 @@ class LocalStream extends RTCEventEmitter {
    */
 
   async setBeautyEffect(isStart: boolean, isAuto = false) {
-    if (this.videoPostProcess.availableCode === 0) {
-      return this.logger.error(this.videoPostProcess.glErrorTip)
-    }
+    this.logger.log(`${isStart ? 'start' : 'close'} basic beauty.`)
+    this.WebGLSupportError()
     if (isStart && this.videoPostProcess.availableCode === 1) {
       return this.logger.error(this.videoPostProcess.glErrorTip)
     }
     const basicBeauty = this.basicBeauty
     if (!isAuto) {
       if (isStart && basicBeauty.isEnable) {
-        let enMessage = 'setBeautyEffect_open: basicBeauty is already opened',
-          zhMessage = 'setBeautyEffect_open: 基础美颜已经开启'
-        let message = env.IS_ZH ? zhMessage : enMessage
-        return Promise.reject(
-          new RtcError({
-            code: ErrorCode.SET_BEAUTY_ERROR,
-            message
-          })
-        )
+        return this.logger.warn('basic beauty is already opened')
       }
       if (!isStart && !basicBeauty.isEnable) {
-        let enMessage = 'setBeautyEffect_close: basicBeauty is already closed',
-          zhMessage = 'setBeautyEffect_close: 基础美颜已经关闭'
-        let message = env.IS_ZH ? zhMessage : enMessage
-        return Promise.reject(
-          new RtcError({
-            code: ErrorCode.SET_BEAUTY_ERROR,
-            message
-          })
-        )
+        return this.logger.warn('basic beauty is already closed')
       }
     }
 
@@ -4196,26 +4226,32 @@ class LocalStream extends RTCEventEmitter {
       if (this.replaceTags.waterMark) {
         this.mediaHelper.disablePreProcessing('video', true)
       }
-
       this.videoPostProcessTags.isBeautyTrack = isStart
       this._cameraTrack = this.mediaHelper.video.cameraTrack
-      this._transformedTrack = (await basicBeauty.setBeauty(
-        isStart,
-        this._cameraTrack
-      )) as MediaStreamTrack
-      // 替换 track
-      await this.replacePluginTrack({
-        mediaType: 'video',
-        //@ts-ignore
-        track: this._transformedTrack,
-        external: false
-      })
+
+      let apiCode = 0
+      try {
+        this._transformedTrack = (await basicBeauty.setBeauty(
+          isStart,
+          this._cameraTrack
+        )) as MediaStreamTrack
+        // 替换 track
+        await this.replacePluginTrack({
+          mediaType: 'video',
+          //@ts-ignore
+          track: this._transformedTrack,
+          external: false
+        })
+      } catch (error: any) {
+        apiCode = -1
+        this.logger.error(`setBeautyEffect:${error.message}`)
+      }
 
       //重新开启水印
       if (this.mediaHelper.video.preProcessingEnabled) {
         this.mediaHelper.enablePreProcessing('video')
       }
-      if (isStart) {
+      if (isStart && apiCode === 0) {
         let effects
         if (this.lastEffects) {
           effects = this.lastEffects
@@ -4227,26 +4263,20 @@ class LocalStream extends RTCEventEmitter {
           }
         }
         basicBeauty.setBeautyOptions(effects)
+      }
+      if (!isAuto) {
         this.client.apiFrequencyControl({
           name: 'setBeautyEffect',
-          code: 0,
+          code: apiCode,
           param: {
             streamID: this.stringStreamID,
-            isRemote: false
-          }
-        })
-      } else {
-        this.client.apiFrequencyControl({
-          name: 'setBeautyEffect',
-          code: -1,
-          param: {
-            streamID: this.stringStreamID,
-            isRemote: false
+            isRemote: false,
+            isEnable: isStart
           }
         })
       }
     } else {
-      this.logger.log('此时还没有有视频track')
+      this.logger.warn('setBeautyEffect:video track not ready.')
     }
   }
 
@@ -4257,52 +4287,56 @@ class LocalStream extends RTCEventEmitter {
    *  @param {Void}
    */
   setFilter(options: string | null, intensity?: number) {
+    this.logger.log(`set beauty filter parameters:${JSON.stringify([options, intensity])}`)
     if (this.videoPostProcess.availableCode === 0) return
+    if (!this.basicBeauty.isEnable) {
+      this.logger.warn('basic beauty is not opened.')
+    }
+    try {
+      if (intensity !== undefined) {
+        intensity = Math.min(Math.max(parseFloat(intensity + ''), 0), 1)
+      }
+    } catch (error: any) {
+      intensity = undefined
+      this.logger.error(`setFilter:${error.message}`)
+    }
     // intensity不填写就是默认值
     this.lastFilter = options
-    this.logger.log('setFilter() set beauty filter', options, intensity)
     this.basicBeauty.setFilter(options, intensity)
   }
 
   //打开背景分割
   async enableBodySegment() {
-    this.logger.log('enableBodySegment() 开启背景分割功能')
-    if (this.videoPostProcess.availableCode < 2) {
+    this.logger.log('start virtual background.')
+    this.WebGLSupportError()
+    if (this.videoPostProcess.availableCode === 1) {
       return this.logger.error(this.videoPostProcess.glErrorTip)
     }
     if (!this.videoPostProcess.getPlugin('VirtualBackground')) {
-      let enMessage = 'enableBodySegment: virtualBackgroundPlugin is not register',
-        zhMessage = 'enableBodySegment: 背景分割插件还未注册'
-      let message = env.IS_ZH ? zhMessage : enMessage
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.SET_BODY_SEGMENT_ERROR,
-          message
-        })
-      )
+      return this.logger.warn('virtual background plugin is not register.')
     }
     if (this._segmentProcessor) {
-      let enMessage = 'enableBodySegment: bodySegment is already opened',
-        zhMessage = 'enableBodySegment: 背景分割已经开启'
-      let message = env.IS_ZH ? zhMessage : enMessage
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.SET_BODY_SEGMENT_ERROR,
-          message
-        })
-      )
+      return this.logger.warn('virtual background is already opened.')
     }
-    this.client.apiFrequencyControl({
-      name: 'enableBodySegment',
-      code: 0,
-      param: {
-        streamID: this.stringStreamID
-      }
-    })
     this._segmentProcessor = this.virtualBackground
     this._segmentProcessor.init()
-    this._segmentProcessor.once('segment-load', () => {
-      this._startBodySegment()
+    this._segmentProcessor.once('segment-load', async () => {
+      let apiCode = 0
+      try {
+        await this._startBodySegment()
+      } catch (error: any) {
+        this._segmentProcessor?.destroy()
+        this._segmentProcessor = null
+        apiCode = -1
+        this.logger.error(`enableBodySegment:${error.message}`)
+      }
+      this.client.apiFrequencyControl({
+        name: 'enableBodySegment',
+        code: apiCode,
+        param: {
+          streamID: this.stringStreamID
+        }
+      })
     })
     // 低版本兼容提示
     if (env.IS_ANY_SAFARI && parseFloat(env.SAFARI_VERSION || '0') < 15.0) {
@@ -4315,38 +4349,33 @@ class LocalStream extends RTCEventEmitter {
 
   //关闭背景分割
   async disableBodySegment() {
-    this.logger.log('disableBodySegment() 关闭背景分割功能')
-    if (this.videoPostProcess.availableCode === 0) {
-      return this.logger.error(this.videoPostProcess.glErrorTip)
-    }
+    this.logger.log('close virtual background.')
+    this.WebGLSupportError()
     if (this._segmentProcessor) {
-      await this._cancelBodySegment()
-      this._segmentProcessor.destroy()
-      this._segmentProcessor = null
+      let apiCode = 0
+      try {
+        await this._cancelBodySegment()
+        this._segmentProcessor.destroy()
+        this._segmentProcessor = null
+      } catch (error: any) {
+        apiCode = -1
+        this.logger.error(`disableBodySegment:${error.message}`)
+      }
       this.client.apiFrequencyControl({
         name: 'disableBodySegment',
-        code: 0,
+        code: apiCode,
         param: {
           streamID: this.stringStreamID
         }
       })
     } else {
-      let enMessage = 'disableBodySegment: bodySegment is already closed',
-        zhMessage = 'disableBodySegment: 背景分割已经关闭'
-      let message = env.IS_ZH ? zhMessage : enMessage
-      Promise.reject(
-        new RtcError({
-          code: ErrorCode.SET_BODY_SEGMENT_ERROR,
-          message
-        })
-      )
+      this.logger.warn('virtual background is already closed.')
     }
   }
 
   async _startBodySegment() {
     if (this.videoPostProcess.availableCode < 2) return
     if (this._segmentProcessor) {
-      this.logger.log('_startBodySegment() 打开背景分割功能')
       await this.transformTrack(true, this._segmentProcessor)
       this.videoPostProcessTags.isBodySegmentTrack = true
     }
@@ -4354,70 +4383,58 @@ class LocalStream extends RTCEventEmitter {
 
   async _cancelBodySegment() {
     if (this.videoPostProcess.availableCode === 0) return
-    this.logger.log('_cancelBodySegment() 取消背景分割功能')
-    this.videoPostProcessTags.isBodySegmentTrack = false
     if (this._segmentProcessor) {
       await this.transformTrack(false, this._segmentProcessor)
+      this.videoPostProcessTags.isBodySegmentTrack = false
     }
   }
 
   // 设置背景
-  setBackGround(options: BackGroundOptions) {
+  setBackground(options: BackGroundOptions) {
+    this.logger.log(`set virtual background parameters:${JSON.stringify(options)}`)
     if (this.videoPostProcess.availableCode === 0) return
-    if (this.virtualBackground) {
-      this.logger.log('setBackGround() options: ', options)
-      this.virtualBackground.setVirtualBackGround(options)
-      this.client.apiFrequencyControl({
-        name: 'setBackGround',
-        code: 0,
-        param: {
-          streamID: this.stringStreamID,
-          type: options.type
-        }
-      })
+    if (!this.virtualBackground.isEnable) {
+      this.logger.warn('virtual background is not opened.')
     }
+    this.virtualBackground.setVirtualBackGround(options)
+  }
+  // 兼容旧 API
+  setBackGround(options: BackGroundOptions) {
+    this.setBackground(options)
   }
 
   // 开启高级美颜
   async enableAdvancedBeauty(faceSize?: number) {
-    this.logger.log('enableAdvancedBeauty() 开启高级美颜功能')
-    if (this.videoPostProcess.availableCode < 2) {
+    this.logger.log('start advanced beauty.')
+    this.WebGLSupportError()
+    if (this.videoPostProcess.availableCode === 1) {
       return this.logger.error(this.videoPostProcess.glErrorTip)
     }
     if (!this.videoPostProcess.getPlugin('AdvancedBeauty')) {
-      let enMessage = 'enableAdvancedBeauty: advancedBeautyPlugin is not register',
-        zhMessage = 'enableAdvancedBeauty: 高级美颜插件还未注册'
-      let message = env.IS_ZH ? zhMessage : enMessage
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.SET_ADVANCED_BEAUTY_ERROR,
-          message
-        })
-      )
+      return this.logger.warn('advanced beauty plugin is not register.')
     }
     if (this._advancedBeautyProcessor) {
-      let enMessage = 'enableAdvancedBeauty: advancedBeauty is already opened',
-        zhMessage = 'enableAdvancedBeauty: 高级美颜已经开启'
-      let message = env.IS_ZH ? zhMessage : enMessage
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.SET_ADVANCED_BEAUTY_ERROR,
-          message
-        })
-      )
+      return this.logger.warn('advanced beauty is already opened.')
     }
-    this.client.apiFrequencyControl({
-      name: 'enableAdvancedBeauty',
-      code: 0,
-      param: {
-        streamID: this.stringStreamID
-      }
-    })
     this._advancedBeautyProcessor = this.advancedBeauty
     this._advancedBeautyProcessor.init(faceSize)
-    this._advancedBeautyProcessor.once('facePoints-load', () => {
-      this.logger.log('facePoints-load')
-      this._startAdvancedBeauty()
+    this._advancedBeautyProcessor.once('facePoints-load', async () => {
+      let apiCode = 0
+      try {
+        await this._startAdvancedBeauty()
+      } catch (error: any) {
+        this._advancedBeautyProcessor?.destroy()
+        this._advancedBeautyProcessor = null
+        apiCode = -1
+        this.logger.error(`enableAdvancedBeauty:${error.message}`)
+      }
+      this.client.apiFrequencyControl({
+        name: 'enableAdvancedBeauty',
+        code: apiCode,
+        param: {
+          streamID: this.stringStreamID
+        }
+      })
     })
     // 低版本兼容提示
     if (env.IS_ANY_SAFARI && parseFloat(env.SAFARI_VERSION || '0') < 15.0) {
@@ -4429,38 +4446,33 @@ class LocalStream extends RTCEventEmitter {
   }
   // 关闭高级美颜
   async disableAdvancedBeauty() {
-    this.logger.log('disableAdvancedBeauty() 关闭高级美颜功能')
-    if (this.videoPostProcess.availableCode === 0) {
-      return this.logger.error(this.videoPostProcess.glErrorTip)
-    }
+    this.logger.log('close advanced beauty.')
+    this.WebGLSupportError()
     if (this._advancedBeautyProcessor) {
-      await this._cancelAdvancedBeauty()
-      this._advancedBeautyProcessor.destroy()
-      this._advancedBeautyProcessor = null
+      let apiCode = 0
+      try {
+        await this._cancelAdvancedBeauty()
+        this._advancedBeautyProcessor.destroy()
+        this._advancedBeautyProcessor = null
+      } catch (error: any) {
+        apiCode = -1
+        this.logger.error(`disableAdvancedBeauty:${error.message}`)
+      }
       this.client.apiFrequencyControl({
         name: 'disableAdvancedBeauty',
-        code: 0,
+        code: apiCode,
         param: {
           streamID: this.stringStreamID
         }
       })
     } else {
-      let enMessage = 'enableAdvancedBeauty: advancedBeauty is already closed',
-        zhMessage = 'enableAdvancedBeauty: 高级美颜已经关闭'
-      let message = env.IS_ZH ? zhMessage : enMessage
-      Promise.reject(
-        new RtcError({
-          code: ErrorCode.SET_ADVANCED_BEAUTY_ERROR,
-          message
-        })
-      )
+      this.logger.warn('advanced beauty is already closed.')
     }
   }
 
   async _startAdvancedBeauty() {
     if (this.videoPostProcess.availableCode < 2) return
     if (this._advancedBeautyProcessor) {
-      this.logger.log('_startAdvancedBeauty() 打开高级美颜功能')
       await this.transformTrack(true, this._advancedBeautyProcessor)
       this.videoPostProcessTags.isAdvBeautyTrack = true
     }
@@ -4468,42 +4480,30 @@ class LocalStream extends RTCEventEmitter {
 
   async _cancelAdvancedBeauty() {
     if (this.videoPostProcess.availableCode === 0) return
-    this.logger.log('_cancelAdvancedBeauty() 取消高级美颜功能')
-    this.videoPostProcessTags.isAdvBeautyTrack = false
     if (this._advancedBeautyProcessor) {
       await this.transformTrack(false, this._advancedBeautyProcessor)
+      this.videoPostProcessTags.isAdvBeautyTrack = false
     }
   }
+
   // 设置高级美颜
   setAdvBeautyEffect: AdvancedBeauty['setAdvEffect'] = (...args) => {
+    this.logger.log(`set advanced beauty parameters:${JSON.stringify(args)}`)
     if (this.videoPostProcess.availableCode === 0) return
-    if (this.advancedBeauty) {
-      this._advancedBeautyProcessor?.setAdvEffect(...args)
-      this.client.apiFrequencyControl({
-        name: 'setAdvBeautyEffect',
-        code: 0,
-        param: {
-          streamID: this.stringStreamID,
-          options: JSON.stringify(args)
-        }
-      })
+    if (!this.advancedBeauty.isEnable) {
+      this.logger.warn('advanced beauty is not opened.')
     }
+    this.advancedBeauty.setAdvEffect(...args)
   }
 
   // 预设高级美颜参数
   presetAdvBeautyEffect: AdvancedBeauty['presetAdvEffect'] = (...args) => {
+    this.logger.log(`preset advanced beauty parameters:${JSON.stringify(args)}`)
     if (this.videoPostProcess.availableCode === 0) return
-    if (this.advancedBeauty) {
-      this._advancedBeautyProcessor?.presetAdvEffect(...args)
-      this.client.apiFrequencyControl({
-        name: 'presetAdvBeautyEffect',
-        code: 0,
-        param: {
-          streamID: this.stringStreamID,
-          options: JSON.stringify(args)
-        }
-      })
+    if (!this.advancedBeauty.isEnable) {
+      this.logger.warn('advanced beauty is not opened.')
     }
+    this.advancedBeauty.presetAdvEffect(...args)
   }
 
   async replacePluginTrack(options: {
@@ -4620,23 +4620,31 @@ class LocalStream extends RTCEventEmitter {
         this.mediaHelper.disablePreProcessing('video', true)
       }
       this._cameraTrack = this.mediaHelper.video.cameraTrack
-      this._transformedTrack = (await processor.setTrack(
-        enable,
-        this._cameraTrack
-      )) as MediaStreamTrack
-      //替换 track
-      await this.replacePluginTrack({
-        mediaType: 'video',
-        //@ts-ignore
-        track: this._transformedTrack,
-        external: false
-      })
+      let err: Error | null = null
+      try {
+        this._transformedTrack = (await processor.setTrack(
+          enable,
+          this._cameraTrack
+        )) as MediaStreamTrack
+        //替换 track
+        await this.replacePluginTrack({
+          mediaType: 'video',
+          //@ts-ignore
+          track: this._transformedTrack,
+          external: false
+        })
+      } catch (error: any) {
+        err = error
+      }
       //重新开启水印
       if (this.mediaHelper.video.preProcessingEnabled) {
         this.mediaHelper.enablePreProcessing('video')
       }
+      if (err) {
+        throw err
+      }
     } else {
-      this.logger.log('此时还没有有视频track')
+      this.logger.error('transformTrack:video track not ready.')
     }
   }
 
@@ -4645,12 +4653,10 @@ class LocalStream extends RTCEventEmitter {
    * @param options
    */
   async registerPlugin(options: PluginOptions) {
-    if (this.videoPostProcess.availableCode === 0) {
-      return this.logger.error(this.videoPostProcess.glErrorTip)
-    }
+    this.logger.log(`register plugin:${options.key}`)
+    this.WebGLSupportError()
     if (this.videoPostProcess.getPlugin(options.key as any)) {
-      this.logger.log(`Plugin ${options.key} exist`)
-      return
+      return this.logger.warn(`plugin ${options.key} is already exists.`)
     }
     let plugin: any = null
     try {
@@ -4662,8 +4668,8 @@ class LocalStream extends RTCEventEmitter {
       }
       if (plugin) {
         plugin.once('plugin-load', () => {
+          this.logger.log(`plugin ${options.key} loaded`)
           this.videoPostProcess.registerPlugin(options.key as any, plugin)
-          this.logger.log(`Plugin ${options.key} loaded`)
           this.emit('plugin-load', options.key)
           this.client.apiFrequencyControl({
             name: 'registerPlugin',
@@ -4675,14 +4681,24 @@ class LocalStream extends RTCEventEmitter {
           })
         })
         plugin.once('plugin-load-error', () => {
-          this.logger.error(`Load ${options.wasmUrl} error`)
           this.emit('plugin-load-error', {
             key: options.key,
-            msg: `Load ${options.wasmUrl} error`
+            msg: `load ${options.wasmUrl} error.`
+          })
+          throw new RtcError({
+            code: ErrorCode.PLUGIN_LOADED_ERROR,
+            message: env.IS_ZH
+              ? `插件加载失败：${options.wasmUrl}。`
+              : `load plugin error:${options.wasmUrl}.`
           })
         })
         plugin.once('error', (message: string) => {
-          this.logger.error(message)
+          throw new RtcError({
+            code: ErrorCode.PLUGIN_LOADED_ERROR,
+            message: env.IS_ZH
+              ? `插件 ${options.key} 内部错误：${message}。`
+              : `plugin '${options.key}' runtime error:${message}.`
+          })
         })
       } else {
         this.client.apiFrequencyControl({
@@ -4693,22 +4709,19 @@ class LocalStream extends RTCEventEmitter {
             plugin: options.key
           }
         })
-        this.logger.error(`unsupport plugin ${options.key}`)
-        throw `unsupport plugin ${options.key}`
+        throw new Error(`unsupport plugin ${options.key}`)
       }
-    } catch (e) {
-      this.logger.error(`create plugin ${options.key} error`)
+    } catch (e: any) {
       this.emit('plugin-load-error', {
         key: options.key,
-        msg: e
+        msg: e.message
       })
     }
   }
 
   async unregisterPlugin(key: PluginType) {
-    if (this.videoPostProcess.availableCode === 0) {
-      return this.logger.error(this.videoPostProcess.glErrorTip)
-    }
+    this.logger.log(`unRegister plugin:${key}`)
+    this.WebGLSupportError()
     if (this.videoPostProcess) {
       if (key === 'VirtualBackground' && this._segmentProcessor) {
         await this.disableBodySegment()

@@ -166,12 +166,12 @@ let configWebrtcG2 = merge(config, {
           path.join(cwd, './dist/lib/', webrtcG2Version, nodeEnv, '/wasm/') +
           getWasmFileName('', webrtcG2Version)
       }
-    ]),
-    new BundleAnalyzerPlugin({
-      analyzerMode: 'static',
-      reportFilename: 'BundleReport.html',
-      logLevel: 'info'
-    })
+    ])
+    // new BundleAnalyzerPlugin({
+    //   analyzerMode: 'static',
+    //   reportFilename: 'BundleReport.html',
+    //   logLevel: 'info'
+    // })
   ],
   resolve: {
     alias: {

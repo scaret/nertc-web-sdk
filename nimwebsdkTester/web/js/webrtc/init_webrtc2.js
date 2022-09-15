@@ -1509,7 +1509,6 @@ $('#preSetBeauty').on('click', () => {
 $('#startBeauty').on('click', async () => {
   if (rtc.localStream) {
     await rtc.localStream.setBeautyEffect(true)
-    console.warn('开启美颜功能')
     if (preEffects) {
       rtc.localStream.setBeautyEffectOptions(preEffects)
     }
@@ -1519,7 +1518,6 @@ $('#startBeauty').on('click', async () => {
 $('#closeBeauty').on('click', async () => {
   if (rtc.localStream) {
     await rtc.localStream.setBeautyEffect(false)
-    console.warn('关闭美颜功能')
   }
 })
 
@@ -2283,9 +2281,16 @@ function initLocalStream() {
   })
   rtc.localStream.on('basic-beauty-res-complete', (failUrls) => {
     if (failUrls.length) {
-      console.error('基础美资源加载失败，失败的连接地址为：', failUrls)
+      console.error('基础美颜资源加载失败，失败的连接地址为：', failUrls)
     } else {
-      console.log('基础美颜资源记载完毕')
+      console.log('基础美颜资源加载完毕')
+    }
+  })
+  rtc.localStream.on('adv-beauty-res-complete', (failUrls) => {
+    if (failUrls.length) {
+      console.error('高级美颜资源加载失败，失败的连接地址为：', failUrls)
+    } else {
+      console.log('高级美颜资源加载完毕')
     }
   })
 }

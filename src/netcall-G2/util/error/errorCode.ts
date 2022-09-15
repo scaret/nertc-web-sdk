@@ -366,23 +366,34 @@ const ErrorCode = {
   APPDATA_OVERRIDE_ERROR: 10206,
 
   // *********************  功能模块相关错误码(ErrorCode 范围：10401 - 10600)
-
   /*
-   * 开关基础美颜相关异常
-   *
+   * WebGL 不支持
    */
-  SET_BEAUTY_ERROR: 10401,
-
+  WEBGL_NOT_SUPPORT_ERROR: 10401,
   /*
-   * 开关高级美颜相关异常
-   *
+   * WebGL LoseContext
    */
-  SET_ADVANCED_BEAUTY_ERROR: 10402,
+  WEBGL_LOSE_CONTEXT_ERROR: 10402,
   /*
-   * 开关背景替换相关异常
-   *
+   * WEBGL Restored FAIL
    */
-  SET_BODY_SEGMENT_ERROR: 10403,
+  WEBGL_RESTORED_FAILD_ERROR: 10403,
+  /*
+   * 基础美颜资源加载失败
+   */
+  BASIC_BEAUTY_RES_ERROR: 10404,
+  /*
+   * 高级美颜资源加载失败
+   */
+  ADV_BEAUTY_RES_ERROR: 10405,
+  /*
+   * 插件加载错误
+   */
+  PLUGIN_LOADED_ERROR: 10406,
+  /*
+   * 插件执行错误
+   */
+  PLUGIN_ERROR: 10407,
   /*
    * 音频处理异常
    *
