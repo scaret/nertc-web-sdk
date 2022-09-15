@@ -85,6 +85,31 @@ export interface pluginOptions {
 }
 
 /**
+ * 基础美颜静态资源配置参数
+ */
+export declare type BasicBeautyResConfig = {
+  beauty?: {
+    whiten: string
+    redden: string
+  }
+  filters?: {
+    [key: string]: {
+      src: string
+      intensity?: number
+    }
+  }
+}
+
+/**
+ * 高级美颜静态资源配置参数
+ */
+export declare type AdvBeautyResConfig = {
+  faceMask?: string
+  eyeTeethMask?: string
+  teethWhiten?: string
+}
+
+/**
  * 高级美颜效果类型。包括：
  * - `enlargeEye`：大眼。
  * - `roundedEye`：圆眼。
@@ -93,6 +118,7 @@ export interface pluginOptions {
  * - `eyeAngle`：眼睛角度。
  * - `shrinkNose`：瘦鼻。
  * - `lengthenNose`：长鼻。
+ * - `widenMouth`：嘴巴宽度。
  * - `shrinkMouth`：嘴巴调整。
  * - `mouthCorners`：嘴角调整。
  * - `adjustPhiltrum`：人中调整。
@@ -103,9 +129,12 @@ export interface pluginOptions {
  * - `shrinkFace`：瘦脸。
  * - `vShapedFace`：V 脸。
  * - `minifyFace`：小脸。
+ * - `shortenFace`：短脸。
  * - `whitenTeeth`：美牙。
  * - `brightenEye`：亮眼。
- *
+ * - 'fadeHeadWrinkle'：抬头纹。
+ * - 'fadeEyeRim'：黑眼圈。
+ * - 'fadeNoseLine'：法令纹。
  */
 export declare type AdvBeautyEffects =
   | 'enlargeEye'
@@ -116,6 +145,7 @@ export declare type AdvBeautyEffects =
   | 'shrinkNose'
   | 'lengthenNose'
   | 'shrinkMouth'
+  | 'widenMouth'
   | 'mouthCorners'
   | 'adjustPhiltrum'
   | 'shrinkUnderjaw'
@@ -125,8 +155,12 @@ export declare type AdvBeautyEffects =
   | 'shrinkFace'
   | 'vShapedFace'
   | 'minifyFace'
+  | 'shortenFace'
   | 'whitenTeeth'
   | 'brightenEye'
+  | 'fadeHeadWrinkle'
+  | 'fadeEyeRim'
+  | 'fadeNoseLine'
 
 export declare type AdvBeautyPreset = {
   enlargeEye?: number
@@ -137,6 +171,7 @@ export declare type AdvBeautyPreset = {
   shrinkNose?: number
   lengthenNose?: number
   shrinkMouth?: number
+  widenMouth?: number
   mouthCorners?: number
   adjustPhiltrum?: number
   shrinkUnderjaw?: number
@@ -146,8 +181,12 @@ export declare type AdvBeautyPreset = {
   shrinkFace?: number
   vShapedFace?: number
   minifyFace?: number
+  shortenFace?: number
   whitenTeeth?: number
   brightenEye?: number
+  fadeHeadWrinkle?: number
+  fadeEyeRim?: number
+  fadeNoseLine?: number
 }
 
 /**

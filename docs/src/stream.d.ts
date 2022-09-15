@@ -9,6 +9,8 @@ import {
   RenderMode,
   BeautyFilters,
   pluginOptions,
+  BasicBeautyResConfig,
+  AdvBeautyResConfig,
   AdvBeautyEffects,
   AdvBeautyPreset,
   BackGroundOptions,
