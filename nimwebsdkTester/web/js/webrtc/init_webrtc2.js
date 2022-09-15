@@ -1688,6 +1688,36 @@ $('#unregisterAdvancedBeauty').on('click', () => {
   }
 })
 
+$('#registerAIDenoise').on('click', async () => {
+  if (rtc.localStream) {
+    $('#segmentStatus').html('loading').show()
+    const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
+    aidenoise_config = aiDenoisePluginConfig[NERTC.ENV][type]
+    rtc.localStream.registerPlugin(aidenoise_config)
+  }
+})
+
+$('#enableAIDenoise').on('click', () => {
+  if (rtc.localStream) {
+    rtc.localStream.enableAIDenoise()
+  }
+})
+
+$('#disableAIDenoise').on('click', () => {
+  if (rtc.localStream) {
+    console.warn('关闭ai降噪')
+    rtc.localStream.disableAIDenoise()
+  }
+})
+
+$('#unregisterAIDenoise').on('click', () => {
+  $('#aidenoiseStatus').html('loading').hide()
+  if (aidenoise_config) {
+    rtc.localStream.unregisterPlugin(aidenoise_config.key)
+    rtc.enableAIDenoise = false
+  }
+})
+
 document.getElementById('select').onchange = function () {
   let file = this.files[0]
   let reader = new FileReader()

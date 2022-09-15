@@ -6,7 +6,7 @@ import { AudioMixingOptions, ILogger } from '../../types'
 import { NeAudioNode } from './NeAudioNode'
 import { getMediaStreamSourceNode } from './getMediaStreamSourceNode'
 import { StageInputVolume } from './stages/StageInputVolume'
-import { StageAIProcessing } from './stages/StageAIProcessing'
+import { StageAIProcessing } from './stages/StageAIProcessing/StageAIProcessing'
 import { StageDelay } from './stages/StageDelay'
 import { AudioMix } from './mixins/AudioMix'
 
@@ -19,6 +19,7 @@ export interface AudioPipelineInput {
 export interface AudioPipelineOptions {
   context: AudioContext
   logger: ILogger
+  outputStream: MediaStream
 }
 
 let audioPipelineCnt = 0
@@ -69,11 +70,6 @@ export class AudioPipeline {
   constructor(options: AudioPipelineOptions) {
     this.context = options.context
 
-    this.stageInputVolume = new StageInputVolume(this.context)
-    this.stageAIProcessing = new StageAIProcessing(this.context)
-    this.stageDelay = new StageDelay(this.context)
-    this.stages = [this.stageInputVolume, this.stageAIProcessing, this.stageDelay]
-
     this.logger = options.logger.getChild(() => {
       let tag = 'AudioPipeline#' + this.id
       if (this.inputs.local) {
@@ -104,6 +100,14 @@ export class AudioPipeline {
       }
       return tag
     })
+
+    this.stageInputVolume = new StageInputVolume(this.context)
+    this.stageAIProcessing = new StageAIProcessing(this.context, this.logger)
+    this.stageDelay = new StageDelay(this.context)
+    this.stages = [this.stageInputVolume, this.stageAIProcessing, this.stageDelay]
+
+    this.output.stream = options.outputStream
+
     this.logger.log(`Audio Pipeline Init`)
   }
   getMixin(index: number) {

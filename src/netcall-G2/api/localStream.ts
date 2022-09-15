@@ -4516,6 +4516,36 @@ class LocalStream extends RTCEventEmitter {
     this.advancedBeauty.presetAdvEffect(...args)
   }
 
+  //打开AI降噪
+  //todo 待音频前处理模块合入后修改
+
+  async enableAIDenoise() {
+    const pipeline = this.mediaHelper.getOrCreateAudioPipeline('audio')
+    if (!pipeline) {
+      this.logger.error(`当前环境不支持AudioContext`)
+    } else {
+      await pipeline.enableAIdenoise(true)
+      const sender = this.getSender('audio', 'high')
+      console.error('sender', sender, sender?.track, pipeline.output.track)
+      if (sender) {
+        sender.replaceTrack(pipeline.output.track)
+      }
+    }
+  }
+
+  async disableAIDenoise() {
+    const pipeline = this.mediaHelper.getOrCreateAudioPipeline('audio')
+    if (!pipeline) {
+      this.logger.error(`当前环境不支持AudioContext`)
+    } else {
+      await pipeline.enableAIdenoise(false)
+      const sender = this.getSender('audio', 'high')
+      if (sender) {
+        sender.replaceTrack(pipeline.output.track)
+      }
+    }
+  }
+
   async replacePluginTrack(options: {
     mediaType: 'video' | 'screen'
     track: MediaStreamTrack

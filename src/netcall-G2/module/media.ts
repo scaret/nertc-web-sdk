@@ -228,6 +228,7 @@ class MediaHelper extends EventEmitter {
       if (!this.audio.pipeline) {
         pipeline = new AudioPipeline({
           logger: this.logger,
+          outputStream: this.audio.audioStream,
           context
         })
         this.audio.pipeline = pipeline
@@ -235,14 +236,23 @@ class MediaHelper extends EventEmitter {
       } else {
         pipeline = this.audio.pipeline
       }
-      if (this.stream.isRemote && pipeline.inputs.remote.track !== this.audio.micTrack) {
-        this.logger.log(`getOrCreateAudioPipeline: 更新输入的Track`)
-        pipeline.setInput('remote', this.audio.micTrack, `remote${this.stream.streamID}`)
+      if (this.stream.isRemote) {
+        if (pipeline.inputs.remote.track !== this.audio.micTrack) {
+          this.logger.log(`getOrCreateAudioPipeline: 更新输入的Track`)
+          pipeline.setInput('remote', this.audio.micTrack, `remote${this.stream.streamID}`)
+        }
+      } else {
+        const track = this.audio.micTrack || this.audio.audioSource
+        if (pipeline.inputs.local.track !== track) {
+          this.logger.log(`getOrCreateAudioPipeline: 更新输入的Track`)
+          pipeline.setInput('local', track, track?.label || 'empty')
+        }
       }
     } else {
       if (!this.screenAudio.pipeline) {
         pipeline = new AudioPipeline({
           logger: this.logger,
+          outputStream: this.screenAudio.screenAudioStream,
           context
         })
         this.screenAudio.pipeline = pipeline
@@ -250,16 +260,21 @@ class MediaHelper extends EventEmitter {
       } else {
         pipeline = this.screenAudio.pipeline
       }
-      if (
-        this.stream.isRemote &&
-        pipeline.inputs.remote.track !== this.screenAudio.screenAudioTrack
-      ) {
-        this.logger.log(`getOrCreateAudioPipeline/screenAudio: 更新输入的Track`)
-        pipeline.setInput(
-          'remote',
-          this.screenAudio.screenAudioTrack,
-          `remote${this.stream.streamID}/screenAudio`
-        )
+      if (this.stream.isRemote) {
+        if (pipeline.inputs.remote.track !== this.screenAudio.screenAudioTrack) {
+          this.logger.log(`getOrCreateAudioPipeline/screenAudio: 更新输入的Track`)
+          pipeline.setInput(
+            'remote',
+            this.screenAudio.screenAudioTrack,
+            `remote${this.stream.streamID}/screenAudio`
+          )
+        }
+      } else {
+        const track = this.screenAudio.screenAudioTrack || this.screenAudio.screenAudioSource
+        if (pipeline.inputs.local.track !== track) {
+          this.logger.log(`getOrCreateAudioPipeline/screenAudio: 更新输入的Track`)
+          pipeline.setInput('local', track, track?.label || 'empty')
+        }
       }
     }
     return pipeline
