@@ -1099,8 +1099,9 @@ function updateRemoteViewInfo() {
         view.$div.hide()
       }
     }
-    let title = `${view.platformType || 'remote'} ${view.uid}`
-    ;['audio', 'video', 'screen', 'audioSlave'].forEach((mediaType) => {
+    let title = `${view.platformType || 'remote'} ${view.uid}`;
+    const remoteStream = rtc.remoteStreams[view.uid];
+    ['audio', 'video', 'screen', 'audioSlave'].forEach((mediaType) => {
       let infoStr = ''
       if (view[mediaType].subscribed) {
         infoStr += `${mediaType}`.toUpperCase()
@@ -1110,7 +1111,6 @@ function updateRemoteViewInfo() {
       if (view[mediaType].muted) {
         infoStr = `<del>${infoStr}</del>`
       }
-      const remoteStream = rtc.remoteStreams[view.uid]
       if (remoteStream) {
         if (mediaType === 'video') {
           const track = remoteStream.mediaHelper.video.cameraTrack
@@ -1138,9 +1138,12 @@ function updateRemoteViewInfo() {
     if (view.uplinkNetworkQuality && view.downlinkNetworkQuality) {
       title += `<br>⬆${view.uplinkNetworkQuality} ⬇${view.downlinkNetworkQuality}`
     }
+    if (remoteStream && document.getElementById('getAudioLevelRemote').checked){
+      title += `<br>主流音量：${remoteStream.getAudioLevel()}；辅流音量：${remoteStream.getAudioLevel('subAudio')}`
+    }
     const html = view.$div.children('.remote-view-title').html()
     if (html !== title) {
-      console.log(`更新说明【${html}】=>【${title}】`)
+      // console.log(`更新说明【${html}】=>【${title}】`)
       view.$div.children('.remote-view-title').html(title)
     }
   }
@@ -1158,6 +1161,7 @@ function updateRemoteViewInfo() {
 
 const updateRemoteViewInfoTimer = setInterval(updateRemoteViewInfo, 200)
 
+document.getElementById('getAudioLevelRemote').onclick = updateRemoteViewInfo
 /**
  * ----------------------------------------
  *              房间逻辑

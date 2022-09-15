@@ -33,6 +33,7 @@ import RtcError from '../util/error/rtcError'
 import { isExistOptions } from '../util/param'
 import { RTCEventEmitter } from '../util/rtcUtil/RTCEventEmitter'
 import * as env from '../util/rtcUtil/rtcEnvironment'
+import { tryResumeAudioContext } from '../module/webAudio'
 
 let remoteStreamCnt = 0
 
@@ -59,7 +60,7 @@ class RemoteStream extends RTCEventEmitter {
   private consumerId: string | null
   private producerId: string | null
   public platformType: PlatformType = PlatformType.unknown
-  public isRemote = true
+  public readonly isRemote = true
   public pubStatus: PubStatus = {
     audio: {
       audio: false,
@@ -702,6 +703,10 @@ class RemoteStream extends RTCEventEmitter {
    * @return {Promise}
    */
   async resume() {
+    if (tryResumeAudioContext()) {
+      this.logger.log(`正在尝试恢复AudioContext自动播放受限`)
+    }
+
     if (this._play) {
       await this._play.resume()
       if (this._play.audioDom && !this._play.audioDom.paused) {
@@ -1125,6 +1130,31 @@ class RemoteStream extends RTCEventEmitter {
 
   hasAudioSlave() {
     return this.mediaHelper.screenAudio.screenAudioStream.getAudioTracks().length > 0
+  }
+
+  getAudioLevel(mediaType: 'audio' | 'audioSlave' = 'audio') {
+    const pipeline = this.mediaHelper.getOrCreateAudioPipeline(mediaType)
+    if (!pipeline) {
+      this.logger.error(`当前环境不支持AudioContext`)
+      return 0
+    } else {
+      if (!pipeline.audioLevelNode) {
+        this.client.apiFrequencyControl({
+          name: 'getAudioLevel',
+          code: 0,
+          param: {
+            streamID: this.stringStreamID
+          }
+        })
+      }
+      const result = pipeline.getAudioLevel()
+      if (!result) {
+        this.logger.log(`正在加载音频模块`)
+        return 0
+      } else {
+        return result.volume
+      }
+    }
   }
 
   /**

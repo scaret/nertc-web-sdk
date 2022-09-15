@@ -1,6 +1,7 @@
 import rtcTimer from './raw/rtcTimer'
 import volumeProcessor from './raw/volumeProcessor.js'
 import webWorkerTimer from './raw/webWorkerTimer.js'
+import audioAIProcessor from './raw/audioAIProcessor'
 
 const moduleMap = {
   volumeProcessor: {
@@ -10,6 +11,11 @@ const moduleMap = {
   },
   webWorkerTimer: {
     blobParts: [webWorkerTimer],
+    options: { type: 'text/javascript; charset=utf-8' },
+    url: ''
+  },
+  audioAIProcessor: {
+    blobParts: [audioAIProcessor],
     options: { type: 'text/javascript; charset=utf-8' },
     url: ''
   },
