@@ -380,7 +380,8 @@ class LocalStream extends RTCEventEmitter {
       if (!success) {
         throw new RtcError({
           code: ErrorCode.WEBGL_RESTORED_FAILD_ERROR,
-          message: env.IS_ZH ? '重新初始化 webgl 失败.' : 'webgl reinitialize failed.'
+          message: env.IS_ZH ? '重新初始化 webgl 失败.' : 'webgl reinitialize failed.',
+          advice: env.IS_ZH ? '请重新刷新页面。' : 'please refresh the page.'
         })
       }
     })
@@ -395,7 +396,10 @@ class LocalStream extends RTCEventEmitter {
           : `failed to load basic-beauty resources:${JSON.stringify(failUrls)}`
         throw new RtcError({
           code: ErrorCode.BASIC_BEAUTY_RES_ERROR,
-          message
+          message,
+          advice: env.IS_ZH
+            ? '请检查网络是否开启或资源地址是否正确。'
+            : 'please check network or resource address.'
         })
       }
     })
@@ -407,7 +411,10 @@ class LocalStream extends RTCEventEmitter {
           : `failed to load basic-beauty resources:${JSON.stringify(failUrls)}`
         throw new RtcError({
           code: ErrorCode.ADV_BEAUTY_RES_ERROR,
-          message
+          message,
+          advice: env.IS_ZH
+            ? '请检查网络是否开启或资源地址是否正确。'
+            : 'please check network or resource address.'
         })
       }
     })
@@ -4156,7 +4163,10 @@ class LocalStream extends RTCEventEmitter {
         code: ErrorCode.WEBGL_NOT_SUPPORT_ERROR,
         message: env.IS_ZH
           ? '当前环境不支持 WebGL。'
-          : 'the current environment does not support webgl.'
+          : 'the current environment does not support webgl.',
+        advice: env.IS_ZH
+          ? '请尝试升级浏览器版本、显卡驱动或开启浏览器忽略显卡黑名单选项。'
+          : 'please try to upgrade the browser version, graphics card driver or enable the browser ignore the graphics card blacklist option.'
       })
     }
   }
@@ -4689,7 +4699,10 @@ class LocalStream extends RTCEventEmitter {
             code: ErrorCode.PLUGIN_LOADED_ERROR,
             message: env.IS_ZH
               ? `插件加载失败：${options.wasmUrl}。`
-              : `load plugin error:${options.wasmUrl}.`
+              : `load plugin error:${options.wasmUrl}.`,
+            advice: env.IS_ZH
+              ? '请检查网络是否开启或资源地址是否正确。'
+              : 'please check network or resource address.'
           })
         })
         plugin.once('error', (message: string) => {
