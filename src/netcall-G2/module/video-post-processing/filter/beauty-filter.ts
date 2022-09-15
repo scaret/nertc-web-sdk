@@ -238,7 +238,7 @@ export class BeautyFilter extends Filter {
   }
 
   private get smoothOut() {
-    return this.smooth ? this.framebuffers['beauty'].targetTexture : this.map
+    return this.smooth || this.featureEnable ? this.framebuffers['beauty'].targetTexture : this.map
   }
 
   private get whitenOut() {
@@ -307,6 +307,7 @@ export class BeautyFilter extends Filter {
       }
     }
     this.featureEnable = sum > 0 ? true : false
+    this.mapChange()
   }
 
   get output() {
