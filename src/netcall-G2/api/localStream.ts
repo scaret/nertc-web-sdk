@@ -4533,6 +4533,7 @@ class LocalStream extends RTCEventEmitter {
     }
   }
 
+  //关闭AI降噪
   async disableAIDenoise() {
     const pipeline = this.mediaHelper.getOrCreateAudioPipeline('audio')
     if (!pipeline) {
@@ -4781,50 +4782,48 @@ class LocalStream extends RTCEventEmitter {
       } else if (options.pluginObj) {
         plugin = new options.pluginObj(options)
       }
-      const pipeline = this.mediaHelper.getOrCreateAudioPipeline('audio')
-      if (!pipeline) {
-        this.logger.error(`当前环境不支持AudioContext`)
+
+      if (plugin) {
+        plugin.once('plugin-load', () => {
+          this.logger.log(`Plugin ${options.key} loaded`)
+          const pipeline = this.mediaHelper.getOrCreateAudioPipeline('audio')
+          if (!pipeline) {
+            this.logger.error(`当前环境不支持AudioContext`)
+          } else {
+            pipeline.registerPlugin(options.key, plugin, options.wasmUrl)
+          }
+          this.emit('plugin-load', options.key)
+          this.client.apiFrequencyControl({
+            name: 'registerPlugin',
+            code: 0,
+            param: {
+              streamID: this.stringStreamID,
+              plugin: options.key
+            }
+          })
+        })
+        plugin.once('plugin-load-error', () => {
+          this.logger.error(`Load ${options.wasmUrl} error`)
+          this.emit('plugin-load-error', {
+            key: options.key,
+            msg: `Load ${options.wasmUrl} error`
+          })
+        })
+        plugin.once('error', (message: string) => {
+          this.logger.error(message)
+        })
       } else {
-        pipeline.registerPlugin(options.key, plugin, options.wasmUrl)
+        this.client.apiFrequencyControl({
+          name: 'registerPlugin',
+          code: -1,
+          param: {
+            streamID: this.stringStreamID,
+            plugin: options.key
+          }
+        })
+        this.logger.error(`unsupport plugin ${options.key}`)
+        throw `unsupport plugin ${options.key}`
       }
-      //todo 待音频前处理模块接入后实现
-      //this._aiDenoiseProcessor = registerProcessor('audioAIProcessor', obj)
-      // const plugin = this._aiDenoiseProcessor.getPlugin(options.key);
-      // if (plugin) {
-      //   plugin.once('plugin-load', () => {
-      //     this.logger.log(`Plugin ${options.key} loaded`)
-      //     this.emit('plugin-load', options.key)
-      //     this.client.apiFrequencyControl({
-      //       name: 'registerPlugin',
-      //       code: 0,
-      //       param: {
-      //         streamID: this.stringStreamID,
-      //         plugin: options.key
-      //       }
-      //     })
-      //   })
-      //   plugin.once('plugin-load-error', () => {
-      //     this.logger.error(`Load ${options.wasmUrl} error`)
-      //     this.emit('plugin-load-error', {
-      //       key: options.key,
-      //       msg: `Load ${options.wasmUrl} error`
-      //     })
-      //   })
-      //   plugin.once('error', (message: string) => {
-      //     this.logger.error(message)
-      //   })
-      // } else {
-      //   this.client.apiFrequencyControl({
-      //     name: 'registerPlugin',
-      //     code: -1,
-      //     param: {
-      //       streamID: this.stringStreamID,
-      //       plugin: options.key
-      //     }
-      //   })
-      //   this.logger.error(`unsupport plugin ${options.key}`)
-      //   throw `unsupport plugin ${options.key}`
-      // }
     } catch (e) {
       this.logger.error(`create plugin ${options.key} error`)
       this.emit('plugin-load-error', {

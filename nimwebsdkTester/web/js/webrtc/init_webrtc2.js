@@ -1744,7 +1744,7 @@ $('#unregisterAdvancedBeauty').on('click', () => {
 
 $('#registerAIDenoise').on('click', async () => {
   if (rtc.localStream) {
-    $('#segmentStatus').html('loading').show()
+    $('#aidenoiseStatus').html('loading').show()
     const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
     aidenoise_config = aiDenoisePluginConfig[NERTC.ENV][type]
     rtc.localStream.registerPlugin(aidenoise_config)
