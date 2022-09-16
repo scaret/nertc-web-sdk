@@ -7,6 +7,7 @@ let audioNodeIdx = 0
  * AudioNode的Wrapper，记录了节点的连接关系
  * NeAudioNode 的节点在初始化时就可以创建好，NeAudioNodeNullable 的节点需要时间来初始化（例如下载一份Worker代码）
  */
+
 export class NeAudioNodeNullable<AudioNodeType> extends RTCEventEmitter {
   protected id = audioNodeIdx++
   protected tag: string
@@ -70,6 +71,26 @@ export class NeAudioNodeNullable<AudioNodeType> extends RTCEventEmitter {
       }
     })
     this.connectedTo.length = 0
+  }
+
+  updateNode(newNode: AudioNodeType) {
+    this.connectedTo.forEach((node) => {
+      if (node.audioNode) {
+        if (this.audioNode) {
+          ;(this.audioNode as unknown as AudioNode).disconnect(node.audioNode)
+        }
+        ;(newNode as unknown as AudioNode).connect(node.audioNode)
+      }
+    })
+    this.connectedFrom.forEach((node) => {
+      if (node.audioNode) {
+        if (this.audioNode) {
+          node.audioNode.disconnect(this.audioNode)
+        }
+        node.audioNode.connect(newNode)
+      }
+    })
+    this.audioNode = newNode
   }
 }
 

@@ -18,7 +18,7 @@ import AdvancedBeauty from '../module/video-post-processing/advanced-beauty'
 import BasicBeauty from '../module/video-post-processing/basic-beauty'
 import VirtualBackground from '../module/video-post-processing/virtual-background'
 import { loadPlugin } from '../plugin'
-import { PluginType } from '../plugin/plugin-list'
+import { AudioPluginType, VideoPluginType, audioPlugins, videoPlugins } from '../plugin/plugin-list'
 import { BackGroundOptions } from '../plugin/segmentation/src/types'
 import {
   AudioEffectOptions,
@@ -134,6 +134,8 @@ class LocalStream extends RTCEventEmitter {
   private advancedBeauty: AdvancedBeauty
   private _segmentProcessor: VirtualBackground | null
   private _advancedBeautyProcessor: AdvancedBeauty | null = null
+  //todo 待音频前处理模块合入后修改
+  private _aiDenoiseProcessor: any
   private lastEffects: any
   private lastFilter: any
   private videoPostProcessTags = {
@@ -4521,6 +4523,35 @@ class LocalStream extends RTCEventEmitter {
     this.advancedBeauty.presetAdvEffect(...args)
   }
 
+  //打开AI降噪
+  async enableAIDenoise() {
+    const pipeline = this.mediaHelper.getOrCreateAudioPipeline('audio')
+    if (!pipeline) {
+      this.logger.error(`当前环境不支持AudioContext`)
+    } else {
+      await pipeline.enableAIdenoise(true)
+      const sender = this.getSender('audio', 'high')
+      console.error('sender', sender, sender?.track, pipeline.output.track)
+      if (sender) {
+        sender.replaceTrack(pipeline.output.track)
+      }
+    }
+  }
+
+  //关闭AI降噪
+  async disableAIDenoise() {
+    const pipeline = this.mediaHelper.getOrCreateAudioPipeline('audio')
+    if (!pipeline) {
+      this.logger.error(`当前环境不支持AudioContext`)
+    } else {
+      await pipeline.enableAIdenoise(false)
+      const sender = this.getSender('audio', 'high')
+      if (sender) {
+        sender.replaceTrack(pipeline.output.track)
+      }
+    }
+  }
+
   async replacePluginTrack(options: {
     mediaType: 'video' | 'screen'
     track: MediaStreamTrack
@@ -4668,6 +4699,16 @@ class LocalStream extends RTCEventEmitter {
    * @param options
    */
   async registerPlugin(options: PluginOptions) {
+    if (videoPlugins.indexOf(options.key) == -1 && audioPlugins.indexOf(options.key) == -1) {
+      this.logger.error(`unsupport plugin ${options.key}`)
+      return
+    }
+    if (audioPlugins.indexOf(options.key) !== -1) {
+      //注册audio插件
+      await this._registerAudioPlugin(options)
+      return
+    }
+
     this.logger.log(`register plugin:${options.key}`)
     this.WebGLSupportError()
     if (this.videoPostProcess.getPlugin(options.key as any)) {
@@ -4737,7 +4778,73 @@ class LocalStream extends RTCEventEmitter {
     }
   }
 
-  async unregisterPlugin(key: PluginType) {
+  async _registerAudioPlugin(options: PluginOptions) {
+    let plugin: any = null
+    try {
+      if (options.pluginUrl) {
+        await loadPlugin(options.key as any, options.pluginUrl)
+        plugin = eval(`new window.${options.key}(options)`)
+      } else if (options.pluginObj) {
+        plugin = new options.pluginObj(options)
+      }
+
+      if (plugin) {
+        plugin.once('plugin-load', () => {
+          this.logger.log(`Plugin ${options.key} loaded`)
+          const pipeline = this.mediaHelper.getOrCreateAudioPipeline('audio')
+          if (!pipeline) {
+            this.logger.error(`当前环境不支持AudioContext`)
+          } else {
+            pipeline.registerPlugin(options.key, plugin, options.wasmUrl)
+          }
+          this.emit('plugin-load', options.key)
+          this.client.apiFrequencyControl({
+            name: 'registerPlugin',
+            code: 0,
+            param: {
+              streamID: this.stringStreamID,
+              plugin: options.key
+            }
+          })
+        })
+        plugin.once('plugin-load-error', () => {
+          this.logger.error(`Load ${options.wasmUrl} error`)
+          this.emit('plugin-load-error', {
+            key: options.key,
+            msg: `Load ${options.wasmUrl} error`
+          })
+        })
+        plugin.once('error', (message: string) => {
+          this.logger.error(message)
+        })
+      } else {
+        this.client.apiFrequencyControl({
+          name: 'registerPlugin',
+          code: -1,
+          param: {
+            streamID: this.stringStreamID,
+            plugin: options.key
+          }
+        })
+        this.logger.error(`unsupport plugin ${options.key}`)
+        throw `unsupport plugin ${options.key}`
+      }
+    } catch (e) {
+      this.logger.error(`create plugin ${options.key} error`)
+      this.emit('plugin-load-error', {
+        key: options.key,
+        msg: e
+      })
+    }
+  }
+
+  async unregisterPlugin(key: VideoPluginType | AudioPluginType) {
+    if (audioPlugins.indexOf(key) !== -1) {
+      //注册audio插件
+      await this._unregisterAudioPlugin(key)
+      return
+    }
+
     this.logger.log(`unRegister plugin:${key}`)
     this.WebGLSupportError()
     if (this.videoPostProcess) {
@@ -4746,8 +4853,18 @@ class LocalStream extends RTCEventEmitter {
       } else if (key === 'AdvancedBeauty' && this._advancedBeautyProcessor) {
         await this.disableAdvancedBeauty()
       }
-      this.videoPostProcess.unregisterPlugin(key)
+      this.videoPostProcess.unregisterPlugin(key as VideoPluginType)
     }
+  }
+
+  async _unregisterAudioPlugin(key: VideoPluginType | AudioPluginType) {
+    //todo 待音频前处理模块接入后实现
+    // if (this._aiDenoiseProcessor) {
+    //   if (key === 'AIDenoise') {
+    //     await this.disableAIDenoise()
+    //   }
+    //   this._aiDenoiseProcessor.unregisterProcessor(key as VideoPluginType)
+    // }
   }
 
   // 临时挂起视频后处理

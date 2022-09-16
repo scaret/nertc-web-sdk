@@ -1,0 +1,2 @@
+declare const audioWorkletAgentProcessor: string
+export default audioWorkletAgentProcessor

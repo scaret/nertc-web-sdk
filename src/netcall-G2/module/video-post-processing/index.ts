@@ -1,6 +1,6 @@
 import { EventEmitter } from 'eventemitter3'
 
-import { PluginType } from '../../plugin/plugin-list'
+import { VideoPluginType } from '../../plugin/plugin-list'
 import { ILogger } from '../../types'
 import * as env from '../../util/rtcUtil/rtcEnvironment'
 import workerTimer from '../../util/rtcUtil/webWorkerTimer'
@@ -37,15 +37,15 @@ export default class VideoPostProcess extends EventEmitter {
   }
 
   // 注入插件
-  registerPlugin(key: PluginType, plugin: any) {
+  registerPlugin(key: VideoPluginType, plugin: any) {
     this.pluginModules[key] = plugin
   }
   // 获取插件
-  getPlugin(key: PluginType) {
+  getPlugin(key: VideoPluginType) {
     return this.pluginModules[key]
   }
   // 移除插件
-  unregisterPlugin(key: PluginType) {
+  unregisterPlugin(key: VideoPluginType) {
     this.pluginModules[key] = null
   }
 

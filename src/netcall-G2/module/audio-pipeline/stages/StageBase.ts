@@ -11,7 +11,7 @@ export abstract class StageBase {
   /**
    * enabled变量是AudioPipeline用于记录该Stage是否已经连入的标志位。Stage本身不要操作这个值。
    */
-  enabled: boolean = false // eslint-disable-line  @typescript-eslint/no-inferrable-types
+  enabled = false
   node: NeAudioNode<any> | null = null
   protected context: AudioContext
   state: 'UNINIT' | 'INITING' | 'INITED' = 'UNINIT'

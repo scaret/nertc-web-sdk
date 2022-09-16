@@ -1,6 +1,6 @@
-import Pluggins, { PluginType } from './plugin-list'
+import Pluggins, { AudioPluginType, VideoPluginType } from './plugin-list'
 
-export function loadPlugin(key: PluginType, url: string) {
+export function loadPlugin(key: VideoPluginType | AudioPluginType, url: string) {
   return new Promise<void>((resolve, reject) => {
     if (Pluggins.indexOf(key) == -1) {
       reject(`unsupport plugin ${key}`)

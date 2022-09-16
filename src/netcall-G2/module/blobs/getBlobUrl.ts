@@ -2,10 +2,16 @@ import rtcTimer from './raw/rtcTimer'
 import volumeProcessor from './raw/volumeProcessor.js'
 import webWorkerTimer from './raw/webWorkerTimer.js'
 import audioAIProcessor from './raw/audioAIProcessor'
+import audioWorkletAgentProcessor from './raw/audioWorkletAgentProcessor'
 
 const moduleMap = {
   volumeProcessor: {
     blobParts: [volumeProcessor],
+    options: { type: 'text/javascript; charset=utf-8' },
+    url: ''
+  },
+  audioWorkletAgentProcessor: {
+    blobParts: [audioWorkletAgentProcessor],
     options: { type: 'text/javascript; charset=utf-8' },
     url: ''
   },
