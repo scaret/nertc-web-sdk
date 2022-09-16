@@ -527,11 +527,14 @@ declare interface Stream {
   /**
    * 设置视频属性。
    *
-   * 从 V4.6.20 起，可以在打开摄像头后继续通过调用该方法动态修改分辨率。该功能由于浏览器和摄像头的限制，可能出现以下情况：
-   * - 从低分辨率切换到高分辨率失败
-   * - 从高分辨率切换到低分辨率时长宽比不完全符合profile设定
-   * - 在多个页面开启摄像头或者打开大小流的情况下，分辨率切换失败
-   *  SDK仅保证在这些情况下的设备可用及码率切换正常。
+   * @note 注意
+   * * setVideoProfile方法会根据预设值使用合适的上行码率。如您之前调用过 [[Stream.setVideoEncoderConfiguration]] ，则原设置会被覆盖。
+   * * 从 V4.6.20 起，可以在打开摄像头后继续通过调用该方法动态修改分辨率。该功能由于浏览器和摄像头的限制，可能出现以下情况：
+   * 1. 从低分辨率切换到高分辨率失败
+   * 2. 从高分辨率切换到低分辨率时长宽比不完全符合profile设定
+   * 3. 在多个页面开启摄像头或者打开大小流的情况下，分辨率切换失败
+   *
+   * SDK仅保证在这些情况下的设备可用及码率切换正常。
    *
    * @example
    * ```javascript
@@ -1095,9 +1098,11 @@ declare interface Stream {
    * 视频上行参数设置。
    *
    *
-   * @note
+   * @note 注意
    * * setVideoEncoderConfiguration 方法只作用于本地视频流。
    * * 在v4.6.20之后，该方法可以在会中使用，可动态调整参数。
+   * * 使用 [[Stream.setVideoProfile]] 后，预设的 maxBitrate 会覆盖当前设置。
+   * 请保证 setVideoEncoderConfiguration 在 setVideoProfile之后调用。
    *
    * @example 设置上行屏幕共享最大编码比特率为3M，流畅度优先：
    *
