@@ -4529,9 +4529,11 @@ class LocalStream extends RTCEventEmitter {
     if (!pipeline) {
       this.logger.error(`当前环境不支持AudioContext`)
     } else {
+      if (!pipeline.hasPlugin('AIDenoise')) {
+        return this.logger.warn('AIDenoise plugin is not register.')
+      }
       await pipeline.enableAIdenoise(true)
       const sender = this.getSender('audio', 'high')
-      console.error('sender', sender, sender?.track, pipeline.output.track)
       if (sender) {
         sender.replaceTrack(pipeline.output.track)
       }
@@ -4544,6 +4546,9 @@ class LocalStream extends RTCEventEmitter {
     if (!pipeline) {
       this.logger.error(`当前环境不支持AudioContext`)
     } else {
+      if (!pipeline.hasPlugin('AIDenoise')) {
+        return this.logger.warn('AIDenoise plugin is not register.')
+      }
       await pipeline.enableAIdenoise(false)
       const sender = this.getSender('audio', 'high')
       if (sender) {
@@ -4858,13 +4863,14 @@ class LocalStream extends RTCEventEmitter {
   }
 
   async _unregisterAudioPlugin(key: VideoPluginType | AudioPluginType) {
-    //todo 待音频前处理模块接入后实现
-    // if (this._aiDenoiseProcessor) {
-    //   if (key === 'AIDenoise') {
-    //     await this.disableAIDenoise()
-    //   }
-    //   this._aiDenoiseProcessor.unregisterProcessor(key as VideoPluginType)
-    // }
+    this.logger.log(`unRegister plugin:${key}`)
+    const pipeline = this.mediaHelper.getOrCreateAudioPipeline('audio')
+    if (pipeline) {
+      if (key === 'AIDenoise') {
+        await this.disableAIDenoise()
+      }
+      pipeline.unregisterPlugin(key as VideoPluginType)
+    }
   }
 
   // 临时挂起视频后处理

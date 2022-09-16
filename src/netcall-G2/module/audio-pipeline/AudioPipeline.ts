@@ -67,6 +67,8 @@ export class AudioPipeline {
     directOutput: true
   }
   logger: ILogger
+  pluginList: Array<string>
+
   constructor(options: AudioPipelineOptions) {
     this.context = options.context
 
@@ -107,6 +109,8 @@ export class AudioPipeline {
     this.stages = [this.stageInputVolume, this.stageAIProcessing, this.stageDelay]
 
     this.output.stream = options.outputStream
+
+    this.pluginList = []
 
     this.logger.log(`Audio Pipeline Init`)
   }
@@ -352,7 +356,20 @@ export class AudioPipeline {
   registerPlugin(key: string, pluginObj: any, wasmUrl: string) {
     if (key === 'AIDenoise') {
       this.stageAIProcessing.registerAIDenoisePlugin(pluginObj, wasmUrl)
+      this.pluginList.push('AIDenoise')
     }
+  }
+
+  unregisterPlugin(key: string) {
+    const index = this.pluginList.indexOf(key)
+    if (index !== -1) {
+      this.pluginList.splice(index, 1)
+      this.stageAIProcessing.unregisterAIDenoise()
+    }
+  }
+
+  hasPlugin(key: string) {
+    return this.pluginList.indexOf(key) !== -1
   }
 
   async enableAIdenoise(enable = true) {
