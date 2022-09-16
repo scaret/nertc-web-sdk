@@ -212,7 +212,8 @@ class Meeting extends EventEmitter {
       sessionMode = 'meeting',
       joinChannelRecordConfig,
       joinChannelLiveConfig,
-      token = ''
+      token = '',
+      getChanneInfoResponse
     } = options
 
     let T1 = Date.now()
@@ -232,30 +233,33 @@ class Meeting extends EventEmitter {
       appkey
     })
     try {
-      let data = (await this.adapterRef.lbsManager.ajax({
-        url, //'https://webtest.netease.im/nrtcproxy/nrtc/getChannelInfos.action'
-        type: 'POST',
-        contentType: 'application/x-www-form-urlencoded',
-        header: {
-          'X-Forwarded-For': this.adapterRef.testConf.ForwardedAddr || ''
-        },
-        data: {
-          uid: requestUid,
-          appkey,
-          channelName,
-          secureType: token ? '1' : '2', // 安全认证类型：1:安全、2:非安全
-          osType: '4', // 系统类型：1:ios、2:aos、3:pc、4:web
-          mode: 2, // 接口字段和信令字段不一致(3.5.0版本开始只保留会议模式)
-          netType: '0', // 先填0吧 微信接口又是异步的 1:2G、2:3G、3:4G、4:wifi、5:有线、0:未知
-          version: SDK_VERSION + '.0' || '1.0.0',
-          curtime,
-          // @ts-ignore
-          checksum: token ? token : md5(appkey + '.' + uid + '.' + curtime),
-          webrtc: 1, // 是否与其它端互通
-          nrtcg2: 1,
-          t1: T1 // 是一个毫秒级的时间戳，若填了这个，服务器会返回t1（客户端请求时间戳）、t2（服务器接收时间戳）、t3（服务器返回时间戳）
-        }
-      })) as SignalGetChannelInfoResponse
+      let data = getChanneInfoResponse
+      if (!data) {
+        data = (await this.adapterRef.lbsManager.ajax({
+          url, //'https://webtest.netease.im/nrtcproxy/nrtc/getChannelInfos.action'
+          type: 'POST',
+          contentType: 'application/x-www-form-urlencoded',
+          header: {
+            'X-Forwarded-For': this.adapterRef.testConf.ForwardedAddr || ''
+          },
+          data: {
+            uid: requestUid,
+            appkey,
+            channelName,
+            secureType: token ? '1' : '2', // 安全认证类型：1:安全、2:非安全
+            osType: '4', // 系统类型：1:ios、2:aos、3:pc、4:web
+            mode: 2, // 接口字段和信令字段不一致(3.5.0版本开始只保留会议模式)
+            netType: '0', // 先填0吧 微信接口又是异步的 1:2G、2:3G、3:4G、4:wifi、5:有线、0:未知
+            version: SDK_VERSION + '.0' || '1.0.0',
+            curtime,
+            // @ts-ignore
+            checksum: token ? token : md5(appkey + '.' + uid + '.' + curtime),
+            webrtc: 1, // 是否与其它端互通
+            nrtcg2: 1,
+            t1: T1 // 是一个毫秒级的时间戳，若填了这个，服务器会返回t1（客户端请求时间戳）、t2（服务器接收时间戳）、t3（服务器返回时间戳）
+          }
+        })) as SignalGetChannelInfoResponse
+      }
       let isUidExisted = uid == '0' || (uid != '0' && !uid) ? false : true
 
       this.info.secure = !!token

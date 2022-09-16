@@ -31,6 +31,8 @@ import md5 = require('md5')
 import { LBSManager } from '../module/LBSManager'
 import { RTCEventEmitter } from '../util/rtcUtil/RTCEventEmitter'
 import * as env from '../util/rtcUtil/rtcEnvironment'
+import { SignalGetChannelInfoResponse } from '../interfaces/SignalProtocols'
+
 let clientCnt = 0
 
 /**
@@ -67,6 +69,7 @@ class Base extends RTCEventEmitter {
       // adapter对象内部成员与方法挂载的引用
       datareportCache: [],
       channelInfo: {
+        customData: '',
         sessionConfig: {}
       },
       //webrtc G2 API上报频控
@@ -127,6 +130,7 @@ class Base extends RTCEventEmitter {
         aslActiveNum: -1
       },
       channelInfo: {
+        customData: '',
         sessionConfig: {}
       },
       userPriority: {

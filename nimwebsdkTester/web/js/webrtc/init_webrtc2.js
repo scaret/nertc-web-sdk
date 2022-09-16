@@ -504,6 +504,10 @@ function initEvents() {
     }
   })
 
+  rtc.client.on('custom-data', (data) => {
+    console.warn('收到自定义消息: ', data)
+    addLog(`${data.uid} 发送自定义消息 ${data.customData}`)
+  })
   rtc.client.on('peer-online', (evt) => {
     console.warn(`${evt.uid} 加入房间`)
     addLog(`${evt.uid} 加入房间`)
@@ -1099,9 +1103,9 @@ function updateRemoteViewInfo() {
         view.$div.hide()
       }
     }
-    let title = `${view.platformType || 'remote'} ${view.uid}`;
-    const remoteStream = rtc.remoteStreams[view.uid];
-    ['audio', 'video', 'screen', 'audioSlave'].forEach((mediaType) => {
+    let title = `${view.platformType || 'remote'} ${view.uid}`
+    const remoteStream = rtc.remoteStreams[view.uid]
+    ;['audio', 'video', 'screen', 'audioSlave'].forEach((mediaType) => {
       let infoStr = ''
       if (view[mediaType].subscribed) {
         infoStr += `${mediaType}`.toUpperCase()
@@ -1138,8 +1142,10 @@ function updateRemoteViewInfo() {
     if (view.uplinkNetworkQuality && view.downlinkNetworkQuality) {
       title += `<br>⬆${view.uplinkNetworkQuality} ⬇${view.downlinkNetworkQuality}`
     }
-    if (remoteStream && document.getElementById('getAudioLevelRemote').checked){
-      title += `<br>主流音量：${remoteStream.getAudioLevel()}；辅流音量：${remoteStream.getAudioLevel('subAudio')}`
+    if (remoteStream && document.getElementById('getAudioLevelRemote').checked) {
+      title += `<br>主流音量：${remoteStream.getAudioLevel()}；辅流音量：${remoteStream.getAudioLevel(
+        'subAudio'
+      )}`
     }
     const html = view.$div.children('.remote-view-title').html()
     if (html !== title) {
@@ -1284,6 +1290,8 @@ $('#joinChannel-btn').on('click', async () => {
     }
     rtc.client.adapterRef.mediaCapability.supportedCodecSend = supportedCodecSend
   }
+
+  const customData = $('#customData').val()
   rtc.client
     .join({
       channelName,
@@ -1307,7 +1315,12 @@ $('#joinChannel-btn').on('click', async () => {
         statisticsWebSocketServer,
         webSocketProxyServer,
         mediaProxyServer
-      }
+      },
+      customData,
+      getChanneInfoResponse:
+        $('#isFastCall').prop('checked') && $('#getChannelInfoResponse').val()
+          ? JSON.parse($('#getChannelInfoResponse').val())
+          : null
     })
     .then(
       (obj) => {

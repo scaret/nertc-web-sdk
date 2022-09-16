@@ -99,6 +99,7 @@ export interface SignalJoinRes extends SignalResBase {
       rtpCapabilities: any
       hostName: string
       platformType: PlatformType
+      customData: string
       producerInfoList: {
         producerId: string
         mediaType: string
