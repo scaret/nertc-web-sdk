@@ -128,6 +128,7 @@ class LocalStream extends RTCEventEmitter {
   private screenAudioSource: MediaStreamTrack | null
   public mediaHelper: MediaHelper
   // 美颜相关实例对象
+  private safariVideoSizeChange = false
   private videoPostProcess: VideoPostProcess
   private basicBeauty: BasicBeauty
   private virtualBackground: VirtualBackground
@@ -361,30 +362,47 @@ class LocalStream extends RTCEventEmitter {
     this.virtualBackground = new VirtualBackground(this.videoPostProcess)
     this.advancedBeauty = new AdvancedBeauty(this.videoPostProcess)
 
+    if (env.IS_ANY_SAFARI) {
+      this.videoPostProcess.on('safariVideoSizeChange', () => {
+        this.safariVideoSizeChange = true
+        this.loseContext()
+      })
+    }
+
     // 处理 webgl 上下文丢失
     this.videoPostProcess.on('contextLost', () => {
       this.suspendVideoPostProcess()
-      this.emit('video-post-context-lost')
-      const message = env.IS_ZH
-        ? `webgl 上下文丢失，相关功能将无法使用。\n正在监听恢复事件以尝试重新初始化 webgl 管线……\n丢失原因：https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/isContextLost#usage_notes。`
-        : `webgl context lost, related functions will not be available.\nwaiting for restored event and try to reinitialize webgl pipeline ……\n see why: https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/isContextLost#usage_notes.`
-      throw new RtcError({
-        code: ErrorCode.WEBGL_LOSE_CONTEXT_ERROR,
-        message
-      })
+      if (!this.safariVideoSizeChange) {
+        this.emit('video-post-context-lost')
+        const message = env.IS_ZH
+          ? `webgl 上下文丢失，相关功能将无法使用。\n正在监听恢复事件以尝试重新初始化 webgl 管线……\n丢失原因：https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/isContextLost#usage_notes。`
+          : `webgl context lost, related functions will not be available.\nwaiting for restored event and try to reinitialize webgl pipeline ……\n see why: https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/isContextLost#usage_notes.`
+        throw new RtcError({
+          code: ErrorCode.WEBGL_LOSE_CONTEXT_ERROR,
+          message
+        })
+      } else {
+        setTimeout(() => {
+          this.restoreContext()
+        }, 0)
+      }
     })
 
     // 处理 webgl 上下文恢复
     this.videoPostProcess.on('contextRestored', (success) => {
       this.resumeVideoPostProcess()
-      this.emit('video-post-context-restored', success)
-      this.logger.log('webgl context restored, try to reinitialize webgl pipeline.')
-      if (!success) {
-        throw new RtcError({
-          code: ErrorCode.WEBGL_RESTORED_FAILD_ERROR,
-          message: env.IS_ZH ? '重新初始化 webgl 失败.' : 'webgl reinitialize failed.',
-          advice: env.IS_ZH ? '请重新刷新页面。' : 'please refresh the page.'
-        })
+      if (!this.safariVideoSizeChange) {
+        this.emit('video-post-context-restored', success)
+        this.logger.log('webgl context restored, try to reinitialize webgl pipeline.')
+        if (!success) {
+          throw new RtcError({
+            code: ErrorCode.WEBGL_RESTORED_FAILD_ERROR,
+            message: env.IS_ZH ? '重新初始化 webgl 失败.' : 'webgl reinitialize failed.',
+            advice: env.IS_ZH ? '请重新刷新页面。' : 'please refresh the page.'
+          })
+        }
+      } else {
+        this.safariVideoSizeChange = false
       }
     })
 
@@ -2909,9 +2927,9 @@ class LocalStream extends RTCEventEmitter {
     this.client.adapterRef.channelInfo.sessionConfig.videoFrameRate = this.videoProfile.frameRate
     let cameraTrack = this.mediaHelper.video.cameraTrack
     let cameraSettings = cameraTrack?.getSettings()
-    const deviceInfo = Device.deviceHistory.video.find((d: DeviceInfo) => {
-      return d.deviceId === (cameraSettings && cameraSettings.deviceId)
-    })
+    // const deviceInfo = Device.deviceHistory.video.find((d: DeviceInfo) => {
+    //   return d.deviceId === (cameraSettings && cameraSettings.deviceId)
+    // })
     // if ((cameraSettings && !cameraSettings.width) || !deviceInfo) {
     //   // 尝试寻找美颜的cameraTrack。不要直接判断是否是CanvasCaptureMediaStreamTrack因为Firefox不支持
     //   cameraSettings = this._cameraTrack?.getSettings()
@@ -5009,12 +5027,16 @@ class LocalStream extends RTCEventEmitter {
 
   // 模拟 webgl 丢失上下文，不对外暴露，仅用于测试
   loseContext() {
-    this.videoPostProcess.filters?.webglLostContext?.loseContext()
+    try {
+      this.videoPostProcess.filters?.webglLostContext?.loseContext()
+    } catch (error) {}
   }
 
   // 模拟 webgl 恢复上下文，不对外暴露，仅用于测试
   restoreContext() {
-    this.videoPostProcess.filters?.webglLostContext?.restoreContext()
+    try {
+      this.videoPostProcess.filters?.webglLostContext?.restoreContext()
+    } catch (error) {}
   }
 
   /**

@@ -91,7 +91,7 @@ export function createTexture(
     return null
   }
 
-  const _opts = {
+  const _opts: typeof opts = {
     flipY: true,
     wrapS: 'clamp',
     wrapT: 'clamp',
@@ -155,6 +155,9 @@ export function createTexture(
       const bindPoint = gl.TEXTURE_2D
       gl.bindTexture(bindPoint, glTexture)
       gl.generateMipmap(bindPoint)
+    },
+    clone() {
+      return createTexture(gl, textureObj.source, textureObj.opts)
     },
     opts: _opts
   }
