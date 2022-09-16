@@ -1061,6 +1061,8 @@ class MediaHelper extends EventEmitter {
       result.frameRate = 20
     } else if (frameRate === 5) {
       result.frameRate = 25
+    } else if (frameRate === 6) {
+      result.frameRate = 30
     }
     return result
   }
