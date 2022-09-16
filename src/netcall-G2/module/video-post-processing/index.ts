@@ -70,6 +70,7 @@ export default class VideoPostProcess extends EventEmitter {
   sourceTrack: MediaStreamTrack | null = null
   private trackInstance: MediaStreamTrack | null = null
   logger: ILogger
+  private videoSizeTag = ''
 
   constructor(logger: ILogger) {
     super()
@@ -168,6 +169,18 @@ export default class VideoPostProcess extends EventEmitter {
     return this.taskSet.size > 0
   }
 
+  // 用以抛出事件，修复在 safari 下动态更改分辨率画面拉伸的问题
+  private videoSizeChange(width: number, height: number) {
+    if (!env.IS_ANY_SAFARI) return
+    if (this.filters) {
+      const st = `${width}-${height}`
+      if (this.videoSizeTag !== st) {
+        this.videoSizeTag = st
+        this.emit('safariVideoSizeChange')
+      }
+    }
+  }
+
   /**
    * 创建 videoPostProcess track
    * @param {MediaStreamTrack} track
@@ -200,6 +213,9 @@ export default class VideoPostProcess extends EventEmitter {
       }
       if (settings.width && settings.height) {
         this.filters?.setSize(settings.width, settings.height)
+        if (!this.videoSizeTag) {
+          this.videoSizeTag = `${settings.width}-${settings.height}`
+        }
       }
       const stream = (<any>this.filters?.canvas).captureStream(this.frameRate)
       this.trackInstance = stream.getVideoTracks()[0]
@@ -212,6 +228,7 @@ export default class VideoPostProcess extends EventEmitter {
       const resizeHandler = (video: HTMLVideoElement) => {
         const { videoWidth: width, videoHeight: height } = video!
         this.filters?.setSize(width, height)
+        this.videoSizeChange(width, height)
       }
 
       this.video.onloadedmetadata = () => {
