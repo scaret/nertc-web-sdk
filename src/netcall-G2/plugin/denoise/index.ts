@@ -26,10 +26,18 @@ class AIDenoise extends RTCEventEmitter {
 
   async preload(options: modelOptions) {
     await fetch(options.wasmUrl)
-      .then((response) => response.arrayBuffer())
+      .then((response) => {
+        if (response.status == 200) {
+          return response.arrayBuffer()
+        } else {
+          this.emit('plugin-load-error')
+        }
+      })
       .then((bytes) => {
-        this.wasmBinary = new Uint8Array(bytes)
-        this.emit('plugin-load')
+        if (bytes) {
+          this.wasmBinary = new Uint8Array(bytes)
+          this.emit('plugin-load')
+        }
       })
   }
 
