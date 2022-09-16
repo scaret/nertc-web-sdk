@@ -15,7 +15,6 @@ class denoise {
   outArrayPtr = null
 
   init(binary) {
-    console.log('init', binary)
     global.Module = {
       wasmBinary: binary,
       onRuntimeInitialized: () => {

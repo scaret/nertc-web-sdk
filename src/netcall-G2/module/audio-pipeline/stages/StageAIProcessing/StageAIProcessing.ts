@@ -41,17 +41,18 @@ export class StageAIProcessing extends StageBase {
               this.audioWorkletAgent!.outputData(evt.inputs[0])
             })
           }
-        } else {
+        } else if (evt.inputs[0] && evt.inputs[0].length) {
           this.audioWorkletAgent!.outputData(evt.inputs[0])
         }
       })
     }
 
-    this.AIDenoise?.on('denoise-load', () => {
-      console.warn('denoise-load')
-    })
-
     this.AIDenoise?.init()
     this.state = 'INITED'
+  }
+
+  unregisterAIDenoise() {
+    this.AIDenoise = null
+    this.state = 'UNINIT'
   }
 }
