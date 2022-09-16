@@ -58,7 +58,7 @@ class denoise {
       )
       this.handleAudioData(result)
     } else {
-      console.warn('_rnnoise_process_frame 无返回值')
+      //console.warn('_rnnoise_process_frame 无返回值')
     }
     this.isProcessing = false
     if (this.buffer.length) {
@@ -87,7 +87,6 @@ class denoise {
   }
 
   handleInitFinished() {
-    console.warn('handleInitFinished')
     global.postMessage({
       type: 'created'
     })

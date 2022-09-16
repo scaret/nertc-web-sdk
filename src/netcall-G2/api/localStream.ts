@@ -52,6 +52,7 @@ import { RTCEventEmitter } from '../util/rtcUtil/RTCEventEmitter'
 import { isHttpProtocol } from '../util/rtcUtil/rtcSupport'
 import { makePrintable } from '../util/rtcUtil/utils'
 import { syncTrackState } from '../util/syncTrackState'
+import { AudioPipeline } from '../module/audio-pipeline/AudioPipeline'
 
 /**
  *  请使用 {@link NERTC.createStream} 通过NERTC.createStream创建
@@ -136,7 +137,7 @@ class LocalStream extends RTCEventEmitter {
   private _segmentProcessor: VirtualBackground | null
   private _advancedBeautyProcessor: AdvancedBeauty | null = null
   //todo 待音频前处理模块合入后修改
-  private _aiDenoiseProcessor: any
+  private _aiDenoiseProcessor: AudioPipeline | null = null
   private lastEffects: any
   private lastFilter: any
   private videoPostProcessTags = {
@@ -4543,6 +4544,9 @@ class LocalStream extends RTCEventEmitter {
 
   //打开AI降噪
   async enableAIDenoise() {
+    if (this._aiDenoiseProcessor) {
+      return this.logger.warn('ai denoise is already opened.')
+    }
     const pipeline = this.mediaHelper.getOrCreateAudioPipeline('audio')
     if (!pipeline) {
       this.logger.error(`当前环境不支持AudioContext`)
@@ -4551,6 +4555,7 @@ class LocalStream extends RTCEventEmitter {
         return this.logger.warn('AIDenoise plugin is not register.')
       }
       await pipeline.enableAIdenoise(true)
+      this._aiDenoiseProcessor = pipeline
       const sender = this.getSender('audio', 'high')
       if (sender) {
         sender.replaceTrack(pipeline.output.track)
@@ -4560,6 +4565,9 @@ class LocalStream extends RTCEventEmitter {
 
   //关闭AI降噪
   async disableAIDenoise() {
+    if (!this._aiDenoiseProcessor) {
+      return this.logger.warn('ai denoise is already closed.')
+    }
     const pipeline = this.mediaHelper.getOrCreateAudioPipeline('audio')
     if (!pipeline) {
       this.logger.error(`当前环境不支持AudioContext`)
@@ -4568,6 +4576,7 @@ class LocalStream extends RTCEventEmitter {
         return this.logger.warn('AIDenoise plugin is not register.')
       }
       await pipeline.enableAIdenoise(false)
+      this._aiDenoiseProcessor = null
       const sender = this.getSender('audio', 'high')
       if (sender) {
         sender.replaceTrack(pipeline.output.track)
@@ -4722,21 +4731,19 @@ class LocalStream extends RTCEventEmitter {
    * @param options
    */
   async registerPlugin(options: PluginOptions) {
-    if (videoPlugins.indexOf(options.key) == -1 && audioPlugins.indexOf(options.key) == -1) {
-      this.logger.error(`unsupport plugin ${options.key}`)
-      return
-    }
-    if (audioPlugins.indexOf(options.key) !== -1) {
-      //注册audio插件
-      await this._registerAudioPlugin(options)
-      return
-    }
-
     this.logger.log(`register plugin:${options.key}`)
-    this.WebGLSupportError()
+
     if (this.videoPostProcess.getPlugin(options.key as any)) {
       return this.logger.warn(`plugin ${options.key} is already exists.`)
     }
+    //防止在不注册AI降噪时创建AudioPipeline，这里写的麻烦一点
+    if (audioPlugins.indexOf(options.key) !== -1) {
+      const pipeline = this.mediaHelper.getOrCreateAudioPipeline('audio')
+      if (pipeline && pipeline.hasPlugin(options.key)) {
+        return this.logger.warn(`plugin ${options.key} is already exists.`)
+      }
+    }
+
     let plugin: any = null
     try {
       if (options.pluginUrl) {
@@ -4748,7 +4755,19 @@ class LocalStream extends RTCEventEmitter {
       if (plugin) {
         plugin.once('plugin-load', () => {
           this.logger.log(`plugin ${options.key} loaded`)
-          this.videoPostProcess.registerPlugin(options.key as any, plugin)
+          if (videoPlugins.indexOf(options.key) !== -1) {
+            this.WebGLSupportError()
+            this.videoPostProcess.registerPlugin(options.key as any, plugin)
+          } else if (audioPlugins.indexOf(options.key) !== -1) {
+            const pipeline = this.mediaHelper.getOrCreateAudioPipeline('audio')
+            if (!pipeline) {
+              this.logger.error(`当前环境不支持AudioContext`)
+            } else {
+              pipeline.registerPlugin(options.key, plugin, options.wasmUrl)
+            }
+          } else {
+            throw new Error(`unsupport plugin ${options.key}`)
+          }
           this.emit('plugin-load', options.key)
           this.client.apiFrequencyControl({
             name: 'registerPlugin',
@@ -4783,14 +4802,6 @@ class LocalStream extends RTCEventEmitter {
           })
         })
       } else {
-        this.client.apiFrequencyControl({
-          name: 'registerPlugin',
-          code: -1,
-          param: {
-            streamID: this.stringStreamID,
-            plugin: options.key
-          }
-        })
         throw new Error(`unsupport plugin ${options.key}`)
       }
     } catch (e: any) {
@@ -4798,77 +4809,30 @@ class LocalStream extends RTCEventEmitter {
         key: options.key,
         msg: e.message
       })
-    }
-  }
-
-  async _registerAudioPlugin(options: PluginOptions) {
-    let plugin: any = null
-    try {
-      if (options.pluginUrl) {
-        await loadPlugin(options.key as any, options.pluginUrl)
-        plugin = eval(`new window.${options.key}(options)`)
-      } else if (options.pluginObj) {
-        plugin = new options.pluginObj(options)
-      }
-
-      if (plugin) {
-        plugin.once('plugin-load', () => {
-          this.logger.log(`Plugin ${options.key} loaded`)
-          const pipeline = this.mediaHelper.getOrCreateAudioPipeline('audio')
-          if (!pipeline) {
-            this.logger.error(`当前环境不支持AudioContext`)
-          } else {
-            pipeline.registerPlugin(options.key, plugin, options.wasmUrl)
-          }
-          this.emit('plugin-load', options.key)
-          this.client.apiFrequencyControl({
-            name: 'registerPlugin',
-            code: 0,
-            param: {
-              streamID: this.stringStreamID,
-              plugin: options.key
-            }
-          })
-        })
-        plugin.once('plugin-load-error', () => {
-          this.logger.error(`Load ${options.wasmUrl} error`)
-          this.emit('plugin-load-error', {
-            key: options.key,
-            msg: `Load ${options.wasmUrl} error`
-          })
-        })
-        plugin.once('error', (message: string) => {
-          this.logger.error(message)
-        })
-      } else {
-        this.client.apiFrequencyControl({
-          name: 'registerPlugin',
-          code: -1,
-          param: {
-            streamID: this.stringStreamID,
-            plugin: options.key
-          }
-        })
-        this.logger.error(`unsupport plugin ${options.key}`)
-        throw `unsupport plugin ${options.key}`
-      }
-    } catch (e) {
-      this.logger.error(`create plugin ${options.key} error`)
-      this.emit('plugin-load-error', {
-        key: options.key,
-        msg: e
+      this.client.apiFrequencyControl({
+        name: 'registerPlugin',
+        code: -1,
+        param: {
+          streamID: this.stringStreamID,
+          plugin: options.key
+        }
       })
     }
   }
 
   async unregisterPlugin(key: VideoPluginType | AudioPluginType) {
+    this.logger.log(`unRegister plugin:${key}`)
     if (audioPlugins.indexOf(key) !== -1) {
-      //注册audio插件
-      await this._unregisterAudioPlugin(key)
+      const pipeline = this.mediaHelper.getOrCreateAudioPipeline('audio')
+      if (pipeline) {
+        if (key === 'AIDenoise') {
+          await this.disableAIDenoise()
+        }
+        pipeline.unregisterPlugin(key as VideoPluginType)
+      }
       return
     }
 
-    this.logger.log(`unRegister plugin:${key}`)
     this.WebGLSupportError()
     if (this.videoPostProcess) {
       if (key === 'VirtualBackground' && this._segmentProcessor) {
@@ -4877,17 +4841,6 @@ class LocalStream extends RTCEventEmitter {
         await this.disableAdvancedBeauty()
       }
       this.videoPostProcess.unregisterPlugin(key as VideoPluginType)
-    }
-  }
-
-  async _unregisterAudioPlugin(key: VideoPluginType | AudioPluginType) {
-    this.logger.log(`unRegister plugin:${key}`)
-    const pipeline = this.mediaHelper.getOrCreateAudioPipeline('audio')
-    if (pipeline) {
-      if (key === 'AIDenoise') {
-        await this.disableAIDenoise()
-      }
-      pipeline.unregisterPlugin(key as VideoPluginType)
     }
   }
 
