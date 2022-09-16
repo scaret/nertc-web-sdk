@@ -16,6 +16,7 @@ import { StatsReport } from './module/report/statsReport'
 import { RTSTransport } from './module/rtsTransport'
 import { Signalling } from './module/signalling'
 import { OperationQueue } from './util/OperationQueue'
+import { SignalGetChannelInfoResponse } from './interfaces/SignalProtocols'
 
 type UIDTYPE = number | string
 
@@ -708,6 +709,7 @@ export interface MeetingJoinChannelOptions {
   joinChannelRecordConfig: RecordConfig
   joinChannelLiveConfig: LiveConfig
   token?: string
+  getChanneInfoResponse?: any
 }
 
 export interface AddTaskOptions {
@@ -1068,6 +1070,8 @@ export interface JoinOptions {
   joinChannelLiveConfig?: LiveConfig
   joinChannelRecordConfig?: RecordConfig
   neRtcServerAddresses?: NeRtcServerAddresses
+  getChanneInfoResponse?: SignalGetChannelInfoResponse
+  customData?: string
 }
 
 export interface JoinChannelRequestParam4WebRTC2 {
@@ -1081,6 +1085,7 @@ export interface JoinChannelRequestParam4WebRTC2 {
   appkey: string
   userRole: number
   token?: string
+  getChanneInfoResponse?: SignalGetChannelInfoResponse
 }
 
 export interface SignalingConnectionConfig {

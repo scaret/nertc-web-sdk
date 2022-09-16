@@ -389,6 +389,12 @@ class Signalling extends EventEmitter {
         }
         this.adapterRef.instance._roleInfo.audienceList[uid] = false
         this.adapterRef.instance.safeEmit('peer-online', { uid })
+        if (externData.customData) {
+          this.adapterRef.instance.safeEmit('custom-data', {
+            uid,
+            customData: externData.customData
+          })
+        }
         break
       }
       case 'OnPeerLeave': {
@@ -1077,6 +1083,7 @@ class Signalling extends EventEmitter {
           name: getBrowserInfo().browserName,
           version: `${getBrowserInfo().browserVersion}`
         },
+        customData: this.adapterRef.channelInfo.customData || '',
         gmEnable: gmEnable,
         gmMode: encryptionModeToInt(this.adapterRef.encryption.encryptionMode),
         gmKey: this.adapterRef.encryption.encryptionSecret,
@@ -1332,6 +1339,10 @@ class Signalling extends EventEmitter {
             this.adapterRef.memberMap[uid] = '' + uid
             this.adapterRef.instance.safeEmit('peer-online', { uid })
           }
+          if (peer.customData) {
+            this.adapterRef.instance.safeEmit('custom-data', { uid, customData: peer.customData })
+          }
+
           if (peer.producerInfoList) {
             for (const peoducerInfo of peer.producerInfoList) {
               const { mediaType, producerId, mute, simulcastEnable } = peoducerInfo

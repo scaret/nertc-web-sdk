@@ -230,6 +230,26 @@ class Client extends Base {
     return this.adapterRef.channelInfo && this.adapterRef.channelInfo.uid
   }
 
+  //用来获取getChannelInfo参数
+  getParameter(type = 'getChannelInfo') {
+    this.apiFrequencyControl({
+      name: 'getParameter',
+      code: 0,
+      param: {
+        type
+      }
+    })
+    if (type === 'getChannelInfo') {
+      const postData = `appkey=${this._params.appkey}&osType=4&mode=2&netType=0&version=${
+        SDK_VERSION + '.0'
+      }&webrtc=1&nrtcg2=1&t1=${Date.now()}`
+      const header = {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+      return JSON.stringify({ postData, header })
+    }
+  }
+
   /**
    *  获取当前通话信息
    *  @method getChannelInfo
@@ -479,6 +499,10 @@ class Client extends Base {
       if (options.token) {
         this._params.token = options.token
       }
+      if (options.customData) {
+        this.adapterRef.channelInfo.customData = options.customData
+      }
+
       this._params.JoinChannelRequestParam4WebRTC2 = {
         startJoinTime: Date.now(),
         appkey: this._params.appkey,
@@ -493,7 +517,8 @@ class Client extends Base {
           recordVideo: false, // 是否开启视频实时音录制，0不需要，1需要（默认0）
           recordType: 0, // 录制模式，0混单（产生混合录制文件+单独录制文件） 1只混（只产生混合录制文件） 2只单（只产生单独录制文件）
           isHostSpeaker: false // 主讲人
-        }
+        },
+        getChanneInfoResponse: options.getChanneInfoResponse
       }
       if (options.neRtcServerAddresses) {
         this._params.neRtcServerAddresses = {
