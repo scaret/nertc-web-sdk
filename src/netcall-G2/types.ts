@@ -1475,7 +1475,7 @@ export interface PluginOptions {
   key: string
   pluginUrl?: string
   pluginObj?: AnyClass
-  wasmUrl?: string
+  wasmUrl: string
 }
 
 type AnyClass = {

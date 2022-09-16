@@ -2,6 +2,7 @@ import webworkify from 'webworkify-webpack'
 import { Logger } from '../../util/webrtcLogger'
 import { ILogger } from '../../types'
 import { RTCEventEmitter } from '../../util/rtcUtil/RTCEventEmitter'
+import { modelOptions } from './src/types'
 
 class AIDenoise extends RTCEventEmitter {
   private deoniseWorker: any
@@ -9,23 +10,21 @@ class AIDenoise extends RTCEventEmitter {
   private logger: ILogger
   private wasmBinary: Uint8Array = new Uint8Array()
   private denoiseCallback!: (result: Float32Array) => void
-  private modelParam: any
   private isLoaded = false
-  constructor(options: any) {
+
+  constructor(options: modelOptions) {
     super()
-    this.modelParam = options //'normal'
     this.logger = new Logger({
       tagGen: () => {
         return 'AIDenoise'
       }
     })
-    this.modelParam.wasmUrl =
-      'https://yx-web-nosdn.netease.im/sdk-release/ai_denoise.wasm?time=' + Date.now()
+
     this.isLoaded = false
-    this.preload(this.modelParam)
+    this.preload(options)
   }
 
-  async preload(options: any) {
+  async preload(options: modelOptions) {
     await fetch(options.wasmUrl)
       .then((response) => response.arrayBuffer())
       .then((bytes) => {

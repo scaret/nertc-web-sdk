@@ -11,10 +11,17 @@ export class StageAIProcessing extends StageBase {
   audioWorkletAgent: AudioWorkletAgent | null = null
   private AIDenoise: AIDenoise | null = null
   enableAIDenoise = true
+
   constructor(context: AudioContext, logger: ILogger) {
     super(context)
     this.logger = logger
   }
+
+  registerAIDenoisePlugin(plugin: AIDenoise, wasmUrl: string) {
+    //AI降噪
+    this.AIDenoise = plugin
+  }
+
   async init() {
     this.state = 'INITING'
     if (!this.audioWorkletAgent) {
@@ -28,8 +35,6 @@ export class StageAIProcessing extends StageBase {
         if (this.enabled) {
           if (this.AIDenoise && this.AIDenoise.load) {
             this.AIDenoise!.process(evt.inputs[0], (data) => {
-              // console.log('noise data', evt.inputs[0])
-              //  console.log(data[0])
               if (data.length) {
                 evt.inputs[0] = data
               }
@@ -42,12 +47,11 @@ export class StageAIProcessing extends StageBase {
       })
     }
 
-    //AI降噪
-    this.AIDenoise = new AIDenoise({})
-    this.AIDenoise.on('plugin-load', () => {
-      console.warn(' this.AIDenoise load ')
-      this.AIDenoise?.init()
+    this.AIDenoise?.on('denoise-load', () => {
+      console.warn('denoise-load')
     })
+
+    this.AIDenoise?.init()
     this.state = 'INITED'
   }
 }

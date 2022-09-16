@@ -120,6 +120,47 @@ const advancedBeautyPluginConfig = {
 
 let beauty_config = null
 
+//AI降噪
+const aiDenoisePluginConfig = {
+  development: {
+    simd: {
+      key: 'AIDenoise',
+      pluginUrl: './js/nim/NIM_Web_AIDenoise.js',
+      wasmUrl: './js/nim/wasm/NIM_Web_AIDenoise_simd.wasm' + `?time=${Math.random()}`
+    },
+    nosimd: {
+      key: 'AIDenoise',
+      pluginUrl: './js/nim/NIM_Web_AIDenoise.js',
+      wasmUrl: './js/nim/wasm/NIM_Web_AIDenoise_nosimd.wasm'
+    }
+  },
+  production: {
+    simd: {
+      key: 'AIDenoise',
+      pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_simd_v${NERTC.VERSION}.wasm`
+    },
+    nosimd: {
+      key: 'AIDenoise',
+      pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_nosimd_v${NERTC.VERSION}.wasm`
+    }
+  },
+  test: {
+    simd: {
+      key: 'AIDenoise',
+      pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}_test.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_simd_v${NERTC.VERSION}_test.wasm`
+    },
+    nosimd: {
+      key: 'AIDenoise',
+      pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}_test.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_nosimd_v${NERTC.VERSION}_test.wasm`
+    }
+  }
+}
+let aidenoise_config = null
+
 let privatizationConfig = null
 /*{
   "appkey":"6c6a4f0c8928b54032ebc495e442ebbf",
@@ -1415,6 +1456,7 @@ $('#leaveChannel-btn').on('click', async () => {
   window.rtc.client.leave()
   rtc.enableBodySegment = false
   rtc.enableAdvancedBeauty = false
+  rtc.enableAIDenoise = false
   rtc.remoteStreams.length = 0
   subList.length = 0
   clearInterval(playTimer)
@@ -1582,17 +1624,29 @@ range4.addEventListener('change', () => {
   rtc.localStream.setBeautyEffectOptions(effects)
 })
 
+/**
+ * ----------------------------------------
+ *              插件相关
+ * ----------------------------------------
+ */
+
 function onPluginLoaded(name) {
   console.log('onPluginLoaded', name)
-  if (name == 'VirtualBackground') {
-    //rtc.localStream.enableBodySegment();
-    $('#segmentStatus').html('loaded').show()
-    rtc.enableBodySegment = true
-  } else if (name == 'AdvancedBeauty') {
-    //const maxFaceSize = document.getElementById('adv-face-size');
-    //rtc.localStream.enableAdvancedBeauty(Number(maxFaceSize.value));
-    $('#advancedBeautyStatus').html('loaded').show()
-    rtc.enableAdvancedBeauty = true
+  switch (name) {
+    case 'VirtualBackground':
+      $('#segmentStatus').html('loaded').show()
+      rtc.enableBodySegment = true
+      break
+    case 'AdvancedBeauty':
+      $('#advancedBeautyStatus').html('loaded').show()
+      rtc.enableAdvancedBeauty = true
+      break
+    case 'AIDenoise':
+      $('#aidenoiseStatus').html('loaded').show()
+      rtc.enableAIDenoise = true
+      break
+    default:
+      break
   }
 }
 

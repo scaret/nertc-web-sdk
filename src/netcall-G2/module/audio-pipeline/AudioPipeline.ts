@@ -346,6 +346,13 @@ export class AudioPipeline {
       singleInput: cnt === 1 ? input : null
     }
   }
+
+  registerPlugin(key: string, pluginObj: any, wasmUrl: string) {
+    if (key === 'AIDenoise') {
+      this.stageAIProcessing.registerAIDenoisePlugin(pluginObj, wasmUrl)
+    }
+  }
+
   async enableAIdenoise(enable = true) {
     this.logger.log(`Enabling AI Denoise`, enable)
     this.stageAIProcessing.enabled = enable
