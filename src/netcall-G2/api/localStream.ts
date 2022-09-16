@@ -2912,13 +2912,17 @@ class LocalStream extends RTCEventEmitter {
     const deviceInfo = Device.deviceHistory.video.find((d: DeviceInfo) => {
       return d.deviceId === (cameraSettings && cameraSettings.deviceId)
     })
-    if ((cameraSettings && !cameraSettings.width) || !deviceInfo) {
-      // 尝试寻找美颜的cameraTrack。不要直接判断是否是CanvasCaptureMediaStreamTrack因为Firefox不支持
-      cameraSettings = this._cameraTrack?.getSettings()
-      if (cameraSettings?.width && this._cameraTrack?.readyState === 'live') {
-        this.logger.log(`setVideoProfile 侦测到美颜在开启状态`)
-        cameraTrack = this._cameraTrack
-      }
+    // if ((cameraSettings && !cameraSettings.width) || !deviceInfo) {
+    //   // 尝试寻找美颜的cameraTrack。不要直接判断是否是CanvasCaptureMediaStreamTrack因为Firefox不支持
+    //   cameraSettings = this._cameraTrack?.getSettings()
+    //   if (cameraSettings?.width && this._cameraTrack?.readyState === 'live') {
+    //     this.logger.log(`setVideoProfile 侦测到美颜在开启状态`)
+    //     cameraTrack = this.videoPostProcess.sourceTrack
+    //   }
+    // }
+    if (this.videoPostProcess.hasAnyTask) {
+      this.logger.log(`setVideoProfile 侦测到美颜在开启状态`)
+      cameraTrack = this.videoPostProcess.sourceTrack
     }
 
     if (cameraTrack) {
@@ -2967,6 +2971,7 @@ class LocalStream extends RTCEventEmitter {
         ...options
       }
     })
+    this.replaceCanvas()
   }
 
   setVideoEncoderConfiguration(options: {

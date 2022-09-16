@@ -1,7 +1,7 @@
 const env = require('./build/env')
 const git = require('./build/git')
 const CopyPlugin = require('copy-webpack-plugin')
-const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin
+// const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin
 
 if (env.isProduction() && git.hasChange()) {
   // throw new Error('please commit all changes')

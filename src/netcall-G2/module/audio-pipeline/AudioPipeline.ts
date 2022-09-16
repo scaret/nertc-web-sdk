@@ -318,8 +318,10 @@ export class AudioPipeline {
             }
           }
         }
+      // eslint-disable-line no-fallthrough
       case 2:
       // TODO
+      // eslint-disable-line no-fallthrough
       default:
       // TODO
     }

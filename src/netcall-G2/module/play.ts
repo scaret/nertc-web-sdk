@@ -261,12 +261,10 @@ class Play extends EventEmitter {
 
   showControlIfVideoPause() {
     if (this.videoDom && this.videoDom.paused) {
-      this.logger.log('[Play] 可能遇到了自动播放问题，展示默认控件:', 'video')
-      this.videoDom.setAttribute('controls', 'controls')
+      this.logger.log('[Play] 可能遇到了播放问题', 'video')
     }
     if (this.screenDom && this.screenDom.paused) {
-      this.logger.log('[Play] 可能遇到了自动播放问题，展示默认控件:', 'screen')
-      this.screenDom.setAttribute('controls', 'controls')
+      this.logger.log('[Play] 可能遇到了播放问题', 'screen')
     }
   }
 
@@ -283,13 +281,11 @@ class Play extends EventEmitter {
   }
 
   handleVideoScreenPlay() {
-    if (this.videoDom && !this.videoDom.paused && this.videoDom.hasAttribute('controls')) {
-      this.logger.log('[Play] 侦测到视频播放，隐藏默认控件:')
-      this.videoDom.removeAttribute('controls')
+    if (this.videoDom && !this.videoDom.paused) {
+      this.logger.log('[Play] 侦测到视频播放')
     }
-    if (this.screenDom && !this.screenDom.paused && this.screenDom.hasAttribute('controls')) {
-      this.logger.log('[Play] 侦测到辅流播放，隐藏默认控件:')
-      this.screenDom.removeAttribute('controls')
+    if (this.screenDom && !this.screenDom.paused) {
+      this.logger.log('[Play] 侦测到辅流播放')
     }
   }
 

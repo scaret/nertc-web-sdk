@@ -164,6 +164,10 @@ export default class VideoPostProcess extends EventEmitter {
     return this.taskSet.has(task)
   }
 
+  get hasAnyTask() {
+    return this.taskSet.size > 0
+  }
+
   /**
    * 创建 videoPostProcess track
    * @param {MediaStreamTrack} track
