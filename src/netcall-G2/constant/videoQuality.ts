@@ -4,7 +4,8 @@ export enum VIDEO_FRAME_RATE_ENUM {
   CHAT_VIDEO_FRAME_RATE_10 = 2,
   CHAT_VIDEO_FRAME_RATE_15 = 3,
   CHAT_VIDEO_FRAME_RATE_20 = 4,
-  CHAT_VIDEO_FRAME_RATE_25 = 5
+  CHAT_VIDEO_FRAME_RATE_25 = 5,
+  CHAT_VIDEO_FRAME_RATE_30 = 6
 }
 
 /**
@@ -39,7 +40,12 @@ export const VIDEO_FRAME_RATE = {
   /**
    * 视频通话帧率 最大取每秒25帧
    */
-  CHAT_VIDEO_FRAME_RATE_25: 5
+  CHAT_VIDEO_FRAME_RATE_25: 5,
+
+  /**
+   * 视频通话帧率 最大取每秒30帧
+   */
+  CHAT_VIDEO_FRAME_RATE_30: 6
 }
 
 export const NERTC_RECORD_VIDEO_QUALITY = {
