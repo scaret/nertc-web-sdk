@@ -26,6 +26,7 @@ import RtcError from '../util/error/rtcError'
 import { RtcSupport } from '../util/rtcUtil/rtcSupport'
 import * as env from '../util/rtcUtil/rtcEnvironment'
 import { getParameters } from './parameters'
+import { MediaHelper } from './media'
 
 /**
  * webaudio 控制
@@ -140,6 +141,7 @@ class WebAudio extends EventEmitter {
   public analyzeDestination: MediaStreamAudioDestinationNode | null
   public destination: MediaStreamAudioDestinationNode | null
   public context: AudioContext | null
+  private mediaHelper: MediaHelper
 
   constructor(option: WebAudioOptions) {
     super()
@@ -155,6 +157,7 @@ class WebAudio extends EventEmitter {
     this.instant = 0.0
     this.slow = 0.0
     this.clip = 0.0
+    this.mediaHelper = option.mediaHelper
     this.mixAudioConf = {
       state: AuidoMixingState.UNSTART,
       audioSource: null,
@@ -283,9 +286,35 @@ class WebAudio extends EventEmitter {
       return null
     }
 
+    // Hack: 处理AI降噪的音频路由
+    let aiNode = this.mediaHelper.audio.stageAIProcessing?.node?.audioNode || null
+    let aiEnabled = this.mediaHelper.audio.stageAIProcessing?.enabled
+    if (aiNode) {
+      if (aiEnabled) {
+        aiNode.connect(that.gainFilter)
+      } else {
+        try {
+          aiNode.disconnect(that.gainFilter)
+        } catch {}
+      }
+    }
     for (var i = 0; i < that.audioInArr.length; i++) {
       const audioIn = that.audioInArr[i]
-      audioIn.connect(that.gainFilter)
+      if (aiNode) {
+        if (aiEnabled) {
+          try {
+            audioIn.gainNode.disconnect(that.gainFilter)
+          } catch (e) {}
+          audioIn.connect(aiNode)
+        } else {
+          try {
+            audioIn.gainNode.disconnect(aiNode)
+          } catch (e) {}
+          audioIn.connect(that.gainFilter)
+        }
+      } else {
+        audioIn.connect(that.gainFilter)
+      }
     }
 
     if (that.mixAudioConf.state === AuidoMixingState.UNSTART) {

@@ -11,10 +11,23 @@ export class StageAIProcessing extends StageBase {
   audioWorkletAgent: AudioWorkletAgent | null = null
   private AIDenoise: AIDenoise | null = null
   enableAIDenoise = true
+  private pluginList: string[] = []
 
   constructor(context: AudioContext, logger: ILogger) {
     super(context)
     this.logger = logger
+    this.enabled = false
+  }
+
+  hasPlugin(key: string) {
+    return this.pluginList.indexOf(key) !== -1
+  }
+
+  registerPlugin(key: string, pluginObj: any, wasmUrl: string) {
+    if (key === 'AIDenoise') {
+      this.registerAIDenoisePlugin(pluginObj, wasmUrl)
+      this.pluginList.push('AIDenoise')
+    }
   }
 
   registerAIDenoisePlugin(plugin: AIDenoise, wasmUrl: string) {
@@ -30,7 +43,7 @@ export class StageAIProcessing extends StageBase {
         context: this.context
       })
       this.node = this.audioWorkletAgent.node as unknown as NeAudioNode<AudioWorkletNode>
-      this.audioWorkletAgent.init()
+      await this.audioWorkletAgent.init()
       this.audioWorkletAgent.on('rawinputs', (evt) => {
         if (this.enabled) {
           if (this.AIDenoise && this.AIDenoise.load) {
