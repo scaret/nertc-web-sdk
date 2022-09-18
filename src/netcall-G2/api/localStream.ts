@@ -51,8 +51,8 @@ import * as env from '../util/rtcUtil/rtcEnvironment'
 import { RTCEventEmitter } from '../util/rtcUtil/RTCEventEmitter'
 import { isHttpProtocol } from '../util/rtcUtil/rtcSupport'
 import { makePrintable } from '../util/rtcUtil/utils'
-import { syncTrackState } from '../util/syncTrackState'
-import { AudioPipeline } from '../module/audio-pipeline/AudioPipeline'
+import { getAudioContext } from '../module/webAudio'
+import { StageAIProcessing } from '../module/audio-pipeline/stages/StageAIProcessing/StageAIProcessing'
 
 /**
  *  请使用 {@link NERTC.createStream} 通过NERTC.createStream创建
@@ -136,8 +136,6 @@ class LocalStream extends RTCEventEmitter {
   private advancedBeauty: AdvancedBeauty
   private _segmentProcessor: VirtualBackground | null
   private _advancedBeautyProcessor: AdvancedBeauty | null = null
-  //todo 待音频前处理模块合入后修改
-  private _aiDenoiseProcessor: AudioPipeline | null = null
   private lastEffects: any
   private lastFilter: any
   private videoPostProcessTags = {
@@ -4543,45 +4541,57 @@ class LocalStream extends RTCEventEmitter {
   }
 
   //打开AI降噪
-  async enableAIDenoise() {
-    if (this._aiDenoiseProcessor) {
-      return this.logger.warn('ai denoise is already opened.')
-    }
-    const pipeline = this.mediaHelper.getOrCreateAudioPipeline('audio')
-    if (!pipeline) {
-      this.logger.error(`当前环境不支持AudioContext`)
+  async enableAIDenoise(): Promise<boolean> {
+    let stageAIProcessing: StageAIProcessing
+    if (this.mediaHelper.audio.stageAIProcessing) {
+      stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
+      if (stageAIProcessing.enabled && stageAIProcessing.state === 'INITED') {
+        this.logger.warn('ai denoise is already opened.')
+        return true
+      }
     } else {
-      if (!pipeline.hasPlugin('AIDenoise')) {
-        return this.logger.warn('AIDenoise plugin is not register.')
-      }
-      await pipeline.enableAIdenoise(true)
-      this._aiDenoiseProcessor = pipeline
-      const sender = this.getSender('audio', 'high')
-      if (sender) {
-        sender.replaceTrack(pipeline.output.track)
+      // 4.6.25版本无法把完整的AudioPipeline移植到localStream，所以单独将AI降噪模块拿出来
+      // 创建AI降噪模块
+      const context = getAudioContext()
+      if (!context) {
+        this.logger.error(`当前环境不支持AudioContext`)
+        return false
+      } else {
+        stageAIProcessing = new StageAIProcessing(context, this.logger)
+        this.mediaHelper.audio.stageAIProcessing = stageAIProcessing
       }
     }
+    if (!stageAIProcessing.hasPlugin('AIDenoise')) {
+      this.logger.warn('AIDenoise plugin is not register.')
+      return false
+    }
+    stageAIProcessing.enabled = true
+    if (stageAIProcessing.state === 'UNINIT') {
+      await stageAIProcessing.init()
+    }
+    if (!this.mediaHelper.audio.audioRoutingEnabled) {
+      this.mediaHelper.enableAudioRouting()
+    }
+    this.mediaHelper.updateWebAudio()
+    return true
   }
 
   //关闭AI降噪
-  async disableAIDenoise() {
-    if (!this._aiDenoiseProcessor) {
-      return this.logger.warn('ai denoise is already closed.')
+  async disableAIDenoise(): Promise<boolean> {
+    const stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
+    if (!stageAIProcessing) {
+      this.logger.warn('disableAIDenoise: ai denoise is not created')
+      return true
+    } else if (!stageAIProcessing.enabled) {
+      this.logger.warn('ai denoise is already closed.')
+      return true
     }
-    const pipeline = this.mediaHelper.getOrCreateAudioPipeline('audio')
-    if (!pipeline) {
-      this.logger.error(`当前环境不支持AudioContext`)
-    } else {
-      if (!pipeline.hasPlugin('AIDenoise')) {
-        return this.logger.warn('AIDenoise plugin is not register.')
-      }
-      await pipeline.enableAIdenoise(false)
-      this._aiDenoiseProcessor = null
-      const sender = this.getSender('audio', 'high')
-      if (sender) {
-        sender.replaceTrack(pipeline.output.track)
-      }
+    stageAIProcessing.enabled = false
+    this.mediaHelper.updateWebAudio()
+    if (this.mediaHelper.canDisableAudioRouting()) {
+      this.mediaHelper.disableAudioRouting()
     }
+    return false
   }
 
   async replacePluginTrack(options: {
@@ -4737,12 +4747,12 @@ class LocalStream extends RTCEventEmitter {
       return this.logger.warn(`plugin ${options.key} is already exists.`)
     }
     //防止在不注册AI降噪时创建AudioPipeline，这里写的麻烦一点
-    if (audioPlugins.indexOf(options.key) !== -1) {
-      const pipeline = this.mediaHelper.getOrCreateAudioPipeline('audio')
-      if (pipeline && pipeline.hasPlugin(options.key)) {
-        return this.logger.warn(`plugin ${options.key} is already exists.`)
-      }
-    }
+    // if (audioPlugins.indexOf(options.key) !== -1) {
+    //   const pipeline = this.mediaHelper.getOrCreateAudioPipeline('audio')
+    //   if (pipeline && pipeline.hasPlugin(options.key)) {
+    //     return this.logger.warn(`plugin ${options.key} is already exists.`)
+    //   }
+    // }
 
     let plugin: any = null
     try {
@@ -4759,11 +4769,30 @@ class LocalStream extends RTCEventEmitter {
             this.WebGLSupportError()
             this.videoPostProcess.registerPlugin(options.key as any, plugin)
           } else if (audioPlugins.indexOf(options.key) !== -1) {
-            const pipeline = this.mediaHelper.getOrCreateAudioPipeline('audio')
-            if (!pipeline) {
-              this.logger.error(`当前环境不支持AudioContext`)
-            } else {
-              pipeline.registerPlugin(options.key, plugin, options.wasmUrl)
+            // const pipeline = this.mediaHelper.getOrCreateAudioPipeline('audio')
+            // if (!pipeline) {
+            //   this.logger.error(`当前环境不支持AudioContext`)
+            // } else {
+            //   pipeline.registerPlugin(options.key, plugin, options.wasmUrl)
+            // }
+
+            if (options.key === 'AIDenoise') {
+              let stageAIProcessing
+              if (this.mediaHelper.audio.stageAIProcessing) {
+                stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
+              } else {
+                // 4.6.25版本无法把完整的AudioPipeline移植到localStream，所以单独将AI降噪模块拿出来
+                // 创建AI降噪模块
+                const context = getAudioContext()
+                if (!context) {
+                  this.logger.error(`当前环境不支持AudioContext`)
+                  return false
+                } else {
+                  stageAIProcessing = new StageAIProcessing(context, this.logger)
+                  this.mediaHelper.audio.stageAIProcessing = stageAIProcessing
+                }
+              }
+              stageAIProcessing.registerPlugin(options.key, plugin, options.wasmUrl)
             }
           } else {
             throw new Error(`unsupport plugin ${options.key}`)
@@ -4823,14 +4852,26 @@ class LocalStream extends RTCEventEmitter {
   async unregisterPlugin(key: VideoPluginType | AudioPluginType) {
     this.logger.log(`unRegister plugin:${key}`)
     if (audioPlugins.indexOf(key) !== -1) {
-      const pipeline = this.mediaHelper.getOrCreateAudioPipeline('audio')
-      if (pipeline) {
-        if (key === 'AIDenoise') {
-          await this.disableAIDenoise()
+      if (key === 'AIDenoise') {
+        const stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
+        if (stageAIProcessing) {
+          stageAIProcessing.enabled = false
+          this.mediaHelper.updateWebAudio()
+          if (this.mediaHelper.canDisableAudioRouting()) {
+            this.mediaHelper.disableAudioRouting()
+          }
+          stageAIProcessing.unregisterAIDenoise()
+          this.mediaHelper.audio.stageAIProcessing = null
         }
-        pipeline.unregisterPlugin(key as VideoPluginType)
       }
       return
+      // const pipeline = this.mediaHelper.getOrCreateAudioPipeline('audio')
+      // if (pipeline) {
+      //   if (key === 'AIDenoise') {
+      //     await this.disableAIDenoise()
+      //   }
+      //   pipeline.unregisterPlugin(key as VideoPluginType)
+      // }
     }
 
     this.WebGLSupportError()

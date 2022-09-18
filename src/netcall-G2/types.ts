@@ -581,6 +581,7 @@ export interface AudioLevelOptions {
 }
 
 export interface WebAudioOptions {
+  mediaHelper: MediaHelper
   logger: ILogger
   isAnalyze?: boolean
   isRemote?: boolean

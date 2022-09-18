@@ -40,6 +40,7 @@ import {
 import { getAudioContext, WebAudio } from './webAudio'
 import { VideoTrackLow } from './videoTrackLow'
 import { AudioPipeline } from './audio-pipeline/AudioPipeline'
+import {StageAIProcessing} from "./audio-pipeline/stages/StageAIProcessing/StageAIProcessing";
 class MediaHelper extends EventEmitter {
   stream: LocalStream | RemoteStream
   public audio: {
@@ -69,6 +70,7 @@ class MediaHelper extends EventEmitter {
     webAudio: WebAudio | null
     micConstraint: { audio: MediaTrackConstraints } | null
     mixAudioConf: MixAudioConf
+    stageAIProcessing: StageAIProcessing | null
     audioRoutingEnabled: boolean
   } = {
     audioStream: new MediaStream(),
@@ -87,6 +89,7 @@ class MediaHelper extends EventEmitter {
       audioBuffer: {}, //云端音频buffer数组
       sounds: {}
     },
+    stageAIProcessing: null,
     audioRoutingEnabled: false
   }
   public video: {
@@ -398,6 +401,7 @@ class MediaHelper extends EventEmitter {
   updateWebAudio() {
     if (!this.audio.webAudio) {
       this.audio.webAudio = new WebAudio({
+        mediaHelper: this,
         logger: this.logger
       })
       this.audio.webAudio.on(
@@ -1372,6 +1376,11 @@ class MediaHelper extends EventEmitter {
   canDisableAudioRouting() {
     let isMixAuidoCompleted = true
     if (!this.audio.webAudio) return false
+
+    //判断是否开启了AI降噪
+    if (this.audio.stageAIProcessing?.enabled) {
+      return false
+    }
 
     //判断伴音是否都已经结束了
     if (
