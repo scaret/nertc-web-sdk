@@ -960,6 +960,9 @@ class Mediasoup extends EventEmitter {
             mediaType: 'screenShare'
           }
         })
+        if (this._screenProducer._rtpSender && stream.mediaHelper.screen.low) {
+          stream.mediaHelper.screen.low.bindSender(this._screenProducer._rtpSender)
+        }
         this.watchProducerState(this._screenProducer, '_screenProducer')
         if (this.adapterRef.encryption.encodedInsertableStreams) {
           if (this._screenProducer._rtpSender) {
