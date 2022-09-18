@@ -170,16 +170,19 @@ export class VideoTrackLow {
     } else if (this.track.readyState !== 'live') {
       this.logger.error(`小流 Track 已停止`)
     } else if (this.high.track?.enabled === false) {
-      if (this.lastState === 'frame') {
+      if (this.lastState === 'frame' || this.lastState === 'clear') {
         this.logger.log(`track处在mute状态`)
         this.lastState = 'black'
         this.context.fillStyle = 'black'
         this.context.fillRect(0, 0, this.width, this.height)
       }
     } else if (this.high.videoDom.paused) {
-      if (this.lastState === 'frame') {
+      if (this.lastState === 'frame' || this.lastState === 'clear') {
         this.logger.log(`track处在 Paused 状态`)
         this.lastState = 'paused'
+        this.high.videoDom.play().catch((e) => {
+          // this.logger.error(`播放失败，小流可能无法展示`, e)
+        })
       }
     } else if (this.high.track?.readyState === 'live') {
       if (this.lastState !== 'frame') {
