@@ -1654,16 +1654,16 @@ function getRandomDevice() {
       return randomBuffer[0]
     }
   } else if (ENVIRONMENT_IS_NODE) {
-    // for nodejs with or without crypto support included
-    try {
-      var crypto_module = require('crypto')
-      // nodejs has crypto support
-      return function () {
-        return crypto_module['randomBytes'](1)[0]
-      }
-    } catch (e) {
-      // nodejs doesn't have crypto support
-    }
+    // // for nodejs with or without crypto support included
+    // try {
+    //   var crypto_module = require('crypto')
+    //   // nodejs has crypto support
+    //   return function () {
+    //     return crypto_module['randomBytes'](1)[0]
+    //   }
+    // } catch (e) {
+    //   // nodejs doesn't have crypto support
+    // }
   }
   // we couldn't find a proper implementation, as Math.random() is not suitable for /dev/random, see emscripten-core/emscripten/pull/7096
   return function () {
