@@ -28,8 +28,8 @@ export class AudioWorkletAgent extends EventEmitter {
       if (AudioWorkletState !== 'READY') {
         tag += ' ' + AudioWorkletState
       }
-      const delay = (this.inputCnt - this.outputCnt) * 10
-      tag += ' Delay' + delay + 'ms'
+      // const delay = (this.inputCnt - this.outputCnt) * 10
+      // tag += ' Delay' + delay + 'ms'
       return tag
     })
     const context = options.context
@@ -38,9 +38,9 @@ export class AudioWorkletAgent extends EventEmitter {
       context: context
     }
 
-    setInterval(() => {
-      this.logger.log(`outputCnt`, this.outputCnt, `inputCnt`, this.inputCnt)
-    }, 10000)
+    // setInterval(() => {
+    //   this.logger.log(`outputCnt`, this.outputCnt, `inputCnt`, this.inputCnt)
+    // }, 10000)
   }
 
   async init() {
@@ -79,6 +79,7 @@ export class AudioWorkletAgent extends EventEmitter {
   }
 
   bindProcessorEvents() {
+    this.removeAllListeners('rawinputs')
     this.support.audioWorkletNode!.port.onmessage = (event) => {
       this.emit('processor-message', event)
       if (event.data.type === 'rawinputs') {

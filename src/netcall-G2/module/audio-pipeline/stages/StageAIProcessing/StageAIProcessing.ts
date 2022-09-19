@@ -54,8 +54,6 @@ export class StageAIProcessing extends StageBase {
               this.audioWorkletAgent!.outputData(evt.inputs[0])
             })
           }
-        } else if (evt.inputs[0] && evt.inputs[0].length) {
-          this.audioWorkletAgent!.outputData(evt.inputs[0])
         }
       })
     }
