@@ -504,6 +504,7 @@
               <option value='CHAT_VIDEO_FRAME_RATE_15'>15</option>
               <option value='CHAT_VIDEO_FRAME_RATE_20'>20</option>
               <option value='CHAT_VIDEO_FRAME_RATE_25'>25</option>
+              <option value='CHAT_VIDEO_FRAME_RATE_30'>30</option>
             </select>
           </div>
 
@@ -524,6 +525,7 @@
               <option value='CHAT_VIDEO_FRAME_RATE_15'>15</option>
               <option value='CHAT_VIDEO_FRAME_RATE_20'>20</option>
               <option value='CHAT_VIDEO_FRAME_RATE_25'>25</option>
+              <option value='CHAT_VIDEO_FRAME_RATE_30'>30</option>
             </select>
           </div>
 
@@ -649,6 +651,14 @@
             <button type="button" id="subscribeAll">订阅全部</button>
             <button type="button" id="unsubscribeAll">取消订阅全部</button>
           </div>
+        </div>
+        <p class="block-header">AI降噪</p>
+        <div class="line">
+          <button type="button" id="registerAIDenoise">注册</button>
+          <button type="button" id="enableAIDenoise">打开</button>
+          <button type="button" id="disableAIDenoise">关闭</button>
+          <button type="button" id="unregisterAIDenoise">销毁</button>
+          <label id="aidenoiseStatus" style="display: none;">loading</label>
         </div>
 
       </div>
@@ -948,6 +958,25 @@
         </div>
       </div>
       <div class="block">
+        <p class="block-header">快呼叫</p>
+        <div class="part">
+          <div class="line">
+            是否启动快呼叫功能
+            <input type="checkbox" id="isFastCall">
+          </div>
+          <div class="line">
+            <label>
+              输入自定义信息
+              <input placeholder="" type="text" id="customData" value="">
+            </label>
+          </div>
+          <div class="line">
+            <label>
+              输入getChannelInfo信息
+              <input placeholder="" type="text" id="getChannelInfoResponse" value="">
+            </label>
+          </div>
+        </div>
 
         <p class="block-header" id="clientRecord">客户端录制</p>
         <div class="part hide" id="part-record-pro">
