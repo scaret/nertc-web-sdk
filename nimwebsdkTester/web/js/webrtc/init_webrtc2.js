@@ -161,7 +161,7 @@ const aiDenoisePluginConfig = {
 }
 let aidenoise_config = null
 
-let privatizationConfig = null
+let privatizationConfig = {}
 /*{
   "appkey":"6c6a4f0c8928b54032ebc495e442ebbf",
   "demoServer":"https://yunxinent-demo.netease.im/nrtcproxy/demo/getChecksum.action",
@@ -299,8 +299,9 @@ $('#privatizationConfig').on('click', () => {
         $('#appkey').val(privatizationConfig.appkey)
         init()
       } else {
-        console.error('私有化配置: 没有获取appkey')
-        addLog('私有化配置: 没有获取appkey，请检查设置的参数是否正确')
+        privatizationConfig = {}
+        console.error('私有化配置: 没有配置appkey')
+        addLog('私有化配置: 没有配置appkey，请检查设置的参数是否正确')
         return
       }
     }
@@ -409,7 +410,15 @@ async function loadTokenByAppKey() {
   let uid = getUidFromDomInput()
   let channelName = $('#channelName').val()
   let safemode = $('#part-env input[name="safemode"]:checked').val() === 'safe'
-  if (AppSecret && safemode && channelName) {
+  if (safemode && privatizationConfig.demoServer) {
+    const checkSumUrl = privatizationConfig.demoServer
+    const data = await axios.post(checkSumUrl, `uid=${uid}&appkey=${appkey}`)
+    if (data.data.code === 200) {
+      $('#token').val(data.data.checksum)
+    } else {
+      console.error('getChecksum error: ', error)
+    }
+  } else if (AppSecret && safemode && channelName) {
     let Nonce = Math.ceil(Math.random() * 1e9)
     let CurTime = Math.ceil(Date.now() / 1000)
     let CheckSum = sha1(`${AppSecret}${Nonce}${CurTime}`)
@@ -458,7 +467,6 @@ function init() {
   globalConfig.inited = true
   addLog('初始化实例')
   const appkey = $('#appkey').val()
-  // loadTokenByAppKey();
   const chrome = $('#part-env input[name="screen-type"]:checked').val()
   NERTC.Logger.enableLogUpload()
   rtc.client = NERTC.createClient({
@@ -1216,7 +1224,6 @@ document.getElementById('getAudioLevelRemote').onclick = updateRemoteViewInfo
  */
 
 $('#joinChannel-btn').on('click', async () => {
-  await loadTokenByAppKey()
   const channelName = $('#channelName').val()
   if (window.localStorage) {
     window.localStorage.setItem(`${localStoragePrefix}channelName`, channelName)
@@ -1242,65 +1249,8 @@ $('#joinChannel-btn').on('click', async () => {
   const priority = +$('#priority').val()
   const isPreemptive = $('#isPreemptive').prop('checked')
 
-  let channelServer = null
-  statisticsServer = null
-  statisticsWebSocketServer = null
-  roomServer = null
-  demoServer = null
-  appkey = null
-  webSocketProxyServer = null
-  mediaProxyServer = null
-  if (privatizationConfig) {
-    if ($('#configUrl').val()) {
-      try {
-        let checkSumUrl = WEBRTC2_ENV[env].checkSumUrl
-        const data = await axios.get($('#configUrl').val())
-        var d = data.data
-        console.log('获取到私有化的配置参数: ' + d)
-        if (d.code != 200) {
-          console.error('获取到私有化的配置参数失败')
-          addLog('获取到私有化的配置参数失败，请检查url是否正确')
-          return
-        }
-        channelServer = d.channelServer || test.channelServer
-        statisticsServer = d.statisticsServer || test.statisticsServer
-        roomServer = d.roomServer || test.roomServer
-        demoServer = d.demoServer || test.demoServer
-        appkey = d.appkey || test.appkey
-      } catch (e) {
-        console.error('获取到私有化的配置参数失败: ', e)
-        addLog('获取到私有化的配置参数失败，请检查url是否正确')
-        return
-      }
-    } else {
-      appkey = $('#privatizationAppkey').val() || privatizationConfig.appkey
-      channelServer = $('#channelServer').val() || privatizationConfig.channelServer
-      statisticsServer = $('#statisticsServer').val() || privatizationConfig.statisticsServer
-      roomServer = $('#roomServer').val() || privatizationConfig.roomServer
-      demoServer = $('#demoServer').val() || privatizationConfig.demoServer
-      webSocketProxyServer = privatizationConfig.webSocketProxyServer
-      mediaProxyServer = privatizationConfig.mediaProxyServer
-      statisticsWebSocketServer = privatizationConfig.statisticsWebSocketServer
-    }
-
-    if (appkey) {
-      $('#appkey').val(appkey)
-      $('#privatizationAppkey').val(appkey)
-      $('#channelServer').val(channelServer)
-      $('#statisticsServer').val(statisticsServer)
-      $('#roomServer').val(roomServer)
-      $('#demoServer').val(demoServer)
-      const proxyServer = rtc.client.adapterRef.proxyServer
-      init()
-      rtc.client.adapterRef.proxyServer = proxyServer
-    } else {
-      console.error('私有化配置: 没有获取appkey')
-      addLog('私有化配置: 没有获取appkey，请检查设置的参数是否正确')
-      return
-    }
-  }
-
   console.info('开始加入房间')
+  await loadTokenByAppKey()
   rtc.client.setLocalMediaPriority({
     priority,
     preemtiveMode: isPreemptive
@@ -1349,13 +1299,13 @@ $('#joinChannel-btn').on('click', async () => {
         liveEnable
       },
       neRtcServerAddresses: {
-        channelServer,
-        statisticsServer,
-        roomServer,
+        channelServer: privatizationConfig.channelServer,
+        statisticsServer: privatizationConfig.statisticsServer,
+        roomServer: privatizationConfig.roomServer,
         cloudProxyServer: '',
-        statisticsWebSocketServer,
-        webSocketProxyServer,
-        mediaProxyServer
+        statisticsWebSocketServer: privatizationConfig.statisticsWebSocketServer,
+        webSocketProxyServer: privatizationConfig.webSocketProxyServer,
+        mediaProxyServer: privatizationConfig.mediaProxyServer
       },
       customData,
       getChanneInfoResponse:
