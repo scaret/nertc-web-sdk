@@ -74,32 +74,10 @@
             <input type="text" id="getwayAddr" value='webrtcgwcn.netease.im/?ip=59.111.239.249:30105'>
             是否使用：<input type="checkbox" id="isGetwayAddrConf" />
           </div>
-          <!-- <div class="line">
-            方式一：参数配置URL:
-            <input type="text" id="configUrl" value=''>
-          </div> -->
           <div class="line">
-            <!-- 启用私有化：<input type="checkbox" checked id="isPrivatization"/> -->
             私有化配置项<input type="file" id="privatizationConfigFildId" />
             <button type="button" id='privatizationConfig'>启用私有化</button>
           </div>
-          <!-- <div class="line">
-            appkey:
-            <input type="text" id="privatizationAppkey" value=''>
-            channelServer:
-            <input type="text" id="channelServer" value=''>
-            statisticsServer:
-            <input type="text" id="statisticsServer" value=''>
-            roomServer:
-            <input type="text" id="roomServer" value=''>
-            demoServer:
-            <input type="text" id="demoServer" value=''>
-          </div> -->
-          <!-- <div class="line">
-            turn地址:
-            <input type="text" id="turnAddr" value='turn:223.252.198.177:3478?transport=tcp'>
-            是否使用：<input type="checkbox" id="isTurnAddrConf"/>
-          </div> -->
           <div class="line" id="envInfo">
             CID: <span id="cid"></span><br />
             <br />
@@ -526,7 +504,6 @@
               <option value='CHAT_VIDEO_FRAME_RATE_15'>15</option>
               <option value='CHAT_VIDEO_FRAME_RATE_20'>20</option>
               <option value='CHAT_VIDEO_FRAME_RATE_25'>25</option>
-              <option value='CHAT_VIDEO_FRAME_RATE_30'>30</option>
             </select>
           </div>
 
@@ -547,7 +524,6 @@
               <option value='CHAT_VIDEO_FRAME_RATE_15'>15</option>
               <option value='CHAT_VIDEO_FRAME_RATE_20'>20</option>
               <option value='CHAT_VIDEO_FRAME_RATE_25'>25</option>
-              <option value='CHAT_VIDEO_FRAME_RATE_30'>30</option>
             </select>
           </div>
 
@@ -673,15 +649,6 @@
             <button type="button" id="subscribeAll">订阅全部</button>
             <button type="button" id="unsubscribeAll">取消订阅全部</button>
           </div>
-        </div>
-
-        <p class="block-header">AI降噪</p>
-        <div class="line">
-          <button type="button" id="registerAIDenoise">注册</button>
-          <button type="button" id="enableAIDenoise">打开</button>
-          <button type="button" id="disableAIDenoise">关闭</button>
-          <button type="button" id="unregisterAIDenoise">销毁</button>
-          <label id="aidenoiseStatus" style="display: none;">loading</label>
         </div>
 
       </div>
@@ -981,25 +948,7 @@
         </div>
       </div>
       <div class="block">
-        <p class="block-header">快呼叫</p>
-        <div class="part">
-          <div class="line">
-            是否启动快呼叫功能
-            <input type="checkbox" id="isFastCall">
-          </div>
-          <div class="line">
-            <label>
-              输入自定义信息
-              <input placeholder="" type="text" id="customData" value="">
-            </label>
-          </div>
-          <div class="line">
-            <label>
-              输入getChannelInfo信息
-              <input placeholder="" type="text" id="getChannelInfoResponse" value="">
-            </label>
-          </div>
-        </div>
+
         <p class="block-header" id="clientRecord">客户端录制</p>
         <div class="part hide" id="part-record-pro">
           <div class="line">
