@@ -5,6 +5,7 @@ import {
   AdapterRef,
   APIEventItem,
   AudioVideoBannedEvent,
+  StreamExceptionEvent,
   CommonEvent,
   DataEvent,
   DeviceAbnormalEvent,
@@ -293,6 +294,10 @@ class DataReport {
 
   setAudioVideoBanned(audioVideoBannedEvent: AudioVideoBannedEvent) {
     this.addEvent('audioVideoBanned', audioVideoBannedEvent)
+  }
+
+  setStreamException(streamExceptionEvent: StreamExceptionEvent) {
+    this.addEvent('streamException', streamExceptionEvent)
   }
 
   reset() {
