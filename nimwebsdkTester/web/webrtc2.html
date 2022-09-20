@@ -166,7 +166,7 @@
           </div>
         </div>
         <p class="block-header">推流任务</p>
-        <div id="part-tasks" class="part">
+        <div id="part-tasks" class="part hide">
           <div class="line">
             <button type="button" id="tasks-btn">推流任务功能</button>
           </div>
@@ -958,6 +958,31 @@
         </div>
       </div>
       <div class="block">
+
+        <p class="block-header">高级token</p>
+        <div class="part">
+          <div class="line">
+            demo自动生成permKey的配置
+            <br/>
+            设置privilege:
+            <input type="text" id="privilege" value="255" style="max-width:40px">
+            设置expireTime:
+            <input type="text" id="expireTime" value='86400' placeholder="超时时间(秒)，默认24小时" style="max-width:40px">
+            
+          </div>
+          <div class="line">
+            permKey:
+            <input type="text" id="permKey" placeholder="不填写，demo自动生成" style="max-width:150px">
+            启动短时token功能:
+            <input type="checkbox" id="enablePermKey" checked>
+          </div>
+          <div class="line">
+            新的permKey:
+            <input type="text" id="newPermKey" placeholder="不填写，demo自动生成" style="max-width:150px">
+            <button id="permKeyRefresh">刷新permKey</button>
+          </div>
+        </div>
+
         <p class="block-header">快呼叫</p>
         <div class="part">
           <div class="line">

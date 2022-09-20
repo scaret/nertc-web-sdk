@@ -141,6 +141,13 @@ export interface AdapterRef {
   encryption: Encryption
   isAudioBanned: boolean
   isVideoBanned: boolean
+  permKeyInfo?: {
+    timeout: number
+    pubAudioRight: boolean
+    subAudioRight: boolean
+    pubVideoRight: boolean
+    subVideoRight: boolean
+  }
 }
 
 export type ConnectionState = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'DISCONNECTING'
@@ -719,6 +726,7 @@ export interface MeetingJoinChannelOptions {
   joinChannelLiveConfig: LiveConfig
   token?: string
   getChanneInfoResponse?: any
+  permKey?: string
 }
 
 export interface AddTaskOptions {
@@ -1074,6 +1082,7 @@ export interface JoinOptions {
   channelName: string
   uid: number | string
   token: string
+  permKey?: string
   spatial?: SpatialInitOptions
   wssArr?: string[] | null
   joinChannelLiveConfig?: LiveConfig
@@ -1092,6 +1101,7 @@ export interface JoinChannelRequestParam4WebRTC2 {
   logoutReason?: number
   startJoinTime: number
   appkey: string
+  permKey: string
   userRole: number
   token?: string
   getChanneInfoResponse?: SignalGetChannelInfoResponse
