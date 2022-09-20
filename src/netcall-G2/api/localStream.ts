@@ -4753,6 +4753,11 @@ class LocalStream extends RTCEventEmitter {
     //     return this.logger.warn(`plugin ${options.key} is already exists.`)
     //   }
     // }
+    const stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
+    if (stageAIProcessing && stageAIProcessing.hasPlugin('AIDenoise')) {
+      this.logger.warn(`plugin ${options.key} is already exists.`)
+      return false
+    }
 
     let plugin: any = null
     try {
