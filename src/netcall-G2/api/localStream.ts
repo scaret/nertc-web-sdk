@@ -4744,18 +4744,18 @@ class LocalStream extends RTCEventEmitter {
     this.logger.log(`register plugin:${options.key}`)
 
     if (this.videoPostProcess.getPlugin(options.key as any)) {
-      return this.logger.warn(`plugin ${options.key} is already exists.`)
+      return this.logger.warn(`plugin ${options.key} already exists.`)
     }
     //防止在不注册AI降噪时创建AudioPipeline，这里写的麻烦一点
     // if (audioPlugins.indexOf(options.key) !== -1) {
     //   const pipeline = this.mediaHelper.getOrCreateAudioPipeline('audio')
     //   if (pipeline && pipeline.hasPlugin(options.key)) {
-    //     return this.logger.warn(`plugin ${options.key} is already exists.`)
+    //     return this.logger.warn(`plugin ${options.key} already exists.`)
     //   }
     // }
     const stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
     if (stageAIProcessing && stageAIProcessing.hasPlugin(options.key)) {
-      this.logger.warn(`plugin ${options.key} is already exists.`)
+      this.logger.warn(`plugin ${options.key} already exists.`)
       return false
     }
 
