@@ -1490,6 +1490,7 @@ export interface PluginOptions {
   pluginUrl?: string
   pluginObj?: AnyClass
   wasmUrl: string
+  adapterRef: AdapterRef
 }
 
 type AnyClass = {

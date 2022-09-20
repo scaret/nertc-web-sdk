@@ -1,3 +1,5 @@
+import { AdapterRef } from '../../../types'
+
 export interface BackGroundOptions {
   type: string
   source?: HTMLImageElement | string
@@ -7,4 +9,5 @@ export interface BackGroundOptions {
 
 export interface modelOptions {
   wasmUrl: string
+  adapterRef: AdapterRef
 }
