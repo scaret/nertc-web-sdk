@@ -1,8 +1,6 @@
 import { EventEmitter } from 'eventemitter3'
 import webworkify from 'webworkify-webpack'
-
 import { ILogger } from '../../types'
-import { Logger } from '../../util/webrtcLogger'
 import { modelOptions } from './src/types'
 
 class AdvancedBeauty extends EventEmitter {
@@ -15,11 +13,9 @@ class AdvancedBeauty extends EventEmitter {
 
   constructor(options: modelOptions) {
     super()
-    this.modelParam = options //'normal'
-    this.logger = new Logger({
-      tagGen: () => {
-        return 'AdvancedBeauty'
-      }
+    this.modelParam = options
+    this.logger = options.adapterRef.logger.getChild(() => {
+      return 'AdvancedBeauty'
     })
 
     this.preload(this.modelParam)

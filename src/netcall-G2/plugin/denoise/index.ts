@@ -1,10 +1,9 @@
 import webworkify from 'webworkify-webpack'
-import { Logger } from '../../util/webrtcLogger'
 import { ILogger } from '../../types'
-import { RTCEventEmitter } from '../../util/rtcUtil/RTCEventEmitter'
+import { EventEmitter } from 'eventemitter3'
 import { modelOptions } from './src/types'
 
-class AIDenoise extends RTCEventEmitter {
+class AIDenoise extends EventEmitter {
   private deoniseWorker: any
   private _deoniseWorkerDestroying = false
   private logger: ILogger
@@ -14,10 +13,8 @@ class AIDenoise extends RTCEventEmitter {
 
   constructor(options: modelOptions) {
     super()
-    this.logger = new Logger({
-      tagGen: () => {
-        return 'AIDenoise'
-      }
+    this.logger = options.adapterRef.logger.getChild(() => {
+      return 'AIDenoise'
     })
 
     this.isLoaded = false
