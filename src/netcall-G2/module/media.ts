@@ -40,7 +40,7 @@ import {
 import { getAudioContext, WebAudio } from './webAudio'
 import { VideoTrackLow } from './videoTrackLow'
 import { AudioPipeline } from './audio-pipeline/AudioPipeline'
-import {StageAIProcessing} from "./audio-pipeline/stages/StageAIProcessing/StageAIProcessing";
+import { StageAIProcessing } from './audio-pipeline/stages/StageAIProcessing/StageAIProcessing'
 class MediaHelper extends EventEmitter {
   stream: LocalStream | RemoteStream
   public audio: {
