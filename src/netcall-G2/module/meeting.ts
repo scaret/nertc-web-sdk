@@ -486,6 +486,9 @@ class Meeting extends EventEmitter {
     if (this.adapterRef.instance._params.neRtcServerAddresses.roomServer) {
       //url = roomsTaskUrl.replace(/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+\.?/, this.adapterRef.instance._params.neRtcServerAddresses.roomServer)
       url = this.adapterRef.instance._params.neRtcServerAddresses.roomServer
+      if (url.substr(-1) !== '/') {
+        url += '/'
+      }
       this.logger.log('私有化配置的 roomsTaskUrl: ', url)
     }
     url = `${url}${this.adapterRef.channelInfo.cid}/tasks`
