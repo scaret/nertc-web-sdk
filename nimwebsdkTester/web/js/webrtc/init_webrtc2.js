@@ -116,7 +116,7 @@ const advancedBeautyPluginConfig = {
     nosimd: {
       key: 'AdvancedBeauty',
       pluginUrl: `./js/nim/NIM_Web_AdvancedBeauty_v${NERTC.VERSION}_test.js`,
-      wasmUrl: `./js/nim/wasm/NIM_Web_AdvancedBeauty_nosimd_v${NERTC.VERSION}_test.js`
+      wasmUrl: `./js/nim/wasm/NIM_Web_AdvancedBeauty_nosimd_v${NERTC.VERSION}_test.wasm`
     }
   }
 }
