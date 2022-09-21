@@ -89,6 +89,8 @@ export class AudioWorkletAgent extends EventEmitter {
       this.emit('processor-message', event)
       if (event.data.type === 'rawinputs') {
         this.handleTypeRawInputs(event)
+      } else if (event.data.type === 'bufferDrop') {
+        this.logger.warn(`音频处理程序刚刚丢弃了${event.data.cnt * 5}ms的处理数据`)
       } else {
         console.error('Unknown message', event)
       }
