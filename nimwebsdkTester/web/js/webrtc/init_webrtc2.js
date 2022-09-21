@@ -240,7 +240,15 @@ function loadEnv() {
     ? window.localStorage.getItem(`${localStoragePrefix}channelName`)
     : ''
   $('#channelName').val(channelName)
-  $('#uid').val(Math.floor(Math.random() * 9000 + 1000))
+
+  let domUid
+  if (sessionStorage && sessionStorage.getItem('domUid')){
+    domUid = sessionStorage.getItem('domUid')
+  } else {
+    domUid = '' + Math.floor(Math.random() * 9000 + 1000)
+  }
+
+  $('#uid').val(domUid)
 
   // 读取url中配置的初始参数
   let query = _parseQuery(location.search)
@@ -1297,6 +1305,9 @@ $('#joinChannel-btn').on('click', async () => {
       `${localStoragePrefix}AppSecret-${globalConfig.env}`,
       $('#AppSecret').val()
     )
+    if (sessionStorage) {
+      sessionStorage.setItem('domUid', document.getElementById('uid').value)
+    }
   }
   const uid = getUidFromDomInput()
   // 实时音录制
