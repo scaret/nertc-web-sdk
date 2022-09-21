@@ -382,8 +382,12 @@ declare interface Stream {
   hasAudioSlave(): boolean
   /**
    * 获取从麦克风中采集的当前音量。
+   *
+   * @note 注意
+   * * Safari 浏览器的桌面端14.1以下、iOS端14.5以下，不支持获取音量
+   * * 该接口也支持远端。
    */
-  getAudioLevel(): string
+  getAudioLevel(mediaType?: 'audio' | 'audioSlave'): string
   /**
    * 设置音频属性。
    *

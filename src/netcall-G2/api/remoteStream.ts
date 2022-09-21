@@ -1143,6 +1143,7 @@ class RemoteStream extends RTCEventEmitter {
           name: 'getAudioLevel',
           code: 0,
           param: {
+            mediaType: mediaType,
             streamID: this.stringStreamID
           }
         })

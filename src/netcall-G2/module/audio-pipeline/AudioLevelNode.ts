@@ -22,8 +22,9 @@ interface AudioLevelNodeOptions {
 }
 
 function smoothVolume(x: number) {
-  const y = Math.min((x * 10) / 3, 1)
-  return Math.floor(y * 1000) / 1000
+  return x
+  // const y = Math.min((x * 10) / 3, 1)
+  // return Math.floor(y * 1000) / 1000
 }
 
 export class AudioLevelNode extends NeAudioNodeNullable<AudioWorkletNode> {
@@ -57,6 +58,10 @@ export class AudioLevelNode extends NeAudioNodeNullable<AudioWorkletNode> {
   async initAudioWorklet() {
     this.logger.log('AudioLevelNode initAudioWorklet')
 
+    if (!this.context.audioWorklet) {
+      this.logger.error(`该环境不支持音频处理`)
+      return
+    }
     if (!AudioWorkletReady) {
       AudioWorkletState = 'LOADING'
       this.logger.log(`正在载入音量模块`)

@@ -46,6 +46,11 @@ export class AudioWorkletAgent extends EventEmitter {
   async init() {
     if (this.support.audioWorkletNode) {
       this.logger.error(`Already Inited`)
+      return
+    }
+    if (!this.support.context.audioWorklet) {
+      this.logger.error(`该环境不支持音频处理`)
+      return
     }
     if (!AudioWorkletReady) {
       AudioWorkletState = 'LOADING'
@@ -84,6 +89,8 @@ export class AudioWorkletAgent extends EventEmitter {
       this.emit('processor-message', event)
       if (event.data.type === 'rawinputs') {
         this.handleTypeRawInputs(event)
+      } else if (event.data.type === 'bufferDrop') {
+        this.logger.warn(`音频处理程序刚刚丢弃了${event.data.cnt * 5}ms的处理数据`)
       } else {
         console.error('Unknown message', event)
       }
