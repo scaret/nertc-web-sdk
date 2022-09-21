@@ -17,3 +17,4 @@ src/protocol/map/*
 tester-weixin-app-netcall/sdk/*
 src/netcall-G2/plugin/advanced-beauty/lib/*
 src/netcall-G2/plugin/segmentation/lib/*
+src/netcall-G2/plugin/denoise/lib/*

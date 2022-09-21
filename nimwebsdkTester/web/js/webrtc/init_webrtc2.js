@@ -1485,6 +1485,8 @@ $('#leaveChannel-btn').on('click', async () => {
   addLog('离开房间')
   console.info('开始离开房间...')
   clearInterval(audioEffectsPlayTimer)
+  audioEffectsPlayTimer = null
+  clearInterval(playTimer)
 
   $('#segmentStatus').html('loading').hide()
   $('#advancedBeautyStatus').html('loading').hide()
@@ -3727,6 +3729,9 @@ for (i = 1; i < 4; i++) {
   })
   // eslint-disable-next-line no-inner-declarations
   function playAuidoEffects(options) {
+    if (!audioEffectsPlayTimer) {
+      return
+    }
     res = rtc.localStream.getAudioEffectsCurrentPosition(options)
     audioEffectsProgress.value = (res.playedTime / isAudioEffectsTotalTime) * 100
     audioEffectsProgressInfo.innerText =
@@ -3744,6 +3749,7 @@ for (i = 1; i < 4; i++) {
     isAudioEffectsEnd = true
     // audioEffectsProgress.value = 0;
     clearInterval(audioEffectsPlayTimer)
+    audioEffectsPlayTimer = null
     if (rtc.localStream) {
       rtc.localStream
         .stopEffect(Number($(`#soundId${num}`).val()))
@@ -3762,6 +3768,7 @@ for (i = 1; i < 4; i++) {
     let audioEffectsFileName = $(`#path${num}`).val()
     isAudioEffectsPuase = true
     clearInterval(audioEffectsPlayTimer)
+    audioEffectsPlayTimer = null
     if (rtc.localStream) {
       rtc.localStream
         .pauseEffect(Number($(`#soundId${num}`).val()))
