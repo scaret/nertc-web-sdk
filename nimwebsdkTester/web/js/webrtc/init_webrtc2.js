@@ -1112,7 +1112,7 @@ function initVolumeDetect() {
         instantMeter.value = instantValueDisplay.innerText = 0.0
         return
       }
-      instantMeter.value = instantValueDisplay.innerText = result
+      instantMeter.value = instantValueDisplay.innerText = result.toFixed(20)
     }
   }, 100)
 }
@@ -1262,9 +1262,9 @@ function updateRemoteViewInfo() {
       title += `<br>⬆${view.uplinkNetworkQuality} ⬇${view.downlinkNetworkQuality}`
     }
     if (remoteStream && document.getElementById('getAudioLevelRemote').checked) {
-      title += `<br>主流音量：${remoteStream.getAudioLevel()}；辅流音量：${remoteStream.getAudioLevel(
+      title += `<br>主流音量：${remoteStream.getAudioLevel().toFixed(4)}；辅流音量：${remoteStream.getAudioLevel(
         'subAudio'
-      )}`
+      ).toFixed(4)}`
     }
     const html = view.$div.children('.remote-view-title').html()
     if (html !== title) {

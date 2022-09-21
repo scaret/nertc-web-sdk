@@ -22,8 +22,9 @@ interface AudioLevelNodeOptions {
 }
 
 function smoothVolume(x: number) {
-  const y = Math.min((x * 10) / 3, 1)
-  return Math.floor(y * 1000) / 1000
+  return x
+  // const y = Math.min((x * 10) / 3, 1)
+  // return Math.floor(y * 1000) / 1000
 }
 
 export class AudioLevelNode extends NeAudioNodeNullable<AudioWorkletNode> {
