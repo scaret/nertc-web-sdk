@@ -152,6 +152,7 @@ class LocalStream extends RTCEventEmitter {
   _play: Play | null
   private _record: Record | null
   public audioLevelHelper: AudioLevel | null = null
+  public audioLevelHelperSlave: AudioLevel | null = null
   public audioProfile: string
   private _cameraTrack: MediaStreamTrack | null
   private _transformedTrack: MediaStreamTrack | null
@@ -560,6 +561,10 @@ class LocalStream extends RTCEventEmitter {
       this.audioLevelHelper.destroy()
     }
     this.audioLevelHelper = null
+    if (this.audioLevelHelperSlave) {
+      this.audioLevelHelperSlave.destroy()
+    }
+    this.audioLevelHelperSlave = null
   }
 
   get segmentProcessor() {
@@ -1394,6 +1399,11 @@ class LocalStream extends RTCEventEmitter {
           if (this.mediaHelper) {
             const constraint = { screenAudio: true, screenAudioSource }
             await this.mediaHelper.getStream(constraint)
+            if (this.audioLevelHelperSlave && this.mediaHelper.screenAudio.screenAudioStream) {
+              this.audioLevelHelperSlave.updateStream(
+                this.mediaHelper.screenAudio.screenAudioStream
+              )
+            }
             if (this.client.adapterRef.connectState.curState !== 'CONNECTED') {
               this.logger.log('Stream.open:client不在频道中，无需发布。', constraint)
             } else {
@@ -1549,8 +1559,12 @@ class LocalStream extends RTCEventEmitter {
           }
           await this.mediaHelper.getStream(constraint)
 
-          if (this.screenAudio && this.audioLevelHelper && this.mediaHelper.audio.audioStream) {
-            this.audioLevelHelper.updateStream(this.mediaHelper.audio.audioStream)
+          if (
+            this.screenAudio &&
+            this.audioLevelHelperSlave &&
+            this.mediaHelper.screenAudio.screenAudioStream
+          ) {
+            this.audioLevelHelperSlave.updateStream(this.mediaHelper.screenAudio.screenAudioStream)
           }
           if (type === 'video' && this.mediaHelper.video.preProcessingEnabled) {
             this.mediaHelper.enablePreProcessing('video')
@@ -2198,14 +2212,27 @@ class LocalStream extends RTCEventEmitter {
    * @memberOf Stream#
    * @return {volume}
    */
-  getAudioLevel() {
-    if (!this.audioLevelHelper && this.mediaHelper.getAudioTrack()) {
-      this.audioLevelHelper = new AudioLevel({
-        stream: this.mediaHelper.audio.audioStream,
-        logger: this.logger
-      })
+  getAudioLevel(mediaType: 'audio' | 'audioSlave' = 'audio') {
+    if (mediaType === 'audio') {
+      if (!this.audioLevelHelper && this.mediaHelper.audio.audioStream.getAudioTracks().length) {
+        this.audioLevelHelper = new AudioLevel({
+          stream: this.mediaHelper.audio.audioStream,
+          logger: this.logger
+        })
+      }
+      return this.audioLevelHelper?.getAudioLevel() || 0
+    } else {
+      if (
+        !this.audioLevelHelperSlave &&
+        this.mediaHelper.screenAudio.screenAudioStream.getAudioTracks().length
+      ) {
+        this.audioLevelHelperSlave = new AudioLevel({
+          stream: this.mediaHelper.screenAudio.screenAudioStream,
+          logger: this.logger
+        })
+      }
+      return this.audioLevelHelperSlave?.getAudioLevel() || 0
     }
-    return this.audioLevelHelper?.getAudioLevel() || 0
   }
 
   /**

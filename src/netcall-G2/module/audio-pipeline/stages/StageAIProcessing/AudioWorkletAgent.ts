@@ -46,6 +46,11 @@ export class AudioWorkletAgent extends EventEmitter {
   async init() {
     if (this.support.audioWorkletNode) {
       this.logger.error(`Already Inited`)
+      return
+    }
+    if (!this.support.context.audioWorklet) {
+      this.logger.error(`该环境不支持音频处理`)
+      return
     }
     if (!AudioWorkletReady) {
       AudioWorkletState = 'LOADING'

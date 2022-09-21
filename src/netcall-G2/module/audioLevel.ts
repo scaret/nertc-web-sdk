@@ -84,6 +84,10 @@ class AudioLevel extends EventEmitter {
 
       // 2.创建 WorkletNode
       if (!this.support.audioWorkletNode) {
+        if (!this.support.context.audioWorklet) {
+          this.logger.error(`该环境不支持音量模块`)
+          return
+        }
         if (!AudioWorkletReady) {
           AudioWorkletState = 'LOADING'
           this.logger.log(`正在载入音量模块`)
