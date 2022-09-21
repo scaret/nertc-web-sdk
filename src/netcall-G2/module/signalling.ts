@@ -755,7 +755,8 @@ class Signalling extends EventEmitter {
 
         break
       }
-      case 'activeSpeaker': {
+      case 'OnPermKeyTimeout': {
+        this.adapterRef.instance.safeEmit('permkey-will-expire')
         break
       }
       case 'OnPeerClose': {
@@ -1062,6 +1063,7 @@ class Signalling extends EventEmitter {
 
     const requestData = {
       method: 'Join',
+      permKeySecret: this.adapterRef.channelInfo.permKey,
       requestId: `${Math.ceil(Math.random() * 1e9)}`,
       supportStdRed: true,
       supportTurn: !this.adapterRef.proxyServer.enable,
@@ -1149,6 +1151,9 @@ class Signalling extends EventEmitter {
         return
       }
       let uid = this.adapterRef.channelInfo.uid
+      if (response.PermKey) {
+        this.adapterRef.permKeyInfo = response.PermKey
+      }
       // 服务器禁用音视频: 1 禁用   0 和 2 取消禁用
       if (response.externData.audioRight === 1) {
         this.adapterRef.isAudioBanned = true
@@ -1228,6 +1233,7 @@ class Signalling extends EventEmitter {
           v_record: this.adapterRef.channelInfo.sessionConfig.recordVideo,
           record_type: this.adapterRef.channelInfo.sessionConfig.recordType,
           host_speaker: this.adapterRef.channelInfo.sessionConfig.isHostSpeaker,
+          permKey: this.adapterRef.channelInfo.permKey,
           result: 0,
           reason: 1,
           server_ip: this.adapterRef.channelInfo._protooUrl
@@ -1281,6 +1287,7 @@ class Signalling extends EventEmitter {
           v_record: this.adapterRef.channelInfo.sessionConfig.recordVideo,
           record_type: this.adapterRef.channelInfo.sessionConfig.recordType,
           host_speaker: this.adapterRef.channelInfo.sessionConfig.isHostSpeaker,
+          permKey: this.adapterRef.channelInfo.permKey,
           result: 0,
           server_ip: this.adapterRef.channelInfo._protooUrl,
           signal_time_elapsed: webrtc2Param.startWssTime - webrtc2Param.startJoinTime,
@@ -1471,6 +1478,7 @@ class Signalling extends EventEmitter {
       v_record: this.adapterRef.channelInfo.sessionConfig.recordVideo,
       record_type: this.adapterRef.channelInfo.sessionConfig.recordType,
       host_speaker: this.adapterRef.channelInfo.sessionConfig.isHostSpeaker,
+      permKey: this.adapterRef.channelInfo.permKey,
       result: reasonCode,
       server_ip: this.adapterRef.channelInfo._protooUrl,
       signal_time_elapsed: webrtc2Param.startWssTime - webrtc2Param.startJoinTime,
@@ -1481,7 +1489,13 @@ class Signalling extends EventEmitter {
     //重连时的login失败，执行else的内容
     if (this._reject) {
       this.logger.error('加入房间失败, 反馈通知')
-      this._reject(errMsg)
+      this._reject(
+        new RtcError({
+          code: reasonCode || ErrorCode.JOIN_FAILED,
+          message: errMsg || 'join failed'
+        })
+      )
+
       this._resolve = null
       this._reject = null
       if (this.keepAliveTimer) {
@@ -1630,6 +1644,24 @@ class Signalling extends EventEmitter {
     } catch (e) {
       this.logger.error('rtsRequestKeyFrame failed:', e)
       throw e
+    }
+  }
+
+  async updatePermKey(permKey: string) {
+    this.logger.log('PermKeyUpdate')
+    if (!this._protoo || !this._protoo.connected) return
+
+    const response = await this._protoo.request('PermKeyUpdate', {
+      requestId: `${Math.ceil(Math.random() * 1e9)}`,
+      permKeySecret: permKey
+    })
+    if (response.code !== 200) {
+      throw new RtcError({
+        code: response.code || ErrorCode.UNKNOWN,
+        message: response.errMsg || 'failed to update permKey'
+      })
+    } else {
+      this.adapterRef.permKeyInfo = response.PermKey
     }
   }
 
@@ -1921,6 +1953,15 @@ class Signalling extends EventEmitter {
         this.adapterRef.instance.leave()
       }
       this.adapterRef.instance.safeEmit('client-banned', {
+        uid
+      })
+    } else if (reason == 5) {
+      this.logger.warn(`${uid} permKey 超时被提出房间`)
+      if (uid.toString() == this.adapterRef.channelInfo.uid.toString()) {
+        this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason = 30206
+        this.adapterRef.instance.leave()
+      }
+      this.adapterRef.instance.safeEmit('permkey-timeout', {
         uid
       })
     }

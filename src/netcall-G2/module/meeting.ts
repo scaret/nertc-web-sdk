@@ -213,6 +213,7 @@ class Meeting extends EventEmitter {
       joinChannelRecordConfig,
       joinChannelLiveConfig,
       token = '',
+      permKey = '',
       getChanneInfoResponse
     } = options
 
@@ -245,6 +246,7 @@ class Meeting extends EventEmitter {
           data: {
             uid: requestUid,
             appkey,
+            permKeySecret: permKey,
             channelName,
             secureType: token ? '1' : '2', // 安全认证类型：1:安全、2:非安全
             osType: '4', // 系统类型：1:ios、2:aos、3:pc、4:web
@@ -308,6 +310,7 @@ class Meeting extends EventEmitter {
           this.adapterRef.channelInfo,
           {
             cid: +data.cid,
+            permKey,
             token: data.token,
             turnToken: ips.token,
             channelName,
@@ -383,7 +386,7 @@ class Meeting extends EventEmitter {
           advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.MEDIA_SERVER_ERROR,
+            code: data.code || ErrorCode.MEDIA_SERVER_ERROR,
             message,
             advice
           })

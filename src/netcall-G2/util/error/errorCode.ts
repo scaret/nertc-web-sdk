@@ -160,7 +160,6 @@ const ErrorCode = {
    *
    */
   AUTO_PLAY_NOT_ALLOWED: 41030,
-
   /*
    * 没有媒体
    * 4.6.25 之后弃用
@@ -290,6 +289,11 @@ const ErrorCode = {
 
   // *********************  房间相关错误码(ErrorCode 范围：10101 - 10200)
 
+  /*
+   * 进房错误
+   *
+   */
+  JOIN_FAILED: 10100,
   /*
    * 重复进房错误
    *
@@ -479,7 +483,16 @@ const ErrorCode = {
    * 数据上报相关异常
    *
    */
-  NO_STATS_ERROR: 10470
+  NO_STATS_ERROR: 10470,
+
+  /*
+   * permKey权限控制，不能推流
+   */
+  NO_PUBLISH_PERMISSSION: 10500,
+  /*
+   * permKey权限控制，不能拉流
+   */
+  NO_SUBSCRIBE_PERMISSSION: 10501
 }
 
 export default ErrorCode

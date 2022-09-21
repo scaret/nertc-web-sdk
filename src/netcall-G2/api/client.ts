@@ -510,6 +510,7 @@ class Client extends Base {
         channelName: options.channelName,
         wssArr: options.wssArr,
         uid: options.uid,
+        permKey: options.permKey || '',
         token: this._params.token,
         joinChannelLiveConfig: options.joinChannelLiveConfig || { liveEnable: false },
         joinChannelRecordConfig: options.joinChannelRecordConfig || {
@@ -851,6 +852,7 @@ class Client extends Base {
       this.logger.error('API调用失败：Client:publish', e.name, e.message, e.stack, ...arguments)
       reason = e.message
       onPublishFinish()
+      throw e
     }
   }
 
@@ -965,6 +967,7 @@ class Client extends Base {
           ' '
         )
       })
+      throw e
     }
   }
 
@@ -1043,8 +1046,14 @@ class Client extends Base {
     }
     try {
       if (stream.subConf.audio) {
-        // 应该订阅音频
-        if (stream.pubStatus.audio.audio && !stream.pubStatus.audio.consumerId) {
+        if (this.adapterRef.permKeyInfo?.subAudioRight === false) {
+          this.logger.error('permKey权限控制你没有权利订阅audio')
+          // throw new RtcError({
+          //   code: ErrorCode.NO_PUBLISH_PERMISSSION,
+          //   message: 'perm key have no right to pub'
+          // })
+          this.adapterRef.instance.emit('error', 'no-subscribe-audio-permission')
+        } else if (stream.pubStatus.audio.audio && !stream.pubStatus.audio.consumerId) {
           //重复调用的问题不再通过consumerStatus来保障，有后续的流程负责
           this.logger.log(`[Subscribe] 开始订阅 ${stream.getId()} 音频流`)
           stream.pubStatus.audio.consumerStatus = 'start'
@@ -1105,7 +1114,17 @@ class Client extends Base {
       }
 
       if (stream.subConf.audioSlave) {
-        if (stream.pubStatus.audioSlave.audioSlave && !stream.pubStatus.audioSlave.consumerId) {
+        if (this.adapterRef.permKeyInfo?.subAudioRight === false) {
+          this.logger.error('permKey权限控制你没有权利订阅audio')
+          // throw new RtcError({
+          //   code: ErrorCode.NO_PUBLISH_PERMISSSION,
+          //   message: 'perm key have no right to pub'
+          // })
+          this.adapterRef.instance.emit('error', 'no-subscribe-audio-permission')
+        } else if (
+          stream.pubStatus.audioSlave.audioSlave &&
+          !stream.pubStatus.audioSlave.consumerId
+        ) {
           this.logger.log(`[Subscribe] 开始订阅 ${stream.getId()} 音频辅流`)
           stream.pubStatus.audioSlave.consumerStatus = 'start'
           await this.adapterRef._mediasoup.createConsumer(
@@ -1156,8 +1175,14 @@ class Client extends Base {
       }
 
       if (stream.subConf.video) {
-        // 应该订阅视频
-        if (stream.pubStatus.video.video && !stream.pubStatus.video.consumerId) {
+        if (this.adapterRef.permKeyInfo?.subVideoRight === false) {
+          this.logger.error('permKey权限控制你没有权利订阅video')
+          // throw new RtcError({
+          //   code: ErrorCode.NO_PUBLISH_PERMISSSION,
+          //   message: 'perm key have no right to pub'
+          // })
+          this.adapterRef.instance.emit('error', 'no-subscribe-video-permission')
+        } else if (stream.pubStatus.video.video && !stream.pubStatus.video.consumerId) {
           this.logger.log(`[Subscribe] 开始订阅 ${stream.getId()} 视频流`)
           // preferredSpatialLayer是从小到大的，即0是小流，1是大流
           // API层面与声网和Native对齐，即0是大流，1是小流
@@ -1226,8 +1251,14 @@ class Client extends Base {
         }
       }
       if (stream.subConf.screen) {
-        // 应该订阅辅流
-        if (stream.pubStatus.screen.screen && !stream.pubStatus.screen.consumerId) {
+        if (this.adapterRef.permKeyInfo?.subVideoRight === false) {
+          this.logger.error('permKey权限控制你没有权利订阅video')
+          // throw new RtcError({
+          //   code: ErrorCode.NO_PUBLISH_PERMISSSION,
+          //   message: 'perm key have no right to pub'
+          // })
+          this.adapterRef.instance.emit('error', 'no-subscribe-video-permission')
+        } else if (stream.pubStatus.screen.screen && !stream.pubStatus.screen.consumerId) {
           this.logger.log(`[Subscribe] 开始订阅 ${stream.getId()} 辅流`)
           // preferredSpatialLayer是从小到大的，即0是小流，1是大流
           // API层面与声网和Native对齐，即0是大流，1是小流
@@ -2107,6 +2138,30 @@ class Client extends Base {
         message,
         advice
       })
+    }
+  }
+
+  async updatePermKey(permKey: string) {
+    try {
+      this.logger.log(`updatePermKey() permKey: ${permKey}`)
+      await this.adapterRef._signalling?.updatePermKey(permKey)
+      this.adapterRef.instance.apiFrequencyControl({
+        name: 'updatePermKey',
+        code: 0,
+        param: {
+          permKey
+        }
+      })
+    } catch (e: any) {
+      this.adapterRef.instance.apiFrequencyControl({
+        name: 'updatePermKey',
+        code: e.code,
+        param: {
+          permKey,
+          reason: e.message
+        }
+      })
+      throw e
     }
   }
 

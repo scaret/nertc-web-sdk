@@ -81,6 +81,13 @@ export interface SignalJoinRes extends SignalResBase {
   enableAudioRecord: boolean
   enableVideoRecord: boolean
   callbackNetStatus: boolean
+  PermKey: {
+    timeout: number
+    pubAudioRight: boolean
+    subAudioRight: boolean
+    pubVideoRight: boolean
+    subVideoRight: boolean
+  }
   externData: {
     code: number
     errMsg: string

@@ -21,18 +21,21 @@ var WEBRTC2_ENV = {
     //appkey: 'b8e51166f2fc093d9d2f0680cb1f2d28',
     checkSumUrl: 'https://webtest.netease.im/nrtcproxy/demo/getChecksum.action',
     getTokenUrl: 'https://imtest.netease.im/nimserver/user/getToken.action',
+    getPermkeygenUrl: 'https://roomserver-greytest.netease.im/logic/permkeygen',
     AppSecret: 'c9df0b60c1ba'
   },
   SAFEDEV: {
     appkey: 'abb4cce04e5e4a7b7fc381ba799878dc',
     checkSumUrl: 'https://webtest.netease.im/nrtcproxy/demo/getChecksum.action',
     getTokenUrl: 'https://imtest.netease.im/nimserver/user/getToken.action',
+    getPermkeygenUrl: 'https://roomserver-greytest.netease.im/logic/permkeygen',
     AppSecret: '1209afc826ea'
   },
   PROD: {
     appkey: '6acf024e190215b685905444b6e57dd7',
     checkSumUrl: 'https://nrtc.netease.im/demo/getChecksum.action',
     getTokenUrl: 'https://api.netease.im/nimserver/user/getToken.action',
+    getPermkeygenUrl: 'https://roomserver-greytest.netease.im/logic/permkeygen',
     AppSecret: 'fffeeb78f165'
   }
 }
@@ -443,6 +446,37 @@ async function loadTokenByAppKey() {
     }
   } else {
     $('#token').val('')
+  }
+}
+
+async function getPermkey() {
+  const config = WEBRTC2_ENV[globalConfig.env]
+  let appkey = $('#appkey').val()
+  let uid = getUidFromDomInput()
+  let cname = $('#channelName').val()
+  let permkey = $('#permkey').val()
+
+  if (appkey && !permkey && cname) {
+    let expireTime = +$('#expireTime').val() || 86400
+    let privilege = +$('#privilege').val()
+    const headers = {
+      'Content-Type': 'application/json'
+    }
+
+    const data = await axios.post(
+      config.getPermkeygenUrl,
+      { appkey, uid, expireTime, cname, privilege },
+      { headers }
+    )
+
+    if (data.data && data.data.permKey) {
+      console.warn('请求permKey: ', data.data.permKey)
+      return data.data.permKey
+    } else {
+      console.warn('请求permKey结果错误: ', data)
+    }
+  } else {
+    $('#permkey').val('')
   }
 }
 
@@ -880,6 +914,18 @@ function initEvents() {
     console.error('===== 发生错误事件：', type)
     if (type === 'SOCKET_ERROR') {
       addLog('==== 网络异常，已经退出房间')
+    } else if (type === 'no-publish-audio-permission') {
+      console.error('permkey控制，没有发布音频的权限')
+      addLog(`permkey控制，没有发布音频的权限`)
+    } else if (type === 'no-publish-video-permission') {
+      console.error('permkey控制，没有发布视频的权限')
+      addLog(`permkey控制，没有发布视频的权限`)
+    } else if (type === 'no-subscribe-audio-permission') {
+      console.error('permkey控制，没有订阅音频的权限')
+      addLog(`permkey控制，没有订阅音频的权限`)
+    } else if (type === 'no-subscribe-video-permission') {
+      console.error('permkey控制，没有订阅音频的权限')
+      addLog(`permkey控制，没有订阅音频的权限`)
     }
   })
 
@@ -1015,6 +1061,22 @@ function initEvents() {
         ? null
         : infoWindow.succTasksList.remove(_data.taskId)
     }
+  })
+
+  rtc.client.on('permkey-will-expire', (evt) => {
+    console.warn('permKey 即将过期')
+    addLog(`permKey 即将过期`)
+  })
+
+  rtc.client.on('permkey-timeout', (evt) => {
+    console.warn(`===== ${evt.uid} permkey超时被踢出房间`)
+    addLog(`===== ${evt.uid} permkey超时被踢出房间`)
+    $('#permKey').val('')
+    delete rtc.remoteStreams[evt.uid]
+    if (currentSpeaker.uid == evt.uid) {
+      currentSpeaker.uid = null
+    }
+    $(`#subList option[value=${evt.uid}]`).remove()
   })
 }
 
@@ -1282,12 +1344,22 @@ $('#joinChannel-btn').on('click', async () => {
     rtc.client.adapterRef.mediaCapability.supportedCodecSend = supportedCodecSend
   }
 
+  if ($('#enablePermKey').prop('checked')) {
+    if ($('#permKey').val() === '') {
+      const newpermKey = await getPermkey()
+      $('#permKey').val(newpermKey)
+    }
+  } else {
+    $('#permKey').val('')
+  }
+
   const customData = $('#customData').val()
   rtc.client
     .join({
       channelName,
       uid: uid,
       token: $('#token').val(),
+      permKey: $('#enablePermKey').prop('checked') ? $('#permKey').val() : '',
       wssArr: $('#isGetwayAddrConf').prop('checked') ? $('#getwayAddr').val().split(',') : null,
       joinChannelRecordConfig: {
         isHostSpeaker,
@@ -2542,6 +2614,24 @@ function getAudioProcessingConfig() {
     return audioProcessing
   }
 }
+
+/**
+ * ----------------------------------------
+ *              短时token
+ * ----------------------------------------
+ */
+$('#permKeyRefresh').on('click', async () => {
+  let newpermKey = $('#newPermKey').val()
+  console.warn('刷新permKey: ', newpermKey)
+  if (!newpermKey) {
+    newpermKey = await getPermkey()
+    //$('#newPermKey').val(newpermKey)
+  }
+  rtc.client.updatePermKey(newpermKey).catch((err) => {
+    console.error('刷新permKey错误: ', err)
+    addLog(`刷新permKey错误:  ${err.message}`)
+  })
+})
 
 /**
  * ----------------------------------------
