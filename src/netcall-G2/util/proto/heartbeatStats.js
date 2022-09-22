@@ -355,7 +355,8 @@ var $root = (
               totalFreezeTime: { type: 'int64', id: 39 },
               bytesReceivedPerSecond: { type: 'int64', id: 40 },
               framesDecodedPerSecond: { type: 'int64', id: 41 },
-              packetsLostRate: { type: 'double', id: 42 }
+              packetsLostRate: { type: 'double', id: 42 },
+              packetsLostPerSecond: { type: 'double', id: 43 }
             }
           },
           audio_ssrc_obj: {
@@ -485,7 +486,8 @@ var $root = (
               recvPacketLoss: { type: 'int64', id: 34 },
               remoteuid: { type: 'string', id: 35 },
               isRemote: { type: 'bool', id: 36 },
-              qpSum: { type: 'int64', id: 37 }
+              qpSum: { type: 'int64', id: 37 },
+              packetsLostPerSecond: { type: 'double', id: 38 }
             }
           },
           screen_inbound_rtp_obj: {
@@ -516,7 +518,8 @@ var $root = (
               framesDecodedPerSecond: { type: 'int64', id: 24 },
               recvPacketLoss: { type: 'int64', id: 25 },
               packetsReceivedPerSecond: { type: 'int64', id: 26 },
-              remoteuid: { type: 'string', id: 27 }
+              remoteuid: { type: 'string', id: 27 },
+              packetsLostRate: { type: 'double', id: 28 }
             }
           },
           audio_track_obj: {

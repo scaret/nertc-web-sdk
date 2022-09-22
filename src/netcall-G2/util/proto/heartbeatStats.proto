@@ -332,6 +332,7 @@ syntax = "proto2";
        optional int64 bytesReceivedPerSecond=40;
        optional int64 framesDecodedPerSecond=41;
        optional double packetsLostRate=42;
+       optional double packetsLostPerSecond=43;
     }
 
      message audio_ssrc_obj{
@@ -459,6 +460,7 @@ syntax = "proto2";
        optional string remoteuid=35;
        optional bool isRemote=36;
        optional int64 qpSum=37;
+       optional double packetsLostPerSecond=38;
     }
 
     message screen_inbound_rtp_obj{
@@ -489,6 +491,7 @@ syntax = "proto2";
        optional int64 recvPacketLoss=25;
        optional int64 packetsReceivedPerSecond=26;
        optional string remoteuid=27;
+       optional double packetsLostRate=28;
     }
 
      message audio_track_obj{
