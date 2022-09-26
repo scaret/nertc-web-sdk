@@ -63,7 +63,11 @@ export class StageAIProcessing extends StageBase {
   }
 
   unregisterAIDenoise() {
-    this.AIDenoise = null
+    if (this.AIDenoise) {
+      this.AIDenoise.destroy()
+      this.AIDenoise = null
+    }
+
     this.state = 'UNINIT'
   }
 }
