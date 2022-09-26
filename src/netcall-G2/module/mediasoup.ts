@@ -778,11 +778,19 @@ class Mediasoup extends EventEmitter {
             this.logger.log(
               `codecOptions for producer ${appData.mediaType}: ${JSON.stringify(codecOptions)}`
             )
+            let remoteIceCandidates = iceCandidates
+            if (this.adapterRef.channelInfo.iceProtocol && iceCandidates) {
+              this.logger.warn('Produce iceProtocol: ', this.adapterRef.channelInfo.iceProtocol)
+              remoteIceCandidates = iceCandidates.filter((item: any) => {
+                return item.protocol == this.adapterRef.channelInfo.iceProtocol
+              })
+            }
+
             await this._sendTransport.fillRemoteRecvSdp({
               kind,
               appData,
               iceParameters,
-              iceCandidates,
+              iceCandidates: remoteIceCandidates,
               dtlsParameters,
               sctpParameters: undefined,
               sendingRtpParameters: rtpParameters,
@@ -811,31 +819,33 @@ class Mediasoup extends EventEmitter {
       const mediaType = 'audio'
       if (this._micProducer) {
         this.loggerSend.log('音频已经publish，跳过')
-      } else if (this.adapterRef.permKeyInfo?.pubAudioRight === false) {
-        this.loggerSend.error('permKey权限控制你没有权利发布audio')
-        this.adapterRef.instance.safeEmit('error', 'no-publish-audio-permission')
       } else {
         const audioTrack = stream.mediaHelper.audio.audioStream.getAudioTracks()[0]
         if (audioTrack) {
-          this.loggerSend.log('发布音频流 audioTrack: ', audioTrack.id, audioTrack.label)
-          stream.pubStatus.audio.audio = true
-          this._micProducer = await this._sendTransport.produce({
-            track: audioTrack,
-            trackLow: null,
-            codecOptions: {
-              opusStereo: true,
-              opusDtx: true
-            },
-            appData: {
-              deviceId: audioTrack.id,
-              deviceIdLow: null,
-              mediaType: 'audio'
-            }
-          })
-          this.watchProducerState(this._micProducer, '_micProducer')
-          if (this.adapterRef.encryption.encodedInsertableStreams) {
-            if (this._micProducer._rtpSender) {
-              this.enableSendTransform(this._micProducer._rtpSender, 'audio', 'high')
+          if (this.adapterRef.permKeyInfo?.pubAudioRight === false) {
+            this.loggerSend.error('permKey权限控制你没有权利发布audio')
+            this.adapterRef.instance.safeEmit('error', 'no-publish-audio-permission')
+          } else {
+            this.loggerSend.log('发布音频流 audioTrack: ', audioTrack.id, audioTrack.label)
+            stream.pubStatus.audio.audio = true
+            this._micProducer = await this._sendTransport.produce({
+              track: audioTrack,
+              trackLow: null,
+              codecOptions: {
+                opusStereo: true,
+                opusDtx: true
+              },
+              appData: {
+                deviceId: audioTrack.id,
+                deviceIdLow: null,
+                mediaType: 'audio'
+              }
+            })
+            this.watchProducerState(this._micProducer, '_micProducer')
+            if (this.adapterRef.encryption.encodedInsertableStreams) {
+              if (this._micProducer._rtpSender) {
+                this.enableSendTransform(this._micProducer._rtpSender, 'audio', 'high')
+              }
             }
           }
         }
@@ -845,28 +855,30 @@ class Mediasoup extends EventEmitter {
     if (mediaTypeInput === 'audioSlave' || mediaTypeInput === 'all') {
       if (this._audioSlaveProducer) {
         this.loggerSend.log('音频辅流已经publish，忽略')
-      } else if (this.adapterRef.permKeyInfo?.pubAudioRight === false) {
-        this.loggerSend.error('permKey权限控制你没有权利发布audio')
-        this.adapterRef.instance.safeEmit('error', 'no-publish-audio-permission')
       } else {
         const audioTrack = stream.mediaHelper.screenAudio.screenAudioStream.getAudioTracks()[0]
         if (audioTrack) {
-          this.loggerSend.log('发布音频辅流 audioSlaveTrack: ', audioTrack.id, audioTrack.label)
-          stream.pubStatus.audioSlave.audio = true
-          this._audioSlaveProducer = await this._sendTransport.produce({
-            track: audioTrack,
-            trackLow: null,
-            codecOptions: {
-              opusStereo: true,
-              opusDtx: true
-            },
-            appData: {
-              deviceId: audioTrack.id,
-              deviceIdLow: null,
-              mediaType: 'audioSlave'
-            }
-          })
-          this.watchProducerState(this._audioSlaveProducer, '_audioSlaveProducer')
+          if (this.adapterRef.permKeyInfo?.pubAudioRight === false) {
+            this.loggerSend.error('permKey权限控制你没有权利发布audio slave')
+            this.adapterRef.instance.safeEmit('error', 'no-publish-audio-slave-permission')
+          } else {
+            this.loggerSend.log('发布音频辅流 audioSlaveTrack: ', audioTrack.id, audioTrack.label)
+            stream.pubStatus.audioSlave.audio = true
+            this._audioSlaveProducer = await this._sendTransport.produce({
+              track: audioTrack,
+              trackLow: null,
+              codecOptions: {
+                opusStereo: true,
+                opusDtx: true
+              },
+              appData: {
+                deviceId: audioTrack.id,
+                deviceIdLow: null,
+                mediaType: 'audioSlave'
+              }
+            })
+            this.watchProducerState(this._audioSlaveProducer, '_audioSlaveProducer')
+          }
         }
       }
     }
@@ -875,62 +887,64 @@ class Mediasoup extends EventEmitter {
       const mediaType = 'video'
       if (this._webcamProducer) {
         this.loggerSend.log('视频已经publish，跳过')
-      } else if (this.adapterRef.permKeyInfo?.pubVideoRight === false) {
-        this.loggerSend.error('permKey权限控制你没有权利发布video')
-        this.adapterRef.instance.safeEmit('error', 'no-publish-video-permission')
       } else if (stream.mediaHelper.video.videoStream.getVideoTracks().length) {
-        let trackLow: MediaStreamTrack | null = null
-        if (this.adapterRef.channelInfo.videoLow) {
-          if (!stream.mediaHelper.video.low) {
-            stream.mediaHelper.video.low = new VideoTrackLow({
-              logger: this.logger,
-              mediaType: 'video'
-            })
-          }
-          trackLow = stream.mediaHelper.video.low.track
+        if (this.adapterRef.permKeyInfo?.pubVideoRight === false) {
+          this.loggerSend.error('permKey权限控制你没有权利发布video')
+          this.adapterRef.instance.safeEmit('error', 'no-publish-video-permission')
         } else {
-          // 不发布小流。此处如果发现上次有小流，则取消绑定关系，但不回收。
-          if (stream.mediaHelper.video.low) {
-            stream.mediaHelper.video.low.bindSender(null)
+          let trackLow: MediaStreamTrack | null = null
+          if (this.adapterRef.channelInfo.videoLow) {
+            if (!stream.mediaHelper.video.low) {
+              stream.mediaHelper.video.low = new VideoTrackLow({
+                logger: this.logger,
+                mediaType: 'video'
+              })
+            }
+            trackLow = stream.mediaHelper.video.low.track
+          } else {
+            // 不发布小流。此处如果发现上次有小流，则取消绑定关系，但不回收。
+            if (stream.mediaHelper.video.low) {
+              stream.mediaHelper.video.low.bindSender(null)
+            }
+            this.senderEncodingParameter.video.low = null
           }
-          this.senderEncodingParameter.video.low = null
-        }
-        const videoTrack = stream.mediaHelper.video.videoStream.getVideoTracks()[0]
-        this.loggerSend.log('发布视频 videoTrack: ', videoTrack.id, videoTrack.label)
-        stream.pubStatus.video.video = true
-        //@ts-ignore
-        const codecInfo = this.adapterRef.mediaCapability.getCodecSend(
-          'video',
+          const videoTrack = stream.mediaHelper.video.videoStream.getVideoTracks()[0]
+          this.loggerSend.log('发布视频 videoTrack: ', videoTrack.id, videoTrack.label)
+          stream.pubStatus.video.video = true
           //@ts-ignore
-          this._sendTransport.handler._sendingRtpParametersByKind['video']
-        )
-        this._webcamProducer = await this._sendTransport.produce({
-          track: videoTrack,
-          trackLow,
-          codec: codecInfo.codecParam,
-          codecOptions: {
-            videoGoogleStartBitrate: 1000
-          },
-          appData: {
-            deviceId: videoTrack.id,
-            deviceIdLow: trackLow?.id || null,
-            mediaType: 'video'
+          const codecInfo = this.adapterRef.mediaCapability.getCodecSend(
+            'video',
+            //@ts-ignore
+            this._sendTransport.handler._sendingRtpParametersByKind['video']
+          )
+          this._webcamProducer = await this._sendTransport.produce({
+            track: videoTrack,
+            trackLow,
+            codec: codecInfo.codecParam,
+            codecOptions: {
+              videoGoogleStartBitrate: 1000
+            },
+            appData: {
+              deviceId: videoTrack.id,
+              deviceIdLow: trackLow?.id || null,
+              mediaType: 'video'
+            }
+          })
+          if (this._webcamProducer._rtpSender && stream.mediaHelper.video.low) {
+            stream.mediaHelper.video.low.bindSender(this._webcamProducer._rtpSender)
           }
-        })
-        if (this._webcamProducer._rtpSender && stream.mediaHelper.video.low) {
-          stream.mediaHelper.video.low.bindSender(this._webcamProducer._rtpSender)
-        }
-        this.watchProducerState(this._webcamProducer, '_webcamProducer')
-        if (this.adapterRef.encryption.encodedInsertableStreams) {
-          if (this._webcamProducer._rtpSender) {
-            this.enableSendTransform(this._webcamProducer._rtpSender, 'video', 'high')
+          this.watchProducerState(this._webcamProducer, '_webcamProducer')
+          if (this.adapterRef.encryption.encodedInsertableStreams) {
+            if (this._webcamProducer._rtpSender) {
+              this.enableSendTransform(this._webcamProducer._rtpSender, 'video', 'high')
+            }
+            if (this._webcamProducer._rtpSenderLow) {
+              this.enableSendTransform(this._webcamProducer._rtpSenderLow, 'video', 'low')
+            }
           }
-          if (this._webcamProducer._rtpSenderLow) {
-            this.enableSendTransform(this._webcamProducer._rtpSenderLow, 'video', 'low')
+          if (!this.adapterRef.state.startPubVideoTime) {
+            this.adapterRef.state.startPubVideoTime = Date.now()
           }
-        }
-        if (!this.adapterRef.state.startPubVideoTime) {
-          this.adapterRef.state.startPubVideoTime = Date.now()
         }
       }
     }
@@ -939,62 +953,64 @@ class Mediasoup extends EventEmitter {
       const mediaType = 'screen'
       if (this._screenProducer) {
         this.loggerSend.log('屏幕共享已经publish，跳过')
-      } else if (this.adapterRef.permKeyInfo?.pubVideoRight === false) {
-        this.loggerSend.error('permKey权限控制你没有权利发布video')
-        this.adapterRef.instance.safeEmit('error', 'no-publish-video-permission')
       } else if (stream.mediaHelper.screen.screenVideoStream.getVideoTracks().length) {
-        let trackLow: MediaStreamTrack | null = null
-        if (this.adapterRef.channelInfo.screenLow) {
-          if (!stream.mediaHelper.screen.low) {
-            stream.mediaHelper.screen.low = new VideoTrackLow({
-              logger: stream.logger,
-              mediaType: 'screen'
-            })
-          }
-          trackLow = stream.mediaHelper.screen.low.track
+        if (this.adapterRef.permKeyInfo?.pubVideoRight === false) {
+          this.loggerSend.error('permKey权限控制你没有权利发布screen')
+          this.adapterRef.instance.safeEmit('error', 'no-publish-screen-permission')
         } else {
-          // 不发布小流。此处如果发现上次有小流，则取消小流绑定（但不回收）
-          if (stream.mediaHelper.screen.low) {
-            stream.mediaHelper.screen.low.bindSender(null)
+          let trackLow: MediaStreamTrack | null = null
+          if (this.adapterRef.channelInfo.screenLow) {
+            if (!stream.mediaHelper.screen.low) {
+              stream.mediaHelper.screen.low = new VideoTrackLow({
+                logger: stream.logger,
+                mediaType: 'screen'
+              })
+            }
+            trackLow = stream.mediaHelper.screen.low.track
+          } else {
+            // 不发布小流。此处如果发现上次有小流，则取消小流绑定（但不回收）
+            if (stream.mediaHelper.screen.low) {
+              stream.mediaHelper.screen.low.bindSender(null)
+            }
+            this.senderEncodingParameter.screen.low = null
           }
-          this.senderEncodingParameter.screen.low = null
-        }
-        const screenTrack = stream.mediaHelper.screen.screenVideoStream.getVideoTracks()[0]
-        this.loggerSend.log('发布屏幕共享 screenTrack: ', screenTrack.id, screenTrack.label)
-        stream.pubStatus.screen.screen = true
-        //@ts-ignore
-        const codecInfo = this.adapterRef.mediaCapability.getCodecSend(
-          'screen',
+          const screenTrack = stream.mediaHelper.screen.screenVideoStream.getVideoTracks()[0]
+          this.loggerSend.log('发布屏幕共享 screenTrack: ', screenTrack.id, screenTrack.label)
+          stream.pubStatus.screen.screen = true
           //@ts-ignore
-          this._sendTransport.handler._sendingRtpParametersByKind['video']
-        )
-        this._screenProducer = await this._sendTransport.produce({
-          track: screenTrack,
-          trackLow,
-          codec: codecInfo.codecParam,
-          codecOptions: {
-            videoGoogleStartBitrate: 1000
-          },
-          appData: {
-            deviceId: screenTrack.id,
-            deviceIdLow: trackLow?.id || null,
-            mediaType: 'screenShare'
+          const codecInfo = this.adapterRef.mediaCapability.getCodecSend(
+            'screen',
+            //@ts-ignore
+            this._sendTransport.handler._sendingRtpParametersByKind['video']
+          )
+          this._screenProducer = await this._sendTransport.produce({
+            track: screenTrack,
+            trackLow,
+            codec: codecInfo.codecParam,
+            codecOptions: {
+              videoGoogleStartBitrate: 1000
+            },
+            appData: {
+              deviceId: screenTrack.id,
+              deviceIdLow: trackLow?.id || null,
+              mediaType: 'screenShare'
+            }
+          })
+          if (this._screenProducer._rtpSender && stream.mediaHelper.screen.low) {
+            stream.mediaHelper.screen.low.bindSender(this._screenProducer._rtpSender)
           }
-        })
-        if (this._screenProducer._rtpSender && stream.mediaHelper.screen.low) {
-          stream.mediaHelper.screen.low.bindSender(this._screenProducer._rtpSender)
-        }
-        this.watchProducerState(this._screenProducer, '_screenProducer')
-        if (this.adapterRef.encryption.encodedInsertableStreams) {
-          if (this._screenProducer._rtpSender) {
-            this.enableSendTransform(this._screenProducer._rtpSender, 'screen', 'high')
+          this.watchProducerState(this._screenProducer, '_screenProducer')
+          if (this.adapterRef.encryption.encodedInsertableStreams) {
+            if (this._screenProducer._rtpSender) {
+              this.enableSendTransform(this._screenProducer._rtpSender, 'screen', 'high')
+            }
+            if (this._screenProducer._rtpSenderLow) {
+              this.enableSendTransform(this._screenProducer._rtpSenderLow, 'screen', 'low')
+            }
           }
-          if (this._screenProducer._rtpSenderLow) {
-            this.enableSendTransform(this._screenProducer._rtpSenderLow, 'screen', 'low')
+          if (!this.adapterRef.state.startPubScreenTime) {
+            this.adapterRef.state.startPubScreenTime = Date.now()
           }
-        }
-        if (!this.adapterRef.state.startPubScreenTime) {
-          this.adapterRef.state.startPubScreenTime = Date.now()
         }
       }
     }
@@ -1634,6 +1650,14 @@ class Mediasoup extends EventEmitter {
         rtpParameters.mid = rtpParameters.mid + ''
       }
 
+      let remoteIceCandidates = iceCandidates
+      if (this.adapterRef.channelInfo.iceProtocol && iceCandidates) {
+        this.logger.warn('Consume iceProtocol: ', this.adapterRef.channelInfo.iceProtocol)
+        remoteIceCandidates = iceCandidates.filter((item: any) => {
+          return item.protocol == this.adapterRef.channelInfo.iceProtocol
+        })
+      }
+
       const consumer = await this._recvTransport.consume({
         id: consumerId || producerId || id, //服务器400的错误中，response是不反馈consumerId和producerId，这里使用本地保存的id
         producerId: producerId || id,
@@ -1645,7 +1669,7 @@ class Mediasoup extends EventEmitter {
         appData: { peerId, remoteUid: uid, mid }, // Trick.
         offer,
         iceParameters,
-        iceCandidates,
+        iceCandidates: remoteIceCandidates,
         dtlsParameters,
         sctpParameters: undefined,
         probeSSrc: this._probeSSrc
