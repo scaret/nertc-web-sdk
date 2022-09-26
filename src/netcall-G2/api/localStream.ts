@@ -4569,6 +4569,7 @@ class LocalStream extends RTCEventEmitter {
 
   //打开AI降噪
   async enableAIDenoise(): Promise<boolean> {
+    this.logger.log('start ai denoise.')
     let stageAIProcessing: StageAIProcessing
     if (this.mediaHelper.audio.stageAIProcessing) {
       stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
@@ -4600,11 +4601,19 @@ class LocalStream extends RTCEventEmitter {
       this.mediaHelper.enableAudioRouting()
     }
     this.mediaHelper.updateWebAudio()
+    this.client.apiFrequencyControl({
+      name: 'enableAIDenoise',
+      code: 0,
+      param: {
+        streamID: this.stringStreamID
+      }
+    })
     return true
   }
 
   //关闭AI降噪
   async disableAIDenoise(): Promise<boolean> {
+    this.logger.log('close ai denoise.')
     const stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
     if (!stageAIProcessing) {
       this.logger.warn('disableAIDenoise: ai denoise is not created')
@@ -4618,6 +4627,13 @@ class LocalStream extends RTCEventEmitter {
     if (this.mediaHelper.canDisableAudioRouting()) {
       this.mediaHelper.disableAudioRouting()
     }
+    this.client.apiFrequencyControl({
+      name: 'disableAIDenoise',
+      code: 0,
+      param: {
+        streamID: this.stringStreamID
+      }
+    })
     return false
   }
 
