@@ -4952,3 +4952,15 @@ function getdate() {
     now.toTimeString().substr(0, 8)
   )
 }
+
+// 读取url中配置的初始参数
+let query = _parseQuery(location.search)
+if (query) {
+  if (query.noclick === "true") {
+    $('input[name="enableAudio"][value=""]').prop('checked', true)
+    $('input[name="enableVideo"][value=""]').prop('checked', true)
+    $('input[name="enableScreen"][value=""]').prop('checked', true)
+    $('input[name="enableScreenAudio"][value=""]').prop('checked', true)
+    $('#joinChannel-btn').click()
+  }
+}

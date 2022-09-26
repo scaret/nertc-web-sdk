@@ -74,13 +74,13 @@ export class AudioPipeline {
 
     this.logger = options.logger.getChild(() => {
       let tag = 'AudioPipeline#' + this.id
-      if (this.inputs.local) {
+      if (this.inputs.local.track) {
         tag += ' LOCAL'
         if (this.inputs.local.track === this.output.track) {
           tag += `[${this.inputs.local.label}]`
         }
       }
-      if (this.inputs.remote) {
+      if (this.inputs.remote.track) {
         tag += ' REMOTE'
         if (this.inputs.remote.track === this.output.track) {
           tag += `[${this.inputs.remote.label}]`
