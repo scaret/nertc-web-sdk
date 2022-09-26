@@ -436,8 +436,7 @@ class Mediasoup extends EventEmitter {
         })
         this.adapterRef._signalling._reconnection()
       } else {
-        this.loggerSend.error('媒体上行传输通道建立失败，抛错错误')
-        this.adapterRef.instance.safeEmit('error', 'SOCKET_ERROR')
+        this.loggerRecv.warn('媒体上行传输通道建立失败，此时sdk正在重连，不用特殊处理')
         this.adapterRef.instance.apiEventReport('setStreamException', {
           name: 'pushStreamException',
           value: `send transport connection failed`
@@ -459,8 +458,7 @@ class Mediasoup extends EventEmitter {
         })
         this.adapterRef._signalling._reconnection()
       } else {
-        this.loggerRecv.error('媒体下行传输通道建立失败，抛错错误')
-        this.adapterRef.instance.safeEmit('error', 'SOCKET_ERROR')
+        this.loggerRecv.warn('媒体下行传输通道建立失败，此时sdk正在重连，不用特殊处理')
         this.adapterRef.instance.apiEventReport('setStreamException', {
           name: 'pullStreamException',
           value: `receive transport connection failed`
