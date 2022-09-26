@@ -1376,6 +1376,11 @@ $('#joinChannel-btn').on('click', async () => {
     $('#permKey').val('')
   }
 
+  const iceProtocol = $('input[name="iceProtocol"]:checked').val()
+  if (iceProtocol !== 'all') {
+    rtc.client.adapterRef.channelInfo.iceProtocol = iceProtocol
+  }
+
   const customData = $('#customData').val()
   rtc.client
     .join({
