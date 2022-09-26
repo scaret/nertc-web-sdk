@@ -29,6 +29,7 @@ function smoothVolume(x: number) {
 
 export class AudioLevelNode extends NeAudioNodeNullable<AudioWorkletNode> {
   private volume = 0
+  private volumeTs = Date.now()
   // 没有左右声道就是null
   public left: ChannelVolume | null = null
   public right: ChannelVolume | null = null
@@ -86,6 +87,7 @@ export class AudioLevelNode extends NeAudioNodeNullable<AudioWorkletNode> {
       const sec = Math.floor(ts)
 
       this.volume = smoothVolume(event.data.volume)
+      this.volumeTs = ts
 
       //左声道
       if (event.data.left > -1) {
@@ -212,10 +214,15 @@ export class AudioLevelNode extends NeAudioNodeNullable<AudioWorkletNode> {
   }
 
   getAudioLevel() {
-    return {
-      volume: this.volume,
-      left: this.left?.volume,
-      right: this.right?.volume
+    const now = Date.now()
+    if (now - this.volumeTs > 1000) {
+      return { volume: 0 }
+    } else {
+      return {
+        volume: this.volume,
+        left: this.left?.volume,
+        right: this.right?.volume
+      }
     }
   }
 }

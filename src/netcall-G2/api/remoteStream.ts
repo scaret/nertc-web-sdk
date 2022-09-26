@@ -33,7 +33,7 @@ import RtcError from '../util/error/rtcError'
 import { isExistOptions } from '../util/param'
 import { RTCEventEmitter } from '../util/rtcUtil/RTCEventEmitter'
 import * as env from '../util/rtcUtil/rtcEnvironment'
-import { tryResumeAudioContext } from '../module/webAudio'
+import { getAudioContext, tryResumeAudioContext} from '../module/webAudio'
 
 let remoteStreamCnt = 0
 
@@ -1139,14 +1139,34 @@ class RemoteStream extends RTCEventEmitter {
       return 0
     } else {
       if (!pipeline.audioLevelNode) {
-        this.client.apiFrequencyControl({
-          name: 'getAudioLevel',
-          code: 0,
-          param: {
-            mediaType: mediaType,
-            streamID: this.stringStreamID
-          }
-        })
+        const context = getAudioContext()
+        if (context?.state === 'suspended') {
+          // 兼容临时版本客户
+          let enMessage = `remoteStream.getAudioLevel: AudioContext is Suspended`,
+            zhMessage = `playVideoStream: 浏览器自动播放受限: AudioContext is Suspended`,
+            enAdvice = 'Please refer to the suggested link for processing --> ',
+            zhAdvice = '请参考提示的链接进行处理 --> '
+          let message = env.IS_ZH ? zhMessage : enMessage,
+            advice = env.IS_ZH ? zhAdvice : enAdvice
+          const error = new RtcError({
+            code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
+            url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082',
+            message,
+            advice
+          })
+          this.client.safeEmit('notAllowedError', error)
+          this.safeEmit('notAllowedError', error)
+          return 0
+        } else {
+          this.client.apiFrequencyControl({
+            name: 'getAudioLevel',
+            code: 0,
+            param: {
+              mediaType: mediaType,
+              streamID: this.stringStreamID
+            }
+          })
+        }
       }
       const result = pipeline.getAudioLevel()
       if (!result) {
