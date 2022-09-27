@@ -71,7 +71,8 @@ var $root = (
               packetsSentPerSecond: { type: 'int64', id: 23 },
               sendPacketLoss: { type: 'int64', id: 24 },
               bytesSentPerSecond: { type: 'int64', id: 25 },
-              alr: { type: 'int64', id: 26 }
+              alr: { type: 'int64', id: 26 },
+              packetsLostPerSecond: { type: 'double', id: 27 }
             }
           },
           video_ssrc_obj: {
@@ -124,7 +125,8 @@ var $root = (
               googTargetEncBitrate: { type: 'string', id: 46 },
               googBucketDelay: { type: 'string', id: 47 },
               googTransmitBitrate: { type: 'string', id: 48 },
-              vlr: { type: 'int64', id: 49 }
+              vlr: { type: 'int64', id: 49 },
+              packetsLostPerSecond: { type: 'double', id: 50 }
             }
           },
           screen_ssrc_obj: {
@@ -177,7 +179,8 @@ var $root = (
               googTargetEncBitrate: { type: 'string', id: 46 },
               googBucketDelay: { type: 'string', id: 47 },
               googTransmitBitrate: { type: 'string', id: 48 },
-              vlr: { type: 'int64', id: 49 }
+              vlr: { type: 'int64', id: 49 },
+              packetsLostPerSecond: { type: 'double', id: 50 }
             }
           },
           video_track_obj: {

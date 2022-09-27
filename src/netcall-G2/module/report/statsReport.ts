@@ -127,7 +127,7 @@ class StatsReport extends EventEmitter {
         let data = await this.stats?.getAllStats()
         // console.log('原始 data--->', data)
         let reportData = this.calculateReport(data)
-        // console.log('data--->', reportData)
+        // console.warn('data--->', reportData)
         if (!env.IS_ELECTRON) {
           // Electron 上报的数据和 Chrome 不同，暂时不上报，后续需要再进行单独处理
           this.wsTransport_.sendPB(reportData)
@@ -172,9 +172,17 @@ class StatsReport extends EventEmitter {
             (this.prevStats_.local.audio_ssrc[0].bytesSentPerSecond = Math.abs(
               this.prevStats_.local.audio_ssrc[0].bytesSent
             ))
+          this.prevStats_.local.audio_ssrc &&
+            (this.prevStats_.local.audio_ssrc[0].packetsLostPerSecond = Math.abs(
+              this.prevStats_.local.audio_ssrc[0].packetsLost
+            ))
           this.prevStats_.local.video_ssrc &&
             (this.prevStats_.local.video_ssrc[0].bytesSentPerSecond = Math.abs(
               this.prevStats_.local.video_ssrc[0].bytesSent
+            ))
+          this.prevStats_.local.video_ssrc &&
+            (this.prevStats_.local.video_ssrc[0].packetsLostPerSecond = Math.abs(
+              this.prevStats_.local.video_ssrc[0].packetsLost
             ))
           this.prevStats_.local.video_ssrc &&
             (this.prevStats_.local.video_ssrc[0].framesEncodedPerSecond =
@@ -182,6 +190,10 @@ class StatsReport extends EventEmitter {
           this.prevStats_.local.screen_ssrc &&
             (this.prevStats_.local.screen_ssrc[0].bytesSentPerSecond = Math.abs(
               this.prevStats_.local.screen_ssrc[0].bytesSent
+            ))
+          this.prevStats_.local.screen_ssrc &&
+            (this.prevStats_.local.screen_ssrc[0].packetsLostPerSecond = Math.abs(
+              this.prevStats_.local.screen_ssrc[0].packetsLost
             ))
           this.prevStats_.local.screen_ssrc &&
             (this.prevStats_.local.screen_ssrc[0].framesEncodedPerSecond =
@@ -221,6 +233,16 @@ class StatsReport extends EventEmitter {
             } else {
               local.audio_ssrc[0].bytesSentPerSecond = 0
             }
+            if (
+              local.audio_ssrc[0].packetsLost - 0 > 0 &&
+              local.audio_ssrc[0].packetsLost - 0 - prevLocal.audio_ssrc[0].packetsLost > 0
+            ) {
+              local.audio_ssrc[0].packetsLostPerSecond = Math.abs(
+                (local.audio_ssrc[0].packetsLost - 0 - prevLocal.audio_ssrc[0].packetsLost) / 2
+              )
+            } else {
+              local.audio_ssrc[0].packetsLostPerSecond = 0
+            }
           }
           if (local.video_ssrc) {
             if (
@@ -241,6 +263,16 @@ class StatsReport extends EventEmitter {
                 (local.video_ssrc[0].framesEncoded - 0 - prevLocal.video_ssrc[0].framesEncoded) / 2
             } else {
               local.video_ssrc[0].framesEncodedPerSecond = 0
+            }
+            if (
+              local.video_ssrc[0].packetsLost - 0 > 0 &&
+              local.video_ssrc[0].packetsLost - 0 - prevLocal.video_ssrc[0].packetsLost > 0
+            ) {
+              local.video_ssrc[0].packetsLostPerSecond = Math.abs(
+                (local.video_ssrc[0].packetsLost - 0 - prevLocal.video_ssrc[0].packetsLost) / 2
+              )
+            } else {
+              local.video_ssrc[0].packetsLostPerSecond = 0
             }
           }
           if (local.screen_ssrc) {
@@ -263,6 +295,16 @@ class StatsReport extends EventEmitter {
                 2
             } else {
               local.screen_ssrc[0].framesEncodedPerSecond = 0
+            }
+            if (
+              local.screen_ssrc[0].packetsLost - 0 > 0 &&
+              local.screen_ssrc[0].packetsLost - 0 - prevLocal.screen_ssrc[0].packetsLost > 0
+            ) {
+              local.screen_ssrc[0].packetsLostPerSecond = Math.abs(
+                (local.screen_ssrc[0].packetsLost - 0 - prevLocal.screen_ssrc[0].packetsLost) / 2
+              )
+            } else {
+              local.screen_ssrc[0].packetsLostPerSecond = 0
             }
           }
         }

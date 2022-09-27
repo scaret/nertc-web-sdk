@@ -58,6 +58,7 @@ syntax = "proto2";
        optional int64 sendPacketLoss=24;
        optional int64 bytesSentPerSecond=25;
        optional int64 alr=26;
+       optional double packetsLostPerSecond=27;
     }
 
      message video_ssrc_obj{
@@ -110,6 +111,7 @@ syntax = "proto2";
        optional string googBucketDelay=47;
        optional string googTransmitBitrate=48;
        optional int64 vlr=49;
+       optional double packetsLostPerSecond=50;
     }
 
     message screen_ssrc_obj{
@@ -162,6 +164,7 @@ syntax = "proto2";
        optional string googBucketDelay=47;
        optional string googTransmitBitrate=48;
        optional int64 vlr=49;
+       optional double packetsLostPerSecond=50;
     }
 
      message video_track_obj{
