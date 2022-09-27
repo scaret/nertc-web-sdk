@@ -242,7 +242,7 @@ function loadEnv() {
   $('#channelName').val(channelName)
 
   let domUid
-  if (sessionStorage && sessionStorage.getItem('domUid')){
+  if (sessionStorage && sessionStorage.getItem('domUid')) {
     domUid = sessionStorage.getItem('domUid')
   } else {
     domUid = '' + Math.floor(Math.random() * 9000 + 1000)
@@ -718,8 +718,8 @@ function initEvents() {
     getRemoteView(evt.stream.streamID).$div.show()
 
     if (rtc.remoteStreams[remoteStream.streamID]) {
-      console.warn('清除之前的音视频流，重新sub')
-      remoteStream.stop()
+      console.warn(`清除之前订阅的${evt.mediaType}，重新sub`)
+      remoteStream.stop(evt.mediaType)
     }
     rtc.remoteStreams[remoteStream.streamID] = remoteStream
     isRepeatability(subList, remoteStream.streamID)
@@ -925,15 +925,27 @@ function initEvents() {
     } else if (type === 'no-publish-audio-permission') {
       console.error('permkey控制，没有发布音频的权限')
       addLog(`permkey控制，没有发布音频的权限`)
+    } else if (type === 'no-publish-audio-slave-permission') {
+      console.error('permkey控制，没有发布音频辅流的权限')
+      addLog(`permkey控制，没有发布音频辅流的权限`)
     } else if (type === 'no-publish-video-permission') {
       console.error('permkey控制，没有发布视频的权限')
       addLog(`permkey控制，没有发布视频的权限`)
+    } else if (type === 'no-publish-screen-permission') {
+      console.error('permkey控制，没有发布屏幕共享的权限')
+      addLog(`permkey控制，没有发布屏幕共享的权限`)
     } else if (type === 'no-subscribe-audio-permission') {
       console.error('permkey控制，没有订阅音频的权限')
       addLog(`permkey控制，没有订阅音频的权限`)
+    } else if (type === 'no-subscribe-audio-slave-permission') {
+      console.error('permkey控制，没有订阅音频辅流的权限')
+      addLog(`permkey控制，没有订阅音频辅流的权限`)
     } else if (type === 'no-subscribe-video-permission') {
-      console.error('permkey控制，没有订阅音频的权限')
-      addLog(`permkey控制，没有订阅音频的权限`)
+      console.error('permkey控制，没有订阅视频的权限')
+      addLog(`permkey控制，没有订阅视频的权限`)
+    } else if (type === 'no-subscribe-screen-permission') {
+      console.error('permkey控制，没有订阅屏幕共享的权限')
+      addLog(`permkey控制，没有订阅屏幕共享的权限`)
     }
   })
 
@@ -1262,9 +1274,9 @@ function updateRemoteViewInfo() {
       title += `<br>⬆${view.uplinkNetworkQuality} ⬇${view.downlinkNetworkQuality}`
     }
     if (remoteStream && document.getElementById('getAudioLevelRemote').checked) {
-      title += `<br>主流音量：${remoteStream.getAudioLevel().toFixed(4)}；辅流音量：${remoteStream.getAudioLevel(
-        'subAudio'
-      ).toFixed(4)}`
+      title += `<br>主流音量：${remoteStream.getAudioLevel().toFixed(4)}；辅流音量：${remoteStream
+        .getAudioLevel('subAudio')
+        .toFixed(4)}`
     }
     const html = view.$div.children('.remote-view-title').html()
     if (html !== title) {
@@ -1362,6 +1374,11 @@ $('#joinChannel-btn').on('click', async () => {
     }
   } else {
     $('#permKey').val('')
+  }
+
+  const iceProtocol = $('input[name="iceProtocol"]:checked').val()
+  if (iceProtocol !== 'all') {
+    rtc.client.adapterRef.channelInfo.iceProtocol = iceProtocol
   }
 
   const customData = $('#customData').val()

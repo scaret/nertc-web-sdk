@@ -1047,11 +1047,7 @@ class Client extends Base {
     try {
       if (stream.subConf.audio) {
         if (this.adapterRef.permKeyInfo?.subAudioRight === false) {
-          this.logger.error('permKey权限控制你没有权利订阅audio')
-          // throw new RtcError({
-          //   code: ErrorCode.NO_PUBLISH_PERMISSSION,
-          //   message: 'perm key have no right to pub'
-          // })
+          this.logger.error('permKey权限控制你没有权限订阅audio')
           this.adapterRef.instance.emit('error', 'no-subscribe-audio-permission')
         } else if (stream.pubStatus.audio.audio && !stream.pubStatus.audio.consumerId) {
           //重复调用的问题不再通过consumerStatus来保障，有后续的流程负责
@@ -1115,12 +1111,8 @@ class Client extends Base {
 
       if (stream.subConf.audioSlave) {
         if (this.adapterRef.permKeyInfo?.subAudioRight === false) {
-          this.logger.error('permKey权限控制你没有权利订阅audio')
-          // throw new RtcError({
-          //   code: ErrorCode.NO_PUBLISH_PERMISSSION,
-          //   message: 'perm key have no right to pub'
-          // })
-          this.adapterRef.instance.emit('error', 'no-subscribe-audio-permission')
+          this.logger.error('permKey权限控制你没有权限订阅audio slave')
+          this.adapterRef.instance.emit('error', 'no-subscribe-audio-slave-permission')
         } else if (
           stream.pubStatus.audioSlave.audioSlave &&
           !stream.pubStatus.audioSlave.consumerId
@@ -1176,11 +1168,7 @@ class Client extends Base {
 
       if (stream.subConf.video) {
         if (this.adapterRef.permKeyInfo?.subVideoRight === false) {
-          this.logger.error('permKey权限控制你没有权利订阅video')
-          // throw new RtcError({
-          //   code: ErrorCode.NO_PUBLISH_PERMISSSION,
-          //   message: 'perm key have no right to pub'
-          // })
+          this.logger.error('permKey权限控制你没有权限订阅video')
           this.adapterRef.instance.emit('error', 'no-subscribe-video-permission')
         } else if (stream.pubStatus.video.video && !stream.pubStatus.video.consumerId) {
           this.logger.log(`[Subscribe] 开始订阅 ${stream.getId()} 视频流`)
@@ -1252,12 +1240,8 @@ class Client extends Base {
       }
       if (stream.subConf.screen) {
         if (this.adapterRef.permKeyInfo?.subVideoRight === false) {
-          this.logger.error('permKey权限控制你没有权利订阅video')
-          // throw new RtcError({
-          //   code: ErrorCode.NO_PUBLISH_PERMISSSION,
-          //   message: 'perm key have no right to pub'
-          // })
-          this.adapterRef.instance.emit('error', 'no-subscribe-video-permission')
+          this.logger.error('permKey权限控制你没有权利订阅screen')
+          this.adapterRef.instance.emit('error', 'no-subscribe-screen-permission')
         } else if (stream.pubStatus.screen.screen && !stream.pubStatus.screen.consumerId) {
           this.logger.log(`[Subscribe] 开始订阅 ${stream.getId()} 辅流`)
           // preferredSpatialLayer是从小到大的，即0是小流，1是大流

@@ -68,7 +68,12 @@
             <button type="button" id='setAppkey'>设置appkey</button>
             <button type="button" id='clearLocalStorage'>重置</button>
           </div>
-
+          <div class="line">
+            ice选择
+            <label><input type="radio" name="iceProtocol" value="udp">udp</label>
+            <label><input type="radio" name="iceProtocol" value="tcp">tcp</label>
+            <label><input type="radio" name="iceProtocol" value="all" checked>all</label>
+          </div>
           <div class="line">
             网关地址:
             <input type="text" id="getwayAddr" value='webrtcgwcn.netease.im/?ip=59.111.239.249:30105'>
