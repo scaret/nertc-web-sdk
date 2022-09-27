@@ -2215,6 +2215,13 @@ class LocalStream extends RTCEventEmitter {
   getAudioLevel(mediaType: 'audio' | 'audioSlave' = 'audio') {
     if (mediaType === 'audio') {
       if (!this.audioLevelHelper && this.mediaHelper.audio.audioStream.getAudioTracks().length) {
+        // 为不支持getAudioLevel的环境做出提示
+        // 由于getAudioLevle是高频调用API，所以仅在第一次调用时抛出错误事件
+        const context = getAudioContext()
+        if (!context || !context.audioWorklet || !context.audioWorklet.addModule) {
+          this.logger.error(`getAudioLevel is not supported in this browser`)
+          this.client.safeEmit('error', 'AUDIOLEVEL_NOT_SUPPORTED')
+        }
         this.audioLevelHelper = new AudioLevel({
           stream: this.mediaHelper.audio.audioStream,
           logger: this.logger

@@ -920,6 +920,7 @@ function initEvents() {
 
   rtc.client.on('error', (type) => {
     console.error('===== 发生错误事件：', type)
+    addLog('ERROR: ' + JSON.stringify(type))
     if (type === 'SOCKET_ERROR') {
       addLog('==== 网络异常，已经退出房间')
     } else if (type === 'no-publish-audio-permission') {

@@ -33,7 +33,7 @@ import RtcError from '../util/error/rtcError'
 import { isExistOptions } from '../util/param'
 import { RTCEventEmitter } from '../util/rtcUtil/RTCEventEmitter'
 import * as env from '../util/rtcUtil/rtcEnvironment'
-import { getAudioContext, tryResumeAudioContext} from '../module/webAudio'
+import { getAudioContext, tryResumeAudioContext } from '../module/webAudio'
 
 let remoteStreamCnt = 0
 
@@ -1140,8 +1140,14 @@ class RemoteStream extends RTCEventEmitter {
     } else {
       if (!pipeline.audioLevelNode) {
         const context = getAudioContext()
+        if (!context || !context.audioWorklet || !context.audioWorklet.addModule) {
+          // 为不支持getAudioLevel的环境做出提示
+          // 由于getAudioLevle是高频调用API，所以仅在第一次调用时抛出错误事件
+          this.logger.error(`getAudioLevel is not supported in this browser`)
+          this.client.safeEmit('error', 'AUDIOLEVEL_NOT_SUPPORTED')
+          // 这里不return
+        }
         if (context?.state === 'suspended') {
-          // 兼容临时版本客户
           let enMessage = `remoteStream.getAudioLevel: AudioContext is Suspended`,
             zhMessage = `playVideoStream: 浏览器自动播放受限: AudioContext is Suspended`,
             enAdvice = 'Please refer to the suggested link for processing --> ',
