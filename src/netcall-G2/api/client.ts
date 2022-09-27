@@ -2128,6 +2128,7 @@ class Client extends Base {
   async updatePermKey(permKey: string) {
     try {
       this.logger.log(`updatePermKey() permKey: ${permKey}`)
+      this.adapterRef.channelInfo.permKey = permKey
       await this.adapterRef._signalling?.updatePermKey(permKey)
       this.adapterRef.instance.apiFrequencyControl({
         name: 'updatePermKey',
