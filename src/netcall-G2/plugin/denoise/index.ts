@@ -81,7 +81,7 @@ class AIDenoise extends EventEmitter {
   }
 
   destroy() {
-    this.logger.log('segmentation destroy')
+    this.logger.log('AIDenoise destroy')
     if (this.deoniseWorker && !this._deoniseWorkerDestroying) {
       this._deoniseWorkerDestroying = true
       this.deoniseWorker.postMessage({ type: 'destroy' })

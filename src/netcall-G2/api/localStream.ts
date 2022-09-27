@@ -2215,6 +2215,13 @@ class LocalStream extends RTCEventEmitter {
   getAudioLevel(mediaType: 'audio' | 'audioSlave' = 'audio') {
     if (mediaType === 'audio') {
       if (!this.audioLevelHelper && this.mediaHelper.audio.audioStream.getAudioTracks().length) {
+        // 为不支持getAudioLevel的环境做出提示
+        // 由于getAudioLevle是高频调用API，所以仅在第一次调用时抛出错误事件
+        const context = getAudioContext()
+        if (!context || !context.audioWorklet || !context.audioWorklet.addModule) {
+          this.logger.error(`getAudioLevel is not supported in this browser`)
+          this.client.safeEmit('error', 'AUDIOLEVEL_NOT_SUPPORTED')
+        }
         this.audioLevelHelper = new AudioLevel({
           stream: this.mediaHelper.audio.audioStream,
           logger: this.logger
@@ -4569,6 +4576,7 @@ class LocalStream extends RTCEventEmitter {
 
   //打开AI降噪
   async enableAIDenoise(): Promise<boolean> {
+    this.logger.log('start ai denoise.')
     let stageAIProcessing: StageAIProcessing
     if (this.mediaHelper.audio.stageAIProcessing) {
       stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
@@ -4600,11 +4608,19 @@ class LocalStream extends RTCEventEmitter {
       this.mediaHelper.enableAudioRouting()
     }
     this.mediaHelper.updateWebAudio()
+    this.client.apiFrequencyControl({
+      name: 'enableAIDenoise',
+      code: 0,
+      param: {
+        streamID: this.stringStreamID
+      }
+    })
     return true
   }
 
   //关闭AI降噪
   async disableAIDenoise(): Promise<boolean> {
+    this.logger.log('close ai denoise.')
     const stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
     if (!stageAIProcessing) {
       this.logger.warn('disableAIDenoise: ai denoise is not created')
@@ -4618,6 +4634,13 @@ class LocalStream extends RTCEventEmitter {
     if (this.mediaHelper.canDisableAudioRouting()) {
       this.mediaHelper.disableAudioRouting()
     }
+    this.client.apiFrequencyControl({
+      name: 'disableAIDenoise',
+      code: 0,
+      param: {
+        streamID: this.stringStreamID
+      }
+    })
     return false
   }
 
