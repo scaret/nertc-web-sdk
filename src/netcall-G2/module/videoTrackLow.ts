@@ -16,6 +16,8 @@ declare global {
   }
 }
 
+type STATES = 'frame' | 'clear' | 'black' | 'paused'
+
 export class VideoTrackLow {
   private logger: ILogger
   private mediaType: string
@@ -33,7 +35,7 @@ export class VideoTrackLow {
 
   private timer: number | null = null
   private lastDrawAt = 0
-  private lastState: 'frame' | 'clear' | 'black' | 'paused' = 'clear'
+  private lastState: STATES = 'clear'
 
   private high: {
     sender: RTCRtpSender | null
@@ -172,29 +174,33 @@ export class VideoTrackLow {
     } else if (this.high.track?.enabled === false) {
       if (this.lastState === 'frame' || this.lastState === 'clear') {
         this.logger.log(`track处在mute状态`)
-        this.lastState = 'black'
-        this.context.fillStyle = 'black'
+        let newState:STATES = 'black'
+        this.logger.log(`小流状态变更 ${this.lastState} => newState`)
+        this.lastState = newState
         this.context.fillRect(0, 0, this.width, this.height)
       }
     } else if (this.high.videoDom.paused) {
       if (this.lastState === 'frame' || this.lastState === 'clear') {
-        this.logger.log(`track处在 Paused 状态`)
-        this.lastState = 'paused'
+        let newState:STATES = 'paused'
+        this.logger.log(`小流状态变更 ${this.lastState} => newState`)
+        this.lastState = newState
         this.high.videoDom.play().catch((e) => {
           // this.logger.error(`播放失败，小流可能无法展示`, e)
         })
       }
     } else if (this.high.track?.readyState === 'live') {
       if (this.lastState !== 'frame') {
-        this.logger.log(`开始画小流`)
-        this.lastState = 'frame'
+        let newState:STATES = 'frame'
+        this.logger.log(`小流状态变更 ${this.lastState} => newState`)
+        this.lastState = newState
       }
       this.context.drawImage(this.high.videoDom, 0, 0, this.width, this.height)
       this.lastDrawAt = Date.now()
     } else {
       if (this.lastState === 'frame') {
-        this.logger.log(`track失效，清除小流`)
-        this.lastState = 'clear'
+        let newState:STATES = 'clear'
+        this.logger.log(`小流状态变更 ${this.lastState} => newState`)
+        this.lastState = newState
         this.context.clearRect(0, 0, this.width, this.height)
       }
     }

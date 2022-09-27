@@ -30,6 +30,7 @@ import {
 import { Peer } from './3rd/protoo-client'
 import { getParameters } from './parameters'
 import { VideoTrackLow } from './videoTrackLow'
+import { IS_SAFARI, SAFARI_MAJOR_VERSION, SAFARI_VERSION} from "../util/rtcUtil/rtcEnvironment";
 
 class Mediasoup extends EventEmitter {
   private adapterRef: AdapterRef
@@ -930,6 +931,12 @@ class Mediasoup extends EventEmitter {
           })
           if (this._webcamProducer._rtpSender && stream.mediaHelper.video.low) {
             stream.mediaHelper.video.low.bindSender(this._webcamProducer._rtpSender)
+            if (IS_SAFARI && SAFARI_MAJOR_VERSION && SAFARI_MAJOR_VERSION < 14) {
+              if (stream._play?.videoDom?.srcObject) {
+                this.logger.log(`尝试重置本地视图的SrcObject`)
+                stream._play.videoDom.srcObject = stream._play.videoDom.srcObject
+              }
+            }
           }
           this.watchProducerState(this._webcamProducer, '_webcamProducer')
           if (this.adapterRef.encryption.encodedInsertableStreams) {
