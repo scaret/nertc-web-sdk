@@ -74,7 +74,7 @@ export class AudioLevelNode extends NeAudioNodeNullable<AudioWorkletNode> {
       await AudioWorkletReady
     }
     const audioWorkletNode = new AudioWorkletNode(this.context, 'vumeter')
-    this.audioNode = audioWorkletNode
+    this.bindAudioWorkletNode(audioWorkletNode)
     this.connectedFrom.forEach((node) => {
       node.connect(this)
     })
@@ -82,10 +82,21 @@ export class AudioLevelNode extends NeAudioNodeNullable<AudioWorkletNode> {
       // 并不会有 connectedTo，但出于完整性还是连一下
       this.connect(node)
     })
+  }
+
+  bindAudioWorkletNode(audioWorkletNode: AudioWorkletNode) {
+    this.audioNode = audioWorkletNode
     audioWorkletNode.port.onmessage = (event) => {
+      if (this.audioNode !== audioWorkletNode) {
+        return
+      }
       const ts = Date.now()
       const sec = Math.floor(ts)
 
+      if (!(event.data.volume > -1)) {
+        this.logger.error(`Unsupported message`, event.data)
+        return
+      }
       this.volume = smoothVolume(event.data.volume)
       this.volumeTs = ts
 

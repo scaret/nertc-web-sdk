@@ -165,7 +165,16 @@ export class AudioPipeline {
       this.initAudioLevelNode()
       this.updateConnection()
     }
-    return this.audioLevelNode?.getAudioLevel()
+    if (this.audioLevelNode) {
+      if (this.audioLevelNode.audioNode && !this.audioLevelNode.audioNode.port.onmessage) {
+        // FIXME: Safari由于未知原因，会失去audioNode绑定的port
+        this.audioLevelNode.logger.warn('Rebinding Audio Worklet Node')
+        this.audioLevelNode.bindAudioWorkletNode(this.audioLevelNode.audioNode)
+      }
+      return this.audioLevelNode.getAudioLevel()
+    } else {
+      return 0
+    }
   }
   initAudioLevelNode() {
     if (this.audioLevelNode) {
