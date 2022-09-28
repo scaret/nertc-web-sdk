@@ -28,6 +28,47 @@
 <script>
   window.clients = {}
   const channelName = Math.floor(Math.random() * 9000) + 1000
+
+  //AI降噪
+  const aiDenoisePluginConfig = {
+    development: {
+      simd: {
+        key: 'AIDenoise',
+        pluginUrl: './js/nim/NIM_Web_AIDenoise.js',
+        wasmUrl: './js/nim/wasm/NIM_Web_AIDenoise_simd.wasm' + `?time=${Math.random()}`
+      },
+      nosimd: {
+        key: 'AIDenoise',
+        pluginUrl: './js/nim/NIM_Web_AIDenoise.js',
+        wasmUrl: './js/nim/wasm/NIM_Web_AIDenoise_nosimd.wasm'
+      }
+    },
+    production: {
+      simd: {
+        key: 'AIDenoise',
+        pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}.js`,
+        wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_simd_v${NERTC.VERSION}.wasm`
+      },
+      nosimd: {
+        key: 'AIDenoise',
+        pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}.js`,
+        wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_nosimd_v${NERTC.VERSION}.wasm`
+      }
+    },
+    test: {
+      simd: {
+        key: 'AIDenoise',
+        pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}_test.js`,
+        wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_simd_v${NERTC.VERSION}_test.wasm`
+      },
+      nosimd: {
+        key: 'AIDenoise',
+        pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}_test.js`,
+        wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_nosimd_v${NERTC.VERSION}_test.wasm`
+      }
+    }
+  }
+
   const main = async ()=>{
     for (let i = 0; i < COUNT; i++){
       const wrapper = document.createElement('div')
@@ -38,6 +79,7 @@
       const screenPanel = document.createElement('div')
       const screenAudioPanel = document.createElement('div')
       const beautyPanel = document.createElement('div')
+      const audioProcessingPanel = document.createElement('div')
       const statsPanel = document.createElement('div')
       
       const localContainer = document.createElement('div')
@@ -50,6 +92,7 @@
       $(screenPanel).appendTo(wrapper)
       $(screenAudioPanel).appendTo(wrapper)
       $(beautyPanel).appendTo(wrapper)
+      $(audioProcessingPanel).appendTo(wrapper)
       $(statsPanel).appendTo(wrapper)
       $(localContainer).appendTo(wrapper)
       $(remoteContainer).appendTo(wrapper)
@@ -159,6 +202,7 @@
       const $unmuteAudioSlave = $(`<button>unmuteAudioSlave</button>`)
       $unmuteAudioSlave.appendTo(screenAudioPanel)
       
+      /////////////////////////////// 美颜
       $("<span>美颜：</span>").appendTo(beautyPanel)
       
       const openBeautyInput = document.createElement("button")
@@ -212,6 +256,29 @@
       const destroyVitrualBackgroundInput = document.createElement("button")
       destroyVitrualBackgroundInput.innerText = "销毁"
       $(destroyVitrualBackgroundInput).appendTo(beautyPanel)
+
+      /////////////////////// AI降噪
+
+      $("<span>AI降噪:</span>").appendTo(audioProcessingPanel)
+
+      const registerAIDenoiseInput = document.createElement("button")
+      registerAIDenoiseInput.innerText = "注册"
+      $(registerAIDenoiseInput).appendTo(audioProcessingPanel)
+
+      const enableAIDenoiseInput = document.createElement("button")
+      enableAIDenoiseInput.innerText = "打开"
+      $(enableAIDenoiseInput).appendTo(audioProcessingPanel)
+
+      const disableAIDenoiseInput = document.createElement("button")
+      disableAIDenoiseInput.innerText = "关闭"
+      $(disableAIDenoiseInput).appendTo(audioProcessingPanel)
+
+      const unregisterAIDenoiseInput = document.createElement("button")
+      unregisterAIDenoiseInput.innerText = "销毁"
+      $(unregisterAIDenoiseInput).appendTo(audioProcessingPanel)
+
+
+      /////////////////////// Stats
 
       $("<span>Stats</span>").appendTo(statsPanel)
       const getSessionStatsBtn = document.createElement("button")
@@ -338,6 +405,27 @@
 
       openBeautyInput.onclick = async () => {
         await getLocalStream().setBeautyEffect(true);
+      }
+
+      registerAIDenoiseInput.onclick = async () =>{
+        const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
+        aidenoise_config = aiDenoisePluginConfig[NERTC.ENV][type]
+        await getLocalStream().registerPlugin(aidenoise_config)
+        console.log('AI降噪注册完成')
+      }
+
+      enableAIDenoiseInput.onclick = async () =>{
+        getLocalStream().enableAIDenoise()
+        console.log('关闭AI降噪')
+      }
+
+      disableAIDenoiseInput.onclick = async () =>{
+        getLocalStream().disableAIDenoise()
+        console.log('关闭AI降噪')
+      }
+
+      unregisterAIDenoiseInput.onclick = async ()=>{
+        getLocalStream().unregisterPlugin('AIDenoise')
       }
 
       openLutInput.onclick = () => {
