@@ -104,6 +104,21 @@ export function getAudioContext() {
   }
 }
 
+let destination: MediaStreamAudioDestinationNode | null = null
+
+/**
+ * Chrome低版本会要求音频源最终连到destination，不然没数据
+ */
+export function getAudioLevelDestination() {
+  if (!destination) {
+    const context = getAudioContext()
+    if (context) {
+      destination = context.createMediaStreamDestination()
+    }
+  }
+  return destination
+}
+
 class WebAudio extends EventEmitter {
   private support: boolean
   private gain: number
