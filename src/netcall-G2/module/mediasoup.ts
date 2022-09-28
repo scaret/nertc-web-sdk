@@ -30,7 +30,7 @@ import {
 import { Peer } from './3rd/protoo-client'
 import { getParameters } from './parameters'
 import { VideoTrackLow } from './videoTrackLow'
-import { IS_SAFARI, SAFARI_MAJOR_VERSION, SAFARI_VERSION} from "../util/rtcUtil/rtcEnvironment";
+import { IS_SAFARI, SAFARI_MAJOR_VERSION, SAFARI_VERSION } from '../util/rtcUtil/rtcEnvironment'
 
 class Mediasoup extends EventEmitter {
   private adapterRef: AdapterRef
@@ -1717,6 +1717,8 @@ class Mediasoup extends EventEmitter {
             )
             consumer.track.enabled = false
           }
+        } else {
+          consumer.track.enabled = true
         }
         if (!remoteStream.mediaHelper) {
           let enMessage = '_createConsumer: media helper is unavailable',
