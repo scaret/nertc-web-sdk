@@ -10,7 +10,10 @@ const git = require('./git')
 
 const version = pjson.private ? pjson.privateVersion : pjson.version
 const branchName = git.currentBranch();
-const webrtcG2Branch = branchName.split('/').pop();
+let webrtcG2Branch = branchName.split('/').join('-');
+if (webrtcG2Branch.indexOf('stab-') === 0) {
+  webrtcG2Branch = webrtcG2Branch.slice(5)
+}
 const webrtcG2Version = pjson.webrtcG2Version
 const nodeEnv = process.env.NODE_ENV || 'test'
 const WEB_NRTC_DIR = process.env.WEB_NRTC_DIR || path.join(__dirname, '../../web-nrtc')
