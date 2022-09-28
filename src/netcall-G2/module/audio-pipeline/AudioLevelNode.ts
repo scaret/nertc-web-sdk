@@ -4,6 +4,7 @@
 import { ILogger } from '../../types'
 import { getBlobUrl } from '../blobs/getBlobUrl'
 import { NeAudioNode, NeAudioNodeNullable } from './NeAudioNode'
+import { getAudioLevelDestination } from '../webAudio'
 
 let AudioWorkletState: 'NOTREADY' | 'LOADING' | 'READY' = 'NOTREADY'
 let AudioWorkletReady: Promise<void> | null = null
@@ -75,6 +76,10 @@ export class AudioLevelNode extends NeAudioNodeNullable<AudioWorkletNode> {
     }
     const audioWorkletNode = new AudioWorkletNode(this.context, 'vumeter')
     this.bindAudioWorkletNode(audioWorkletNode)
+    const audioLevelDestination = getAudioLevelDestination()
+    if (audioLevelDestination) {
+      audioWorkletNode.connect(audioLevelDestination)
+    }
     this.connectedFrom.forEach((node) => {
       node.connect(this)
     })

@@ -5,7 +5,7 @@ import { EventEmitter } from 'eventemitter3'
 
 import { AudioLevelOptions, ILogger } from '../types'
 import { getBlobUrl } from './blobs/getBlobUrl'
-import { getAudioContext } from './webAudio'
+import { getAudioContext, getAudioLevelDestination } from './webAudio'
 
 let AudioWorkletState: 'NOTREADY' | 'LOADING' | 'READY' = 'NOTREADY'
 let AudioWorkletReady: Promise<void> | null = null
@@ -234,6 +234,10 @@ class AudioLevel extends EventEmitter {
 
       // 3.连接 sourceNode 和 audioWorkletNode
       this.support.sourceNode.connect(this.support.audioWorkletNode)
+      const audioLevelDestination = getAudioLevelDestination()
+      if (audioLevelDestination) {
+        this.support.audioWorkletNode.connect(audioLevelDestination)
+      }
     }
   }
 
