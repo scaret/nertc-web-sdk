@@ -1,6 +1,5 @@
 import { Client } from '../netcall-G2/api/client'
 import { LocalStream } from '../netcall-G2/api/localStream'
-import { pluginManager } from '../netcall-G2/api/pluginManager'
 import { BUILD, ENV, SDK_VERSION as VERSION } from '../netcall-G2/Config'
 import { clientNotYetUninitialized } from '../netcall-G2/constant/ErrorCode'
 import {
@@ -137,7 +136,6 @@ export const NERTC = {
     if (!client) {
       client = instance
     }
-    pluginManager.safeEmit('client-created', { client: instance })
     return instance
   },
 
@@ -184,7 +182,6 @@ export const NERTC = {
         })
       )
       getParameters().localStreams.push(localStream)
-      pluginManager.emit('stream-created', { localStream: localStream })
       return localStream
     } else {
       return clientNotYetUninitialized
@@ -308,8 +305,6 @@ export const NERTC = {
       client = null
     }
   },
-
-  pluginManager: pluginManager,
 
   PlatformTypeMap: PlatformTypeMap,
 
