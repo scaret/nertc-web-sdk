@@ -122,6 +122,8 @@ interface IParameters {
   protooMessageTimeout: number
   //是否复用已经取消订阅的远端媒体流的mid
   reuseMid: boolean
+  // 播放音频/视频的最大过期时间。
+  playMediaTimeout: number
   // 是否不启动WebAudio
   disableWebAudio: boolean
   // 是否关闭 2D 的 CanvasContext
@@ -202,6 +204,7 @@ let parameters: IParameters = {
   disableLBSService: false,
   protooMessageTimeout: 30000,
   reuseMid: true,
+  playMediaTimeout: 3000,
   disableWebAudio: false,
   disable2dContext: false,
   disableWebGLContext: false,
