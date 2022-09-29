@@ -30,9 +30,10 @@ registerProcessor(
         let sum = 0
         let rms = 0
         // Calculated the squared-sum.
-        if (samplesLeft) {
-          for (let i = 0; i < samplesLeft.length; ++i) sum += samplesLeft[i] * samplesLeft[i]
-
+        if (samplesLeft && samplesLeft.length) {
+          for (let i = 0; i < samplesLeft.length; ++i) {
+            sum += samplesLeft[i] * samplesLeft[i]
+          }
           // Calculate the RMS level and update the volume.
           rms = Math.sqrt(sum / samplesLeft.length)
           this._leftVolume = Math.max(rms, this._leftVolume * SMOOTHING_FACTOR)
@@ -52,21 +53,23 @@ registerProcessor(
         this._nextUpdateFrame -= samplesLeft.length
         if (this._nextUpdateFrame < 0) {
           this._nextUpdateFrame += this.intervalInFrames
-          if (this._leftVolume < 0.001) {
-            this._leftVolume = 0
-          }
-          if (this._rightVolume < 0.001) {
-            this._rightVolume = 0
+          let volume = Math.max(this._leftVolume, this._rightVolume)
+          if (!(volume > -1)) {
+            if (this._leftVolume > -1) {
+              volume = this._leftVolume
+            } else if (this._rightVolume > -1) {
+              volume = this._rightVolume
+            }
           }
           if (samplesRight) {
             this.port.postMessage({
               left: this._leftVolume,
               right: this._rightVolume,
-              volume: Math.max(this._leftVolume, this._rightVolume)
+              volume: volume
             })
           } else {
             this.port.postMessage({
-              volume: Math.max(this._leftVolume, this._rightVolume)
+              volume: volume
             })
           }
         }
