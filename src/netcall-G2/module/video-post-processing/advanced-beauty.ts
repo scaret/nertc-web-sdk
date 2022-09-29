@@ -23,7 +23,7 @@ export default class AdvancedBeauty extends EventEmitter {
   }
 
   init(decFaceSize?: number) {
-    if (this.videPostProcess.availableCode === 0) return
+    if (this.videPostProcess.availableCode < 1) return
     this.advancedBeautyProcess.on('facePoints-load', () => {
       this.emit('facePoints-load')
       this.advancedBeautyProcess.setFaceSize(Math.min(5, Math.max(1, decFaceSize || 1)))
@@ -32,7 +32,7 @@ export default class AdvancedBeauty extends EventEmitter {
   }
 
   destroy() {
-    if (this.videPostProcess.availableCode === 0) return
+    if (this.videPostProcess.availableCode < 1) return
     this.advancedBeautyProcess.removeAllListeners()
     this.advancedBeautyProcess.destroy()
   }
@@ -64,13 +64,13 @@ export default class AdvancedBeauty extends EventEmitter {
   }
 
   setAdvEffect: AdvBeautyFilter['setAdvEffect'] = (...args) => {
-    if (this.videPostProcess.availableCode === 0) return
+    if (this.videPostProcess.availableCode < 1) return
     this.logger.log(`set advbeauty effect：[${args[0]}, ${args[1]}]`)
     this.videPostProcess.filters?.advBeauty.setAdvEffect(...args)
   }
 
   presetAdvEffect: AdvBeautyFilter['presetAdvEffect'] = (...args) => {
-    if (this.videPostProcess.availableCode === 0) return
+    if (this.videPostProcess.availableCode < 1) return
     this.logger.log(`preset advbeauty effect：${JSON.stringify(args[0])}`)
     this.videPostProcess.filters?.advBeauty.presetAdvEffect(...args)
   }
