@@ -2101,12 +2101,20 @@ $('#subscribeAll').on('click', () => {
   for (let uid in rtc.client.adapterRef.remoteStreamMap) {
     const remoteStream = rtc.client.adapterRef.remoteStreamMap[uid]
     if (remoteStream.active) {
-      remoteStream.setSubscribeConfig({
+      const subscribeConfig = {
         audio: true,
         video: true,
         screen: true,
         audioSlave: true
-      })
+      }
+      if (subscribeConfig.video && $('#subResolutionVideo').val()) {
+        subscribeConfig.video = $('#subResolutionVideo').val()
+      }
+      if (subscribeConfig.screen && $('#subResolutionScreen').val()) {
+        subscribeConfig.screen = $('#subResolutionScreen').val()
+      }
+      console.log(`SubscribeAll`, uid, subscribeConfig)
+      remoteStream.setSubscribeConfig(subscribeConfig)
       rtc.client.subscribe(remoteStream)
     }
   }
