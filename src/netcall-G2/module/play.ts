@@ -17,6 +17,7 @@ import {
   createEncoderWatermarkControl,
   EncoderWatermarkControl
 } from './watermark/EncoderWatermarkControl'
+import { playMedia } from '../util/playMedia'
 
 class Play extends EventEmitter {
   private volume: number | null
@@ -491,7 +492,7 @@ class Play extends EventEmitter {
     }
     try {
       this.audioDom.muted = false
-      await this.audioDom.play()
+      await playMedia(this.audioDom, getParameters().playMediaTimeout)
       this.logger.log(
         `[Play] 播放音频完成，当前播放状态:`,
         this.audioDom && this.audioDom.played && this.audioDom.played.length
@@ -546,7 +547,7 @@ class Play extends EventEmitter {
     }
     try {
       this.audioSlaveDom.muted = false
-      await this.audioSlaveDom.play()
+      await playMedia(this.audioSlaveDom, getParameters().playMediaTimeout)
       this.logger.log(
         `[Play] 播放音频完成，当前播放状态:`,
         this.audioSlaveDom && this.audioSlaveDom.played && this.audioSlaveDom.played.length
@@ -774,7 +775,7 @@ class Play extends EventEmitter {
         this.logger.error(`[Play] 加载主流播放视频源失败：没有视频源`)
       }
       this.videoDom.srcObject = stream
-      await this.videoDom.play()
+      await playMedia(this.videoDom, getParameters().playMediaTimeout)
       this.logger.log(
         `[Play] 成功加载主流播放视频源：当前视频实际分辨率${this.videoDom?.videoWidth}x${this.videoDom?.videoHeight}，显示宽高${this.videoDom?.offsetWidth}x${this.videoDom?.offsetHeight}`
       )
@@ -832,7 +833,7 @@ class Play extends EventEmitter {
         this.logger.error(`[Play] 加载主流播放视频源失败：没有视频源`)
       }
       this.screenDom.srcObject = stream
-      await this.screenDom.play()
+      await playMedia(this.screenDom, getParameters().playMediaTimeout)
       this.logger.log(
         `[Play] 成功加载辅流播放视频源：当前视频实际分辨率${this.screenDom?.videoWidth}x${this.screenDom?.videoHeight}，显示宽高${this.screenDom?.offsetWidth}x${this.screenDom?.offsetHeight}`
       )

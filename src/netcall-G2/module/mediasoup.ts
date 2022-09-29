@@ -903,7 +903,7 @@ class Mediasoup extends EventEmitter {
           } else {
             // 不发布小流。此处如果发现上次有小流，则取消绑定关系，但不回收。
             if (stream.mediaHelper.video.low) {
-              stream.mediaHelper.video.low.bindSender(null)
+              stream.mediaHelper.video.low.bindSender(null, null)
             }
             this.senderEncodingParameter.video.low = null
           }
@@ -930,7 +930,7 @@ class Mediasoup extends EventEmitter {
             }
           })
           if (this._webcamProducer._rtpSender && stream.mediaHelper.video.low) {
-            stream.mediaHelper.video.low.bindSender(this._webcamProducer._rtpSender)
+            stream.mediaHelper.video.low.bindSender(this._webcamProducer._rtpSender, this._webcamProducer._rtpSenderLow || null)
             if (IS_SAFARI && SAFARI_MAJOR_VERSION && SAFARI_MAJOR_VERSION < 14) {
               if (stream._play?.videoDom?.srcObject) {
                 this.logger.log(`尝试重置本地视图的SrcObject`)
@@ -975,7 +975,7 @@ class Mediasoup extends EventEmitter {
           } else {
             // 不发布小流。此处如果发现上次有小流，则取消小流绑定（但不回收）
             if (stream.mediaHelper.screen.low) {
-              stream.mediaHelper.screen.low.bindSender(null)
+              stream.mediaHelper.screen.low.bindSender(null, null)
             }
             this.senderEncodingParameter.screen.low = null
           }
@@ -1002,7 +1002,10 @@ class Mediasoup extends EventEmitter {
             }
           })
           if (this._screenProducer._rtpSender && stream.mediaHelper.screen.low) {
-            stream.mediaHelper.screen.low.bindSender(this._screenProducer._rtpSender)
+            stream.mediaHelper.screen.low.bindSender(
+              this._screenProducer._rtpSender,
+              this._screenProducer._rtpSenderLow || null
+            )
           }
           this.watchProducerState(this._screenProducer, '_screenProducer')
           if (this.adapterRef.encryption.encodedInsertableStreams) {
