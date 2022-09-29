@@ -250,12 +250,20 @@ export class VideoTrackLow {
           } else {
             this.emptyTrackInfo.visible = 'yes'
             this.logger.log(`_checkCanvasBlank: 小流画面可见`, this.emptyTrackInfo.count)
+            if (this.sender.track !== this.track) {
+              this.logger.warn(`小流切换至低分辨率模式`)
+              this.sender.replaceTrack(this.track)
+            }
           }
         }
         if (this.emptyTrackInfo.count > 30) {
-          this.logger.warn(`_checkCanvasBlank: 小流两秒内无画面，使用大流代替`)
           this.emptyTrackInfo.visible = 'no'
-          this.sender.replaceTrack(this.high.sender.track)
+          if (this.sender.track !== this.high.sender.track) {
+            this.logger.warn(`_checkCanvasBlank: 小流两秒内无画面，小流切换至相同分辨率模式`)
+            this.sender.replaceTrack(this.high.sender.track)
+          } else {
+            this.logger.warn(`_checkCanvasBlank: 小流两秒内无画面，继续使用相同分辨率模式`)
+          }
         }
       }
     }
@@ -277,6 +285,15 @@ export class VideoTrackLow {
       this.high.videoDom.play().catch((e) => {
         // ignore
       })
+      if (this.sender) {
+        if (this.emptyTrackInfo.visible === 'no') {
+          this.logger.warn(`小流正在使用相同分辨率模式`)
+          this.sender.replaceTrack(newTrack)
+        } else if (this.sender.track !== this.track) {
+          this.logger.warn(`小流正在使用低分辨率模式`)
+          this.sender.replaceTrack(this.track)
+        }
+      }
     }
   }
   bindSender(senderHigh: RTCRtpSender | null, senderLow: RTCRtpSender | null) {
