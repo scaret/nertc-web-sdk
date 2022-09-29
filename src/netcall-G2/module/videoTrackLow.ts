@@ -179,6 +179,10 @@ export class VideoTrackLow {
       return
     }
     this._correctSize()
+    if (this.high.track?.enabled === true && this.track?.enabled === false) {
+      this.logger.log(`恢复小流mute状态`)
+      this.track.enabled = true
+    }
     if (!this.track) {
       this.logger.error(`无法获取小流 Track`)
     } else if (this.track.readyState !== 'live') {
