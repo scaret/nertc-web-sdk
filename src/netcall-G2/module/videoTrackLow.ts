@@ -4,6 +4,8 @@ import { getRTCTimer } from '../util/RTCTimer'
 import { watchTrack } from '../util/gum'
 import { getParameters } from './parameters'
 import { get2DContext } from './browser-api/getCanvasContext'
+import { isCanvasBlank } from '../util/isCanvasBlank'
+import { IS_IOS } from '../util/rtcUtil/rtcEnvironment'
 
 export interface VideoTrackLowOptions {
   logger: ILogger
@@ -51,6 +53,16 @@ export class VideoTrackLow {
     videoDom: getAutoplayVideo(),
     width: 0,
     height: 0
+  }
+  private sender: RTCRtpSender | null = null
+  private emptyTrackInfo: {
+    track: MediaStreamTrack | null
+    count: number
+    visible: 'yes' | 'no' | 'unknown'
+  } = {
+    track: null,
+    count: 0,
+    visible: 'unknown'
   }
 
   constructor(options: VideoTrackLowOptions) {
@@ -174,37 +186,84 @@ export class VideoTrackLow {
     } else if (this.high.track?.enabled === false) {
       if (this.lastState === 'frame' || this.lastState === 'clear') {
         this.logger.log(`track处在mute状态`)
-        let newState:STATES = 'black'
-        this.logger.log(`小流状态变更 ${this.lastState} => newState`)
+        let newState: STATES = 'black'
+        this.logger.log(`小流状态变更 ${this.lastState} => ${newState}`)
         this.lastState = newState
         this.context.fillRect(0, 0, this.width, this.height)
       }
     } else if (this.high.videoDom.paused) {
       if (this.lastState === 'frame' || this.lastState === 'clear') {
-        let newState:STATES = 'paused'
-        this.logger.log(`小流状态变更 ${this.lastState} => newState`)
+        let newState: STATES = 'paused'
+        this.logger.log(`小流状态变更 ${this.lastState} => ${newState}`)
         this.lastState = newState
         this.high.videoDom.play().catch((e) => {
           // this.logger.error(`播放失败，小流可能无法展示`, e)
         })
       }
+      if (getParameters().videoLowCheckCanvasBlank === 'all') {
+        this._checkCanvasBlank()
+      } else if (IS_IOS && getParameters().videoLowCheckCanvasBlank === 'ios') {
+        this._checkCanvasBlank()
+      }
     } else if (this.high.track?.readyState === 'live') {
       if (this.lastState !== 'frame') {
-        let newState:STATES = 'frame'
-        this.logger.log(`小流状态变更 ${this.lastState} => newState`)
+        let newState: STATES = 'frame'
+        this.logger.log(`小流状态变更 ${this.lastState} => ${newState}`)
         this.lastState = newState
       }
       this.context.drawImage(this.high.videoDom, 0, 0, this.width, this.height)
       this.lastDrawAt = Date.now()
+      if (getParameters().videoLowCheckCanvasBlank === 'all') {
+        this._checkCanvasBlank()
+      } else if (IS_IOS && getParameters().videoLowCheckCanvasBlank === 'ios') {
+        this._checkCanvasBlank()
+      }
     } else {
       if (this.lastState === 'frame') {
-        let newState:STATES = 'clear'
-        this.logger.log(`小流状态变更 ${this.lastState} => newState`)
+        let newState: STATES = 'clear'
+        this.logger.log(`小流状态变更 ${this.lastState} => ${newState}`)
         this.lastState = newState
         this.context.clearRect(0, 0, this.width, this.height)
       }
     }
   }
+
+  /**
+   * IOS无法将CanvasCaptureMediaStreamTrack再画到Canvas
+   */
+  _checkCanvasBlank() {
+    if (this.high.sender?.track && this.sender?.track) {
+      if (this.high.sender.track !== this.emptyTrackInfo.track) {
+        this.emptyTrackInfo = {
+          track: this.high.sender.track,
+          count: 0,
+          visible: 'unknown'
+        }
+      }
+      if (this.emptyTrackInfo.visible === 'unknown') {
+        if (this.high.videoDom.paused || this.high.videoDom.readyState !== 4) {
+          this.emptyTrackInfo.count++
+        } else {
+          const isBlank = isCanvasBlank(this.canvas)
+          if (isBlank) {
+            this.emptyTrackInfo.count++
+          } else {
+            this.emptyTrackInfo.visible = 'yes'
+            this.logger.log(`_checkCanvasBlank: 小流画面可见`, this.emptyTrackInfo.count)
+          }
+        }
+        if (this.emptyTrackInfo.count > 30) {
+          this.logger.warn(`_checkCanvasBlank: 小流两秒内无画面，使用大流代替`)
+          this.emptyTrackInfo.visible = 'no'
+          this.sender.replaceTrack(this.high.sender.track)
+        }
+      }
+    }
+  }
+
+  /**
+   * 这个函数每次画帧时都会调用，但大多时候没有行为
+   */
   private _bindTrack(newTrack: MediaStreamTrack | null) {
     if (this.high.track !== newTrack) {
       if (this.high.track) {
@@ -220,10 +279,11 @@ export class VideoTrackLow {
       })
     }
   }
-  bindSender(sender: RTCRtpSender | null) {
-    this.high.sender = sender
-    if (sender) {
-      this._bindTrack(sender.track)
+  bindSender(senderHigh: RTCRtpSender | null, senderLow: RTCRtpSender | null) {
+    this.high.sender = senderHigh
+    this.sender = senderLow
+    if (senderHigh) {
+      this._bindTrack(senderHigh.track)
     } else {
       this._bindTrack(null)
     }

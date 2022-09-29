@@ -35,6 +35,8 @@ interface IParameters {
   videoLowMaxHeight: number
   // 主流小流帧率
   videoLowFramerate: number
+  // 小流检查是否是空
+  videoLowCheckCanvasBlank: 'ios' | 'all' | 'never'
 
   // 辅流小流最大宽度
   screenLowMaxWidth: number
@@ -144,6 +146,7 @@ let parameters: IParameters = {
   videoLowMaxWidth: 320,
   videoLowMaxHeight: 180,
   videoLowFramerate: 15,
+  videoLowCheckCanvasBlank: 'ios',
   screenLowMaxWidth: 320,
   screenLowMaxHeight: 180,
   screenLowFramerate: 15,
