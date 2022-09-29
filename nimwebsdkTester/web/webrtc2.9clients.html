@@ -9,10 +9,12 @@
 <label><input type="checkbox" id="defaultOpenMic">打开麦克风</label>
 <label><input type="checkbox" id="defaultOpenCamera" checked>打开摄像头</label>
 <label><input type="checkbox" id="defaultOpenScreen">打开屏幕共享</label>
+<label><input type="checkbox" id="dualStreamVideo">主流小流</label>
+<label><input type="checkbox" id="dualStreamScreen">辅流小流</label>
 <label id="segmentStatus" style="display: none;"></label>
 <label id="advancedBeautyStatus" style="display: none;"></label>
 <div id="views">
-  
+
 </div>
 <script>
   var searchParams = new URLSearchParams(location.search);
@@ -345,6 +347,13 @@
           uid,
         })
         getLocalStream()
+        const dualStreamVideo = document.getElementById('dualStreamVideo').checked
+        const dualStreamScreen = document.getElementById('dualStreamScreen').checked
+        console.log('主流小流是否开启：', dualStreamVideo, '辅流小流是否开启：', dualStreamVideo)
+        client.enableDualStream({
+          video: dualStreamVideo,
+          screen: dualStreamScreen
+        })
         await client.publish(localStream)
         if (document.getElementById("defaultOpenMic").checked){
           await localStream.open({type: "audio"})
