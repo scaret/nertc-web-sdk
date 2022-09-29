@@ -49,6 +49,8 @@ export default class VideoPostProcess extends EventEmitter {
     this.pluginModules[key] = null
   }
 
+  // 是否被销毁
+  private isAlive = true
   // 初始化视频滤镜管线
   filters: Filters | null = null
   // 视频源
@@ -108,6 +110,7 @@ export default class VideoPostProcess extends EventEmitter {
    * 2: 可用
    */
   get availableCode() {
+    if (!this.isAlive) return -1
     if (!this.filters) return 0
     if (!this.filters.gl) return 0
     return this.filters.gl.isContextLost() ? 1 : 2
@@ -115,8 +118,10 @@ export default class VideoPostProcess extends EventEmitter {
 
   get glErrorTip() {
     switch (this.availableCode) {
+      case -1:
+        return 'localStream is already destroyed.'
       case 0:
-        return 'The current environment does not support webgl.'
+        return 'the current environment does not support webgl.'
       case 1:
         return 'webgl context has been lost.'
     }
@@ -385,7 +390,7 @@ export default class VideoPostProcess extends EventEmitter {
 
   setTaskAndTrack = (task: TaskType, isEnable: boolean, track?: MediaStreamTrack) => {
     return new Promise((resolve, reject) => {
-      if (this.availableCode === 0) {
+      if (this.availableCode < 1) {
         return reject(this.glErrorTip)
       }
       if (isEnable) {
@@ -416,13 +421,17 @@ export default class VideoPostProcess extends EventEmitter {
   }
 
   destroy() {
+    this.isAlive = false
+    workerTimer.clearTimeout(this.timerId)
     this.removeAllListeners()
     this.taskSet.clear()
-    workerTimer.clearTimeout(this.timerId)
+    this.readyTaskSet.clear()
+    this.taskSnapshot.clear()
     this.sourceTrack?.stop()
     this.sourceTrack = null
     this.trackInstance?.stop()
     this.trackInstance = null
+    this.video = null
     this.filters?.destroy()
     ;(<any>this.filters) = null
     this.sourceMap = null

@@ -4251,7 +4251,7 @@ class LocalStream extends RTCEventEmitter {
 
   setBeautyEffectOptions(effects: BeautyEffectOptions) {
     this.logger.log('set basic beauty parameters:', effects)
-    if (this.videoPostProcess.availableCode === 0) return
+    if (this.videoPostProcess.availableCode < 1) return
     if (!this.basicBeauty.isEnable) {
       this.logger.warn('basic beauty is not opened.')
     }
@@ -4277,7 +4277,7 @@ class LocalStream extends RTCEventEmitter {
   async setBeautyEffect(isStart: boolean, isAuto = false) {
     this.logger.log(`${isStart ? 'start' : 'close'} basic beauty.`)
     this.WebGLSupportError()
-    if (isStart && this.videoPostProcess.availableCode === 1) {
+    if (isStart && this.videoPostProcess.availableCode < 2) {
       return this.logger.error(this.videoPostProcess.glErrorTip)
     }
     const basicBeauty = this.basicBeauty
@@ -4356,7 +4356,7 @@ class LocalStream extends RTCEventEmitter {
    */
   setFilter(options: string | null, intensity?: number) {
     this.logger.log(`set beauty filter parameters:${JSON.stringify([options, intensity])}`)
-    if (this.videoPostProcess.availableCode === 0) return
+    if (this.videoPostProcess.availableCode < 1) return
     if (!this.basicBeauty.isEnable) {
       this.logger.warn('basic beauty is not opened.')
     }
@@ -4377,7 +4377,7 @@ class LocalStream extends RTCEventEmitter {
   async enableBodySegment() {
     this.logger.log('start virtual background.')
     this.WebGLSupportError()
-    if (this.videoPostProcess.availableCode === 1) {
+    if (this.videoPostProcess.availableCode < 2) {
       return this.logger.error(this.videoPostProcess.glErrorTip)
     }
     if (!this.videoPostProcess.getPlugin('VirtualBackground')) {
@@ -4450,7 +4450,7 @@ class LocalStream extends RTCEventEmitter {
   }
 
   async _cancelBodySegment() {
-    if (this.videoPostProcess.availableCode === 0) return
+    if (this.videoPostProcess.availableCode < 1) return
     if (this._segmentProcessor) {
       await this.transformTrack(false, this._segmentProcessor)
       this.videoPostProcessTags.isBodySegmentTrack = false
@@ -4460,7 +4460,7 @@ class LocalStream extends RTCEventEmitter {
   // 设置背景
   setBackground(options: BackGroundOptions) {
     this.logger.log(`set virtual background parameters:${JSON.stringify(options)}`)
-    if (this.videoPostProcess.availableCode === 0) return
+    if (this.videoPostProcess.availableCode < 1) return
     if (!this.virtualBackground.isEnable) {
       this.logger.warn('virtual background is not opened.')
     }
@@ -4475,7 +4475,7 @@ class LocalStream extends RTCEventEmitter {
   async enableAdvancedBeauty(faceSize?: number) {
     this.logger.log('start advanced beauty.')
     this.WebGLSupportError()
-    if (this.videoPostProcess.availableCode === 1) {
+    if (this.videoPostProcess.availableCode < 2) {
       return this.logger.error(this.videoPostProcess.glErrorTip)
     }
     if (!this.videoPostProcess.getPlugin('AdvancedBeauty')) {
@@ -4547,7 +4547,7 @@ class LocalStream extends RTCEventEmitter {
   }
 
   async _cancelAdvancedBeauty() {
-    if (this.videoPostProcess.availableCode === 0) return
+    if (this.videoPostProcess.availableCode < 1) return
     if (this._advancedBeautyProcessor) {
       await this.transformTrack(false, this._advancedBeautyProcessor)
       this.videoPostProcessTags.isAdvBeautyTrack = false
@@ -4557,7 +4557,7 @@ class LocalStream extends RTCEventEmitter {
   // 设置高级美颜
   setAdvBeautyEffect: AdvancedBeauty['setAdvEffect'] = (...args) => {
     this.logger.log(`set advanced beauty parameters:${JSON.stringify(args)}`)
-    if (this.videoPostProcess.availableCode === 0) return
+    if (this.videoPostProcess.availableCode < 1) return
     if (!this.advancedBeauty.isEnable) {
       this.logger.warn('advanced beauty is not opened.')
     }
@@ -4567,7 +4567,7 @@ class LocalStream extends RTCEventEmitter {
   // 预设高级美颜参数
   presetAdvBeautyEffect: AdvancedBeauty['presetAdvEffect'] = (...args) => {
     this.logger.log(`preset advanced beauty parameters:${JSON.stringify(args)}`)
-    if (this.videoPostProcess.availableCode === 0) return
+    if (this.videoPostProcess.availableCode < 1) return
     if (!this.advancedBeauty.isEnable) {
       this.logger.warn('advanced beauty is not opened.')
     }
@@ -4649,7 +4649,7 @@ class LocalStream extends RTCEventEmitter {
     track: MediaStreamTrack
     external: boolean
   }) {
-    if (this.videoPostProcess.availableCode === 0) return
+    if (this.videoPostProcess.availableCode < 1) return
     // replaceTrack不会主动关掉原来的track，包括大小流
     let oldTrack
     let external = false // 被替换的流是否是外部流
@@ -4749,7 +4749,7 @@ class LocalStream extends RTCEventEmitter {
   }
 
   async transformTrack(enable: boolean, processor: VirtualBackground | AdvancedBeauty | null) {
-    if (this.videoPostProcess.availableCode === 0) return
+    if (this.videoPostProcess.availableCode < 1) return
     if (!processor) {
       return
     }
@@ -4943,7 +4943,7 @@ class LocalStream extends RTCEventEmitter {
 
   // 临时挂起视频后处理
   async suspendVideoPostProcess() {
-    if (this.videoPostProcess.availableCode === 0) return
+    if (this.videoPostProcess.availableCode < 1) return
     const { isBeautyTrack, isBodySegmentTrack, isAdvBeautyTrack } = this.videoPostProcessTags
     if (isBeautyTrack) {
       await this.setBeautyEffect(false, true)
@@ -4961,7 +4961,7 @@ class LocalStream extends RTCEventEmitter {
 
   // 恢复挂起的视频后处理
   async resumeVideoPostProcess() {
-    if (this.videoPostProcess.availableCode === 0) return
+    if (this.videoPostProcess.availableCode < 1) return
     try {
       const { isBeautyTrack, isBodySegmentTrack, isAdvBeautyTrack } = this.videoPostProcessTags
       // 打开基础美颜
@@ -4989,7 +4989,7 @@ class LocalStream extends RTCEventEmitter {
 
   // 兼容 safari 15.3 以下版本抓流红黑屏及其他问题
   private async replaceCanvas() {
-    if (this.videoPostProcess.availableCode === 0) return
+    if (this.videoPostProcess.availableCode < 1) return
     if (!this._play) return
     if (!env.IS_ANY_SAFARI) return
     if (env.SAFARI_VERSION && parseFloat(env.SAFARI_VERSION) > 15.2) return
@@ -5137,8 +5137,7 @@ class LocalStream extends RTCEventEmitter {
       this._transformedTrack = null
     }
     // 销毁美颜相关 webgl 管线
-    this.videoPostProcess?.destroy()
-    ;(<any>this.videoPostProcess) = null
+    this.videoPostProcess.destroy()
   }
 }
 
