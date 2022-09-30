@@ -768,6 +768,14 @@ export interface JoinOptions {
    */
   token?: string
   /**
+   * 高级权限token，可以控制该client对象创建加入房间、发布音视频、订阅音视频的权限，以及通话时长的时间
+   */
+  permkey?: string
+  /**
+   * 自定义消息，房间中其他成员会收到`custom-data`通知，得到这个消息通知
+   */
+  customData?: string
+  /**
    * 互动直播相关参数。
    */
   joinChannelLiveConfig?: LiveConfig

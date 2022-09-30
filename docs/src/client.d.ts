@@ -215,6 +215,25 @@ declare interface Client {
   ): Promise<void>
 
   /**
+   * 动态更新高级权限token。
+   *
+   * 启动高级权限token功能之后，用户可以中途动态更新其权限，以及刷新token超时时间
+   *
+   * @param newpermKey 新生成的高级权限token。
+   *
+   * @note 注意事项
+   * * 该方法仅支持加入房间后调用
+   *
+   * ```
+   * // 收到sdk反馈的高级token超时时间快要到的通知后，主动去刷新超时时间，或者中途更新本人的权限
+   * rtc.client.updatePermKey(newpermKey).catch((err) => {
+       console.error('刷新permKey错误: ', err.code, err.message)
+     })
+   * ```
+   */
+  updatePermKey(newpermKey: string): Promise<void>
+
+  /**
    设置用户角色。默认情况下用户以主播角色加入房间。
 
    在加入房间前，用户可以调用本接口设置本端模式为观众或主播模式。在加入房间后，用户可以通过本接口切换用户模式。
@@ -938,11 +957,46 @@ declare interface Client {
 
   /**
    * 客户端遇到错误。错误类型包括：
-   * * SOCKET_ERROR: 连接错误。
-   * * RELOGIN_ERROR: 重连失败。
+   * * SOCKET_ERROR: 与服务器断开连接，请检查用户网络。
+   * * RELOGIN_ERROR: 网络重连登录失败，请联系云信技术支持。
+   * * MEDIA_TRANSPORT_DISCONNECT: 媒体通道一直连接失败，请检查用户网络。
+   * * AUDIOLEVEL_NOT_SUPPORTED：该浏览器环境不支持音频前处理模块，不能使用伴音、音效、getAudioLevel()、AI降噪等功能。
+   * * no-publish-audio-permission：高级权限token限制您发布自己的音频主流（麦克风）
+   * * no-publish-audio-slave-permission：高级权限token限制您发布自己的音频辅流（即屏幕共享系统声卡声音）
+   * * no-publish-video-permission：高级权限token限制您发布自己的视频主流（摄像头）
+   * * no-publish-screen-permission：高级权限token限制您发布自己的视频辅流（屏幕共享）
+   * * no-subscribe-audio-permission：高级权限token限制您订阅其他人的音频主流（麦克风）
+   * * no-subscribe-audio-slave-permission：高级权限token限制您发布订阅其他人的音频辅流（即屏幕共享系统声卡声音）
+   * * no-subscribe-video-permission：高级权限token限制您发布订阅其他人的视频主流（摄像头）
+   * * no-subscribe-screen-permission：高级权限token限制您发布订阅其他人的视频辅流（屏幕共享）
    *
+   * * @example 示例代码
+   * ```
+   * rtc.client.on('error', (type) => {
+      console.error('===== 发生错误事件：', type)
+      if (type === 'SOCKET_ERROR') {
+        addLog('==== 网络异常，已经退出房间')
+      } else if (type === 'no-publish-audio-permission') {
+        console.error('permkey控制，没有发布音频的权限')
+      } else if (type === 'no-publish-audio-slave-permission') {
+        console.error('permkey控制，没有发布音频辅流的权限')
+      } else if (type === 'no-publish-video-permission') {
+        addLog(`permkey控制，没有发布视频的权限`)
+      } else if (type === 'no-publish-screen-permission') {
+        console.error('permkey控制，没有发布屏幕共享的权限')
+      } else if (type === 'no-subscribe-audio-permission') {
+        console.error('permkey控制，没有订阅音频的权限')
+      } else if (type === 'no-subscribe-audio-slave-permission') {
+        console.error('permkey控制，没有订阅音频辅流的权限')
+      } else if (type === 'no-subscribe-video-permission') {
+        console.error('permkey控制，没有订阅视频的权限')
+      } else if (type === 'no-subscribe-screen-permission') {
+        console.error('permkey控制，没有订阅屏幕共享的权限')
+      }
+    })
+    ```
    */
-  on(event: 'error', callback: (errorName: string) => void): void
+  on(event: 'error', callback: (type: string) => void): void
 
   /**
    * 客户端遇到警告。可能有：
@@ -961,6 +1015,46 @@ declare interface Client {
       reason: string
     }) => void
   ): void
+
+  /**
+   * `permkey-will-expire` 事件表示房间中有人在join()的时候设置了自定义消息。
+   *
+   *
+   * @example
+   * ```javascript
+   * rtc.client.on("custom-data", async evt=>{
+   *   console.warn(`${evt.uid} 发送自定义消息 ${evt.customData}`)
+   * })
+   * ```
+   *
+   */
+  on(event: 'custom-data'): void
+
+  /**
+   * `permkey-will-expire` 事件表示高级权限token功能启用后，permkey还有30s就要超时了，需要主动调用updatePermkey()去更新。
+   * @example
+   * ```javascript
+   * rtc.client.on("permkey-will-expire", async evt=>{
+   *   console.warn(`permKey 即将过期}`)
+   *   const newpermKey = await getPermkey() //自己业务层实现该功能
+   *   rtc.client.updatePermKey(newpermKey).catch((err) => {
+   *     console.error('刷新permKey错误: ', err.message)
+   *   })
+   * })
+   * ```
+   *
+   */
+  on(event: 'permkey-will-expire'): void
+
+  /**
+   * `permkey-timeout` 事件表示高级权限token功能启用后，permkey已经超时，您被提出房间了。
+   */
+  on(event: 'permkey-timeout'): void
+
+  /**
+   * `audioTrackEnded` 事件表示音频轨道结束。造成的原因可能是设备被拔出。
+   */
+  on(event: 'audioTrackEnded'): void
 
   /**
    * `audioTrackEnded` 事件表示音频轨道结束。造成的原因可能是设备被拔出。
