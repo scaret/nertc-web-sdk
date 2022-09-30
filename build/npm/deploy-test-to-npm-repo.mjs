@@ -20,6 +20,13 @@ const AdvancedBeautySimdWasmDest = path.join(pathNpmRepo, './wasm/NERTC_Web_SDK_
 const AdvancedBeautyNoSimdWasmSrc = path.join(__dirname, `../../dist/lib/${VERSION}/test/wasm/NIM_Web_AdvancedBeauty_nosimd_v${VERSION}_test.wasm`);
 const AdvancedBeautyNoSimdWasmDest = path.join(pathNpmRepo, './wasm/NERTC_Web_SDK_AdvancedBeauty_nosimd.wasm');
 
+const AIDenoiseSrc = path.join(__dirname, `../../dist/lib/${VERSION}/test/NIM_Web_AIDenoise_v${VERSION}_test.js`);
+const AIDenoiseDest = path.join(pathNpmRepo, 'NERTC_Web_SDK_AIDenoise.js')
+const AIDenoiseSimdWasmSrc = path.join(__dirname, `../../dist/lib/${VERSION}/test/wasm/NIM_Web_AIDenoise_simd_v${VERSION}_test.wasm`);
+const AIDenoiseSimdWasmDest = path.join(pathNpmRepo, './wasm/NERTC_Web_SDK_AIDenoise_simd.wasm');
+const AIDenoiseNoSimdWasmSrc = path.join(__dirname, `../../dist/lib/${VERSION}/test/wasm/NIM_Web_AIDenoise_nosimd_v${VERSION}_test.wasm`);
+const AIDenoiseNoSimdWasmDest = path.join(pathNpmRepo, './wasm/NERTC_Web_SDK_AIDenoise_nosimd.wasm');
+
 const wasmDir = path.join(pathNpmRepo, 'wasm');
 
 // 1. 验证SDK版本
@@ -44,12 +51,15 @@ await $`cp -f ${sdkSrc} ${sdkDest}`
 // 拷贝插件
 await $`cp -f ${VirtualBackgroundSrc} ${VirtualBackgroundDest}`
 await $`cp -f ${AdvancedBeautySrc} ${AdvancedBeautyDest}`
+await $`cp -f ${AIDenoiseSrc} ${AIDenoiseDest}`
 await $`rm -rf ${wasmDir}`
 await $`mkdir ${wasmDir}`
 await $`cp -f ${VirtualBackgroundSimdWasmSrc} ${VirtualBackgroundSimdWasmDest}`
 await $`cp -f ${VirtualBackgroundNoSimdWasmSrc} ${VirtualBackgroundNoSimdWasmDest}`
 await $`cp -f ${AdvancedBeautySimdWasmSrc} ${AdvancedBeautySimdWasmDest}`
 await $`cp -f ${AdvancedBeautyNoSimdWasmSrc} ${AdvancedBeautyNoSimdWasmDest}`
+await $`cp -f ${AIDenoiseSimdWasmSrc} ${AIDenoiseSimdWasmDest}`
+await $`cp -f ${AIDenoiseNoSimdWasmSrc} ${AIDenoiseNoSimdWasmDest}`
 
 // 3. 拷贝文档
 await $`rm -rf ${path.join(pathNpmRepo, 'types')}`
