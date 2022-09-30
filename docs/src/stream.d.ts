@@ -1330,7 +1330,10 @@ declare interface Stream {
    * 高级美颜/背景分割/AI降噪插件加载通知。
    *
    */
-  on(event: 'plugin-load', callback: (type: 'AdvancedBeauty' | 'VirtualBackground') => void): void
+  on(
+    event: 'plugin-load',
+    callback: (type: 'AdvancedBeauty' | 'VirtualBackground' | 'AIDenoise') => void
+  ): void
 
   /**
    * 高级美颜/背景分割/AI降噪插件加载失败通知。
