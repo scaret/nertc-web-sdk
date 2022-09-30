@@ -344,20 +344,6 @@ if (IS_FIREFOX) {
   $('#screenLow').removeAttr('checked')
 }
 
-/**
- * ----------------------------------------
- *             demo页面模块隐藏
- * ----------------------------------------
- */
-$('#config').on('click', () => {
-  //会话参数配置
-  if ($('#sessionConf').css('display') == 'none') {
-    $('#sessionConf').css('display', 'block')
-  } else {
-    $('#sessionConf').css('display', 'none')
-  }
-})
-
 $('#uploadLog').on('click', () => {
   //启动上传日志
   NERTC.Logger.enableLogUpload()
