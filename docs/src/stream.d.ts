@@ -1236,17 +1236,18 @@ declare interface Stream {
   setFilter(options: BeautyFilters, intensity?: number): void
 
   /**
-   * 注册(高级美颜/背景替换)插件
+   * 注册(高级美颜/背景替换/AI降噪)插件
    * @param {pluginOptions} options 插件参数说明
    *
    */
   registerPlugin(options: pluginOptions): Promise<void>
 
   /**
-   * 注销(高级美颜/背景替换)插件
+   * 注销(高级美颜/背景替换/AI降噪)插件
    * @param key 插件标识，可设置为：
    * * AdvancedBeauty (表示注销高级美颜插件)
    * * VirtualBackground (表示注销背景替换插件)
+   * * AIDenoise (表示注销AI降噪插件)
    *
    */
   unregisterPlugin(key: string): Promise<void>
@@ -1298,6 +1299,18 @@ declare interface Stream {
   setBackGround(options: BackGroundOptions): void
 
   /**
+   * 开启AI降噪
+   *
+   */
+  enableAIDenoise(): Promise<boolean>
+
+  /**
+   * 关闭AI降噪
+   *
+   */
+  disableAIDenoise(): Promise<boolean>
+
+  /**
    *  销毁音视频流对象。
    */
   destroy(): void
@@ -1314,13 +1327,16 @@ declare interface Stream {
   ): void
 
   /**
-   * 高级美颜/背景分割插件加载通知。
+   * 高级美颜/背景分割/AI降噪插件加载通知。
    *
    */
-  on(event: 'plugin-load', callback: (type: 'AdvancedBeauty' | 'VirtualBackground') => void): void
+  on(
+    event: 'plugin-load',
+    callback: (type: 'AdvancedBeauty' | 'VirtualBackground' | 'AIDenoise') => void
+  ): void
 
   /**
-   * 高级美颜/背景分割插件加载失败通知。
+   * 高级美颜/背景分割/AI降噪插件加载失败通知。
    *
    */
   on(event: 'plugin-load-error', callback: (key: any, msg: any) => void): void
