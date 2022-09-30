@@ -289,7 +289,7 @@ export class VideoTrackLow {
       this.high.videoDom.play().catch((e) => {
         // ignore
       })
-      if (this.sender) {
+      if (this.sender?.track) {
         if (this.emptyTrackInfo.visible === 'no') {
           this.logger.warn(`小流正在使用相同分辨率模式`)
           this.sender.replaceTrack(newTrack)

@@ -93,50 +93,15 @@
             <input type="button" id="copyEnvInfo" value="复制到剪贴板">
           </div>
           <div class="line">
-            <button type="button" id='config'>参数配置</button>
             <button type="button" id='uploadLog'>启动上传日志</button>
             <button type="button" id='disableUploadLog'>关闭上传日志</button>
           </div>
         </div>
 
         <div id='sessionConf' style="display: none">
-          <p class="block-header">录制参数</p>
-          <div class="part">
-            <div class="line">
-              <label><input type="checkbox" id="sessionConfigRecordAudio" checked> 音频录制 </label>
-              <label><input type="checkbox" id="sessionConfigRecordVideo" checked> 视频录制 </label>
-              <label><input type="checkbox" id="sessionConfigIsHostSpeaker"> 主讲人 </label>
-            </div>
-            <div class="line">
-              <label for='sessionConfigRecordType'>录制模式</label>
-              <select id='sessionConfigRecordType'>
-                <option value='0'>混合录制并且录制单人文件</option>
-                <option value='1'>混合录制</option>
-                <option value='2'>单人录制</option>
-              </select>
-            </div>
-          </div>
-          <p class="block-header">互动直播参数</p>
-          <div class="part" id="part-live">
-            <div class="line">
-              <label>
-                <input type="checkbox" id="sessionConfigLiveEnable" checked> 互动直播开关
-              </label>
-            </div>
-          </div>
-          <p class="block-header">媒体优先级设置</p>
-          <div class="part">
-            <div class="line">
-              <input type="checkbox" id="isPreemptive"> 抢占模式
-            </div>
-            <div class="line">
-              选择优先级
-              <select id='priority'>
-                <option value='100'>普通优先级（100）</option>
-                <option value='50'>高优先级（50）</option>
-              </select>
-            </div>
-          </div>
+
+
+
         </div>
         <p class="block-header">会话类型</p>
         <div id="part-channel" class="part">
@@ -170,26 +135,66 @@
 
           </div>
         </div>
-        <p class="block-header">推流任务</p>
+        <p class="block-header">服务端录制</p>
+        <div class="part hide">
+          <div class="line">
+            <label><input type="checkbox" id="sessionConfigRecordAudio" checked> 音频录制 </label>
+            <label><input type="checkbox" id="sessionConfigRecordVideo" checked> 视频录制 </label>
+            <label><input type="checkbox" id="sessionConfigIsHostSpeaker"> 主讲人 </label>
+          </div>
+          <div class="line">
+            <label for='sessionConfigRecordType'>录制模式</label>
+            <select id='sessionConfigRecordType'>
+              <option value='0'>混合录制并且录制单人文件</option>
+              <option value='1'>混合录制</option>
+              <option value='2'>单人录制</option>
+            </select>
+          </div>
+        </div>
+
+        <p class="block-header">互动直播</p>
+        <div class="part hide" id="part-live">
+          <div class="line">
+            <label>
+              <input type="checkbox" id="sessionConfigLiveEnable" checked> 互动直播开关
+            </label>
+          </div>
+        </div>
+
+        <p class="block-header">媒体优先级设置</p>
+        <div class="part hide">
+          <div class="line">
+            <input type="checkbox" id="isPreemptive"> 抢占模式
+          </div>
+          <div class="line">
+            选择优先级
+            <select id='priority'>
+              <option value='100'>普通优先级（100）</option>
+              <option value='50'>高优先级（50）</option>
+            </select>
+          </div>
+        </div>
+
+        <p class="block-header">推流任务/rtmp</p>
         <div id="part-tasks" class="part hide">
           <div class="line">
             <button type="button" id="tasks-btn">推流任务功能</button>
           </div>
         </div>
         <p class="block-header">美颜</p>
-        <div class="line">
-          <button type="button" id="loseContext">模拟 loseContext </button>
-          <button type="button" id="restoreContext">模拟 restoreContext </button>
-        </div>
-        <div class="line">预设美颜参数: </div>
-        <div class="line">
-          美白
-          <input type="text" id="setMeibai" class="input-40"> 红润
-          <input type="text" id="setHongrun" class="input-40"> 平滑
-          <input type="text" id="setPinghua" class="input-40">
-          <button id="preSetBeauty">设置</button>
-        </div>
-        <div id="part-tasks" class="part">
+        <div class="part hide">
+          <div class="line">
+            <button type="button" id="loseContext">模拟 loseContext </button>
+            <button type="button" id="restoreContext">模拟 restoreContext </button>
+          </div>
+          <div class="line">预设美颜参数: </div>
+          <div class="line">
+            美白
+            <input type="text" id="setMeibai" class="input-40"> 红润
+            <input type="text" id="setHongrun" class="input-40"> 平滑
+            <input type="text" id="setPinghua" class="input-40">
+            <button id="preSetBeauty">设置</button>
+          </div>
           <div class="line">
             <button type="button" id="startBeauty">开启美颜</button>
             <button type="button" id="closeBeauty">关闭美颜</button>
@@ -217,7 +222,7 @@
           </div>
           <div class="line">
             <label for="r1">滤镜强度:</label><input type="range" id="filterIntensity" min="0" max="1" value="0" step="0.01"
-              disabled />
+                                                disabled />
           </div>
           <div class="line">
             <label for="r1">美白: </label><input type="range" id="r2" value="0" />
@@ -228,8 +233,9 @@
           <div class="line">
             <label for="r1">平滑: </label><input type="range" id="r4" value="0" />
           </div>
-
-          <p class="block-header">背景分割</p>
+        </div>
+        <p class="block-header">背景分割</p>
+        <div class="part hide">
           <div class="line">
             <button type="button" id="registerVitrualBackground">注册</button>
             <button type="button" id="enableSegment">打开</button>
@@ -263,7 +269,10 @@
               <option value="10">10</option>
             </select>
           </div>
-          <p class="block-header">高级美颜</p>
+        </div>
+
+        <p class="block-header">高级美颜</p>
+        <div class="part hide">
           <div class="line">
             <label>
               最大人脸数：
@@ -973,7 +982,7 @@
             <input type="text" id="privilege" value="255" style="max-width:40px">
             设置expireTime:
             <input type="text" id="expireTime" value='86400' placeholder="超时时间(秒)，默认24小时" style="max-width:40px">
-            
+
           </div>
           <div class="line">
             permKey:
@@ -1483,7 +1492,7 @@
 
         </div>
       </div>
-      <div class="block3 hide" id="statsPanel">
+      <div class="block3" id="statsPanel" style="display: none">
       </div>
     </div>
   </div>
