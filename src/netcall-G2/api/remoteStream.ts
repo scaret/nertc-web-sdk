@@ -13,6 +13,7 @@ import { Play } from '../module/play'
 import { Record } from '../module/record'
 import {
   Client,
+  GetCurrentFrameDataOptions,
   ILogger,
   MediaRecordingOptions,
   MediaTypeShort,
@@ -46,7 +47,7 @@ class RemoteStream extends RTCEventEmitter {
   public screen: boolean
   public client: Client
   public mediaHelper: MediaHelper
-  _play: Play | null
+  _play: Play
   public audioLevelHelper: AudioLevel | null = null
   private _record: Record | null
   public videoView: HTMLElement | null | undefined | String
@@ -340,7 +341,6 @@ class RemoteStream extends RTCEventEmitter {
     if (this._play) {
       this._play.destroy()
     }
-    this._play = null
     if (this._record) {
       this._record.destroy()
     }
@@ -1720,6 +1720,11 @@ class RemoteStream extends RTCEventEmitter {
       })
       return 'INVALID_OPERATION'
     }
+  }
+
+  getCurrentFrameData(options: GetCurrentFrameDataOptions = { mediaType: 'video' }) {
+    let imageData = this._play.getCurrentFrameData(options)
+    return imageData
   }
 
   /**

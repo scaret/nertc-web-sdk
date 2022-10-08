@@ -984,6 +984,12 @@ export interface SnapshotBase64Options {
   mediaType?: MediaTypeShort
 }
 
+export interface GetCurrentFrameDataOptions {
+  mediaType: MediaTypeShort
+  width?: number
+  height?: number
+}
+
 export interface MediaRecordingOptions {
   type: string
   reset: boolean

@@ -3701,6 +3701,64 @@ $('#snapshotbase64').click(function (event) {
 
 /**
  * ----------------------------------------
+ *             截图生成 ImageData
+ * ----------------------------------------
+ */
+let getCurrentFrameDataCtx = null
+$('#getCurrentFrameData').click(function (event) {
+  if (rtc.client) {
+    let stream
+    let uid = $('#snapshotAccount').val()
+    let mediaType = $('#snapType').val()
+    console.warn('getCurrentFrameData', uid, mediaType)
+    if (rtc.client.getUid() == uid || !uid) {
+      stream = rtc.localStream
+      if (!stream) {
+        console.warn('请检查本地流是否存在')
+        addLog('请检查uid是否正确')
+        return
+      }
+    } else {
+      stream = rtc.remoteStreams[uid]
+      if (!stream) {
+        console.warn('请检查uid是否正确')
+        addLog('请检查uid是否正确')
+        return
+      }
+    }
+    let imageData = null
+    let start = Date.now()
+    if (mediaType) {
+      imageData = stream.getCurrentFrameData({mediaType})
+    } else {
+      imageData = stream.getCurrentFrameData()
+    }
+    if (!imageData){
+      document.getElementById(`getCurrentFrameDataInfo`).innerText = `无法截图`
+      if (getCurrentFrameDataCtx){
+        getCurrentFrameDataCtx.clearRect(0, 0, getCurrentFrameDataCtx.canvas.width, getCurrentFrameDataCtx.canvas.height)
+      }
+      return
+    }
+    let time = Date.now() - start
+    console.log(`getCurrentFrameData spent: ${time} result: `, imageData)
+    document.getElementById(`getCurrentFrameDataInfo`).innerText = `${time}ms ${imageData.width}x${imageData.height} ${imageData.colorSpace} len:${imageData.data.byteLength}`
+    if (!getCurrentFrameDataCtx){
+      const canvas = document.createElement('canvas')
+      canvas.id = 'getCurrentFrameDataCanvas'
+      canvas.style.width = '100%'
+      document.getElementById('getCurrentFrameDataResult').append(canvas)
+      getCurrentFrameDataCtx = canvas.getContext('2d')
+    }
+    getCurrentFrameDataCtx.canvas.width = imageData.width
+    getCurrentFrameDataCtx.canvas.height = imageData.height
+    getCurrentFrameDataCtx.fillRect(0, 0, imageData.width, imageData.height)
+    getCurrentFrameDataCtx.putImageData(imageData, 0, 0, 0, 0, imageData.width,  imageData.height)
+  }
+})
+
+/**
+ * ----------------------------------------
  *             音效相关
  * ----------------------------------------
  */

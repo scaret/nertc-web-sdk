@@ -1101,6 +1101,27 @@ declare interface Stream {
   }): Promise<unknown>
 
   /**
+   * 获取当前帧的数据。
+   *
+   * @note 注意
+   *
+   * 1. 对应的媒体只有在播放状态下才能调用该方法
+   * 2. 该方法为阻塞方法，在多个Stream上频繁调用该方法可能导致页面卡顿
+   * 3. 当前如不可截图，则返回null。
+   *
+   * @example
+   * // 假设rtc.localStream开启了屏幕共享，那么在rtc.localStream.play()之后
+   * setInterval(()=>{
+   *   const imageData = rtc.localstream.getCurrentFrameData({mediaType: 'screen'})
+   *   if (imageData){
+   *     console.log(`getCurrentFrameData：${imageData.width}x${imageData.height}`)
+   *    // ctx.putImageData(imageData, 0, 0, 0, 0, imageData.width,  imageData.height)
+   *   }
+   * }, 100)
+   *
+   */
+  getCurrentFrameData(options: { mediaType: 'video' | 'screen' }): ImageData | null
+  /**
    * 视频上行参数设置。
    *
    *

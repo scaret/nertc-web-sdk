@@ -847,9 +847,10 @@
             <button id="playScreenAudio" class="close">双开</button>
             <button id="playScreenAudioOff" class="close">关闭</button>
           </div>
+        </div>
+        <p class="block-header">截图</p>
+        <div class="part">
           <div class="line">
-            <button id="snapshot" class="close">截图</button>
-            <button id="snapshotbase64" class="close">截图生成base64</button>
             <textarea id="base64Text" style="position:absolute; opacity:0; top:0; width:0; height:0;"></textarea>
             uid：
             <input type="text" id="snapshotAccount" class="input-40">
@@ -861,6 +862,16 @@
             </select>
             图片名称：
             <input type="text" id="snapshotName" class="input-40">
+          </div>
+          <div class="line">
+            <button id="snapshot" class="close">截图</button>
+            <button id="snapshotbase64" class="close">截图生成base64</button>
+          </div>
+          <div class="line">
+            <button id="getCurrentFrameData" class="close">getCurrentFrameData</button>
+            <div id="getCurrentFrameDataInfo">
+            </div>
+            <div id="getCurrentFrameDataResult"></div>
           </div>
         </div>
 

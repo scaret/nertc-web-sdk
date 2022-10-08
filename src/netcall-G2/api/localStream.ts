@@ -27,6 +27,7 @@ import {
   BeautyEffectOptions,
   Client,
   Client as IClient,
+  GetCurrentFrameDataOptions,
   GetStreamConstraints,
   LocalStreamOptions,
   MediaRecordingOptions,
@@ -149,7 +150,7 @@ class LocalStream extends RTCEventEmitter {
     isMuted: false
   }
 
-  _play: Play | null
+  _play: Play
   private _record: Record | null
   public audioLevelHelper: AudioLevel | null = null
   public audioLevelHelperSlave: AudioLevel | null = null
@@ -552,7 +553,6 @@ class LocalStream extends RTCEventEmitter {
     if (this._play) {
       this._play.destroy()
     }
-    this._play = null
     if (this._record) {
       this._record.destroy()
     }
@@ -3514,6 +3514,10 @@ class LocalStream extends RTCEventEmitter {
     }
   }
 
+  getCurrentFrameData(options: GetCurrentFrameDataOptions = { mediaType: 'video' }) {
+    let imageData = this._play.getCurrentFrameData(options)
+    return imageData
+  }
   /**
    * ************************ 客户端录制相关 *****************************
    */

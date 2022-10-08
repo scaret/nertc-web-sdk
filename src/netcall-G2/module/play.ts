@@ -2,7 +2,14 @@ import { EventEmitter } from 'eventemitter3'
 
 import { LocalStream } from '../api/localStream'
 import { RemoteStream } from '../api/remoteStream'
-import { ILogger, PlayOptions, RenderMode, SnapshotBase64Options, SnapshotOptions } from '../types'
+import {
+  GetCurrentFrameDataOptions,
+  ILogger,
+  PlayOptions,
+  RenderMode,
+  SnapshotBase64Options,
+  SnapshotOptions
+} from '../types'
 import ErrorCode from '../util/error/errorCode'
 import RtcError from '../util/error/rtcError'
 import * as env from '../util/rtcUtil/rtcEnvironment'
@@ -18,6 +25,7 @@ import {
   EncoderWatermarkControl
 } from './watermark/EncoderWatermarkControl'
 import { playMedia } from '../util/playMedia'
+import { get2DContext } from './browser-api/getCanvasContext'
 
 class Play extends EventEmitter {
   private volume: number | null
@@ -56,6 +64,14 @@ class Play extends EventEmitter {
 
   private stream: LocalStream | RemoteStream
   private logger: ILogger
+  private frameData: {
+    // 有canvas而无context，表示获取Context失败，之后不再尝试获取Context
+    canvas: HTMLCanvasElement | null
+    context: CanvasRenderingContext2D | null
+  } = {
+    canvas: null,
+    context: null
+  }
   constructor(options: PlayOptions) {
     super()
     this._reset()
@@ -1253,6 +1269,77 @@ class Play extends EventEmitter {
       const fileUrl = this.getBase64Image(canvas)
       rtcCanvas.destroy()
       return fileUrl
+    }
+  }
+
+  _initFrameDataCanvas(): CanvasRenderingContext2D | null {
+    if (!this.frameData.canvas) {
+      this.logger.log(`正在初始化 frameData.canvas`)
+      this.frameData.canvas = document.createElement('canvas')
+      this.frameData.context = get2DContext(this.frameData.canvas)
+    }
+    return this.frameData.context
+  }
+
+  getCurrentFrameData(options: GetCurrentFrameDataOptions) {
+    let videoDom: HTMLVideoElement | null
+    if (!options.mediaType || options.mediaType === 'video') {
+      videoDom = this.videoDom
+    } else {
+      videoDom = this.screenDom
+    }
+    if (!videoDom) {
+      this.logger.error('getCurrentFrameData: Playing Video is not found')
+      return null
+    }
+    if (videoDom.paused) {
+      this.logger.warn(`getCurrentFrameData: 目前数据源不在播放状态，截图结果可能不是最新。`)
+    }
+    if (!this.frameData.canvas) {
+      this._initFrameDataCanvas()
+    }
+    const canvas = this.frameData.canvas
+    const ctx = this.frameData.context
+    if (!ctx) {
+      let enMessage = 'getCurrentFrameData: context of canvas is not found',
+        zhMessage = 'getCurrentFrameData: 未找到 canvas 中的 context',
+        enAdvice = 'The latest version of the Chrome browser is recommended',
+        zhAdvice = '建议使用最新版的 Chrome 浏览器'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND_ERROR,
+        message,
+        advice
+      })
+    }
+    if (!canvas) {
+      let enMessage = 'getCurrentFrameData: canvas is not found',
+        zhMessage = 'getCurrentFrameData: 未找到 canvas',
+        enAdvice = 'The latest version of the Chrome browser is recommended',
+        zhAdvice = '建议使用最新版的 Chrome 浏览器'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
+      throw new RtcError({
+        code: ErrorCode.NOT_FOUND_ERROR,
+        message,
+        advice
+      })
+    }
+    const width = options.width || videoDom.videoWidth
+    const height = options.height || videoDom.videoHeight
+    if (width && height) {
+      if (canvas.width !== width) {
+        canvas.width = width
+      }
+      if (canvas.height !== height) {
+        canvas.height = height
+      }
+      ctx.drawImage(videoDom, 0, 0, width, height)
+      const imageData = ctx.getImageData(0, 0, width, height)
+      return imageData
+    } else {
+      return null
     }
   }
 
