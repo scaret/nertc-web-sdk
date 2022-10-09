@@ -556,15 +556,7 @@ class MediaHelper extends EventEmitter {
       this.screenAudio.screenAudioSource = screenAudioSource
       emptyStreamWith(this.screenAudio.screenAudioStream, screenAudioSource)
       this.listenToTrackEnded(this.screenAudio.screenAudioSource)
-      this.updateWebAudio()
-      if (!this.audio.audioRoutingEnabled) {
-        if (this.getAudioInputTracks().length > 1) {
-          this.enableAudioRouting()
-        } else {
-          emptyStreamWith(this.audio.audioStream, screenAudioSource)
-          this.updateAudioSender(screenAudioSource)
-        }
-      }
+      emptyStreamWith(this.screenAudio.screenAudioStream, screenAudioSource)
       screenAudio = false
     }
 
