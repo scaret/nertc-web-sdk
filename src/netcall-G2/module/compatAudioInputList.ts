@@ -1,5 +1,7 @@
+import { getParameters } from './parameters'
+
 class CompatAudioInputList {
-  enabled = false
+  enabled = getParameters().enableCompatAudio
   compatTracks: { source: MediaStreamTrack; dest: MediaStreamTrack }[] = []
   findSource(destTrackId: string) {
     const pair = this.compatTracks.find((pair) => {
