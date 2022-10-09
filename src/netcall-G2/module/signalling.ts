@@ -1267,7 +1267,7 @@ class Signalling extends EventEmitter {
             this.adapterRef.localStream.audioSlave
           ) {
             this.logger.log(
-              `重连成功，重新publish本端流: audio ${this.adapterRef.localStream.hasAudio()}, video ${this.adapterRef.localStream.hasVideo()}, screen ${this.adapterRef.localStream.hasScreen()}`
+              `重连成功，重新publish本端流: audio ${this.adapterRef.localStream.hasAudio()}, video ${this.adapterRef.localStream.hasVideo()}, screen ${this.adapterRef.localStream.hasScreen()}, audioSlave ${this.adapterRef.localStream.hasAudioSlave()}`
             )
             this.adapterRef.instance.doPublish(this.adapterRef.localStream)
           } else {
