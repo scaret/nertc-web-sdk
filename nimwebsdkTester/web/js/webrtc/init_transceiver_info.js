@@ -321,9 +321,10 @@ const captureTimer = setInterval(async ()=>{
     if (rtc.client.adapterRef._mediasoup.iceStatusHistory.recv.status) {
       $('#statsStuckTimeRecv').html(rtc.client.adapterRef._mediasoup.iceStatusHistory.recv.status.stuckTime)
       $('#iceRecv').html(rtc.client.adapterRef._mediasoup.iceStatusHistory.recv.status.info)
-    }else{
+    }else {
       $('#statsStuckTimeRecv').html('')
       $('#iceRecv').html('')
+    }
   }
 
   // 订阅状态
