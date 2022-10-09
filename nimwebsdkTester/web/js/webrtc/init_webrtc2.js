@@ -3711,6 +3711,8 @@ $('#getCurrentFrameData').click(function (event) {
     let uid = $('#snapshotAccount').val()
     let mediaType = $('#snapType').val()
     console.warn('getCurrentFrameData', uid, mediaType)
+    let width = parseInt($('#frameDataWidth').val())
+    let height = parseInt($('#frameDataHeight').val())
     if (rtc.client.getUid() == uid || !uid) {
       stream = rtc.localStream
       if (!stream) {
@@ -3728,9 +3730,21 @@ $('#getCurrentFrameData').click(function (event) {
     }
     let imageData = null
     let start = Date.now()
-    if (mediaType) {
-      imageData = stream.getCurrentFrameData({mediaType})
+    const options = {}
+    if (mediaType){
+      options.mediaType = mediaType
+    }
+    if (width){
+      options.width = width
+    }
+    if (height){
+      options.height = height
+    }
+    if (mediaType || width || height) {
+      console.log(`getCurrentFrameData options`, uid, options)
+      imageData = stream.getCurrentFrameData(options)
     } else {
+      console.log(`getCurrentFrameData options`, uid, null)
       imageData = stream.getCurrentFrameData()
     }
     if (!imageData){
