@@ -1404,7 +1404,8 @@ class Signalling extends EventEmitter {
                 } else if (
                   remoteStream.pubStatus.audio.audio ||
                   remoteStream.pubStatus.video.video ||
-                  remoteStream.pubStatus.screen.screen
+                  remoteStream.pubStatus.screen.screen ||
+                  remoteStream.pubStatus.audioSlave.audioSlave
                 ) {
                   that.adapterRef.instance.safeEmit('stream-added', {
                     stream: remoteStream,
