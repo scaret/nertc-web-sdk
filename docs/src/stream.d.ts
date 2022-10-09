@@ -1138,7 +1138,7 @@ declare interface Stream {
    * rtc.localStream.setVideoEncoderConfiguration({
    *   mediaType: "screen",
    *   streamType: "high",
-   *   maxBitrate: 3_000_000,
+   *   maxBitrate: 3000,
    *   contentHint: "motion",
    * })
    * // await rtc.localStream.init()

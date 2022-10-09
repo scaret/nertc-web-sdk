@@ -218,6 +218,13 @@ const captureTimer = setInterval(async ()=>{
     })
     $('#sendStatsFilterList').html(sendStatsFilterListHtml)
     $("#sendGetStats").html(htmlSendstats)
+    if (rtc.client.adapterRef._mediasoup.iceStatusHistory.send.status){
+      $('#statsStuckTimeSend').html(rtc.client.adapterRef._mediasoup.iceStatusHistory.send.status.stuckTime)
+      $('#iceSend').html(rtc.client.adapterRef._mediasoup.iceStatusHistory.send.status.info)
+    }else{
+      $('#statsStuckTimeSend').html('')
+      $('#iceSend').html('')
+    }
   }
   
   // 下行状态
@@ -311,6 +318,12 @@ const captureTimer = setInterval(async ()=>{
     })
     $('#recvStatsFilterList').html(recvStatsFilterListHtml)
     $("#recvGetStats").html(htmlRecvstats)
+    if (rtc.client.adapterRef._mediasoup.iceStatusHistory.recv.status) {
+      $('#statsStuckTimeRecv').html(rtc.client.adapterRef._mediasoup.iceStatusHistory.recv.status.stuckTime)
+      $('#iceRecv').html(rtc.client.adapterRef._mediasoup.iceStatusHistory.recv.status.info)
+    }else{
+      $('#statsStuckTimeRecv').html('')
+      $('#iceRecv').html('')
   }
 
   // 订阅状态
