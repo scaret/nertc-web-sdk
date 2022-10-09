@@ -930,7 +930,10 @@ class Mediasoup extends EventEmitter {
             }
           })
           if (this._webcamProducer._rtpSender && stream.mediaHelper.video.low) {
-            stream.mediaHelper.video.low.bindSender(this._webcamProducer._rtpSender, this._webcamProducer._rtpSenderLow || null)
+            stream.mediaHelper.video.low.bindSender(
+              this._webcamProducer._rtpSender,
+              this._webcamProducer._rtpSenderLow || null
+            )
             if (IS_SAFARI && SAFARI_MAJOR_VERSION && SAFARI_MAJOR_VERSION < 14) {
               if (stream._play?.videoDom?.srcObject) {
                 this.logger.log(`尝试重置本地视图的SrcObject`)
@@ -2464,6 +2467,7 @@ class Mediasoup extends EventEmitter {
       direction,
       iceConnectionState: 'uninit',
       info: '',
+      stuckTime: -1,
       elapse: -1
     }
     let pc
@@ -2514,12 +2518,29 @@ class Mediasoup extends EventEmitter {
 
       let stats: RTCStatsReport | null = null
       try {
-        stats = await pc.getStats(null)
+        // 由于getStats本身会产生卡顿，这里尽量只取一个track进行getStats，并计算卡顿时间
+        let start = Date.now()
+        let track = null
+        if (direction === 'send') {
+          let sender = pc.getSenders()[0]
+          if (sender?.track) {
+            track = sender.track
+          }
+        } else {
+          let receiver = pc.getReceivers()[0]
+          if (receiver?.track) {
+            track = receiver.track
+          }
+        }
+        let p = pc.getStats(track)
+        iceStatus.stuckTime = Date.now() - start
+        stats = await p
       } catch (e) {
         // do nothing
       }
       const statsArr: RTCStats[] = []
       const transports: RTCTransportStats[] = []
+      let start2 = Date.now()
       stats &&
         stats.forEach((item, key) => {
           statsArr.push(item)
@@ -2566,6 +2587,7 @@ class Mediasoup extends EventEmitter {
           iceStatus.info += `无法找到candidatePair ${transport.selectedCandidatePairId}`
         }
       })
+      iceStatus.stuckTime += Date.now() - start2
     }
 
     if (
