@@ -1326,21 +1326,40 @@ class Play extends EventEmitter {
         advice
       })
     }
-    const width = options.width || videoDom.videoWidth
-    const height = options.height || videoDom.videoHeight
-    if (width && height) {
-      if (canvas.width !== width) {
-        canvas.width = width
-      }
-      if (canvas.height !== height) {
-        canvas.height = height
-      }
-      ctx.drawImage(videoDom, 0, 0, width, height)
-      const imageData = ctx.getImageData(0, 0, width, height)
-      return imageData
-    } else {
+    const videoWidth = videoDom.videoWidth
+    const videoHeight = videoDom.videoHeight
+    if (!videoWidth || !videoHeight) {
       return null
     }
+    let width
+    let height
+    if (options.width && options.width > 0) {
+      if (options.height && options.height > 0) {
+        width = options.width
+        height = options.height
+      } else {
+        width = options.width
+        height = Math.floor((options.width / videoWidth) * videoHeight)
+      }
+    } else {
+      if (options.height && options.height > 0) {
+        height = options.height
+        width = Math.floor((options.height / videoHeight) * videoWidth)
+      } else {
+        width = videoWidth
+        height = videoHeight
+      }
+    }
+
+    if (canvas.width !== width) {
+      canvas.width = width
+    }
+    if (canvas.height !== height) {
+      canvas.height = height
+    }
+    ctx.drawImage(videoDom, 0, 0, width, height)
+    const imageData = ctx.getImageData(0, 0, width, height)
+    return imageData
   }
 
   getBase64Image(canvas: HTMLCanvasElement) {

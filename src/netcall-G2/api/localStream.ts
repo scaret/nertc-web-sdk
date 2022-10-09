@@ -840,7 +840,7 @@ class LocalStream extends RTCEventEmitter {
       this.screen = true
     }
 
-    if (this.audio || this.video || this.screen) {
+    if (this.audio || this.video || this.screen || this.audioSlave) {
       this.state = 'INITED'
     } else if (initErr) {
       this.state = 'UNINIT'

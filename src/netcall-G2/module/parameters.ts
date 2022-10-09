@@ -102,12 +102,16 @@ interface IParameters {
   forceCustomEncryptionOff: boolean
   // 检测H264接收端时必须为High
   h264StrictHigh: boolean
+  disableH264Send: boolean
+  disableVP8Send: boolean
   // 允许TCP
   enableTcpCandidate: boolean
   // 允许UDP
   enableUdpCandidate: boolean
   // 最大事件循环卡顿提示次数
   maxEventLoopLagWarning: number
+  // 默认是否开启兼容模式
+  enableCompatAudio: boolean
   // 兼容模式下怎么决定用哪个声道
   audioInputcompatMode: 'left' | 'right' | 'auto'
   // 主链路无响应多久后启用备用链路
@@ -194,9 +198,12 @@ let parameters: IParameters = {
   forceEncodedInsertableStreams: false,
   forceCustomEncryptionOff: false,
   h264StrictHigh: false,
+  disableH264Send: false,
+  disableVP8Send: false,
   enableTcpCandidate: true,
   enableUdpCandidate: true,
   maxEventLoopLagWarning: 3,
+  enableCompatAudio: false,
   audioInputcompatMode: 'auto',
   fireBackupDelay: 5000,
   audioAslFlag: true,
