@@ -102,6 +102,8 @@ interface IParameters {
   forceCustomEncryptionOff: boolean
   // 检测H264接收端时必须为High
   h264StrictHigh: boolean
+  disableH264Send: boolean
+  disableVP8Send: boolean
   // 允许TCP
   enableTcpCandidate: boolean
   // 允许UDP
@@ -196,6 +198,8 @@ let parameters: IParameters = {
   forceEncodedInsertableStreams: false,
   forceCustomEncryptionOff: false,
   h264StrictHigh: false,
+  disableH264Send: false,
+  disableVP8Send: false,
   enableTcpCandidate: true,
   enableUdpCandidate: true,
   maxEventLoopLagWarning: 3,

@@ -81,6 +81,20 @@ export class MediaCapability {
     }
     this.supportedCodecRecv = supportedCodecsRecv.video
     this.supportedCodecSend = supportedCodecsSend.video
+    if (getParameters().disableH264Send) {
+      let index = this.supportedCodecSend.indexOf('H264')
+      if (index !== -1) {
+        this.logger.log(`根据私有化参数设置，忽略H264发送支持`)
+        this.supportedCodecSend.splice(index, 1)
+      }
+    }
+    if (getParameters().disableVP8Send) {
+      let index = this.supportedCodecSend.indexOf('VP8')
+      if (index !== -1) {
+        this.logger.log(`根据私有化参数设置，忽略VP8发送支持`)
+        this.supportedCodecSend.splice(index, 1)
+      }
+    }
     this.logger.log(
       'detect supportedCodecRecv',
       JSON.stringify(this.supportedCodecRecv),
@@ -141,6 +155,12 @@ export class MediaCapability {
       }
       for (let j = 0; j < codecsFromRtpCapability.codecs.length; j++) {
         const codec = codecsFromRtpCapability.codecs[j]
+        if (getParameters().disableH264Send && codec.mimeType?.toLowerCase().indexOf('h264') > -1) {
+          continue
+        }
+        if (getParameters().disableVP8Send && codec.mimeType?.toLowerCase().indexOf('vp8') > -1) {
+          continue
+        }
         if (
           codec.mimeType &&
           codec.mimeType.toLowerCase().indexOf(candidateCodec.toLowerCase()) > -1
