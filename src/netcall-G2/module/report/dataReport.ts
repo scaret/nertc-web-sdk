@@ -21,6 +21,7 @@ import {
   RequestLBSEvent
 } from '../../types'
 import { USER_AGENT } from '../../util/rtcUtil/rtcEnvironment'
+import {processManager} from "../processManager";
 
 let reportUrl = 'https://statistic.live.126.net/statics/report/common/form'
 
@@ -175,6 +176,9 @@ class DataReport {
     loginEvent.preferred_codec_send =
       this.adapterRef.mediaCapability.preferredCodecSend.video?.join(',')
     loginEvent.extra_info = JSON.stringify({
+      proc: processManager.processId,
+      page: processManager.pageId,
+      brow: processManager.browserId,
       userAgent: USER_AGENT
     })
     loginEvent.lbs_addrs = this.adapterRef.lbsManager.getReportField('nrtc')

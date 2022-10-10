@@ -134,6 +134,8 @@ interface IParameters {
   disable2dContext: boolean
   // 是否关闭 WebGL 的 CanvasContext
   disableWebGLContext: boolean
+  // 是否上报pageId和browserId
+  reportPageBrowserId: boolean
   // 修补Safari本地canvas track无法播放的问题
   shimLocalCanvas: 'safari' | 'all' | 'never'
 }
@@ -215,6 +217,7 @@ let parameters: IParameters = {
   disableWebAudio: false,
   disable2dContext: false,
   disableWebGLContext: false,
+  reportPageBrowserId: true,
   shimLocalCanvas: 'safari'
 }
 
