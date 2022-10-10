@@ -869,6 +869,7 @@ export interface Client {
     uid: number | string
     kind: MediaTypeShort
     streamType: 'high' | 'low'
+    mediaType?: MediaTypeShort
   }
   removeSsrc: (uid: number | string, kind?: MediaTypeShort) => void
   stopSession: () => void

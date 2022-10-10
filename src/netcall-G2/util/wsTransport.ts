@@ -211,6 +211,8 @@ export default class WSTransport {
     let headerArray = [4, 1, 1, 1, 1, 0, 0, 0] // 正式环境
     // let headerArray = [4,1,1,1,2,0,0,0];  // 测试环境
     // console.error('msg: ', heartbeatMessage.decode(buffer))
+    // let decodeMsg = heartbeatMessage.decode(buffer)
+    // console.error('decodeMsg: ', decodeMsg)
     let newBuffer = Uint8Array.from(headerArray.concat(Array.from(buffer)))
     return newBuffer
   }

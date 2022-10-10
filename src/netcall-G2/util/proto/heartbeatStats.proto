@@ -59,6 +59,7 @@ syntax = "proto2";
        optional int64 bytesSentPerSecond=25;
        optional int64 alr=26;
        optional double packetsLostPerSecond=27;
+       optional string streamType=28;
     }
 
      message video_ssrc_obj{
@@ -112,6 +113,7 @@ syntax = "proto2";
        optional string googTransmitBitrate=48;
        optional int64 vlr=49;
        optional double packetsLostPerSecond=50;
+       optional string streamType=51;
     }
 
     message screen_ssrc_obj{
@@ -165,6 +167,7 @@ syntax = "proto2";
        optional string googTransmitBitrate=48;
        optional int64 vlr=49;
        optional double packetsLostPerSecond=50;
+       optional string streamType=51;
     }
 
      message video_track_obj{
@@ -209,6 +212,7 @@ syntax = "proto2";
        optional bool isRemote=21;
        optional int64 qpSum=22;
        optional string uid=23;
+       optional string streamType=24;
     }
 
      message video_outbound_rtp_obj{
@@ -255,6 +259,7 @@ syntax = "proto2";
        optional int64 framerateStdDev=41;
        optional bool isRemote=42;
        optional string uid=43;
+       optional string streamType=44;
     }
 
     message screen_outbound_rtp_obj{
@@ -279,6 +284,7 @@ syntax = "proto2";
        optional int64 framesEncodedPerSecond=19;
        optional int64 packetsSentPerSecond=20;
        optional string remoteId=21;
+       optional string streamType=22;
     }
   }
 
@@ -336,6 +342,7 @@ syntax = "proto2";
        optional int64 framesDecodedPerSecond=41;
        optional double packetsLostRate=42;
        optional double packetsLostPerSecond=43;
+       optional string streamType=44;
     }
 
      message audio_ssrc_obj{
@@ -381,6 +388,7 @@ syntax = "proto2";
        optional double packetsLostRate=40;
        optional double packetsLostPerSecond=41;
        optional double alr=42;
+       optional string streamType=43;
     }
 
      message audio_inbound_rtp_obj{
@@ -423,6 +431,7 @@ syntax = "proto2";
        optional bool isRemote=37;
        optional int64 packetsLostPerSecond=38;
        optional int64 qpSum=39;
+       optional string streamType=40;
     }
 
      message video_inbound_rtp_obj{
@@ -464,6 +473,7 @@ syntax = "proto2";
        optional bool isRemote=36;
        optional int64 qpSum=37;
        optional double packetsLostPerSecond=38;
+       optional string streamType=39;
     }
 
     message screen_inbound_rtp_obj{
@@ -495,6 +505,7 @@ syntax = "proto2";
        optional int64 packetsReceivedPerSecond=26;
        optional string remoteuid=27;
        optional double packetsLostRate=28;
+       optional string streamType=29;
     }
 
      message audio_track_obj{
@@ -581,6 +592,7 @@ syntax = "proto2";
       optional double packetsLostRate=42;
       optional double packetsLostPerSecond=43;
       optional int64 vlr=44;
+      optional string streamType=45;
    }
   }
 }
