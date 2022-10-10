@@ -548,6 +548,16 @@ class Mediasoup extends EventEmitter {
               },
               ...appData
             }
+            // http://doc.hz.netease.com/pages/viewpage.action?pageId=262212959
+            if (mediaTypeShort === 'screen') {
+              producerData.deviceId = 'screen-share-default'
+            } else if (mediaTypeShort === 'video') {
+              if (stream.mediaHelper.video.videoSource) {
+                producerData.deviceId = 'video-external-default'
+              } else {
+                producerData.deviceId = 'video-default'
+              }
+            }
 
             // 1. 使用原有的encoding
             let encoding = this.senderEncodingParameter[mediaTypeShort].high
