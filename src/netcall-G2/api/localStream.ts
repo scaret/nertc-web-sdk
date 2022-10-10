@@ -897,6 +897,14 @@ class LocalStream extends RTCEventEmitter {
     }
   }
 
+  getScreenTrack() {
+    return this.mediaHelper.screen.screenVideoStream.getVideoTracks()[0] || null
+  }
+
+  getAudioSlaveTrack() {
+    return this.mediaHelper.screenAudio.screenAudioStream.getAudioTracks()[0] || null
+  }
+
   /**
    * 播放音视频流
    * @function play
