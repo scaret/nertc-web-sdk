@@ -304,7 +304,8 @@ var $root = (
               framesEncodedPerSecond: { type: 'int64', id: 19 },
               packetsSentPerSecond: { type: 'int64', id: 20 },
               remoteId: { type: 'string', id: 21 },
-              streamType: { type: 'string', id: 22 }
+              streamType: { type: 'string', id: 22 },
+              framesPerSecond: { type: 'int64', id: 23 }
             }
           }
         }
@@ -533,7 +534,8 @@ var $root = (
               packetsReceivedPerSecond: { type: 'int64', id: 26 },
               remoteuid: { type: 'string', id: 27 },
               packetsLostRate: { type: 'double', id: 28 },
-              streamType: { type: 'string', id: 29 }
+              streamType: { type: 'string', id: 29 },
+              framesPerSecond: { type: 'int64', id: 30 }
             }
           },
           audio_track_obj: {
