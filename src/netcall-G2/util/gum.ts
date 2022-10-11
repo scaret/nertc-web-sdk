@@ -111,7 +111,9 @@ async function getStream(constraint: GUMConstaints, logger: ILogger) {
     }
     return stream
   } catch (e: any) {
-    logger.error('getUserMedia error: ', e.name)
+    logger.error(
+      `getUserMedia error: ${e.name} [${e.message}] constraint: ${JSON.stringify(constraint)}`
+    )
     /*const stream = await navigator.mediaDevices.getUserMedia({audio: true})
     logger.log('重新获取到媒体流: ', stream.id)*/
     return Promise.reject(e)
