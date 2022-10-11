@@ -1031,6 +1031,10 @@ class Play extends EventEmitter {
    * 视频截图功能
    */
   async takeSnapshot(options: SnapshotOptions, streamId?: string | number) {
+    if (this.mask.enabled) {
+      this.logger.error(`takeSnapshot: 目前在打码状态`)
+      return null
+    }
     let snapshotVideo = (!options.mediaType && this.videoDom) || options.mediaType === 'video'
     let snapshotScreen = (!options.mediaType && this.screenDom) || options.mediaType === 'screen'
 
@@ -1171,6 +1175,10 @@ class Play extends EventEmitter {
    * 视频截图生成base64
    */
   takeSnapshotBase64(options: SnapshotBase64Options) {
+    if (this.mask.enabled) {
+      this.logger.error(`takeSnapshot: 目前在打码状态`)
+      return null
+    }
     let snapshotVideo = (!options.mediaType && this.videoDom) || options.mediaType === 'video'
     let snapshotScreen = (!options.mediaType && this.screenDom) || options.mediaType === 'screen'
     let rtcCanvas = new RTCCanvas('canvas')
@@ -1282,6 +1290,10 @@ class Play extends EventEmitter {
   }
 
   getCurrentFrameData(options: GetCurrentFrameDataOptions) {
+    if (this.mask.enabled) {
+      this.logger.error(`getCurrentFrameData: 当前在打码状态`)
+      return null
+    }
     let videoDom: HTMLVideoElement | null
     if (!options.mediaType || options.mediaType === 'video') {
       videoDom = this.videoDom
