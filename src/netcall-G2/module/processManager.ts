@@ -1,5 +1,5 @@
 import { generateUUID } from '../util/rtcUtil/utils'
-import { getParameters } from './parameters'
+import {getParameters} from "./parameters";
 
 const SESSION_STORAGE_KEY = 'NERTC_PAGEID'
 const LOCAL_STROAGE_KEY = 'NERTC_BROWSERID'

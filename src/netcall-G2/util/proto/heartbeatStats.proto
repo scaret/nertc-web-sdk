@@ -285,7 +285,6 @@ syntax = "proto2";
        optional int64 packetsSentPerSecond=20;
        optional string remoteId=21;
        optional string streamType=22;
-       optional int64 framesPerSecond=23;
     }
   }
 
@@ -507,7 +506,6 @@ syntax = "proto2";
        optional string remoteuid=27;
        optional double packetsLostRate=28;
        optional string streamType=29;
-       optional int64 framesPerSecond=30;
     }
 
      message audio_track_obj{
