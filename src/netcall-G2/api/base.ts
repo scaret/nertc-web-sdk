@@ -711,6 +711,7 @@ class Base extends RTCEventEmitter {
   }
 
   /*** 用户成员uid和ssrc对应的list ***/
+  // 不支持 firefox
   getUidAndKindBySsrc(ssrc: number) {
     // 发送端
     const mediaTypeList: MediaTypeShort[] = ['audio', 'video', 'screen', 'audioSlave']

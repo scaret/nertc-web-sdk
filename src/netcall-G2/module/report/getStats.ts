@@ -492,7 +492,6 @@ class GetStats extends EventEmitter {
         mediaTypeShort,
         uidAndKindBySsrc.streamType
       )
-      item.streamType = uidAndKindBySsrc.streamType
       item.localuid = this.adapterRef.channelInfo.uid
       item.remoteuid = targetUid
 
@@ -565,7 +564,6 @@ class GetStats extends EventEmitter {
   //转换标准getStats格式
   formatChromeStandardizedStats(report: RTCStatsReport, direction: string, uid: string | number) {
     let result: { [key: string]: any } = {}
-
     report.forEach((report) => {
       if (report.type == 'inbound-rtp' && this.adapterRef && this.adapterRef.instance) {
         uid = this.adapterRef.instance.getUidAndKindBySsrc(report.ssrc).uid
@@ -601,13 +599,13 @@ class GetStats extends EventEmitter {
    safari浏览器getStats适配器
   */
   async safari(pc: RTCPeerConnection, direction: string) {
-    // const nonStandardStats = async () => {
-    //   const stats = await pc.getStats()
-    //   //@ts-ignore
-    //   pc.lastStats = pc.lastStats || {}
-    //   const result = this.formatSafariNonStandardStats(pc, stats, direction)
-    //   return result
-    // }
+    const nonStandardStats = async () => {
+      const stats = await pc.getStats()
+      //@ts-ignore
+      pc.lastStats = pc.lastStats || {}
+      const result = this.formatSafariNonStandardStats(pc, stats, direction)
+      return result
+    }
 
     const standardizedStats = async () => {
       if (!pc.getTransceivers) return {}
@@ -641,14 +639,13 @@ class GetStats extends EventEmitter {
       return result
     }
 
-    // const nonStandardResult = await nonStandardStats()
+    const nonStandardResult = await nonStandardStats()
     const standardizedResult = await standardizedStats()
     // console.log('safari nonstandard--->', nonStandardResult)
     // console.log('safari standard--->', standardizedResult)
     //当前Safari标准实现的getStats和非标准的一致，先忽略
     //const standardizedResult = await standardizedStats()
-    // let assignedResult = Object.assign(nonStandardResult, standardizedResult)
-    let assignedResult = Object.assign(standardizedResult)
+    let assignedResult = Object.assign(nonStandardResult, standardizedResult)
     return assignedResult
   }
 
@@ -661,11 +658,11 @@ class GetStats extends EventEmitter {
     let uidMap = new Map()
     stats.forEach((item: any) => {
       if (item.type == 'outbound-rtp' || item.type == 'inbound-rtp') {
-        let uidAndKindBySsrc = this.adapterRef?.instance.getUidAndKindBySsrc(item.ssrc)
-        const uid = uidAndKindBySsrc ? uidAndKindBySsrc.uid : 0
+        const uid = this.adapterRef
+          ? this.adapterRef.instance.getUidAndKindBySsrc(item.ssrc).uid
+          : 0
         uidMap.set(item.trackId, { uid: uid.toString(), ssrc: item.ssrc })
         item.remoteuid = uid.toString()
-        item.streamType = uidAndKindBySsrc!.streamType
         return
       }
     })
@@ -707,7 +704,6 @@ class GetStats extends EventEmitter {
   formatSafariStandardizedStats(report: any, direction: string) {
     let result: { [key: string]: any } = {}
     let uid: string | number
-
     report.forEach((report: any) => {
       if (report.type == 'inbound-rtp') {
         uid = this.adapterRef ? this.adapterRef.instance.getUidAndKindBySsrc(report.ssrc).uid : uid
@@ -719,26 +715,19 @@ class GetStats extends EventEmitter {
         report.type == 'local-candidate' ||
         report.type == 'remote-candidate' ||
         report.type == 'track' ||
+        report.type == 'outbound-rtp' ||
         report.type == 'remote-inbound-rtp' ||
         report.type == 'candidate-pair' ||
         report.type == 'media-source' ||
+        report.type == 'inbound-rtp' ||
         report.type == 'transport'
+        // ||report.type == 'codec'
       ) {
         result[
           `${report.type}_${this.adapterRef && this.adapterRef.channelInfo.uid}_${direction}_${uid}`
         ] = report
-      } else if (report.type == 'outbound-rtp' || report.type == 'inbound-rtp') {
-        const uidAndKindBySsrc = this.adapterRef?.instance.getUidAndKindBySsrc(report.ssrc)
-        report.mediaType = uidAndKindBySsrc!.kind
-        report.streamType = uidAndKindBySsrc!.streamType
-        result[
-          `${report.mediaType}-${report.type}_${
-            this.adapterRef && this.adapterRef.channelInfo.uid
-          }_${direction}_${uid}_${report.streamType}`
-        ] = report
       }
     })
-
     return result
   }
 
@@ -795,12 +784,12 @@ class GetStats extends EventEmitter {
     mid?: string | null
   ) {
     let result: { [key: string]: any } = {}
+
     report.forEach((report) => {
       if (report.type == 'inbound-rtp' && this.adapterRef && this.adapterRef.instance) {
         const uidAndKindBySsrc = this.adapterRef.instance.getUidAndKindBySsrc(report.ssrc)
         report.remoteuid = uidAndKindBySsrc.uid
         uid = uidAndKindBySsrc.uid
-        report.streamType = uidAndKindBySsrc.streamType
         if (report.kind === 'video') {
           report.mediaType = uidAndKindBySsrc.kind ? uidAndKindBySsrc.kind : 'screen'
         }
@@ -812,14 +801,11 @@ class GetStats extends EventEmitter {
       // }
     })
 
-    // report.forEach((report) => {
-    //   if (report.type == 'outbound-rtp' && mid == '2') {
-    //     // TODO: 同时开启大小流，会导致出现问题
-    //     const uidAndKindBySsrc = this.adapterRef?.instance.getUidAndKindBySsrc(report.ssrc)
-    //     // report.streamType = uidAndKindBySsrc!.streamType
-    //     report.mediaType = 'screen'
-    //   }
-    // })
+    report.forEach((report) => {
+      if (report.type == 'outbound-rtp' && mid == '2') {
+        report.mediaType = 'screen'
+      }
+    })
 
     report.forEach((report) => {
       if (
@@ -832,13 +818,10 @@ class GetStats extends EventEmitter {
           `${report.type}_${this.adapterRef && this.adapterRef.channelInfo.uid}_${direction}_${uid}`
         ] = report
       } else if (report.type == 'outbound-rtp' || report.type == 'inbound-rtp') {
-        const uidAndKindBySsrc = this.adapterRef?.instance.getUidAndKindBySsrc(report.ssrc)
-        report.mediaType = uidAndKindBySsrc!.kind
-        report.streamType = uidAndKindBySsrc!.streamType
         result[
           `${report.mediaType}-${report.type}_${
             this.adapterRef && this.adapterRef.channelInfo.uid
-          }_${direction}_${uid}_${report.streamType}`
+          }_${direction}_${uid}`
         ] = report
       }
     })
