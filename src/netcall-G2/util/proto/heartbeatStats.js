@@ -72,8 +72,7 @@ var $root = (
               sendPacketLoss: { type: 'int64', id: 24 },
               bytesSentPerSecond: { type: 'int64', id: 25 },
               alr: { type: 'int64', id: 26 },
-              packetsLostPerSecond: { type: 'double', id: 27 },
-              streamType: { type: 'string', id: 28 }
+              packetsLostPerSecond: { type: 'double', id: 27 }
             }
           },
           video_ssrc_obj: {
@@ -127,8 +126,7 @@ var $root = (
               googBucketDelay: { type: 'string', id: 47 },
               googTransmitBitrate: { type: 'string', id: 48 },
               vlr: { type: 'int64', id: 49 },
-              packetsLostPerSecond: { type: 'double', id: 50 },
-              streamType: { type: 'string', id: 51 }
+              packetsLostPerSecond: { type: 'double', id: 50 }
             }
           },
           screen_ssrc_obj: {
@@ -182,8 +180,7 @@ var $root = (
               googBucketDelay: { type: 'string', id: 47 },
               googTransmitBitrate: { type: 'string', id: 48 },
               vlr: { type: 'int64', id: 49 },
-              packetsLostPerSecond: { type: 'double', id: 50 },
-              streamType: { type: 'string', id: 51 }
+              packetsLostPerSecond: { type: 'double', id: 50 }
             }
           },
           video_track_obj: {
@@ -229,8 +226,7 @@ var $root = (
               nackCount: { type: 'int64', id: 20 },
               isRemote: { type: 'bool', id: 21 },
               qpSum: { type: 'int64', id: 22 },
-              uid: { type: 'string', id: 23 },
-              streamType: { type: 'string', id: 24 }
+              uid: { type: 'string', id: 23 }
             }
           },
           video_outbound_rtp_obj: {
@@ -277,8 +273,7 @@ var $root = (
               framerateMean: { type: 'int64', id: 40 },
               framerateStdDev: { type: 'int64', id: 41 },
               isRemote: { type: 'bool', id: 42 },
-              uid: { type: 'string', id: 43 },
-              streamType: { type: 'string', id: 44 }
+              uid: { type: 'string', id: 43 }
             }
           },
           screen_outbound_rtp_obj: {
@@ -303,8 +298,7 @@ var $root = (
               bytesSentPerSecond: { type: 'int64', id: 18 },
               framesEncodedPerSecond: { type: 'int64', id: 19 },
               packetsSentPerSecond: { type: 'int64', id: 20 },
-              remoteId: { type: 'string', id: 21 },
-              streamType: { type: 'string', id: 22 }
+              remoteId: { type: 'string', id: 21 }
             }
           }
         }
@@ -365,8 +359,7 @@ var $root = (
               bytesReceivedPerSecond: { type: 'int64', id: 40 },
               framesDecodedPerSecond: { type: 'int64', id: 41 },
               packetsLostRate: { type: 'double', id: 42 },
-              packetsLostPerSecond: { type: 'double', id: 43 },
-              streamType: { type: 'string', id: 44 }
+              packetsLostPerSecond: { type: 'double', id: 43 }
             }
           },
           audio_ssrc_obj: {
@@ -412,8 +405,7 @@ var $root = (
               bytesReceivedPerSecond: { type: 'int64', id: 39 },
               packetsLostRate: { type: 'double', id: 40 },
               packetsLostPerSecond: { type: 'double', id: 41 },
-              alr: { type: 'double', id: 42 },
-              streamType: { type: 'string', id: 43 }
+              alr: { type: 'double', id: 42 }
             }
           },
           audio_inbound_rtp_obj: {
@@ -456,8 +448,7 @@ var $root = (
               remoteuid: { type: 'string', id: 36 },
               isRemote: { type: 'bool', id: 37 },
               packetsLostPerSecond: { type: 'int64', id: 38 },
-              qpSum: { type: 'int64', id: 39 },
-              streamType: { type: 'string', id: 40 }
+              qpSum: { type: 'int64', id: 39 }
             }
           },
           video_inbound_rtp_obj: {
@@ -499,8 +490,7 @@ var $root = (
               remoteuid: { type: 'string', id: 35 },
               isRemote: { type: 'bool', id: 36 },
               qpSum: { type: 'int64', id: 37 },
-              packetsLostPerSecond: { type: 'double', id: 38 },
-              streamType: { type: 'string', id: 39 }
+              packetsLostPerSecond: { type: 'double', id: 38 }
             }
           },
           screen_inbound_rtp_obj: {
@@ -532,8 +522,7 @@ var $root = (
               recvPacketLoss: { type: 'int64', id: 25 },
               packetsReceivedPerSecond: { type: 'int64', id: 26 },
               remoteuid: { type: 'string', id: 27 },
-              packetsLostRate: { type: 'double', id: 28 },
-              streamType: { type: 'string', id: 29 }
+              packetsLostRate: { type: 'double', id: 28 }
             }
           },
           audio_track_obj: {
@@ -622,8 +611,7 @@ var $root = (
               framesDecodedPerSecond: { type: 'int64', id: 41 },
               packetsLostRate: { type: 'double', id: 42 },
               packetsLostPerSecond: { type: 'double', id: 43 },
-              vlr: { type: 'int64', id: 44 },
-              streamType: { type: 'string', id: 45 }
+              vlr: { type: 'int64', id: 44 }
             }
           }
         }
