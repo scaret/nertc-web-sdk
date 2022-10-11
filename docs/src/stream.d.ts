@@ -1108,8 +1108,11 @@ declare interface Stream {
    * 1. 对应的媒体只有在播放状态下才能调用该方法
    * 2. 该方法为阻塞方法，在多个Stream上频繁调用该方法可能导致页面卡顿
    * 3. 当前如不可截图，则返回null。
-   *
+   * 4. 由于底层接口限制，该功能在部分部分低版本浏览上性能较低，偶现截图时间在10秒以上，如Safari 13等。
+   * 5. 打码状态不能截图
+   * 
    * @example
+   * ```
    * // 假设rtc.localStream开启了屏幕共享，那么在rtc.localStream.play()之后
    * setInterval(()=>{
    *   const imageData = rtc.localstream.getCurrentFrameData({mediaType: 'screen'})
@@ -1118,7 +1121,7 @@ declare interface Stream {
    *    // ctx.putImageData(imageData, 0, 0, 0, 0, imageData.width,  imageData.height)
    *   }
    * }, 100)
-   *
+   * ```
    */
   getCurrentFrameData(options: { mediaType: 'video' | 'screen' }): ImageData | null
   /**
