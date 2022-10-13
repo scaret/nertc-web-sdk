@@ -172,6 +172,7 @@
               <option value='100'>普通优先级（100）</option>
               <option value='50'>高优先级（50）</option>
             </select>
+            <button id="doSetLocalMediaPriority">设置</button>
           </div>
         </div>
 
@@ -992,7 +993,7 @@
       <div class="block">
 
         <p class="block-header">高级token</p>
-        <div class="part">
+        <div class="part hide">
           <div class="line">
             demo自动生成permKey的配置
             <br/>
@@ -1006,7 +1007,7 @@
             permKey:
             <input type="text" id="permKey" placeholder="不填写，demo自动生成" style="max-width:150px">
             启动短时token功能:
-            <input type="checkbox" id="enablePermKey" checked>
+            <input type="checkbox" id="enablePermKey">
           </div>
           <div class="line">
             新的permKey:
@@ -1016,7 +1017,7 @@
         </div>
 
         <p class="block-header">快呼叫</p>
-        <div class="part">
+        <div class="part hide">
           <div class="line">
             是否启动快呼叫功能
             <input type="checkbox" id="isFastCall">
@@ -1465,7 +1466,7 @@
 
 
         <p class="block-header">去除事件监听</p>
-        <div class="part" id="removeListeners">
+        <div class="part hide" id="removeListeners">
           <label>
             事件监听白名单<br />
             <select id="event-whitelist" multiple>
@@ -1477,7 +1478,7 @@
         </div>
 
         <p class="block-header">LBS服务</p>
-        <div class="part">
+        <div class="part hide">
           当前配置状态：<span id="lbsState"></span><br />
           远端配置过期时间：<span id="lbsExpireTime"></span>
           <br />
