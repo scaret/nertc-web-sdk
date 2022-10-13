@@ -156,6 +156,10 @@ let configWebrtcG2 = merge(config, {
       const dir = './nimwebsdkTester/web/js/nim'
       fse.emptyDirSync(dir)
       fse.copySync(configWebrtcG2.output.path, dir)
+    }, ()=>{
+      const dir = './nimwebsdkTester/web/js/nim'
+      console.log(`\nRebuilding. Clean target folder: ${dir}\n`)
+      fse.emptyDirSync(dir)
     }),
     new webpack.BannerPlugin({
       banner: `NeRTC ${webrtcG2Version}|BUILD ${git.describe()} ${process.env.NODE_ENV}`
