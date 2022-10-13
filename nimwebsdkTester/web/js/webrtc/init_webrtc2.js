@@ -1322,17 +1322,8 @@ $('#joinChannel-btn').on('click', async () => {
   const recordVideo = $('#sessionConfigRecordVideo').prop('checked')
   // 互动直播相关
   const liveEnable = $('#sessionConfigLiveEnable').prop('checked')
-  // 媒体优先级
-  //const enableMeidaPriority = $('#enableMeidaPriority').prop('checked')
-  const priority = +$('#priority').val()
-  const isPreemptive = $('#isPreemptive').prop('checked')
-
   console.info('开始加入房间')
   await loadTokenByAppKey()
-  rtc.client.setLocalMediaPriority({
-    priority,
-    preemtiveMode: isPreemptive
-  })
 
   rtc.client.adapterRef.testConf = {
     turnAddr: $('#isTurnAddrConf').prop('checked')
@@ -4543,6 +4534,18 @@ $('#doUpdateWatermark').on('click', function () {
 
 $('#closeWatermarkPanel').on('click', function () {
   $('#updateWatermarkPanel').hide()
+})
+
+$('#doSetLocalMediaPriority').on('click', function (){
+  // 媒体优先级
+  //const enableMeidaPriority = $('#enableMeidaPriority').prop('checked')
+  const priority = +$('#priority').val()
+  const isPreemptive = $('#isPreemptive').prop('checked')
+  addLog('媒体优先级:' + priority + (isPreemptive ? '抢占模式' : ''))
+  rtc.client.setLocalMediaPriority({
+    priority,
+    preemtiveMode: isPreemptive
+  })
 })
 
 $('#pushMask').on('click', function () {
