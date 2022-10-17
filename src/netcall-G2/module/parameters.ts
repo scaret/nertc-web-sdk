@@ -2,7 +2,7 @@
 
 import { Client } from '../api/client'
 import { LocalStream } from '../api/localStream'
-import { loglevels } from '../util/log/logger'
+import { loglevels } from '../util/log/loglevels'
 import { ProducerCodecOptions } from './3rd/mediasoup-client/Producer'
 
 interface IParameters {
@@ -59,6 +59,9 @@ interface IParameters {
 
   // 整个页面打印在console里的最低logLevel等级
   logLevel: loglevels
+
+  // 强制开启或关闭日志上传。
+  forceLogUpload: 'default' | 'on' | 'off'
 
   // mediasoup中的编码选项
   codecOptions: {
@@ -162,6 +165,7 @@ let parameters: IParameters = {
   hideControlOnResume: true,
   maxTransportRebuildCnt: Number.MAX_SAFE_INTEGER,
   logLevel: loglevels.INFO,
+  forceLogUpload: 'default',
   forceListenDeviceChange: true,
   codecOptions: {
     audio: {

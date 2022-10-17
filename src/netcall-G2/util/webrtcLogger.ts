@@ -1,6 +1,6 @@
 import { getParameters } from '../module/parameters'
 import { LoggerOptions } from '../types'
-import { loglevels } from './log/logger'
+import { loglevels } from './log/loglevels'
 import { logHelper } from './logHelper'
 import { getBrowserInfo } from './rtcUtil/rtcPlatform'
 import { formatSingleArg } from './rtcUtil/utils'

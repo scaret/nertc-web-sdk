@@ -21,7 +21,8 @@ import { ClientOptions, LocalStreamOptions, PlatformTypeMap } from '../netcall-G
 import { checkSystemRequirements } from '../netcall-G2/util/checkSystemRequirements'
 import ErrorCode from '../netcall-G2/util/error/errorCode'
 import RtcError from '../netcall-G2/util/error/rtcError'
-import log, { loglevels } from '../netcall-G2/util/log/logger'
+import log from '../netcall-G2/util/log/logger'
+import { loglevels } from '../netcall-G2/util/log/loglevels'
 import { checkExists, checkValidInteger } from '../netcall-G2/util/param'
 import { getSupportedCodecs } from '../netcall-G2/util/rtcUtil/codec'
 import * as env from '../netcall-G2/util/rtcUtil/rtcEnvironment'
@@ -81,16 +82,20 @@ export const NERTC = {
      *
      */
     enableLogUpload() {
-      if (client) {
-        client.apiFrequencyControl({
-          name: 'enableLogUpload',
-          code: 0,
-          param: {
-            clientUid: client.adapterRef.channelInfo.uid || ''
-          }
-        })
+      if (getParameters().forceLogUpload === 'off') {
+        client?.logger.error(`enableLogUpload: 禁止开启日志上传`)
+      } else {
+        if (client) {
+          client.apiFrequencyControl({
+            name: 'enableLogUpload',
+            code: 0,
+            param: {
+              clientUid: client.adapterRef.channelInfo.uid || ''
+            }
+          })
+        }
+        log.enableLogUpload()
       }
-      log.enableLogUpload()
     },
 
     /**
@@ -99,16 +104,20 @@ export const NERTC = {
      * 默认是关闭状态，如果你调用了开启日志上传（enableLogUpload)，可以通过本方法停止上传日志。
      */
     disableLogUpload() {
-      if (client) {
-        client.apiFrequencyControl({
-          name: 'disableLogUpload',
-          code: 0,
-          param: {
-            clientUid: client.adapterRef.channelInfo.uid || ''
-          }
-        })
+      if (getParameters().forceLogUpload === 'on') {
+        client?.logger.error(`disableLogUpload: 禁止关闭日志上传`)
+      } else {
+        if (client) {
+          client.apiFrequencyControl({
+            name: 'disableLogUpload',
+            code: 0,
+            param: {
+              clientUid: client.adapterRef.channelInfo.uid || ''
+            }
+          })
+        }
+        log.disableLogUpload()
       }
-      log.disableLogUpload()
     }
   },
 

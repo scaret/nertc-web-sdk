@@ -1,4 +1,4 @@
-import { loglevels } from '../../../util/log/logger'
+import { loglevels } from '../../../util/log/loglevels'
 import { formatSingleArg } from '../../../util/rtcUtil/utils'
 import { updateLogIndex } from '../../../util/webrtcLogger'
 import { getParameters } from '../../parameters'
