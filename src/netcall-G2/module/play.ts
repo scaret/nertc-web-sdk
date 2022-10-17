@@ -1284,7 +1284,10 @@ class Play extends EventEmitter {
     if (!this.frameData.canvas) {
       this.logger.log(`正在初始化 frameData.canvas`)
       this.frameData.canvas = document.createElement('canvas')
-      this.frameData.context = get2DContext(this.frameData.canvas)
+      this.frameData.context = get2DContext(this.frameData.canvas, {
+        // @ts-ignore
+        willReadFrequently: true
+      })
     }
     return this.frameData.context
   }
