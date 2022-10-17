@@ -22,7 +22,7 @@ import {
 import { Client as ICLient } from '../types'
 import ErrorCode from '../util/error/errorCode'
 import RtcError from '../util/error/rtcError'
-import logger, { loglevels } from '../util/log/logger'
+import logger from '../util/log/logger'
 import { getSupportedCodecs } from '../util/rtcUtil/codec'
 import { Logger } from '../util/webrtcLogger'
 import { LocalStream } from './localStream'
@@ -32,6 +32,7 @@ import { LBSManager } from '../module/LBSManager'
 import { RTCEventEmitter } from '../util/rtcUtil/RTCEventEmitter'
 import * as env from '../util/rtcUtil/rtcEnvironment'
 import { SignalGetChannelInfoResponse } from '../interfaces/SignalProtocols'
+import {loglevels} from "../util/log/loglevels";
 
 let clientCnt = 0
 
