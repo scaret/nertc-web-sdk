@@ -1,4 +1,5 @@
 // 注意：getParameters和setParameters是一些私有全局变量，仅用于调试和私有接口，不用于正常业务
+// 变量名请使用至少三个单词组合，以防与客户URL变量相撞
 
 import { Client } from '../api/client'
 import { LocalStream } from '../api/localStream'
@@ -59,6 +60,9 @@ interface IParameters {
 
   // 整个页面打印在console里的最低logLevel等级
   logLevel: loglevels
+
+  // 强制使用的logLevel。-1为不强制
+  forceLogLevel: -1 | loglevels
 
   // 强制开启或关闭日志上传。
   forceLogUpload: 'default' | 'on' | 'off'
@@ -139,6 +143,8 @@ interface IParameters {
   disableWebGLContext: boolean
   // 是否上报pageId和browserId
   reportPageBrowserId: boolean
+  // 心跳间隔，也就是getStats间隔。设为很大的数可以用来屏蔽getStats操作
+  doHeartbeatInterval: number
   // 修补Safari本地canvas track无法播放的问题
   shimLocalCanvas: 'safari' | 'all' | 'never'
 }
@@ -165,6 +171,7 @@ let parameters: IParameters = {
   hideControlOnResume: true,
   maxTransportRebuildCnt: Number.MAX_SAFE_INTEGER,
   logLevel: loglevels.INFO,
+  forceLogLevel: -1,
   forceLogUpload: 'default',
   forceListenDeviceChange: true,
   codecOptions: {
@@ -222,6 +229,7 @@ let parameters: IParameters = {
   disable2dContext: false,
   disableWebGLContext: false,
   reportPageBrowserId: true,
+  doHeartbeatInterval: 2000,
   shimLocalCanvas: 'safari'
 }
 

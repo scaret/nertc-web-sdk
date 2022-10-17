@@ -9,6 +9,7 @@ import { generateUUID } from '../../util/rtcUtil/utils'
 import WSTransport from '../../util/wsTransport'
 import { FormativeStatsReport } from './formativeStatsReport'
 import { GetStats } from './getStats'
+import {getParameters} from "../parameters";
 const sha1 = require('js-sha1')
 
 const wsURL = 'wss://statistic.live.126.net/lps-websocket/websocket/collect'
@@ -106,9 +107,11 @@ class StatsReport extends EventEmitter {
 
   startHeartbeat() {
     if (this.heartbeat_ === -1) {
-      const heartbeatInterval = 2000
       this.adapterRef.logger.log('startHeartbeat...')
-      this.heartbeat_ = raf.setInterval(this.doHeartbeat.bind(this), heartbeatInterval)
+      this.heartbeat_ = raf.setInterval(
+        this.doHeartbeat.bind(this),
+        getParameters().doHeartbeatInterval
+      )
     }
   }
 
