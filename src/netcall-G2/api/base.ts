@@ -81,7 +81,10 @@ class Base extends RTCEventEmitter {
       deviceId: ''
     }
 
-    if (options.debug === true) {
+    const forceLogLevel = getParameters().forceLogLevel
+    if (forceLogLevel !== -1) {
+      logger.setLogLevel(forceLogLevel)
+    } else if (options.debug === true) {
       logger.setLogLevel(loglevels.DEBUG)
     } else if (options.debug === false) {
       if (getParameters().logLevel <= loglevels.WARNING) {

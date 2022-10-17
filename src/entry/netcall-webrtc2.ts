@@ -22,7 +22,7 @@ import { checkSystemRequirements } from '../netcall-G2/util/checkSystemRequireme
 import ErrorCode from '../netcall-G2/util/error/errorCode'
 import RtcError from '../netcall-G2/util/error/rtcError'
 import log from '../netcall-G2/util/log/logger'
-import { loglevels } from '../netcall-G2/util/log/loglevels'
+import {loglevelMap, loglevels} from '../netcall-G2/util/log/loglevels'
 import { checkExists, checkValidInteger } from '../netcall-G2/util/param'
 import { getSupportedCodecs } from '../netcall-G2/util/rtcUtil/codec'
 import * as env from '../netcall-G2/util/rtcUtil/rtcEnvironment'
@@ -62,17 +62,22 @@ export const NERTC = {
     NONE: 4,
 
     setLogLevel(level: loglevels) {
-      if (client) {
-        client.apiFrequencyControl({
-          name: 'setLogLevel',
-          code: 0,
-          param: {
-            clientUid: client.adapterRef.channelInfo.uid || '',
-            level
-          }
-        })
+      const forceLogLevel = getParameters().forceLogLevel
+      if (forceLogLevel !== -1) {
+        client?.logger.error(`setLogLevel: 本页面的日志级别固定为 ${loglevelMap[forceLogLevel]}`)
+      } else {
+        if (client) {
+          client.apiFrequencyControl({
+            name: 'setLogLevel',
+            code: 0,
+            param: {
+              clientUid: client.adapterRef.channelInfo.uid || '',
+              level
+            }
+          })
+        }
+        log.setLogLevel(level)
       }
-      log.setLogLevel(level)
     },
 
     /**

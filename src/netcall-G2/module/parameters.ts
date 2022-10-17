@@ -60,6 +60,9 @@ interface IParameters {
   // 整个页面打印在console里的最低logLevel等级
   logLevel: loglevels
 
+  // 强制使用的logLevel。-1为不强制
+  forceLogLevel: -1 | loglevels
+
   // 强制开启或关闭日志上传。
   forceLogUpload: 'default' | 'on' | 'off'
 
@@ -165,6 +168,7 @@ let parameters: IParameters = {
   hideControlOnResume: true,
   maxTransportRebuildCnt: Number.MAX_SAFE_INTEGER,
   logLevel: loglevels.INFO,
+  forceLogLevel: -1,
   forceLogUpload: 'default',
   forceListenDeviceChange: true,
   codecOptions: {
