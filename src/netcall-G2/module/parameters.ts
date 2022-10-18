@@ -145,6 +145,8 @@ interface IParameters {
   reportPageBrowserId: boolean
   // 心跳间隔，也就是getStats间隔。设为很大的数可以用来屏蔽getStats操作
   doHeartbeatInterval: number
+  // 设备拔插检测间隔，为0不启动额外计时器
+  deviceChangeInterval: number
   // 修补Safari本地canvas track无法播放的问题
   shimLocalCanvas: 'safari' | 'all' | 'never'
 }
@@ -230,6 +232,7 @@ let parameters: IParameters = {
   disableWebGLContext: false,
   reportPageBrowserId: true,
   doHeartbeatInterval: 2000,
+  deviceChangeInterval: 0,
   shimLocalCanvas: 'safari'
 }
 
