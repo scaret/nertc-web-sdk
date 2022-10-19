@@ -70,15 +70,15 @@ interface IParameters {
   // mediasoup中的编码选项
   codecOptions: {
     audio: ProducerCodecOptions
-    video: {
-      high: ProducerCodecOptions
-      low: ProducerCodecOptions
-    }
-    screen: {
-      high: ProducerCodecOptions
-      low: ProducerCodecOptions
-    }
   }
+  videoHighStartBitrate: number
+  videoHighMinBitrate: number
+  videoLowStartBitrate: number
+  videoLowMinBitrate: number
+  screenHighStartBitrate: number
+  screenHighMinBitrate: number
+  screenLowStartBitrate: number
+  screenLowMinBitrate: number
   // 屏幕共享时是否跳转到被共享页面
   screenFocus: boolean
   // 是否允许localStream啥都不开
@@ -145,6 +145,8 @@ interface IParameters {
   reportPageBrowserId: boolean
   // 心跳间隔，也就是getStats间隔。设为很大的数可以用来屏蔽getStats操作
   doHeartbeatInterval: number
+  // 设备拔插检测间隔，为0不启动额外计时器
+  deviceChangeInterval: number
   // 修补Safari本地canvas track无法播放的问题
   shimLocalCanvas: 'safari' | 'all' | 'never'
 }
@@ -178,24 +180,16 @@ let parameters: IParameters = {
     audio: {
       opusStereo: true,
       opusDtx: true
-    },
-    video: {
-      high: {
-        videoGoogleStartBitrate: 1000
-      },
-      low: {
-        videoGoogleStartBitrate: 500
-      }
-    },
-    screen: {
-      high: {
-        videoGoogleStartBitrate: 2000
-      },
-      low: {
-        videoGoogleStartBitrate: 500
-      }
     }
   },
+  videoHighStartBitrate: 1000,
+  videoHighMinBitrate: 0,
+  videoLowStartBitrate: 500,
+  videoLowMinBitrate: 0,
+  screenHighStartBitrate: 2000,
+  screenHighMinBitrate: 0,
+  screenLowStartBitrate: 500,
+  screenLowMinBitrate: 0,
   screenFocus: true,
   allowEmptyMedia: true,
   keepLocalstreamOnLeave: false,
@@ -230,6 +224,7 @@ let parameters: IParameters = {
   disableWebGLContext: false,
   reportPageBrowserId: true,
   doHeartbeatInterval: 2000,
+  deviceChangeInterval: 0,
   shimLocalCanvas: 'safari'
 }
 

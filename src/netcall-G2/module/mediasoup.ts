@@ -773,16 +773,45 @@ class Mediasoup extends EventEmitter {
               codecOptions.push(Object.assign({}, getParameters().codecOptions.audio))
             } else if (appData.mediaType === 'video') {
               if (rtpParameters.encodings.length >= 2) {
+                const lowOption: ProducerCodecOptions = {}
+                if (getParameters().videoLowStartBitrate) {
+                  lowOption.videoGoogleStartBitrate = getParameters().videoLowStartBitrate
+                }
+                if (getParameters().videoLowMinBitrate) {
+                  lowOption.videoGoogleMinBitrate = getParameters().videoLowMinBitrate
+                }
                 // 小流，需与Encodings顺序保持一致
-                codecOptions.push(Object.assign({}, getParameters().codecOptions.video.low))
+                codecOptions.push(lowOption)
               }
-              codecOptions.push(Object.assign({}, getParameters().codecOptions.video.high))
+              const highOption: ProducerCodecOptions = {}
+              if (getParameters().videoHighStartBitrate) {
+                highOption.videoGoogleStartBitrate = getParameters().videoHighStartBitrate
+              }
+              if (getParameters().videoHighMinBitrate) {
+                highOption.videoGoogleMinBitrate = getParameters().videoHighMinBitrate
+              }
+              codecOptions.push(highOption)
             } else if (appData.mediaType === 'screenShare') {
               if (rtpParameters.encodings.length >= 2) {
                 // 小流，需与Encodings顺序保持一致
-                codecOptions.push(Object.assign({}, getParameters().codecOptions.screen.low))
+                const lowOption: ProducerCodecOptions = {}
+                if (getParameters().screenLowStartBitrate) {
+                  lowOption.videoGoogleStartBitrate = getParameters().screenLowStartBitrate
+                }
+                if (getParameters().screenLowMinBitrate) {
+                  lowOption.videoGoogleMinBitrate = getParameters().screenLowMinBitrate
+                }
+                // 小流，需与Encodings顺序保持一致
+                codecOptions.push(lowOption)
               }
-              codecOptions.push(Object.assign({}, getParameters().codecOptions.screen.high))
+              const highOption: ProducerCodecOptions = {}
+              if (getParameters().screenHighStartBitrate) {
+                highOption.videoGoogleStartBitrate = getParameters().screenHighStartBitrate
+              }
+              if (getParameters().screenHighMinBitrate) {
+                highOption.videoGoogleMinBitrate = getParameters().screenHighMinBitrate
+              }
+              codecOptions.push(highOption)
             }
             this.logger.log(
               `codecOptions for producer ${appData.mediaType}: ${JSON.stringify(codecOptions)}`

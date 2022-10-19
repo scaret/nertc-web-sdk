@@ -370,7 +370,9 @@ class DeviceManager extends RTCEventEmitter {
     } else {
       navigator.mediaDevices.ondevicechange = this.handleDeviceChange
     }
-    this.deviceChangeDetectionTimer = setInterval(this.handleDeviceChange, 1000)
+    if (getParameters().deviceChangeInterval) {
+      this.deviceChangeDetectionTimer = setInterval(this.handleDeviceChange, 1000)
+    }
   }
 
   stopDeviceChangeDetection() {
