@@ -215,7 +215,13 @@ export class VideoTrackLow {
         this.logger.log(`小流状态变更 ${this.lastState} => ${newState}`)
         this.lastState = newState
       }
-      this.context.drawImage(this.high.videoDom, 0, 0, this.width, this.height)
+      // @ts-ignore CanvasCaptureMediaStreamTrack 可以直接画Canvas
+      const highCanvas: HTMLCanvasElement | undefined = this.high.track.canvas
+      if (highCanvas) {
+        this.context.drawImage(highCanvas, 0, 0, this.width, this.height)
+      } else {
+        this.context.drawImage(this.high.videoDom, 0, 0, this.width, this.height)
+      }
       this.lastDrawAt = Date.now()
       if (getParameters().videoLowCheckCanvasBlank === 'all') {
         this._checkCanvasBlank()
