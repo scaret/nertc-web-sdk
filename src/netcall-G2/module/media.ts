@@ -641,7 +641,9 @@ class MediaHelper extends EventEmitter {
                 }
               },
               audio:
-                screenAudio && this.getAudioConstraints() ? this.getAudioConstraints() : screenAudio
+                screenAudio && this.getAudioConstraints('audioSlave')
+                  ? this.getAudioConstraints('audioSlave')
+                  : screenAudio
             },
             this.logger
           )
@@ -696,7 +698,7 @@ class MediaHelper extends EventEmitter {
         if (audio) {
           let gumAudioStream = await GUM.getStream(
             {
-              audio: this.getAudioConstraints()
+              audio: this.getAudioConstraints('audio')
             },
             this.logger
           )
@@ -743,7 +745,10 @@ class MediaHelper extends EventEmitter {
         }
         const { height, width, frameRate } = this.video.captureConfig.high
         let config: GUMConstaints = {
-          audio: audio && this.getAudioConstraints() ? this.getAudioConstraints() : undefined,
+          audio:
+            audio && this.getAudioConstraints('audio')
+              ? this.getAudioConstraints('audio')
+              : undefined,
           video: video
             ? {
                 width: {
@@ -1077,7 +1082,7 @@ class MediaHelper extends EventEmitter {
     return result
   }
 
-  getAudioConstraints(): GUMAudioConstraints | undefined {
+  getAudioConstraints(mediaType: 'audio' | 'audioSlave'): GUMAudioConstraints | undefined {
     if (this.stream.isRemote) {
       this.logger.error('Remote Stream dont have audio constraints')
       return
@@ -1085,7 +1090,7 @@ class MediaHelper extends EventEmitter {
     //@ts-ignore
     const audioProcessing = this.stream.audioProcessing
     let constraint: GUMAudioConstraints = {
-      channelCount: 1
+      channelCount: mediaType === 'audio' ? 1 : 2
     }
     if (audioProcessing) {
       if (typeof audioProcessing.AEC !== 'undefined') {
@@ -1102,6 +1107,18 @@ class MediaHelper extends EventEmitter {
         constraint.autoGainControl = audioProcessing.AGC
         constraint.googAutoGainControl = audioProcessing.AGC
         constraint.googAutoGainControl2 = audioProcessing.AGC
+      }
+    }
+    if (mediaType === 'audioSlave') {
+      // 屏幕共享默认关闭3A
+      if (typeof constraint.echoCancellation === 'undefined') {
+        constraint.echoCancellation = false
+      }
+      if (typeof constraint.noiseSuppression === 'undefined') {
+        constraint.noiseSuppression = false
+      }
+      if (typeof constraint.autoGainControl === 'undefined') {
+        constraint.autoGainControl = false
       }
     }
     //@ts-ignore
