@@ -877,8 +877,16 @@ class LocalStream extends RTCEventEmitter {
    * @memberOf STREAM#
    * @return {MediaStreamTrack}
    */
-  getAudioTrack() {
-    return this.mediaHelper.getAudioInputTracks()[0] || null
+  getAudioTrack(mediaType: 'audio' | 'audioSlave' = 'audio') {
+    if (this.mediaHelper) {
+      if (mediaType === 'audio') {
+        return this.mediaHelper.getAudioInputTracks()[0]
+      } else if (mediaType === 'audioSlave') {
+        return this.mediaHelper.getAudioSlaveInputTracks()[0]
+      } else {
+        return null
+      }
+    }
   }
 
   /**
@@ -887,13 +895,15 @@ class LocalStream extends RTCEventEmitter {
    * @memberOf STREAM#
    * @return {MediaStreamTrack}
    */
-  getVideoTrack() {
+  getVideoTrack(mediaType: 'video' | 'screen' = 'video') {
     if (this.mediaHelper) {
-      return (
-        this.mediaHelper.video.cameraTrack ||
-        this.mediaHelper.screen.screenVideoTrack ||
-        this.mediaHelper.video.videoSource
-      )
+      if (mediaType === 'video') {
+        return this.mediaHelper.video.cameraTrack || this.mediaHelper.video.videoSource
+      } else if (mediaType === 'screen') {
+        return this.mediaHelper.screen.screenVideoTrack || this.mediaHelper.screen.screenVideoSource
+      } else {
+        return null
+      }
     }
   }
 

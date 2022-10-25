@@ -111,12 +111,14 @@ declare interface Stream {
   init(): Promise<void>
   /**
    * 获取音频轨道。
+   * 默认获取主流音频轨道（麦克风）
    */
-  getAudioTrack(): MediaStreamTrack | null
+  getAudioTrack(mediaType?: 'audio' | 'audioSlave'): MediaStreamTrack | null
   /**
    * 获取视频轨道。
+   * 默认获取主流视频轨道（摄像头）
    */
-  getVideoTrack(): MediaStreamTrack | null | undefined
+  getVideoTrack(mediaType?: 'video' | 'screen'): MediaStreamTrack | null | undefined
   /**
    * 播放音视频流。
    *
