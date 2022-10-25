@@ -6,7 +6,6 @@ import { loglevelMap, loglevels } from './loglevels'
 let win: any = window
 // 与声网对齐
 
-
 const logger = {
   setLogLevel(level: loglevels) {
     if (getParameters().logLevel !== level) {

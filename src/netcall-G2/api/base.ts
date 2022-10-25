@@ -32,7 +32,7 @@ import { LBSManager } from '../module/LBSManager'
 import { RTCEventEmitter } from '../util/rtcUtil/RTCEventEmitter'
 import * as env from '../util/rtcUtil/rtcEnvironment'
 import { SignalGetChannelInfoResponse } from '../interfaces/SignalProtocols'
-import {loglevels} from "../util/log/loglevels";
+import { loglevels } from '../util/log/loglevels'
 
 let clientCnt = 0
 

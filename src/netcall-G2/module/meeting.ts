@@ -241,7 +241,7 @@ class Meeting extends EventEmitter {
           type: 'POST',
           contentType: 'application/x-www-form-urlencoded',
           header: {
-            'X-Forwarded-For': this.adapterRef.testConf.ForwardedAddr || ''
+            'X-Forwarded-For': this.adapterRef.testConf?.ForwardedAddr || ''
           },
           data: {
             uid: requestUid,

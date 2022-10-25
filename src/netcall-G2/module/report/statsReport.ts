@@ -9,7 +9,7 @@ import { generateUUID } from '../../util/rtcUtil/utils'
 import WSTransport from '../../util/wsTransport'
 import { FormativeStatsReport } from './formativeStatsReport'
 import { GetStats } from './getStats'
-import {getParameters} from "../parameters";
+import { getParameters } from '../parameters'
 const sha1 = require('js-sha1')
 
 const wsURL = 'wss://statistic.live.126.net/lps-websocket/websocket/collect'
