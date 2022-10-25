@@ -22,7 +22,7 @@ import { checkSystemRequirements } from '../netcall-G2/util/checkSystemRequireme
 import ErrorCode from '../netcall-G2/util/error/errorCode'
 import RtcError from '../netcall-G2/util/error/rtcError'
 import log from '../netcall-G2/util/log/logger'
-import {loglevelMap, loglevels} from '../netcall-G2/util/log/loglevels'
+import { loglevelMap, loglevels } from '../netcall-G2/util/log/loglevels'
 import { checkExists, checkValidInteger } from '../netcall-G2/util/param'
 import { getSupportedCodecs } from '../netcall-G2/util/rtcUtil/codec'
 import * as env from '../netcall-G2/util/rtcUtil/rtcEnvironment'

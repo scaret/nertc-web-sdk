@@ -21,7 +21,7 @@ import {
   RequestLBSEvent
 } from '../../types'
 import { USER_AGENT } from '../../util/rtcUtil/rtcEnvironment'
-import {processManager} from "../processManager";
+import { processManager } from '../processManager'
 
 let reportUrl = 'https://statistic.live.126.net/statics/report/common/form'
 
