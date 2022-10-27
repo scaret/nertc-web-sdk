@@ -54,6 +54,7 @@ import { isHttpProtocol } from '../util/rtcUtil/rtcSupport'
 import { makePrintable } from '../util/rtcUtil/utils'
 import { getAudioContext } from '../module/webAudio'
 import { StageAIProcessing } from '../module/audio-pipeline/stages/StageAIProcessing/StageAIProcessing'
+import { webassemblySupported } from '../util/wasmDetect'
 
 /**
  *  请使用 {@link NERTC.createStream} 通过NERTC.createStream创建
@@ -4815,7 +4816,17 @@ class LocalStream extends RTCEventEmitter {
    */
   async registerPlugin(options: PluginOptions) {
     this.logger.log(`register plugin:${options.key}`)
-
+    if (!webassemblySupported()) {
+      throw new RtcError({
+        code: ErrorCode.PLUGIN_REGISTER_ERROR,
+        message: env.IS_ZH
+          ? `该浏览器不支持WebAssembly，注册 ${options.key} 失败。`
+          : `Browser does not support WebAssembly.Register ${options.key} error.`,
+        advice: env.IS_ZH
+          ? '请更新浏览器版本或使用其他浏览器'
+          : 'please update the browser version or open with another browser.'
+      })
+    }
     if (this.videoPostProcess.getPlugin(options.key as any)) {
       return this.logger.warn(`plugin ${options.key} already exists.`)
     }
