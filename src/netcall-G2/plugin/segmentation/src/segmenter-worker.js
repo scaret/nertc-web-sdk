@@ -18,8 +18,8 @@ class mHumanSegmenter {
         this.mHumanSegmenter = new global.Module.SegmentModule()
         this.handleInitFinished()
       },
-      printErr: function (msg) {
-        global.postMessage({ type: 'error', message: msg })
+      onAbort: (msg) => {
+        global.postMessage({ type: 'error', message: '' + msg })
       }
     }
     require('../lib/ne_segment_normal.js')

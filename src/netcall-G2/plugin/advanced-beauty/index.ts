@@ -73,6 +73,9 @@ class AdvancedBeauty extends EventEmitter {
           break
         case 'error':
           this.emit('error', data.message)
+          break
+        default:
+          break
       }
     })
   }

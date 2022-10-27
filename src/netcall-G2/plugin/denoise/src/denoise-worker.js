@@ -20,6 +20,9 @@ class denoise {
       onRuntimeInitialized: () => {
         this.rnnoise = global.Module._rnnoise_create()
         this.handleInitFinished()
+      },
+      onAbort: (msg) => {
+        global.postMessage({ type: 'error', message: '' + msg })
       }
     }
     require('../lib/ai_denoise.js')

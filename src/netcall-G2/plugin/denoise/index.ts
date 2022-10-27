@@ -76,6 +76,11 @@ class AIDenoise extends EventEmitter {
             this.deoniseWorker = null
           }
           break
+        case 'error':
+          this.emit('error', data.message)
+          break
+        default:
+          break
       }
     })
   }
