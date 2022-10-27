@@ -67,17 +67,29 @@ export declare type BeautyFilters =
   | 'heibai'
 
 /**
+ * 插件Class
+ */
+export declare type AnyClass = {
+  new (...args: any): AnyClass
+  [key: string]: any
+}
+
+/**
  * 注册插件参数。
  */
 export interface pluginOptions {
   /**
    *  插件标识
    */
-  key: 'AdvancedBeauty' | 'VirtualBackground'
+  key: 'AdvancedBeauty' | 'VirtualBackground' | 'AIDenoise'
   /**
    *  插件 js 地址
    */
-  pluginUrl: string
+  pluginUrl?: string
+  /**
+   *  插件对象
+   */
+  pluginObj?: AnyClass
   /**
    *  插件 wasm 地址
    */
