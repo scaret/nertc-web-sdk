@@ -1,6 +1,6 @@
 tmp/*
 dist/*
-node_modules/*
+node_modules
 nimwebsdkTester/node_modules/*
 nimwebsdkTester/web/js/*.js
 nimwebsdkTester/web/js/nim
