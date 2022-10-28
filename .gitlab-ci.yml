@@ -1,0 +1,13 @@
+stages: # 阶段
+  - processMROpen
+
+mr-open-job:
+  tags:
+    - nertc-web-sdk
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+  stage: processMROpen
+  script:
+    - cd build/gitlab-ci
+    - npm ci
+    - node ./processMROpen.js --project-id $CI_PROJECT_ID --merge-request-id $CI_MERGE_REQUEST_IID --popo-group-id 2751190
