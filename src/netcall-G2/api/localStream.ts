@@ -4627,11 +4627,11 @@ class LocalStream extends RTCEventEmitter {
     stageAIProcessing.enabled = true
     if (stageAIProcessing.state === 'UNINIT') {
       await stageAIProcessing.init()
+      if (!this.mediaHelper.audio.audioRoutingEnabled) {
+        this.mediaHelper.enableAudioRouting()
+      }
+      this.mediaHelper.updateWebAudio()
     }
-    if (!this.mediaHelper.audio.audioRoutingEnabled) {
-      this.mediaHelper.enableAudioRouting()
-    }
-    this.mediaHelper.updateWebAudio()
     this.client.apiFrequencyControl({
       name: 'enableAIDenoise',
       code: 0,
@@ -4915,6 +4915,9 @@ class LocalStream extends RTCEventEmitter {
           })
         })
         plugin.once('error', (message: string) => {
+          if (options.key == 'AIDenoise') {
+            this.disableAIDenoise()
+          }
           throw new RtcError({
             code: ErrorCode.PLUGIN_LOADED_ERROR,
             message: env.IS_ZH
