@@ -4788,13 +4788,15 @@ class LocalStream extends RTCEventEmitter {
           enable,
           this._cameraTrack
         )) as MediaStreamTrack
-        //替换 track
-        await this.replacePluginTrack({
-          mediaType: 'video',
-          //@ts-ignore
-          track: this._transformedTrack,
-          external: false
-        })
+        if (this._transformedTrack) {
+          //替换 track
+          await this.replacePluginTrack({
+            mediaType: 'video',
+            //@ts-ignore
+            track: this._transformedTrack,
+            external: false
+          })
+        }
       } catch (error: any) {
         err = error
       }
