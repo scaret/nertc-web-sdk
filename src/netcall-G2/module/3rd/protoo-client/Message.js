@@ -1,8 +1,8 @@
 const Logger = require('./Logger')
 const { generateRandomNumber } = require('./utils')
+const { JSONBigParse } = require('../../../util/json-big')
 //js里面的整数有安全范围，即最大能显示的范围，超过了这个范围可能会精度丢失
 //Number.MAX_SAFE_INTEGER  //值为9007199254740991
-const JSONbig = require('json-bigint')
 
 const logger = new Logger('Message')
 
@@ -12,7 +12,7 @@ class Message {
     const message = {}
 
     try {
-      object = JSONbig.parse(raw)
+      object = JSONBigParse(raw)
     } catch (error) {
       logger.error('parse() | invalid JSONbig: %s', error)
 

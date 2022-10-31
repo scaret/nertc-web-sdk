@@ -1,5 +1,3 @@
-import BigNumber from 'bignumber.js'
-
 import { LocalStream } from './api/localStream'
 import { RemoteStream } from './api/remoteStream'
 import { SpatialManager } from './api/spatialManager'
@@ -719,7 +717,7 @@ export interface MeetingOptions {
 export interface MeetingJoinChannelOptions {
   appkey: string
   channelName: string
-  uid: number | string | BigNumber
+  uid: number | string | BigInt
   wssArr?: string[] | null
   sessionMode?: 'meeting'
   joinChannelRecordConfig: RecordConfig
@@ -746,7 +744,7 @@ export interface RTMPTask {
       color: number
     }
     users: {
-      uid: number | string | BigNumber
+      uid: number | string | BigInt
       x: number
       y: number
       width: number

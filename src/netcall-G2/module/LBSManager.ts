@@ -10,7 +10,7 @@ import RtcError from '../util/error/rtcError'
 import { generateUUID } from '../util/rtcUtil/utils'
 import { getParameters } from './parameters'
 import * as env from '../util/rtcUtil/rtcEnvironment'
-var JSONbig = require('json-bigint')
+import { JSONBigStringify } from '../util/json-big'
 
 type URLBackupSourceType = 'builtin' | 'localstorage' | 'lbs' | 'extra'
 
@@ -757,7 +757,7 @@ export class LBSManager {
           }
         } else {
           if (option.data) {
-            xhr.send(JSONbig.stringify(option.data))
+            xhr.send(JSONBigStringify(option.data))
           } else {
             xhr.send()
           }

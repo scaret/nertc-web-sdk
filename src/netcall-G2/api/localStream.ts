@@ -1,5 +1,3 @@
-import BigNumber from 'bignumber.js'
-
 import { NERTC_VIDEO_QUALITY, VIDEO_FRAME_RATE } from '../constant/videoQuality'
 import {
   ReportParamEnableEarback,
@@ -261,7 +259,7 @@ class LocalStream extends RTCEventEmitter {
     if (!options.uid) {
       // 允许不填uid
       options.uid = `local_${this.localStreamId}`
-    } else if (typeof options.uid === 'string' || BigNumber.isBigNumber(options.uid)) {
+    } else if (typeof options.uid === 'string') {
       this.logger.log('uid是string类型')
       options.client.adapterRef.channelInfo.uidType = 'string'
     } else if (typeof options.uid === 'number') {
