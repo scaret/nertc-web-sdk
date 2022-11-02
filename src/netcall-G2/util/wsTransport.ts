@@ -1,5 +1,6 @@
 import { EventEmitter } from 'eventemitter3'
-import * as protobuf from './proto/protobuf-js/light'
+import * as protobuf from 'protobufjs/light' // test 专用
+// import * as protobuf from './proto/protobuf-js/light' // product 专用
 
 import { getReconnectionTimeout } from '../util/rtcUtil/utils'
 import heartbeatStats = require('../util/proto/heartbeatStats')
@@ -210,7 +211,7 @@ export default class WSTransport {
     let buffer = heartbeatMessage.encode(message).finish()
     let headerArray = [4, 1, 1, 1, 1, 0, 0, 0] // 正式环境
     // let headerArray = [4,1,1,1,2,0,0,0];  // 测试环境
-    // console.error('msg: ', heartbeatMessage.decode(buffer))
+    console.error('msg: ', heartbeatMessage.decode(buffer)) // test 专用
     let newBuffer = Uint8Array.from(headerArray.concat(Array.from(buffer)))
     return newBuffer
   }

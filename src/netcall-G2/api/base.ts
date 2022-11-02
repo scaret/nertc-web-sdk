@@ -57,6 +57,7 @@ class Base extends RTCEventEmitter {
   public transportRebuildCnt = 0
   public clientId: number
   public logger: ILogger
+  private isReport: boolean
   private timeLast: number = Date.now()
   constructor(options: ClientOptions) {
     super()
@@ -64,6 +65,7 @@ class Base extends RTCEventEmitter {
       appkey: '',
       mode: 'rtc'
     }
+    this.isReport = typeof options.report === 'boolean' ? options.report : true
     this.clientId = clientCnt++
     // @ts-ignore typescript成员初始化
     this.adapterRef = {
@@ -191,9 +193,11 @@ class Base extends RTCEventEmitter {
     if (!this.adapterRef._statsReport) {
       this.adapterRef._statsReport = new StatsReport({
         sdkRef: this.sdkRef,
-        adapterRef: this.adapterRef
+        adapterRef: this.adapterRef,
+        isReport: this.isReport
       })
-      this.adapterRef._statsReport.start()
+
+      this.isReport && this.adapterRef._statsReport.start()
       this.adapterRef._statsReport.startHeartbeat()
     }
   }
