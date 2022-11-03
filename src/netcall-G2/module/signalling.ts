@@ -1,4 +1,3 @@
-import BigNumber from 'bignumber.js'
 import { EventEmitter } from 'eventemitter3'
 
 import { RemoteStream } from '../api/remoteStream'
@@ -377,7 +376,6 @@ class Signalling extends EventEmitter {
         }*/
         let uid = externData.uid
         if (this.adapterRef.channelInfo.uidType === 'string') {
-          uid = new BigNumber(uid)
           uid = uid.toString()
         }
 
@@ -412,7 +410,6 @@ class Signalling extends EventEmitter {
           externData.userList.forEach((item: any) => {
             let uid = item.uid
             if (this.adapterRef.channelInfo.uidType === 'string') {
-              uid = new BigNumber(uid)
               uid = uid.toString()
             }
             this.adapterRef._mediasoup?.removeUselessConsumeRequest({ uid })
@@ -431,7 +428,6 @@ class Signalling extends EventEmitter {
         )
         let { uid, producerId, mediaType, mute, simulcastEnable } = externData.producerInfo
         if (this.adapterRef.channelInfo.uidType === 'string') {
-          uid = new BigNumber(uid)
           uid = uid.toString()
         }
         let mediaTypeShort: MediaTypeShort
@@ -515,7 +511,6 @@ class Signalling extends EventEmitter {
         const { requestId, code, errMsg, externData } = notification.data
         let { uid, producerId, mediaType, cid } = externData
         if (this.adapterRef.channelInfo.uidType === 'string') {
-          uid = new BigNumber(uid)
           uid = uid.toString()
         }
         let remoteStream = this.adapterRef.remoteStreamMap[uid]
@@ -1331,8 +1326,6 @@ class Signalling extends EventEmitter {
         for (const peer of response.externData.userList) {
           let uid = peer.uid
           if (this.adapterRef.channelInfo.uidType === 'string') {
-            //@ts-ignore
-            uid = new BigNumber(uid)
             uid = uid.toString()
           }
           let remoteStream = this.adapterRef.remoteStreamMap[uid]
@@ -1804,9 +1797,9 @@ class Signalling extends EventEmitter {
 
     function hex2int2String(hex: string) {
       const len = hex.length
-      let a = new Array(len)
+      let a: number[] = new Array(len)
       let code
-      let value = new BigNumber(0)
+      let value: number | bigint = 0
       for (let i = 0; i < len; i++) {
         code = hex.charCodeAt(i)
         if (48 <= code && code < 58) {
@@ -1824,23 +1817,33 @@ class Signalling extends EventEmitter {
       return value.toString()
     }
 
-    function multiply(x: BigNumber, y: BigNumber | number) {
-      if (x.toNumber() == 0) return x
+    function multiply(x: number | bigint, y: number) {
+      if (!x) return x
       //x = new BigNumber(x)
-      const z = x.multipliedBy(y)
-      //@ts-ignore
-      BigNumber('7e+500').times(y) // '1.26e+501'
-      x.multipliedBy('-a', 16)
+      let z
+      if (typeof x === 'number') {
+        z = x * y
+        if (z > Number.MAX_SAFE_INTEGER) {
+          z = BigInt(x) * BigInt(y)
+        }
+      } else {
+        z = x * BigInt(y)
+      }
       return z
     }
 
-    function plus(x: BigNumber, y: BigNumber | number) {
+    function plus(x: number | bigint, y: number) {
       //x = new BigNumber(x)
-      y = x.plus(y)
-      //@ts-ignore
-      BigNumber(0.7).plus(x).plus(y)
-      x.plus('0.1', 8)
-      return y
+      let z
+      if (typeof x === 'number') {
+        z = x + y
+        if (z > Number.MAX_SAFE_INTEGER) {
+          z = BigInt(x) + BigInt(y)
+        }
+      } else {
+        z = x + BigInt(y)
+      }
+      return z
     }
     let isExit = true
     let newList: NetStatusItem[] = []
@@ -1897,7 +1900,6 @@ class Signalling extends EventEmitter {
   _handleUserRoleNotify(externData: any) {
     let uid = externData.uid
     if (this.adapterRef.channelInfo.uidType === 'string') {
-      uid = new BigNumber(uid)
       uid = uid.toString()
     }
     const userRole = externData.data && externData.data.userRole
@@ -1938,7 +1940,6 @@ class Signalling extends EventEmitter {
 
   _handleKickedNotify(reason: number, uid = this.adapterRef.channelInfo.uid) {
     if (this.adapterRef.channelInfo.uidType === 'string') {
-      uid = new BigNumber(uid)
       uid = uid.toString()
     }
 

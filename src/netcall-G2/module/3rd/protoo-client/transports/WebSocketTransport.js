@@ -2,7 +2,7 @@ const retry = require('retry')
 const Logger = require('../Logger')
 const EnhancedEventEmitter = require('../EnhancedEventEmitter')
 const Message = require('../Message')
-var JSONbig = require('json-bigint')
+const { JSONBigStringify } = require('../../../../util/json-big')
 const WS_SUBPROTOCOL = 'protoo'
 const DEFAULT_RETRY_OPTIONS = {
   retries: 10,
@@ -77,7 +77,7 @@ class WebSocketTransport extends EnhancedEventEmitter {
     if (this._closed) throw new Error('transport closed')
 
     try {
-      this._ws.send(JSONbig.stringify(message))
+      this._ws.send(JSONBigStringify(message))
     } catch (error) {
       logger.warn('send() failed:', error.name, error.message)
 

@@ -1,8 +1,7 @@
 import ErrorCode from '../util/error/errorCode'
 import RtcError from '../util/error/rtcError'
 import * as env from '../util/rtcUtil/rtcEnvironment'
-/** 异步请求api */
-var JSONbig = require('json-bigint')
+import { JSONBigStringify } from './json-big'
 /**
  * 异步请求方法
  *
@@ -114,7 +113,7 @@ function ajax(option: AjaxOptions) {
         if (option.header && option.header['Content-Encoding'] === 'gzip') {
           xhr.send(option.data)
         } else {
-          xhr.send(JSONbig.stringify(option.data))
+          xhr.send(JSONBigStringify(option.data))
         }
       } else {
         xhr.send()

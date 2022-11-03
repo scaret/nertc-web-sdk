@@ -10,7 +10,7 @@ import RtcError from '../util/error/rtcError'
 import { generateUUID } from '../util/rtcUtil/utils'
 import { getParameters } from './parameters'
 import * as env from '../util/rtcUtil/rtcEnvironment'
-var JSONbig = require('json-bigint')
+import { JSONBigParse, JSONBigStringify } from '../util/json-big'
 
 type URLBackupSourceType = 'builtin' | 'localstorage' | 'lbs' | 'extra'
 
@@ -343,7 +343,7 @@ export class LBSManager {
       config
     }
     try {
-      localStorage.setItem(this.localStorageKey, JSON.stringify(data))
+      localStorage.setItem(this.localStorageKey, JSONBigStringify(data))
     } catch (e: any) {
       this.logger.error(`saveConfig：无法存储LBS设置`, e.name, e.message)
     }
@@ -365,7 +365,7 @@ export class LBSManager {
         this.logger.log(`本地未发现LBS配置`)
         return { reason: 'configNotFound', config: null }
       }
-      data = JSON.parse(str)
+      data = JSONBigParse(str)
     } catch (e: any) {
       this.logger.error('无法读取本地配置：', e.name, e.message)
     }
@@ -563,7 +563,7 @@ export class LBSManager {
             urlSetting,
             requestInfo,
             xhr.status,
-            typeof xhr.response === 'string' ? xhr.response : JSON.stringify(xhr.response)
+            typeof xhr.response === 'string' ? xhr.response : JSONBigStringify(xhr.response)
           )
           if (urlSettings[1] && urlSettings[1].fire && urlSettings[1].timer) {
             // 如果备用链路尚未启动，则直接启用备用链路
@@ -618,7 +618,7 @@ export class LBSManager {
             urlSetting,
             requestInfo,
             LBS_ERR_CODE.UNKNOWN_ERROR,
-            JSON.stringify(xhr.response)
+            JSONBigStringify(xhr.response)
           )
           if (urlSettings[1] && urlSettings[1].fire && urlSettings[1].timer) {
             // 如果备用链路尚未启动，则直接启用备用链路
@@ -641,7 +641,7 @@ export class LBSManager {
             urlSetting,
             requestInfo,
             LBS_ERR_CODE.FORMAT_ERROR,
-            JSON.stringify(xhr.response)
+            JSONBigStringify(xhr.response)
           )
           if (urlSettings[1] && urlSettings[1].fire && urlSettings[1].timer) {
             // 如果备用链路尚未启动，则直接启用备用链路
@@ -668,7 +668,7 @@ export class LBSManager {
           } else {
             ajaxFinished = true
             var data = xhr.response
-            // data = JSON.parse(data)
+            // data = JSONBigParse(data)
             resolve(data)
           }
         }
@@ -684,7 +684,7 @@ export class LBSManager {
           urlSetting,
           requestInfo,
           LBS_ERR_CODE.UNKNOWN_ERROR,
-          `${e.type || JSON.stringify(e)}:${urlSetting.url}`
+          `${e.type || JSONBigStringify(e)}:${urlSetting.url}`
         )
         if (urlSettings[1] && urlSettings[1].fire && urlSettings[1].timer) {
           // 如果备用链路尚未启动，则直接启用备用链路
@@ -757,7 +757,7 @@ export class LBSManager {
           }
         } else {
           if (option.data) {
-            xhr.send(JSONbig.stringify(option.data))
+            xhr.send(JSONBigStringify(option.data))
           } else {
             xhr.send()
           }

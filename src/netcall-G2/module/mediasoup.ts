@@ -1,4 +1,3 @@
-import BigNumber from 'bignumber.js'
 import { EventEmitter } from 'eventemitter3'
 
 import { LocalStream } from '../api/localStream'
@@ -31,6 +30,7 @@ import { Peer } from './3rd/protoo-client'
 import { getParameters } from './parameters'
 import { VideoTrackLow } from './videoTrackLow'
 import { IS_SAFARI, SAFARI_MAJOR_VERSION, SAFARI_VERSION } from '../util/rtcUtil/rtcEnvironment'
+import { JSONBigStringify } from '../util/json-big'
 
 class Mediasoup extends EventEmitter {
   private adapterRef: AdapterRef
@@ -266,7 +266,7 @@ class Mediasoup extends EventEmitter {
         'iceTransportPolicy ',
         iceTransportPolicy,
         ' iceServers ',
-        JSON.stringify(iceServers)
+        JSONBigStringify(iceServers)
       )
     }
 
@@ -499,7 +499,7 @@ class Mediasoup extends EventEmitter {
       this._sendTransport.on(
         'produce',
         async ({ kind, rtpParameters, appData, localDtlsParameters, offer }, callback, errback) => {
-          this.loggerSend.log(`produce 反馈 [kind= ${kind}, appData= ${JSON.stringify(appData)}]`)
+          this.loggerSend.log(`produce 反馈 [kind= ${kind}, appData= ${JSONBigStringify(appData)}]`)
           if (!this._sendTransport) {
             let enMessage = `createProduce: send transport is not found 2`,
               zhMessage = `createProduce: 发送端 transport 未找到 2`,
@@ -814,7 +814,7 @@ class Mediasoup extends EventEmitter {
               codecOptions.push(highOption)
             }
             this.logger.log(
-              `codecOptions for producer ${appData.mediaType}: ${JSON.stringify(codecOptions)}`
+              `codecOptions for producer ${appData.mediaType}: ${JSONBigStringify(codecOptions)}`
             )
             let remoteIceCandidates = iceCandidates
             if (this.adapterRef.channelInfo.iceProtocol && iceCandidates) {
@@ -1386,7 +1386,7 @@ class Mediasoup extends EventEmitter {
       this.loggerRecv.warn(
         '[Subscribe] createConsumer: 跳过不支持的Producer',
         id,
-        JSON.stringify(this.unsupportedProducers[id])
+        JSONBigStringify(this.unsupportedProducers[id])
       )
       return this.checkConsumerList(info)
     }
@@ -1512,10 +1512,11 @@ class Mediasoup extends EventEmitter {
       })
     }
 
-    let subUid = uid
-    if (this.adapterRef.channelInfo.uidType === 'string') {
-      //@ts-ignore
-      subUid = new BigNumber(subUid)
+    let subUid: BigInt | number
+    if (typeof uid === 'string') {
+      subUid = BigInt(uid)
+    } else {
+      subUid = uid
     }
     let data: any = {
       requestId: `${Math.ceil(Math.random() * 1e9)}`,
@@ -1537,7 +1538,7 @@ class Mediasoup extends EventEmitter {
     this.adapterRef.instance.apiEventReport('setFunction', {
       name: 'set_video_sub',
       oper: '1',
-      value: JSON.stringify(preferredSpatialLayer)
+      value: JSONBigStringify(preferredSpatialLayer)
     })
     if (localDtlsParameters === undefined) {
       data.transportId = this._recvTransport.id
@@ -1570,7 +1571,7 @@ class Mediasoup extends EventEmitter {
       if (e.message === 'request timeout' && this.adapterRef._signalling._protoo === _protoo) {
         this.logger.error(
           `[Subscribe] Consume消息Timeout，尝试信令重连：${e.name}/${e.message}。当前的连接状态：${this.adapterRef.connectState.curState}。原始请求：`,
-          JSON.stringify(data)
+          JSONBigStringify(data)
         )
         this.adapterRef.channelStatus = 'connectioning'
         this.adapterRef.instance.apiEventReport('setDisconnect', {
@@ -1580,7 +1581,7 @@ class Mediasoup extends EventEmitter {
       } else {
         this.logger.error(
           `[Subscribe] Consume消息错误：${e.name}/${e.message}。当前的连接状态：${this.adapterRef.connectState.curState}。原始请求：`,
-          JSON.stringify(data)
+          JSONBigStringify(data)
         )
       }
       let enMessage = `_createConsumer: ${e.message}`,
@@ -1676,143 +1677,121 @@ class Mediasoup extends EventEmitter {
       return this.checkConsumerList(info)
     }
 
-    try {
-      const peerId = consumeRes.uid
-      if (
-        rtpParameters &&
-        rtpParameters.encodings &&
-        rtpParameters.encodings.length &&
-        rtpParameters.encodings[0].ssrc
-      ) {
-        this.adapterRef.instance.addSsrc(uid, mediaTypeShort, rtpParameters.encodings[0].ssrc)
-      }
-      if (transportId !== undefined) {
-        this._recvTransport._id = transportId
-      }
-      if (probeSSrc !== undefined) {
-        this._probeSSrc = probeSSrc
-      }
-      if (iceParameters) {
-        this._recvTransportIceParameters = iceParameters
-      }
+    const peerId = consumeRes.uid
+    if (
+      rtpParameters &&
+      rtpParameters.encodings &&
+      rtpParameters.encodings.length &&
+      rtpParameters.encodings[0].ssrc
+    ) {
+      this.adapterRef.instance.addSsrc(uid, mediaTypeShort, rtpParameters.encodings[0].ssrc)
+    }
+    if (transportId !== undefined) {
+      this._recvTransport._id = transportId
+    }
+    if (probeSSrc !== undefined) {
+      this._probeSSrc = probeSSrc
+    }
+    if (iceParameters) {
+      this._recvTransportIceParameters = iceParameters
+    }
 
-      if (rtpParameters && rtpParameters.mid != undefined) {
-        rtpParameters.mid = rtpParameters.mid + ''
-      }
+    if (rtpParameters && rtpParameters.mid != undefined) {
+      rtpParameters.mid = rtpParameters.mid + ''
+    }
 
-      let remoteIceCandidates = iceCandidates
-      if (this.adapterRef.channelInfo.iceProtocol && iceCandidates) {
-        this.logger.warn('Consume iceProtocol: ', this.adapterRef.channelInfo.iceProtocol)
-        remoteIceCandidates = iceCandidates.filter((item: any) => {
-          return item.protocol == this.adapterRef.channelInfo.iceProtocol
-        })
-      }
-
-      const consumer = await this._recvTransport.consume({
-        id: consumerId || producerId || id, //服务器400的错误中，response是不反馈consumerId和producerId，这里使用本地保存的id
-        producerId: producerId || id,
-        kind,
-        mediaType: mediaTypeShort,
-        uid: uid || peerId,
-        rtpParameters,
-        codecOptions,
-        appData: { peerId, remoteUid: uid, mid }, // Trick.
-        offer,
-        iceParameters,
-        iceCandidates: remoteIceCandidates,
-        dtlsParameters,
-        sctpParameters: undefined,
-        probeSSrc: this._probeSSrc
+    let remoteIceCandidates = iceCandidates
+    if (this.adapterRef.channelInfo.iceProtocol && iceCandidates) {
+      this.logger.warn('Consume iceProtocol: ', this.adapterRef.channelInfo.iceProtocol)
+      remoteIceCandidates = iceCandidates.filter((item: any) => {
+        return item.protocol == this.adapterRef.channelInfo.iceProtocol
       })
-      if (this.adapterRef.encryption.encodedInsertableStreams && consumer.rtpReceiver) {
-        this.enableRecvTransform(consumer.rtpReceiver, uid, mediaTypeShort)
-      }
-      this._consumers[consumer.id] = consumer
+    }
 
-      consumer.on('transportclose', () => {
-        this._consumers && delete this._consumers[consumer.id]
-      })
+    const consumer = await this._recvTransport.consume({
+      id: consumerId || producerId || id, //服务器400的错误中，response是不反馈consumerId和producerId，这里使用本地保存的id
+      producerId: producerId || id,
+      kind,
+      mediaType: mediaTypeShort,
+      uid: uid || peerId,
+      rtpParameters,
+      codecOptions,
+      appData: { peerId, remoteUid: uid, mid }, // Trick.
+      offer,
+      iceParameters,
+      iceCandidates: remoteIceCandidates,
+      dtlsParameters,
+      sctpParameters: undefined,
+      probeSSrc: this._probeSSrc
+    })
+    if (this.adapterRef.encryption.encodedInsertableStreams && consumer.rtpReceiver) {
+      this.enableRecvTransform(consumer.rtpReceiver, uid, mediaTypeShort)
+    }
+    this._consumers[consumer.id] = consumer
 
-      this.loggerRecv.log('[Subscribe] 订阅consume完成 peerId =', peerId)
-      if (remoteStream && remoteStream['pubStatus'][mediaTypeShort]['producerId']) {
-        remoteStream['subStatus'][mediaTypeShort] = true
-        //@ts-ignore
-        remoteStream['pubStatus'][mediaTypeShort][mediaTypeShort] = true
-        remoteStream['pubStatus'][mediaTypeShort]['consumerId'] = consumerId
-        remoteStream['pubStatus'][mediaTypeShort]['producerId'] = producerId
-        if (remoteStream.getMuteStatus(mediaTypeShort).muted) {
+    consumer.on('transportclose', () => {
+      this._consumers && delete this._consumers[consumer.id]
+    })
+
+    this.loggerRecv.log('[Subscribe] 订阅consume完成 peerId =', peerId)
+    if (remoteStream && remoteStream['pubStatus'][mediaTypeShort]['producerId']) {
+      remoteStream['subStatus'][mediaTypeShort] = true
+      //@ts-ignore
+      remoteStream['pubStatus'][mediaTypeShort][mediaTypeShort] = true
+      remoteStream['pubStatus'][mediaTypeShort]['consumerId'] = consumerId
+      remoteStream['pubStatus'][mediaTypeShort]['producerId'] = producerId
+      if (remoteStream.getMuteStatus(mediaTypeShort).muted) {
+        this.loggerRecv.log(
+          `[Subscribe] 远端流处于mute状态：uid ${remoteStream.getId()}, ${mediaTypeShort}, ${JSONBigStringify(
+            remoteStream.getMuteStatus(mediaTypeShort)
+          )}`
+        )
+        const muteStatus = remoteStream.getMuteStatus(mediaTypeShort)
+        if (muteStatus.send) {
           this.loggerRecv.log(
-            `[Subscribe] 远端流处于mute状态：uid ${remoteStream.getId()}, ${mediaTypeShort}, ${JSON.stringify(
-              remoteStream.getMuteStatus(mediaTypeShort)
+            `[Subscribe] 远端流把自己mute了：uid ${remoteStream.getId()}, ${mediaTypeShort}, ${JSONBigStringify(
+              muteStatus
             )}`
           )
-          const muteStatus = remoteStream.getMuteStatus(mediaTypeShort)
-          if (muteStatus.send) {
-            this.loggerRecv.log(
-              `[Subscribe] 远端流把自己mute了：uid ${remoteStream.getId()}, ${mediaTypeShort}, ${JSON.stringify(
-                muteStatus
-              )}`
-            )
-          }
-          if (muteStatus.recv) {
-            this.loggerRecv.log(
-              `[Subscribe] 本端把远端流mute了：uid ${remoteStream.getId()}, ${mediaTypeShort}, ${JSON.stringify(
-                muteStatus
-              )}`
-            )
-            consumer.track.enabled = false
-          }
-        } else {
-          consumer.track.enabled = true
         }
-        if (!remoteStream.mediaHelper) {
-          let enMessage = '_createConsumer: media helper is unavailable',
-            zhMessage = '_createConsumer: media helper 不可用',
-            enAdvice = 'Please contact CommsEase technical support',
-            zhAdvice = '请联系云信技术支持'
-          let message = env.IS_ZH ? zhMessage : enMessage,
-            advice = env.IS_ZH ? zhAdvice : enAdvice
-          throw new RtcError({
-            code: ErrorCode.UNAVAILABLE_ERROR,
-            message,
-            advice
-          })
+        if (muteStatus.recv) {
+          this.loggerRecv.log(
+            `[Subscribe] 本端把远端流mute了：uid ${remoteStream.getId()}, ${mediaTypeShort}, ${JSONBigStringify(
+              muteStatus
+            )}`
+          )
+          consumer.track.enabled = false
         }
-        remoteStream.mediaHelper.updateStream(mediaTypeShort, consumer.track)
-        this.adapterRef.instance.safeEmit('@pairing-createConsumer-success')
-        this.adapterRef.instance.safeEmit('stream-subscribed', {
-          stream: remoteStream,
-          mediaType: mediaTypeShort
-        })
       } else {
-        this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
-        this.loggerRecv.log(
-          '[Subscribe] 该次consume状态错误： ',
-          JSON.stringify(remoteStream['pubStatus'], null, '')
-        )
+        consumer.track.enabled = true
       }
-      return this.checkConsumerList(info)
-    } catch (e: any) {
-      this.adapterRef &&
-        this.loggerRecv.error(
-          `订阅 ${uid} 的 ${kind} 媒体失败, error.name: ${e.name}, error.message: ${e.message}`
-        )
-      if (e.name === 'peer closed') {
-        this.loggerRecv.log(
-          '[Subscribe] 订阅 ${uid} 的 ${kind} 媒体失败，信令通道已经销毁，忽略改成请求'
-        )
-        return this.checkConsumerList(info)
+      if (!remoteStream.mediaHelper) {
+        let enMessage = '_createConsumer: media helper is unavailable',
+          zhMessage = '_createConsumer: media helper 不可用',
+          enAdvice = 'Please contact CommsEase technical support',
+          zhAdvice = '请联系云信技术支持'
+        let message = env.IS_ZH ? zhMessage : enMessage,
+          advice = env.IS_ZH ? zhAdvice : enAdvice
+        throw new RtcError({
+          code: ErrorCode.UNAVAILABLE_ERROR,
+          message,
+          advice
+        })
       }
-      this.loggerRecv.error(
-        `[Subscribe] 订阅 ${uid} 的 ${kind} 媒体失败，做容错处理: 重新建立下行连接`
+      remoteStream.mediaHelper.updateStream(mediaTypeShort, consumer.track)
+      this.adapterRef.instance.safeEmit('@pairing-createConsumer-success')
+      this.adapterRef.instance.safeEmit('stream-subscribed', {
+        stream: remoteStream,
+        mediaType: mediaTypeShort
+      })
+    } else {
+      this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
+      this.loggerRecv.log(
+        '[Subscribe] 该次consume状态错误： ',
+        JSONBigStringify(remoteStream['pubStatus'], null, '')
       )
-      this.resetConsumeRequestStatus()
-      if (this._recvTransport) {
-        await this.closeTransport(this._recvTransport)
-      }
-      this.adapterRef.instance.reBuildRecvTransport()
-      return this.checkConsumerList(info)
     }
+    return this.checkConsumerList(info)
   }
 
   //@ts-ignore
@@ -1910,10 +1889,10 @@ class Mediasoup extends EventEmitter {
     this.adapterRef.instance.apiEventReport('setFunction', {
       name: 'set_video_sub',
       oper: '1',
-      value: JSON.stringify(preferredSpatialLayer)
+      value: JSONBigStringify(preferredSpatialLayer)
     })
 
-    this.loggerRecv.log('发送consume请求 =', JSON.stringify(data))
+    this.loggerRecv.log('发送consume请求 =', JSONBigStringify(data))
     if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
       info.resolve(null)
       let enMessage = `_createConsumerRts: _protoo is not found 2`,
@@ -1930,7 +1909,7 @@ class Mediasoup extends EventEmitter {
     }
     const consumeRes = await this.adapterRef._signalling._protoo.request('WsConsume', data)
 
-    this.loggerRecv.log('consume反馈结果 =', JSON.stringify(consumeRes))
+    this.loggerRecv.log('consume反馈结果 =', JSONBigStringify(consumeRes))
     let { transportId, rtpParameters, producerId, consumerId, code, errMsg } = consumeRes
 
     try {
@@ -1963,7 +1942,7 @@ class Mediasoup extends EventEmitter {
       } else {
         this.loggerRecv.log(
           '该次consume状态错误： ',
-          JSON.stringify(remoteStream['pubStatus'], null, '')
+          JSONBigStringify(remoteStream['pubStatus'], null, '')
         )
         this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
       }
@@ -2044,7 +2023,7 @@ class Mediasoup extends EventEmitter {
         transportId: transport.id
       })
       this.logger.log(
-        `closeTransport() [停止通道反馈结果 result=${JSON.stringify(result, null, ' ')}]`
+        `closeTransport() [停止通道反馈结果 result=${JSONBigStringify(result, null, ' ')}]`
       )
       transport.close()
     } catch (error: any) {
@@ -2083,9 +2062,8 @@ class Mediasoup extends EventEmitter {
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
-      if (this.adapterRef.channelInfo.uidType === 'string') {
-        //@ts-ignore
-        muteUid = new BigNumber(muteUid)
+      if (typeof this.adapterRef.channelInfo.uid === 'string') {
+        muteUid = BigInt(this.adapterRef.channelInfo.uid)
       }
       await this.adapterRef._signalling._protoo.request('SendUserData', {
         externData: {
@@ -2134,9 +2112,8 @@ class Mediasoup extends EventEmitter {
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
-      if (this.adapterRef.channelInfo.uidType === 'string') {
-        //@ts-ignore
-        muteUid = new BigNumber(muteUid)
+      if (typeof this.adapterRef.channelInfo.uid === 'string') {
+        muteUid = BigInt(this.adapterRef.channelInfo.uid)
       }
       await this.adapterRef._signalling._protoo.request('SendUserData', {
         externData: {
@@ -2186,9 +2163,8 @@ class Mediasoup extends EventEmitter {
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
-      if (this.adapterRef.channelInfo.uidType === 'string') {
-        //@ts-ignore
-        muteUid = new BigNumber(muteUid)
+      if (typeof this.adapterRef.channelInfo.uid === 'string') {
+        muteUid = BigInt(this.adapterRef.channelInfo.uid)
       }
       await this.adapterRef._signalling._protoo.request('SendUserData', {
         externData: {
@@ -2237,9 +2213,8 @@ class Mediasoup extends EventEmitter {
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
-      if (this.adapterRef.channelInfo.uidType === 'string') {
-        //@ts-ignore
-        muteUid = new BigNumber(muteUid)
+      if (typeof this.adapterRef.channelInfo.uid === 'string') {
+        muteUid = BigInt(this.adapterRef.channelInfo.uid)
       }
       await this.adapterRef._signalling._protoo.request('SendUserData', {
         externData: {
@@ -2289,9 +2264,8 @@ class Mediasoup extends EventEmitter {
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
-      if (this.adapterRef.channelInfo.uidType === 'string') {
-        //@ts-ignore
-        muteUid = new BigNumber(muteUid)
+      if (typeof this.adapterRef.channelInfo.uid === 'string') {
+        muteUid = BigInt(this.adapterRef.channelInfo.uid)
       }
       await this.adapterRef._signalling._protoo.request('SendUserData', {
         externData: {
@@ -2340,9 +2314,8 @@ class Mediasoup extends EventEmitter {
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
-      if (this.adapterRef.channelInfo.uidType === 'string') {
-        //@ts-ignore
-        muteUid = new BigNumber(muteUid)
+      if (typeof this.adapterRef.channelInfo.uid === 'string') {
+        muteUid = BigInt(this.adapterRef.channelInfo.uid)
       }
       await this.adapterRef._signalling._protoo.request('SendUserData', {
         externData: {
@@ -2391,9 +2364,8 @@ class Mediasoup extends EventEmitter {
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
-      if (this.adapterRef.channelInfo.uidType === 'string') {
-        //@ts-ignore
-        muteUid = new BigNumber(muteUid)
+      if (typeof this.adapterRef.channelInfo.uid === 'string') {
+        muteUid = BigInt(this.adapterRef.channelInfo.uid)
       }
       await this.adapterRef._signalling._protoo.request('SendUserData', {
         externData: {
@@ -2442,9 +2414,8 @@ class Mediasoup extends EventEmitter {
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
-      if (this.adapterRef.channelInfo.uidType === 'string') {
-        //@ts-ignore
-        muteUid = new BigNumber(muteUid)
+      if (typeof this.adapterRef.channelInfo.uid === 'string') {
+        muteUid = BigInt(this.adapterRef.channelInfo.uid)
       }
       await this.adapterRef._signalling._protoo.request('SendUserData', {
         externData: {
@@ -2479,9 +2450,8 @@ class Mediasoup extends EventEmitter {
         })
       }
       let muteUid = this.adapterRef.channelInfo.uid
-      if (this.adapterRef.channelInfo.uidType === 'string') {
-        //@ts-ignore
-        muteUid = new BigNumber(muteUid)
+      if (typeof this.adapterRef.channelInfo.uid === 'string') {
+        muteUid = BigInt(this.adapterRef.channelInfo.uid)
       }
       await this.adapterRef._signalling._protoo.request('SendUserData', {
         externData: {
@@ -2655,7 +2625,7 @@ class Mediasoup extends EventEmitter {
       this.adapterRef.instance.apiFrequencyControl({
         name: '_iceStateChange_' + direction,
         code,
-        param: JSON.stringify(iceStatus)
+        param: JSONBigStringify(iceStatus)
       })
       this.adapterRef.instance.safeEmit('@ice-change', iceStatus)
     }

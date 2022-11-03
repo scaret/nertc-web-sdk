@@ -1,5 +1,3 @@
-import BigNumber from 'bignumber.js'
-
 import { STREAM_TYPE } from '../constant/videoQuality'
 import {
   ReportParamSetExternalAudioRender,
@@ -168,7 +166,7 @@ class RemoteStream extends RTCEventEmitter {
       return tag
     })
 
-    if (typeof options.uid === 'string' || BigNumber.isBigNumber(options.uid)) {
+    if (typeof options.uid === 'string') {
       //this.logger.log('uid是string类型')
       options.client.adapterRef.channelInfo.uidType = 'string'
     } else if (typeof options.uid === 'number') {

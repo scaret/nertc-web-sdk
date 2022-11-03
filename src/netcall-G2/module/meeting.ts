@@ -3,7 +3,6 @@ import { EventEmitter } from 'eventemitter3'
 import { getChannelInfoUrl, getCloudProxyInfoUrl, roomsTaskUrl, SDK_VERSION } from '../Config'
 import { ajax } from '../util/ajax'
 const md5 = require('md5')
-import BigNumber from 'bignumber.js'
 
 import { SignalGetChannelInfoResponse } from '../interfaces/SignalProtocols'
 import {
@@ -18,6 +17,7 @@ import {
 import ErrorCode from '../util/error/errorCode'
 import RtcError from '../util/error/rtcError'
 import * as env from '../util/rtcUtil/rtcEnvironment'
+import { JSONBigParse, JSONBigStringify } from '../util/json-big'
 
 /**
  * 会控相关
@@ -81,9 +81,11 @@ class Meeting extends EventEmitter {
       url = this.adapterRef.instance._params.neRtcServerAddresses.cloudProxyServer
       this.adapterRef.logger.log('私有化配置的 cloudProxyServer: ', url)
     }
-    let requestUid = uid
-    if (this.adapterRef.channelInfo.uidType === 'string') {
-      requestUid = new BigNumber(requestUid)
+    let requestUid
+    if (typeof uid === 'string') {
+      requestUid = BigInt(requestUid)
+    } else {
+      requestUid = uid
     }
     //@ts-ignore
     let curtime = Date.parse(new Date()) / 1000
@@ -108,7 +110,7 @@ class Meeting extends EventEmitter {
         }
       })) as any
 
-      this.adapterRef.logger.log('获取到云代理服务相关信息:', JSON.stringify(data))
+      this.adapterRef.logger.log('获取到云代理服务相关信息:', JSONBigStringify(data))
       this.adapterRef.instance.apiFrequencyControl({
         name: 'setCloudProxyInfo',
         code: data.code === 200 ? 0 : -1,
@@ -224,9 +226,11 @@ class Meeting extends EventEmitter {
       url = this.adapterRef.instance._params.neRtcServerAddresses.channelServer
       this.logger.log('私有化配置的 getChannelInfoUrl: ', url)
     }
-    let requestUid = uid
-    if (this.adapterRef.channelInfo.uidType === 'string') {
-      requestUid = new BigNumber(requestUid)
+    let requestUid
+    if (typeof uid === 'string') {
+      requestUid = BigInt(uid)
+    } else {
+      requestUid = uid
     }
     Object.assign(this.adapterRef.channelInfo, {
       uid,
@@ -269,9 +273,9 @@ class Meeting extends EventEmitter {
       if (typeof data === 'string') {
         // 兼容mockjs
         this.logger.warn(`join 返回值类型为string，应为object。尝试进行强制类型转换。`, data)
-        data = JSON.parse(data)
+        data = JSONBigParse(data)
       } else {
-        this.logger.log('join 获取到房间信息:', JSON.stringify(data, null, ' '))
+        this.logger.log('join 获取到房间信息:', JSONBigStringify(data, null, ' '))
       }
       if (data.code === 200) {
         this.adapterRef.channelStatus = 'join'
@@ -492,19 +496,21 @@ class Meeting extends EventEmitter {
       this.logger.log('私有化配置的 roomsTaskUrl: ', url)
     }
     url = `${url}${this.adapterRef.channelInfo.cid}/tasks`
-    let requestUid = this.adapterRef.channelInfo.uid
-    if (this.adapterRef.channelInfo.uidType === 'string') {
-      requestUid = new BigNumber(requestUid)
+    let requestUid
+    if (typeof this.adapterRef.channelInfo.uid === 'string') {
+      requestUid = BigInt(this.adapterRef.channelInfo.uid)
+    } else {
+      requestUid = this.adapterRef.channelInfo.uid
     }
 
     for (let i = 0; i < rtmpTasks.length; i++) {
       rtmpTasks[i].hostUid = requestUid
       rtmpTasks[i].version = 1
-      this.logger.log('rtmpTask: ', JSON.stringify(rtmpTasks[i]))
+      this.logger.log('rtmpTask: ', JSONBigStringify(rtmpTasks[i]))
       const layout = rtmpTasks[i].layout
       layout.users.forEach((user) => {
         if (typeof user.uid === 'string') {
-          user.uid = new BigNumber(user.uid)
+          user.uid = BigInt(user.uid)
         }
       })
       try {
@@ -570,7 +576,7 @@ class Meeting extends EventEmitter {
       this.adapterRef.instance.apiFrequencyControl({
         name: 'deleteTasks',
         code: -1,
-        param: JSON.stringify(
+        param: JSONBigStringify(
           {
             error: '请先加入房间',
             version: 1,
@@ -642,7 +648,7 @@ class Meeting extends EventEmitter {
           this.adapterRef.instance.apiFrequencyControl({
             name: 'deleteTasks',
             code: 0,
-            param: JSON.stringify(
+            param: JSONBigStringify(
               {
                 taskId: taskIds[i]
               },
@@ -652,11 +658,11 @@ class Meeting extends EventEmitter {
           })
           return Promise.resolve()
         } else {
-          this.logger.log('删除推流任务请求失败:', JSON.stringify(data))
+          this.logger.log('删除推流任务请求失败:', JSONBigStringify(data))
           this.adapterRef.instance.apiFrequencyControl({
             name: 'deleteTasks',
             code: data.code,
-            param: JSON.stringify(
+            param: JSONBigStringify(
               {
                 taskId: taskIds[i]
               },
@@ -683,7 +689,7 @@ class Meeting extends EventEmitter {
         this.adapterRef.instance.apiFrequencyControl({
           name: 'deleteTasks',
           code: -1,
-          param: JSON.stringify(
+          param: JSONBigStringify(
             {
               error: 'code error',
               taskId: taskIds[i]
@@ -723,7 +729,7 @@ class Meeting extends EventEmitter {
       this.adapterRef.instance.apiFrequencyControl({
         name: 'updateTasks',
         code: -1,
-        param: JSON.stringify(
+        param: JSONBigStringify(
           {
             error: '请先加入房间',
             version: 1,
@@ -775,16 +781,18 @@ class Meeting extends EventEmitter {
       this.logger.log('私有化配置的 roomsTaskUrl: ', url)
     }
     url = `${url}${this.adapterRef.channelInfo.cid}/task/update`
-    let requestUid = this.adapterRef.channelInfo.uid
-    if (this.adapterRef.channelInfo.uidType === 'string') {
-      requestUid = new BigNumber(requestUid)
+    let requestUid
+    if (typeof this.adapterRef.channelInfo.uid === 'string') {
+      requestUid = BigInt(this.adapterRef.channelInfo.uid)
+    } else {
+      requestUid = this.adapterRef.channelInfo.uid
     }
 
     for (let i = 0; i < rtmpTasks.length; i++) {
       const layout = rtmpTasks[i].layout
       layout.users.forEach((user) => {
         if (typeof user.uid === 'string') {
-          user.uid = new BigNumber(user.uid)
+          user.uid = BigInt(user.uid)
         }
       })
       try {
@@ -810,7 +818,7 @@ class Meeting extends EventEmitter {
           this.adapterRef.instance.apiFrequencyControl({
             name: 'updateTasks',
             code: 0,
-            param: JSON.stringify(
+            param: JSONBigStringify(
               {
                 version: 1,
                 taskId: rtmpTasks[i].taskId,
@@ -826,11 +834,11 @@ class Meeting extends EventEmitter {
           })
           return Promise.resolve()
         } else {
-          this.logger.log('更新推流任务失败：', JSON.stringify(data))
+          this.logger.log('更新推流任务失败：', JSONBigStringify(data))
           this.adapterRef.instance.apiFrequencyControl({
             name: 'updateTasks',
             code: data.code,
-            param: JSON.stringify(
+            param: JSONBigStringify(
               {
                 version: 1,
                 taskId: rtmpTasks[i].taskId,
@@ -863,7 +871,7 @@ class Meeting extends EventEmitter {
         this.adapterRef.instance.apiFrequencyControl({
           name: 'updateTasks',
           code: -1,
-          param: JSON.stringify(
+          param: JSONBigStringify(
             {
               error: 'code error',
               version: 1,

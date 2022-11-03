@@ -1,9 +1,10 @@
 import { getParameters } from '../module/parameters'
-import { LoggerOptions } from '../types'
+import { ILogger, LoggerOptions } from '../types'
 import { loglevels } from './log/loglevels'
 import { logHelper } from './logHelper'
 import { getBrowserInfo } from './rtcUtil/rtcPlatform'
 import { formatSingleArg } from './rtcUtil/utils'
+import { BUILD } from '../Config'
 
 let logIndex = 0
 let cachedLogs: any[] = []
@@ -227,6 +228,19 @@ export class Logger {
     })
     return args
   }
+}
+
+let defaultLogger: Logger | null = null
+
+export function getDefaultLogger(): ILogger {
+  if (!defaultLogger) {
+    defaultLogger = new Logger({
+      tagGen: () => {
+        return `${BUILD}`
+      }
+    })
+  }
+  return defaultLogger
 }
 
 var formatTimeUnit = function (num: string, count?: number) {
