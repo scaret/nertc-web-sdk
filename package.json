@@ -27,6 +27,8 @@
     "copy:api": "npm run build:api && node build/api/copy.js",
     "dev:prod": "cross-env PLATFORM=all NODE_ENV=production npm run dev",
     "dev:g2": "cross-env PLATFORM=g2 NO_SOURCE_MAP=true NODE_ENV=development webpack --config webpack.config.js -w",
+    "dev:core": "cross-env PLATFORM=g2 NO_SOURCE_MAP=true NODE_ENV=development webpack --config webpack.config.core.js -w",
+    "analyze:core": "cross-env PLATFORM=g2 npm_config_report=true NO_SOURCE_MAP=true NODE_ENV=production webpack --config webpack.config.core.js",
     "pack:g2": "npm run clean && npm run build:sdk:g2 && npm run build:tester:g2 && npm run deploy:g2 && npm run build:api",
     "pack:test:g2": "cross-env PLATFORM=all NODE_ENV=test npm run pack:g2",
     "jenkins:g2": "npm run clean && cross-env PLATFORM=g2 NODE_ENV=development npm run build:sdk:g2 && npm run build:api",
