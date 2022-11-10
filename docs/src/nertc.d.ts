@@ -341,6 +341,10 @@ declare namespace NERTC {
      * 视频通话帧率 最大取每秒25帧
      */
     CHAT_VIDEO_FRAME_RATE_25: number
+    /**
+     * 视频通话帧率 最大取每秒30帧
+     */
+    CHAT_VIDEO_FRAME_RATE_30: number
   }
   /**
    * 分辨率设置。
