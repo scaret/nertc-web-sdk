@@ -526,10 +526,27 @@ class Mediasoup extends EventEmitter {
             this.adapterRef.logger.error('找不到 iceUfragRegLocal')
           }
           try {
+            let rtpParametersSend = rtpParameters
+            const codec = rtpParametersSend.codecs[0]
+            if (
+              getParameters().h264ProfileLevel &&
+              getParameters().h264ProfileLevelSignal &&
+              codec.mimeType === 'video/H264' &&
+              codec.parameters &&
+              codec.parameters['profile-level-id'] !== getParameters().h264ProfileLevelSignal
+            ) {
+              rtpParametersSend = JSON.parse(JSON.stringify(rtpParameters))
+              this.logger.warn(
+                `信令消息修改profile-level-id, ${
+                  rtpParametersSend.codecs[0].parameters['profile-level-id']
+                } => ${getParameters().h264ProfileLevelSignal}`
+              )
+              rtpParametersSend.codecs[0].parameters['profile-level-id'] = '42e01f'
+            }
             let producerData = {
               requestId: `${Math.ceil(Math.random() * 1e9)}`,
               kind: kind,
-              rtpParameters: rtpParameters,
+              rtpParameters: rtpParametersSend,
               iceUfrag: iceUfragRegLocal[1],
               //mediaProfile: [{'ssrc':123, 'res':"320*240", 'fps':30, 'spatialLayer':0, 'maxBitrate':1000}],
               externData: {
