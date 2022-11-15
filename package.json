@@ -1,5 +1,5 @@
 {
-  "name": "nertc-web-sdk",
+  "name": "@scaret/nertc-web-sdk",
   "version": "4.6.251",
   "description": "NeRTC SDK for web",
   "main": "NERTC.js",
