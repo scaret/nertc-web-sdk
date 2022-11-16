@@ -4445,7 +4445,6 @@ class LocalStream extends RTCEventEmitter {
     if (this._segmentProcessor) {
       let apiCode = 0
       try {
-        this.setBackGround({ type: 'image', source: '' })
         await this._cancelBodySegment()
         this._segmentProcessor.destroy()
         this._segmentProcessor = null
