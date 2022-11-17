@@ -1,5 +1,5 @@
-"use strict";
-module.exports = {};
+'use strict'
+module.exports = {}
 
 /**
  * Named roots.
