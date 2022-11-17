@@ -1,3 +1,4 @@
+/* eslint-disable */
 /*
     json2.js
     2013-05-26

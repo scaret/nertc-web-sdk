@@ -1,10 +1,10 @@
-"use strict";
+'use strict'
 
 /**
  * Streaming RPC helpers.
  * @namespace
  */
-var rpc = exports;
+var rpc = exports
 
 /**
  * RPC implementation passed to {@link Service#create} performing a service request on network level, i.e. by utilizing http requests or websockets.
@@ -33,4 +33,4 @@ var rpc = exports;
  * @returns {undefined}
  */
 
-rpc.Service = require("./rpc/service");
+rpc.Service = require('./rpc/service')

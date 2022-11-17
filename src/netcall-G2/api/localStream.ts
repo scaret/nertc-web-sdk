@@ -724,67 +724,6 @@ class LocalStream extends RTCEventEmitter {
       this.client.adapterRef.channelInfo.sessionConfig.videoQuality = this.videoProfile.resolution
       this.client.adapterRef.channelInfo.sessionConfig.videoFrameRate = this.videoProfile.frameRate
     }
-    if (this.client.adapterRef.isAudioBanned && this.client.adapterRef.isVideoBanned) {
-      const reason = `服务器禁止发送音视频流`
-      this.logger.error(reason)
-      this.client.apiFrequencyControl({
-        name: 'init',
-        code: -1,
-        param: JSON.stringify(
-          {
-            reason: reason
-          },
-          null,
-          ' '
-        )
-      })
-      this.audio = false
-      this.screenAudio = false
-      this.video = false
-      this.screen = false
-      let enMessage = 'localStream.init: audio and video are banned by server',
-        zhMessage = 'localStream.init: audio 和 video 被服务器禁言'
-      let message = env.IS_ZH ? zhMessage : enMessage
-      throw new RtcError({
-        code: ErrorCode.BANNED_BY_SERVER,
-        message
-      })
-    }
-    if (this.client.adapterRef.isAudioBanned && !this.client.adapterRef.isVideoBanned) {
-      const reason = `服务器禁止发送音频流`
-      this.logger.error(reason)
-      this.client.apiFrequencyControl({
-        name: 'init',
-        code: -1,
-        param: JSON.stringify(
-          {
-            reason: reason
-          },
-          null,
-          ' '
-        )
-      })
-      this.audio = false
-      this.screenAudio = false
-    }
-
-    if (!this.client.adapterRef.isAudioBanned && this.client.adapterRef.isVideoBanned) {
-      const reason = `服务器禁止发送视频流`
-      this.logger.error(reason)
-      this.client.apiFrequencyControl({
-        name: 'init',
-        code: -1,
-        param: JSON.stringify(
-          {
-            reason: reason
-          },
-          null,
-          ' '
-        )
-      })
-      this.video = false
-      this.screen = false
-    }
 
     try {
       if (this.audio) {
@@ -997,20 +936,13 @@ class LocalStream extends RTCEventEmitter {
       }
     }
     if (playOptions.audio) {
-      let param: ReportParamEnableEarback
-      if (this.client.adapterRef.isAudioBanned) {
-        param = {
-          enable: false
-        }
-      } else {
-        param = {
-          enable: true
-        }
+      const param: ReportParamEnableEarback = {
+        enable: true
       }
 
       this.client.apiFrequencyControl({
         name: 'enableEarback',
-        code: param.enable ? 0 : 1,
+        code: 0,
         param: JSON.stringify(param, null, ' ')
       })
     }
@@ -1296,26 +1228,6 @@ class LocalStream extends RTCEventEmitter {
       }
       switch (type) {
         case 'audio':
-          if (this.client.adapterRef.isAudioBanned) {
-            const reason = `服务器禁止发送音频流`
-            this.logger.error(reason)
-            onOpenFinished({
-              code: -1,
-              param: {
-                reason,
-                type
-              }
-            })
-            let enMessage = 'localStream.open.audio: audio is banned by server',
-              zhMessage = 'localStream.open.audio: audio 被服务器禁言'
-            let message = env.IS_ZH ? zhMessage : enMessage
-            return Promise.reject(
-              new RtcError({
-                code: ErrorCode.BANNED_BY_SERVER,
-                message
-              })
-            )
-          }
           this.logger.log(`open(): 开启 ${audioSource ? audioSource.label : 'mic设备'}`)
           if (this.mediaHelper.audio.micTrack || this.mediaHelper.audio.audioSource) {
             this.logger.warn('请先关闭麦克风')
@@ -1360,26 +1272,6 @@ class LocalStream extends RTCEventEmitter {
           }
           break
         case 'screenAudio':
-          if (this.client.adapterRef.isAudioBanned) {
-            const reason = `服务器禁止发送音频流`
-            this.logger.error(reason)
-            onOpenFinished({
-              code: -1,
-              param: {
-                reason,
-                type
-              }
-            })
-            let enMessage = 'localStream.open.screenAudio: audio is banned by server',
-              zhMessage = 'localStream.open.screenAudio: audio 被服务器禁言'
-            let message = env.IS_ZH ? zhMessage : enMessage
-            return Promise.reject(
-              new RtcError({
-                code: ErrorCode.BANNED_BY_SERVER,
-                message
-              })
-            )
-          }
           if (!screenAudioSource) {
             this.logger.error(`open(): 不允许单独开启屏幕共享音频功能。`)
             return
@@ -1430,48 +1322,6 @@ class LocalStream extends RTCEventEmitter {
           break
         case 'video':
         case 'screen':
-          if (this.client.adapterRef.isVideoBanned) {
-            const reason = `服务器禁止发送视频流`
-            this.logger.error(reason)
-            onOpenFinished({
-              code: -1,
-              param: {
-                reason,
-                type
-              }
-            })
-            let enMessage = 'localStream.open.video: video is banned by server',
-              zhMessage = 'localStream.open.video: video 被服务器禁言'
-            let message = env.IS_ZH ? zhMessage : enMessage
-            return Promise.reject(
-              new RtcError({
-                code: ErrorCode.BANNED_BY_SERVER,
-                message
-              })
-            )
-          }
-          if (options.screenAudio && this.client.adapterRef.isAudioBanned) {
-            const reason = `服务器禁止发送音频流`
-            this.logger.error(reason)
-            onOpenFinished({
-              code: -1,
-              param: {
-                reason,
-                type,
-                screenAudio: options.screenAudio
-              }
-            })
-            let enMessage = 'localStream.open.screenAudio: audio is banned by server',
-              zhMessage = 'localStream.open.screenAudio: audio 被服务器禁言'
-            let message = env.IS_ZH ? zhMessage : enMessage
-            return Promise.reject(
-              new RtcError({
-                code: ErrorCode.BANNED_BY_SERVER,
-                message
-              })
-            )
-          }
-
           this.logger.log(`开启${type === 'video' ? 'camera' : 'screen'}设备`)
           if (this[type]) {
             if (type === 'video') {
@@ -2479,18 +2329,6 @@ class LocalStream extends RTCEventEmitter {
       this.inSwitchDevice[type] = true
     }
     if (type === 'audio') {
-      // server ban
-      if (this.client.adapterRef.isAudioBanned) {
-        let enMessage = 'switchDevice: audio is banned by server',
-          zhMessage = 'switchDevice: audio 被服务器禁言'
-        let message = env.IS_ZH ? zhMessage : enMessage
-        return Promise.reject(
-          new RtcError({
-            code: ErrorCode.BANNED_BY_SERVER,
-            message
-          })
-        )
-      }
       const micTrack = this.mediaHelper.audio.micTrack
       if (micTrack?.readyState === 'live' && micTrack?.getSettings().deviceId === deviceId) {
         this.logger.log(`切换相同的麦克风设备，不处理`)
@@ -2540,18 +2378,6 @@ class LocalStream extends RTCEventEmitter {
       constraint = this.mediaHelper.audio.micConstraint
       this.microphoneId = deviceId
     } else if (type === 'video') {
-      if (this.client.adapterRef.isVideoBanned) {
-        let enMessage = 'switchDevice: video is banned by server',
-          zhMessage = 'switchDevice: video 被服务器禁言'
-        let message = env.IS_ZH ? zhMessage : enMessage
-        return Promise.reject(
-          new RtcError({
-            code: ErrorCode.BANNED_BY_SERVER,
-            message
-          })
-        )
-      }
-
       const cameraTrack = this.mediaHelper.video.cameraTrack
       // 关闭视频后期处理
       await this.suspendVideoPostProcess()
@@ -3745,17 +3571,6 @@ class LocalStream extends RTCEventEmitter {
    * @returns {Promise}
    */
   startAudioMixing(options: AudioMixingOptions) {
-    if (this.client.adapterRef.isAudioBanned) {
-      let enMessage = 'startAudioMixing: audio is banned by server',
-        zhMessage = 'startAudioMixing: audio 被服务器禁言'
-      let message = env.IS_ZH ? zhMessage : enMessage
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.BANNED_BY_SERVER,
-          message
-        })
-      )
-    }
     this.logger.log('开始伴音')
     return this.mediaHelper.startAudioMixing(options)
   }
@@ -3863,17 +3678,6 @@ class LocalStream extends RTCEventEmitter {
    * @returns {Promise}
    */
   async playEffect(options: AudioEffectOptions) {
-    if (this.client.adapterRef.isAudioBanned) {
-      let enMessage = 'playEffect: audio is banned by server',
-        zhMessage = 'playEffect: audio 被服务器禁言'
-      let message = env.IS_ZH ? zhMessage : enMessage
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.BANNED_BY_SERVER,
-          message
-        })
-      )
-    }
     this.logger.log('开始播放音效: ', JSON.stringify(options, null, ' '))
     return this.mediaHelper.playEffect(options)
   }

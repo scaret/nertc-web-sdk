@@ -973,37 +973,8 @@ class Signalling extends EventEmitter {
             })
           }
 
-          if (this.adapterRef.isAudioBanned) {
-            if (!this.adapterRef.localStream) {
-              return
-            }
-            let isAudioOn = this.adapterRef.localStream.audio
-            let isScreenAudioOn = this.adapterRef.localStream.screenAudio
-            // 关掉所有音频相关
-            !!isAudioOn && this.adapterRef.localStream.close({ type: 'audio' })
-            !!isScreenAudioOn && this.adapterRef.localStream.close({ type: 'screenAudio' })
-
-            this.adapterRef.localStream.stopAllEffects() // 关掉所有音效
-            let localAudio = this.adapterRef.localStream.mediaHelper.audio
-            if (
-              !!localAudio.webAudio &&
-              !!localAudio.webAudio.context &&
-              !!localAudio.webAudio.mixAudioConf &&
-              !!localAudio.webAudio.mixAudioConf.audioSource
-            ) {
-              // 关掉伴音
-              this.adapterRef.localStream.stopAudioMixing()
-            }
-          }
           if (!this.adapterRef.localStream) {
             return
-          }
-          if (this.adapterRef.isVideoBanned) {
-            let isVideoOn = this.adapterRef.localStream.video
-            let isScreenOn = this.adapterRef.localStream.screen
-            // 关掉所有视频相关 (辅流跟随视频流同步禁止)
-            !!isVideoOn && this.adapterRef.localStream.close({ type: 'video' })
-            !!isScreenOn && this.adapterRef.localStream.close({ type: 'screen' })
           }
         } else {
           this.logger.error(`收到OnUserData通知消息 type = ${type}, data: `, data)

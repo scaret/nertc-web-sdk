@@ -1,50 +1,53 @@
-"use strict";
-var util = exports;
+'use strict'
+var util = exports
 
 // used to return a Promise where callback is omitted
-util.asPromise = require("@protobufjs/aspromise");
+util.asPromise = require('@protobufjs/aspromise')
 
 // converts to / from base64 encoded strings
-util.base64 = require("@protobufjs/base64");
+util.base64 = require('@protobufjs/base64')
 
 // base class of rpc.Service
-util.EventEmitter = require("@protobufjs/eventemitter");
+util.EventEmitter = require('@protobufjs/eventemitter')
 
 // float handling accross browsers
-util.float = require("@protobufjs/float");
+util.float = require('@protobufjs/float')
 
 // requires modules optionally and hides the call from bundlers
-util.inquire = require("@protobufjs/inquire");
+util.inquire = require('@protobufjs/inquire')
 
 // converts to / from utf8 encoded strings
-util.utf8 = require("@protobufjs/utf8");
+util.utf8 = require('@protobufjs/utf8')
 
 // provides a node-like buffer pool in the browser
-util.pool = require("@protobufjs/pool");
+util.pool = require('@protobufjs/pool')
 
 // utility to work with the low and high bits of a 64 bit value
-util.LongBits = require("./longbits");
+util.LongBits = require('./longbits')
 
 /**
  * Whether running within node or not.
  * @memberof util
  * @type {boolean}
  */
-util.isNode = Boolean(typeof global !== "undefined"
-                   && global
-                   && global.process
-                   && global.process.versions
-                   && global.process.versions.node);
+util.isNode = Boolean(
+  typeof global !== 'undefined' &&
+    global &&
+    global.process &&
+    global.process.versions &&
+    global.process.versions.node
+)
 
 /**
  * Global object reference.
  * @memberof util
  * @type {Object}
  */
-util.global = util.isNode && global
-           || typeof window !== "undefined" && window
-           || typeof self   !== "undefined" && self
-           || this; // eslint-disable-line no-invalid-this
+util.global =
+  (util.isNode && global) ||
+  (typeof window !== 'undefined' && window) ||
+  (typeof self !== 'undefined' && self) ||
+  this // eslint-disable-line no-invalid-this
 
 /**
  * An immuable empty array.
@@ -52,14 +55,14 @@ util.global = util.isNode && global
  * @type {Array.<*>}
  * @const
  */
-util.emptyArray = Object.freeze ? Object.freeze([]) : /* istanbul ignore next */ []; // used on prototypes
+util.emptyArray = Object.freeze ? Object.freeze([]) : /* istanbul ignore next */ [] // used on prototypes
 
 /**
  * An immutable empty object.
  * @type {Object}
  * @const
  */
-util.emptyObject = Object.freeze ? Object.freeze({}) : /* istanbul ignore next */ {}; // used on prototypes
+util.emptyObject = Object.freeze ? Object.freeze({}) : /* istanbul ignore next */ {} // used on prototypes
 
 /**
  * Tests if the specified value is an integer.
@@ -67,9 +70,11 @@ util.emptyObject = Object.freeze ? Object.freeze({}) : /* istanbul ignore next *
  * @param {*} value Value to test
  * @returns {boolean} `true` if the value is an integer
  */
-util.isInteger = Number.isInteger || /* istanbul ignore next */ function isInteger(value) {
-    return typeof value === "number" && isFinite(value) && Math.floor(value) === value;
-};
+util.isInteger =
+  Number.isInteger ||
+  /* istanbul ignore next */ function isInteger(value) {
+    return typeof value === 'number' && isFinite(value) && Math.floor(value) === value
+  }
 
 /**
  * Tests if the specified value is a string.
@@ -77,8 +82,8 @@ util.isInteger = Number.isInteger || /* istanbul ignore next */ function isInteg
  * @returns {boolean} `true` if the value is a string
  */
 util.isString = function isString(value) {
-    return typeof value === "string" || value instanceof String;
-};
+  return typeof value === 'string' || value instanceof String
+}
 
 /**
  * Tests if the specified value is a non-null object.
@@ -86,8 +91,8 @@ util.isString = function isString(value) {
  * @returns {boolean} `true` if the value is a non-null object
  */
 util.isObject = function isObject(value) {
-    return value && typeof value === "object";
-};
+  return value && typeof value === 'object'
+}
 
 /**
  * Checks if a property on a message is considered to be present.
@@ -98,19 +103,22 @@ util.isObject = function isObject(value) {
  * @returns {boolean} `true` if considered to be present, otherwise `false`
  */
 util.isset =
-
-/**
- * Checks if a property on a message is considered to be present.
- * @param {Object} obj Plain object or message instance
- * @param {string} prop Property name
- * @returns {boolean} `true` if considered to be present, otherwise `false`
- */
-util.isSet = function isSet(obj, prop) {
-    var value = obj[prop];
-    if (value != null && obj.hasOwnProperty(prop)) // eslint-disable-line eqeqeq, no-prototype-builtins
-        return typeof value !== "object" || (Array.isArray(value) ? value.length : Object.keys(value).length) > 0;
-    return false;
-};
+  /**
+   * Checks if a property on a message is considered to be present.
+   * @param {Object} obj Plain object or message instance
+   * @param {string} prop Property name
+   * @returns {boolean} `true` if considered to be present, otherwise `false`
+   */
+  util.isSet = function isSet(obj, prop) {
+    var value = obj[prop]
+    if (value != null && obj.hasOwnProperty(prop))
+      // eslint-disable-line eqeqeq, no-prototype-builtins
+      return (
+        typeof value !== 'object' ||
+        (Array.isArray(value) ? value.length : Object.keys(value).length) > 0
+      )
+    return false
+  }
 
 /**
  * Any compatible Buffer instance.
@@ -123,22 +131,22 @@ util.isSet = function isSet(obj, prop) {
  * Node's Buffer class if available.
  * @type {Constructor<Buffer>}
  */
-util.Buffer = (function() {
-    try {
-        var Buffer = util.inquire("buffer").Buffer;
-        // refuse to use non-node buffers if not explicitly assigned (perf reasons):
-        return Buffer.prototype.utf8Write ? Buffer : /* istanbul ignore next */ null;
-    } catch (e) {
-        /* istanbul ignore next */
-        return null;
-    }
-})();
+util.Buffer = (function () {
+  try {
+    var Buffer = util.inquire('buffer').Buffer
+    // refuse to use non-node buffers if not explicitly assigned (perf reasons):
+    return Buffer.prototype.utf8Write ? Buffer : /* istanbul ignore next */ null
+  } catch (e) {
+    /* istanbul ignore next */
+    return null
+  }
+})()
 
 // Internal alias of or polyfull for Buffer.from.
-util._Buffer_from = null;
+util._Buffer_from = null
 
 // Internal alias of or polyfill for Buffer.allocUnsafe.
-util._Buffer_allocUnsafe = null;
+util._Buffer_allocUnsafe = null
 
 /**
  * Creates a new buffer of whatever type supported by the environment.
@@ -146,23 +154,23 @@ util._Buffer_allocUnsafe = null;
  * @returns {Uint8Array|Buffer} Buffer
  */
 util.newBuffer = function newBuffer(sizeOrArray) {
-    /* istanbul ignore next */
-    return typeof sizeOrArray === "number"
-        ? util.Buffer
-            ? util._Buffer_allocUnsafe(sizeOrArray)
-            : new util.Array(sizeOrArray)
-        : util.Buffer
-            ? util._Buffer_from(sizeOrArray)
-            : typeof Uint8Array === "undefined"
-                ? sizeOrArray
-                : new Uint8Array(sizeOrArray);
-};
+  /* istanbul ignore next */
+  return typeof sizeOrArray === 'number'
+    ? util.Buffer
+      ? util._Buffer_allocUnsafe(sizeOrArray)
+      : new util.Array(sizeOrArray)
+    : util.Buffer
+    ? util._Buffer_from(sizeOrArray)
+    : typeof Uint8Array === 'undefined'
+    ? sizeOrArray
+    : new Uint8Array(sizeOrArray)
+}
 
 /**
  * Array implementation used in the browser. `Uint8Array` if supported, otherwise `Array`.
  * @type {Constructor<Uint8Array>}
  */
-util.Array = typeof Uint8Array !== "undefined" ? Uint8Array /* istanbul ignore next */ : Array;
+util.Array = typeof Uint8Array !== 'undefined' ? Uint8Array /* istanbul ignore next */ : Array
 
 /**
  * Any compatible Long instance.
@@ -177,30 +185,32 @@ util.Array = typeof Uint8Array !== "undefined" ? Uint8Array /* istanbul ignore n
  * Long.js's Long class if available.
  * @type {Constructor<Long>}
  */
-util.Long = /* istanbul ignore next */ util.global.dcodeIO && /* istanbul ignore next */ util.global.dcodeIO.Long
-         || /* istanbul ignore next */ util.global.Long
-         || util.inquire("long");
+util.Long =
+  /* istanbul ignore next */ (util.global.dcodeIO &&
+    /* istanbul ignore next */ util.global.dcodeIO.Long) ||
+  /* istanbul ignore next */ util.global.Long ||
+  util.inquire('long')
 
 /**
  * Regular expression used to verify 2 bit (`bool`) map keys.
  * @type {RegExp}
  * @const
  */
-util.key2Re = /^true|false|0|1$/;
+util.key2Re = /^true|false|0|1$/
 
 /**
  * Regular expression used to verify 32 bit (`int32` etc.) map keys.
  * @type {RegExp}
  * @const
  */
-util.key32Re = /^-?(?:0|[1-9][0-9]*)$/;
+util.key32Re = /^-?(?:0|[1-9][0-9]*)$/
 
 /**
  * Regular expression used to verify 64 bit (`int64` etc.) map keys.
  * @type {RegExp}
  * @const
  */
-util.key64Re = /^(?:[\\x00-\\xff]{8}|-?(?:0|[1-9][0-9]*))$/;
+util.key64Re = /^(?:[\\x00-\\xff]{8}|-?(?:0|[1-9][0-9]*))$/
 
 /**
  * Converts a number or long to an 8 characters long hash string.
@@ -208,10 +218,8 @@ util.key64Re = /^(?:[\\x00-\\xff]{8}|-?(?:0|[1-9][0-9]*))$/;
  * @returns {string} Hash
  */
 util.longToHash = function longToHash(value) {
-    return value
-        ? util.LongBits.from(value).toHash()
-        : util.LongBits.zeroHash;
-};
+  return value ? util.LongBits.from(value).toHash() : util.LongBits.zeroHash
+}
 
 /**
  * Converts an 8 characters long hash string to a long or number.
@@ -220,11 +228,10 @@ util.longToHash = function longToHash(value) {
  * @returns {Long|number} Original value
  */
 util.longFromHash = function longFromHash(hash, unsigned) {
-    var bits = util.LongBits.fromHash(hash);
-    if (util.Long)
-        return util.Long.fromBits(bits.lo, bits.hi, unsigned);
-    return bits.toNumber(Boolean(unsigned));
-};
+  var bits = util.LongBits.fromHash(hash)
+  if (util.Long) return util.Long.fromBits(bits.lo, bits.hi, unsigned)
+  return bits.toNumber(Boolean(unsigned))
+}
 
 /**
  * Merges the properties of the source object into the destination object.
@@ -234,14 +241,14 @@ util.longFromHash = function longFromHash(hash, unsigned) {
  * @param {boolean} [ifNotSet=false] Merges only if the key is not already set
  * @returns {Object.<string,*>} Destination object
  */
-function merge(dst, src, ifNotSet) { // used by converters
-    for (var keys = Object.keys(src), i = 0; i < keys.length; ++i)
-        if (dst[keys[i]] === undefined || !ifNotSet)
-            dst[keys[i]] = src[keys[i]];
-    return dst;
+function merge(dst, src, ifNotSet) {
+  // used by converters
+  for (var keys = Object.keys(src), i = 0; i < keys.length; ++i)
+    if (dst[keys[i]] === undefined || !ifNotSet) dst[keys[i]] = src[keys[i]]
+  return dst
 }
 
-util.merge = merge;
+util.merge = merge
 
 /**
  * Converts the first character of a string to lower case.
@@ -249,8 +256,8 @@ util.merge = merge;
  * @returns {string} Converted string
  */
 util.lcFirst = function lcFirst(str) {
-    return str.charAt(0).toLowerCase() + str.substring(1);
-};
+  return str.charAt(0).toLowerCase() + str.substring(1)
+}
 
 /**
  * Creates a custom error constructor.
@@ -259,39 +266,43 @@ util.lcFirst = function lcFirst(str) {
  * @returns {Constructor<Error>} Custom error constructor
  */
 function newError(name) {
+  function CustomError(message, properties) {
+    if (!(this instanceof CustomError)) return new CustomError(message, properties)
 
-    function CustomError(message, properties) {
+    // Error.call(this, message);
+    // ^ just returns a new error instance because the ctor can be called as a function
 
-        if (!(this instanceof CustomError))
-            return new CustomError(message, properties);
+    Object.defineProperty(this, 'message', {
+      get: function () {
+        return message
+      }
+    })
 
-        // Error.call(this, message);
-        // ^ just returns a new error instance because the ctor can be called as a function
+    /* istanbul ignore next */
+    if (Error.captureStackTrace)
+      // node
+      Error.captureStackTrace(this, CustomError)
+    else Object.defineProperty(this, 'stack', { value: new Error().stack || '' })
 
-        Object.defineProperty(this, "message", { get: function() { return message; } });
+    if (properties) merge(this, properties)
+  }
 
-        /* istanbul ignore next */
-        if (Error.captureStackTrace) // node
-            Error.captureStackTrace(this, CustomError);
-        else
-            Object.defineProperty(this, "stack", { value: new Error().stack || "" });
+  ;(CustomError.prototype = Object.create(Error.prototype)).constructor = CustomError
 
-        if (properties)
-            merge(this, properties);
+  Object.defineProperty(CustomError.prototype, 'name', {
+    get: function () {
+      return name
     }
+  })
 
-    (CustomError.prototype = Object.create(Error.prototype)).constructor = CustomError;
+  CustomError.prototype.toString = function toString() {
+    return this.name + ': ' + this.message
+  }
 
-    Object.defineProperty(CustomError.prototype, "name", { get: function() { return name; } });
-
-    CustomError.prototype.toString = function toString() {
-        return this.name + ": " + this.message;
-    };
-
-    return CustomError;
+  return CustomError
 }
 
-util.newError = newError;
+util.newError = newError
 
 /**
  * Constructs a new protocol error.
@@ -310,7 +321,7 @@ util.newError = newError;
  *         console.log("decoded so far: " + JSON.stringify(e.instance));
  * }
  */
-util.ProtocolError = newError("ProtocolError");
+util.ProtocolError = newError('ProtocolError')
 
 /**
  * So far decoded message instance.
@@ -331,21 +342,21 @@ util.ProtocolError = newError("ProtocolError");
  * @returns {OneOfGetter} Unbound getter
  */
 util.oneOfGetter = function getOneOf(fieldNames) {
-    var fieldMap = {};
-    for (var i = 0; i < fieldNames.length; ++i)
-        fieldMap[fieldNames[i]] = 1;
+  var fieldMap = {}
+  for (var i = 0; i < fieldNames.length; ++i) fieldMap[fieldNames[i]] = 1
 
-    /**
-     * @returns {string|undefined} Set field name, if any
-     * @this Object
-     * @ignore
-     */
-    return function() { // eslint-disable-line consistent-return
-        for (var keys = Object.keys(this), i = keys.length - 1; i > -1; --i)
-            if (fieldMap[keys[i]] === 1 && this[keys[i]] !== undefined && this[keys[i]] !== null)
-                return keys[i];
-    };
-};
+  /**
+   * @returns {string|undefined} Set field name, if any
+   * @this Object
+   * @ignore
+   */
+  return function () {
+    // eslint-disable-line consistent-return
+    for (var keys = Object.keys(this), i = keys.length - 1; i > -1; --i)
+      if (fieldMap[keys[i]] === 1 && this[keys[i]] !== undefined && this[keys[i]] !== null)
+        return keys[i]
+  }
+}
 
 /**
  * A OneOf setter as returned by {@link util.oneOfSetter}.
@@ -361,19 +372,17 @@ util.oneOfGetter = function getOneOf(fieldNames) {
  * @returns {OneOfSetter} Unbound setter
  */
 util.oneOfSetter = function setOneOf(fieldNames) {
-
-    /**
-     * @param {string} name Field name
-     * @returns {undefined}
-     * @this Object
-     * @ignore
-     */
-    return function(name) {
-        for (var i = 0; i < fieldNames.length; ++i)
-            if (fieldNames[i] !== name)
-                delete this[fieldNames[i]];
-    };
-};
+  /**
+   * @param {string} name Field name
+   * @returns {undefined}
+   * @this Object
+   * @ignore
+   */
+  return function (name) {
+    for (var i = 0; i < fieldNames.length; ++i)
+      if (fieldNames[i] !== name) delete this[fieldNames[i]]
+  }
+}
 
 /**
  * Default conversion options used for {@link Message#toJSON} implementations.
@@ -392,30 +401,32 @@ util.oneOfSetter = function setOneOf(fieldNames) {
  * @see https://developers.google.com/protocol-buffers/docs/proto3?hl=en#json
  */
 util.toJSONOptions = {
-    longs: String,
-    enums: String,
-    bytes: String,
-    json: true
-};
+  longs: String,
+  enums: String,
+  bytes: String,
+  json: true
+}
 
 // Sets up buffer utility according to the environment (called in index-minimal)
-util._configure = function() {
-    var Buffer = util.Buffer;
-    /* istanbul ignore if */
-    if (!Buffer) {
-        util._Buffer_from = util._Buffer_allocUnsafe = null;
-        return;
+util._configure = function () {
+  var Buffer = util.Buffer
+  /* istanbul ignore if */
+  if (!Buffer) {
+    util._Buffer_from = util._Buffer_allocUnsafe = null
+    return
+  }
+  // because node 4.x buffers are incompatible & immutable
+  // see: https://github.com/dcodeIO/protobuf.js/pull/665
+  util._Buffer_from =
+    (Buffer.from !== Uint8Array.from && Buffer.from) ||
+    /* istanbul ignore next */
+    function Buffer_from(value, encoding) {
+      return new Buffer(value, encoding)
     }
-    // because node 4.x buffers are incompatible & immutable
-    // see: https://github.com/dcodeIO/protobuf.js/pull/665
-    util._Buffer_from = Buffer.from !== Uint8Array.from && Buffer.from ||
-        /* istanbul ignore next */
-        function Buffer_from(value, encoding) {
-            return new Buffer(value, encoding);
-        };
-    util._Buffer_allocUnsafe = Buffer.allocUnsafe ||
-        /* istanbul ignore next */
-        function Buffer_allocUnsafe(size) {
-            return new Buffer(size);
-        };
-};
+  util._Buffer_allocUnsafe =
+    Buffer.allocUnsafe ||
+    /* istanbul ignore next */
+    function Buffer_allocUnsafe(size) {
+      return new Buffer(size)
+    }
+}
