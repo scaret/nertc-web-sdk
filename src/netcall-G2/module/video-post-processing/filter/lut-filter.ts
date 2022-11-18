@@ -31,6 +31,9 @@ export class LutFilter extends Filter {
     this.framebuffers.main = framebuffer
   }
 
+  /**
+   * 初始化滤镜着色器程序及所需图像缓冲区
+   */
   private initProgramBuffer() {
     const gl = this.renderer.gl!
     const size = this.renderer.getSize()

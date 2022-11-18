@@ -14,6 +14,7 @@ type BasicResType = {
   }
 }
 
+/** 基础美颜依赖资源的配置项 */
 const resSet: BasicResType = {
   beauty: {
     whiten: 'https://yx-web-nosdn.netease.im/common/cab8e4f0696d3d8e29ee10d6dccc1204/meibai.png',
@@ -98,8 +99,10 @@ const resSet: BasicResType = {
   }
 }
 
+/** 基础美颜实例缓存，当基础美颜依赖资源被用户自定义配置后，通过此集合对所有实例所涉及的静态资源进行更新 */
 const instances: Set<BasicBeauty> = new Set<BasicBeauty>()
 
+/** 基础美颜控制类，对外提供调用接口 */
 export default class BasicBeauty {
   private videPostProcess: VideoPostProcess
 
@@ -202,7 +205,7 @@ export default class BasicBeauty {
     return this.videPostProcess.hasTask('BasicBeauty')
   }
 
-  // 配置静态资源地址
+  /** 配置静态资源地址 */
   static configStaticRes(resConfig: BasicResType) {
     let isUpdate = false
     if (resConfig.beauty) {

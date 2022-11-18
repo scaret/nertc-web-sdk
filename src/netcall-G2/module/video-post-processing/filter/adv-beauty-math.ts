@@ -1,4 +1,5 @@
 // 向量
+/** 二维向量方法库 */
 export class Vector2 {
   value: [number, number] = [0, 0]
   constructor(x: number, y: number) {
@@ -200,6 +201,7 @@ export class Vector2 {
   }
 }
 
+/** 3x3 矩阵方法库 */
 export class Matrix3x3 {
   private matrix: [number, number, number][]
   /**
@@ -426,8 +428,7 @@ export const preHandle = (posData: Int16Array) => {
   // rmiscutRatio - rDis/maxDis;
 }
 
-// 大眼和圆眼最好用 shader 去对像素进行操作，这样过度会更自然一点
-// 后续有时间再重构
+/** 各美颜项涉及到的对点位操作的函数集合 */
 export const handlers: {
   [key in HandleKey]?: (posData: Int16Array, intensity: number) => any
 } = {
