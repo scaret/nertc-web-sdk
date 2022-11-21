@@ -14,7 +14,15 @@ export const IOS_VERSION =
     }
     return null
   })()
-
+export const IOS_MAJOR_VERSION =
+  IOS_VERSION &&
+  (function () {
+    const match = IOS_VERSION.match(/\d+.?\d/)
+    if (match && match[0]) {
+      return parseFloat(match[0])
+    }
+    return null
+  })()
 export const IS_ANDROID = /Android/i.test(USER_AGENT)
 export const ANDROID_VERSION =
   IS_ANDROID &&
@@ -351,6 +359,73 @@ export const CHROME_VERSION =
   (function () {
     const match = USER_AGENT.match(/Chrome\/([\d.]+)/)
     if (match && match[1]) return match[1]
+    return null
+  })()
+
+// iOS 的 Chrome/Edge/Firefox 浏览器支持的条件是 IOS_MAJOR_VERSION 版本要大于 14.3
+// iOS Chrome
+export const IS_IOS_CHROME = /CriOS/i.test(USER_AGENT)
+// iOS Chrome exact Version / String
+export const IOS_CHROME_VERSION =
+  IS_IOS_CHROME &&
+  (function () {
+    const match = USER_AGENT.match(/CriOS\/([\d.]+)/)
+    if (match && match[1]) return match[1]
+    return null
+  })()
+// iOS Chrome major version
+export const IOS_CHROME_MAJOR_VERSION =
+  IS_IOS_CHROME &&
+  (function () {
+    const match = USER_AGENT.match(/CriOS\/(\d+)/)
+
+    if (match && match[1]) {
+      return parseFloat(match[1])
+    }
+    return null
+  })()
+
+// iOS Edge
+export const IS_IOS_EDGE = /EdgiOS/i.test(USER_AGENT)
+// iOS Edge exact Version / String
+export const IOS_EDGE_VERSION =
+  IS_IOS_EDGE &&
+  (function () {
+    const match = USER_AGENT.match(/EdgiOS\/([\d.]+)/)
+    if (match && match[1]) return match[1]
+    return null
+  })()
+// iOS Edge major version
+export const IOS_EDGE_MAJOR_VERSION =
+  IS_IOS_EDGE &&
+  (function () {
+    const match = USER_AGENT.match(/EdgiOS\/(\d+)/)
+
+    if (match && match[1]) {
+      return parseFloat(match[1])
+    }
+    return null
+  })()
+
+// iOS Firefox
+export const IS_IOS_FIREFOX = /FxiOS/i.test(USER_AGENT)
+// iOS Firefox exact Version / String
+export const IOS_FIREFOX_VERSION =
+  IS_IOS_FIREFOX &&
+  (function () {
+    const match = USER_AGENT.match(/FxiOS\/([\d.]+)/)
+    if (match && match[1]) return match[1]
+    return null
+  })()
+// iOS Firefox major version
+export const IOS_FIREFOX_MAJOR_VERSION =
+  IS_IOS_FIREFOX &&
+  (function () {
+    const match = USER_AGENT.match(/FxiOS\/(\d+)/)
+
+    if (match && match[1]) {
+      return parseFloat(match[1])
+    }
     return null
   })()
 

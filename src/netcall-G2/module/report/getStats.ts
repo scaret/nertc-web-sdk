@@ -2,17 +2,23 @@
  getStats适配器
  */
 import { EventEmitter } from 'eventemitter3'
-
-import { AdapterRef, MediaTypeShort } from '../../types'
+import { SDK_VERSION } from '../../Config'
+import { AdapterRef } from '../../types'
 import * as env from '../../util/rtcUtil/rtcEnvironment'
 import { getBrowserInfo, getOSInfo } from '../../util/rtcUtil/rtcPlatform'
 
+export interface DownAudioItem {
+  googDecodingPLC: string
+  googDecodingCNG: string
+  googDecodingCTN: string
+  googDecodingPLCCNG: string
+}
 class GetStats extends EventEmitter {
   private adapterRef: AdapterRef | null
   private interval: number
   private times: number
   private browser: 'chrome' | 'safari' | 'firefox'
-  private KeyTransform: { K: { [key: string]: number }; T: { [key: string]: number } }
+  private prevItem: any = {}
   constructor(options: { adapterRef: AdapterRef; interval: number }) {
     super()
     this.adapterRef = options.adapterRef
@@ -20,20 +26,6 @@ class GetStats extends EventEmitter {
     //workaround for TS2564
     this.times = 0
     this.browser = 'chrome'
-    this.KeyTransform = {
-      K: {
-        // 单位需要换算为k的字段
-        googAvailableSendBandwidth: 1,
-        googTargetEncBitrate: 1,
-        googActualEncBitrate: 1,
-        googRetransmitBitrate: 1,
-        googTransmitBitrate: 1
-      },
-      T: {
-        // 需要换算为S的字段
-        //googCaptureStartNtpTimeMs: 1
-      }
-    }
     this._reset()
   }
 
@@ -54,312 +46,30 @@ class GetStats extends EventEmitter {
     } else if (env.IS_FIREFOX && env.FIREFOX_MAJOR_VERSION && env.FIREFOX_MAJOR_VERSION >= 60) {
       this.browser = 'firefox'
     }
-
-    this.KeyTransform = {
-      K: {
-        // 单位需要换算为k的字段
-        googAvailableSendBandwidth: 1,
-        googTargetEncBitrate: 1,
-        googActualEncBitrate: 1,
-        googRetransmitBitrate: 1,
-        googTransmitBitrate: 1
-      },
-      T: {
-        // 需要换算为S的字段
-        //googCaptureStartNtpTimeMs: 1
-      }
-    }
   }
 
   async getAllStats() {
-    let localPc =
-      this.adapterRef &&
-      this.adapterRef._mediasoup &&
-      this.adapterRef._mediasoup._sendTransport &&
-      this.adapterRef._mediasoup._sendTransport._handler._pc
-    let remotePc =
-      this.adapterRef &&
-      this.adapterRef._mediasoup &&
-      this.adapterRef._mediasoup._recvTransport &&
-      this.adapterRef._mediasoup._recvTransport._handler._pc
+    let localPC = this.adapterRef?._mediasoup?._sendTransport?._handler._pc
+    let remotePC = this.adapterRef?._mediasoup?._recvTransport?._handler._pc
 
-    if (!localPc && !remotePc) {
+    if (!localPC && !remotePC) {
       return
     }
 
     let result = {
-      local: localPc ? await this.getLocalStats(localPc) : null,
-      remote: remotePc ? await this.getRemoteStats(remotePc) : null
+      local: localPC ? await this.getLocalStats(localPC) : null,
+      remote: remotePC ? await this.getRemoteStats(remotePC) : null
     }
     this.times = (this.times || 0) + 1
-    this.emit('stats', result, this.times)
+    // this.emit('stats', result, this.times)
     // console.log('stats before revised--->', result)
-    let reportData = this.reviseData(result, this.browser)
+    let report = this.reviseData(result, this.browser)
+    // 给 formativeStatsReport 传递全量数据
+    this.emit('stats', report, this.times)
+    // console.error('report: ', report)
+    let reportData = this.finalizeData(report)
+    // console.error('reportData: ', reportData)
     return reportData
-  }
-
-  reviseData(params: any, browser: string) {
-    let localDatasObj_ = new Map()
-    let remoteDatasObj_ = new Map()
-    if (browser === 'chrome') {
-      let localDatasMap_ = new Map([
-        ['candidate-pair', []],
-        ['local-candidate', []],
-        ['media-source', []],
-        ['outbound-rtp', []],
-        ['remote-candidate', []],
-        ['remote-inbound-rtp', []],
-        ['ssrc', []], // audio/video
-        ['VideoBwe', []], // video
-        ['track', []],
-        ['transport', []]
-      ])
-      let remoteDatasMap_ = new Map([
-        ['candidate-pair', []],
-        ['inbound-rtp', []],
-        ['local-candidate', []],
-        ['remote-candidate', []],
-        ['ssrc', []], // 根据 mediaType 区分是 audio/video
-        ['track', []],
-        ['transport', []]
-      ])
-      let local = params.local
-      let remote = params.remote
-      for (let item in local) {
-        if (localDatasMap_.has(local[item].type)) {
-          if (item.indexOf('ssrc') > -1) {
-            let key
-
-            if (item.indexOf('audio') > 0 || item.indexOf('video') > 0) {
-              key = `${local[item].mediaType}_ssrc`
-            } else if (item.indexOf('screen') > 0) {
-              key = `screen_ssrc`
-              local[item].mediaType = 'screen'
-            }
-
-            if (localDatasObj_.has(key)) {
-              localDatasObj_.get(key).push(local[item])
-            } else {
-              localDatasObj_.set(key, [])
-              localDatasObj_.get(key).push(local[item])
-            }
-          }
-          // else if(local[item].type === 'VideoBwe'){
-          //   localDatasObj_.set('videobwe',[]);
-          //   localDatasObj_.get('videobwe').push(local[item])
-          // }
-          else {
-            localDatasObj_.set(local[item].type, [])
-            localDatasObj_.get(local[item].type).push(local[item])
-          }
-        }
-      }
-      let localObj = Object.create(null)
-      for (let [k, v] of localDatasObj_) {
-        localObj[k] = v
-      }
-      params.local = localObj
-
-      for (let item in remote) {
-        if (remoteDatasMap_.has(remote[item].type)) {
-          if (remote[item].type === 'ssrc') {
-            let key
-            if (item.indexOf('audio') > 0 || item.indexOf('video') > 0) {
-              key = `${remote[item].mediaType}_${remote[item].type}`
-            } else if (item.indexOf('screen') > 0) {
-              key = `screen_${remote[item].type}`
-              remote[item].mediaType = 'screen'
-            }
-            // 判断是否已经有key了
-            if (remoteDatasObj_.has(key)) {
-              remoteDatasObj_.get(key).push(remote[item])
-            } else {
-              remoteDatasObj_.set(key, [])
-              remoteDatasObj_.get(key).push(remote[item])
-            }
-          } else {
-            let key = remote[item].type
-            if (remoteDatasObj_.has(key)) {
-              remoteDatasObj_.get(key).push(remote[item])
-            } else {
-              remoteDatasObj_.set(key, [])
-              remoteDatasObj_.get(key).push(remote[item])
-            }
-          }
-        }
-      }
-      let remoteObj = Object.create(null)
-      for (let [k, v] of remoteDatasObj_) {
-        remoteObj[k] = v
-      }
-      params.remote = remoteObj
-    } else if (browser === 'safari') {
-      let local = params.local
-      let remote = params.remote
-      let localDatasMap_ = new Map([
-        ['outbound-rtp', []],
-        ['track', []]
-      ])
-      for (let item in local) {
-        if (localDatasMap_.has(local[item].type)) {
-          let key = `${local[item].mediaType}_${local[item].type}`
-          if (localDatasObj_.has(key)) {
-            localDatasObj_.get(key).push(local[item])
-          } else {
-            localDatasObj_.set(key, [])
-            localDatasObj_.get(key).push(local[item])
-          }
-        }
-      }
-      let localObj = Object.create(null)
-      for (let [k, v] of localDatasObj_) {
-        localObj[k] = v
-      }
-      params.local = localObj
-
-      let remoteDatasMap_ = new Map([
-        ['inbound-rtp', []],
-        ['track', []]
-      ])
-      for (let item in remote) {
-        if (remoteDatasMap_.has(remote[item].type)) {
-          let key = `${remote[item].mediaType}_${remote[item].type}`
-          // 判断是否已经有key了
-          if (remoteDatasObj_.has(key)) {
-            remoteDatasObj_.get(key).push(remote[item])
-          } else {
-            remoteDatasObj_.set(key, [])
-            remoteDatasObj_.get(key).push(remote[item])
-          }
-        }
-      }
-      let remoteObj = Object.create(null)
-      for (let [k, v] of remoteDatasObj_) {
-        remoteObj[k] = v
-      }
-      params.remote = remoteObj
-    } else if (browser === 'firefox') {
-      let local = params.local
-      let remote = params.remote
-      let localDatasMap_ = new Map([
-        ['candidate-pair', []],
-        ['local-candidate', []],
-        ['outbound-rtp', []],
-        ['remote-candidate', []]
-      ])
-
-      for (let item in local) {
-        if (localDatasMap_.has(local[item].type)) {
-          let key
-          if (item.indexOf('-outbound-rtp') > -1) {
-            key = `${local[item].mediaType}_${local[item].type}`
-          } else {
-            key = `${local[item].type}`
-          }
-
-          // 判断是否已经有key了
-          if (localDatasObj_.has(key)) {
-            localDatasObj_.get(key).push(local[item])
-          } else {
-            localDatasObj_.set(key, [])
-            localDatasObj_.get(key).push(local[item])
-          }
-        }
-      }
-      let localObj = Object.create(null)
-      for (let [k, v] of localDatasObj_) {
-        localObj[k] = v
-      }
-      params.local = localObj
-      let remoteDatasMap_ = new Map([
-        ['candidate-pair', []],
-        ['inbound-rtp', []],
-        ['local-candidate', []],
-        ['remote-candidate', []]
-      ])
-      for (let item in remote) {
-        if (remoteDatasMap_.has(remote[item].type)) {
-          let key
-          if (item.indexOf('-inbound-rtp') > -1) {
-            key = `${remote[item].mediaType}_${remote[item].type}`
-          } else {
-            key = `${remote[item].type}`
-          }
-
-          // 判断是否已经有key了
-          if (remoteDatasObj_.has(key)) {
-            remoteDatasObj_.get(key).push(remote[item])
-          } else {
-            remoteDatasObj_.set(key, [])
-            remoteDatasObj_.get(key).push(remote[item])
-          }
-        }
-      }
-      let remoteObj = Object.create(null)
-      for (let [k, v] of remoteDatasObj_) {
-        remoteObj[k] = v
-      }
-      params.remote = remoteObj
-    }
-
-    // 后端平台不支持key中的 - ，改成 _
-    let keyMap_ = {
-      'candidate-pair': 'candidate_pair',
-      'local-candidate': 'local_candidate',
-      'media-source': 'media_source',
-      'outbound-rtp': 'outbound_rtp',
-      'remote-candidate': 'remote_candidate',
-      'remote-inbound-rtp': 'remote_inbound_rtp',
-      VideoBwe: 'video_bwe',
-      'inbound-rtp': 'inbound_rtp',
-      'audio_outbound-rtp': 'audio_outbound_rtp',
-      'video_outbound-rtp': 'video_outbound_rtp',
-      'audio_inbound-rtp': 'audio_inbound_rtp',
-      'video_inbound-rtp': 'video_inbound_rtp',
-      // firefox
-      'screen_outbound-rtp': 'screen_outbound_rtp',
-      'screen_inbound-rtp': 'screen_inbound_rtp'
-    }
-    for (let key in params.local) {
-      // @ts-ignore
-      let localKey = keyMap_[key]
-      if (localKey) {
-        params.local[localKey] = params.local[key]
-        delete params.local[key]
-      }
-    }
-
-    for (let key in params.remote) {
-      // @ts-ignore
-      let remoteKey = keyMap_[key]
-      if (remoteKey) {
-        params.remote[remoteKey] = params.remote[key]
-        delete params.remote[key]
-      }
-    }
-    params.timestamp = new Date().getTime()
-    params.appkey = this.adapterRef?.channelInfo.appkey
-    params.cid = this.adapterRef?.channelInfo.cid
-    params.uid = this.adapterRef?.channelInfo.uid
-    if (env.IS_EDG) {
-      params.browser = 'Edge-' + getBrowserInfo().browserVersion
-    } else if (env.IS_ANY_SAFARI) {
-      params.browser =
-        'Safari-iOS-' + getBrowserInfo().browserName + '-' + getBrowserInfo().browserVersion
-    }
-    //  else if (env.IS_ANDROID && env.IS_WECHAT) {
-    //   params.browser =
-    //     'Chrome-' + getBrowserInfo().browserName + '-' + getBrowserInfo().browserVersion
-    // }
-    else if (env.IS_ANDROID) {
-      params.browser =
-        'Chrome-Android-' + getBrowserInfo().browserName + '-' + getBrowserInfo().browserVersion
-    } else {
-      params.browser = getBrowserInfo().browserName + '-' + getBrowserInfo().browserVersion
-    }
-
-    params.platform = getOSInfo().osName
-    return params
   }
 
   async getLocalStats(pc: RTCPeerConnection) {
@@ -381,6 +91,7 @@ class GetStats extends EventEmitter {
   */
   async chrome(pc: RTCPeerConnection, direction: string) {
     const nonStandardStats = () => {
+      // chrome 在关闭本端屏幕共享后，非标准 getStats 还是能获取到屏幕共享数据，只是码率、帧率等数据显示为 0
       return new Promise((resolve, reject) => {
         // 由于Chrome为callback形式的getStats使用了非标准化的接口，故不遵守TypeScript定义
         // @ts-ignore
@@ -411,7 +122,6 @@ class GetStats extends EventEmitter {
 
     const standardizedStats = async () => {
       if (!pc.getTransceivers) return {}
-
       let result = {}
       const transceivers = pc.getTransceivers()
 
@@ -450,115 +160,61 @@ class GetStats extends EventEmitter {
     direction: string
   ) {
     const tmp: any = {}
+
     Object.values(stats).forEach((item) => {
-      // 过滤googleTrack
-      if (direction === 'recv' && !/^ssrc_/i.test(item.id)) {
-        return tmp
+      if (/^ssrc_/i.test(item.id)) {
+        const uidAndKindBySsrc = this.adapterRef?.instance.getUidAndKindBySsrc(parseInt(item.ssrc))
+        item.streamType = uidAndKindBySsrc?.streamType
+        item.uid = uidAndKindBySsrc?.uid
+        let mediaTypeShort
+        if (uidAndKindBySsrc?.kind) {
+          mediaTypeShort = uidAndKindBySsrc.kind
+        } else if (item.googContentType === 'screen') {
+          mediaTypeShort = 'screen'
+        } else {
+          mediaTypeShort = item.mediaType
+        }
+        item.dataId = `${mediaTypeShort}_${item.streamType}_${item.id}`
       }
-      if (direction === 'send' && !/^(bweforvideo|Conn-0-1-0|ssrc_)/i.test(item.id)) {
-        return tmp
+      if (/^bweforvideo/i.test(item.id)) {
+        item.dataId = item.id
       }
-
-      // 普通换算
-      if (item.id === 'bweforvideo') {
-        item = this.formatData(item)
+      if (/^Conn-0-1-0/i.test(item.id) && direction === 'send') {
+        item.dataId = `${item.id}_${item.type}`
       }
-
-      const reg = direction === 'send' ? /ssrc_(\d+)_send/i : /ssrc_(\d+)_recv/i
-      const res = reg.exec(item.id)
-      const id = item.id
-      tmp[id] = item
-      if (!res || !res[1]) return tmp
-      const ssrc = res[1]
-      if (!this.adapterRef) {
-        //console.error("getStats行为没有client关联")
-        return
-      }
-      const uidAndKindBySsrc = this.adapterRef.instance.getUidAndKindBySsrc(parseInt(ssrc))
-      let targetUid = uidAndKindBySsrc.uid
-      let mediaTypeShort
-      if (uidAndKindBySsrc.kind) {
-        mediaTypeShort = uidAndKindBySsrc.kind
-      } else if (item.googContentType === 'screen') {
-        mediaTypeShort = 'screen'
+      if (direction === 'send') {
+        if (/^video_/i.test(item.dataId) || /^screen_/i.test(item.dataId)) {
+          let stats = this.getLocalVideoScreenFreezeStats(item, item.uid)
+          item.freezeTime = stats.freezeTime
+          item.totalFreezeTime = stats.totalFreezeTime
+        }
       } else {
-        mediaTypeShort = item.mediaType
-      }
-      if (!targetUid && direction === 'recv') return tmp
-      item.id = this.stringifyItemId(
-        'ssrc',
-        direction,
-        direction === 'recv' ? '' + targetUid : '0',
-        mediaTypeShort,
-        uidAndKindBySsrc.streamType
-      )
-      item.localuid = this.adapterRef.channelInfo.uid
-      item.remoteuid = targetUid
-
-      item = this.computeData(pc, item)
-      if (item.googInterframeDelayMax == -1) {
-        item.googInterframeDelayMax = 0
+        if (/^video_/i.test(item.dataId) || /^screen_/i.test(item.dataId)) {
+          let stats = this.getRemoteVideoScreenFreezeStats({}, item, item.uid)
+          item.freezeTime = stats.freezeTime
+          item.totalFreezeTime = stats.totalFreezeTime
+        }
+        if (/^audio_/i.test(item.dataId) || /^audioSlave_/i.test(item.dataId)) {
+          let stats = this.getRemoteAudioFreezeStats(item, item.uid)
+          item.freezeTime = stats ? stats.freezeTime : 0
+          item.totalFreezeTime = stats ? stats.totalFreezeTime : 0
+        }
       }
 
-      tmp[item.id] = item
-      delete tmp[id]
+      if (
+        /^audio_/i.test(item.dataId) ||
+        /^audioSlave_/i.test(item.dataId) ||
+        /^video_/i.test(item.dataId) ||
+        /^screen_/i.test(item.dataId) ||
+        /^bweforvideo/i.test(item.dataId) ||
+        /^Conn-/.test(item.dataId)
+      ) {
+        item = this.computeData(direction, pc, item)
+        tmp[item.dataId] = item
+      }
     })
+
     return tmp
-  }
-
-  // 组装和解析stats项。当前仅用于ssrc
-  stringifyItemId(
-    type: RTCStatsType | 'ssrc',
-    direction: string,
-    remoteUid: string,
-    mediaType: MediaTypeShort,
-    streamType: 'high' | 'low'
-  ) {
-    let id
-    if (direction === 'send') {
-      if (streamType === 'high') {
-        id = `${type}_${this.adapterRef?.channelInfo.uid}_send_0_${mediaType}`
-      } else {
-        id = `${type}_${this.adapterRef?.channelInfo.uid}_send_0_${mediaType}_${streamType}`
-      }
-    } else {
-      id = `${type}_${this.adapterRef?.channelInfo.uid}_${direction}_${remoteUid}_${mediaType}`
-    }
-    return id
-  }
-
-  parseItemId(id: string) {
-    const matchSendHigh = id.match(/([a-zA-Z\-])+_\d+_send_0_([a-zA-Z]+)/)
-    const matchSendLow = id.match(/([a-zA-Z\-])+_\d+_send_0_([a-zA-Z]+)_([a-zA-Z]+)/)
-    const matchRecv = id.match(/([a-zA-Z\-])+_\d+_recv_(\d+)_([a-zA-Z]+)/)
-    let result
-    if (matchSendHigh) {
-      result = {
-        type: matchSendHigh[1],
-        direction: 'send',
-        remoteUid: '0',
-        mediaType: matchSendHigh[2],
-        streamType: 'high'
-      }
-    } else if (matchSendLow) {
-      result = {
-        type: matchSendLow[1],
-        direction: 'send',
-        remoteUid: '0',
-        mediaType: matchSendLow[2],
-        streamType: matchSendLow[3]
-      }
-    } else if (matchRecv) {
-      result = {
-        type: matchRecv[1],
-        direction: 'recv',
-        remoteUid: matchRecv[2],
-        mediaType: matchRecv[3]
-      }
-    } else {
-      result = null
-    }
-    return result
   }
 
   //转换标准getStats格式
@@ -574,22 +230,37 @@ class GetStats extends EventEmitter {
     //无用的信息
     if (!uid && direction.indexOf('recv') > -1) return
 
-    report.forEach((report) => {
+    report.forEach((item) => {
+      item.dataId = `${item.type}_${
+        this.adapterRef && this.adapterRef.channelInfo.uid
+      }_${direction}_${uid}`
       if (
-        report.type == 'local-candidate' ||
-        report.type == 'remote-candidate' ||
-        report.type == 'track' ||
-        report.type == 'outbound-rtp' ||
-        report.type == 'remote-inbound-rtp' ||
-        report.type == 'candidate-pair' ||
-        report.type == 'media-source' ||
-        report.type == 'inbound-rtp' ||
-        report.type == 'transport'
-        // ||report.type == 'codec'
+        item.type == 'outbound-rtp' ||
+        item.type === 'remote-inbound-rtp' ||
+        item.type == 'inbound-rtp' ||
+        item.type === 'remote-outbound-rtp'
       ) {
-        result[
-          `${report.type}_${this.adapterRef && this.adapterRef.channelInfo.uid}_${direction}_${uid}`
-        ] = report
+        const uidAndKindBySsrc = this.adapterRef?.instance.getUidAndKindBySsrc(parseInt(item.ssrc))
+        item.streamType = uidAndKindBySsrc?.streamType
+        item.mediaType = uidAndKindBySsrc?.kind
+        item.dataId = `${item.mediaType}_${item.streamType}_${item.dataId}`
+        item.uid = uid
+      }
+      if (
+        (item.type === 'local-candidate' && direction === 'send') ||
+        (item.type === 'candidate-pair' && direction === 'send')
+      ) {
+        item.dataId = `${item.type}_${item.id}`
+      }
+      if (
+        /^audio_/i.test(item.dataId) ||
+        /^audioSlave_/i.test(item.dataId) ||
+        /^video_/i.test(item.dataId) ||
+        /^screen_/i.test(item.dataId) ||
+        /^local-candidate_/i.test(item.dataId) ||
+        /^candidate-pair_/i.test(item.dataId)
+      ) {
+        result[`${item.dataId}`] = item
       }
     })
     return result
@@ -599,6 +270,7 @@ class GetStats extends EventEmitter {
    safari浏览器getStats适配器
   */
   async safari(pc: RTCPeerConnection, direction: string) {
+    // safari nonStandard 和 Standard 获取到的数据一样，因此只需使用 nonStandard 数据即可
     const nonStandardStats = async () => {
       const stats = await pc.getStats()
       //@ts-ignore
@@ -607,45 +279,8 @@ class GetStats extends EventEmitter {
       return result
     }
 
-    const standardizedStats = async () => {
-      if (!pc.getTransceivers) return {}
-
-      let result = {}
-      const transceivers = pc.getTransceivers()
-
-      for (let i = 0; i < transceivers.length; i++) {
-        let getStats = null
-        let stats = null
-        const item = transceivers[i]
-        if (item.direction === 'sendonly') {
-          if (item.sender && item.sender.getStats) {
-            stats = await item.sender.getStats()
-            if (stats) {
-              stats = this.formatSafariStandardizedStats(stats, direction) || {}
-              Object.assign(result, stats)
-            }
-          }
-        } else if (item.direction === 'recvonly') {
-          if (item.receiver && item.receiver.getStats) {
-            stats = await item.receiver.getStats()
-            if (stats) {
-              stats = this.formatSafariStandardizedStats(stats, direction) || {}
-              Object.assign(result, stats)
-            }
-          }
-        }
-      }
-
-      return result
-    }
-
     const nonStandardResult = await nonStandardStats()
-    const standardizedResult = await standardizedStats()
-    // console.log('safari nonstandard--->', nonStandardResult)
-    // console.log('safari standard--->', standardizedResult)
-    //当前Safari标准实现的getStats和非标准的一致，先忽略
-    //const standardizedResult = await standardizedStats()
-    let assignedResult = Object.assign(nonStandardResult, standardizedResult)
+    let assignedResult = Object.assign({}, nonStandardResult)
     return assignedResult
   }
 
@@ -655,244 +290,176 @@ class GetStats extends EventEmitter {
     direction: string
   ) {
     let result: { [key: string]: any } = {}
-    let uidMap = new Map()
+    // 上行数据为 outbound-rtp 和 remote-inbound-rtp，下行数据为 inbound-rtp
     stats.forEach((item: any) => {
-      if (item.type == 'outbound-rtp' || item.type == 'inbound-rtp') {
-        const uid = this.adapterRef
-          ? this.adapterRef.instance.getUidAndKindBySsrc(item.ssrc).uid
-          : 0
-        uidMap.set(item.trackId, { uid: uid.toString(), ssrc: item.ssrc })
-        item.remoteuid = uid.toString()
-        return
-      }
-    })
-
-    stats.forEach((item: any) => {
-      if (item.type == 'track') {
-        //console.log('item: ', item)
-        item.ssrc = uidMap.get(item.id.toString()).ssrc
-        item.remoteuid = item.uid = uidMap.get(item.id.toString()).uid
-        if (item.framesSent || item.framesReceived) {
-          item = this.computeData(pc, item)
-          result[
-            `_video_${item.type}_${
-              this.adapterRef && this.adapterRef.channelInfo.uid
-            }_${direction}_${item.uid}`
-          ] = item
-          item.mediaType = 'video'
-        } else {
-          result[
-            `_audio_${item.type}_${
-              this.adapterRef && this.adapterRef.channelInfo.uid
-            }_${direction}_${item.uid}`
-          ] = item
-          item.mediaType = 'audio'
-        }
-      } else if (item.type == 'outbound-rtp' || item.type == 'inbound-rtp') {
-        item = this.computeData(pc, item)
-        result[
-          `${item.mediaType}_${item.type}_${
-            this.adapterRef && this.adapterRef.channelInfo.uid
-          }_${direction}_${item.uid}`
-        ] = item
-      }
-    })
-
-    return result
-  }
-
-  formatSafariStandardizedStats(report: any, direction: string) {
-    let result: { [key: string]: any } = {}
-    let uid: string | number
-    report.forEach((report: any) => {
-      if (report.type == 'inbound-rtp') {
-        uid = this.adapterRef ? this.adapterRef.instance.getUidAndKindBySsrc(report.ssrc).uid : uid
-      }
-    })
-
-    report.forEach((report: any) => {
       if (
-        report.type == 'local-candidate' ||
-        report.type == 'remote-candidate' ||
-        report.type == 'track' ||
-        report.type == 'outbound-rtp' ||
-        report.type == 'remote-inbound-rtp' ||
-        report.type == 'candidate-pair' ||
-        report.type == 'media-source' ||
-        report.type == 'inbound-rtp' ||
-        report.type == 'transport'
-        // ||report.type == 'codec'
+        item.type == 'outbound-rtp' ||
+        item.type == 'remote-inbound-rtp' ||
+        item.type == 'inbound-rtp'
       ) {
-        result[
-          `${report.type}_${this.adapterRef && this.adapterRef.channelInfo.uid}_${direction}_${uid}`
-        ] = report
+        const uidAndKindBySsrc = this.adapterRef?.instance.getUidAndKindBySsrc(parseInt(item.ssrc))
+        item.uid = uidAndKindBySsrc ? uidAndKindBySsrc.uid : '0'
+        item.mediaType = uidAndKindBySsrc?.kind
+        item.streamType = uidAndKindBySsrc?.streamType
+        item.dataId = `${item.mediaType}_${item.streamType}_${item.type}_${item.id}`
+        item = this.computeData(direction, pc, item)
+        result[item.dataId] = item
+      } else if (item.type == 'candidate-pair') {
+        item.dataId = `${item.type}_${item.id}`
+        result[item.dataId] = item
       }
     })
+
     return result
   }
 
   async firefox(pc: RTCPeerConnection, direction: string) {
+    // firefox nonStandard 和 Standard 获取到的数据一样，因此只需使用 nonStandard 数据即可
     const nonStandardStats = async () => {
       let stats = await pc.getStats()
-      let result: { [key: string]: any } = {}
-      stats.forEach((res) => {
-        result[res.type] = res
-      })
-      // result = this.formatFirefoxNonStandardStats(pc, result, direction);
-      return result
-    }
-
-    const standardizedStats = async () => {
-      if (!pc.getTransceivers) return {}
-
-      let result = {}
-      const transceivers = pc.getTransceivers()
-
-      for (let i = 0; i < transceivers.length; i++) {
-        let getStats = null
-        let report = null
-        const item = transceivers[i]
-
-        if (item.direction === 'sendonly') {
-          if (item.sender && item.sender.getStats) {
-            report = await item.sender.getStats()
-            report = this.formatFirefoxStandardizedStats(report, direction, 0, item.mid)
-            Object.assign(result, report)
-          }
-        } else if (item.direction === 'recvonly') {
-          if (item.receiver && item.receiver.getStats) {
-            report = await item.receiver.getStats()
-            report = this.formatFirefoxStandardizedStats(report, direction, 0)
-            Object.assign(result, report)
-          }
-        }
-      }
+      //@ts-ignore
+      pc.lastStats = pc.lastStats || {}
+      const result = this.formatFirefoxNonStandardStats(pc, stats, direction)
       return result
     }
 
     const nonStandardResult = await nonStandardStats()
-    const standardizedResult = await standardizedStats()
-    let assignedResult = Object.assign(nonStandardResult, standardizedResult)
+    let assignedResult = Object.assign(nonStandardResult, {})
     return assignedResult
   }
 
-  //转换标准getStats格式
-  formatFirefoxStandardizedStats(
-    report: RTCStatsReport,
-    direction: string,
-    uid: string | number,
-    mid?: string | null
+  // 转换非标准 getStats 格式
+  formatFirefoxNonStandardStats(
+    pc: RTCPeerConnection,
+    stats: { [key: string]: any },
+    direction: string
   ) {
     let result: { [key: string]: any } = {}
-
-    report.forEach((report) => {
-      if (report.type == 'inbound-rtp' && this.adapterRef && this.adapterRef.instance) {
-        const uidAndKindBySsrc = this.adapterRef.instance.getUidAndKindBySsrc(report.ssrc)
-        report.remoteuid = uidAndKindBySsrc.uid
-        uid = uidAndKindBySsrc.uid
-        if (report.kind === 'video') {
-          report.mediaType = uidAndKindBySsrc.kind ? uidAndKindBySsrc.kind : 'screen'
-        }
-      }
-      // if(report.type == 'inbound-rtp' && this.adapterRef && this.adapterRef.instance && report.kind === 'video') {
-      //   const uidAndKindBySsrc = this.adapterRef.instance.getUidAndKindBySsrc(report.ssrc);
-      //   report.remoteuid = uidAndKindBySsrc.uid;
-      //   report.mediaType = uidAndKindBySsrc.kind ? uidAndKindBySsrc.kind : 'screen';
-      // }
-    })
-
-    report.forEach((report) => {
-      if (report.type == 'outbound-rtp' && mid == '2') {
-        report.mediaType = 'screen'
-      }
-    })
-
-    report.forEach((report) => {
+    // 上行数据为 outbound-rtp 和 remote-inbound-rtp，下行数据为 inbound-rtp 和 remote-outbound-rtp
+    stats.forEach((item: any) => {
       if (
-        report.type == 'local-candidate' ||
-        report.type == 'remote-candidate' ||
-        report.type == 'remote-inbound-rtp' ||
-        report.type == 'candidate-pair'
+        item.type == 'outbound-rtp' ||
+        item.type == 'remote-inbound-rtp' ||
+        item.type == 'inbound-rtp' ||
+        item.type == 'remote-outbound-rtp'
       ) {
-        result[
-          `${report.type}_${this.adapterRef && this.adapterRef.channelInfo.uid}_${direction}_${uid}`
-        ] = report
-      } else if (report.type == 'outbound-rtp' || report.type == 'inbound-rtp') {
-        result[
-          `${report.mediaType}-${report.type}_${
-            this.adapterRef && this.adapterRef.channelInfo.uid
-          }_${direction}_${uid}`
-        ] = report
+        const uidAndKindBySsrc = this.adapterRef?.instance.getUidAndKindBySsrc(parseInt(item.ssrc))
+        item.uid = uidAndKindBySsrc ? uidAndKindBySsrc.uid : '0'
+        item.mediaType = uidAndKindBySsrc?.kind
+        item.streamType = uidAndKindBySsrc?.streamType
+        item.dataId = `${item.mediaType}_${item.streamType}_${item.type}_${item.id}`
+        item = this.computeData(direction, pc, item)
+        result[item.dataId] = item
       }
     })
+
     return result
   }
 
-  // 普通换算
-  formatData(data: any) {
-    Object.keys(data).map((key) => {
-      // 换算为K
-      if (this.KeyTransform.K[key]) {
-        data[key] = (data[key] / 1024).toFixed(2)
-        //console.log(`KeyTransform.K ${key}`, data[key])
-      }
-      // 换算为T
-      if (this.KeyTransform.T[key]) {
-        data[key] = (data[key] / 1024 / 1024).toFixed(2)
-        //console.log(`KeyTransform.T ${key}`, data[key])
-      }
-    })
-    return data
-  }
-
   // 计算一些数据，码率、每秒中发送、接收包数、丢包率
-  computeData(pc: RTCPeerConnection, item: any) {
+  computeData(direction: string, pc: RTCPeerConnection, item: any) {
     const param = {
       pc,
       ssrcKey: item.ssrc,
       currentItem: item
     }
-    // 进行数据计算
-    if (item.bytesSent) {
-      item['bitsSentPerSecond'] = this.getLastStats(
-        Object.assign({}, param, { firstKey: 'bytesSent' })
-      )
-    }
 
-    if (item.packetsSent) {
-      item['packetsSentPerSecond'] = this.getLastStats(
-        Object.assign({}, param, { firstKey: 'packetsSent' })
-      )
-    }
+    if (direction === 'send') {
+      if (item.bytesSent) {
+        item['bitsSentPerSecond'] = this.getLastStats(
+          Object.assign({}, param, { firstKey: 'bytesSent' })
+        )
+      }
 
-    if (item.bytesReceived) {
-      item['bitsReceivedPerSecond'] = this.getLastStats(
-        Object.assign({}, param, { firstKey: 'bytesReceived' })
-      )
-    }
+      if (item.packetsSent) {
+        item['packetsSentPerSecond'] = this.getLastStats(
+          Object.assign({}, param, { firstKey: 'packetsSent' })
+        )
+      }
 
-    if (item.packetsReceived) {
-      item['packetsReceivedPerSecond'] = this.getLastStats(
-        Object.assign({}, param, { firstKey: 'packetsReceived' })
-      )
-    }
+      if (item.framesSent) {
+        item['frameRateSent'] = this.getLastStats(
+          Object.assign({}, param, { firstKey: 'framesSent' })
+        )
+      }
 
-    if (item.packetsSent && item.packetsLost) {
-      item['sendPacketLoss'] = this.getLastStats(
-        Object.assign({}, param, { firstKey: 'packetsSent', secondKey: 'packetsLost' })
-      )
-    }
+      if (item.packetsLost) {
+        item['packetsLostPerSecond'] = Number(
+          this.getLastStats(Object.assign({}, param, { firstKey: 'packetsLost' }))
+        )
+      }
 
-    if (item.packetsReceived && item.packetsLost) {
-      item['recvPacketLoss'] = this.getLastStats(
-        Object.assign({}, param, { firstKey: 'packetsReceived', secondKey: 'packetsLost' })
-      )
-    }
+      if (item.packetsSent && item.packetsLost) {
+        item['sendPacketLoss'] = this.getLastStats(
+          Object.assign({}, param, { firstKey: 'packetsSent', secondKey: 'packetsLost' })
+        )
+        if (item['packetsSentPerSecond'] + item['packetsLostPerSecond'] === 0) {
+          item['packetsLostRate'] = 0
+        } else {
+          item['packetsLostRate'] =
+            item['packetsLostPerSecond'] /
+            (item['packetsSentPerSecond'] + item['packetsLostPerSecond'])
+        }
+      }
 
-    if (item.framesSent) {
-      item['frameRateSent'] = this.getLastStats(
-        Object.assign({}, param, { firstKey: 'framesSent' })
-      )
+      if (item.framesEncoded) {
+        item['framesEncodedPerSecond'] = this.getLastStats(
+          Object.assign({}, param, { firstKey: 'framesEncoded' })
+        )
+      }
+
+      if (item.qpSum && item.framesEncoded) {
+        item['qpPercentage'] = item.qpSum / item.framesEncoded
+      }
+    } else {
+      if (item.googDecodingNormal) {
+        item['googDecodingNormalPerSecond'] = this.getLastStats(
+          Object.assign({}, param, { firstKey: 'googDecodingNormal' })
+        )
+      }
+
+      if (item.bytesReceived) {
+        item['bitsReceivedPerSecond'] = this.getLastStats(
+          Object.assign({}, param, { firstKey: 'bytesReceived' })
+        )
+      }
+
+      if (item.framesReceived) {
+        item['frameRateReceived'] = this.getLastStats(
+          Object.assign({}, param, { firstKey: 'framesReceived' })
+        )
+      }
+
+      if (item.packetsReceived) {
+        item['packetsReceivedPerSecond'] = this.getLastStats(
+          Object.assign({}, param, { firstKey: 'packetsReceived' })
+        )
+      }
+
+      if (item.packetsLost) {
+        item['packetsLostPerSecond'] = this.getLastStats(
+          Object.assign({}, param, { firstKey: 'packetsLost' })
+        )
+      }
+
+      if (item.packetsReceived && item.packetsLost) {
+        item['recvPacketLoss'] = this.getLastStats(
+          Object.assign({}, param, { firstKey: 'packetsReceived', secondKey: 'packetsLost' })
+        )
+        if (item['packetsReceivedPerSecond'] + item['packetsLostPerSecond'] === 0) {
+          item['packetsLostRate'] = 0
+        } else {
+          item['packetsLostRate'] =
+            item['packetsLostPerSecond'] /
+            (item['packetsReceivedPerSecond'] + item['packetsLostPerSecond'])
+        }
+      }
+
+      if (item.framesDecoded) {
+        item['framesDecodedPerSecond'] = this.getLastStats(
+          Object.assign({}, param, { firstKey: 'framesDecoded' })
+        )
+      }
     }
 
     return item
@@ -908,34 +475,555 @@ class GetStats extends EventEmitter {
       if (!pc.lastStats[ssrcKey]) {
         pc.lastStats[ssrcKey] = {}
       }
-      firstGap = currentItem[firstKey]
-      secondKey ? (secondGap = currentItem[secondKey]) : null
-    } else if (currentItem[firstKey] - pc.lastStats[ssrcKey][firstKey] > 0) {
-      firstGap = (currentItem[firstKey] - pc.lastStats[ssrcKey][firstKey]) / 2
+      firstGap = parseFloat(currentItem[firstKey])
+      secondKey ? (secondGap = parseFloat(currentItem[secondKey])) : null
+    } else if (
+      parseFloat(currentItem[firstKey]) - parseFloat(pc.lastStats[ssrcKey][firstKey]) >
+      0
+    ) {
+      firstGap =
+        (parseFloat(currentItem[firstKey]) - parseFloat(pc.lastStats[ssrcKey][firstKey])) / 2
       secondKey
-        ? (secondGap = (currentItem[secondKey] - pc.lastStats[ssrcKey][secondKey]) / 2)
+        ? (secondGap =
+            (parseFloat(currentItem[secondKey]) - parseFloat(pc.lastStats[ssrcKey][secondKey])) / 2)
         : null
     } else {
-      return firstGap
+      return Number(firstGap)
     }
 
     if (/bytes/gi.test(firstKey)) {
       //当前的检测周期是2s
-      firstGap = Math.round((firstGap * 8) / 1000)
+      firstGap = Math.round((Number(firstGap) * 8) / 1000)
     } else if (secondKey) {
       if (firstKey.indexOf('send') > -1) {
-        firstGap = Math.floor((secondGap / firstGap) * 10000) / 100
+        firstGap = Math.floor((Number(secondGap) / Number(firstGap)) * 10000) / 100
       } else {
-        firstGap = ((secondGap / (secondGap + secondGap)) * 10000) / 100
+        firstGap = ((Number(secondGap) / (Number(secondGap) + Number(secondGap))) * 10000) / 100
       }
     } else {
-      firstGap = firstGap
+      firstGap = Number(firstGap)
     }
 
     // 设置上一次的值
     pc.lastStats[ssrcKey][firstKey] = currentItem[firstKey]
     secondKey ? (pc.lastStats[ssrcKey][secondKey] = currentItem[secondKey]) : null
-    return firstGap
+    return Number(firstGap)
+  }
+
+  reviseData(params: any, browser: string) {
+    // 整理后的数据只包含 4 种 mediaType，以及 bwe（local 和 remote 相同）
+    //上行数据处理
+    let result = {
+      appkey: this.adapterRef?.channelInfo.appkey,
+      cid: this.adapterRef?.channelInfo.cid,
+      uid: this.adapterRef?.channelInfo.uid,
+      timestamp: new Date().getTime(),
+      platform: getOSInfo().osName,
+      browser,
+      sdkVersion: SDK_VERSION,
+      local: {},
+      remote: {}
+    }
+    let local = {
+      audio_ssrc: [] as any,
+      video_ssrc: [] as any,
+      audioSlave_ssrc: [] as any,
+      screen_ssrc: [] as any,
+      bwe: [] as any,
+      conn: [] as any,
+      candidatePair: [] as any,
+      localCandidate: [] as any
+    }
+    let video_high = {},
+      video_low = {},
+      screen_high = {},
+      screen_low = {},
+      audio_local = {},
+      audioSlave_local = {},
+      bwe_local = {},
+      conn_local = {},
+      candidate_pair_local = {},
+      local_candidate_local = {}
+    // 下行数据处理
+    let remote = {
+      audio_ssrc: [] as any,
+      video_ssrc: [] as any,
+      audioSlave_ssrc: [] as any,
+      screen_ssrc: [] as any,
+      bwe: [] as any
+    }
+    let remoteAudio: any[] = [],
+      remoteVideo: any[] = [],
+      remoteAudioSlave: any[] = [],
+      remoteScreen: any[] = []
+    // 数据处理
+    if (browser === 'chrome') {
+      // Chrome 上行数据
+      Object.values(params.local).forEach((item: any) => {
+        if (/^audio_/i.test(item.dataId)) {
+          if (typeof item.active === 'boolean') {
+            item.active = item.active ? 1 : 0
+          }
+          audio_local = Object.assign(audio_local, item)
+        }
+        if (/^audioSlave_/i.test(item.dataId)) {
+          if (typeof item.active === 'boolean') {
+            item.active = item.active ? 1 : 0
+          }
+          audioSlave_local = Object.assign(audioSlave_local, item)
+        }
+        if (/^video_high/i.test(item.dataId)) {
+          if (typeof item.active === 'boolean') {
+            item.active = item.active ? 1 : 0
+          }
+          if (item.googBandwidthLimitedResolution === 'false') {
+            item.googBandwidthLimitedResolution = 0
+          } else if (item.googBandwidthLimitedResolution === 'true') {
+            item.googBandwidthLimitedResolution = 1
+          }
+          if (item.googCpuLimitedResolution === 'false') {
+            item.googCpuLimitedResolution = 0
+          } else if (item.googCpuLimitedResolution === 'true') {
+            item.googCpuLimitedResolution = 1
+          }
+          if (item.googHasEnteredLowResolution === 'false') {
+            item.googHasEnteredLowResolution = 0
+          } else if (item.googHasEnteredLowResolution === 'true') {
+            item.googHasEnteredLowResolution = 1
+          }
+          video_high = Object.assign(video_high, item)
+        }
+        if (/^video_low/i.test(item.dataId)) {
+          if (typeof item.active === 'boolean') {
+            item.active = item.active ? 1 : 0
+          }
+          if (item.googBandwidthLimitedResolution === 'false') {
+            item.googBandwidthLimitedResolution = 0
+          } else if (item.googBandwidthLimitedResolution === 'true') {
+            item.googBandwidthLimitedResolution = 1
+          }
+          if (item.googCpuLimitedResolution === 'false') {
+            item.googCpuLimitedResolution = 0
+          } else if (item.googCpuLimitedResolution === 'true') {
+            item.googCpuLimitedResolution = 1
+          }
+          if (item.googHasEnteredLowResolution === 'false') {
+            item.googHasEnteredLowResolution = 0
+          } else if (item.googHasEnteredLowResolution === 'true') {
+            item.googHasEnteredLowResolution = 1
+          }
+          video_low = Object.assign(video_low, item)
+        }
+        if (/^screen_high/i.test(item.dataId)) {
+          if (typeof item.active === 'boolean') {
+            item.active = item.active ? 1 : 0
+          }
+          if (item.googBandwidthLimitedResolution === 'false') {
+            item.googBandwidthLimitedResolution = 0
+          } else if (item.googBandwidthLimitedResolution === 'true') {
+            item.googBandwidthLimitedResolution = 1
+          }
+          if (item.googCpuLimitedResolution === 'false') {
+            item.googCpuLimitedResolution = 0
+          } else if (item.googCpuLimitedResolution === 'true') {
+            item.googCpuLimitedResolution = 1
+          }
+          if (item.googHasEnteredLowResolution === 'false') {
+            item.googHasEnteredLowResolution = 0
+          } else if (item.googHasEnteredLowResolution === 'true') {
+            item.googHasEnteredLowResolution = 1
+          }
+          screen_high = Object.assign(screen_high, item)
+        }
+        if (/^screen_low/i.test(item.dataId)) {
+          if (typeof item.active === 'boolean') {
+            item.active = item.active ? 1 : 0
+          }
+          if (item.googBandwidthLimitedResolution === 'false') {
+            item.googBandwidthLimitedResolution = 0
+          } else if (item.googBandwidthLimitedResolution === 'true') {
+            item.googBandwidthLimitedResolution = 1
+          }
+          if (item.googCpuLimitedResolution === 'false') {
+            item.googCpuLimitedResolution = 0
+          } else if (item.googCpuLimitedResolution === 'true') {
+            item.googCpuLimitedResolution = 1
+          }
+          if (item.googHasEnteredLowResolution === 'false') {
+            item.googHasEnteredLowResolution = 0
+          } else if (item.googHasEnteredLowResolution === 'true') {
+            item.googHasEnteredLowResolution = 1
+          }
+          screen_low = Object.assign(screen_low, item)
+        }
+        if (/^bweforvideo/i.test(item.dataId)) {
+          bwe_local = Object.assign(bwe_local, item)
+        }
+        if (/^Conn/i.test(item.dataId)) {
+          conn_local = Object.assign(conn_local, item)
+        }
+        if (/^local-candidate_/i.test(item.dataId)) {
+          candidate_pair_local = Object.assign(candidate_pair_local, item)
+        }
+        if (/^candidate-pair_/i.test(item.dataId)) {
+          local_candidate_local = Object.assign(local_candidate_local, item)
+        }
+      })
+      // 不能使用 active 状态判断是否 push，老版本 chrome 没有 active 字段
+      if (Object.values(video_high).length) {
+        local.video_ssrc.push(video_high)
+      }
+      if (Object.values(video_low).length) {
+        local.video_ssrc.push(video_low)
+      }
+      if (Object.values(screen_high).length) {
+        local.screen_ssrc.push(screen_high)
+      }
+      if (Object.values(screen_low).length) {
+        local.screen_ssrc.push(screen_low)
+      }
+      if (Object.values(audio_local).length) {
+        local.audio_ssrc.push(audio_local)
+      }
+      if (Object.values(audioSlave_local).length) {
+        local.audioSlave_ssrc.push(audioSlave_local)
+      }
+      if (local.video_ssrc.length || local.screen_ssrc.length) {
+        local.bwe.push(bwe_local)
+        local.bwe[0].timestamp = Date.parse(local.bwe[0].timestamp)
+      }
+
+      if (Object.values(conn_local).length) {
+        local.conn.push(conn_local)
+      }
+      if (Object.values(candidate_pair_local).length) {
+        local.candidatePair.push(candidate_pair_local)
+      }
+      if (Object.values(local_candidate_local).length) {
+        local.localCandidate.push(local_candidate_local)
+      }
+
+      // Chrome 下行数据
+      Object.values(params.remote).forEach((item: any) => {
+        if (/^audio_/i.test(item.dataId) && item.uid.length) {
+          remoteAudio.push(item)
+        }
+        if (/^video_/i.test(item.dataId) && item.uid.length) {
+          remoteVideo.push(item)
+        }
+        if (/^audioSlave_/i.test(item.dataId) && item.uid.length) {
+          remoteAudioSlave.push(item)
+        }
+        if (/^screen_/i.test(item.dataId) && item.uid.length) {
+          remoteScreen.push(item)
+        }
+        if (/^bweforvideo/i.test(item.dataId)) {
+          remote.bwe.push(item)
+          remote.bwe[0].timestamp = Date.parse(remote.bwe[0].timestamp)
+        }
+      })
+      remote.audio_ssrc = this.combineArray(remoteAudio)
+      remote.video_ssrc = this.combineArray(remoteVideo)
+      remote.audioSlave_ssrc = this.combineArray(remoteAudioSlave)
+      remote.screen_ssrc = this.combineArray(remoteScreen)
+      if (!remote.video_ssrc.length && !remote.screen_ssrc.length) {
+        remote.bwe = []
+      }
+    } else if (browser === 'safari') {
+      //  Safari 上行数据
+      Object.values(params.local).forEach((item: any) => {
+        if (/^audio_/i.test(item.dataId)) {
+          audio_local = Object.assign(audio_local, item)
+        }
+        if (/^audioSlave_/i.test(item.dataId)) {
+          audioSlave_local = Object.assign(audioSlave_local, item)
+        }
+        if (/^video_high/i.test(item.dataId)) {
+          video_high = Object.assign(video_high, item)
+        }
+        if (/^video_low/i.test(item.dataId)) {
+          video_low = Object.assign(video_low, item)
+        }
+        if (/^screen_high/i.test(item.dataId)) {
+          screen_high = Object.assign(screen_high, item)
+        }
+        if (/^screen_low/i.test(item.dataId)) {
+          screen_low = Object.assign(screen_low, item)
+        }
+        if (/^candidate-pair/i.test(item.dataId)) {
+          candidate_pair_local = Object.assign(candidate_pair_local, item)
+        }
+      })
+
+      Object.values(audio_local).length && local.audio_ssrc.push(audio_local)
+      Object.values(audioSlave_local).length && local.audioSlave_ssrc.push(audioSlave_local)
+      Object.values(video_high).length && local.video_ssrc.push(video_high)
+      Object.values(video_low).length && local.video_ssrc.push(video_low)
+      Object.values(screen_high).length && local.screen_ssrc.push(screen_high)
+      Object.values(screen_low).length && local.screen_ssrc.push(screen_low)
+      Object.values(candidate_pair_local).length && local.candidatePair.push(candidate_pair_local)
+
+      // Safari 下行数据
+      Object.values(params.remote).forEach((item: any) => {
+        if (/^audio_/i.test((item as any).dataId)) {
+          remote.audio_ssrc.push(item)
+        }
+        if (/^video_/i.test(item.dataId)) {
+          remote.video_ssrc.push(item)
+        }
+        if (/^audioSlave_/i.test(item.dataId)) {
+          remote.audioSlave_ssrc.push(item)
+        }
+        if (/^screen_/i.test(item.dataId)) {
+          remote.screen_ssrc.push(item)
+        }
+      })
+    } else if (browser === 'firefox') {
+      // Firefox 上行数据
+      Object.values(params.local).forEach((item: any) => {
+        if (/^audio_/i.test(item.dataId)) {
+          audio_local = Object.assign(audio_local, item)
+        }
+        if (/^audioSlave_/i.test(item.dataId)) {
+          audioSlave_local = Object.assign(audioSlave_local, item)
+        }
+        if (/^video_high/i.test(item.dataId)) {
+          video_high = Object.assign(video_high, item)
+        }
+        if (/^video_low/i.test(item.dataId)) {
+          video_low = Object.assign(video_low, item)
+        }
+        if (/^screen_high/i.test(item.dataId)) {
+          screen_high = Object.assign(screen_high, item)
+        }
+        if (/^screen_low/i.test(item.dataId)) {
+          screen_low = Object.assign(screen_low, item)
+        }
+      })
+      Object.values(audio_local).length && local.audio_ssrc.push(audio_local)
+      Object.values(audioSlave_local).length && local.audioSlave_ssrc.push(audioSlave_local)
+      Object.values(video_high).length && local.video_ssrc.push(video_high)
+      Object.values(video_low).length && local.video_ssrc.push(video_low)
+      Object.values(screen_high).length && local.screen_ssrc.push(screen_high)
+      Object.values(screen_low).length && local.screen_ssrc.push(screen_low)
+      // Firefox 下行数据
+      Object.values(params.remote).forEach((item: any) => {
+        if (/^audio_/i.test((item as any).dataId)) {
+          remoteAudio.push(item)
+        }
+        if (/^video_/i.test(item.dataId)) {
+          remoteVideo.push(item)
+        }
+        if (/^audioSlave_/i.test(item.dataId)) {
+          remoteAudioSlave.push(item)
+        }
+        if (/^screen_/i.test(item.dataId)) {
+          remoteScreen.push(item)
+        }
+      })
+      remote.audio_ssrc = this.combineArray(remoteAudio)
+      remote.video_ssrc = this.combineArray(remoteVideo)
+      remote.audioSlave_ssrc = this.combineArray(remoteAudioSlave)
+      remote.screen_ssrc = this.combineArray(remoteScreen)
+    }
+
+    result.local = local
+    result.remote = remote
+    if (env.IS_EDG) {
+      result.browser = 'Edge-' + getBrowserInfo().browserVersion
+    } else {
+      result.browser = getBrowserInfo().browserName + '-' + getBrowserInfo().browserVersion
+    }
+
+    return result
+  }
+
+  finalizeData(params: any) {
+    let result = {
+      appkey: params.appkey,
+      cid: params.cid,
+      uid: params.uid,
+      timestamp: params.timestamp,
+      platform: params.platform,
+      browser: params.browser,
+      sdkVersion: SDK_VERSION,
+      local: {
+        audio_ssrc: params.local.audio_ssrc,
+        video_ssrc: params.local.video_ssrc,
+        audioSlave_ssrc: params.local.audioSlave_ssrc,
+        screen_ssrc: params.local.screen_ssrc,
+        bwe: params.local.bwe
+      },
+      remote: params.remote
+    }
+    return result
+  }
+
+  combineArray(arr: any) {
+    // 合并下行相同 uid 的数组
+    let result = Object.values(
+      arr.reduce((m: any, n: any) => {
+        if (!m[n.uid]) {
+          m[n.uid] = { uid: n.uid, list: {} }
+        }
+        Object.assign(m[n.uid].list, n)
+        return m
+      }, {})
+    )
+    return result.map((item: any) => item.list)
+  }
+
+  getLocalVideoScreenFreezeStats(data: any, uid: number | string) {
+    let totalFreezeTime = 0
+    if (!data) {
+      return {
+        totalFreezeTime,
+        freezeTime: 0
+      }
+    }
+
+    let n = parseInt(data.googFrameRateInput)
+    let i = parseInt(data.googFrameRateSent)
+
+    if (n <= 0 || i <= 0) {
+      return {
+        totalFreezeTime: 2000,
+        freezeTime: 6
+      }
+    }
+    //let stuckRate = (n - i) / n
+
+    let value = Math.abs(n - i - 2)
+    let stuckRate = value / n
+
+    //@ts-ignore
+    totalFreezeTime = parseInt(stuckRate * 2000)
+    let freezeTime = 0
+    if (totalFreezeTime < 300) {
+      totalFreezeTime = 0
+      freezeTime = 0
+    } else if (totalFreezeTime > 1500) {
+      freezeTime = 6
+    } else {
+      //@ts-ignore
+      freezeTime = parseInt(totalFreezeTime / 300)
+    }
+
+    const info = {
+      totalFreezeTime,
+      //@ts-ignore
+      freezeTime
+    }
+    //console.log('本端视频卡顿率: ', JSON.stringify(info, null, ' '))
+    return info
+  }
+
+  getRemoteVideoScreenFreezeStats(prev: any, next: any, uid: number | string) {
+    let totalFreezeTime = 0
+    //@ts-ignore
+    if (!next || next.framesDecoded == 0) {
+      return {
+        totalFreezeTime,
+        freezeTime: 0
+      }
+    } else if (next && next.googFrameRateDecoded == '0' && next.framesDecoded) {
+      return {
+        totalFreezeTime: 2000,
+        freezeTime: 6
+      }
+    }
+
+    let n = parseInt(next.googFrameRateReceived) || 0
+    let i = parseInt(next.googFrameRateDecoded)
+
+    if (n <= 0 || i <= 0) {
+      return {
+        totalFreezeTime: 2000,
+        freezeTime: 6
+      }
+    }
+
+    let value = Math.abs(i - n - 2)
+    if (n > 15) {
+      return {
+        totalFreezeTime: 0,
+        freezeTime: 0
+      }
+    } else {
+      value = Math.abs(15 - n)
+    }
+
+    let stuckRate = value / 15
+    //@ts-ignore
+    totalFreezeTime = parseInt(stuckRate * 2000)
+    if (totalFreezeTime > 2000) {
+      totalFreezeTime = 2000
+    }
+
+    let freezeTime = 0
+    if (totalFreezeTime < 300) {
+      totalFreezeTime = 0
+      freezeTime = 0
+    } else if (totalFreezeTime > 1500) {
+      freezeTime = 6
+    } else {
+      //@ts-ignore
+      freezeTime = parseInt(totalFreezeTime / 300)
+    }
+
+    const info = {
+      totalFreezeTime,
+      //@ts-ignore
+      freezeTime
+    }
+    //console.log('远端屏幕共享卡顿率: ', JSON.stringify(info, null, ' '))
+    return info
+  }
+
+  getRemoteAudioFreezeStats(currentItem: DownAudioItem, uid: number | string) {
+    let totalFreezeTime = 0
+    if (!this.prevItem || !currentItem) {
+      return {
+        totalFreezeTime,
+        freezeTime: 0
+      }
+    }
+    if (!Object.values(this.prevItem).length && currentItem) {
+      this.prevItem = currentItem
+      return {
+        totalFreezeTime,
+        freezeTime: 0
+      }
+    }
+    if (this.prevItem && currentItem) {
+      let prevStuck =
+        parseInt(this.prevItem.googDecodingPLC) +
+        parseInt(this.prevItem.googDecodingCNG) +
+        parseInt(this.prevItem.googDecodingPLCCNG)
+      let prevNormal = parseInt(this.prevItem.googDecodingCTN)
+
+      let nextStuck =
+        parseInt(currentItem.googDecodingPLC) +
+        parseInt(currentItem.googDecodingCNG) +
+        parseInt(currentItem.googDecodingPLCCNG)
+      let nextNormal = parseInt(currentItem.googDecodingCTN)
+      if (nextNormal <= prevNormal || nextStuck <= prevStuck) {
+        return {
+          totalFreezeTime,
+          freezeTime: 0
+        }
+      }
+
+      let stuckRate = (nextStuck - prevStuck) / (nextNormal - prevNormal)
+      const data = {
+        //@ts-ignore
+        totalFreezeTime: parseInt(stuckRate * 1000),
+        //@ts-ignore
+        freezeTime: stuckRate * 10 > 1 ? parseInt(stuckRate * 10) : stuckRate > 0 ? 1 : 0
+      }
+      this.prevItem = currentItem
+      return data
+    }
   }
 
   stop() {

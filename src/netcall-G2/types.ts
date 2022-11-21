@@ -585,6 +585,7 @@ export interface LoggerOptions {
 export interface StatsReportOptions {
   sdkRef: SDKRef
   adapterRef: AdapterRef
+  isReport: boolean
 }
 
 export interface AudioLevelOptions {
@@ -1013,7 +1014,7 @@ export interface SignallingOptions {
 export interface ClientOptions {
   appkey: string
   debug?: boolean
-  report: boolean | undefined
+  report?: boolean
   token?: string
   ref: any
 }
