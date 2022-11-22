@@ -4818,6 +4818,15 @@ class LocalStream extends RTCEventEmitter {
   async registerPlugin(options: PluginOptions) {
     this.logger.log(`register plugin:${options.key}`)
     if (!webassemblySupported()) {
+      this.client.apiFrequencyControl({
+        name: 'registerPlugin',
+        code: -1,
+        param: {
+          streamID: this.stringStreamID,
+          plugin: options.key,
+          msg: 'unsupportWasm'
+        }
+      })
       throw new RtcError({
         code: ErrorCode.PLUGIN_REGISTER_ERROR,
         message: env.IS_ZH
@@ -4937,7 +4946,8 @@ class LocalStream extends RTCEventEmitter {
         code: -1,
         param: {
           streamID: this.stringStreamID,
-          plugin: options.key
+          plugin: options.key,
+          msg: e.message
         }
       })
     }
