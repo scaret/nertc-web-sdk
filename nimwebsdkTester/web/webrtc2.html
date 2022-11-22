@@ -235,8 +235,18 @@
             <label for="r1">平滑: </label><input type="range" id="r4" value="0" />
           </div>
         </div>
+        <p class="block-header">WebAssembly支持</p>
+        <div class="part hide">
+          <div class="line">
+            <button type="button" id="unsupportWasm">模拟不支持wasm </button>
+            <button type="button" id="resupportWasm">恢复支持wasm </button>
+          </div>
+        </div>
         <p class="block-header">背景分割</p>
         <div class="part hide">
+          <div class="line">
+            <button type="button" id="registerSimdVitrualBackground">注册simd版</button>
+          </div>
           <div class="line">
             <button type="button" id="registerVitrualBackground">注册</button>
             <button type="button" id="enableSegment">打开</button>
@@ -279,6 +289,9 @@
               最大人脸数：
               <input id="adv-face-size" type="number" step="0" min="1" max="5" value="1">
             </label>
+          </div>
+          <div class="line">
+            <button type="button" id="registerSimdAdvancedBeauty">注册simd版</button>
           </div>
           <div class="line">
             <button type="button" id="registerAdvancedBeauty">注册</button>
@@ -668,6 +681,9 @@
           </div>
         </div>
         <p class="block-header">AI降噪</p>
+        <div class="line">
+          <button type="button" id="registerSimdAIDenoise">注册simd版</button>
+        </div>
         <div class="line">
           <button type="button" id="registerAIDenoise">注册</button>
           <button type="button" id="enableAIDenoise">打开</button>

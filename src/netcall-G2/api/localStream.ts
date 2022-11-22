@@ -222,6 +222,7 @@ class LocalStream extends RTCEventEmitter {
   public destroyed = false
   private canvasWatermarkOptions: NERtcCanvasWatermarkConfig | null = null
   private encoderWatermarkOptions: NERtcEncoderWatermarkConfig | null = null
+  private supportWasm: boolean = true
 
   constructor(options: LocalStreamOptions) {
     super()
@@ -359,6 +360,7 @@ class LocalStream extends RTCEventEmitter {
       }
     })
 
+    this.supportWasm = webassemblySupported()
     this.videoPostProcess = new VideoPostProcess(this.logger)
     this.basicBeauty = new BasicBeauty(this.videoPostProcess)
     this.virtualBackground = new VirtualBackground(this.videoPostProcess)
@@ -4817,7 +4819,7 @@ class LocalStream extends RTCEventEmitter {
    */
   async registerPlugin(options: PluginOptions) {
     this.logger.log(`register plugin:${options.key}`)
-    if (!webassemblySupported()) {
+    if (!this.supportWasm) {
       this.client.apiFrequencyControl({
         name: 'registerPlugin',
         code: -1,
