@@ -615,61 +615,71 @@ class FormativeStatsReport {
   updateLocalMediaInfo(params: any) {
     if (!this.adapterRef.localStream) return
     // client: getLocalAudioStats
-    this.adapterRef.localAudioStats[0] = {
-      CodecType: 'Opus',
-      MuteState: this.adapterRef.localStream!.muteStatus.audio.send,
-      RecordingLevel: parseFloat(params.local.audio_ssrc[0].audioInputLevel) || 0,
-      SamplingRate: this.getSamplingRate(this.adapterRef.localStream!.audioProfile),
-      SendBitrate: params.local.audio_ssrc[0].bitsSentPerSecond,
-      SendLevel: parseFloat(params.local.audio_ssrc[0].audioInputLevel) || 0
+    if (params.local.audio_ssrc.length) {
+      this.adapterRef.localAudioStats[0] = {
+        CodecType: 'Opus',
+        MuteState: this.adapterRef.localStream!.muteStatus.audio.send,
+        RecordingLevel: parseFloat(params.local.audio_ssrc[0].audioInputLevel) || 0,
+        SamplingRate: this.getSamplingRate(this.adapterRef.localStream!.audioProfile),
+        SendBitrate: params.local.audio_ssrc[0].bitsSentPerSecond,
+        SendLevel: parseFloat(params.local.audio_ssrc[0].audioInputLevel) || 0
+      }
     }
 
     // client: getLocalAudioSlaveStats
-    this.adapterRef.localAudioSlaveStats[0] = {
-      CodecType: 'Opus',
-      MuteState: this.adapterRef.localStream!.muteStatus.audioSlave.send,
-      RecordingLevel: parseFloat(params.local.audioSlave_ssrc[0].audioInputLevel) || 0,
-      SamplingRate: this.getSamplingRate(this.adapterRef.localStream!.audioProfile),
-      SendBitrate: params.local.audioSlave_ssrc[0].bitsSentPerSecond,
-      SendLevel: parseFloat(params.local.audioSlave_ssrc[0].audioInputLevel) || 0
+    if (params.local.audioSlave_ssrc.length) {
+      this.adapterRef.localAudioSlaveStats[0] = {
+        CodecType: 'Opus',
+        MuteState: this.adapterRef.localStream!.muteStatus.audioSlave.send,
+        RecordingLevel: parseFloat(params.local.audioSlave_ssrc[0].audioInputLevel) || 0,
+        SamplingRate: this.getSamplingRate(this.adapterRef.localStream!.audioProfile),
+        SendBitrate: params.local.audioSlave_ssrc[0].bitsSentPerSecond,
+        SendLevel: parseFloat(params.local.audioSlave_ssrc[0].audioInputLevel) || 0
+      }
     }
+
     // client: getLocalVideoStats('video')
-    this.adapterRef.localVideoStats[0] = {
-      LayerType: 1,
-      CodecName: params.local.video_ssrc[0].googCodecName || 'h264',
-      CaptureFrameRate: params.local.video_ssrc[0].googFrameRateInput || 0,
-      CaptureResolutionHeight: parseInt(params.local.video_ssrc[0].googFrameHeightInput) || 0,
-      CaptureResolutionWidth: parseInt(params.local.video_ssrc[0].googFrameWidthInput) || 0,
-      EncodeDelay: parseInt(params.local.video_ssrc[0].googAvgEncodeMs) || 0,
-      MuteState: this.adapterRef.localStream.muteStatus.video.send,
-      SendBitrate: parseInt(params.local.video_ssrc[0].googTransmitBitrate) || 0,
-      SendFrameRate: parseInt(params.local.video_ssrc[0].googFrameRateSent) || 0,
-      SendResolutionHeight: parseInt(params.local.video_ssrc[0].googFrameHeightSent) || 0,
-      SendResolutionWidth: parseInt(params.local.video_ssrc[0].googFrameWidthSent) || 0,
-      TargetSendBitrate: parseInt(params.local.video_ssrc[0].googTargetEncBitrate) || 0,
-      TotalDuration: this.adapterRef.state.startPubVideoTime
-        ? (Date.now() - this.adapterRef.state.startPubVideoTime) / 1000
-        : 0,
-      TotalFreezeTime: params.local.video_ssrc[0].totalFreezeTime || 0
+    if (params.local.video_ssrc.length) {
+      this.adapterRef.localVideoStats[0] = {
+        LayerType: 1,
+        CodecName: params.local.video_ssrc[0].googCodecName || 'h264',
+        CaptureFrameRate: params.local.video_ssrc[0].googFrameRateInput || 0,
+        CaptureResolutionHeight: parseInt(params.local.video_ssrc[0].googFrameHeightInput) || 0,
+        CaptureResolutionWidth: parseInt(params.local.video_ssrc[0].googFrameWidthInput) || 0,
+        EncodeDelay: parseInt(params.local.video_ssrc[0].googAvgEncodeMs) || 0,
+        MuteState: this.adapterRef.localStream.muteStatus.video.send,
+        SendBitrate: parseInt(params.local.video_ssrc[0].googTransmitBitrate) || 0,
+        SendFrameRate: parseInt(params.local.video_ssrc[0].googFrameRateSent) || 0,
+        SendResolutionHeight: parseInt(params.local.video_ssrc[0].googFrameHeightSent) || 0,
+        SendResolutionWidth: parseInt(params.local.video_ssrc[0].googFrameWidthSent) || 0,
+        TargetSendBitrate: parseInt(params.local.video_ssrc[0].googTargetEncBitrate) || 0,
+        TotalDuration: this.adapterRef.state.startPubVideoTime
+          ? (Date.now() - this.adapterRef.state.startPubVideoTime) / 1000
+          : 0,
+        TotalFreezeTime: params.local.video_ssrc[0].totalFreezeTime || 0
+      }
     }
+
     // client: getLocalVideoStats('screen')
-    this.adapterRef.localScreenStats[0] = {
-      LayerType: 2,
-      CodecName: params.local.screen_ssrc[0].googCodecName || 'h264',
-      CaptureFrameRate: params.local.screen_ssrc[0].googFrameRateInput || 0,
-      CaptureResolutionHeight: parseInt(params.local.screen_ssrc[0].googFrameHeightInput) || 0,
-      CaptureResolutionWidth: parseInt(params.local.screen_ssrc[0].googFrameWidthInput) || 0,
-      EncodeDelay: parseInt(params.local.screen_ssrc[0].googAvgEncodeMs) || 0,
-      MuteState: this.adapterRef.localStream.muteStatus.screen.send,
-      SendBitrate: parseInt(params.local.screen_ssrc[0].googTransmitBitrate) || 0,
-      SendFrameRate: parseInt(params.local.screen_ssrc[0].googFrameRateSent) || 0,
-      SendResolutionHeight: parseInt(params.local.screen_ssrc[0].googFrameHeightSent) || 0,
-      SendResolutionWidth: parseInt(params.local.screen_ssrc[0].googFrameWidthSent) || 0,
-      TargetSendBitrate: parseInt(params.local.screen_ssrc[0].googTargetEncBitrate) || 0,
-      TotalDuration: this.adapterRef.state.startPubScreenTime
-        ? (Date.now() - this.adapterRef.state.startPubScreenTime) / 1000
-        : 0,
-      TotalFreezeTime: params.local.screen_ssrc[0].totalFreezeTime || 0
+    if (params.local.screen_ssrc.length) {
+      this.adapterRef.localScreenStats[0] = {
+        LayerType: 2,
+        CodecName: params.local.screen_ssrc[0].googCodecName || 'h264',
+        CaptureFrameRate: params.local.screen_ssrc[0].googFrameRateInput || 0,
+        CaptureResolutionHeight: parseInt(params.local.screen_ssrc[0].googFrameHeightInput) || 0,
+        CaptureResolutionWidth: parseInt(params.local.screen_ssrc[0].googFrameWidthInput) || 0,
+        EncodeDelay: parseInt(params.local.screen_ssrc[0].googAvgEncodeMs) || 0,
+        MuteState: this.adapterRef.localStream.muteStatus.screen.send,
+        SendBitrate: parseInt(params.local.screen_ssrc[0].googTransmitBitrate) || 0,
+        SendFrameRate: parseInt(params.local.screen_ssrc[0].googFrameRateSent) || 0,
+        SendResolutionHeight: parseInt(params.local.screen_ssrc[0].googFrameHeightSent) || 0,
+        SendResolutionWidth: parseInt(params.local.screen_ssrc[0].googFrameWidthSent) || 0,
+        TargetSendBitrate: parseInt(params.local.screen_ssrc[0].googTargetEncBitrate) || 0,
+        TotalDuration: this.adapterRef.state.startPubScreenTime
+          ? (Date.now() - this.adapterRef.state.startPubScreenTime) / 1000
+          : 0,
+        TotalFreezeTime: params.local.screen_ssrc[0].totalFreezeTime || 0
+      }
     }
 
     // let systemNetworkType = ((navigator.connection || {}).type || 'unknown')
