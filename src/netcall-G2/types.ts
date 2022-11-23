@@ -15,6 +15,8 @@ import { RTSTransport } from './module/rtsTransport'
 import { Signalling } from './module/signalling'
 import { OperationQueue } from './util/OperationQueue'
 import { SignalGetChannelInfoResponse } from './interfaces/SignalProtocols'
+import { CanvasWatermarkControl } from './module/watermark/CanvasWatermarkControl'
+import { EncoderWatermarkControl } from './module/watermark/EncoderWatermarkControl'
 
 type UIDTYPE = number | string
 
@@ -154,6 +156,15 @@ export type ConnectionState = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'DIS
 export type MediaType = 'audio' | 'video' | 'screenShare' | 'audioSlave'
 export type MediaTypeShort = 'audio' | 'video' | 'screen' | 'audioSlave'
 
+export const MediaTypeListAudio: ['audio', 'audioSlave'] = ['audio', 'audioSlave']
+export const MediaTypeListVideo: ['audio', 'audioSlave'] = ['audio', 'audioSlave']
+export const MediaTypeList: ['audio', 'video', 'screen', 'audioSlave'] = [
+  'audio',
+  'video',
+  'screen',
+  'audioSlave'
+]
+
 export interface NetStatusItem {
   uid: number | string
   downlinkNetworkQuality: number
@@ -181,6 +192,26 @@ export interface RenderMode {
   width: number
   height: number
   cut: boolean
+}
+
+export interface AudioPlaySettings {
+  volume: number | null
+  dom: HTMLAudioElement | null
+}
+
+export interface VideoPlaySettings {
+  dom: HTMLVideoElement | null
+  containerDom: HTMLElement | null
+  view: HTMLElement | null
+  renderMode: RenderMode
+  size: { width: number; height: number }
+  canvasWatermark: CanvasWatermarkControl
+  encoderWatermark: EncoderWatermarkControl
+  frameData: {
+    // 有canvas而无context，表示获取Context失败，之后不再尝试获取Context
+    canvas: HTMLCanvasElement | null
+    context: CanvasRenderingContext2D | null
+  }
 }
 
 export interface MediaStats {
@@ -975,7 +1006,7 @@ export interface MaskUserSetting {
 }
 
 export interface SnapshotOptions {
-  name: string
+  name?: string
   mediaType?: MediaTypeShort
 }
 

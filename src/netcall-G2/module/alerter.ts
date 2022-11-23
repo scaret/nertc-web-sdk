@@ -110,18 +110,7 @@ function resumeAllMedia() {
     }
     for (let id in client.adapterRef.remoteStreamMap) {
       const remoteStream = client.adapterRef.remoteStreamMap[id]
-      if (remoteStream._play?.audioDom?.paused) {
-        remoteStream.logger.warn(`尝试恢复音频播放`)
-        remoteStream._play.audioDom.play()
-      }
-      if (remoteStream._play?.videoDom?.paused) {
-        remoteStream.logger.warn(`尝试恢复视频播放`)
-        remoteStream._play.videoDom.play()
-      }
-      if (remoteStream._play?.screenDom?.paused) {
-        remoteStream.logger.warn(`尝试恢复屏幕共享播放`)
-        remoteStream._play.screenDom.play()
-      }
+      remoteStream.resume()
     }
   }
   const localStreams = getParameters().localStreams
@@ -130,18 +119,7 @@ function resumeAllMedia() {
     if (localStream.destroyed) {
       continue
     }
-    if (localStream._play?.audioDom?.paused) {
-      localStream.logger.warn(`尝试恢复音频播放`)
-      localStream._play.audioDom.play()
-    }
-    if (localStream._play?.videoDom?.paused) {
-      localStream.logger.warn(`尝试恢复视频播放`)
-      localStream._play.videoDom.play()
-    }
-    if (localStream._play?.screenDom?.paused) {
-      localStream.logger.warn(`尝试恢复屏幕共享播放`)
-      localStream._play.screenDom.play()
-    }
+    localStream.resume()
   }
   const audioContext = getAudioContext()
   if (audioContext?.state === 'suspended') {

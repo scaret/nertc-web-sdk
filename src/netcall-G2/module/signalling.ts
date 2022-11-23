@@ -7,6 +7,7 @@ import {
   AdapterRef,
   ILogger,
   MaskUserSetting,
+  MediaTypeList,
   MediaTypeShort,
   NetStatusItem,
   SignalingConnectionConfig,
@@ -1846,8 +1847,7 @@ class Signalling extends EventEmitter {
     const producerId = data.producerId
     const mute = data.mute
     Object.values(this.adapterRef.remoteStreamMap).forEach((stream) => {
-      const mediaTypeList: MediaTypeShort[] = ['audio', 'video', 'screen', 'audioSlave']
-      mediaTypeList.forEach((mediaTypeShort) => {
+      MediaTypeList.forEach((mediaTypeShort) => {
         if (stream.pubStatus[mediaTypeShort].producerId === producerId) {
           stream.muteStatus[mediaTypeShort].send = mute
           if (mute) {

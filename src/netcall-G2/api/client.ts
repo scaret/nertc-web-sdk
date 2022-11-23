@@ -22,6 +22,7 @@ import {
   LocalVideoStats,
   MediaPriorityOptions,
   MediaSubStatus,
+  MediaTypeList,
   MediaTypeShort,
   RTMPTask,
   SpatialInitOptions
@@ -1352,15 +1353,12 @@ class Client extends Base {
    * @param {Stream} Stream类型
    * @returns {Promise}
    */
-  async unsubscribe(stream: RemoteStream, mediaType?: 'audio' | 'audioSlave' | 'video' | 'screen') {
+  async unsubscribe(stream: RemoteStream, mediaType?: MediaTypeShort) {
     checkExists({ tag: 'client.unsubscribe:stream', value: stream })
     return this.doUnsubscribe(stream, mediaType)
   }
 
-  async doUnsubscribe(
-    stream: RemoteStream,
-    mediaType?: 'audio' | 'audioSlave' | 'video' | 'screen'
-  ) {
+  async doUnsubscribe(stream: RemoteStream, mediaType?: MediaTypeShort) {
     this.logger.log(
       `unsubscribe() [取消订阅远端音视频流: ${stream.stringStreamID}, mediaType: ${
         mediaType ? mediaType : 'all'
@@ -2484,7 +2482,6 @@ class Client extends Base {
       const remoteStream = this.adapterRef.remoteStreamMap[uid]
       this.logger.warn('refreshRemoteEvents peer-online', uid)
       this.safeEmit('peer-online', { uid: uid })
-      const MediaTypeList: MediaTypeShort[] = ['audio', 'video', 'screen', 'audioSlave']
       MediaTypeList.forEach((mediaTypeShort) => {
         if (remoteStream.pubStatus[mediaTypeShort].producerId) {
           this.logger.warn('refreshRemoteEvents stream-added', uid, mediaTypeShort)

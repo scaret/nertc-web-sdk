@@ -792,12 +792,13 @@ function initEvents() {
         const id = remoteStream.getId()
         addView(id)
         if (errorCode === 41030) {
-          $(`#${id}-img`).show()
-          $(`#${id}-img`).on('click', async () => {
-            console.log('start resume--->')
-            await remoteStream.resume()
-            $(`#${id}-img`).hide()
-          })
+          addLog('自动播放策略阻止：' + remoteStream.streamID)
+          // $(`#${id}-img`).show()
+          // $(`#${id}-img`).on('click', async () => {
+          //   console.log('start resume--->')
+          //   await remoteStream.resume()
+          //   $(`#${id}-img`).hide()
+          // })
         }
       })
     }
@@ -1206,7 +1207,7 @@ function getRemoteView(uid) {
     return view
   } else {
     const $div = $(
-      `<div class="remote-view remove-view-${uid}"><div class="remote-view-title remote-view-title-${uid}"></div></div>`
+      `<div class="remote-view remote-view-${uid}"><div class="remote-view-title remote-view-title-${uid}"></div></div>`
     )
     view = {
       uid: uid,
@@ -1248,11 +1249,30 @@ function updateRemoteViewInfo() {
         infoStr += `${mediaType}`.toUpperCase()
       } else if (view[mediaType].added) {
         infoStr += `${mediaType}`
+      } else {
+        infoStr += `<span style="color:#d3d3d3">${mediaType}</span>`
       }
       if (view[mediaType].muted) {
         infoStr = `<del>${infoStr}</del>`
       }
       if (remoteStream) {
+        const canPlay = remoteStream.canPlay(mediaType)
+        if (canPlay){
+          const title = `canPlay: ${canPlay.result} ${canPlay.reason}\nisPlaying ${mediaType}: ${remoteStream.isPlaying(mediaType)}`
+
+          if (canPlay.result){
+            infoStr = `<span style="background: #90ee90" title="${title}" onclick="rtc.remoteStreams[${remoteStream.streamID}].play($('.remote-view-${remoteStream.streamID}')[0], {audio: '${mediaType}' === 'audio', video: '${mediaType}' === 'video', screen: '${mediaType}' === 'screen', audioSlave: '${mediaType}' === 'audioSlave', })">${infoStr}</span>`
+          } else if (canPlay.reason === 'PLAYING') {
+            infoStr = `<span title="${title}" onclick="rtc.remoteStreams[${remoteStream.streamID}].stop('${mediaType}')">${infoStr}</span>`
+          } else if (canPlay.reason === 'PAUSED') {
+            infoStr = `<span style="background: yellow" title="${title}" onclick="rtc.remoteStreams[${remoteStream.streamID}].resume('${mediaType}')">${infoStr}</span>`
+          } else {
+            infoStr = `<span title="${title}">${infoStr}</span>`
+          }
+        } else {
+          console.error(mediaType, remoteStream)
+        }
+
         if (mediaType === 'video') {
           const track = remoteStream.mediaHelper.video.cameraTrack
           if (track) {
