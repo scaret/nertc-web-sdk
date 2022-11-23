@@ -29,6 +29,7 @@ import {
   GetStreamConstraints,
   LocalStreamOptions,
   MediaRecordingOptions,
+  MediaTypeList,
   MediaTypeShort,
   NERtcCanvasWatermarkConfig,
   NERtcEncoderWatermarkConfig,
@@ -210,9 +211,6 @@ class LocalStream extends RTCEventEmitter {
     screen: { send: false }
   }
   public readonly isRemote: false = false
-  private audioPlay_ = false
-  private videoPlay_ = false
-  private screenPlay_ = false
   public active = true
   public logger: ILogger
   public localStreamId: number
@@ -880,14 +878,11 @@ class LocalStream extends RTCEventEmitter {
     if (playOptions.audio && this._play && this.mediaHelper.getAudioInputTracks().length > 0) {
       this.logger.log(`uid ${this.stringStreamID} 开始播放本地音频: `, playOptions.audioType)
       if (playOptions.audioType === 'voice') {
-        this._play.playAudioStream(this.mediaHelper.audio.micStream, playOptions.muted)
-        this.audioPlay_ = true
+        this._play.playAudioStream('audio', this.mediaHelper.audio.micStream, playOptions.muted)
       } else if (playOptions.audioType === 'music') {
-        this._play.playAudioStream(this.mediaHelper.audio.musicStream, playOptions.muted)
-        this.audioPlay_ = true
+        this._play.playAudioStream('audio', this.mediaHelper.audio.musicStream, playOptions.muted)
       } else if (playOptions.audioType === 'mixing') {
-        this._play.playAudioStream(this.mediaHelper.audio.audioStream, playOptions.muted)
-        this.audioPlay_ = true
+        this._play.playAudioStream('audio', this.mediaHelper.audio.audioStream, playOptions.muted)
       }
     }
 
@@ -904,14 +899,11 @@ class LocalStream extends RTCEventEmitter {
         if (this._play && this.mediaHelper.video.videoStream.getVideoTracks().length) {
           this.logger.log(`uid ${this.stringStreamID} 开始启动视频播放 主流 本地`)
           try {
-            let end = 'local'
-            await this._play.playVideoStream(this.mediaHelper.video.renderStream, view, end)
+            await this._play.playVideoStream('video', this.mediaHelper.video.renderStream, view)
             if ('width' in this.renderMode.local.video) {
-              this._play.setVideoRender(this.renderMode.local.video)
+              this._play.setRender('video', this.renderMode.local.video)
             }
-            this.videoPlay_ = true
           } catch (error) {
-            this.videoPlay_ = false
             this.logger.log('localStream play video error ', error)
           }
           // 重新开启视频后期处理
@@ -923,13 +915,11 @@ class LocalStream extends RTCEventEmitter {
         if (this._play && this.mediaHelper.screen.screenVideoStream.getVideoTracks().length) {
           this.logger.log(`uid ${this.stringStreamID} 开始启动视频播放 辅流 本地`)
           try {
-            await this._play.playScreenStream(this.mediaHelper.screen.renderStream, view)
+            await this._play.playVideoStream('screen', this.mediaHelper.screen.renderStream, view)
             if ('width' in this.renderMode.local.screen) {
-              this._play.setScreenRender(this.renderMode.local.screen)
+              this._play.setRender('screen', this.renderMode.local.screen)
             }
-            this.screenPlay_ = false
           } catch (error) {
-            this.screenPlay_ = false
             this.logger.log('localStream play screen error ', error)
           }
         }
@@ -971,15 +961,6 @@ class LocalStream extends RTCEventEmitter {
   async resume() {
     if (this._play) {
       await this._play.resume()
-      if (this._play.audioDom && !this._play.audioDom.paused) {
-        this.audioPlay_ = true
-      }
-      if (this._play.videoDom && !this._play.videoDom.paused) {
-        this.videoPlay_ = true
-      }
-      if (this._play.screenDom && !this._play.screenDom.paused) {
-        this.screenPlay_ = true
-      }
     }
     this.client.apiFrequencyControl({
       name: 'resume',
@@ -1027,7 +1008,7 @@ class LocalStream extends RTCEventEmitter {
     // mediaType不填则都设
     if (!mediaType || mediaType === 'video') {
       if (this._play) {
-        this._play.setVideoRender(options)
+        this._play.setRender('video', options)
       }
       this.renderMode.local.video = options
       this.replaceCanvas()
@@ -1035,7 +1016,7 @@ class LocalStream extends RTCEventEmitter {
     if (!mediaType || mediaType === 'screen') {
       this.renderMode.local.screen = options
       if (this._play) {
-        this._play.setScreenRender(options)
+        this._play.setRender('screen', options)
       }
     }
     this.client.apiFrequencyControl({
@@ -1058,29 +1039,11 @@ class LocalStream extends RTCEventEmitter {
   stop(type?: MediaTypeShort) {
     this.logger.log(`stop() uid ${this.stringStreamID} 停止播放 ${type || '音视频流'}`)
     if (!this._play) return
-    if (type === 'audio') {
-      this._play.stopPlayAudioStream()
-      this.audioPlay_ = false
-    } else if (type === 'video') {
-      this._play.stopPlayVideoStream()
-      this.videoPlay_ = false
-    } else if (type === 'screen') {
-      this._play.stopPlayScreenStream()
-      this.screenPlay_ = false
-    } else {
-      if (this._play.audioDom) {
-        this._play.stopPlayAudioStream()
-        this.audioPlay_ = false
+    MediaTypeList.forEach((mediaType) => {
+      if (!type || mediaType === type) {
+        this._play.stopPlayStream(mediaType)
       }
-      if (this._play.videoDom) {
-        this._play.stopPlayVideoStream()
-        this.videoPlay_ = false
-      }
-      if (this._play.screenDom) {
-        this._play.stopPlayScreenStream()
-        this.screenPlay_ = false
-      }
-    }
+    })
     this.client.apiFrequencyControl({
       name: 'stop',
       code: 0,
@@ -1106,15 +1069,11 @@ class LocalStream extends RTCEventEmitter {
    * @param {string} type 查看的媒体类型： audio/video
    * @returns {Promise}
    */
-  async isPlaying(type: MediaTypeShort) {
+  isPlaying(type: MediaTypeShort) {
     let isPlaying = false
     if (!this._play) {
-    } else if (type === 'audio') {
-      isPlaying = await this._play.isPlayAudioStream()
-    } else if (type === 'video') {
-      isPlaying = await this._play.isPlayVideoStream()
-    } else if (type === 'screen') {
-      isPlaying = await this._play.isPlayScreenStream()
+    } else if (MediaTypeList.indexOf(type) > -1) {
+      return this._play.isPlaying(type)
     } else {
       this.logger.warn('isPlaying: unknown type')
       let enMessage = 'localStream.isPlaying: The type of parameter(uid) is unknown',
@@ -1123,13 +1082,11 @@ class LocalStream extends RTCEventEmitter {
         zhAdvice = '请输入正确的参数类型'
       let message = env.IS_ZH ? zhMessage : enMessage,
         advice = env.IS_ZH ? zhAdvice : enAdvice
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.UNKNOWN_TYPE_ERROR,
-          message,
-          advice
-        })
-      )
+      throw new RtcError({
+        code: ErrorCode.UNKNOWN_TYPE_ERROR,
+        message,
+        advice
+      })
     }
     this.client.apiFrequencyControl({
       name: 'isPlaying',
@@ -1144,8 +1101,15 @@ class LocalStream extends RTCEventEmitter {
         ' '
       )
     })
-    this.logger.log(`检查${this.stringStreamID}的${type}播放状态: ${isPlaying}`)
     return isPlaying
+  }
+
+  canPlay(mediaType: MediaTypeShort) {
+    if (MediaTypeList.indexOf(mediaType) === -1) {
+      return null
+    } else {
+      return this._play.canPlay(mediaType)
+    }
   }
 
   /**
@@ -1668,7 +1632,7 @@ class LocalStream extends RTCEventEmitter {
             advice
           })
         }
-        this._play.stopPlayVideoStream()
+        this._play.stopPlayVideoStream('video')
         if (!this.getAdapterRef()) {
           this.logger.log('Stream.close:未发布视频，无需停止发布')
         } else {
@@ -1707,7 +1671,7 @@ class LocalStream extends RTCEventEmitter {
             advice
           })
         }
-        this._play.stopPlayScreenStream()
+        this._play.stopPlayVideoStream('screen')
         if (!this.getAdapterRef()) {
           this.logger.log('Stream.close:未发布辅流，无需停止发布')
         } else {
@@ -2173,7 +2137,7 @@ class LocalStream extends RTCEventEmitter {
           advice
         })
       }
-      this._play.setPlayVolume(volume)
+      this._play.setPlayVolume('audio', volume)
     } else {
       this.logger.log(`没有音频流，请检查是否有发布过音频`)
       reason = 'INVALID_OPERATION'
@@ -2561,7 +2525,7 @@ class LocalStream extends RTCEventEmitter {
         this.videoPostProcess.sourceTrack.enabled = true
       }
       if (env.IS_SAFARI) {
-        const videoDom = this._play?.getVideoDom
+        const videoDom = this._play?.video.containerDom
         if (videoDom) {
           videoDom.style.backgroundColor = ''
         }
@@ -2611,7 +2575,7 @@ class LocalStream extends RTCEventEmitter {
         this.virtualBackground.emptyFrame = true
       }
       if (env.IS_SAFARI) {
-        const videoDom = this._play?.getVideoDom
+        const videoDom = this._play?.video.dom
         if (videoDom) {
           videoDom.style.backgroundColor = 'black'
         }
@@ -3117,10 +3081,7 @@ class LocalStream extends RTCEventEmitter {
     })
   }
 
-  getSender(
-    mediaTypeShort: 'audio' | 'video' | 'screen' | 'audioSlave',
-    streamType: 'high' | 'low'
-  ) {
+  getSender(mediaTypeShort: MediaTypeShort, streamType: 'high' | 'low') {
     const peer = this.getAdapterRef()?._mediasoup?._sendTransport?.handler._pc
     let sender = null
     if (peer) {
@@ -3273,7 +3234,7 @@ class LocalStream extends RTCEventEmitter {
           advice
         })
       }
-      await this._play.takeSnapshot(options, this.streamID)
+      await this._play.takeSnapshot(options, 'download', this.streamID)
       this.client.apiFrequencyControl({
         name: 'takeSnapshot',
         code: 0,
@@ -3325,7 +3286,7 @@ class LocalStream extends RTCEventEmitter {
           advice
         })
       }
-      let base64Url = this._play.takeSnapshotBase64(options)
+      let base64Url = this._play.takeSnapshot(options, 'base64')
       this.client.apiFrequencyControl({
         name: 'takeSnapshotBase64',
         code: 0,
@@ -3852,12 +3813,10 @@ class LocalStream extends RTCEventEmitter {
 
   setCanvasWatermarkConfigs(options: NERtcCanvasWatermarkConfig) {
     if (this._play) {
-      let watermarkControl = null
-      if (!options.mediaType || options.mediaType === 'video') {
-        watermarkControl = this._play.watermark.video.canvasControl
-      } else if (options.mediaType === 'screen') {
-        watermarkControl = this._play.watermark.screen.canvasControl
-      }
+      let watermarkControl =
+        options.mediaType === 'screen'
+          ? this._play.screen.canvasWatermark
+          : this._play.video.canvasWatermark
       if (!watermarkControl) {
         this.logger.error('setCanvasWatermarkConfigs：播放器未初始化', options.mediaType)
         return
@@ -3926,45 +3885,25 @@ class LocalStream extends RTCEventEmitter {
    */
   setEncoderWatermarkConfigs(options: NERtcEncoderWatermarkConfig) {
     if (this._play && this._play) {
-      let watermarkControl = null
-      if (!options.mediaType || options.mediaType === 'video') {
-        watermarkControl = this._play.watermark.video.encoderControl
-        if (
-          options.textWatermarks?.length ||
-          options.timestampWatermarks ||
-          options.imageWatermarks?.length
-        ) {
-          this._play.watermark.video.encoderControl.handler.enabled = true
-          if (!this.mediaHelper.video.preProcessingEnabled) {
-            this.mediaHelper.enablePreProcessing('video')
-          }
-        } else {
-          this._play.watermark.video.encoderControl.handler.enabled = false
-          if (this.mediaHelper.canDisablePreProcessing('video')) {
-            this.mediaHelper.disablePreProcessing('video')
-          }
-        }
-      } else if (options.mediaType === 'screen') {
-        watermarkControl = this._play.watermark.screen.encoderControl
-        if (
-          options.textWatermarks?.length ||
-          options.timestampWatermarks ||
-          options.imageWatermarks?.length
-        ) {
-          this._play.watermark.screen.encoderControl.handler.enabled = true
-          if (!this.mediaHelper.screen.preProcessingEnabled) {
-            this.mediaHelper.enablePreProcessing('screen')
-          }
-        } else {
-          this._play.watermark.screen.encoderControl.handler.enabled = false
-          if (this.mediaHelper.canDisablePreProcessing('screen')) {
-            this.mediaHelper.disablePreProcessing('screen')
-          }
-        }
-      }
+      const mediaType = options.mediaType || 'video'
+      const watermarkControl = this._play[mediaType].encoderWatermark
       if (!watermarkControl) {
         this.logger.error('setEncoderWatermarkConfigs：播放器未初始化', options.mediaType)
         return
+      } else if (
+        options.textWatermarks?.length ||
+        options.timestampWatermarks ||
+        options.imageWatermarks?.length
+      ) {
+        watermarkControl.handler.enabled = true
+        if (!this.mediaHelper[mediaType].preProcessingEnabled) {
+          this.mediaHelper.enablePreProcessing(mediaType)
+        }
+      } else {
+        watermarkControl.handler.enabled = false
+        if (this.mediaHelper.canDisablePreProcessing(mediaType)) {
+          this.mediaHelper.disablePreProcessing(mediaType)
+        }
       }
 
       const LIMITS = {
@@ -4817,8 +4756,8 @@ class LocalStream extends RTCEventEmitter {
     if (!this._play) return
     if (!env.IS_ANY_SAFARI) return
     if (env.SAFARI_VERSION && parseFloat(env.SAFARI_VERSION) > 15.2) return
-    const localVideoDom = this._play.getVideoDom?.querySelector('video')
-    const videoDom = this._play.getVideoDom
+    const localVideoDom = this._play.video.dom?.querySelector('video')
+    const videoDom = this._play.video.containerDom
     if (localVideoDom && videoDom) {
       const filters = this.videoPostProcess.filters!
       const video = this.videoPostProcess.video

@@ -463,6 +463,20 @@ class MediaHelper extends EventEmitter {
     }
   }
 
+  getTrackByMediaType(mediaType: MediaTypeShort) {
+    if (mediaType === 'audio') {
+      return this.audio.micTrack || this.audio.audioSource
+    } else if (mediaType === 'audioSlave') {
+      return this.screenAudio.screenAudioTrack || this.screenAudio.screenAudioSource
+    } else if (mediaType === 'video') {
+      return this.video.cameraTrack || this.video.videoSource
+    } else if (mediaType === 'screen') {
+      return this.screen.screenVideoTrack || this.screen.screenVideoSource
+    } else {
+      return null
+    }
+  }
+
   async getStream(constraint: GetStreamConstraints) {
     let {
       audio = false,
@@ -1012,16 +1026,13 @@ class MediaHelper extends EventEmitter {
           oper: '1',
           value: 'success'
         })
-        const videoView = this.stream.Play?.videoView
+        const videoView = this.stream._play.video.view
         if (videoView) {
           await this.stream.play(videoView)
-          //@ts-ignore
           if ('width' in this.stream.renderMode.local.video) {
-            //@ts-ignore
             this.stream.setLocalRenderMode(this.stream.renderMode.local.video, 'video')
           }
         }
-        //@ts-ignore
         const videoSender = this.stream.getSender('video', 'high')
         if (videoSender?.track) {
           videoSender.replaceTrack(videoTrack)
@@ -1233,15 +1244,15 @@ class MediaHelper extends EventEmitter {
       this.audio.micTrack = track
       emptyStreamWith(this.audio.audioStream, track)
       // Safari：即使前后属性相同，也需要重新设一遍srcObject
-      if (this.stream._play?.audioDom) {
-        this.stream._play.audioDom.srcObject = this.audio.audioStream
+      if (this.stream._play.audio.dom) {
+        this.stream._play.audio.dom.srcObject = this.audio.audioStream
       }
     } else if (kind === 'audioSlave') {
       this.screenAudio.screenAudioTrack = track
       emptyStreamWith(this.screenAudio.screenAudioStream, track)
       // Safari：即使前后属性相同，也需要重新设一遍srcObject
-      if (this.stream._play?.audioSlaveDom) {
-        this.stream._play.audioSlaveDom.srcObject = this.audio.audioStream
+      if (this.stream._play.audioSlave.dom) {
+        this.stream._play.audioSlave.dom.srcObject = this.screenAudio.screenAudioStream
       }
     } else if (kind === 'video') {
       this.video.cameraTrack = track
@@ -1260,8 +1271,8 @@ class MediaHelper extends EventEmitter {
       }
 
       // Safari：即使前后属性相同，也需要重新设一遍srcObject
-      if (this.stream._play?.videoDom) {
-        this.stream._play.videoDom.srcObject = this.video.renderStream
+      if (this.stream._play.video.dom) {
+        this.stream._play.video.dom.srcObject = this.video.renderStream
       }
     } else if (kind === 'screen') {
       this.screen.screenVideoTrack = track
@@ -1279,8 +1290,8 @@ class MediaHelper extends EventEmitter {
           this.screen.encoderConfig.high.contentHint
       }
       // Safari：即使前后属性相同，也需要重新设一遍srcObject
-      if (this.stream._play?.screenDom) {
-        this.stream._play.screenDom.srcObject = this.screen.renderStream
+      if (this.stream._play.screen.dom) {
+        this.stream._play.screen.dom.srcObject = this.screen.renderStream
       }
     }
   }

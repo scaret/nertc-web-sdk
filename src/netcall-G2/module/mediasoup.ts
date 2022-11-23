@@ -8,6 +8,7 @@ import {
   ILogger,
   MediasoupManagerOptions,
   MediaType,
+  MediaTypeList,
   MediaTypeShort,
   ProduceConsumeInfo,
   RecvInfo,
@@ -474,10 +475,7 @@ class Mediasoup extends EventEmitter {
     this.adapterRef.instance.leave()
   }
 
-  async createProduce(
-    stream: LocalStream,
-    mediaTypeInput: 'all' | 'audio' | 'audioSlave' | 'video' | 'screen'
-  ) {
+  async createProduce(stream: LocalStream, mediaTypeInput: 'all' | MediaTypeShort) {
     stream.logger.log('发布音视频: ', stream.getId(), mediaTypeInput)
     //this._sendTransport.removeListener()
     if (!this._sendTransport) {
@@ -974,9 +972,9 @@ class Mediasoup extends EventEmitter {
               this._webcamProducer._rtpSenderLow || null
             )
             if (IS_SAFARI && SAFARI_MAJOR_VERSION && SAFARI_MAJOR_VERSION < 14) {
-              if (stream._play?.videoDom?.srcObject) {
+              if (stream._play.video.dom?.srcObject) {
                 this.logger.log(`尝试重置本地视图的SrcObject`)
-                stream._play.videoDom.srcObject = stream._play.videoDom.srcObject
+                stream._play.video.dom.srcObject = stream._play.video.dom.srcObject
               }
             }
           }
@@ -1407,7 +1405,7 @@ class Mediasoup extends EventEmitter {
       this.loggerRecv.log('[Subscribe] 已经订阅过')
       let isPlaying = true
       if (remoteStream.Play) {
-        isPlaying = await remoteStream.Play.isPlayStreamError(mediaTypeShort)
+        isPlaying = remoteStream._play.isPlaying(mediaTypeShort)
       }
 
       if (isPlaying) {
@@ -2647,8 +2645,7 @@ class Mediasoup extends EventEmitter {
       if (options.uid && options.uid.toString() !== uid) {
         continue
       }
-      let mediaTypes: MediaTypeShort[] = ['audio', 'video', 'screen', 'audioSlave']
-      mediaTypes.forEach((mediaType) => {
+      MediaTypeList.forEach((mediaType) => {
         if (options.mediaType && options.mediaType !== mediaType) {
           return
         }

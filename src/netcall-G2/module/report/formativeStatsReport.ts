@@ -333,19 +333,11 @@ class FormativeStatsReport {
         const remoteStream = this.adapterRef.remoteStreamMap[item.uid]
         const muteStatus =
           remoteStream && (remoteStream.muteStatus.audio.send || remoteStream.muteStatus.audio.recv)
-        let isPlaying = true
+        let isPlaying
         if (muteStatus) {
           isPlaying = false
-        }
-
-        if (
-          !remoteStream ||
-          !remoteStream.Play ||
-          !remoteStream.Play.audioDom ||
-          !remoteStream.Play.audioDom.srcObject ||
-          remoteStream.Play.audioDom.muted
-        ) {
-          isPlaying = false
+        } else {
+          isPlaying = remoteStream._play.isPlaying('audio')
         }
 
         this._audioLevel.push({
@@ -393,16 +385,8 @@ class FormativeStatsReport {
         let isPlaying = true
         if (muteStatus) {
           isPlaying = false
-        }
-
-        if (
-          !remoteStream ||
-          !remoteStream.Play ||
-          !remoteStream.Play.audioSlaveDom ||
-          !remoteStream.Play.audioSlaveDom.srcObject ||
-          remoteStream.Play.audioSlaveDom.muted
-        ) {
-          isPlaying = false
+        } else {
+          isPlaying = remoteStream._play.isPlaying('audioSlave')
         }
 
         this._audioLevel.push({
@@ -448,7 +432,7 @@ class FormativeStatsReport {
           }
         }
         const remoteStream = this.adapterRef.remoteStreamMap[item.uid]
-        const videoDom = remoteStream && remoteStream.Play && remoteStream.Play.videoDom
+        const videoDom = remoteStream && remoteStream.Play && remoteStream.Play.video.dom
         let muteState =
           remoteStream && (remoteStream.muteStatus.video.send || remoteStream.muteStatus.video.recv)
         if (!this.firstData.recvFirstData[item.uid].recvFirstVideoFrame && item.framesDecoded > 0) {
@@ -521,7 +505,7 @@ class FormativeStatsReport {
           }
         }
         const remoteStream = this.adapterRef.remoteStreamMap[item.uid]
-        const screenDom = remoteStream && remoteStream.Play && remoteStream.Play.screenDom
+        const screenDom = remoteStream && remoteStream.Play && remoteStream.Play.screen.dom
         let muteState =
           remoteStream &&
           (remoteStream.muteStatus.screen.send || remoteStream.muteStatus.screen.recv)
@@ -731,13 +715,7 @@ class FormativeStatsReport {
       return
     }
 
-    if (
-      !remoteStream ||
-      !remoteStream.Play ||
-      !remoteStream.Play.audioDom ||
-      !remoteStream.Play.audioDom.srcObject ||
-      remoteStream.Play.audioDom.muted
-    ) {
+    if (!remoteStream.isPlaying('audio')) {
       return
     }
 
@@ -754,12 +732,7 @@ class FormativeStatsReport {
       params.googDecodingNormalPerSecond > 0 &&
       0 === +(params.audioOutputLevel || params.audioLevel)
     ) {
-      const volume =
-        remoteStream &&
-        remoteStream.Play &&
-        remoteStream.Play.audioDom &&
-        remoteStream.Play.audioDom.volume
-      if (volume && volume > 0) {
+      if (remoteStream._play.isPlaying('audio')) {
         this.adapterRef.instance.safeEmit('exception', {
           msg: 'AUDIO_OUTPUT_LEVEL_TOO_LOW',
           code: 2002,
