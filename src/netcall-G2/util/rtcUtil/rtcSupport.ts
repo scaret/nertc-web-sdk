@@ -9,17 +9,12 @@ import { getBrowserInfo, getOSInfo } from './rtcPlatform'
 
 // default check result
 let checkResult = {
-  result: false,
-  detail: {
-    isBrowserSupported: false,
-    isWebRTCSupported: false,
-    isMediaDevicesSupported: false,
-    isH264EncodeSupported: false,
-    isVp8EncodeSupported: false,
-    isH264DecodeSupported: false,
-    isVp8DecodeSupported: false
-  }
+  isPullStreamSupport: false,
+  isPushStreamSupport: false,
+  isScreenShareSupport: false
 }
+let encode = { video: [] as any, audio: [] as any }
+let decode = { video: [] as any, audio: [] as any }
 
 // 1. getUserMedia
 var getUserMedia = null
@@ -160,12 +155,12 @@ const RtcSupport = {
 
 export { RtcSupport }
 
-export const isWebRTCSupported = function () {
-  const apiList = ['RTCPeerConnection', 'webkitRTCPeerConnection', 'RTCIceGatherer']
+const isWebRTCSupported = function () {
+  const apiList = ['RTCPeerConnection', 'webkitRTCPeerConnection', 'mozRTCPeerConnection']
   return apiList.filter((api) => api in window).length > 0
 }
 
-export const isMediaDevicesSupported = function () {
+const isMediaDevicesSupported = function () {
   if (!navigator.mediaDevices) {
     return false
   }
@@ -173,7 +168,53 @@ export const isMediaDevicesSupported = function () {
   return apiList.filter((api) => api in navigator.mediaDevices).length === apiList.length
 }
 
-export const isScreenShareSupport = function () {
+const isWebSocketSupported = function () {
+  return !!window.WebSocket && !!window.WebSocket.prototype.send
+}
+
+async function isEncodeSupported() {
+  if (encode.video.length) {
+    return true
+  }
+  encode = (await getSupportedCodecs('send')) as any
+  return encode.video.indexOf('H264') > -1 || encode.video.indexOf('VP8') > -1
+}
+
+async function isDecodeSupported() {
+  if (decode.video.length) {
+    return true
+  }
+  decode = (await getSupportedCodecs('recv')) as any
+  return decode.video.indexOf('H264') > -1 || decode.video.indexOf('VP8') > -1
+}
+async function isGetSendStatsSupported() {
+  return !!RTCPeerConnection.prototype.getStats || !!RTCRtpSender.prototype.getStats
+}
+
+async function isGetReceiveStatsSupported() {
+  return !!RTCPeerConnection.prototype.getStats || !!RTCRtpReceiver.prototype.getStats
+}
+
+export async function isPushStreamSupported() {
+  return (
+    (await isEncodeSupported()) &&
+    isWebRTCSupported() &&
+    isWebSocketSupported() &&
+    isMediaDevicesSupported() &&
+    isGetSendStatsSupported()
+  )
+}
+
+export async function isPullStreamSupported() {
+  return (
+    (await isDecodeSupported()) &&
+    isWebRTCSupported() &&
+    isWebSocketSupported() &&
+    isGetReceiveStatsSupported()
+  )
+}
+
+const isScreenShareSupported = function () {
   if (env.IS_ELECTRON) {
     return true
   } else {
@@ -228,37 +269,18 @@ export const isBrowserSupported = function () {
 }
 
 // compatibility check
-export const checkRTCCompatibility = async function () {
+export const checkBrowserCompatibility = async function () {
   // check cached result
-  if (checkResult.result) {
-    return checkResult
-  }
+  // if (checkResult.result) {
+  //   return checkResult
+  // }
+  const isScreenShareSupport = isScreenShareSupported()
+  const isPushSupport = await isPushStreamSupported()
+  const isPullSupport = await isPullStreamSupported()
 
-  // TODO: check blacklists of browser
-  const isBrowserSupport = isBrowserSupported()
-  // check WebRTC Api
-  const isWebRTCSupport = isWebRTCSupported()
-  // check media api
-  const isMediaDevicesSupport = isMediaDevicesSupported()
-  // check encode
-  const encode = (await getSupportedCodecs('send')) as any
-  // check decode
-  const decode = (await getSupportedCodecs('recv')) as any
-
-  checkResult.detail.isBrowserSupported = isBrowserSupport
-  checkResult.detail.isWebRTCSupported = isWebRTCSupport
-  checkResult.detail.isMediaDevicesSupported = isMediaDevicesSupport
-  checkResult.detail.isH264EncodeSupported = encode.video.indexOf('H264') > -1
-  checkResult.detail.isVp8EncodeSupported = encode.video.indexOf('VP8') > -1
-  checkResult.detail.isH264DecodeSupported = decode.video.indexOf('H264') > -1
-  checkResult.detail.isVp8DecodeSupported = decode.video.indexOf('VP8') > -1
-
-  checkResult.result =
-    isBrowserSupport &&
-    isWebRTCSupport &&
-    isMediaDevicesSupport &&
-    (checkResult.detail.isH264EncodeSupported || checkResult.detail.isVp8EncodeSupported) &&
-    (checkResult.detail.isH264EncodeSupported || checkResult.detail.isVp8EncodeSupported)
+  checkResult.isScreenShareSupport = isScreenShareSupport
+  checkResult.isPushStreamSupport = isPushSupport
+  checkResult.isPullStreamSupport = isPullSupport
 
   return checkResult
 }

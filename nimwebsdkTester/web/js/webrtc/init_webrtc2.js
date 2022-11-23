@@ -1257,10 +1257,12 @@ function updateRemoteViewInfo() {
       }
       if (remoteStream) {
         const canPlay = remoteStream.canPlay(mediaType)
-        if (canPlay){
-          const title = `canPlay: ${canPlay.result} ${canPlay.reason}\nisPlaying ${mediaType}: ${remoteStream.isPlaying(mediaType)}`
+        if (canPlay) {
+          const title = `canPlay: ${canPlay.result} ${
+            canPlay.reason
+          }\nisPlaying ${mediaType}: ${remoteStream.isPlaying(mediaType)}`
 
-          if (canPlay.result){
+          if (canPlay.result) {
             infoStr = `<span style="background: #90ee90" title="${title}" onclick="rtc.remoteStreams[${remoteStream.streamID}].play($('.remote-view-${remoteStream.streamID}')[0], {audio: '${mediaType}' === 'audio', video: '${mediaType}' === 'video', screen: '${mediaType}' === 'screen', audioSlave: '${mediaType}' === 'audioSlave', })">${infoStr}</span>`
           } else if (canPlay.reason === 'PLAYING') {
             infoStr = `<span title="${title}" onclick="rtc.remoteStreams[${remoteStream.streamID}].stop('${mediaType}')">${infoStr}</span>`
