@@ -223,6 +223,7 @@ class LocalStream extends RTCEventEmitter {
   private canvasWatermarkOptions: NERtcCanvasWatermarkConfig | null = null
   private encoderWatermarkOptions: NERtcEncoderWatermarkConfig | null = null
   private supportWasm: boolean = true
+  private supportAIDenoise: boolean = true
 
   constructor(options: LocalStreamOptions) {
     super()
@@ -4601,6 +4602,10 @@ class LocalStream extends RTCEventEmitter {
 
   //打开AI降噪
   async enableAIDenoise(): Promise<boolean> {
+    if (!this.supportAIDenoise) {
+      this.logger.warn('Unsupport ai denoise. Please check your plugin version')
+      return false
+    }
     this.logger.log('start ai denoise.')
     let stageAIProcessing: StageAIProcessing
     if (this.mediaHelper.audio.stageAIProcessing) {
@@ -4628,11 +4633,11 @@ class LocalStream extends RTCEventEmitter {
     stageAIProcessing.enabled = true
     if (stageAIProcessing.state === 'UNINIT') {
       await stageAIProcessing.init()
-      if (!this.mediaHelper.audio.audioRoutingEnabled) {
-        this.mediaHelper.enableAudioRouting()
-      }
-      this.mediaHelper.updateWebAudio()
     }
+    if (!this.mediaHelper.audio.audioRoutingEnabled) {
+      this.mediaHelper.enableAudioRouting()
+    }
+    this.mediaHelper.updateWebAudio()
     this.client.apiFrequencyControl({
       name: 'enableAIDenoise',
       code: 0,
@@ -4927,6 +4932,7 @@ class LocalStream extends RTCEventEmitter {
         plugin.once('error', (message: string) => {
           if (options.key == 'AIDenoise') {
             this.disableAIDenoise()
+            this.supportAIDenoise = false
           }
           throw new RtcError({
             code: ErrorCode.PLUGIN_LOADED_ERROR,
