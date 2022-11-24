@@ -1288,6 +1288,7 @@ class Signalling extends EventEmitter {
       this.logger.log(
         `Signalling: 查看房间其他人的发布信息: ${JSON.stringify(response.externData.userList)}`
       )
+      const eventsAfterJoinRes: { eventName: string; eventData: any }[] = []
       if (
         response.externData !== undefined &&
         response.externData.userList &&
@@ -1313,14 +1314,23 @@ class Signalling extends EventEmitter {
             })
             this.adapterRef.remoteStreamMap[uid] = remoteStream
             this.adapterRef.memberMap[uid] = '' + uid
-            this.adapterRef.instance.safeEmit('peer-online', { uid })
+            eventsAfterJoinRes.push({
+              eventName: 'peer-online',
+              eventData: { uid }
+            })
           } else {
             remoteStream.active = true
             this.adapterRef.memberMap[uid] = '' + uid
-            this.adapterRef.instance.safeEmit('peer-online', { uid })
+            eventsAfterJoinRes.push({
+              eventName: 'peer-online',
+              eventData: { uid }
+            })
           }
           if (peer.customData) {
-            this.adapterRef.instance.safeEmit('custom-data', { uid, customData: peer.customData })
+            eventsAfterJoinRes.push({
+              eventName: 'custom-data',
+              eventData: { uid, customData: peer.customData }
+            })
           }
 
           if (peer.producerInfoList) {
@@ -1352,41 +1362,62 @@ class Signalling extends EventEmitter {
               remoteStream['muteStatus'][mediaTypeShort].send = mute
               remoteStream['pubStatus'][mediaTypeShort]['simulcastEnable'] = simulcastEnable
 
-              setTimeout(() => {
-                // join response中的事件应该延迟到join发生后再抛出
-                that.logger.log(
-                  `Signalling: 通知 ${remoteStream.getId()} 发布信息: ${JSON.stringify(
-                    remoteStream.pubStatus,
-                    null,
-                    ''
-                  )}`
-                )
-                if (that.adapterRef._enableRts && that.adapterRef._rtsTransport) {
-                  that.adapterRef.instance.emit('rts-stream-added', {
+              that.logger.log(
+                `Signalling: 通知 ${remoteStream.getId()} 发布信息: ${JSON.stringify(
+                  remoteStream.pubStatus,
+                  null,
+                  ''
+                )}`
+              )
+              if (that.adapterRef._enableRts && that.adapterRef._rtsTransport) {
+                eventsAfterJoinRes.push({
+                  eventName: 'rts-stream-added',
+                  eventData: {
                     stream: remoteStream,
                     kind: mediaTypeShort
-                  })
-                } else if (
-                  remoteStream.pubStatus.audio.audio ||
-                  remoteStream.pubStatus.video.video ||
-                  remoteStream.pubStatus.screen.screen ||
-                  remoteStream.pubStatus.audioSlave.audioSlave
-                ) {
-                  that.adapterRef.instance.safeEmit('stream-added', {
+                  }
+                })
+              } else if (
+                remoteStream.pubStatus.audio.audio ||
+                remoteStream.pubStatus.video.video ||
+                remoteStream.pubStatus.screen.screen ||
+                remoteStream.pubStatus.audioSlave.audioSlave
+              ) {
+                eventsAfterJoinRes.push({
+                  eventName: 'stream-added',
+                  eventData: {
                     stream: remoteStream,
                     mediaType: mediaTypeShort
+                  }
+                })
+              }
+
+              if (mute) {
+                if (mediaTypeShort === 'audioSlave') {
+                  eventsAfterJoinRes.push({
+                    eventName: `mute-audio-slave`,
+                    eventData: {
+                      uid: remoteStream.getId()
+                    }
+                  })
+                } else {
+                  eventsAfterJoinRes.push({
+                    eventName: `mute-${mediaTypeShort}`,
+                    eventData: {
+                      uid: remoteStream.getId()
+                    }
                   })
                 }
+              }
 
-                if (mute) {
-                  if (mediaTypeShort === 'audioSlave') {
-                    that.adapterRef.instance.safeEmit(`mute-audio-slave`, {
-                      uid: remoteStream.getId()
-                    })
-                  } else {
-                    that.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {
-                      uid: remoteStream.getId()
-                    })
+              const instance = this.adapterRef.instance
+              setTimeout(() => {
+                // join response中的事件应该延迟到join发生后再抛出
+                for (let i = 0; i < eventsAfterJoinRes.length; i++) {
+                  const eventName = eventsAfterJoinRes[i].eventName
+                  const eventData = eventsAfterJoinRes[i].eventData
+                  if (instance) {
+                    instance.safeEmit(eventName, eventData)
                   }
                 }
               }, 0)
