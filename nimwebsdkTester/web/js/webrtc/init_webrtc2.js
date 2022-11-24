@@ -1727,6 +1727,27 @@ $('#registerSimdVitrualBackground').on('click', async () => {
     rtc.localStream.registerPlugin(segment_config)
   }
 })
+//模拟背景分割插件js 404
+$('#vbjs404').on('click', async () => {
+  if (rtc.localStream) {
+    $('#segmentStatus').html('loading').show()
+    const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
+    segment_config = Object.assign({}, virtualBackgroundPluginConfig[NERTC.ENV][type])
+    segment_config.pluginUrl = './js/nim/NIM_Web_VirtualBackground111.js'
+    rtc.localStream.registerPlugin(segment_config)
+  }
+})
+//模拟背景分割插件wasm 404
+$('#vbwasm404').on('click', async () => {
+  if (rtc.localStream) {
+    $('#segmentStatus').html('loading').show()
+    const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
+    segment_config = Object.assign({}, virtualBackgroundPluginConfig[NERTC.ENV][type])
+    segment_config.wasmUrl =
+      './js/nim/wasm/NIM_Web_VirtualBackground_simd111.wasm' + `?time=${Math.random()}`
+    rtc.localStream.registerPlugin(segment_config)
+  }
+})
 
 $('#registerVitrualBackground').on('click', async () => {
   if (rtc.localStream) {
@@ -1765,6 +1786,27 @@ $('#registerSimdAdvancedBeauty').on('click', async () => {
     const type = 'simd'
     beauty_config = advancedBeautyPluginConfig[NERTC.ENV][type]
     rtc.localStream.registerPlugin(beauty_config)
+  }
+})
+//模拟高级美颜插件js 404
+$('#abjs404').on('click', async () => {
+  if (rtc.localStream) {
+    $('#advancedBeautyStatus').html('loading').show()
+    const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
+    segment_config = Object.assign({}, advancedBeautyPluginConfig[NERTC.ENV][type])
+    segment_config.pluginUrl = './js/nim/NIM_Web_AdvancedBeauty111.js'
+    rtc.localStream.registerPlugin(segment_config)
+  }
+})
+//模拟高级美颜插件wasm 404
+$('#abwasm404').on('click', async () => {
+  if (rtc.localStream) {
+    $('#advancedBeautyStatus').html('loading').show()
+    const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
+    segment_config = Object.assign({}, advancedBeautyPluginConfig[NERTC.ENV][type])
+    segment_config.wasmUrl =
+      './js/nim/wasm/NIM_Web_AdvancedBeauty111.wasm' + `?time=${Math.random()}`
+    rtc.localStream.registerPlugin(segment_config)
   }
 })
 
@@ -1837,6 +1879,26 @@ $('#registerSimdAIDenoise').on('click', async () => {
     const type = 'simd'
     aidenoise_config = aiDenoisePluginConfig[NERTC.ENV][type]
     rtc.localStream.registerPlugin(aidenoise_config)
+  }
+})
+//模拟AI降噪插件js 404
+$('#adjs404').on('click', async () => {
+  if (rtc.localStream) {
+    $('#aidenoiseStatus').html('loading').show()
+    const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
+    segment_config = Object.assign({}, aiDenoisePluginConfig[NERTC.ENV][type])
+    segment_config.pluginUrl = './js/nim/NIM_Web_AIDenoise111.js'
+    rtc.localStream.registerPlugin(segment_config)
+  }
+})
+//模拟AI降噪插件wasm 404
+$('#adwasm404').on('click', async () => {
+  if (rtc.localStream) {
+    $('#aidenoiseStatus').html('loading').show()
+    const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
+    segment_config = Object.assign({}, aiDenoisePluginConfig[NERTC.ENV][type])
+    segment_config.wasmUrl = './js/nim/wasm/NIM_Web_AIDenoise111.wasm' + `?time=${Math.random()}`
+    rtc.localStream.registerPlugin(segment_config)
   }
 })
 

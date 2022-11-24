@@ -4947,7 +4947,7 @@ class LocalStream extends RTCEventEmitter {
     } catch (e: any) {
       this.emit('plugin-load-error', {
         key: options.key,
-        msg: e.message
+        msg: e
       })
       this.client.apiFrequencyControl({
         name: 'registerPlugin',
