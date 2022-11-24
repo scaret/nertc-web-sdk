@@ -278,7 +278,17 @@ class Base extends RTCEventEmitter {
       startSessionTime: 0, // 通话开始时间
       endSessionTime: 0, // 通话时间结束
       startPubVideoTime: 0, // 视频发布开始时间
-      startPubScreenTime: 0 //屏幕共享发布开始时间
+      startPubScreenTime: 0, //屏幕共享发布开始时间
+      getChannelInfoTime: 0,
+      signalEstablishTime: 0,
+      signalOpenTime: 0,
+      signalJoinResTime: 0,
+      signalJoinSuccessTime: 0,
+      signalAudioAddedTime: 0,
+      signalAudioSubscribedTime: 0,
+      signalVideoAddedTime: 0,
+      signalVideoSubscribedTime: 0,
+      signalVideoFirstFrameTime: 0
     }
 
     Object.assign(this.adapterRef, {

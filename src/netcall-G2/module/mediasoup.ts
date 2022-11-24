@@ -1778,6 +1778,19 @@ class Mediasoup extends EventEmitter {
       }
       remoteStream.mediaHelper.updateStream(mediaTypeShort, consumer.track)
       this.adapterRef.instance.safeEmit('@pairing-createConsumer-success')
+      if (mediaTypeShort === 'audio') {
+        if (
+          this.adapterRef.state.signalAudioSubscribedTime < this.adapterRef.state.signalOpenTime
+        ) {
+          this.adapterRef.state.signalAudioSubscribedTime = Date.now()
+        }
+      } else if (mediaTypeShort === 'video') {
+        if (
+          this.adapterRef.state.signalVideoSubscribedTime < this.adapterRef.state.signalOpenTime
+        ) {
+          this.adapterRef.state.signalVideoSubscribedTime = Date.now()
+        }
+      }
       this.adapterRef.instance.safeEmit('stream-subscribed', {
         stream: remoteStream,
         mediaType: mediaTypeShort

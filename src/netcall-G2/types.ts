@@ -58,6 +58,16 @@ export interface AdapterRef {
     endSessionTime: number
     startPubVideoTime: number
     startPubScreenTime: number
+    getChannelInfoTime: number
+    signalEstablishTime: number
+    signalOpenTime: number
+    signalJoinResTime: number
+    signalJoinSuccessTime: number
+    signalAudioAddedTime: number
+    signalAudioSubscribedTime: number
+    signalVideoAddedTime: number
+    signalVideoSubscribedTime: number
+    signalVideoFirstFrameTime: number
   }
   mediaCapability: MediaCapability
   nim?: any

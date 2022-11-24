@@ -314,6 +314,7 @@ class Signalling extends EventEmitter {
       }
     })
     this._protoo = new protooClient.Peer(protooTransport)
+    this.adapterRef.state.signalEstablishTime = Date.now()
     this._bindEvent()
   }
 
@@ -1019,6 +1020,7 @@ class Signalling extends EventEmitter {
   }
 
   async join() {
+    this.adapterRef.state.signalOpenTime = Date.now()
     let gmEnable
     if (!this.adapterRef.encryption.encryptionSecret) {
       gmEnable = false
@@ -1094,6 +1096,7 @@ class Signalling extends EventEmitter {
       let thisProtoo = this._protoo
       try {
         response = (await this._protoo.request('Join', requestData)) as SignalJoinRes
+        this.adapterRef.state.signalJoinResTime = Date.now()
       } catch (e: any) {
         if (thisProtoo !== this._protoo) {
           this.logger.warn(`过期的信令通道消息：【${e.name}】`, e.message)
@@ -1417,6 +1420,23 @@ class Signalling extends EventEmitter {
                   const eventName = eventsAfterJoinRes[i].eventName
                   const eventData = eventsAfterJoinRes[i].eventData
                   if (instance) {
+                    if (eventName === 'stream-added') {
+                      if (eventData.mediaType === 'audio') {
+                        if (
+                          instance.adapterRef.state.signalAudioAddedTime <
+                          instance.adapterRef.state.signalOpenTime
+                        ) {
+                          instance.adapterRef.state.signalAudioAddedTime = Date.now()
+                        }
+                      } else if (eventData.mediaType === 'video') {
+                        if (
+                          instance.adapterRef.state.signalVideoAddedTime <
+                          instance.adapterRef.state.signalOpenTime
+                        ) {
+                          instance.adapterRef.state.signalVideoAddedTime = Date.now()
+                        }
+                      }
+                    }
                     instance.safeEmit(eventName, eventData)
                   }
                 }
@@ -1432,6 +1452,7 @@ class Signalling extends EventEmitter {
           }
         }
       }
+      this.adapterRef.state.signalJoinSuccessTime = Date.now()
       if (this._resolve) {
         this.logger.log('加入房间成功, 反馈通知')
         this._resolve(response)
