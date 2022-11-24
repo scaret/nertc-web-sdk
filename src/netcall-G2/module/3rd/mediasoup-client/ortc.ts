@@ -881,6 +881,10 @@ function matchCodecs(
 
   // Per codec special checks.
   switch (aMimeType) {
+    case 'video/h265':
+    case 'video/vp9':
+    case 'video/av1':
+      return false
     case 'video/h264': {
       const aPacketizationMode = aCodec.parameters['packetization-mode'] || 0
       const bPacketizationMode = bCodec.parameters['packetization-mode'] || 0
