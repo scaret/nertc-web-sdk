@@ -246,7 +246,10 @@ function loadEnv() {
     domUid = sessionStorage.getItem('domUid')
   } else {
     domUid = '' + Math.floor(Math.random() * 9000 + 1000)
+    //变成大整数
+    domUid = `${domUid}000000000${domUid}`
   }
+  $(`#useStringUid`).attr('checked', 'checked')
 
   $('#uid').val(domUid)
 
@@ -1232,6 +1235,58 @@ function getRemoteView(uid) {
   }
 }
 
+function updateLocalViewInfo() {
+  let title = ''
+  ;['audio', 'video', 'screen', 'audioSlave'].forEach((mediaType) => {
+    let infoStr = mediaType
+    if (rtc.localStream) {
+      const canPlay = rtc.localStream.canPlay(mediaType)
+      if (canPlay) {
+        const title = `canPlay: ${canPlay.result} ${
+          canPlay.reason
+        }\nisPlaying ${mediaType}: ${rtc.localStream.isPlaying(mediaType)}`
+        if (canPlay.reason === 'NOT_OPENED'){
+          infoStr = `<span style="color:#d3d3d3">${infoStr}</span>`
+        }
+        if (canPlay.result) {
+          infoStr = `<span style="background: #90ee90" title="${title}" onclick="rtc.localStream.play('local-container', {audio: '${mediaType}' === 'audio', video: '${mediaType}' === 'video', screen: '${mediaType}' === 'screen', audioSlave: '${mediaType}' === 'audioSlave', })">${infoStr}</span>`
+        } else if (canPlay.reason === 'PLAYING') {
+          infoStr = `<span title="${title}" onclick="rtc.localStream.stop('${mediaType}')">${infoStr}</span>`
+        } else if (canPlay.reason === 'PAUSED') {
+          infoStr = `<span style="background: yellow" title="${title}" onclick="rtc.localStream.resume('${mediaType}')">${infoStr}</span>`
+        } else {
+          infoStr = `<span title="${title}">${infoStr}</span>`
+        }
+      } else {
+        console.error(mediaType, rtc.localStream)
+      }
+
+      if (mediaType === 'video') {
+        const track = rtc.localStream.mediaHelper.video.cameraTrack
+        if (track) {
+          const settings = track.getSettings()
+          if (settings && settings.width && settings.height) {
+            infoStr += ` ${settings.width}x${settings.height}`
+          }
+        }
+      }
+      if (mediaType === 'screen') {
+        const track = rtc.localStream.mediaHelper.screen.screenVideoTrack
+        if (track) {
+          const settings = track.getSettings()
+          if (settings && settings.width && settings.height) {
+            infoStr += ` ${settings.width}x${settings.height}`
+          }
+        }
+      }
+    }
+    if (infoStr) {
+      title += ' ' + infoStr
+    }
+  })
+  $('#local-container-title').html(title)
+}
+
 function updateRemoteViewInfo() {
   for (let i = 0; i < remoteViews.length; i++) {
     const view = remoteViews[i]
@@ -1263,11 +1318,11 @@ function updateRemoteViewInfo() {
           }\nisPlaying ${mediaType}: ${remoteStream.isPlaying(mediaType)}`
 
           if (canPlay.result) {
-            infoStr = `<span style="background: #90ee90" title="${title}" onclick="rtc.remoteStreams[${remoteStream.streamID}].play($('.remote-view-${remoteStream.streamID}')[0], {audio: '${mediaType}' === 'audio', video: '${mediaType}' === 'video', screen: '${mediaType}' === 'screen', audioSlave: '${mediaType}' === 'audioSlave', })">${infoStr}</span>`
+            infoStr = `<span style="background: #90ee90" title="${title}" onclick="rtc.remoteStreams['${remoteStream.streamID}'].play($('.remote-view-${remoteStream.streamID}')[0], {audio: '${mediaType}' === 'audio', video: '${mediaType}' === 'video', screen: '${mediaType}' === 'screen', audioSlave: '${mediaType}' === 'audioSlave', })">${infoStr}</span>`
           } else if (canPlay.reason === 'PLAYING') {
-            infoStr = `<span title="${title}" onclick="rtc.remoteStreams[${remoteStream.streamID}].stop('${mediaType}')">${infoStr}</span>`
+            infoStr = `<span title="${title}" onclick="rtc.remoteStreams['${remoteStream.streamID}'].stop('${mediaType}')">${infoStr}</span>`
           } else if (canPlay.reason === 'PAUSED') {
-            infoStr = `<span style="background: yellow" title="${title}" onclick="rtc.remoteStreams[${remoteStream.streamID}].resume('${mediaType}')">${infoStr}</span>`
+            infoStr = `<span style="background: yellow" title="${title}" onclick="rtc.remoteStreams['${remoteStream.streamID}'].resume('${mediaType}')">${infoStr}</span>`
           } else {
             infoStr = `<span title="${title}">${infoStr}</span>`
           }
@@ -1324,7 +1379,8 @@ function updateRemoteViewInfo() {
   }
 }
 
-const updateRemoteViewInfoTimer = setInterval(updateRemoteViewInfo, 200)
+const updateLocalViewInfoTimer = setInterval(updateLocalViewInfo, 500)
+const updateRemoteViewInfoTimer = setInterval(updateRemoteViewInfo, 500)
 
 document.getElementById('getAudioLevelRemote').onclick = updateRemoteViewInfo
 /**
