@@ -1332,6 +1332,10 @@ document.getElementById('getAudioLevelRemote').onclick = updateRemoteViewInfo
  */
 
 $('#joinChannel-btn').on('click', async () => {
+  if (window.pointsMs){
+    window.pointsMs.buttonClick = Date.now()
+    $(`#buttonClickMs`).html('0')
+  }
   const channelName = $('#channelName').val()
   if (window.localStorage) {
     window.localStorage.setItem(`${localStoragePrefix}channelName`, channelName)

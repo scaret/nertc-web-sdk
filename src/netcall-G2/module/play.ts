@@ -172,6 +172,16 @@ class Play extends EventEmitter {
         const width = videoDom.videoWidth
         const height = videoDom.videoHeight
 
+        if (width > 2 && height > 2 && this.stream.isRemote) {
+          if (
+            this.stream.client.adapterRef.state.signalVideoFirstFrameTime <
+            this.stream.client.adapterRef.state.signalJoinSuccessTime
+          ) {
+            // 视频首帧
+            this.stream.client.adapterRef.state.signalVideoFirstFrameTime = Date.now()
+          }
+        }
+
         if (width !== mediaSettings.size.width || height !== mediaSettings.size.height) {
           this.logger.log(
             `[Play] 主流视频分辨率发生变化：${mediaSettings.size.width}x${

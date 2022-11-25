@@ -18,6 +18,14 @@ let recvStatsFilter = {
   },
 }
 
+window.points = [
+  'startSession', 'getChannelInfo', 'signalEstablish', 'signalOpen', 'signalJoinRes', 'signalJoinSuccess',
+  'signalAudioAdded', 'signalVideoAdded', 'signalAudioSubscribed', 'signalVideoSubscribed', 'signalVideoFirstFrame'
+]
+window.pointsMs = {
+  buttonClick: Date.now()
+}
+
 const captureTimer = setInterval(async ()=>{
   if (!rtc || !rtc.client){
     return
@@ -415,6 +423,29 @@ const captureTimer = setInterval(async ()=>{
     if ($('#currentPubStatus').html() !== currentPubStatus){
       $('#currentPubStatus').text(currentPubStatus)
     }
+  }
+
+  // 计算进房时间统计
+  const state = rtc.client.adapterRef.state
+  if (state.startSessionTime) {
+    points.forEach((pointName, i)=>{
+      const ms = state[`${pointName}Time`] - pointsMs.buttonClick
+
+      if (state[`${pointName}Time`] > 0 && ms >= 0){
+        if (pointsMs[pointName] !== ms){
+          pointsMs[pointName] = ms
+          let delta
+          if (pointsMs[points[i - 1]]){
+            delta = pointsMs[pointName] - pointsMs[points[i - 1]]
+          } else {
+            delta = '-'
+          }
+          $(`#${pointName}Ms`).html(`${delta} / ${ms}`)
+        }
+      } else {
+        $(`#${pointName}Ms`).html('')
+      }
+    })
   }
 
 }, 1000)
