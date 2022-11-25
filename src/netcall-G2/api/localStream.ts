@@ -4919,6 +4919,15 @@ class LocalStream extends RTCEventEmitter {
             key: options.key,
             msg: `load ${options.wasmUrl} error.`
           })
+          this.client.apiFrequencyControl({
+            name: 'registerPlugin',
+            code: -1,
+            param: {
+              streamID: this.stringStreamID,
+              plugin: options.key,
+              msg: `load ${options.wasmUrl} error.`
+            }
+          })
           throw new RtcError({
             code: ErrorCode.PLUGIN_LOADED_ERROR,
             message: env.IS_ZH
@@ -4931,9 +4940,18 @@ class LocalStream extends RTCEventEmitter {
         })
         plugin.once('error', (message: string) => {
           if (options.key == 'AIDenoise') {
-            this.disableAIDenoise()
             this.supportAIDenoise = false
           }
+          this.unregisterPlugin(options.key)
+          this.client.apiFrequencyControl({
+            name: 'registerPlugin',
+            code: -1,
+            param: {
+              streamID: this.stringStreamID,
+              plugin: options.key,
+              msg: `插件 ${options.key} 内部错误：${message}。`
+            }
+          })
           throw new RtcError({
             code: ErrorCode.PLUGIN_LOADED_ERROR,
             message: env.IS_ZH
@@ -4961,7 +4979,7 @@ class LocalStream extends RTCEventEmitter {
     }
   }
 
-  async unregisterPlugin(key: VideoPluginType | AudioPluginType) {
+  async unregisterPlugin(key: string) {
     this.logger.log(`unRegister plugin:${key}`)
     if (audioPlugins.indexOf(key) !== -1) {
       if (key === 'AIDenoise') {
