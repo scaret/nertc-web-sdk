@@ -1,5 +1,3 @@
-import { isBrowserSupported } from './rtcUtil/rtcSupport'
-
 class SystemChecker {
   checkCnt = 0
   checkSystemRequirements() {
@@ -19,12 +17,6 @@ class SystemChecker {
     }
     if (!window.WebSocket) {
       console.warn(`checkSystemRequirements: 没有 WebSocket 对象。`)
-      return false
-    }
-    if (!isBrowserSupported()) {
-      console.warn(
-        `checkSystemRequirements: 不支持的浏览器。当前的 UserAgent为 ${navigator.userAgent}`
-      )
       return false
     }
     return true

@@ -920,17 +920,17 @@ function matchCodecs(
       break
     }
 
-    case 'video/vp9': {
-      // If strict matching check profile-id.
-      if (strict) {
-        const aProfileId = aCodec.parameters['profile-id'] || 0
-        const bProfileId = bCodec.parameters['profile-id'] || 0
+    // case 'video/vp9': {
+    //   // If strict matching check profile-id.
+    //   if (strict) {
+    //     const aProfileId = aCodec.parameters['profile-id'] || 0
+    //     const bProfileId = bCodec.parameters['profile-id'] || 0
 
-        if (aProfileId !== bProfileId) return false
-      }
+    //     if (aProfileId !== bProfileId) return false
+    //   }
 
-      break
-    }
+    //   break
+    // }
   }
 
   return true
