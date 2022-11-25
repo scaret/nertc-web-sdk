@@ -329,14 +329,6 @@ class Play extends EventEmitter {
     }
   }
 
-  async stopPlayStream(mediaType: MediaTypeShort) {
-    const dom = this[mediaType].dom
-    if (dom) {
-      dom.muted = true
-      dom.srcObject = null
-    }
-  }
-
   setPlayVolume(mediaType: 'audio' | 'audioSlave', volume: number) {
     const mediaSetting = this[mediaType]
     mediaSetting.volume = volume
@@ -476,7 +468,23 @@ class Play extends EventEmitter {
     }
   }
 
-  async stopPlayVideoStream(mediaType: 'video' | 'screen') {
+  async stopPlayStream(mediaType: MediaTypeShort) {
+    if (mediaType === 'audio' || mediaType === 'audioSlave') {
+      this._stopPlayAudioStream(mediaType)
+    } else if (mediaType === 'video' || mediaType === 'screen') {
+      this._stopPlayVideoStream(mediaType)
+    }
+  }
+
+  private async _stopPlayAudioStream(mediaType: 'audio' | 'audioSlave') {
+    const dom = this[mediaType].dom
+    if (dom) {
+      dom.muted = true
+      dom.srcObject = null
+    }
+  }
+
+  private async _stopPlayVideoStream(mediaType: 'video' | 'screen') {
     this.logger.log(`stopPlayVideoStream 停止播放 ${mediaType}`)
     const view = this[mediaType].view
     const containerDom = this[mediaType].containerDom

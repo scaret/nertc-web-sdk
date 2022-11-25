@@ -1636,7 +1636,7 @@ class LocalStream extends RTCEventEmitter {
             advice
           })
         }
-        this._play.stopPlayVideoStream('video')
+        this._play.stopPlayStream('video')
         if (!this.getAdapterRef()) {
           this.logger.log('Stream.close:未发布视频，无需停止发布')
         } else {
@@ -1675,7 +1675,7 @@ class LocalStream extends RTCEventEmitter {
             advice
           })
         }
-        this._play.stopPlayVideoStream('screen')
+        this._play.stopPlayStream('screen')
         if (!this.getAdapterRef()) {
           this.logger.log('Stream.close:未发布辅流，无需停止发布')
         } else {
