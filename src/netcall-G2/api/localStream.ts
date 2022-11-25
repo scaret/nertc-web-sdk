@@ -4696,7 +4696,7 @@ class LocalStream extends RTCEventEmitter {
         param: {
           streamID: this.stringStreamID,
           plugin: options.key,
-          msg: e.message
+          msg: e
         }
       })
     }
