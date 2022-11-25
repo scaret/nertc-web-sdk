@@ -26,6 +26,7 @@ export const resSet = {
   teethWhiten: 'https://yx-web-nosdn.netease.im/common/ca8a6b0be3427ead9b19bcf9ae1245a8/teath.png'
 }
 
+/** 高级美颜面部 faceMesh 的扩展相关功能 */
 const advBtyFaceMesh = {
   // 插值出额头部分的 facemesh
   genTopFace(keyPoints: Int16Array) {
@@ -78,6 +79,7 @@ const advBtyFaceMesh = {
       )
     })
   },
+  // 插值出面部外圆点位，确保画面在高级美颜后无割裂感
   genFaceOutline(keyPoints: Int16Array) {
     const extraPts = [
       0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 106, 107, 108, 109, 110, 111,
@@ -224,6 +226,7 @@ export class AdvBeautyFilter extends Filter {
     // })
   }
 
+  /** 设置线框渲染数据，用于调试 */
   private setWirePosBuffer() {
     if (!this.isShowWire) return
     const existKeys = new Set()
@@ -261,6 +264,7 @@ export class AdvBeautyFilter extends Filter {
     }
   }
 
+  /** 初始化高级美颜着色器程序及所需图像缓冲区 */
   private initProgramBuffer() {
     const gl = this.renderer.gl!
     const size = this.renderer.getSize()
@@ -270,6 +274,7 @@ export class AdvBeautyFilter extends Filter {
     }
     let wireFramebuffer = null
     if (this.isShowWire) {
+      // facemesh 线框着色器程序
       const wireProgram = new Program(gl, () => {
         gl.drawArrays(gl.LINES, 0, this.wirePosBuffer?.count || 0)
       })
@@ -282,7 +287,7 @@ export class AdvBeautyFilter extends Filter {
       this.framebuffers.wire = wireFramebuffer
     }
 
-    // 面部变形
+    // 面部变形着色器程序
     const morphProgram = new Program(gl, () => {
       gl.drawElements(gl.TRIANGLES, this.indicesBuffer!.count, gl.UNSIGNED_SHORT, 0)
     })
@@ -306,7 +311,7 @@ export class AdvBeautyFilter extends Filter {
     this.programs.morph = morphProgram
     this.framebuffers.morph = morphFramebuffer
 
-    // 脸部遮罩
+    // 脸部遮罩着色器程序，用以生成脸部遮罩，用以优化基础美颜区域
     const faceMaskProgram = new Program(gl, () => {
       gl.drawElements(gl.TRIANGLES, this.indicesBuffer!.count, gl.UNSIGNED_SHORT, 0)
     })
@@ -322,7 +327,7 @@ export class AdvBeautyFilter extends Filter {
     this.programs.faceMask = faceMaskProgram
     this.framebuffers.faceMask = faceMaskFramebuffer
 
-    // 眼睛牙齿遮罩
+    // 眼睛牙齿遮罩着色器程序
     const eyeTeethProgram = new Program(gl, () => {
       gl.drawElements(gl.TRIANGLES, this.advEyeTeethIndicesBuffer!.count, gl.UNSIGNED_SHORT, 0)
     })
@@ -341,7 +346,7 @@ export class AdvBeautyFilter extends Filter {
     morphProgram.setUniform('eyeTeethMaskMap', eyeTeethFramebuffer.targetTexture)
 
     for (let i = 0; i < 2; i++) {
-      // 大眼圆眼
+      // 大眼圆眼着色器程序，左右眼需分开处理
       const eyeProgram = new Program(gl)
       eyeProgram.setShader(baseTextureShader.vShader, 'VERTEX')
       eyeProgram.setShader(advBeautyEyeShader.fShader, 'FRAGMENT')
@@ -362,6 +367,7 @@ export class AdvBeautyFilter extends Filter {
       this.programs[eyeKey] = eyeProgram
       this.framebuffers[eyeKey] = eyeFramebuffer
 
+      // 多脸情况下，需初始化两个 facemask 合并 buffer，交替累加生成最终的多脸 facemask
       const faceMaskMergeProgram = new Program(gl)
       faceMaskMergeProgram.setShader(baseTextureShader.vShader, 'VERTEX')
       faceMaskMergeProgram.setShader(advFaceMaskShader.fShader, 'FRAGMENT')
@@ -378,13 +384,12 @@ export class AdvBeautyFilter extends Filter {
 
   get output() {
     if (this.advData) {
-      // return this.faceMask
-      // return this.framebuffers.eyeTeeth.targetTexture;
       return this.framebuffers.rEye.targetTexture
     }
     return super.output
   }
 
+  /** 根据脸数，返回 facemask 数据，用以优化基础美颜区域 */
   get faceMask() {
     if (this.advData) {
       const faceNum = (this.advData.length / 212) >> 0
@@ -426,10 +431,12 @@ export class AdvBeautyFilter extends Filter {
     })
   }
 
+  /** 设置人脸推理数据 */
   setAdvData(data: Int16Array) {
     this.advData = data.length ? data : null
   }
 
+  /** 设置美颜效果 */
   setAdvEffect(key: HandleKey | 'reset', intensity?: number) {
     if (key in this.params && typeof intensity === 'number') {
       this.params[key as HandleKey] = Math.min(1, Math.max(0, intensity))
@@ -451,6 +458,7 @@ export class AdvBeautyFilter extends Filter {
     }
   }
 
+  /** 预设美颜效果 */
   presetAdvEffect(preset: {
     [key in HandleKey]?: number
   }) {
@@ -633,6 +641,7 @@ export class AdvBeautyFilter extends Filter {
     }
   }
 
+  /** 配置高级美颜静态资源 */
   static configStaticRes(resConfig: AdvBeautyResType, sender?: AdvBeautyFilter) {
     const failUrls: string[] = []
     let count = 1

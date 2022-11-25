@@ -167,6 +167,11 @@ export function createTexture(
 }
 
 /**
+ * 为了成功加载跨域图片，loadImage 中的 url 参数会追加随机数，会导致本地缓存失效
+ * 为了不给用户体验造成影响，在此处构建基于内存的图像缓存空间
+ */
+const loadedImgs: { [key: string]: HTMLImageElement } = {}
+/**
  * 加载图片
  * @param {string} url
  * @param {(img: HTMLImageElement) => void} onSuccess
@@ -178,6 +183,13 @@ export function loadImage(
   onSuccess?: (img: HTMLImageElement) => void,
   onFail?: (err: any) => void
 ) {
+  if (typeof url !== 'string' || !url) return
+
+  if (loadedImgs[url]) {
+    onSuccess?.(loadedImgs[url])
+    return
+  }
+
   fetch(url + `?rdn=${Date.now()}`)
     .then((response) => {
       return response.arrayBuffer()
@@ -193,6 +205,7 @@ export function loadImage(
       img.onload = () => {
         if (!loaded) {
           loaded = true
+          loadedImgs[url] = img
           onSuccess?.(img)
         }
       }
@@ -204,6 +217,7 @@ export function loadImage(
       setTimeout(() => {
         if (!loaded && img.complete && img.naturalHeight > 0) {
           loaded = true
+          loadedImgs[url] = img
           onSuccess?.(img)
         }
       }, 0)

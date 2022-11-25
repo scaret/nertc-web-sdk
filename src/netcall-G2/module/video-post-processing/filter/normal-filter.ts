@@ -6,6 +6,7 @@ import { createTexture } from '../gl-utils/texture'
 import { baseTextureShader } from '../shaders/base-texture-shader.glsl'
 import { Filter } from './filter'
 
+/** 合成所有渲染效果并输出 */
 export class NormalFilter extends Filter {
   protected _srcMap: ReturnType<typeof createTexture> = null
   constructor(
@@ -21,6 +22,7 @@ export class NormalFilter extends Filter {
   private initProgram() {
     const gl = this.renderer.gl!
     let size = this.renderer.getSize()
+    // 初始化从 webgl 缓冲区获取 imagedata 并用于推理的着色器程序
     const imgDataProgram = new Program(gl)
     imgDataProgram.setShader(baseTextureShader.vShader, 'VERTEX')
     imgDataProgram.setShader(baseTextureShader.yFlipFShader, 'FRAGMENT')
@@ -31,6 +33,7 @@ export class NormalFilter extends Filter {
     this.programs.imgData = imgDataProgram
     this.framebuffers.imgData = imgDataFramebuffer
 
+    // 初始化合成效果输出的着色器程序
     const program = new Program(gl)
     program.setShader(baseTextureShader.vShader, 'VERTEX')
     program.setShader(baseTextureShader.fShader, 'FRAGMENT')

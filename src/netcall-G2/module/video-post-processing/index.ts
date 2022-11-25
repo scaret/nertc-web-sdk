@@ -8,6 +8,11 @@ import { Filters } from './filter'
 
 type TaskType = 'BasicBeauty' | 'VirtualBackground' | 'AdvancedBeauty'
 
+/**
+ * 视频后期处理核心类，负责：
+ * 1、背景替换、高级美颜 wasm 插件的管理；
+ * 2、异步渲染任务队列的维护与管理
+ */
 export default class VideoPostProcess extends EventEmitter {
   // 插件模块
   private pluginModules: {
@@ -116,6 +121,9 @@ export default class VideoPostProcess extends EventEmitter {
     return this.filters.gl.isContextLost() ? 1 : 2
   }
 
+  /**
+   * 根据状态码，输出错误提示信息
+   */
   get glErrorTip() {
     switch (this.availableCode) {
       case -1:
@@ -264,7 +272,8 @@ export default class VideoPostProcess extends EventEmitter {
   }
 
   private frameCount = [0, 0]
-  // task render loop
+
+  /** 任务队列循环渲染 */
   update = (updateFrameCount = true) => {
     if (this.availableCode < 2) return
     if (env.IS_ANY_SAFARI && document.visibilityState === 'hidden') {
@@ -388,6 +397,7 @@ export default class VideoPostProcess extends EventEmitter {
     )
   }
 
+  /** 添加/移除渲染任务，并根据渲染任务情况返回对应 track */
   setTaskAndTrack = (task: TaskType, isEnable: boolean, track?: MediaStreamTrack) => {
     return new Promise((resolve, reject) => {
       if (this.availableCode < 1) {

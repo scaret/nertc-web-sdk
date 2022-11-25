@@ -399,6 +399,10 @@ const ErrorCode = {
    */
   PLUGIN_ERROR: 10407,
   /*
+   * 插件注册错误
+   */
+  PLUGIN_REGISTER_ERROR: 10408,
+  /*
    * 音频处理异常
    *
    */

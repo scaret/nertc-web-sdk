@@ -1,3 +1,4 @@
+/** 保存基础美颜、高级美颜所需的 buffer 数据 */
 export const typedArray = {
   // 位置数据
   posArray: new Int8Array([-1, 1, -1, -1, 1, 1, 1, -1]),

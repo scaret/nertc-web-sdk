@@ -53,6 +53,7 @@ import { isHttpProtocol } from '../util/rtcUtil/rtcSupport'
 import { makePrintable } from '../util/rtcUtil/utils'
 import { getAudioContext } from '../module/webAudio'
 import { StageAIProcessing } from '../module/audio-pipeline/stages/StageAIProcessing/StageAIProcessing'
+import { webassemblySupported } from '../util/wasmDetect'
 
 /**
  *  请使用 {@link NERTC.createStream} 通过NERTC.createStream创建
@@ -217,6 +218,8 @@ class LocalStream extends RTCEventEmitter {
   public destroyed = false
   private canvasWatermarkOptions: NERtcCanvasWatermarkConfig | null = null
   private encoderWatermarkOptions: NERtcEncoderWatermarkConfig | null = null
+  private supportWasm: boolean = true
+  private supportAIDenoise: boolean = true
 
   constructor(options: LocalStreamOptions) {
     super()
@@ -354,6 +357,7 @@ class LocalStream extends RTCEventEmitter {
       }
     })
 
+    this.supportWasm = webassemblySupported()
     this.videoPostProcess = new VideoPostProcess(this.logger)
     this.basicBeauty = new BasicBeauty(this.videoPostProcess)
     this.virtualBackground = new VirtualBackground(this.videoPostProcess)
@@ -4339,6 +4343,10 @@ class LocalStream extends RTCEventEmitter {
 
   //打开AI降噪
   async enableAIDenoise(): Promise<boolean> {
+    if (!this.supportAIDenoise) {
+      this.logger.warn('Unsupport ai denoise. Please check your plugin version')
+      return false
+    }
     this.logger.log('start ai denoise.')
     let stageAIProcessing: StageAIProcessing
     if (this.mediaHelper.audio.stageAIProcessing) {
@@ -4527,13 +4535,15 @@ class LocalStream extends RTCEventEmitter {
           enable,
           this._cameraTrack
         )) as MediaStreamTrack
-        //替换 track
-        await this.replacePluginTrack({
-          mediaType: 'video',
-          //@ts-ignore
-          track: this._transformedTrack,
-          external: false
-        })
+        if (this._transformedTrack) {
+          //替换 track
+          await this.replacePluginTrack({
+            mediaType: 'video',
+            //@ts-ignore
+            track: this._transformedTrack,
+            external: false
+          })
+        }
       } catch (error: any) {
         err = error
       }
@@ -4555,7 +4565,26 @@ class LocalStream extends RTCEventEmitter {
    */
   async registerPlugin(options: PluginOptions) {
     this.logger.log(`register plugin:${options.key}`)
-
+    if (!this.supportWasm) {
+      this.client.apiFrequencyControl({
+        name: 'registerPlugin',
+        code: -1,
+        param: {
+          streamID: this.stringStreamID,
+          plugin: options.key,
+          msg: 'unsupportWasm'
+        }
+      })
+      throw new RtcError({
+        code: ErrorCode.PLUGIN_REGISTER_ERROR,
+        message: env.IS_ZH
+          ? `该浏览器不支持WebAssembly，注册 ${options.key} 失败。`
+          : `Browser does not support WebAssembly.Register ${options.key} error.`,
+        advice: env.IS_ZH
+          ? '请更新浏览器版本或使用其他浏览器'
+          : 'please update the browser version or open with another browser.'
+      })
+    }
     if (this.videoPostProcess.getPlugin(options.key as any)) {
       return this.logger.warn(`plugin ${options.key} already exists.`)
     }
@@ -4642,6 +4671,10 @@ class LocalStream extends RTCEventEmitter {
           })
         })
         plugin.once('error', (message: string) => {
+          if (options.key == 'AIDenoise') {
+            this.disableAIDenoise()
+            this.supportAIDenoise = false
+          }
           throw new RtcError({
             code: ErrorCode.PLUGIN_LOADED_ERROR,
             message: env.IS_ZH
@@ -4655,14 +4688,15 @@ class LocalStream extends RTCEventEmitter {
     } catch (e: any) {
       this.emit('plugin-load-error', {
         key: options.key,
-        msg: e.message
+        msg: e
       })
       this.client.apiFrequencyControl({
         name: 'registerPlugin',
         code: -1,
         param: {
           streamID: this.stringStreamID,
-          plugin: options.key
+          plugin: options.key,
+          msg: e.message
         }
       })
     }

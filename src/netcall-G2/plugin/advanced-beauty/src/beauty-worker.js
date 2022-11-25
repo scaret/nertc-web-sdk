@@ -19,6 +19,9 @@ class mHumanSegmenter {
         this.mHumanSegmenter.setMaxFaceSize(this.max_face_size)
         this.keyPointSize = this.mHumanSegmenter.getKeyPointSize()
         this.handleInitFinished()
+      },
+      onAbort: (msg) => {
+        global.postMessage({ type: 'error', message: '' + msg })
       }
     }
     require('../lib/ne_face_points.js')

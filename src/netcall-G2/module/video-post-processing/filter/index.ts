@@ -9,7 +9,7 @@ import { NormalFilter } from './normal-filter'
 import { typedArray } from './typed-array'
 import { VirtualBackFilter } from './virtual-back-filter'
 
-/** 视频处理全流程管理 */
+/** 视频后期处理管线构建与管理 */
 export class Filters {
   private _renderer: Renderer
   private map: ReturnType<typeof createTexture>
@@ -95,6 +95,7 @@ export class Filters {
     this.virtualBackground = new VirtualBackFilter(this._renderer, this.map, posBuffer, uvBuffer)
   }
 
+  /** 从已有参数重新创建后期处理管线，用以丢失上下文后对管线进行恢复 */
   clone() {
     try {
       const filters = new Filters(this._renderer.canvas)
@@ -113,6 +114,14 @@ export class Filters {
     }
   }
 
+  /**
+   * 返回视频后期处理管线内部涉及到的以下子渲染过程（为了确保输出结果的正确，子任务顺序有严格要求）
+   * 1、高级美颜
+   * 2、基础美颜
+   * 3、滤镜
+   * 4、虚拟背景
+   * 5、合成
+   */
   private get filters() {
     return [
       this.advBeauty,
@@ -131,13 +140,18 @@ export class Filters {
     return this._renderer.canvas
   }
 
+  /**
+   * 返回 webgl 渲染上下文
+   */
   get gl() {
     return this._renderer.gl
   }
 
+  /** 设置输入源 */
   get srcMap() {
     return this.map
   }
+
   /**
    * 设置视频源
    * @param {TexImageSource|null} source
@@ -172,7 +186,7 @@ export class Filters {
   }
 
   /**
-   * 渲染流程
+   * 渲染整个管线
    */
   render() {
     const filters = this.filters
@@ -188,7 +202,7 @@ export class Filters {
   }
 
   /**
-   * 循环处理
+   * 循环渲染整个管线
    */
   update(updateMapSource = true) {
     if (this._alive) {
