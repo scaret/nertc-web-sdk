@@ -1309,7 +1309,10 @@ class Mediasoup extends EventEmitter {
     )
     const result = await this.adapterRef._signalling._protoo.request('SetConsumerPreferredLayer', {
       requestId: `${Math.ceil(Math.random() * 1e9)}`,
-      uid: remoteStream.streamID,
+      uid:
+        typeof remoteStream.streamID === 'number'
+          ? remoteStream.streamID
+          : BigInt(remoteStream.streamID),
       producerId: remoteStream.pubStatus[mediaType].producerId,
       consumerId: remoteStream.pubStatus[mediaType].consumerId,
       spatialLayer: layer
