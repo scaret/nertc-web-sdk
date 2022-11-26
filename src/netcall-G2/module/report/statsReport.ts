@@ -125,9 +125,9 @@ class StatsReport extends EventEmitter {
       if (data?.times % 60 === 0) {
         this.sendDataReportHeartbeat()
       }
-    } catch (error) {
+    } catch (e: any) {
       // console.warn('doHeartBeat failed')
-      this.adapterRef.logger.log('doHeartbeat: ', error)
+      this.adapterRef.logger.warn('数据上报出现异常: ', e.message)
     }
   }
 
