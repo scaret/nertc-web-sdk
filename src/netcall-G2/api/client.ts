@@ -168,24 +168,8 @@ class Client extends Base {
   // 初始化nrtc
   _init(options: ClientOptions) {
     const { appkey = '', token } = options
-    if (!appkey) {
-      this.logger.error('Client: init error: 请传入appkey')
-      let enMessage = 'Client_init: appkey is not found',
-        zhMessage = 'Client_init: appkey 参数缺失',
-        enAdvice = 'Please input appkey',
-        zhAdvice = '请输入 appkey'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.INVALID_PARAMETER_ERROR,
-        message,
-        advice
-      })
-    }
     this._params.appkey = appkey
-
     this.adapterRef.lbsManager.loadBuiltinConfig('oninit')
-
     this._params.token = token
     this._roleInfo = {
       userRole: 0, // 0:主播，1：观众
@@ -287,16 +271,9 @@ class Client extends Base {
       }
     })
     if (reason) {
-      let enMessage = 'startProxyServer: API call sequence error',
-        zhMessage = 'startProxyServer: 接口调用顺序异常',
-        enAdvice = 'Please call startProxyServer() before join()',
-        zhAdvice = '请在加入房间前调用'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.API_CALL_SEQUENCE_ERROR,
-        message,
-        advice
+        code: ErrorCode.API_CALL_SEQUENCE_BEFORE_ERROR,
+        message: '请在加入房间前调用'
       })
     }
     this.adapterRef.proxyServer.enable = true
@@ -402,16 +379,9 @@ class Client extends Base {
     try {
       if (!options.channelName || options.channelName === '') {
         this.logger.log('join: 请填写房间名称')
-        let enMessage = 'join: parameter(channelName) is not found',
-          zhMessage = 'join: 没有找到房间名称',
-          enAdvice = 'Please input the parameter(channelName)',
-          zhAdvice = '请填写房间名称'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.INVALID_PARAMETER_ERROR,
-          message,
-          advice
+          code: ErrorCode.JOIN_WITHOUT_CHANNEL_NAME,
+          message: 'join: 请填写房间名称'
         })
       }
       if (options.joinChannelRecordConfig) {
@@ -433,32 +403,17 @@ class Client extends Base {
         this.adapterRef.channelInfo.uidType = 'number'
         if (options.uid > Number.MAX_SAFE_INTEGER) {
           this.logger.log('uid 参数越界')
-          let enMessage = 'join: parameter(uid) out of bounds',
-            zhMessage = 'join: uid 参数越界',
-            enAdvice =
-              'The maximum range of the Number type is 2^53 - 1, please input the correct parameter',
-            zhAdvice = 'Number 类型的 uid 最大值是 2^53 - 1， 请输入正确的参数'
-          let message = env.IS_ZH ? zhMessage : enMessage,
-            advice = env.IS_ZH ? zhAdvice : enAdvice
           throw new RtcError({
-            code: ErrorCode.INVALID_PARAMETER_ERROR,
-            message,
-            advice
+            code: ErrorCode.JOIN_UID_TYPE_ERROR,
+            message: 'Number 类型的 uid 最大值是 2^53 - 1， 请输入正确的参数'
           })
         }
       } else {
         this.logger.error('uid参数格式非法')
-        let enMessage = 'join: The type of parameter(uid) is not invalid',
-          zhMessage = 'join: uid 参数类型非法',
-          enAdvice = 'Please input the correct parameter type',
-          zhAdvice = '请输入正确的参数类型'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_PARAMETER_ERROR,
-            message,
-            advice
+            code: ErrorCode.JOIN_UID_TYPE_ERROR,
+            message: 'createStream: uid参数格式非法'
           })
         )
       }
@@ -475,18 +430,10 @@ class Client extends Base {
         this.adapterRef.channelStatus === 'connectioning'
       ) {
         this.safeEmit('@pairing-join-error')
-        let enMessage = `join: repeatedly join`,
-          zhMessage = `join: 重复登录`,
-          enAdvice =
-            'Please check the login logic to ensure that you have successfully logged out of the room before logging in to the room again',
-          zhAdvice = '请检查登录逻辑，确保再次登录房间前已成功登出房间'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
             code: ErrorCode.REPEAT_JOIN_ERROR,
-            message,
-            advice
+            message: 'join: 重复加入房间'
           })
         )
       }
@@ -565,17 +512,11 @@ class Client extends Base {
         }
       }
       if (!this.adapterRef._meetings) {
+        this.logger.error('join() meeting模块缺失')
         this.safeEmit('@pairing-join-error')
-        let enMessage = 'join:  meeting error',
-          zhMessage = 'join: 会控异常',
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.MEETING_ERROR,
-          message,
-          advice
+          code: ErrorCode.UNKNOWN_TYPE_ERROR,
+          message: 'sdk内部系统错误'
         })
       }
       const joinResult = await this.adapterRef._meetings.joinChannel(
@@ -666,46 +607,23 @@ class Client extends Base {
     let errMsg = ''
     let enMessage, zhMessage, enAdvice, zhAdvice, message, advice, code
     if (this.adapterRef.connectState.curState !== 'DISCONNECTED') {
-      errMsg = 'enableCustomTransform必须在加入频道前调用'
-      enMessage = 'enableCustomTransform: invalid operation'
-      zhMessage = 'enableCustomTransform: 必须在加入频道前调用'
-      enAdvice = `please call before addTasks`
-      zhAdvice = `必须在加入频道前调用`
-      message = env.IS_ZH ? zhMessage : enMessage
-      advice = env.IS_ZH ? zhAdvice : enAdvice
-      code = ErrorCode.API_CALL_SEQUENCE_ERROR
+      message = 'enableCustomTransform必须在加入频道前调用'
+      code = ErrorCode.API_CALL_SEQUENCE_BEFORE_ERROR
       // @ts-ignore
     } else if (typeof window.TransformStream !== 'function') {
       errMsg = '浏览器不支持自定义加解密: 未找到TransformStream'
-      enMessage =
-        'enableCustomTransform: TransformStream is not found because enableCustomTransform is not support in your browser'
-      zhMessage = 'enableCustomTransform: 浏览器不支持自定义加密, TransformStream 未找到'
-      enAdvice = `The latest version of the Chrome browser is recommended`
-      zhAdvice = `建议使用最新版的 Chrome 浏览器`
-      message = env.IS_ZH ? zhMessage : enMessage
-      advice = env.IS_ZH ? zhAdvice : enAdvice
+      message = 'enableCustomTransform: 浏览器不支持自定义加密, TransformStream 未找到'
       code = ErrorCode.NOT_SUPPORT_ERROR
     }
     // @ts-ignore
     else if (typeof window.RTCRtpReceiver?.prototype.createEncodedStreams !== 'function') {
       errMsg = 'enableCustomTransform: 浏览器不支持自定义加解密，未找到createEncodedStreams'
-      enMessage =
-        'enableCustomTransform: createEncodedStreams is not found because enableCustomTransform is not support in your browser'
-      zhMessage = 'enableCustomTransform: 浏览器不支持自定义加密, createEncodedStreams 未找到'
-      enAdvice = `The latest version of the Chrome browser is recommended`
-      zhAdvice = `建议使用最新版的 Chrome 浏览器`
-      message = env.IS_ZH ? zhMessage : enMessage
-      advice = env.IS_ZH ? zhAdvice : enAdvice
+      message = 'enableCustomTransform: 浏览器不支持自定义加密, createEncodedStreams 未找到'
       code = ErrorCode.NOT_SUPPORT_ERROR
     } else if (this.adapterRef.encryption.encryptionMode !== 'none') {
       errMsg = 'enableCustomTransform: 自定义加密功能与国密加密功能不兼容'
-      enMessage =
+      message =
         'enableCustomTransform: Custom encryption and national encryption are not compatible'
-      zhMessage = 'enableCustomTransform: 自定义加密功能与国密加密功能不兼容'
-      enAdvice = `Cannot use custom encryption and national encryption at the same time`
-      zhAdvice = `不能同时使用自定义加密功能与国密加密功能`
-      message = env.IS_ZH ? zhMessage : enMessage
-      advice = env.IS_ZH ? zhAdvice : enAdvice
       code = ErrorCode.SET_ENCRYPTION_MODE_ERROR
     }
     if (errMsg) {
@@ -797,32 +715,18 @@ class Client extends Base {
     if (reason) {
       if (reason === 'INVALID_OPERATION') {
         onPublishFinish()
-        let enMessage = 'doPublish: invalid operation',
-          zhMessage = 'doPublish: 操作异常',
-          enAdvice = 'please make sure the client role is anchor',
-          zhAdvice = '请确认当前的 role 是主播'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION_ERROR,
-            message,
-            advice
+            code: ErrorCode.PUBLISH_ROLE_ERROR,
+            message: '请确保当前的 role 是主播'
           })
         )
       } else if (reason === 'INVALID_LOCAL_STREAM') {
         onPublishFinish()
-        let enMessage = 'doPublish: The stream format is illegal',
-          zhMessage = 'doPublish: 传入的 stream 格式非法，没有媒体数据',
-          enAdvice = 'Please input the correct stream',
-          zhAdvice = '请输入正确的 stream 参数'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.LOCALSTREAM_ERROR,
-            message,
-            advice
+            code: ErrorCode.PUBLISH_NO_STREAM,
+            message: '传入的 stream 格式非法，没有媒体数据'
           })
         )
       } else {
@@ -834,16 +738,11 @@ class Client extends Base {
     try {
       if (!this.adapterRef._mediasoup) {
         onPublishFinish()
-        let enMessage = 'doPublish:  media server error',
-          zhMessage = 'doPublish: 媒体服务异常',
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
+        this.logger.error('join() 媒体mediasoup模块缺失')
+        this.safeEmit('@pairing-join-error')
         throw new RtcError({
-          code: ErrorCode.MEDIA_SERVER_ERROR,
-          message,
-          advice
+          code: ErrorCode.UNKNOWN_TYPE_ERROR,
+          message: 'sdk内部系统错误'
         })
       }
       this.bindLocalStream(stream)

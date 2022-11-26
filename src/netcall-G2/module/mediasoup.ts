@@ -1420,17 +1420,7 @@ class Mediasoup extends EventEmitter {
         try {
           remoteStream.pubStatus[mediaTypeShort].stopconsumerStatus = 'start'
           if (!this.adapterRef._mediasoup) {
-            let enMessage = '_createConsumer:  media server error',
-              zhMessage = '_createConsumer: 媒体服务异常',
-              enAdvice = 'Please contact CommsEase technical support',
-              zhAdvice = '请联系云信技术支持'
-            let message = env.IS_ZH ? zhMessage : enMessage,
-              advice = env.IS_ZH ? zhAdvice : enAdvice
-            throw new RtcError({
-              code: ErrorCode.MEDIA_SERVER_ERROR,
-              message,
-              advice
-            })
+            return this.checkConsumerList(info)
           }
           await this.destroyConsumer(remoteStream.pubStatus.audio.consumerId, null, null)
           this.adapterRef.instance.removeSsrc(remoteStream.getId(), mediaTypeShort)

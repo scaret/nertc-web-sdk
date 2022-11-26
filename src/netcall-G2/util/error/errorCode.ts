@@ -242,20 +242,19 @@ const ErrorCode = {
    * 可能原因：出现这种错误，说明该api接口需要在加入join()之前调用，而当前在加入房间之后调用了。
    * 处理建议：修改api接口的使用顺序，在join()之前调用即可
    */
-  API_CALL_SEQUENCE_ERROR: 10008,
+  API_CALL_SEQUENCE_BEFORE_ERROR: 10008,
+
+  /*
+   * 非法操作
+   */
+  INVALID_OPERATION_ERROR: 10009,
 
   /*
    * 描述：接口调用顺序错误。
    * 可能原因：出现这种错误，说明该api接口需要在加入join()成功之后调用，而当前的接口调用不符合要求，可能是当前没有执行过join()，也可能是join()失败了。
    * 处理建议：修改api接口的使用顺序，在join()成功之后调用即可
    */
-  INVALID_OPERATION_ERROR: 10009,
-
-  /*
-   * localStream异常，可通过 console 日志产看具体原因
-   *
-   */
-  LOCALSTREAM_ERROR: 10010,
+  API_CALL_SEQUENCE_AFTER_ERROR: 10010,
 
   /*
    * 描述：本地流localStream异常。
@@ -377,7 +376,7 @@ const ErrorCode = {
    * 可能原因：参数错误，join()方法没有传递channelName参数
    * 处理建议：参数错误，join()方法中传递合法的channelName参数即可
    */
-  JOIN_WITHOUT_CHANNEL_NAME: 10010,
+  JOIN_WITHOUT_CHANNEL_NAME: 10110,
 
   /*
    * 描述：参数错误，join()方法传递recordAudio或者recordVideo参数格式非法
@@ -564,6 +563,41 @@ const ErrorCode = {
    * 处理建议：volume要求0-100（number）
    */
   STREAM_SET_CAPTURE_VOLUME_ARGUMENT_ERROR: 10242,
+
+  /*
+   * 描述：调用unmuteAudio()恢复视频出错
+   * 可能原因：之前没有播放过视频, 不支持unmute
+   * 处理建议：请先调用play()播放音频
+   */
+  STREAM_UNMUTE_AUDIO_ERROR: 10243,
+
+  /*
+   * 描述：调用unmuteAudioSlave()恢复视频出错
+   * 可能原因：之前没有播放过音频辅流, 不支持unmute
+   * 处理建议：请先调用play()播放音频辅流
+   */
+  STREAM_UNMUTE_AUDIO_SLAVE_ERROR: 10244,
+
+  /*
+   * 描述：调用unmuteVideo()恢复视频出错
+   * 可能原因：之前没有播放过视频, 不支持unmute
+   * 处理建议：请先调用play()播放视频
+   */
+  STREAM_UNMUTE_VIDEO_ERROR: 10245,
+
+  /*
+   * 描述：调用unmuteScreen()恢复视频出错
+   * 可能原因：之前没有播放过视频, 不支持unmute
+   * 处理建议：请先调用play()播放屏幕共享
+   */
+  STREAM_UNMUTE_SCREEN_ERROR: 10246,
+
+  /*
+   * 描述：调用takeSnapshot()或者takeSnapshotBase64()截图出错
+   * 可能原因：之前没有播放过视频, 不支持截屏
+   * 处理建议：请先调用play()播放视频
+   */
+  STREAM_TAKE_SNAPSHOT_ERROR: 10247,
 
   // *********************  订阅和发布相关错误码 (ErrorCode 范围：10401 - 10600)
 
