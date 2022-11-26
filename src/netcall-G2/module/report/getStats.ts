@@ -524,9 +524,9 @@ class GetStats {
             this.formativeStatsReport?.formatRecvData(tmp, mediaTypeShort)
 
             const remoteStream = this?.adapterRef?.remoteStreamMap[tmp.uid]
-            let videoDom = remoteStream && remoteStream.Play && remoteStream?.Play?.videoDom
+            let videoDom = remoteStream && remoteStream.Play && remoteStream?.Play?.video.dom
             if (mediaTypeShort === 'screen') {
-              videoDom = remoteStream && remoteStream.Play && remoteStream?.Play?.screenDom
+              videoDom = remoteStream && remoteStream.Play && remoteStream?.Play?.screen.dom
             }
             let muteState =
               (remoteStream &&

@@ -677,9 +677,9 @@ class FormativeStatsReport {
     if (
       !remoteStream ||
       !remoteStream.Play ||
-      !remoteStream.Play.audioDom ||
-      !remoteStream.Play.audioDom.srcObject ||
-      remoteStream.Play.audioDom.muted
+      !remoteStream.Play.audio.dom ||
+      !remoteStream.Play.audio.dom.srcObject ||
+      remoteStream.Play.audio.dom.muted
     ) {
       return
     }
@@ -700,8 +700,8 @@ class FormativeStatsReport {
       const volume =
         remoteStream &&
         remoteStream.Play &&
-        remoteStream.Play.audioDom &&
-        remoteStream.Play.audioDom.volume
+        remoteStream.Play.audio.dom &&
+        remoteStream.Play.audio.dom.volume
       if (volume && volume > 0) {
         this.adapterRef.instance.safeEmit('exception', {
           msg: 'AUDIO_OUTPUT_LEVEL_TOO_LOW',
