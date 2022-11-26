@@ -218,8 +218,8 @@ class LocalStream extends RTCEventEmitter {
   public destroyed = false
   private canvasWatermarkOptions: NERtcCanvasWatermarkConfig | null = null
   private encoderWatermarkOptions: NERtcEncoderWatermarkConfig | null = null
-  private supportWasm: boolean = true
-  private supportAIDenoise: boolean = true
+  private supportWasm = true
+  private supportAIDenoise = true
 
   constructor(options: LocalStreamOptions) {
     super()
@@ -2758,7 +2758,7 @@ class LocalStream extends RTCEventEmitter {
     }
     this.mediaHelper.video.captureConfig.high = this.mediaHelper.convert(this.videoProfile)
     this.mediaHelper.video.encoderConfig.high.maxBitrate =
-      this.getVideoBW() || this.mediaHelper.video.encoderConfig.high.maxBitrate
+      this.getVideoBW(this.videoProfile) || this.mediaHelper.video.encoderConfig.high.maxBitrate
     this.logger.log(
       `setVideoProfile ${JSON.stringify(options)} 视频采集参数 ${JSON.stringify(
         this.mediaHelper.video.captureConfig.high
@@ -3038,7 +3038,7 @@ class LocalStream extends RTCEventEmitter {
       this.screenProfile.resolution = profile.resolution
     }
     this.mediaHelper.screen.captureConfig.high = this.mediaHelper.convert(this.screenProfile)
-    this.mediaHelper.screen.encoderConfig.high.maxBitrate = this.getScreenBW()
+    this.mediaHelper.screen.encoderConfig.high.maxBitrate = this.getVideoBW(this.screenProfile)
     this.logger.log(
       `setScreenProfile ${JSON.stringify(profile)} 屏幕共享采集参数 ${JSON.stringify(
         this.mediaHelper.screen.captureConfig.high
@@ -3159,59 +3159,35 @@ class LocalStream extends RTCEventEmitter {
       })
   }
 
-  getVideoBW() {
-    if (!this.videoProfile) {
-      let enMessage = 'getVideoBW: videoProfile is not found',
-        zhMessage = 'getVideoBW: 未找到 videoProfile',
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
-      })
-    }
-    if (this.videoProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_180p) {
-      return 300 * 1000
-    } else if (this.videoProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_480p) {
-      return 800 * 1000
-    } else if (this.videoProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_720p) {
-      return 1200 * 1000
-    } else if (this.videoProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p) {
-      return 1500 * 1000
+  getVideoBW(profile: VideoProfileOptions) {
+    //码表参考：https://docs.popo.netease.com/lingxi/a120b338ea194ec296e12251bc523efa
+    if (profile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_180p) {
+      if (profile.frameRate <= VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_NORMAL) {
+        return 140 * 1000
+      } else {
+        return 220 * 1000
+      }
+    } else if (profile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_480p) {
+      if (profile.frameRate <= VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_NORMAL) {
+        return 500 * 1000
+      } else {
+        return 750 * 1000
+      }
+    } else if (profile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_720p) {
+      if (profile.frameRate <= VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_NORMAL) {
+        return 1130 * 1000
+      } else {
+        return 1710 * 1000
+      }
+    } else if (profile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p) {
+      if (profile.frameRate <= VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_NORMAL) {
+        return 2080 * 1000
+      } else {
+        return 3150 * 1000
+      }
     } else {
-      this.logger.warn(`发现不支持的 NERTC_VIDEO_QUALITY ${this.videoProfile.resolution}`)
+      this.logger.warn(`发现不支持的 NERTC_VIDEO_QUALITY ${profile.resolution}`)
       return 800 * 1000
-    }
-  }
-
-  getScreenBW() {
-    if (!this.screenProfile) {
-      let enMessage = 'getScreenBW: screenProfile is not found',
-        zhMessage = 'getScreenBW: 未找到 screenProfile',
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
-      })
-    }
-    if (this.screenProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_180p) {
-      return 300 * 1000
-    } else if (this.screenProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_480p) {
-      return 800 * 1000
-    } else if (this.screenProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_720p) {
-      return 1200 * 1000
-    } else if (this.screenProfile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p) {
-      return 1500 * 1000
-    } else {
-      this.logger.warn(`发现不支持的 NERTC_VIDEO_QUALITY ${this.screenProfile.resolution}`)
-      return 1500 * 1000
     }
   }
 
