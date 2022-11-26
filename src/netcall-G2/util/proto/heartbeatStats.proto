@@ -1,587 +1,289 @@
 syntax = "proto2";
- message WebrtcStats{
-   optional local_obj local=1;
-   optional remote_obj remote=2;
-   optional int64 timestamp=3;
-   optional string appkey=4;
-   optional int64 cid=5;
-   optional int64 uid=6;
-   optional string browser=7;
-   optional string platform=8;
-   message local_obj{
-     repeated video_bwe_obj video_bwe=1;
-     repeated audio_ssrc_obj audio_ssrc=2;
-     repeated video_ssrc_obj video_ssrc=3;
-     repeated video_track_obj video_track=4;
-     repeated audio_outbound_rtp_obj audio_outbound_rtp=5;
-     repeated video_outbound_rtp_obj video_outbound_rtp=6;
-     repeated screen_ssrc_obj screen_ssrc=7;
-     repeated screen_outbound_rtp_obj screen_outbound_rtp=8;
+  message WebrtcStats{
+    optional local_obj local=1;
+    optional remote_obj remote=2;
+    optional int64 timestamp=3;
+    optional string appkey=4;
+    optional int64 cid=5;
+    //number存在精准度缺失问题，改为string格式
+    optional string uid=6; 
+    optional string browser=7;
+    optional string platform=8;
+    optional string sdkVersion=9;
+    message local_obj{
+      repeated audio_ssrc_obj audio_ssrc=1;
+      repeated audioSlave_ssrc_obj audioSlave_ssrc=2;
+      repeated video_ssrc_obj video_ssrc=3;
+      repeated screen_ssrc_obj screen_ssrc=4;
+      repeated bwe_obj bwe=5;
 
-     message video_bwe_obj{
-       optional string googActualEncBitrate=1;
-       optional string googAvailableSendBandwidth=2;
-       optional string googRetransmitBitrate=3;
-       optional string googAvailableReceiveBandwidth=4;
-       optional string googTargetEncBitrate=5;
-       optional string googBucketDelay=6;
-       optional string googTransmitBitrate=7;
-       optional string id=8;
-       optional string type=9;
-       optional string timestamp=10;
+      message audio_ssrc_obj{
+        optional int64 audioInputLevel=1;
+        optional int64 totalAudioEnergy=2;
+        optional int64 totalSamplesDuration=3;
+        optional int64 bytesSent=4;
+        optional int64 bitsSentPerSecond=5;
+        optional int64 targetBitrate=6;
+        optional int64 packetsSent=7;
+        optional int64 packetsSentPerSecond=8;
+        optional int64 packetsLost=9;
+        optional int64 fractionLost=10;
+        optional int64 packetsLostRate=11;
+        optional int64 nackCount=12;
+        optional int64 rtt=13;
+        optional int64 jitterReceived=14;
+        optional int64 echoReturnLoss=15;
+        optional double echoReturnLossEnhancement=16;
+        optional int64 active=17;
+      }
+
+      message audioSlave_ssrc_obj{
+        optional int64 audioInputLevel=1;
+        optional int64 totalAudioEnergy=2;
+        optional int64 totalSamplesDuration=3;
+        optional int64 bytesSent=4;
+        optional int64 bitsSentPerSecond=5;
+        optional int64 targetBitrate=6;
+        optional int64 packetsSent=7;
+        optional int64 packetsSentPerSecond=8;
+        optional int64 packetsLost=9;
+        optional int64 fractionLost=10;
+        optional int64 packetsLostRate=11;
+        optional int64 nackCount=12;
+        optional int64 rtt=13;
+        optional int64 jitterReceived=14;
+        optional int64 echoReturnLoss=15;
+        optional double echoReturnLossEnhancement=16;
+        optional int64 active=17;
+      }
+
+      message video_ssrc_obj{
+        optional int64 bytesSent=1;
+        optional int64 bitsSentPerSecond=2;
+        optional int64 targetBitrate=3;
+        optional int64 packetsSent=4;
+        optional int64 packetsSentPerSecond=5;
+        optional int64 packetsLost=6;
+        optional int64 fractionLost=7;
+        optional int64 packetsLostRate=8;
+        optional int64 firCount=9;
+        optional int64 pliCount=10;
+        optional int64 nackCount=11;
+        optional int64 framesEncoded=12;
+        optional int64 framesEncodedPerSecond=13;
+        optional int64 avgEncodeMs=14;
+        optional int64 encodeUsagePercent=15;
+        optional int64 framesSent=16;
+        optional int64 frameRateInput=17;
+        optional int64 frameRateSent=18;
+        optional int64 frameWidthInput=19;
+        optional int64 frameWidthSent=20;
+        optional int64 frameHeightInput=21;
+        optional int64 frameHeightSent=22;
+        optional int64 hugeFramesSent=23;
+        optional int64 qpSum=24;
+        optional int64 qpPercentage=25;
+        optional int64 freezeTime=26;
+        optional int64 totalFreezeTime=27;
+        optional string qualityLimitationReason=28;
+        optional int64 qualityLimitationResolutionChanges=29;
+        optional int64 jitter=30;
+        optional int64 rtt=31;
+        optional int64 active=32;
+        optional string streamType=33;
+      }
+
+      message screen_ssrc_obj{
+        optional int64 bytesSent=1;
+        optional int64 bitsSentPerSecond=2;
+        optional int64 targetBitrate=3;
+        optional int64 packetsSent=4;
+        optional int64 packetsSentPerSecond=5;
+        optional int64 packetsLost=6;
+        optional int64 fractionLost=7;
+        optional int64 packetsLostRate=8;
+        optional int64 firCount=9;
+        optional int64 pliCount=10;
+        optional int64 nackCount=11;
+        optional int64 framesEncoded=12;
+        optional int64 framesEncodedPerSecond=13;
+        optional int64 avgEncodeMs=14;
+        optional int64 encodeUsagePercent=15;
+        optional int64 framesSent=16;
+        optional int64 frameRateInput=17;
+        optional int64 frameRateSent=18;
+        optional int64 frameWidthInput=19;
+        optional int64 frameWidthSent=20;
+        optional int64 frameHeightInput=21;
+        optional int64 frameHeightSent=22;
+        optional int64 hugeFramesSent=23;
+        optional int64 qpSum=24;
+        optional int64 qpPercentage=25;
+        optional int64 freezeTime=26;
+        optional int64 totalFreezeTime=27;
+        optional string qualityLimitationReason=28;
+        optional int64 qualityLimitationResolutionChanges=29;
+        optional int64 jitter=30;
+        optional int64 rtt=31;
+        optional int64 active=32;
+        optional string streamType=33;
+      }
+
+
+      message bwe_obj{
+        optional int64 googActualEncBitrate=1;
+        optional int64 googAvailableSendBandwidth=2;
+        optional int64 googRetransmitBitrate=3;
+        optional int64 googAvailableReceiveBandwidth=4;
+        optional int64 googTargetEncBitrate=5;
+        optional int64 googBucketDelay=6;
+        optional int64 googTransmitBitrate=7;
+      }
     }
 
-     message audio_ssrc_obj{
-       optional string audioInputLevel=1;
-       optional string packetsLost=2;
-       optional string googRtt=3;
-       optional string totalSamplesDuration=4;
-       optional string googEchoCancellationReturnLossEnhancement=5;
-       optional string googTrackId=6;
-       optional string totalAudioEnergy=7;
-       optional string transportId=8;
-       optional string mediaType=9;
-       optional string googEchoCancellationReturnLoss=10;
-       optional string googCodecName=11;
-       optional string ssrc=12;
-       optional string googJitterReceived=13;
-       optional string googTypingNoiseState=14;
-       optional string packetsSent=15;
-       optional string bytesSent=16;
-       optional string id=17;
-       optional string type=18;
-       optional string timestamp=19;
-       optional int64 localuid=20;
-       optional int64 remoteuid=21;
-       optional int64 bitsSentPerSecond=22;
-       optional int64 packetsSentPerSecond=23;
-       optional int64 sendPacketLoss=24;
-       optional int64 bytesSentPerSecond=25;
-       optional int64 alr=26;
-       optional double packetsLostPerSecond=27;
+    message remote_obj{
+      repeated audio_ssrc_obj audio_ssrc=1;
+      repeated audioSlave_ssrc_obj audioSlave_ssrc=2;
+      repeated video_ssrc_obj video_ssrc=3;
+      repeated screen_ssrc_obj screen_ssrc=4;
+      message audio_ssrc_obj{
+        optional int64 audioOutputLevel=1;
+        optional int64 totalAudioEnergy=2;
+        optional int64 totalSamplesDuration=3;
+        optional int64 bytesReceived=4;
+        optional int64 bitsReceivedPerSecond=5;
+        optional int64 packetsReceived=6;
+        optional int64 packetsReceivedPerSecond=7;
+        optional int64 packetsLost=8;
+        optional int64 packetsLostRate=9;
+        optional int64 nackCount=10;
+        optional int64 lastPacketReceivedTimestamp=11;
+        optional int64 estimatedPlayoutTimestamp=12;
+        optional int64 freezeTime=13;
+        optional int64 totalFreezeTime=14;
+        optional int64 decodingPLC=15;
+        optional int64 decodingPLCCNG=16;
+        optional int64 decodingNormal=17;
+        optional int64 decodingMuted=18;
+        optional int64 decodingCNG=19;
+        optional int64 decodingCTN=20;
+        optional int64 currentDelayMs=21;
+        optional int64 preferredJitterBufferMs=22;
+        optional int64 jitterBufferMs=23;
+        optional int64 jitterBufferDelay=24;
+        optional int64 jitter=25;
+        optional int64 rtt=26;
+        optional int64 preemptiveExpandRate=27;
+        optional int64 speechExpandRate=28;
+        optional int64 concealedSamples=29;
+        optional int64 silentConcealedSamples=30;
+        optional int64 secondaryDecodedRate=31;
+        optional int64 secondaryDiscardedRate=32;
+        optional string uid=33;
+      }
+
+      message audioSlave_ssrc_obj{
+        optional int64 audioOutputLevel=1;
+        optional int64 totalAudioEnergy=2;
+        optional int64 totalSamplesDuration=3;
+        optional int64 bytesReceived=4;
+        optional int64 bitsReceivedPerSecond=5;
+        optional int64 packetsReceived=6;
+        optional int64 packetsReceivedPerSecond=7;
+        optional int64 packetsLost=8;
+        optional int64 packetsLostRate=9;
+        optional int64 nackCount=10;
+        optional int64 lastPacketReceivedTimestamp=11;
+        optional int64 estimatedPlayoutTimestamp=12;
+        optional int64 freezeTime=13;
+        optional int64 totalFreezeTime=14;
+        optional int64 decodingPLC=15;
+        optional int64 decodingPLCCNG=16;
+        optional int64 decodingNormal=17;
+        optional int64 decodingMuted=18;
+        optional int64 decodingCNG=19;
+        optional int64 decodingCTN=20;
+        optional int64 currentDelayMs=21;
+        optional int64 preferredJitterBufferMs=22;
+        optional int64 jitterBufferMs=23;
+        optional int64 jitterBufferDelay=24;
+        optional int64 jitter=25;
+        optional int64 rtt=26;
+        optional int64 preemptiveExpandRate=27;
+        optional int64 speechExpandRate=28;
+        optional int64 concealedSamples=29;
+        optional int64 silentConcealedSamples=30;
+        optional int64 secondaryDecodedRate=31;
+        optional int64 secondaryDiscardedRate=32;
+        optional string uid=33;
+      }
+
+      message video_ssrc_obj{
+        optional int64 bytesReceived=1;
+        optional int64 bitsReceivedPerSecond=2;
+        optional int64 packetsReceived=3;
+        optional int64 packetsReceivedPerSecond=4;
+        optional int64 packetsLost=5;
+        optional int64 packetsLostRate=6;
+        optional int64 firCount=7;
+        optional int64 pliCount=8;
+        optional int64 nackCount=9;
+        optional int64 lastPacketReceivedTimestamp=10;
+        optional int64 estimatedPlayoutTimestamp=11;
+        optional int64 pauseCount=12;
+        optional int64 totalPausesDuration=13;
+        optional int64 freezeCount=14;
+        optional int64 totalFreezesDuration=15;
+        optional int64 totalFreezeTime=16;
+        optional int64 freezeTime=17;
+        optional int64 framesDecoded=18;
+        optional int64 framesDropped=19;
+        optional int64 framesReceived=20;
+        optional int64 decodeMs=21;
+        optional int64 frameRateDecoded=22;
+        optional int64 frameRateOutput=23;
+        optional int64 frameRateReceived=24;
+        optional int64 frameWidthReceived=25;
+        optional int64 frameHeightReceived=26;
+        optional int64 powerEfficientDecoder=27;
+        optional int64 currentDelayMs=28;
+        optional int64 jitterBufferDelay=29;
+        optional string uid=30;
+      }
+
+      message screen_ssrc_obj{
+        optional int64 bytesReceived=1;
+        optional int64 bitsReceivedPerSecond=2;
+        optional int64 packetsReceived=3;
+        optional int64 packetsReceivedPerSecond=4;
+        optional int64 packetsLost=5;
+        optional int64 packetsLostRate=6;
+        optional int64 firCount=7;
+        optional int64 pliCount=8;
+        optional int64 nackCount=9;
+        optional int64 lastPacketReceivedTimestamp=10;
+        optional int64 estimatedPlayoutTimestamp=11;
+        optional int64 pauseCount=12;
+        optional int64 totalPausesDuration=13;
+        optional int64 freezeCount=14;
+        optional int64 totalFreezesDuration=15;
+        optional int64 totalFreezeTime=16;
+        optional int64 freezeTime=17;
+        optional int64 framesDecoded=18;
+        optional int64 framesDropped=19;
+        optional int64 framesReceived=20;
+        optional int64 decodeMs=21;
+        optional int64 frameRateDecoded=22;
+        optional int64 frameRateOutput=23;
+        optional int64 frameRateReceived=24;
+        optional int64 frameWidthReceived=25;
+        optional int64 frameHeightReceived=26;
+        optional int64 powerEfficientDecoder=27;
+        optional int64 currentDelayMs=28;
+        optional int64 jitterBufferDelay=29;
+        optional string uid=30;
+      }
     }
-
-     message video_ssrc_obj{
-       optional string googContentType=1;
-       optional string googFrameWidthInput=2;
-       optional string googFrameWidthSent=3;
-       optional string packetsLost=4;
-       optional string googRtt=5;
-       optional string googHasEnteredLowResolution=6;
-       optional string googEncodeUsagePercent=7;
-       optional string googCpuLimitedResolution=8;
-       optional string googNacksReceived=9;
-       optional string googBandwidthLimitedResolution=10;
-       optional string googFrameHeightInput=11;
-       optional string googAvgEncodeMs=12;
-       optional string googTrackId=13;
-       optional string googFrameRateInput=14;
-       optional string framesEncoded=15;
-       optional string codecImplementationName=16;
-       optional string transportId=17;
-       optional string mediaType=18;
-       optional string googFrameHeightSent=19;
-       optional string googFrameRateSent=20;
-       optional string googCodecName=21;
-       optional string hugeFramesSent=22;
-       optional string qpSum=23;
-       optional string googPlisReceived=24;
-       optional string googAdaptationChanges=25;
-       optional string ssrc=26;
-       optional string googFirsReceived=27;
-       optional string packetsSent=28;
-       optional string bytesSent=29;
-       optional string id=30;
-       optional string type=31;
-       optional string timestamp=32;
-       optional int64 localuid=33;
-       optional int64 remoteuid=34;
-       optional int64 bitsSentPerSecond=35;
-       optional int64 packetsSentPerSecond=36;
-       optional int64 sendPacketLoss=37;
-       optional int64 freezeTime=38;
-       optional int64 totalFreezeTime=39;
-       optional int64 bytesSentPerSecond=40;
-       optional int64 framesEncodedPerSecond=41;
-       optional string googActualEncBitrate=42;
-       optional string googAvailableSendBandwidth=43;
-       optional string googRetransmitBitrate=44;
-       optional string googAvailableReceiveBandwidth=45;
-       optional string googTargetEncBitrate=46;
-       optional string googBucketDelay=47;
-       optional string googTransmitBitrate=48;
-       optional int64 vlr=49;
-       optional double packetsLostPerSecond=50;
-    }
-
-    message screen_ssrc_obj{
-       optional string googContentType=1;
-       optional string googFrameWidthInput=2;
-       optional string googFrameWidthSent=3;
-       optional string packetsLost=4;
-       optional string googRtt=5;
-       optional string googHasEnteredLowResolution=6;
-       optional string googEncodeUsagePercent=7;
-       optional string googCpuLimitedResolution=8;
-       optional string googNacksReceived=9;
-       optional string googBandwidthLimitedResolution=10;
-       optional string googFrameHeightInput=11;
-       optional string googAvgEncodeMs=12;
-       optional string googTrackId=13;
-       optional string googFrameRateInput=14;
-       optional string framesEncoded=15;
-       optional string codecImplementationName=16;
-       optional string transportId=17;
-       optional string mediaType=18;
-       optional string googFrameHeightSent=19;
-       optional string googFrameRateSent=20;
-       optional string googCodecName=21;
-       optional string hugeFramesSent=22;
-       optional string qpSum=23;
-       optional string googPlisReceived=24;
-       optional string googAdaptationChanges=25;
-       optional string ssrc=26;
-       optional string googFirsReceived=27;
-       optional string packetsSent=28;
-       optional string bytesSent=29;
-       optional string id=30;
-       optional string type=31;
-       optional string timestamp=32;
-       optional int64 localuid=33;
-       optional int64 remoteuid=34;
-       optional int64 bitsSentPerSecond=35;
-       optional int64 packetsSentPerSecond=36;
-       optional int64 sendPacketLoss=37;
-       optional int64 freezeTime=38;
-       optional int64 totalFreezeTime=39;
-       optional int64 bytesSentPerSecond=40;
-       optional int64 framesEncodedPerSecond=41;
-       optional string googActualEncBitrate=42;
-       optional string googAvailableSendBandwidth=43;
-       optional string googRetransmitBitrate=44;
-       optional string googAvailableReceiveBandwidth=45;
-       optional string googTargetEncBitrate=46;
-       optional string googBucketDelay=47;
-       optional string googTransmitBitrate=48;
-       optional int64 vlr=49;
-       optional double packetsLostPerSecond=50;
-    }
-
-     message video_track_obj{
-       optional string id=1;
-       optional int64 timestamp=2;
-       optional string type=3;
-       optional bool detached=4;
-       optional bool ended=5;
-       optional int64 frameHeight=6;
-       optional int64 frameWidth=7;
-       optional int64 framesSent=8;
-       optional bool remoteSource=9;
-       optional string trackIdentifier=10;
-       optional int64 ssrc=11;
-       optional int64 frameRateSent=12;
-       optional string mediaType=13;
-       optional int64 framesSentPerSecond=14;
-       optional string uid=15;
-    }
-
-     message audio_outbound_rtp_obj{
-       optional string id=1;
-       optional int64 timestamp=2;
-       optional string type=3;
-       optional string codecId=4;
-       optional string kind=5;
-       optional string mediaType=6;
-       optional int64 ssrc=7;
-       optional string transportId=8;
-       optional int64 bytesSent=9;
-       optional int64 packetsSent=10;
-       optional int64 headerBytesSent=11;
-       optional string mediaSourceId=12;
-       optional string remoteId=13;
-       optional int64 retransmittedBytesSent=14;
-       optional int64 retransmittedPacketsSent=15;
-       optional string trackId=16;
-       optional int64 bitsSentPerSecond=17;
-       optional int64 packetsSentPerSecond=18;
-       optional int64 bytesSentPerSecond=19;
-       optional int64 nackCount=20;
-       optional bool isRemote=21;
-       optional int64 qpSum=22;
-       optional string uid=23;
-    }
-
-     message video_outbound_rtp_obj{
-       optional string id=1;
-       optional int64 timestamp=2;
-       optional string type=3;
-       optional string codecId=4;
-       optional string kind=5;
-       optional string mediaType=6;
-       optional int64 ssrc=7;
-       optional string transportId=8;
-       optional int64 bytesSent=9;
-       optional int64 packetsSent=10;
-       optional int64 firCount=11;
-       optional int64 frameHeight=12;
-       optional int64 frameWidth=13;
-       optional int64 framesEncoded=14;
-       optional int64 framesPerSecond=15;
-       optional int64 framesSent=16;
-       optional int64 headerBytesSent=17;
-       optional int64 hugeFramesSent=18;
-       optional int64 keyFramesEncoded=19;
-       optional string mediaSourceId=20;
-       optional int64 nackCount=21;
-       optional int64 pliCount=22;
-       optional int64 qpSum=23;
-       optional int64 qualityLimitationResolutionChanges=24;
-       optional string remoteId=25;
-       optional int64 retransmittedBytesSent=26;
-       optional int64 retransmittedPacketsSent=27;
-       optional double totalEncodeTime=28;
-       optional int64 totalEncodedBytesTarget=29;
-       optional double totalPacketSendDelay=30;
-       optional string trackId=31;
-       optional int64 bitsSentPerSecond=32;
-       optional int64 packetsSentPerSecond=33;
-       optional int64 frameRateSent=34;
-       optional int64 bytesSentPerSecond=35;
-       optional int64 framesEncodedPerSecond=36;
-       optional int64 bitrateMean=37;
-       optional int64 bitrateStdDev=38;
-       optional int64 droppedFrames=39;
-       optional int64 framerateMean=40;
-       optional int64 framerateStdDev=41;
-       optional bool isRemote=42;
-       optional string uid=43;
-    }
-
-    message screen_outbound_rtp_obj{
-       optional string id=1;
-       optional int64 timestamp=2;
-       optional string type=3;
-       optional string kind=4;
-       optional string mediaType=5;
-       optional int64 ssrc=6;
-       optional int64 bytesSent=7;
-       optional int64 packetsSent=8;
-       optional double bitrateMean=9;
-       optional double bitrateStdDev=10;
-       optional int64 droppedFrames=11;
-       optional int64 firCount=12;
-       optional int64 framerateMean=13;
-       optional int64 framerateStdDev=14;
-       optional int64 framesEncoded=15;
-       optional int64 nackCount=16;
-       optional int64 pliCount=17;
-       optional int64 bytesSentPerSecond=18;
-       optional int64 framesEncodedPerSecond=19;
-       optional int64 packetsSentPerSecond=20;
-       optional string remoteId=21;
-    }
-  }
-
-   message remote_obj{
-     repeated video_ssrc_obj video_ssrc=1;
-     repeated audio_ssrc_obj audio_ssrc=2;
-     repeated audio_inbound_rtp_obj audio_inbound_rtp=3;
-     repeated video_inbound_rtp_obj video_inbound_rtp=4;
-     repeated audio_track_obj audio_track=5;
-     repeated video_track_obj video_track=6;
-     repeated screen_ssrc_obj screen_ssrc=7;
-     repeated screen_inbound_rtp_obj screen_inbound_rtp=8;
-
-     message video_ssrc_obj{
-       optional string googContentType=1;
-       optional string googCaptureStartNtpTimeMs=2;
-       optional string googTargetDelayMs=3;
-       optional string packetsLost=4;
-       optional string googDecodeMs=5;
-       optional string googFrameHeightReceived=6;
-       optional string googFrameRateOutput=7;
-       optional string packetsReceived=8;
-       optional string ssrc=9;
-       optional string googRenderDelayMs=10;
-       optional string googMaxDecodeMs=11;
-       optional string googTrackId=12;
-       optional string googFrameWidthReceived=13;
-       optional string codecImplementationName=14;
-       optional string transportId=15;
-       optional string mediaType=16;
-       optional string googInterframeDelayMax=17;
-       optional string googCodecName=18;
-       optional string googFrameRateReceived=19;
-       optional string framesDecoded=20;
-       optional string googNacksSent=21;
-       optional string googFirsSent=22;
-       optional string bytesReceived=23;
-       optional string googFirstFrameReceivedToDecodedMs=24;
-       optional string googCurrentDelayMs=25;
-       optional string googMinPlayoutDelayMs=26;
-       optional string googFrameRateDecoded=27;
-       optional string googJitterBufferMs=28;
-       optional string googPlisSent=29;
-       optional string id=30;
-       optional string type=31;
-       optional string timestamp=32;
-       optional int64 localuid=33;
-       optional string remoteuid=34;
-       optional int64 bitsReceivedPerSecond=35;
-       optional int64 packetsReceivedPerSecond=36;
-       optional int64 recvPacketLoss=37;
-       optional int64 freezeTime=38;
-       optional int64 totalFreezeTime=39;
-       optional int64 bytesReceivedPerSecond=40;
-       optional int64 framesDecodedPerSecond=41;
-       optional double packetsLostRate=42;
-       optional double packetsLostPerSecond=43;
-    }
-
-     message audio_ssrc_obj{
-       optional string googDecodingCTN=1;
-       optional string packetsLost=2;
-       optional string googSecondaryDecodedRate=3;
-       optional string googDecodingPLC=4;
-       optional string packetsReceived=5;
-       optional string googJitterReceived=6;
-       optional string googDecodingCNG=7;
-       optional string ssrc=8;
-       optional string googPreferredJitterBufferMs=9;
-       optional string googSpeechExpandRate=10;
-       optional string totalSamplesDuration=11;
-       optional string totalAudioEnergy=12;
-       optional string transportId=13;
-       optional string mediaType=14;
-       optional string googDecodingPLCCNG=15;
-       optional string googCodecName=16;
-       optional string googSecondaryDiscardedRate=17;
-       optional string googDecodingNormal=18;
-       optional string googTrackId=19;
-       optional string audioOutputLevel=20;
-       optional string googAccelerateRate=21;
-       optional string bytesReceived=22;
-       optional string googCurrentDelayMs=23;
-       optional string googDecodingCTSG=24;
-       optional string googExpandRate=25;
-       optional string googPreemptiveExpandRate=26;
-       optional string googJitterBufferMs=27;
-       optional string googDecodingMuted=28;
-       optional string id=29;
-       optional string type=30;
-       optional string timestamp=31;
-       optional int64 localuid=32;
-       optional string remoteuid=33;
-       optional int64 bitsReceivedPerSecond=34;
-       optional int64 packetsReceivedPerSecond=35;
-       optional int64 recvPacketLoss=36;
-       optional int64 freezeTime=37;
-       optional int64 totalFreezeTime=38;
-       optional int64 bytesReceivedPerSecond=39;
-       optional double packetsLostRate=40;
-       optional double packetsLostPerSecond=41;
-       optional double alr=42;
-    }
-
-     message audio_inbound_rtp_obj{
-       optional string id=1;
-       optional int64 timestamp=2;
-       optional string type=3;
-       optional string codecId=4;
-       optional string kind=5;
-       optional string mediaType=6;
-       optional int64 ssrc=7;
-       optional string transportId=8;
-       optional double jitter=9;
-       optional int64 packetsLost=10;
-       optional int64 packetsReceived=11;
-       optional int64 audioLevel=12;
-       optional int64 bytesReceived=13;
-       optional int64 concealedSamples=14;
-       optional int64 concealmentEvents=15;
-       optional int64 estimatedPlayoutTimestamp=16;
-       optional int64 fecPacketsDiscarded=17;
-       optional int64 fecPacketsReceived=18;
-       optional int64 headerBytesReceived=19;
-       optional int64 insertedSamplesForDeceleration=20;
-       optional double jitterBufferDelay=21;
-       optional int64 jitterBufferEmittedCount=22;
-       optional double lastPacketReceivedTimestamp=23;
-       optional int64 removedSamplesForAcceleration=24;
-       optional int64 silentConcealedSamples=25;
-       optional double totalAudioEnergy=26;
-       optional double totalSamplesDuration=27;
-       optional int64 totalSamplesReceived=28;
-       optional string trackId=29;
-       optional int64 bitsReceivedPerSecond=30;
-       optional int64 packetsReceivedPerSecond=31;
-       optional string uid=32;
-       optional int64 bytesReceivedPerSecond=33;
-       optional double packetsLostRate=34;
-       optional int64 recvPacketLoss=35;
-       optional string remoteuid=36;
-       optional bool isRemote=37;
-       optional int64 packetsLostPerSecond=38;
-       optional int64 qpSum=39;
-    }
-
-     message video_inbound_rtp_obj{
-       optional string id=1;
-       optional int64 timestamp=2;
-       optional string type=3;
-       optional string codecId=4;
-       optional string kind=5;
-       optional string mediaType=6;
-       optional int64 ssrc=7;
-       optional string transportId=8;
-       optional int64 packetsLost=9;
-       optional int64 packetsReceived=10;
-       optional int64 bytesReceived=11;
-       optional int64 estimatedPlayoutTimestamp=12;
-       optional int64 firCount=13;
-       optional int64 frameHeight=14;
-       optional int64 frameWidth=15;
-       optional int64 framesDecoded=16;
-       optional int64 framesPerSecond=17;
-       optional int64 framesReceived=18;
-       optional int64 headerBytesReceived=19;
-       optional int64 keyFramesDecoded=20;
-       optional int64 lastPacketReceivedTimestamp=21;
-       optional int64 nackCount=22;
-       optional int64 pliCount=23;
-       optional double totalDecodeTime=24;
-       optional double totalInterFrameDelay=25;
-       optional double totalSquaredInterFrameDelay=26;
-       optional string trackId=27;
-       optional int64 bitsReceivedPerSecond=28;
-       optional int64 packetsReceivedPerSecond=29;
-       optional string uid=30;
-       optional int64 bytesReceivedPerSecond=31;
-       optional double packetsLostRate=32;
-       optional double framesDecodedPerSecond=33;
-       optional int64 recvPacketLoss=34;
-       optional string remoteuid=35;
-       optional bool isRemote=36;
-       optional int64 qpSum=37;
-       optional double packetsLostPerSecond=38;
-    }
-
-    message screen_inbound_rtp_obj{
-       optional string id=1;
-       optional int64 timestamp=2;
-       optional string type=3;
-       optional string kind=4;
-       optional string mediaType=5;
-       optional int64 ssrc=6;
-       optional int64 discardedPackets=7;
-       optional double jitter=8;
-       optional int64 packetsLost=9;
-       optional int64 packetsReceived=10;
-       optional double bitrateMean=11;
-       optional double bitrateStdDev=12;
-       optional int64 bytesReceived=13;
-       optional int64 firCount=14;
-       optional double framerateMean=15;
-       optional double framerateStdDev=16;
-       optional int64 framesDecoded=17;
-       optional int64 nackCount=18;
-       optional int64 pliCount=19;
-       optional string remoteId=20;
-       optional string targetUid=21;
-       optional int64 bytesReceivedPerSecond=22;
-       optional int64 packetsLostPerSecond=23;
-       optional int64 framesDecodedPerSecond=24;
-       optional int64 recvPacketLoss=25;
-       optional int64 packetsReceivedPerSecond=26;
-       optional string remoteuid=27;
-       optional double packetsLostRate=28;
-    }
-
-     message audio_track_obj{
-       optional string id=1;
-       optional int64 timestamp=2;
-       optional string type=3;
-       optional double audioLevel=4;
-       optional bool detached=5;
-       optional bool ended=6;
-       optional int64 jitterBufferFlushes=7;
-       optional bool remoteSource=8;
-       optional string trackIdentifier=9;
-       optional string mediaType=10;
-       optional int64 ssrc=11;
-       optional string uid=12;
-    }
-
-     message video_track_obj{
-       optional string id=1;
-       optional int64 timestamp=2;
-       optional string type=3;
-       optional bool detached=4;
-       optional bool ended=5;
-       optional int64 frameHeight=6;
-       optional int64 frameWidth=7;
-       optional int64 framesDecoded=8;
-       optional int64 framesDropped=9;
-       optional int64 framesReceived=10;
-       optional int64 freezeCount=11;
-       optional int64 pauseCount=12;
-       optional bool remoteSource=13;
-       optional double sumOfSquaredFramesDuration=14;
-       optional double totalFramesDuration=15;
-       optional double totalFreezesDuration=16;
-       optional int64 totalPausesDuration=17;
-       optional string trackIdentifier=18;
-       optional int64 ssrc=19;
-       optional string mediaType=20;
-       optional string uid=21;
-    }
-
-    message screen_ssrc_obj{
-      optional string googContentType=1;
-      optional string googCaptureStartNtpTimeMs=2;
-      optional string googTargetDelayMs=3;
-      optional string packetsLost=4;
-      optional string googDecodeMs=5;
-      optional string googFrameHeightReceived=6;
-      optional string googFrameRateOutput=7;
-      optional string packetsReceived=8;
-      optional string ssrc=9;
-      optional string googRenderDelayMs=10;
-      optional string googMaxDecodeMs=11;
-      optional string googTrackId=12;
-      optional string googFrameWidthReceived=13;
-      optional string codecImplementationName=14;
-      optional string transportId=15;
-      optional string mediaType=16;
-      optional string googInterframeDelayMax=17;
-      optional string googCodecName=18;
-      optional string googFrameRateReceived=19;
-      optional string framesDecoded=20;
-      optional string googNacksSent=21;
-      optional string googFirsSent=22;
-      optional string bytesReceived=23;
-      optional string googFirstFrameReceivedToDecodedMs=24;
-      optional string googCurrentDelayMs=25;
-      optional string googMinPlayoutDelayMs=26;
-      optional string googFrameRateDecoded=27;
-      optional string googJitterBufferMs=28;
-      optional string googPlisSent=29;
-      optional string id=30;
-      optional string type=31;
-      optional string timestamp=32;
-      optional int64 localuid=33;
-      optional string remoteuid=34;
-      optional int64 bitsReceivedPerSecond=35;
-      optional int64 packetsReceivedPerSecond=36;
-      optional int64 recvPacketLoss=37;
-      optional int64 freezeTime=38;
-      optional int64 totalFreezeTime=39;
-      optional int64 bytesReceivedPerSecond=40;
-      optional int64 framesDecodedPerSecond=41;
-      optional double packetsLostRate=42;
-      optional double packetsLostPerSecond=43;
-      optional int64 vlr=44;
-   }
   }
 }
 

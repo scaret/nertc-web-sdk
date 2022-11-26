@@ -438,6 +438,14 @@ async function loadTokenByAppKey() {
     } else {
       console.error(data.data || data)
     }
+  } else if (safemode && channelName) {
+    const checkSumUrl = config.checkSumUrl
+    const data = await axios.post(checkSumUrl, `uid=${uid}&appkey=${appkey}`)
+    if (data.data.code === 200) {
+      $('#token').val(data.data.checksum)
+    } else {
+      console.error('getChecksum error: ', error)
+    }
   } else {
     $('#token').val('')
   }
@@ -1112,7 +1120,7 @@ function initVolumeDetect() {
         return
       }
       const newValue = result.toFixed(10)
-      if (instantMeter.value !== newValue){
+      if (instantMeter.value !== newValue) {
         instantMeter.value = newValue
       }
       if (instantValueDisplay.innerText !== newValue) {
@@ -3722,13 +3730,13 @@ $('#getCurrentFrameData').click(function (event) {
     let imageData = null
     let start = Date.now()
     const options = {}
-    if (mediaType){
+    if (mediaType) {
       options.mediaType = mediaType
     }
-    if (width){
+    if (width) {
       options.width = width
     }
-    if (height){
+    if (height) {
       options.height = height
     }
     if (mediaType || width || height) {
@@ -3738,17 +3746,24 @@ $('#getCurrentFrameData').click(function (event) {
       console.log(`getCurrentFrameData options`, uid, null)
       imageData = stream.getCurrentFrameData()
     }
-    if (!imageData){
+    if (!imageData) {
       document.getElementById(`getCurrentFrameDataInfo`).innerText = `无法截图`
-      if (getCurrentFrameDataCtx){
-        getCurrentFrameDataCtx.clearRect(0, 0, getCurrentFrameDataCtx.canvas.width, getCurrentFrameDataCtx.canvas.height)
+      if (getCurrentFrameDataCtx) {
+        getCurrentFrameDataCtx.clearRect(
+          0,
+          0,
+          getCurrentFrameDataCtx.canvas.width,
+          getCurrentFrameDataCtx.canvas.height
+        )
       }
       return
     }
     let time = Date.now() - start
     console.log(`getCurrentFrameData spent: ${time} result: `, imageData)
-    document.getElementById(`getCurrentFrameDataInfo`).innerText = `${time}ms ${imageData.width}x${imageData.height} ${imageData.colorSpace} len:${imageData.data.byteLength}`
-    if (!getCurrentFrameDataCtx){
+    document.getElementById(
+      `getCurrentFrameDataInfo`
+    ).innerText = `${time}ms ${imageData.width}x${imageData.height} ${imageData.colorSpace} len:${imageData.data.byteLength}`
+    if (!getCurrentFrameDataCtx) {
       const canvas = document.createElement('canvas')
       canvas.id = 'getCurrentFrameDataCanvas'
       canvas.style.width = '100%'
@@ -3758,7 +3773,7 @@ $('#getCurrentFrameData').click(function (event) {
     getCurrentFrameDataCtx.canvas.width = imageData.width
     getCurrentFrameDataCtx.canvas.height = imageData.height
     getCurrentFrameDataCtx.fillRect(0, 0, imageData.width, imageData.height)
-    getCurrentFrameDataCtx.putImageData(imageData, 0, 0, 0, 0, imageData.width,  imageData.height)
+    getCurrentFrameDataCtx.putImageData(imageData, 0, 0, 0, 0, imageData.width, imageData.height)
   }
 })
 
@@ -4536,7 +4551,7 @@ $('#closeWatermarkPanel').on('click', function () {
   $('#updateWatermarkPanel').hide()
 })
 
-$('#doSetLocalMediaPriority').on('click', function (){
+$('#doSetLocalMediaPriority').on('click', function () {
   // 媒体优先级
   //const enableMeidaPriority = $('#enableMeidaPriority').prop('checked')
   const priority = +$('#priority').val()
@@ -5002,7 +5017,7 @@ function getdate() {
 // 读取url中配置的初始参数
 let query = _parseQuery(location.search)
 if (query) {
-  if (query.noclick === "true") {
+  if (query.noclick === 'true') {
     $('input[name="enableAudio"][value=""]').prop('checked', true)
     $('input[name="enableVideo"][value=""]').prop('checked', true)
     $('input[name="enableScreen"][value=""]').prop('checked', true)
