@@ -93,6 +93,43 @@ class DataReport {
     Object.assign(this.common, commonEvent)
     return this
   }
+  /**
+   * heartbeat定时上报
+   * @param {Object} options
+   * @param {String} options.uid    通话用户UID 3.3.0 是
+   * @param {String} options.cid    通话时CID  3.3.0 是
+   * @param {JSONObject} options.sys   通话时CID  3.3.0 是
+   * @param {JSONArray} options.tx   上行通话质量数据 3.3.0 是
+   * @param {JSONArray} options.rx   描述信息 3.3.0 是
+   */
+  setHeartbeat(heartbeatEvent: HeartbeatEvent) {
+    this.heartbeat = heartbeatEvent
+
+    //api 上报借助心跳包活
+    // 通过heatbeat上报，优先上报apiEvents中的事件
+    const apiEventKeys = Object.keys(this.adapterRef.apiEvent)
+    const apiEventsKeys = Object.keys(this.adapterRef.apiEvents)
+    const eventNames = apiEventKeys.concat(
+      apiEventsKeys.filter((eventName) => !apiEventKeys.includes(eventName))
+    )
+
+    let api: APIEventItem[] = []
+    for (let i in eventNames) {
+      const eventName = eventNames[i]
+      if (this.adapterRef.apiEvents[eventName] && this.adapterRef.apiEvents[eventName].length) {
+        api = api.concat(this.adapterRef.apiEvents[eventName])
+        this.adapterRef.apiEvents[eventName] = []
+      } else if (
+        this.adapterRef.apiEvent[eventName] &&
+        this.adapterRef.apiEvent[eventName].length
+      ) {
+        api = api.concat(this.adapterRef.apiEvent[eventName])
+        this.adapterRef.apiEvent[eventName] = []
+      }
+    }
+    this.api = this.api.concat(api)
+    return this
+  }
 
   /**
    * networkChange事件

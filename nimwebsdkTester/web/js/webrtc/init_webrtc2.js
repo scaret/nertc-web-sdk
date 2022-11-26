@@ -445,6 +445,14 @@ async function loadTokenByAppKey() {
     } else {
       console.error(data.data || data)
     }
+  } else if (safemode && channelName) {
+    const checkSumUrl = config.checkSumUrl
+    const data = await axios.post(checkSumUrl, `uid=${uid}&appkey=${appkey}`)
+    if (data.data.code === 200) {
+      $('#token').val(data.data.checksum)
+    } else {
+      console.error('getChecksum error: ', error)
+    }
   } else {
     $('#token').val('')
   }

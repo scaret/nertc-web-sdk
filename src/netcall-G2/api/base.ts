@@ -197,9 +197,6 @@ class Base extends RTCEventEmitter {
         adapterRef: this.adapterRef,
         isReport: this.isReport
       })
-
-      this.isReport && this.adapterRef._statsReport.start()
-      this.adapterRef._statsReport.startHeartbeat()
     }
   }
 
@@ -443,20 +440,9 @@ class Base extends RTCEventEmitter {
     this.adapterRef.channelInfo.wssArrIndex = 0
 
     // 开始上报format数据
-    if (!this.adapterRef._statsReport) {
-      let enMessage = 'startSession: no format stats',
-        zhMessage = 'startSession: 没有 format 数据',
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.NO_STATS_ERROR,
-        message,
-        advice
-      })
+    if (this.adapterRef._statsReport) {
+      this.adapterRef._statsReport.start()
     }
-    this.adapterRef._statsReport.statsStart()
   }
 
   stopSession() {
@@ -515,13 +501,6 @@ class Base extends RTCEventEmitter {
       }
       remotStream.active = false
       remotStream.destroy()
-      const data =
-        this.adapterRef._statsReport &&
-        this.adapterRef._statsReport.formativeStatsReport &&
-        this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData
-      if (data && data[uid]) {
-        delete data[uid]
-      }
     }
     this.adapterRef.netStatusList = this.adapterRef.netStatusList.filter((item, index, list) => {
       return item.uid !== uid

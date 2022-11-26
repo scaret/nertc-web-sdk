@@ -1097,14 +1097,6 @@ class Client extends Base {
           const uid = stream.getId()
           if (uid) {
             delete this.adapterRef.remoteAudioStats[uid]
-            const data =
-              this.adapterRef._statsReport &&
-              this.adapterRef._statsReport.formativeStatsReport &&
-              this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
-            if (data) {
-              data.recvFirstAudioFrame = false
-              data.recvFirstAudioPackage = false
-            }
           }
           this.logger.log('取消订阅音频流完成')
         }
@@ -1226,15 +1218,6 @@ class Client extends Base {
           const uid = stream.getId()
           if (uid) {
             delete this.adapterRef.remoteVideoStats[uid]
-            const data =
-              this.adapterRef._statsReport &&
-              this.adapterRef._statsReport.formativeStatsReport &&
-              this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
-            if (data) {
-              data.recvFirstVideoFrame = false
-              data.recvFirstVideoPackage = false
-              data.videoTotalPlayDuration = 0
-            }
           }
           this.logger.log('取消订阅视频流完成')
         }
@@ -1296,15 +1279,6 @@ class Client extends Base {
           const uid = stream.getId()
           if (uid) {
             delete this.adapterRef.remoteScreenStats[uid]
-            const data =
-              this.adapterRef._statsReport &&
-              this.adapterRef._statsReport.formativeStatsReport &&
-              this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
-            if (data) {
-              data.recvFirstScreenFrame = false
-              data.recvFirstScreenPackage = false
-              data.screenTotalPlayDuration = 0
-            }
           }
           this.logger.log('取消订阅辅助流完成')
         }
@@ -1399,14 +1373,6 @@ class Client extends Base {
         const uid = stream.getId()
         if (uid) {
           delete this.adapterRef.remoteAudioStats[uid]
-          const data =
-            this.adapterRef._statsReport &&
-            this.adapterRef._statsReport.formativeStatsReport &&
-            this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
-          if (data) {
-            data.recvFirstAudioFrame = false
-            data.recvFirstAudioPackage = false
-          }
         }
         this.logger.log('取消订阅音频流完成')
       }
@@ -1483,15 +1449,6 @@ class Client extends Base {
         const uid = stream.getId()
         if (uid) {
           delete this.adapterRef.remoteVideoStats[uid]
-          const data =
-            this.adapterRef._statsReport &&
-            this.adapterRef._statsReport.formativeStatsReport &&
-            this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
-          if (data) {
-            data.recvFirstVideoFrame = false
-            data.recvFirstVideoPackage = false
-            data.videoTotalPlayDuration = 0
-          }
         }
         this.logger.log('取消订阅视频流完成')
       }
@@ -1530,15 +1487,6 @@ class Client extends Base {
         const uid = stream.getId()
         if (uid) {
           delete this.adapterRef.remoteScreenStats[uid]
-          const data =
-            this.adapterRef._statsReport &&
-            this.adapterRef._statsReport.formativeStatsReport &&
-            this.adapterRef._statsReport.formativeStatsReport.firstData.recvFirstData[uid]
-          if (data) {
-            data.recvFirstScreenFrame = false
-            data.recvFirstScreenPackage = false
-            data.screenTotalPlayDuration = 0
-          }
         }
         this.logger.log('取消订阅辅助流完成')
       }

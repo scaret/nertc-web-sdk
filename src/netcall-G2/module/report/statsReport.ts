@@ -6,10 +6,11 @@ import raf from '../../util/rtcUtil/raf'
 import * as env from '../../util/rtcUtil/rtcEnvironment'
 import { generateUUID } from '../../util/rtcUtil/utils'
 import WSTransport from '../../util/wsTransport'
-import { FormativeStatsReport } from './formativeStatsReport'
 import { GetStats } from './getStats'
 import { getParameters } from '../parameters'
+import { getBrowserInfo, getOSInfo } from '../../util/rtcUtil/rtcPlatform'
 const sha1 = require('js-sha1')
+import { DataReport } from './dataReport'
 
 const wsURL = 'wss://statistic.live.126.net/lps-websocket/websocket/collect'
 const DEV = 1 // 测试
@@ -27,9 +28,7 @@ class StatsReport extends EventEmitter {
   private stats: GetStats | null
   private heartbeat_: any
   private wsTransport_: any
-  private prevStats_: any
-  public formativeStatsReport: FormativeStatsReport | null
-  public isStartGetStats: boolean
+  private reportData: any
 
   constructor(options: StatsReportOptions) {
     super()
@@ -41,27 +40,23 @@ class StatsReport extends EventEmitter {
     this.sdkRef = options.sdkRef
     this.adapterRef = options.adapterRef
     this.isReport = options.isReport
-    this.prevStats_ = {}
     this.appKey =
       this.adapterRef.instance._params.appkey ||
       (this.adapterRef.channelInfo && this.adapterRef.channelInfo.appKey) ||
       ''
-    this.isStartGetStats = false
-
+    this.reportData = {
+      appkey: this.appKey,
+      cid: this.adapterRef?.channelInfo.cid || 0,
+      uid: this.adapterRef?.channelInfo.uid || 0,
+      browser: getBrowserInfo().browserName,
+      platform: getOSInfo().osName,
+      timestamp: 0,
+      local: {},
+      remote: {}
+    }
     // 初始化stats数据统计
     this.stats = new GetStats({
-      adapterRef: this.adapterRef,
-      interval: 1000
-    })
-    this.stats.on('stats', (data, time) => {
-      //this.adapterRef.logger.log(time,'object',data, time);
-      this.formativeStatsReport && this.formativeStatsReport.update(data, time)
-    })
-
-    this.formativeStatsReport = new FormativeStatsReport({
-      adapterRef: this.adapterRef,
-      sdkRef: this.sdkRef,
-      appkey: this.appKey
+      adapterRef: this.adapterRef
     })
   }
 
@@ -70,28 +65,16 @@ class StatsReport extends EventEmitter {
       this.stats.destroy()
     }
     this.stats = null
-
-    if (this.formativeStatsReport) {
-      this.formativeStatsReport.destroy()
-    }
-    this.formativeStatsReport = null
-
     this.stopHeartbeat()
   }
 
   stop() {
     this.stats && this.stats.stop()
-    this.formativeStatsReport && this.formativeStatsReport.stop()
-  }
-
-  statsStart() {
-    if (this.formativeStatsReport) {
-      this.isStartGetStats = true
-      this.formativeStatsReport.start()
-    }
   }
 
   start() {
+    this.reportData.uid = this.adapterRef?.channelInfo.uid
+    this.reportData.cid = this.adapterRef?.channelInfo.cid
     let deviceId = generateUUID()
     let checkSum = sha1(`${PROD}${timestamp}${SDK_VERSION}${platform}${sdktype}${deviceId}${salt}`)
     //console.log('start: ', this.adapterRef.instance._params.neRtcServerAddresses)
@@ -104,6 +87,7 @@ class StatsReport extends EventEmitter {
       adapterRef: this.adapterRef
     })
     this.wsTransport_.init()
+    this.startHeartbeat()
   }
 
   startHeartbeat() {
@@ -126,18 +110,20 @@ class StatsReport extends EventEmitter {
 
   async doHeartbeat() {
     try {
-      if (this.isStartGetStats) {
-        // 数据上报部分
-        let data = await this.stats?.getAllStats()
-        console.error('上报 data--->', data)
-        // console.error('data: ', JSON.stringify(data))
-        // let reportData = this.calculateReport(data)
-        // console.warn('data--->', reportData)
-        // 每 2s 上报一次
-        if (!env.IS_ELECTRON && this.isReport) {
-          // Electron 上报的数据和 Chrome 不同，暂时不上报，后续需要再进行单独处理
-          this.wsTransport_.sendPB(data)
-        }
+      // 数据上报部分
+      let data: any = await this.stats?.getAllStats()
+      //@ts-ignore
+      window.reportData = data
+      console.log('report data--->', data)
+      if (this.isReport && !env.IS_ELECTRON && data?.times % 2 === 0) {
+        // Electron 上报的数据和 Chrome 不同，暂时不上报，后续需要再进行单独处理
+        this.reportData.local = data?.local
+        this.reportData.remote = data?.remote
+        this.reportData.timestamp = new Date().getTime()
+        this.wsTransport_.sendPB(this.reportData)
+      }
+      if (data?.times % 60 === 0) {
+        this.sendDataReportHeartbeat()
       }
     } catch (error) {
       // console.warn('doHeartBeat failed')
@@ -145,7 +131,22 @@ class StatsReport extends EventEmitter {
     }
   }
 
+  sendDataReportHeartbeat() {
+    //上报G2的数据
+    let datareport = new DataReport({
+      adapterRef: this.adapterRef
+    })
+    datareport.setHeartbeat({
+      name: 'setHeartbeat',
+      uid: '' + this.adapterRef.channelInfo.uid,
+      cid: '' + this.adapterRef.channelInfo.cid
+    })
+    datareport.send()
+    return
+  }
+
   destroy() {
+    this.sendDataReportHeartbeat()
     this.stop()
     this._reset()
     if (this.isReport) {

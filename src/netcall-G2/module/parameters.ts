@@ -223,7 +223,8 @@ let parameters: IParameters = {
   disable2dContext: false,
   disableWebGLContext: false,
   reportPageBrowserId: true,
-  doHeartbeatInterval: 2000,
+  //getStats请求间隔设置为1s，数据上报为doHeartbeatInterval * 2
+  doHeartbeatInterval: 1000,
   deviceChangeInterval: 0,
   shimLocalCanvas: 'safari'
 }

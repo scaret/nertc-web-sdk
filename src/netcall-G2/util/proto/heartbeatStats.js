@@ -29,7 +29,7 @@ var $root = (
         id: 5
       },
       uid: {
-        type: 'int64',
+        type: 'string',
         id: 6
       },
       browser: {
@@ -78,1074 +78,448 @@ var $root = (
           audio_ssrc_obj: {
             fields: {
               audioInputLevel: {
-                type: 'string',
+                type: 'int64',
                 id: 1
               },
               totalAudioEnergy: {
-                type: 'double',
+                type: 'int64',
                 id: 2
               },
-              mediaType: {
-                type: 'string',
+              totalSamplesDuration: {
+                type: 'int64',
                 id: 3
-              },
-              transportId: {
-                type: 'string',
-                id: 4
-              },
-              packetsLost: {
-                type: 'int64',
-                id: 5
-              },
-              googRtt: {
-                type: 'string',
-                id: 6
-              },
-              googEchoCancellationReturnLoss: {
-                type: 'string',
-                id: 7
-              },
-              googCodecName: {
-                type: 'string',
-                id: 8
-              },
-              ssrc: {
-                type: 'int64',
-                id: 9
-              },
-              googJitterReceived: {
-                type: 'string',
-                id: 10
-              },
-              googEchoCancellationReturnLossEnhancement: {
-                type: 'string',
-                id: 11
-              },
-              packetsSent: {
-                type: 'int64',
-                id: 12
               },
               bytesSent: {
                 type: 'int64',
-                id: 13
-              },
-              totalSamplesDuration: {
-                type: 'double',
-                id: 14
-              },
-              googTrackId: {
-                type: 'string',
-                id: 15
-              },
-              id: {
-                type: 'string',
-                id: 16
-              },
-              type: {
-                type: 'string',
-                id: 17
-              },
-              timestamp: {
-                type: 'int64',
-                id: 18
-              },
-              streamType: {
-                type: 'string',
-                id: 19
-              },
-              uid: {
-                type: 'int64',
-                id: 20
-              },
-              dataId: {
-                type: 'string',
-                id: 21
+                id: 4
               },
               bitsSentPerSecond: {
                 type: 'int64',
-                id: 22
-              },
-              packetsSentPerSecond: {
-                type: 'int64',
-                id: 23
-              },
-              packetsLostPerSecond: {
-                type: 'int64',
-                id: 24
-              },
-              sendPacketLoss: {
-                type: 'int64',
-                id: 25
-              },
-              packetsLostRate: {
-                type: 'int64',
-                id: 26
-              },
-              kind: {
-                type: 'string',
-                id: 27
-              },
-              trackId: {
-                type: 'string',
-                id: 28
-              },
-              codecId: {
-                type: 'string',
-                id: 29
-              },
-              mediaSourceId: {
-                type: 'string',
-                id: 30
-              },
-              remoteId: {
-                type: 'string',
-                id: 31
-              },
-              mid: {
-                type: 'string',
-                id: 32
-              },
-              retransmittedPacketsSent: {
-                type: 'int64',
-                id: 33
-              },
-              retransmittedBytesSent: {
-                type: 'int64',
-                id: 34
+                id: 5
               },
               targetBitrate: {
                 type: 'int64',
-                id: 35
+                id: 6
               },
-              nackCount: {
+              packetsSent: {
                 type: 'int64',
-                id: 36
+                id: 7
               },
-              active: {
+              packetsSentPerSecond: {
                 type: 'int64',
-                id: 37
+                id: 8
               },
-              jitter: {
-                type: 'double',
-                id: 38
-              },
-              localId: {
-                type: 'string',
-                id: 39
-              },
-              roundTripTime: {
-                type: 'double',
-                id: 40
+              packetsLost: {
+                type: 'int64',
+                id: 9
               },
               fractionLost: {
                 type: 'int64',
-                id: 41
+                id: 10
               },
-              totalRoundTripTime: {
-                type: 'double',
-                id: 42
-              },
-              roundTripTimeMeasurements: {
+              packetsLostRate: {
                 type: 'int64',
-                id: 43
+                id: 11
               },
-              headerBytesSent: {
+              nackCount: {
                 type: 'int64',
-                id: 44
+                id: 12
+              },
+              rtt: {
+                type: 'int64',
+                id: 13
+              },
+              jitterReceived: {
+                type: 'int64',
+                id: 14
+              },
+              echoReturnLoss: {
+                type: 'string',
+                id: 15
+              },
+              echoReturnLossEnhancement: {
+                type: 'string',
+                id: 16
+              },
+              active: {
+                type: 'int64',
+                id: 17
               }
             }
           },
           audioSlave_ssrc_obj: {
             fields: {
               audioInputLevel: {
-                type: 'string',
+                type: 'int64',
                 id: 1
               },
               totalAudioEnergy: {
-                type: 'double',
+                type: 'int64',
                 id: 2
               },
-              mediaType: {
-                type: 'string',
+              totalSamplesDuration: {
+                type: 'int64',
                 id: 3
-              },
-              transportId: {
-                type: 'string',
-                id: 4
-              },
-              packetsLost: {
-                type: 'int64',
-                id: 5
-              },
-              googRtt: {
-                type: 'string',
-                id: 6
-              },
-              roundTripTimeMeasurements: {
-                type: 'int64',
-                id: 7
-              },
-              googCodecName: {
-                type: 'string',
-                id: 8
-              },
-              ssrc: {
-                type: 'int64',
-                id: 9
-              },
-              googJitterReceived: {
-                type: 'string',
-                id: 10
-              },
-              headerBytesSent: {
-                type: 'int64',
-                id: 11
-              },
-              packetsSent: {
-                type: 'int64',
-                id: 12
               },
               bytesSent: {
                 type: 'int64',
-                id: 13
-              },
-              totalSamplesDuration: {
-                type: 'double',
-                id: 14
-              },
-              googTrackId: {
-                type: 'string',
-                id: 15
-              },
-              id: {
-                type: 'string',
-                id: 16
-              },
-              type: {
-                type: 'string',
-                id: 17
-              },
-              timestamp: {
-                type: 'int64',
-                id: 18
-              },
-              streamType: {
-                type: 'string',
-                id: 19
-              },
-              uid: {
-                type: 'int64',
-                id: 20
-              },
-              dataId: {
-                type: 'string',
-                id: 21
+                id: 4
               },
               bitsSentPerSecond: {
                 type: 'int64',
-                id: 22
-              },
-              packetsSentPerSecond: {
-                type: 'int64',
-                id: 23
-              },
-              packetsLostPerSecond: {
-                type: 'int64',
-                id: 24
-              },
-              sendPacketLoss: {
-                type: 'int64',
-                id: 25
-              },
-              packetsLostRate: {
-                type: 'int64',
-                id: 26
-              },
-              kind: {
-                type: 'string',
-                id: 27
-              },
-              trackId: {
-                type: 'string',
-                id: 28
-              },
-              codecId: {
-                type: 'string',
-                id: 29
-              },
-              mediaSourceId: {
-                type: 'string',
-                id: 30
-              },
-              remoteId: {
-                type: 'string',
-                id: 31
-              },
-              mid: {
-                type: 'string',
-                id: 32
-              },
-              retransmittedPacketsSent: {
-                type: 'int64',
-                id: 33
-              },
-              retransmittedBytesSent: {
-                type: 'int64',
-                id: 34
+                id: 5
               },
               targetBitrate: {
                 type: 'int64',
-                id: 35
+                id: 6
               },
-              nackCount: {
+              packetsSent: {
                 type: 'int64',
-                id: 36
+                id: 7
               },
-              active: {
+              packetsSentPerSecond: {
                 type: 'int64',
-                id: 37
+                id: 8
               },
-              jitter: {
-                type: 'double',
-                id: 38
-              },
-              localId: {
-                type: 'string',
-                id: 39
-              },
-              roundTripTime: {
-                type: 'double',
-                id: 40
+              packetsLost: {
+                type: 'int64',
+                id: 9
               },
               fractionLost: {
                 type: 'int64',
-                id: 41
+                id: 10
               },
-              totalRoundTripTime: {
-                type: 'double',
-                id: 42
+              packetsLostRate: {
+                type: 'int64',
+                id: 11
+              },
+              nackCount: {
+                type: 'int64',
+                id: 12
+              },
+              rtt: {
+                type: 'int64',
+                id: 13
+              },
+              jitterReceived: {
+                type: 'int64',
+                id: 14
+              },
+              echoReturnLoss: {
+                type: 'string',
+                id: 15
+              },
+              echoReturnLossEnhancement: {
+                type: 'string',
+                id: 16
+              },
+              active: {
+                type: 'int64',
+                id: 17
               }
             }
           },
           video_ssrc_obj: {
             fields: {
-              googContentType: {
-                type: 'string',
+              bytesSent: {
+                type: 'int64',
                 id: 1
               },
-              googFrameWidthInput: {
-                type: 'string',
+              bitsSentPerSecond: {
+                type: 'int64',
                 id: 2
               },
-              packetsLost: {
+              targetBitrate: {
                 type: 'int64',
                 id: 3
               },
-              googRtt: {
-                type: 'string',
+              packetsSent: {
+                type: 'int64',
                 id: 4
               },
-              googHasEnteredLowResolution: {
+              packetsSentPerSecond: {
                 type: 'int64',
                 id: 5
               },
-              googEncodeUsagePercent: {
-                type: 'string',
+              packetsLost: {
+                type: 'int64',
                 id: 6
               },
-              googCpuLimitedResolution: {
+              fractionLost: {
                 type: 'int64',
                 id: 7
               },
-              hugeFramesSent: {
+              packetsLostRate: {
                 type: 'int64',
                 id: 8
               },
-              googNacksReceived: {
-                type: 'string',
+              firCount: {
+                type: 'int64',
                 id: 9
               },
-              googBandwidthLimitedResolution: {
+              pliCount: {
                 type: 'int64',
                 id: 10
               },
-              googFrameHeightInput: {
-                type: 'string',
+              nackCount: {
+                type: 'int64',
                 id: 11
-              },
-              googPlisReceived: {
-                type: 'string',
-                id: 12
-              },
-              googFrameRateInput: {
-                type: 'string',
-                id: 13
-              },
-              googAvgEncodeMs: {
-                type: 'string',
-                id: 14
-              },
-              googTrackId: {
-                type: 'string',
-                id: 15
-              },
-              codecImplementationName: {
-                type: 'string',
-                id: 16
-              },
-              transportId: {
-                type: 'string',
-                id: 17
               },
               framesEncoded: {
                 type: 'int64',
+                id: 12
+              },
+              framesEncodedPerSecond: {
+                type: 'int64',
+                id: 13
+              },
+              avgEncodeMs: {
+                type: 'int64',
+                id: 14
+              },
+              encodeUsagePercent: {
+                type: 'int64',
+                id: 15
+              },
+              framesSent: {
+                type: 'int64',
+                id: 16
+              },
+              frameRateInput: {
+                type: 'int64',
+                id: 17
+              },
+              frameRateSent: {
+                type: 'int64',
                 id: 18
               },
-              mediaType: {
-                type: 'string',
+              frameWidthInput: {
+                type: 'int64',
                 id: 19
               },
-              googFrameHeightSent: {
-                type: 'string',
+              frameWidthSent: {
+                type: 'int64',
                 id: 20
               },
-              googFrameRateSent: {
-                type: 'string',
+              frameHeightInput: {
+                type: 'int64',
                 id: 21
               },
-              googCodecName: {
-                type: 'string',
+              frameHeightSent: {
+                type: 'int64',
                 id: 22
               },
-              qpSum: {
+              hugeFramesSent: {
                 type: 'int64',
                 id: 23
               },
-              googAdaptationChanges: {
-                type: 'string',
+              qpSum: {
+                type: 'int64',
                 id: 24
               },
-              ssrc: {
+              qpPercentage: {
                 type: 'int64',
                 id: 25
               },
-              googFirsReceived: {
-                type: 'string',
+              freezeTime: {
+                type: 'int64',
                 id: 26
               },
-              googFrameWidthSent: {
-                type: 'string',
+              totalFreezeTime: {
+                type: 'int64',
                 id: 27
               },
-              packetsSent: {
-                type: 'int64',
+              qualityLimitationReason: {
+                type: 'string',
                 id: 28
               },
-              bytesSent: {
+              qualityLimitationResolutionChanges: {
                 type: 'int64',
                 id: 29
               },
-              id: {
-                type: 'string',
+              jitter: {
+                type: 'int64',
                 id: 30
               },
-              type: {
-                type: 'string',
+              rtt: {
+                type: 'int64',
                 id: 31
               },
-              timestamp: {
+              active: {
                 type: 'int64',
                 id: 32
               },
               streamType: {
                 type: 'string',
                 id: 33
-              },
-              dataId: {
-                type: 'int64',
-                id: 34
-              },
-              freezeTime: {
-                type: 'int64',
-                id: 35
-              },
-              totalFreezeTime: {
-                type: 'int64',
-                id: 36
-              },
-              bitsSentPerSecond: {
-                type: 'int64',
-                id: 37
-              },
-              packetsSentPerSecond: {
-                type: 'int64',
-                id: 38
-              },
-              packetsLostPerSecond: {
-                type: 'int64',
-                id: 39
-              },
-              sendPacketLoss: {
-                type: 'int64',
-                id: 40
-              },
-              packetsLostRate: {
-                type: 'int64',
-                id: 41
-              },
-              framesEncodedPerSecond: {
-                type: 'int64',
-                id: 42
-              },
-              qpPercentage: {
-                type: 'double',
-                id: 43
-              },
-              kind: {
-                type: 'string',
-                id: 44
-              },
-              trackId: {
-                type: 'string',
-                id: 45
-              },
-              codecId: {
-                type: 'string',
-                id: 46
-              },
-              mediaSourceId: {
-                type: 'string',
-                id: 47
-              },
-              remoteId: {
-                type: 'string',
-                id: 48
-              },
-              mid: {
-                type: 'string',
-                id: 49
-              },
-              retransmittedPacketsSent: {
-                type: 'int64',
-                id: 50
-              },
-              headerBytesSent: {
-                type: 'int64',
-                id: 51
-              },
-              retransmittedBytesSent: {
-                type: 'int64',
-                id: 52
-              },
-              keyFramesEncoded: {
-                type: 'int64',
-                id: 53
-              },
-              totalEncodeTime: {
-                type: 'double',
-                id: 54
-              },
-              totalEncodedBytesTarget: {
-                type: 'int64',
-                id: 55
-              },
-              frameWidth: {
-                type: 'int64',
-                id: 56
-              },
-              frameHeight: {
-                type: 'int64',
-                id: 57
-              },
-              framesPerSecond: {
-                type: 'int64',
-                id: 58
-              },
-              framesSent: {
-                type: 'int64',
-                id: 59
-              },
-              totalPacketSendDelay: {
-                type: 'double',
-                id: 60
-              },
-              qualityLimitationReason: {
-                type: 'string',
-                id: 61
-              },
-              qualityLimitationResolutionChanges: {
-                type: 'int64',
-                id: 62
-              },
-              encoderImplementation: {
-                type: 'string',
-                id: 63
-              },
-              firCount: {
-                type: 'int64',
-                id: 64
-              },
-              pliCount: {
-                type: 'int64',
-                id: 65
-              },
-              nackCount: {
-                type: 'int64',
-                id: 66
-              },
-              active: {
-                type: 'int64',
-                id: 67
-              },
-              jitter: {
-                type: 'double',
-                id: 68
-              },
-              localId: {
-                type: 'string',
-                id: 69
-              },
-              roundTripTime: {
-                type: 'double',
-                id: 70
-              },
-              fractionLost: {
-                type: 'int64',
-                id: 71
-              },
-              totalRoundTripTime: {
-                type: 'double',
-                id: 72
-              },
-              roundTripTimeMeasurements: {
-                type: 'int64',
-                id: 73
-              },
-              frameRateSent: {
-                type: 'int64',
-                id: 74
-              },
-              packetsReceived: {
-                type: 'int64',
-                id: 75
-              },
-              uid: {
-                type: 'int64',
-                id: 76
               }
-              // qualityLimitationDurations: {
-              //   rule: 'repeated',
-              //   type: 'quality_limitation_durations_obj',
-              //   id: 77,
-              //   nested: {
-              //     quality_limitation_durations_obj: {
-              //       fields: {
-              //         other: {
-              //           type: 'double',
-              //           id: 1
-              //         },
-              //         cpu: {
-              //           type: 'double',
-              //           id: 2
-              //         },
-              //         bandwidth: {
-              //           type: 'double',
-              //           id: 3
-              //         },
-              //         none: {
-              //           type: 'double',
-              //           id: 4
-              //         }
-              //       }
-              //     }
-              //   }
-              // }
             }
           },
           screen_ssrc_obj: {
             fields: {
-              googContentType: {
-                type: 'string',
+              bytesSent: {
+                type: 'int64',
                 id: 1
               },
-              googFrameWidthInput: {
-                type: 'string',
+              bitsSentPerSecond: {
+                type: 'int64',
                 id: 2
               },
-              packetsLost: {
+              targetBitrate: {
                 type: 'int64',
                 id: 3
               },
-              googRtt: {
-                type: 'string',
+              packetsSent: {
+                type: 'int64',
                 id: 4
               },
-              googHasEnteredLowResolution: {
+              packetsSentPerSecond: {
                 type: 'int64',
                 id: 5
               },
-              googEncodeUsagePercent: {
-                type: 'string',
+              packetsLost: {
+                type: 'int64',
                 id: 6
               },
-              googCpuLimitedResolution: {
+              fractionLost: {
                 type: 'int64',
                 id: 7
               },
-              hugeFramesSent: {
+              packetsLostRate: {
                 type: 'int64',
                 id: 8
               },
-              googNacksReceived: {
-                type: 'string',
+              firCount: {
+                type: 'int64',
                 id: 9
               },
-              googBandwidthLimitedResolution: {
+              pliCount: {
                 type: 'int64',
                 id: 10
               },
-              googFrameHeightInput: {
-                type: 'string',
+              nackCount: {
+                type: 'int64',
                 id: 11
-              },
-              googPlisReceived: {
-                type: 'string',
-                id: 12
-              },
-              googFrameRateInput: {
-                type: 'string',
-                id: 13
-              },
-              googAvgEncodeMs: {
-                type: 'string',
-                id: 14
-              },
-              googTrackId: {
-                type: 'string',
-                id: 15
-              },
-              codecImplementationName: {
-                type: 'string',
-                id: 16
-              },
-              transportId: {
-                type: 'string',
-                id: 17
               },
               framesEncoded: {
                 type: 'int64',
+                id: 12
+              },
+              framesEncodedPerSecond: {
+                type: 'int64',
+                id: 13
+              },
+              avgEncodeMs: {
+                type: 'int64',
+                id: 14
+              },
+              encodeUsagePercent: {
+                type: 'int64',
+                id: 15
+              },
+              framesSent: {
+                type: 'int64',
+                id: 16
+              },
+              frameRateInput: {
+                type: 'int64',
+                id: 17
+              },
+              frameRateSent: {
+                type: 'int64',
                 id: 18
               },
-              mediaType: {
-                type: 'string',
+              frameWidthInput: {
+                type: 'int64',
                 id: 19
               },
-              googFrameHeightSent: {
-                type: 'string',
+              frameWidthSent: {
+                type: 'int64',
                 id: 20
               },
-              googFrameRateSent: {
-                type: 'string',
+              frameHeightInput: {
+                type: 'int64',
                 id: 21
               },
-              googCodecName: {
-                type: 'string',
+              frameHeightSent: {
+                type: 'int64',
                 id: 22
               },
-              qpSum: {
+              hugeFramesSent: {
                 type: 'int64',
                 id: 23
               },
-              googAdaptationChanges: {
-                type: 'string',
+              qpSum: {
+                type: 'int64',
                 id: 24
               },
-              ssrc: {
+              qpPercentage: {
                 type: 'int64',
                 id: 25
               },
-              googFirsReceived: {
-                type: 'string',
+              freezeTime: {
+                type: 'int64',
                 id: 26
               },
-              googFrameWidthSent: {
-                type: 'string',
+              totalFreezeTime: {
+                type: 'int64',
                 id: 27
               },
-              packetsSent: {
-                type: 'int64',
+              qualityLimitationReason: {
+                type: 'string',
                 id: 28
               },
-              bytesSent: {
+              qualityLimitationResolutionChanges: {
                 type: 'int64',
                 id: 29
               },
-              id: {
-                type: 'string',
+              jitter: {
+                type: 'int64',
                 id: 30
               },
-              type: {
-                type: 'string',
+              rtt: {
+                type: 'int64',
                 id: 31
               },
-              timestamp: {
+              active: {
                 type: 'int64',
                 id: 32
               },
               streamType: {
                 type: 'string',
                 id: 33
-              },
-              dataId: {
-                type: 'int64',
-                id: 34
-              },
-              freezeTime: {
-                type: 'int64',
-                id: 35
-              },
-              totalFreezeTime: {
-                type: 'int64',
-                id: 36
-              },
-              bitsSentPerSecond: {
-                type: 'int64',
-                id: 37
-              },
-              packetsSentPerSecond: {
-                type: 'int64',
-                id: 38
-              },
-              packetsLostPerSecond: {
-                type: 'int64',
-                id: 39
-              },
-              sendPacketLoss: {
-                type: 'int64',
-                id: 40
-              },
-              packetsLostRate: {
-                type: 'int64',
-                id: 41
-              },
-              framesEncodedPerSecond: {
-                type: 'int64',
-                id: 42
-              },
-              qpPercentage: {
-                type: 'double',
-                id: 43
-              },
-              kind: {
-                type: 'string',
-                id: 44
-              },
-              trackId: {
-                type: 'string',
-                id: 45
-              },
-              codecId: {
-                type: 'string',
-                id: 46
-              },
-              mediaSourceId: {
-                type: 'string',
-                id: 47
-              },
-              remoteId: {
-                type: 'string',
-                id: 48
-              },
-              mid: {
-                type: 'string',
-                id: 49
-              },
-              retransmittedPacketsSent: {
-                type: 'int64',
-                id: 50
-              },
-              headerBytesSent: {
-                type: 'int64',
-                id: 51
-              },
-              retransmittedBytesSent: {
-                type: 'int64',
-                id: 52
-              },
-              keyFramesEncoded: {
-                type: 'int64',
-                id: 53
-              },
-              totalEncodeTime: {
-                type: 'double',
-                id: 54
-              },
-              totalEncodedBytesTarget: {
-                type: 'int64',
-                id: 55
-              },
-              frameWidth: {
-                type: 'int64',
-                id: 56
-              },
-              frameHeight: {
-                type: 'int64',
-                id: 57
-              },
-              framesPerSecond: {
-                type: 'int64',
-                id: 58
-              },
-              framesSent: {
-                type: 'int64',
-                id: 59
-              },
-              totalPacketSendDelay: {
-                type: 'double',
-                id: 60
-              },
-              qualityLimitationReason: {
-                type: 'string',
-                id: 61
-              },
-              qualityLimitationResolutionChanges: {
-                type: 'int64',
-                id: 62
-              },
-              encoderImplementation: {
-                type: 'string',
-                id: 63
-              },
-              firCount: {
-                type: 'int64',
-                id: 64
-              },
-              pliCount: {
-                type: 'int64',
-                id: 65
-              },
-              nackCount: {
-                type: 'int64',
-                id: 66
-              },
-              active: {
-                type: 'int64',
-                id: 67
-              },
-              jitter: {
-                type: 'double',
-                id: 68
-              },
-              localId: {
-                type: 'string',
-                id: 69
-              },
-              roundTripTime: {
-                type: 'double',
-                id: 70
-              },
-              fractionLost: {
-                type: 'int64',
-                id: 71
-              },
-              totalRoundTripTime: {
-                type: 'double',
-                id: 72
-              },
-              roundTripTimeMeasurements: {
-                type: 'int64',
-                id: 73
-              },
-              frameRateSent: {
-                type: 'int64',
-                id: 74
-              },
-              packetsReceived: {
-                type: 'int64',
-                id: 75
-              },
-              contentType: {
-                type: 'string',
-                id: 76
-              },
-              uid: {
-                type: 'int64',
-                id: 77
               }
-              // qualityLimitationDurations: {
-              //   rule: 'repeated',
-              //   type: 'quality_limitation_durations_obj',
-              //   id: 78,
-              //   nested: {
-              //     quality_limitation_durations_obj: {
-              //       fields: {
-              //         other: {
-              //           type: 'double',
-              //           id: 1
-              //         },
-              //         cpu: {
-              //           type: 'double',
-              //           id: 2
-              //         },
-              //         bandwidth: {
-              //           type: 'double',
-              //           id: 3
-              //         },
-              //         none: {
-              //           type: 'double',
-              //           id: 4
-              //         }
-              //       }
-              //     }
-              //   }
-              // }
             }
           },
           bwe_obj: {
             fields: {
               googActualEncBitrate: {
-                type: 'string',
+                type: 'int64',
                 id: 1
               },
               googAvailableSendBandwidth: {
-                type: 'string',
+                type: 'int64',
                 id: 2
               },
               googRetransmitBitrate: {
-                type: 'string',
+                type: 'int64',
                 id: 3
               },
               googAvailableReceiveBandwidth: {
-                type: 'string',
+                type: 'int64',
                 id: 4
               },
               googTargetEncBitrate: {
-                type: 'string',
+                type: 'int64',
                 id: 5
               },
-              googBucketDelay: {
-                type: 'string',
+              googTransmitBitrate: {
+                type: 'int64',
                 id: 6
               },
-              googTransmitBitrate: {
-                type: 'string',
-                id: 7
-              },
-              id: {
-                type: 'string',
-                id: 8
-              },
-              type: {
-                type: 'string',
-                id: 9
-              },
-              timestamp: {
+              googBucketDelay: {
                 type: 'int64',
-                id: 10
-              },
-              dataId: {
-                type: 'string',
-                id: 11
+                id: 7
               }
             }
           }
@@ -1172,1271 +546,526 @@ var $root = (
             rule: 'repeated',
             type: 'screen_ssrc_obj',
             id: 4
-          },
-          bwe: {
-            rule: 'repeated',
-            type: 'bwe_obj',
-            id: 5
           }
         },
         nested: {
           audio_ssrc_obj: {
             fields: {
-              googDecodingCTN: {
-                type: 'string',
+              audioOutputLevel: {
+                type: 'int64',
                 id: 1
               },
-              packetsLost: {
+              totalAudioEnergy: {
                 type: 'int64',
                 id: 2
               },
-              googSecondaryDecodedRate: {
-                type: 'string',
-                id: 3
-              },
-              googDecodingPLC: {
-                type: 'string',
-                id: 4
-              },
-              packetsReceived: {
-                type: 'int64',
-                id: 5
-              },
-              googDecodingCNG: {
-                type: 'string',
-                id: 6
-              },
-              googPreferredJitterBufferMs: {
-                type: 'string',
-                id: 7
-              },
-              googSpeechExpandRate: {
-                type: 'string',
-                id: 8
-              },
               totalSamplesDuration: {
-                type: 'double',
-                id: 9
-              },
-              googTrackId: {
-                type: 'string',
-                id: 10
-              },
-              totalAudioEnergy: {
-                type: 'double',
-                id: 11
-              },
-              transportId: {
-                type: 'string',
-                id: 12
-              },
-              mediaType: {
-                type: 'string',
-                id: 13
-              },
-              googDecodingPLCCNG: {
-                type: 'string',
-                id: 14
-              },
-              googCodecName: {
-                type: 'string',
-                id: 15
-              },
-              googDecodingNormal: {
-                type: 'string',
-                id: 16
-              },
-              googSecondaryDiscardedRate: {
-                type: 'string',
-                id: 17
-              },
-              ssrc: {
                 type: 'int64',
-                id: 18
-              },
-              audioOutputLevel: {
-                type: 'string',
-                id: 19
+                id: 3
               },
               bytesReceived: {
                 type: 'int64',
+                id: 4
+              },
+              bitsReceivedPerSecond: {
+                type: 'int64',
+                id: 5
+              },
+              packetsReceived: {
+                type: 'int64',
+                id: 6
+              },
+              packetsReceivedPerSecond: {
+                type: 'int64',
+                id: 7
+              },
+              packetsLost: {
+                type: 'int64',
+                id: 8
+              },
+              packetsLostRate: {
+                type: 'int64',
+                id: 9
+              },
+              nackCount: {
+                type: 'int64',
+                id: 10
+              },
+              lastPacketReceivedTimestamp: {
+                type: 'int64',
+                id: 11
+              },
+              estimatedPlayoutTimestamp: {
+                type: 'int64',
+                id: 12
+              },
+              freezeTime: {
+                type: 'int64',
+                id: 13
+              },
+              totalFreezeTime: {
+                type: 'int64',
+                id: 14
+              },
+              decodingPLC: {
+                type: 'int64',
+                id: 15
+              },
+              decodingPLCCNG: {
+                type: 'int64',
+                id: 16
+              },
+              decodingNormal: {
+                type: 'int64',
+                id: 17
+              },
+              decodingMuted: {
+                type: 'int64',
+                id: 18
+              },
+              decodingCNG: {
+                type: 'int64',
+                id: 19
+              },
+              decodingCTN: {
+                type: 'int64',
                 id: 20
               },
-              googAccelerateRate: {
-                type: 'string',
+              currentDelayMs: {
+                type: 'int64',
                 id: 21
               },
-              googCurrentDelayMs: {
-                type: 'string',
+              preferredJitterBufferMs: {
+                type: 'int64',
                 id: 22
               },
-              googDecodingCTSG: {
-                type: 'string',
+              jitterBufferMs: {
+                type: 'int64',
                 id: 23
               },
-              googExpandRate: {
-                type: 'string',
+              jitterBufferDelay: {
+                type: 'int64',
                 id: 24
               },
-              googJitterReceived: {
-                type: 'string',
+              jitter: {
+                type: 'int64',
                 id: 25
               },
-              googPreemptiveExpandRate: {
-                type: 'string',
+              rtt: {
+                type: 'int64',
                 id: 26
               },
-              googJitterBufferMs: {
-                type: 'string',
+              preemptiveExpandRate: {
+                type: 'int64',
                 id: 27
               },
-              googDecodingMuted: {
-                type: 'string',
+              speechExpandRate: {
+                type: 'int64',
                 id: 28
               },
-              id: {
-                type: 'string',
+              concealedSamples: {
+                type: 'int64',
                 id: 29
               },
-              type: {
-                type: 'string',
+              silentConcealedSamples: {
+                type: 'int64',
                 id: 30
               },
-              timestamp: {
+              secondaryDecodedRate: {
                 type: 'int64',
                 id: 31
               },
-              streamType: {
-                type: 'string',
+              secondaryDiscardedRate: {
+                type: 'int64',
                 id: 32
               },
               uid: {
                 type: 'string',
                 id: 33
-              },
-              dataId: {
-                type: 'string',
-                id: 34
-              },
-              freezeTime: {
-                type: 'int64',
-                id: 35
-              },
-              totalFreezeTime: {
-                type: 'int64',
-                id: 36
-              },
-              bitsReceivedPerSecond: {
-                type: 'int64',
-                id: 37
-              },
-              packetsReceivedPerSecond: {
-                type: 'int64',
-                id: 38
-              },
-              packetsLostPerSecond: {
-                type: 'int64',
-                id: 39
-              },
-              recvPacketLoss: {
-                type: 'int64',
-                id: 40
-              },
-              packetsLostRate: {
-                type: 'double',
-                id: 41
-              },
-              kind: {
-                type: 'string',
-                id: 42
-              },
-              trackId: {
-                type: 'string',
-                id: 43
-              },
-              codecId: {
-                type: 'string',
-                id: 44
-              },
-              jitter: {
-                type: 'double',
-                id: 45
-              },
-              packetsDiscarded: {
-                type: 'int64',
-                id: 46
-              },
-              trackIdentifier: {
-                type: 'string',
-                id: 47
-              },
-              mid: {
-                type: 'string',
-                id: 48
-              },
-              remoteId: {
-                type: 'string',
-                id: 49
-              },
-              fecPacketsReceived: {
-                type: 'int64',
-                id: 50
-              },
-              fecPacketsDiscarded: {
-                type: 'int64',
-                id: 51
-              },
-              headerBytesReceived: {
-                type: 'int64',
-                id: 52
-              },
-              lastPacketReceivedTimestamp: {
-                type: 'int64',
-                id: 53
-              },
-              jitterBufferDelay: {
-                type: 'int64',
-                id: 54
-              },
-              jitterBufferTargetDelay: {
-                type: 'double',
-                id: 55
-              },
-              jitterBufferMinimumDelay: {
-                type: 'double',
-                id: 56
-              },
-              jitterBufferEmittedCount: {
-                type: 'int64',
-                id: 57
-              },
-              totalSamplesReceived: {
-                type: 'int64',
-                id: 58
-              },
-              concealedSamples: {
-                type: 'int64',
-                id: 59
-              },
-              silentConcealedSamples: {
-                type: 'int64',
-                id: 60
-              },
-              concealmentEvents: {
-                type: 'int64',
-                id: 61
-              },
-              insertedSamplesForDeceleration: {
-                type: 'int64',
-                id: 62
-              },
-              removedSamplesForAcceleration: {
-                type: 'int64',
-                id: 63
-              },
-              audioLevel: {
-                type: 'double',
-                id: 64
-              },
-              nackCount: {
-                type: 'int64',
-                id: 65
-              },
-              packetsSent: {
-                type: 'int64',
-                id: 66
-              },
-              bytesSent: {
-                type: 'int64',
-                id: 67
-              },
-              localId: {
-                type: 'string',
-                id: 68
-              },
-              remoteTimestamp: {
-                type: 'int64',
-                id: 69
-              },
-              reportsSent: {
-                type: 'int64',
-                id: 70
-              },
-              roundTripTimeMeasurements: {
-                type: 'int64',
-                id: 71
-              },
-              totalRoundTripTime: {
-                type: 'int64',
-                id: 72
-              },
-              estimatedPlayoutTimestamp: {
-                type: 'int64',
-                id: 73
-              },
-              googDecodingNormalPerSecond: {
-                type: 'int64',
-                id: 74
               }
             }
           },
           audioSlave_ssrc_obj: {
             fields: {
-              googDecodingCTN: {
-                type: 'string',
+              audioOutputLevel: {
+                type: 'int64',
                 id: 1
               },
-              packetsLost: {
+              totalAudioEnergy: {
                 type: 'int64',
                 id: 2
               },
-              googSecondaryDecodedRate: {
-                type: 'string',
-                id: 3
-              },
-              googDecodingPLC: {
-                type: 'string',
-                id: 4
-              },
-              packetsReceived: {
-                type: 'int64',
-                id: 5
-              },
-              googDecodingCNG: {
-                type: 'string',
-                id: 6
-              },
-              googPreferredJitterBufferMs: {
-                type: 'string',
-                id: 7
-              },
-              googSpeechExpandRate: {
-                type: 'string',
-                id: 8
-              },
               totalSamplesDuration: {
-                type: 'double',
-                id: 9
-              },
-              googTrackId: {
-                type: 'string',
-                id: 10
-              },
-              totalAudioEnergy: {
-                type: 'double',
-                id: 11
-              },
-              transportId: {
-                type: 'string',
-                id: 12
-              },
-              mediaType: {
-                type: 'string',
-                id: 13
-              },
-              googDecodingPLCCNG: {
-                type: 'string',
-                id: 14
-              },
-              googCodecName: {
-                type: 'string',
-                id: 15
-              },
-              googDecodingNormal: {
-                type: 'string',
-                id: 16
-              },
-              googSecondaryDiscardedRate: {
-                type: 'string',
-                id: 17
-              },
-              ssrc: {
                 type: 'int64',
-                id: 18
-              },
-              audioOutputLevel: {
-                type: 'string',
-                id: 19
+                id: 3
               },
               bytesReceived: {
                 type: 'int64',
+                id: 4
+              },
+              bitsReceivedPerSecond: {
+                type: 'int64',
+                id: 5
+              },
+              packetsReceived: {
+                type: 'int64',
+                id: 6
+              },
+              packetsReceivedPerSecond: {
+                type: 'int64',
+                id: 7
+              },
+              packetsLost: {
+                type: 'int64',
+                id: 8
+              },
+              packetsLostRate: {
+                type: 'int64',
+                id: 9
+              },
+              nackCount: {
+                type: 'int64',
+                id: 10
+              },
+              lastPacketReceivedTimestamp: {
+                type: 'int64',
+                id: 11
+              },
+              estimatedPlayoutTimestamp: {
+                type: 'int64',
+                id: 12
+              },
+              freezeTime: {
+                type: 'int64',
+                id: 13
+              },
+              totalFreezeTime: {
+                type: 'int64',
+                id: 14
+              },
+              decodingPLC: {
+                type: 'int64',
+                id: 15
+              },
+              decodingPLCCNG: {
+                type: 'int64',
+                id: 16
+              },
+              decodingNormal: {
+                type: 'int64',
+                id: 17
+              },
+              decodingMuted: {
+                type: 'int64',
+                id: 18
+              },
+              decodingCNG: {
+                type: 'int64',
+                id: 19
+              },
+              decodingCTN: {
+                type: 'int64',
                 id: 20
               },
-              googAccelerateRate: {
-                type: 'string',
+              currentDelayMs: {
+                type: 'int64',
                 id: 21
               },
-              googCurrentDelayMs: {
-                type: 'string',
+              preferredJitterBufferMs: {
+                type: 'int64',
                 id: 22
               },
-              googDecodingCTSG: {
-                type: 'string',
+              jitterBufferMs: {
+                type: 'int64',
                 id: 23
               },
-              googExpandRate: {
-                type: 'string',
+              jitterBufferDelay: {
+                type: 'int64',
                 id: 24
               },
-              googJitterReceived: {
-                type: 'string',
+              jitter: {
+                type: 'int64',
                 id: 25
               },
-              googPreemptiveExpandRate: {
-                type: 'string',
+              rtt: {
+                type: 'int64',
                 id: 26
               },
-              googJitterBufferMs: {
-                type: 'string',
+              preemptiveExpandRate: {
+                type: 'int64',
                 id: 27
               },
-              googDecodingMuted: {
-                type: 'string',
+              speechExpandRate: {
+                type: 'int64',
                 id: 28
               },
-              id: {
-                type: 'string',
+              concealedSamples: {
+                type: 'int64',
                 id: 29
               },
-              type: {
-                type: 'string',
+              silentConcealedSamples: {
+                type: 'int64',
                 id: 30
               },
-              timestamp: {
+              secondaryDecodedRate: {
                 type: 'int64',
                 id: 31
               },
-              streamType: {
-                type: 'string',
+              secondaryDiscardedRate: {
+                type: 'int64',
                 id: 32
               },
               uid: {
                 type: 'string',
                 id: 33
-              },
-              dataId: {
-                type: 'string',
-                id: 34
-              },
-              freezeTime: {
-                type: 'int64',
-                id: 35
-              },
-              totalFreezeTime: {
-                type: 'int64',
-                id: 36
-              },
-              bitsReceivedPerSecond: {
-                type: 'int64',
-                id: 37
-              },
-              packetsReceivedPerSecond: {
-                type: 'int64',
-                id: 38
-              },
-              packetsLostPerSecond: {
-                type: 'int64',
-                id: 39
-              },
-              recvPacketLoss: {
-                type: 'int64',
-                id: 40
-              },
-              packetsLostRate: {
-                type: 'double',
-                id: 41
-              },
-              kind: {
-                type: 'string',
-                id: 42
-              },
-              trackId: {
-                type: 'string',
-                id: 43
-              },
-              codecId: {
-                type: 'string',
-                id: 44
-              },
-              jitter: {
-                type: 'double',
-                id: 45
-              },
-              packetsDiscarded: {
-                type: 'int64',
-                id: 46
-              },
-              trackIdentifier: {
-                type: 'string',
-                id: 47
-              },
-              mid: {
-                type: 'string',
-                id: 48
-              },
-              remoteId: {
-                type: 'string',
-                id: 49
-              },
-              fecPacketsReceived: {
-                type: 'int64',
-                id: 50
-              },
-              fecPacketsDiscarded: {
-                type: 'int64',
-                id: 51
-              },
-              headerBytesReceived: {
-                type: 'int64',
-                id: 52
-              },
-              lastPacketReceivedTimestamp: {
-                type: 'int64',
-                id: 53
-              },
-              jitterBufferDelay: {
-                type: 'int64',
-                id: 54
-              },
-              jitterBufferTargetDelay: {
-                type: 'double',
-                id: 55
-              },
-              jitterBufferMinimumDelay: {
-                type: 'double',
-                id: 56
-              },
-              jitterBufferEmittedCount: {
-                type: 'int64',
-                id: 57
-              },
-              totalSamplesReceived: {
-                type: 'int64',
-                id: 58
-              },
-              concealedSamples: {
-                type: 'int64',
-                id: 59
-              },
-              silentConcealedSamples: {
-                type: 'int64',
-                id: 60
-              },
-              concealmentEvents: {
-                type: 'int64',
-                id: 61
-              },
-              insertedSamplesForDeceleration: {
-                type: 'int64',
-                id: 62
-              },
-              removedSamplesForAcceleration: {
-                type: 'int64',
-                id: 63
-              },
-              audioLevel: {
-                type: 'double',
-                id: 64
-              },
-              nackCount: {
-                type: 'int64',
-                id: 65
-              },
-              packetsSent: {
-                type: 'int64',
-                id: 66
-              },
-              bytesSent: {
-                type: 'int64',
-                id: 67
-              },
-              localId: {
-                type: 'string',
-                id: 68
-              },
-              remoteTimestamp: {
-                type: 'int64',
-                id: 69
-              },
-              reportsSent: {
-                type: 'int64',
-                id: 70
-              },
-              roundTripTimeMeasurements: {
-                type: 'int64',
-                id: 71
-              },
-              totalRoundTripTime: {
-                type: 'int64',
-                id: 72
-              },
-              googDecodingNormalPerSecond: {
-                type: 'int64',
-                id: 73
               }
             }
           },
           video_ssrc_obj: {
             fields: {
-              googContentType: {
-                type: 'string',
+              bytesReceived: {
+                type: 'int64',
                 id: 1
               },
-              googCaptureStartNtpTimeMs: {
-                type: 'string',
-                id: 2
-              },
-              googTargetDelayMs: {
-                type: 'string',
-                id: 3
-              },
-              packetsLost: {
+              bitsReceivedPerSecond: {
                 type: 'int64',
-                id: 4
-              },
-              googDecodeMs: {
-                type: 'string',
-                id: 5
-              },
-              googFrameHeightReceived: {
-                type: 'string',
-                id: 6
+                id: 2
               },
               packetsReceived: {
                 type: 'int64',
+                id: 3
+              },
+              packetsReceivedPerSecond: {
+                type: 'int64',
+                id: 4
+              },
+              packetsLost: {
+                type: 'int64',
+                id: 5
+              },
+              packetsLostRate: {
+                type: 'int64',
+                id: 6
+              },
+              firCount: {
+                type: 'int64',
                 id: 7
               },
-              googMaxDecodeMs: {
-                type: 'string',
+              pliCount: {
+                type: 'int64',
                 id: 8
               },
-              googTrackId: {
-                type: 'string',
+              nackCount: {
+                type: 'int64',
                 id: 9
               },
-              googFrameWidthReceived: {
-                type: 'string',
+              lastPacketReceivedTimestamp: {
+                type: 'int64',
                 id: 10
               },
-              codecImplementationName: {
-                type: 'string',
+              estimatedPlayoutTimestamp: {
+                type: 'int64',
                 id: 11
               },
-              transportId: {
-                type: 'string',
+              pauseCount: {
+                type: 'int64',
                 id: 12
               },
-              mediaType: {
-                type: 'string',
+              totalPausesDuration: {
+                type: 'int64',
                 id: 13
               },
-              googInterframeDelayMax: {
-                type: 'string',
+              freezeCount: {
+                type: 'int64',
                 id: 14
               },
-              googCodecName: {
-                type: 'string',
+              totalFreezesDuration: {
+                type: 'int64',
                 id: 15
               },
-              googFrameRateReceived: {
-                type: 'string',
+              totalFreezeTime: {
+                type: 'int64',
                 id: 16
               },
-              googMinPlayoutDelayMs: {
-                type: 'string',
+              freezeTime: {
+                type: 'int64',
                 id: 17
               },
               framesDecoded: {
                 type: 'int64',
                 id: 18
               },
-              googNacksSent: {
-                type: 'string',
+              framesDropped: {
+                type: 'int64',
                 id: 19
-              },
-              ssrc: {
-                type: 'int64',
-                id: 20
-              },
-              bytesReceived: {
-                type: 'int64',
-                id: 21
-              },
-              googFirstFrameReceivedToDecodedMs: {
-                type: 'string',
-                id: 22
-              },
-              googCurrentDelayMs: {
-                type: 'string',
-                id: 23
-              },
-              googRenderDelayMs: {
-                type: 'string',
-                id: 24
-              },
-              googFirsSent: {
-                type: 'string',
-                id: 25
-              },
-              googFrameRateDecoded: {
-                type: 'string',
-                id: 26
-              },
-              googFrameRateOutput: {
-                type: 'string',
-                id: 27
-              },
-              googJitterBufferMs: {
-                type: 'string',
-                id: 28
-              },
-              googPlisSent: {
-                type: 'string',
-                id: 29
-              },
-              id: {
-                type: 'string',
-                id: 30
-              },
-              type: {
-                type: 'string',
-                id: 31
-              },
-              timestamp: {
-                type: 'int64',
-                id: 32
-              },
-              streamType: {
-                type: 'string',
-                id: 33
-              },
-              uid: {
-                type: 'string',
-                id: 34
-              },
-              dataId: {
-                type: 'string',
-                id: 35
-              },
-              freezeTime: {
-                type: 'int64',
-                id: 36
-              },
-              totalFreezeTime: {
-                type: 'int64',
-                id: 37
-              },
-              bitsReceivedPerSecond: {
-                type: 'int64',
-                id: 38
-              },
-              packetsReceivedPerSecond: {
-                type: 'double',
-                id: 39
-              },
-              packetsLostPerSecond: {
-                type: 'double',
-                id: 40
-              },
-              recvPacketLoss: {
-                type: 'int64',
-                id: 41
-              },
-              framesDecodedPerSecond: {
-                type: 'double',
-                id: 42
-              },
-              kind: {
-                type: 'string',
-                id: 43
-              },
-              trackId: {
-                type: 'string',
-                id: 44
-              },
-              codecId: {
-                type: 'string',
-                id: 45
-              },
-              jitter: {
-                type: 'double',
-                id: 46
-              },
-              trackIdentifier: {
-                type: 'string',
-                id: 47
-              },
-              mid: {
-                type: 'string',
-                id: 48
-              },
-              headerBytesReceived: {
-                type: 'int64',
-                id: 49
-              },
-              lastPacketReceivedTimestamp: {
-                type: 'int64',
-                id: 50
-              },
-              jitterBufferDelay: {
-                type: 'double',
-                id: 51
-              },
-              jitterBufferEmittedCount: {
-                type: 'int64',
-                id: 52
               },
               framesReceived: {
                 type: 'int64',
-                id: 53
-              },
-              frameWidth: {
-                type: 'int64',
-                id: 54
-              },
-              frameHeight: {
-                type: 'int64',
-                id: 55
-              },
-              framesPerSecond: {
-                type: 'int64',
-                id: 56
-              },
-              keyFramesDecoded: {
-                type: 'int64',
-                id: 57
-              },
-              framesDropped: {
-                type: 'int64',
-                id: 58
-              },
-              totalDecodeTime: {
-                type: 'double',
-                id: 59
-              },
-              totalProcessingDelay: {
-                type: 'double',
-                id: 60
-              },
-              totalInterFrameDelay: {
-                type: 'double',
-                id: 61
-              },
-              totalSquaredInterFrameDelay: {
-                type: 'double',
-                id: 62
-              },
-              estimatedPlayoutTimestamp: {
-                type: 'int64',
-                id: 63
-              },
-              decoderImplementation: {
-                type: 'string',
-                id: 64
-              },
-              firCount: {
-                type: 'int64',
-                id: 65
-              },
-              pliCount: {
-                type: 'int64',
-                id: 66
-              },
-              nackCount: {
-                type: 'int64',
-                id: 67
-              },
-              discardedPackets: {
-                type: 'int64',
-                id: 68
-              },
-              packetsDiscarded: {
-                type: 'int64',
-                id: 69
-              },
-              remoteId: {
-                type: 'string',
-                id: 70
-              },
-              bytesSent: {
-                type: 'int64',
-                id: 71
-              },
-              packetsSent: {
-                type: 'int64',
-                id: 72
-              },
-              localId: {
-                type: 'string',
-                id: 73
-              },
-              remoteTimestamp: {
-                type: 'int64',
-                id: 74
-              },
-              packetsLostRate: {
-                type: 'double',
-                id: 75
-              },
-              frameRateReceived: {
-                type: 'double',
-                id: 76
-              }
-            }
-          },
-          screen_ssrc_obj: {
-            fields: {
-              googContentType: {
-                type: 'string',
-                id: 1
-              },
-              googCaptureStartNtpTimeMs: {
-                type: 'string',
-                id: 2
-              },
-              googTargetDelayMs: {
-                type: 'string',
-                id: 3
-              },
-              packetsLost: {
-                type: 'int64',
-                id: 4
-              },
-              googDecodeMs: {
-                type: 'string',
-                id: 5
-              },
-              googFrameHeightReceived: {
-                type: 'string',
-                id: 6
-              },
-              packetsReceived: {
-                type: 'int64',
-                id: 7
-              },
-              googMaxDecodeMs: {
-                type: 'string',
-                id: 8
-              },
-              googTrackId: {
-                type: 'string',
-                id: 9
-              },
-              googFrameWidthReceived: {
-                type: 'string',
-                id: 10
-              },
-              codecImplementationName: {
-                type: 'string',
-                id: 11
-              },
-              transportId: {
-                type: 'string',
-                id: 12
-              },
-              mediaType: {
-                type: 'string',
-                id: 13
-              },
-              googInterframeDelayMax: {
-                type: 'string',
-                id: 14
-              },
-              googCodecName: {
-                type: 'string',
-                id: 15
-              },
-              googFrameRateReceived: {
-                type: 'string',
-                id: 16
-              },
-              googMinPlayoutDelayMs: {
-                type: 'string',
-                id: 17
-              },
-              framesDecoded: {
-                type: 'int64',
-                id: 18
-              },
-              googNacksSent: {
-                type: 'string',
-                id: 19
-              },
-              ssrc: {
-                type: 'int64',
                 id: 20
               },
-              bytesReceived: {
+              decodeMs: {
                 type: 'int64',
                 id: 21
               },
-              googFirstFrameReceivedToDecodedMs: {
-                type: 'string',
+              frameRateDecoded: {
+                type: 'int64',
                 id: 22
               },
-              googCurrentDelayMs: {
-                type: 'string',
+              frameRateOutput: {
+                type: 'int64',
                 id: 23
               },
-              googRenderDelayMs: {
-                type: 'string',
+              frameRateReceived: {
+                type: 'int64',
                 id: 24
               },
-              googFirsSent: {
-                type: 'string',
+              frameWidthReceived: {
+                type: 'int64',
                 id: 25
               },
-              googFrameRateDecoded: {
-                type: 'string',
+              frameHeightReceived: {
+                type: 'int64',
                 id: 26
               },
-              googFrameRateOutput: {
-                type: 'string',
+              powerEfficientDecoder: {
+                type: 'int64',
                 id: 27
               },
-              googJitterBufferMs: {
-                type: 'string',
+              currentDelayMs: {
+                type: 'int64',
                 id: 28
               },
-              googPlisSent: {
-                type: 'string',
-                id: 29
-              },
-              id: {
-                type: 'string',
-                id: 30
-              },
-              type: {
-                type: 'string',
-                id: 31
-              },
-              timestamp: {
+              jitterBufferDelay: {
                 type: 'int64',
-                id: 32
-              },
-              streamType: {
-                type: 'string',
-                id: 33
+                id: 29
               },
               uid: {
                 type: 'string',
-                id: 34
-              },
-              dataId: {
-                type: 'string',
-                id: 35
-              },
-              freezeTime: {
-                type: 'int64',
-                id: 36
-              },
-              totalFreezeTime: {
-                type: 'int64',
-                id: 37
-              },
-              bitsReceivedPerSecond: {
-                type: 'int64',
-                id: 38
-              },
-              packetsReceivedPerSecond: {
-                type: 'double',
-                id: 39
-              },
-              packetsLostPerSecond: {
-                type: 'double',
-                id: 40
-              },
-              recvPacketLoss: {
-                type: 'int64',
-                id: 41
-              },
-              framesDecodedPerSecond: {
-                type: 'double',
-                id: 42
-              },
-              kind: {
-                type: 'string',
-                id: 43
-              },
-              trackId: {
-                type: 'string',
-                id: 44
-              },
-              codecId: {
-                type: 'string',
-                id: 45
-              },
-              jitter: {
-                type: 'double',
-                id: 46
-              },
-              trackIdentifier: {
-                type: 'string',
-                id: 47
-              },
-              mid: {
-                type: 'string',
-                id: 48
-              },
-              headerBytesReceived: {
-                type: 'int64',
-                id: 49
-              },
-              lastPacketReceivedTimestamp: {
-                type: 'int64',
-                id: 50
-              },
-              jitterBufferDelay: {
-                type: 'double',
-                id: 51
-              },
-              jitterBufferEmittedCount: {
-                type: 'int64',
-                id: 52
-              },
-              framesReceived: {
-                type: 'int64',
-                id: 53
-              },
-              frameWidth: {
-                type: 'int64',
-                id: 54
-              },
-              frameHeight: {
-                type: 'int64',
-                id: 55
-              },
-              framesPerSecond: {
-                type: 'int64',
-                id: 56
-              },
-              keyFramesDecoded: {
-                type: 'int64',
-                id: 57
-              },
-              framesDropped: {
-                type: 'int64',
-                id: 58
-              },
-              totalDecodeTime: {
-                type: 'double',
-                id: 59
-              },
-              totalProcessingDelay: {
-                type: 'double',
-                id: 60
-              },
-              totalInterFrameDelay: {
-                type: 'double',
-                id: 61
-              },
-              totalSquaredInterFrameDelay: {
-                type: 'double',
-                id: 62
-              },
-              estimatedPlayoutTimestamp: {
-                type: 'int64',
-                id: 63
-              },
-              decoderImplementation: {
-                type: 'string',
-                id: 64
-              },
-              firCount: {
-                type: 'int64',
-                id: 65
-              },
-              pliCount: {
-                type: 'int64',
-                id: 66
-              },
-              nackCount: {
-                type: 'int64',
-                id: 67
-              },
-              discardedPackets: {
-                type: 'int64',
-                id: 68
-              },
-              packetsDiscarded: {
-                type: 'int64',
-                id: 69
-              },
-              remoteId: {
-                type: 'string',
-                id: 70
-              },
-              bytesSent: {
-                type: 'int64',
-                id: 71
-              },
-              packetsSent: {
-                type: 'int64',
-                id: 72
-              },
-              localId: {
-                type: 'string',
-                id: 73
-              },
-              remoteTimestamp: {
-                type: 'int64',
-                id: 74
-              },
-              packetsLostRate: {
-                type: 'double',
-                id: 75
-              },
-              frameRateReceived: {
-                type: 'double',
-                id: 76
+                id: 30
               }
             }
           },
           bwe_obj: {
             fields: {
-              googActualEncBitrate: {
-                type: 'string',
+              bytesReceived: {
+                type: 'int64',
                 id: 1
               },
-              googAvailableSendBandwidth: {
-                type: 'string',
+              bitsReceivedPerSecond: {
+                type: 'int64',
                 id: 2
               },
-              googRetransmitBitrate: {
-                type: 'string',
+              packetsReceived: {
+                type: 'int64',
                 id: 3
               },
-              googAvailableReceiveBandwidth: {
-                type: 'string',
+              packetsReceivedPerSecond: {
+                type: 'int64',
                 id: 4
               },
-              googTargetEncBitrate: {
-                type: 'string',
+              packetsLost: {
+                type: 'int64',
                 id: 5
               },
-              googBucketDelay: {
-                type: 'string',
+              packetsLostRate: {
+                type: 'int64',
                 id: 6
               },
-              googTransmitBitrate: {
-                type: 'string',
+              firCount: {
+                type: 'int64',
                 id: 7
               },
-              id: {
-                type: 'string',
+              pliCount: {
+                type: 'int64',
                 id: 8
               },
-              type: {
-                type: 'string',
+              nackCount: {
+                type: 'int64',
                 id: 9
               },
-              timestamp: {
+              lastPacketReceivedTimestamp: {
                 type: 'int64',
                 id: 10
               },
-              dataId: {
-                type: 'string',
+              estimatedPlayoutTimestamp: {
+                type: 'int64',
                 id: 11
+              },
+              pauseCount: {
+                type: 'int64',
+                id: 12
+              },
+              totalPausesDuration: {
+                type: 'int64',
+                id: 13
+              },
+              freezeCount: {
+                type: 'int64',
+                id: 14
+              },
+              totalFreezesDuration: {
+                type: 'int64',
+                id: 15
+              },
+              totalFreezeTime: {
+                type: 'int64',
+                id: 16
+              },
+              freezeTime: {
+                type: 'int64',
+                id: 17
+              },
+              framesDecoded: {
+                type: 'int64',
+                id: 18
+              },
+              framesDropped: {
+                type: 'int64',
+                id: 19
+              },
+              framesReceived: {
+                type: 'int64',
+                id: 20
+              },
+              decodeMs: {
+                type: 'int64',
+                id: 21
+              },
+              frameRateDecoded: {
+                type: 'int64',
+                id: 22
+              },
+              frameRateOutput: {
+                type: 'int64',
+                id: 23
+              },
+              frameRateReceived: {
+                type: 'int64',
+                id: 24
+              },
+              frameWidthReceived: {
+                type: 'int64',
+                id: 25
+              },
+              frameHeightReceived: {
+                type: 'int64',
+                id: 26
+              },
+              powerEfficientDecoder: {
+                type: 'int64',
+                id: 27
+              },
+              currentDelayMs: {
+                type: 'int64',
+                id: 28
+              },
+              jitterBufferDelay: {
+                type: 'int64',
+                id: 29
+              },
+              uid: {
+                type: 'string',
+                id: 30
               }
             }
           }

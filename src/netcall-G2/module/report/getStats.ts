@@ -1,38 +1,33 @@
 /*
- getStats适配器
+ getStats适配器,该模块仅仅提供数据，以及封装成统一的格式
+ 设计方案：https://docs.popo.netease.com/lingxi/172c1c97e0034932a4b4097049d39a70
  */
-import { EventEmitter } from 'eventemitter3'
-import { SDK_VERSION } from '../../Config'
-import { AdapterRef } from '../../types'
+import { AdapterRef, MediaTypeShort } from '../../types'
+import { FormativeStatsReport } from './formativeStatsData'
 import * as env from '../../util/rtcUtil/rtcEnvironment'
-import { getBrowserInfo, getOSInfo } from '../../util/rtcUtil/rtcPlatform'
 
-export interface DownAudioItem {
-  googDecodingPLC: string
-  googDecodingCNG: string
-  googDecodingCTN: string
-  googDecodingPLCCNG: string
-}
-class GetStats extends EventEmitter {
+class GetStats {
   private adapterRef: AdapterRef | null
-  private interval: number
-  private times: number
+  private times = 0
   private browser: 'chrome' | 'safari' | 'firefox'
-  private prevItem: any = {}
-  constructor(options: { adapterRef: AdapterRef; interval: number }) {
-    super()
+  public formativeStatsReport: FormativeStatsReport | null
+  private audioLevel: { uid: number | string; level: number; type: string | undefined }[]
+  private tmp = { bytesSent: 0, bytesReceived: 0 }
+  constructor(options: { adapterRef: AdapterRef }) {
     this.adapterRef = options.adapterRef
-    this.interval = options.interval || 1000
     //workaround for TS2564
-    this.times = 0
     this.browser = 'chrome'
+    this.audioLevel = [] //算是违背了初心，本来这个模块是不做业务的
     this._reset()
+    //对原始数据进行二次封装，以及提供sdk本身数据相关接口的依赖
+    this.formativeStatsReport = new FormativeStatsReport({
+      adapterRef: this.adapterRef
+    })
   }
 
   _reset() {
     this.times = 0
     this.browser = 'chrome'
-
     if (
       (env.IS_CHROME_ONLY && env.CHROME_MAJOR_VERSION && env.CHROME_MAJOR_VERSION >= 72) ||
       env.IS_ANDROID
@@ -46,30 +41,54 @@ class GetStats extends EventEmitter {
     } else if (env.IS_FIREFOX && env.FIREFOX_MAJOR_VERSION && env.FIREFOX_MAJOR_VERSION >= 60) {
       this.browser = 'firefox'
     }
+    this.audioLevel = []
+    if (this.formativeStatsReport) {
+      this.formativeStatsReport.destroy()
+    }
+    this.formativeStatsReport = null
   }
 
   async getAllStats() {
-    let localPC = this.adapterRef?._mediasoup?._sendTransport?._handler._pc
-    let remotePC = this.adapterRef?._mediasoup?._recvTransport?._handler._pc
-
-    if (!localPC && !remotePC) {
-      return
+    function compare(property: string) {
+      return function (a: any, b: any) {
+        var value1 = a[property]
+        var value2 = b[property]
+        if (value2 !== 0 && !value2) {
+          // 考虑NaN或无值的情况
+          return -1
+        } else if (value1 !== 0 && !value1) {
+          return 1
+        } else {
+          return value2 - value1
+        }
+      }
     }
+    try {
+      let localPc = this?.adapterRef?._mediasoup?._sendTransport?._handler?._pc
+      let remotePc = this?.adapterRef?._mediasoup?._recvTransport?._handler?._pc
 
-    let result = {
-      local: localPC ? await this.getLocalStats(localPC) : null,
-      remote: remotePC ? await this.getRemoteStats(remotePC) : null
+      if (!localPc && !remotePc) {
+        return
+      }
+      this.audioLevel.length = 0
+      this.tmp = { bytesSent: 0, bytesReceived: 0 }
+      this.times = (this.times || 0) + 1
+      let result = {
+        local: localPc ? await this.getLocalStats(localPc) : null,
+        remote: remotePc ? await this.getRemoteStats(remotePc) : null,
+        times: this.times
+      }
+      this.audioLevel.sort(compare('level'))
+      if (this.audioLevel.length > 0 && this.audioLevel[0].level > 0) {
+        // Firefox 获取不到audioLevel, 没有active-speaker探测能力
+        this?.adapterRef?.instance.safeEmit('active-speaker', this.audioLevel[0])
+        this?.adapterRef?.instance.safeEmit('volume-indicator', this.audioLevel)
+      }
+      //this.adapterRef?.logger.log('stats before revised--->', result)
+      return result
+    } catch (e: any) {
+      this.adapterRef?.logger.warn('数据汇集出现异常: ', e.message)
     }
-    this.times = (this.times || 0) + 1
-    // this.emit('stats', result, this.times)
-    // console.log('stats before revised--->', result)
-    let report = this.reviseData(result, this.browser)
-    // 给 formativeStatsReport 传递全量数据
-    this.emit('stats', report, this.times)
-    // console.error('report: ', report)
-    let reportData = this.finalizeData(report)
-    // console.error('reportData: ', reportData)
-    return reportData
   }
 
   async getLocalStats(pc: RTCPeerConnection) {
@@ -91,7 +110,6 @@ class GetStats extends EventEmitter {
   */
   async chrome(pc: RTCPeerConnection, direction: string) {
     const nonStandardStats = () => {
-      // chrome 在关闭本端屏幕共享后，非标准 getStats 还是能获取到屏幕共享数据，只是码率、帧率等数据显示为 0
       return new Promise((resolve, reject) => {
         // 由于Chrome为callback形式的getStats使用了非标准化的接口，故不遵守TypeScript定义
         // @ts-ignore
@@ -109,8 +127,6 @@ class GetStats extends EventEmitter {
             item.timestamp = res.timestamp
             result[item.id] = item
           })
-
-          //console.log('!!!原始:', result)
           // @ts-ignore
           pc.lastStats = pc.lastStats || {}
           //针对非标准话的getStats进行格式化处理
@@ -122,34 +138,100 @@ class GetStats extends EventEmitter {
 
     const standardizedStats = async () => {
       if (!pc.getTransceivers) return {}
-      let result = {}
-      const transceivers = pc.getTransceivers()
 
+      let result = {
+        audio_ssrc: [],
+        audioSlave_ssrc: [],
+        video_ssrc: [], //风险点，要求大流在前，小流在后，需要排序
+        screen_ssrc: [] //风险点，要求大流在前，小流在后，需要排序
+      }
+      const transceivers = pc.getTransceivers()
       for (let i = 0; i < transceivers.length; i++) {
-        let getStats = null
         let report = null
         const item = transceivers[i]
         if (item.direction === 'sendonly') {
-          if (item.sender && item.sender.getStats) {
+          if (item.sender && item.sender.track && item.sender.getStats) {
             report = await item.sender.getStats()
             report = this.formatChromeStandardizedStats(report, direction, 0)
-            Object.assign(result, report)
+            if (report.video_ssrc && result.video_ssrc) {
+              //@ts-ignore
+              result.video_ssrc.push(report.video_ssrc[0])
+              if (result.video_ssrc.length > 1) {
+                const temp: any = result.video_ssrc[0] || {}
+                if (temp.streamType === 'low') {
+                  ;[result.video_ssrc[0], result.video_ssrc[1]] = [
+                    result.video_ssrc[1],
+                    result.video_ssrc[0]
+                  ]
+                }
+              }
+            } else if (report.screen_ssrc && result.screen_ssrc) {
+              //@ts-ignore
+              result.screen_ssrc.push(report.screen_ssrc[0])
+              if (result.screen_ssrc.length > 1) {
+                const temp: any = result.screen_ssrc[0] || {}
+                if (temp.streamType === 'low') {
+                  ;[result.screen_ssrc[0], result.screen_ssrc[1]] = [
+                    result.screen_ssrc[1],
+                    result.screen_ssrc[0]
+                  ]
+                }
+              }
+            } else {
+              Object.assign(result, report)
+            }
           }
         } else if (item.direction === 'recvonly') {
-          if (item.receiver && item.receiver.getStats) {
+          if (item.receiver && item.receiver.track && item.receiver.getStats) {
             report = await item.receiver.getStats()
             report = this.formatChromeStandardizedStats(report, direction, 0)
-            Object.assign(result, report)
+            if (report.audio_ssrc && result.audio_ssrc) {
+              //@ts-ignore
+              result.audio_ssrc.push(report.audio_ssrc[0])
+            } else if (report.audioSlave_ssrc && result.audioSlave_ssrc) {
+              //@ts-ignore
+              result.audioSlave_ssrc.push(report.audioSlave_ssrc[0])
+            } else if (report.video_ssrc && result.video_ssrc) {
+              //@ts-ignore
+              result.video_ssrc.push(report.video_ssrc[0])
+            } else if (report.screen_ssrc && result.screen_ssrc) {
+              //@ts-ignore
+              result.screen_ssrc.push(report.screen_ssrc[0])
+            } else {
+              Object.assign(result, report)
+            }
           }
         }
       }
-
       return result
     }
 
     const nonStandardResult = await nonStandardStats()
     const standardizedResult = await standardizedStats()
-    let assignedResult = Object.assign(nonStandardResult, standardizedResult)
+    const assignedResult: { [key: string]: any } = {}
+    if (nonStandardResult && standardizedResult) {
+      //@ts-ignore
+      Object.keys(nonStandardResult).forEach((key) => {
+        //@ts-ignore
+        const nonTmp = nonStandardResult[key]
+        //@ts-ignore
+        const tmp = standardizedResult[key]
+        assignedResult[key] = []
+        if (!tmp) {
+          assignedResult[key] = nonTmp
+          return
+        }
+        for (let i = 0; i < nonTmp.length; i++) {
+          if (tmp[i]) {
+            assignedResult[key].push(Object.assign(nonTmp[i], tmp[i]))
+          }
+        }
+      })
+    } else if (nonStandardResult) {
+      Object.assign(assignedResult, nonStandardResult)
+    } else if (standardizedResult) {
+      Object.assign(assignedResult, standardizedResult)
+    }
     return assignedResult
   }
 
@@ -159,14 +241,78 @@ class GetStats extends EventEmitter {
     stats: { [key: string]: any },
     direction: string
   ) {
-    const tmp: any = {}
-
+    function getLimitationReason(item: any) {
+      if (item.googBandwidthLimitedResolution) {
+        return 1
+      } else if (item.googCpuLimitedResolution) {
+        return 2
+      } else if (item.googHasEnteredLowResolution) {
+        return 3
+      } else {
+        0
+      }
+    }
+    // 普通换算
+    function formatData(data: any) {
+      const KeyTransform = {
+        googAvailableSendBandwidth: 1,
+        googTargetEncBitrate: 1,
+        googActualEncBitrate: 1,
+        googRetransmitBitrate: 1,
+        googTransmitBitrate: 1
+      }
+      Object.keys(data).map((key: string) => {
+        // 换算为K
+        //@ts-ignore
+        if (KeyTransform[key]) {
+          data[key] = parseInt(data[key]) / 1024
+        }
+      })
+      return data
+    }
+    function getSamplingRate(param: string | undefined) {
+      if (!param) return 16
+      let samplingRate: number
+      const SamplingRateMap = new Map([
+        ['speech_low_quality', 16],
+        ['speech_standard', 32],
+        ['music_standard', 48],
+        ['standard_stereo', 48],
+        ['high_quality', 48],
+        ['high_quality_stereo', 48]
+      ])
+      samplingRate = SamplingRateMap.get(param)!
+      return samplingRate
+    }
+    const audio_ssrc: any = []
+    const audioSlave_ssrc: any = []
+    const video_ssrc: any = []
+    const screen_ssrc: any = []
+    const bwe: any = []
     Object.values(stats).forEach((item) => {
-      if (/^ssrc_/i.test(item.id)) {
-        const uidAndKindBySsrc = this.adapterRef?.instance.getUidAndKindBySsrc(parseInt(item.ssrc))
-        item.streamType = uidAndKindBySsrc?.streamType
-        item.uid = uidAndKindBySsrc?.uid
-        let mediaTypeShort
+      // 普通换算
+      if (item.id.includes('Conn-')) {
+        this.formativeStatsReport?.formatTransportData(item, direction)
+      }
+      if (item.id.includes('Cand-')) {
+        this!.adapterRef!.transportStats.NetworkType = item.networkType
+      } else if (item.id === 'bweforvideo' && direction === 'send') {
+        item = formatData(item)
+        this!.adapterRef!.transportStats.OutgoingAvailableBandwidth =
+          item.googAvailableSendBandwidth
+        bwe.push({
+          googActualEncBitrate: parseInt(item.googActualEncBitrate) || 0,
+          googAvailableSendBandwidth: parseInt(item.googAvailableSendBandwidth) || 0,
+          googRetransmitBitrate: parseInt(item.googRetransmitBitrate) || 0,
+          googAvailableReceiveBandwidth: parseInt(item.googAvailableReceiveBandwidth) || 0,
+          googTargetEncBitrate: parseInt(item.googTargetEncBitrate) || 0,
+          googTransmitBitrate: parseInt(item.googTransmitBitrate) || 0
+        })
+      } else if (/^ssrc_/i.test(item.id)) {
+        const uidAndKindBySsrc = this?.adapterRef?.instance.getUidAndKindBySsrc(parseInt(item.ssrc))
+        const targetUid = uidAndKindBySsrc?.uid
+        const streamType = uidAndKindBySsrc?.streamType
+        let mediaTypeShort = ''
         if (uidAndKindBySsrc?.kind) {
           mediaTypeShort = uidAndKindBySsrc.kind
         } else if (item.googContentType === 'screen') {
@@ -174,95 +320,438 @@ class GetStats extends EventEmitter {
         } else {
           mediaTypeShort = item.mediaType
         }
-        item.dataId = `${mediaTypeShort}_${item.streamType}_${item.id}`
-      }
-      if (/^bweforvideo/i.test(item.id)) {
-        item.dataId = item.id
-      }
-      if (/^Conn-0-1-0/i.test(item.id) && direction === 'send') {
-        item.dataId = `${item.id}_${item.type}`
-      }
-      if (direction === 'send') {
-        if (/^video_/i.test(item.dataId) || /^screen_/i.test(item.dataId)) {
-          let stats = this.getLocalVideoScreenFreezeStats(item, item.uid)
-          item.freezeTime = stats.freezeTime
-          item.totalFreezeTime = stats.totalFreezeTime
-        }
-      } else {
-        if (/^video_/i.test(item.dataId) || /^screen_/i.test(item.dataId)) {
-          let stats = this.getRemoteVideoScreenFreezeStats({}, item, item.uid)
-          item.freezeTime = stats.freezeTime
-          item.totalFreezeTime = stats.totalFreezeTime
-        }
-        if (/^audio_/i.test(item.dataId) || /^audioSlave_/i.test(item.dataId)) {
-          let stats = this.getRemoteAudioFreezeStats(item, item.uid)
-          item.freezeTime = stats ? stats.freezeTime : 0
-          item.totalFreezeTime = stats ? stats.totalFreezeTime : 0
-        }
-      }
+        let tmp: any = {}
+        if (direction === 'send') {
+          if (item.mediaType === 'audio') {
+            tmp.audioInputLevel = parseInt(item.audioInputLevel)
+            tmp.totalAudioEnergy = parseInt(item.totalAudioEnergy)
+            tmp.totalSamplesDuration = parseInt(item.totalSamplesDuration)
+            tmp.bytesSent = parseInt(item.bytesSent)
+            //tmp.bitsSentPerSecond = 0//后面的模块计算得出
+            //tmp.targetBitrate = 0 //不支持
+            tmp.packetsSent = parseInt(item.packetsSent)
+            //tmp.packetsSentPerSecond = 50 //后面的模块计算得出
+            tmp.packetsLost = parseInt(item.packetsLost)
+            //tmp.fractionLost = parseInt(item.fractionLost) //不支持
+            //tmp.packetsLostRate = 0 //后面的模块计算得出
+            //tmp.nackCount = 0 //不支持
+            tmp.rtt = parseInt(item.googRtt)
+            tmp.jitterReceived = parseInt(item.googJitterReceived)
+            tmp.echoReturnLoss = item.googEchoCancellationReturnLoss || ''
+            tmp.echoReturnLossEnhancement = item.googEchoCancellationReturnLossEnhancement || ''
+            this.formativeStatsReport?.formatSendData(tmp, mediaTypeShort)
+            //tmp.active = item.active //不支持
 
-      if (
-        /^audio_/i.test(item.dataId) ||
-        /^audioSlave_/i.test(item.dataId) ||
-        /^video_/i.test(item.dataId) ||
-        /^screen_/i.test(item.dataId) ||
-        /^bweforvideo/i.test(item.dataId) ||
-        /^Conn-/.test(item.dataId)
-      ) {
-        item = this.computeData(direction, pc, item)
-        tmp[item.dataId] = item
+            //sdk接口getLocalAudioStats()数据封装
+            const audioStats = {
+              CodecType: 'Opus',
+              MuteState: this?.adapterRef?.localStream?.muteStatus?.audio?.send || false,
+              RecordingLevel: tmp.audioInputLevel || 0,
+              SamplingRate: getSamplingRate(this?.adapterRef?.localStream?.audioProfile),
+              SendBitrate: tmp.bitsSentPerSecond || 0,
+              SendLevel: tmp.audioInputLevel || 0
+            }
+            if (mediaTypeShort === 'audio') {
+              audio_ssrc.push(tmp)
+              this!.adapterRef!.localAudioStats[0] = audioStats
+            } else if (mediaTypeShort === 'audioSlave') {
+              audioSlave_ssrc.push(tmp)
+              this!.adapterRef!.localAudioSlaveStats[0] = audioStats
+            }
+          } else if (item.mediaType === 'video' /* && streamType === 'high'*/) {
+            tmp.bytesSent = parseInt(item.bytesSent)
+            //tmp.bitsSentPerSecond = 0 //后面的模块计算得出
+            //tmp.targetBitrate = 0 //不支持
+            tmp.packetsSent = parseInt(item.packetsSent)
+            //tmp.packetsSentPerSecond = 0 //后面的模块计算得出
+            tmp.packetsLost = parseInt(item.packetsLost)
+            //tmp.fractionLost = parseInt(item.fractionLost) //不支持
+            //tmp.packetsLostRate = 0 //后面的模块计算得出
+            tmp.firCount = parseInt(item.googFirsReceived)
+            tmp.pliCount = parseInt(item.googPlisReceived)
+            tmp.nackCount = parseInt(item.googNacksReceived)
+            tmp.framesEncoded = parseInt(item.framesEncoded)
+            //tmp.framesEncodedPerSecond = 0//后面的模块计算得出
+            tmp.avgEncodeMs = parseInt(item.googAvgEncodeMs)
+            tmp.encodeUsagePercent = parseInt(item.googEncodeUsagePercent)
+            tmp.frameRateInput = parseInt(item.googFrameRateInput)
+            tmp.frameRateSent = parseInt(item.googFrameRateSent)
+            tmp.frameWidthInput = parseInt(item.googFrameWidthInput)
+            tmp.frameWidthSent = parseInt(item.googFrameWidthSent)
+            tmp.frameHeightInput = parseInt(item.googFrameHeightInput)
+            tmp.frameHeightSent = parseInt(item.googFrameHeightSent)
+            tmp.hugeFramesSent = parseInt(item.hugeFramesSent)
+            tmp.qpSum = parseInt(item.qpSum)
+            //tmp.qpPercentage = 0 //后面的模块计算得出
+            //tmp.freezeTime = 0 //后面的模块计算得出
+            //tmp.totalFreezeTime = 0 //后面的模块计算得出
+            tmp.qualityLimitationReason = getLimitationReason(item)
+            tmp.qualityLimitationResolutionChanges = parseInt(item.googAdaptationChanges)
+            //tmp.jitter = 0 //不支持
+            tmp.rtt = parseInt(item.googRtt)
+            //tmp.active = 1 //不支持
+            tmp.streamType = streamType
+            if (streamType === 'high') {
+              this.formativeStatsReport?.formatSendData(tmp, mediaTypeShort)
+            }
+            //sdk接口getLocalVideoStats()数据封装
+            const videoStats = {
+              LayerType: 1,
+              CodecName: item.googCodecName || 'h264',
+              CaptureFrameRate: tmp.frameRateInput || 0,
+              CaptureResolutionHeight: tmp.frameHeightInput || 0,
+              CaptureResolutionWidth: tmp.frameWidthInput || 0,
+              EncodeDelay: tmp.avgEncodeMs || 0,
+              MuteState: this!.adapterRef!.localStream?.muteStatus?.video?.send || false,
+              SendBitrate: tmp.bitsSentPerSecond || 0,
+              SendFrameRate: tmp.frameRateSent || 0,
+              SendResolutionHeight: tmp.frameHeightSent || 0,
+              SendResolutionWidth: tmp.frameWidthSent || 0,
+              TargetSendBitrate: tmp.bitsSentPerSecond || 0,
+              TotalDuration: this?.adapterRef?.state.startPubVideoTime
+                ? (Date.now() - this.adapterRef.state.startPubVideoTime) / 1000
+                : 0,
+              TotalFreezeTime: tmp.totalFreezeTime || 0
+            }
+            if (mediaTypeShort === 'video') {
+              video_ssrc.push(tmp)
+              this!.adapterRef!.localVideoStats[0] = videoStats
+            } else if (mediaTypeShort === 'screen') {
+              this!.adapterRef!.localScreenStats[0] = videoStats
+              screen_ssrc.push(tmp)
+            }
+          }
+        } else if (direction === 'recv') {
+          tmp.uid = targetUid
+          if (item.mediaType === 'audio') {
+            tmp.audioOutputLevel = parseInt(item.audioOutputLevel)
+            tmp.totalAudioEnergy = parseInt(item.totalAudioEnergy)
+            tmp.totalSamplesDuration = parseInt(item.totalSamplesDuration)
+            tmp.bytesReceived = parseInt(item.bytesReceived)
+            //后面的模块计算得出
+            //tmp.bitsReceivedPerSecond = 0
+            tmp.packetsReceived = parseInt(item.packetsReceived)
+            //后面的模块计算得出
+            //tmp.packetsReceivedPerSecond = 50
+            tmp.packetsLost = parseInt(item.packetsLost)
+            //tmp.fractionLost = parseInt(item.fractionLost) //不支持
+            //后面的模块计算得出
+            //tmp.packetsLostRate = 0
+            //tmp.nackCount = 0 //不支持
+            //tmp.lastPacketReceivedTimestamp = 0 //不支持
+            //tmp.estimatedPlayoutTimestamp = 0 //不支持
+            //后面的模块计算得出
+            // tmp.freezeTime = 0
+            // tmp.totalFreezeTime = 0
+            tmp.decodingPLC = parseInt(item.googDecodingPLC)
+            tmp.decodingPLCCNG = parseInt(item.googDecodingPLCCNG)
+            tmp.decodingNormal = parseInt(item.googDecodingNormal)
+            tmp.decodingMuted = parseInt(item.googDecodingMuted)
+            tmp.decodingCNG = parseInt(item.googDecodingCNG)
+            tmp.decodingCTN = parseInt(item.googDecodingCTN)
+            tmp.currentDelayMs = parseInt(item.googCurrentDelayMs)
+            tmp.preferredJitterBufferMs = parseInt(item.googPreferredJitterBufferMs)
+            tmp.jitterBufferMs = parseInt(item.googJitterBufferMs)
+            tmp.jitter = parseInt(item.googJitterReceived)
+            //tmp.rtt = 0 //不支持
+            tmp.preemptiveExpandRate = parseInt(item.googPreemptiveExpandRate)
+            tmp.speechExpandRate = parseInt(item.googSpeechExpandRate)
+            //tmp.concealedSamples = 0 //不支持
+            //tmp.silentConcealedSamples = 0 //不支持
+            tmp.secondaryDecodedRate = parseInt(item.googSecondaryDecodedRate)
+            tmp.secondaryDiscardedRate = parseInt(item.googSecondaryDiscardedRate)
+            this.formativeStatsReport?.formatRecvData(tmp, mediaTypeShort)
+            const remoteStream = this?.adapterRef?.remoteStreamMap[item.uid]
+            const muteStatus =
+              (remoteStream &&
+                (remoteStream.muteStatus.audioSlave.send ||
+                  remoteStream.muteStatus.audioSlave.recv)) ||
+              false
+
+            //sdk接口getRemoteAudioStats()数据封装
+            const audioStats = {
+              CodecType: 'Opus',
+              End2EndDelay:
+                (parseInt(item.googCurrentDelayMs) || 0) + (parseInt(item.googJitterBufferMs) || 0),
+              MuteState: muteStatus,
+              PacketLossRate: tmp.packetsLostRate || 0,
+              RecvBitrate: tmp.bitsReceivedPerSecond || 0,
+              RecvLevel: tmp.audioOutputLevel || 0,
+              TotalFreezeTime: tmp.totalFreezeTime || 0,
+              TotalPlayDuration: parseInt(item.totalSamplesDuration) || 0,
+              TransportDelay: parseInt(item.googCurrentDelayMs) || 0
+            }
+
+            if (mediaTypeShort === 'audio') {
+              this!.adapterRef!.remoteAudioStats[tmp.uid] = audioStats
+              audio_ssrc.push(tmp)
+            } else if (mediaTypeShort === 'audioSlave') {
+              this!.adapterRef!.remoteAudioSlaveStats[tmp.uid] = audioStats
+              audioSlave_ssrc.push(tmp)
+            }
+          } else if (item.mediaType === 'video') {
+            tmp.bytesReceived = parseInt(item.bytesReceived)
+            //后面的模块计算得出
+            tmp.bitsReceivedPerSecond = 0
+            tmp.packetsReceived = parseInt(item.packetsReceived)
+            //后面的模块计算得出
+            //tmp.packetsReceivedPerSecond = 0
+            tmp.packetsLost = parseInt(item.packetsLost)
+            //后面的模块计算得出
+            //tmp.packetsLostRate = 0
+            tmp.firCount = parseInt(item.googFirsSent)
+            tmp.pliCount = parseInt(item.googPlisSent)
+            tmp.nackCount = parseInt(item.googNacksSent)
+            //tmp.lastPacketReceivedTimestamp = 0 //不支持
+            //tmp.estimatedPlayoutTimestamp = 0 //不支持
+            //tmp.pauseCount = 0 //不支持
+            //tmp.totalPausesDuration = 0 //不支持
+            //tmp.freezeCount = 0 //不支持
+            //tmp.totalFreezesDuration = 0 //不支持
+            //后面的模块计算得出
+            //tmp.totalFreezeTime = 0
+            //tmp.freezeTime = 0
+            tmp.framesDecoded = parseInt(item.framesDecoded)
+            //tmp.framesDropped = 0 //不支持
+            tmp.decodeMs = parseInt(item.googDecodeMs)
+            tmp.frameRateDecoded = parseInt(item.googFrameRateDecoded)
+            tmp.frameRateOutput = parseInt(item.googFrameRateOutput)
+            tmp.frameRateReceived = parseInt(item.googFrameRateReceived)
+            tmp.frameWidthReceived = parseInt(item.googFrameWidthReceived)
+            tmp.frameHeightReceived = parseInt(item.googFrameHeightReceived)
+            //tmp.powerEfficientDecoder = 1 //不支持
+            tmp.jitterBufferDelay = parseInt(item.googJitterBufferMs)
+            this.formativeStatsReport?.formatRecvData(tmp, mediaTypeShort)
+
+            const remoteStream = this?.adapterRef?.remoteStreamMap[tmp.uid]
+            let videoDom = remoteStream && remoteStream.Play && remoteStream?.Play?.video.dom
+            if (mediaTypeShort === 'screen') {
+              videoDom = remoteStream && remoteStream.Play && remoteStream?.Play?.screen.dom
+            }
+            let muteState =
+              (remoteStream &&
+                (remoteStream.muteStatus.video.send || remoteStream.muteStatus.video.recv)) ||
+              false
+            //sdk接口getRemoteVideoStats()数据封装
+            const videoStats = {
+              LayerType: 1,
+              CodecName: item.googCodecName,
+              End2EndDelay:
+                (parseInt(item.googCurrentDelayMs) || 0) +
+                (parseInt(item.googJitterBufferMs) || 0) +
+                (parseInt(item.googRenderDelayMs) || 0),
+              MuteState: muteState,
+              PacketLossRate: tmp.packetsLostRate || 0,
+              RecvBitrate: tmp.bitsReceivedPerSecond || 0,
+              RecvResolutionHeight: tmp.frameHeightReceived || 0,
+              RecvResolutionWidth: tmp.frameWidthReceived || 0,
+              RenderFrameRate: tmp.frameRateOutput || 0,
+              RenderResolutionHeight: videoDom ? videoDom.videoHeight : 0,
+              RenderResolutionWidth: videoDom ? videoDom.videoWidth : 0,
+              TotalFreezeTime: item.totalFreezeTime || 0,
+              TotalPlayDuration:
+                videoDom && videoDom.played && videoDom.played.length ? videoDom.played.end(0) : 0,
+              TransportDelay: parseInt(item.googCurrentDelayMs) || 0
+            }
+
+            if (mediaTypeShort === 'video') {
+              this!.adapterRef!.remoteVideoStats[tmp.uid] = videoStats
+              video_ssrc.push(tmp)
+            } else if (mediaTypeShort === 'screen') {
+              this!.adapterRef!.remoteScreenStats[tmp.uid] = videoStats
+              screen_ssrc.push(tmp)
+            }
+          }
+        }
       }
     })
-
-    return tmp
+    const result: any = {}
+    if (audio_ssrc.length) {
+      result.audio_ssrc = audio_ssrc
+    }
+    if (audioSlave_ssrc.length) {
+      result.audioSlave_ssrc = audioSlave_ssrc
+    }
+    if (video_ssrc.length) {
+      if (video_ssrc.length > 1) {
+        const temp: any = video_ssrc[0] || {}
+        if (temp.streamType === 'low') {
+          ;[video_ssrc[0], video_ssrc[1]] = [video_ssrc[1], video_ssrc[0]]
+        }
+      }
+      result.video_ssrc = video_ssrc
+    }
+    if (screen_ssrc.length) {
+      if (screen_ssrc.length > 1) {
+        const temp: any = screen_ssrc[0] || {}
+        if (temp.streamType === 'low') {
+          ;[screen_ssrc[0], screen_ssrc[1]] = [screen_ssrc[1], screen_ssrc[0]]
+        }
+      }
+      result.screen_ssrc = screen_ssrc
+    }
+    if (bwe.length) {
+      result.bwe = bwe
+    }
+    //console.log('非标准格式的数据: ', result)
+    return result
   }
 
-  //转换标准getStats格式
+  //转换chrome标准getStats格式
   formatChromeStandardizedStats(report: RTCStatsReport, direction: string, uid: string | number) {
-    let result: { [key: string]: any } = {}
-    report.forEach((report) => {
-      if (report.type == 'inbound-rtp' && this.adapterRef && this.adapterRef.instance) {
-        uid = this.adapterRef.instance.getUidAndKindBySsrc(report.ssrc).uid
-        return
+    function getLimitationReason(reason: string) {
+      if (reason === 'bandwidth') {
+        return 1
+      } else if (reason === 'cpu') {
+        return 2
+      } else if (reason === 'other') {
+        return 3
+      } else if (reason === 'none') {
+        return 0
       }
-    })
-
-    //无用的信息
-    if (!uid && direction.indexOf('recv') > -1) return
-
+    }
+    const audioObj: { [key: string]: any } = {}
+    const videoObj: { [key: string]: any } = {}
+    let ssrc = 0
     report.forEach((item) => {
-      item.dataId = `${item.type}_${
-        this.adapterRef && this.adapterRef.channelInfo.uid
-      }_${direction}_${uid}`
-      if (
-        item.type == 'outbound-rtp' ||
-        item.type === 'remote-inbound-rtp' ||
-        item.type == 'inbound-rtp' ||
-        item.type === 'remote-outbound-rtp'
-      ) {
-        const uidAndKindBySsrc = this.adapterRef?.instance.getUidAndKindBySsrc(parseInt(item.ssrc))
-        item.streamType = uidAndKindBySsrc?.streamType
-        item.mediaType = uidAndKindBySsrc?.kind
-        item.dataId = `${item.mediaType}_${item.streamType}_${item.dataId}`
-        item.uid = uid
-      }
-      if (
-        (item.type === 'local-candidate' && direction === 'send') ||
-        (item.type === 'candidate-pair' && direction === 'send')
-      ) {
-        item.dataId = `${item.type}_${item.id}`
-      }
-      if (
-        /^audio_/i.test(item.dataId) ||
-        /^audioSlave_/i.test(item.dataId) ||
-        /^video_/i.test(item.dataId) ||
-        /^screen_/i.test(item.dataId) ||
-        /^local-candidate_/i.test(item.dataId) ||
-        /^candidate-pair_/i.test(item.dataId)
-      ) {
-        result[`${item.dataId}`] = item
+      if (item.type == 'media-source') {
+        if (item.kind === 'audio') {
+          audioObj.audioInputLevel = Math.round(item.audioLevel * 32768)
+          audioObj.totalAudioEnergy = Math.round(item.totalAudioEnergy)
+          audioObj.totalSamplesDuration = Math.round(item.totalSamplesDuration)
+          item.echoReturnLoss ? (audioObj.echoReturnLoss = item.echoReturnLoss.toString()) : null
+          item.echoReturnLossEnhancement
+            ? (audioObj.echoReturnLossEnhancement = item.echoReturnLossEnhancement.toString())
+            : null
+        } else if (item.kind === 'video') {
+          videoObj.framesEncoded = parseInt(item.frames)
+          videoObj.frameRateInput = item.framesPerSecond
+          videoObj.frameWidthInput = item.width
+          videoObj.frameHeightInput = item.height
+        }
+      } else if (item.type == 'outbound-rtp') {
+        ssrc = item.ssrc
+        if (item.kind === 'audio') {
+          audioObj.targetBitrate = item.targetBitrate
+          audioObj.bytesSent = item.headerBytesSent + item.bytesSent
+          audioObj.packetsSent = item.packetsSent
+          audioObj.nackCount = item.nackCount
+          audioObj.active = item.active ? 1 : 0
+        } else if (item.kind === 'video') {
+          videoObj.active = item.active ? 1 : 0
+          videoObj.bytesSent = item.headerBytesSent + item.bytesSent
+          videoObj.firCount = item.firCount
+          videoObj.nackCount = item.nackCount
+          videoObj.pliCount = item.pliCount
+          videoObj.framesEncoded = item.framesEncoded
+          videoObj.framesSent = item.framesSent
+          videoObj.hugeFramesSent = item.hugeFramesSent
+          videoObj.packetsSent = item.packetsSent
+          videoObj.qpSum = item.qpSum
+          videoObj.qualityLimitationReason = getLimitationReason(item.qualityLimitationReason)
+          videoObj.qualityLimitationResolutionChanges = item.qualityLimitationResolutionChanges
+          videoObj.targetBitrate = item.targetBitrate
+          //这计算的是总的数据，不是实时数据，当前先依赖pc.getStats()反馈吧，后续不支持了在处理
+          //videoObj.avgEncodeMs = Math.round((item.totalEncodeTime * 1000) / item.framesEncoded)
+          item.framesPerSecond ? (videoObj.frameRateSent = item.framesPerSecond) : null
+          item.frameWidth ? (videoObj.frameWidthSent = item.frameWidth) : null
+          item.frameHeight ? (videoObj.frameHeightSent = item.frameHeight) : null
+        }
+      } else if (item.type == 'remote-inbound-rtp') {
+        if (item.kind === 'audio') {
+          audioObj.fractionLost = item.fractionLost
+          audioObj.jitterReceived = Math.round(item.jitter * 1000)
+          audioObj.packetsLost = item.packetsLost
+          audioObj.rtt = Math.round(item.roundTripTime * 1000)
+        } else if (item.kind === 'video') {
+          videoObj.fractionLost = item.fractionLost
+          videoObj.jitterReceived = Math.round(item.jitter * 1000)
+          videoObj.packetsLost = item.packetsLost
+          videoObj.rtt = Math.round(item.roundTripTime * 1000)
+        }
+      } else if (item.type == 'inbound-rtp') {
+        ssrc = item.ssrc
+        if (item.kind === 'audio') {
+          audioObj.audioOutputLevel = Math.round(item.audioLevel * 32768)
+          audioObj.totalAudioEnergy = Math.round(item.totalAudioEnergy)
+          audioObj.totalSamplesDuration = Math.round(item.totalSamplesReceived)
+          audioObj.bytesReceived = item.headerBytesReceived + item.bytesReceived
+          audioObj.concealedSamples = item.concealedSamples
+          audioObj.estimatedPlayoutTimestamp = item.estimatedPlayoutTimestamp || 0
+          audioObj.jitter = Math.round(item.jitter * 1000)
+          audioObj.jitterBufferDelay = Math.round(
+            (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
+          )
+          audioObj.lastPacketReceivedTimestamp = item.lastPacketReceivedTimestamp
+          audioObj.nackCount = item.nackCount
+          audioObj.silentConcealedSamples = item.silentConcealedSamples
+          audioObj.packetsLost = item.packetsLost
+          audioObj.packetsReceived = item.packetsReceived
+        } else if (item.kind === 'video') {
+          videoObj.bytesReceived = item.bytesReceived + item.headerBytesReceived
+          videoObj.estimatedPlayoutTimestamp = item.estimatedPlayoutTimestamp
+          videoObj.lastPacketReceivedTimestamp = item.lastPacketReceivedTimestamp
+          videoObj.firCount = item.firCount
+          videoObj.nackCount = item.nackCount
+          videoObj.pliCount = item.pliCount
+          videoObj.framesDecoded = item.framesDecoded
+          videoObj.framesDropped = item.framesDropped
+          videoObj.framesReceived = item.framesReceived
+          videoObj.packetsReceived = item.packetsReceived
+          videoObj.packetsLost = item.packetsLost
+          videoObj.pauseCount = item.pauseCount
+          videoObj.totalPausesDuration = item.totalPausesDuration
+          videoObj.freezeCount = item.freezeCount
+          videoObj.totalFreezesDuration = item.totalFreezesDuration
+          //videoObj.decodeMs = 0 //可以计算每秒的解码耗时，当前先不处理
+          videoObj.frameRateReceived = item.framesPerSecond
+          videoObj.frameWidthReceived = item.frameWidth
+          videoObj.frameHeightReceived = item.frameHeight
+          videoObj.powerEfficientDecoder = item.powerEfficientDecoder ? 1 : 0
+          videoObj.jitter = Math.round(item.jitter * 1000)
+          videoObj.jitterBufferDelay = Math.round(
+            (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
+          )
+        }
+      } else if (item.type == 'remote-outbound-rtp') {
+        if (item.kind === 'audio') {
+          item.jitter ? (audioObj.jitter = Math.round(item.jitter * 1000)) : null
+          item.roundTripTime ? (audioObj.rtt = Math.round(item.roundTripTime * 1000)) : null
+        } else if (item.kind === 'video') {
+          item.jitter ? (videoObj.jitter = Math.round(item.jitter * 1000)) : null
+          item.roundTripTime ? (videoObj.rtt = Math.round(item.roundTripTime * 1000)) : null
+        }
       }
     })
+    const uidAndKindBySsrc = this?.adapterRef?.instance.getUidAndKindBySsrc(ssrc)
+    let mediaTypeShort = uidAndKindBySsrc?.kind
+    if (JSON.stringify(videoObj) !== '{}') {
+      videoObj.streamType = uidAndKindBySsrc?.streamType || 'high'
+    }
+    const result: { [key: string]: any } = {}
+    if (direction === 'recv') {
+      if (JSON.stringify(videoObj) !== '{}') {
+        videoObj.uid = uidAndKindBySsrc?.uid
+        //标准的getStats()就不参与数据计算了,会导致数据重复,后面同理
+        //this.formativeStatsReport?.formatRecvData(videoObj, mediaTypeShort)
+      } else if (JSON.stringify(audioObj) !== '{}') {
+        audioObj.uid = uidAndKindBySsrc?.uid
+        if (audioObj.audioOutputLevel) {
+          const remoteStream = this?.adapterRef?.remoteStreamMap[audioObj.uid]
+          const isPlaying = (mediaTypeShort && remoteStream?.isPlaying(mediaTypeShort)) || false
+          this.audioLevel.push({
+            uid,
+            level: isPlaying ? +audioObj.audioOutputLevel || 0 : 0,
+            type: mediaTypeShort
+          })
+        }
+      }
+    }
+    if (mediaTypeShort?.includes('audio')) {
+      result[`${mediaTypeShort}_ssrc`] = [audioObj]
+    } else if (mediaTypeShort === 'video' || mediaTypeShort === 'screen') {
+      result[`${mediaTypeShort}_ssrc`] = [videoObj]
+    }
     return result
   }
 
@@ -270,760 +759,367 @@ class GetStats extends EventEmitter {
    safari浏览器getStats适配器
   */
   async safari(pc: RTCPeerConnection, direction: string) {
-    // safari nonStandard 和 Standard 获取到的数据一样，因此只需使用 nonStandard 数据即可
-    const nonStandardStats = async () => {
-      const stats = await pc.getStats()
-      //@ts-ignore
-      pc.lastStats = pc.lastStats || {}
-      const result = this.formatSafariNonStandardStats(pc, stats, direction)
-      return result
-    }
+    if (!pc.getTransceivers) return {}
 
-    const nonStandardResult = await nonStandardStats()
-    let assignedResult = Object.assign({}, nonStandardResult)
-    return assignedResult
+    let result = {
+      audio_ssrc: [],
+      audioSlave_ssrc: [],
+      video_ssrc: [], //风险点，要求大流在前，小流在后，需要排序
+      screen_ssrc: [] //风险点，要求大流在前，小流在后，需要排序
+    }
+    const transceivers = pc.getTransceivers()
+    for (let i = 0; i < transceivers.length; i++) {
+      let getStats = null
+      let report = null
+      const item = transceivers[i]
+      if (item.direction === 'sendonly') {
+        if (item.sender && item.sender.getStats) {
+          report = await item.sender.getStats()
+          report = this.formatSafariStandardizedStats(report, direction, 0)
+          if (report.video_ssrc && result.video_ssrc) {
+            //@ts-ignore
+            result.video_ssrc.push(report.video_ssrc)
+            if (result.video_ssrc.length > 1) {
+              const temp: any = result.video_ssrc[0] || {}
+              if (temp.streamType === 'low') {
+                ;[result.video_ssrc[0], result.video_ssrc[1]] = [
+                  result.video_ssrc[1],
+                  result.video_ssrc[0]
+                ]
+              }
+            }
+          } else if (report.screen_ssrc && result.screen_ssrc) {
+            //@ts-ignore
+            result.screen_ssrc.push(report.screen_ssrc)
+            if (result.screen_ssrc.length > 1) {
+              const temp: any = result.screen_ssrc[0] || {}
+              if (temp.streamType === 'low') {
+                ;[result.screen_ssrc[0], result.screen_ssrc[1]] = [
+                  result.screen_ssrc[1],
+                  result.screen_ssrc[0]
+                ]
+              }
+            }
+          } else {
+            Object.assign(result, report)
+          }
+        }
+      } else if (item.direction === 'recvonly') {
+        if (item.receiver && item.receiver.getStats) {
+          report = await item.receiver.getStats()
+          report = this.formatSafariStandardizedStats(report, direction, 0)
+          if (report.audio_ssrc && result.audio_ssrc) {
+            //@ts-ignore
+            result.audio_ssrc.push(report.audio_ssrc[0])
+          } else if (report.audioSlave_ssrc && result.audioSlave_ssrc) {
+            //@ts-ignore
+            result.audioSlave_ssrc.push(report.audioSlave_ssrc[0])
+          } else if (report.video_ssrc && result.video_ssrc) {
+            //@ts-ignore
+            result.video_ssrc.push(report.video_ssrc[0])
+          } else if (report.screen_ssrc && result.screen_ssrc) {
+            //@ts-ignore
+            result.screen_ssrc.push(report.screen_ssrc[0])
+          } else {
+            Object.assign(result, report)
+          }
+        }
+      }
+    }
+    return result
   }
 
-  formatSafariNonStandardStats(
-    pc: RTCPeerConnection,
-    stats: { [key: string]: any },
-    direction: string
+  formatSafariStandardizedStats(
+    report: RTCStatsReport,
+    direction: string,
+    uid: string | number,
+    mid?: string | null
   ) {
-    let result: { [key: string]: any } = {}
-    // 上行数据为 outbound-rtp 和 remote-inbound-rtp，下行数据为 inbound-rtp
-    stats.forEach((item: any) => {
-      if (
-        item.type == 'outbound-rtp' ||
-        item.type == 'remote-inbound-rtp' ||
-        item.type == 'inbound-rtp'
-      ) {
-        const uidAndKindBySsrc = this.adapterRef?.instance.getUidAndKindBySsrc(parseInt(item.ssrc))
-        item.uid = uidAndKindBySsrc ? uidAndKindBySsrc.uid : '0'
-        item.mediaType = uidAndKindBySsrc?.kind
-        item.streamType = uidAndKindBySsrc?.streamType
-        item.dataId = `${item.mediaType}_${item.streamType}_${item.type}_${item.id}`
-        item = this.computeData(direction, pc, item)
-        result[item.dataId] = item
-      } else if (item.type == 'candidate-pair') {
-        item.dataId = `${item.type}_${item.id}`
-        result[item.dataId] = item
+    const audioObj: { [key: string]: any } = {}
+    const videoObj: { [key: string]: any } = {}
+    let ssrc = 0
+    report.forEach((item) => {
+      if (item.type == 'track') {
+        if (item.kind === 'audio') {
+          audioObj.active = item.ended ? 0 : 1
+        } else if (item.kind === 'video') {
+          videoObj.active = item.ended ? 0 : 1
+          videoObj.frameWidthInput = item.width
+          videoObj.frameHeightInput = item.height
+        }
+      } else if (item.type == 'outbound-rtp') {
+        ssrc = item.ssrc
+        if (item.kind === 'audio') {
+          audioObj.bytesSent = item.headerBytesSent + item.bytesSent
+          audioObj.packetsSent = item.packetsSent
+          audioObj.nackCount = item.nackCount
+        } else if (item.kind === 'video') {
+          videoObj.bytesSent = item.headerBytesSent + item.bytesSent
+          videoObj.firCount = item.firCount
+          videoObj.nackCount = item.nackCount
+          videoObj.pliCount = item.pliCount
+          videoObj.framesEncoded = item.framesEncoded
+          videoObj.hugeFramesSent = item.hugeFramesSent
+          videoObj.packetsSent = item.packetsSent
+          videoObj.qpSum = item.qpSum
+          videoObj.qualityLimitationResolutionChanges = item.qualityLimitationResolutionChanges
+          //这计算的是总的数据，不是实时数据，当前先依赖pc.getStats()反馈吧，后续不支持了在处理
+          videoObj.avgEncodeMs = Math.round((item.totalEncodeTime * 1000) / item.framesEncoded)
+          item.framesPerSecond ? (videoObj.frameRateSent = item.framesPerSecond) : null
+          item.frameWidth ? (videoObj.frameWidthSent = item.frameWidth) : null
+          item.frameHeight ? (videoObj.frameHeightSent = item.frameHeight) : null
+        }
+      } else if (item.type == 'remote-inbound-rtp') {
+        if (item.kind === 'audio') {
+          audioObj.jitterReceived = Math.round(item.jitter * 1000)
+          audioObj.packetsLost = item.packetsLost
+          audioObj.rtt = Math.round(item.roundTripTime * 1000)
+        } else if (item.kind === 'video') {
+          videoObj.jitterReceived = Math.round(item.jitter * 1000)
+          videoObj.packetsLost = item.packetsLost
+          videoObj.rtt = Math.round(item.roundTripTime * 1000)
+        }
+      } else if (item.type == 'inbound-rtp') {
+        ssrc = item.ssrc
+        if (item.kind === 'audio') {
+          audioObj.audioOutputLevel = Math.round(item.audioLevel * 32768)
+          audioObj.totalAudioEnergy = Math.round(item.totalAudioEnergy)
+          audioObj.totalSamplesDuration = Math.round(item.totalSamplesReceived)
+          audioObj.bytesReceived = item.headerBytesReceived + item.bytesReceived
+          audioObj.concealedSamples = item.concealedSamples || 0
+          audioObj.estimatedPlayoutTimestamp = item.estimatedPlayoutTimestamp || 0
+          audioObj.jitter = Math.round(item.jitter * 1000)
+          audioObj.jitterBufferDelay = Math.round(
+            (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
+          )
+          audioObj.lastPacketReceivedTimestamp = item.lastPacketReceivedTimestamp
+          audioObj.nackCount = item.nackCount
+          audioObj.silentConcealedSamples = item.silentConcealedSamples
+          audioObj.packetsLost = item.packetsLost
+          audioObj.packetsReceived = item.packetsReceived
+        } else if (item.kind === 'video') {
+          videoObj.bytesReceived = item.bytesReceived + item.headerBytesReceived
+          videoObj.estimatedPlayoutTimestamp = item.estimatedPlayoutTimestamp || 0
+          videoObj.lastPacketReceivedTimestamp = item.lastPacketReceivedTimestamp || 0
+          videoObj.firCount = item.firCount
+          videoObj.nackCount = item.nackCount
+          videoObj.pliCount = item.pliCount
+          videoObj.framesDecoded = item.framesDecoded
+          videoObj.framesDropped = item.framesDropped
+          videoObj.framesReceived = item.framesReceived
+          videoObj.packetsReceived = item.packetsReceived
+          videoObj.packetsLost = item.packetsLost
+          //videoObj.decodeMs = 0 //可以计算每秒的解码耗时，当前先不处理
+          videoObj.frameRateReceived = item.framesPerSecond
+          videoObj.frameWidthReceived = item.frameWidth
+          videoObj.frameHeightReceived = item.frameHeight
+          videoObj.jitter = Math.round(item.jitter * 1000)
+          videoObj.jitterBufferDelay = Math.round(
+            (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
+          )
+        }
+      } else if (item.type == 'remote-outbound-rtp') {
+        if (item.kind === 'audio') {
+          item.jitter ? (audioObj.jitter = Math.round(item.jitter * 1000)) : null
+          item.roundTripTime ? (audioObj.rtt = Math.round(item.roundTripTime * 1000)) : null
+        } else if (item.kind === 'video') {
+          item.jitter ? (videoObj.jitter = Math.round(item.jitter * 1000)) : null
+          item.roundTripTime ? (videoObj.rtt = Math.round(item.roundTripTime * 1000)) : null
+        }
       }
     })
-
+    const uidAndKindBySsrc = this?.adapterRef?.instance.getUidAndKindBySsrc(ssrc)
+    let mediaTypeShort = uidAndKindBySsrc?.kind
+    if (JSON.stringify(videoObj) !== '{}') {
+      videoObj.streamType = uidAndKindBySsrc?.streamType || 'high'
+    }
+    const result: { [key: string]: any } = {}
+    if (direction === 'recv') {
+      if (JSON.stringify(videoObj) !== '{}') {
+        videoObj.uid = uidAndKindBySsrc?.uid
+        this.formativeStatsReport?.formatRecvData(videoObj, mediaTypeShort)
+      } else if (JSON.stringify(audioObj) !== '{}') {
+        audioObj.uid = uidAndKindBySsrc?.uid
+        this.formativeStatsReport?.formatRecvData(audioObj, mediaTypeShort)
+        if (audioObj.audioOutputLevel) {
+          const remoteStream = this?.adapterRef?.remoteStreamMap[audioObj.uid]
+          const isPlaying = (mediaTypeShort && remoteStream?.isPlaying(mediaTypeShort)) || false
+          this.audioLevel.push({
+            uid,
+            level: isPlaying ? +audioObj.audioOutputLevel || 0 : 0,
+            type: mediaTypeShort
+          })
+        }
+      }
+    }
+    if (mediaTypeShort?.includes('audio')) {
+      if (direction === 'send') {
+        this.formativeStatsReport?.formatSendData(audioObj, mediaTypeShort)
+      }
+      result[`${mediaTypeShort}_ssrc`] = [audioObj]
+    } else if (mediaTypeShort === 'video' || mediaTypeShort === 'screen') {
+      if (uidAndKindBySsrc?.streamType === 'high' && direction === 'send') {
+        this.formativeStatsReport?.formatSendData(videoObj, mediaTypeShort)
+      }
+      result[`${mediaTypeShort}_ssrc`] = [videoObj]
+    }
     return result
   }
 
   async firefox(pc: RTCPeerConnection, direction: string) {
-    // firefox nonStandard 和 Standard 获取到的数据一样，因此只需使用 nonStandard 数据即可
-    const nonStandardStats = async () => {
-      let stats = await pc.getStats()
-      //@ts-ignore
-      pc.lastStats = pc.lastStats || {}
-      const result = this.formatFirefoxNonStandardStats(pc, stats, direction)
-      return result
-    }
+    if (!pc.getTransceivers) return {}
 
-    const nonStandardResult = await nonStandardStats()
-    let assignedResult = Object.assign(nonStandardResult, {})
-    return assignedResult
+    let result = {
+      audio_ssrc: [],
+      audioSlave_ssrc: [],
+      video_ssrc: [],
+      screen_ssrc: []
+    }
+    const transceivers = pc.getTransceivers()
+    for (let i = 0; i < transceivers.length; i++) {
+      let getStats = null
+      let report = null
+      const item = transceivers[i]
+      if (item.direction === 'sendonly') {
+        if (item.sender && item.sender.getStats) {
+          report = await item.sender.getStats()
+          report = this.formatFirefoxStandardizedStats(report, direction, 0)
+          Object.assign(result, report)
+        }
+      } else if (item.direction === 'recvonly') {
+        if (item.receiver && item.receiver.getStats) {
+          report = await item.receiver.getStats()
+          report = this.formatFirefoxStandardizedStats(report, direction, 0)
+          if (report.audio_ssrc && result.audio_ssrc) {
+            //@ts-ignore
+            result.audio_ssrc.push(report.audio_ssrc[0])
+          } else if (report.audioSlave_ssrc && result.audioSlave_ssrc) {
+            //@ts-ignore
+            result.audioSlave_ssrc.push(report.audioSlave_ssrc[0])
+          } else if (report.video_ssrc && result.video_ssrc) {
+            //@ts-ignore
+            result.video_ssrc.push(report.video_ssrc[0])
+          } else if (report.screen_ssrc && result.screen_ssrc) {
+            //@ts-ignore
+            result.screen_ssrc.push(report.screen_ssrc[0])
+          } else {
+            Object.assign(result, report)
+          }
+        }
+      }
+    }
+    return result
   }
 
-  // 转换非标准 getStats 格式
-  formatFirefoxNonStandardStats(
-    pc: RTCPeerConnection,
-    stats: { [key: string]: any },
-    direction: string
+  //转换标准getStats格式
+  formatFirefoxStandardizedStats(
+    report: RTCStatsReport,
+    direction: string,
+    uid: string | number,
+    mid?: string | null
   ) {
-    let result: { [key: string]: any } = {}
-    // 上行数据为 outbound-rtp 和 remote-inbound-rtp，下行数据为 inbound-rtp 和 remote-outbound-rtp
-    stats.forEach((item: any) => {
-      if (
-        item.type == 'outbound-rtp' ||
-        item.type == 'remote-inbound-rtp' ||
-        item.type == 'inbound-rtp' ||
-        item.type == 'remote-outbound-rtp'
-      ) {
-        const uidAndKindBySsrc = this.adapterRef?.instance.getUidAndKindBySsrc(parseInt(item.ssrc))
-        item.uid = uidAndKindBySsrc ? uidAndKindBySsrc.uid : '0'
-        item.mediaType = uidAndKindBySsrc?.kind
-        item.streamType = uidAndKindBySsrc?.streamType
-        item.dataId = `${item.mediaType}_${item.streamType}_${item.type}_${item.id}`
-        item = this.computeData(direction, pc, item)
-        result[item.dataId] = item
+    const audioObj: { [key: string]: any } = {}
+    const videoObj: { [key: string]: any } = {}
+    let ssrc = 0
+    report.forEach((item) => {
+      if (item.type == 'outbound-rtp') {
+        ssrc = item.ssrc
+        if (item.kind === 'audio') {
+          audioObj.bytesSent = item.headerBytesSent + item.bytesSent
+          audioObj.packetsSent = item.packetsSent
+          audioObj.nackCount = item.nackCount
+        } else if (item.kind === 'video') {
+          videoObj.bytesSent = item.headerBytesSent + item.bytesSent
+          videoObj.firCount = item.firCount
+          videoObj.nackCount = item.nackCount
+          videoObj.pliCount = item.pliCount
+          videoObj.hugeFramesSent = item.hugeFramesSent
+          videoObj.packetsSent = item.packetsSent
+          videoObj.qpSum = item.qpSum
+          //这计算的是总的数据，不是实时数据，当前先依赖pc.getStats()反馈吧，后续不支持了在处理
+          videoObj.avgEncodeMs = Math.round((item.totalEncodeTime * 1000) / item.framesEncoded)
+          //需要针对firefox计算帧率
+          //item.framesEncoded ? (videoObj.frameRateInput = item.framesEncoded) : null
+          item.framesPerSecond ? (videoObj.frameRateSent = item.framesPerSecond) : null
+          item.frameWidth ? (videoObj.frameWidthSent = item.frameWidth) : null
+          item.frameHeight ? (videoObj.frameHeightSent = item.frameHeight) : null
+        }
+      } else if (item.type == 'remote-inbound-rtp') {
+        if (item.kind === 'video') {
+          videoObj.fractionLost = item.fractionLost
+          videoObj.jitterReceived = Math.round(item.jitter * 1000)
+          videoObj.packetsLost = item.packetsLost
+          videoObj.rtt = Math.round(item.roundTripTime * 1000)
+        }
+      } else if (item.type == 'inbound-rtp') {
+        ssrc = item.ssrc
+        if (item.kind === 'audio') {
+          audioObj.totalSamplesDuration = Math.round(item.totalSamplesReceived)
+          audioObj.bytesReceived = item.bytesReceived
+          audioObj.concealedSamples = item.concealedSamples
+          audioObj.jitter = Math.round(item.jitter * 1000)
+          audioObj.jitterBufferDelay = Math.round(
+            (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
+          )
+          audioObj.silentConcealedSamples = item.silentConcealedSamples
+          audioObj.packetsLost = item.packetsLost
+          audioObj.packetsReceived = item.packetsReceived
+        } else if (item.kind === 'video') {
+          videoObj.bytesReceived = item.bytesReceived
+          videoObj.firCount = item.firCount
+          videoObj.nackCount = item.nackCount
+          videoObj.pliCount = item.pliCount
+          videoObj.framesDecoded = item.framesDecoded
+          videoObj.framesDropped = item.framesReceived - item.framesDecoded
+          videoObj.framesReceived = item.framesReceived
+          videoObj.packetsReceived = item.packetsReceived
+          videoObj.packetsLost = item.packetsLost
+          videoObj.frameRateReceived = item.framesPerSecond || 0
+          videoObj.frameWidthReceived = item.frameWidth
+          videoObj.frameHeightReceived = item.frameHeight
+          videoObj.jitter = Math.round(item.jitter * 1000)
+          videoObj.jitterBufferDelay = Math.round(
+            (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
+          )
+        }
       }
     })
-
-    return result
-  }
-
-  // 计算一些数据，码率、每秒中发送、接收包数、丢包率
-  computeData(direction: string, pc: RTCPeerConnection, item: any) {
-    const param = {
-      pc,
-      ssrcKey: item.ssrc,
-      currentItem: item
+    const uidAndKindBySsrc = this?.adapterRef?.instance.getUidAndKindBySsrc(ssrc)
+    let mediaTypeShort = uidAndKindBySsrc?.kind
+    if (JSON.stringify(videoObj) !== '{}') {
+      videoObj.streamType = uidAndKindBySsrc?.streamType || 'high'
     }
-
-    if (direction === 'send') {
-      if (item.bytesSent) {
-        item['bitsSentPerSecond'] = this.getLastStats(
-          Object.assign({}, param, { firstKey: 'bytesSent' })
-        )
-      }
-
-      if (item.packetsSent) {
-        item['packetsSentPerSecond'] = this.getLastStats(
-          Object.assign({}, param, { firstKey: 'packetsSent' })
-        )
-      }
-
-      if (item.framesSent) {
-        item['frameRateSent'] = this.getLastStats(
-          Object.assign({}, param, { firstKey: 'framesSent' })
-        )
-      }
-
-      if (item.packetsLost) {
-        item['packetsLostPerSecond'] = Number(
-          this.getLastStats(Object.assign({}, param, { firstKey: 'packetsLost' }))
-        )
-      }
-
-      if (item.packetsSent && item.packetsLost) {
-        item['sendPacketLoss'] = this.getLastStats(
-          Object.assign({}, param, { firstKey: 'packetsSent', secondKey: 'packetsLost' })
-        )
-        if (item['packetsSentPerSecond'] + item['packetsLostPerSecond'] === 0) {
-          item['packetsLostRate'] = 0
-        } else {
-          item['packetsLostRate'] =
-            item['packetsLostPerSecond'] /
-            (item['packetsSentPerSecond'] + item['packetsLostPerSecond'])
+    const result: { [key: string]: any } = {}
+    if (direction === 'recv') {
+      if (JSON.stringify(videoObj) !== '{}') {
+        videoObj.uid = uidAndKindBySsrc?.uid
+        this.formativeStatsReport?.formatRecvData(videoObj, mediaTypeShort)
+      } else if (JSON.stringify(audioObj) !== '{}') {
+        audioObj.uid = uidAndKindBySsrc?.uid
+        this.formativeStatsReport?.formatRecvData(audioObj, mediaTypeShort)
+        if (audioObj.audioOutputLevel) {
+          const remoteStream = this?.adapterRef?.remoteStreamMap[audioObj.uid]
+          const isPlaying = (mediaTypeShort && remoteStream?.isPlaying(mediaTypeShort)) || false
+          this.audioLevel.push({
+            uid,
+            level: isPlaying ? +audioObj.audioOutputLevel || 0 : 0,
+            type: mediaTypeShort
+          })
         }
-      }
-
-      if (item.framesEncoded) {
-        item['framesEncodedPerSecond'] = this.getLastStats(
-          Object.assign({}, param, { firstKey: 'framesEncoded' })
-        )
-      }
-
-      if (item.qpSum && item.framesEncoded) {
-        item['qpPercentage'] = item.qpSum / item.framesEncoded
-      }
-    } else {
-      if (item.googDecodingNormal) {
-        item['googDecodingNormalPerSecond'] = this.getLastStats(
-          Object.assign({}, param, { firstKey: 'googDecodingNormal' })
-        )
-      }
-
-      if (item.bytesReceived) {
-        item['bitsReceivedPerSecond'] = this.getLastStats(
-          Object.assign({}, param, { firstKey: 'bytesReceived' })
-        )
-      }
-
-      if (item.framesReceived) {
-        item['frameRateReceived'] = this.getLastStats(
-          Object.assign({}, param, { firstKey: 'framesReceived' })
-        )
-      }
-
-      if (item.packetsReceived) {
-        item['packetsReceivedPerSecond'] = this.getLastStats(
-          Object.assign({}, param, { firstKey: 'packetsReceived' })
-        )
-      }
-
-      if (item.packetsLost) {
-        item['packetsLostPerSecond'] = this.getLastStats(
-          Object.assign({}, param, { firstKey: 'packetsLost' })
-        )
-      }
-
-      if (item.packetsReceived && item.packetsLost) {
-        item['recvPacketLoss'] = this.getLastStats(
-          Object.assign({}, param, { firstKey: 'packetsReceived', secondKey: 'packetsLost' })
-        )
-        if (item['packetsReceivedPerSecond'] + item['packetsLostPerSecond'] === 0) {
-          item['packetsLostRate'] = 0
-        } else {
-          item['packetsLostRate'] =
-            item['packetsLostPerSecond'] /
-            (item['packetsReceivedPerSecond'] + item['packetsLostPerSecond'])
-        }
-      }
-
-      if (item.framesDecoded) {
-        item['framesDecodedPerSecond'] = this.getLastStats(
-          Object.assign({}, param, { firstKey: 'framesDecoded' })
-        )
       }
     }
-
-    return item
-  }
-
-  // 码率、丢包率的具体计算
-  getLastStats(option: any = {}) {
-    const { pc, ssrcKey, firstKey, secondKey = null, currentItem } = option
-    //console.log('getLastStats ssrcKey: ', ssrcKey)
-    let firstGap = 0
-    let secondGap = 0
-    if (!pc.lastStats[ssrcKey] || !pc.lastStats[ssrcKey][firstKey]) {
-      if (!pc.lastStats[ssrcKey]) {
-        pc.lastStats[ssrcKey] = {}
+    if (mediaTypeShort?.includes('audio')) {
+      if (direction === 'send') {
+        this.formativeStatsReport?.formatSendData(audioObj, mediaTypeShort)
       }
-      firstGap = parseFloat(currentItem[firstKey])
-      secondKey ? (secondGap = parseFloat(currentItem[secondKey])) : null
-    } else if (
-      parseFloat(currentItem[firstKey]) - parseFloat(pc.lastStats[ssrcKey][firstKey]) >
-      0
-    ) {
-      firstGap =
-        (parseFloat(currentItem[firstKey]) - parseFloat(pc.lastStats[ssrcKey][firstKey])) / 2
-      secondKey
-        ? (secondGap =
-            (parseFloat(currentItem[secondKey]) - parseFloat(pc.lastStats[ssrcKey][secondKey])) / 2)
-        : null
-    } else {
-      return Number(firstGap)
-    }
-
-    if (/bytes/gi.test(firstKey)) {
-      //当前的检测周期是2s
-      firstGap = Math.round((Number(firstGap) * 8) / 1000)
-    } else if (secondKey) {
-      if (firstKey.indexOf('send') > -1) {
-        firstGap = Math.floor((Number(secondGap) / Number(firstGap)) * 10000) / 100
-      } else {
-        firstGap = ((Number(secondGap) / (Number(secondGap) + Number(secondGap))) * 10000) / 100
+      result[`${mediaTypeShort}_ssrc`] = [audioObj]
+    } else if (mediaTypeShort === 'video' || mediaTypeShort === 'screen') {
+      if (uidAndKindBySsrc?.streamType === 'high' && direction === 'send') {
+        this.formativeStatsReport?.formatSendData(videoObj, mediaTypeShort)
       }
-    } else {
-      firstGap = Number(firstGap)
-    }
-
-    // 设置上一次的值
-    pc.lastStats[ssrcKey][firstKey] = currentItem[firstKey]
-    secondKey ? (pc.lastStats[ssrcKey][secondKey] = currentItem[secondKey]) : null
-    return Number(firstGap)
-  }
-
-  reviseData(params: any, browser: string) {
-    // 整理后的数据只包含 4 种 mediaType，以及 bwe（local 和 remote 相同）
-    //上行数据处理
-    let result = {
-      appkey: this.adapterRef?.channelInfo.appkey,
-      cid: this.adapterRef?.channelInfo.cid,
-      uid: this.adapterRef?.channelInfo.uid,
-      timestamp: new Date().getTime(),
-      platform: getOSInfo().osName,
-      browser,
-      sdkVersion: SDK_VERSION,
-      local: {},
-      remote: {}
-    }
-    let local = {
-      audio_ssrc: [] as any,
-      video_ssrc: [] as any,
-      audioSlave_ssrc: [] as any,
-      screen_ssrc: [] as any,
-      bwe: [] as any,
-      conn: [] as any,
-      candidatePair: [] as any,
-      localCandidate: [] as any
-    }
-    let video_high = {},
-      video_low = {},
-      screen_high = {},
-      screen_low = {},
-      audio_local = {},
-      audioSlave_local = {},
-      bwe_local = {},
-      conn_local = {},
-      candidate_pair_local = {},
-      local_candidate_local = {}
-    // 下行数据处理
-    let remote = {
-      audio_ssrc: [] as any,
-      video_ssrc: [] as any,
-      audioSlave_ssrc: [] as any,
-      screen_ssrc: [] as any,
-      bwe: [] as any
-    }
-    let remoteAudio: any[] = [],
-      remoteVideo: any[] = [],
-      remoteAudioSlave: any[] = [],
-      remoteScreen: any[] = []
-    // 数据处理
-    if (browser === 'chrome') {
-      // Chrome 上行数据
-      Object.values(params.local).forEach((item: any) => {
-        if (/^audio_/i.test(item.dataId)) {
-          if (typeof item.active === 'boolean') {
-            item.active = item.active ? 1 : 0
-          }
-          audio_local = Object.assign(audio_local, item)
-        }
-        if (/^audioSlave_/i.test(item.dataId)) {
-          if (typeof item.active === 'boolean') {
-            item.active = item.active ? 1 : 0
-          }
-          audioSlave_local = Object.assign(audioSlave_local, item)
-        }
-        if (/^video_high/i.test(item.dataId)) {
-          if (typeof item.active === 'boolean') {
-            item.active = item.active ? 1 : 0
-          }
-          if (item.googBandwidthLimitedResolution === 'false') {
-            item.googBandwidthLimitedResolution = 0
-          } else if (item.googBandwidthLimitedResolution === 'true') {
-            item.googBandwidthLimitedResolution = 1
-          }
-          if (item.googCpuLimitedResolution === 'false') {
-            item.googCpuLimitedResolution = 0
-          } else if (item.googCpuLimitedResolution === 'true') {
-            item.googCpuLimitedResolution = 1
-          }
-          if (item.googHasEnteredLowResolution === 'false') {
-            item.googHasEnteredLowResolution = 0
-          } else if (item.googHasEnteredLowResolution === 'true') {
-            item.googHasEnteredLowResolution = 1
-          }
-          video_high = Object.assign(video_high, item)
-        }
-        if (/^video_low/i.test(item.dataId)) {
-          if (typeof item.active === 'boolean') {
-            item.active = item.active ? 1 : 0
-          }
-          if (item.googBandwidthLimitedResolution === 'false') {
-            item.googBandwidthLimitedResolution = 0
-          } else if (item.googBandwidthLimitedResolution === 'true') {
-            item.googBandwidthLimitedResolution = 1
-          }
-          if (item.googCpuLimitedResolution === 'false') {
-            item.googCpuLimitedResolution = 0
-          } else if (item.googCpuLimitedResolution === 'true') {
-            item.googCpuLimitedResolution = 1
-          }
-          if (item.googHasEnteredLowResolution === 'false') {
-            item.googHasEnteredLowResolution = 0
-          } else if (item.googHasEnteredLowResolution === 'true') {
-            item.googHasEnteredLowResolution = 1
-          }
-          video_low = Object.assign(video_low, item)
-        }
-        if (/^screen_high/i.test(item.dataId)) {
-          if (typeof item.active === 'boolean') {
-            item.active = item.active ? 1 : 0
-          }
-          if (item.googBandwidthLimitedResolution === 'false') {
-            item.googBandwidthLimitedResolution = 0
-          } else if (item.googBandwidthLimitedResolution === 'true') {
-            item.googBandwidthLimitedResolution = 1
-          }
-          if (item.googCpuLimitedResolution === 'false') {
-            item.googCpuLimitedResolution = 0
-          } else if (item.googCpuLimitedResolution === 'true') {
-            item.googCpuLimitedResolution = 1
-          }
-          if (item.googHasEnteredLowResolution === 'false') {
-            item.googHasEnteredLowResolution = 0
-          } else if (item.googHasEnteredLowResolution === 'true') {
-            item.googHasEnteredLowResolution = 1
-          }
-          screen_high = Object.assign(screen_high, item)
-        }
-        if (/^screen_low/i.test(item.dataId)) {
-          if (typeof item.active === 'boolean') {
-            item.active = item.active ? 1 : 0
-          }
-          if (item.googBandwidthLimitedResolution === 'false') {
-            item.googBandwidthLimitedResolution = 0
-          } else if (item.googBandwidthLimitedResolution === 'true') {
-            item.googBandwidthLimitedResolution = 1
-          }
-          if (item.googCpuLimitedResolution === 'false') {
-            item.googCpuLimitedResolution = 0
-          } else if (item.googCpuLimitedResolution === 'true') {
-            item.googCpuLimitedResolution = 1
-          }
-          if (item.googHasEnteredLowResolution === 'false') {
-            item.googHasEnteredLowResolution = 0
-          } else if (item.googHasEnteredLowResolution === 'true') {
-            item.googHasEnteredLowResolution = 1
-          }
-          screen_low = Object.assign(screen_low, item)
-        }
-        if (/^bweforvideo/i.test(item.dataId)) {
-          bwe_local = Object.assign(bwe_local, item)
-        }
-        if (/^Conn/i.test(item.dataId)) {
-          conn_local = Object.assign(conn_local, item)
-        }
-        if (/^local-candidate_/i.test(item.dataId)) {
-          candidate_pair_local = Object.assign(candidate_pair_local, item)
-        }
-        if (/^candidate-pair_/i.test(item.dataId)) {
-          local_candidate_local = Object.assign(local_candidate_local, item)
-        }
-      })
-      // 不能使用 active 状态判断是否 push，老版本 chrome 没有 active 字段
-      if (Object.values(video_high).length) {
-        local.video_ssrc.push(video_high)
-      }
-      if (Object.values(video_low).length) {
-        local.video_ssrc.push(video_low)
-      }
-      if (Object.values(screen_high).length) {
-        local.screen_ssrc.push(screen_high)
-      }
-      if (Object.values(screen_low).length) {
-        local.screen_ssrc.push(screen_low)
-      }
-      if (Object.values(audio_local).length) {
-        local.audio_ssrc.push(audio_local)
-      }
-      if (Object.values(audioSlave_local).length) {
-        local.audioSlave_ssrc.push(audioSlave_local)
-      }
-      if (local.video_ssrc.length || local.screen_ssrc.length) {
-        local.bwe.push(bwe_local)
-        local.bwe[0].timestamp = Date.parse(local.bwe[0].timestamp)
-      }
-
-      if (Object.values(conn_local).length) {
-        local.conn.push(conn_local)
-      }
-      if (Object.values(candidate_pair_local).length) {
-        local.candidatePair.push(candidate_pair_local)
-      }
-      if (Object.values(local_candidate_local).length) {
-        local.localCandidate.push(local_candidate_local)
-      }
-
-      // Chrome 下行数据
-      Object.values(params.remote).forEach((item: any) => {
-        if (/^audio_/i.test(item.dataId) && item.uid.length) {
-          remoteAudio.push(item)
-        }
-        if (/^video_/i.test(item.dataId) && item.uid.length) {
-          remoteVideo.push(item)
-        }
-        if (/^audioSlave_/i.test(item.dataId) && item.uid.length) {
-          remoteAudioSlave.push(item)
-        }
-        if (/^screen_/i.test(item.dataId) && item.uid.length) {
-          remoteScreen.push(item)
-        }
-        if (/^bweforvideo/i.test(item.dataId)) {
-          remote.bwe.push(item)
-          remote.bwe[0].timestamp = Date.parse(remote.bwe[0].timestamp)
-        }
-      })
-      remote.audio_ssrc = this.combineArray(remoteAudio)
-      remote.video_ssrc = this.combineArray(remoteVideo)
-      remote.audioSlave_ssrc = this.combineArray(remoteAudioSlave)
-      remote.screen_ssrc = this.combineArray(remoteScreen)
-      if (!remote.video_ssrc.length && !remote.screen_ssrc.length) {
-        remote.bwe = []
-      }
-    } else if (browser === 'safari') {
-      //  Safari 上行数据
-      Object.values(params.local).forEach((item: any) => {
-        if (/^audio_/i.test(item.dataId)) {
-          audio_local = Object.assign(audio_local, item)
-        }
-        if (/^audioSlave_/i.test(item.dataId)) {
-          audioSlave_local = Object.assign(audioSlave_local, item)
-        }
-        if (/^video_high/i.test(item.dataId)) {
-          video_high = Object.assign(video_high, item)
-        }
-        if (/^video_low/i.test(item.dataId)) {
-          video_low = Object.assign(video_low, item)
-        }
-        if (/^screen_high/i.test(item.dataId)) {
-          screen_high = Object.assign(screen_high, item)
-        }
-        if (/^screen_low/i.test(item.dataId)) {
-          screen_low = Object.assign(screen_low, item)
-        }
-        if (/^candidate-pair/i.test(item.dataId)) {
-          candidate_pair_local = Object.assign(candidate_pair_local, item)
-        }
-      })
-
-      Object.values(audio_local).length && local.audio_ssrc.push(audio_local)
-      Object.values(audioSlave_local).length && local.audioSlave_ssrc.push(audioSlave_local)
-      Object.values(video_high).length && local.video_ssrc.push(video_high)
-      Object.values(video_low).length && local.video_ssrc.push(video_low)
-      Object.values(screen_high).length && local.screen_ssrc.push(screen_high)
-      Object.values(screen_low).length && local.screen_ssrc.push(screen_low)
-      Object.values(candidate_pair_local).length && local.candidatePair.push(candidate_pair_local)
-
-      // Safari 下行数据
-      Object.values(params.remote).forEach((item: any) => {
-        if (/^audio_/i.test((item as any).dataId)) {
-          remote.audio_ssrc.push(item)
-        }
-        if (/^video_/i.test(item.dataId)) {
-          remote.video_ssrc.push(item)
-        }
-        if (/^audioSlave_/i.test(item.dataId)) {
-          remote.audioSlave_ssrc.push(item)
-        }
-        if (/^screen_/i.test(item.dataId)) {
-          remote.screen_ssrc.push(item)
-        }
-      })
-    } else if (browser === 'firefox') {
-      // Firefox 上行数据
-      Object.values(params.local).forEach((item: any) => {
-        if (/^audio_/i.test(item.dataId)) {
-          audio_local = Object.assign(audio_local, item)
-        }
-        if (/^audioSlave_/i.test(item.dataId)) {
-          audioSlave_local = Object.assign(audioSlave_local, item)
-        }
-        if (/^video_high/i.test(item.dataId)) {
-          video_high = Object.assign(video_high, item)
-        }
-        if (/^video_low/i.test(item.dataId)) {
-          video_low = Object.assign(video_low, item)
-        }
-        if (/^screen_high/i.test(item.dataId)) {
-          screen_high = Object.assign(screen_high, item)
-        }
-        if (/^screen_low/i.test(item.dataId)) {
-          screen_low = Object.assign(screen_low, item)
-        }
-      })
-      Object.values(audio_local).length && local.audio_ssrc.push(audio_local)
-      Object.values(audioSlave_local).length && local.audioSlave_ssrc.push(audioSlave_local)
-      Object.values(video_high).length && local.video_ssrc.push(video_high)
-      Object.values(video_low).length && local.video_ssrc.push(video_low)
-      Object.values(screen_high).length && local.screen_ssrc.push(screen_high)
-      Object.values(screen_low).length && local.screen_ssrc.push(screen_low)
-      // Firefox 下行数据
-      Object.values(params.remote).forEach((item: any) => {
-        if (/^audio_/i.test((item as any).dataId)) {
-          remoteAudio.push(item)
-        }
-        if (/^video_/i.test(item.dataId)) {
-          remoteVideo.push(item)
-        }
-        if (/^audioSlave_/i.test(item.dataId)) {
-          remoteAudioSlave.push(item)
-        }
-        if (/^screen_/i.test(item.dataId)) {
-          remoteScreen.push(item)
-        }
-      })
-      remote.audio_ssrc = this.combineArray(remoteAudio)
-      remote.video_ssrc = this.combineArray(remoteVideo)
-      remote.audioSlave_ssrc = this.combineArray(remoteAudioSlave)
-      remote.screen_ssrc = this.combineArray(remoteScreen)
-    }
-
-    result.local = local
-    result.remote = remote
-    if (env.IS_EDG) {
-      result.browser = 'Edge-' + getBrowserInfo().browserVersion
-    } else {
-      result.browser = getBrowserInfo().browserName + '-' + getBrowserInfo().browserVersion
-    }
-
-    return result
-  }
-
-  finalizeData(params: any) {
-    let result = {
-      appkey: params.appkey,
-      cid: params.cid,
-      uid: params.uid,
-      timestamp: params.timestamp,
-      platform: params.platform,
-      browser: params.browser,
-      sdkVersion: SDK_VERSION,
-      local: {
-        audio_ssrc: params.local.audio_ssrc,
-        video_ssrc: params.local.video_ssrc,
-        audioSlave_ssrc: params.local.audioSlave_ssrc,
-        screen_ssrc: params.local.screen_ssrc,
-        bwe: params.local.bwe
-      },
-      remote: params.remote
+      result[`${mediaTypeShort}_ssrc`] = [videoObj]
     }
     return result
-  }
-
-  combineArray(arr: any) {
-    // 合并下行相同 uid 的数组
-    let result = Object.values(
-      arr.reduce((m: any, n: any) => {
-        if (!m[n.uid]) {
-          m[n.uid] = { uid: n.uid, list: {} }
-        }
-        Object.assign(m[n.uid].list, n)
-        return m
-      }, {})
-    )
-    return result.map((item: any) => item.list)
-  }
-
-  getLocalVideoScreenFreezeStats(data: any, uid: number | string) {
-    let totalFreezeTime = 0
-    if (!data) {
-      return {
-        totalFreezeTime,
-        freezeTime: 0
-      }
-    }
-
-    let n = parseInt(data.googFrameRateInput)
-    let i = parseInt(data.googFrameRateSent)
-
-    if (n <= 0 || i <= 0) {
-      return {
-        totalFreezeTime: 2000,
-        freezeTime: 6
-      }
-    }
-    //let stuckRate = (n - i) / n
-
-    let value = Math.abs(n - i - 2)
-    let stuckRate = value / n
-
-    //@ts-ignore
-    totalFreezeTime = parseInt(stuckRate * 2000)
-    let freezeTime = 0
-    if (totalFreezeTime < 300) {
-      totalFreezeTime = 0
-      freezeTime = 0
-    } else if (totalFreezeTime > 1500) {
-      freezeTime = 6
-    } else {
-      //@ts-ignore
-      freezeTime = parseInt(totalFreezeTime / 300)
-    }
-
-    const info = {
-      totalFreezeTime,
-      //@ts-ignore
-      freezeTime
-    }
-    //console.log('本端视频卡顿率: ', JSON.stringify(info, null, ' '))
-    return info
-  }
-
-  getRemoteVideoScreenFreezeStats(prev: any, next: any, uid: number | string) {
-    let totalFreezeTime = 0
-    //@ts-ignore
-    if (!next || next.framesDecoded == 0) {
-      return {
-        totalFreezeTime,
-        freezeTime: 0
-      }
-    } else if (next && next.googFrameRateDecoded == '0' && next.framesDecoded) {
-      return {
-        totalFreezeTime: 2000,
-        freezeTime: 6
-      }
-    }
-
-    let n = parseInt(next.googFrameRateReceived) || 0
-    let i = parseInt(next.googFrameRateDecoded)
-
-    if (n <= 0 || i <= 0) {
-      return {
-        totalFreezeTime: 2000,
-        freezeTime: 6
-      }
-    }
-
-    let value = Math.abs(i - n - 2)
-    if (n > 15) {
-      return {
-        totalFreezeTime: 0,
-        freezeTime: 0
-      }
-    } else {
-      value = Math.abs(15 - n)
-    }
-
-    let stuckRate = value / 15
-    //@ts-ignore
-    totalFreezeTime = parseInt(stuckRate * 2000)
-    if (totalFreezeTime > 2000) {
-      totalFreezeTime = 2000
-    }
-
-    let freezeTime = 0
-    if (totalFreezeTime < 300) {
-      totalFreezeTime = 0
-      freezeTime = 0
-    } else if (totalFreezeTime > 1500) {
-      freezeTime = 6
-    } else {
-      //@ts-ignore
-      freezeTime = parseInt(totalFreezeTime / 300)
-    }
-
-    const info = {
-      totalFreezeTime,
-      //@ts-ignore
-      freezeTime
-    }
-    //console.log('远端屏幕共享卡顿率: ', JSON.stringify(info, null, ' '))
-    return info
-  }
-
-  getRemoteAudioFreezeStats(currentItem: DownAudioItem, uid: number | string) {
-    let totalFreezeTime = 0
-    if (!this.prevItem || !currentItem) {
-      return {
-        totalFreezeTime,
-        freezeTime: 0
-      }
-    }
-    if (!Object.values(this.prevItem).length && currentItem) {
-      this.prevItem = currentItem
-      return {
-        totalFreezeTime,
-        freezeTime: 0
-      }
-    }
-    if (this.prevItem && currentItem) {
-      let prevStuck =
-        parseInt(this.prevItem.googDecodingPLC) +
-        parseInt(this.prevItem.googDecodingCNG) +
-        parseInt(this.prevItem.googDecodingPLCCNG)
-      let prevNormal = parseInt(this.prevItem.googDecodingCTN)
-
-      let nextStuck =
-        parseInt(currentItem.googDecodingPLC) +
-        parseInt(currentItem.googDecodingCNG) +
-        parseInt(currentItem.googDecodingPLCCNG)
-      let nextNormal = parseInt(currentItem.googDecodingCTN)
-      if (nextNormal <= prevNormal || nextStuck <= prevStuck) {
-        return {
-          totalFreezeTime,
-          freezeTime: 0
-        }
-      }
-
-      let stuckRate = (nextStuck - prevStuck) / (nextNormal - prevNormal)
-      const data = {
-        //@ts-ignore
-        totalFreezeTime: parseInt(stuckRate * 1000),
-        //@ts-ignore
-        freezeTime: stuckRate * 10 > 1 ? parseInt(stuckRate * 10) : stuckRate > 0 ? 1 : 0
-      }
-      this.prevItem = currentItem
-      return data
-    }
   }
 
   stop() {
