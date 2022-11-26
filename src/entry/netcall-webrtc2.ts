@@ -25,7 +25,7 @@ import log from '../netcall-G2/util/log/logger'
 import { loglevelMap, loglevels } from '../netcall-G2/util/log/loglevels'
 import { checkExists } from '../netcall-G2/util/param'
 import { getSupportedCodecs } from '../netcall-G2/util/rtcUtil/codec'
-import { checkBrowserCompatibility } from '../netcall-G2/util/rtcUtil/rtcSupport'
+import { checkBrowserCompatibility, isHttpProtocol } from '../netcall-G2/util/rtcUtil/rtcSupport'
 import * as env from '../netcall-G2/util/rtcUtil/rtcEnvironment'
 
 /**
@@ -137,6 +137,13 @@ export const NERTC = {
    * @return {Client} Client对象
    */
   createClient(options: ClientOptions) {
+    if (!checkSystemRequirements()) {
+      console.error('浏览器环境不支持')
+      throw new RtcError({
+        code: ErrorCode.NOT_SUPPORT_ERROR,
+        message: '云信sdk不支持，请使用最新版本的chrome浏览器'
+      })
+    }
     checkExists({ tag: 'createClient:ClientOptions', value: options })
     checkExists({ tag: 'createClient:ClientOptions.appkey', value: options.appkey })
     // 需要监视的API，埋点等
@@ -174,14 +181,26 @@ export const NERTC = {
    */
   createStream(options: LocalStreamOptions) {
     checkExists({ tag: 'createStream:options', value: options })
+    if (isHttpProtocol()) {
+      client?.adapterRef.logger.warn('The current protocol is HTTP')
+      throw new RtcError({
+        code: ErrorCode.NOT_SUPPORT_ERROR,
+        message: '请使用https环境或者loclhost环境'
+      })
+    }
+    let getUserMedia = navigator.mediaDevices && navigator.mediaDevices.getUserMedia
+    if (!getUserMedia) {
+      console.warn(`没有 getUserMedia 方法。请使用最新版本的chrome浏览器`)
+      throw new RtcError({
+        code: ErrorCode.NOT_SUPPORT_ERROR,
+        message: '浏览器不支持开启媒体设备，请使用最新版本的chrome浏览器'
+      })
+    }
     if (options.screenAudio) {
       if (!options.screen) {
-        let zhMessage = 'createStream: screenAudio 要与 screen 一起开启'
-        let enMessage = 'createStream: screenAudio should be open together with screen'
-        let message = env.IS_ZH ? zhMessage : enMessage
         throw new RtcError({
           code: ErrorCode.INVALID_OPERATION_ERROR,
-          message
+          message: 'createStream: screenAudio 要与 screen 一起开启'
         })
       }
     }

@@ -49,11 +49,11 @@ import { checkExists, checkValidInteger, isExistOptions } from '../util/param'
 import { applyResolution } from '../util/rtcUtil/applyResolution'
 import * as env from '../util/rtcUtil/rtcEnvironment'
 import { RTCEventEmitter } from '../util/rtcUtil/RTCEventEmitter'
-import { isHttpProtocol } from '../util/rtcUtil/rtcSupport'
 import { makePrintable } from '../util/rtcUtil/utils'
 import { getAudioContext } from '../module/webAudio'
 import { StageAIProcessing } from '../module/audio-pipeline/stages/StageAIProcessing/StageAIProcessing'
 import { webassemblySupported } from '../util/wasmDetect'
+import { UnknownType } from 'typedoc/dist/lib/models'
 
 /**
  *  请使用 {@link NERTC.createStream} 通过NERTC.createStream创建
@@ -261,37 +261,22 @@ class LocalStream extends RTCEventEmitter {
       // 允许不填uid
       options.uid = `local_${this.localStreamId}`
     } else if (typeof options.uid === 'string') {
-      this.logger.log('uid是string类型')
+      this.logger.log('createStream: uid是string类型')
       options.client.adapterRef.channelInfo.uidType = 'string'
     } else if (typeof options.uid === 'number') {
-      this.logger.log('uid是number类型')
+      this.logger.log('createStream: uid是number类型')
       options.client.adapterRef.channelInfo.uidType = 'number'
       if (options.uid > Number.MAX_SAFE_INTEGER) {
-        let enMessage = 'localStream: parameter(uid) out of bounds',
-          zhMessage = 'localStream: uid 参数越界',
-          enAdvice =
-            'The maximum range of the Number type is 2^53 - 1, please input the correct parameter',
-          zhAdvice = 'Number 类型的 uid 最大值是 2^53 - 1， 请输入正确的参数'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.INVALID_PARAMETER_ERROR,
-          message,
-          advice
+          code: ErrorCode.STREAM_UID_ERROR,
+          message: 'Number 类型的 uid 最大值是 2^53 - 1， 请输入正确的参数'
         })
       }
     } else {
-      this.logger.error('uid参数格式非法')
-      let enMessage = 'localStream: The type of parameter(uid) is not invalid',
-        zhMessage = 'localStream: uid 参数类型非法',
-        enAdvice = 'Please input the correct parameter type',
-        zhAdvice = '请输入正确的参数类型'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
+      this.logger.error('createStream: uid参数格式非法')
       throw new RtcError({
-        code: ErrorCode.INVALID_PARAMETER_ERROR,
-        message,
-        advice
+        code: ErrorCode.STREAM_UID_ERROR,
+        message: 'createStream: uid参数格式非法'
       })
     }
     this._reset()
@@ -375,13 +360,6 @@ class LocalStream extends RTCEventEmitter {
       this.suspendVideoPostProcess()
       if (!this.safariVideoSizeChange) {
         this.emit('video-post-context-lost')
-        const message = env.IS_ZH
-          ? `webgl 上下文丢失，相关功能将无法使用。\n正在监听恢复事件以尝试重新初始化 webgl 管线……\n丢失原因：https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/isContextLost#usage_notes。`
-          : `webgl context lost, related functions will not be available.\nwaiting for restored event and try to reinitialize webgl pipeline ……\n see why: https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/isContextLost#usage_notes.`
-        throw new RtcError({
-          code: ErrorCode.WEBGL_LOSE_CONTEXT_ERROR,
-          message
-        })
       } else {
         setTimeout(() => {
           this.restoreContext()
@@ -395,13 +373,6 @@ class LocalStream extends RTCEventEmitter {
       if (!this.safariVideoSizeChange) {
         this.emit('video-post-context-restored', success)
         this.logger.log('webgl context restored, try to reinitialize webgl pipeline.')
-        if (!success) {
-          throw new RtcError({
-            code: ErrorCode.WEBGL_RESTORED_FAILD_ERROR,
-            message: env.IS_ZH ? '重新初始化 webgl 失败.' : 'webgl reinitialize failed.',
-            advice: env.IS_ZH ? '请重新刷新页面。' : 'please refresh the page.'
-          })
-        }
       } else {
         this.safariVideoSizeChange = false
       }
@@ -411,33 +382,9 @@ class LocalStream extends RTCEventEmitter {
     // failUrls[] 返回失败的资源路径
     this.videoPostProcess.on('beautyResComplete', (failUrls: string[]) => {
       this.emit('basic-beauty-res-complete', failUrls)
-      if (failUrls.length) {
-        const message = env.IS_ZH
-          ? `基础美颜资源加载失败:${JSON.stringify(failUrls)}`
-          : `failed to load basic-beauty resources:${JSON.stringify(failUrls)}`
-        throw new RtcError({
-          code: ErrorCode.BASIC_BEAUTY_RES_ERROR,
-          message,
-          advice: env.IS_ZH
-            ? '请检查网络是否开启或资源地址是否正确。'
-            : 'please check network or resource address.'
-        })
-      }
     })
     this.videoPostProcess.on('advBeautyResComplete', (failUrls: string[]) => {
       this.emit('adv-beauty-res-complete', failUrls)
-      if (failUrls.length) {
-        const message = env.IS_ZH
-          ? `高级美颜资源加载失败:${JSON.stringify(failUrls)}`
-          : `failed to load basic-beauty resources:${JSON.stringify(failUrls)}`
-        throw new RtcError({
-          code: ErrorCode.ADV_BEAUTY_RES_ERROR,
-          message,
-          advice: env.IS_ZH
-            ? '请检查网络是否开启或资源地址是否正确。'
-            : 'please check network or resource address.'
-        })
-      }
     })
 
     this.videoPostProcess.on('taskSwitch', (isOn) => {
@@ -591,71 +538,13 @@ class LocalStream extends RTCEventEmitter {
     }
     return this.streamID
   }
-  /**
-   *  获取音视频流的连接数据
-   *  @method getStats
-   *  @memberOf Stream
-   *  @return object
-   */
-
-  async getStats() {
-    let localPc = this.getAdapterRef()?._mediasoup?._sendTransport?._handler._pc
-    this.logger.log(`获取音视频连接数据, uid: ${this.stringStreamID}`)
-    if (localPc) {
-      const stats = {
-        accessDelay: '0',
-        audioSendBytes: '0',
-        audioSendPackets: '0',
-        audioSendPacketsLost: '0',
-        videoSendBytes: '0',
-        videoSendFrameRate: '0',
-        videoSendPackets: '0',
-        videoSendPacketsLost: '0',
-        videoSendResolutionHeight: '0',
-        videoSendResolutionWidth: '0'
-      }
-      try {
-        const results = await localPc.getStats()
-        results.forEach((item: any) => {
-          if (item.type === 'outbound-rtp') {
-            if (item.mediaType === 'video') {
-              stats.videoSendBytes = item.bytesSent.toString()
-              stats.videoSendPackets = item.packetsSent.toString()
-              stats.videoSendFrameRate = item.framesPerSecond.toString()
-            } else if (item.mediaType === 'audio') {
-              stats.audioSendBytes = item.bytesSent.toString()
-              stats.audioSendPackets = item.packetsSent.toString()
-            }
-          } else if (item.type === 'candidate-pair') {
-            if (typeof item.currentRoundTripTime === 'number') {
-              stats.accessDelay = (item.currentRoundTripTime * 1000).toString()
-            }
-          } else if (item.type === 'track') {
-            if (typeof item.frameWidth !== 'undefined') {
-              stats.videoSendResolutionWidth = item.frameWidth.toString()
-              stats.videoSendResolutionHeight = item.frameHeight.toString()
-            }
-          } else if (item.type === 'remote-inbound-rtp') {
-            if (item.kind === 'audio') {
-              stats.audioSendPacketsLost = item.packetsLost.toString()
-            } else if (item.kind === 'video') {
-              stats.videoSendPacketsLost = item.packetsLost.toString()
-            }
-          }
-        })
-      } catch (error: any) {
-        this.logger.error('failed to get localStats', error.name, error.message)
-      }
-      return stats
-    }
-  }
 
   getAudioStream() {
     if (this.mediaHelper) {
       this.client.apiFrequencyControl({
-        name: 'setExternalAudioRender',
+        name: 'getAudioStream',
         code: 0,
-        param: JSON.stringify({} as ReportParamSetExternalAudioRender, null, ' ')
+        param: JSON.stringify({ streamID: this.getId() }, null, ' ')
       })
       return this.mediaHelper.audio.audioStream
     } else {
@@ -670,9 +559,6 @@ class LocalStream extends RTCEventEmitter {
    * @return {Promise}
    */
   async init() {
-    if (isHttpProtocol()) {
-      this.logger.warn('The current protocol is HTTP')
-    }
     // localStream.init行为排队
     const hookInitFinished = await this.client.operationQueue.enqueue({
       caller: this,
@@ -794,16 +680,9 @@ class LocalStream extends RTCEventEmitter {
         this.state = 'UNINIT'
         this.logger.warn('init() localStream不允许初始化时无任何音视频')
         onInitFinished()
-        let enMessage = 'init: localStream is not allowed to init without audio or video',
-          zhMessage = 'init: localStream init 缺失 audio/video 参数',
-          enAdvice = 'please make sure audio or video exists when init localStream',
-          zhAdvice = '请输入正确的参数'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
-          code: ErrorCode.LOCALSTREAM_ERROR,
-          message,
-          advice
+          code: ErrorCode.STREAM_PROFILE_ERROR,
+          message: 'init() localStream不允许初始化时无任何音视频'
         })
       }
     }
@@ -865,6 +744,13 @@ class LocalStream extends RTCEventEmitter {
     viewInput: HTMLElement | String | null | undefined,
     playOptions: StreamPlayOptions = {}
   ) {
+    if ((playOptions.video || playOptions.screen) && !viewInput) {
+      this.logger.warn(`play() localStream ${this.getId()} 播放视频没有指定div标签`)
+      throw new RtcError({
+        code: ErrorCode.STREAM_PLAY_ARGUMENT_ERROR,
+        message: 'play() 播放视频没有指定div标签'
+      })
+    }
     if (!isExistOptions({ tag: 'Stream.playOptions.audio', value: playOptions.audio }).result) {
       playOptions.audio = false
     }
@@ -996,13 +882,16 @@ class LocalStream extends RTCEventEmitter {
       mediaType
     }
     if (!options || !(options.width - 0) || !(options.height - 0)) {
-      this.logger.warn('setLocalRenderMode 参数错误')
+      this.logger.warn('setLocalRenderMode 参数宽高错误')
       this.client.apiFrequencyControl({
         name: 'setLocalRenderMode',
         code: -1,
         param: JSON.stringify(params, null, ' ')
       })
-      return 'INVALID_ARGUMENTS'
+      throw new RtcError({
+        code: ErrorCode.STREAM_RENDER_ARGUMENT_ERROR,
+        message: 'setLocalRenderMode() 参数宽高错误'
+      })
     }
     this.logger.log(
       `uid ${this.stringStreamID} 设置本地视频播放窗口大小: `,
@@ -1079,17 +968,10 @@ class LocalStream extends RTCEventEmitter {
     } else if (MediaTypeList.indexOf(type) > -1) {
       return this._play.isPlaying(type)
     } else {
-      this.logger.warn('isPlaying: unknown type')
-      let enMessage = 'localStream.isPlaying: The type of parameter(uid) is unknown',
-        zhMessage = 'localStream.isPlaying: uid 参数类型非法',
-        enAdvice = 'please make sure the parameter(type) is correct',
-        zhAdvice = '请输入正确的参数类型'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
+      this.logger.warn('isPlaying() unknown type')
       throw new RtcError({
-        code: ErrorCode.UNKNOWN_TYPE_ERROR,
-        message,
-        advice
+        code: ErrorCode.STREAM_ISPLAYING_ARGUMENT_ERROR,
+        message: 'isPlaying() type 参数类型非法'
       })
     }
     this.client.apiFrequencyControl({
@@ -1105,6 +987,7 @@ class LocalStream extends RTCEventEmitter {
         ' '
       )
     })
+    this.logger.log(`检查${this.stringStreamID}的${type}播放状态: ${isPlaying}`)
     return isPlaying
   }
 
@@ -1164,30 +1047,6 @@ class LocalStream extends RTCEventEmitter {
         param: JSON.stringify(this.mediaHelper.getTrackSettings())
       })
     }
-    if (this.client._roleInfo.userRole === 1) {
-      const reason = `观众不允许打开设备`
-      this.logger.error(reason)
-      onOpenFinished({
-        code: -1,
-        param: {
-          reason,
-          type
-        }
-      })
-      let enMessage = 'Stream.open: invalid operation',
-        zhMessage = 'Stream.open: 操作异常',
-        enAdvice = 'audience is not allowed to open',
-        zhAdvice = '观众模式不允许打开设备'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.INVALID_OPERATION_ERROR,
-          message,
-          advice
-        })
-      )
-    }
 
     try {
       if (!this.getAdapterRef()) {
@@ -1198,25 +1057,18 @@ class LocalStream extends RTCEventEmitter {
         case 'audio':
           this.logger.log(`open(): 开启 ${audioSource ? audioSource.label : 'mic设备'}`)
           if (this.mediaHelper.audio.micTrack || this.mediaHelper.audio.audioSource) {
-            this.logger.warn('请先关闭麦克风')
+            this.logger.warn('open(): 请先关闭麦克风')
             onOpenFinished({
               code: -1,
               param: {
-                reason: '请先关闭麦克风',
+                reason: '重复打开麦克风',
                 type
               }
             })
-            let enMessage = 'Stream.open: invalid operation',
-              zhMessage = 'Stream.open: 操作异常',
-              enAdvice = 'please close mic first',
-              zhAdvice = '请先关闭麦克风'
-            let message = env.IS_ZH ? zhMessage : enMessage,
-              advice = env.IS_ZH ? zhAdvice : enAdvice
             return Promise.reject(
               new RtcError({
-                code: ErrorCode.INVALID_OPERATION_ERROR,
-                message,
-                advice
+                code: ErrorCode.REPEAT_OPEN_MIC_ERROR,
+                message: 'open() 重复打开麦克风'
               })
             )
           }
@@ -1241,7 +1093,7 @@ class LocalStream extends RTCEventEmitter {
           break
         case 'screenAudio':
           if (!screenAudioSource) {
-            this.logger.error(`open(): 不允许单独开启屏幕共享音频功能。`)
+            this.logger.warn(`open(): 不允许单独开启屏幕共享音频功能。`)
             return
           }
           this.logger.log(`open(): 开启自定义屏幕共享音频 ${screenAudioSource.label}`)
@@ -1249,7 +1101,7 @@ class LocalStream extends RTCEventEmitter {
             this.mediaHelper.screenAudio.screenAudioTrack ||
             this.mediaHelper.screenAudio.screenAudioSource
           ) {
-            this.logger.error('请先关闭屏幕共享音频')
+            this.logger.warn('请先关闭屏幕共享音频')
             onOpenFinished({
               code: -1,
               param: {
@@ -1257,17 +1109,10 @@ class LocalStream extends RTCEventEmitter {
                 type
               }
             })
-            let enMessage = `Stream.open: invalid operation`,
-              zhMessage = `Stream.open: 操作异常`,
-              enAdvice = 'Please close screenAudio first',
-              zhAdvice = '请先关闭 screenAudio'
-            let message = env.IS_ZH ? zhMessage : enMessage,
-              advice = env.IS_ZH ? zhAdvice : enAdvice
             return Promise.reject(
               new RtcError({
-                code: ErrorCode.INVALID_OPERATION_ERROR,
-                message,
-                advice
+                code: ErrorCode.REPEAT_OPEN_AUDIO_SLAVE_ERROR,
+                message: 'open() 重复打开系统音频'
               })
             )
           }
@@ -1292,88 +1137,53 @@ class LocalStream extends RTCEventEmitter {
         case 'screen':
           this.logger.log(`开启${type === 'video' ? 'camera' : 'screen'}设备`)
           if (this[type]) {
-            if (type === 'video') {
-              this.logger.warn('请先关闭摄像头')
-              onOpenFinished({
-                code: -1,
-                param: {
-                  reason: '请先关闭摄像头',
+            const isVideo = type === 'video'
+            this.logger.warn(`open() 请先关闭${isVideo ? '摄像头' : '屏幕共享'}`)
+            this.client.apiFrequencyControl({
+              name: 'open',
+              code: -1,
+              param: JSON.stringify(
+                {
+                  reason: `open() 请先关闭${isVideo ? '摄像头' : '屏幕共享'}`,
                   type
-                }
-              })
-              let enMessage = 'Stream.open: invalid operation',
-                zhMessage = 'Stream.open: 操作异常',
-                enAdvice = 'please close video first',
-                zhAdvice = '请先关闭摄像头'
-              let message = env.IS_ZH ? zhMessage : enMessage,
-                advice = env.IS_ZH ? zhAdvice : enAdvice
-              return Promise.reject(
-                new RtcError({
-                  code: ErrorCode.INVALID_OPERATION_ERROR,
-                  message,
-                  advice
-                })
+                },
+                null,
+                ' '
               )
-            } else {
-              this.logger.warn('请先关闭屏幕共享')
-              this.client.apiFrequencyControl({
-                name: 'open',
-                code: -1,
-                param: JSON.stringify(
-                  {
-                    reason: '请先关闭屏幕共享',
-                    type
-                  },
-                  null,
-                  ' '
-                )
+            })
+            onOpenFinished({
+              code: -1,
+              param: {
+                reason: `重复打开${isVideo ? '摄像头' : '屏幕共享'}`,
+                type
+              }
+            })
+            return Promise.reject(
+              new RtcError({
+                code: isVideo
+                  ? ErrorCode.REPEAT_OPEN_CAMERA_ERROR
+                  : ErrorCode.REPEAT_OPEN_SCREEN_ERROR,
+                message: 'open() 重复打开摄像头'
               })
-              onOpenFinished({
-                code: -1,
-                param: {
-                  reason: '请先关闭屏幕共享',
-                  type
-                }
-              })
-              let enMessage = 'Stream.open: invalid operation',
-                zhMessage = 'Stream.open: 操作异常',
-                enAdvice = 'please close screen-sharing first',
-                zhAdvice = '请先关闭屏幕共享'
-              let message = env.IS_ZH ? zhMessage : enMessage,
-                advice = env.IS_ZH ? zhAdvice : enAdvice
-              return Promise.reject(
-                new RtcError({
-                  code: ErrorCode.INVALID_OPERATION_ERROR,
-                  message,
-                  advice
-                })
-              )
-            }
+            )
           }
           if (
             options.screenAudio &&
             (this.mediaHelper.screenAudio.screenAudioTrack ||
               this.mediaHelper.screenAudio.screenAudioSource)
           ) {
-            this.logger.warn('请先关闭屏幕共享音频')
+            this.logger.warn('open() 重复开启屏幕共享音频')
             onOpenFinished({
               code: -1,
               param: {
-                reason: '请先关闭屏幕共享音频',
+                reason: '重复开启屏幕共享音频',
                 type
               }
             })
-            let enMessage = 'Stream.open: invalid operation',
-              zhMessage = 'Stream.open: 操作异常',
-              enAdvice = 'please close screenAudio first',
-              zhAdvice = '请先关闭屏幕共享音频'
-            let message = env.IS_ZH ? zhMessage : enMessage,
-              advice = env.IS_ZH ? zhAdvice : enAdvice
             return Promise.reject(
               new RtcError({
-                code: ErrorCode.INVALID_OPERATION_ERROR,
-                message,
-                advice
+                code: ErrorCode.REPEAT_OPEN_AUDIO_SLAVE_ERROR,
+                message: 'open() 重复开启屏幕共享音频'
               })
             )
           }
@@ -1423,7 +1233,11 @@ class LocalStream extends RTCEventEmitter {
           }
           break
         default:
-          this.logger.error('非法参数')
+          this.logger.warn('open() 非法参数')
+          throw new RtcError({
+            code: ErrorCode.STREAM_OPTN_NO_TYPE_ERROR,
+            message: 'open() type 参数类型非法'
+          })
       }
       onOpenFinished({
         code: 0,
@@ -1455,14 +1269,10 @@ class LocalStream extends RTCEventEmitter {
         e.message.indexOf('ermission') > -1 &&
         e.message.indexOf('denied') > -1
       ) {
-        let enAdvice = 'Please enable media permissions and try again',
-          zhAdvice = '请开启媒体权限重试'
-        let advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
             code: ErrorCode.NOT_SUPPORT_ERROR,
-            message: `open: ${e.message}`,
-            advice
+            message: `${e.message}`
           })
         )
       } else {
@@ -1560,9 +1370,9 @@ class LocalStream extends RTCEventEmitter {
     let reason = null
     switch (type) {
       case 'audio':
-        this.logger.log('关闭mic设备')
+        this.logger.log('close() 关闭mic设备')
         if (!this.audio) {
-          this.logger.log('没有开启过麦克风')
+          this.logger.log('close() 没有开启过麦克风')
           reason = 'NOT_OPEN_MIC_YET'
           break
         }
@@ -1574,35 +1384,35 @@ class LocalStream extends RTCEventEmitter {
 
         if (this.getAdapterRef()) {
           if (this.mediaHelper.getAudioInputTracks().length > 0) {
-            this.logger.log('Stream.close:关闭音频，保留发布：', type)
+            this.logger.log('close() 关闭音频，保留发布：', type)
           } else {
-            this.logger.log('Stream.close:停止发布音频')
+            this.logger.log('close() 停止发布音频')
             await this.client.adapterRef._mediasoup?.destroyProduce('audio')
           }
         } else {
-          this.logger.log('Stream.close:未发布音频，无需停止发布')
+          this.logger.log('close() 未发布音频，无需停止发布')
         }
         break
       case 'screenAudio':
-        this.logger.log('关闭屏幕共享音频')
+        this.logger.log('close() 关闭屏幕共享音频')
         if (!this.screenAudio) {
-          this.logger.log('没有开启过屏幕共享音频')
+          this.logger.log('close() 没有开启过屏幕共享音频')
           reason = 'NOT_OPEN_SCREENAUDIO_YET'
           break
         }
         this.screenAudio = false
         this.mediaHelper.stopStream('screenAudio')
         if (this.getAdapterRef()) {
-          this.logger.log('Stream.close:停止发布音频辅流')
+          this.logger.log('close() 停止发布音频辅流')
           await this.client.adapterRef._mediasoup?.destroyProduce('audioSlave')
         } else {
-          this.logger.log('Stream.close:未发布音频，无需停止发布')
+          this.logger.log('close() 未发布音频，无需停止发布')
         }
         break
       case 'video':
-        this.logger.log('关闭camera设备')
+        this.logger.log('close() 关闭camera设备')
         if (!this.video) {
-          this.logger.log('没有开启过摄像头')
+          this.logger.log('close() 没有开启过摄像头')
           reason = 'NOT_OPEN_CAMERA_YET'
           break
         }
@@ -1622,25 +1432,11 @@ class LocalStream extends RTCEventEmitter {
           //把预处理停了，但是保留flag以待下次开启
           this.mediaHelper.disablePreProcessing('video', true)
         }
-        if (!this._play) {
-          onCloseFinished()
-          let enMessage = 'localStream.close.video: Play is not start',
-            zhMessage = 'localStream.close.video: 播放未开始',
-            enAdvice = 'Please start playing first',
-            zhAdvice = '请先开启播放'
-          let message = env.IS_ZH ? zhMessage : enMessage,
-            advice = env.IS_ZH ? zhAdvice : enAdvice
-          throw new RtcError({
-            code: ErrorCode.PLAY_NOT_START_ERROR,
-            message,
-            advice
-          })
-        }
-        this._play.stopPlayStream('video')
+        this?._play.stopPlayStream('video')
         if (!this.getAdapterRef()) {
-          this.logger.log('Stream.close:未发布视频，无需停止发布')
+          this.logger.log('close() 未发布视频，无需停止发布')
         } else {
-          this.logger.log('Stream.close:停止发布视频')
+          this.logger.log('close() 停止发布视频')
           await this.client.adapterRef._mediasoup?.destroyProduce('video')
         }
         // mute 状态下，关闭摄像头需要将相关标志位初始化
@@ -1650,9 +1446,9 @@ class LocalStream extends RTCEventEmitter {
         }
         break
       case 'screen':
-        this.logger.log('关闭屏幕共享')
+        this.logger.log('close() 关闭屏幕共享')
         if (!this.screen) {
-          this.logger.log('没有开启过屏幕共享')
+          this.logger.log('close() 没有开启过屏幕共享')
           reason = 'NOT_OPEN_SCREEN_YET'
           break
         }
@@ -1662,41 +1458,28 @@ class LocalStream extends RTCEventEmitter {
           this.mediaHelper.disablePreProcessing('screen', true)
         }
         this.mediaHelper.stopStream('screen')
-        if (!this._play) {
-          let enMessage = 'localStream.close.screen: Play is not start',
-            zhMessage = 'localStream.close.creen: 播放未开始',
-            enAdvice = 'Please start playing first',
-            zhAdvice = '请先开启播放'
-          let message = env.IS_ZH ? zhMessage : enMessage,
-            advice = env.IS_ZH ? zhAdvice : enAdvice
-          throw new RtcError({
-            code: ErrorCode.PLAY_NOT_START_ERROR,
-            message,
-            advice
-          })
-        }
-        this._play.stopPlayStream('screen')
+        this?._play.stopPlayStream('screen')
         if (!this.getAdapterRef()) {
-          this.logger.log('Stream.close:未发布辅流，无需停止发布')
+          this.logger.log('Stream.close: 未发布辅流，无需停止发布')
         } else {
-          this.logger.log('Stream.close:停止发布辅流')
+          this.logger.log('Stream.close: 停止发布辅流')
           await this.client.adapterRef._mediasoup?.destroyProduce('screen')
         }
         break
       case 'all':
         this.logger.log(
-          `Stream.close:关闭所有设备：audio ${this.audio}, video ${this.video}, screen ${this.screen}, screenAudio ${this.screenAudio}`
+          `Stream.close:关闭所有设备: audio ${this.audio}, video ${this.video}, screen ${this.screen}, screenAudio ${this.screenAudio}`
         )
         this.audio && (await this.close({ type: 'audio' }))
         this.video && (await this.close({ type: 'video' }))
         this.screen && (await this.close({ type: 'screen' }))
         this.screenAudio && (await this.close({ type: 'screenAudio' }))
         this.logger.log(
-          `Stream.close:关闭所有设备成功：audio ${this.audio}, video ${this.video}, screen ${this.screen}, screenAudio ${this.screenAudio}`
+          `Stream.close:关闭所有设备成功: audio ${this.audio}, video ${this.video}, screen ${this.screen}, screenAudio ${this.screenAudio}`
         )
         break
       default:
-        this.logger.log('不能识别type')
+        this.logger.log('close() Unknown Type')
         reason = 'INVALID_ARGUMENTS'
     }
     if (reason) {
@@ -1716,64 +1499,33 @@ class LocalStream extends RTCEventEmitter {
           ' '
         )
       })
+      onCloseFinished()
       if (reason === 'NOT_OPEN_MIC_YET') {
-        onCloseFinished()
-        let enMessage = 'Stream.close: invalid operation',
-          zhMessage = 'Stream.close: 操作异常',
-          enAdvice = 'mic is not open',
-          zhAdvice = '麦克风没有开启'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION_ERROR,
-            message,
-            advice
+            code: ErrorCode.STREAM_CLOSE_AUDIO_ERROR,
+            message: 'close() 麦克风没有开启'
           })
         )
       } else if (reason === 'NOT_OPEN_CAMERA_YET') {
-        onCloseFinished()
-        let enMessage = 'Stream.close: invalid operation',
-          zhMessage = 'Stream.close: 操作异常',
-          enAdvice = 'camera is not open',
-          zhAdvice = '摄像头没有开启'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION_ERROR,
-            message,
-            advice
+            code: ErrorCode.STREAM_CLOSE_CAMERA_ERROR,
+            message: 'close() 麦克风没有开启'
           })
         )
       } else if (reason === 'NOT_OPEN_SCREEN_YET') {
-        onCloseFinished()
-        let enMessage = 'Stream.close: invalid operation',
-          zhMessage = 'Stream.close: 操作异常',
-          enAdvice = 'screen-sharing is not open',
-          zhAdvice = '屏幕共享没有开启'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION_ERROR,
-            message,
-            advice
+            code: ErrorCode.STREAM_CLOSE_SCREEN_ERROR,
+            message: 'close() 麦克风没有开启'
           })
         )
       } else {
-        onCloseFinished()
-        let enMessage = 'Stream.close: invalid operation',
-          zhMessage = 'Stream.close: 操作异常',
-          enAdvice = 'Type is unidentified',
-          zhAdvice = 'Type 不能识别'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION_ERROR,
-            message,
-            advice
+            code: ErrorCode.STREAM_CLOSE_AUDIO_SLAVE_ERROR,
+            message: 'close() Unknown Type'
           })
         )
       }

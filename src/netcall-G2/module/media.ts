@@ -342,7 +342,7 @@ class MediaHelper extends EventEmitter {
         let message = env.IS_ZH ? zhMessage : enMessage,
           advice = env.IS_ZH ? zhAdvice : enAdvice
         let err = new RtcError({
-          code: ErrorCode.LOCALSTREAM_ERROR,
+          code: ErrorCode.LOCALSTREAM_NOT_FOUND_ERROR,
           message,
           advice
         })
