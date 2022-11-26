@@ -23,8 +23,9 @@ import ErrorCode from '../netcall-G2/util/error/errorCode'
 import RtcError from '../netcall-G2/util/error/rtcError'
 import log from '../netcall-G2/util/log/logger'
 import { loglevelMap, loglevels } from '../netcall-G2/util/log/loglevels'
-import { checkExists, checkValidInteger } from '../netcall-G2/util/param'
+import { checkExists } from '../netcall-G2/util/param'
 import { getSupportedCodecs } from '../netcall-G2/util/rtcUtil/codec'
+import { checkBrowserCompatibility } from '../netcall-G2/util/rtcUtil/rtcSupport'
 import * as env from '../netcall-G2/util/rtcUtil/rtcEnvironment'
 
 /**
@@ -288,13 +289,32 @@ export const NERTC = {
  //接口使用示例
  NERTC.getSupportedCodec().then(data => {
       data.forEach(item=>{
-        console.log(`Supported video codec: ${data.video.join(",")});
-        console.log(`Supported audio codec: ${data.audio.join(",")});
+        console.log(`Supported video codec: ${data.video.join(",")}`);
+        console.log(`Supported audio codec: ${data.audio.join(",")}`);
       })
     })
  */
   async getSupportedCodec() {
     return await getSupportedCodecs()
+  },
+
+  /**
+ * 获取当前浏览器支持 WebRTC 的基本能力。
+ * @function checkBrowserCompatibility
+ * @memberOf NERTC#
+ *  @returns {Promise}
+ *
+ * @example
+ //接口使用示例
+  NERTC.checkBrowserCompatibility().then(data => {
+    console.log(`isPullStreamSupport: ${data.isPullStreamSupport}`);
+    console.log(`isPushStreamSupport: ${data.isPushStreamSupport}`);
+    console.log(`isScreenShareSupport: ${data.isScreenShareSupport}`);
+  })
+ */
+
+  async checkBrowserCompatibility() {
+    return await checkBrowserCompatibility()
   },
 
   getHandler() {

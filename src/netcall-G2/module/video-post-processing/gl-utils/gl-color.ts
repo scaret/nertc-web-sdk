@@ -1,3 +1,4 @@
+/** 生成 gl 上下文所要求的颜色数据，主要将前端常用的颜色形式转换为具体的数值数组 */
 export class GlColor {
   private _color: [number, number, number, number] = [1, 1, 1, 1]
 
@@ -7,15 +8,6 @@ export class GlColor {
 
   private convert(color: string | [number, number, number, number?]) {
     if (typeof color === 'string') {
-      // 匹配 rgba
-      // const rgba: any = color.match(
-      //     /(?<=\()(\d+),(\d+),(\d+)(,(\d+)){0,1}(?=\))/
-      // );
-      // if (rgba) {
-      //     this.convert(rgba[0].split(','));
-      //     return;
-      // }
-      // 匹配 16 进制颜色
       if (/^#([0-9a-fA-f]{3}|[0-9a-fA-f]{6})$/i.test(color)) {
         if (color.length === 4) {
           let Ncolor = '#'

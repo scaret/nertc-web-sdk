@@ -7,6 +7,7 @@ import {
   AdapterRef,
   ILogger,
   MaskUserSetting,
+  MediaTypeList,
   MediaTypeShort,
   NetStatusItem,
   SignalingConnectionConfig,
@@ -313,6 +314,7 @@ class Signalling extends EventEmitter {
       }
     })
     this._protoo = new protooClient.Peer(protooTransport)
+    this.adapterRef.state.signalEstablishTime = Date.now()
     this._bindEvent()
   }
 
@@ -955,37 +957,8 @@ class Signalling extends EventEmitter {
             })
           }
 
-          if (this.adapterRef.isAudioBanned) {
-            if (!this.adapterRef.localStream) {
-              return
-            }
-            let isAudioOn = this.adapterRef.localStream.audio
-            let isScreenAudioOn = this.adapterRef.localStream.screenAudio
-            // 关掉所有音频相关
-            !!isAudioOn && this.adapterRef.localStream.close({ type: 'audio' })
-            !!isScreenAudioOn && this.adapterRef.localStream.close({ type: 'screenAudio' })
-
-            this.adapterRef.localStream.stopAllEffects() // 关掉所有音效
-            let localAudio = this.adapterRef.localStream.mediaHelper.audio
-            if (
-              !!localAudio.webAudio &&
-              !!localAudio.webAudio.context &&
-              !!localAudio.webAudio.mixAudioConf &&
-              !!localAudio.webAudio.mixAudioConf.audioSource
-            ) {
-              // 关掉伴音
-              this.adapterRef.localStream.stopAudioMixing()
-            }
-          }
           if (!this.adapterRef.localStream) {
             return
-          }
-          if (this.adapterRef.isVideoBanned) {
-            let isVideoOn = this.adapterRef.localStream.video
-            let isScreenOn = this.adapterRef.localStream.screen
-            // 关掉所有视频相关 (辅流跟随视频流同步禁止)
-            !!isVideoOn && this.adapterRef.localStream.close({ type: 'video' })
-            !!isScreenOn && this.adapterRef.localStream.close({ type: 'screen' })
           }
         } else {
           this.logger.error(`收到OnUserData通知消息 type = ${type}, data: `, data)
@@ -1029,6 +1002,7 @@ class Signalling extends EventEmitter {
   }
 
   async join() {
+    this.adapterRef.state.signalOpenTime = Date.now()
     let gmEnable
     if (!this.adapterRef.encryption.encryptionSecret) {
       gmEnable = false
@@ -1104,6 +1078,7 @@ class Signalling extends EventEmitter {
       let thisProtoo = this._protoo
       try {
         response = (await this._protoo.request('Join', requestData)) as SignalJoinRes
+        this.adapterRef.state.signalJoinResTime = Date.now()
       } catch (e: any) {
         if (thisProtoo !== this._protoo) {
           this.logger.warn(`过期的信令通道消息：【${e.name}】`, e.message)
@@ -1298,6 +1273,7 @@ class Signalling extends EventEmitter {
       this.logger.log(
         `Signalling: 查看房间其他人的发布信息: ${JSON.stringify(response.externData.userList)}`
       )
+      const eventsAfterJoinRes: { eventName: string; eventData: any }[] = []
       if (
         response.externData !== undefined &&
         response.externData.userList &&
@@ -1323,14 +1299,23 @@ class Signalling extends EventEmitter {
             })
             this.adapterRef.remoteStreamMap[uid] = remoteStream
             this.adapterRef.memberMap[uid] = '' + uid
-            this.adapterRef.instance.safeEmit('peer-online', { uid })
+            eventsAfterJoinRes.push({
+              eventName: 'peer-online',
+              eventData: { uid }
+            })
           } else {
             remoteStream.active = true
             this.adapterRef.memberMap[uid] = '' + uid
-            this.adapterRef.instance.safeEmit('peer-online', { uid })
+            eventsAfterJoinRes.push({
+              eventName: 'peer-online',
+              eventData: { uid }
+            })
           }
           if (peer.customData) {
-            this.adapterRef.instance.safeEmit('custom-data', { uid, customData: peer.customData })
+            eventsAfterJoinRes.push({
+              eventName: 'custom-data',
+              eventData: { uid, customData: peer.customData }
+            })
           }
 
           if (peer.producerInfoList) {
@@ -1362,41 +1347,79 @@ class Signalling extends EventEmitter {
               remoteStream['muteStatus'][mediaTypeShort].send = mute
               remoteStream['pubStatus'][mediaTypeShort]['simulcastEnable'] = simulcastEnable
 
-              setTimeout(() => {
-                // join response中的事件应该延迟到join发生后再抛出
-                that.logger.log(
-                  `Signalling: 通知 ${remoteStream.getId()} 发布信息: ${JSON.stringify(
-                    remoteStream.pubStatus,
-                    null,
-                    ''
-                  )}`
-                )
-                if (that.adapterRef._enableRts && that.adapterRef._rtsTransport) {
-                  that.adapterRef.instance.emit('rts-stream-added', {
+              that.logger.log(
+                `Signalling: 通知 ${remoteStream.getId()} 发布信息: ${JSON.stringify(
+                  remoteStream.pubStatus,
+                  null,
+                  ''
+                )}`
+              )
+              if (that.adapterRef._enableRts && that.adapterRef._rtsTransport) {
+                eventsAfterJoinRes.push({
+                  eventName: 'rts-stream-added',
+                  eventData: {
                     stream: remoteStream,
                     kind: mediaTypeShort
-                  })
-                } else if (
-                  remoteStream.pubStatus.audio.audio ||
-                  remoteStream.pubStatus.video.video ||
-                  remoteStream.pubStatus.screen.screen ||
-                  remoteStream.pubStatus.audioSlave.audioSlave
-                ) {
-                  that.adapterRef.instance.safeEmit('stream-added', {
+                  }
+                })
+              } else if (
+                remoteStream.pubStatus.audio.audio ||
+                remoteStream.pubStatus.video.video ||
+                remoteStream.pubStatus.screen.screen ||
+                remoteStream.pubStatus.audioSlave.audioSlave
+              ) {
+                eventsAfterJoinRes.push({
+                  eventName: 'stream-added',
+                  eventData: {
                     stream: remoteStream,
                     mediaType: mediaTypeShort
+                  }
+                })
+              }
+
+              if (mute) {
+                if (mediaTypeShort === 'audioSlave') {
+                  eventsAfterJoinRes.push({
+                    eventName: `mute-audio-slave`,
+                    eventData: {
+                      uid: remoteStream.getId()
+                    }
+                  })
+                } else {
+                  eventsAfterJoinRes.push({
+                    eventName: `mute-${mediaTypeShort}`,
+                    eventData: {
+                      uid: remoteStream.getId()
+                    }
                   })
                 }
+              }
 
-                if (mute) {
-                  if (mediaTypeShort === 'audioSlave') {
-                    that.adapterRef.instance.safeEmit(`mute-audio-slave`, {
-                      uid: remoteStream.getId()
-                    })
-                  } else {
-                    that.adapterRef.instance.safeEmit(`mute-${mediaTypeShort}`, {
-                      uid: remoteStream.getId()
-                    })
+              const instance = this.adapterRef.instance
+              setTimeout(() => {
+                // join response中的事件应该延迟到join发生后再抛出
+                for (let i = 0; i < eventsAfterJoinRes.length; i++) {
+                  const eventName = eventsAfterJoinRes[i].eventName
+                  const eventData = eventsAfterJoinRes[i].eventData
+                  if (instance) {
+                    if (eventName === 'stream-added') {
+                      if (eventData.mediaType === 'audio') {
+                        if (
+                          instance.adapterRef.state.signalAudioAddedTime <
+                          instance.adapterRef.state.signalOpenTime
+                        ) {
+                          instance.adapterRef.state.signalAudioAddedTime = Date.now()
+                        }
+                      } else if (eventData.mediaType === 'video') {
+                        if (
+                          instance.adapterRef.state.signalVideoAddedTime <
+                          instance.adapterRef.state.signalOpenTime
+                        ) {
+                          instance.adapterRef.state.signalVideoAddedTime = Date.now()
+                        }
+                      }
+                    }
+                    instance.safeEmit(eventName, eventData)
                   }
                 }
               }, 0)
@@ -1411,6 +1434,7 @@ class Signalling extends EventEmitter {
           }
         }
       }
+      this.adapterRef.state.signalJoinSuccessTime = Date.now()
       if (this._resolve) {
         this.logger.log('加入房间成功, 反馈通知')
         this._resolve(response)
@@ -1857,8 +1881,7 @@ class Signalling extends EventEmitter {
     const producerId = data.producerId
     const mute = data.mute
     Object.values(this.adapterRef.remoteStreamMap).forEach((stream) => {
-      const mediaTypeList: MediaTypeShort[] = ['audio', 'video', 'screen', 'audioSlave']
-      mediaTypeList.forEach((mediaTypeShort) => {
+      MediaTypeList.forEach((mediaTypeShort) => {
         if (stream.pubStatus[mediaTypeShort].producerId === producerId) {
           stream.muteStatus[mediaTypeShort].send = mute
           if (mute) {

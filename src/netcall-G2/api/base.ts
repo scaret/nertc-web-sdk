@@ -15,6 +15,7 @@ import {
   ClientOptions,
   ILogger,
   JoinChannelRequestParam4WebRTC2,
+  MediaTypeList,
   MediaTypeShort,
   NeRtcServerAddresses,
   Timer
@@ -57,6 +58,7 @@ class Base extends RTCEventEmitter {
   public transportRebuildCnt = 0
   public clientId: number
   public logger: ILogger
+  private isReport: boolean
   private timeLast: number = Date.now()
   constructor(options: ClientOptions) {
     super()
@@ -64,6 +66,7 @@ class Base extends RTCEventEmitter {
       appkey: '',
       mode: 'rtc'
     }
+    this.isReport = typeof options.report === 'boolean' ? options.report : true
     this.clientId = clientCnt++
     // @ts-ignore typescript成员初始化
     this.adapterRef = {
@@ -191,7 +194,8 @@ class Base extends RTCEventEmitter {
     if (!this.adapterRef._statsReport) {
       this.adapterRef._statsReport = new StatsReport({
         sdkRef: this.sdkRef,
-        adapterRef: this.adapterRef
+        adapterRef: this.adapterRef,
+        isReport: this.isReport
       })
     }
   }
@@ -271,7 +275,17 @@ class Base extends RTCEventEmitter {
       startSessionTime: 0, // 通话开始时间
       endSessionTime: 0, // 通话时间结束
       startPubVideoTime: 0, // 视频发布开始时间
-      startPubScreenTime: 0 //屏幕共享发布开始时间
+      startPubScreenTime: 0, //屏幕共享发布开始时间
+      getChannelInfoTime: 0,
+      signalEstablishTime: 0,
+      signalOpenTime: 0,
+      signalJoinResTime: 0,
+      signalJoinSuccessTime: 0,
+      signalAudioAddedTime: 0,
+      signalAudioSubscribedTime: 0,
+      signalVideoAddedTime: 0,
+      signalVideoSubscribedTime: 0,
+      signalVideoFirstFrameTime: 0
     }
 
     Object.assign(this.adapterRef, {
@@ -460,8 +474,7 @@ class Base extends RTCEventEmitter {
     this.logger.log(`${uid}离开房间`)
     const remotStream = this.adapterRef.remoteStreamMap[uid]
     if (remotStream?.active) {
-      const mediaTypeList: MediaTypeShort[] = ['audio', 'video', 'screen', 'audioSlave']
-      for (let mediaType of mediaTypeList) {
+      for (let mediaType of MediaTypeList) {
         if (remotStream.pubStatus[mediaType].producerId) {
           this.adapterRef.instance.safeEmit('stream-removed', {
             stream: remotStream,
@@ -477,7 +490,7 @@ class Base extends RTCEventEmitter {
       delete this.adapterRef.remoteAudioSlaveStats[uid]
       delete this.adapterRef.remoteVideoStats[uid]
       delete this.adapterRef.remoteScreenStats[uid]
-      for (let mediaType of mediaTypeList) {
+      for (let mediaType of MediaTypeList) {
         if (remotStream.pubStatus[mediaType].consumerId) {
           await this.adapterRef._mediasoup?.destroyConsumer(
             remotStream.pubStatus[mediaType].consumerId,
@@ -698,9 +711,8 @@ class Base extends RTCEventEmitter {
   // 不支持 firefox
   getUidAndKindBySsrc(ssrc: number) {
     // 发送端
-    const mediaTypeList: MediaTypeShort[] = ['audio', 'video', 'screen', 'audioSlave']
     const streamTypeList: ('high' | 'low')[] = ['high', 'low']
-    for (let mediaType of mediaTypeList) {
+    for (let mediaType of MediaTypeList) {
       for (let streamType of streamTypeList) {
         if (
           this.adapterRef._mediasoup?.senderEncodingParameter[mediaType][streamType]?.ssrc === ssrc

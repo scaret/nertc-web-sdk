@@ -29,6 +29,7 @@ import {
   GetStreamConstraints,
   LocalStreamOptions,
   MediaRecordingOptions,
+  MediaTypeList,
   MediaTypeShort,
   NERtcCanvasWatermarkConfig,
   NERtcEncoderWatermarkConfig,
@@ -52,6 +53,7 @@ import { isHttpProtocol } from '../util/rtcUtil/rtcSupport'
 import { makePrintable } from '../util/rtcUtil/utils'
 import { getAudioContext } from '../module/webAudio'
 import { StageAIProcessing } from '../module/audio-pipeline/stages/StageAIProcessing/StageAIProcessing'
+import { webassemblySupported } from '../util/wasmDetect'
 
 /**
  *  请使用 {@link NERTC.createStream} 通过NERTC.createStream创建
@@ -210,15 +212,14 @@ class LocalStream extends RTCEventEmitter {
     screen: { send: false }
   }
   public readonly isRemote: false = false
-  private audioPlay_ = false
-  private videoPlay_ = false
-  private screenPlay_ = false
   public active = true
   public logger: ILogger
   public localStreamId: number
   public destroyed = false
   private canvasWatermarkOptions: NERtcCanvasWatermarkConfig | null = null
   private encoderWatermarkOptions: NERtcEncoderWatermarkConfig | null = null
+  private supportWasm: boolean = true
+  private supportAIDenoise: boolean = true
 
   constructor(options: LocalStreamOptions) {
     super()
@@ -356,6 +357,7 @@ class LocalStream extends RTCEventEmitter {
       }
     })
 
+    this.supportWasm = webassemblySupported()
     this.videoPostProcess = new VideoPostProcess(this.logger)
     this.basicBeauty = new BasicBeauty(this.videoPostProcess)
     this.virtualBackground = new VirtualBackground(this.videoPostProcess)
@@ -724,67 +726,6 @@ class LocalStream extends RTCEventEmitter {
       this.client.adapterRef.channelInfo.sessionConfig.videoQuality = this.videoProfile.resolution
       this.client.adapterRef.channelInfo.sessionConfig.videoFrameRate = this.videoProfile.frameRate
     }
-    if (this.client.adapterRef.isAudioBanned && this.client.adapterRef.isVideoBanned) {
-      const reason = `服务器禁止发送音视频流`
-      this.logger.error(reason)
-      this.client.apiFrequencyControl({
-        name: 'init',
-        code: -1,
-        param: JSON.stringify(
-          {
-            reason: reason
-          },
-          null,
-          ' '
-        )
-      })
-      this.audio = false
-      this.screenAudio = false
-      this.video = false
-      this.screen = false
-      let enMessage = 'localStream.init: audio and video are banned by server',
-        zhMessage = 'localStream.init: audio 和 video 被服务器禁言'
-      let message = env.IS_ZH ? zhMessage : enMessage
-      throw new RtcError({
-        code: ErrorCode.BANNED_BY_SERVER,
-        message
-      })
-    }
-    if (this.client.adapterRef.isAudioBanned && !this.client.adapterRef.isVideoBanned) {
-      const reason = `服务器禁止发送音频流`
-      this.logger.error(reason)
-      this.client.apiFrequencyControl({
-        name: 'init',
-        code: -1,
-        param: JSON.stringify(
-          {
-            reason: reason
-          },
-          null,
-          ' '
-        )
-      })
-      this.audio = false
-      this.screenAudio = false
-    }
-
-    if (!this.client.adapterRef.isAudioBanned && this.client.adapterRef.isVideoBanned) {
-      const reason = `服务器禁止发送视频流`
-      this.logger.error(reason)
-      this.client.apiFrequencyControl({
-        name: 'init',
-        code: -1,
-        param: JSON.stringify(
-          {
-            reason: reason
-          },
-          null,
-          ' '
-        )
-      })
-      this.video = false
-      this.screen = false
-    }
 
     try {
       if (this.audio) {
@@ -941,14 +882,11 @@ class LocalStream extends RTCEventEmitter {
     if (playOptions.audio && this._play && this.mediaHelper.getAudioInputTracks().length > 0) {
       this.logger.log(`uid ${this.stringStreamID} 开始播放本地音频: `, playOptions.audioType)
       if (playOptions.audioType === 'voice') {
-        this._play.playAudioStream(this.mediaHelper.audio.micStream, playOptions.muted)
-        this.audioPlay_ = true
+        this._play.playAudioStream('audio', this.mediaHelper.audio.micStream, playOptions.muted)
       } else if (playOptions.audioType === 'music') {
-        this._play.playAudioStream(this.mediaHelper.audio.musicStream, playOptions.muted)
-        this.audioPlay_ = true
+        this._play.playAudioStream('audio', this.mediaHelper.audio.musicStream, playOptions.muted)
       } else if (playOptions.audioType === 'mixing') {
-        this._play.playAudioStream(this.mediaHelper.audio.audioStream, playOptions.muted)
-        this.audioPlay_ = true
+        this._play.playAudioStream('audio', this.mediaHelper.audio.audioStream, playOptions.muted)
       }
     }
 
@@ -965,14 +903,11 @@ class LocalStream extends RTCEventEmitter {
         if (this._play && this.mediaHelper.video.videoStream.getVideoTracks().length) {
           this.logger.log(`uid ${this.stringStreamID} 开始启动视频播放 主流 本地`)
           try {
-            let end = 'local'
-            await this._play.playVideoStream(this.mediaHelper.video.renderStream, view, end)
+            await this._play.playVideoStream('video', this.mediaHelper.video.renderStream, view)
             if ('width' in this.renderMode.local.video) {
-              this._play.setVideoRender(this.renderMode.local.video)
+              this._play.setRender('video', this.renderMode.local.video)
             }
-            this.videoPlay_ = true
           } catch (error) {
-            this.videoPlay_ = false
             this.logger.log('localStream play video error ', error)
           }
           // 重新开启视频后期处理
@@ -984,33 +919,24 @@ class LocalStream extends RTCEventEmitter {
         if (this._play && this.mediaHelper.screen.screenVideoStream.getVideoTracks().length) {
           this.logger.log(`uid ${this.stringStreamID} 开始启动视频播放 辅流 本地`)
           try {
-            await this._play.playScreenStream(this.mediaHelper.screen.renderStream, view)
+            await this._play.playVideoStream('screen', this.mediaHelper.screen.renderStream, view)
             if ('width' in this.renderMode.local.screen) {
-              this._play.setScreenRender(this.renderMode.local.screen)
+              this._play.setRender('screen', this.renderMode.local.screen)
             }
-            this.screenPlay_ = false
           } catch (error) {
-            this.screenPlay_ = false
             this.logger.log('localStream play screen error ', error)
           }
         }
       }
     }
     if (playOptions.audio) {
-      let param: ReportParamEnableEarback
-      if (this.client.adapterRef.isAudioBanned) {
-        param = {
-          enable: false
-        }
-      } else {
-        param = {
-          enable: true
-        }
+      const param: ReportParamEnableEarback = {
+        enable: true
       }
 
       this.client.apiFrequencyControl({
         name: 'enableEarback',
-        code: param.enable ? 0 : 1,
+        code: 0,
         param: JSON.stringify(param, null, ' ')
       })
     }
@@ -1039,15 +965,6 @@ class LocalStream extends RTCEventEmitter {
   async resume() {
     if (this._play) {
       await this._play.resume()
-      if (this._play.audioDom && !this._play.audioDom.paused) {
-        this.audioPlay_ = true
-      }
-      if (this._play.videoDom && !this._play.videoDom.paused) {
-        this.videoPlay_ = true
-      }
-      if (this._play.screenDom && !this._play.screenDom.paused) {
-        this.screenPlay_ = true
-      }
     }
     this.client.apiFrequencyControl({
       name: 'resume',
@@ -1095,7 +1012,7 @@ class LocalStream extends RTCEventEmitter {
     // mediaType不填则都设
     if (!mediaType || mediaType === 'video') {
       if (this._play) {
-        this._play.setVideoRender(options)
+        this._play.setRender('video', options)
       }
       this.renderMode.local.video = options
       this.replaceCanvas()
@@ -1103,7 +1020,7 @@ class LocalStream extends RTCEventEmitter {
     if (!mediaType || mediaType === 'screen') {
       this.renderMode.local.screen = options
       if (this._play) {
-        this._play.setScreenRender(options)
+        this._play.setRender('screen', options)
       }
     }
     this.client.apiFrequencyControl({
@@ -1126,29 +1043,11 @@ class LocalStream extends RTCEventEmitter {
   stop(type?: MediaTypeShort) {
     this.logger.log(`stop() uid ${this.stringStreamID} 停止播放 ${type || '音视频流'}`)
     if (!this._play) return
-    if (type === 'audio') {
-      this._play.stopPlayAudioStream()
-      this.audioPlay_ = false
-    } else if (type === 'video') {
-      this._play.stopPlayVideoStream()
-      this.videoPlay_ = false
-    } else if (type === 'screen') {
-      this._play.stopPlayScreenStream()
-      this.screenPlay_ = false
-    } else {
-      if (this._play.audioDom) {
-        this._play.stopPlayAudioStream()
-        this.audioPlay_ = false
+    MediaTypeList.forEach((mediaType) => {
+      if (!type || mediaType === type) {
+        this._play.stopPlayStream(mediaType)
       }
-      if (this._play.videoDom) {
-        this._play.stopPlayVideoStream()
-        this.videoPlay_ = false
-      }
-      if (this._play.screenDom) {
-        this._play.stopPlayScreenStream()
-        this.screenPlay_ = false
-      }
-    }
+    })
     this.client.apiFrequencyControl({
       name: 'stop',
       code: 0,
@@ -1174,15 +1073,11 @@ class LocalStream extends RTCEventEmitter {
    * @param {string} type 查看的媒体类型： audio/video
    * @returns {Promise}
    */
-  async isPlaying(type: MediaTypeShort) {
+  isPlaying(type: MediaTypeShort) {
     let isPlaying = false
     if (!this._play) {
-    } else if (type === 'audio') {
-      isPlaying = await this._play.isPlayAudioStream()
-    } else if (type === 'video') {
-      isPlaying = await this._play.isPlayVideoStream()
-    } else if (type === 'screen') {
-      isPlaying = await this._play.isPlayScreenStream()
+    } else if (MediaTypeList.indexOf(type) > -1) {
+      return this._play.isPlaying(type)
     } else {
       this.logger.warn('isPlaying: unknown type')
       let enMessage = 'localStream.isPlaying: The type of parameter(uid) is unknown',
@@ -1191,13 +1086,11 @@ class LocalStream extends RTCEventEmitter {
         zhAdvice = '请输入正确的参数类型'
       let message = env.IS_ZH ? zhMessage : enMessage,
         advice = env.IS_ZH ? zhAdvice : enAdvice
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.UNKNOWN_TYPE_ERROR,
-          message,
-          advice
-        })
-      )
+      throw new RtcError({
+        code: ErrorCode.UNKNOWN_TYPE_ERROR,
+        message,
+        advice
+      })
     }
     this.client.apiFrequencyControl({
       name: 'isPlaying',
@@ -1212,8 +1105,15 @@ class LocalStream extends RTCEventEmitter {
         ' '
       )
     })
-    this.logger.log(`检查${this.stringStreamID}的${type}播放状态: ${isPlaying}`)
     return isPlaying
+  }
+
+  canPlay(mediaType: MediaTypeShort) {
+    if (MediaTypeList.indexOf(mediaType) === -1) {
+      return null
+    } else {
+      return this._play.canPlay(mediaType)
+    }
   }
 
   /**
@@ -1296,26 +1196,6 @@ class LocalStream extends RTCEventEmitter {
       }
       switch (type) {
         case 'audio':
-          if (this.client.adapterRef.isAudioBanned) {
-            const reason = `服务器禁止发送音频流`
-            this.logger.error(reason)
-            onOpenFinished({
-              code: -1,
-              param: {
-                reason,
-                type
-              }
-            })
-            let enMessage = 'localStream.open.audio: audio is banned by server',
-              zhMessage = 'localStream.open.audio: audio 被服务器禁言'
-            let message = env.IS_ZH ? zhMessage : enMessage
-            return Promise.reject(
-              new RtcError({
-                code: ErrorCode.BANNED_BY_SERVER,
-                message
-              })
-            )
-          }
           this.logger.log(`open(): 开启 ${audioSource ? audioSource.label : 'mic设备'}`)
           if (this.mediaHelper.audio.micTrack || this.mediaHelper.audio.audioSource) {
             this.logger.warn('请先关闭麦克风')
@@ -1360,26 +1240,6 @@ class LocalStream extends RTCEventEmitter {
           }
           break
         case 'screenAudio':
-          if (this.client.adapterRef.isAudioBanned) {
-            const reason = `服务器禁止发送音频流`
-            this.logger.error(reason)
-            onOpenFinished({
-              code: -1,
-              param: {
-                reason,
-                type
-              }
-            })
-            let enMessage = 'localStream.open.screenAudio: audio is banned by server',
-              zhMessage = 'localStream.open.screenAudio: audio 被服务器禁言'
-            let message = env.IS_ZH ? zhMessage : enMessage
-            return Promise.reject(
-              new RtcError({
-                code: ErrorCode.BANNED_BY_SERVER,
-                message
-              })
-            )
-          }
           if (!screenAudioSource) {
             this.logger.error(`open(): 不允许单独开启屏幕共享音频功能。`)
             return
@@ -1430,48 +1290,6 @@ class LocalStream extends RTCEventEmitter {
           break
         case 'video':
         case 'screen':
-          if (this.client.adapterRef.isVideoBanned) {
-            const reason = `服务器禁止发送视频流`
-            this.logger.error(reason)
-            onOpenFinished({
-              code: -1,
-              param: {
-                reason,
-                type
-              }
-            })
-            let enMessage = 'localStream.open.video: video is banned by server',
-              zhMessage = 'localStream.open.video: video 被服务器禁言'
-            let message = env.IS_ZH ? zhMessage : enMessage
-            return Promise.reject(
-              new RtcError({
-                code: ErrorCode.BANNED_BY_SERVER,
-                message
-              })
-            )
-          }
-          if (options.screenAudio && this.client.adapterRef.isAudioBanned) {
-            const reason = `服务器禁止发送音频流`
-            this.logger.error(reason)
-            onOpenFinished({
-              code: -1,
-              param: {
-                reason,
-                type,
-                screenAudio: options.screenAudio
-              }
-            })
-            let enMessage = 'localStream.open.screenAudio: audio is banned by server',
-              zhMessage = 'localStream.open.screenAudio: audio 被服务器禁言'
-            let message = env.IS_ZH ? zhMessage : enMessage
-            return Promise.reject(
-              new RtcError({
-                code: ErrorCode.BANNED_BY_SERVER,
-                message
-              })
-            )
-          }
-
           this.logger.log(`开启${type === 'video' ? 'camera' : 'screen'}设备`)
           if (this[type]) {
             if (type === 'video') {
@@ -1818,7 +1636,7 @@ class LocalStream extends RTCEventEmitter {
             advice
           })
         }
-        this._play.stopPlayVideoStream()
+        this._play.stopPlayStream('video')
         if (!this.getAdapterRef()) {
           this.logger.log('Stream.close:未发布视频，无需停止发布')
         } else {
@@ -1857,7 +1675,7 @@ class LocalStream extends RTCEventEmitter {
             advice
           })
         }
-        this._play.stopPlayScreenStream()
+        this._play.stopPlayStream('screen')
         if (!this.getAdapterRef()) {
           this.logger.log('Stream.close:未发布辅流，无需停止发布')
         } else {
@@ -2323,7 +2141,7 @@ class LocalStream extends RTCEventEmitter {
           advice
         })
       }
-      this._play.setPlayVolume(volume)
+      this._play.setPlayVolume('audio', volume)
     } else {
       this.logger.log(`没有音频流，请检查是否有发布过音频`)
       reason = 'INVALID_OPERATION'
@@ -2479,18 +2297,6 @@ class LocalStream extends RTCEventEmitter {
       this.inSwitchDevice[type] = true
     }
     if (type === 'audio') {
-      // server ban
-      if (this.client.adapterRef.isAudioBanned) {
-        let enMessage = 'switchDevice: audio is banned by server',
-          zhMessage = 'switchDevice: audio 被服务器禁言'
-        let message = env.IS_ZH ? zhMessage : enMessage
-        return Promise.reject(
-          new RtcError({
-            code: ErrorCode.BANNED_BY_SERVER,
-            message
-          })
-        )
-      }
       const micTrack = this.mediaHelper.audio.micTrack
       if (micTrack?.readyState === 'live' && micTrack?.getSettings().deviceId === deviceId) {
         this.logger.log(`切换相同的麦克风设备，不处理`)
@@ -2540,18 +2346,6 @@ class LocalStream extends RTCEventEmitter {
       constraint = this.mediaHelper.audio.micConstraint
       this.microphoneId = deviceId
     } else if (type === 'video') {
-      if (this.client.adapterRef.isVideoBanned) {
-        let enMessage = 'switchDevice: video is banned by server',
-          zhMessage = 'switchDevice: video 被服务器禁言'
-        let message = env.IS_ZH ? zhMessage : enMessage
-        return Promise.reject(
-          new RtcError({
-            code: ErrorCode.BANNED_BY_SERVER,
-            message
-          })
-        )
-      }
-
       const cameraTrack = this.mediaHelper.video.cameraTrack
       // 关闭视频后期处理
       await this.suspendVideoPostProcess()
@@ -2735,7 +2529,7 @@ class LocalStream extends RTCEventEmitter {
         this.videoPostProcess.sourceTrack.enabled = true
       }
       if (env.IS_SAFARI) {
-        const videoDom = this._play?.getVideoDom
+        const videoDom = this._play?.video.containerDom
         if (videoDom) {
           videoDom.style.backgroundColor = ''
         }
@@ -2785,7 +2579,7 @@ class LocalStream extends RTCEventEmitter {
         this.virtualBackground.emptyFrame = true
       }
       if (env.IS_SAFARI) {
-        const videoDom = this._play?.getVideoDom
+        const videoDom = this._play?.video.dom
         if (videoDom) {
           videoDom.style.backgroundColor = 'black'
         }
@@ -3291,10 +3085,7 @@ class LocalStream extends RTCEventEmitter {
     })
   }
 
-  getSender(
-    mediaTypeShort: 'audio' | 'video' | 'screen' | 'audioSlave',
-    streamType: 'high' | 'low'
-  ) {
+  getSender(mediaTypeShort: MediaTypeShort, streamType: 'high' | 'low') {
     const peer = this.getAdapterRef()?._mediasoup?._sendTransport?.handler._pc
     let sender = null
     if (peer) {
@@ -3447,7 +3238,7 @@ class LocalStream extends RTCEventEmitter {
           advice
         })
       }
-      await this._play.takeSnapshot(options, this.streamID)
+      await this._play.takeSnapshot(options, 'download', this.streamID)
       this.client.apiFrequencyControl({
         name: 'takeSnapshot',
         code: 0,
@@ -3499,7 +3290,7 @@ class LocalStream extends RTCEventEmitter {
           advice
         })
       }
-      let base64Url = this._play.takeSnapshotBase64(options)
+      let base64Url = this._play.takeSnapshot(options, 'base64')
       this.client.apiFrequencyControl({
         name: 'takeSnapshotBase64',
         code: 0,
@@ -3745,17 +3536,6 @@ class LocalStream extends RTCEventEmitter {
    * @returns {Promise}
    */
   startAudioMixing(options: AudioMixingOptions) {
-    if (this.client.adapterRef.isAudioBanned) {
-      let enMessage = 'startAudioMixing: audio is banned by server',
-        zhMessage = 'startAudioMixing: audio 被服务器禁言'
-      let message = env.IS_ZH ? zhMessage : enMessage
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.BANNED_BY_SERVER,
-          message
-        })
-      )
-    }
     this.logger.log('开始伴音')
     return this.mediaHelper.startAudioMixing(options)
   }
@@ -3863,17 +3643,6 @@ class LocalStream extends RTCEventEmitter {
    * @returns {Promise}
    */
   async playEffect(options: AudioEffectOptions) {
-    if (this.client.adapterRef.isAudioBanned) {
-      let enMessage = 'playEffect: audio is banned by server',
-        zhMessage = 'playEffect: audio 被服务器禁言'
-      let message = env.IS_ZH ? zhMessage : enMessage
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.BANNED_BY_SERVER,
-          message
-        })
-      )
-    }
     this.logger.log('开始播放音效: ', JSON.stringify(options, null, ' '))
     return this.mediaHelper.playEffect(options)
   }
@@ -4048,12 +3817,10 @@ class LocalStream extends RTCEventEmitter {
 
   setCanvasWatermarkConfigs(options: NERtcCanvasWatermarkConfig) {
     if (this._play) {
-      let watermarkControl = null
-      if (!options.mediaType || options.mediaType === 'video') {
-        watermarkControl = this._play.watermark.video.canvasControl
-      } else if (options.mediaType === 'screen') {
-        watermarkControl = this._play.watermark.screen.canvasControl
-      }
+      let watermarkControl =
+        options.mediaType === 'screen'
+          ? this._play.screen.canvasWatermark
+          : this._play.video.canvasWatermark
       if (!watermarkControl) {
         this.logger.error('setCanvasWatermarkConfigs：播放器未初始化', options.mediaType)
         return
@@ -4122,45 +3889,25 @@ class LocalStream extends RTCEventEmitter {
    */
   setEncoderWatermarkConfigs(options: NERtcEncoderWatermarkConfig) {
     if (this._play && this._play) {
-      let watermarkControl = null
-      if (!options.mediaType || options.mediaType === 'video') {
-        watermarkControl = this._play.watermark.video.encoderControl
-        if (
-          options.textWatermarks?.length ||
-          options.timestampWatermarks ||
-          options.imageWatermarks?.length
-        ) {
-          this._play.watermark.video.encoderControl.handler.enabled = true
-          if (!this.mediaHelper.video.preProcessingEnabled) {
-            this.mediaHelper.enablePreProcessing('video')
-          }
-        } else {
-          this._play.watermark.video.encoderControl.handler.enabled = false
-          if (this.mediaHelper.canDisablePreProcessing('video')) {
-            this.mediaHelper.disablePreProcessing('video')
-          }
-        }
-      } else if (options.mediaType === 'screen') {
-        watermarkControl = this._play.watermark.screen.encoderControl
-        if (
-          options.textWatermarks?.length ||
-          options.timestampWatermarks ||
-          options.imageWatermarks?.length
-        ) {
-          this._play.watermark.screen.encoderControl.handler.enabled = true
-          if (!this.mediaHelper.screen.preProcessingEnabled) {
-            this.mediaHelper.enablePreProcessing('screen')
-          }
-        } else {
-          this._play.watermark.screen.encoderControl.handler.enabled = false
-          if (this.mediaHelper.canDisablePreProcessing('screen')) {
-            this.mediaHelper.disablePreProcessing('screen')
-          }
-        }
-      }
+      const mediaType = options.mediaType || 'video'
+      const watermarkControl = this._play[mediaType].encoderWatermark
       if (!watermarkControl) {
         this.logger.error('setEncoderWatermarkConfigs：播放器未初始化', options.mediaType)
         return
+      } else if (
+        options.textWatermarks?.length ||
+        options.timestampWatermarks ||
+        options.imageWatermarks?.length
+      ) {
+        watermarkControl.handler.enabled = true
+        if (!this.mediaHelper[mediaType].preProcessingEnabled) {
+          this.mediaHelper.enablePreProcessing(mediaType)
+        }
+      } else {
+        watermarkControl.handler.enabled = false
+        if (this.mediaHelper.canDisablePreProcessing(mediaType)) {
+          this.mediaHelper.disablePreProcessing(mediaType)
+        }
       }
 
       const LIMITS = {
@@ -4596,6 +4343,10 @@ class LocalStream extends RTCEventEmitter {
 
   //打开AI降噪
   async enableAIDenoise(): Promise<boolean> {
+    if (!this.supportAIDenoise) {
+      this.logger.warn('Unsupport ai denoise. Please check your plugin version')
+      return false
+    }
     this.logger.log('start ai denoise.')
     let stageAIProcessing: StageAIProcessing
     if (this.mediaHelper.audio.stageAIProcessing) {
@@ -4784,13 +4535,15 @@ class LocalStream extends RTCEventEmitter {
           enable,
           this._cameraTrack
         )) as MediaStreamTrack
-        //替换 track
-        await this.replacePluginTrack({
-          mediaType: 'video',
-          //@ts-ignore
-          track: this._transformedTrack,
-          external: false
-        })
+        if (this._transformedTrack) {
+          //替换 track
+          await this.replacePluginTrack({
+            mediaType: 'video',
+            //@ts-ignore
+            track: this._transformedTrack,
+            external: false
+          })
+        }
       } catch (error: any) {
         err = error
       }
@@ -4812,7 +4565,26 @@ class LocalStream extends RTCEventEmitter {
    */
   async registerPlugin(options: PluginOptions) {
     this.logger.log(`register plugin:${options.key}`)
-
+    if (!this.supportWasm) {
+      this.client.apiFrequencyControl({
+        name: 'registerPlugin',
+        code: -1,
+        param: {
+          streamID: this.stringStreamID,
+          plugin: options.key,
+          msg: 'unsupportWasm'
+        }
+      })
+      throw new RtcError({
+        code: ErrorCode.PLUGIN_REGISTER_ERROR,
+        message: env.IS_ZH
+          ? `该浏览器不支持WebAssembly，注册 ${options.key} 失败。`
+          : `Browser does not support WebAssembly.Register ${options.key} error.`,
+        advice: env.IS_ZH
+          ? '请更新浏览器版本或使用其他浏览器'
+          : 'please update the browser version or open with another browser.'
+      })
+    }
     if (this.videoPostProcess.getPlugin(options.key as any)) {
       return this.logger.warn(`plugin ${options.key} already exists.`)
     }
@@ -4899,6 +4671,10 @@ class LocalStream extends RTCEventEmitter {
           })
         })
         plugin.once('error', (message: string) => {
+          if (options.key == 'AIDenoise') {
+            this.disableAIDenoise()
+            this.supportAIDenoise = false
+          }
           throw new RtcError({
             code: ErrorCode.PLUGIN_LOADED_ERROR,
             message: env.IS_ZH
@@ -4912,14 +4688,15 @@ class LocalStream extends RTCEventEmitter {
     } catch (e: any) {
       this.emit('plugin-load-error', {
         key: options.key,
-        msg: e.message
+        msg: e
       })
       this.client.apiFrequencyControl({
         name: 'registerPlugin',
         code: -1,
         param: {
           streamID: this.stringStreamID,
-          plugin: options.key
+          plugin: options.key,
+          msg: e
         }
       })
     }
@@ -5013,8 +4790,8 @@ class LocalStream extends RTCEventEmitter {
     if (!this._play) return
     if (!env.IS_ANY_SAFARI) return
     if (env.SAFARI_VERSION && parseFloat(env.SAFARI_VERSION) > 15.2) return
-    const localVideoDom = this._play.getVideoDom?.querySelector('video')
-    const videoDom = this._play.getVideoDom
+    const localVideoDom = this._play.video.dom?.querySelector('video')
+    const videoDom = this._play.video.containerDom
     if (localVideoDom && videoDom) {
       const filters = this.videoPostProcess.filters!
       const video = this.videoPostProcess.video

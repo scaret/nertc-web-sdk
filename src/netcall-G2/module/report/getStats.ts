@@ -207,9 +207,7 @@ class GetStats {
     }
 
     const nonStandardResult = await nonStandardStats()
-    //console.log('非标准的汇总stats数据: ', nonStandardResult)
     const standardizedResult = await standardizedStats()
-    //console.log('标准的汇总stats数据: ', standardizedResult)
     const assignedResult: { [key: string]: any } = {}
     if (nonStandardResult && standardizedResult) {
       //@ts-ignore
@@ -343,6 +341,8 @@ class GetStats {
             tmp.echoReturnLossEnhancement = item.googEchoCancellationReturnLossEnhancement || ''
             this.formativeStatsReport?.formatSendData(tmp, mediaTypeShort)
             //tmp.active = item.active //不支持
+
+            //sdk接口getLocalAudioStats()数据封装
             const audioStats = {
               CodecType: 'Opus',
               MuteState: this?.adapterRef?.localStream?.muteStatus?.audio?.send || false,
@@ -394,6 +394,7 @@ class GetStats {
             if (streamType === 'high') {
               this.formativeStatsReport?.formatSendData(tmp, mediaTypeShort)
             }
+            //sdk接口getLocalVideoStats()数据封装
             const videoStats = {
               LayerType: 1,
               CodecName: item.googCodecName || 'h264',
@@ -467,6 +468,7 @@ class GetStats {
                   remoteStream.muteStatus.audioSlave.recv)) ||
               false
 
+            //sdk接口getRemoteAudioStats()数据封装
             const audioStats = {
               CodecType: 'Opus',
               End2EndDelay:
@@ -530,7 +532,7 @@ class GetStats {
               (remoteStream &&
                 (remoteStream.muteStatus.video.send || remoteStream.muteStatus.video.recv)) ||
               false
-
+            //sdk接口getRemoteVideoStats()数据封装
             const videoStats = {
               LayerType: 1,
               CodecName: item.googCodecName,
@@ -730,13 +732,13 @@ class GetStats {
     if (direction === 'recv') {
       if (JSON.stringify(videoObj) !== '{}') {
         videoObj.uid = uidAndKindBySsrc?.uid
+        //标准的getStats()就不参与数据计算了,会导致数据重复,后面同理
         //this.formativeStatsReport?.formatRecvData(videoObj, mediaTypeShort)
       } else if (JSON.stringify(audioObj) !== '{}') {
         audioObj.uid = uidAndKindBySsrc?.uid
-        //this.formativeStatsReport?.formatRecvData(audioObj, mediaTypeShort)
         if (audioObj.audioOutputLevel) {
           const remoteStream = this?.adapterRef?.remoteStreamMap[audioObj.uid]
-          const isPlaying = true //remoteStream.isPlaying(mediaTypeShort)
+          const isPlaying = (mediaTypeShort && remoteStream?.isPlaying(mediaTypeShort)) || false
           this.audioLevel.push({
             uid,
             level: isPlaying ? +audioObj.audioOutputLevel || 0 : 0,
@@ -746,14 +748,8 @@ class GetStats {
       }
     }
     if (mediaTypeShort?.includes('audio')) {
-      // if (direction === 'send') {
-      //   this.formativeStatsReport?.formatSendData(audioObj, mediaTypeShort)
-      // }
       result[`${mediaTypeShort}_ssrc`] = [audioObj]
     } else if (mediaTypeShort === 'video' || mediaTypeShort === 'screen') {
-      // if (uidAndKindBySsrc?.streamType === 'high' && direction === 'send') {
-      //   this.formativeStatsReport?.formatSendData(videoObj, mediaTypeShort)
-      // }
       result[`${mediaTypeShort}_ssrc`] = [videoObj]
     }
     return result
@@ -947,7 +943,7 @@ class GetStats {
         this.formativeStatsReport?.formatRecvData(audioObj, mediaTypeShort)
         if (audioObj.audioOutputLevel) {
           const remoteStream = this?.adapterRef?.remoteStreamMap[audioObj.uid]
-          const isPlaying = true //remoteStream.isPlaying(mediaTypeShort)
+          const isPlaying = (mediaTypeShort && remoteStream?.isPlaying(mediaTypeShort)) || false
           this.audioLevel.push({
             uid,
             level: isPlaying ? +audioObj.audioOutputLevel || 0 : 0,
@@ -1103,7 +1099,7 @@ class GetStats {
         this.formativeStatsReport?.formatRecvData(audioObj, mediaTypeShort)
         if (audioObj.audioOutputLevel) {
           const remoteStream = this?.adapterRef?.remoteStreamMap[audioObj.uid]
-          const isPlaying = true //remoteStream.isPlaying(mediaTypeShort)
+          const isPlaying = (mediaTypeShort && remoteStream?.isPlaying(mediaTypeShort)) || false
           this.audioLevel.push({
             uid,
             level: isPlaying ? +audioObj.audioOutputLevel || 0 : 0,

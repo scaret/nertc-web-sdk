@@ -1,2 +1,2 @@
-export as namespace protobuf;
-export * from "./index";
+export as namespace protobuf
+export * from './index'

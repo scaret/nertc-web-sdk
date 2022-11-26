@@ -11,6 +11,13 @@ import { lutShader } from '../shaders/lut-shader.glsl'
 import { Filter } from './filter'
 
 const loadedImg: { [key: string]: HTMLImageElement } = {}
+
+/**
+ * 基础美颜渲染过程
+ * 在开启高级美颜的情况下：
+ * 1、基础美颜会复用高级美颜的部分输出结果（脸部遮罩）；
+ * 2、高级美颜祛黑眼圈、法令纹、抬头纹等功能会复用磨皮部分功能。
+ */
 export class BeautyFilter extends Filter {
   private whitenMap: ReturnType<typeof createTexture>
   private reddenMap: ReturnType<typeof createTexture>
@@ -42,6 +49,9 @@ export class BeautyFilter extends Filter {
     this.initUniforms()
   }
 
+  /**
+   * 初始化基础美颜着色器程序及所需图像缓冲区
+   */
   private initProgramsBuffers() {
     const gl = this.renderer.gl!
     const size = this.renderer.getSize()
@@ -50,41 +60,51 @@ export class BeautyFilter extends Filter {
       [key: string]: NonNullable<ReturnType<typeof createFrameBuffer>>
     } = {}
     const opts = {
+      // 横向模糊初始化参数
       blurX: {
         vShader: beautyBlurShader.vShader,
         fShader: beautyBlurShader.fShader,
+        // 用以求解高反差的模糊底图尺寸可以小一点，有助于提升性能，但是太小会导致细节流失，酌情考虑
         size: { width: size.width >> 1, height: size.height >> 1 }
       },
+      // 纵向模糊初始化参数
       blurY: {
         vShader: beautyBlurShader.vShader,
         fShader: beautyBlurShader.fShader,
+        // 用以求解高反差的模糊底图尺寸可以小一点，有助于提升性能，但是太小会导致细节流失，酌情考虑
         size: { width: size.width >> 1, height: size.height >> 1 }
       },
+      // 高反差初始化参数
       highPass: {
         vShader: baseTextureShader.vShader,
         fShader: beautyHighPassShader.fShader,
         size
       },
+      // 横向磨皮初始化参数
       hBlurX: {
         vShader: beautyBlurShader.vShader,
         fShader: beautyBlurShader.fShader,
         size
       },
+      // 纵向磨皮初始化参数
       hBlurY: {
         vShader: beautyBlurShader.vShader,
         fShader: beautyBlurShader.fShader,
         size
       },
+      // 磨皮效果合成初始化参数
       beauty: {
         vShader: baseTextureShader.vShader,
         fShader: beautyShader.fShader,
         size
       },
+      // 美白初始化参数
       whiten: {
         vShader: baseTextureShader.vShader,
         fShader: lutShader.fShader,
         size
       },
+      // 红润初始化参数
       redden: {
         vShader: baseTextureShader.vShader,
         fShader: lutShader.fShader,
@@ -94,7 +114,7 @@ export class BeautyFilter extends Filter {
 
     for (const key in opts) {
       const { vShader, fShader, size } = (opts as any)[key]
-      // program
+
       const program = new Program(gl)
       program.setShader(vShader, 'VERTEX')
       program.setShader(fShader, 'FRAGMENT')
@@ -102,7 +122,6 @@ export class BeautyFilter extends Filter {
       program.setAttributeBuffer(this.uvBuffer)
       programs[key] = program
 
-      // frameBuffer
       const frameBuffer = createFrameBuffer(gl, size.width, size.height)!
       framebuffers[key] = frameBuffer
     }
@@ -113,6 +132,7 @@ export class BeautyFilter extends Filter {
     }
   }
 
+  /** 为着色器程序赋初值 */
   private initUniforms() {
     const programs = this.programs
     const framebuffers = this.framebuffers
@@ -173,6 +193,7 @@ export class BeautyFilter extends Filter {
     }
   }
 
+  /** 设置美白、红润的 lut 图 */
   setLutsSrc(opts: { whiten: string; redden: string }, onComplete?: (failUrls: string[]) => void) {
     const { whiten, redden } = opts
     let queueLen = 2
@@ -250,6 +271,7 @@ export class BeautyFilter extends Filter {
     this.programs['redden'].setUniform('map', this.whitenOut)
   }
 
+  /** 设置磨皮参数 */
   get smooth() {
     return this._smooth
   }
@@ -261,6 +283,7 @@ export class BeautyFilter extends Filter {
     }
   }
 
+  /** 设置美白参数 */
   get whiten() {
     return this._whiten
   }
@@ -275,6 +298,7 @@ export class BeautyFilter extends Filter {
     }
   }
 
+  /** 设置红润参数 */
   get redden() {
     return this._redden
   }
@@ -288,6 +312,7 @@ export class BeautyFilter extends Filter {
     }
   }
 
+  /** 设置面部遮罩，由管线自动获取并设置 */
   set faceMask(mask: ReturnType<typeof createTexture> | null) {
     if (this._faceMask !== mask) {
       this.programs['beauty'].setUniform('maskMap', mask)
@@ -296,6 +321,7 @@ export class BeautyFilter extends Filter {
     }
   }
 
+  /** 设置抬头纹、黑眼圈及法令纹的强度，由管线自动获取并设置 */
   set featureParas(params: { forehead: number; eyeRim: number; noseLine: number }) {
     let sum = 0
     for (const key in params) {

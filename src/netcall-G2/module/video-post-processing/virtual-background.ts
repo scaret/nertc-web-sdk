@@ -4,6 +4,7 @@ import { BackGroundOptions } from '../../plugin/segmentation/src/types'
 import VideoPostProcess from '.'
 import { loadImage } from './gl-utils/texture'
 
+/** 虚拟背景控制类，对外提供调用接口 */
 export default class VirtualBackground extends EventEmitter {
   private videPostProcess: VideoPostProcess
 
@@ -12,12 +13,18 @@ export default class VirtualBackground extends EventEmitter {
     this.videPostProcess = videPostProcess
   }
 
+  /** 默认背景设置 */
   private bgOption: BackGroundOptions = { type: 'color', color: '#e7ad3c' }
+  /** 获取虚拟背景推理模块实例 */
   private get segmentProcess() {
     const plugin = this.videPostProcess.getPlugin('VirtualBackground')
     return plugin as any
   }
 
+  /**
+   * 初始化虚拟背景推理模块
+   * @param {number} decFaceSize? 最大人脸数
+   */
   init() {
     this.segmentProcess.on('segment-load', () => {
       this.emit('segment-load')
@@ -25,11 +32,15 @@ export default class VirtualBackground extends EventEmitter {
     this.segmentProcess.init()
   }
 
+  /**
+   * 销毁高级美颜推理模块
+   */
   destroy() {
     this.segmentProcess.removeAllListeners()
     this.segmentProcess.destroy()
   }
 
+  /** 设置虚拟背景 */
   setVirtualBackGround(option: BackGroundOptions) {
     this.bgOption = option
     const { type } = option
@@ -88,11 +99,12 @@ export default class VirtualBackground extends EventEmitter {
     })
   }
 
-  //-------------------------------------------------以下是测试代码,同时也是对外暴漏的接口-------------------------------------------------
+  /** 设置背景图片、颜色 */
   setBackGround(bk: HTMLImageElement | HTMLVideoElement | string | null) {
     this.videPostProcess.filters?.virtualBackground.setBackground(bk)
   }
 
+  /** 设置背景虚化 */
   setBlurIntensity(intensity: number) {
     this.videPostProcess.filters?.virtualBackground.setBlurIntensity(intensity)
   }
@@ -101,6 +113,7 @@ export default class VirtualBackground extends EventEmitter {
     return this.videPostProcess.hasTask('VirtualBackground')
   }
 
+  /** 用黑帧替换虚拟背景渲染结果 */
   set emptyFrame(isEmptyFrame: boolean) {
     this.videPostProcess.filters!.virtualBackground.emptyFrame = isEmptyFrame
   }

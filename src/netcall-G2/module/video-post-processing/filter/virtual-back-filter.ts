@@ -9,6 +9,7 @@ import { mipMapBlurShader } from '../shaders/mip-map-blur.glsl'
 import { virtualBackShader } from '../shaders/virtual-back-shader.glsl'
 import { Filter } from './filter'
 
+/** 虚拟背景渲染过程*/
 export class VirtualBackFilter extends Filter {
   // 源贴图
   private sourceMap: ReturnType<typeof createTexture>
@@ -39,11 +40,17 @@ export class VirtualBackFilter extends Filter {
     this.initProgramBuffer()
   }
 
+  /**
+   * 初始化虚拟背景着色器程序及所需图像缓冲区，并为着色器程序赋初值
+   */
   private initProgramBuffer() {
     const gl = this.renderer.gl!
     const size = this.renderer.getSize()
+
+    // 背景模糊采用基于 mipmap 的 fastblur 方案，在 webgl 1.0 版本，需确保要生成 mipmap 的贴图尺寸是 2的 n 次方
     const mipSize = [toNthPower(size.width), toNthPower(size.height)]
 
+    // 构生成 mipmap 的着色器程序
     const mipProgram = new Program(gl)
     mipProgram.setShader(baseTextureShader.vShader, 'VERTEX')
     mipProgram.setShader(baseTextureShader.fShader, 'FRAGMENT')
@@ -54,6 +61,7 @@ export class VirtualBackFilter extends Filter {
     this.programs.mip = mipProgram
     this.framebuffers.mip = mipFramebuffer
 
+    // 构建背景模糊的着色器程序
     const blurProgram = new Program(gl)
     blurProgram.setShader(baseTextureShader.vShader, 'VERTEX')
     blurProgram.setShader(mipMapBlurShader.fShader, 'FRAGMENT')
@@ -66,6 +74,7 @@ export class VirtualBackFilter extends Filter {
     this.programs.blur = blurProgram
     this.framebuffers.blur = blurFramebuffer
 
+    // 构建虚拟背景着色器程序
     const program = new Program(gl)
     program.setShader(baseTextureShader.vShader, 'VERTEX')
     program.setShader(virtualBackShader.fShader, 'FRAGMENT')
@@ -98,6 +107,7 @@ export class VirtualBackFilter extends Filter {
     this.programs.main.setUniform('emptyFrame', isEmptyFrame ? 1 : 0)
   }
 
+  /** 设置人像分割遮罩 */
   setMaskMap(source: TexImageSource | null) {
     const map = this.maskMap
     if (map) {
@@ -106,11 +116,13 @@ export class VirtualBackFilter extends Filter {
     }
   }
 
+  /** 设置背景颜色 */
   private setBkColor(color: string | null) {
     this.bkColor.setValue(color || '#e7ad3c')
     this.programs.main.setUniform('backColor', this.bkColor.value)
   }
 
+  /** 根据当前背景，获取背景相关的信息 */
   private getBkInfo() {
     const map = this.bkMap
     const source = map ? map.source : null
@@ -130,6 +142,7 @@ export class VirtualBackFilter extends Filter {
     return info
   }
 
+  /** 设置背景图片 */
   private setBkMap(source: HTMLVideoElement | HTMLImageElement | null) {
     const map = this.bkMap
     if (map) {
@@ -176,6 +189,7 @@ export class VirtualBackFilter extends Filter {
     }
   }
 
+  /** 设置背景模糊强度 */
   setBlurIntensity(intensity: number) {
     const size = this.renderer.getSize()
     intensity = Math.max(0.1, Math.min(1.0, intensity))

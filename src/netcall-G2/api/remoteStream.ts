@@ -14,6 +14,7 @@ import {
   GetCurrentFrameDataOptions,
   ILogger,
   MediaRecordingOptions,
+  MediaTypeList,
   MediaTypeShort,
   NERtcCanvasWatermarkConfig,
   PlatformType,
@@ -123,11 +124,6 @@ class RemoteStream extends RTCEventEmitter {
     video: { send: false, recv: false },
     screen: { send: false, recv: false }
   }
-
-  private audioPlay_: boolean
-  private audioSlavePlay_: boolean
-  private videoPlay_: boolean
-  private screenPlay_: boolean
   public active = true
   public destroyed = false
   public logger: ILogger
@@ -207,10 +203,6 @@ class RemoteStream extends RTCEventEmitter {
     }
     this.consumerId = null
     this.producerId = null
-    this.audioPlay_ = false
-    this.audioSlavePlay_ = false
-    this.videoPlay_ = false
-    this.screenPlay_ = false
     this.subConf = {
       audio: true,
       audioSlave: true,
@@ -594,10 +586,12 @@ class RemoteStream extends RTCEventEmitter {
       } else {
         this.logger.log(`[play] uid ${this.stringStreamID} 开始播放远端音频`)
         try {
-          await this._play.playAudioStream(this.mediaHelper.audio.audioStream, playOptions.muted)
-          this.audioPlay_ = true
+          await this._play.playAudioStream(
+            'audio',
+            this.mediaHelper.audio.audioStream,
+            playOptions.muted
+          )
         } catch (error) {
-          this.audioPlay_ = false
           this.client.emit('notAllowedError', error)
           this.client.emit('NotAllowedError', error) // 兼容旧版本
           this.safeEmit('notAllowedError', error)
@@ -615,13 +609,12 @@ class RemoteStream extends RTCEventEmitter {
       } else {
         this.logger.log(`[play] uid ${this.stringStreamID} 开始播放远端音频辅流`)
         try {
-          await this._play.playAudioSlaveStream(
+          await this._play.playAudioStream(
+            'audioSlave',
             this.mediaHelper.screenAudio.screenAudioStream,
             playOptions.muted
           )
-          this.audioSlavePlay_ = true
         } catch (error) {
-          this.audioSlavePlay_ = false
           this.client.emit('notAllowedError', error)
           this.client.emit('NotAllowedError', error) // 兼容旧版本
           this.safeEmit('notAllowedError', error)
@@ -645,18 +638,16 @@ class RemoteStream extends RTCEventEmitter {
           this.logger.log(`[play] uid ${this.stringStreamID} 开始启动视频播放 主流 远端`)
           try {
             let end = 'remote'
-            await this._play.playVideoStream(this.mediaHelper.video.renderStream, view, end)
+            await this._play.playVideoStream('video', this.mediaHelper.video.renderStream, view)
             if ('width' in this.renderMode.remote.video) {
-              this._play.setVideoRender(this.renderMode.remote.video)
+              this._play.setRender('video', this.renderMode.remote.video)
             }
-            this.videoPlay_ = true
           } catch (error) {
             // let ErrorMessage = 'NotAllowedError: videoplay is not allowed in current browser, please refer to https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082'
             // throw new RtcError({
             //   code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
             //   message: ErrorMessage
             // })
-            this.videoPlay_ = false
             this.client.emit('notAllowedError', error)
             this.client.emit('NotAllowedError', error) // 兼容旧版本
             this.safeEmit('notAllowedError', error)
@@ -672,13 +663,11 @@ class RemoteStream extends RTCEventEmitter {
         ) {
           this.logger.log(`[play] uid ${this.stringStreamID} 开始启动视频播放 辅流 远端`)
           try {
-            await this._play.playScreenStream(this.mediaHelper.screen.renderStream, view)
+            await this._play.playVideoStream('screen', this.mediaHelper.screen.renderStream, view)
             if ('width' in this.renderMode.remote.screen) {
-              this._play.setScreenRender(this.renderMode.remote.screen)
+              this._play.setRender('screen', this.renderMode.remote.screen)
             }
-            this.screenPlay_ = false
           } catch (error) {
-            this.screenPlay_ = false
             this.client.emit('notAllowedError', error)
             this.client.emit('NotAllowedError', error) // 兼容旧版本
             this.safeEmit('notAllowedError', error)
@@ -715,18 +704,6 @@ class RemoteStream extends RTCEventEmitter {
 
     if (this._play) {
       await this._play.resume()
-      if (this._play.audioDom && !this._play.audioDom.paused) {
-        this.audioPlay_ = true
-      }
-      if (this._play.audioSlaveDom && !this._play.audioSlaveDom.paused) {
-        this.audioSlavePlay_ = true
-      }
-      if (this._play.videoDom && !this._play.videoDom.paused) {
-        this.videoPlay_ = true
-      }
-      if (this._play.screenDom && !this._play.screenDom.paused) {
-        this.screenPlay_ = true
-      }
     }
     this.client.apiFrequencyControl({
       name: 'resume',
@@ -776,14 +753,14 @@ class RemoteStream extends RTCEventEmitter {
     // mediaType不填则都设
     if (!mediaType || mediaType === 'video') {
       if (this._play) {
-        this._play.setVideoRender(options)
+        this._play.setRender('video', options)
       }
       this.renderMode.remote.video = options
     }
     if (!mediaType || mediaType === 'screen') {
       this.renderMode.remote.screen = options
       if (this._play) {
-        this._play.setScreenRender(options)
+        this._play.setRender('screen', options)
       }
     }
     this.client.apiFrequencyControl({
@@ -806,36 +783,11 @@ class RemoteStream extends RTCEventEmitter {
   stop(type?: MediaTypeShort) {
     this.logger.log(`uid ${this.stringStreamID} Stream.stop: 停止播放 ${type || '音视频流'}`)
     if (!this._play) return
-    if (type === 'audio') {
-      this._play.stopPlayAudioStream()
-      this.audioPlay_ = false
-    } else if (type === 'audioSlave') {
-      this._play.stopPlayAudioSlaveStream()
-      this.audioSlavePlay_ = false
-    } else if (type === 'video') {
-      this._play.stopPlayVideoStream()
-      this.videoPlay_ = false
-    } else if (type === 'screen') {
-      this._play.stopPlayScreenStream()
-      this.screenPlay_ = false
-    } else {
-      if (this._play.audioDom) {
-        this._play.stopPlayAudioStream()
-        this.audioPlay_ = false
+    MediaTypeList.forEach((mediaType) => {
+      if (!type || mediaType === type) {
+        this._play.stopPlayStream(mediaType)
       }
-      if (this._play.audioSlaveDom) {
-        this._play.stopPlayAudioSlaveStream()
-        this.audioSlavePlay_ = false
-      }
-      if (this._play.videoDom) {
-        this._play.stopPlayVideoStream()
-        this.videoPlay_ = false
-      }
-      if (this._play.screenDom) {
-        this._play.stopPlayScreenStream()
-        this.screenPlay_ = false
-      }
-    }
+    })
     this.client.apiFrequencyControl({
       name: 'stop',
       code: 0,
@@ -861,17 +813,11 @@ class RemoteStream extends RTCEventEmitter {
    * @param {string} type 查看的媒体类型： audio/video
    * @returns {Promise}
    */
-  async isPlaying(type: MediaTypeShort) {
+  isPlaying(type: MediaTypeShort) {
     let isPlaying = false
     if (!this._play) {
-    } else if (type === 'audio') {
-      isPlaying = await this._play.isPlayAudioStream()
-    } else if (type === 'audioSlave') {
-      isPlaying = await this._play.isPlayAudioSlaveStream()
-    } else if (type === 'video') {
-      isPlaying = await this._play.isPlayVideoStream()
-    } else if (type === 'screen') {
-      isPlaying = await this._play.isPlayScreenStream()
+    } else if (MediaTypeList.indexOf(type) > -1) {
+      return this._play.isPlaying(type)
     } else {
       this.logger.warn('isPlaying: unknown type')
       let enMessage = 'remoteStream.isPlaying: The type of parameter(uid) is unknown',
@@ -880,13 +826,11 @@ class RemoteStream extends RTCEventEmitter {
         zhAdvice = '请输入正确的参数类型'
       let message = env.IS_ZH ? zhMessage : enMessage,
         advice = env.IS_ZH ? zhAdvice : enAdvice
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.UNKNOWN_TYPE_ERROR,
-          message,
-          advice
-        })
-      )
+      throw new RtcError({
+        code: ErrorCode.UNKNOWN_TYPE_ERROR,
+        message,
+        advice
+      })
     }
     this.client.apiFrequencyControl({
       name: 'isPlaying',
@@ -903,6 +847,14 @@ class RemoteStream extends RTCEventEmitter {
     })
     this.logger.log(`检查${this.stringStreamID}的${type}播放状态: ${isPlaying}`)
     return isPlaying
+  }
+
+  canPlay(mediaType: MediaTypeShort) {
+    if (MediaTypeList.indexOf(mediaType) === -1) {
+      return null
+    } else {
+      return this._play.canPlay(mediaType)
+    }
   }
 
   /**
@@ -930,7 +882,7 @@ class RemoteStream extends RTCEventEmitter {
       this.muteStatus.audio.recv = false
       this.mediaHelper.audio.audioStream.getAudioTracks().length &&
         (this.mediaHelper.audio.audioStream.getAudioTracks()[0].enabled = true)
-      this._play.playAudioStream(this.mediaHelper.audio.audioStream, false)
+      this._play.playAudioStream('audio', this.mediaHelper.audio.audioStream, false)
       this.client.apiFrequencyControl({
         name: 'unmuteAudio',
         code: 0,
@@ -986,7 +938,7 @@ class RemoteStream extends RTCEventEmitter {
       if (this.mediaHelper.audio.audioStream.getAudioTracks().length) {
         this.mediaHelper.audio.audioStream.getAudioTracks()[0].enabled = false
       }
-      this._play.stopPlayAudioStream()
+      this._play.stopPlayStream('audio')
       this.client.apiFrequencyControl({
         name: 'muteAudio',
         code: 0,
@@ -1039,7 +991,11 @@ class RemoteStream extends RTCEventEmitter {
       this.muteStatus.audioSlave.recv = false
       this.mediaHelper.screenAudio.screenAudioStream.getAudioTracks().length &&
         (this.mediaHelper.screenAudio.screenAudioStream.getAudioTracks()[0].enabled = true)
-      this._play.playAudioSlaveStream(this.mediaHelper.screenAudio.screenAudioStream, false)
+      this._play.playAudioStream(
+        'audioSlave',
+        this.mediaHelper.screenAudio.screenAudioStream,
+        false
+      )
       this.client.apiFrequencyControl({
         name: 'unmuteAudioSlave',
         code: 0,
@@ -1095,7 +1051,7 @@ class RemoteStream extends RTCEventEmitter {
       if (this.mediaHelper.screenAudio.screenAudioStream.getAudioTracks().length) {
         this.mediaHelper.screenAudio.screenAudioStream.getAudioTracks()[0].enabled = false
       }
-      this._play.stopPlayAudioSlaveStream()
+      this._play.stopPlayStream('audioSlave')
       this.client.apiFrequencyControl({
         name: 'muteAudioSlave',
         code: 0,
@@ -1225,7 +1181,7 @@ class RemoteStream extends RTCEventEmitter {
           advice
         })
       }
-      this._play.setPlayVolume(volume)
+      this._play.setPlayVolume('audio', volume)
     } else {
       this.logger.log(`没有音频流，请检查是否有订阅过音频`)
       reason = 'INVALID_OPERATION'
@@ -1282,7 +1238,7 @@ class RemoteStream extends RTCEventEmitter {
           advice
         })
       }
-      this._play.setPlayAudioSlaveVolume(volume)
+      this._play.setPlayVolume('audioSlave', volume)
     } else {
       this.logger.log(`没有音频辅流，请检查是否有订阅过音频辅流`)
       reason = 'INVALID_OPERATION'
@@ -1645,7 +1601,7 @@ class RemoteStream extends RTCEventEmitter {
           advice
         })
       }
-      await this._play.takeSnapshot(options, this.streamID)
+      await this._play.takeSnapshot(options, 'download', this.streamID)
       this.client.apiFrequencyControl({
         name: 'takeSnapshot',
         code: 0,
@@ -1697,7 +1653,7 @@ class RemoteStream extends RTCEventEmitter {
           advice
         })
       }
-      let base64Url = this._play.takeSnapshotBase64(options)
+      let base64Url = this._play.takeSnapshot(options, 'base64')
       this.client.apiFrequencyControl({
         name: 'takeSnapshotBase64',
         code: 0,
@@ -1933,8 +1889,7 @@ class RemoteStream extends RTCEventEmitter {
   }
 
   clearRemotePubStatus() {
-    let mediaTypes: MediaTypeShort[] = ['audio', 'audioSlave', 'video', 'screen']
-    for (let mediaType of mediaTypes) {
+    for (let mediaType of MediaTypeList) {
       this[mediaType] = false
       //@ts-ignore
       this.pubStatus[mediaType][mediaType] = false
@@ -1957,12 +1912,10 @@ class RemoteStream extends RTCEventEmitter {
    */
   setCanvasWatermarkConfigs(options: NERtcCanvasWatermarkConfig) {
     if (this._play) {
-      let watermarkControl = null
-      if (!options.mediaType || options.mediaType === 'video') {
-        watermarkControl = this._play.watermark.video.canvasControl
-      } else if (options.mediaType === 'screen') {
-        watermarkControl = this._play.watermark.screen.canvasControl
-      }
+      let watermarkControl =
+        options.mediaType === 'screen'
+          ? this._play.screen.canvasWatermark
+          : this._play.video.canvasWatermark
       if (!watermarkControl) {
         this.logger.error('setCanvasWatermarkConfigs：播放器未初始化', options.mediaType)
         return

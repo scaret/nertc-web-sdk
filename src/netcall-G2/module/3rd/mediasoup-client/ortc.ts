@@ -881,6 +881,10 @@ function matchCodecs(
 
   // Per codec special checks.
   switch (aMimeType) {
+    case 'video/h265':
+    case 'video/vp9':
+    case 'video/av1':
+      return false
     case 'video/h264': {
       const aPacketizationMode = aCodec.parameters['packetization-mode'] || 0
       const bPacketizationMode = bCodec.parameters['packetization-mode'] || 0
@@ -916,17 +920,17 @@ function matchCodecs(
       break
     }
 
-    case 'video/vp9': {
-      // If strict matching check profile-id.
-      if (strict) {
-        const aProfileId = aCodec.parameters['profile-id'] || 0
-        const bProfileId = bCodec.parameters['profile-id'] || 0
+    // case 'video/vp9': {
+    //   // If strict matching check profile-id.
+    //   if (strict) {
+    //     const aProfileId = aCodec.parameters['profile-id'] || 0
+    //     const bProfileId = bCodec.parameters['profile-id'] || 0
 
-        if (aProfileId !== bProfileId) return false
-      }
+    //     if (aProfileId !== bProfileId) return false
+    //   }
 
-      break
-    }
+    //   break
+    // }
   }
 
   return true

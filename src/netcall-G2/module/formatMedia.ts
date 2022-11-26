@@ -174,23 +174,23 @@ class FormatMedia extends EventEmitter {
 
       let videoDoms = []
       if (recordConfig?.recordType === 'video') {
-        if (this.adapterRef.localStream && this.adapterRef.localStream.Play?.videoDom) {
-          videoDoms.push(this.adapterRef.localStream.Play?.videoDom)
+        if (this.adapterRef.localStream?._play.video.dom) {
+          videoDoms.push(this.adapterRef.localStream._play.video.dom)
         } else {
           videoDoms.push(document.createElement('video'))
         }
-        if (this.adapterRef.localStream && this.adapterRef.localStream.Play?.screenDom) {
-          videoDoms.push(this.adapterRef.localStream.Play?.screenDom)
+        if (this.adapterRef.localStream?._play.screen.dom) {
+          videoDoms.push(this.adapterRef.localStream?._play.screen.dom)
         }
 
         if (recorder === 'all' && this.adapterRef.remoteStreamMap) {
           for (var uid in this.adapterRef.remoteStreamMap) {
             const remoteStream = this.adapterRef.remoteStreamMap[uid]
-            if (remoteStream.Play?.videoDom) {
-              videoDoms.push(remoteStream.Play?.videoDom)
+            if (remoteStream._play.video.dom) {
+              videoDoms.push(remoteStream._play.video.dom)
             }
-            if (remoteStream.Play?.screenDom) {
-              videoDoms.push(remoteStream.Play?.screenDom)
+            if (remoteStream._play.screen.dom) {
+              videoDoms.push(remoteStream._play.screen.dom)
             }
           }
         }

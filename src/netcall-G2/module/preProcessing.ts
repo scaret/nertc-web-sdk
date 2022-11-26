@@ -68,7 +68,7 @@ export async function enablePreProcessing(
           enabled: false,
           func: () => {}
         },
-        mediaHelper.stream._play?.watermark[mediaType].encoderControl.handler
+        mediaHelper.stream._play[mediaType].encoderWatermark.handler
       ],
       history: [],
       timer: null

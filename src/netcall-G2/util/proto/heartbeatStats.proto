@@ -32,8 +32,8 @@ syntax = "proto2";
         optional int64 nackCount=12;
         optional int64 rtt=13;
         optional int64 jitterReceived=14;
-        optional int64 echoReturnLoss=15;
-        optional double echoReturnLossEnhancement=16;
+        optional string echoReturnLoss=15;
+        optional string echoReturnLossEnhancement=16;
         optional int64 active=17;
       }
 
@@ -52,8 +52,8 @@ syntax = "proto2";
         optional int64 nackCount=12;
         optional int64 rtt=13;
         optional int64 jitterReceived=14;
-        optional int64 echoReturnLoss=15;
-        optional double echoReturnLossEnhancement=16;
+        optional string echoReturnLoss=15;
+        optional string echoReturnLossEnhancement=16;
         optional int64 active=17;
       }
 
@@ -286,4 +286,3 @@ syntax = "proto2";
     }
   }
 }
-

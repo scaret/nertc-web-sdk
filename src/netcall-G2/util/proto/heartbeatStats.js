@@ -1,30 +1,78 @@
 /*eslint-disable block-scoped-var, id-length, no-control-regex, no-magic-numbers, no-prototype-builtins, no-redeclare, no-shadow, no-var, sort-vars*/
 'use strict'
-
-var $protobuf = require('./protobuf-js/light')
+var $protobuf = require('protobufjs/light') // test 专用
+// var $protobuf = require('./protobuf-js/light') // product 专用
 
 var $root = (
   $protobuf.roots['default'] || ($protobuf.roots['default'] = new $protobuf.Root())
 ).addJSON({
   WebrtcStats: {
     fields: {
-      local: { type: 'local_obj', id: 1 },
-      remote: { type: 'remote_obj', id: 2 },
-      timestamp: { type: 'int64', id: 3 },
-      appkey: { type: 'string', id: 4 },
-      cid: { type: 'int64', id: 5 },
-      uid: { type: 'int64', id: 6 },
-      browser: { type: 'string', id: 7 },
-      platform: { type: 'string', id: 8 }
+      local: {
+        type: 'local_obj',
+        id: 1
+      },
+      remote: {
+        type: 'remote_obj',
+        id: 2
+      },
+      timestamp: {
+        type: 'int64',
+        id: 3
+      },
+      appkey: {
+        type: 'string',
+        id: 4
+      },
+      cid: {
+        type: 'int64',
+        id: 5
+      },
+      uid: {
+        type: 'string',
+        id: 6
+      },
+      browser: {
+        type: 'string',
+        id: 7
+      },
+      platform: {
+        type: 'string',
+        id: 8
+      },
+      sdkVersion: {
+        type: 'string',
+        id: 9
+      }
     },
     nested: {
       local_obj: {
         fields: {
-          audio_ssrc: { rule: 'repeated', type: 'audio_ssrc_obj', id: 1 },
-          audioSlave_ssrc: { rule: 'repeated', type: 'audioSlave_ssrc_obj', id: 2 },
-          video_ssrc: { rule: 'repeated', type: 'video_ssrc_obj', id: 3 },
-          screen_ssrc: { rule: 'repeated', type: 'screen_ssrc_obj', id: 4 },
-          bwe: { rule: 'repeated', type: 'bwe_obj', id: 5 }
+          audio_ssrc: {
+            rule: 'repeated',
+            type: 'audio_ssrc_obj',
+            id: 1
+          },
+          audioSlave_ssrc: {
+            rule: 'repeated',
+            type: 'audioSlave_ssrc_obj',
+            id: 2
+          },
+          video_ssrc: {
+            rule: 'repeated',
+            type: 'video_ssrc_obj',
+            id: 3
+          },
+          screen_ssrc: {
+            rule: 'repeated',
+            type: 'screen_ssrc_obj',
+            id: 4
+          },
+          bwe: {
+            rule: 'repeated',
+            type: 'bwe_obj',
+            id: 5
+          }
         },
         nested: {
           audio_ssrc_obj: {
@@ -468,6 +516,10 @@ var $root = (
               googTransmitBitrate: {
                 type: 'int64',
                 id: 6
+              },
+              googBucketDelay: {
+                type: 'int64',
+                id: 7
               }
             }
           }
@@ -893,7 +945,7 @@ var $root = (
               }
             }
           },
-          screen_ssrc_obj: {
+          bwe_obj: {
             fields: {
               bytesReceived: {
                 type: 'int64',

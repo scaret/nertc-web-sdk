@@ -2,7 +2,6 @@ import { EventEmitter } from 'eventemitter3'
 
 import { SDK_VERSION } from '../../Config'
 import { AdapterRef, SDKRef, StatsReportOptions } from '../../types'
-import isEmpty from '../../util/rtcUtil/isEmpty'
 import raf from '../../util/rtcUtil/raf'
 import * as env from '../../util/rtcUtil/rtcEnvironment'
 import { generateUUID } from '../../util/rtcUtil/utils'
@@ -25,6 +24,7 @@ class StatsReport extends EventEmitter {
   private sdkRef: SDKRef
   private adapterRef: AdapterRef
   private appKey: string
+  private isReport: boolean
   private stats: GetStats | null
   private heartbeat_: any
   private wsTransport_: any
@@ -39,6 +39,7 @@ class StatsReport extends EventEmitter {
     this.wsTransport_ = null
     this.sdkRef = options.sdkRef
     this.adapterRef = options.adapterRef
+    this.isReport = options.isReport
     this.appKey =
       this.adapterRef.instance._params.appkey ||
       (this.adapterRef.channelInfo && this.adapterRef.channelInfo.appKey) ||
@@ -114,7 +115,7 @@ class StatsReport extends EventEmitter {
       //@ts-ignore
       window.reportData = data
       console.log('report data--->', data)
-      if (!env.IS_ELECTRON && data?.times % 2 === 0) {
+      if (this.isReport && !env.IS_ELECTRON && data?.times % 2 === 0) {
         // Electron 上报的数据和 Chrome 不同，暂时不上报，后续需要再进行单独处理
         this.reportData.local = data?.local
         this.reportData.remote = data?.remote
@@ -125,9 +126,11 @@ class StatsReport extends EventEmitter {
         this.sendDataReportHeartbeat()
       }
     } catch (error) {
+      // console.warn('doHeartBeat failed')
       this.adapterRef.logger.log('doHeartbeat: ', error)
     }
   }
+
   sendDataReportHeartbeat() {
     //上报G2的数据
     let datareport = new DataReport({
@@ -146,7 +149,9 @@ class StatsReport extends EventEmitter {
     this.sendDataReportHeartbeat()
     this.stop()
     this._reset()
-    this.wsTransport_ && this.wsTransport_.close()
+    if (this.isReport) {
+      this.wsTransport_ && this.wsTransport_.close()
+    }
   }
 }
 

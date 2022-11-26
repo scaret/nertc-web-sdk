@@ -246,7 +246,10 @@ function loadEnv() {
     domUid = sessionStorage.getItem('domUid')
   } else {
     domUid = '' + Math.floor(Math.random() * 9000 + 1000)
+    //变成大整数
+    domUid = `${domUid}000000000${domUid}`
   }
+  $(`#useStringUid`).attr('checked', 'checked')
 
   $('#uid').val(domUid)
 
@@ -265,6 +268,10 @@ function loadEnv() {
 
 $('input[name="env"]').on('click', () => {
   loadEnv()
+})
+
+$('input[name="setReport"]').on('click', () => {
+  init()
 })
 
 $('#setAppkey').on('click', () => {
@@ -505,11 +512,20 @@ function init() {
   const appkey = $('#appkey').val()
   const chrome = $('#part-env input[name="screen-type"]:checked').val()
   NERTC.Logger.enableLogUpload()
-  rtc.client = NERTC.createClient({
-    appkey,
-    debug: true
-    //report: false
-  })
+  let reportVal = Number($('input[name="setReport"]:checked').val())
+  if (!reportVal) {
+    rtc.client = NERTC.createClient({
+      appkey,
+      debug: true
+    })
+  } else {
+    rtc.client = NERTC.createClient({
+      appkey,
+      debug: true,
+      report: reportVal === 1 ? true : false
+    })
+  }
+
   initDevices()
   initEvents()
   initVolumeDetect()
@@ -787,12 +803,13 @@ function initEvents() {
         const id = remoteStream.getId()
         addView(id)
         if (errorCode === 41030) {
-          $(`#${id}-img`).show()
-          $(`#${id}-img`).on('click', async () => {
-            console.log('start resume--->')
-            await remoteStream.resume()
-            $(`#${id}-img`).hide()
-          })
+          addLog('自动播放策略阻止：' + remoteStream.streamID)
+          // $(`#${id}-img`).show()
+          // $(`#${id}-img`).on('click', async () => {
+          //   console.log('start resume--->')
+          //   await remoteStream.resume()
+          //   $(`#${id}-img`).hide()
+          // })
         }
       })
     }
@@ -1201,7 +1218,7 @@ function getRemoteView(uid) {
     return view
   } else {
     const $div = $(
-      `<div class="remote-view remove-view-${uid}"><div class="remote-view-title remote-view-title-${uid}"></div></div>`
+      `<div class="remote-view remote-view-${uid}"><div class="remote-view-title remote-view-title-${uid}"></div></div>`
     )
     view = {
       uid: uid,
@@ -1226,6 +1243,58 @@ function getRemoteView(uid) {
   }
 }
 
+function updateLocalViewInfo() {
+  let title = ''
+  ;['audio', 'video', 'screen', 'audioSlave'].forEach((mediaType) => {
+    let infoStr = mediaType
+    if (rtc.localStream) {
+      const canPlay = rtc.localStream.canPlay(mediaType)
+      if (canPlay) {
+        const title = `canPlay: ${canPlay.result} ${
+          canPlay.reason
+        }\nisPlaying ${mediaType}: ${rtc.localStream.isPlaying(mediaType)}`
+        if (canPlay.reason === 'NOT_OPENED'){
+          infoStr = `<span style="color:#d3d3d3">${infoStr}</span>`
+        }
+        if (canPlay.result) {
+          infoStr = `<span style="background: #90ee90" title="${title}" onclick="rtc.localStream.play('local-container', {audio: '${mediaType}' === 'audio', video: '${mediaType}' === 'video', screen: '${mediaType}' === 'screen', audioSlave: '${mediaType}' === 'audioSlave', })">${infoStr}</span>`
+        } else if (canPlay.reason === 'PLAYING') {
+          infoStr = `<span title="${title}" onclick="rtc.localStream.stop('${mediaType}')">${infoStr}</span>`
+        } else if (canPlay.reason === 'PAUSED') {
+          infoStr = `<span style="background: yellow" title="${title}" onclick="rtc.localStream.resume('${mediaType}')">${infoStr}</span>`
+        } else {
+          infoStr = `<span title="${title}">${infoStr}</span>`
+        }
+      } else {
+        console.error(mediaType, rtc.localStream)
+      }
+
+      if (mediaType === 'video') {
+        const track = rtc.localStream.mediaHelper.video.cameraTrack
+        if (track) {
+          const settings = track.getSettings()
+          if (settings && settings.width && settings.height) {
+            infoStr += ` ${settings.width}x${settings.height}`
+          }
+        }
+      }
+      if (mediaType === 'screen') {
+        const track = rtc.localStream.mediaHelper.screen.screenVideoTrack
+        if (track) {
+          const settings = track.getSettings()
+          if (settings && settings.width && settings.height) {
+            infoStr += ` ${settings.width}x${settings.height}`
+          }
+        }
+      }
+    }
+    if (infoStr) {
+      title += ' ' + infoStr
+    }
+  })
+  $('#local-container-title').html(title)
+}
+
 function updateRemoteViewInfo() {
   for (let i = 0; i < remoteViews.length; i++) {
     const view = remoteViews[i]
@@ -1243,11 +1312,32 @@ function updateRemoteViewInfo() {
         infoStr += `${mediaType}`.toUpperCase()
       } else if (view[mediaType].added) {
         infoStr += `${mediaType}`
+      } else {
+        infoStr += `<span style="color:#d3d3d3">${mediaType}</span>`
       }
       if (view[mediaType].muted) {
         infoStr = `<del>${infoStr}</del>`
       }
       if (remoteStream) {
+        const canPlay = remoteStream.canPlay(mediaType)
+        if (canPlay) {
+          const title = `canPlay: ${canPlay.result} ${
+            canPlay.reason
+          }\nisPlaying ${mediaType}: ${remoteStream.isPlaying(mediaType)}`
+
+          if (canPlay.result) {
+            infoStr = `<span style="background: #90ee90" title="${title}" onclick="rtc.remoteStreams['${remoteStream.streamID}'].play($('.remote-view-${remoteStream.streamID}')[0], {audio: '${mediaType}' === 'audio', video: '${mediaType}' === 'video', screen: '${mediaType}' === 'screen', audioSlave: '${mediaType}' === 'audioSlave', })">${infoStr}</span>`
+          } else if (canPlay.reason === 'PLAYING') {
+            infoStr = `<span title="${title}" onclick="rtc.remoteStreams['${remoteStream.streamID}'].stop('${mediaType}')">${infoStr}</span>`
+          } else if (canPlay.reason === 'PAUSED') {
+            infoStr = `<span style="background: yellow" title="${title}" onclick="rtc.remoteStreams['${remoteStream.streamID}'].resume('${mediaType}')">${infoStr}</span>`
+          } else {
+            infoStr = `<span title="${title}">${infoStr}</span>`
+          }
+        } else {
+          console.error(mediaType, remoteStream)
+        }
+
         if (mediaType === 'video') {
           const track = remoteStream.mediaHelper.video.cameraTrack
           if (track) {
@@ -1297,7 +1387,8 @@ function updateRemoteViewInfo() {
   }
 }
 
-const updateRemoteViewInfoTimer = setInterval(updateRemoteViewInfo, 200)
+const updateLocalViewInfoTimer = setInterval(updateLocalViewInfo, 500)
+const updateRemoteViewInfoTimer = setInterval(updateRemoteViewInfo, 500)
 
 document.getElementById('getAudioLevelRemote').onclick = updateRemoteViewInfo
 /**
@@ -1307,6 +1398,10 @@ document.getElementById('getAudioLevelRemote').onclick = updateRemoteViewInfo
  */
 
 $('#joinChannel-btn').on('click', async () => {
+  if (window.pointsMs){
+    window.pointsMs.buttonClick = Date.now()
+    $(`#buttonClickMs`).html('0')
+  }
   const channelName = $('#channelName').val()
   if (window.localStorage) {
     window.localStorage.setItem(`${localStoragePrefix}channelName`, channelName)
@@ -1707,6 +1802,56 @@ function onPluginLoaded(name) {
   }
 }
 
+//模拟不支持wasm的浏览器
+$('#unsupportWasm').on('click', function () {
+  if (rtc.localStream) {
+    rtc.localStream.supportWasm = false
+    console.warn('模拟不支持wasm的浏览器')
+  } else {
+    console.warn('需要先初始化本地流')
+  }
+})
+
+$('#resupportWasm').on('click', function () {
+  if (rtc.localStream) {
+    rtc.localStream.supportWasm = true
+    console.warn('恢复浏览器支持wasm')
+  } else {
+    console.warn('需要先初始化本地流')
+  }
+})
+
+//强制注册simd版插件
+$('#registerSimdVitrualBackground').on('click', async () => {
+  if (rtc.localStream) {
+    $('#segmentStatus').html('loading').show()
+    const type = 'simd'
+    segment_config = virtualBackgroundPluginConfig[NERTC.ENV][type]
+    rtc.localStream.registerPlugin(segment_config)
+  }
+})
+//模拟背景分割插件js 404
+$('#vbjs404').on('click', async () => {
+  if (rtc.localStream) {
+    $('#segmentStatus').html('loading').show()
+    const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
+    segment_config = Object.assign({}, virtualBackgroundPluginConfig[NERTC.ENV][type])
+    segment_config.pluginUrl = './js/nim/NIM_Web_VirtualBackground111.js'
+    rtc.localStream.registerPlugin(segment_config)
+  }
+})
+//模拟背景分割插件wasm 404
+$('#vbwasm404').on('click', async () => {
+  if (rtc.localStream) {
+    $('#segmentStatus').html('loading').show()
+    const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
+    segment_config = Object.assign({}, virtualBackgroundPluginConfig[NERTC.ENV][type])
+    segment_config.wasmUrl =
+      './js/nim/wasm/NIM_Web_VirtualBackground_simd111.wasm' + `?time=${Math.random()}`
+    rtc.localStream.registerPlugin(segment_config)
+  }
+})
+
 $('#registerVitrualBackground').on('click', async () => {
   if (rtc.localStream) {
     $('#segmentStatus').html('loading').show()
@@ -1734,6 +1879,37 @@ $('#unregisterVitrualBackground').on('click', () => {
   if (segment_config) {
     rtc.localStream.unregisterPlugin(segment_config.key)
     rtc.enableBodySegment = false
+  }
+})
+
+//强制注册simd版插件
+$('#registerSimdAdvancedBeauty').on('click', async () => {
+  if (rtc.localStream) {
+    $('#advancedBeautyStatus').html('loading').show()
+    const type = 'simd'
+    beauty_config = advancedBeautyPluginConfig[NERTC.ENV][type]
+    rtc.localStream.registerPlugin(beauty_config)
+  }
+})
+//模拟高级美颜插件js 404
+$('#abjs404').on('click', async () => {
+  if (rtc.localStream) {
+    $('#advancedBeautyStatus').html('loading').show()
+    const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
+    segment_config = Object.assign({}, advancedBeautyPluginConfig[NERTC.ENV][type])
+    segment_config.pluginUrl = './js/nim/NIM_Web_AdvancedBeauty111.js'
+    rtc.localStream.registerPlugin(segment_config)
+  }
+})
+//模拟高级美颜插件wasm 404
+$('#abwasm404').on('click', async () => {
+  if (rtc.localStream) {
+    $('#advancedBeautyStatus').html('loading').show()
+    const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
+    segment_config = Object.assign({}, advancedBeautyPluginConfig[NERTC.ENV][type])
+    segment_config.wasmUrl =
+      './js/nim/wasm/NIM_Web_AdvancedBeauty111.wasm' + `?time=${Math.random()}`
+    rtc.localStream.registerPlugin(segment_config)
   }
 })
 
@@ -1796,6 +1972,36 @@ $('#unregisterAdvancedBeauty').on('click', () => {
       rtc.localStream.unregisterPlugin(beauty_config.key)
       rtc.enableAdvancedBeauty = false
     }
+  }
+})
+
+//强制注册simd版插件
+$('#registerSimdAIDenoise').on('click', async () => {
+  if (rtc.localStream) {
+    $('#aidenoiseStatus').html('loading').show()
+    const type = 'simd'
+    aidenoise_config = aiDenoisePluginConfig[NERTC.ENV][type]
+    rtc.localStream.registerPlugin(aidenoise_config)
+  }
+})
+//模拟AI降噪插件js 404
+$('#adjs404').on('click', async () => {
+  if (rtc.localStream) {
+    $('#aidenoiseStatus').html('loading').show()
+    const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
+    segment_config = Object.assign({}, aiDenoisePluginConfig[NERTC.ENV][type])
+    segment_config.pluginUrl = './js/nim/NIM_Web_AIDenoise111.js'
+    rtc.localStream.registerPlugin(segment_config)
+  }
+})
+//模拟AI降噪插件wasm 404
+$('#adwasm404').on('click', async () => {
+  if (rtc.localStream) {
+    $('#aidenoiseStatus').html('loading').show()
+    const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
+    segment_config = Object.assign({}, aiDenoisePluginConfig[NERTC.ENV][type])
+    segment_config.wasmUrl = './js/nim/wasm/NIM_Web_AIDenoise111.wasm' + `?time=${Math.random()}`
+    rtc.localStream.registerPlugin(segment_config)
   }
 })
 
