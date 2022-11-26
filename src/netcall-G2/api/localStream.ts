@@ -49,7 +49,6 @@ import { checkExists, checkValidInteger, isExistOptions } from '../util/param'
 import { applyResolution } from '../util/rtcUtil/applyResolution'
 import * as env from '../util/rtcUtil/rtcEnvironment'
 import { RTCEventEmitter } from '../util/rtcUtil/RTCEventEmitter'
-import { isHttpProtocol } from '../util/rtcUtil/rtcSupport'
 import { makePrintable } from '../util/rtcUtil/utils'
 import { getAudioContext } from '../module/webAudio'
 import { StageAIProcessing } from '../module/audio-pipeline/stages/StageAIProcessing/StageAIProcessing'
@@ -670,9 +669,6 @@ class LocalStream extends RTCEventEmitter {
    * @return {Promise}
    */
   async init() {
-    if (isHttpProtocol()) {
-      this.logger.warn('The current protocol is HTTP')
-    }
     // localStream.init行为排队
     const hookInitFinished = await this.client.operationQueue.enqueue({
       caller: this,
