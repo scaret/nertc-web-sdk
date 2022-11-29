@@ -488,7 +488,7 @@ class Meeting extends EventEmitter {
     url = `${url}${this.adapterRef.channelInfo.cid}/tasks`
 
     for (let i = 0; i < rtmpTasks.length; i++) {
-      rtmpTasks[i].hostUid = new SimpleBig(this.adapterRef.channelInfo.uid).toString()
+      rtmpTasks[i].hostUid = new SimpleBig(this.adapterRef.channelInfo.uid) //.toString()
       rtmpTasks[i].version = 1
       this.logger.log('rtmpTask: ', JSONBigStringify(rtmpTasks[i]))
       const layout = rtmpTasks[i].layout
@@ -510,10 +510,10 @@ class Meeting extends EventEmitter {
             taskId: rtmpTasks[i].taskId,
             streamUrl: rtmpTasks[i].streamUrl,
             record: rtmpTasks[i].record,
-            hostUid: rtmpTasks[i].hostUid,
+            hostUid: +rtmpTasks[i].hostUid,
             layout: layout,
             config: rtmpTasks[i].config,
-            extraInfo: rtmpTasks[i].extraInfo
+            extraInfo: rtmpTasks[i].extraInfo || ''
           }
         })
         if (data.code === 200) {
@@ -802,7 +802,7 @@ class Meeting extends EventEmitter {
                 taskId: rtmpTasks[i].taskId,
                 streamUrl: rtmpTasks[i].streamUrl,
                 record: rtmpTasks[i].record,
-                hostUid: parseInt(rtmpTasks[i].hostUid),
+                hostUid: rtmpTasks[i].hostUid,
                 layout: rtmpTasks[i].layout,
                 config: rtmpTasks[i].config
               },

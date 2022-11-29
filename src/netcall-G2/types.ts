@@ -592,7 +592,7 @@ export interface RTMPTask {
   taskId: string
   streamUrl: string
   record: boolean
-  hostUid: string
+  hostUid: number | SimpleBig
   version: number
   layout: {
     canvas: {
