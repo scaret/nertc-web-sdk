@@ -17,6 +17,7 @@ import { OperationQueue } from './util/OperationQueue'
 import { SignalGetChannelInfoResponse } from './interfaces/SignalProtocols'
 import { CanvasWatermarkControl } from './module/watermark/CanvasWatermarkControl'
 import { EncoderWatermarkControl } from './module/watermark/EncoderWatermarkControl'
+import { SimpleBig } from './util/json-big/SimpleBig'
 
 type UIDTYPE = number | string
 
@@ -573,7 +574,7 @@ export interface MeetingOptions {
 export interface MeetingJoinChannelOptions {
   appkey: string
   channelName: string
-  uid: number | string | BigInt
+  uid: number | string
   wssArr?: string[] | null
   sessionMode?: 'meeting'
   joinChannelRecordConfig: RecordConfig
@@ -600,7 +601,7 @@ export interface RTMPTask {
       color: number
     }
     users: {
-      uid: number | string | BigInt
+      uid: number | SimpleBig
       x: number
       y: number
       width: number

@@ -151,6 +151,8 @@
     test, toJSON, toString, valueOf
 */
 
+import {SimpleBig} from "../SimpleBig";
+
 const escapable =
   /[\\\"\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g
 let gap: string
@@ -192,8 +194,7 @@ function str(key: string | number, holder: Record<string | number, any>): string
   const mind = gap
   let partial
   let value = holder[key]
-  // const isBigNumber = value != null && (value instanceof BigNumber || BigNumber.isBigNumber(value))
-  const isBigNumber = false
+  const isBigNumber = value != null && (value instanceof SimpleBig)
 
   // If the value has a toJSON method, call it to obtain a replacement value.
 
@@ -212,9 +213,6 @@ function str(key: string | number, holder: Record<string | number, any>): string
 
   switch (typeof value) {
     case 'string':
-      if (isBigNumber) {
-        return value
-      }
       return quote(value)
 
     case 'number':
@@ -236,7 +234,9 @@ function str(key: string | number, holder: Record<string | number, any>): string
     case 'object':
       // Due to a specification blunder in ECMAScript, typeof null is 'object',
       // so watch out for that case.
-
+      if (isBigNumber) {
+        return value.toString()
+      }
       if (!value) {
         return 'null'
       }
