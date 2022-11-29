@@ -18,6 +18,7 @@ import ErrorCode from '../util/error/errorCode'
 import RtcError from '../util/error/rtcError'
 import * as env from '../util/rtcUtil/rtcEnvironment'
 import { JSONBigParse, JSONBigStringify } from '../util/json-big'
+import { SimpleBig } from '../util/json-big/SimpleBig'
 
 /**
  * 会控相关
@@ -81,12 +82,6 @@ class Meeting extends EventEmitter {
       url = this.adapterRef.instance._params.neRtcServerAddresses.cloudProxyServer
       this.adapterRef.logger.log('私有化配置的 cloudProxyServer: ', url)
     }
-    let requestUid
-    if (typeof uid === 'string') {
-      requestUid = BigInt(requestUid)
-    } else {
-      requestUid = uid
-    }
     //@ts-ignore
     let curtime = Date.parse(new Date()) / 1000
     const md5str = appkey + '.' + uid + '.' + curtime
@@ -96,7 +91,7 @@ class Meeting extends EventEmitter {
         type: 'POST',
         //contentType: 'application/x-www-form-urlencoded',
         data: {
-          uid: requestUid,
+          uid: new SimpleBig(uid),
           appkey,
           channelName,
           secureType: token ? '1' : '2', // 安全认证类型：1:安全、2:非安全
@@ -226,12 +221,6 @@ class Meeting extends EventEmitter {
       url = this.adapterRef.instance._params.neRtcServerAddresses.channelServer
       this.logger.log('私有化配置的 getChannelInfoUrl: ', url)
     }
-    let requestUid
-    if (typeof uid === 'string') {
-      requestUid = BigInt(uid)
-    } else {
-      requestUid = uid
-    }
     Object.assign(this.adapterRef.channelInfo, {
       uid,
       sessionMode,
@@ -248,7 +237,7 @@ class Meeting extends EventEmitter {
             'X-Forwarded-For': this.adapterRef.testConf?.ForwardedAddr || ''
           },
           data: {
-            uid: requestUid,
+            uid: new SimpleBig(uid),
             appkey,
             permKeySecret: permKey,
             channelName,
@@ -497,21 +486,15 @@ class Meeting extends EventEmitter {
       this.logger.log('私有化配置的 roomsTaskUrl: ', url)
     }
     url = `${url}${this.adapterRef.channelInfo.cid}/tasks`
-    let requestUid
-    if (typeof this.adapterRef.channelInfo.uid === 'string') {
-      requestUid = BigInt(this.adapterRef.channelInfo.uid)
-    } else {
-      requestUid = this.adapterRef.channelInfo.uid
-    }
 
     for (let i = 0; i < rtmpTasks.length; i++) {
-      rtmpTasks[i].hostUid = requestUid
+      rtmpTasks[i].hostUid = new SimpleBig(this.adapterRef.channelInfo.uid).toString()
       rtmpTasks[i].version = 1
       this.logger.log('rtmpTask: ', JSONBigStringify(rtmpTasks[i]))
       const layout = rtmpTasks[i].layout
       layout.users.forEach((user) => {
         if (typeof user.uid === 'string') {
-          user.uid = BigInt(user.uid)
+          user.uid = new SimpleBig(user.uid)
         }
       })
       try {
@@ -782,18 +765,12 @@ class Meeting extends EventEmitter {
       this.logger.log('私有化配置的 roomsTaskUrl: ', url)
     }
     url = `${url}${this.adapterRef.channelInfo.cid}/task/update`
-    let requestUid
-    if (typeof this.adapterRef.channelInfo.uid === 'string') {
-      requestUid = BigInt(this.adapterRef.channelInfo.uid)
-    } else {
-      requestUid = this.adapterRef.channelInfo.uid
-    }
 
     for (let i = 0; i < rtmpTasks.length; i++) {
       const layout = rtmpTasks[i].layout
       layout.users.forEach((user) => {
         if (typeof user.uid === 'string') {
-          user.uid = BigInt(user.uid)
+          user.uid = new SimpleBig(user.uid)
         }
       })
       try {
@@ -809,7 +786,7 @@ class Meeting extends EventEmitter {
             taskId: rtmpTasks[i].taskId,
             streamUrl: rtmpTasks[i].streamUrl,
             record: rtmpTasks[i].record,
-            hostUid: requestUid,
+            hostUid: new SimpleBig(this.adapterRef.channelInfo.uid),
             layout: layout,
             config: rtmpTasks[i].config
           }

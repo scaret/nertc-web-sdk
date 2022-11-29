@@ -32,6 +32,7 @@ import { getParameters } from './parameters'
 import { VideoTrackLow } from './videoTrackLow'
 import { IS_SAFARI, SAFARI_MAJOR_VERSION, SAFARI_VERSION } from '../util/rtcUtil/rtcEnvironment'
 import { JSONBigStringify } from '../util/json-big'
+import { SimpleBig } from '../util/json-big/SimpleBig'
 
 class Mediasoup extends EventEmitter {
   private adapterRef: AdapterRef
@@ -1309,10 +1310,7 @@ class Mediasoup extends EventEmitter {
     )
     const result = await this.adapterRef._signalling._protoo.request('SetConsumerPreferredLayer', {
       requestId: `${Math.ceil(Math.random() * 1e9)}`,
-      uid:
-        typeof remoteStream.streamID === 'number'
-          ? remoteStream.streamID
-          : BigInt(remoteStream.streamID),
+      uid: new SimpleBig(remoteStream.streamID),
       producerId: remoteStream.pubStatus[mediaType].producerId,
       consumerId: remoteStream.pubStatus[mediaType].consumerId,
       spatialLayer: layer
@@ -1503,17 +1501,11 @@ class Mediasoup extends EventEmitter {
       })
     }
 
-    let subUid: BigInt | number
-    if (typeof uid === 'string') {
-      subUid = BigInt(uid)
-    } else {
-      subUid = uid
-    }
     let data: any = {
       requestId: `${Math.ceil(Math.random() * 1e9)}`,
       kind,
       rtpCapabilities,
-      uid: subUid,
+      uid: new SimpleBig(uid),
       producerId: id,
       preferredSpatialLayer,
       mid,
@@ -2065,15 +2057,11 @@ class Mediasoup extends EventEmitter {
           advice
         })
       }
-      let muteUid = this.adapterRef.channelInfo.uid
-      if (typeof this.adapterRef.channelInfo.uid === 'string') {
-        muteUid = BigInt(this.adapterRef.channelInfo.uid)
-      }
       await this.adapterRef._signalling._protoo.request('SendUserData', {
         externData: {
           type: 'Mute',
           cid: this.adapterRef.channelInfo.cid,
-          uid: muteUid,
+          uid: new SimpleBig(this.adapterRef.channelInfo.uid),
           data: {
             producerId: this._micProducer.id,
             mute: true
@@ -2115,15 +2103,11 @@ class Mediasoup extends EventEmitter {
           advice
         })
       }
-      let muteUid = this.adapterRef.channelInfo.uid
-      if (typeof this.adapterRef.channelInfo.uid === 'string') {
-        muteUid = BigInt(this.adapterRef.channelInfo.uid)
-      }
       await this.adapterRef._signalling._protoo.request('SendUserData', {
         externData: {
           type: 'Mute',
           cid: this.adapterRef.channelInfo.cid,
-          uid: muteUid,
+          uid: new SimpleBig(this.adapterRef.channelInfo.uid),
           data: {
             producerId: this._micProducer.id,
             mute: false
@@ -2166,15 +2150,11 @@ class Mediasoup extends EventEmitter {
           advice
         })
       }
-      let muteUid = this.adapterRef.channelInfo.uid
-      if (typeof this.adapterRef.channelInfo.uid === 'string') {
-        muteUid = BigInt(this.adapterRef.channelInfo.uid)
-      }
       await this.adapterRef._signalling._protoo.request('SendUserData', {
         externData: {
           type: 'Mute',
           cid: this.adapterRef.channelInfo.cid,
-          uid: muteUid,
+          uid: new SimpleBig(this.adapterRef.channelInfo.uid),
           data: {
             producerId: this._audioSlaveProducer.id,
             mute: true
@@ -2216,15 +2196,11 @@ class Mediasoup extends EventEmitter {
           advice
         })
       }
-      let muteUid = this.adapterRef.channelInfo.uid
-      if (typeof this.adapterRef.channelInfo.uid === 'string') {
-        muteUid = BigInt(this.adapterRef.channelInfo.uid)
-      }
       await this.adapterRef._signalling._protoo.request('SendUserData', {
         externData: {
           type: 'Mute',
           cid: this.adapterRef.channelInfo.cid,
-          uid: muteUid,
+          uid: new SimpleBig(this.adapterRef.channelInfo.uid),
           data: {
             producerId: this._audioSlaveProducer.id,
             mute: false
@@ -2267,15 +2243,11 @@ class Mediasoup extends EventEmitter {
           advice
         })
       }
-      let muteUid = this.adapterRef.channelInfo.uid
-      if (typeof this.adapterRef.channelInfo.uid === 'string') {
-        muteUid = BigInt(this.adapterRef.channelInfo.uid)
-      }
       await this.adapterRef._signalling._protoo.request('SendUserData', {
         externData: {
           type: 'Mute',
           cid: this.adapterRef.channelInfo.cid,
-          uid: muteUid,
+          uid: new SimpleBig(this.adapterRef.channelInfo.uid),
           data: {
             producerId: this._webcamProducer.id,
             mute: true
@@ -2317,15 +2289,11 @@ class Mediasoup extends EventEmitter {
           advice
         })
       }
-      let muteUid = this.adapterRef.channelInfo.uid
-      if (typeof this.adapterRef.channelInfo.uid === 'string') {
-        muteUid = BigInt(this.adapterRef.channelInfo.uid)
-      }
       await this.adapterRef._signalling._protoo.request('SendUserData', {
         externData: {
           type: 'Mute',
           cid: this.adapterRef.channelInfo.cid,
-          uid: muteUid,
+          uid: new SimpleBig(this.adapterRef.channelInfo.uid),
           data: {
             producerId: this._webcamProducer.id,
             mute: false
@@ -2367,15 +2335,11 @@ class Mediasoup extends EventEmitter {
           advice
         })
       }
-      let muteUid = this.adapterRef.channelInfo.uid
-      if (typeof this.adapterRef.channelInfo.uid === 'string') {
-        muteUid = BigInt(this.adapterRef.channelInfo.uid)
-      }
       await this.adapterRef._signalling._protoo.request('SendUserData', {
         externData: {
           type: 'Mute',
           cid: this.adapterRef.channelInfo.cid,
-          uid: muteUid,
+          uid: new SimpleBig(this.adapterRef.channelInfo.uid),
           data: {
             producerId: this._screenProducer.id,
             mute: true
@@ -2417,15 +2381,11 @@ class Mediasoup extends EventEmitter {
           advice
         })
       }
-      let muteUid = this.adapterRef.channelInfo.uid
-      if (typeof this.adapterRef.channelInfo.uid === 'string') {
-        muteUid = BigInt(this.adapterRef.channelInfo.uid)
-      }
       await this.adapterRef._signalling._protoo.request('SendUserData', {
         externData: {
           type: 'Mute',
           cid: this.adapterRef.channelInfo.cid,
-          uid: muteUid,
+          uid: new SimpleBig(this.adapterRef.channelInfo.uid),
           data: {
             producerId: this._screenProducer.id,
             mute: false
@@ -2453,15 +2413,11 @@ class Mediasoup extends EventEmitter {
           advice
         })
       }
-      let muteUid = this.adapterRef.channelInfo.uid
-      if (typeof this.adapterRef.channelInfo.uid === 'string') {
-        muteUid = BigInt(this.adapterRef.channelInfo.uid)
-      }
       await this.adapterRef._signalling._protoo.request('SendUserData', {
         externData: {
           type: 'UserRole',
           cid: this.adapterRef.channelInfo.cid,
-          uid: muteUid,
+          uid: new SimpleBig(this.adapterRef.channelInfo.uid),
           data: {
             userRole: userRole
           }

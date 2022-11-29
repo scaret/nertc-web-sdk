@@ -25,6 +25,7 @@ import { encryptionModeToInt } from './encryption'
 import { getParameters } from './parameters'
 import { RTSTransport } from './rtsTransport'
 import * as env from '../util/rtcUtil/rtcEnvironment'
+import { SimpleBig } from '../util/json-big/SimpleBig'
 const protooClient = require('./3rd/protoo-client/')
 
 class Signalling extends EventEmitter {
@@ -1783,7 +1784,7 @@ class Signalling extends EventEmitter {
       const item = {
         uid:
           this.adapterRef.channelInfo.uidType === 'string'
-            ? hex2int2String(uidString)
+            ? SimpleBig.fromHex(uidString).toString()
             : parseInt(uidString, 16),
         //uid: parseInt(uidString, 16),
         downlinkNetworkQuality: parseInt(serverToClientNetStatusString, 16),
@@ -1799,57 +1800,6 @@ class Signalling extends EventEmitter {
         stack.push(str[i - 2], str[i - 1])
       }
       return stack.join('')
-    }
-
-    function hex2int2String(hex: string) {
-      const len = hex.length
-      let a: number[] = new Array(len)
-      let code
-      let value: number | bigint = 0
-      for (let i = 0; i < len; i++) {
-        code = hex.charCodeAt(i)
-        if (48 <= code && code < 58) {
-          code -= 48
-        } else {
-          code = (code & 0xdf) - 65 + 10
-        }
-        a[i] = code
-      }
-      for (let i = 0; i < a.length; i++) {
-        const c = a[i]
-        const x = multiply(value, 16)
-        value = plus(x, c)
-      }
-      return value.toString()
-    }
-
-    function multiply(x: number | bigint, y: number) {
-      if (!x) return x
-      //x = new BigNumber(x)
-      let z
-      if (typeof x === 'number') {
-        z = x * y
-        if (z > Number.MAX_SAFE_INTEGER) {
-          z = BigInt(x) * BigInt(y)
-        }
-      } else {
-        z = x * BigInt(y)
-      }
-      return z
-    }
-
-    function plus(x: number | bigint, y: number) {
-      //x = new BigNumber(x)
-      let z
-      if (typeof x === 'number') {
-        z = x + y
-        if (z > Number.MAX_SAFE_INTEGER) {
-          z = BigInt(x) + BigInt(y)
-        }
-      } else {
-        z = x + BigInt(y)
-      }
-      return z
     }
     let isExit = true
     let newList: NetStatusItem[] = []
