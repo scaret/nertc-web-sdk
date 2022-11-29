@@ -822,7 +822,7 @@ class Meeting extends EventEmitter {
                 taskId: rtmpTasks[i].taskId,
                 streamUrl: rtmpTasks[i].streamUrl,
                 record: rtmpTasks[i].record,
-                hostUid: parseInt(rtmpTasks[i].hostUid),
+                hostUid: rtmpTasks[i].hostUid,
                 layout: rtmpTasks[i].layout,
                 config: rtmpTasks[i].config
               },
@@ -856,7 +856,7 @@ class Meeting extends EventEmitter {
               taskId: rtmpTasks[i].taskId,
               streamUrl: rtmpTasks[i].streamUrl,
               record: rtmpTasks[i].record,
-              hostUid: parseInt(rtmpTasks[i].hostUid),
+              hostUid: rtmpTasks[i].hostUid,
               layout: rtmpTasks[i].layout,
               config: rtmpTasks[i].config
             },

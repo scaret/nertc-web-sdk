@@ -584,19 +584,15 @@ class Signalling extends EventEmitter {
         if (mediaTypeShort === 'audio') {
           remoteStream.mediaHelper.audio.micTrack = null
           emptyStreamWith(remoteStream.mediaHelper.audio.audioStream, null)
-          delete this.adapterRef.remoteAudioStats[uid]
         } else if (mediaTypeShort === 'audioSlave') {
           remoteStream.mediaHelper.screenAudio.screenAudioTrack = null
           emptyStreamWith(remoteStream.mediaHelper.screenAudio.screenAudioStream, null)
-          delete this.adapterRef.remoteAudioSlaveStats[uid]
         } else if (mediaTypeShort === 'video') {
           remoteStream.mediaHelper.video.cameraTrack = null
           emptyStreamWith(remoteStream.mediaHelper.video.videoStream, null)
-          delete this.adapterRef.remoteVideoStats[uid]
         } else if (mediaTypeShort === 'screen') {
           remoteStream.mediaHelper.screen.screenVideoTrack = null
           emptyStreamWith(remoteStream.mediaHelper.screen.screenVideoStream, null)
-          delete this.adapterRef.remoteScreenStats[uid]
         }
 
         if (this.adapterRef._enableRts) {

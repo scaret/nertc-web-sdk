@@ -1114,10 +1114,6 @@ class Client extends Base {
           stream.stop('video')
           stream.pubStatus.video.stopconsumerStatus = 'end'
           stream.subStatus.video = false
-          const uid = stream.getId()
-          if (uid) {
-            delete this.adapterRef.remoteVideoStats[uid]
-          }
           this.logger.log('取消订阅视频流完成')
         }
       }
@@ -1346,9 +1342,6 @@ class Client extends Base {
         stream.pubStatus.video.stopconsumerStatus = 'end'
         stream.subStatus.video = false
         const uid = stream.getId()
-        if (uid) {
-          delete this.adapterRef.remoteVideoStats[uid]
-        }
         this.logger.log('取消订阅视频流完成')
       }
 

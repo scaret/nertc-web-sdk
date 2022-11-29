@@ -42,7 +42,7 @@ class Mediasoup extends EventEmitter {
   private _mediasoupDevice: Device | null = null
   private _sendTransportIceParameters = null
   private _recvTransportIceParameters = null
-  private _audioSlaveProducer: Producer | null = null
+  public _audioSlaveProducer: Producer | null = null
   private _audioSlaveProducerId: string | null = null
   public _micProducer: Producer | null = null
   private _micProducerId: string | null = null

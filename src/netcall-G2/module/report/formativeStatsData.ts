@@ -82,17 +82,25 @@ class FormativeStatsReport {
     if (this?.adapterRef?._mediasoup?._micProducer) {
     } else {
       this.firstData.sendFirstAudioPackage = false
+      this.statsCatch.upAudioCache = {}
     }
+    if (this?.adapterRef?._mediasoup?._audioSlaveProducer) {
+    } else {
+      this.statsCatch.upAudioSlaveCache = {}
+    }
+
     if (this?.adapterRef?._mediasoup?._webcamProducer) {
     } else {
       this.firstData.sendFirstVideoPackage = false
+      this.statsCatch.upVideoCache = {}
     }
     if (this?.adapterRef?._mediasoup?._screenProducer) {
     } else {
       this.firstData.sendFirstScreenPackage = false
+      this.statsCatch.upScreenCache = {}
     }
   }
-  clearFirstRecvData(uid = 0) {
+  clearFirstRecvData(uid: any) {
     //定时清除标记，比如订阅取消订阅远端，不需要上面业务层处理了
     const remoteStream = this.adapterRef.remoteStreamMap[uid]
     const tmp = this.firstData.recvFirstData[uid]
@@ -101,12 +109,18 @@ class FormativeStatsReport {
     }
     if (remoteStream.pubStatus.audio.consumerId === '') {
       tmp.recvFirstAudioFrame = tmp.recvFirstAudioPackage = false
+      this.statsCatch.downAudioCache[uid] = null
+    }
+    if (remoteStream.pubStatus.audioSlave.consumerId === '') {
+      this.statsCatch.downAudioSlaveCache[uid] = null
     }
     if (remoteStream.pubStatus.video.consumerId === '') {
       tmp.recvFirstVideoFrame = tmp.recvFirstVideoPackage = false
+      this.statsCatch.downVideoCache[uid] = null
     }
     if (remoteStream.pubStatus.screen.consumerId === '') {
       tmp.recvFirstScreenFrame = tmp.recvFirstScreenPackage = false
+      this.statsCatch.downScreenCache[uid] = null
     }
   }
 
@@ -298,7 +312,7 @@ class FormativeStatsReport {
       this.statsCatch.downScreenCache[uid] = data
       this.dispatchExceptionEventRecvScreen(tmp, data, uid)
     }
-    if (!tmp) {
+    if (!tmp || data.bytesReceived < tmp.bytesReceived) {
       return
     }
     let result = {
@@ -307,6 +321,10 @@ class FormativeStatsReport {
     }
     //计算码率
     data.bitsReceivedPerSecond = Math.round((8 * (data.bytesReceived - tmp.bytesReceived)) / 1000)
+    // if (data.bitsReceivedPerSecond < 0) {
+    //   debugger
+    // }
+    // console.warn(mediaType, ' 码率： ', data.bitsReceivedPerSecond)
     //计算每秒发包数
     data.packetsReceivedPerSecond = data.packetsReceived - tmp.packetsReceived
     //计算丢包率

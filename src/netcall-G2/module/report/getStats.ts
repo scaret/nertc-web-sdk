@@ -71,6 +71,11 @@ class GetStats {
         return
       }
       this.audioLevel.length = 0
+      this!.adapterRef!.remoteAudioStats = {}
+      this!.adapterRef!.remoteAudioSlaveStats = {}
+      this!.adapterRef!.remoteVideoStats = {}
+      this!.adapterRef!.remoteScreenStats = {}
+
       this.tmp = { bytesSent: 0, bytesReceived: 0 }
       this.times = (this.times || 0) + 1
       let result = {
@@ -426,6 +431,10 @@ class GetStats {
             }
           }
         } else if (direction === 'recv') {
+          if (!targetUid) {
+            return {}
+          }
+          this.formativeStatsReport?.clearFirstRecvData(targetUid)
           tmp.remoteuid = targetUid
           if (item.mediaType === 'audio') {
             tmp.audioOutputLevel = parseInt(item.audioOutputLevel)
@@ -487,10 +496,14 @@ class GetStats {
             }
 
             if (mediaTypeShort === 'audio') {
-              this!.adapterRef!.remoteAudioStats[tmp.remoteuid] = audioStats
+              tmp.remoteuid
+                ? (this!.adapterRef!.remoteAudioStats[tmp.remoteuid] = audioStats)
+                : null
               audio_ssrc.push(tmp)
             } else if (mediaTypeShort === 'audioSlave') {
-              this!.adapterRef!.remoteAudioSlaveStats[tmp.remoteuid] = audioStats
+              tmp.remoteuid
+                ? (this!.adapterRef!.remoteAudioSlaveStats[tmp.remoteuid] = audioStats)
+                : null
               audioSlave_ssrc.push(tmp)
             }
           } else if (item.mediaType === 'video') {
@@ -693,8 +706,8 @@ class GetStats {
           audioObj.packetsReceived = item.packetsReceived
         } else if (item.kind === 'video') {
           videoObj.bytesReceived = item.bytesReceived + item.headerBytesReceived
-          videoObj.estimatedPlayoutTimestamp = item.estimatedPlayoutTimestamp
-          videoObj.lastPacketReceivedTimestamp = item.lastPacketReceivedTimestamp
+          videoObj.estimatedPlayoutTimestamp = item.estimatedPlayoutTimestamp || 0
+          videoObj.lastPacketReceivedTimestamp = item.lastPacketReceivedTimestamp || 0
           videoObj.firCount = item.firCount
           videoObj.nackCount = item.nackCount
           videoObj.pliCount = item.pliCount
@@ -736,8 +749,6 @@ class GetStats {
     if (direction === 'recv') {
       if (JSON.stringify(videoObj) !== '{}') {
         videoObj.remoteuid = uidAndKindBySsrc?.uid
-        //标准的getStats()就不参与数据计算了,会导致数据重复,后面同理
-        //this.formativeStatsReport?.formatRecvData(videoObj, mediaTypeShort)
       } else if (JSON.stringify(audioObj) !== '{}') {
         audioObj.remoteuid = uidAndKindBySsrc?.uid
         if (audioObj.audioOutputLevel) {
@@ -934,6 +945,7 @@ class GetStats {
     }
     const result: { [key: string]: any } = {}
     if (direction === 'recv') {
+      this.formativeStatsReport?.clearFirstRecvData(uidAndKindBySsrc?.uid)
       if (JSON.stringify(videoObj) !== '{}') {
         videoObj.remoteuid = uidAndKindBySsrc?.uid
         this.formativeStatsReport?.formatRecvData(videoObj, mediaTypeShort)
@@ -1085,6 +1097,7 @@ class GetStats {
     }
     const result: { [key: string]: any } = {}
     if (direction === 'recv') {
+      this.formativeStatsReport?.clearFirstRecvData(uidAndKindBySsrc?.uid)
       if (JSON.stringify(videoObj) !== '{}') {
         videoObj.remoteuid = uidAndKindBySsrc?.uid
         this.formativeStatsReport?.formatRecvData(videoObj, mediaTypeShort)
