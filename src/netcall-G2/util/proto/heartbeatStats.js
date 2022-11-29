@@ -679,7 +679,7 @@ var $root = (
                 type: 'int64',
                 id: 32
               },
-              uid: {
+              remoteuid: {
                 type: 'string',
                 id: 33
               }
@@ -815,7 +815,7 @@ var $root = (
                 type: 'int64',
                 id: 32
               },
-              uid: {
+              remoteuid: {
                 type: 'string',
                 id: 33
               }
@@ -939,7 +939,7 @@ var $root = (
                 type: 'int64',
                 id: 29
               },
-              uid: {
+              remoteuid: {
                 type: 'string',
                 id: 30
               }
@@ -1063,7 +1063,7 @@ var $root = (
                 type: 'int64',
                 id: 29
               },
-              uid: {
+              remoteuid: {
                 type: 'string',
                 id: 30
               }

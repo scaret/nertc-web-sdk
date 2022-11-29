@@ -179,7 +179,7 @@ syntax = "proto2";
         optional int64 silentConcealedSamples=30;
         optional int64 secondaryDecodedRate=31;
         optional int64 secondaryDiscardedRate=32;
-        optional string uid=33;
+        optional string remoteuid=33;
       }
 
       message audioSlave_ssrc_obj{
@@ -215,7 +215,7 @@ syntax = "proto2";
         optional int64 silentConcealedSamples=30;
         optional int64 secondaryDecodedRate=31;
         optional int64 secondaryDiscardedRate=32;
-        optional string uid=33;
+        optional string remoteuid=33;
       }
 
       message video_ssrc_obj{
@@ -248,7 +248,7 @@ syntax = "proto2";
         optional int64 powerEfficientDecoder=27;
         optional int64 currentDelayMs=28;
         optional int64 jitterBufferDelay=29;
-        optional string uid=30;
+        optional string remoteuid=30;
       }
 
       message screen_ssrc_obj{
@@ -281,7 +281,7 @@ syntax = "proto2";
         optional int64 powerEfficientDecoder=27;
         optional int64 currentDelayMs=28;
         optional int64 jitterBufferDelay=29;
-        optional string uid=30;
+        optional string remoteuid=30;
       }
     }
   }

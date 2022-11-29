@@ -415,14 +415,18 @@ class GetStats {
             }
             if (mediaTypeShort === 'video') {
               video_ssrc.push(tmp)
-              this!.adapterRef!.localVideoStats[0] = videoStats
+              if (streamType === 'high') {
+                this!.adapterRef!.localVideoStats[0] = videoStats
+              }
             } else if (mediaTypeShort === 'screen') {
-              this!.adapterRef!.localScreenStats[0] = videoStats
+              if (streamType === 'high') {
+                this!.adapterRef!.localScreenStats[0] = videoStats
+              }
               screen_ssrc.push(tmp)
             }
           }
         } else if (direction === 'recv') {
-          tmp.uid = targetUid
+          tmp.remoteuid = targetUid
           if (item.mediaType === 'audio') {
             tmp.audioOutputLevel = parseInt(item.audioOutputLevel)
             tmp.totalAudioEnergy = parseInt(item.totalAudioEnergy)
@@ -461,7 +465,7 @@ class GetStats {
             tmp.secondaryDecodedRate = parseInt(item.googSecondaryDecodedRate)
             tmp.secondaryDiscardedRate = parseInt(item.googSecondaryDiscardedRate)
             this.formativeStatsReport?.formatRecvData(tmp, mediaTypeShort)
-            const remoteStream = this?.adapterRef?.remoteStreamMap[item.uid]
+            const remoteStream = this?.adapterRef?.remoteStreamMap[item.remoteuid]
             const muteStatus =
               (remoteStream &&
                 (remoteStream.muteStatus.audioSlave.send ||
@@ -483,10 +487,10 @@ class GetStats {
             }
 
             if (mediaTypeShort === 'audio') {
-              this!.adapterRef!.remoteAudioStats[tmp.uid] = audioStats
+              this!.adapterRef!.remoteAudioStats[tmp.remoteuid] = audioStats
               audio_ssrc.push(tmp)
             } else if (mediaTypeShort === 'audioSlave') {
-              this!.adapterRef!.remoteAudioSlaveStats[tmp.uid] = audioStats
+              this!.adapterRef!.remoteAudioSlaveStats[tmp.remoteuid] = audioStats
               audioSlave_ssrc.push(tmp)
             }
           } else if (item.mediaType === 'video') {
@@ -523,7 +527,7 @@ class GetStats {
             tmp.jitterBufferDelay = parseInt(item.googJitterBufferMs)
             this.formativeStatsReport?.formatRecvData(tmp, mediaTypeShort)
 
-            const remoteStream = this?.adapterRef?.remoteStreamMap[tmp.uid]
+            const remoteStream = this?.adapterRef?.remoteStreamMap[tmp.remoteuid]
             let videoDom = remoteStream && remoteStream.Play && remoteStream?.Play?.video.dom
             if (mediaTypeShort === 'screen') {
               videoDom = remoteStream && remoteStream.Play && remoteStream?.Play?.screen.dom
@@ -555,10 +559,10 @@ class GetStats {
             }
 
             if (mediaTypeShort === 'video') {
-              this!.adapterRef!.remoteVideoStats[tmp.uid] = videoStats
+              this!.adapterRef!.remoteVideoStats[tmp.remoteuid] = videoStats
               video_ssrc.push(tmp)
             } else if (mediaTypeShort === 'screen') {
-              this!.adapterRef!.remoteScreenStats[tmp.uid] = videoStats
+              this!.adapterRef!.remoteScreenStats[tmp.remoteuid] = videoStats
               screen_ssrc.push(tmp)
             }
           }
@@ -731,13 +735,13 @@ class GetStats {
     const result: { [key: string]: any } = {}
     if (direction === 'recv') {
       if (JSON.stringify(videoObj) !== '{}') {
-        videoObj.uid = uidAndKindBySsrc?.uid
+        videoObj.remoteuid = uidAndKindBySsrc?.uid
         //标准的getStats()就不参与数据计算了,会导致数据重复,后面同理
         //this.formativeStatsReport?.formatRecvData(videoObj, mediaTypeShort)
       } else if (JSON.stringify(audioObj) !== '{}') {
-        audioObj.uid = uidAndKindBySsrc?.uid
+        audioObj.remoteuid = uidAndKindBySsrc?.uid
         if (audioObj.audioOutputLevel) {
-          const remoteStream = this?.adapterRef?.remoteStreamMap[audioObj.uid]
+          const remoteStream = this?.adapterRef?.remoteStreamMap[audioObj.remoteuid]
           const isPlaying = (mediaTypeShort && remoteStream?.isPlaying(mediaTypeShort)) || false
           this.audioLevel.push({
             uid,
@@ -936,13 +940,13 @@ class GetStats {
     const result: { [key: string]: any } = {}
     if (direction === 'recv') {
       if (JSON.stringify(videoObj) !== '{}') {
-        videoObj.uid = uidAndKindBySsrc?.uid
+        videoObj.remoteuid = uidAndKindBySsrc?.uid
         this.formativeStatsReport?.formatRecvData(videoObj, mediaTypeShort)
       } else if (JSON.stringify(audioObj) !== '{}') {
-        audioObj.uid = uidAndKindBySsrc?.uid
+        audioObj.remoteuid = uidAndKindBySsrc?.uid
         this.formativeStatsReport?.formatRecvData(audioObj, mediaTypeShort)
         if (audioObj.audioOutputLevel) {
-          const remoteStream = this?.adapterRef?.remoteStreamMap[audioObj.uid]
+          const remoteStream = this?.adapterRef?.remoteStreamMap[audioObj.remoteuid]
           const isPlaying = (mediaTypeShort && remoteStream?.isPlaying(mediaTypeShort)) || false
           this.audioLevel.push({
             uid,
@@ -1092,13 +1096,13 @@ class GetStats {
     const result: { [key: string]: any } = {}
     if (direction === 'recv') {
       if (JSON.stringify(videoObj) !== '{}') {
-        videoObj.uid = uidAndKindBySsrc?.uid
+        videoObj.remoteuid = uidAndKindBySsrc?.uid
         this.formativeStatsReport?.formatRecvData(videoObj, mediaTypeShort)
       } else if (JSON.stringify(audioObj) !== '{}') {
-        audioObj.uid = uidAndKindBySsrc?.uid
+        audioObj.remoteuid = uidAndKindBySsrc?.uid
         this.formativeStatsReport?.formatRecvData(audioObj, mediaTypeShort)
         if (audioObj.audioOutputLevel) {
-          const remoteStream = this?.adapterRef?.remoteStreamMap[audioObj.uid]
+          const remoteStream = this?.adapterRef?.remoteStreamMap[audioObj.remoteuid]
           const isPlaying = (mediaTypeShort && remoteStream?.isPlaying(mediaTypeShort)) || false
           this.audioLevel.push({
             uid,
