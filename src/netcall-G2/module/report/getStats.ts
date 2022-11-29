@@ -152,7 +152,7 @@ class GetStats {
         if (item.direction === 'sendonly') {
           if (item.sender && item.sender.track && item.sender.getStats) {
             report = await item.sender.getStats()
-            report = this.formatChromeStandardizedStats(report, direction, 0)
+            report = this.formatChromeStandardizedStats(report, direction)
             if (report.video_ssrc && result.video_ssrc) {
               //@ts-ignore
               result.video_ssrc.push(report.video_ssrc[0])
@@ -184,7 +184,7 @@ class GetStats {
         } else if (item.direction === 'recvonly') {
           if (item.receiver && item.receiver.track && item.receiver.getStats) {
             report = await item.receiver.getStats()
-            report = this.formatChromeStandardizedStats(report, direction, 0)
+            report = this.formatChromeStandardizedStats(report, direction)
             if (report.audio_ssrc && result.audio_ssrc) {
               //@ts-ignore
               result.audio_ssrc.push(report.audio_ssrc[0])
@@ -602,7 +602,7 @@ class GetStats {
   }
 
   //转换chrome标准getStats格式
-  formatChromeStandardizedStats(report: RTCStatsReport, direction: string, uid: string | number) {
+  formatChromeStandardizedStats(report: RTCStatsReport, direction: string) {
     function getLimitationReason(reason: string) {
       if (reason === 'bandwidth') {
         return 1
@@ -744,7 +744,7 @@ class GetStats {
           const remoteStream = this?.adapterRef?.remoteStreamMap[audioObj.remoteuid]
           const isPlaying = (mediaTypeShort && remoteStream?.isPlaying(mediaTypeShort)) || false
           this.audioLevel.push({
-            uid,
+            uid: audioObj.remoteuid,
             level: isPlaying ? +audioObj.audioOutputLevel || 0 : 0,
             type: mediaTypeShort
           })
@@ -779,7 +779,7 @@ class GetStats {
       if (item.direction === 'sendonly') {
         if (item.sender && item.sender.getStats) {
           report = await item.sender.getStats()
-          report = this.formatSafariStandardizedStats(report, direction, 0)
+          report = this.formatSafariStandardizedStats(report, direction)
           if (report.video_ssrc && result.video_ssrc) {
             //@ts-ignore
             result.video_ssrc.push(report.video_ssrc)
@@ -811,7 +811,7 @@ class GetStats {
       } else if (item.direction === 'recvonly') {
         if (item.receiver && item.receiver.getStats) {
           report = await item.receiver.getStats()
-          report = this.formatSafariStandardizedStats(report, direction, 0)
+          report = this.formatSafariStandardizedStats(report, direction)
           if (report.audio_ssrc && result.audio_ssrc) {
             //@ts-ignore
             result.audio_ssrc.push(report.audio_ssrc[0])
@@ -833,12 +833,7 @@ class GetStats {
     return result
   }
 
-  formatSafariStandardizedStats(
-    report: RTCStatsReport,
-    direction: string,
-    uid: string | number,
-    mid?: string | null
-  ) {
+  formatSafariStandardizedStats(report: RTCStatsReport, direction: string) {
     const audioObj: { [key: string]: any } = {}
     const videoObj: { [key: string]: any } = {}
     let ssrc = 0
@@ -949,7 +944,7 @@ class GetStats {
           const remoteStream = this?.adapterRef?.remoteStreamMap[audioObj.remoteuid]
           const isPlaying = (mediaTypeShort && remoteStream?.isPlaying(mediaTypeShort)) || false
           this.audioLevel.push({
-            uid,
+            uid: audioObj.remoteuid,
             level: isPlaying ? +audioObj.audioOutputLevel || 0 : 0,
             type: mediaTypeShort
           })
@@ -987,13 +982,13 @@ class GetStats {
       if (item.direction === 'sendonly') {
         if (item.sender && item.sender.getStats) {
           report = await item.sender.getStats()
-          report = this.formatFirefoxStandardizedStats(report, direction, 0)
+          report = this.formatFirefoxStandardizedStats(report, direction)
           Object.assign(result, report)
         }
       } else if (item.direction === 'recvonly') {
         if (item.receiver && item.receiver.getStats) {
           report = await item.receiver.getStats()
-          report = this.formatFirefoxStandardizedStats(report, direction, 0)
+          report = this.formatFirefoxStandardizedStats(report, direction)
           if (report.audio_ssrc && result.audio_ssrc) {
             //@ts-ignore
             result.audio_ssrc.push(report.audio_ssrc[0])
@@ -1016,12 +1011,7 @@ class GetStats {
   }
 
   //转换标准getStats格式
-  formatFirefoxStandardizedStats(
-    report: RTCStatsReport,
-    direction: string,
-    uid: string | number,
-    mid?: string | null
-  ) {
+  formatFirefoxStandardizedStats(report: RTCStatsReport, direction: string) {
     const audioObj: { [key: string]: any } = {}
     const videoObj: { [key: string]: any } = {}
     let ssrc = 0
@@ -1105,7 +1095,7 @@ class GetStats {
           const remoteStream = this?.adapterRef?.remoteStreamMap[audioObj.remoteuid]
           const isPlaying = (mediaTypeShort && remoteStream?.isPlaying(mediaTypeShort)) || false
           this.audioLevel.push({
-            uid,
+            uid: audioObj.remoteuid,
             level: isPlaying ? +audioObj.audioOutputLevel || 0 : 0,
             type: mediaTypeShort
           })

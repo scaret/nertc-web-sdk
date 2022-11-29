@@ -213,8 +213,7 @@ class FormativeStatsReport {
       data.totalFreezeTime = result.totalFreezeTime
     }
   }
-  //this.adapterRef.instance.safeEmit('active-speaker', this.audioLevel[0])
-  //this.adapterRef.instance.safeEmit('volume-indicator', this.audioLevel)
+
   formatRecvData(data: any, mediaType: any) {
     let tmp: any
     const uid = data.uid || 0
