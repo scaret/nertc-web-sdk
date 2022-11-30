@@ -32,14 +32,19 @@ const main = async () => {
   console.log('mergeRequestInfo', mergeRequestInfo)
   let popoMessage = ''
   let atUids = []
+  let createdAt = new Date(mergeRequestInfo.created_at)
+  let updatedAt = new Date(mergeRequestInfo.updated_at)
+  //30秒内的更新算第一次更新
+  let isNewMR = updatedAt - createdAt < 30000
+
   if (!options.popoGroupId) {
     console.log(`没有 popoGroupId`)
   } else if (options.work_in_progress) {
     console.log(`当前MR还在草稿状态`)
-  } else if (mergeRequestInfo.state !== 'opened') {
-    console.log(`当前MR状态为：`, mergeRequestInfo.state)
   } else {
-    popoMessage += `【新的MR】${mergeRequestInfo.web_url}\n`
+    popoMessage += `【${isNewMR ? '新的MR' : mergeRequestInfo.state}】 ${
+      mergeRequestInfo.web_url
+    }\n`
     popoMessage += `【标题】${mergeRequestInfo.title}\n`
     if (mergeRequestInfo.description) {
       popoMessage += `${mergeRequestInfo.description}\n`
@@ -61,12 +66,22 @@ const main = async () => {
     }
     console.log(popoMessage)
     atUids.push(`${mergeRequestInfo.author.username}@corp.netease.com`)
-    const data = {
-      receiver: '' + options.popoGroupId,
-      message: popoMessage,
-      atUids: atUids
+    if (isNewMR) {
+      const data = {
+        receiver: '' + options.popoGroupId,
+        message: popoMessage,
+        atUids: atUids
+      }
+      console.log('推送群消息', data)
+      await axios.post('https://admin.netease.im/public-service/robot/team', data)
+    } else {
+      const data = {
+        receiver: `${mergeRequestInfo.author.username}@corp.netease.com`,
+        message: popoMessage
+      }
+      await axios.post('https://admin.netease.im/public-service/robot/p2p', data)
+      console.log('推送个人消息', data)
     }
-    await axios.post('https://admin.netease.im/public-service/robot/team', data)
   }
   // let users = await api.Users.all()
 }
