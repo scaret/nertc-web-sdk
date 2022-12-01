@@ -526,10 +526,27 @@ class Mediasoup extends EventEmitter {
             this.adapterRef.logger.error('找不到 iceUfragRegLocal')
           }
           try {
+            let rtpParametersSend = rtpParameters
+            const codec = rtpParametersSend.codecs[0]
+            if (
+              getParameters().h264ProfileLevel &&
+              getParameters().h264ProfileLevelSignal &&
+              codec.mimeType === 'video/H264' &&
+              codec.parameters &&
+              codec.parameters['profile-level-id'] !== getParameters().h264ProfileLevelSignal
+            ) {
+              rtpParametersSend = JSON.parse(JSON.stringify(rtpParameters))
+              this.logger.warn(
+                `信令消息修改profile-level-id, ${
+                  rtpParametersSend.codecs[0].parameters['profile-level-id']
+                } => ${getParameters().h264ProfileLevelSignal}`
+              )
+              rtpParametersSend.codecs[0].parameters['profile-level-id'] = '42e01f'
+            }
             let producerData = {
               requestId: `${Math.ceil(Math.random() * 1e9)}`,
               kind: kind,
-              rtpParameters: rtpParameters,
+              rtpParameters: rtpParametersSend,
               iceUfrag: iceUfragRegLocal[1],
               //mediaProfile: [{'ssrc':123, 'res':"320*240", 'fps':30, 'spatialLayer':0, 'maxBitrate':1000}],
               externData: {
@@ -691,6 +708,10 @@ class Mediasoup extends EventEmitter {
                 advice
               })
             }
+            let producerRes = await this.adapterRef._signalling._protoo.request(
+              'Produce',
+              producerData
+            )
             const {
               code,
               transportId,
@@ -700,14 +721,22 @@ class Mediasoup extends EventEmitter {
               dtlsParameters,
               producerId,
               errMsg
-            } = await this.adapterRef._signalling._protoo.request('Produce', producerData)
+            } = producerRes
 
             if (transportId !== undefined) {
               this._sendTransport._id = transportId
             }
-            this.loggerSend.log(
-              `produce请求反馈结果, code: ${code}, kind: ${kind}, producerId: ${producerId},  errMsg: ${errMsg}`
-            )
+            if (code === 200) {
+              this.loggerSend.log(
+                `produce请求反馈结果, code: ${code}, kind: ${kind}, producerId: ${producerId}`
+              )
+            } else {
+              this.loggerSend.error(
+                `produce请求反馈错误, code: ${code}, kind: ${kind}, producerId: ${producerId},  errMsg: ${errMsg}, 请求：${JSONBigStringify(
+                  producerData
+                )}, 返回：${JSONBigStringify(producerData)}`
+              )
+            }
             if (turnParameters) {
               //服务器反馈turn server，sdk更新ice Server
               let iceServers = []

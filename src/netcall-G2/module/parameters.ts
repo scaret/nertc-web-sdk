@@ -147,6 +147,9 @@ interface IParameters {
   doHeartbeatInterval: number
   // 设备拔插检测间隔，为0不启动额外计时器
   deviceChangeInterval: number
+  // 如需启用硬件加速，将 h264ProfileLevel 改为 42001f，并将 h264ProfileLevelSignal 改为 42e01f
+  h264ProfileLevel: string
+  h264ProfileLevelSignal: string
   // 修补Safari本地canvas track无法播放的问题
   shimLocalCanvas: 'safari' | 'all' | 'never'
 }
@@ -226,6 +229,8 @@ let parameters: IParameters = {
   //getStats请求间隔设置为1s，数据上报为doHeartbeatInterval * 2
   doHeartbeatInterval: 1000,
   deviceChangeInterval: 0,
+  h264ProfileLevel: '',
+  h264ProfileLevelSignal: '42e01f',
   shimLocalCanvas: 'safari'
 }
 

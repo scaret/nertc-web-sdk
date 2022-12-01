@@ -403,6 +403,7 @@ class GetStats {
             const videoStats = {
               LayerType: 1,
               CodecName: item.googCodecName || 'h264',
+              CodecImplementationName: item.codecImplementationName || '',
               CaptureFrameRate: tmp.frameRateInput || 0,
               CaptureResolutionHeight: tmp.frameHeightInput || 0,
               CaptureResolutionWidth: tmp.frameWidthInput || 0,

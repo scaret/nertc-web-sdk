@@ -116,6 +116,23 @@ async function getSupportedCodecs(
   }
 }
 
+function isProfileLevelSupported(profileLevelId: string) {
+  if (typeof RTCRtpSender !== 'undefined') {
+    const capabilities = RTCRtpSender.getCapabilities('video')
+    if (capabilities) {
+      for (let i in capabilities.codecs) {
+        const codec = capabilities.codecs[i]
+        if (codec.mimeType === 'video/H264' && codec.sdpFmtpLine) {
+          if (codec.sdpFmtpLine.indexOf(profileLevelId) > -1){
+            return true
+          }
+        }
+      }
+    }
+  }
+  return false
+}
+
 function reduceCodecs(codecs: any[], selectedCodec?: RTCRtpCodecCapability) {
   const filteredCodecs = []
   for (let i = 0; i < codecs.length; i++) {
@@ -126,6 +143,23 @@ function reduceCodecs(codecs: any[], selectedCodec?: RTCRtpCodecCapability) {
           continue
         } else {
         }
+      }
+    }
+    const codec = codecs[i]
+    if (codec.mimeType === 'video/H264' && getParameters().h264ProfileLevel) {
+      if (
+        codec.parameters['profile-level-id'] &&
+        isProfileLevelSupported(getParameters().h264ProfileLevel)
+      ) {
+        console.warn(
+          `Changing Codec ${codec.parameters['profile-level-id']} => ${
+            getParameters().h264ProfileLevel
+          }`
+        )
+        codec.parameters['profile-level-id'] = getParameters().h264ProfileLevel
+        // codec.preferredPayloadType = 102
+      } else {
+        console.warn(`H264 Profile Level is not supported in current browser`)
       }
     }
     filteredCodecs.push(codecs[i])
