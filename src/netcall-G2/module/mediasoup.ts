@@ -708,6 +708,10 @@ class Mediasoup extends EventEmitter {
                 advice
               })
             }
+            let producerRes = await this.adapterRef._signalling._protoo.request(
+              'Produce',
+              producerData
+            )
             const {
               code,
               transportId,
@@ -717,14 +721,22 @@ class Mediasoup extends EventEmitter {
               dtlsParameters,
               producerId,
               errMsg
-            } = await this.adapterRef._signalling._protoo.request('Produce', producerData)
+            } = producerRes
 
             if (transportId !== undefined) {
               this._sendTransport._id = transportId
             }
-            this.loggerSend.log(
-              `produce请求反馈结果, code: ${code}, kind: ${kind}, producerId: ${producerId},  errMsg: ${errMsg}`
-            )
+            if (code === 200) {
+              this.loggerSend.log(
+                `produce请求反馈结果, code: ${code}, kind: ${kind}, producerId: ${producerId}`
+              )
+            } else {
+              this.loggerSend.error(
+                `produce请求反馈错误, code: ${code}, kind: ${kind}, producerId: ${producerId},  errMsg: ${errMsg}, 请求：${JSONBigStringify(
+                  producerData
+                )}, 返回：${JSONBigStringify(producerData)}`
+              )
+            }
             if (turnParameters) {
               //服务器反馈turn server，sdk更新ice Server
               let iceServers = []
