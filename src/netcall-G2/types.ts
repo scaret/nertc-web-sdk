@@ -380,6 +380,7 @@ export interface LocalAudioStats {
 export interface LocalVideoStats {
   LayerType: number
   CodecName: string
+  CodecImplementationName: string
   CaptureFrameRate: number
   CaptureResolutionHeight: number
   CaptureResolutionWidth: number

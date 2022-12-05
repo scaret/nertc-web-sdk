@@ -465,6 +465,7 @@ class Signalling extends EventEmitter {
           this.adapterRef.remoteStreamMap[uid] = remoteStream
           this.adapterRef.memberMap[uid] = uid
         }
+        remoteStream.muteStatus[mediaTypeShort].send = externData.producerInfo.mute
         if (remoteStream.pubStatus[mediaTypeShort].consumerId) {
           this.adapterRef._mediasoup?.destroyConsumer(
             remoteStream.pubStatus[mediaTypeShort].consumerId,

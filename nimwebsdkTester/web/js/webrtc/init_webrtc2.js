@@ -2464,6 +2464,7 @@ $('#switchCustom').on('click', () => {
     rtc.screenVideoSource && rtc.screenVideoSource.readyState === 'live'
       ? rtc.screenVideoSource
       : getVideoSource('screen')
+  rtc.screenVideoSource.enabled = true
   rtc.localStream.switchScreenStream({
     screenVideoSource: rtc.screenVideoSource
   })
@@ -2491,6 +2492,7 @@ function initLocalStream() {
         ? rtc.audioSource
         : getAudioSource('audio')
     audioSource = rtc.audioSource
+    rtc.audioSource.enabled = true
   } else {
     audioSource = null
   }
@@ -2503,6 +2505,7 @@ function initLocalStream() {
       rtc.videoSource && rtc.videoSource.readyState === 'live'
         ? rtc.videoSource
         : getVideoSource('video')
+    rtc.videoSource.enabled = true
     videoSource = rtc.videoSource
   } else {
     videoSource = null
@@ -2517,6 +2520,7 @@ function initLocalStream() {
         ? rtc.screenVideoSource
         : getVideoSource('screen')
     screenVideoSource = rtc.screenVideoSource
+    rtc.screenVideoSource.enabled = true
   } else {
     screenVideoSource = null
   }
@@ -3218,6 +3222,7 @@ $('#playCameraSource').on('click', () => {
     rtc.videoSource && rtc.videoSource.readyState === 'live'
       ? rtc.videoSource
       : getVideoSource('video')
+  rtc.videoSource.enabled = true
   rtc.localStream
     .open({
       type: 'video',
@@ -3305,6 +3310,7 @@ $('#playMicroSource').on('click', () => {
     rtc.audioSource && rtc.audioSource.readyState === 'live'
       ? rtc.audioSource
       : getAudioSource('audio')
+  rtc.audioSource.enabled = true
   let openOptions = {
     type: 'audio',
     audioSource: rtc.audioSource
@@ -3372,6 +3378,7 @@ $('#playScreenSource').on('click', () => {
     rtc.screenVideoSource && rtc.screenVideoSource.readyState === 'live'
       ? rtc.screenVideoSource
       : getVideoSource('screen')
+  rtc.screenVideoSource.enabled = true
   let openOptions = {
     type: 'screen',
     screenVideoSource: rtc.screenVideoSource
@@ -3461,6 +3468,7 @@ $('#playScreenAudioSource').on('click', () => {
     rtc.screenAudioSource && rtc.screenAudioSource.readyState === 'live'
       ? rtc.screenAudioSource
       : getAudioSource('screenAudio')
+  rtc.screenAudioSource.enabled = true
   let openOptions = {
     type: 'screenAudio',
     screenAudioSource: rtc.screenAudioSource
