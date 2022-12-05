@@ -256,7 +256,10 @@ class Base extends RTCEventEmitter {
       this.adapterRef.netStatusTimer = null
     }
     this.adapterRef.uid2SscrList = {}
-
+    this.adapterRef.proxyServer = {
+      enable: false,
+      type: 3
+    }
     // 状态类变量
     this.adapterRef.state = {
       lastDeviceStatus: {

@@ -259,8 +259,8 @@ class Client extends Base {
       this.adapterRef.channelStatus === 'join' ||
       this.adapterRef.channelStatus === 'connectioning'
     ) {
-      this.adapterRef.logger.error('startProxyServer: 请在加入房间前调用')
-      reason = 'INVALID_OPERATION'
+      this.adapterRef.logger.warn('startProxyServer: 请在加入房间前调用')
+      reason = 'startProxyServer: 请在加入房间前调用'
     }
     this.apiFrequencyControl({
       name: 'startProxyServer',
@@ -273,7 +273,7 @@ class Client extends Base {
     if (reason) {
       throw new RtcError({
         code: ErrorCode.API_CALL_SEQUENCE_BEFORE_ERROR,
-        message: '请在加入房间前调用'
+        message: 'startProxyServer() 请在加入房间前调用'
       })
     }
     this.adapterRef.proxyServer.enable = true
