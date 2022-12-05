@@ -5,184 +5,15 @@
  */
 const ErrorCode = {
   /*
-   * 无效参数，可以通过 console 日志查看原因
-   * 4.6.25 之后弃用
-   */
-  // INVALID_PARAMETER: 41000,
-  /*
-   * 浏览器不支持
-   * 4.6.25 之后弃用
-   */
-  // NOT_SUPPORT: 41001,
-  /*
-   * 没有找到服务器地址
-   * 4.6.25 之后弃用
-   */
-  // NO_SERVER_ADDRESS: 41002,
-  /*
-   * 服务器地址连接失败
-   * 4.6.25 之后弃用
-   */
-  // SOCKET_ERROR: 41003,
-  /*
-   * 找不到信令
-   * 4.6.25 之后弃用
-   */
-  // NO_SIGNALLING: 41004,
-  /*
-   * 找不到 statsReport 数据
-   * 4.6.25 之后弃用
-   */
-  // NO_STATS: 41005,
-  /*
-   * 找不到 mediasoup 数据
-   * 4.6.25 之后弃用
-   */
-  // NO_MEDIASERVER: 41006,
-  /*
-   * 找不到 meetings 数据
-   * 4.6.25 之后弃用
-   */
-  // NO_MEETINGS: 41007,
-  /*
-   * 找不到 localStream 数据
-   * 4.6.25 之后弃用
-   */
-  // NO_LOCALSTREAM: 41008,
-  /*
-   * 非法操作，可以通过 console 日志查看原因,一般是状态不对
-   * 4.6.25 之后弃用
-   */
-  // INVALID_OPERATION: 41009,
-  /*
-   * 重复进房
-   * 4.6.25 之后弃用
-   */
-  // REPEAT_JOIN: 41010,
-  /*
-   * 本地用户不再频道中
-   * 4.6.25 之后弃用
-   */
-  // USER_NOT_IN_CHANNEL: 41011,
-  /*
-   * 当前不支持，可以通过 console 日志查看原因
-   * 4.6.25 之后弃用
-   */
-  // NOT_SUPPORTED_YET: 41012,
-  /*
-   * 未知类型，可以通过 console 日志查看原因
-   * 4.6.25 之后弃用
-   */
-  // UNKNOWN_TYPE: 41013,
-  /*
-   * 无权限，禁止操作
-   * 4.6.25 之后弃用
-   */
-  // NOT_ALLOWED: 41014,
-  /*
-   * 状态错误，可以通过 console 日志查看原因
-   * 4.6.25 之后弃用
-   */
-  // STATE_ERROR: 41015,
-  /*
-   * 找不到文件，可以通过 console 日志查看原因
-   * 4.6.25 之后弃用
-   */
-  // NO_FILE: 41016,
-  /*
-   * 解码失败
-   * 4.6.25 之后弃用
-   */
-  // DECODE_FAILED: 41017,
-  /*
-   * 添加推流任务失败
-   * 4.6.25 之后弃用
-   */
-  // ADD_TASK_FAILED: 41018,
-  /*
-   * 删除推流任务请求失败
-   * 4.6.25 之后弃用
-   */
-  // DELETE_TASK_FAILED: 41019,
-  /*
-   * 更新推流任务失败
-   * 4.6.25 之后弃用
-   */
-  // UPDATE_TASKS_FAILED: 41020,
-  /*
-   * 录制接口出错
-   * 4.6.25 之后弃用
-   */
-  // RECORD_API_ERROR: 41021,
-  /*
-   * 没有进行录制
-   * 4.6.25 之后弃用
-   */
-  // NO_RECORDER_FOUND: 41022,
-  /*
-   * 未定义，可以通过 console 日志查看原因
-   * 4.6.25 之后弃用
-   */
-  // NOT_DEFINED: 41023,
-  /*
-   * 不可用，可以通过 console 日志查看原因
-   * 4.6.25 之后弃用
-   */
-  // NOT_AVAILABLE: 41024,
-  /*
-   * 没有 mediaHelper 数据
-   * 4.6.25 之后弃用
-   */
-  // NO_MEDIAHELPER: 41025,
-  /*
-   * 没有开启播放
-   * 4.6.25 之后弃用
-   */
-  // NO_PLAY: 41026,
-  /*
-   * 没有开启录制
-   * 4.6.25 之后弃用
-   */
-  // NO_RECORD: 41027,
-  /*
-   * 未获取，可以通过 console 日志查看原因
-   * 4.6.25 之后弃用
-   */
-  // NOT_FOUND: 41028,
-  /*
-   * appData 错误，可以通过 console 日志查看原因
-   * 4.6.25 之后弃用
-   */
-  // APPDATA_ERROR: 41029,
-
-  /*
    * 自动播放受限
    *
    */
   AUTO_PLAY_NOT_ALLOWED: 41030,
-  /*
-   * 没有媒体
-   * 4.6.25 之后弃用
-   */
-  // NO_MEDIA: 41031,
-
-  /*
-   * 被服务器禁言
-   * 4.6.25 之后弃用
-   */
-  // MEDIA_OPEN_BANNED_BY_SERVER: 41032,
-
-  /*
-   * 云代理失败
-   * 4.6.25 之后弃用
-   */
-  // PROXY_SERVER_ERROR: 41033,
-
-  /*
-   * 未知错误
-   * 4.6.25 之后弃用
-   */
   UNKNOWN: 99999,
+
+  /**
+   * web端音视频sdk错误码规范统一: https://docs.popo.netease.com/lingxi/529191c6202443fe9d535067fdad061d
+   */
 
   // *********************  通用错误码(ErrorCode 范围：10000 - 10100)
 
@@ -215,24 +46,24 @@ const ErrorCode = {
   NETWORK_REQUEST_ERROR: 10003,
 
   /*
-   * 云信服务异常，可通过 console 日志产看具体原因
+   * 云信服务异常，可通过 console 日志产看具体原因(后面要废弃)
    *
    */
   SERVER_ERROR: 10004,
 
   /*
-   * 云信媒体服务异常，可通过 console 日志产看具体原因
+   * 云信媒体服务异常，可通过 console 日志产看具体原因(后面要废弃)
    *
    */
   MEDIA_SERVER_ERROR: 10005,
   /*
-   * 云信信令异常，可通过 console 日志产看具体原因
+   * 云信信令异常，可通过 console 日志产看具体原因(后面要废弃)
    *
    */
   SIGNALLING_ERROR: 10006,
 
   /*
-   * 云信信令服务异常，可通过 console 日志产看具体原因
+   * 云信信令服务异常，可通过 console 日志产看具体原因(后面要废弃)
    *
    */
   SIGNALLING_SERVER_ERROR: 10007,
@@ -245,7 +76,7 @@ const ErrorCode = {
   API_CALL_SEQUENCE_BEFORE_ERROR: 10008,
 
   /*
-   * 非法操作
+   * 非法操作(后面要废弃)
    */
   INVALID_OPERATION_ERROR: 10009,
 
@@ -369,7 +200,7 @@ const ErrorCode = {
    * 可能原因：服务器permKey权限控制不允许加入房间
    * 处理建议：客户应用服务器侧的逻辑，可以自行调整permKey的规则
    */
-  JOIN_PERMKEY_ERROR: 10009,
+  JOIN_PERMKEY_ERROR: 10109,
 
   /*
    * 描述：参数错误，join()方法没有传递channelName参数
@@ -397,7 +228,14 @@ const ErrorCode = {
    * 可能原因：appkey、token等信息错误
    * 处理建议：RtcError对象中的extraCode属性有指定云信服务器器反馈的具体错误码内容，也可以在console中查看具体原因
    */
-  SERVER_AUTH_ERROR: 10099,
+  SERVER_AUTH_ERROR: 10199,
+
+  /*
+   * 描述：参数错误，setChannelProfile(option)接口参数错误
+   * 可能原因：要求option为{mode}，其中mode必须为'rtc'或者'live'
+   * 处理建议：检查参数要求，符合sdk要求
+   */
+  SET_CHANNEL_PROFILE_INVALID_PARAMETER_ERROR: 10121,
 
   // *********************  localStream和remoteStream对象本地音视频视频采集&播放相关错误码 (ErrorCode 范围：10201 - 10400)
   /*

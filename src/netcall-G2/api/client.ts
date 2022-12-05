@@ -1924,13 +1924,20 @@ class Client extends Base {
    * @return {null}
    */
   setChannelProfile(options: { mode: 'rtc' | 'live' }) {
+    const mode = options?.mode || null
     let reason = null
+    let errorCode = 0
     this.logger.log('setChannelProfile, options: ', JSON.stringify(options, null, ' '))
+    if (mode !== 'rtc' && mode !== 'live') {
+      this.logger.warn('setChannelProfile: 参数格式错误')
+      reason = 'setChannelProfile: 参数格式错误'
+      errorCode = ErrorCode.SET_CHANNEL_PROFILE_INVALID_PARAMETER_ERROR
+    }
     if (this.adapterRef.connectState.curState !== 'DISCONNECTED') {
-      this.logger.warn('setChannelProfile: 请在加入房间前调用')
-      reason = 'setChannelProfile: please invoke this function before join()'
+      this.logger.warn('setChannelProfile: 当前没有加入房间，或者因为网络异常正在重连中')
+      reason = 'setChannelProfile: 当前没有加入房间，或者因为网络异常正在重连中'
+      errorCode = ErrorCode.API_CALL_SEQUENCE_BEFORE_ERROR
     } else {
-      const mode = options.mode || 'rtc'
       if (this.adapterRef.localStream) {
         if (mode === 'live') {
           this.adapterRef.localStream.audioProfile = 'music_standard'
@@ -1944,21 +1951,14 @@ class Client extends Base {
       name: 'setChannelProfile',
       code: reason ? -1 : 0,
       param: {
-        mode: options.mode,
+        mode: JSON.stringify(options, null, ' '),
         reason
       }
     })
     if (reason) {
-      let enMessage = 'setChannelProfile: invalid operation',
-        zhMessage = 'setChannelProfile: 操作异常',
-        enAdvice = 'please invoke this function before join()',
-        zhAdvice = '请在进房前调用'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.INVALID_OPERATION_ERROR,
-        message,
-        advice
+        code: errorCode,
+        message: reason
       })
     }
   }
