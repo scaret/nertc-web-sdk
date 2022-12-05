@@ -656,8 +656,8 @@ class RemoteStream extends RTCEventEmitter {
    * @returns {Void}
    */
   setRemoteRenderMode(options: RenderMode, mediaType?: MediaTypeShort) {
-    if (!options || !(options.width - 0) || !(options.height - 0)) {
-      this.logger.warn('setRemoteRenderMode 参数错误')
+    if (!options || !Number.isInteger(options.width) || !Number.isInteger(options.width)) {
+      this.logger.warn('setRemoteRenderMode 参数宽高错误')
       this.client.apiFrequencyControl({
         name: 'setRemoteRenderMode',
         code: -1,
@@ -666,6 +666,10 @@ class RemoteStream extends RTCEventEmitter {
           mediaType,
           ...options
         }
+      })
+      throw new RtcError({
+        code: ErrorCode.STREAM_RENDER_ARGUMENT_ERROR,
+        message: 'setLocalRenderMode() 参数宽高错误'
       })
     }
     if (!this.client || !this._play) {
