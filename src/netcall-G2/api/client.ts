@@ -559,13 +559,6 @@ class Client extends Base {
       options: null
     })
     this.logger.log('leave() 离开频道')
-    if (
-      this.adapterRef.channelStatus !== 'join' &&
-      this.adapterRef.channelStatus !== 'connectioning'
-    ) {
-      this.logger.log('房间状态: ', this.adapterRef.channelStatus)
-      //return Promise.reject('ERR_REPEAT_LEAVE')
-    }
     this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
     this.adapterRef.connectState.curState = 'DISCONNECTING'
     this.adapterRef.connectState.reconnect = false
@@ -574,6 +567,11 @@ class Client extends Base {
     if (this.adapterRef._meetings) {
       this.adapterRef._meetings.leaveChannel().then(onLeaveFinish)
     } else {
+      this.adapterRef.connectState = {
+        prevState: 'DISCONNECTED',
+        curState: 'DISCONNECTED',
+        reconnect: false
+      }
       onLeaveFinish()
     }
     this.apiFrequencyControl({
