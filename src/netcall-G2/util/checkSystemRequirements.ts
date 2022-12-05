@@ -13,8 +13,10 @@ class SystemChecker {
       const peer = new PC()
       if (!peer.getSenders || !peer.addTransceiver || !peer.getTransceivers) {
         console.warn(`checkSystemRequirements: RTCPeerConnection不符合sdk要求`)
+        peer.close()
         return
       }
+      peer.close()
     }
     //getUserMedia对于拉流没有影响，不应该作为限制条件
     // let getUserMedia = navigator.mediaDevices && navigator.mediaDevices.getUserMedia
