@@ -621,24 +621,10 @@ class MediaHelper extends EventEmitter {
             },
             this.logger
           )
-          const cameraTrack = stream.getTracks()[0]
-          this.video.cameraTrack = cameraTrack
-          emptyStreamWith(this.video.videoStream, cameraTrack)
-          if (
-            this.video.videoStream.getVideoTracks().length &&
-            typeof this.video.encoderConfig.high.contentHint === 'string' &&
-            // @ts-ignore
-            this.video.videoStream.getVideoTracks()[0].contentHint !==
-              this.video.encoderConfig.high.contentHint
-          ) {
-            this.logger.log(
-              `应用 contentHint video high`,
-              this.video.encoderConfig.high.contentHint
-            )
-            // @ts-ignore
-            this.video.videoStream.getVideoTracks()[0].contentHint =
-              this.video.encoderConfig.high.contentHint
-          }
+          const screenTrack = stream.getVideoTracks()[0]
+          this.screen.screenVideoTrack = screenTrack
+          emptyStreamWith(this.screen.screenVideoStream, screenTrack)
+
         } else {
           let gdmStream = await GUM.getScreenStream(
             {
