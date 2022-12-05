@@ -651,7 +651,7 @@ class GetStats {
       } else if (item.type == 'outbound-rtp') {
         ssrc = item.ssrc
         if (item.kind === 'audio') {
-          audioObj.targetBitrate = item.targetBitrate
+          audioObj.targetBitrate = Math.round(item.targetBitrate / 1000)
           audioObj.bytesSent = item.headerBytesSent + item.bytesSent
           audioObj.packetsSent = item.packetsSent
           audioObj.nackCount = item.nackCount
@@ -669,7 +669,7 @@ class GetStats {
           videoObj.qpSum = item.qpSum
           videoObj.qualityLimitationReason = getLimitationReason(item.qualityLimitationReason)
           videoObj.qualityLimitationResolutionChanges = item.qualityLimitationResolutionChanges
-          videoObj.targetBitrate = item.targetBitrate
+          videoObj.targetBitrate = Math.round(item.targetBitrate / 1000)
           //这计算的是总的数据，不是实时数据，当前先依赖pc.getStats()反馈吧，后续不支持了在处理
           //videoObj.avgEncodeMs = Math.round((item.totalEncodeTime * 1000) / item.framesEncoded)
           item.framesPerSecond ? (videoObj.frameRateSent = item.framesPerSecond) : null
