@@ -77,29 +77,6 @@ class FormativeStatsReport {
     }
   }
 
-  clearFirstSendData() {
-    //定时清除标记，比如本地开关设备,不需要上面业务层处理了
-    if (this?.adapterRef?._mediasoup?._micProducer) {
-    } else {
-      this.firstData.sendFirstAudioPackage = false
-      this.statsCatch.upAudioCache = {}
-    }
-    if (this?.adapterRef?._mediasoup?._audioSlaveProducer) {
-    } else {
-      this.statsCatch.upAudioSlaveCache = {}
-    }
-
-    if (this?.adapterRef?._mediasoup?._webcamProducer) {
-    } else {
-      this.firstData.sendFirstVideoPackage = false
-      this.statsCatch.upVideoCache = {}
-    }
-    if (this?.adapterRef?._mediasoup?._screenProducer) {
-    } else {
-      this.firstData.sendFirstScreenPackage = false
-      this.statsCatch.upScreenCache = {}
-    }
-  }
   clearFirstRecvData(uid: any) {
     //定时清除标记，比如订阅取消订阅远端，不需要上面业务层处理了
     const remoteStream = this.adapterRef.remoteStreamMap[uid]
@@ -155,9 +132,14 @@ class FormativeStatsReport {
   }
 
   formatSendData(data: any, mediaType: any) {
-    this.clearFirstSendData()
     let tmp: any
     if (mediaType === 'audio') {
+      if (this?.adapterRef?._mediasoup?._micProducer) {
+      } else {
+        this.firstData.sendFirstAudioPackage = false
+        this.statsCatch.upAudioCache = {}
+        return
+      }
       if (data.packetsSent > 0 && !this.firstData.sendFirstAudioPackage) {
         this.firstData.sendFirstAudioPackage = true
         this.adapterRef.instance.apiEventReport('setSendFirstPackage', {
@@ -169,16 +151,27 @@ class FormativeStatsReport {
       }
       this.statsCatch.upAudioCache = data
     } else if (mediaType === 'audioSlave') {
+      if (this?.adapterRef?._mediasoup?._audioSlaveProducer) {
+      } else {
+        this.statsCatch.upAudioSlaveCache = {}
+        return
+      }
       if (this.statsCatch.upAudioSlaveCache) {
         tmp = this.statsCatch.upAudioSlaveCache
       }
       this.statsCatch.upAudioSlaveCache = data
       this.dispatchExceptionEventSendAudio(tmp, data)
     } else if (mediaType === 'video') {
+      if (this?.adapterRef?._mediasoup?._webcamProducer) {
+      } else {
+        this.firstData.sendFirstVideoPackage = false
+        this.statsCatch.upVideoCache = {}
+        return
+      }
       if (data.packetsSent > 0 && !this.firstData.sendFirstVideoPackage) {
         this.firstData.sendFirstVideoPackage = true
         this.adapterRef.instance.apiEventReport('setSendFirstPackage', {
-          media_type: 2
+          media_type: 1
         })
       }
       if (this.statsCatch.upVideoCache) {
@@ -187,10 +180,16 @@ class FormativeStatsReport {
       this.statsCatch.upVideoCache = data
       this.dispatchExceptionEventSendVideo(tmp, data)
     } else if (mediaType === 'screen') {
+      if (this?.adapterRef?._mediasoup?._screenProducer) {
+      } else {
+        this.firstData.sendFirstScreenPackage = false
+        this.statsCatch.upScreenCache = {}
+        return
+      }
       if (data.packetsSent > 0 && !this.firstData.sendFirstScreenPackage) {
         this.firstData.sendFirstScreenPackage = true
         this.adapterRef.instance.apiEventReport('setSendFirstPackage', {
-          media_type: 3
+          media_type: 2
         })
       }
       if (this.statsCatch.upScreenCache) {
