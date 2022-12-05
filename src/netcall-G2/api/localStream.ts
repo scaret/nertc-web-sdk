@@ -1163,7 +1163,7 @@ class LocalStream extends RTCEventEmitter {
                 code: isVideo
                   ? ErrorCode.REPEAT_OPEN_CAMERA_ERROR
                   : ErrorCode.REPEAT_OPEN_SCREEN_ERROR,
-                message: 'open() 重复打开摄像头'
+                message: `重复打开${isVideo ? '摄像头' : '屏幕共享'}`
               })
             )
           }

@@ -112,8 +112,7 @@ class StatsReport extends EventEmitter {
       // 数据上报部分
       let data: any = await this.stats?.getAllStats()
       //@ts-ignore
-      window.reportData = data
-      console.log('report data--->', data)
+      //console.log('report data--->', data)
       if (this.isReport && !env.IS_ELECTRON && data?.times % 2 === 0) {
         // Electron 上报的数据和 Chrome 不同，暂时不上报，后续需要再进行单独处理
         this.reportData.local = data?.local
