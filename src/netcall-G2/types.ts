@@ -124,7 +124,6 @@ export interface AdapterRef {
   logger: ILogger
   logStorage: LogStorage
   testConf: {
-    ForwardedAddr?: string
     turnAddr?: string[]
     iceServers?: RTCIceServer[]
     iceTransportPolicy?: RTCIceTransportPolicy

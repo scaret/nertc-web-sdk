@@ -34,6 +34,7 @@ import { RTCEventEmitter } from '../util/rtcUtil/RTCEventEmitter'
 import * as env from '../util/rtcUtil/rtcEnvironment'
 import { SignalGetChannelInfoResponse } from '../interfaces/SignalProtocols'
 import { loglevels } from '../util/log/loglevels'
+import { generateUUID, randomString } from '../util/rtcUtil/utils'
 
 let clientCnt = 0
 
@@ -516,13 +517,14 @@ class Base extends RTCEventEmitter {
   // 设置通话开始时间
   setStartSessionTime() {
     this.adapterRef.state.startSessionTime = Date.now()
-    this.adapterRef.deviceId = md5(
-      this.adapterRef.channelInfo.cid +
-        ':' +
-        this.adapterRef.channelInfo.uid +
-        ':' +
-        this.adapterRef.state.startSessionTime
-    )
+    //SessionId串联通话流程(https://docs.popo.netease.com/lingxi/5a58f91a11d740328f448f14ae93b4e1#edit)
+    const deviceId = generateUUID()
+    const cname = this.adapterRef.channelInfo.channelName || ''
+    const uid = this.adapterRef.channelInfo.uid || 0
+    const timesamp = Date.now()
+    const channelInstance = '' //web端不具备
+    const medStr = md5(deviceId + cname + uid + timesamp + channelInstance)
+    this.adapterRef.deviceId = randomString(medStr, 16)
   }
 
   // 设置通话结束时间

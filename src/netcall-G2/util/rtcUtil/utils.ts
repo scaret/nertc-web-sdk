@@ -42,6 +42,17 @@ export const randomId = function () {
   })
 }
 
+export const randomString = (str: String, length: number) => {
+  if (!str || !length) {
+    return ''
+  }
+  let result = ''
+  for (var i = length; i > 0; --i) {
+    result += str[Math.floor(Math.random() * str.length)]
+  }
+  return result
+}
+
 export function deepCopy(param: Object) {
   var result = Array.isArray(param) ? [] : {}
   for (var key in param) {

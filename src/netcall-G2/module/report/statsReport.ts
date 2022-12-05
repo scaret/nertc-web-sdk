@@ -4,7 +4,6 @@ import { SDK_VERSION } from '../../Config'
 import { AdapterRef, SDKRef, StatsReportOptions } from '../../types'
 import raf from '../../util/rtcUtil/raf'
 import * as env from '../../util/rtcUtil/rtcEnvironment'
-import { generateUUID } from '../../util/rtcUtil/utils'
 import WSTransport from '../../util/wsTransport'
 import { GetStats } from './getStats'
 import { getParameters } from '../parameters'
@@ -18,7 +17,7 @@ const PROD = 0 // 线上
 
 const platform = 'web'
 const sdktype = 'webrtc'
-const timestamp = new Date().getTime()
+const timestamp = Date.now()
 const salt = '40f5a1a1871e46089e1e5139a779dd77'
 class StatsReport extends EventEmitter {
   private sdkRef: SDKRef
@@ -75,7 +74,7 @@ class StatsReport extends EventEmitter {
   start() {
     this.reportData.uid = this.adapterRef?.channelInfo.uid
     this.reportData.cid = this.adapterRef?.channelInfo.cid
-    let deviceId = generateUUID()
+    let deviceId = this.adapterRef?.deviceId
     let checkSum = sha1(`${PROD}${timestamp}${SDK_VERSION}${platform}${sdktype}${deviceId}${salt}`)
     //console.log('start: ', this.adapterRef.instance._params.neRtcServerAddresses)
     let url = `${

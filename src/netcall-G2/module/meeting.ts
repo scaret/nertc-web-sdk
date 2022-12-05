@@ -90,6 +90,9 @@ class Meeting extends EventEmitter {
         url,
         type: 'POST',
         //contentType: 'application/x-www-form-urlencoded',
+        header: {
+          //'Session-Id': this.adapterRef.deviceId || ''
+        },
         data: {
           uid: new SimpleBig(uid),
           appkey,
@@ -234,7 +237,7 @@ class Meeting extends EventEmitter {
           type: 'POST',
           contentType: 'application/x-www-form-urlencoded',
           header: {
-            'X-Forwarded-For': this.adapterRef.testConf?.ForwardedAddr || ''
+            'Session-Id': this.adapterRef.deviceId || ''
           },
           data: {
             uid: new SimpleBig(uid),
@@ -259,7 +262,6 @@ class Meeting extends EventEmitter {
       let isUidExisted = uid == '0' || (uid != '0' && !uid) ? false : true
 
       this.info.secure = !!token
-      this.info.forward = !!this.adapterRef.testConf.ForwardedAddr
       if (typeof data === 'string') {
         // 兼容mockjs
         this.logger.warn(`join 返回值类型为string，应为object。尝试进行强制类型转换。`, data)
@@ -503,7 +505,8 @@ class Meeting extends EventEmitter {
           type: 'POST',
           contentType: 'application/json;charset=utf-8',
           header: {
-            Token: this.adapterRef.channelInfo.turnToken
+            Token: this.adapterRef.channelInfo.turnToken,
+            //'Session-Id': this.adapterRef.deviceId || ''
           },
           data: {
             version: 1,
@@ -621,7 +624,8 @@ class Meeting extends EventEmitter {
           type: 'POST',
           contentType: 'application/json;charset=utf-8',
           header: {
-            Token: this.adapterRef.channelInfo.turnToken
+            Token: this.adapterRef.channelInfo.turnToken,
+            //'Session-Id': this.adapterRef.deviceId || ''
           },
           data: {
             taskId: taskIds[i]
@@ -779,7 +783,8 @@ class Meeting extends EventEmitter {
           type: 'POST',
           contentType: 'application/json;charset=utf-8',
           header: {
-            Token: this.adapterRef.channelInfo.turnToken
+            Token: this.adapterRef.channelInfo.turnToken,
+            //'Session-Id': this.adapterRef.deviceId || ''
           },
           data: {
             version: 1,

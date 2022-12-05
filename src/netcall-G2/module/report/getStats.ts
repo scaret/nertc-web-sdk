@@ -537,6 +537,7 @@ class GetStats {
             tmp.frameRateReceived = parseInt(item.googFrameRateReceived)
             tmp.frameWidthReceived = parseInt(item.googFrameWidthReceived)
             tmp.frameHeightReceived = parseInt(item.googFrameHeightReceived)
+            tmp.currentDelayMs = parseInt(item.googCurrentDelayMs)
             //tmp.powerEfficientDecoder = 1 //不支持
             tmp.jitterBufferDelay = parseInt(item.googJitterBufferMs)
             this.formativeStatsReport?.formatRecvData(tmp, mediaTypeShort)
@@ -683,7 +684,7 @@ class GetStats {
           audioObj.rtt = Math.round(item.roundTripTime * 1000)
         } else if (item.kind === 'video') {
           videoObj.fractionLost = item.fractionLost
-          videoObj.jitterReceived = Math.round(item.jitter * 1000)
+          videoObj.jitter = Math.round(item.jitter * 1000)
           videoObj.packetsLost = item.packetsLost
           videoObj.rtt = Math.round(item.roundTripTime * 1000)
         }
@@ -886,7 +887,7 @@ class GetStats {
           audioObj.packetsLost = item.packetsLost
           audioObj.rtt = Math.round(item.roundTripTime * 1000)
         } else if (item.kind === 'video') {
-          videoObj.jitterReceived = Math.round(item.jitter * 1000)
+          videoObj.jitter = Math.round(item.jitter * 1000)
           videoObj.packetsLost = item.packetsLost
           videoObj.rtt = Math.round(item.roundTripTime * 1000)
         }
@@ -1054,7 +1055,7 @@ class GetStats {
       } else if (item.type == 'remote-inbound-rtp') {
         if (item.kind === 'video') {
           videoObj.fractionLost = item.fractionLost
-          videoObj.jitterReceived = Math.round(item.jitter * 1000)
+          videoObj.jitter = Math.round(item.jitter * 1000)
           videoObj.packetsLost = item.packetsLost
           videoObj.rtt = Math.round(item.roundTripTime * 1000)
         }
