@@ -898,7 +898,15 @@ export class Chrome74 extends HandlerInterface {
     let localId = (rtpParameters && rtpParameters.mid) || appData.mid
     Logger.debug(prefix, `[Subscribe] receive() mid: ${localId}`)
 
-    if (!rtpParameters.mid) {
+    if (rtpParameters?.mid) {
+      this._remoteSdp!.receive({
+        mid: localId,
+        kind,
+        offerRtpParameters: rtpParameters,
+        streamId: rtpParameters.rtcp!.cname!,
+        trackId
+      })
+    } else {
       Logger.debug(prefix, '[Subscribe] receive() 容错流程')
       const filteredCodecs: any[] = []
       extendedRtpCapabilities.codecs.forEach((codec: any) => {
@@ -925,14 +933,6 @@ export class Chrome74 extends HandlerInterface {
       }
       this._remoteSdp!.receive(data)
       this._remoteSdp!.disableMediaSection(`${localId}`)
-    } else {
-      this._remoteSdp!.receive({
-        mid: localId,
-        kind,
-        offerRtpParameters: rtpParameters,
-        streamId: rtpParameters.rtcp!.cname!,
-        trackId
-      })
     }
 
     offer.sdp = offer.sdp.replace(
