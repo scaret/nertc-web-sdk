@@ -945,7 +945,7 @@ var $root = (
               }
             }
           },
-          bwe_obj: {
+          screen_ssrc_obj: {
             fields: {
               bytesReceived: {
                 type: 'int64',

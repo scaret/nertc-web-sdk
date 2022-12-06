@@ -206,7 +206,12 @@ class FormativeStatsReport {
     data.packetsLostRate = this.getPacketLossRate(tmp, data, true)
     if (data.streamType) {
       //计算每秒编码数目
-      data.framesEncodedPerSecond = Math.abs(data.framesEncoded - tmp.framesEncoded)
+      if (data.framesEncoded >= tmp.framesEncoded) {
+        data.framesEncodedPerSecond = data.framesEncoded - tmp.framesEncoded
+      } else {
+        data.framesEncodedPerSecond = 0
+      }
+
       //计算QP编码帧的占比
       data.qpPercentage = this.getQpPercentage(tmp, data)
       //计算卡顿率

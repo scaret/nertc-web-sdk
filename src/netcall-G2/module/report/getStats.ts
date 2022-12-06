@@ -735,7 +735,7 @@ class GetStats {
           videoObj.frameWidthReceived = item.frameWidth
           videoObj.frameHeightReceived = item.frameHeight
           videoObj.powerEfficientDecoder = item.powerEfficientDecoder ? 1 : 0
-          videoObj.jitter = Math.round(item.jitter * 1000)
+          //videoObj.jitter = Math.round(item.jitter * 1000)
           videoObj.jitterBufferDelay = Math.round(
             (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
           )
@@ -745,14 +745,14 @@ class GetStats {
           item.jitter ? (audioObj.jitter = Math.round(item.jitter * 1000)) : null
           item.roundTripTime ? (audioObj.rtt = Math.round(item.roundTripTime * 1000)) : null
         } else if (item.kind === 'video') {
-          item.jitter ? (videoObj.jitter = Math.round(item.jitter * 1000)) : null
-          item.roundTripTime ? (videoObj.rtt = Math.round(item.roundTripTime * 1000)) : null
+          // item.jitter ? (videoObj.jitter = Math.round(item.jitter * 1000)) : null
+          // item.roundTripTime ? (videoObj.rtt = Math.round(item.roundTripTime * 1000)) : null
         }
       }
     })
     const uidAndKindBySsrc = this?.adapterRef?.instance.getUidAndKindBySsrc(ssrc)
     let mediaTypeShort = uidAndKindBySsrc?.kind
-    if (JSON.stringify(videoObj) !== '{}') {
+    if (JSON.stringify(videoObj) !== '{}' && direction === 'send') {
       videoObj.streamType = uidAndKindBySsrc?.streamType || 'high'
     }
     const result: { [key: string]: any } = {}
@@ -933,7 +933,7 @@ class GetStats {
           videoObj.frameRateReceived = item.framesPerSecond
           videoObj.frameWidthReceived = item.frameWidth
           videoObj.frameHeightReceived = item.frameHeight
-          videoObj.jitter = Math.round(item.jitter * 1000)
+          //videoObj.jitter = Math.round(item.jitter * 1000)
           videoObj.jitterBufferDelay = Math.round(
             (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
           )
@@ -943,14 +943,14 @@ class GetStats {
           item.jitter ? (audioObj.jitter = Math.round(item.jitter * 1000)) : null
           item.roundTripTime ? (audioObj.rtt = Math.round(item.roundTripTime * 1000)) : null
         } else if (item.kind === 'video') {
-          item.jitter ? (videoObj.jitter = Math.round(item.jitter * 1000)) : null
-          item.roundTripTime ? (videoObj.rtt = Math.round(item.roundTripTime * 1000)) : null
+          // item.jitter ? (videoObj.jitter = Math.round(item.jitter * 1000)) : null
+          // item.roundTripTime ? (videoObj.rtt = Math.round(item.roundTripTime * 1000)) : null
         }
       }
     })
     const uidAndKindBySsrc = this?.adapterRef?.instance.getUidAndKindBySsrc(ssrc)
     let mediaTypeShort = uidAndKindBySsrc?.kind
-    if (JSON.stringify(videoObj) !== '{}') {
+    if (JSON.stringify(videoObj) !== '{}' && direction === 'send') {
       videoObj.streamType = uidAndKindBySsrc?.streamType || 'high'
     }
     const result: { [key: string]: any } = {}
@@ -1093,7 +1093,7 @@ class GetStats {
           videoObj.frameRateReceived = item.framesPerSecond || 0
           videoObj.frameWidthReceived = item.frameWidth
           videoObj.frameHeightReceived = item.frameHeight
-          videoObj.jitter = Math.round(item.jitter * 1000)
+          //videoObj.jitter = Math.round(item.jitter * 1000)
           videoObj.jitterBufferDelay = Math.round(
             (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
           )
@@ -1102,7 +1102,7 @@ class GetStats {
     })
     const uidAndKindBySsrc = this?.adapterRef?.instance.getUidAndKindBySsrc(ssrc)
     let mediaTypeShort = uidAndKindBySsrc?.kind
-    if (JSON.stringify(videoObj) !== '{}') {
+    if (JSON.stringify(videoObj) !== '{}' && direction === 'send') {
       videoObj.streamType = uidAndKindBySsrc?.streamType || 'high'
     }
     const result: { [key: string]: any } = {}
