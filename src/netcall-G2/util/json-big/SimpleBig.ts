@@ -17,19 +17,37 @@ export class SimpleBig {
   static fromHex(hexStr: string) {
     // 十六进制的string转为10进制string，主要需要考虑超过Number.MAX_SAFE_INT的情况
 
-    const digits: number[] = []
-    for (let i = 0; i < hexStr.length; i++) {
-      if (!digits[i]) {
-        digits[i] = 0
-      }
-      digits[i] += parseInt(hexStr.charAt(hexStr.length - 1 - i))
-      if (digits[i] > 9) {
-        // 产生了进位
-        digits[i] -= 10
-        digits[i + 1] = 1
-      }
+    if (hexStr.length < 13) {
+      // 对比较小的数直接parse
+      return parseInt(hexStr, 16)
     }
-    const numStr = digits.reverse().join('')
-    return new SimpleBig(numStr)
+    let dec = '0'
+    hexStr.split('').forEach((chr) => {
+      var n = parseInt(chr, 16)
+      for (let t = 8; t; t >>= 1) {
+        dec = add(dec, dec)
+        if (n & t) {
+          dec = add(dec, '1')
+        }
+      }
+    })
+
+    return new SimpleBig(dec)
   }
+}
+
+function add(decInStrX: string, decInStrY: string) {
+  let c = 0
+  let r: number[] = []
+  let x = decInStrX.split('').map(Number)
+  let y = decInStrY.split('').map(Number)
+  while (x.length || y.length) {
+    const s = (x.pop() || 0) + (y.pop() || 0) + c
+    r.unshift(s < 10 ? s : s - 10)
+    c = s < 10 ? 0 : 1
+  }
+  if (c) {
+    r.unshift(c)
+  }
+  return r.join('')
 }
