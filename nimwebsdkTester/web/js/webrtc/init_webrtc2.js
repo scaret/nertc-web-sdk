@@ -1315,6 +1315,9 @@ function updateRemoteViewInfo() {
       } else {
         infoStr += `<span style="color:#d3d3d3">${mediaType}</span>`
       }
+      if (remoteStream){
+        view[mediaType].muted = remoteStream.getMuteStatus(mediaType).muted
+      }
       if (view[mediaType].muted) {
         infoStr = `<del>${infoStr}</del>`
       }
