@@ -537,6 +537,7 @@ class GetStats {
             tmp.frameRateReceived = parseInt(item.googFrameRateReceived)
             tmp.frameWidthReceived = parseInt(item.googFrameWidthReceived)
             tmp.frameHeightReceived = parseInt(item.googFrameHeightReceived)
+            tmp.currentDelayMs = parseInt(item.googCurrentDelayMs)
             //tmp.powerEfficientDecoder = 1 //不支持
             tmp.jitterBufferDelay = parseInt(item.googJitterBufferMs)
             this.formativeStatsReport?.formatRecvData(tmp, mediaTypeShort)
@@ -650,7 +651,9 @@ class GetStats {
       } else if (item.type == 'outbound-rtp') {
         ssrc = item.ssrc
         if (item.kind === 'audio') {
-          audioObj.targetBitrate = item.targetBitrate
+          item.targetBitrate
+            ? (audioObj.targetBitrate = Math.round(item.targetBitrate / 1000))
+            : null
           audioObj.bytesSent = item.headerBytesSent + item.bytesSent
           audioObj.packetsSent = item.packetsSent
           audioObj.nackCount = item.nackCount
@@ -668,7 +671,9 @@ class GetStats {
           videoObj.qpSum = item.qpSum
           videoObj.qualityLimitationReason = getLimitationReason(item.qualityLimitationReason)
           videoObj.qualityLimitationResolutionChanges = item.qualityLimitationResolutionChanges
-          videoObj.targetBitrate = item.targetBitrate
+          item.targetBitrate
+            ? (videoObj.targetBitrate = Math.round(item.targetBitrate / 1000))
+            : null
           //这计算的是总的数据，不是实时数据，当前先依赖pc.getStats()反馈吧，后续不支持了在处理
           //videoObj.avgEncodeMs = Math.round((item.totalEncodeTime * 1000) / item.framesEncoded)
           item.framesPerSecond ? (videoObj.frameRateSent = item.framesPerSecond) : null
@@ -683,7 +688,7 @@ class GetStats {
           audioObj.rtt = Math.round(item.roundTripTime * 1000)
         } else if (item.kind === 'video') {
           videoObj.fractionLost = item.fractionLost
-          videoObj.jitterReceived = Math.round(item.jitter * 1000)
+          videoObj.jitter = Math.round(item.jitter * 1000)
           videoObj.packetsLost = item.packetsLost
           videoObj.rtt = Math.round(item.roundTripTime * 1000)
         }
@@ -717,10 +722,14 @@ class GetStats {
           videoObj.framesReceived = item.framesReceived
           videoObj.packetsReceived = item.packetsReceived
           videoObj.packetsLost = item.packetsLost
-          videoObj.pauseCount = item.pauseCount
-          videoObj.totalPausesDuration = item.totalPausesDuration
-          videoObj.freezeCount = item.freezeCount
-          videoObj.totalFreezesDuration = item.totalFreezesDuration
+          item.pauseCount ? (videoObj.pauseCount = item.pauseCount) : null
+          item.totalPausesDuration
+            ? (videoObj.totalPausesDuration = item.totalPausesDuration)
+            : null
+          item.freezeCount ? (videoObj.freezeCount = item.freezeCount) : null
+          item.totalFreezesDuration
+            ? (videoObj.totalFreezesDuration = item.totalFreezesDuration)
+            : null
           //videoObj.decodeMs = 0 //可以计算每秒的解码耗时，当前先不处理
           videoObj.frameRateReceived = item.framesPerSecond
           videoObj.frameWidthReceived = item.frameWidth
@@ -886,7 +895,7 @@ class GetStats {
           audioObj.packetsLost = item.packetsLost
           audioObj.rtt = Math.round(item.roundTripTime * 1000)
         } else if (item.kind === 'video') {
-          videoObj.jitterReceived = Math.round(item.jitter * 1000)
+          videoObj.jitter = Math.round(item.jitter * 1000)
           videoObj.packetsLost = item.packetsLost
           videoObj.rtt = Math.round(item.roundTripTime * 1000)
         }
@@ -1054,7 +1063,7 @@ class GetStats {
       } else if (item.type == 'remote-inbound-rtp') {
         if (item.kind === 'video') {
           videoObj.fractionLost = item.fractionLost
-          videoObj.jitterReceived = Math.round(item.jitter * 1000)
+          videoObj.jitter = Math.round(item.jitter * 1000)
           videoObj.packetsLost = item.packetsLost
           videoObj.rtt = Math.round(item.roundTripTime * 1000)
         }

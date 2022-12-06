@@ -4,7 +4,6 @@ import { SDK_VERSION } from '../../Config'
 import { AdapterRef, SDKRef, StatsReportOptions } from '../../types'
 import raf from '../../util/rtcUtil/raf'
 import * as env from '../../util/rtcUtil/rtcEnvironment'
-import { generateUUID } from '../../util/rtcUtil/utils'
 import WSTransport from '../../util/wsTransport'
 import { GetStats } from './getStats'
 import { getParameters } from '../parameters'
@@ -18,7 +17,7 @@ const PROD = 0 // 线上
 
 const platform = 'web'
 const sdktype = 'webrtc'
-const timestamp = new Date().getTime()
+const timestamp = Date.now()
 const salt = '40f5a1a1871e46089e1e5139a779dd77'
 class StatsReport extends EventEmitter {
   private sdkRef: SDKRef
@@ -75,7 +74,7 @@ class StatsReport extends EventEmitter {
   start() {
     this.reportData.uid = this.adapterRef?.channelInfo.uid
     this.reportData.cid = this.adapterRef?.channelInfo.cid
-    let deviceId = generateUUID()
+    let deviceId = this.adapterRef?.deviceId
     let checkSum = sha1(`${PROD}${timestamp}${SDK_VERSION}${platform}${sdktype}${deviceId}${salt}`)
     //console.log('start: ', this.adapterRef.instance._params.neRtcServerAddresses)
     let url = `${
@@ -113,8 +112,7 @@ class StatsReport extends EventEmitter {
       // 数据上报部分
       let data: any = await this.stats?.getAllStats()
       //@ts-ignore
-      window.reportData = data
-      console.log('report data--->', data)
+      //console.log('report data--->', data)
       if (this.isReport && !env.IS_ELECTRON && data?.times % 2 === 0) {
         // Electron 上报的数据和 Chrome 不同，暂时不上报，后续需要再进行单独处理
         this.reportData.local = data?.local

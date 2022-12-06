@@ -191,6 +191,7 @@ const checkExists = (param: ExistsOptions) => {
 }
 
 export {
+  isValidInteger,
   checkExists,
   checkValidBoolean,
   checkValidFloat,

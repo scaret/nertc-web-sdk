@@ -877,16 +877,16 @@ class LocalStream extends RTCEventEmitter {
    * @returns {Void}
    */
   setLocalRenderMode(options: RenderMode, mediaType?: MediaTypeShort) {
-    const params: any = {
-      options,
-      mediaType
-    }
-    if (!options || !(options.width - 0) || !(options.height - 0)) {
+    if (!options || !Number.isInteger(options.width) || !Number.isInteger(options.width)) {
       this.logger.warn('setLocalRenderMode 参数宽高错误')
       this.client.apiFrequencyControl({
         name: 'setLocalRenderMode',
         code: -1,
-        param: JSON.stringify(params, null, ' ')
+        param: {
+          streamID: this.stringStreamID,
+          mediaType,
+          ...options
+        }
       })
       throw new RtcError({
         code: ErrorCode.STREAM_RENDER_ARGUMENT_ERROR,
@@ -918,7 +918,7 @@ class LocalStream extends RTCEventEmitter {
       param: {
         streamID: this.stringStreamID,
         mediaType,
-        ...params
+        ...options
       }
     })
   }

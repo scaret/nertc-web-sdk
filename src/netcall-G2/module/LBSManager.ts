@@ -148,7 +148,10 @@ export class LBSManager {
         url: `${lbsUrl}?reason=${reason}&sdkVersion=${encodeURIComponent(
           SDK_VERSION
         )}&appKey=${encodeURIComponent(this.client._params.appkey)}&business=rtc&clientType=16`,
-        type: 'GET'
+        type: 'GET',
+        header: {
+          //'Session-Id': this.client.adapterRef.deviceId || ''
+        }
       })) as LBS_RES
     } catch (e) {
       this.logger.error(`LBS更新失败！`, e)
