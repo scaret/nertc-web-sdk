@@ -161,6 +161,7 @@ class GetStats {
             if (report.video_ssrc && result.video_ssrc) {
               //@ts-ignore
               result.video_ssrc.push(report.video_ssrc[0])
+              //排序，保障大流在数组的第一位
               if (result.video_ssrc.length > 1) {
                 const temp: any = result.video_ssrc[0] || {}
                 if (temp.streamType === 'low') {
@@ -803,7 +804,8 @@ class GetStats {
           report = this.formatSafariStandardizedStats(report, direction)
           if (report.video_ssrc && result.video_ssrc) {
             //@ts-ignore
-            result.video_ssrc.push(report.video_ssrc)
+            result.video_ssrc.push(report.video_ssrc[0])
+            //排序，保障大流在数组的第一位
             if (result.video_ssrc.length > 1) {
               const temp: any = result.video_ssrc[0] || {}
               if (temp.streamType === 'low') {
@@ -815,7 +817,7 @@ class GetStats {
             }
           } else if (report.screen_ssrc && result.screen_ssrc) {
             //@ts-ignore
-            result.screen_ssrc.push(report.screen_ssrc)
+            result.screen_ssrc.push(report.screen_ssrc[0])
             if (result.screen_ssrc.length > 1) {
               const temp: any = result.screen_ssrc[0] || {}
               if (temp.streamType === 'low') {
