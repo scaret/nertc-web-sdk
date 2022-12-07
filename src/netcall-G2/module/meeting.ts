@@ -91,7 +91,7 @@ class Meeting extends EventEmitter {
         type: 'POST',
         //contentType: 'application/x-www-form-urlencoded',
         header: {
-          //'Session-Id': this.adapterRef.deviceId || ''
+          'Session-Id': this.adapterRef.deviceId || ''
         },
         data: {
           uid: new SimpleBig(uid),
@@ -506,7 +506,7 @@ class Meeting extends EventEmitter {
           contentType: 'application/json;charset=utf-8',
           header: {
             Token: this.adapterRef.channelInfo.turnToken,
-            //'Session-Id': this.adapterRef.deviceId || ''
+            'Session-Id': this.adapterRef.deviceId || ''
           },
           data: {
             version: 1,
@@ -625,7 +625,7 @@ class Meeting extends EventEmitter {
           contentType: 'application/json;charset=utf-8',
           header: {
             Token: this.adapterRef.channelInfo.turnToken,
-            //'Session-Id': this.adapterRef.deviceId || ''
+            'Session-Id': this.adapterRef.deviceId || ''
           },
           data: {
             taskId: taskIds[i]
@@ -784,7 +784,7 @@ class Meeting extends EventEmitter {
           contentType: 'application/json;charset=utf-8',
           header: {
             Token: this.adapterRef.channelInfo.turnToken,
-            //'Session-Id': this.adapterRef.deviceId || ''
+            'Session-Id': this.adapterRef.deviceId || ''
           },
           data: {
             version: 1,

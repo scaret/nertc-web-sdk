@@ -312,7 +312,8 @@ class GetStats {
           googRetransmitBitrate: parseInt(item.googRetransmitBitrate) || 0,
           googAvailableReceiveBandwidth: parseInt(item.googAvailableReceiveBandwidth) || 0,
           googTargetEncBitrate: parseInt(item.googTargetEncBitrate) || 0,
-          googTransmitBitrate: parseInt(item.googTransmitBitrate) || 0
+          googTransmitBitrate: parseInt(item.googTransmitBitrate) || 0,
+          googBucketDelay: parseInt(item.googBucketDelay) || 0
         })
       } else if (/^ssrc_/i.test(item.id)) {
         const uidAndKindBySsrc = this?.adapterRef?.instance.getUidAndKindBySsrc(parseInt(item.ssrc))
