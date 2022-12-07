@@ -174,11 +174,11 @@ class Play extends EventEmitter {
 
         if (width > 2 && height > 2 && this.stream.isRemote) {
           if (
-            this.stream.client.adapterRef.state.signalVideoFirstFrameTime <
+            this.stream.client.adapterRef.state.videoResizeTime <
             this.stream.client.adapterRef.state.signalJoinSuccessTime
           ) {
             // 视频首帧
-            this.stream.client.adapterRef.state.signalVideoFirstFrameTime = Date.now()
+            this.stream.client.adapterRef.state.videoResizeTime = Date.now()
           }
         }
 
@@ -449,6 +449,13 @@ class Play extends EventEmitter {
       const dom = mediaSetting.dom
       if (!dom) return
       dom.srcObject = stream
+      if (
+        this.stream.isRemote &&
+        this.stream.client.adapterRef.state.domVideoAppendTime <
+          this.stream.client.adapterRef.state.signalJoinSuccessTime
+      ) {
+        this.stream.client.adapterRef.state.domVideoAppendTime = Date.now()
+      }
       await playMedia(dom, getParameters().playMediaTimeout)
       this.logger.log(
         `[Play] 成功加载主流播放视频源：当前视频实际分辨率${dom.videoWidth}x${dom.videoHeight}，显示宽高${dom.offsetWidth}x${dom.offsetHeight}`

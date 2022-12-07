@@ -5234,11 +5234,28 @@ function getdate() {
 // 读取url中配置的初始参数
 let query = _parseQuery(location.search)
 if (query) {
+  if (query.transparentWithFlagOff === 'true') {
+    console.log('启用EncodedTransform')
+    $('#customTransform').val('transparentWithFlagOff')
+    $('#setTransform').click()
+  }
   if (query.noclick === 'true') {
     $('input[name="enableAudio"][value=""]').prop('checked', true)
     $('input[name="enableVideo"][value=""]').prop('checked', true)
     $('input[name="enableScreen"][value=""]').prop('checked', true)
     $('input[name="enableScreenAudio"][value=""]').prop('checked', true)
+
+    console.log('启用EncodedTransform')
+    $('#customTransform').val('transparentWithFlagOff')
+    try{
+      $('#setTransform').click()
+    }catch(e){
+      console.error(e)
+    }
+
+    console.log('启用观众模式')
+    rtc.client.setClientRole('audience')
+
     $('#joinChannel-btn').click()
   }
 }

@@ -2608,6 +2608,14 @@ class Mediasoup extends EventEmitter {
       const code = iceConnectionStateMap[iceStatus.iceConnectionState || 0] || 0
       if (code > 0) {
         this.adapterRef.logger.log('iceConnectionStateChanged', direction, iceStatus.info)
+        if (code === iceConnectionStateMap.connected) {
+          if (
+            direction === 'recv' &&
+            this.adapterRef.state.iceRecvConnectedTime < this.adapterRef.state.signalJoinResTime
+          ) {
+            this.adapterRef.state.iceRecvConnectedTime = Date.now()
+          }
+        }
       } else {
         this.adapterRef.logger.warn('iceConnectionStateChanged', direction, iceStatus.info)
       }
