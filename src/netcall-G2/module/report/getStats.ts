@@ -344,8 +344,8 @@ class GetStats {
             //tmp.nackCount = 0 //不支持
             tmp.rtt = parseInt(item.googRtt)
             tmp.jitterReceived = parseInt(item.googJitterReceived)
-            item.googEchoCancellationReturnLoss ? tmp.echoReturnLoss = item.googEchoCancellationReturnLoss || ''
-            item.googEchoCancellationReturnLossEnhancement ? tmp.echoReturnLossEnhancement = item.googEchoCancellationReturnLossEnhancement : null
+            item.googEchoCancellationReturnLoss ? (tmp.echoReturnLoss = item.googEchoCancellationReturnLoss) : null
+            item.googEchoCancellationReturnLossEnhancement ? (tmp.echoReturnLossEnhancement = item.googEchoCancellationReturnLossEnhancement) : null
             this.formativeStatsReport?.formatSendData(tmp, mediaTypeShort)
             //tmp.active = item.active //不支持
 
