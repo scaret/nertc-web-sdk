@@ -255,7 +255,7 @@ class GetStats {
       } else if (item.googHasEnteredLowResolution) {
         return 3
       } else {
-        0
+        return 0
       }
     }
     // 普通换算
@@ -628,6 +628,8 @@ class GetStats {
       } else if (reason === 'other') {
         return 3
       } else if (reason === 'none') {
+        return 0
+      } else {
         return 0
       }
     }
@@ -1083,19 +1085,25 @@ class GetStats {
       if (item.type == 'outbound-rtp') {
         ssrc = item.ssrc
         if (item.kind === 'audio') {
-          audioObj.bytesSent = item.headerBytesSent + item.bytesSent
+          audioObj.bytesSent = (item.headerBytesSent || 0) + item.bytesSent
           audioObj.packetsSent = item.packetsSent
           audioObj.nackCount = item.nackCount
         } else if (item.kind === 'video') {
-          videoObj.bytesSent = item.headerBytesSent + item.bytesSent
+          videoObj.bytesSent = (item.headerBytesSent || 0) + item.bytesSent
           videoObj.firCount = item.firCount
           videoObj.nackCount = item.nackCount
           videoObj.pliCount = item.pliCount
-          videoObj.hugeFramesSent = item.hugeFramesSent
+          item.hugeFramesSent ? (videoObj.hugeFramesSent = item.hugeFramesSent) : null
           videoObj.packetsSent = item.packetsSent
           videoObj.qpSum = item.qpSum
+          item.framesEncoded ? (videoObj.framesEncoded = item.framesEncoded) : null
+          item.framesSent ? (videoObj.framesSent = item.framesSent) : null
           //这计算的是总的数据，不是实时数据，当前先依赖pc.getStats()反馈吧，后续不支持了在处理
-          videoObj.avgEncodeMs = Math.round((item.totalEncodeTime * 1000) / item.framesEncoded)
+          item.totalEncodeTime && item.framesEncoded
+            ? (videoObj.avgEncodeMs = Math.round(
+                (item.totalEncodeTime * 1000) / item.framesEncoded
+              ))
+            : null
           //需要针对firefox计算帧率
           //item.framesEncoded ? (videoObj.frameRateInput = item.framesEncoded) : null
           item.framesPerSecond ? (videoObj.frameRateSent = item.framesPerSecond) : null
@@ -1112,8 +1120,14 @@ class GetStats {
       } else if (item.type == 'inbound-rtp') {
         ssrc = item.ssrc
         if (item.kind === 'audio') {
-          audioObj.totalSamplesDuration = Math.round(item.totalSamplesReceived)
-          audioObj.bytesReceived = item.bytesReceived
+          item.audioLevel ? (audioObj.audioOutputLevel = Math.round(item.audioLevel * 32768)) : null
+          item.insertedSamplesForDeceleration
+            ? (audioObj.preemptiveExpandRate = parseInt(item.insertedSamplesForDeceleration))
+            : null
+          item.removedSamplesForAcceleration
+            ? (audioObj.speechExpandRate = parseInt(item.removedSamplesForAcceleration))
+            : null
+          audioObj.bytesReceived = item.bytesReceived + (item.headerBytesReceived || 0)
           audioObj.concealedSamples = item.concealedSamples
           audioObj.jitter = Math.round(item.jitter * 1000)
           audioObj.jitterBufferDelay = Math.round(
@@ -1122,8 +1136,17 @@ class GetStats {
           audioObj.silentConcealedSamples = item.silentConcealedSamples
           audioObj.packetsLost = item.packetsLost
           audioObj.packetsReceived = item.packetsReceived
+          item.totalSamplesReceived
+            ? (audioObj.totalSamplesDuration = Math.round(item.totalSamplesReceived))
+            : null
+          item.totalAudioEnergy
+            ? (audioObj.totalAudioEnergy = Math.round(item.totalAudioEnergy))
+            : null
+          item.totalSamplesReceived
+            ? (audioObj.totalSamplesDuration = Math.round(item.totalSamplesReceived))
+            : null
         } else if (item.kind === 'video') {
-          videoObj.bytesReceived = item.bytesReceived
+          videoObj.bytesReceived = item.bytesReceived + (item.headerBytesReceived || 0)
           videoObj.firCount = item.firCount
           videoObj.nackCount = item.nackCount
           videoObj.pliCount = item.pliCount
@@ -1139,6 +1162,12 @@ class GetStats {
           videoObj.jitterBufferDelay = Math.round(
             (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
           )
+          item.estimatedPlayoutTimestamp
+            ? (videoObj.estimatedPlayoutTimestamp = item.estimatedPlayoutTimestamp)
+            : null
+          item.lastPacketReceivedTimestamp
+            ? (videoObj.lastPacketReceivedTimestamp = item.lastPacketReceivedTimestamp)
+            : null
         }
       }
     })
