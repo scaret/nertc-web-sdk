@@ -862,6 +862,7 @@ class GetStats {
     const videoObj: { [key: string]: any } = {}
     let ssrc = 0
     report.forEach((item) => {
+      //console.log(item.type, ' item: ', item)
       if (item.type == 'track') {
         if (item.kind === 'audio') {
           audioObj.active = item.ended ? 0 : 1
@@ -875,7 +876,7 @@ class GetStats {
         if (item.kind === 'audio') {
           audioObj.bytesSent = item.headerBytesSent + item.bytesSent
           audioObj.packetsSent = item.packetsSent
-          audioObj.nackCount = item.nackCount
+          item.nackCount ? (audioObj.nackCount = item.nackCount) : null
         } else if (item.kind === 'video') {
           videoObj.bytesSent = item.headerBytesSent + item.bytesSent
           videoObj.firCount = item.firCount
@@ -894,12 +895,12 @@ class GetStats {
         }
       } else if (item.type == 'remote-inbound-rtp') {
         if (item.kind === 'audio') {
-          audioObj.jitterReceived = Math.round(item.jitter * 1000)
-          audioObj.packetsLost = item.packetsLost
+          item.jitter ? (audioObj.jitterReceived = Math.round(item.jitter * 1000)) : null
+          item.packetsLost ? (audioObj.packetsLost = item.packetsLost) : null
           audioObj.rtt = Math.round(item.roundTripTime * 1000)
         } else if (item.kind === 'video') {
-          videoObj.jitter = Math.round(item.jitter * 1000)
-          videoObj.packetsLost = item.packetsLost
+          item.jitter ? (videoObj.jitter = Math.round(item.jitter * 1000)) : null
+          item.packetsLost ? (videoObj.packetsLost = item.packetsLost) : null
           videoObj.rtt = Math.round(item.roundTripTime * 1000)
         }
       } else if (item.type == 'inbound-rtp') {
@@ -911,12 +912,12 @@ class GetStats {
           audioObj.bytesReceived = item.headerBytesReceived + item.bytesReceived
           audioObj.concealedSamples = item.concealedSamples || 0
           audioObj.estimatedPlayoutTimestamp = item.estimatedPlayoutTimestamp || 0
-          audioObj.jitter = Math.round(item.jitter * 1000)
+          item.jitter ? (audioObj.jitter = Math.round(item.jitter * 1000)) : null
           audioObj.jitterBufferDelay = Math.round(
             (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
           )
           audioObj.lastPacketReceivedTimestamp = item.lastPacketReceivedTimestamp
-          audioObj.nackCount = item.nackCount
+          item.nackCount ? (audioObj.nackCount = item.nackCount) : null
           audioObj.silentConcealedSamples = item.silentConcealedSamples
           audioObj.packetsLost = item.packetsLost
           audioObj.packetsReceived = item.packetsReceived
@@ -928,7 +929,7 @@ class GetStats {
           videoObj.nackCount = item.nackCount
           videoObj.pliCount = item.pliCount
           videoObj.framesDecoded = item.framesDecoded
-          videoObj.framesDropped = item.framesDropped
+          item.framesDropped ? (videoObj.framesDropped = item.framesDropped) : null
           videoObj.framesReceived = item.framesReceived
           videoObj.packetsReceived = item.packetsReceived
           videoObj.packetsLost = item.packetsLost
@@ -936,10 +937,12 @@ class GetStats {
           videoObj.frameRateReceived = item.framesPerSecond
           videoObj.frameWidthReceived = item.frameWidth
           videoObj.frameHeightReceived = item.frameHeight
-          //videoObj.jitter = Math.round(item.jitter * 1000)
-          videoObj.jitterBufferDelay = Math.round(
-            (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
-          )
+          item.jitter ? (videoObj.jitter = Math.round(item.jitter * 1000)) : null
+          item.jitterBufferDelay
+            ? (videoObj.jitterBufferDelay = Math.round(
+                (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
+              ))
+            : null
         }
       } else if (item.type == 'remote-outbound-rtp') {
         if (item.kind === 'audio') {
