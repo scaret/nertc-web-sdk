@@ -285,7 +285,10 @@ class Base extends RTCEventEmitter {
       signalAudioSubscribedTime: 0,
       signalVideoAddedTime: 0,
       signalVideoSubscribedTime: 0,
-      signalVideoFirstFrameTime: 0
+      iceRecvConnectedTime: 0,
+      domVideoAppendTime: 0,
+      videoFirstIframeTime: 0,
+      videoResizeTime: 0
     }
 
     Object.assign(this.adapterRef, {
