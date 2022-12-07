@@ -1,4 +1,5 @@
 import { Timer } from '../types'
+import { pringForLongPromise } from './gum'
 
 export function playMedia(
   media: HTMLVideoElement | HTMLAudioElement,
@@ -12,6 +13,7 @@ export function playMedia(
       }
     }, timeout)
     const p1 = media.play()
+    pringForLongPromise(p1, '媒体标签仍在启动播放中')
     p1.then(() => {
       if (timer) {
         clearTimeout(timer)

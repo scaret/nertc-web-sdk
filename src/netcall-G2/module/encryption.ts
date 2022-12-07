@@ -91,6 +91,12 @@ class Encryption extends EventEmitter {
         receiverInfo.mediaType
       )
     }
+    if (
+      encodedFrame.type === 'key' &&
+      this.adapterRef.state.videoFirstIframeTime < this.adapterRef.state.signalJoinSuccessTime
+    ) {
+      this.adapterRef.state.videoFirstIframeTime = Date.now()
+    }
     this.adapterRef.instance.safeEmit('receiver-transform', {
       uid: receiverInfo.uid,
       mediaType: receiverInfo.mediaType,

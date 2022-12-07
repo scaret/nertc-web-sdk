@@ -20,7 +20,11 @@ let recvStatsFilter = {
 
 window.points = [
   'startSession', 'getChannelInfo', 'signalEstablish', 'signalOpen', 'signalJoinRes', 'signalJoinSuccess',
-  'signalAudioAdded', 'signalVideoAdded', 'signalAudioSubscribed', 'signalVideoSubscribed', 'signalVideoFirstFrame'
+  'signalAudioAdded', 'signalVideoAdded', 'signalAudioSubscribed',
+  'signalVideoSubscribed',
+  'domVideoAppend',
+  'videoFirstIframe',
+  'videoResize'
 ]
 window.pointsMs = {
   buttonClick: Date.now()

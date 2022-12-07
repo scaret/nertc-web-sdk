@@ -3,16 +3,18 @@ import { compatAudioInputList } from '../module/compatAudioInputList'
 import { Device } from '../module/device'
 import { getParameters } from '../module/parameters'
 import { getAudioContext } from '../module/webAudio'
-import { GUMConstaints, ILogger, NeMediaStreamTrack } from '../types'
+import { GUMConstaints, ILogger, NeMediaStreamTrack, Timer } from '../types'
 import { canShimCanvas, shimCanvas } from './rtcUtil/shimCanvas'
 import { syncTrackState } from './syncTrackState'
-import { Logger } from './webrtcLogger'
+import { getDefaultLogger, Logger } from './webrtcLogger'
 
 const logger: ILogger = new Logger({
   tagGen: () => {
     return 'GUM'
   }
 })
+
+let gumTotal = 0
 
 async function getStream(constraint: GUMConstaints, logger: ILogger) {
   if (constraint.audio) {
@@ -31,10 +33,13 @@ async function getStream(constraint: GUMConstaints, logger: ILogger) {
       constraint.audio.echoCancellation = false
     }
   }
-  logger.log('getLocalStream constraint:', JSON.stringify(constraint))
+  const gumCount = ++gumTotal
+  logger.log(`getLocalStream constraint: #${gumCount}`, JSON.stringify(constraint))
   try {
-    const stream = await navigator.mediaDevices.getUserMedia(constraint)
-    logger.log('获取到媒体流: ', stream.id)
+    const p = navigator.mediaDevices.getUserMedia(constraint)
+    pringForLongPromise(p, `仍在等待 getUserMedia 返回 #${gumCount}`)
+    const stream = await p
+    logger.log(`获取到媒体流: #${gumCount}`, stream.id)
     const tracks = stream.getTracks()
     for (let trackId = 0; trackId < tracks.length; trackId++) {
       const track = tracks[trackId]
@@ -121,12 +126,13 @@ async function getStream(constraint: GUMConstaints, logger: ILogger) {
 }
 
 async function getScreenStream(constraint: MediaStreamConstraints, logger: ILogger) {
-  logger.log('getScreenStream constraint:', JSON.stringify(constraint, null, ' '))
+  const gumCount = ++gumTotal
+  logger.log(`getScreenStream constraint: #${gumCount}`, JSON.stringify(constraint, null, ' '))
   //@ts-ignore
   const getDisplayMedia = navigator.getDisplayMedia || navigator.mediaDevices.getDisplayMedia
   // STARTOF handleDisplayMedia
   const handleDisplayMedia = (stream: MediaStream) => {
-    logger.log('获取到屏幕共享流: ', stream.id)
+    logger.log(`获取到屏幕共享流: #${gumCount}`, stream.id)
     const tracks = stream.getTracks()
     tracks.forEach((track) => {
       watchTrack(track)
@@ -135,8 +141,12 @@ async function getScreenStream(constraint: MediaStreamConstraints, logger: ILogg
           // @ts-ignore
           if (track.focus) {
             logger.log('屏幕共享不跳转到被共享页面')
-            // @ts-ignore
-            track.focus('no-focus-change')
+            try {
+              // @ts-ignore
+              track.focus('no-focus-change')
+            } catch (e) {
+              //fallthrough
+            }
           } else {
             logger.log('当前浏览器不支持屏幕共享跳转控制')
           }
@@ -149,11 +159,13 @@ async function getScreenStream(constraint: MediaStreamConstraints, logger: ILogg
 
   let mediaStream: MediaStream
   try {
-    //@ts-ignore
-    mediaStream = await navigator.mediaDevices.getDisplayMedia(constraint)
+    // @ts-ignore
+    const p = navigator.mediaDevices.getDisplayMedia(constraint) as Promise<MediaStream>
+    pringForLongPromise(p, `仍在等待 getDisplayMedia 返回 #${gumCount}`)
+    mediaStream = await p
   } catch (e: any) {
     if (e?.message?.indexOf('user gesture') > -1 && Device.onUserGestureNeeded) {
-      logger.warn('荧幕共享获取中断，需要手势触发。')
+      logger.warn('荧幕共享获取中断，需要手势触发。', gumCount)
       Device.onUserGestureNeeded(e)
       try {
         mediaStream = await new Promise((resolve, reject) => {
@@ -163,11 +175,11 @@ async function getScreenStream(constraint: MediaStreamConstraints, logger: ILogg
           })
         })
       } catch (e: any) {
-        logger.error('第二次屏幕共享获取失败: ', e.name, e.message)
+        logger.error(`第二次屏幕共享获取失败: #${gumCount}`, e.name, e.message)
         throw e
       }
     } else {
-      logger.error('屏幕共享获取失败: ', e.name, e.message)
+      logger.error(`屏幕共享获取失败: #${gumCount}`, e.name, e.message)
       throw e
     }
   }
@@ -259,6 +271,31 @@ export function watchTrack(track: MediaStreamTrack | null) {
       }
     }
   }
+}
+
+export async function pringForLongPromise(p: Promise<any>, description: string) {
+  let cnt = 0
+  const start = Date.now()
+  let timer: Timer | null = setInterval(() => {
+    cnt++
+    getDefaultLogger().warn(`${description} ${Date.now() - start}ms`)
+    if (timer && cnt > 10) {
+      clearInterval(timer)
+      timer = null
+    }
+  }, 6000)
+  p.then(() => {
+    if (timer) {
+      clearInterval(timer)
+      timer = null
+    }
+  })
+  p.catch((e) => {
+    if (timer) {
+      clearInterval(timer)
+      timer = null
+    }
+  })
 }
 
 function emptyStreamWith(stream: MediaStream, withTrack: MediaStreamTrack | null) {

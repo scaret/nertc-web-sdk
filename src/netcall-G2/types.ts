@@ -68,7 +68,10 @@ export interface AdapterRef {
     signalAudioSubscribedTime: number
     signalVideoAddedTime: number
     signalVideoSubscribedTime: number
-    signalVideoFirstFrameTime: number
+    iceRecvConnectedTime: number
+    domVideoAppendTime: number
+    videoFirstIframeTime: number
+    videoResizeTime: number
   }
   mediaCapability: MediaCapability
   nim?: any
