@@ -395,6 +395,8 @@ class Signalling extends EventEmitter {
           })
           this.adapterRef.remoteStreamMap[uid] = remoteStream
           this.adapterRef.memberMap[uid] = uid
+        } else {
+          remoteStream.active = true
         }
         this.adapterRef.instance._roleInfo.audienceList[uid] = false
         this.adapterRef.instance.safeEmit('peer-online', { uid })
@@ -464,6 +466,8 @@ class Signalling extends EventEmitter {
           })
           this.adapterRef.remoteStreamMap[uid] = remoteStream
           this.adapterRef.memberMap[uid] = uid
+        } else {
+          remoteStream.active = true
         }
         remoteStream.muteStatus[mediaTypeShort].send = externData.producerInfo.mute
         if (remoteStream.pubStatus[mediaTypeShort].consumerId) {
@@ -1878,6 +1882,8 @@ class Signalling extends EventEmitter {
         })
         this.adapterRef.remoteStreamMap[uid] = remoteStream
         this.adapterRef.memberMap[uid] = uid
+      } else {
+        remoteStream.active = true
       }
       this.adapterRef.instance._roleInfo.audienceList[uid] = false
     }
