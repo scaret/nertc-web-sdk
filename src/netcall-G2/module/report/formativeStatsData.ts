@@ -233,8 +233,9 @@ class FormativeStatsReport {
   }
 
   formatRecvData(data: any, mediaType: any) {
+    //console.log(data.remoteuid, ' ', mediaType, ': ', data)
     let tmp: any
-    const uid = data.uid || 0
+    const uid = data.remoteuid || 0
     this.clearFirstRecvData(uid)
     if (!this.firstData.recvFirstData[uid]) {
       this.firstData.recvFirstData[uid] = {
