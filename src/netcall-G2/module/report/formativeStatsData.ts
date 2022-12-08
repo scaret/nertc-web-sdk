@@ -203,7 +203,9 @@ class FormativeStatsReport {
     //计算每秒发包数
     data.packetsSentPerSecond = data.packetsSent - tmp.packetsSent
     //计算丢包率
-    data.packetsLostRate = this.getPacketLossRate(tmp, data, true)
+    if (data.packetsLost) {
+      data.packetsLostRate = this.getPacketLossRate(tmp, data, true)
+    }
     if (data.streamType) {
       //计算每秒编码数目
       if (data.framesEncoded >= tmp.framesEncoded) {
@@ -333,7 +335,10 @@ class FormativeStatsReport {
     //计算每秒发包数
     data.packetsReceivedPerSecond = data.packetsReceived - tmp.packetsReceived
     //计算丢包率
-    data.packetsLostRate = this.getPacketLossRate(tmp, data)
+    if (data.packetsLost) {
+      data.packetsLostRate = this.getPacketLossRate(tmp, data)
+    }
+
     if (mediaType === 'video' || mediaType === 'screen') {
       //计算卡顿率
       if (!data.frameRateReceived) {
