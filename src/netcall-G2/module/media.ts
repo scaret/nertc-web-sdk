@@ -624,7 +624,6 @@ class MediaHelper extends EventEmitter {
           const screenTrack = stream.getVideoTracks()[0]
           this.screen.screenVideoTrack = screenTrack
           emptyStreamWith(this.screen.screenVideoStream, screenTrack)
-
         } else {
           let gdmStream = await GUM.getScreenStream(
             {

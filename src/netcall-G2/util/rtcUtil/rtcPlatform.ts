@@ -38,7 +38,7 @@ const browserInfoMap = new Map([
   [env.IS_EDGE, ['EDGE', env.EDGE_VERSION]],
   [env.IS_SOGOUM, ['SogouMobile', env.SOGOUM_VERSION]],
   [env.IS_SOGOU, ['Sogou', env.SOGOU_VERSION]],
-  [env.IS_ELECTRON, ['Sogou', env.ELECTRON_VERSION]]
+  [env.IS_ELECTRON, ['Electron', env.ELECTRON_VERSION]]
 ])
 
 export function getBrowserInfo() {
