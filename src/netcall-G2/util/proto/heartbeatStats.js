@@ -513,11 +513,11 @@ var $root = (
                 type: 'int64',
                 id: 5
               },
-              googTransmitBitrate: {
+              googBucketDelay: {
                 type: 'int64',
                 id: 6
               },
-              googBucketDelay: {
+              googTransmitBitrate: {
                 type: 'int64',
                 id: 7
               }

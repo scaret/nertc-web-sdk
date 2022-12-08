@@ -46,7 +46,7 @@ class StatsReport extends EventEmitter {
     this.reportData = {
       appkey: this.appKey,
       cid: this.adapterRef?.channelInfo.cid || 0,
-      uid: this.adapterRef?.channelInfo.uid || 0,
+      uid: `${this.adapterRef?.channelInfo.uid}` || '0',
       browser: getBrowserInfo().browserName,
       platform: getOSInfo().osName,
       timestamp: 0,
@@ -72,7 +72,7 @@ class StatsReport extends EventEmitter {
   }
 
   start() {
-    this.reportData.uid = this.adapterRef?.channelInfo.uid
+    this.reportData.uid = `${this.adapterRef?.channelInfo.uid}` || '0'
     this.reportData.cid = this.adapterRef?.channelInfo.cid
     let deviceId = this.adapterRef?.deviceId
     let checkSum = sha1(`${PROD}${timestamp}${SDK_VERSION}${platform}${sdktype}${deviceId}${salt}`)
@@ -113,7 +113,7 @@ class StatsReport extends EventEmitter {
       let data: any = await this.stats?.getAllStats()
       //@ts-ignore
       console.log('report data--->', data)
-      if (this.isReport && !env.IS_ELECTRON && data?.times % 2 === 0) {
+      if (this.isReport && data?.times % 2 === 0) {
         // Electron 上报的数据和 Chrome 不同，暂时不上报，后续需要再进行单独处理
         this.reportData.local = data?.local
         this.reportData.remote = data?.remote
@@ -136,7 +136,7 @@ class StatsReport extends EventEmitter {
     })
     datareport.setHeartbeat({
       name: 'setHeartbeat',
-      uid: '' + this.adapterRef.channelInfo.uid,
+      uid: `${this.adapterRef?.channelInfo.uid}` || '0',
       cid: '' + this.adapterRef.channelInfo.cid
     })
     datareport.send()

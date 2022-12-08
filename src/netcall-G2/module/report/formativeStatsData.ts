@@ -333,7 +333,7 @@ class FormativeStatsReport {
     data.packetsReceivedPerSecond = data.packetsReceived - tmp.packetsReceived
     //计算丢包率
     data.packetsLostRate = this.getPacketLossRate(tmp, data)
-    if (data.streamType) {
+    if (mediaType === 'video' || mediaType === 'screen') {
       //计算卡顿率
       if (!data.frameRateReceived) {
         data.frameRateReceived = data.framesReceived - tmp.framesReceived
