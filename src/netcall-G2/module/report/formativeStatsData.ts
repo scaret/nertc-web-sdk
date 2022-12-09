@@ -203,7 +203,9 @@ class FormativeStatsReport {
     //计算每秒发包数
     data.packetsSentPerSecond = data.packetsSent - tmp.packetsSent
     //计算丢包率
-    data.packetsLostRate = this.getPacketLossRate(tmp, data, true)
+    if (data.packetsLost) {
+      data.packetsLostRate = this.getPacketLossRate(tmp, data, true)
+    }
     if (data.streamType) {
       //计算每秒编码数目
       if (data.framesEncoded >= tmp.framesEncoded) {
@@ -233,8 +235,9 @@ class FormativeStatsReport {
   }
 
   formatRecvData(data: any, mediaType: any) {
+    //console.log(data.remoteuid, ' ', mediaType, ': ', data)
     let tmp: any
-    const uid = data.uid || 0
+    const uid = data.remoteuid || 0
     this.clearFirstRecvData(uid)
     if (!this.firstData.recvFirstData[uid]) {
       this.firstData.recvFirstData[uid] = {
@@ -332,7 +335,10 @@ class FormativeStatsReport {
     //计算每秒发包数
     data.packetsReceivedPerSecond = data.packetsReceived - tmp.packetsReceived
     //计算丢包率
-    data.packetsLostRate = this.getPacketLossRate(tmp, data)
+    if (data.packetsLost) {
+      data.packetsLostRate = this.getPacketLossRate(tmp, data)
+    }
+
     if (mediaType === 'video' || mediaType === 'screen') {
       //计算卡顿率
       if (!data.frameRateReceived) {

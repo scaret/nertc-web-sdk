@@ -330,7 +330,9 @@ class GetStats {
         let tmp: any = {}
         if (direction === 'send') {
           if (item.mediaType === 'audio') {
-            item.audioInputLevel ? (tmp.audioInputLevel = parseInt(item.audioInputLevel)) : null
+            item.audioInputLevel !== undefined
+              ? (tmp.audioInputLevel = parseInt(item.audioInputLevel))
+              : null
             tmp.totalAudioEnergy = parseInt(item.totalAudioEnergy)
             tmp.totalSamplesDuration = parseInt(item.totalSamplesDuration)
             tmp.bytesSent = parseInt(item.bytesSent)
@@ -344,8 +346,12 @@ class GetStats {
             //tmp.nackCount = 0 //不支持
             tmp.rtt = parseInt(item.googRtt)
             tmp.jitterReceived = parseInt(item.googJitterReceived)
-            item.googEchoCancellationReturnLoss ? (tmp.echoReturnLoss = item.googEchoCancellationReturnLoss) : null
-            item.googEchoCancellationReturnLossEnhancement ? (tmp.echoReturnLossEnhancement = item.googEchoCancellationReturnLossEnhancement) : null
+            item.googEchoCancellationReturnLoss !== undefined
+              ? (tmp.echoReturnLoss = item.googEchoCancellationReturnLoss)
+              : null
+            item.googEchoCancellationReturnLossEnhancement !== undefined
+              ? (tmp.echoReturnLossEnhancement = item.googEchoCancellationReturnLossEnhancement)
+              : null
             this.formativeStatsReport?.formatSendData(tmp, mediaTypeShort)
             //tmp.active = item.active //不支持
 
@@ -377,7 +383,9 @@ class GetStats {
             tmp.firCount = parseInt(item.googFirsReceived)
             tmp.pliCount = parseInt(item.googPlisReceived)
             tmp.nackCount = parseInt(item.googNacksReceived)
-            item.framesEncoded ? (tmp.framesEncoded = parseInt(item.framesEncoded)) : null
+            item.framesEncoded !== undefined
+              ? (tmp.framesEncoded = parseInt(item.framesEncoded))
+              : null
             //tmp.framesEncodedPerSecond = 0//后面的模块计算得出
             tmp.avgEncodeMs = parseInt(item.googAvgEncodeMs)
             tmp.encodeUsagePercent = parseInt(item.googEncodeUsagePercent)
@@ -387,7 +395,9 @@ class GetStats {
             tmp.frameWidthSent = parseInt(item.googFrameWidthSent)
             tmp.frameHeightInput = parseInt(item.googFrameHeightInput)
             tmp.frameHeightSent = parseInt(item.googFrameHeightSent)
-            item.hugeFramesSent ? (tmp.hugeFramesSent = parseInt(item.hugeFramesSent)) : null
+            item.hugeFramesSent !== undefined
+              ? (tmp.hugeFramesSent = parseInt(item.hugeFramesSent))
+              : null
             tmp.qpSum = parseInt(item.qpSum)
             //tmp.qpPercentage = 0 //后面的模块计算得出
             //tmp.freezeTime = 0 //后面的模块计算得出
@@ -416,9 +426,10 @@ class GetStats {
               SendResolutionHeight: tmp.frameHeightSent || 0,
               SendResolutionWidth: tmp.frameWidthSent || 0,
               TargetSendBitrate: tmp.bitsSentPerSecond || 0,
-              TotalDuration: this?.adapterRef?.state.startPubVideoTime
-                ? (Date.now() - this.adapterRef.state.startPubVideoTime) / 1000
-                : 0,
+              TotalDuration:
+                this?.adapterRef?.state.startPubVideoTime !== undefined
+                  ? (Date.now() - this.adapterRef.state.startPubVideoTime) / 1000
+                  : 0,
               TotalFreezeTime: tmp.totalFreezeTime || 0
             }
             if (mediaTypeShort === 'video') {
@@ -541,7 +552,9 @@ class GetStats {
             tmp.frameHeightReceived = parseInt(item.googFrameHeightReceived)
             tmp.currentDelayMs = parseInt(item.googCurrentDelayMs)
             //tmp.powerEfficientDecoder = 1 //不支持
-            item.googJitterBufferMs ? tmp.jitterBufferDelay = parseInt(item.googJitterBufferMs) : null
+            item.googJitterBufferMs !== undefined
+              ? (tmp.jitterBufferDelay = parseInt(item.googJitterBufferMs))
+              : null
             this.formativeStatsReport?.formatRecvData(tmp, mediaTypeShort)
 
             const remoteStream = this?.adapterRef?.remoteStreamMap[tmp.remoteuid]
@@ -642,12 +655,14 @@ class GetStats {
           audioObj.audioInputLevel = Math.round(item.audioLevel * 32768)
           audioObj.totalAudioEnergy = Math.round(item.totalAudioEnergy)
           audioObj.totalSamplesDuration = Math.round(item.totalSamplesDuration)
-          item.echoReturnLoss ? (audioObj.echoReturnLoss = item.echoReturnLoss.toString()) : null
-          item.echoReturnLossEnhancement
+          item.echoReturnLoss !== undefined
+            ? (audioObj.echoReturnLoss = item.echoReturnLoss.toString())
+            : null
+          item.echoReturnLossEnhancement !== undefined
             ? (audioObj.echoReturnLossEnhancement = item.echoReturnLossEnhancement.toString())
             : null
         } else if (item.kind === 'video') {
-          item.frames ? (videoObj.framesEncoded = parseInt(item.frames)) : null
+          item.frames !== undefined ? (videoObj.framesEncoded = parseInt(item.frames)) : null
           videoObj.frameRateInput = item.framesPerSecond
           videoObj.frameWidthInput = item.width
           videoObj.frameHeightInput = item.height
@@ -655,12 +670,12 @@ class GetStats {
       } else if (item.type == 'outbound-rtp') {
         ssrc = item.ssrc
         if (item.kind === 'audio') {
-          item.targetBitrate
+          item.targetBitrate !== undefined
             ? (audioObj.targetBitrate = Math.round(item.targetBitrate / 1000))
             : null
           audioObj.bytesSent = item.headerBytesSent + item.bytesSent
           audioObj.packetsSent = item.packetsSent
-          item.nackCount ? (audioObj.nackCount = item.nackCount) : null
+          item.nackCount !== undefined ? (audioObj.nackCount = item.nackCount) : null
           audioObj.active = item.active ? 1 : 0
         } else if (item.kind === 'video') {
           videoObj.active = item.active ? 1 : 0
@@ -668,21 +683,23 @@ class GetStats {
           videoObj.firCount = item.firCount
           videoObj.nackCount = item.nackCount
           videoObj.pliCount = item.pliCount
-          item.framesEncoded ? (videoObj.framesEncoded = item.framesEncoded) : null
-          item.framesSent ? (videoObj.framesSent = item.framesSent) : null
-          item.hugeFramesSent ? (videoObj.hugeFramesSent = item.hugeFramesSent) : null
+          item.framesEncoded !== undefined ? (videoObj.framesEncoded = item.framesEncoded) : null
+          item.framesSent !== undefined ? (videoObj.framesSent = item.framesSent) : null
+          item.hugeFramesSent !== undefined ? (videoObj.hugeFramesSent = item.hugeFramesSent) : null
           videoObj.packetsSent = item.packetsSent
           videoObj.qpSum = item.qpSum
           videoObj.qualityLimitationReason = getLimitationReason(item.qualityLimitationReason)
           videoObj.qualityLimitationResolutionChanges = item.qualityLimitationResolutionChanges
-          item.targetBitrate
+          item.targetBitrate !== undefined
             ? (videoObj.targetBitrate = Math.round(item.targetBitrate / 1000))
             : null
           //这计算的是总的数据，不是实时数据，当前先依赖pc.getStats()反馈吧，后续不支持了在处理
           //videoObj.avgEncodeMs = Math.round((item.totalEncodeTime * 1000) / item.framesEncoded)
-          item.framesPerSecond ? (videoObj.frameRateSent = item.framesPerSecond) : null
-          item.frameWidth ? (videoObj.frameWidthSent = item.frameWidth) : null
-          item.frameHeight ? (videoObj.frameHeightSent = item.frameHeight) : null
+          item.framesPerSecond !== undefined
+            ? (videoObj.frameRateSent = item.framesPerSecond)
+            : null
+          item.frameWidth !== undefined ? (videoObj.frameWidthSent = item.frameWidth) : null
+          item.frameHeight !== undefined ? (videoObj.frameHeightSent = item.frameHeight) : null
         }
       } else if (item.type == 'remote-inbound-rtp') {
         if (item.kind === 'audio') {
@@ -699,25 +716,31 @@ class GetStats {
       } else if (item.type == 'inbound-rtp') {
         ssrc = item.ssrc
         if (item.kind === 'audio') {
-          item.audioLevel ? (audioObj.audioOutputLevel = Math.round(item.audioLevel * 32768)) : null
-          item.totalAudioEnergy
+          item.audioLevel !== undefined
+            ? (audioObj.audioOutputLevel = Math.round(item.audioLevel * 32768))
+            : null
+          item.totalAudioEnergy !== undefined
             ? (audioObj.totalAudioEnergy = Math.round(item.totalAudioEnergy))
             : null
-          item.totalSamplesReceived
+          item.totalSamplesReceived !== undefined
             ? (audioObj.totalSamplesDuration = Math.round(item.totalSamplesReceived))
             : null
           audioObj.bytesReceived = item.headerBytesReceived + item.bytesReceived
-          item.concealedSamples ? (audioObj.concealedSamples = item.concealedSamples) : null
+          item.concealedSamples !== undefined
+            ? (audioObj.concealedSamples = item.concealedSamples)
+            : null
           audioObj.estimatedPlayoutTimestamp = item.estimatedPlayoutTimestamp || 0
           audioObj.jitter = Math.round(item.jitter * 1000)
-          item.jitterBufferDelay
+          item.jitterBufferDelay !== undefined
             ? (audioObj.jitterBufferDelay = Math.round(
                 (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
               ))
             : null
           audioObj.lastPacketReceivedTimestamp = item.lastPacketReceivedTimestamp
-          item.nackCount ? audioObj.nackCount = item.nackCount : null
-          item.silentConcealedSamples ? audioObj.silentConcealedSamples = item.silentConcealedSamples : null
+          item.nackCount !== undefined ? (audioObj.nackCount = item.nackCount) : null
+          item.silentConcealedSamples !== undefined
+            ? (audioObj.silentConcealedSamples = item.silentConcealedSamples)
+            : null
           audioObj.packetsLost = item.packetsLost
           audioObj.packetsReceived = item.packetsReceived
         } else if (item.kind === 'video') {
@@ -728,32 +751,38 @@ class GetStats {
           videoObj.nackCount = item.nackCount
           videoObj.pliCount = item.pliCount
           videoObj.framesDecoded = item.framesDecoded
-          item.framesDropped ? (videoObj.framesDropped = item.framesDropped) : null
-          item.framesReceived ? (videoObj.framesReceived = item.framesReceived) : null
+          item.framesDropped !== undefined ? (videoObj.framesDropped = item.framesDropped) : null
+          item.framesReceived !== undefined ? (videoObj.framesReceived = item.framesReceived) : null
           videoObj.packetsReceived = item.packetsReceived
           videoObj.packetsLost = item.packetsLost
-          item.pauseCount ? (videoObj.pauseCount = item.pauseCount) : null
-          item.totalPausesDuration
+          item.pauseCount !== undefined ? (videoObj.pauseCount = item.pauseCount) : null
+          item.totalPausesDuration !== undefined
             ? (videoObj.totalPausesDuration = item.totalPausesDuration)
             : null
-          item.freezeCount ? (videoObj.freezeCount = item.freezeCount) : null
-          item.totalFreezesDuration
+          item.freezeCount !== undefined ? (videoObj.freezeCount = item.freezeCount) : null
+          item.totalFreezesDuration !== undefined
             ? (videoObj.totalFreezesDuration = item.totalFreezesDuration)
             : null
           //videoObj.decodeMs = 0 //可以计算每秒的解码耗时，当前先不处理
-          item.framesPerSecond ? (videoObj.frameRateReceived = item.framesPerSecond) : null
-          item.frameWidth ? (videoObj.frameWidthReceived = item.frameWidth) : null
-          item.frameHeight ? (videoObj.frameHeightReceived = item.frameHeight) : null
+          item.framesPerSecond !== undefined
+            ? (videoObj.frameRateReceived = item.framesPerSecond)
+            : null
+          item.frameWidth !== undefined ? (videoObj.frameWidthReceived = item.frameWidth) : null
+          item.frameHeight !== undefined ? (videoObj.frameHeightReceived = item.frameHeight) : null
           videoObj.powerEfficientDecoder = item.powerEfficientDecoder ? 1 : 0
           //videoObj.jitter = Math.round(item.jitter * 1000)
-          item.jitterBufferDelay ? videoObj.jitterBufferDelay = Math.round(
-            (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
-          ) : null
+          item.jitterBufferDelay !== undefined
+            ? (videoObj.jitterBufferDelay = Math.round(
+                (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
+              ))
+            : null
         }
       } else if (item.type == 'remote-outbound-rtp') {
         if (item.kind === 'audio') {
-          item.jitter ? (audioObj.jitter = Math.round(item.jitter * 1000)) : null
-          item.roundTripTime ? (audioObj.rtt = Math.round(item.roundTripTime * 1000)) : null
+          item.jitter !== undefined ? (audioObj.jitter = Math.round(item.jitter * 1000)) : null
+          item.roundTripTime !== undefined
+            ? (audioObj.rtt = Math.round(item.roundTripTime * 1000))
+            : null
         } else if (item.kind === 'video') {
           // item.jitter ? (videoObj.jitter = Math.round(item.jitter * 1000)) : null
           // item.roundTripTime ? (videoObj.rtt = Math.round(item.roundTripTime * 1000)) : null
@@ -884,19 +913,23 @@ class GetStats {
         if (item.kind === 'audio' || mediaType === 'audio') {
           audioObj.active = item.ended ? 0 : 1
           //safari 13下行
-          item.audioLevel ? (audioObj.audioOutputLevel = Math.round(item.audioLevel * 32768)) : null
+          item.audioLevel !== undefined
+            ? (audioObj.audioOutputLevel = Math.round(item.audioLevel * 32768))
+            : null
         } else if (item.kind === 'video' || mediaType === 'video') {
           videoObj.active = item.ended ? 0 : 1
           if (direction === 'send') {
             videoObj.frameWidthInput = item.width || item.frameWidth
             videoObj.frameHeightInput = item.height || item.frameHeight
-            item.framesSent ? (videoObj.framesSent = item.framesSent) : null
+            item.framesSent !== undefined ? (videoObj.framesSent = item.framesSent) : null
           } else if (direction === 'recv') {
             videoObj.frameWidthReceived = item.width || item.frameWidth
             videoObj.frameHeightReceived = item.height || item.frameHeight
-            item.framesDecoded ? (videoObj.framesDecoded = item.framesDecoded) : null
-            item.framesReceived ? (videoObj.framesReceived = item.framesReceived) : null
-            item.framesDropped ? (videoObj.framesDropped = item.framesDropped) : null
+            item.framesDecoded !== undefined ? (videoObj.framesDecoded = item.framesDecoded) : null
+            item.framesReceived !== undefined
+              ? (videoObj.framesReceived = item.framesReceived)
+              : null
+            item.framesDropped !== undefined ? (videoObj.framesDropped = item.framesDropped) : null
           }
         }
       } else if (item.type == 'outbound-rtp') {
@@ -904,93 +937,103 @@ class GetStats {
         if (item.kind === 'audio' || item.mediaType === 'audio' || mediaType === 'audio') {
           audioObj.bytesSent = (item.headerBytesSent || 0) + item.bytesSent
           audioObj.packetsSent = item.packetsSent
-          item.nackCount ? (audioObj.nackCount = item.nackCount) : null
+          item.nackCount !== undefined ? (audioObj.nackCount = item.nackCount) : null
         } else if (item.kind === 'video' || item.mediaType === 'video' || mediaType === 'video') {
           videoObj.bytesSent = (item.headerBytesSent || 0) + item.bytesSent
           videoObj.firCount = item.firCount
           videoObj.nackCount = item.nackCount
           videoObj.pliCount = item.pliCount
           videoObj.framesEncoded = item.framesEncoded
-          item.hugeFramesSent ? (videoObj.hugeFramesSent = item.hugeFramesSent) : null
+          item.hugeFramesSent !== undefined ? (videoObj.hugeFramesSent = item.hugeFramesSent) : null
           videoObj.packetsSent = item.packetsSent
           videoObj.qpSum = item.qpSum
-          item.qualityLimitationResolutionChanges
+          item.qualityLimitationResolutionChanges !== undefined
             ? (videoObj.qualityLimitationResolutionChanges =
                 item.qualityLimitationResolutionChanges)
             : null
           //这计算的是总的数据，不是实时数据，当前先依赖pc.getStats()反馈吧，后续不支持了在处理
-          item.totalEncodeTime
+          item.totalEncodeTime !== undefined
             ? (videoObj.avgEncodeMs = Math.round(
                 (item.totalEncodeTime * 1000) / item.framesEncoded
               ))
             : null
-          item.framesPerSecond ? (videoObj.frameRateSent = item.framesPerSecond) : null
-          item.frameWidth ? (videoObj.frameWidthSent = item.frameWidth) : null
-          item.frameHeight ? (videoObj.frameHeightSent = item.frameHeight) : null
+          item.framesPerSecond !== undefined
+            ? (videoObj.frameRateSent = item.framesPerSecond)
+            : null
+          item.frameWidth !== undefined ? (videoObj.frameWidthSent = item.frameWidth) : null
+          item.frameHeight !== undefined ? (videoObj.frameHeightSent = item.frameHeight) : null
         }
       } else if (item.type == 'remote-inbound-rtp') {
         if (item.kind === 'audio') {
-          item.jitter ? (audioObj.jitterReceived = Math.round(item.jitter * 1000)) : null
-          item.packetsLost ? (audioObj.packetsLost = item.packetsLost) : null
+          item.jitter !== undefined
+            ? (audioObj.jitterReceived = Math.round(item.jitter * 1000))
+            : null
+          item.packetsLost !== undefined ? (audioObj.packetsLost = item.packetsLost) : null
           audioObj.rtt = Math.round(item.roundTripTime * 1000)
         } else if (item.kind === 'video') {
-          item.jitter ? (videoObj.jitter = Math.round(item.jitter * 1000)) : null
-          item.packetsLost ? (videoObj.packetsLost = item.packetsLost) : null
+          item.jitter !== undefined ? (videoObj.jitter = Math.round(item.jitter * 1000)) : null
+          item.packetsLost !== undefined ? (videoObj.packetsLost = item.packetsLost) : null
           videoObj.rtt = Math.round(item.roundTripTime * 1000)
         }
       } else if (item.type == 'inbound-rtp') {
         ssrc = item.ssrc
         if (item.kind === 'audio' || item.mediaType === 'audio' || mediaType === 'audio') {
-          item.audioLevel ? (audioObj.audioOutputLevel = Math.round(item.audioLevel * 32768)) : null
-          item.totalAudioEnergy
+          item.audioLevel !== undefined
+            ? (audioObj.audioOutputLevel = Math.round(item.audioLevel * 32768))
+            : null
+          item.totalAudioEnergy !== undefined
             ? (audioObj.totalAudioEnergy = Math.round(item.totalAudioEnergy))
             : null
-          item.totalSamplesReceived
+          item.totalSamplesReceived !== undefined
             ? (audioObj.totalSamplesDuration = Math.round(item.totalSamplesReceived))
             : null
           audioObj.bytesReceived = (item.headerBytesReceived || 0) + item.bytesReceived
-          item.concealedSamples ? (audioObj.concealedSamples = item.concealedSamples) : null
-          item.estimatedPlayoutTimestamp
+          item.concealedSamples !== undefined
+            ? (audioObj.concealedSamples = item.concealedSamples)
+            : null
+          item.estimatedPlayoutTimestamp !== undefined
             ? (audioObj.estimatedPlayoutTimestamp = item.estimatedPlayoutTimestamp)
             : null
-          item.jitter ? (audioObj.jitter = Math.round(item.jitter * 1000)) : null
-          item.jitterBufferDelay
+          item.jitter !== undefined ? (audioObj.jitter = Math.round(item.jitter * 1000)) : null
+          item.jitterBufferDelay !== undefined
             ? (audioObj.jitterBufferDelay = Math.round(
                 (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
               ))
             : null
-          item.lastPacketReceivedTimestamp
+          item.lastPacketReceivedTimestamp !== undefined
             ? (audioObj.lastPacketReceivedTimestamp = item.lastPacketReceivedTimestamp)
             : null
-          item.nackCount ? (audioObj.nackCount = item.nackCount) : null
-          item.silentConcealedSamples
+          item.nackCount !== undefined ? (audioObj.nackCount = item.nackCount) : null
+          item.silentConcealedSamples !== undefined
             ? (audioObj.silentConcealedSamples = item.silentConcealedSamples)
             : null
           audioObj.packetsLost = item.packetsLost
           audioObj.packetsReceived = item.packetsReceived
-          item.jitter ? (audioObj.jitter = Math.round(item.jitter * 1000)) : null
+          item.jitter !== undefined ? (audioObj.jitter = Math.round(item.jitter * 1000)) : null
         } else if (item.kind === 'video' || item.mediaType === 'video' || mediaType === 'video') {
           videoObj.bytesReceived = item.bytesReceived + (item.headerBytesReceived || 0)
-          item.estimatedPlayoutTimestamp
+          item.estimatedPlayoutTimestamp !== undefined
             ? (videoObj.estimatedPlayoutTimestamp = item.estimatedPlayoutTimestamp)
             : null
-          item.lastPacketReceivedTimestamp
+          item.lastPacketReceivedTimestamp !== undefined
             ? (videoObj.lastPacketReceivedTimestamp = item.lastPacketReceivedTimestamp)
             : null
           videoObj.firCount = item.firCount
           videoObj.nackCount = item.nackCount
           videoObj.pliCount = item.pliCount
-          item.framesDecoded ? (videoObj.framesDecoded = item.framesDecoded) : null
-          item.framesDropped ? (videoObj.framesDropped = item.framesDropped) : null
-          item.framesReceived ? (videoObj.framesReceived = item.framesReceived) : null
+          item.framesDecoded !== undefined ? (videoObj.framesDecoded = item.framesDecoded) : null
+          item.framesDropped !== undefined ? (videoObj.framesDropped = item.framesDropped) : null
+          item.framesReceived !== undefined ? (videoObj.framesReceived = item.framesReceived) : null
           videoObj.packetsReceived = item.packetsReceived
           videoObj.packetsLost = item.packetsLost
           //videoObj.decodeMs = 0 //可以计算每秒的解码耗时，当前先不处理
-          item.framesPerSecond ? (videoObj.frameRateReceived = item.framesPerSecond) : null
-          item.frameWidth ? (videoObj.frameWidthReceived = item.frameWidth) : null
-          item.frameHeight ? (videoObj.frameHeightReceived = item.frameHeight) : null
-          item.jitter ? (videoObj.jitter = Math.round(item.jitter * 1000)) : null
-          item.jitterBufferDelay
+          item.framesPerSecond !== undefined
+            ? (videoObj.frameRateReceived = item.framesPerSecond)
+            : null
+          item.frameWidth !== undefined ? (videoObj.frameWidthReceived = item.frameWidth) : null
+          item.frameHeight !== undefined ? (videoObj.frameHeightReceived = item.frameHeight) : null
+          item.jitter !== undefined ? (videoObj.jitter = Math.round(item.jitter * 1000)) : null
+          item.jitterBufferDelay !== undefined
             ? (videoObj.jitterBufferDelay = Math.round(
                 (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
               ))
@@ -998,8 +1041,10 @@ class GetStats {
         }
       } else if (item.type == 'remote-outbound-rtp') {
         if (item.kind === 'audio') {
-          item.jitter ? (audioObj.jitter = Math.round(item.jitter * 1000)) : null
-          item.roundTripTime ? (audioObj.rtt = Math.round(item.roundTripTime * 1000)) : null
+          item.jitter !== undefined ? (audioObj.jitter = Math.round(item.jitter * 1000)) : null
+          item.roundTripTime !== undefined
+            ? (audioObj.rtt = Math.round(item.roundTripTime * 1000))
+            : null
         } else if (item.kind === 'video') {
           // item.jitter ? (videoObj.jitter = Math.round(item.jitter * 1000)) : null
           // item.roundTripTime ? (videoObj.rtt = Math.round(item.roundTripTime * 1000)) : null
@@ -1107,22 +1152,24 @@ class GetStats {
           videoObj.firCount = item.firCount
           videoObj.nackCount = item.nackCount
           videoObj.pliCount = item.pliCount
-          item.hugeFramesSent ? (videoObj.hugeFramesSent = item.hugeFramesSent) : null
+          item.hugeFramesSent !== undefined ? (videoObj.hugeFramesSent = item.hugeFramesSent) : null
           videoObj.packetsSent = item.packetsSent
           videoObj.qpSum = item.qpSum
-          item.framesEncoded ? (videoObj.framesEncoded = item.framesEncoded) : null
-          item.framesSent ? (videoObj.framesSent = item.framesSent) : null
+          item.framesEncoded !== undefined ? (videoObj.framesEncoded = item.framesEncoded) : null
+          item.framesSent !== undefined ? (videoObj.framesSent = item.framesSent) : null
           //这计算的是总的数据，不是实时数据，当前先依赖pc.getStats()反馈吧，后续不支持了在处理
-          item.totalEncodeTime && item.framesEncoded
+          item.totalEncodeTime !== undefined && item.framesEncoded !== undefined
             ? (videoObj.avgEncodeMs = Math.round(
                 (item.totalEncodeTime * 1000) / item.framesEncoded
               ))
             : null
           //需要针对firefox计算帧率
           //item.framesEncoded ? (videoObj.frameRateInput = item.framesEncoded) : null
-          item.framesPerSecond ? (videoObj.frameRateSent = item.framesPerSecond) : null
-          item.frameWidth ? (videoObj.frameWidthSent = item.frameWidth) : null
-          item.frameHeight ? (videoObj.frameHeightSent = item.frameHeight) : null
+          item.framesPerSecond !== undefined
+            ? (videoObj.frameRateSent = item.framesPerSecond)
+            : null
+          item.frameWidth !== undefined ? (videoObj.frameWidthSent = item.frameWidth) : null
+          item.frameHeight !== undefined ? (videoObj.frameHeightSent = item.frameHeight) : null
         }
       } else if (item.type == 'remote-inbound-rtp') {
         if (item.kind === 'video') {
@@ -1134,11 +1181,13 @@ class GetStats {
       } else if (item.type == 'inbound-rtp') {
         ssrc = item.ssrc
         if (item.kind === 'audio') {
-          item.audioLevel ? (audioObj.audioOutputLevel = Math.round(item.audioLevel * 32768)) : null
-          item.insertedSamplesForDeceleration
+          item.audioLevel !== undefined
+            ? (audioObj.audioOutputLevel = Math.round(item.audioLevel * 32768))
+            : null
+          item.insertedSamplesForDeceleration !== undefined
             ? (audioObj.preemptiveExpandRate = parseInt(item.insertedSamplesForDeceleration))
             : null
-          item.removedSamplesForAcceleration
+          item.removedSamplesForAcceleration !== undefined
             ? (audioObj.speechExpandRate = parseInt(item.removedSamplesForAcceleration))
             : null
           audioObj.bytesReceived = item.bytesReceived + (item.headerBytesReceived || 0)
@@ -1150,13 +1199,13 @@ class GetStats {
           audioObj.silentConcealedSamples = item.silentConcealedSamples
           audioObj.packetsLost = item.packetsLost
           audioObj.packetsReceived = item.packetsReceived
-          item.totalSamplesReceived
+          item.totalSamplesReceived !== undefined
             ? (audioObj.totalSamplesDuration = Math.round(item.totalSamplesReceived))
             : null
-          item.totalAudioEnergy
+          item.totalAudioEnergy !== undefined
             ? (audioObj.totalAudioEnergy = Math.round(item.totalAudioEnergy))
             : null
-          item.totalSamplesReceived
+          item.totalSamplesReceived !== undefined
             ? (audioObj.totalSamplesDuration = Math.round(item.totalSamplesReceived))
             : null
         } else if (item.kind === 'video') {
@@ -1176,10 +1225,10 @@ class GetStats {
           videoObj.jitterBufferDelay = Math.round(
             (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
           )
-          item.estimatedPlayoutTimestamp
+          item.estimatedPlayoutTimestamp !== undefined
             ? (videoObj.estimatedPlayoutTimestamp = item.estimatedPlayoutTimestamp)
             : null
-          item.lastPacketReceivedTimestamp
+          item.lastPacketReceivedTimestamp !== undefined
             ? (videoObj.lastPacketReceivedTimestamp = item.lastPacketReceivedTimestamp)
             : null
         }
