@@ -37,6 +37,9 @@ registerProcessor(
           // Calculate the RMS level and update the volume.
           rms = Math.sqrt(sum / samplesLeft.length)
           this._leftVolume = Math.max(rms, this._leftVolume * SMOOTHING_FACTOR)
+          if (this._leftVolume < 1e-10) {
+            this._leftVolume = 0
+          }
         }
         if (samplesRight) {
           sum = 0
@@ -47,6 +50,9 @@ registerProcessor(
           // Calculate the RMS level and update the volume.
           rms = Math.sqrt(sum / samplesRight.length)
           this._rightVolume = Math.max(rms, this._rightVolume * SMOOTHING_FACTOR)
+          if (this._rightVolume < 1e-10) {
+            this._rightVolume = 0
+          }
         }
 
         // Update and sync the volume property with the main thread.
