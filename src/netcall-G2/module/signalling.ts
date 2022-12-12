@@ -1396,35 +1396,6 @@ class Signalling extends EventEmitter {
                   })
                 }
               }
-
-              const instance = this.adapterRef.instance
-              setTimeout(() => {
-                // join response中的事件应该延迟到join发生后再抛出
-                for (let i = 0; i < eventsAfterJoinRes.length; i++) {
-                  const eventName = eventsAfterJoinRes[i].eventName
-                  const eventData = eventsAfterJoinRes[i].eventData
-                  if (instance) {
-                    if (eventName === 'stream-added') {
-                      if (eventData.mediaType === 'audio') {
-                        if (
-                          instance.adapterRef.state.signalAudioAddedTime <
-                          instance.adapterRef.state.signalOpenTime
-                        ) {
-                          instance.adapterRef.state.signalAudioAddedTime = Date.now()
-                        }
-                      } else if (eventData.mediaType === 'video') {
-                        if (
-                          instance.adapterRef.state.signalVideoAddedTime <
-                          instance.adapterRef.state.signalOpenTime
-                        ) {
-                          instance.adapterRef.state.signalVideoAddedTime = Date.now()
-                        }
-                      }
-                    }
-                    instance.safeEmit(eventName, eventData)
-                  }
-                }
-              }, 0)
             }
           }
         }
@@ -1436,6 +1407,36 @@ class Signalling extends EventEmitter {
           }
         }
       }
+
+      const instance = this.adapterRef.instance
+      setTimeout(() => {
+        // join response中的事件应该延迟到join发生后再抛出
+        for (let i = 0; i < eventsAfterJoinRes.length; i++) {
+          const eventName = eventsAfterJoinRes[i].eventName
+          const eventData = eventsAfterJoinRes[i].eventData
+          if (instance) {
+            if (eventName === 'stream-added') {
+              if (eventData.mediaType === 'audio') {
+                if (
+                  instance.adapterRef.state.signalAudioAddedTime <
+                  instance.adapterRef.state.signalOpenTime
+                ) {
+                  instance.adapterRef.state.signalAudioAddedTime = Date.now()
+                }
+              } else if (eventData.mediaType === 'video') {
+                if (
+                  instance.adapterRef.state.signalVideoAddedTime <
+                  instance.adapterRef.state.signalOpenTime
+                ) {
+                  instance.adapterRef.state.signalVideoAddedTime = Date.now()
+                }
+              }
+            }
+            instance.safeEmit(eventName, eventData)
+          }
+        }
+      }, 0)
+
       this.adapterRef.state.signalJoinSuccessTime = Date.now()
       if (this._resolve) {
         this.logger.log('加入房间成功, 反馈通知')
