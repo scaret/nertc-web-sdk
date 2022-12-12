@@ -123,7 +123,7 @@ function isProfileLevelSupported(profileLevelId: string) {
       for (let i in capabilities.codecs) {
         const codec = capabilities.codecs[i]
         if (codec.mimeType === 'video/H264' && codec.sdpFmtpLine) {
-          if (codec.sdpFmtpLine.indexOf(profileLevelId) > -1){
+          if (codec.sdpFmtpLine.indexOf(profileLevelId) > -1) {
             return true
           }
         }
