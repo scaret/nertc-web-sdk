@@ -1217,6 +1217,9 @@ class MediaHelper extends EventEmitter {
           readyState: this.screenAudio.screenAudioSource.readyState
         }
       }
+      if (Device.deviceHistory.audioOut[0]) {
+        settings.audioOutDefault = Device.deviceHistory.audioOut[0]
+      }
     } catch (e: any) {
       settings.errName = e.name
       settings.errMessage = e.message
