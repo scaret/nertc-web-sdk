@@ -223,7 +223,7 @@ class Mediasoup extends EventEmitter {
         await this._mediasoupDevice.load({ routerRtpCapabilities: this._edgeRtpCapabilities })
       }
     }
-    let iceServers = []
+    let iceServers: RTCIceServer[] = []
     let iceTransportPolicy: RTCIceTransportPolicy = 'all'
 
     if (this.adapterRef.channelInfo.relaytoken && this.adapterRef.channelInfo.relayaddrs) {
@@ -250,19 +250,7 @@ class Mediasoup extends EventEmitter {
         iceTransportPolicy = 'relay'
       }
     }
-    if (this.adapterRef.testConf.turnAddr) {
-      iceServers.length = 0
-      iceServers.push({
-        urls: this.adapterRef.testConf.turnAddr, //'turn:' + item + '?transport=udp',
-        credential: this.adapterRef.channelInfo.uid + '/' + this.adapterRef.channelInfo.cid,
-        username: this.adapterRef.testConf.relaytoken || '123456'
-      })
-      iceTransportPolicy = 'relay'
-    }
-    if (this.adapterRef.testConf.iceServers) {
-      iceServers = this.adapterRef.testConf.iceServers
-      iceTransportPolicy = this.adapterRef.testConf.iceTransportPolicy || 'relay'
-    }
+
     if (iceServers.length) {
       this.logger.log(
         'iceTransportPolicy ',
@@ -346,7 +334,7 @@ class Mediasoup extends EventEmitter {
   async _sendTransportConnectionstatechange(_sendTransport: Transport, connectionState: string) {
     if (this._sendTransport !== _sendTransport) {
       this.loggerSend.error(
-        '_sendTransportConnectionstatechange：出现了_sendTransport绑定不一致的状况。'
+        '_sendTransportConnectionstatechange: 出现了_sendTransport绑定不一致的状况。'
       )
       return
     }
@@ -362,18 +350,6 @@ class Mediasoup extends EventEmitter {
               this._reconnectTransportConnectTimeout()
             }, this._timeout)
           }
-
-          /*let iceParameters = null
-          if (this._protoo && this._protoo.connected) {
-            if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
-              throw new RtcError({
-                code: ErrorCode.NOT_FOUND_ERROR,
-                message: 'No _protoo 1'
-              })
-            }
-            iceParameters = await this.adapterRef._signalling._protoo.request('restartIce', { transportId: this._sendTransport.id });
-            await this._sendTransport.restartIce({ iceParameters });
-          }*/
         }
         //直接执行信令层面的重连
         this._sendTransportConnectTimeout()
@@ -407,11 +383,6 @@ class Mediasoup extends EventEmitter {
               this._reconnectTransportConnectTimeout()
             }, this._timeout)
           }
-          /*let iceParameters = null
-          if (this._protoo && this._protoo.connected) {
-            iceParameters = await this._protoo.request('restartIce', { transportId: this._recvTransport.id });
-            await this._recvTransport.restartIce({ iceParameters });
-          }*/
         }
       } catch (e: any) {
         this.loggerRecv.error('reconnectRecvTransportConnect() | failed:', e.name, e.message)
@@ -439,7 +410,7 @@ class Mediasoup extends EventEmitter {
         })
         this.adapterRef._signalling._reconnection()
       } else {
-        this.loggerRecv.warn('媒体上行传输通道建立失败，此时sdk正在重连，不用特殊处理')
+        this.loggerRecv.warn('媒体上行传输通道建立失败, 此时sdk正在重连, 不用特殊处理')
         this.adapterRef.instance.apiEventReport('setStreamException', {
           name: 'pushStreamException',
           value: `send transport connection failed`
@@ -473,23 +444,17 @@ class Mediasoup extends EventEmitter {
   async _reconnectTransportConnectTimeout() {
     this.loggerRecv.error('媒体传输通道一直重连失败，主动退出房间')
     this.adapterRef.instance.safeEmit('error', 'MEDIA_TRANSPORT_DISCONNECT')
+    this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason =
+      ErrorCode.MEDIA_CONNECTION_DISCONNECTED
     this.adapterRef.instance.leave()
   }
 
   async createProduce(stream: LocalStream, mediaTypeInput: 'all' | MediaTypeShort) {
     stream.logger.log('发布音视频: ', stream.getId(), mediaTypeInput)
-    //this._sendTransport.removeListener()
     if (!this._sendTransport) {
-      let enMessage = `createProduce: send transport is not found 1`,
-        zhMessage = `createProduce: 发送端 transport 未找到 1`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
+        code: ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: 'createProduce: 发送端 transport 未找到 1'
       })
     }
 
@@ -500,17 +465,8 @@ class Mediasoup extends EventEmitter {
         async ({ kind, rtpParameters, appData, localDtlsParameters, offer }, callback, errback) => {
           this.loggerSend.log(`produce 反馈 [kind= ${kind}, appData= ${JSONBigStringify(appData)}]`)
           if (!this._sendTransport) {
-            let enMessage = `createProduce: send transport is not found 2`,
-              zhMessage = `createProduce: 发送端 transport 未找到 2`,
-              enAdvice = 'Please contact CommsEase technical support',
-              zhAdvice = '请联系云信技术支持'
-            let message = env.IS_ZH ? zhMessage : enMessage,
-              advice = env.IS_ZH ? zhAdvice : enAdvice
-            throw new RtcError({
-              code: ErrorCode.NOT_FOUND_ERROR,
-              message,
-              advice
-            })
+            //此时可能正在重连，或者已经离开房间，忽略该webrtc流程的内部反馈
+            return
           }
           const mediaTypeShort: MediaTypeShort =
             appData.mediaType == 'screenShare' ? 'screen' : appData.mediaType
@@ -522,8 +478,7 @@ class Mediasoup extends EventEmitter {
           }
           const iceUfragRegLocal = offer.sdp.match(/a=ice-ufrag:([0-9a-zA-Z#=+-_\/\\\\]+)/)
           if (!iceUfragRegLocal) {
-            this.adapterRef.logger.error(offer.sdp)
-            this.adapterRef.logger.error('找不到 iceUfragRegLocal')
+            this.adapterRef.logger.error('找不到 iceUfragRegLocal: ', offer.sdp)
           }
           try {
             let rtpParametersSend = rtpParameters
@@ -548,7 +503,6 @@ class Mediasoup extends EventEmitter {
               kind: kind,
               rtpParameters: rtpParametersSend,
               iceUfrag: iceUfragRegLocal[1],
-              //mediaProfile: [{'ssrc':123, 'res':"320*240", 'fps':30, 'spatialLayer':0, 'maxBitrate':1000}],
               externData: {
                 producerInfo: {
                   mediaType: appData.mediaType === 'audioSlave' ? 'subAudio' : appData.mediaType, //信令协商的mediaType为: audio、subAudio、video、screenShare
@@ -556,7 +510,7 @@ class Mediasoup extends EventEmitter {
                     appData.mediaType === 'screenShare' || appData.mediaType === 'audioSlave',
                   simulcastEnable: simulcastEnable,
                   spatialLayerCount: simulcastEnable ? 2 : 1,
-                  mute: false //  false
+                  mute: false
                 }
               },
               appData: {
@@ -564,7 +518,7 @@ class Mediasoup extends EventEmitter {
               },
               ...appData
             }
-            // http://doc.hz.netease.com/pages/viewpage.action?pageId=262212959
+            // 辅流设计文档(http://doc.hz.netease.com/pages/viewpage.action?pageId=262212959)
             if (mediaTypeShort === 'screen') {
               producerData.deviceId = 'screen-share-default'
             } else if (mediaTypeShort === 'video') {
@@ -679,7 +633,7 @@ class Mediasoup extends EventEmitter {
               })
             }
 
-            // 去除RED http://jira.netease.com/browse/NRTCG2-16502
+            // 去除RED(http://jira.netease.com/browse/NRTCG2-16502)
             for (
               let codecId = producerData.rtpParameters.codecs.length - 1;
               codecId >= 0;
@@ -696,16 +650,9 @@ class Mediasoup extends EventEmitter {
               producerData.dtlsParameters = localDtlsParameters
             }
             if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
-              let enMessage = `createProduce: _protoo is not found`,
-                zhMessage = `createProduce: _protoo 未找到`,
-                enAdvice = 'Please contact CommsEase technical support',
-                zhAdvice = '请联系云信技术支持'
-              let message = env.IS_ZH ? zhMessage : enMessage,
-                advice = env.IS_ZH ? zhAdvice : enAdvice
               throw new RtcError({
-                code: ErrorCode.NOT_FOUND_ERROR,
-                message,
-                advice
+                code: ErrorCode.UNKNOWN_TYPE_ERROR,
+                message: 'createProduce: _protoo 未找到'
               })
             }
             let producerRes = await this.adapterRef._signalling._protoo.request(
@@ -736,11 +683,11 @@ class Mediasoup extends EventEmitter {
                   producerData
                 )}, 返回：${JSONBigStringify(producerData)}`
               )
+              //TO-DO:发布失败需要增加处理流程
             }
             if (turnParameters) {
               //服务器反馈turn server，sdk更新ice Server
               let iceServers = []
-              let iceTransportPolicy: RTCIceTransportPolicy = 'all'
               iceServers.push(
                 {
                   urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=udp',
@@ -784,16 +731,9 @@ class Mediasoup extends EventEmitter {
               this._sendTransportIceParameters = iceParameters
             }
             if (!this.adapterRef.localStream) {
-              let enMessage = 'createProduce: localStream is not found',
-                zhMessage = 'createProduce: 未找到 localStream',
-                enAdvice = 'Please contact CommsEase technical support',
-                zhAdvice = '请联系云信技术支持'
-              let message = env.IS_ZH ? zhMessage : enMessage,
-                advice = env.IS_ZH ? zhAdvice : enAdvice
               throw new RtcError({
-                code: ErrorCode.LOCALSTREAM_NOT_FOUND_ERROR,
-                message,
-                advice
+                code: ErrorCode.UNKNOWN_TYPE_ERROR,
+                message: 'createProduce: 未找到 localStream'
               })
             }
             let codecOptions: ProducerCodecOptions[] = []
@@ -851,7 +791,7 @@ class Mediasoup extends EventEmitter {
                 return item.protocol == this.adapterRef.channelInfo.iceProtocol
               })
             }
-
+            //执行setRemoteDescription流程
             await this._sendTransport.fillRemoteRecvSdp({
               kind,
               appData,
@@ -865,7 +805,7 @@ class Mediasoup extends EventEmitter {
               codec: codecInfo.codecParam,
               audioProfile: this.adapterRef.localStream.audioProfile
             })
-
+            //设置视频的编码码率
             if (mediaTypeShort === 'video' || mediaTypeShort === 'screen') {
               this.adapterRef.localStream.applyEncoderConfig(mediaTypeShort, 'high')
               if (rtpParameters.encodings.length >= 2) {
@@ -880,9 +820,7 @@ class Mediasoup extends EventEmitter {
       )
     }
     // ENDOF produceCallback
-
     if (mediaTypeInput === 'audio' || mediaTypeInput === 'all') {
-      const mediaType = 'audio'
       if (this._micProducer) {
         this.loggerSend.log('音频已经publish，跳过')
       } else {
@@ -950,7 +888,6 @@ class Mediasoup extends EventEmitter {
     }
 
     if (mediaTypeInput === 'video' || mediaTypeInput === 'all') {
-      const mediaType = 'video'
       if (this._webcamProducer) {
         this.loggerSend.log('视频已经publish，跳过')
       } else if (stream.mediaHelper.video.videoStream.getVideoTracks().length) {
@@ -1025,7 +962,6 @@ class Mediasoup extends EventEmitter {
     }
 
     if (mediaTypeInput === 'screen' || mediaTypeInput === 'all') {
-      const mediaType = 'screen'
       if (this._screenProducer) {
         this.loggerSend.log('屏幕共享已经publish，跳过')
       } else if (stream.mediaHelper.screen.screenVideoStream.getVideoTracks().length) {
@@ -1097,7 +1033,7 @@ class Mediasoup extends EventEmitter {
   enableSendTransform(sender: RTCRtpSender, mediaType: MediaTypeShort, streamType: 'high' | 'low') {
     const senderInfo = this._sendTransport?.send.find((r) => r.sender === sender)
     if (!senderInfo) {
-      this.loggerRecv.error('未找到匹配的Sender', mediaType, streamType)
+      this.loggerRecv.error('enableSendTransform() 未找到匹配的Sender', mediaType, streamType)
     } else {
       if (!senderInfo.encodedStreams) {
         // @ts-ignore
@@ -1125,7 +1061,7 @@ class Mediasoup extends EventEmitter {
   enableRecvTransform(receiver: RTCRtpReceiver, uid: string | number, mediaType: MediaTypeShort) {
     const receiverInfo = this._recvTransport?.recv.find((r) => r.receiver === receiver)
     if (!receiverInfo) {
-      this.loggerRecv.error('未找到匹配的Receiver', uid, mediaType)
+      this.loggerRecv.error('enableRecvTransform() 未找到匹配的Receiver', uid, mediaType)
     } else {
       if (!receiverInfo.encodedStreams) {
         // @ts-ignore
@@ -1187,16 +1123,9 @@ class Mediasoup extends EventEmitter {
       producerId = this._micProducerId
       this._micProducer = this._micProducerId = null
       if (!this.adapterRef.localStream) {
-        let enMessage = 'destroyProduce.audio: localStream is not found',
-          zhMessage = 'destroyProduce.audio: 未找到 localStream',
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
           code: ErrorCode.LOCALSTREAM_NOT_FOUND_ERROR,
-          message,
-          advice
+          message: 'destroyProduce.audio: 未找到 localStream'
         })
       }
       this.adapterRef.localStream.pubStatus.audio.audio = false
@@ -1205,16 +1134,9 @@ class Mediasoup extends EventEmitter {
       producerId = this._audioSlaveProducerId
       this._audioSlaveProducer = this._audioSlaveProducerId = null
       if (!this.adapterRef.localStream) {
-        let enMessage = 'destroyProduce.audioSlave: localStream is not found',
-          zhMessage = 'destroyProduce.audioSlave: 未找到 localStream',
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
           code: ErrorCode.LOCALSTREAM_NOT_FOUND_ERROR,
-          message,
-          advice
+          message: 'destroyProduce.audio: 未找到 localStream'
         })
       }
       this.adapterRef.localStream.pubStatus.audioSlave.audio = false
@@ -1223,16 +1145,9 @@ class Mediasoup extends EventEmitter {
       producerId = this._webcamProducerId
       this._webcamProducer = this._webcamProducerId = null
       if (!this.adapterRef.localStream) {
-        let enMessage = 'destroyProduce.video: localStream is not found',
-          zhMessage = 'destroyProduce.video: 未找到 localStream',
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
           code: ErrorCode.LOCALSTREAM_NOT_FOUND_ERROR,
-          message,
-          advice
+          message: 'destroyProduce.video: 未找到 localStream'
         })
       }
       this.adapterRef.localStream.pubStatus.video.video = false
@@ -1241,16 +1156,9 @@ class Mediasoup extends EventEmitter {
       producerId = this._screenProducerId
       this._screenProducer = this._screenProducerId = null
       if (!this.adapterRef.localStream) {
-        let enMessage = 'destroyProduce.screen: localStream is not found',
-          zhMessage = 'destroyProduce.screen: 未找到 localStream',
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
           code: ErrorCode.LOCALSTREAM_NOT_FOUND_ERROR,
-          message,
-          advice
+          message: 'destroyProduce.screen: 未找到 localStream'
         })
       }
       this.adapterRef.localStream.pubStatus.screen.screen = false
@@ -1261,7 +1169,7 @@ class Mediasoup extends EventEmitter {
       if (!producer) return
       producer.close()
       if (!this.adapterRef._signalling?._protoo) {
-        this.logger.warn(`destroyProduce：当前信令中断，不发信令包`, kind, producerId)
+        this.logger.warn(`destroyProduce: 当前信令中断, 不发信令包`, kind, producerId)
       } else {
         this.adapterRef._signalling._protoo
           .request('CloseProducer', {
@@ -1269,11 +1177,11 @@ class Mediasoup extends EventEmitter {
             producerId
           })
           .catch((e) => {
-            this.logger.error(`destroyProduce Failed:`, e.name, e.stack, e)
+            this.logger.error('CloseProducer Failed: ', e.name, e.message)
           })
       }
     } catch (error: any) {
-      this.loggerSend.error('_destroyProducer() | failed:', error.name, error.message)
+      this.loggerSend.error('destroyProduce failed: ', error.name, error.message)
     }
   }
 
@@ -1631,7 +1539,6 @@ class Mediasoup extends EventEmitter {
     if (turnParameters) {
       //服务器反馈turn server，sdk更新ice Server
       let iceServers = []
-      let iceTransportPolicy: RTCIceTransportPolicy = 'all'
       iceServers.push(
         {
           urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=udp',

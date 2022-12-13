@@ -64,55 +64,34 @@ class Record extends EventEmitter {
     this.logger.log('开始本地录制: ', JSON.stringify(option, null, ''))
     let reason = null
     if (!window.MediaRecorder || !MediaRecorder.isTypeSupported || !env.IS_CHROME) {
-      this.logger.log('浏览器不支持本地录制')
-      reason = 'RecordBrowserNotSupport'
-      let enMessage = 'Record.start: recording is not supported in this browser',
-        zhMessage = 'Record.start: 当前浏览器不支持本地录制',
-        enAdvice = 'The latest version of the Chrome browser is recommended',
-        zhAdvice = '建议使用最新版的 Chrome 浏览器'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
+      reason = 'Record.start: 当前浏览器不支持本地录制'
+      this.logger.warn(reason)
       throw new RtcError({
-        code: ErrorCode.NOT_SUPPORT_ERROR,
-        message,
-        advice
+        code: ErrorCode.RECORDING_NOT_SUPPORT,
+        message: reason
       })
     }
 
     if (this._status.isRecording) {
-      this.logger.log('当前正在录制中')
-      reason = 'RecordInRecording'
-      let enMessage = 'Record.start: invalid operation',
-        zhMessage = 'Record.start: 操作异常',
-        enAdvice = 'in recording',
-        zhAdvice = '当前正在录制中'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
+      reason = 'Record.start: 操作异常, 当前正在录制中'
+      this.logger.warn(reason)
       throw new RtcError({
-        code: ErrorCode.INVALID_OPERATION_ERROR,
-        message,
-        advice
+        code: ErrorCode.REPEAT_RECORDING_ERROR,
+        message: reason
       })
     }
 
     if (this._status.recordUrl && this._status.recordStatus !== 'downloaded') {
       if (option.reset) {
-        this.logger.warn('MediaRecordHelper: start: 存在未下载视频，强制清除...')
+        this.logger.warn('Record.start: 存在未下载视频，强制清除...')
         // 当同步接口使用
         await this.clean()
       } else {
-        this.logger.log(`MediaRecordHelper: start : 请先下载或重置上一段录制文件`)
-        reason = 'RecordFileExsit'
-        let enMessage = 'Record.start: invalid operation',
-          zhMessage = 'Record.start: 操作异常',
-          enAdvice = 'Please download or reset the previous recording first',
-          zhAdvice = '请先下载或重置上一段录制文件'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
+        reason = 'Record.start: 操作异常, 请先下载或重置上一段录制文件'
+        this.logger.warn(reason)
         throw new RtcError({
-          code: ErrorCode.INVALID_OPERATION_ERROR,
-          message,
-          advice
+          code: ErrorCode.RECORDING_CACHE_ERROR,
+          message: reason
         })
       }
     }
@@ -170,13 +149,13 @@ class Record extends EventEmitter {
         )
       })
     } catch (e: any) {
-      this.logger.error('录制start error: ', e.name, e.message, e)
+      this.logger.error('Record.start 内部异常: ', e.name, e.message)
       this.client.apiFrequencyControl({
         name: 'startMediaRecording',
         code: -1,
         param: JSON.stringify(
           {
-            reason: '录制接口 error',
+            reason: e.message,
             uid,
             mediaType: type,
             recordName: ''
@@ -185,17 +164,10 @@ class Record extends EventEmitter {
           ' '
         )
       })
-      let enMessage = 'Record.start: start interface error',
-        zhMessage = 'Record.start: 录制接口异常',
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
           code: ErrorCode.RECORDING_ERROR,
-          message,
-          advice
+          message: 'Record.start: 录制异常 ' + e.message
         })
       )
     }
@@ -207,11 +179,11 @@ class Record extends EventEmitter {
   stop(options?: { isUser?: boolean }) {
     let reason = null
     if (!this._status.isRecording || !this._recorder) {
-      this.logger.log('当前没有进行录制')
+      this.logger.log('Record.stop 当前没有进行录制')
       reason = 'RecordNotExist'
     }
     if (this._recorder && this._status.state !== 'started') {
-      this.logger.warn(`MediaRecordHelper: record stopping when ${this._recorder.state}`)
+      this.logger.warn(`Record.stop: record stopping when ${this._recorder.state}`)
       reason = 'RecordStateError'
     }
     if (reason) {
@@ -228,27 +200,12 @@ class Record extends EventEmitter {
     this._status.state = 'stopped'
     this._status.recordStatus = 'stopping'
     return new Promise((resolve, reject) => {
-      if (!this._recorder) {
-        let enMessage = 'Record.stop: stop interface error, record is not found',
-          zhMessage = 'Record.stop: 录制接口异常, 未找到 record',
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        return reject(
-          new RtcError({
-            code: ErrorCode.RECORDING_ERROR,
-            message,
-            advice
-          })
-        )
-      }
       this._status.fileName = this._status.fileName
-      this._recorder.onstop = () => {
+      this!._recorder!.onstop = () => {
         this._onStop(resolve)
       }
       // 默认文件名
-      this._recorder.stop()
+      this?._recorder?.stop()
       this.client.apiFrequencyControl({
         name: 'stopMediaRecording',
         code: 0,
@@ -308,7 +265,7 @@ class Record extends EventEmitter {
     return Promise.resolve()
       .then(() => {
         if (this._status.isRecording) {
-          this.logger.log('MediaRecordHelper: download: 正在录制中，立即停止...')
+          this.logger.log('Record.download: 正在录制中，立即停止...')
           return this.stop({ isUser: false })
         }
         return Promise.resolve()
@@ -323,7 +280,7 @@ class Record extends EventEmitter {
           a.click()
           this._status.recordStatus = 'downloaded'
         } else {
-          this.logger.log(`MediaRecordHelper: download: cannot download media without url ...`)
+          this.logger.log(`Record.download: cannot download media without url ...`)
         }
         if (isUser) {
           this.client.apiFrequencyControl({

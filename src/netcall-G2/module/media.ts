@@ -624,7 +624,6 @@ class MediaHelper extends EventEmitter {
           const screenTrack = stream.getVideoTracks()[0]
           this.screen.screenVideoTrack = screenTrack
           emptyStreamWith(this.screen.screenVideoStream, screenTrack)
-
         } else {
           let gdmStream = await GUM.getScreenStream(
             {
@@ -689,7 +688,6 @@ class MediaHelper extends EventEmitter {
             }
           }
         }
-
         this.stream.client.apiEventReport('setFunction', {
           name: 'set_screen',
           oper: '1',
@@ -879,24 +877,6 @@ class MediaHelper extends EventEmitter {
           value: e.message
         })
       }
-
-      // if (
-      //   e.message &&
-      //   // 为什么这样写：
-      //   // Safari和ios的提示是：The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.
-      //   // Chrome的提示是：Permission Denied. Permission Denied by system
-      //   e.message.indexOf('ermission') > -1 &&
-      //   e.message.indexOf('denied') > -1
-      // ) {
-      //   this.stream.client.safeEmit('accessDenied', mediaType)
-      // } else if (e.message && e.message.indexOf('not found') > -1) {
-      //   this.stream.client.safeEmit('notFound', mediaType)
-      // } else if (e.message && e.message.indexOf('not start video source') > -1) {
-      //   this.stream.client.safeEmit('beOccupied', mediaType)
-      // } else {
-      //   this.stream.client.safeEmit('deviceError', mediaType)
-      // }
-
       if (e.name === 'NotAllowedError') {
         this.stream.client.safeEmit('accessDenied', mediaType)
       } else if (e.name === 'NotFoundError') {

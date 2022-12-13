@@ -124,7 +124,6 @@ class Base extends RTCEventEmitter {
     if (options.debug) {
       getParameters().debugG2 = true
     }
-    this.adapterRef.testConf = {} //内部测试配置
     this.sdkRef = options.ref
   }
 
@@ -365,38 +364,19 @@ class Base extends RTCEventEmitter {
     }
     let { wssArr, cid } = this.adapterRef.channelInfo
     if (!wssArr || wssArr.length === 0) {
-      this.logger.error(`没有找到服务器地址: ${JSON.stringify(this.adapterRef.channelInfo)}`)
+      this.logger.error(`没有找到服务器地址 : ${JSON.stringify(this.adapterRef.channelInfo)}`)
       this.adapterRef.channelStatus = 'leave'
-      let enMessage = `startSession: server address is not found: ${JSON.stringify(
-          this.adapterRef.channelInfo
-        )}`,
-        zhMessage = `startSession: 没有找到服务器地址: ${JSON.stringify(
-          this.adapterRef.channelInfo
-        )}`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.UNKNOWN,
-        message,
-        advice
+        code: ErrorCode.JOIN_FAILED,
+        message: '没有找到媒体服务器地址'
       })
     }
 
     if (!cid) {
       this.logger.error('服务器没有分配cid')
-      this.adapterRef.channelStatus = 'leave'
-      let enMessage = 'startSession: no cid assigned by server',
-        zhMessage = 'startSession: 服务器没有分配cid',
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.UNKNOWN,
-        message,
-        advice
+        code: ErrorCode.JOIN_FAILED,
+        message: '服务器没有分配cid'
       })
     }
     this.logger.log(
@@ -406,32 +386,16 @@ class Base extends RTCEventEmitter {
     )
     if (this.adapterRef.channelInfo.wssArrIndex >= wssArr.length) {
       this.logger.error('所有的服务器地址都连接失败')
-      this.adapterRef.channelInfo.wssArrIndex = 0
-      this.adapterRef.channelStatus = 'leave'
-      let enMessage = 'startSession: All server addresses failed to connect',
-        zhMessage = 'startSession: 所有的服务器地址都连接失败',
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
         code: ErrorCode.NETWORK_ERROR,
-        message,
-        advice
+        message: '所有的服务器地址都连接失败'
       })
     }
     let url = wssArr[this.adapterRef.channelInfo.wssArrIndex]
     if (!this.adapterRef._signalling) {
-      let enMessage = 'startSession: signalling server error',
-        zhMessage = 'startSession: 信令服务器异常',
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.SIGNALLING_SERVER_ERROR,
-        message,
-        advice
+        code: ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: 'startSession: 信令模块缺失'
       })
     }
     try {
