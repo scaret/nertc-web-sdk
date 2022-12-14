@@ -723,7 +723,7 @@ class GetStats {
             ? (audioObj.totalAudioEnergy = Math.round(item.totalAudioEnergy))
             : null
           item.totalSamplesReceived !== undefined
-            ? (audioObj.totalSamplesDuration = Math.round(item.totalSamplesReceived))
+            ? (audioObj.totalSamplesDuration = Math.round(item.totalSamplesReceived / 48000))
             : null
           audioObj.bytesReceived = item.headerBytesReceived + item.bytesReceived
           item.concealedSamples !== undefined
@@ -985,7 +985,7 @@ class GetStats {
             ? (audioObj.totalAudioEnergy = Math.round(item.totalAudioEnergy))
             : null
           item.totalSamplesReceived !== undefined
-            ? (audioObj.totalSamplesDuration = Math.round(item.totalSamplesReceived))
+            ? (audioObj.totalSamplesDuration = Math.round(item.totalSamplesReceived / 48000))
             : null
           audioObj.bytesReceived = (item.headerBytesReceived || 0) + item.bytesReceived
           item.concealedSamples !== undefined
@@ -1200,13 +1200,13 @@ class GetStats {
           audioObj.packetsLost = item.packetsLost
           audioObj.packetsReceived = item.packetsReceived
           item.totalSamplesReceived !== undefined
-            ? (audioObj.totalSamplesDuration = Math.round(item.totalSamplesReceived))
+            ? (audioObj.totalSamplesDuration = Math.round(item.totalSamplesReceived / 48000))
             : null
           item.totalAudioEnergy !== undefined
             ? (audioObj.totalAudioEnergy = Math.round(item.totalAudioEnergy))
             : null
           item.totalSamplesReceived !== undefined
-            ? (audioObj.totalSamplesDuration = Math.round(item.totalSamplesReceived))
+            ? (audioObj.totalSamplesDuration = Math.round(item.totalSamplesReceived / 48000))
             : null
         } else if (item.kind === 'video') {
           videoObj.bytesReceived = item.bytesReceived + (item.headerBytesReceived || 0)
