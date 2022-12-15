@@ -45,12 +45,29 @@ export function detectDevice(): BuiltinHandlerName | undefined {
     if (env.IS_CHROME_ONLY && env.CHROME_MAJOR_VERSION && env.CHROME_MAJOR_VERSION >= 72) {
       return 'Chrome74'
     }
+    // any android H5
+    else if (env.IS_ANDROID) {
+      return 'Chrome74'
+    }
+    // Electron
+    else if (
+      env.IS_ELECTRON &&
+      env.IS_CHROME_ONLY &&
+      env.ANY_CHROME_MAJOR_VERSION &&
+      env.ANY_CHROME_MAJOR_VERSION >= 72
+    ) {
+      return 'Chrome74'
+    }
     // Firefox.
     else if (env.IS_FIREFOX && env.FIREFOX_MAJOR_VERSION && env.FIREFOX_MAJOR_VERSION >= 60) {
       return 'Firefox60'
     }
     // Safari with Unified-Plan support enabled.
-    else if (env.IS_ANY_SAFARI && env.SAFARI_MAJOR_VERSION && env.SAFARI_MAJOR_VERSION >= 12) {
+    // iOS WeChat should be set as Safari12
+    else if (
+      (env.IS_ANY_SAFARI && env.SAFARI_MAJOR_VERSION && env.SAFARI_MAJOR_VERSION >= 12) ||
+      (env.IS_ANY_SAFARI && env.IS_WECHAT)
+    ) {
       return 'Safari12'
     }
     // Unsupported browser.

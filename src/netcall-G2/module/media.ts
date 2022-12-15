@@ -1197,6 +1197,9 @@ class MediaHelper extends EventEmitter {
           readyState: this.screenAudio.screenAudioSource.readyState
         }
       }
+      if (Device.deviceHistory.audioOut[0]) {
+        settings.audioOutDefault = Device.deviceHistory.audioOut[0]
+      }
     } catch (e: any) {
       settings.errName = e.name
       settings.errMessage = e.message
@@ -2394,6 +2397,20 @@ class MediaHelper extends EventEmitter {
           })
         )
       }
+    } else if (this.getAudioInputTracks().length === 0 || !this.stream.pubStatus.audio.audio) {
+      let enMessage = 'playEffect: invalid operation',
+        zhMessage = 'playEffect: 操作异常',
+        enAdvice = 'audio source is not published',
+        zhAdvice = '音频还没有 publish'
+      let message = env.IS_ZH ? zhMessage : enMessage,
+        advice = env.IS_ZH ? zhAdvice : enAdvice
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.INVALID_OPERATION_ERROR,
+          message,
+          advice
+        })
+      )
     }
     this.audio.mixAudioConf.sounds[soundId].state = 'STARTING'
 

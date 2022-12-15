@@ -362,6 +362,14 @@ export const CHROME_VERSION =
     return null
   })()
 
+export const ANY_CHROME_MAJOR_VERSION = (function () {
+  const match = USER_AGENT.match(/Chrome\/(\d+)/)
+  if (match && match[1]) {
+    return parseFloat(match[1])
+  }
+  return null
+})()
+
 // iOS 的 Chrome/Edge/Firefox 浏览器支持的条件是 IOS_MAJOR_VERSION 版本要大于 14.3
 // iOS Chrome
 export const IS_IOS_CHROME = /CriOS/i.test(USER_AGENT)

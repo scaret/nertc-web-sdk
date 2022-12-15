@@ -199,11 +199,11 @@ class FormativeStatsReport {
     }
 
     //计算码率
-    data.bitsSentPerSecond = Math.round((8 * (data.bytesSent - tmp.bytesSent)) / 1000)
+    data.bitsSentPerSecond = Math.round((8 * (data.bytesSent - (tmp.bytesSent || 0))) / 1000)
     //计算每秒发包数
-    data.packetsSentPerSecond = data.packetsSent - tmp.packetsSent
+    data.packetsSentPerSecond = data.packetsSent - (tmp.packetsSent || 0)
     //计算丢包率
-    if (data.packetsLost) {
+    if (data.packetsLost !== undefined) {
       data.packetsLostRate = this.getPacketLossRate(tmp, data, true)
     }
     if (data.streamType) {
@@ -335,7 +335,7 @@ class FormativeStatsReport {
     //计算每秒发包数
     data.packetsReceivedPerSecond = data.packetsReceived - tmp.packetsReceived
     //计算丢包率
-    if (data.packetsLost) {
+    if (data.packetsLost !== undefined) {
       data.packetsLostRate = this.getPacketLossRate(tmp, data)
     }
 
