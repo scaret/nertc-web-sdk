@@ -3839,7 +3839,7 @@ class LocalStream extends RTCEventEmitter {
         })
       }
     } else {
-      this.logger.warn('setBeautyEffect:video track not ready.')
+      this.logger.error('setBeautyEffect:video track not ready.')
     }
   }
 
