@@ -3876,7 +3876,11 @@ class LocalStream extends RTCEventEmitter {
       return this.logger.error(this.videoPostProcess.glErrorTip)
     }
     if (!this.videoPostProcess.getPlugin('VirtualBackground')) {
-      return this.logger.warn('virtual background plugin is not register.')
+      this.logger.error('virtual background plugin is not register.')
+      throw new RtcError({
+        code: ErrorCode.PLUGIN_NOT_REGISTER,
+        message: 'virtual background plugin is not register'
+      })
     }
     if (this._segmentProcessor) {
       return this.logger.warn('virtual background is already opened.')
@@ -3974,7 +3978,11 @@ class LocalStream extends RTCEventEmitter {
       return this.logger.error(this.videoPostProcess.glErrorTip)
     }
     if (!this.videoPostProcess.getPlugin('AdvancedBeauty')) {
-      return this.logger.warn('advanced beauty plugin is not register.')
+      this.logger.error('advanced beauty plugin is not register.')
+      throw new RtcError({
+        code: ErrorCode.PLUGIN_NOT_REGISTER,
+        message: 'advanced beauty plugin is not register'
+      })
     }
     if (this._advancedBeautyProcessor) {
       return this.logger.warn('advanced beauty is already opened.')

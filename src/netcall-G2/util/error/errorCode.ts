@@ -501,6 +501,10 @@ const ErrorCode = {
    */
   PLUGIN_REGISTER_ERROR: 10408,
   /*
+   * 插件未注册
+   */
+  PLUGIN_NOT_REGISTER: 10409,
+  /*
    * 音频处理异常
    *
    */
