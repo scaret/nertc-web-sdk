@@ -391,7 +391,6 @@ class Base extends RTCEventEmitter {
         message: '所有的服务器地址都连接失败'
       })
     }
-    let url = wssArr[this.adapterRef.channelInfo.wssArrIndex]
     if (!this.adapterRef._signalling) {
       throw new RtcError({
         code: ErrorCode.UNKNOWN_TYPE_ERROR,
@@ -511,7 +510,7 @@ class Base extends RTCEventEmitter {
     this.adapterRef.state.endSessionTime = 0
   }
 
-  //重新建立下行连接
+  //重新建立下行连接，当前无用，后面计划废弃
   async reBuildRecvTransport() {
     this.transportRebuildCnt++
     if (this.transportRebuildCnt >= getParameters().maxTransportRebuildCnt) {
@@ -520,17 +519,7 @@ class Base extends RTCEventEmitter {
     }
     this.logger.warn(`下行通道异常，重新建立 #${this.transportRebuildCnt}`)
     if (!this.adapterRef._mediasoup) {
-      let enMessage = 'reBuildRecvTransport:  media server error',
-        zhMessage = 'reBuildRecvTransport: 媒体服务异常',
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.MEDIA_SERVER_ERROR,
-        message,
-        advice
-      })
+      return
     }
     this.adapterRef.instance.safeEmit('@pairing-reBuildRecvTransport-start')
     if (this.adapterRef._mediasoup._recvTransport) {
@@ -568,7 +557,7 @@ class Base extends RTCEventEmitter {
       this.adapterRef.instance.safeEmit('@pairing-reBuildRecvTransport-success')
     }
   }
-
+  //重新建立下行连接，rts使用，后面计划废弃
   async rtsRequestKeyFrame(stream: RemoteStream) {
     this.logger.log('请求关键帧: ', stream.pubStatus.video.consumerId)
     if (this.adapterRef._signalling) {
@@ -614,30 +603,11 @@ class Base extends RTCEventEmitter {
         !this.adapterRef.apiEvent[name] ||
         !this.adapterRef.apiEvent[name].length
       ) {
-        let enMessage = `apiFrequencyControl: no apiEvent named ${name}`,
-          zhMessage = `apiFrequencyControl: 未找到 name 为 ${name} 的 apiEvent`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.EVENT_UPLOAD_ERROR,
-          message,
-          advice
-        })
+        //属于事件上报内容，不需要做抛出错误
+        return
       }
       if (!this.adapterRef.apiEvent[name][0].time) {
-        let enMessage = `apiFrequencyControl: invalid time`,
-          zhMessage = `apiFrequencyControl: 无效的 time`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.EVENT_UPLOAD_ERROR,
-          message,
-          advice
-        })
+        //属于事件上报内容，不需要做抛出错误
       }
       if (Date.now() - this.adapterRef.apiEvent[name][0].time < 10000) {
         this.adapterRef.requestId[name]++

@@ -744,10 +744,17 @@ class Client extends Base {
         code: reason ? -1 : 0,
         param: JSON.stringify(param)
       })
+      const settings = JSON.stringify(stream.mediaHelper.getTrackSettings())
       this.apiFrequencyControl({
         name: '_trackSettings',
         code: 0,
-        param: JSON.stringify(stream.mediaHelper.getTrackSettings())
+        param: settings
+      })
+      //api事件上报经常丢失，增加一下事件上报
+      this.adapterRef.instance.apiEventReport('setFunction', {
+        name: 'media_track_Settings',
+        oper: '1',
+        value: settings
       })
     }
     if (!stream || (!stream.audio && !stream.video && !stream.screen && !stream.screenAudio)) {
