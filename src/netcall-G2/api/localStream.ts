@@ -3785,11 +3785,11 @@ class LocalStream extends RTCEventEmitter {
       }
     }
 
+    this.videoPostProcessTags.isBeautyTrack = isStart
     if (this.mediaHelper && this.mediaHelper.video.cameraTrack) {
       if (this.replaceTags.waterMark) {
         this.mediaHelper.disablePreProcessing('video', true)
       }
-      this.videoPostProcessTags.isBeautyTrack = isStart
       this._cameraTrack = this.mediaHelper.video.cameraTrack
 
       let apiCode = 0
@@ -3839,7 +3839,7 @@ class LocalStream extends RTCEventEmitter {
         })
       }
     } else {
-      this.logger.error('setBeautyEffect:video track not ready.')
+      this.logger.log('setBeautyEffect:video track not ready.')
     }
   }
 
@@ -4291,7 +4291,7 @@ class LocalStream extends RTCEventEmitter {
         throw err
       }
     } else {
-      this.logger.error('transformTrack:video track not ready.')
+      this.logger.log('transformTrack:video track not ready.')
     }
   }
 
