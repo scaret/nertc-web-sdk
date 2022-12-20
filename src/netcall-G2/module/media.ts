@@ -1898,7 +1898,7 @@ class MediaHelper extends EventEmitter {
       this.audio.webAudio.mixAudioConf.playStartTime
     if (playedTime > this.audio.webAudio.mixAudioConf.totalTime) {
       this.logger.log(
-        '播发过的圈数 playedCycle: ',
+        '播放过的圈数 playedCycle: ',
         Math.floor(playedTime / this.audio.webAudio.mixAudioConf.totalTime)
       )
       cycle = cycle - Math.floor(playedTime / this.audio.webAudio.mixAudioConf.totalTime)
@@ -1906,7 +1906,7 @@ class MediaHelper extends EventEmitter {
     }
     if (this.audio.webAudio.mixAudioConf.setPlayStartTime) {
       this.logger.log(
-        '暂停期间，用户设置混音播发时间: ',
+        '暂停期间，用户设置混音播放时间: ',
         this.audio.webAudio.mixAudioConf.setPlayStartTime
       )
       playStartTime = this.audio.webAudio.mixAudioConf.setPlayStartTime
@@ -2102,7 +2102,7 @@ class MediaHelper extends EventEmitter {
     } else if (this.audio.webAudio.mixAudioConf.state === AuidoMixingState.PAUSED) {
       this.audio.webAudio.mixAudioConf.setPlayStartTime = playTime
       this.logger.log(
-        'setAudioMixingPlayTime: 当前正在暂停，记录设置的播发位置，在恢复伴音时，跳转到此次设置的播放位置'
+        'setAudioMixingPlayTime: 当前正在暂停，记录设置的播放位置，在恢复伴音时，跳转到此次设置的播放位置'
       )
       return Promise.resolve()
     }
@@ -2202,7 +2202,7 @@ class MediaHelper extends EventEmitter {
           this.logger.log('已经播放的时间: ', playedTime)
           if (playedTime > this.audio.webAudio.mixAudioConf.totalTime) {
             this.logger.log(
-              '播发过的圈数 playedCycle: ',
+              '播放过的圈数 playedCycle: ',
               Math.floor(playedTime / this.audio.webAudio.mixAudioConf.totalTime)
             )
             cycle = cycle - Math.floor(playedTime / this.audio.webAudio.mixAudioConf.totalTime)
@@ -2694,7 +2694,7 @@ class MediaHelper extends EventEmitter {
     this.logger.log('resumeEffect 已经播放的时间: ', playedTime)
     if (playedTime > this.audio.mixAudioConf.sounds[soundId].totalTime) {
       const cyclePlayed = Math.floor(playedTime / this.audio.mixAudioConf.sounds[soundId].totalTime)
-      this.logger.log('播发过的圈数 playedCycle: ', cyclePlayed)
+      this.logger.log('播放过的圈数 playedCycle: ', cyclePlayed)
       playedTime = playedTime % this.audio.mixAudioConf.sounds[soundId].totalTime
       this.audio.mixAudioConf.sounds[soundId].cycle =
         this.audio.mixAudioConf.sounds[soundId].cycle - cyclePlayed

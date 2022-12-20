@@ -200,7 +200,7 @@ export class AudioMix extends RTCEventEmitter {
     }
     let playStartTime
     if (this.mixAudioConf.setPlayStartTime) {
-      this.logger.log('暂停期间，用户设置混音播发时间: ', this.mixAudioConf.setPlayStartTime)
+      this.logger.log('暂停期间，用户设置混音播放时间: ', this.mixAudioConf.setPlayStartTime)
       playStartTime = this.mixAudioConf.setPlayStartTime
       this.mixAudioConf.setPlayStartTime = 0
     } else {
