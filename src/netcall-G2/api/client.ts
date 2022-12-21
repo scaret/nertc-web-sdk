@@ -1945,7 +1945,7 @@ class Client extends Base {
     let reason, message
     this.logger.log('deleteTasks() 删除互动直播推流任务, options: ', options)
     if (!taskIds || !Array.isArray(taskIds) || !taskIds.length) {
-      message = 'addTasks() 参数格式错误, taskIds为空, 或者该数组长度为空'
+      message = 'deleteTasks() 参数格式错误, taskIds为空, 或者该数组长度为空'
       reason = ErrorCode.DELETE_TASK_PARAMETER_ERROR
     } else if (this._roleInfo.userRole === 1) {
       message = 'deleteTasks() 观众不允许删除推流任务'

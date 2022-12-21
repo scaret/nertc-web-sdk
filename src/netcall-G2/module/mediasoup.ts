@@ -1937,20 +1937,7 @@ class Mediasoup extends EventEmitter {
     if (!transport || !transport.id) return
     try {
       this.logger.log(`closeTransport() [停止通道 transportId= ${transport.id}]`)
-      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
-        let enMessage = `closeTransport: _protoo is not found`,
-          zhMessage = `closeTransport: _protoo 未找到`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.NOT_FOUND_ERROR,
-          message,
-          advice
-        })
-      }
-      const result = await this.adapterRef._signalling._protoo.request('CloseTransport', {
+      const result = await this.adapterRef._signalling?._protoo?.request('CloseTransport', {
         requestId: `${Math.ceil(Math.random() * 1e9)}`,
         transportId: transport.id
       })
@@ -1959,397 +1946,176 @@ class Mediasoup extends EventEmitter {
       )
       transport.close()
     } catch (error: any) {
-      this.logger.error('closeTransport() | failed:', error.name, error.message, error)
+      this.logger.error('closeTransport() | failed:', error.name, error.message)
     }
   }
 
   async muteAudio() {
     this.loggerSend.log('mute音频')
-    if (!this._micProducer) {
-      let enMessage = `muteAudio: _micProducer is not found`,
-        zhMessage = `muteAudio: _micProducer 未找到`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
-      })
-    }
-    this._micProducer.pause()
+    this._micProducer?.pause()
     try {
-      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
-        let enMessage = `muteAudio: _protoo is not found`,
-          zhMessage = `muteAudio: _protoo 未找到`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.NOT_FOUND_ERROR,
-          message,
-          advice
-        })
-      }
-      await this.adapterRef._signalling._protoo.request('SendUserData', {
+      await this.adapterRef._signalling?._protoo?.request('SendUserData', {
         externData: {
           type: 'Mute',
           cid: this.adapterRef.channelInfo.cid,
           uid: new SimpleBig(this.adapterRef.channelInfo.uid),
           data: {
-            producerId: this._micProducer.id,
+            producerId: this._micProducer?.id,
             mute: true
           }
         }
       })
     } catch (e: any) {
-      this.loggerSend.error('muteMic() | failed:', e.name, e.message, e)
+      this.loggerSend.error('muteAudio() | failed:', e.name, e.message, e)
     }
   }
 
   async unmuteAudio() {
-    this.loggerSend.log('resume音频')
-    if (!this._micProducer) {
-      let enMessage = `unmuteAudio: _micProducer is not found`,
-        zhMessage = `unmuteAudio: _micProducer 未找到`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
-      })
-    }
-    this._micProducer.resume()
+    this.loggerSend.log('unmute音频')
+    this._micProducer?.resume()
     try {
-      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
-        let enMessage = `unmuteAudio: _protoo is not found`,
-          zhMessage = `unmuteAudio: _protoo 未找到`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.NOT_FOUND_ERROR,
-          message,
-          advice
-        })
-      }
-      await this.adapterRef._signalling._protoo.request('SendUserData', {
+      await this.adapterRef._signalling?._protoo?.request('SendUserData', {
         externData: {
           type: 'Mute',
           cid: this.adapterRef.channelInfo.cid,
           uid: new SimpleBig(this.adapterRef.channelInfo.uid),
           data: {
-            producerId: this._micProducer.id,
+            producerId: this._micProducer?.id,
             mute: false
           }
         }
       })
     } catch (e: any) {
-      this.loggerSend.error('muteMic() | failed: ', e.name, e.message, e)
+      this.loggerSend.error('unmuteAudio() | failed: ', e.name, e.message)
       return Promise.reject(e)
     }
   }
 
   async muteAudioSlave() {
     this.loggerSend.log('mute音频辅流')
-    if (!this._audioSlaveProducer) {
-      let enMessage = `muteAudioSlave: _audioSlaveProducer is not found`,
-        zhMessage = `muteAudioSlave: _audioSlaveProducer 未找到`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
-      })
-    }
-    this._audioSlaveProducer.pause()
+    this._audioSlaveProducer?.pause()
     try {
-      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
-        let enMessage = `muteAudioSlave: _protoo is not found`,
-          zhMessage = `muteAudioSlave: _protoo 未找到`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.NOT_FOUND_ERROR,
-          message,
-          advice
-        })
-      }
-      await this.adapterRef._signalling._protoo.request('SendUserData', {
+      await this.adapterRef._signalling?._protoo?.request('SendUserData', {
         externData: {
           type: 'Mute',
           cid: this.adapterRef.channelInfo.cid,
           uid: new SimpleBig(this.adapterRef.channelInfo.uid),
           data: {
-            producerId: this._audioSlaveProducer.id,
+            producerId: this._audioSlaveProducer?.id,
             mute: true
           }
         }
       })
     } catch (e: any) {
-      this.loggerSend.error('muteMic() | failed:', e.name, e.message, e)
+      this.loggerSend.error('muteAudioSlave() | failed:', e.name, e.message)
     }
   }
 
   async unmuteAudioSlave() {
-    this.loggerSend.log('resume音频辅流')
-    if (!this._audioSlaveProducer) {
-      let enMessage = `unmuteAudioSlave: _audioSlaveProducer is not found`,
-        zhMessage = `unmuteAudioSlave: _audioSlaveProducer 未找到`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
-      })
-    }
-    this._audioSlaveProducer.resume()
+    this.loggerSend.log('unmute音频辅流')
+    this._audioSlaveProducer?.resume()
     try {
-      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
-        let enMessage = `unmuteAudioSlave: _protoo is not found`,
-          zhMessage = `unmuteAudioSlave: _protoo 未找到`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.NOT_FOUND_ERROR,
-          message,
-          advice
-        })
-      }
-      await this.adapterRef._signalling._protoo.request('SendUserData', {
+      await this.adapterRef._signalling?._protoo?.request('SendUserData', {
         externData: {
           type: 'Mute',
           cid: this.adapterRef.channelInfo.cid,
           uid: new SimpleBig(this.adapterRef.channelInfo.uid),
           data: {
-            producerId: this._audioSlaveProducer.id,
+            producerId: this._audioSlaveProducer?.id,
             mute: false
           }
         }
       })
     } catch (e: any) {
-      this.loggerSend.error('muteMic() | failed: ', e.name, e.message, e)
+      this.loggerSend.error('unmuteAudioSlave() | failed: ', e.name, e.message)
       return Promise.reject(e)
     }
   }
 
   async muteVideo() {
     this.loggerSend.log('mute视频')
-    if (!this._webcamProducer) {
-      let enMessage = `muteVideo: _webcamProducer is not found`,
-        zhMessage = `muteVideo: _webcamProducer 未找到`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
-      })
-    }
-    this._webcamProducer.pause()
+    this._webcamProducer?.pause()
     try {
-      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
-        let enMessage = `muteVideo: _protoo is not found`,
-          zhMessage = `muteVideo: _protoo 未找到`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.NOT_FOUND_ERROR,
-          message,
-          advice
-        })
-      }
-      await this.adapterRef._signalling._protoo.request('SendUserData', {
+      await this.adapterRef._signalling?._protoo?.request('SendUserData', {
         externData: {
           type: 'Mute',
           cid: this.adapterRef.channelInfo.cid,
           uid: new SimpleBig(this.adapterRef.channelInfo.uid),
           data: {
-            producerId: this._webcamProducer.id,
+            producerId: this._webcamProducer?.id,
             mute: true
           }
         }
       })
     } catch (e: any) {
-      this.loggerSend.error('muteMic() | failed:', e.name, e.message, e)
+      this.loggerSend.error('muteVideo() | failed:', e.name, e.message)
     }
   }
 
   async unmuteVideo() {
-    this.loggerSend.log('resume视频')
-    if (!this._webcamProducer) {
-      let enMessage = `unmuteVideo: _webcamProducer is not found`,
-        zhMessage = `unmuteVideo: _webcamProducer 未找到`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
-      })
-    }
-    this._webcamProducer.resume()
+    this.loggerSend.log('unmute视频')
+    this._webcamProducer?.resume()
     try {
-      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
-        let enMessage = `unmuteVideo: _protoo is not found`,
-          zhMessage = `unmuteVideo: _protoo 未找到`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.NOT_FOUND_ERROR,
-          message,
-          advice
-        })
-      }
-      await this.adapterRef._signalling._protoo.request('SendUserData', {
+      await this.adapterRef._signalling?._protoo?.request('SendUserData', {
         externData: {
           type: 'Mute',
           cid: this.adapterRef.channelInfo.cid,
           uid: new SimpleBig(this.adapterRef.channelInfo.uid),
           data: {
-            producerId: this._webcamProducer.id,
+            producerId: this._webcamProducer?.id,
             mute: false
           }
         }
       })
     } catch (e: any) {
-      this.loggerSend.error('muteMic() | failed:', e.name, e.message, e)
+      this.loggerSend.error('unmuteVideo() | failed:', e.name, e.message)
     }
   }
 
   async muteScreen() {
-    this.loggerSend.log('mute视频')
-    if (!this._screenProducer) {
-      let enMessage = `muteScreen: _screenProducer is not found`,
-        zhMessage = `muteScreen: _screenProducer 未找到`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
-      })
-    }
-    this._screenProducer.pause()
+    this.loggerSend.log('mute屏幕共享')
+    this._screenProducer?.pause()
     try {
-      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
-        let enMessage = `muteScreen: _protoo is not found`,
-          zhMessage = `muteScreen: _protoo 未找到`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.NOT_FOUND_ERROR,
-          message,
-          advice
-        })
-      }
-      await this.adapterRef._signalling._protoo.request('SendUserData', {
+      await this.adapterRef._signalling?._protoo?.request('SendUserData', {
         externData: {
           type: 'Mute',
           cid: this.adapterRef.channelInfo.cid,
           uid: new SimpleBig(this.adapterRef.channelInfo.uid),
           data: {
-            producerId: this._screenProducer.id,
+            producerId: this._screenProducer?.id,
             mute: true
           }
         }
       })
     } catch (e: any) {
-      this.loggerSend.error('muteScreen() | failed: ', e.name, e.message, e)
+      this.loggerSend.error('muteScreen() | failed: ', e.name, e.message)
     }
   }
 
   async unmuteScreen() {
-    this.loggerSend.log('resume视频')
-    if (!this._screenProducer) {
-      let enMessage = `unmuteScreen: _screenProducer is not found`,
-        zhMessage = `unmuteScreen: _screenProducer 未找到`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
-      })
-    }
-    this._screenProducer.resume()
+    this.loggerSend.log('unmute屏幕共享')
+    this._screenProducer?.resume()
     try {
-      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
-        let enMessage = `unmuteScreen: _protoo is not found`,
-          zhMessage = `unmuteScreen: _protoo 未找到`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.NOT_FOUND_ERROR,
-          message,
-          advice
-        })
-      }
-      await this.adapterRef._signalling._protoo.request('SendUserData', {
+      await this.adapterRef._signalling?._protoo?.request('SendUserData', {
         externData: {
           type: 'Mute',
           cid: this.adapterRef.channelInfo.cid,
           uid: new SimpleBig(this.adapterRef.channelInfo.uid),
           data: {
-            producerId: this._screenProducer.id,
+            producerId: this._screenProducer?.id,
             mute: false
           }
         }
       })
     } catch (e: any) {
-      this.loggerSend.error('muteMic() | failed:', e.name, e.message, e)
+      this.loggerSend.error('unmuteScreen() | failed:', e.name, e.message)
     }
   }
 
   async updateUserRole(userRole: number) {
-    this.loggerSend.log(`updateUserRole:更新用户角色为${userRole}`)
+    this.loggerSend.log(`updateUserRole() 更新用户角色为${userRole}`)
     try {
-      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
-        let enMessage = `updateUserRole: _protoo is not found`,
-          zhMessage = `updateUserRole: _protoo 未找到`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.NOT_FOUND_ERROR,
-          message,
-          advice
-        })
-      }
-      await this.adapterRef._signalling._protoo.request('SendUserData', {
+      await this.adapterRef._signalling?._protoo?.request('SendUserData', {
         externData: {
           type: 'UserRole',
           cid: this.adapterRef.channelInfo.cid,
@@ -2360,7 +2126,7 @@ class Mediasoup extends EventEmitter {
         }
       })
     } catch (e: any) {
-      this.loggerSend.error('updateUserRole failed:', e.name, e.message, e)
+      this.loggerSend.error('updateUserRole() failed:', e.name, e.message)
       throw e
     }
   }

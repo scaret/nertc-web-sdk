@@ -427,7 +427,7 @@ class Play extends EventEmitter {
   async playVideoStream(mediaType: 'video' | 'screen', stream: MediaStream, view: HTMLElement) {
     const mediaSetting = this[mediaType]
     if (mediaSetting.dom?.srcObject === stream) {
-      this.logger.log(`[Play ${mediaType}] playVideoStream：跳过重复的播放请求`)
+      this.logger.log(`[Play ${mediaType}] playVideoStream: 跳过重复的播放请求`)
       return
     }
     mediaSetting.view = view
@@ -601,37 +601,18 @@ class Play extends EventEmitter {
     streamId?: string | number
   ) {
     if (this.mask.enabled) {
-      this.logger.error(`takeSnapshot: 目前在打码状态`)
+      this.logger.warn(`takeSnapshot: 目前在打码状态`)
       return null
     }
 
     let rtcCanvas = new RTCCanvas('canvas')
     let canvas = rtcCanvas._canvas
     let ctx = rtcCanvas._ctx
-    if (!ctx) {
-      let enMessage = 'takeSnapshot: context of canvas is not found',
-        zhMessage = 'takeSnapshot: 未找到 canvas 中的 context',
-        enAdvice = 'The latest version of the Chrome browser is recommended',
-        zhAdvice = '建议使用最新版的 Chrome 浏览器'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
+    if (!ctx || !canvas) {
+      this.logger.error(`takeSnapshot() 浏览器环境不支持`)
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
-      })
-    }
-    if (!canvas) {
-      let enMessage = 'takeSnapshot: canvas is not found',
-        zhMessage = 'takeSnapshot: 未找到 canvas',
-        enAdvice = 'The latest version of the Chrome browser is recommended',
-        zhAdvice = '建议使用最新版的 Chrome 浏览器'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
+        code: ErrorCode.SWITCH_DEVICE_NO_CAMERA_ERROR,
+        message: 'takeSnapshot() 浏览器环境不支持'
       })
     }
 
@@ -647,17 +628,7 @@ class Play extends EventEmitter {
         ctx.fillStyle = '#ffffff'
         const dom = this[mediaType].dom
         if (!dom) {
-          let enMessage = 'takeSnapshot: dom is not found',
-            zhMessage = 'takeSnapshot: 未找到 dom',
-            enAdvice = 'Please contact CommsEase technical support',
-            zhAdvice = '请联系云信技术支持'
-          let message = env.IS_ZH ? zhMessage : enMessage,
-            advice = env.IS_ZH ? zhAdvice : enAdvice
-          throw new RtcError({
-            code: ErrorCode.NOT_FOUND_ERROR,
-            message,
-            advice
-          })
+          return
         }
         ctx.fillRect(0, 0, dom.videoWidth, dom.videoHeight)
         rtcCanvas.setSize(dom.videoWidth, dom.videoHeight)
@@ -675,10 +646,9 @@ class Play extends EventEmitter {
         if (returnType === 'download') {
           fileUrl = await new Promise((resolve, reject) => {
             canvas!.toBlob((blob) => {
-              this.logger.log('takeSnapshot, 获取到截图的blob: ', blob)
+              this.logger.log('takeSnapshot() 获取到截图的blob: ', blob)
               //@ts-ignore
               let url = URL.createObjectURL(blob)
-              this.logger.log('截图的url: ', url)
               let a = document.createElement('a')
               document.body.appendChild(a)
               a.style.display = 'none'

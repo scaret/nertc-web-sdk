@@ -440,10 +440,86 @@ const ErrorCode = {
 
   /*
    * 描述：调用takeSnapshot()或者takeSnapshotBase64()截图出错
-   * 可能原因：之前没有播放过视频, 不支持截屏
-   * 处理建议：请先调用play()播放视频
+   * 可能原因：之前没有启动过摄像头，或者启动完成摄像头但是没有播放过视频, 不支持截屏
+   * 处理建议：请先开启摄像头，并且play()播放视频
    */
   STREAM_TAKE_SNAPSHOT_ERROR: 10247,
+
+  /*
+   * 描述：调用takeSnapshot()或者takeSnapshotBase64()截图出错
+   * 可能原因：浏览器环境不支持截图功能
+   * 处理建议：请使用最新版本的chrome浏览器
+   */
+  STREAM_TAKE_SNAPSHOT_NO_CANVAS_ERROR: 10248,
+
+  /*
+   * 描述：调用setAudioVolume()出错
+   * 可能原因：参数错误，volume不是number数据类型
+   * 处理建议：volume 要设置的远端音频的播放音量，范围为 0（静音）到 100（声音最大）
+   */
+  SET_AUDIO_VOLUME_ARGUMENTS_ERROR: 10250,
+  /*
+   * 描述：调用setAudioVolume()截图出错
+   * 可能原因：之前没有播放过音频，不能设置播放音量
+   * 处理建议：请先调用play()播放声音
+   */
+  SET_AUDIO_VOLUME_ERROR: 10251,
+
+  /*
+   * 描述：调用setCaptureVolume()出错
+   * 可能原因：参数错误，volume不是number数据类型
+   * 处理建议：volume 要设置的远端音频的播放音量，范围为 0（静音）到 100（声音最大）
+   */
+  SET_CAPTURE_VOLUME_ARGUMENTS_ERROR: 10252,
+
+  /*
+   * 描述：调用setAudioOutput()出错
+   * 可能原因：系统错误，可能是不支持，或者浏览器内部在切换扬声器的时候出现异常
+   * 处理建议：联系云信技术支持
+   */
+  SET_AUDIO_OUTPUT_ERROR: 10253,
+
+  /*
+   * 描述：调用switchDevice()方法错误
+   * 可能原因：参数错误，type仅支持'audio'、'video'
+   * 处理建议：业务上避免
+   */
+  SWITCH_DEVICE_REPEAT_ARGUMENTS_ERROR: 10254,
+
+  /*
+   * 描述：调用switchDevice()方法错误
+   * 可能原因：状态错误，在前一次调用switchDevice()切换还没有成功的时候，又重复调用switchDevice()
+   * 处理建议：业务上避免，sdk会忽略此次调用
+   */
+  SWITCH_DEVICE_REPEAT_ERROR: 10255,
+
+  /*
+   * 描述：调用switchDevice()方法错误
+   * 可能原因：状态错误，调用switchDevice()切换麦克风设备，但是当前并没有打开mic设备
+   * 处理建议：业务上避免
+   */
+  SWITCH_DEVICE_NO_MIC_ERROR: 10256,
+
+  /*
+   * 描述：调用switchDevice()方法错误
+   * 可能原因：状态错误，调用switchDevice()切换麦克风设备，但是音频数据是用户自定义数据，不支持切换
+   * 处理建议：业务上避免
+   */
+  SWITCH_DEVICE_NO_SUPPORT_AUDIO: 10257,
+
+  /*
+   * 描述：调用switchDevice()方法错误
+   * 可能原因：状态错误，调用switchDevice()切换摄像头设备，但是当前并没有打开摄像头设备
+   * 处理建议：业务上避免
+   */
+  SWITCH_DEVICE_NO_CAMERA_ERROR: 10258,
+
+  /*
+   * 描述：调用switchDevice()方法错误
+   * 可能原因：状态错误，调用switchDevice()切换摄像头设备，但是视频数据是用户自定义数据，不支持切换
+   * 处理建议：业务上避免
+   */
+  SWITCH_DEVICE_NO_SUPPORT_VIDEO: 10259,
 
   // *********************  订阅和发布相关错误码 (ErrorCode 范围：10350 - 10400)
 
@@ -482,7 +558,9 @@ const ErrorCode = {
 
   //美颜、背景替换模块错误码范围：10401 - 10419
   /*
-   * WebGL 不支持
+   * 描述：不支持美颜或者背景替换功能
+   * 可能原因：浏览器不支持webGL
+   * 处理建议：使用最新版本的chrome浏览器
    */
   WEBGL_NOT_SUPPORT_ERROR: 10401,
   /*
@@ -516,47 +594,106 @@ const ErrorCode = {
 
   //伴音、音效模块错误码范围：10420 - 10439
   /*
-   * 音频处理异常
-   *
+   * 描述：startAudioMixing()伴音功能没有音频
+   * 可能原因：当前没有开启mic，不支持伴音功能
+   * 处理建议：先开启mic
    */
-  FORMAT_AUDIO_ERROR: 10420,
+  AUDIO_MIX_NO_AUDIO: 10420,
 
   /*
-   * 伴音相关文件加载状态异常
-   *
+   * 描述：startAudioMixing()云端伴音文件加载失败
+   * 可能原因：audioFilePath参数错误，或者该路径http请求失败，或者该云端文件数据格式错误
+   * 处理建议：请检查audioFilePath云端音频文件是否是正常的
    */
   AUDIO_MIX_FILE_ERROR: 10421,
-  /*
-   * 伴音相关操作状态异常
-   *
-   */
-  AUDIO_MIX_STATE_ERROR: 10422,
-  /*
-   * 音效相关操作状态异常
-   *
-   */
-  AUDIO_EFFECT_STATE_ERROR: 10423,
-  /*
-   * 音效文件缺失
-   *
-   */
-  AUDIO_EFFECT_FILE_LOST_ERROR: 10424,
-  /*
-   * 伴音解码异常
-   *
-   */
-  AUDIO_MIX_DECODE_FAILED_ERROR: 10425,
 
   /*
-   * 伴音相关异常
-   *
+   * 描述：startAudioMixing()云端伴音功能不支持
+   * 可能原因：浏览器环境不支持云端伴音功能
+   * 处理建议：请使用最新版本的Chrome浏览器
    */
-  AUDIO_MIXING_ERROR: 10426,
+  AUDIO_MIX_NO_SUPPORT: 10422,
+
   /*
-   * 音效相关异常
-   *
+   * 描述：云端伴音功能接口调用异常
+   * 可能原因：当前没有开启过伴音功能，调用停止、暂停、调节音量等操作会失败
+   * 处理建议：请先startAudioMixing()开启伴音功能
    */
-  AUDIO_EFFECT_ERROR: 10427,
+  AUDIO_MIX_NOT_STATE_ERROR: 10423,
+
+  /*
+   * 描述：resumeAudioMixing()调用异常
+   * 可能原因：当前没有暂停伴音
+   * 处理建议：业务上避免类似操作
+   */
+  AUDIO_MIX_NOT_PAUSE: 10424,
+
+  /*
+   * 描述：setAudioMixingVolume()参数错误
+   * 可能原因：volume为number类型，范围是0-255，该参数设置错误
+   * 处理建议：请正确设置volume
+   */
+  AUDIO_MIX_VOLUME_ERROR: 10425,
+
+  /*
+   * 描述：setAudioMixingPosition()参数错误
+   * 可能原因：playStartTime格式或者范围错误
+   * 处理建议：playStartTime应该是大于0，且小于云端伴音文件的总时长
+   */
+  AUDIO_MIX_PLAY_START_TIME_ERROR: 10426,
+
+  /*
+   * 描述：音效功能不支持
+   * 可能原因：浏览器环境不支持音效功能
+   * 处理建议：请使用最新版本的Chrome浏览器
+   */
+  AUDIO_EFFECT_NO_SUPPORT: 10430,
+  /*
+   * 描述：playEffect()|preloadEffect()云端音效文件加载失败
+   * 可能原因：filePath参数错误，或者该路径http请求失败，或者该云端文件数据格式错误
+   * 处理建议：请检查filePath云端音效文件是否是正常的
+   */
+  AUDIO_EFFECT_FILE_ERROR: 10431,
+
+  /*
+   * 描述：playEffect()音效功能没有音频
+   * 可能原因：当前没有开启mic
+   * 处理建议：先开启mic
+   */
+  AUDIO_EFFECT_NO_AUDIO: 10432,
+
+  /*
+   * 描述：云端音效功能接口调用异常
+   * 可能原因：当前没有开启过音效功能，调用停止、暂停、调节音量等操作会失败
+   * 处理建议：请先playEffect()开启音效功能
+   */
+  AUDIO_EFFECT_NOT_STATE_ERROR: 10433,
+
+  /*
+   * 描述：soundId找不到对应的音效问题
+   * 可能原因：soundId的音效文件可能没有加载或者已经释放了，或者参数错误
+   * 处理建议：请检查soundId是否正确
+   */
+  AUDIO_EFFECT_FILE_LOST_ERROR: 10434,
+
+  /*
+   * 描述：resumeEffect()调用异常
+   * 可能原因：当前没有暂停该音效文件
+   * 处理建议：业务上避免类似操作
+   */
+  AUDIO_EFFECT_NOT_PAUSE: 10435,
+  /*
+   * 描述：unloadEffect()调用异常
+   * 可能原因：该音效文件正在播放，不能unload
+   * 处理建议：该音效文件已经播放，请现使用 stopEffect 方法停止播放
+   */
+  AUDIO_EFFECT_PLAY_ALREADY: 10436,
+  /*
+   * 描述：playEffect()音效功能内部状态异常
+   * 可能原因：在已经播放音效后，或者当前音效处于暂停、音效文件加载中时，又调用playEffect()出现了sdk内部状态异常
+   * 处理建议：请提供必要的信息联系云信技术支持
+   */
+  AUDIO_EFFECT_ERROR: 10437,
 
   //小业务功能模块：10440 - 10449
   /*
@@ -565,6 +702,13 @@ const ErrorCode = {
    * 处理建议：priority参数设置正确
    */
   SET_LOCAL_MEDIA_PRIORITY_ARGUMENT_ERROR: 10445,
+
+  /*
+   * 描述：updatePermKey()请求错误
+   * 可能原因：服务器针对更新permKey请求拒绝了
+   * 处理建议：RtcError对象中的extraCode属性有指定云信服务器器反馈的具体错误码内容，也可以在console中查看具体原因
+   */
+  UPDATE_PERMKEY_ERROR: 10446,
 
   //客户端录制+水印模块（?）：10450 - 10460
 
@@ -605,12 +749,13 @@ const ErrorCode = {
   RECORDING_NOT_START_ERROR: 10454,
 
   /*
-   * 水印数额超限相关异常
-   *
+   * 描述：调用setCanvasWatermarkConfigs()方法设置画布水印错误
+   * 可能原因：水印数额超限了(最多可以设置 10 个文字水印，4 个图片水印)
+   * 处理建议：业务上避免这种情况
    */
   WATERMARKS_EXCEEDED_ERROR: 10460,
 
-  //客户端录制+水印模块（?）：10461 - 10470
+  //LBS模块：10461 - 10470
   /*
    * LBS 请求相关异常
    *

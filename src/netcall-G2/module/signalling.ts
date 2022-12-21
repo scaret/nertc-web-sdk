@@ -1489,9 +1489,10 @@ class Signalling extends EventEmitter {
       permKeySecret: permKey
     })
     if (response.code !== 200) {
-      throw new RtcError({
-        code: response.code || ErrorCode.UNKNOWN,
-        message: response.errMsg || 'failed to update permKey'
+      new RtcError({
+        code: ErrorCode.UPDATE_PERMKEY_ERROR,
+        extraCode: response.code,
+        message: 'update permkey 认证错误'
       })
     } else {
       this.adapterRef.permKeyInfo = response.PermKey
