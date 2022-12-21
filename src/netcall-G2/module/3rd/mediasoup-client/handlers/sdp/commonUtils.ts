@@ -117,16 +117,9 @@ export function extractDtlsParameters({ sdpObject }: { sdpObject: any }): DtlsPa
   )
 
   if (!mediaObject) {
-    let enMessage = `extractDtlsParameters: active media section is found`,
-      zhMessage = `extractDtlsParameters: active media 未找到`,
-      enAdvice = 'Please contact CommsEase technical support',
-      zhAdvice = '请联系云信技术支持'
-    let message = env.IS_ZH ? zhMessage : enMessage,
-      advice = env.IS_ZH ? zhAdvice : enAdvice
     throw new RtcError({
-      code: ErrorCode.SDP_ERROR,
-      message,
-      advice
+      code: ErrorCode.UNKNOWN_TYPE_ERROR,
+      message: `extractDtlsParameters: active media 未找到`
     })
   }
 

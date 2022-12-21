@@ -335,16 +335,9 @@ class MediaHelper extends EventEmitter {
     if (!this.stream.isRemote) {
       if (this.stream.destroyed) {
         this._reset()
-        let enMessage = 'assertLive: localStream is destroyed',
-          zhMessage = 'assertLive: localStream 已经销毁',
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         let err = new RtcError({
           code: ErrorCode.LOCALSTREAM_NOT_FOUND_ERROR,
-          message,
-          advice
+          message: 'assertLive: localStream 已经销毁'
         })
         throw err
       }
@@ -898,24 +891,8 @@ class MediaHelper extends EventEmitter {
 
   async getSecondStream(constraint: GUMConstaints) {
     let { audio = false, video = false } = constraint
-    if (!audio && !video) {
-      this.logger.error('getSecondStream: 必须指定一个参数')
-      let enMessage = 'getSecondStream: invalid parameter',
-        zhMessage = 'getSecondStream: 参数缺失',
-        enAdvice = 'Please make sure audio/video is valid',
-        zhAdvice = '必须指定一个参数'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.INVALID_PARAMETER_ERROR,
-          message,
-          advice
-        })
-      )
-    }
     if (this.stream.isRemote) {
-      return Promise.reject('getSecondStream:远端用户不能调用getSecondStream')
+      return
     }
 
     try {
@@ -1041,19 +1018,19 @@ class MediaHelper extends EventEmitter {
       result.height = 1080
     }
 
-    if (frameRate === 0) {
+    if (frameRate === VIDEO_FRAME_RATE_ENUM.CHAT_VIDEO_FRAME_RATE_NORMAL) {
       result.frameRate = 15
-    } else if (frameRate === 1) {
+    } else if (frameRate === VIDEO_FRAME_RATE_ENUM.CHAT_VIDEO_FRAME_RATE_5) {
       result.frameRate = 5
-    } else if (frameRate === 2) {
+    } else if (frameRate === VIDEO_FRAME_RATE_ENUM.CHAT_VIDEO_FRAME_RATE_10) {
       result.frameRate = 10
-    } else if (frameRate === 3) {
+    } else if (frameRate === VIDEO_FRAME_RATE_ENUM.CHAT_VIDEO_FRAME_RATE_15) {
       result.frameRate = 15
-    } else if (frameRate === 4) {
+    } else if (frameRate === VIDEO_FRAME_RATE_ENUM.CHAT_VIDEO_FRAME_RATE_20) {
       result.frameRate = 20
-    } else if (frameRate === 5) {
+    } else if (frameRate === VIDEO_FRAME_RATE_ENUM.CHAT_VIDEO_FRAME_RATE_25) {
       result.frameRate = 25
-    } else if (frameRate === 6) {
+    } else if (frameRate === VIDEO_FRAME_RATE_ENUM.CHAT_VIDEO_FRAME_RATE_30) {
       result.frameRate = 30
     }
     return result
@@ -1717,7 +1694,7 @@ class MediaHelper extends EventEmitter {
       this.audio.webAudio.mixAudioConf.playStartTime
     if (playedTime > this.audio.webAudio.mixAudioConf.totalTime) {
       this.logger.log(
-        '播发过的圈数 playedCycle: ',
+        '播放过的圈数 playedCycle: ',
         Math.floor(playedTime / this.audio.webAudio.mixAudioConf.totalTime)
       )
       cycle = cycle - Math.floor(playedTime / this.audio.webAudio.mixAudioConf.totalTime)
@@ -1725,7 +1702,7 @@ class MediaHelper extends EventEmitter {
     }
     if (this.audio.webAudio.mixAudioConf.setPlayStartTime) {
       this.logger.log(
-        '暂停期间，用户设置混音播发时间: ',
+        '暂停期间，用户设置混音播放时间: ',
         this.audio.webAudio.mixAudioConf.setPlayStartTime
       )
       playStartTime = this.audio.webAudio.mixAudioConf.setPlayStartTime
@@ -1777,7 +1754,7 @@ class MediaHelper extends EventEmitter {
       this.logger.error(message)
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.INVALID_OPERATION_ERROR,
+          code: reason,
           message
         })
       )
@@ -1849,7 +1826,7 @@ class MediaHelper extends EventEmitter {
           this.logger.log('已经播放的时间: ', playedTime)
           if (playedTime > this.audio.webAudio.mixAudioConf.totalTime) {
             this.logger.log(
-              '播发过的圈数 playedCycle: ',
+              '播放过的圈数 playedCycle: ',
               Math.floor(playedTime / this.audio.webAudio.mixAudioConf.totalTime)
             )
             cycle = cycle - Math.floor(playedTime / this.audio.webAudio.mixAudioConf.totalTime)
@@ -1918,7 +1895,7 @@ class MediaHelper extends EventEmitter {
       this.logger.log('getAudioMixingCurrentPosition() 当前没有开启伴音')
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.INVALID_OPERATION_ERROR,
+          code: ErrorCode.AUDIO_MIX_NOT_STATE_ERROR,
           message: 'getAudioMixingCurrentPosition() 当前没有开启伴音'
         })
       )
@@ -1942,7 +1919,7 @@ class MediaHelper extends EventEmitter {
       this.logger.log('getAudioMixingDuration() 当前没有开启伴音')
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.INVALID_OPERATION_ERROR,
+          code: ErrorCode.AUDIO_MIX_NOT_STATE_ERROR,
           message: 'getAudioMixingDuration() 当前没有开启伴音'
         })
       )
@@ -2195,7 +2172,7 @@ class MediaHelper extends EventEmitter {
     }
     if (reason) {
       throw new RtcError({
-        code: ErrorCode.NOT_SUPPORT_ERROR,
+        code: ErrorCode.AUDIO_EFFECT_NO_SUPPORT,
         message
       })
     }
@@ -2208,7 +2185,7 @@ class MediaHelper extends EventEmitter {
     this.logger.log('resumeEffect 已经播放的时间: ', playedTime)
     if (playedTime > this.audio.mixAudioConf.sounds[soundId].totalTime) {
       const cyclePlayed = Math.floor(playedTime / this.audio.mixAudioConf.sounds[soundId].totalTime)
-      this.logger.log('播发过的圈数 playedCycle: ', cyclePlayed)
+      this.logger.log('播放过的圈数 playedCycle: ', cyclePlayed)
       playedTime = playedTime % this.audio.mixAudioConf.sounds[soundId].totalTime
       this.audio.mixAudioConf.sounds[soundId].cycle =
         this.audio.mixAudioConf.sounds[soundId].cycle - cyclePlayed

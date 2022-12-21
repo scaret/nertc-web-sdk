@@ -308,19 +308,7 @@ export class Transport extends EnhancedEventEmitter {
    */
   set appData(
     appData: any // eslint-disable-line no-unused-vars
-  ) {
-    let enMessage = `Transport: cannot override appData object`,
-      zhMessage = `Transport: appData override 异常`,
-      enAdvice = 'Please contact CommsEase technical support',
-      zhAdvice = '请联系云信技术支持'
-    let message = env.IS_ZH ? zhMessage : enMessage,
-      advice = env.IS_ZH ? zhAdvice : enAdvice
-    throw new RtcError({
-      code: ErrorCode.APPDATA_OVERRIDE_ERROR,
-      message,
-      advice
-    })
-  }
+  ) {}
 
   /**
    * Observer.

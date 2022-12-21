@@ -267,17 +267,10 @@ class Play extends EventEmitter {
           this.logger.error(`[Resume] 恢复播放 ${mediaType} 出现问题:`, error.name, error.message)
           if (error.name === 'notAllowedError' || error.name === 'NotAllowedError') {
             // 兼容临时版本客户
-            let enMessage = `resume: ${error.message}`,
-              zhMessage = `resume: 浏览器自动播放受限: ${error.name}`,
-              enAdvice = 'Please refer to the suggested link for processing --> ',
-              zhAdvice = '请参考提示的链接进行处理 --> '
-            let message = env.IS_ZH ? zhMessage : enMessage,
-              advice = env.IS_ZH ? zhAdvice : enAdvice
             throw new RtcError({
               code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
               url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082',
-              message,
-              advice
+              message: `resume: 浏览器自动播放受限: ${error.name}`
             })
           }
         })
@@ -323,17 +316,10 @@ class Play extends EventEmitter {
       this.logger.warn(`[Play ${mediaType}] 播放音频出现问题: `, error.name, error.message, error)
       if (error.name === 'notAllowedError' || error.name === 'NotAllowedError') {
         // 兼容临时版本客户
-        let enMessage = `playStream ${mediaType}: ${error.message}`,
-          zhMessage = `playStream ${mediaType}: 浏览器自动播放受限: ${error.name}`,
-          enAdvice = 'Please refer to the suggested link for processing --> ',
-          zhAdvice = '请参考提示的链接进行处理 --> '
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
           code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
           url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082',
-          message,
-          advice
+          message: `playStream ${mediaType}: 浏览器自动播放受限: ${error.name}`
         })
       }
     }
@@ -469,17 +455,10 @@ class Play extends EventEmitter {
 
       if (error.name === 'notAllowedError' || error.name === 'NotAllowedError') {
         // 兼容临时版本客户
-        let enMessage = `playVideoStream: ${error.message}`,
-          zhMessage = `playVideoStream: 浏览器自动播放受限: ${error.name}`,
-          enAdvice = 'Please refer to the suggested link for processing --> ',
-          zhAdvice = '请参考提示的链接进行处理 --> '
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
           code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
           url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082',
-          message,
-          advice
+          message: `playVideoStream: 浏览器自动播放受限: ${error.name}`
         })
       }
     }
@@ -611,7 +590,7 @@ class Play extends EventEmitter {
     if (!ctx || !canvas) {
       this.logger.error(`takeSnapshot() 浏览器环境不支持`)
       throw new RtcError({
-        code: ErrorCode.SWITCH_DEVICE_NO_CAMERA_ERROR,
+        code: ErrorCode.STREAM_TAKE_SNAPSHOT_NO_CANVAS_ERROR,
         message: 'takeSnapshot() 浏览器环境不支持'
       })
     }
@@ -707,30 +686,10 @@ class Play extends EventEmitter {
     }
     const canvas = frameData.canvas
     const ctx = frameData.context
-    if (!ctx) {
-      let enMessage = 'getCurrentFrameData: context of canvas is not found',
-        zhMessage = 'getCurrentFrameData: 未找到 canvas 中的 context',
-        enAdvice = 'The latest version of the Chrome browser is recommended',
-        zhAdvice = '建议使用最新版的 Chrome 浏览器'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
+    if (!ctx || !canvas) {
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
-      })
-    }
-    if (!canvas) {
-      let enMessage = 'getCurrentFrameData: canvas is not found',
-        zhMessage = 'getCurrentFrameData: 未找到 canvas',
-        enAdvice = 'The latest version of the Chrome browser is recommended',
-        zhAdvice = '建议使用最新版的 Chrome 浏览器'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
+        code: ErrorCode.STREAM_TAKE_SNAPSHOT_NO_CANVAS_ERROR,
+        message: `getCurrentFrameData() 浏览器环境不支持`
       })
     }
     const videoWidth = dom.videoWidth

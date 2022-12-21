@@ -847,7 +847,7 @@ class LocalStream extends RTCEventEmitter {
    */
   async resume() {
     if (this._play) {
-      this.logger.log('resume()')
+      this.logger.log('resume() uid: ', this.stringStreamID)
       await this._play.resume()
     }
     this.client.apiFrequencyControl({
@@ -1864,7 +1864,6 @@ class LocalStream extends RTCEventEmitter {
     if (!Number.isInteger(volume)) {
       errcode = ErrorCode.SET_AUDIO_VOLUME_ARGUMENTS_ERROR
       message = 'setAudioVolume() volume 应该为 0 - 100 的整数'
-      this.logger.log(message)
     } else if (volume < 0) {
       volume = 0
     } else if (volume > 100) {
@@ -1879,7 +1878,6 @@ class LocalStream extends RTCEventEmitter {
     } else {
       message = 'setAudioVolume() 没有音频流，请检查是否有发布过音频'
       errcode = ErrorCode.SET_AUDIO_VOLUME_ERROR
-      this.logger.log(message)
     }
     this.client.apiFrequencyControl({
       name: 'setAudioVolume',
@@ -1892,6 +1890,7 @@ class LocalStream extends RTCEventEmitter {
       }
     })
     if (errcode) {
+      this.logger.error(message)
       throw new RtcError({
         code: errcode,
         message
@@ -2812,25 +2811,25 @@ class LocalStream extends RTCEventEmitter {
   getVideoBW(profile: VideoProfileOptions) {
     //码表参考：https://docs.popo.netease.com/lingxi/a120b338ea194ec296e12251bc523efa
     if (profile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_180p) {
-      if (profile.frameRate <= VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_NORMAL) {
+      if (profile.frameRate <= VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_15) {
         return 140 * 1000
       } else {
         return 220 * 1000
       }
     } else if (profile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_480p) {
-      if (profile.frameRate <= VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_NORMAL) {
+      if (profile.frameRate <= VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_15) {
         return 500 * 1000
       } else {
         return 750 * 1000
       }
     } else if (profile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_720p) {
-      if (profile.frameRate <= VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_NORMAL) {
+      if (profile.frameRate <= VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_15) {
         return 1130 * 1000
       } else {
         return 1710 * 1000
       }
     } else if (profile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p) {
-      if (profile.frameRate <= VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_NORMAL) {
+      if (profile.frameRate <= VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_15) {
         return 2080 * 1000
       } else {
         return 3150 * 1000
@@ -4120,13 +4119,8 @@ class LocalStream extends RTCEventEmitter {
         }
       })
       throw new RtcError({
-        code: ErrorCode.PLUGIN_REGISTER_ERROR,
-        message: env.IS_ZH
-          ? `该浏览器不支持WebAssembly，注册 ${options.key} 失败。`
-          : `Browser does not support WebAssembly.Register ${options.key} error.`,
-        advice: env.IS_ZH
-          ? '请更新浏览器版本或使用其他浏览器'
-          : 'please update the browser version or open with another browser.'
+        code: ErrorCode.WEBGL_NOT_SUPPORT_ERROR,
+        message: `该浏览器不支持WebAssembly，注册 ${options.key} 失败。`
       })
     }
     if (this.videoPostProcess.getPlugin(options.key as any)) {
@@ -4215,12 +4209,7 @@ class LocalStream extends RTCEventEmitter {
           })
           throw new RtcError({
             code: ErrorCode.PLUGIN_LOADED_ERROR,
-            message: env.IS_ZH
-              ? `插件加载失败：${options.wasmUrl}。`
-              : `load plugin error:${options.wasmUrl}.`,
-            advice: env.IS_ZH
-              ? '请检查网络是否开启或资源地址是否正确。'
-              : 'please check network or resource address.'
+            message: `插件加载失败：${options.wasmUrl}`
           })
         })
         plugin.once('error', (message: string) => {
@@ -4239,9 +4228,7 @@ class LocalStream extends RTCEventEmitter {
           })
           throw new RtcError({
             code: ErrorCode.PLUGIN_LOADED_ERROR,
-            message: env.IS_ZH
-              ? `插件 ${options.key} 内部错误：${message}。`
-              : `plugin '${options.key}' runtime error:${message}.`
+            message: `插件 ${options.key} 内部错误：${message}。`
           })
         })
       } else {

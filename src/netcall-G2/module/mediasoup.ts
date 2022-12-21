@@ -1118,49 +1118,31 @@ class Mediasoup extends EventEmitter {
   async destroyProduce(kind: MediaTypeShort) {
     let producer = null
     let producerId = null
+    if (!this.adapterRef.localStream) {
+      throw new RtcError({
+        code: ErrorCode.LOCALSTREAM_NOT_FOUND_ERROR,
+        message: `destroyProduce.${kind}: 未找到 localStream`
+      })
+    }
     if (kind === 'audio') {
       producer = this._micProducer
       producerId = this._micProducerId
       this._micProducer = this._micProducerId = null
-      if (!this.adapterRef.localStream) {
-        throw new RtcError({
-          code: ErrorCode.LOCALSTREAM_NOT_FOUND_ERROR,
-          message: 'destroyProduce.audio: 未找到 localStream'
-        })
-      }
       this.adapterRef.localStream.pubStatus.audio.audio = false
     } else if (kind === 'audioSlave') {
       producer = this._audioSlaveProducer
       producerId = this._audioSlaveProducerId
       this._audioSlaveProducer = this._audioSlaveProducerId = null
-      if (!this.adapterRef.localStream) {
-        throw new RtcError({
-          code: ErrorCode.LOCALSTREAM_NOT_FOUND_ERROR,
-          message: 'destroyProduce.audio: 未找到 localStream'
-        })
-      }
       this.adapterRef.localStream.pubStatus.audioSlave.audio = false
     } else if (kind === 'video') {
       producer = this._webcamProducer
       producerId = this._webcamProducerId
       this._webcamProducer = this._webcamProducerId = null
-      if (!this.adapterRef.localStream) {
-        throw new RtcError({
-          code: ErrorCode.LOCALSTREAM_NOT_FOUND_ERROR,
-          message: 'destroyProduce.video: 未找到 localStream'
-        })
-      }
       this.adapterRef.localStream.pubStatus.video.video = false
     } else if (kind === 'screen') {
       producer = this._screenProducer
       producerId = this._screenProducerId
       this._screenProducer = this._screenProducerId = null
-      if (!this.adapterRef.localStream) {
-        throw new RtcError({
-          code: ErrorCode.LOCALSTREAM_NOT_FOUND_ERROR,
-          message: 'destroyProduce.screen: 未找到 localStream'
-        })
-      }
       this.adapterRef.localStream.pubStatus.screen.screen = false
     }
 
@@ -1227,20 +1209,13 @@ class Mediasoup extends EventEmitter {
     mediaType: MediaTypeShort
   ) {
     if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
-      let enMessage = `setConsumerPreferredLayer: _protoo is not found`,
-        zhMessage = `setConsumerPreferredLayer: _protoo 未找到`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
+        code: ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: 'setConsumerPreferredLayer: _protoo 未找到'
       })
     }
     this.loggerSend.log(
-      'setConsumerPreferredLayer() [切换大小流]layer：',
+      'setConsumerPreferredLayer() [切换大小流]layer: ',
       layer,
       layer === 1 ? '大流' : '小流',
       mediaType
@@ -1381,16 +1356,9 @@ class Mediasoup extends EventEmitter {
     if (!this._recvTransport) {
       this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
       info.resolve(null)
-      let enMessage = `_createConsumer: receive transport is not found`,
-        zhMessage = `_createConsumer: 接收端 transport 未找到`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
+        code: ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: `createConsumer: 接收端 transport 未找到`
       })
     }
 
@@ -1425,16 +1393,9 @@ class Mediasoup extends EventEmitter {
     }
     const iceUfragRegRemote = offer.sdp.match(/a=ice-ufrag:([0-9a-zA-Z=#+-_\/\\\\]+)/)
     if (!iceUfragRegRemote) {
-      let enMessage = `_createConsumer: iceUfragRegRemote is null`,
-        zhMessage = `_createConsumer: iceUfragRegRemote 为空`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.SDP_ERROR,
-        message,
-        advice
+        code: ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: `_createConsumer: iceUfragRegRemote 为空`
       })
     }
 
@@ -1470,16 +1431,9 @@ class Mediasoup extends EventEmitter {
     )
     if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
       info.resolve(null)
-      let enMessage = `_createConsumer: _protoo is not found`,
-        zhMessage = `_createConsumer: _protoo 未找到`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
+        code: ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: `_createConsumer: _protoo 未找到`
       })
     }
     const recvPC = this._recvTransport.handler._pc
@@ -1490,7 +1444,7 @@ class Mediasoup extends EventEmitter {
     } catch (e: any) {
       if (e.message === 'request timeout' && this.adapterRef._signalling._protoo === _protoo) {
         this.logger.error(
-          `[Subscribe] Consume消息Timeout，尝试信令重连：${e.name}/${e.message}。当前的连接状态：${this.adapterRef.connectState.curState}。原始请求：`,
+          `[Subscribe] Consume消息Timeout, 尝试信令重连: ${e.name}/${e.message}, 当前的连接状态: ${this.adapterRef.connectState.curState}, 原始请求: `,
           JSONBigStringify(data)
         )
         this.adapterRef.channelStatus = 'connectioning'
@@ -1500,20 +1454,13 @@ class Mediasoup extends EventEmitter {
         this.adapterRef._signalling._reconnection()
       } else {
         this.logger.error(
-          `[Subscribe] Consume消息错误：${e.name}/${e.message}。当前的连接状态：${this.adapterRef.connectState.curState}。原始请求：`,
+          `[Subscribe] Consume消息错误: ${e.name}/${e.message}, 当前的连接状态：${this.adapterRef.connectState.curState}, 原始请求：`,
           JSONBigStringify(data)
         )
       }
-      let enMessage = `_createConsumer: ${e.message}`,
-        zhMessage = `_createConsumer: Consume 消息错误:${e.message}`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
         code: ErrorCode.UNKNOWN_TYPE_ERROR,
-        message,
-        advice
+        message: `_createConsumer: Consume 消息错误:${e.message}`
       })
     }
     let {
@@ -1684,19 +1631,6 @@ class Mediasoup extends EventEmitter {
       } else {
         consumer.track.enabled = true
       }
-      if (!remoteStream.mediaHelper) {
-        let enMessage = '_createConsumer: media helper is unavailable',
-          zhMessage = '_createConsumer: media helper 不可用',
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.UNAVAILABLE_ERROR,
-          message,
-          advice
-        })
-      }
       remoteStream.mediaHelper.updateStream(mediaTypeShort, consumer.track)
       this.adapterRef.instance.safeEmit('@pairing-createConsumer-success')
       if (mediaTypeShort === 'audio') {
@@ -1719,7 +1653,7 @@ class Mediasoup extends EventEmitter {
     } else {
       this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
       this.loggerRecv.log(
-        '[Subscribe] 该次consume状态错误： ',
+        '[Subscribe] 该次consume状态错误: ',
         JSONBigStringify(remoteStream['pubStatus'], null, '')
       )
     }
@@ -1734,49 +1668,19 @@ class Mediasoup extends EventEmitter {
       `开始订阅 ${uid} 的 ${mediaTypeShort} 媒体: ${id} 大小流: ${preferredSpatialLayer}`
     )
     if (!this.adapterRef._rtsTransport) {
-      let enMessage = `_createConsumerRts: _rtsTransport is not found`,
-        zhMessage = `_createConsumerRts: _rtsTransport 未找到`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
-      })
+      return
     } else if (
       !this.adapterRef._signalling ||
       !this.adapterRef._signalling._protoo ||
       !this.adapterRef._signalling._protoo.request
     ) {
-      let enMessage = `_createConsumerRts: _protoo is not found 1`,
-        zhMessage = `_createConsumerRts: _protoo 未找到 1`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
-      })
+      return
     } else if (
       mediaTypeShort !== 'audio' &&
       mediaTypeShort !== 'video' &&
       mediaTypeShort !== 'screen'
     ) {
-      let enMessage = '_createConsumerRts: mediaType type is unknown',
-        zhMessage = '_createConsumerRts: mediaType 参数类型非法',
-        enAdvice = 'please make sure the parameter(mediaType) is correct',
-        zhAdvice = '请输入正确的参数类型'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.UNKNOWN_TYPE_ERROR,
-        message,
-        advice
-      })
+      return
     }
 
     if (!id) {
@@ -1827,16 +1731,9 @@ class Mediasoup extends EventEmitter {
     this.loggerRecv.log('发送consume请求 =', JSONBigStringify(data))
     if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
       info.resolve(null)
-      let enMessage = `_createConsumerRts: _protoo is not found 2`,
-        zhMessage = `_createConsumerRts: _protoo 未找到 2`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
+        code: ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: `_createConsumerRts: _protoo 未找到 2`
       })
     }
     const consumeRes = await this.adapterRef._signalling._protoo.request('WsConsume', data)

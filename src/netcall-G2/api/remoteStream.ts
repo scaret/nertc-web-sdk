@@ -348,7 +348,9 @@ class RemoteStream extends RTCEventEmitter {
    * @returns {Null}
    */
   setSubscribeConfig(conf: SubscribeOptions) {
-    this.logger.log(`[Subscribe] 设置 ${this.stringStreamID} 订阅规则：${JSON.stringify(conf)}`)
+    this.logger.log(
+      `setSubscribeConfig() 设置 ${this.stringStreamID} 订阅规则：${JSON.stringify(conf)}`
+    )
     if (typeof conf.highOrLow === 'number') {
       this.subConf.highOrLow.video = conf.highOrLow
       this.subConf.highOrLow.screen = conf.highOrLow
@@ -408,7 +410,9 @@ class RemoteStream extends RTCEventEmitter {
     }
 
     this.logger.log(
-      `[Subscribe] 设置 ${this.stringStreamID} 订阅规则结果：${JSON.stringify(this.subConf)}`
+      `setSubscribeConfig() 设置 ${this.stringStreamID} 订阅规则结果：${JSON.stringify(
+        this.subConf
+      )}`
     )
     this.client.apiFrequencyControl({
       name: 'setSubscribeConfig',
@@ -485,7 +489,7 @@ class RemoteStream extends RTCEventEmitter {
     playOptions: StreamPlayOptions = {}
   ) {
     if ((playOptions.video || playOptions.screen) && !viewInput) {
-      this.logger.warn(`play() localStream ${this.getId()} 播放视频没有指定div标签`)
+      this.logger.warn(`play() remoteStream ${this.getId()} 播放视频没有指定div标签`)
       throw new RtcError({
         code: ErrorCode.STREAM_PLAY_ARGUMENT_ERROR,
         message: 'play() 播放视频没有指定div标签'
@@ -508,8 +512,7 @@ class RemoteStream extends RTCEventEmitter {
     }
 
     this.logger.log(
-      `[play] play() uid ${this.stringStreamID} 播放, Stream.pla::`,
-      JSON.stringify(playOptions)
+      `play() uid ${this.stringStreamID} 播放, playOptions:${JSON.stringify(playOptions)}`
     )
     if (playOptions.audio && this._play && this.mediaHelper.audio.audioStream.getTracks().length) {
       if (this.client.spatialManager) {
@@ -629,6 +632,7 @@ class RemoteStream extends RTCEventEmitter {
     }
 
     if (this._play) {
+      this.logger.log('resume() uid: ', this.stringStreamID)
       await this._play.resume()
     }
     this.client.apiFrequencyControl({
@@ -711,7 +715,7 @@ class RemoteStream extends RTCEventEmitter {
    * @return {Void}
    */
   stop(type?: MediaTypeShort) {
-    this.logger.log(`uid ${this.stringStreamID} Stream.stop: 停止播放 ${type || '音视频流'}`)
+    this.logger.log(`stop() uid ${this.stringStreamID}, 停止播放 ${type || '音视频流'}`)
     if (!this._play) return
     MediaTypeList.forEach((mediaType) => {
       if (!type || mediaType === type) {
@@ -811,7 +815,7 @@ class RemoteStream extends RTCEventEmitter {
         )
       })
     } catch (e: any) {
-      this.logger.error('API调用失败：Stream:unmuteAudio', e.name, e.message, e)
+      this.logger.error('API调用失败：Stream:unmuteAudio', e.name, e.message)
       this.client.apiFrequencyControl({
         name: 'unmuteAudio',
         code: -1,
@@ -986,7 +990,7 @@ class RemoteStream extends RTCEventEmitter {
   getAudioLevel(mediaType: 'audio' | 'audioSlave' = 'audio') {
     const pipeline = this.mediaHelper.getOrCreateAudioPipeline(mediaType)
     if (!pipeline) {
-      this.logger.error(`当前环境不支持AudioContext`)
+      //this.logger.error(`当前环境不支持AudioContext`)
       return 0
     } else {
       if (!pipeline.audioLevelNode) {
@@ -1036,10 +1040,10 @@ class RemoteStream extends RTCEventEmitter {
    * @return {Promise}
    */
   setAudioVolume(volume = 100) {
-    let reason = null
+    let errcode, message
     if (!Number.isInteger(volume)) {
-      this.logger.log('volume 为 0 - 100 的整数')
-      reason = 'INVALID_ARGUMENTS'
+      errcode = ErrorCode.SET_AUDIO_VOLUME_ARGUMENTS_ERROR
+      message = 'setAudioVolume() volume 应该为 0 - 100 的整数'
     } else if (volume < 0) {
       volume = 0
     } else if (volume > 100) {
@@ -1047,52 +1051,38 @@ class RemoteStream extends RTCEventEmitter {
     } else {
       volume = volume * 2.55
     }
-    this.logger.log(`调节${this.stringStreamID}的音量大小: ${volume}`)
+    this.logger.log(`setAudioVolume() 调节${this.stringStreamID}的音量大小: ${volume}`)
 
     if (this.audio) {
-      if (!this._play) {
-        throw new RtcError({
-          code: ErrorCode.STREAM_NOT_SUBSCRIBE_AUDIO_SLAVE,
-          message: 'remoteStream.setAudioVolume: 播放未开始'
-        })
-      }
-      this._play.setPlayVolume('audio', volume)
+      this._play?.setPlayVolume('audio', volume)
     } else {
-      this.logger.log(`没有音频流，请检查是否有订阅过音频`)
-      reason = 'INVALID_OPERATION'
+      message = 'setAudioVolume() 没有音频流，请检查是否有发布过音频'
+      errcode = ErrorCode.SET_AUDIO_VOLUME_ERROR
     }
     this.client.apiFrequencyControl({
       name: 'setAudioVolume',
-      code: 0,
+      code: errcode ? -1 : 0,
       param: {
         streamID: this.stringStreamID,
+        isRemote: false,
         volume,
-        isRemote: true
+        reason: message
       }
     })
-    if (reason) {
-      this.client.apiFrequencyControl({
-        name: 'setAudioVolume',
-        code: -1,
-        param: {
-          streamID: this.stringStreamID,
-          volume,
-          isRemote: true,
-          reason
-        }
-      })
+    if (errcode) {
+      this.logger.error(message)
       throw new RtcError({
-        code: ErrorCode.STREAM_NOT_SUBSCRIBE_AUDIO,
-        message: 'remoteStream.setAudioVolume: 没有订阅音频'
+        code: errcode,
+        message
       })
     }
   }
 
   setAudioSlaveVolume(volume = 100) {
-    let reason = null
+    let errcode, message
     if (!Number.isInteger(volume)) {
-      this.logger.log('volume 为 0 - 100 的整数')
-      reason = 'INVALID_ARGUMENTS'
+      errcode = ErrorCode.SET_AUDIO_VOLUME_ARGUMENTS_ERROR
+      message = 'setAudioSlaveVolume() volume 应该为 0 - 100 的整数'
     } else if (volume < 0) {
       volume = 0
     } else if (volume > 100) {
@@ -1100,34 +1090,29 @@ class RemoteStream extends RTCEventEmitter {
     } else {
       volume = volume * 2.55
     }
-    this.logger.log(`调节${this.stringStreamID}的音频辅流音量大小: ${volume}`)
+    this.logger.log(`setAudioSlaveVolume() 调节${this.stringStreamID}的音量大小: ${volume}`)
 
-    if (this.audioSlave) {
-      if (!this._play) {
-        throw new RtcError({
-          code: ErrorCode.STREAM_NOT_SUBSCRIBE_AUDIO_SLAVE,
-          message: 'remoteStream.setAudioVolume: audioSlave播放未开始'
-        })
-      }
-      this._play.setPlayVolume('audioSlave', volume)
+    if (this.audio) {
+      this._play?.setPlayVolume('audioSlave', volume)
     } else {
-      this.logger.log(`没有音频辅流，请检查是否有订阅过音频辅流`)
-      reason = 'INVALID_OPERATION'
+      message = 'setAudioSlaveVolume() 没有音频流，请检查是否有发布过音频'
+      errcode = ErrorCode.SET_AUDIO_VOLUME_ERROR
     }
     this.client.apiFrequencyControl({
       name: 'setAudioSlaveVolume',
-      code: 0,
-      param: JSON.stringify({ volume }, null, ' ')
+      code: errcode ? -1 : 0,
+      param: {
+        streamID: this.stringStreamID,
+        isRemote: false,
+        volume,
+        reason: message || ''
+      }
     })
-    if (reason) {
-      this.client.apiFrequencyControl({
-        name: 'setAudioSlaveVolume',
-        code: -1,
-        param: JSON.stringify({ volume, reason }, null, ' ')
-      })
+    if (errcode) {
+      this.logger.error(message)
       throw new RtcError({
-        code: ErrorCode.STREAM_NOT_SUBSCRIBE_AUDIO,
-        message: 'remoteStream.setAudioVolume: 没有订阅音频辅流'
+        code: errcode,
+        message
       })
     }
   }
@@ -1180,7 +1165,7 @@ class RemoteStream extends RTCEventEmitter {
    * @return {Promise}
    */
   async unmuteVideo() {
-    this.logger.log(`启用 ${this.stringStreamID} 的视频轨道`)
+    this.logger.log(`unmuteVideo() 启用 ${this.stringStreamID} 的视频轨道`)
     try {
       if (!this._play || !this.videoView) {
         throw new RtcError({
@@ -1230,7 +1215,7 @@ class RemoteStream extends RTCEventEmitter {
    * @return {Promise}
    */
   async muteVideo() {
-    this.logger.log(`禁用 ${this.stringStreamID} 的视频轨道`)
+    this.logger.log(`muteVideo() 禁用 ${this.stringStreamID} 的视频轨道`)
     try {
       if (!this._play) {
         return
@@ -1277,7 +1262,7 @@ class RemoteStream extends RTCEventEmitter {
    */
 
   async unmuteScreen() {
-    this.logger.log(`启用 ${this.stringStreamID} 的视频轨道`)
+    this.logger.log(`unmuteScreen() 启用 ${this.stringStreamID} 的视频轨道`)
     try {
       if (!this._play || !this.screenView) {
         throw new RtcError({
@@ -1326,7 +1311,7 @@ class RemoteStream extends RTCEventEmitter {
    * @return {Promise}
    */
   async muteScreen() {
-    this.logger.log(`禁用 ${this.stringStreamID} 的视频轨道`)
+    this.logger.log(`muteScreen() 禁用 ${this.stringStreamID} 的视频轨道`)
     try {
       if (!this._play) {
         return
@@ -1388,12 +1373,11 @@ class RemoteStream extends RTCEventEmitter {
    * @returns {Promise}
    */
   async takeSnapshot(options: SnapshotOptions) {
+    let errcode, message
     if (this.video || this.screen) {
       if (!this._play) {
-        throw new RtcError({
-          code: ErrorCode.STREAM_TAKE_SNAPSHOT_ERROR,
-          message: '之前没有播放视频，不支持截图'
-        })
+        message = 'takeSnapshot(): 当前视频没有播放'
+        errcode = ErrorCode.STREAM_TAKE_SNAPSHOT_ERROR
       }
       await this._play.takeSnapshot(options, 'download', this.streamID)
       this.client.apiFrequencyControl({
@@ -1406,7 +1390,12 @@ class RemoteStream extends RTCEventEmitter {
         }
       })
     } else {
-      this.logger.log(`没有视频流，请检查是否有 订阅 过视频`)
+      message = 'takeSnapshot(): 没有视频流, 请检查是否开启过视频'
+      errcode = ErrorCode.STREAM_TAKE_SNAPSHOT_ERROR
+    }
+
+    if (errcode) {
+      this.logger.error(message)
       this.client.apiFrequencyControl({
         name: 'takeSnapshot',
         code: -1,
@@ -1415,13 +1404,16 @@ class RemoteStream extends RTCEventEmitter {
             streamID: this.stringStreamID,
             isRemote: false,
             ...options,
-            reason: `没有视频流，请检查是否有 订阅 过视频`
+            reason: message
           },
           null,
           ' '
         )
       })
-      return 'INVALID_OPERATION'
+      throw new RtcError({
+        code: errcode,
+        message
+      })
     }
   }
 
@@ -1433,12 +1425,11 @@ class RemoteStream extends RTCEventEmitter {
    * @returns {string}
    */
   takeSnapshotBase64(options: SnapshotBase64Options) {
+    let errcode, message
     if (this.video || this.screen) {
       if (!this._play) {
-        throw new RtcError({
-          code: ErrorCode.STREAM_TAKE_SNAPSHOT_ERROR,
-          message: '之前没有播放视频，不支持截图'
-        })
+        message = 'takeSnapshotBase64(): 当前视频没有播放'
+        errcode = ErrorCode.STREAM_TAKE_SNAPSHOT_ERROR
       }
       let base64Url = this._play.takeSnapshot(options, 'base64')
       this.client.apiFrequencyControl({
@@ -1452,7 +1443,11 @@ class RemoteStream extends RTCEventEmitter {
       })
       return base64Url
     } else {
-      this.logger.log(`没有视频流，请检查是否有 发布 过视频`)
+      message = 'takeSnapshotBase64(): 没有视频流, 请检查是否开启过视频'
+      errcode = ErrorCode.STREAM_TAKE_SNAPSHOT_ERROR
+    }
+    if (errcode) {
+      this.logger.error(message)
       this.client.apiFrequencyControl({
         name: 'takeSnapshotBase64',
         code: -1,
@@ -1461,13 +1456,16 @@ class RemoteStream extends RTCEventEmitter {
             streamID: this.stringStreamID,
             isRemote: false,
             ...options,
-            reason: `没有视频流，请检查是否有 发布 过视频`
+            reason: message
           },
           null,
           ' '
         )
       })
-      return 'INVALID_OPERATION'
+      throw new RtcError({
+        code: errcode,
+        message
+      })
     }
   }
 
@@ -1490,19 +1488,6 @@ class RemoteStream extends RTCEventEmitter {
    */
   async startMediaRecording(options: MediaRecordingOptions) {
     const streams = []
-    if (!this.mediaHelper) {
-      let enMessage = 'remoteStream.startMediaRecording: media helper is unavailable',
-        zhMessage = 'remoteStream.startMediaRecording: media helper 不可用',
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.UNAVAILABLE_ERROR,
-        message,
-        advice
-      })
-    }
     switch (options.type) {
       case 'screen':
         streams.push(this.mediaHelper.screen.screenVideoStream)
@@ -1522,16 +1507,9 @@ class RemoteStream extends RTCEventEmitter {
       return
     }
     if (!this._record || !this.streamID || !streams) {
-      let enMessage = 'remoteStream_startMediaRecording: invalid parameter when start recording',
-        zhMessage = 'remoteStream_startMediaRecording: 开始录制时参数异常',
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
         code: ErrorCode.RECORDING_ERROR,
-        message,
-        advice
+        message: 'remoteStream_startMediaRecording: 开始录制时参数异常'
       })
     }
     return (
@@ -1557,16 +1535,9 @@ class RemoteStream extends RTCEventEmitter {
    */
   stopMediaRecording(options: { recordId?: string }) {
     if (!this._record) {
-      let enMessage = 'remoteStream.stopMediaRecording: recording is not start',
-        zhMessage = 'remoteStream.stopMediaRecording: 录制未开始',
-        enAdvice = 'Please start recording first',
-        zhAdvice = '请先开启录制'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
         code: ErrorCode.RECORDING_NOT_START_ERROR,
-        message,
-        advice
+        message: 'remoteStream.stopMediaRecording: 录制未开始'
       })
     }
     //FIXME
@@ -1584,16 +1555,9 @@ class RemoteStream extends RTCEventEmitter {
    */
   playMediaRecording(options: { recordId: string; view: HTMLElement }) {
     if (!this._record) {
-      let enMessage = 'remoteStream.playMediaRecording: recording is not start',
-        zhMessage = 'remoteStream.playMediaRecording: 录制未开始',
-        enAdvice = 'Please start recording first',
-        zhAdvice = '请先开启录制'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
         code: ErrorCode.RECORDING_NOT_START_ERROR,
-        message,
-        advice
+        message: 'remoteStream.playMediaRecording: 录制未开始'
       })
     }
     return this._record.play(options.view)
@@ -1607,16 +1571,9 @@ class RemoteStream extends RTCEventEmitter {
   listMediaRecording() {
     let list = []
     if (!this._record) {
-      let enMessage = 'remoteStream.listMediaRecording: recording is not start',
-        zhMessage = 'remoteStream.listMediaRecording: 录制未开始',
-        enAdvice = 'Please start recording first',
-        zhAdvice = '请先开启录制'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
         code: ErrorCode.RECORDING_NOT_START_ERROR,
-        message,
-        advice
+        message: 'remoteStream.listMediaRecording: 录制未开始'
       })
     }
     const recordStatus = this._record.getRecordStatus()
@@ -1635,16 +1592,9 @@ class RemoteStream extends RTCEventEmitter {
    */
   cleanMediaRecording(options: { recordId: string }) {
     if (!this._record) {
-      let enMessage = 'remoteStream.cleanMediaRecording: recording is not start',
-        zhMessage = 'remoteStream.cleanMediaRecording: 录制未开始',
-        enAdvice = 'Please start recording first',
-        zhAdvice = '请先开启录制'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
         code: ErrorCode.RECORDING_NOT_START_ERROR,
-        message,
-        advice
+        message: 'remoteStream.cleanMediaRecording: 录制未开始'
       })
     }
     return this._record.clean()
@@ -1660,16 +1610,9 @@ class RemoteStream extends RTCEventEmitter {
    */
   downloadMediaRecording(options: { recordId: string }) {
     if (!this._record) {
-      let enMessage = 'remoteStream.downloadMediaRecording: recording is not start',
-        zhMessage = 'remoteStream.downloadMediaRecording: 录制未开始',
-        enAdvice = 'Please start recording first',
-        zhAdvice = '请先开启录制'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
         code: ErrorCode.RECORDING_NOT_START_ERROR,
-        message,
-        advice
+        message: 'remoteStream.downloadMediaRecording: 录制未开始'
       })
     }
     return this._record.download()
@@ -1717,36 +1660,18 @@ class RemoteStream extends RTCEventEmitter {
         this.logger.error(
           `目前的文字水印数量：${options.textWatermarks.length}。允许的数量：${LIMITS.TEXT}`
         )
-        let enMessage =
-            'remoteStream_setCanvasWatermarkConfigs: The number of text watermarks exceeds the limit',
-          zhMessage = 'remoteStream_setCanvasWatermarkConfigs: 文字水印数量超限',
-          enAdvice =
-            'The number of text watermarks can be set up to 10, please make sure not to exceed the limit',
-          zhAdvice = '最多可以设置 10 个文字水印'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
           code: ErrorCode.WATERMARKS_EXCEEDED_ERROR,
-          message,
-          advice
+          message: '最多可以设置 10 个文字水印'
         })
       }
       if (options.imageWatermarks && options.imageWatermarks.length > LIMITS.IMAGE) {
         this.logger.error(
           `目前的图片水印数量：${options.imageWatermarks.length}。允许的数量：${LIMITS.IMAGE}`
         )
-        let enMessage =
-            'remoteStream_setCanvasWatermarkConfigs: The number of image watermarks exceeds the limit',
-          zhMessage = 'remoteStream_setCanvasWatermarkConfigs: 文字水印数量超限',
-          enAdvice =
-            'The number of image watermarks can be set up to 4, please make sure not to exceed the limit',
-          zhAdvice = '最多可以设置 4 个文字水印'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
           code: ErrorCode.WATERMARKS_EXCEEDED_ERROR,
-          message,
-          advice
+          message: '最多可以设置 4 个图片水印'
         })
       }
       watermarkControl.checkWatermarkParams(options)

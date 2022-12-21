@@ -22,7 +22,6 @@ const ErrorCode = {
    *
    */
   AUTO_PLAY_NOT_ALLOWED: 41030,
-  UNKNOWN: 99999,
 
   /**
    * web端音视频sdk错误码规范统一: https://docs.popo.netease.com/lingxi/529191c6202443fe9d535067fdad061d
@@ -59,22 +58,18 @@ const ErrorCode = {
   NETWORK_REQUEST_ERROR: 10003,
 
   /*
-   * 云信媒体服务异常，可通过 console 日志产看具体原因(后面要废弃)
-   *
+   * 描述：非法操作。
+   * 可能原因：出现这种错误，说明sdk接口使用姿势有问题。
+   * 处理建议：RtcError对象中的message有输出具体的错误内容，也可以在console中查看具体原因
    */
-  MEDIA_SERVER_ERROR: 10005,
+  INVALID_OPERATION_ERROR: 10008,
 
   /*
    * 描述：接口调用顺序错误。
    * 可能原因：出现这种错误，说明该api接口需要在加入join()之前调用，而当前在加入房间之后调用了。
    * 处理建议：修改api接口的使用顺序，在join()之前调用即可
    */
-  API_CALL_SEQUENCE_BEFORE_ERROR: 10008,
-
-  /*
-   * 非法操作(后面要废弃)
-   */
-  INVALID_OPERATION_ERROR: 10009,
+  API_CALL_SEQUENCE_BEFORE_ERROR: 10009,
 
   /*
    * 描述：接口调用顺序错误。
@@ -96,24 +91,6 @@ const ErrorCode = {
    * 处理建议：麻烦提供具体的信息，联系云信技术支持
    */
   UNKNOWN_TYPE_ERROR: 10012,
-
-  /*
-   * 未定义异常，可通过 console 日志产看具体原因(后面要废弃)
-   *
-   */
-  UNDEFINED_ERROR: 10013,
-
-  /*
-   * 不可用异常，可通过 console 日志产看具体原因(后面要废弃)
-   *
-   */
-  UNAVAILABLE_ERROR: 10014,
-
-  /*
-   * socket异常，可通过 console 日志产看具体原因(后面要废弃)
-   *
-   */
-  SOCKET_INIT_ERROR: 10016,
 
   /*
    * 描述：登录请求发送了异常。
@@ -157,27 +134,6 @@ const ErrorCode = {
    * 处理建议：业务层规避这种行为，加入房间成功之后，方可执行相应的api
    */
   USER_NOT_IN_CHANNEL_ERROR: 10104,
-
-  /*
-   * 事件上报错误
-   *
-   *
-   */
-  EVENT_UPLOAD_ERROR: 10105,
-
-  /*
-   * 未找到异常
-   *
-   *
-   */
-  NOT_FOUND_ERROR: 10106,
-
-  /*
-   * SDP异常
-   *
-   *
-   */
-  SDP_ERROR: 10107,
 
   /*
    * 描述：服务器permKey权限控制不允许加入房间
@@ -265,18 +221,6 @@ const ErrorCode = {
   UPDATE_TASKS_FAILED_ERROR: 10137,
 
   // *********************  localStream和remoteStream对象本地音视频视频采集&播放相关错误码 (ErrorCode 范围：10201 - 10349)
-
-  /*
-   * 未开始播放异常
-   *
-   */
-  PLAY_NOT_START_ERROR: 10205,
-
-  /*
-   * appData异常
-   *
-   */
-  APPDATA_OVERRIDE_ERROR: 10206,
 
   /*
    * 描述：NERTC.createStream()接口中uid参数错误
@@ -391,14 +335,14 @@ const ErrorCode = {
 
   /*
    * 描述：当前没有订阅过音频，却调用setAudioVolume()设置播放音量
-   * 可能原因：当前没有订阅过音频，却调用setAUdioVolumeAUdioVolume()设置播放音量
+   * 可能原因：当前没有订阅过音频，却调用setAudioVolume()设置播放音量
    * 处理建议：业务层规避这种行为，也可以忽略这个报错，因为sdk会主动放弃该次的setAudioVolume()调用
    */
   STREAM_NOT_SUBSCRIBE_AUDIO: 10240,
 
   /*
    * 描述：当前没有播放音频，却调用setAudioVolume()设置播放音量
-   * 可能原因：当前没有播放音频，却调用setAUdioVolumeAUdioVolume()设置播放音量
+   * 可能原因：当前没有播放音频，却调用setAudioVolume()设置播放音量
    * 处理建议：业务层规避这种行为，也可以忽略这个报错，因为sdk会主动放弃该次的setAudioVolume()调用
    */
   STREAM_NOT_SUBSCRIBE_AUDIO_SLAVE: 10241,
@@ -411,14 +355,14 @@ const ErrorCode = {
   STREAM_SET_CAPTURE_VOLUME_ARGUMENT_ERROR: 10242,
 
   /*
-   * 描述：调用unmuteAudio()恢复视频出错
-   * 可能原因：之前没有播放过视频, 不支持unmute
+   * 描述：调用unmuteAudio()恢复音频出错
+   * 可能原因：之前没有播放过音频, 不支持unmute
    * 处理建议：请先调用play()播放音频
    */
   STREAM_UNMUTE_AUDIO_ERROR: 10243,
 
   /*
-   * 描述：调用unmuteAudioSlave()恢复视频出错
+   * 描述：调用unmuteAudioSlave()恢复音频辅流出错
    * 可能原因：之前没有播放过音频辅流, 不支持unmute
    * 处理建议：请先调用play()播放音频辅流
    */
@@ -432,8 +376,8 @@ const ErrorCode = {
   STREAM_UNMUTE_VIDEO_ERROR: 10245,
 
   /*
-   * 描述：调用unmuteScreen()恢复视频出错
-   * 可能原因：之前没有播放过视频, 不支持unmute
+   * 描述：调用unmuteScreen()恢复屏幕共享出错
+   * 可能原因：之前没有播放过屏幕共享, 不支持unmute
    * 处理建议：请先调用play()播放屏幕共享
    */
   STREAM_UNMUTE_SCREEN_ERROR: 10246,
@@ -459,7 +403,7 @@ const ErrorCode = {
    */
   SET_AUDIO_VOLUME_ARGUMENTS_ERROR: 10250,
   /*
-   * 描述：调用setAudioVolume()截图出错
+   * 描述：调用setAudioVolume()出错
    * 可能原因：之前没有播放过音频，不能设置播放音量
    * 处理建议：请先调用play()播放声音
    */
@@ -556,9 +500,9 @@ const ErrorCode = {
    * ******************  功能模块相关错误码(ErrorCode 范围：10401 - 10600)
    */
 
-  //美颜、背景替换模块错误码范围：10401 - 10419
+  //美颜、背景替换、AI降噪等插件模块错误码范围：10401 - 10419
   /*
-   * 描述：不支持美颜或者背景替换功能
+   * 描述：不支持美颜、背景替换、AI降噪功能
    * 可能原因：浏览器不支持webGL
    * 处理建议：使用最新版本的chrome浏览器
    */
@@ -579,8 +523,11 @@ const ErrorCode = {
    * 高级美颜资源加载失败
    */
   ADV_BEAUTY_RES_ERROR: 10405,
+
   /*
-   * 插件加载错误
+   * 描述：插件加载错误
+   * 可能原因：插件路径错误，或者系统内容错误，message会反馈具体的信息
+   * 处理建议：检查设置的插件路径是否正确，如果正确无误，仍然加载失败，请联系云信技术支持
    */
   PLUGIN_LOADED_ERROR: 10406,
   /*
@@ -757,22 +704,19 @@ const ErrorCode = {
 
   //LBS模块：10461 - 10470
   /*
-   * LBS 请求相关异常
-   *
+   * 描述：LBS 请求相关异常
+   * 可能原因：网络有问题，sdk发起的所有LBS请求都失败了
+   * 处理建议：切换一下网络常识，如果一直不成功，请联系云信技术支持
    */
   LBS_REQUEST_ERROR: 10461,
   /*
-   * LBS json 解析异常
-   *
+   * 描述：LBS 请求相关响应的结果解析异常
+   * 可能原因：云信内部流程异常
+   * 处理建议：情提供具体的信息，联系云信技术支持
    */
   LBS_JSON_ERROR: 10462,
 
   //日志和数据上报（?）：10470 - 10480
-  /*
-   * 数据上报相关异常
-   *
-   */
-  NO_STATS_ERROR: 10470,
 
   //加密模块：10471 - 10476
   /*
@@ -808,15 +752,7 @@ const ErrorCode = {
    * 可能原因：浏览器环境不支持
    * 处理建议：麻烦使用最新版本的chrome浏览器
    */
-  GET_SYSTEM_STATS_NOT_SUPPORT_ERROR: 10480,
-
-  //高级权限token相关错误码:10480 - 10489
-  /*
-   * 描述：getSystemStats()接口该浏览器不支持。
-   * 可能原因：浏览器环境不支持
-   * 处理建议：麻烦使用最新版本的chrome浏览器
-   */
-  GET_SYSTEM_STATS_NOT_SUPPORT: 10480
+  GET_SYSTEM_STATS_NOT_SUPPORT_ERROR: 10480
 }
 
 export default ErrorCode

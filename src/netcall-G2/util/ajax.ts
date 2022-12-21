@@ -41,17 +41,10 @@ export interface AjaxOptions {
 
 function ajax(option: AjaxOptions) {
   if (!option || !option.url) {
-    let enMessage = 'ajax: parameter is not valid',
-      zhMessage = 'ajax: 参数异常',
-      enAdvice = 'Please input the correct parameter',
-      zhAdvice = '请输入正确的参数'
-    let message = env.IS_ZH ? zhMessage : enMessage,
-      advice = env.IS_ZH ? zhAdvice : enAdvice
     return Promise.reject(
       new RtcError({
         code: ErrorCode.NETWORK_REQUEST_ERROR,
-        message,
-        advice
+        message: 'ajax: 参数异常'
       })
     )
   }
@@ -75,17 +68,10 @@ function ajax(option: AjaxOptions) {
   return new Promise((resolve, reject) => {
     xhr.onload = function () {
       if (xhr.status > 400) {
-        let enMessage = 'ajax: response error',
-          zhMessage = 'ajax: 相应异常',
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
             code: ErrorCode.NETWORK_REQUEST_ERROR,
-            message,
-            advice
+            message: 'ajax: 响应异常, code: ' + xhr.status
           })
         )
       }

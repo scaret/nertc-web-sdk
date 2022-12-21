@@ -412,17 +412,10 @@ class Record extends EventEmitter {
     return new Promise((resolve, reject) => {
       let opStream = new MediaStream()
       if (!streams) {
-        let enMessage = `Record._format: stream is undefined`,
-          zhMessage = `Record._format: stream 未明确`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         return reject(
           new RtcError({
-            code: ErrorCode.UNDEFINED_ERROR,
-            message,
-            advice
+            code: ErrorCode.RECORDING_ERROR,
+            message: `Record._format: stream 未明确`
           })
         )
       }
@@ -483,17 +476,10 @@ class Record extends EventEmitter {
       mimeType: this._status.mimeType
     }
     if (!this._status.opStream) {
-      let enMessage = `Record._start: stream is undefined`,
-        zhMessage = `Record._start: stream 未明确`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.UNDEFINED_ERROR,
-          message,
-          advice
+          code: ErrorCode.RECORDING_ERROR,
+          message: `Record._start: opStream 未明确`
         })
       )
     }
@@ -576,32 +562,18 @@ class Record extends EventEmitter {
       dom = document.createElement('video')
       dom.autoplay = true
     } else {
-      let enMessage = '_play: MIME type ${this._status.mimeType} is not supported in this browser',
-        zhMessage = `_play: 当前浏览器不支持 MIME type ${this._status.mimeType}`,
-        enAdvice = 'The latest version of the Chrome browser is recommended',
-        zhAdvice = '建议使用最新版的 Chrome 浏览器'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
           code: ErrorCode.NOT_SUPPORT_ERROR,
-          message,
-          advice
+          message: `_play: 当前浏览器不支持 MIME type ${this._status.mimeType}`
         })
       )
     }
     if (!this._status.recordUrl) {
-      let enMessage = `Record._play: record url is undefined`,
-        zhMessage = `Record._play: 录制 url 未明确`,
-        enAdvice = 'please make sure record url exists',
-        zhAdvice = '请确保录制 url 正确'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.UNDEFINED_ERROR,
-          message,
-          advice
+          code: ErrorCode.RECORDING_ERROR,
+          message: `Record._play: 录制 url 未明确`
         })
       )
     }

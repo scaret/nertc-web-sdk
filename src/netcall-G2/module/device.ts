@@ -61,30 +61,16 @@ class DeviceManager extends RTCEventEmitter {
   }) {
     if (!navigator.mediaDevices) {
       this.logger.error(`navigator.mediaDevices is ${navigator.mediaDevices}`)
-      let enMessage = 'getDevices: mediaDevices is not support in your browser',
-        zhMessage = 'getDevices: 当前浏览器不支持 mediaDevices',
-        enAdvice = 'The latest version of the Chrome browser is recommended',
-        zhAdvice = '建议使用最新版的 Chrome 浏览器'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
         code: ErrorCode.NOT_SUPPORT_ERROR,
-        message,
-        advice,
+        message: 'getDevices: 当前浏览器不支持 mediaDevices',
         url: 'https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/enumerateDevices'
       })
     } else if (!navigator.mediaDevices.enumerateDevices) {
       this.logger.error(`navigator.mediaDevices is ${navigator.mediaDevices.enumerateDevices}`)
-      let enMessage = 'getDevices: enumerateDevices is not support in your browser',
-        zhMessage = 'getDevices: 当前浏览器不支持 enumerateDevices',
-        enAdvice = 'The latest version of the Chrome browser is recommended',
-        zhAdvice = '建议使用最新版的 Chrome 浏览器'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
         code: ErrorCode.NOT_SUPPORT_ERROR,
-        message,
-        advice,
+        message: 'getDevices: 当前浏览器不支持 enumerateDevices',
         url: 'https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/enumerateDevices'
       })
     }
