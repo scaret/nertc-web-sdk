@@ -1060,19 +1060,19 @@ class MediaHelper extends EventEmitter {
       result.height = 1080
     }
 
-    if (frameRate === 0) {
+    if (frameRate === VIDEO_FRAME_RATE_ENUM.CHAT_VIDEO_FRAME_RATE_NORMAL) {
       result.frameRate = 15
-    } else if (frameRate === 1) {
+    } else if (frameRate === VIDEO_FRAME_RATE_ENUM.CHAT_VIDEO_FRAME_RATE_5) {
       result.frameRate = 5
-    } else if (frameRate === 2) {
+    } else if (frameRate === VIDEO_FRAME_RATE_ENUM.CHAT_VIDEO_FRAME_RATE_10) {
       result.frameRate = 10
-    } else if (frameRate === 3) {
+    } else if (frameRate === VIDEO_FRAME_RATE_ENUM.CHAT_VIDEO_FRAME_RATE_15) {
       result.frameRate = 15
-    } else if (frameRate === 4) {
+    } else if (frameRate === VIDEO_FRAME_RATE_ENUM.CHAT_VIDEO_FRAME_RATE_20) {
       result.frameRate = 20
-    } else if (frameRate === 5) {
+    } else if (frameRate === VIDEO_FRAME_RATE_ENUM.CHAT_VIDEO_FRAME_RATE_25) {
       result.frameRate = 25
-    } else if (frameRate === 6) {
+    } else if (frameRate === VIDEO_FRAME_RATE_ENUM.CHAT_VIDEO_FRAME_RATE_30) {
       result.frameRate = 30
     }
     return result

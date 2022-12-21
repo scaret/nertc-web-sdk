@@ -2914,25 +2914,25 @@ class LocalStream extends RTCEventEmitter {
   getVideoBW(profile: VideoProfileOptions) {
     //码表参考：https://docs.popo.netease.com/lingxi/a120b338ea194ec296e12251bc523efa
     if (profile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_180p) {
-      if (profile.frameRate <= VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_NORMAL) {
+      if (profile.frameRate <= VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_15) {
         return 140 * 1000
       } else {
         return 220 * 1000
       }
     } else if (profile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_480p) {
-      if (profile.frameRate <= VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_NORMAL) {
+      if (profile.frameRate <= VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_15) {
         return 500 * 1000
       } else {
         return 750 * 1000
       }
     } else if (profile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_720p) {
-      if (profile.frameRate <= VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_NORMAL) {
+      if (profile.frameRate <= VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_15) {
         return 1130 * 1000
       } else {
         return 1710 * 1000
       }
     } else if (profile.resolution == NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p) {
-      if (profile.frameRate <= VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_NORMAL) {
+      if (profile.frameRate <= VIDEO_FRAME_RATE.CHAT_VIDEO_FRAME_RATE_15) {
         return 2080 * 1000
       } else {
         return 3150 * 1000
