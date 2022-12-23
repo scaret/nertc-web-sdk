@@ -673,6 +673,18 @@ class MediaHelper extends EventEmitter {
                   this.updateAudioSender(screenAudioTrack);
                 }
               }*/
+              this.stream.client.apiEventReport('setFunction', {
+                name: 'pub_second_audio',
+                oper: '1',
+                value: JSON.stringify(
+                  {
+                    result: 'success',
+                    constaints: this.getAudioConstraints('audioSlave')
+                  },
+                  null,
+                  ' '
+                )
+              })
             } else {
               this.logger.warn('getStream screenAudio: 未获取到屏幕共享音频')
               //@ts-ignore
@@ -684,7 +696,31 @@ class MediaHelper extends EventEmitter {
         this.stream.client.apiEventReport('setFunction', {
           name: 'set_screen',
           oper: '1',
-          value: 'success'
+          value: JSON.stringify(
+            {
+              result: 'success',
+              constaints: {
+                video: {
+                  width: {
+                    ideal: width
+                  },
+                  height: {
+                    ideal: height
+                  },
+                  frameRate: {
+                    ideal: frameRate,
+                    max: frameRate
+                  }
+                },
+                audio:
+                  screenAudio && this.getAudioConstraints('audioSlave')
+                    ? this.getAudioConstraints('audioSlave')
+                    : screenAudio
+              }
+            },
+            null,
+            ' '
+          )
         })
         if (audio) {
           let gumAudioStream = await GUM.getStream(
@@ -723,7 +759,14 @@ class MediaHelper extends EventEmitter {
           this.stream.client.apiEventReport('setFunction', {
             name: 'set_mic',
             oper: '1',
-            value: 'success'
+            value: JSON.stringify(
+              {
+                result: 'success',
+                constaints: this.getAudioConstraints('audio')
+              },
+              null,
+              ' '
+            )
           })
         }
       } else if (screenAudio) {
@@ -806,7 +849,14 @@ class MediaHelper extends EventEmitter {
           this.stream.client.apiEventReport('setFunction', {
             name: 'set_mic',
             oper: '1',
-            value: 'success'
+            value: JSON.stringify(
+              {
+                result: 'success',
+                constaints: config.audio
+              },
+              null,
+              ' '
+            )
           })
           if (typeof config.audio === 'object') {
             this.audio.micConstraint = { audio: config.audio }
@@ -835,7 +885,10 @@ class MediaHelper extends EventEmitter {
           this.stream.client.apiEventReport('setFunction', {
             name: 'set_camera',
             oper: '1',
-            value: 'success'
+            value: JSON.stringify({
+              result: 'success',
+              constaints: config.video
+            })
           })
           if (typeof config.video === 'object') {
             this.video.cameraConstraint = { video: config.video }
@@ -851,7 +904,14 @@ class MediaHelper extends EventEmitter {
         this.stream.client.apiEventReport('setFunction', {
           name: 'set_mic',
           oper: '1',
-          value: e.message
+          value: JSON.stringify(
+            {
+              result: 'fail',
+              reason: `${e.name} + ${e.message}`
+            },
+            null,
+            ' '
+          )
         })
       }
       if (video) {
@@ -859,7 +919,14 @@ class MediaHelper extends EventEmitter {
         this.stream.client.apiEventReport('setFunction', {
           name: 'set_camera',
           oper: '1',
-          value: e.message
+          value: JSON.stringify(
+            {
+              result: 'fail',
+              reason: `${e.name} + ${e.message}`
+            },
+            null,
+            ' '
+          )
         })
       }
       if (screen) {
@@ -867,7 +934,14 @@ class MediaHelper extends EventEmitter {
         this.stream.client.apiEventReport('setFunction', {
           name: 'set_screen',
           oper: '1',
-          value: e.message
+          value: JSON.stringify(
+            {
+              result: 'fail',
+              reason: `${e.name} + ${e.message}`
+            },
+            null,
+            ' '
+          )
         })
       }
       if (e.name === 'NotAllowedError') {
@@ -940,7 +1014,14 @@ class MediaHelper extends EventEmitter {
         this.stream.client.apiEventReport('setFunction', {
           name: 'set_mic',
           oper: '1',
-          value: 'success'
+          value: JSON.stringify(
+            {
+              result: 'success',
+              constaints: constraint.audio
+            },
+            null,
+            ' '
+          )
         })
       }
 
@@ -967,7 +1048,14 @@ class MediaHelper extends EventEmitter {
         this.stream.client.apiEventReport('setFunction', {
           name: 'set_camera',
           oper: '1',
-          value: 'success'
+          value: JSON.stringify(
+            {
+              result: 'success',
+              constaints: constraint.video
+            },
+            null,
+            ' '
+          )
         })
         const videoView = this.stream._play.video.view
         if (videoView) {
@@ -989,7 +1077,14 @@ class MediaHelper extends EventEmitter {
       this.stream.client.apiEventReport('setFunction', {
         name,
         oper: '1',
-        value: e.message
+        value: JSON.stringify(
+          {
+            result: 'fail',
+            reason: e.message
+          },
+          null,
+          ' '
+        )
       })
       return Promise.reject(e)
     }
@@ -1263,6 +1358,7 @@ class MediaHelper extends EventEmitter {
       if (this.canDisableAudioRouting()){
         this.disableAudioRouting();
       }*/
+      type = 'pub_second_audio'
     } else if (kind === 'video') {
       type = 'set_camera'
       this.video.cameraTrack?.stop()
@@ -1520,11 +1616,21 @@ class MediaHelper extends EventEmitter {
         //停止的原因可能是设备拔出、取消授权等
         this.logger.warn('音频轨道已停止')
         this.stream.client.safeEmit('audioTrackEnded')
+        this.stream.client.apiEventReport('setStreamException', {
+          name: 'pushStreamException',
+          value: 'audioTrackEnded',
+          mediaType: 'audio'
+        })
       }
       if (track === this.video.cameraTrack || track === this.video.videoSource) {
         //停止的原因可能是设备拔出、取消授权等
         this.logger.warn('视频轨道已停止')
         this.stream.client.safeEmit('videoTrackEnded')
+        this.stream.client.apiEventReport('setStreamException', {
+          name: 'pushStreamException',
+          value: 'videoTrackEnded',
+          mediaType: 'video'
+        })
       }
       // 分别处理 Chrome 共享屏幕中的“整个屏幕”、“窗口”、“Chrome标签页”
       if (
@@ -1536,10 +1642,20 @@ class MediaHelper extends EventEmitter {
       ) {
         this.logger.warn('屏幕共享已停止')
         this.stream.client.safeEmit('stopScreenSharing')
+        this.stream.client.apiEventReport('setStreamException', {
+          name: 'pushStreamException',
+          value: 'videoTrackEnded',
+          mediaType: 'screen'
+        })
       }
       if (track === this.screenAudio.screenAudioTrack) {
         this.logger.warn('屏幕共享音频已停止')
         this.stream.client.safeEmit('stopScreenAudio')
+        this.stream.client.apiEventReport('setStreamException', {
+          name: 'pushStreamException',
+          value: 'stopScreenAudio',
+          mediaType: 'screenAudio'
+        })
       }
     })
   }

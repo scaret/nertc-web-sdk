@@ -406,7 +406,8 @@ class Mediasoup extends EventEmitter {
         this.adapterRef._signalling.reconnectionControl.next =
           this.adapterRef._signalling.reconnectionControl.copynext
         this.adapterRef.instance.apiEventReport('setDisconnect', {
-          reason: 'send peer ice failed'
+          reason: 'sendPeerIceFailed',
+          ext: '' //扩展可选
         })
         this.adapterRef._signalling._reconnection()
       } else {
@@ -428,7 +429,8 @@ class Mediasoup extends EventEmitter {
         this.adapterRef._signalling.reconnectionControl.next =
           this.adapterRef._signalling.reconnectionControl.copynext
         this.adapterRef.instance.apiEventReport('setDisconnect', {
-          reason: 'recv peer ice failed'
+          reason: 'recvPeerIceFailed',
+          ext: '' //扩展可选
         })
         this.adapterRef._signalling._reconnection()
       } else {
@@ -1416,11 +1418,6 @@ class Mediasoup extends EventEmitter {
       }
     }
 
-    this.adapterRef.instance.apiEventReport('setFunction', {
-      name: 'set_video_sub',
-      oper: '1',
-      value: JSONBigStringify(preferredSpatialLayer)
-    })
     if (localDtlsParameters === undefined) {
       data.transportId = this._recvTransport.id
     } else {
@@ -1449,7 +1446,8 @@ class Mediasoup extends EventEmitter {
         )
         this.adapterRef.channelStatus = 'connectioning'
         this.adapterRef.instance.apiEventReport('setDisconnect', {
-          reason: 'consumeRequestTimeout'
+          reason: 'consumeRequestTimeout',
+          ext: '' //扩展可选
         })
         this.adapterRef._signalling._reconnection()
       } else {
@@ -1600,6 +1598,22 @@ class Mediasoup extends EventEmitter {
     })
 
     this.loggerRecv.log('[Subscribe] 订阅consume完成 peerId =', peerId)
+    this.adapterRef.instance.apiEventReport('setFunction', {
+      name: `set_${mediaTypeShort}_sub`,
+      oper: '1',
+      value: JSONBigStringify(
+        {
+          remoteUid: uid,
+          result: code,
+          reason: errMsg || '',
+          preferredSpatialLayer,
+          consumerId: consumerId || '',
+          producerId: producerId || id
+        },
+        null,
+        ' '
+      )
+    })
     if (remoteStream && remoteStream['pubStatus'][mediaTypeShort]['producerId']) {
       remoteStream['subStatus'][mediaTypeShort] = true
       //@ts-ignore
@@ -1722,12 +1736,6 @@ class Mediasoup extends EventEmitter {
       }
     }
 
-    this.adapterRef.instance.apiEventReport('setFunction', {
-      name: 'set_video_sub',
-      oper: '1',
-      value: JSONBigStringify(preferredSpatialLayer)
-    })
-
     this.loggerRecv.log('发送consume请求 =', JSONBigStringify(data))
     if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
       info.resolve(null)
@@ -1822,6 +1830,18 @@ class Mediasoup extends EventEmitter {
             mediaType
           })
         }
+        this.adapterRef.instance.apiEventReport('setFunction', {
+          name: `set_${mediaType}_sub`,
+          oper: '0',
+          value: JSONBigStringify(
+            {
+              remoteUid: remoteStream?.stringStreamID,
+              consumerId: consumerId || ''
+            },
+            null,
+            ' '
+          )
+        })
       } catch (e: any) {
         this.logger.error('CloseConsumer失败', e.name, e.message, e)
       }

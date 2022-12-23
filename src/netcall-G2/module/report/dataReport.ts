@@ -171,6 +171,14 @@ class DataReport {
 
   /**
    * 通过结束事件
+   * PAGE_UNLOAD: 30000, //浏览器刷新
+    LOGIN_FAILED: 30001, //登录失败，sdk内部错误
+    MEDIA_CONNECTION_DISCONNECTED: 30204, //媒体通道连接失败
+    SIGNAL_CONNECTION_DISCONNECTED: 30205, //信令通道连接失败
+    CLIENT_BANNED: 30206, //客户端被踢
+    CHANNEL_CLOSED: 30207, //房间被关闭
+    UID_DUPLICATE: 30209, //uid重复
+    PERMKEY_TIMEOUT: 30902, // permkey高级权限token超时
    */
   setLogout(logoutEvent: LogoutEvent) {
     this.addEvent('logout', logoutEvent)
@@ -185,6 +193,13 @@ class DataReport {
 
   /**
    * 异常断开通知
+   * sendPeerIceFailed
+   * recvPeerIceFailed
+   * consumeRequestTimeout
+   * OnTransportClose
+   * OnSignalRestart
+   * websocketDisconnect
+   *
    */
   setDisconnect(disconnect: DisconnectEvent) {
     this.addEvent('disconnect', disconnect)
@@ -213,9 +228,9 @@ class DataReport {
 
   /**
    * http://doc.hz.netease.com/pages/viewpage.action?pageId=330162004#id-%E4%BA%8B%E4%BB%B6%E4%B8%8A%E6%8A%A5-4.9%E9%80%BB%E8%BE%91function%E4%B8%8A%E6%8A%A5%EF%BC%88G2%E5%AE%A2%E6%88%B7%E7%AB%AF--function%EF%BC%89
-   * 逻辑function上报：set_camera、set_mic、pub_second_audio、
-   * set_video_sub、set_audio_sub、set_second_audio_sub、
-   * on_error、onDisconnect
+   * 逻辑function上报：set_camera、set_mic、pub_second_audio、set_screen
+   * set_video_sub、set_audio_sub、set_udioSlave_sub、set_screen_sub
+   * set_play_auido、set_play_audioSlave、set_play_video、set_play_screen
    */
   setFunction(functionEvent: FunctionEvent) {
     this.addEvent('function', functionEvent)
@@ -234,7 +249,7 @@ class DataReport {
   }
 
   setUserCustomEvent(functionEvent: UserCustomEvent) {
-    this.addEvent('function', functionEvent)
+    this.addEvent('userCustomEvent', functionEvent)
   }
 
   reset() {

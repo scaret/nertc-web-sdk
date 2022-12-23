@@ -816,7 +816,6 @@ class LocalStream extends RTCEventEmitter {
       const param: ReportParamEnableEarback = {
         enable: true
       }
-
       this.client.apiFrequencyControl({
         name: 'enableEarback',
         code: 0,
@@ -1331,7 +1330,7 @@ class LocalStream extends RTCEventEmitter {
     this.client.adapterRef.instance.apiEventReport('setFunction', {
       name: 'switch_to_custom_screen',
       oper: '1',
-      value: reason || 'success'
+      param: reason || 'success'
     })
     this.client.apiFrequencyControl({
       name: 'switchScreenStream',

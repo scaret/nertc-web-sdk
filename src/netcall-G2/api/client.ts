@@ -180,16 +180,31 @@ class Client extends Base {
     Device.on('recording-device-changed', (evt) => {
       if (!this.destroyed) {
         this.safeEmit('recording-device-changed', evt)
+        this.adapterRef.instance.apiEventReport('setUserCustomEvent', {
+          name: 'recording-device-changed',
+          customIdentify: 'client',
+          param: JSON.stringify(evt, null, ' ')
+        })
       }
     })
     Device.on('camera-changed', (evt) => {
       if (!this.destroyed) {
         this.safeEmit('camera-changed', evt)
+        this.adapterRef.instance.apiEventReport('setUserCustomEvent', {
+          name: 'camera-changed',
+          customIdentify: 'client',
+          param: JSON.stringify(evt, null, ' ')
+        })
       }
     })
     Device.on('playout-device-changed', (evt) => {
       if (!this.destroyed) {
         this.safeEmit('playout-device-changed', evt)
+        this.adapterRef.instance.apiEventReport('setUserCustomEvent', {
+          name: 'playout-device-changed',
+          customIdentify: 'client',
+          param: JSON.stringify(evt, null, ' ')
+        })
       }
     })
 
@@ -751,10 +766,10 @@ class Client extends Base {
         param: settings
       })
       //api事件上报经常丢失，增加一下事件上报
-      this.adapterRef.instance.apiEventReport('setFunction', {
+      this.adapterRef.instance.apiEventReport('setUserCustomEvent', {
         name: 'media_track_Settings',
-        oper: '1',
-        value: settings
+        customIdentify: 'publish',
+        param: settings
       })
     }
     if (!stream || (!stream.audio && !stream.video && !stream.screen && !stream.screenAudio)) {

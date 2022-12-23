@@ -627,7 +627,8 @@ class Signalling extends EventEmitter {
           this.logger.warn('服务器媒体进程crash，上行媒体和下行媒体同时重连')
           this.adapterRef.channelStatus = 'connectioning'
           this.adapterRef.instance.apiEventReport('setDisconnect', {
-            reason: 'OnTransportClose'
+            reason: 'OnTransportClose',
+            ext: '' //扩展可选
           })
           this._reconnection()
         } else {
@@ -650,7 +651,8 @@ class Signalling extends EventEmitter {
       //     this.logger.warn('下行媒体同时重连')
       //     this.adapterRef.channelStatus = 'connectioning'
       //     this.adapterRef.instance.apiEventReport('setDisconnect', {
-      //       reason: 'OnConsumerClose'
+      //       reason: 'OnConsumerClose',
+      //       ext: '' //扩展可选
       //     })
       //     this._reconnection()
       //   } else {
@@ -663,7 +665,8 @@ class Signalling extends EventEmitter {
         this.logger.warn(`chence OnSignalRestart code = ${code} errMsg = ${errMsg}`)
         this.logger.warn('服务器信令进程crash，重连')
         this.adapterRef.instance.apiEventReport('setDisconnect', {
-          reason: 'OnSignalRestart'
+          reason: 'OnSignalRestart',
+          ext: '' //扩展可选
         })
         if (this._protoo?.connected && this.adapterRef.connectState.curState === 'CONNECTED') {
           //sdk内部已经在重连中，不主动执行
@@ -894,7 +897,8 @@ class Signalling extends EventEmitter {
       this._reconnection()
     }
     this.adapterRef.instance.apiEventReport('setDisconnect', {
-      reason: 'websocket disconnect' //ws中断
+      reason: 'websocketDisconnect', //ws中断
+      ext: '' //扩展可选
     })
   }
 

@@ -286,6 +286,7 @@ export interface FirstPacketSentEvent extends DataEvent {
 
 export interface DisconnectEvent extends DataEvent {
   reason: string
+  ext?: string
 }
 
 export interface DeviceAbnormalEvent extends DataEvent {
@@ -338,12 +339,9 @@ export interface StreamExceptionEvent extends DataEvent {
 }
 
 export interface UserCustomEvent extends DataEvent {
-  cid: string
-  uid: string
   name: string
   customIdentify: string
   param: string
-  time: number
 }
 
 export interface WholeStatsReportOptions {

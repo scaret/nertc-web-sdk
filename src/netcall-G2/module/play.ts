@@ -11,27 +11,18 @@ import {
   MediaTypeShort,
   PlayOptions,
   RenderMode,
-  SnapshotBase64Options,
   SnapshotOptions,
   VideoPlaySettings
 } from '../types'
 import ErrorCode from '../util/error/errorCode'
 import RtcError from '../util/error/rtcError'
-import * as env from '../util/rtcUtil/rtcEnvironment'
 import { RTCCanvas } from '../util/rtcUtil/rtcCanvas'
 import { getDomInfo } from '../util/rtcUtil/utils'
 import { getParameters } from './parameters'
-import {
-  CanvasWatermarkControl,
-  createCanvasWatermarkControl
-} from './watermark/CanvasWatermarkControl'
-import {
-  createEncoderWatermarkControl,
-  EncoderWatermarkControl
-} from './watermark/EncoderWatermarkControl'
+import { createCanvasWatermarkControl } from './watermark/CanvasWatermarkControl'
+import { createEncoderWatermarkControl } from './watermark/EncoderWatermarkControl'
 import { playMedia } from '../util/playMedia'
 import { get2DContext } from './browser-api/getCanvasContext'
-import * as stream from 'stream'
 
 class Play extends EventEmitter {
   private snapshotIndex = 0
@@ -253,86 +244,6 @@ class Play extends EventEmitter {
     })
   }
 
-  async resume() {
-    const promises: Promise<any>[] = []
-    MediaTypeList.forEach((mediaType) => {
-      const dom = this[mediaType].dom
-      if (dom?.paused) {
-        const p = dom.play()
-        promises.push(p)
-        p.then(() => {
-          this.logger.log(`[Resume] 恢复播放: ${mediaType} 成功`)
-        })
-        p.catch((error) => {
-          this.logger.error(`[Resume] 恢复播放 ${mediaType} 出现问题:`, error.name, error.message)
-          if (error.name === 'notAllowedError' || error.name === 'NotAllowedError') {
-            // 兼容临时版本客户
-            throw new RtcError({
-              code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
-              url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082',
-              message: `resume: 浏览器自动播放受限: ${error.name}`
-            })
-          }
-        })
-      }
-    })
-    try {
-      // 为什么这么写：因为同时触发play
-      await Promise.all(promises)
-    } catch (error: any) {
-      // fallthrough
-    }
-  }
-
-  async playAudioStream(mediaType: 'audio' | 'audioSlave', stream: MediaStream, ismuted?: boolean) {
-    const mediaSettings = this[mediaType]
-    if (!mediaSettings.dom) {
-      mediaSettings.dom = document.createElement('audio')
-    }
-    const dom = mediaSettings.dom
-    if (typeof ismuted === 'boolean') {
-      dom.muted = ismuted
-    } else {
-      dom.muted = false
-    }
-    dom.srcObject = stream
-
-    if (this.sinkId) {
-      this.logger.log(`[Play ${mediaType}] 音频尝试使用输出设备`, this.sinkId)
-      try {
-        // @ts-ignore
-        await dom.setSinkId(this.sinkId)
-        this.logger.log(`[Play] ${mediaType} 音频使用输出设备成功`, this.sinkId)
-      } catch (e: any) {
-        this.logger.error('[Play] 音频输出设备切换失败', e.name, e.message, e)
-      }
-    }
-
-    try {
-      await playMedia(dom, getParameters().playMediaTimeout)
-      this.logger.log(`[Play] 播放音频完成，当前播放状态:`, dom.played && dom.played.length)
-      this.stream.client.updateRecordingAudioStream()
-    } catch (error: any) {
-      this.logger.warn(`[Play ${mediaType}] 播放音频出现问题: `, error.name, error.message, error)
-      if (error.name === 'notAllowedError' || error.name === 'NotAllowedError') {
-        // 兼容临时版本客户
-        throw new RtcError({
-          code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
-          url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082',
-          message: `playStream ${mediaType}: 浏览器自动播放受限: ${error.name}`
-        })
-      }
-    }
-  }
-
-  setPlayVolume(mediaType: 'audio' | 'audioSlave', volume: number) {
-    const mediaSetting = this[mediaType]
-    mediaSetting.volume = volume
-    if (mediaSetting.dom) {
-      mediaSetting.dom.volume = volume / 255
-    }
-  }
-
   isPlaying(mediaType: MediaTypeShort) {
     let dom = this[mediaType].dom
     if (!dom) {
@@ -410,6 +321,117 @@ class Play extends EventEmitter {
     return ret
   }
 
+  async resume() {
+    const promises: Promise<any>[] = []
+    MediaTypeList.forEach((mediaType) => {
+      const dom = this[mediaType].dom
+      if (dom?.paused) {
+        const p = dom.play()
+        promises.push(p)
+        p.then(() => {
+          this.logger.log(`[Resume] 恢复播放: ${mediaType} 成功`)
+        })
+        p.catch((error) => {
+          this.logger.error(`[Resume] 恢复播放 ${mediaType} 出现问题:`, error.name, error.message)
+          if (error.name === 'notAllowedError' || error.name === 'NotAllowedError') {
+            // 兼容临时版本客户
+            throw new RtcError({
+              code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
+              url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082',
+              message: `resume: 浏览器自动播放受限: ${error.name}`
+            })
+          }
+        })
+      }
+    })
+    try {
+      // 为什么这么写：因为同时触发play
+      await Promise.all(promises)
+    } catch (error: any) {
+      // fallthrough
+    }
+  }
+
+  async playAudioStream(mediaType: 'audio' | 'audioSlave', stream: MediaStream, ismuted?: boolean) {
+    const mediaSettings = this[mediaType]
+    if (!mediaSettings.dom) {
+      mediaSettings.dom = document.createElement('audio')
+    }
+    const dom = mediaSettings.dom
+    if (typeof ismuted === 'boolean') {
+      dom.muted = ismuted
+    } else {
+      dom.muted = false
+    }
+    dom.srcObject = stream
+
+    if (this.sinkId) {
+      this.logger.log(`[Play ${mediaType}] 音频尝试使用输出设备`, this.sinkId)
+      try {
+        // @ts-ignore
+        await dom.setSinkId(this.sinkId)
+        this.logger.log(`[Play] ${mediaType} 音频使用输出设备成功`, this.sinkId)
+      } catch (e: any) {
+        this.logger.error('[Play] 音频输出设备切换失败', e.name, e.message, e)
+      }
+    }
+
+    try {
+      await playMedia(dom, getParameters().playMediaTimeout)
+      this.logger.log(`[Play] 播放音频完成，当前播放状态:`, dom.played.length)
+      this.stream.client.updateRecordingAudioStream()
+      this.stream.client.apiEventReport('setFunction', {
+        name: `set_play_${mediaType}`,
+        oper: '1',
+        value: JSON.stringify(
+          {
+            result: 'success',
+            streamUid: this.stream.stringStreamID,
+            muted: dom.muted,
+            active: dom.srcObject.active,
+            played: dom.played.length
+          },
+          null,
+          ' '
+        )
+      })
+    } catch (error: any) {
+      this.logger.warn(`[Play ${mediaType}] 播放音频出现问题: `, error.name, error.message, error)
+      this.stream.client.apiEventReport('setFunction', {
+        name: `set_play_${mediaType}`,
+        oper: '1',
+        value: JSON.stringify(
+          {
+            result: 'fail',
+            reason: `${error.name} + ${error.message}`,
+            uid: this.stream.stringStreamID,
+            muted: dom.muted,
+            active: dom.srcObject.active,
+            played: dom.played.length
+          },
+          null,
+          ' '
+        )
+      })
+      if (error.name === 'notAllowedError' || error.name === 'NotAllowedError') {
+        // 兼容临时版本客户
+        throw new RtcError({
+          code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
+          url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082',
+          message: `playStream ${mediaType}: 浏览器自动播放受限: ${error.name}`
+        })
+      }
+    }
+  }
+
+  setPlayVolume(mediaType: 'audio' | 'audioSlave', volume: number) {
+    const mediaSetting = this[mediaType]
+    mediaSetting.volume = volume
+    if (mediaSetting.dom) {
+      mediaSetting.dom.volume = volume / 255
+    }
+  }
+
   async playVideoStream(mediaType: 'video' | 'screen', stream: MediaStream, view: HTMLElement) {
     const mediaSetting = this[mediaType]
     if (mediaSetting.dom?.srcObject === stream) {
@@ -446,13 +468,44 @@ class Play extends EventEmitter {
       this.logger.log(
         `[Play] 成功加载主流播放视频源：当前视频实际分辨率${dom.videoWidth}x${dom.videoHeight}，显示宽高${dom.offsetWidth}x${dom.offsetHeight}`
       )
+
+      this.stream.client.apiEventReport('setFunction', {
+        name: `set_play_${mediaType}`,
+        oper: '1',
+        value: JSON.stringify(
+          {
+            result: 'success',
+            uid: this.stream.stringStreamID,
+            muted: dom.muted,
+            active: dom.srcObject.active,
+            played: dom.played.length
+          },
+          null,
+          ' '
+        )
+      })
       if (dom.paused && getParameters()['controlOnPaused']) {
         //给微信的Workaround。微信会play()执行成功但不播放
         this.showControlIfVideoPause()
       }
     } catch (error: any) {
       this.logger.warn(`[Play ${mediaType}] 播放视频出现问题:`, error.name, error.message, error)
-
+      this.stream.client.apiEventReport('setFunction', {
+        name: `set_play_${mediaType}`,
+        oper: '1',
+        value: JSON.stringify(
+          {
+            result: 'fail',
+            reason: `${error.name} + ${error.message}`,
+            uid: this.stream.stringStreamID,
+            muted: mediaSetting?.dom?.muted,
+            active: stream.active,
+            played: mediaSetting?.dom?.played.length
+          },
+          null,
+          ' '
+        )
+      })
       if (error.name === 'notAllowedError' || error.name === 'NotAllowedError') {
         // 兼容临时版本客户
         throw new RtcError({
@@ -477,6 +530,19 @@ class Play extends EventEmitter {
     if (dom) {
       dom.muted = true
       dom.srcObject = null
+      this.stream.client.apiEventReport('setFunction', {
+        name: `set_play_${mediaType}`,
+        oper: '0',
+        value: JSON.stringify(
+          {
+            result: 'success',
+            uid: this.stream.stringStreamID,
+            muted: dom.muted
+          },
+          null,
+          ' '
+        )
+      })
     }
   }
 
@@ -497,8 +563,33 @@ class Play extends EventEmitter {
         dom.remove()
         dom.srcObject = null
         this[mediaType].dom = null
-      } catch (e) {
+        this.stream.client.apiEventReport('setFunction', {
+          name: `set_play_${mediaType}`,
+          oper: '0',
+          value: JSON.stringify(
+            {
+              result: 'success',
+              uid: this.stream.stringStreamID
+            },
+            null,
+            ' '
+          )
+        })
+      } catch (e: any) {
         this.logger.log('stopPlayVideoStream e: ', e)
+        this.stream.client.apiEventReport('setFunction', {
+          name: `set_play_${mediaType}`,
+          oper: '0',
+          value: JSON.stringify(
+            {
+              result: 'failed',
+              uid: this.stream.stringStreamID,
+              reason: e.message
+            },
+            null,
+            ' '
+          )
+        })
       }
     }
     if (view && containerDom) {
@@ -555,6 +646,23 @@ class Play extends EventEmitter {
       dom.style.width = '100%'
       dom.style.height = 'auto'
     }
+    this.stream.client.apiEventReport('setFunction', {
+      name: `set_render_${mediaType}`,
+      oper: '1',
+      value: JSON.stringify(
+        {
+          result: 'success',
+          uid: this.stream.stringStreamID,
+          played: dom.played.length,
+          domStyleWidth: dom.style.width,
+          domStyleHeight: dom.style.height,
+          containerDomWidth: mediaSetting.containerDom?.style?.width, // 设置外部容器宽
+          containerDomHeight: mediaSetting.containerDom?.style?.height // 设置外部容器高
+        },
+        null,
+        ' '
+      )
+    })
   }
 
   async setAudioOutput(audioSinkId: string) {
