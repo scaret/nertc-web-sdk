@@ -124,7 +124,6 @@ class Base extends RTCEventEmitter {
     if (options.debug) {
       getParameters().debugG2 = true
     }
-    this.adapterRef.testConf = {} //内部测试配置
     this.sdkRef = options.ref
   }
 
@@ -365,38 +364,19 @@ class Base extends RTCEventEmitter {
     }
     let { wssArr, cid } = this.adapterRef.channelInfo
     if (!wssArr || wssArr.length === 0) {
-      this.logger.error(`没有找到服务器地址: ${JSON.stringify(this.adapterRef.channelInfo)}`)
+      this.logger.error(`没有找到服务器地址 : ${JSON.stringify(this.adapterRef.channelInfo)}`)
       this.adapterRef.channelStatus = 'leave'
-      let enMessage = `startSession: server address is not found: ${JSON.stringify(
-          this.adapterRef.channelInfo
-        )}`,
-        zhMessage = `startSession: 没有找到服务器地址: ${JSON.stringify(
-          this.adapterRef.channelInfo
-        )}`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.UNKNOWN,
-        message,
-        advice
+        code: ErrorCode.JOIN_FAILED,
+        message: '没有找到媒体服务器地址'
       })
     }
 
     if (!cid) {
       this.logger.error('服务器没有分配cid')
-      this.adapterRef.channelStatus = 'leave'
-      let enMessage = 'startSession: no cid assigned by server',
-        zhMessage = 'startSession: 服务器没有分配cid',
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.UNKNOWN,
-        message,
-        advice
+        code: ErrorCode.JOIN_FAILED,
+        message: '服务器没有分配cid'
       })
     }
     this.logger.log(
@@ -406,32 +386,15 @@ class Base extends RTCEventEmitter {
     )
     if (this.adapterRef.channelInfo.wssArrIndex >= wssArr.length) {
       this.logger.error('所有的服务器地址都连接失败')
-      this.adapterRef.channelInfo.wssArrIndex = 0
-      this.adapterRef.channelStatus = 'leave'
-      let enMessage = 'startSession: All server addresses failed to connect',
-        zhMessage = 'startSession: 所有的服务器地址都连接失败',
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
         code: ErrorCode.NETWORK_ERROR,
-        message,
-        advice
+        message: '所有的服务器地址都连接失败'
       })
     }
-    let url = wssArr[this.adapterRef.channelInfo.wssArrIndex]
     if (!this.adapterRef._signalling) {
-      let enMessage = 'startSession: signalling server error',
-        zhMessage = 'startSession: 信令服务器异常',
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.SIGNALLING_SERVER_ERROR,
-        message,
-        advice
+        code: ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: 'startSession: 信令模块缺失'
       })
     }
     try {
@@ -547,7 +510,7 @@ class Base extends RTCEventEmitter {
     this.adapterRef.state.endSessionTime = 0
   }
 
-  //重新建立下行连接
+  //重新建立下行连接，当前无用，后面计划废弃
   async reBuildRecvTransport() {
     this.transportRebuildCnt++
     if (this.transportRebuildCnt >= getParameters().maxTransportRebuildCnt) {
@@ -556,17 +519,7 @@ class Base extends RTCEventEmitter {
     }
     this.logger.warn(`下行通道异常，重新建立 #${this.transportRebuildCnt}`)
     if (!this.adapterRef._mediasoup) {
-      let enMessage = 'reBuildRecvTransport:  media server error',
-        zhMessage = 'reBuildRecvTransport: 媒体服务异常',
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.MEDIA_SERVER_ERROR,
-        message,
-        advice
-      })
+      return
     }
     this.adapterRef.instance.safeEmit('@pairing-reBuildRecvTransport-start')
     if (this.adapterRef._mediasoup._recvTransport) {
@@ -604,7 +557,7 @@ class Base extends RTCEventEmitter {
       this.adapterRef.instance.safeEmit('@pairing-reBuildRecvTransport-success')
     }
   }
-
+  //重新建立下行连接，rts使用，后面计划废弃
   async rtsRequestKeyFrame(stream: RemoteStream) {
     this.logger.log('请求关键帧: ', stream.pubStatus.video.consumerId)
     if (this.adapterRef._signalling) {
@@ -650,30 +603,11 @@ class Base extends RTCEventEmitter {
         !this.adapterRef.apiEvent[name] ||
         !this.adapterRef.apiEvent[name].length
       ) {
-        let enMessage = `apiFrequencyControl: no apiEvent named ${name}`,
-          zhMessage = `apiFrequencyControl: 未找到 name 为 ${name} 的 apiEvent`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.EVENT_UPLOAD_ERROR,
-          message,
-          advice
-        })
+        //属于事件上报内容，不需要做抛出错误
+        return
       }
       if (!this.adapterRef.apiEvent[name][0].time) {
-        let enMessage = `apiFrequencyControl: invalid time`,
-          zhMessage = `apiFrequencyControl: 无效的 time`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.EVENT_UPLOAD_ERROR,
-          message,
-          advice
-        })
+        //属于事件上报内容，不需要做抛出错误
       }
       if (Date.now() - this.adapterRef.apiEvent[name][0].time < 10000) {
         this.adapterRef.requestId[name]++

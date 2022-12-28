@@ -26,10 +26,10 @@ class RtcError extends Error {
         adviceMsg +
         url
     )
-    this.code_ = options.code
-    this.message_ = options.message
-    this.advice_ = options.advice
-    this.extraCode_ = options.extraCode
+    this.code_ = options.code || 0
+    this.message_ = options.message || null
+    this.advice_ = options.advice || null
+    this.extraCode_ = options.extraCode || null
   }
 
   get code() {
@@ -38,6 +38,9 @@ class RtcError extends Error {
 
   get message() {
     return this.message_
+  }
+  get extraCode() {
+    return this.extraCode_
   }
 
   get advice() {

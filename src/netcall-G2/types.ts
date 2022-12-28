@@ -126,13 +126,6 @@ export interface AdapterRef {
   localScreenStats: [LocalVideoStats]
   logger: ILogger
   logStorage: LogStorage
-  testConf: {
-    turnAddr?: string[]
-    iceServers?: RTCIceServer[]
-    iceTransportPolicy?: RTCIceTransportPolicy
-    relayaddrs?: string
-    relaytoken?: string
-  }
   // connectioning其实是reconnecting
   channelStatus: 'init' | 'leave' | 'join' | 'connectioning'
   _signalling: Signalling | null
@@ -293,6 +286,7 @@ export interface FirstPacketSentEvent extends DataEvent {
 
 export interface DisconnectEvent extends DataEvent {
   reason: string
+  ext?: string
 }
 
 export interface DeviceAbnormalEvent extends DataEvent {
@@ -342,6 +336,12 @@ export interface StreamExceptionEvent extends DataEvent {
   name: string
   value: string
   time: number
+}
+
+export interface UserCustomEvent extends DataEvent {
+  name: string
+  customIdentify: string
+  param: string
 }
 
 export interface WholeStatsReportOptions {

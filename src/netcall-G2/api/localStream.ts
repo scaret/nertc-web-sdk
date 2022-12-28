@@ -1,12 +1,7 @@
 import { NERTC_VIDEO_QUALITY, VIDEO_FRAME_RATE } from '../constant/videoQuality'
-import {
-  ReportParamEnableEarback,
-  ReportParamSetExternalAudioRender,
-  ReportParamSwitchCamera
-} from '../interfaces/ApiReportParam'
+import { ReportParamEnableEarback } from '../interfaces/ApiReportParam'
 import { alerter } from '../module/alerter'
 import { AudioLevel } from '../module/audioLevel'
-import { Device, DeviceInfo } from '../module/device'
 import { MediaHelper } from '../module/media'
 import { getParameters } from '../module/parameters'
 import { Play } from '../module/play'
@@ -16,7 +11,7 @@ import AdvancedBeauty from '../module/video-post-processing/advanced-beauty'
 import BasicBeauty from '../module/video-post-processing/basic-beauty'
 import VirtualBackground from '../module/video-post-processing/virtual-background'
 import { loadPlugin } from '../plugin'
-import { AudioPluginType, VideoPluginType, audioPlugins, videoPlugins } from '../plugin/plugin-list'
+import { VideoPluginType, audioPlugins, videoPlugins } from '../plugin/plugin-list'
 import { BackGroundOptions } from '../plugin/segmentation/src/types'
 import {
   AudioEffectOptions,
@@ -45,7 +40,7 @@ import { ILogger } from '../types'
 import ErrorCode from '../util/error/errorCode'
 import RtcError from '../util/error/rtcError'
 import { emptyStreamWith, watchTrack } from '../util/gum'
-import { checkExists, checkValidInteger, isExistOptions } from '../util/param'
+import { isExistOptions } from '../util/param'
 import { applyResolution } from '../util/rtcUtil/applyResolution'
 import * as env from '../util/rtcUtil/rtcEnvironment'
 import { RTCEventEmitter } from '../util/rtcUtil/RTCEventEmitter'
@@ -53,14 +48,12 @@ import { makePrintable } from '../util/rtcUtil/utils'
 import { getAudioContext } from '../module/webAudio'
 import { StageAIProcessing } from '../module/audio-pipeline/stages/StageAIProcessing/StageAIProcessing'
 import { webassemblySupported } from '../util/wasmDetect'
-import { UnknownType } from 'typedoc/dist/lib/models'
 
 /**
  *  请使用 {@link NERTC.createStream} 通过NERTC.createStream创建
  *  @class
  *  @name Stream
  */
-
 let localStreamCnt = 0
 
 export interface LocalStreamOpenOptions {
@@ -321,7 +314,7 @@ class LocalStream extends RTCEventEmitter {
     }
 
     this.logger.log(
-      `创建 本地 Stream: `,
+      `创建本地Stream: `,
       JSON.stringify({
         streamID: this.stringStreamID,
         audio: options.audio,
@@ -764,9 +757,11 @@ class LocalStream extends RTCEventEmitter {
       playOptions.screen = true
     }
 
-    this.logger.log(`uid ${this.stringStreamID} Stream.play::`, JSON.stringify(playOptions))
+    this.logger.log(
+      `play() uid: ${this.stringStreamID}, playOptions: ${JSON.stringify(playOptions)}`
+    )
     if (playOptions.audio && this._play && this.mediaHelper.getAudioInputTracks().length > 0) {
-      this.logger.log(`uid ${this.stringStreamID} 开始播放本地音频: `, playOptions.audioType)
+      this.logger.log(`play() uid ${this.stringStreamID} 开始播放本地音频: `, playOptions.audioType)
       if (playOptions.audioType === 'voice') {
         this._play.playAudioStream('audio', this.mediaHelper.audio.micStream, playOptions.muted)
       } else if (playOptions.audioType === 'music') {
@@ -787,14 +782,15 @@ class LocalStream extends RTCEventEmitter {
       if (playOptions.video) {
         this.videoView = view
         if (this._play && this.mediaHelper.video.videoStream.getVideoTracks().length) {
-          this.logger.log(`uid ${this.stringStreamID} 开始启动视频播放 主流 本地`)
+          this.logger.log(`play() uid ${this.stringStreamID} 开始启动视频播放 主流 本地`)
           try {
             await this._play.playVideoStream('video', this.mediaHelper.video.renderStream, view)
             if ('width' in this.renderMode.local.video) {
               this._play.setRender('video', this.renderMode.local.video)
             }
           } catch (error) {
-            this.logger.log('localStream play video error ', error)
+            this.logger.log('play() 视频播放异常: ', error)
+            throw error
           }
           // 重新开启视频后期处理
           await this.resumeVideoPostProcess()
@@ -803,14 +799,15 @@ class LocalStream extends RTCEventEmitter {
       if (playOptions.screen) {
         this.screenView = view
         if (this._play && this.mediaHelper.screen.screenVideoStream.getVideoTracks().length) {
-          this.logger.log(`uid ${this.stringStreamID} 开始启动视频播放 辅流 本地`)
+          this.logger.log(`play() uid ${this.stringStreamID} 开始启动视频播放 辅流 本地`)
           try {
             await this._play.playVideoStream('screen', this.mediaHelper.screen.renderStream, view)
             if ('width' in this.renderMode.local.screen) {
               this._play.setRender('screen', this.renderMode.local.screen)
             }
           } catch (error) {
-            this.logger.log('localStream play screen error ', error)
+            this.logger.log('play() 屏幕共享播放异常: ', error)
+            throw error
           }
         }
       }
@@ -819,7 +816,6 @@ class LocalStream extends RTCEventEmitter {
       const param: ReportParamEnableEarback = {
         enable: true
       }
-
       this.client.apiFrequencyControl({
         name: 'enableEarback',
         code: 0,
@@ -850,6 +846,7 @@ class LocalStream extends RTCEventEmitter {
    */
   async resume() {
     if (this._play) {
+      this.logger.log('resume() uid: ', this.stringStreamID)
       await this._play.resume()
     }
     this.client.apiFrequencyControl({
@@ -878,7 +875,7 @@ class LocalStream extends RTCEventEmitter {
    */
   setLocalRenderMode(options: RenderMode, mediaType?: MediaTypeShort) {
     if (!options || !Number.isInteger(options.width) || !Number.isInteger(options.width)) {
-      this.logger.warn('setLocalRenderMode 参数宽高错误')
+      this.logger.warn('setLocalRenderMode() 参数宽高参数错误')
       this.client.apiFrequencyControl({
         name: 'setLocalRenderMode',
         code: -1,
@@ -894,7 +891,7 @@ class LocalStream extends RTCEventEmitter {
       })
     }
     this.logger.log(
-      `uid ${this.stringStreamID} 设置本地视频播放窗口大小: `,
+      `setLocalRenderMode() uid ${this.stringStreamID} 设置本地视频播放窗口大小: `,
       mediaType || 'video+screen',
       JSON.stringify(options)
     )
@@ -1050,7 +1047,7 @@ class LocalStream extends RTCEventEmitter {
 
     try {
       if (!this.getAdapterRef()) {
-        this.logger.log('Stream.open: 绑定 localStream ', type)
+        this.logger.log('open(): 绑定 localStream ', type)
         this.client.bindLocalStream(this)
       }
       switch (type) {
@@ -1112,7 +1109,7 @@ class LocalStream extends RTCEventEmitter {
             return Promise.reject(
               new RtcError({
                 code: ErrorCode.REPEAT_OPEN_AUDIO_SLAVE_ERROR,
-                message: 'open() 重复打开系统音频'
+                message: 'open() 重复打开屏幕共享音频'
               })
             )
           }
@@ -1144,7 +1141,7 @@ class LocalStream extends RTCEventEmitter {
               code: -1,
               param: JSON.stringify(
                 {
-                  reason: `open() 请先关闭${isVideo ? '摄像头' : '屏幕共享'}`,
+                  reason: `open() 重复打开${isVideo ? '摄像头' : '屏幕共享'}`,
                   type
                 },
                 null,
@@ -1154,7 +1151,7 @@ class LocalStream extends RTCEventEmitter {
             onOpenFinished({
               code: -1,
               param: {
-                reason: `重复打开${isVideo ? '摄像头' : '屏幕共享'}`,
+                reason: `open() 重复打开${isVideo ? '摄像头' : '屏幕共享'}`,
                 type
               }
             })
@@ -1163,7 +1160,7 @@ class LocalStream extends RTCEventEmitter {
                 code: isVideo
                   ? ErrorCode.REPEAT_OPEN_CAMERA_ERROR
                   : ErrorCode.REPEAT_OPEN_SCREEN_ERROR,
-                message: 'open() 重复打开摄像头'
+                message: `open() 重复打开${isVideo ? '摄像头' : '屏幕共享'}`
               })
             )
           }
@@ -1176,7 +1173,7 @@ class LocalStream extends RTCEventEmitter {
             onOpenFinished({
               code: -1,
               param: {
-                reason: '重复开启屏幕共享音频',
+                reason: 'open() 重复开启屏幕共享音频',
                 type
               }
             })
@@ -1223,7 +1220,7 @@ class LocalStream extends RTCEventEmitter {
           }
 
           if (this.client.adapterRef.connectState.curState !== 'CONNECTED') {
-            this.logger.log('Stream.open:client不在频道中，无需发布。', constraint)
+            this.logger.log('Stream.open:client不在频道中, 无需发布。', constraint)
           } else {
             this.logger.log('Stream.open:开始发布', constraint)
             await this.client.adapterRef._mediasoup?.createProduce(this, type)
@@ -1333,7 +1330,7 @@ class LocalStream extends RTCEventEmitter {
     this.client.adapterRef.instance.apiEventReport('setFunction', {
       name: 'switch_to_custom_screen',
       oper: '1',
-      value: reason || 'success'
+      param: reason || 'success'
     })
     this.client.apiFrequencyControl({
       name: 'switchScreenStream',
@@ -1378,10 +1375,6 @@ class LocalStream extends RTCEventEmitter {
         }
         this.audio = false
         this.mediaHelper.stopStream('audio')
-        /*if (this.audioLevelHelper) {
-          this.audioLevelHelper.disconnect()
-        }*/
-
         if (this.getAdapterRef()) {
           if (this.mediaHelper.getAudioInputTracks().length > 0) {
             this.logger.log('close() 关闭音频，保留发布：', type)
@@ -1511,14 +1504,14 @@ class LocalStream extends RTCEventEmitter {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.STREAM_CLOSE_CAMERA_ERROR,
-            message: 'close() 麦克风没有开启'
+            message: 'close() 摄像头没有开启'
           })
         )
       } else if (reason === 'NOT_OPEN_SCREEN_YET') {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.STREAM_CLOSE_SCREEN_ERROR,
-            message: 'close() 麦克风没有开启'
+            message: 'close() 屏幕共享没有开启'
           })
         )
       } else {
@@ -1559,7 +1552,7 @@ class LocalStream extends RTCEventEmitter {
    * @return {Promise}
    */
   async unmuteAudio() {
-    this.logger.log('启用音频轨道: ', this.stringStreamID)
+    this.logger.log('unmuteAudio() 启用音频轨道: ', this.stringStreamID)
     try {
       if (this.getAdapterRef()) {
         // unmuteLocalAudio1: unmute Mediasoup
@@ -1595,7 +1588,7 @@ class LocalStream extends RTCEventEmitter {
         )
       })
     } catch (e: any) {
-      this.logger.error('API调用失败：Stream:unmuteAudio', e.name, e.message, e)
+      this.logger.error('unmuteAudio() 异常: ', e.name, e.message, e)
       this.client.apiFrequencyControl({
         name: 'unmuteAudio',
         code: -1,
@@ -1619,7 +1612,7 @@ class LocalStream extends RTCEventEmitter {
    * @return {Promise}
    */
   async muteAudio() {
-    this.logger.log('禁用音频轨道: ', this.stringStreamID)
+    this.logger.log('muteAudio() 禁用音频轨道: ', this.stringStreamID)
 
     try {
       // muteLocalAudio1: mute mediasoup
@@ -1655,7 +1648,7 @@ class LocalStream extends RTCEventEmitter {
         )
       })
     } catch (e: any) {
-      this.logger.error('API调用失败：Stream:muteAudio', e.name, e.message, e)
+      this.logger.error('muteAudio() 异常: ', e.name, e.message, e)
       this.client.apiFrequencyControl({
         name: 'muteAudio',
         code: -1,
@@ -1679,7 +1672,7 @@ class LocalStream extends RTCEventEmitter {
    * @return {Promise}
    */
   async unmuteAudioSlave() {
-    this.logger.log('启用音频辅流轨道: ', this.stringStreamID)
+    this.logger.log('unmuteAudioSlave() 启用音频辅流轨道: ', this.stringStreamID)
     try {
       if (this.getAdapterRef()) {
         // unmuteLocalAudio1: unmute Mediasoup
@@ -1706,7 +1699,7 @@ class LocalStream extends RTCEventEmitter {
         )
       })
     } catch (e: any) {
-      this.logger.error('API调用失败：Stream:unmuteAudio', e.name, e.message, e)
+      this.logger.error('unmuteAudioSlave() 异常: ', e.name, e.message, e)
       this.client.apiFrequencyControl({
         name: 'unmuteAudioSlave',
         code: -1,
@@ -1729,7 +1722,7 @@ class LocalStream extends RTCEventEmitter {
    * @return {Promise}
    */
   async muteAudioSlave() {
-    this.logger.log('禁用音频辅流轨道: ', this.stringStreamID)
+    this.logger.log('muteAudioSlave() 禁用音频辅流轨道: ', this.stringStreamID)
 
     try {
       // muteLocalAudio1: mute mediasoup
@@ -1756,7 +1749,7 @@ class LocalStream extends RTCEventEmitter {
         )
       })
     } catch (e: any) {
-      this.logger.error('API调用失败：Stream:muteAudioSlave', e.name, e.message, e)
+      this.logger.error('muteAudioSlave() 异常: ', e.name, e.message, e)
       this.client.apiFrequencyControl({
         name: 'muteAudioSlave',
         code: -1,
@@ -1846,7 +1839,7 @@ class LocalStream extends RTCEventEmitter {
    * @return {Void}
    */
   setAudioProfile(profile: string) {
-    this.logger.log('设置音频属性: ', profile)
+    this.logger.log('setAudioProfile() 设置音频属性: ', profile)
     this.audioProfile = profile
     this.client.apiFrequencyControl({
       name: 'setAudioProfile',
@@ -1866,10 +1859,10 @@ class LocalStream extends RTCEventEmitter {
    * @return {Promise}
    */
   setAudioVolume(volume = 100) {
-    let reason = null
+    let errcode, message
     if (!Number.isInteger(volume)) {
-      this.logger.log('volume 为 0 - 100 的整数')
-      reason = 'INVALID_ARGUMENTS'
+      errcode = ErrorCode.SET_AUDIO_VOLUME_ARGUMENTS_ERROR
+      message = 'setAudioVolume() volume 应该为 0 - 100 的整数'
     } else if (volume < 0) {
       volume = 0
     } else if (volume > 100) {
@@ -1877,49 +1870,31 @@ class LocalStream extends RTCEventEmitter {
     } else {
       volume = volume * 2.55
     }
-    this.logger.log(`调节${this.stringStreamID}的音量大小: ${volume}`)
+    this.logger.log(`setAudioVolume() 调节${this.stringStreamID}的音量大小: ${volume}`)
 
     if (this.audio) {
-      if (!this._play) {
-        let enMessage = 'localStream.setAudioVolume: Play is not start',
-          zhMessage = 'localStream.setAudioVolume: 播放未开始',
-          enAdvice = 'Please start playing first',
-          zhAdvice = '请先开启播放'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.PLAY_NOT_START_ERROR,
-          message,
-          advice
-        })
-      }
-      this._play.setPlayVolume('audio', volume)
+      this._play?.setPlayVolume('audio', volume)
     } else {
-      this.logger.log(`没有音频流，请检查是否有发布过音频`)
-      reason = 'INVALID_OPERATION'
-    }
-    if (reason) {
-      this.client.apiFrequencyControl({
-        name: 'setAudioVolume',
-        code: -1,
-        param: {
-          streamID: this.stringStreamID,
-          isRemote: false,
-          volume,
-          reason
-        }
-      })
-      return reason
+      message = 'setAudioVolume() 没有音频流，请检查是否有发布过音频'
+      errcode = ErrorCode.SET_AUDIO_VOLUME_ERROR
     }
     this.client.apiFrequencyControl({
       name: 'setAudioVolume',
-      code: 0,
+      code: errcode ? -1 : 0,
       param: {
         streamID: this.stringStreamID,
         isRemote: false,
-        volume
+        volume,
+        reason: message
       }
     })
+    if (errcode) {
+      this.logger.error(message)
+      throw new RtcError({
+        code: errcode,
+        message
+      })
+    }
   }
 
   /**
@@ -1930,42 +1905,25 @@ class LocalStream extends RTCEventEmitter {
    * @return {Void}
    */
   setCaptureVolume(volume: number, audioType?: 'microphone' | 'screenAudio') {
-    let reason = null
+    let errcode, message
     if (!Number.isInteger(volume)) {
-      this.logger.log('volume 为 0 - 100 的整数')
-      reason = 'INVALID_ARGUMENTS'
+      errcode = ErrorCode.SET_AUDIO_VOLUME_ARGUMENTS_ERROR
+      message = 'setCaptureVolume() volume 应该为 0 - 100 的整数'
+      this.logger.log(message)
     } else if (volume < 0) {
       volume = 0
     } else if (volume > 100) {
       volume = 100
     }
-    this.logger.log(`调节${this.stringStreamID}的音量大小: ${volume}`)
+    this.logger.log(`setCaptureVolume() 调节${this.stringStreamID}的音量大小: ${volume}`)
 
     if (!this.mediaHelper.audio.audioRoutingEnabled) {
       this.mediaHelper.enableAudioRouting()
     }
     this.mediaHelper.setGain(volume / 100, audioType)
-
-    if (reason) {
-      this.client.apiFrequencyControl({
-        name: 'setCaptureVolume',
-        code: -1,
-        param: JSON.stringify(
-          {
-            streamID: this.stringStreamID,
-            volume,
-            audioType,
-            reason
-          },
-          null,
-          ' '
-        )
-      })
-      return reason
-    }
     this.client.apiFrequencyControl({
       name: 'setCaptureVolume',
-      code: 0,
+      code: errcode ? -1 : 0,
       param: JSON.stringify(
         {
           streamID: this.stringStreamID,
@@ -1976,6 +1934,12 @@ class LocalStream extends RTCEventEmitter {
         ' '
       )
     })
+    if (errcode) {
+      throw new RtcError({
+        code: errcode,
+        message
+      })
+    }
   }
 
   /**
@@ -1998,7 +1962,10 @@ class LocalStream extends RTCEventEmitter {
           }, 0)
         }
         this.logger.error('设置输出设备失败', e.name, e.message)
-        throw e
+        throw new RtcError({
+          code: ErrorCode.SET_AUDIO_OUTPUT_ERROR,
+          message: e.message || '系统内部错误'
+        })
       }
       if (callback) {
         setTimeout(callback, 0)
@@ -2028,65 +1995,46 @@ class LocalStream extends RTCEventEmitter {
    * @return {Promise}
    */
   async switchDevice(type: 'audio' | 'video', deviceId: string) {
-    this.logger.log(`切换媒体输入设备: ${type}, deviceId: ${deviceId}`)
+    this.logger.log(`switchDevice() 切换媒体输入设备: ${type}, deviceId: ${deviceId}`)
     let constraint = {}
+    let errcode, message
     if (this.inSwitchDevice[type]) {
-      this.logger.error(`switchDevice：正在切换中，重复`, type)
-      let enMessage = 'switchDevice: invalid operation',
-        zhMessage = 'switchDevice: 操作异常',
-        enAdvice = `switching ${type}`,
-        zhAdvice = `正在切换中 ${type}`
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.INVALID_OPERATION_ERROR,
-          message,
-          advice
-        })
-      )
+      message = `switchDevice() 正在切换中, 重复切换 ${type}`
+      errcode = ErrorCode.SWITCH_DEVICE_REPEAT_ERROR
     } else {
       this.inSwitchDevice[type] = true
     }
     if (type === 'audio') {
       const micTrack = this.mediaHelper.audio.micTrack
       if (micTrack?.readyState === 'live' && micTrack?.getSettings().deviceId === deviceId) {
-        this.logger.log(`切换相同的麦克风设备，不处理`)
-        this.inSwitchDevice[type] = false
-        return Promise.resolve()
+        this.logger.warn(`switchDevice() 切换相同的麦克风设备，不处理`)
+        return
       } else if (!this.hasAudio()) {
-        this.logger.log(`当前没有开启音频输入设备，无法切换`)
-        this.inSwitchDevice[type] = false
-        let enMessage = 'switchDevice: invalid operation',
-          zhMessage = 'switchDevice: 操作异常',
-          enAdvice = `no audio input device`,
-          zhAdvice = `当前没有开启音频输入设备，无法切换`
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        return Promise.reject(
-          new RtcError({
-            code: ErrorCode.INVALID_OPERATION_ERROR,
-            message,
-            advice
-          })
-        )
+        message = `switchDevice() 当前没有开启音频输入设备，无法切换`
+        errcode = ErrorCode.SWITCH_DEVICE_NO_MIC_ERROR
       } else if (this.audioSource) {
-        this.logger.log(`自定义音频输入不支持，无法切换`)
-        this.inSwitchDevice[type] = false
-        let enMessage = 'switchDevice: invalid operation',
-          zhMessage = 'switchDevice: 操作异常',
-          enAdvice = `user-defined audio is not support`,
-          zhAdvice = `自定义音频输入不支持，无法切换`
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        return Promise.reject(
-          new RtcError({
-            code: ErrorCode.INVALID_OPERATION_ERROR,
-            message,
-            advice
-          })
-        )
+        message = `switchDevice() 自定义音频输入不支持，无法切换`
+        errcode = ErrorCode.SWITCH_DEVICE_NO_SUPPORT_AUDIO
       }
+      if (errcode) {
+        this.logger.error(message)
+        this.inSwitchDevice[type] = false
+        this.client.apiFrequencyControl({
+          name: 'switchDevice',
+          code: -1,
+          param: {
+            reason: message,
+            type,
+            deviceId,
+            streamID: this.stringStreamID
+          }
+        })
+        throw new RtcError({
+          code: errcode,
+          message
+        })
+      }
+
       if (this.mediaHelper.audio.micConstraint && this.mediaHelper.audio.micConstraint.audio) {
         this.mediaHelper.audio.micConstraint.audio.deviceId = { exact: deviceId }
       } else if (this.mediaHelper.audio.micConstraint) {
@@ -2108,69 +2056,33 @@ class LocalStream extends RTCEventEmitter {
         this._transformedTrack = null
       }
       if (cameraTrack?.readyState === 'live' && cameraTrack?.getSettings().deviceId === deviceId) {
-        this.logger.log(`切换相同的摄像头设备，不处理`)
+        this.logger.log('switchDevice() 切换相同的摄像头设备，不处理')
         this.inSwitchDevice[type] = false
-        return Promise.resolve()
+        return
       } else if (!this.hasVideo()) {
-        this.logger.log(`当前没有开启视频输入设备，无法切换`)
-        this.inSwitchDevice[type] = false
-        this.client.apiFrequencyControl({
-          name: 'switchDevice',
-          code: -1,
-          param: {
-            reason: 'INVALID_OPERATION: 当前没有开启视频输入设备，无法切换',
-            type,
-            deviceId,
-            streamID: this.stringStreamID
-          }
-        })
-        this.client.apiFrequencyControl({
-          name: '_trackSettings',
-          code: 0,
-          param: JSON.stringify(this.mediaHelper.getTrackSettings())
-        })
-        let enMessage = 'switchDevice: invalid operation',
-          zhMessage = 'switchDevice: 操作异常',
-          enAdvice = `no video input device`,
-          zhAdvice = `当前没有开启视频输入设备，无法切换`
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        return Promise.reject(
-          new RtcError({
-            code: ErrorCode.INVALID_OPERATION_ERROR,
-            message,
-            advice
-          })
-        )
+        message = `switchDevice() 当前没有开启视频输入设备，无法切换`
+        errcode = ErrorCode.SWITCH_DEVICE_NO_CAMERA_ERROR
       } else if (this.videoSource) {
-        this.logger.log(`自定义视频输入不支持，无法切换`)
+        message = `switchDevice() 自定义视频输入不支持切换`
+        errcode = ErrorCode.SWITCH_DEVICE_NO_SUPPORT_VIDEO
+      }
+      if (errcode) {
+        this.logger.error(message)
         this.inSwitchDevice[type] = false
         this.client.apiFrequencyControl({
           name: 'switchDevice',
           code: -1,
           param: {
-            reason: 'INVALID_OPERATION: 自定义视频输入不支持，无法切换',
+            reason: message,
             type,
             deviceId,
             streamID: this.stringStreamID
           }
         })
-        this.client.apiFrequencyControl({
-          name: '_trackSettings',
-          code: 0,
-          param: JSON.stringify(this.mediaHelper.getTrackSettings())
-        })
-        let enMessage = 'switchDevice: invalid operation',
-          zhMessage = 'switchDevice: 操作异常',
-          enAdvice = `user-defined video is not support`,
-          zhAdvice = `自定义视频输入不支持，无法切换`
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: ErrorCode.INVALID_OPERATION_ERROR,
-            message,
-            advice
+            code: errcode,
+            message
           })
         )
       }
@@ -2188,18 +2100,11 @@ class LocalStream extends RTCEventEmitter {
         this.virtualBackground.emptyFrame = false
       }
     } else {
-      this.logger.error(`switchDevice: unknown type ${type}`)
-      let enMessage = 'switchDevice: invalid operation',
-        zhMessage = 'switchDevice: 操作异常',
-        enAdvice = `unknown type ${type}`,
-        zhAdvice = `未知 type ${type}`
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
+      this.logger.error(`switchDevice() type参数错误: ${type}`)
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.INVALID_OPERATION_ERROR,
-          message,
-          advice
+          code: ErrorCode.SWITCH_DEVICE_REPEAT_ARGUMENTS_ERROR,
+          message: `switchDevice() type参数错误: ${type}`
         })
       )
     }
@@ -2214,17 +2119,17 @@ class LocalStream extends RTCEventEmitter {
         this.mediaHelper.enablePreProcessing('video')
       }
       if (type === 'video') {
-        this.client.apiFrequencyControl({
-          name: 'switchDevice',
-          code: 0,
-          param: {
-            type,
-            deviceId,
-            streamID: this.stringStreamID
-          }
-        })
         await this.resumeVideoPostProcess()
       }
+      this.client.apiFrequencyControl({
+        name: 'switchDevice',
+        code: 0,
+        param: {
+          type,
+          deviceId,
+          streamID: this.stringStreamID
+        }
+      })
       this.client.apiFrequencyControl({
         name: '_trackSettings',
         code: 0,
@@ -2233,24 +2138,25 @@ class LocalStream extends RTCEventEmitter {
     } catch (e: any) {
       this.logger.error('API调用失败：Stream:switchDevice', e.name, e.message, e)
       this.inSwitchDevice[type] = false
-      if (type === 'video') {
-        this.client.apiFrequencyControl({
-          name: 'switchDevice',
-          code: -1,
-          param: {
-            reason: e.message,
-            type,
-            deviceId,
-            streamID: this.stringStreamID
-          }
-        })
-      }
+      this.client.apiFrequencyControl({
+        name: 'switchDevice',
+        code: -1,
+        param: {
+          reason: e.message,
+          type,
+          deviceId,
+          streamID: this.stringStreamID
+        }
+      })
       this.client.apiFrequencyControl({
         name: '_trackSettings',
         code: 0,
         param: JSON.stringify(this.mediaHelper.getTrackSettings())
       })
-      return Promise.reject(e)
+      throw new RtcError({
+        code: e.code || ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: e.message
+      })
     }
   }
 
@@ -2262,7 +2168,7 @@ class LocalStream extends RTCEventEmitter {
    */
 
   async unmuteVideo() {
-    this.logger.log(`启用 ${this.stringStreamID} 的视频轨道`)
+    this.logger.log(`unmuteVideo() 启用 ${this.stringStreamID} 的视频轨道`)
     try {
       if (this.virtualBackground) {
         this.virtualBackground.emptyFrame = false
@@ -2301,7 +2207,7 @@ class LocalStream extends RTCEventEmitter {
       })
       this.replaceTags.isMuted = false
     } catch (e: any) {
-      this.logger.error('API调用失败：Stream:unmuteVideo', e.name, e.message, e)
+      this.logger.error('unmuteVideo() 异常: ', e.name, e.message, e)
       this.client.apiFrequencyControl({
         name: 'unmuteVideo',
         code: -1,
@@ -2325,7 +2231,7 @@ class LocalStream extends RTCEventEmitter {
    * @return {Promise}
    */
   async muteVideo() {
-    this.logger.log(`禁用 ${this.stringStreamID} 的视频轨道`)
+    this.logger.log(`muteVideo() 禁用 ${this.stringStreamID} 的视频轨道`)
     try {
       if (this.virtualBackground) {
         this.virtualBackground.emptyFrame = true
@@ -2363,7 +2269,7 @@ class LocalStream extends RTCEventEmitter {
       })
       this.replaceTags.isMuted = true
     } catch (e: any) {
-      this.logger.error('API调用失败：Stream:muteVideo', e.name, e.message, e)
+      this.logger.error('muteVideo() 异常: ', e.name, e.message, e)
       this.client.apiFrequencyControl({
         name: 'muteVideo',
         code: -1,
@@ -2389,7 +2295,7 @@ class LocalStream extends RTCEventEmitter {
    */
 
   async unmuteScreen() {
-    this.logger.log(`启用 ${this.stringStreamID} 的视频轨道`)
+    this.logger.log(`unmuteScreen() 启用 ${this.stringStreamID} 的视频轨道`)
     try {
       if (this.getAdapterRef()) {
         this.client.adapterRef._mediasoup?.unmuteScreen()
@@ -2415,7 +2321,7 @@ class LocalStream extends RTCEventEmitter {
         )
       })
     } catch (e: any) {
-      this.logger.error('API调用失败：Stream:unmuteScreen', e.name, e.message, e)
+      this.logger.error('unmuteScreen() 异常: ', e.name, e.message)
       this.client.apiFrequencyControl({
         name: 'unmuteScreen',
         code: -1,
@@ -2439,7 +2345,7 @@ class LocalStream extends RTCEventEmitter {
    * @return {Promise}
    */
   async muteScreen() {
-    this.logger.log(`禁用 ${this.stringStreamID} 的辅流轨道`)
+    this.logger.log(`muteScreen() 禁用 ${this.stringStreamID} 的辅流轨道`)
     try {
       // local mute
       if (this.getAdapterRef()) {
@@ -2465,7 +2371,7 @@ class LocalStream extends RTCEventEmitter {
         )
       })
     } catch (e: any) {
-      this.logger.error('API调用失败：Stream:muteScreen', e, ...arguments)
+      this.logger.error('muteScreen() ', e.message)
       this.client.apiFrequencyControl({
         name: 'muteScreen',
         code: -1,
@@ -2488,7 +2394,7 @@ class LocalStream extends RTCEventEmitter {
    * @return {Boolean}
    */
   hasVideo() {
-    this.logger.log('获取视频 flag')
+    this.logger.log('hasVideo()')
     return this.mediaHelper.video.videoStream.getVideoTracks().length > 0
   }
 
@@ -2512,35 +2418,23 @@ class LocalStream extends RTCEventEmitter {
     this.mediaHelper.video.encoderConfig.high.maxBitrate =
       this.getVideoBW(this.videoProfile) || this.mediaHelper.video.encoderConfig.high.maxBitrate
     this.logger.log(
-      `setVideoProfile ${JSON.stringify(options)} 视频采集参数 ${JSON.stringify(
+      `setVideoProfile() options: ${JSON.stringify(options)}, 视频采集参数: ${JSON.stringify(
         this.mediaHelper.video.captureConfig.high
-      )} 编码参数 ${JSON.stringify(this.mediaHelper.video.encoderConfig.high)}`
+      )}, 编码参数: ${JSON.stringify(this.mediaHelper.video.encoderConfig.high)}`
     )
     this.client.adapterRef.channelInfo.sessionConfig.maxVideoQuality =
       NERTC_VIDEO_QUALITY.VIDEO_QUALITY_1080p
     this.client.adapterRef.channelInfo.sessionConfig.videoQuality = this.videoProfile.resolution
     this.client.adapterRef.channelInfo.sessionConfig.videoFrameRate = this.videoProfile.frameRate
     let cameraTrack = this.mediaHelper.video.cameraTrack
-    let cameraSettings = cameraTrack?.getSettings()
-    // const deviceInfo = Device.deviceHistory.video.find((d: DeviceInfo) => {
-    //   return d.deviceId === (cameraSettings && cameraSettings.deviceId)
-    // })
-    // if ((cameraSettings && !cameraSettings.width) || !deviceInfo) {
-    //   // 尝试寻找美颜的cameraTrack。不要直接判断是否是CanvasCaptureMediaStreamTrack因为Firefox不支持
-    //   cameraSettings = this._cameraTrack?.getSettings()
-    //   if (cameraSettings?.width && this._cameraTrack?.readyState === 'live') {
-    //     this.logger.log(`setVideoProfile 侦测到美颜在开启状态`)
-    //     cameraTrack = this.videoPostProcess.sourceTrack
-    //   }
-    // }
     if (this.videoPostProcess.hasAnyTask) {
-      this.logger.log(`setVideoProfile 侦测到美颜在开启状态`)
+      this.logger.log(`setVideoProfile() 侦测到美颜在开启状态`)
       cameraTrack = this.videoPostProcess.sourceTrack
     }
 
     if (cameraTrack) {
       try {
-        this.logger.log(`setVideoProfile 尝试动态修改分辨率【${cameraTrack.label}】`)
+        this.logger.log(`setVideoProfile() 尝试动态修改分辨率【${cameraTrack.label}】`)
         await applyResolution({
           track: cameraTrack,
           targetWidth: this.mediaHelper.video.captureConfig.high.width,
@@ -2554,7 +2448,7 @@ class LocalStream extends RTCEventEmitter {
           this.mediaHelper.video.cameraConstraint.video.height = settings.height
         }
       } catch (e: any) {
-        this.logger.error(`无法使用动态分辨率:`, e.name, e.message)
+        this.logger.error(`setVideoProfile() 无法设置动态分辨率:`, e.name, e.message)
       }
     }
     const sender = this.getSender('video', 'high')
@@ -2564,16 +2458,14 @@ class LocalStream extends RTCEventEmitter {
       const encodings: RTCRtpEncodingParameters = parameters.encodings && parameters.encodings[0]
       if (encodings?.maxBitrate !== this.mediaHelper.video.encoderConfig.high.maxBitrate) {
         this.logger.log(
-          `setVideoProfile调整上行码率 ${encodings.maxBitrate} => ${this.mediaHelper.video.encoderConfig.high.maxBitrate}`
+          `setVideoProfile() 调整上行码率 ${encodings.maxBitrate} => ${this.mediaHelper.video.encoderConfig.high.maxBitrate}`
         )
         encodings.maxBitrate = this.mediaHelper.video.encoderConfig.high.maxBitrate
         try {
           sender.setParameters(parameters)
         } catch (e: any) {
-          this.logger.error(`setVideoProfile无法调整上行码率`, e.name, e.message)
+          this.logger.warn(`setVideoProfile() 无法调整上行码率: `, e.name, e.message)
         }
-      } else {
-        this.logger.log(`setVideoProfile无需调整上行码率 ${encodings?.maxBitrate}`)
       }
     }
     this.client.apiFrequencyControl({
@@ -2587,6 +2479,7 @@ class LocalStream extends RTCEventEmitter {
     this.replaceCanvas()
   }
 
+  //编码策略
   setVideoEncoderConfiguration(options: {
     mediaType: 'video' | 'screen'
     streamType: 'high' | 'low'
@@ -2595,14 +2488,20 @@ class LocalStream extends RTCEventEmitter {
   }) {
     options.mediaType = options.mediaType || 'video'
     options.streamType = options.streamType || 'high'
-    this.logger.log('自定义视频编码配置', options)
+    this.logger.log('setVideoEncoderConfiguration() 自定义视频编码配置: ', options)
     if (!this.mediaHelper[options.mediaType].encoderConfig[options.streamType]) {
-      this.logger.error('无法识别的媒体类型：', options.mediaType, options.streamType)
+      this.logger.warn(
+        'setVideoEncoderConfiguration() 无法识别的媒体类型：',
+        options.mediaType,
+        options.streamType
+      )
     } else {
       if (options.maxBitrate) {
         const maxBitrate = options.maxBitrate * 1000
         this.logger.log(
-          `setVideoEncoderConfiguration:设置maxBitrate ${options.mediaType} ${options.streamType} ${
+          `setVideoEncoderConfiguration() 设置maxBitrate ${options.mediaType} ${
+            options.streamType
+          } ${
             this.mediaHelper[options.mediaType].encoderConfig[options.streamType].maxBitrate
           } => ${maxBitrate}`
         )
@@ -2610,7 +2509,7 @@ class LocalStream extends RTCEventEmitter {
           maxBitrate
       } else {
         this.logger.log(
-          'setVideoEncoderConfiguration:未设定maxBitrate。保留目前的值：',
+          'setVideoEncoderConfiguration:未设定maxBitrate。保留目前的值: ',
           options.mediaType,
           options.streamType,
           this.mediaHelper[options.mediaType].encoderConfig[options.streamType].maxBitrate
@@ -2726,7 +2625,7 @@ class LocalStream extends RTCEventEmitter {
             this.mediaHelper.video.encoderConfig.high.contentHint
         ) {
           this.logger.log(
-            `应用 contentHint video high`,
+            `replaceTrack() 应用 contentHint video high`,
             this.mediaHelper.video.encoderConfig.high.contentHint
           )
           // @ts-ignore
@@ -2745,7 +2644,7 @@ class LocalStream extends RTCEventEmitter {
       watchTrack(options.track)
       this.mediaHelper.listenToTrackEnded(options.track)
     } else {
-      this.logger.error(`replaceTrack ${options.mediaType} 当前没有可替换的流`)
+      this.logger.error(`replaceTrack() ${options.mediaType} 当前没有可替换的流`)
       return null
     }
     if (preProcessingEnabled) {
@@ -2754,7 +2653,7 @@ class LocalStream extends RTCEventEmitter {
       const sender = this.getSender(options.mediaType, 'high')
       if (sender) {
         sender.replaceTrack(options.track)
-        this.logger.log(`replaceTrack ${options.mediaType} 成功替换上行`)
+        this.logger.log(`replaceTrack() ${options.mediaType} 成功替换上行`)
       }
     }
     if (this.replaceTags.isMuted) {
@@ -2792,9 +2691,9 @@ class LocalStream extends RTCEventEmitter {
     this.mediaHelper.screen.captureConfig.high = this.mediaHelper.convert(this.screenProfile)
     this.mediaHelper.screen.encoderConfig.high.maxBitrate = this.getVideoBW(this.screenProfile)
     this.logger.log(
-      `setScreenProfile ${JSON.stringify(profile)} 屏幕共享采集参数 ${JSON.stringify(
+      `setScreenProfile() profile: ${JSON.stringify(profile)}, 屏幕共享采集参数: ${JSON.stringify(
         this.mediaHelper.screen.captureConfig.high
-      )} 编码参数 ${JSON.stringify(this.mediaHelper.screen.encoderConfig.high)}`
+      )}, 编码参数: ${JSON.stringify(this.mediaHelper.screen.encoderConfig.high)}`
     )
     this.client.adapterRef.channelInfo.sessionConfig.screenQuality = profile
     if (this.mediaHelper.screen.screenVideoTrack) {
@@ -2814,16 +2713,14 @@ class LocalStream extends RTCEventEmitter {
       const encodings: RTCRtpEncodingParameters = parameters.encodings && parameters.encodings[0]
       if (encodings?.maxBitrate !== this.mediaHelper.screen.encoderConfig.high.maxBitrate) {
         this.logger.log(
-          `setScreenProfile 调整上行码率 ${encodings.maxBitrate} => ${this.mediaHelper.screen.encoderConfig.high.maxBitrate}`
+          `setScreenProfile() 调整上行码率 ${encodings.maxBitrate} => ${this.mediaHelper.screen.encoderConfig.high.maxBitrate}`
         )
         encodings.maxBitrate = this.mediaHelper.screen.encoderConfig.high.maxBitrate
         try {
           sender.setParameters(parameters)
         } catch (e: any) {
-          this.logger.error(`setScreenProfile 无法调整上行码率`, e.name, e.message)
+          this.logger.error(`setScreenProfile() 无法调整上行码率`, e.name, e.message)
         }
-      } else {
-        this.logger.log(`setScreenProfile 无需调整上行码率 ${encodings?.maxBitrate}`)
       }
     }
 
@@ -2905,8 +2802,7 @@ class LocalStream extends RTCEventEmitter {
           `应用最大编码码率失败：${mediaTypeShort} ${streamType} ${maxBitrate}`,
           parameters,
           e.name,
-          e.message,
-          e
+          e.message
         )
       })
   }
@@ -2952,20 +2848,13 @@ class LocalStream extends RTCEventEmitter {
    * @returns {Promise}
    */
   async takeSnapshot(options: SnapshotOptions) {
+    let errcode, message
     if (this.video || this.screen) {
       if (!this._play) {
-        let enMessage = 'localStream.takeSnapshot: Play is not start',
-          zhMessage = 'localStream.takeSnapshot: 播放未开始',
-          enAdvice = 'Please start playing first',
-          zhAdvice = '请先开启播放'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.PLAY_NOT_START_ERROR,
-          message,
-          advice
-        })
+        message = 'takeSnapshot(): 当前视频没有播放'
+        errcode = ErrorCode.STREAM_TAKE_SNAPSHOT_ERROR
       }
+      this.logger.log(`takeSnapshot() options: ${JSON.stringify(options)}`)
       await this._play.takeSnapshot(options, 'download', this.streamID)
       this.client.apiFrequencyControl({
         name: 'takeSnapshot',
@@ -2977,7 +2866,12 @@ class LocalStream extends RTCEventEmitter {
         }
       })
     } else {
-      this.logger.log(`没有视频流，请检查是否有 发布 过视频`)
+      message = 'takeSnapshot(): 没有视频流, 请检查是否开启过视频'
+      errcode = ErrorCode.STREAM_TAKE_SNAPSHOT_ERROR
+    }
+
+    if (errcode) {
+      this.logger.error(message)
       this.client.apiFrequencyControl({
         name: 'takeSnapshot',
         code: -1,
@@ -2986,13 +2880,16 @@ class LocalStream extends RTCEventEmitter {
             streamID: this.stringStreamID,
             isRemote: false,
             ...options,
-            reason: `没有视频流，请检查是否有 发布 过视频`
+            reason: message
           },
           null,
           ' '
         )
       })
-      return 'INVALID_OPERATION'
+      throw new RtcError({
+        code: errcode,
+        message
+      })
     }
   }
 
@@ -3004,19 +2901,11 @@ class LocalStream extends RTCEventEmitter {
    * @returns {string}
    */
   takeSnapshotBase64(options: SnapshotBase64Options) {
+    let errcode, message
     if (this.video || this.screen) {
       if (!this._play) {
-        let enMessage = 'localStream.takeSnapshotBase64: Play is not start',
-          zhMessage = 'localStream.takeSnapshotBase64: 播放未开始',
-          enAdvice = 'Please start playing first',
-          zhAdvice = '请先开启播放'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.PLAY_NOT_START_ERROR,
-          message,
-          advice
-        })
+        message = 'takeSnapshotBase64(): 当前视频没有播放'
+        errcode = ErrorCode.STREAM_TAKE_SNAPSHOT_ERROR
       }
       let base64Url = this._play.takeSnapshot(options, 'base64')
       this.client.apiFrequencyControl({
@@ -3030,7 +2919,12 @@ class LocalStream extends RTCEventEmitter {
       })
       return base64Url
     } else {
-      this.logger.log(`没有视频流，请检查是否有 发布 过视频`)
+      message = 'takeSnapshotBase64(): 没有视频流, 请检查是否开启过视频'
+      errcode = ErrorCode.STREAM_TAKE_SNAPSHOT_ERROR
+    }
+
+    if (errcode) {
+      this.logger.error(message)
       this.client.apiFrequencyControl({
         name: 'takeSnapshotBase64',
         code: -1,
@@ -3039,13 +2933,16 @@ class LocalStream extends RTCEventEmitter {
             streamID: this.stringStreamID,
             isRemote: false,
             ...options,
-            reason: `没有视频流，请检查是否有 发布 过视频`
+            reason: message
           },
           null,
           ' '
         )
       })
-      return 'INVALID_OPERATION'
+      throw new RtcError({
+        code: errcode,
+        message
+      })
     }
   }
 
@@ -3092,16 +2989,9 @@ class LocalStream extends RTCEventEmitter {
       return
     }
     if (!this._record || !this.streamID || !streams) {
-      let enMessage = 'localStream_startMediaRecording: invalid parameter when start recording',
-        zhMessage = 'localStream_startMediaRecording: 开始录制时参数异常',
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
         code: ErrorCode.RECORDING_ERROR,
-        message,
-        advice
+        message: 'localStream_startMediaRecording: 开始录制时参数异常'
       })
     }
     return (
@@ -3127,16 +3017,9 @@ class LocalStream extends RTCEventEmitter {
    */
   stopMediaRecording(options: { recordId?: string }) {
     if (!this._record) {
-      let enMessage = 'localStream.stopMediaRecording: recording is not start',
-        zhMessage = 'localStream.stopMediaRecording: 录制未开始',
-        enAdvice = 'Please start recording first',
-        zhAdvice = '请先开启录制'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
         code: ErrorCode.RECORDING_NOT_START_ERROR,
-        message,
-        advice
+        message: 'localStream.stopMediaRecording: 录制未开始'
       })
     }
     //FIXME
@@ -3154,16 +3037,9 @@ class LocalStream extends RTCEventEmitter {
    */
   playMediaRecording(options: { recordId: string; view: HTMLElement }) {
     if (!this._record) {
-      let enMessage = 'localStream.playMediaRecording: recording is not start',
-        zhMessage = 'localStream.playMediaRecording: 录制未开始',
-        enAdvice = 'Please start recording first',
-        zhAdvice = '请先开启录制'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
         code: ErrorCode.RECORDING_NOT_START_ERROR,
-        message,
-        advice
+        message: 'localStream.playMediaRecording: 录制未开始'
       })
     }
     return this._record.play(options.view)
@@ -3177,16 +3053,9 @@ class LocalStream extends RTCEventEmitter {
   listMediaRecording() {
     let list = []
     if (!this._record) {
-      let enMessage = 'localStream.listMediaRecording: recording is not start',
-        zhMessage = 'localStream.listMediaRecording: 录制未开始',
-        enAdvice = 'Please start recording first',
-        zhAdvice = '请先开启录制'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
         code: ErrorCode.RECORDING_NOT_START_ERROR,
-        message,
-        advice
+        message: 'localStream.listMediaRecording: 录制未开始'
       })
     }
     const recordStatus = this._record.getRecordStatus()
@@ -3205,16 +3074,9 @@ class LocalStream extends RTCEventEmitter {
    */
   cleanMediaRecording(options: { recordId: string }) {
     if (!this._record) {
-      let enMessage = 'localStream.cleanMediaRecording: recording is not start',
-        zhMessage = 'localStream.cleanMediaRecording: 录制未开始',
-        enAdvice = 'Please start recording first',
-        zhAdvice = '请先开启录制'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
         code: ErrorCode.RECORDING_NOT_START_ERROR,
-        message,
-        advice
+        message: 'localStream.cleanMediaRecording: 录制未开始'
       })
     }
     return this._record.clean()
@@ -3230,16 +3092,9 @@ class LocalStream extends RTCEventEmitter {
    */
   downloadMediaRecording(options: { recordId: string }) {
     if (!this._record) {
-      let enMessage = 'localStream.downloadMediaRecording: recording is not start',
-        zhMessage = 'localStream.downloadMediaRecording: 录制未开始',
-        enAdvice = 'Please start recording first',
-        zhAdvice = '请先开启录制'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
         code: ErrorCode.RECORDING_NOT_START_ERROR,
-        message,
-        advice
+        message: 'localStream.downloadMediaRecording: 录制未开始'
       })
     }
     return this._record.download()
@@ -3264,7 +3119,7 @@ class LocalStream extends RTCEventEmitter {
    * @returns {Promise}
    */
   startAudioMixing(options: AudioMixingOptions) {
-    this.logger.log('开始伴音')
+    this.logger.log('startAudioMixing() 开始伴音')
     return this.mediaHelper.startAudioMixing(options)
   }
 
@@ -3275,7 +3130,7 @@ class LocalStream extends RTCEventEmitter {
    * @return {Promise}
    */
   stopAudioMixing() {
-    this.logger.log('停止伴音')
+    this.logger.log('stopAudioMixing() 停止伴音')
     return this.mediaHelper.stopAudioMixing()
   }
 
@@ -3286,7 +3141,7 @@ class LocalStream extends RTCEventEmitter {
    * @return {Promise}
    */
   pauseAudioMixing() {
-    this.logger.log('暂停伴音')
+    this.logger.log('pauseAudioMixing() 暂停伴音')
     return this.mediaHelper.pauseAudioMixing()
   }
 
@@ -3297,7 +3152,7 @@ class LocalStream extends RTCEventEmitter {
    * @return {Promise}
    */
   resumeAudioMixing() {
-    this.logger.log('恢复伴音')
+    this.logger.log('resumeAudioMixing() 恢复伴音')
     return this.mediaHelper.resumeAudioMixing()
   }
 
@@ -3308,7 +3163,7 @@ class LocalStream extends RTCEventEmitter {
    * @return {Promise}
    */
   adjustAudioMixingVolume(volume: number) {
-    this.logger.log('调节伴音音量:', volume)
+    this.logger.log('adjustAudioMixingVolume() 调节伴音音量: ', volume)
     return this.mediaHelper.setAudioMixingVolume(volume)
   }
 
@@ -3319,7 +3174,7 @@ class LocalStream extends RTCEventEmitter {
    * @return {Object}
    */
   getAudioMixingDuration() {
-    this.logger.log('获取伴音总时长')
+    this.logger.log('getAudioMixingDuration() 获取伴音总时长')
     return this.mediaHelper.getAudioMixingTotalTime()
   }
 
@@ -3342,7 +3197,7 @@ class LocalStream extends RTCEventEmitter {
    * @return {Promise}
    */
   setAudioMixingPosition(playStartTime: number) {
-    this.logger.log('设置伴音音频文件的播放位置:', playStartTime)
+    this.logger.log('setAudioMixingPosition() 设置伴音音频文件的播放位置: ', playStartTime)
     return this.mediaHelper.setAudioMixingPlayTime(playStartTime)
   }
 
@@ -3371,7 +3226,7 @@ class LocalStream extends RTCEventEmitter {
    * @returns {Promise}
    */
   async playEffect(options: AudioEffectOptions) {
-    this.logger.log('开始播放音效: ', JSON.stringify(options, null, ' '))
+    this.logger.log('playEffect() 开始播放音效: ', JSON.stringify(options, null, ' '))
     return this.mediaHelper.playEffect(options)
   }
 
@@ -3383,7 +3238,7 @@ class LocalStream extends RTCEventEmitter {
    * @return {Promise}
    */
   async stopEffect(soundId: number) {
-    this.logger.log('停止播放音效: ', soundId)
+    this.logger.log('stopEffect() 停止播放音效: ', soundId)
     return this.mediaHelper.stopEffect(soundId)
   }
 
@@ -3395,7 +3250,7 @@ class LocalStream extends RTCEventEmitter {
    * @return {Promise}
    */
   async pauseEffect(soundId: number) {
-    this.logger.log('暂停播放音效：', soundId)
+    this.logger.log('pauseEffect() 暂停播放音效：', soundId)
     return this.mediaHelper.pauseEffect(soundId)
   }
 
@@ -3407,7 +3262,7 @@ class LocalStream extends RTCEventEmitter {
    * @return {Promise}
    */
   async resumeEffect(soundId: number) {
-    this.logger.log('恢复播放音效文件: ', soundId)
+    this.logger.log('resumeEffect() 恢复播放音效文件: ', soundId)
     return this.mediaHelper.resumeEffect(soundId)
   }
 
@@ -3420,7 +3275,7 @@ class LocalStream extends RTCEventEmitter {
    * @return {Promise}
    */
   async setVolumeOfEffect(soundId: number, volume: number) {
-    this.logger.log(`调节 ${soundId} 音效文件音量为: ${volume}`)
+    this.logger.log(`setVolumeOfEffect() 调节 ${soundId} 音效文件音量为: ${volume}`)
     return this.mediaHelper.setVolumeOfEffect(soundId, volume)
   }
 
@@ -3434,7 +3289,7 @@ class LocalStream extends RTCEventEmitter {
    * @return {Object}
    */
   async preloadEffect(soundId: number, filePath: string) {
-    this.logger.log(`预加载 ${soundId} 音效文件地址: ${filePath}`)
+    this.logger.log(`preloadEffect() 预加载 ${soundId} 音效文件地址: ${filePath}`)
     return this.mediaHelper.preloadEffect(soundId, filePath)
   }
 
@@ -3447,7 +3302,7 @@ class LocalStream extends RTCEventEmitter {
    * @return {Object}
    */
   async unloadEffect(soundId: number) {
-    this.logger.log(`释放指定音效文件 ${soundId}`)
+    this.logger.log(`unloadEffect() 释放指定音效文件 ${soundId}`)
     return this.mediaHelper.unloadEffect(soundId)
   }
 
@@ -3461,7 +3316,7 @@ class LocalStream extends RTCEventEmitter {
       + `volume`: 为音量值，整数，范围为 [0,100]。
    */
   getEffectsVolume() {
-    this.logger.log('获取所有音效文件播放音量')
+    this.logger.log('getEffectsVolume() 获取所有音效文件播放音量')
     return this.mediaHelper.getEffectsVolume()
   }
 
@@ -3473,7 +3328,7 @@ class LocalStream extends RTCEventEmitter {
    * @return {void}
    */
   setEffectsVolume(volume: number) {
-    this.logger.log('设置所有音效文件播放音量:', volume)
+    this.logger.log('setEffectsVolume() 设置所有音效文件播放音量:', volume)
     return this.mediaHelper.setEffectsVolume(volume)
   }
 
@@ -3484,7 +3339,7 @@ class LocalStream extends RTCEventEmitter {
    * @return {Promise}
    */
   async stopAllEffects() {
-    this.logger.log('停止播放所有音效文件')
+    this.logger.log('stopAllEffects() 停止播放所有音效文件')
     return this.mediaHelper.stopAllEffects()
   }
 
@@ -3495,7 +3350,7 @@ class LocalStream extends RTCEventEmitter {
    * @return {Promise}
    */
   async pauseAllEffects() {
-    this.logger.log('暂停播放所有音效文件')
+    this.logger.log('pauseAllEffects() 暂停播放所有音效文件')
     return this.mediaHelper.pauseAllEffects()
   }
 
@@ -3506,7 +3361,7 @@ class LocalStream extends RTCEventEmitter {
    * @return {Promise}
    */
   async resumeAllEffects() {
-    this.logger.log('恢复播放所有音效文件')
+    this.logger.log('resumeAllEffects() 恢复播放所有音效文件')
     return this.mediaHelper.resumeAllEffects()
   }
 
@@ -3517,7 +3372,7 @@ class LocalStream extends RTCEventEmitter {
    * @return {Object}
    */
   getAudioEffectsDuration(options: AudioEffectOptions) {
-    this.logger.log('获取音效总时长')
+    this.logger.log('getAudioEffectsDuration() 获取音效总时长')
     return this.mediaHelper.getAudioEffectsTotalTime(options)
   }
 
@@ -3563,36 +3418,18 @@ class LocalStream extends RTCEventEmitter {
         this.logger.error(
           `目前的文字水印数量：${options.textWatermarks.length}。允许的数量：${LIMITS.TEXT}`
         )
-        let enMessage =
-            'localStream_setCanvasWatermarkConfigs: The number of text watermarks exceeds the limit',
-          zhMessage = 'localStream_setCanvasWatermarkConfigs: 文字水印数量超限',
-          enAdvice =
-            'The number of text watermarks can be set up to 10, please make sure not to exceed the limit',
-          zhAdvice = '最多可以设置 10 个文字水印'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
           code: ErrorCode.WATERMARKS_EXCEEDED_ERROR,
-          message,
-          advice
+          message: '最多可以设置 10 个文字水印'
         })
       }
       if (options.imageWatermarks && options.imageWatermarks.length > LIMITS.IMAGE) {
         this.logger.error(
           `目前的图片水印数量：${options.imageWatermarks.length}。允许的数量：${LIMITS.IMAGE}`
         )
-        let enMessage =
-            'localStream_setCanvasWatermarkConfigs: The number of image watermarks exceeds the limit',
-          zhMessage = 'localStream_setCanvasWatermarkConfigs: 文字水印数量超限',
-          enAdvice =
-            'The number of image watermarks can be set up to 4, please make sure not to exceed the limit',
-          zhAdvice = '最多可以设置 4 个文字水印'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
           code: ErrorCode.WATERMARKS_EXCEEDED_ERROR,
-          message,
-          advice
+          message: '最多可以设置 4 个图片水印'
         })
       }
       watermarkControl.checkWatermarkParams(options)
@@ -3609,7 +3446,7 @@ class LocalStream extends RTCEventEmitter {
         }
       })
     } else {
-      this.logger.error('setCanvasWatermarkConfigs：播放器未初始化')
+      this.logger.error('setCanvasWatermarkConfigs: 播放器未初始化')
     }
   }
   /**
@@ -3620,7 +3457,7 @@ class LocalStream extends RTCEventEmitter {
       const mediaType = options.mediaType || 'video'
       const watermarkControl = this._play[mediaType].encoderWatermark
       if (!watermarkControl) {
-        this.logger.error('setEncoderWatermarkConfigs：播放器未初始化', options.mediaType)
+        this.logger.error('setEncoderWatermarkConfigs: 播放器未初始化', options.mediaType)
         return
       } else if (
         options.textWatermarks?.length ||
@@ -3647,36 +3484,18 @@ class LocalStream extends RTCEventEmitter {
         this.logger.error(
           `目前的文字水印数量：${options.textWatermarks.length}。允许的数量：${LIMITS.TEXT}`
         )
-        let enMessage =
-            'localStream_setEncoderWatermarkConfigs: The number of text watermarks exceeds the limit',
-          zhMessage = 'localStream_setEncoderWatermarkConfigs: 文字水印数量超限',
-          enAdvice =
-            'The number of text watermarks can be set up to 10, please make sure not to exceed the limit',
-          zhAdvice = '最多可以设置 10 个文字水印'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
           code: ErrorCode.WATERMARKS_EXCEEDED_ERROR,
-          message,
-          advice
+          message: '最多可以设置 10 个文字水印'
         })
       }
       if (options.imageWatermarks && options.imageWatermarks.length > LIMITS.IMAGE) {
         this.logger.error(
           `目前的图片水印数量：${options.imageWatermarks.length}。允许的数量：${LIMITS.IMAGE}`
         )
-        let enMessage =
-            'localStream_setEncoderWatermarkConfigs: The number of image watermarks exceeds the limit',
-          zhMessage = 'localStream_setEncoderWatermarkConfigs: 文字水印数量超限',
-          enAdvice =
-            'The number of image watermarks can be set up to 4, please make sure not to exceed the limit',
-          zhAdvice = '最多可以设置 4 个文字水印'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         throw new RtcError({
           code: ErrorCode.WATERMARKS_EXCEEDED_ERROR,
-          message,
-          advice
+          message: '最多可以设置 4 个图片水印'
         })
       }
       watermarkControl.checkWatermarkParams(options)
@@ -3689,7 +3508,7 @@ class LocalStream extends RTCEventEmitter {
         param: JSON.stringify(options, null, 2)
       })
     } else {
-      this.logger.error('setEncoderWatermarkConfigs：播放器未初始化')
+      this.logger.error('setEncoderWatermarkConfigs: 播放器未初始化')
     }
   }
 
@@ -3714,12 +3533,7 @@ class LocalStream extends RTCEventEmitter {
     if (this.videoPostProcess.availableCode === 0) {
       throw new RtcError({
         code: ErrorCode.WEBGL_NOT_SUPPORT_ERROR,
-        message: env.IS_ZH
-          ? '当前环境不支持 WebGL。'
-          : 'the current environment does not support webgl.',
-        advice: env.IS_ZH
-          ? '请尝试升级浏览器版本、显卡驱动或开启浏览器忽略显卡黑名单选项。'
-          : 'please try to upgrade the browser version, graphics card driver or enable the browser ignore the graphics card blacklist option.'
+        message: '当前环境不支持 WebGL'
       })
     }
   }
@@ -4304,13 +4118,8 @@ class LocalStream extends RTCEventEmitter {
         }
       })
       throw new RtcError({
-        code: ErrorCode.PLUGIN_REGISTER_ERROR,
-        message: env.IS_ZH
-          ? `该浏览器不支持WebAssembly，注册 ${options.key} 失败。`
-          : `Browser does not support WebAssembly.Register ${options.key} error.`,
-        advice: env.IS_ZH
-          ? '请更新浏览器版本或使用其他浏览器'
-          : 'please update the browser version or open with another browser.'
+        code: ErrorCode.WEBGL_NOT_SUPPORT_ERROR,
+        message: `该浏览器不支持WebAssembly，注册 ${options.key} 失败。`
       })
     }
     if (this.videoPostProcess.getPlugin(options.key as any)) {
@@ -4399,12 +4208,7 @@ class LocalStream extends RTCEventEmitter {
           })
           throw new RtcError({
             code: ErrorCode.PLUGIN_LOADED_ERROR,
-            message: env.IS_ZH
-              ? `插件加载失败：${options.wasmUrl}。`
-              : `load plugin error:${options.wasmUrl}.`,
-            advice: env.IS_ZH
-              ? '请检查网络是否开启或资源地址是否正确。'
-              : 'please check network or resource address.'
+            message: `插件加载失败：${options.wasmUrl}`
           })
         })
         plugin.once('error', (message: string) => {
@@ -4423,9 +4227,7 @@ class LocalStream extends RTCEventEmitter {
           })
           throw new RtcError({
             code: ErrorCode.PLUGIN_LOADED_ERROR,
-            message: env.IS_ZH
-              ? `插件 ${options.key} 内部错误：${message}。`
-              : `plugin '${options.key}' runtime error:${message}.`
+            message: `插件 ${options.key} 内部错误：${message}。`
           })
         })
       } else {

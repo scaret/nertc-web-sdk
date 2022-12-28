@@ -223,7 +223,7 @@ class Mediasoup extends EventEmitter {
         await this._mediasoupDevice.load({ routerRtpCapabilities: this._edgeRtpCapabilities })
       }
     }
-    let iceServers = []
+    let iceServers: RTCIceServer[] = []
     let iceTransportPolicy: RTCIceTransportPolicy = 'all'
 
     if (this.adapterRef.channelInfo.relaytoken && this.adapterRef.channelInfo.relayaddrs) {
@@ -250,19 +250,7 @@ class Mediasoup extends EventEmitter {
         iceTransportPolicy = 'relay'
       }
     }
-    if (this.adapterRef.testConf.turnAddr) {
-      iceServers.length = 0
-      iceServers.push({
-        urls: this.adapterRef.testConf.turnAddr, //'turn:' + item + '?transport=udp',
-        credential: this.adapterRef.channelInfo.uid + '/' + this.adapterRef.channelInfo.cid,
-        username: this.adapterRef.testConf.relaytoken || '123456'
-      })
-      iceTransportPolicy = 'relay'
-    }
-    if (this.adapterRef.testConf.iceServers) {
-      iceServers = this.adapterRef.testConf.iceServers
-      iceTransportPolicy = this.adapterRef.testConf.iceTransportPolicy || 'relay'
-    }
+
     if (iceServers.length) {
       this.logger.log(
         'iceTransportPolicy ',
@@ -346,7 +334,7 @@ class Mediasoup extends EventEmitter {
   async _sendTransportConnectionstatechange(_sendTransport: Transport, connectionState: string) {
     if (this._sendTransport !== _sendTransport) {
       this.loggerSend.error(
-        '_sendTransportConnectionstatechange：出现了_sendTransport绑定不一致的状况。'
+        '_sendTransportConnectionstatechange: 出现了_sendTransport绑定不一致的状况。'
       )
       return
     }
@@ -362,18 +350,6 @@ class Mediasoup extends EventEmitter {
               this._reconnectTransportConnectTimeout()
             }, this._timeout)
           }
-
-          /*let iceParameters = null
-          if (this._protoo && this._protoo.connected) {
-            if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo){
-              throw new RtcError({
-                code: ErrorCode.NOT_FOUND_ERROR,
-                message: 'No _protoo 1'
-              })
-            }
-            iceParameters = await this.adapterRef._signalling._protoo.request('restartIce', { transportId: this._sendTransport.id });
-            await this._sendTransport.restartIce({ iceParameters });
-          }*/
         }
         //直接执行信令层面的重连
         this._sendTransportConnectTimeout()
@@ -407,11 +383,6 @@ class Mediasoup extends EventEmitter {
               this._reconnectTransportConnectTimeout()
             }, this._timeout)
           }
-          /*let iceParameters = null
-          if (this._protoo && this._protoo.connected) {
-            iceParameters = await this._protoo.request('restartIce', { transportId: this._recvTransport.id });
-            await this._recvTransport.restartIce({ iceParameters });
-          }*/
         }
       } catch (e: any) {
         this.loggerRecv.error('reconnectRecvTransportConnect() | failed:', e.name, e.message)
@@ -435,11 +406,12 @@ class Mediasoup extends EventEmitter {
         this.adapterRef._signalling.reconnectionControl.next =
           this.adapterRef._signalling.reconnectionControl.copynext
         this.adapterRef.instance.apiEventReport('setDisconnect', {
-          reason: 'send peer ice failed'
+          reason: 'sendPeerIceFailed',
+          ext: '' //扩展可选
         })
         this.adapterRef._signalling._reconnection()
       } else {
-        this.loggerRecv.warn('媒体上行传输通道建立失败，此时sdk正在重连，不用特殊处理')
+        this.loggerRecv.warn('媒体上行传输通道建立失败, 此时sdk正在重连, 不用特殊处理')
         this.adapterRef.instance.apiEventReport('setStreamException', {
           name: 'pushStreamException',
           value: `send transport connection failed`
@@ -457,7 +429,8 @@ class Mediasoup extends EventEmitter {
         this.adapterRef._signalling.reconnectionControl.next =
           this.adapterRef._signalling.reconnectionControl.copynext
         this.adapterRef.instance.apiEventReport('setDisconnect', {
-          reason: 'recv peer ice failed'
+          reason: 'recvPeerIceFailed',
+          ext: '' //扩展可选
         })
         this.adapterRef._signalling._reconnection()
       } else {
@@ -473,23 +446,17 @@ class Mediasoup extends EventEmitter {
   async _reconnectTransportConnectTimeout() {
     this.loggerRecv.error('媒体传输通道一直重连失败，主动退出房间')
     this.adapterRef.instance.safeEmit('error', 'MEDIA_TRANSPORT_DISCONNECT')
+    this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason =
+      ErrorCode.MEDIA_CONNECTION_DISCONNECTED
     this.adapterRef.instance.leave()
   }
 
   async createProduce(stream: LocalStream, mediaTypeInput: 'all' | MediaTypeShort) {
     stream.logger.log('发布音视频: ', stream.getId(), mediaTypeInput)
-    //this._sendTransport.removeListener()
     if (!this._sendTransport) {
-      let enMessage = `createProduce: send transport is not found 1`,
-        zhMessage = `createProduce: 发送端 transport 未找到 1`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
+        code: ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: 'createProduce: 发送端 transport 未找到 1'
       })
     }
 
@@ -500,17 +467,8 @@ class Mediasoup extends EventEmitter {
         async ({ kind, rtpParameters, appData, localDtlsParameters, offer }, callback, errback) => {
           this.loggerSend.log(`produce 反馈 [kind= ${kind}, appData= ${JSONBigStringify(appData)}]`)
           if (!this._sendTransport) {
-            let enMessage = `createProduce: send transport is not found 2`,
-              zhMessage = `createProduce: 发送端 transport 未找到 2`,
-              enAdvice = 'Please contact CommsEase technical support',
-              zhAdvice = '请联系云信技术支持'
-            let message = env.IS_ZH ? zhMessage : enMessage,
-              advice = env.IS_ZH ? zhAdvice : enAdvice
-            throw new RtcError({
-              code: ErrorCode.NOT_FOUND_ERROR,
-              message,
-              advice
-            })
+            //此时可能正在重连，或者已经离开房间，忽略该webrtc流程的内部反馈
+            return
           }
           const mediaTypeShort: MediaTypeShort =
             appData.mediaType == 'screenShare' ? 'screen' : appData.mediaType
@@ -522,8 +480,7 @@ class Mediasoup extends EventEmitter {
           }
           const iceUfragRegLocal = offer.sdp.match(/a=ice-ufrag:([0-9a-zA-Z#=+-_\/\\\\]+)/)
           if (!iceUfragRegLocal) {
-            this.adapterRef.logger.error(offer.sdp)
-            this.adapterRef.logger.error('找不到 iceUfragRegLocal')
+            this.adapterRef.logger.error('找不到 iceUfragRegLocal: ', offer.sdp)
           }
           try {
             let rtpParametersSend = rtpParameters
@@ -548,7 +505,6 @@ class Mediasoup extends EventEmitter {
               kind: kind,
               rtpParameters: rtpParametersSend,
               iceUfrag: iceUfragRegLocal[1],
-              //mediaProfile: [{'ssrc':123, 'res':"320*240", 'fps':30, 'spatialLayer':0, 'maxBitrate':1000}],
               externData: {
                 producerInfo: {
                   mediaType: appData.mediaType === 'audioSlave' ? 'subAudio' : appData.mediaType, //信令协商的mediaType为: audio、subAudio、video、screenShare
@@ -556,7 +512,7 @@ class Mediasoup extends EventEmitter {
                     appData.mediaType === 'screenShare' || appData.mediaType === 'audioSlave',
                   simulcastEnable: simulcastEnable,
                   spatialLayerCount: simulcastEnable ? 2 : 1,
-                  mute: false //  false
+                  mute: false
                 }
               },
               appData: {
@@ -564,7 +520,7 @@ class Mediasoup extends EventEmitter {
               },
               ...appData
             }
-            // http://doc.hz.netease.com/pages/viewpage.action?pageId=262212959
+            // 辅流设计文档(http://doc.hz.netease.com/pages/viewpage.action?pageId=262212959)
             if (mediaTypeShort === 'screen') {
               producerData.deviceId = 'screen-share-default'
             } else if (mediaTypeShort === 'video') {
@@ -679,7 +635,7 @@ class Mediasoup extends EventEmitter {
               })
             }
 
-            // 去除RED http://jira.netease.com/browse/NRTCG2-16502
+            // 去除RED(http://jira.netease.com/browse/NRTCG2-16502)
             for (
               let codecId = producerData.rtpParameters.codecs.length - 1;
               codecId >= 0;
@@ -696,16 +652,9 @@ class Mediasoup extends EventEmitter {
               producerData.dtlsParameters = localDtlsParameters
             }
             if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
-              let enMessage = `createProduce: _protoo is not found`,
-                zhMessage = `createProduce: _protoo 未找到`,
-                enAdvice = 'Please contact CommsEase technical support',
-                zhAdvice = '请联系云信技术支持'
-              let message = env.IS_ZH ? zhMessage : enMessage,
-                advice = env.IS_ZH ? zhAdvice : enAdvice
               throw new RtcError({
-                code: ErrorCode.NOT_FOUND_ERROR,
-                message,
-                advice
+                code: ErrorCode.UNKNOWN_TYPE_ERROR,
+                message: 'createProduce: _protoo 未找到'
               })
             }
             let producerRes = await this.adapterRef._signalling._protoo.request(
@@ -736,11 +685,11 @@ class Mediasoup extends EventEmitter {
                   producerData
                 )}, 返回：${JSONBigStringify(producerData)}`
               )
+              //TO-DO:发布失败需要增加处理流程
             }
             if (turnParameters) {
               //服务器反馈turn server，sdk更新ice Server
               let iceServers = []
-              let iceTransportPolicy: RTCIceTransportPolicy = 'all'
               iceServers.push(
                 {
                   urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=udp',
@@ -784,16 +733,9 @@ class Mediasoup extends EventEmitter {
               this._sendTransportIceParameters = iceParameters
             }
             if (!this.adapterRef.localStream) {
-              let enMessage = 'createProduce: localStream is not found',
-                zhMessage = 'createProduce: 未找到 localStream',
-                enAdvice = 'Please contact CommsEase technical support',
-                zhAdvice = '请联系云信技术支持'
-              let message = env.IS_ZH ? zhMessage : enMessage,
-                advice = env.IS_ZH ? zhAdvice : enAdvice
               throw new RtcError({
-                code: ErrorCode.LOCALSTREAM_NOT_FOUND_ERROR,
-                message,
-                advice
+                code: ErrorCode.UNKNOWN_TYPE_ERROR,
+                message: 'createProduce: 未找到 localStream'
               })
             }
             let codecOptions: ProducerCodecOptions[] = []
@@ -851,7 +793,7 @@ class Mediasoup extends EventEmitter {
                 return item.protocol == this.adapterRef.channelInfo.iceProtocol
               })
             }
-
+            //执行setRemoteDescription流程
             await this._sendTransport.fillRemoteRecvSdp({
               kind,
               appData,
@@ -865,7 +807,7 @@ class Mediasoup extends EventEmitter {
               codec: codecInfo.codecParam,
               audioProfile: this.adapterRef.localStream.audioProfile
             })
-
+            //设置视频的编码码率
             if (mediaTypeShort === 'video' || mediaTypeShort === 'screen') {
               this.adapterRef.localStream.applyEncoderConfig(mediaTypeShort, 'high')
               if (rtpParameters.encodings.length >= 2) {
@@ -880,9 +822,7 @@ class Mediasoup extends EventEmitter {
       )
     }
     // ENDOF produceCallback
-
     if (mediaTypeInput === 'audio' || mediaTypeInput === 'all') {
-      const mediaType = 'audio'
       if (this._micProducer) {
         this.loggerSend.log('音频已经publish，跳过')
       } else {
@@ -950,7 +890,6 @@ class Mediasoup extends EventEmitter {
     }
 
     if (mediaTypeInput === 'video' || mediaTypeInput === 'all') {
-      const mediaType = 'video'
       if (this._webcamProducer) {
         this.loggerSend.log('视频已经publish，跳过')
       } else if (stream.mediaHelper.video.videoStream.getVideoTracks().length) {
@@ -1025,7 +964,6 @@ class Mediasoup extends EventEmitter {
     }
 
     if (mediaTypeInput === 'screen' || mediaTypeInput === 'all') {
-      const mediaType = 'screen'
       if (this._screenProducer) {
         this.loggerSend.log('屏幕共享已经publish，跳过')
       } else if (stream.mediaHelper.screen.screenVideoStream.getVideoTracks().length) {
@@ -1097,7 +1035,7 @@ class Mediasoup extends EventEmitter {
   enableSendTransform(sender: RTCRtpSender, mediaType: MediaTypeShort, streamType: 'high' | 'low') {
     const senderInfo = this._sendTransport?.send.find((r) => r.sender === sender)
     if (!senderInfo) {
-      this.loggerRecv.error('未找到匹配的Sender', mediaType, streamType)
+      this.loggerRecv.error('enableSendTransform() 未找到匹配的Sender', mediaType, streamType)
     } else {
       if (!senderInfo.encodedStreams) {
         // @ts-ignore
@@ -1125,7 +1063,7 @@ class Mediasoup extends EventEmitter {
   enableRecvTransform(receiver: RTCRtpReceiver, uid: string | number, mediaType: MediaTypeShort) {
     const receiverInfo = this._recvTransport?.recv.find((r) => r.receiver === receiver)
     if (!receiverInfo) {
-      this.loggerRecv.error('未找到匹配的Receiver', uid, mediaType)
+      this.loggerRecv.error('enableRecvTransform() 未找到匹配的Receiver', uid, mediaType)
     } else {
       if (!receiverInfo.encodedStreams) {
         // @ts-ignore
@@ -1182,77 +1120,31 @@ class Mediasoup extends EventEmitter {
   async destroyProduce(kind: MediaTypeShort) {
     let producer = null
     let producerId = null
+    if (!this.adapterRef.localStream) {
+      throw new RtcError({
+        code: ErrorCode.LOCALSTREAM_NOT_FOUND_ERROR,
+        message: `destroyProduce.${kind}: 未找到 localStream`
+      })
+    }
     if (kind === 'audio') {
       producer = this._micProducer
       producerId = this._micProducerId
       this._micProducer = this._micProducerId = null
-      if (!this.adapterRef.localStream) {
-        let enMessage = 'destroyProduce.audio: localStream is not found',
-          zhMessage = 'destroyProduce.audio: 未找到 localStream',
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.LOCALSTREAM_NOT_FOUND_ERROR,
-          message,
-          advice
-        })
-      }
       this.adapterRef.localStream.pubStatus.audio.audio = false
     } else if (kind === 'audioSlave') {
       producer = this._audioSlaveProducer
       producerId = this._audioSlaveProducerId
       this._audioSlaveProducer = this._audioSlaveProducerId = null
-      if (!this.adapterRef.localStream) {
-        let enMessage = 'destroyProduce.audioSlave: localStream is not found',
-          zhMessage = 'destroyProduce.audioSlave: 未找到 localStream',
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.LOCALSTREAM_NOT_FOUND_ERROR,
-          message,
-          advice
-        })
-      }
       this.adapterRef.localStream.pubStatus.audioSlave.audio = false
     } else if (kind === 'video') {
       producer = this._webcamProducer
       producerId = this._webcamProducerId
       this._webcamProducer = this._webcamProducerId = null
-      if (!this.adapterRef.localStream) {
-        let enMessage = 'destroyProduce.video: localStream is not found',
-          zhMessage = 'destroyProduce.video: 未找到 localStream',
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.LOCALSTREAM_NOT_FOUND_ERROR,
-          message,
-          advice
-        })
-      }
       this.adapterRef.localStream.pubStatus.video.video = false
     } else if (kind === 'screen') {
       producer = this._screenProducer
       producerId = this._screenProducerId
       this._screenProducer = this._screenProducerId = null
-      if (!this.adapterRef.localStream) {
-        let enMessage = 'destroyProduce.screen: localStream is not found',
-          zhMessage = 'destroyProduce.screen: 未找到 localStream',
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.LOCALSTREAM_NOT_FOUND_ERROR,
-          message,
-          advice
-        })
-      }
       this.adapterRef.localStream.pubStatus.screen.screen = false
     }
 
@@ -1261,7 +1153,7 @@ class Mediasoup extends EventEmitter {
       if (!producer) return
       producer.close()
       if (!this.adapterRef._signalling?._protoo) {
-        this.logger.warn(`destroyProduce：当前信令中断，不发信令包`, kind, producerId)
+        this.logger.warn(`destroyProduce: 当前信令中断, 不发信令包`, kind, producerId)
       } else {
         this.adapterRef._signalling._protoo
           .request('CloseProducer', {
@@ -1269,11 +1161,11 @@ class Mediasoup extends EventEmitter {
             producerId
           })
           .catch((e) => {
-            this.logger.error(`destroyProduce Failed:`, e.name, e.stack, e)
+            this.logger.error('CloseProducer Failed: ', e.name, e.message)
           })
       }
     } catch (error: any) {
-      this.loggerSend.error('_destroyProducer() | failed:', error.name, error.message)
+      this.loggerSend.error('destroyProduce failed: ', error.name, error.message)
     }
   }
 
@@ -1319,20 +1211,13 @@ class Mediasoup extends EventEmitter {
     mediaType: MediaTypeShort
   ) {
     if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
-      let enMessage = `setConsumerPreferredLayer: _protoo is not found`,
-        zhMessage = `setConsumerPreferredLayer: _protoo 未找到`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
+        code: ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: 'setConsumerPreferredLayer: _protoo 未找到'
       })
     }
     this.loggerSend.log(
-      'setConsumerPreferredLayer() [切换大小流]layer：',
+      'setConsumerPreferredLayer() [切换大小流]layer: ',
       layer,
       layer === 1 ? '大流' : '小流',
       mediaType
@@ -1473,16 +1358,9 @@ class Mediasoup extends EventEmitter {
     if (!this._recvTransport) {
       this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
       info.resolve(null)
-      let enMessage = `_createConsumer: receive transport is not found`,
-        zhMessage = `_createConsumer: 接收端 transport 未找到`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
+        code: ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: `createConsumer: 接收端 transport 未找到`
       })
     }
 
@@ -1517,16 +1395,9 @@ class Mediasoup extends EventEmitter {
     }
     const iceUfragRegRemote = offer.sdp.match(/a=ice-ufrag:([0-9a-zA-Z=#+-_\/\\\\]+)/)
     if (!iceUfragRegRemote) {
-      let enMessage = `_createConsumer: iceUfragRegRemote is null`,
-        zhMessage = `_createConsumer: iceUfragRegRemote 为空`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.SDP_ERROR,
-        message,
-        advice
+        code: ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: `_createConsumer: iceUfragRegRemote 为空`
       })
     }
 
@@ -1547,11 +1418,6 @@ class Mediasoup extends EventEmitter {
       }
     }
 
-    this.adapterRef.instance.apiEventReport('setFunction', {
-      name: 'set_video_sub',
-      oper: '1',
-      value: JSONBigStringify(preferredSpatialLayer)
-    })
     if (localDtlsParameters === undefined) {
       data.transportId = this._recvTransport.id
     } else {
@@ -1562,16 +1428,9 @@ class Mediasoup extends EventEmitter {
     )
     if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
       info.resolve(null)
-      let enMessage = `_createConsumer: _protoo is not found`,
-        zhMessage = `_createConsumer: _protoo 未找到`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
+        code: ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: `_createConsumer: _protoo 未找到`
       })
     }
     const recvPC = this._recvTransport.handler._pc
@@ -1582,30 +1441,24 @@ class Mediasoup extends EventEmitter {
     } catch (e: any) {
       if (e.message === 'request timeout' && this.adapterRef._signalling._protoo === _protoo) {
         this.logger.error(
-          `[Subscribe] Consume消息Timeout，尝试信令重连：${e.name}/${e.message}。当前的连接状态：${this.adapterRef.connectState.curState}。原始请求：`,
+          `[Subscribe] Consume消息Timeout, 尝试信令重连: ${e.name}/${e.message}, 当前的连接状态: ${this.adapterRef.connectState.curState}, 原始请求: `,
           JSONBigStringify(data)
         )
         this.adapterRef.channelStatus = 'connectioning'
         this.adapterRef.instance.apiEventReport('setDisconnect', {
-          reason: 'consumeRequestTimeout'
+          reason: 'consumeRequestTimeout',
+          ext: '' //扩展可选
         })
         this.adapterRef._signalling._reconnection()
       } else {
         this.logger.error(
-          `[Subscribe] Consume消息错误：${e.name}/${e.message}。当前的连接状态：${this.adapterRef.connectState.curState}。原始请求：`,
+          `[Subscribe] Consume消息错误: ${e.name}/${e.message}, 当前的连接状态：${this.adapterRef.connectState.curState}, 原始请求：`,
           JSONBigStringify(data)
         )
       }
-      let enMessage = `_createConsumer: ${e.message}`,
-        zhMessage = `_createConsumer: Consume 消息错误:${e.message}`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
         code: ErrorCode.UNKNOWN_TYPE_ERROR,
-        message,
-        advice
+        message: `_createConsumer: Consume 消息错误:${e.message}`
       })
     }
     let {
@@ -1631,7 +1484,6 @@ class Mediasoup extends EventEmitter {
     if (turnParameters) {
       //服务器反馈turn server，sdk更新ice Server
       let iceServers = []
-      let iceTransportPolicy: RTCIceTransportPolicy = 'all'
       iceServers.push(
         {
           urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=udp',
@@ -1746,6 +1598,22 @@ class Mediasoup extends EventEmitter {
     })
 
     this.loggerRecv.log('[Subscribe] 订阅consume完成 peerId =', peerId)
+    this.adapterRef.instance.apiEventReport('setFunction', {
+      name: `set_${mediaTypeShort}_sub`,
+      oper: '1',
+      value: JSONBigStringify(
+        {
+          remoteUid: uid,
+          result: code,
+          reason: errMsg || '',
+          preferredSpatialLayer,
+          consumerId: consumerId || '',
+          producerId: producerId || id
+        },
+        null,
+        ' '
+      )
+    })
     if (remoteStream && remoteStream['pubStatus'][mediaTypeShort]['producerId']) {
       remoteStream['subStatus'][mediaTypeShort] = true
       //@ts-ignore
@@ -1777,19 +1645,6 @@ class Mediasoup extends EventEmitter {
       } else {
         consumer.track.enabled = true
       }
-      if (!remoteStream.mediaHelper) {
-        let enMessage = '_createConsumer: media helper is unavailable',
-          zhMessage = '_createConsumer: media helper 不可用',
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.UNAVAILABLE_ERROR,
-          message,
-          advice
-        })
-      }
       remoteStream.mediaHelper.updateStream(mediaTypeShort, consumer.track)
       this.adapterRef.instance.safeEmit('@pairing-createConsumer-success')
       if (mediaTypeShort === 'audio') {
@@ -1812,7 +1667,7 @@ class Mediasoup extends EventEmitter {
     } else {
       this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
       this.loggerRecv.log(
-        '[Subscribe] 该次consume状态错误： ',
+        '[Subscribe] 该次consume状态错误: ',
         JSONBigStringify(remoteStream['pubStatus'], null, '')
       )
     }
@@ -1827,49 +1682,19 @@ class Mediasoup extends EventEmitter {
       `开始订阅 ${uid} 的 ${mediaTypeShort} 媒体: ${id} 大小流: ${preferredSpatialLayer}`
     )
     if (!this.adapterRef._rtsTransport) {
-      let enMessage = `_createConsumerRts: _rtsTransport is not found`,
-        zhMessage = `_createConsumerRts: _rtsTransport 未找到`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
-      })
+      return
     } else if (
       !this.adapterRef._signalling ||
       !this.adapterRef._signalling._protoo ||
       !this.adapterRef._signalling._protoo.request
     ) {
-      let enMessage = `_createConsumerRts: _protoo is not found 1`,
-        zhMessage = `_createConsumerRts: _protoo 未找到 1`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
-      })
+      return
     } else if (
       mediaTypeShort !== 'audio' &&
       mediaTypeShort !== 'video' &&
       mediaTypeShort !== 'screen'
     ) {
-      let enMessage = '_createConsumerRts: mediaType type is unknown',
-        zhMessage = '_createConsumerRts: mediaType 参数类型非法',
-        enAdvice = 'please make sure the parameter(mediaType) is correct',
-        zhAdvice = '请输入正确的参数类型'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.UNKNOWN_TYPE_ERROR,
-        message,
-        advice
-      })
+      return
     }
 
     if (!id) {
@@ -1911,25 +1736,12 @@ class Mediasoup extends EventEmitter {
       }
     }
 
-    this.adapterRef.instance.apiEventReport('setFunction', {
-      name: 'set_video_sub',
-      oper: '1',
-      value: JSONBigStringify(preferredSpatialLayer)
-    })
-
     this.loggerRecv.log('发送consume请求 =', JSONBigStringify(data))
     if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
       info.resolve(null)
-      let enMessage = `_createConsumerRts: _protoo is not found 2`,
-        zhMessage = `_createConsumerRts: _protoo 未找到 2`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
+        code: ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: `_createConsumerRts: _protoo 未找到 2`
       })
     }
     const consumeRes = await this.adapterRef._signalling._protoo.request('WsConsume', data)
@@ -2018,6 +1830,18 @@ class Mediasoup extends EventEmitter {
             mediaType
           })
         }
+        this.adapterRef.instance.apiEventReport('setFunction', {
+          name: `set_${mediaType}_sub`,
+          oper: '0',
+          value: JSONBigStringify(
+            {
+              remoteUid: remoteStream?.stringStreamID,
+              consumerId: consumerId || ''
+            },
+            null,
+            ' '
+          )
+        })
       } catch (e: any) {
         this.logger.error('CloseConsumer失败', e.name, e.message, e)
       }
@@ -2030,20 +1854,7 @@ class Mediasoup extends EventEmitter {
     if (!transport || !transport.id) return
     try {
       this.logger.log(`closeTransport() [停止通道 transportId= ${transport.id}]`)
-      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
-        let enMessage = `closeTransport: _protoo is not found`,
-          zhMessage = `closeTransport: _protoo 未找到`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.NOT_FOUND_ERROR,
-          message,
-          advice
-        })
-      }
-      const result = await this.adapterRef._signalling._protoo.request('CloseTransport', {
+      const result = await this.adapterRef._signalling?._protoo?.request('CloseTransport', {
         requestId: `${Math.ceil(Math.random() * 1e9)}`,
         transportId: transport.id
       })
@@ -2052,397 +1863,176 @@ class Mediasoup extends EventEmitter {
       )
       transport.close()
     } catch (error: any) {
-      this.logger.error('closeTransport() | failed:', error.name, error.message, error)
+      this.logger.error('closeTransport() | failed:', error.name, error.message)
     }
   }
 
   async muteAudio() {
     this.loggerSend.log('mute音频')
-    if (!this._micProducer) {
-      let enMessage = `muteAudio: _micProducer is not found`,
-        zhMessage = `muteAudio: _micProducer 未找到`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
-      })
-    }
-    this._micProducer.pause()
+    this._micProducer?.pause()
     try {
-      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
-        let enMessage = `muteAudio: _protoo is not found`,
-          zhMessage = `muteAudio: _protoo 未找到`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.NOT_FOUND_ERROR,
-          message,
-          advice
-        })
-      }
-      await this.adapterRef._signalling._protoo.request('SendUserData', {
+      await this.adapterRef._signalling?._protoo?.request('SendUserData', {
         externData: {
           type: 'Mute',
           cid: this.adapterRef.channelInfo.cid,
           uid: new SimpleBig(this.adapterRef.channelInfo.uid),
           data: {
-            producerId: this._micProducer.id,
+            producerId: this._micProducer?.id,
             mute: true
           }
         }
       })
     } catch (e: any) {
-      this.loggerSend.error('muteMic() | failed:', e.name, e.message, e)
+      this.loggerSend.error('muteAudio() | failed:', e.name, e.message, e)
     }
   }
 
   async unmuteAudio() {
-    this.loggerSend.log('resume音频')
-    if (!this._micProducer) {
-      let enMessage = `unmuteAudio: _micProducer is not found`,
-        zhMessage = `unmuteAudio: _micProducer 未找到`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
-      })
-    }
-    this._micProducer.resume()
+    this.loggerSend.log('unmute音频')
+    this._micProducer?.resume()
     try {
-      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
-        let enMessage = `unmuteAudio: _protoo is not found`,
-          zhMessage = `unmuteAudio: _protoo 未找到`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.NOT_FOUND_ERROR,
-          message,
-          advice
-        })
-      }
-      await this.adapterRef._signalling._protoo.request('SendUserData', {
+      await this.adapterRef._signalling?._protoo?.request('SendUserData', {
         externData: {
           type: 'Mute',
           cid: this.adapterRef.channelInfo.cid,
           uid: new SimpleBig(this.adapterRef.channelInfo.uid),
           data: {
-            producerId: this._micProducer.id,
+            producerId: this._micProducer?.id,
             mute: false
           }
         }
       })
     } catch (e: any) {
-      this.loggerSend.error('muteMic() | failed: ', e.name, e.message, e)
+      this.loggerSend.error('unmuteAudio() | failed: ', e.name, e.message)
       return Promise.reject(e)
     }
   }
 
   async muteAudioSlave() {
     this.loggerSend.log('mute音频辅流')
-    if (!this._audioSlaveProducer) {
-      let enMessage = `muteAudioSlave: _audioSlaveProducer is not found`,
-        zhMessage = `muteAudioSlave: _audioSlaveProducer 未找到`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
-      })
-    }
-    this._audioSlaveProducer.pause()
+    this._audioSlaveProducer?.pause()
     try {
-      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
-        let enMessage = `muteAudioSlave: _protoo is not found`,
-          zhMessage = `muteAudioSlave: _protoo 未找到`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.NOT_FOUND_ERROR,
-          message,
-          advice
-        })
-      }
-      await this.adapterRef._signalling._protoo.request('SendUserData', {
+      await this.adapterRef._signalling?._protoo?.request('SendUserData', {
         externData: {
           type: 'Mute',
           cid: this.adapterRef.channelInfo.cid,
           uid: new SimpleBig(this.adapterRef.channelInfo.uid),
           data: {
-            producerId: this._audioSlaveProducer.id,
+            producerId: this._audioSlaveProducer?.id,
             mute: true
           }
         }
       })
     } catch (e: any) {
-      this.loggerSend.error('muteMic() | failed:', e.name, e.message, e)
+      this.loggerSend.error('muteAudioSlave() | failed:', e.name, e.message)
     }
   }
 
   async unmuteAudioSlave() {
-    this.loggerSend.log('resume音频辅流')
-    if (!this._audioSlaveProducer) {
-      let enMessage = `unmuteAudioSlave: _audioSlaveProducer is not found`,
-        zhMessage = `unmuteAudioSlave: _audioSlaveProducer 未找到`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
-      })
-    }
-    this._audioSlaveProducer.resume()
+    this.loggerSend.log('unmute音频辅流')
+    this._audioSlaveProducer?.resume()
     try {
-      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
-        let enMessage = `unmuteAudioSlave: _protoo is not found`,
-          zhMessage = `unmuteAudioSlave: _protoo 未找到`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.NOT_FOUND_ERROR,
-          message,
-          advice
-        })
-      }
-      await this.adapterRef._signalling._protoo.request('SendUserData', {
+      await this.adapterRef._signalling?._protoo?.request('SendUserData', {
         externData: {
           type: 'Mute',
           cid: this.adapterRef.channelInfo.cid,
           uid: new SimpleBig(this.adapterRef.channelInfo.uid),
           data: {
-            producerId: this._audioSlaveProducer.id,
+            producerId: this._audioSlaveProducer?.id,
             mute: false
           }
         }
       })
     } catch (e: any) {
-      this.loggerSend.error('muteMic() | failed: ', e.name, e.message, e)
+      this.loggerSend.error('unmuteAudioSlave() | failed: ', e.name, e.message)
       return Promise.reject(e)
     }
   }
 
   async muteVideo() {
     this.loggerSend.log('mute视频')
-    if (!this._webcamProducer) {
-      let enMessage = `muteVideo: _webcamProducer is not found`,
-        zhMessage = `muteVideo: _webcamProducer 未找到`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
-      })
-    }
-    this._webcamProducer.pause()
+    this._webcamProducer?.pause()
     try {
-      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
-        let enMessage = `muteVideo: _protoo is not found`,
-          zhMessage = `muteVideo: _protoo 未找到`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.NOT_FOUND_ERROR,
-          message,
-          advice
-        })
-      }
-      await this.adapterRef._signalling._protoo.request('SendUserData', {
+      await this.adapterRef._signalling?._protoo?.request('SendUserData', {
         externData: {
           type: 'Mute',
           cid: this.adapterRef.channelInfo.cid,
           uid: new SimpleBig(this.adapterRef.channelInfo.uid),
           data: {
-            producerId: this._webcamProducer.id,
+            producerId: this._webcamProducer?.id,
             mute: true
           }
         }
       })
     } catch (e: any) {
-      this.loggerSend.error('muteMic() | failed:', e.name, e.message, e)
+      this.loggerSend.error('muteVideo() | failed:', e.name, e.message)
     }
   }
 
   async unmuteVideo() {
-    this.loggerSend.log('resume视频')
-    if (!this._webcamProducer) {
-      let enMessage = `unmuteVideo: _webcamProducer is not found`,
-        zhMessage = `unmuteVideo: _webcamProducer 未找到`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
-      })
-    }
-    this._webcamProducer.resume()
+    this.loggerSend.log('unmute视频')
+    this._webcamProducer?.resume()
     try {
-      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
-        let enMessage = `unmuteVideo: _protoo is not found`,
-          zhMessage = `unmuteVideo: _protoo 未找到`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.NOT_FOUND_ERROR,
-          message,
-          advice
-        })
-      }
-      await this.adapterRef._signalling._protoo.request('SendUserData', {
+      await this.adapterRef._signalling?._protoo?.request('SendUserData', {
         externData: {
           type: 'Mute',
           cid: this.adapterRef.channelInfo.cid,
           uid: new SimpleBig(this.adapterRef.channelInfo.uid),
           data: {
-            producerId: this._webcamProducer.id,
+            producerId: this._webcamProducer?.id,
             mute: false
           }
         }
       })
     } catch (e: any) {
-      this.loggerSend.error('muteMic() | failed:', e.name, e.message, e)
+      this.loggerSend.error('unmuteVideo() | failed:', e.name, e.message)
     }
   }
 
   async muteScreen() {
-    this.loggerSend.log('mute视频')
-    if (!this._screenProducer) {
-      let enMessage = `muteScreen: _screenProducer is not found`,
-        zhMessage = `muteScreen: _screenProducer 未找到`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
-      })
-    }
-    this._screenProducer.pause()
+    this.loggerSend.log('mute屏幕共享')
+    this._screenProducer?.pause()
     try {
-      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
-        let enMessage = `muteScreen: _protoo is not found`,
-          zhMessage = `muteScreen: _protoo 未找到`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.NOT_FOUND_ERROR,
-          message,
-          advice
-        })
-      }
-      await this.adapterRef._signalling._protoo.request('SendUserData', {
+      await this.adapterRef._signalling?._protoo?.request('SendUserData', {
         externData: {
           type: 'Mute',
           cid: this.adapterRef.channelInfo.cid,
           uid: new SimpleBig(this.adapterRef.channelInfo.uid),
           data: {
-            producerId: this._screenProducer.id,
+            producerId: this._screenProducer?.id,
             mute: true
           }
         }
       })
     } catch (e: any) {
-      this.loggerSend.error('muteScreen() | failed: ', e.name, e.message, e)
+      this.loggerSend.error('muteScreen() | failed: ', e.name, e.message)
     }
   }
 
   async unmuteScreen() {
-    this.loggerSend.log('resume视频')
-    if (!this._screenProducer) {
-      let enMessage = `unmuteScreen: _screenProducer is not found`,
-        zhMessage = `unmuteScreen: _screenProducer 未找到`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.NOT_FOUND_ERROR,
-        message,
-        advice
-      })
-    }
-    this._screenProducer.resume()
+    this.loggerSend.log('unmute屏幕共享')
+    this._screenProducer?.resume()
     try {
-      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
-        let enMessage = `unmuteScreen: _protoo is not found`,
-          zhMessage = `unmuteScreen: _protoo 未找到`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.NOT_FOUND_ERROR,
-          message,
-          advice
-        })
-      }
-      await this.adapterRef._signalling._protoo.request('SendUserData', {
+      await this.adapterRef._signalling?._protoo?.request('SendUserData', {
         externData: {
           type: 'Mute',
           cid: this.adapterRef.channelInfo.cid,
           uid: new SimpleBig(this.adapterRef.channelInfo.uid),
           data: {
-            producerId: this._screenProducer.id,
+            producerId: this._screenProducer?.id,
             mute: false
           }
         }
       })
     } catch (e: any) {
-      this.loggerSend.error('muteMic() | failed:', e.name, e.message, e)
+      this.loggerSend.error('unmuteScreen() | failed:', e.name, e.message)
     }
   }
 
   async updateUserRole(userRole: number) {
-    this.loggerSend.log(`updateUserRole:更新用户角色为${userRole}`)
+    this.loggerSend.log(`updateUserRole() 更新用户角色为${userRole}`)
     try {
-      if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
-        let enMessage = `updateUserRole: _protoo is not found`,
-          zhMessage = `updateUserRole: _protoo 未找到`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.NOT_FOUND_ERROR,
-          message,
-          advice
-        })
-      }
-      await this.adapterRef._signalling._protoo.request('SendUserData', {
+      await this.adapterRef._signalling?._protoo?.request('SendUserData', {
         externData: {
           type: 'UserRole',
           cid: this.adapterRef.channelInfo.cid,
@@ -2453,7 +2043,7 @@ class Mediasoup extends EventEmitter {
         }
       })
     } catch (e: any) {
-      this.loggerSend.error('updateUserRole failed:', e.name, e.message, e)
+      this.loggerSend.error('updateUserRole() failed:', e.name, e.message)
       throw e
     }
   }

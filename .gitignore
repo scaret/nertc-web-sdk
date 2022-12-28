@@ -22,3 +22,4 @@ src/backup/*/test/
 .gitconfig
 yarn.lock
 types
+rtc_commit_template

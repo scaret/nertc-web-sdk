@@ -18,7 +18,8 @@ import {
   RecvFirstFrameEvent,
   RecvFirstPackageEvent,
   ReloginEvent,
-  RequestLBSEvent
+  RequestLBSEvent,
+  UserCustomEvent
 } from '../../types'
 import { USER_AGENT } from '../../util/rtcUtil/rtcEnvironment'
 import { processManager } from '../processManager'
@@ -93,20 +94,16 @@ class DataReport {
     Object.assign(this.common, commonEvent)
     return this
   }
+
+  //事件上报文档：http://doc.hz.netease.com/pages/editpage.action?pageId=330162004
+
   /**
    * heartbeat定时上报
-   * @param {Object} options
-   * @param {String} options.uid    通话用户UID 3.3.0 是
-   * @param {String} options.cid    通话时CID  3.3.0 是
-   * @param {JSONObject} options.sys   通话时CID  3.3.0 是
-   * @param {JSONArray} options.tx   上行通话质量数据 3.3.0 是
-   * @param {JSONArray} options.rx   描述信息 3.3.0 是
+   * api 上报借助心跳包活(文档：http://doc.hz.netease.com/pages/viewpage.action?pageId=330161811)
+   * 通过heatbeat上报，优先上报apiEvents中的事件
    */
   setHeartbeat(heartbeatEvent: HeartbeatEvent) {
     this.heartbeat = heartbeatEvent
-
-    //api 上报借助心跳包活
-    // 通过heatbeat上报，优先上报apiEvents中的事件
     const apiEventKeys = Object.keys(this.adapterRef.apiEvent)
     const apiEventsKeys = Object.keys(this.adapterRef.apiEvents)
     const eventNames = apiEventKeys.concat(
@@ -133,10 +130,6 @@ class DataReport {
 
   /**
    * networkChange事件
-   * @param {Object} options
-   * @param {String} options.uid  String  通话用户UID 3.4.0 是
-   * @param {String} options.cid  String  通话时CID  3.4.0 是
-   * @param {String} options.time long  切换时间点,NTP时间（断网case需要等待网络重连后再上报） 3.4.0 是
    */
   setNetworkChange(networkChangeEvent: DataEvent) {
     this.addEvent('networkChange', networkChangeEvent)
@@ -145,22 +138,6 @@ class DataReport {
 
   /**
    * 通话开始log事件
-   * @param {Object} options
-   * @param {String} options.uid	String	通话用户UID	3.4.0	是
-   * @param {String} options.cid	String	通话时CID	3.4.0	是
-   * @param {String} options.sdk_ver  String  sdk版本  3.4.0 是
-   * @param {String} options.platform  String  系统平台  3.4.0 是
-   * @param {String} options.meeting_mode	int	1:会议模式 0:点对点模式 3.4.0 是
-   * @param {boolean} options.a_record	bool	是否打开音频录制	3.4.0	是
-   * @param {boolean} options.v_record	bool	是否打开视频录制	3.4.0	是
-   * @param {int} options.record_type	int	录制模式 0-混单 1-只混 2-只单	3.4.0	是
-   * @param {boolean} options.host_speaker	bool	是否为录制主讲人	3.4.0	是
-   * @param {String} options.server_ip	String	 媒体服务地址 wertc: webrtc 服务器ip g1: 中转服务器ip 3.4.0	是
-   * @param {int} options.result	int	0:成功;-1:超时;-2:认证失败	3.4.0	是
-   * @param {int}  options.time long	登入时间点,NTP时间	3.4.0	是
-   * @param {int}  options.signal_time_elapsed long  join过程中，完成与dispatch server之间的信令交互所花费的总时长(单位为 毫秒) 3.4.0 是
-   * @param {int}  options.time_elapsed long  join 成功所花费的总时长(单位为 毫秒) 3.4.0 是
-   * @param {String}  options.model String 浏览器版本号 3.4.0 是
    */
   setLogin(loginEvent: LoginEvent) {
     // {uid, cid, sdk_ver=SDK_VERSION, platform='Web', app_key=this.common.app_key, meeting_mode=1, a_record, v_record, record_type, host_speaker, server_ip, result, time, signal_time_elapsed, time_elapsed}) {
@@ -185,19 +162,7 @@ class DataReport {
   }
 
   /**
-   * 断网重连的重新log事件
-   * @param {Object} options
-   * @param {String} options.uid  String  通话用户UID 3.4.0 是
-   * @param {String} options.cid  String  通话时CID  3.4.0 是
-   * @param {String} options.platform  String  系统平台  3.4.0 是
-   * @param {String} options.meeting_mode int 1:会议模式 0:点对点模式 3.4.0 是
-   * @param {boolean} options.a_record  bool  是否打开音频录制  3.4.0 是
-   * @param {boolean} options.v_record  bool  是否打开视频录制  3.4.0 是
-   * @param {int} options.record_type int 录制模式 0-混单 1-只混 2-只单 3.4.0 是
-   * @param {boolean} options.host_speaker  bool  是否为录制主讲人  3.4.0 是
-   * @param {String} options.server_ip  String   媒体服务地址 wertc: webrtc 服务器ip g1: 中转服务器ip 3.4.0 是
-   * @param {int} options.result  int 0:成功;-1:超时;-2:认证失败  3.4.0 是
-   * @param {int}  options.time long  登入时间点,NTP时间 3.4.0 是
+   * 重连的重新log事件
    *
    */
   setRelogin(reloginEvent: ReloginEvent) {
@@ -206,11 +171,14 @@ class DataReport {
 
   /**
    * 通过结束事件
-   * @param {Object} options
-   * @param {String} options.uid  String  通话用户UID 3.4.0 是
-   * @param {String} options.cid  String  通话时CID  3.4.0 是
-   * @param {String} options.time String  结束时间 3.4.0 是
-   * @param {String} options.reason String  登出的原因 0：正常leave，30204：媒体连接断开，30205：信令连接断开，30206：服务器踢掉，30207：房间已关闭 3.4.0 是
+   * PAGE_UNLOAD: 30000, //浏览器刷新
+    LOGIN_FAILED: 30001, //登录失败，sdk内部错误
+    MEDIA_CONNECTION_DISCONNECTED: 30204, //媒体通道连接失败
+    SIGNAL_CONNECTION_DISCONNECTED: 30205, //信令通道连接失败
+    CLIENT_BANNED: 30206, //客户端被踢
+    CHANNEL_CLOSED: 30207, //房间被关闭
+    UID_DUPLICATE: 30209, //uid重复
+    PERMKEY_TIMEOUT: 30902, // permkey高级权限token超时
    */
   setLogout(logoutEvent: LogoutEvent) {
     this.addEvent('logout', logoutEvent)
@@ -218,11 +186,6 @@ class DataReport {
 
   /**
    * 描述设备使用情况，比如“打开成功”，“设备占用”，“设备异常”，"没有权限" “mute/unmute”等等。
-   * @param {Object} options
-   * @param {String} options.uid  String  通话用户UID 3.4.0 是
-   * @param {String} options.cid  String  通话时CID  3.4.0 是
-   * @param {String} options.ip  String  ip地址  3.4.0 是
-   * @param {String} options.time String  触发时间 3.4.0 是
    */
   deviceAbnormal(deviceAbnormal: DeviceAbnormalEvent) {
     this.addEvent('deviceAbnormal', deviceAbnormal)
@@ -230,11 +193,13 @@ class DataReport {
 
   /**
    * 异常断开通知
-   * @param {Object} options
-   * @param {String} options.uid  String  通话用户UID 3.4.0 是
-   * @param {String} options.cid  String  通话时CID  3.4.0 是
-   * @param {String} options.reason  String  失败原因  3.4.0 是
-   * @param {String} options.time String  触发时间 3.4.0 是
+   * sendPeerIceFailed
+   * recvPeerIceFailed
+   * consumeRequestTimeout
+   * OnTransportClose
+   * OnSignalRestart
+   * websocketDisconnect
+   *
    */
   setDisconnect(disconnect: DisconnectEvent) {
     this.addEvent('disconnect', disconnect)
@@ -242,12 +207,6 @@ class DataReport {
 
   /**
    * 第一个收到后解码数据包
-   * @param {Object} options
-   * @param {String} options.uid  String  通话用户UID 3.4.0 是
-   * @param {String} options.cid  String  通话时CID  3.4.0 是
-   * @param {String} options.pull_uid  String  对端用户  3.4.0 是
-   * @param {String} options.time String  触发时间 3.4.0 是
-   * @param {int} options.media_type Int  0 音频, 1 视频 3.4.0 是
    */
   setRecvFirstFrame(recvFirstFrameEvent: RecvFirstFrameEvent) {
     this.addEvent('recvFirstFrame', recvFirstFrameEvent)
@@ -255,11 +214,6 @@ class DataReport {
 
   /**
    * 发送的第一个媒体包
-   * @param {Object} options
-   * @param {String} options.uid  String  通话用户UID 3.4.0 是
-   * @param {String} options.cid  String  通话时CID  3.4.0 是
-   * @param {String} options.time String  触发时间 3.4.0 是
-   * @param {int} options.media_type Int  0 音频, 1 视频 3.4.0 是
    */
   setSendFirstPackage(firstPacketSent: FirstPacketSentEvent) {
     this.addEvent('firstPacketSent', firstPacketSent)
@@ -267,25 +221,16 @@ class DataReport {
 
   /**
    * 收到对端的第一个媒体包
-   * @param {Object} options
-   * @param {String} options.uid  String  通话用户UID 3.4.0 是
-   * @param {String} options.cid  String  通话时CID  3.4.0 是
-   * @param {String} options.pull_uid  String  对端用户  3.4.0 是
-   * @param {String} options.time String  触发时间 3.4.0 是
-   * @param {int} options.media_type Int  0 音频, 1 视频 3.4.0 是
    */
   setRecvFirstPackage(recvFirstPackageEvent: RecvFirstPackageEvent) {
     this.addEvent('recvFirstPackage', recvFirstPackageEvent)
   }
 
   /**
-   * 异常断开通知
-   * @param {Object} options
-   * @param {String} options.uid  String  通话用户UID 3.4.0 是
-   * @param {String} options.cid  String  通话时CID  3.4.0 是
-   * @param {String} options.oper  String  操作，例如：打开、关闭  3.4.0 是
-   * @param {String} options.value  String  详见各功能点的具体说明  3.4.0 是
-   * @param {String} options.time String  触发时间 3.4.0 是
+   * http://doc.hz.netease.com/pages/viewpage.action?pageId=330162004#id-%E4%BA%8B%E4%BB%B6%E4%B8%8A%E6%8A%A5-4.9%E9%80%BB%E8%BE%91function%E4%B8%8A%E6%8A%A5%EF%BC%88G2%E5%AE%A2%E6%88%B7%E7%AB%AF--function%EF%BC%89
+   * 逻辑function上报：set_camera、set_mic、pub_second_audio、set_screen
+   * set_video_sub、set_audio_sub、set_udioSlave_sub、set_screen_sub
+   * set_play_auido、set_play_audioSlave、set_play_video、set_play_screen
    */
   setFunction(functionEvent: FunctionEvent) {
     this.addEvent('function', functionEvent)
@@ -301,6 +246,10 @@ class DataReport {
 
   setStreamException(streamExceptionEvent: StreamExceptionEvent) {
     this.addEvent('streamException', streamExceptionEvent)
+  }
+
+  setUserCustomEvent(functionEvent: UserCustomEvent) {
+    this.addEvent('userCustomEvent', functionEvent)
   }
 
   reset() {

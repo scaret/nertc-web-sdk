@@ -1253,7 +1253,7 @@ function updateLocalViewInfo() {
         const title = `canPlay: ${canPlay.result} ${
           canPlay.reason
         }\nisPlaying ${mediaType}: ${rtc.localStream.isPlaying(mediaType)}`
-        if (canPlay.reason === 'NOT_OPENED'){
+        if (canPlay.reason === 'NOT_OPENED') {
           infoStr = `<span style="color:#d3d3d3">${infoStr}</span>`
         }
         if (canPlay.result) {
@@ -1315,7 +1315,7 @@ function updateRemoteViewInfo() {
       } else {
         infoStr += `<span style="color:#d3d3d3">${mediaType}</span>`
       }
-      if (remoteStream){
+      if (remoteStream) {
         view[mediaType].muted = remoteStream.getMuteStatus(mediaType).muted
       }
       if (view[mediaType].muted) {
@@ -1401,7 +1401,7 @@ document.getElementById('getAudioLevelRemote').onclick = updateRemoteViewInfo
  */
 
 $('#joinChannel-btn').on('click', async () => {
-  if (window.pointsMs){
+  if (window.pointsMs) {
     window.pointsMs.buttonClick = Date.now()
     $(`#buttonClickMs`).html('0')
   }
@@ -1430,13 +1430,6 @@ $('#joinChannel-btn').on('click', async () => {
   const liveEnable = $('#sessionConfigLiveEnable').prop('checked')
   console.info('开始加入房间')
   await loadTokenByAppKey()
-
-  rtc.client.adapterRef.testConf = {
-    turnAddr: $('#isTurnAddrConf').prop('checked')
-      ? $('#isTurnAddrConf').prop('checked') && $('#turnAddr').val()
-      : null
-  }
-
   //supportedCodec用于测试
   if ($('#enableCodecHacking').prop('checked')) {
     const supportedCodecRecv = []
@@ -5247,9 +5240,9 @@ if (query) {
 
     console.log('启用EncodedTransform')
     $('#customTransform').val('transparentWithFlagOff')
-    try{
+    try {
       $('#setTransform').click()
-    }catch(e){
+    } catch (e) {
       console.error(e)
     }
 

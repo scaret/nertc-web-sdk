@@ -41,19 +41,11 @@ class FormatMedia extends EventEmitter {
       await this.initAudioIn(streams)
       return this.destination.stream
     } catch (e: any) {
-      this.logger.error('媒体设备获取失败: ', e.name, e.message)
-      // return Promise.reject(e)
-      let enMessage = `formatAudio: get media device error: ${e.name}`,
-        zhMessage = `formatAudio: 媒体设备获取失败: ${e.name}`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
+      this.logger.error('formatAudio() 异常: ', e.name, e.message)
       return Promise.reject(
         new RtcError({
-          code: ErrorCode.FORMAT_AUDIO_ERROR,
-          message,
-          advice
+          code: ErrorCode.RECORDING_NOT_SUPPORT,
+          message: e.message || 'formatAudio() 浏览器不支持'
         })
       )
     }

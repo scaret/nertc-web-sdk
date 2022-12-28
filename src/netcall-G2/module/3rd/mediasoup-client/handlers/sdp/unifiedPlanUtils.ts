@@ -17,16 +17,9 @@ export function getRtpEncodings({
   }
 
   if (ssrcs.size === 0) {
-    let enMessage = 'getRtpEncodings: no a=ssrc lines found',
-      zhMessage = 'getRtpEncodings: a=ssrc 行未找到',
-      enAdvice = 'Please contact CommsEase technical support',
-      zhAdvice = '请联系云信技术支持'
-    let message = env.IS_ZH ? zhMessage : enMessage,
-      advice = env.IS_ZH ? zhAdvice : enAdvice
     throw new RtcError({
-      code: ErrorCode.SDP_ERROR,
-      message,
-      advice
+      code: ErrorCode.UNKNOWN_TYPE_ERROR,
+      message: 'getRtpEncodings: a=ssrc 行未找到'
     })
   }
 
@@ -88,16 +81,9 @@ export function addLegacySimulcast({
   const ssrcMsidLine = (offerMediaObject.ssrcs || []).find((line: any) => line.attribute === 'msid')
 
   if (!ssrcMsidLine) {
-    let enMessage = 'addLegacySimulcast: a=ssrc line with msid information is not found',
-      zhMessage = 'addLegacySimulcast: a=ssrc 行的 msid 信息未找到',
-      enAdvice = 'Please contact CommsEase technical support',
-      zhAdvice = '请联系云信技术支持'
-    let message = env.IS_ZH ? zhMessage : enMessage,
-      advice = env.IS_ZH ? zhAdvice : enAdvice
     throw new RtcError({
-      code: ErrorCode.SDP_ERROR,
-      message,
-      advice
+      code: ErrorCode.UNKNOWN_TYPE_ERROR,
+      message: 'addLegacySimulcast: a=ssrc 行的 msid 信息未找到'
     })
   }
 
@@ -119,23 +105,7 @@ export function addLegacySimulcast({
       return false
     }
   })
-
   const ssrcCnameLine = offerMediaObject.ssrcs.find((line: any) => line.attribute === 'cname')
-
-  if (!ssrcCnameLine) {
-    let enMessage = 'addLegacySimulcast: a=ssrc line with cname information is not found',
-      zhMessage = 'addLegacySimulcast: a=ssrc 行的 cname 信息未找到',
-      enAdvice = 'Please contact CommsEase technical support',
-      zhAdvice = '请联系云信技术支持'
-    let message = env.IS_ZH ? zhMessage : enMessage,
-      advice = env.IS_ZH ? zhAdvice : enAdvice
-    throw new RtcError({
-      code: ErrorCode.SDP_ERROR,
-      message,
-      advice
-    })
-  }
-
   const cname = ssrcCnameLine.value
   const ssrcs = []
   const rtxSsrcs = []

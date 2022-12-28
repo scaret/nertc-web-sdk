@@ -1,9 +1,6 @@
 import { EventEmitter } from 'eventemitter3'
-
 import { getChannelInfoUrl, getCloudProxyInfoUrl, roomsTaskUrl, SDK_VERSION } from '../Config'
-import { ajax } from '../util/ajax'
 const md5 = require('md5')
-
 import { SignalGetChannelInfoResponse } from '../interfaces/SignalProtocols'
 import {
   AdapterRef,
@@ -68,19 +65,16 @@ class Meeting extends EventEmitter {
     })
   }
 
-  _reset() {
-    // this.adapterRef = null // adapter层的成员属性与方法引用
-    // this.sdkRef = null // SDK 实例指针
-  }
+  _reset() {}
 
   async getCloudProxyInfo(options: MeetingJoinChannelOptions) {
     const { appkey, channelName, uid, token = '' } = options
 
-    this.adapterRef.logger.log('getCloudProxyInfoUrl: ', getCloudProxyInfoUrl)
+    this.adapterRef.logger.log('getCloudProxyInfo() url: ', getCloudProxyInfoUrl)
     let url = getCloudProxyInfoUrl
     if (this.adapterRef.instance._params.neRtcServerAddresses.cloudProxyServer) {
       url = this.adapterRef.instance._params.neRtcServerAddresses.cloudProxyServer
-      this.adapterRef.logger.log('私有化配置的 cloudProxyServer: ', url)
+      this.adapterRef.logger.log('getCloudProxyInfo() 私有化配置cloudProxyServer: ', url)
     }
     //@ts-ignore
     let curtime = Date.parse(new Date()) / 1000
@@ -89,7 +83,6 @@ class Meeting extends EventEmitter {
       const data = (await this.adapterRef.lbsManager.ajax({
         url,
         type: 'POST',
-        //contentType: 'application/x-www-form-urlencoded',
         header: {
           'Session-Id': this.adapterRef.deviceId || ''
         },
@@ -108,7 +101,10 @@ class Meeting extends EventEmitter {
         }
       })) as any
 
-      this.adapterRef.logger.log('获取到云代理服务相关信息:', JSONBigStringify(data))
+      this.adapterRef.logger.log(
+        'getCloudProxyInfo() 获取到云代理服务相关信息: ',
+        JSONBigStringify(data, null, ' ')
+      )
       this.adapterRef.instance.apiFrequencyControl({
         name: 'setCloudProxyInfo',
         code: data.code === 200 ? 0 : -1,
@@ -125,7 +121,7 @@ class Meeting extends EventEmitter {
         const { wsProxyArray, mediaProxyArray, mediaProxyToken, cname, curTime, uid } = data
         if (this.adapterRef.instance._params.neRtcServerAddresses.webSocketProxyServer) {
           this.adapterRef.logger.warn(
-            '获取到云代理私有化 webSocketProxyServer:',
+            'getCloudProxyInfo() webSocketProxyServer: ',
             this.adapterRef.instance._params.neRtcServerAddresses.webSocketProxyServer
           )
           this.adapterRef.proxyServer.wsProxyArray = [
@@ -137,7 +133,7 @@ class Meeting extends EventEmitter {
 
         if (this.adapterRef.instance._params.neRtcServerAddresses.mediaProxyServer) {
           this.adapterRef.logger.warn(
-            '获取到云代理私有化 mediaProxyServer:',
+            'getCloudProxyInfo() mediaProxyServer:',
             this.adapterRef.instance._params.neRtcServerAddresses.mediaProxyServer
           )
           this.adapterRef.proxyServer.mediaProxyArray = [
@@ -151,17 +147,10 @@ class Meeting extends EventEmitter {
           this.adapterRef.proxyServer.credential = uid + '/' + curTime
         }
       } else {
-        this.adapterRef.logger.log('获取到云代理服务相关信息, 回退')
-
-        /*this.adapterRef.channelStatus = 'leave'
-        this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
-        this.adapterRef.connectState.curState = 'DISCONNECTED'
-        this.adapterRef.connectState.reconnect = false
-        this.adapterRef.instance.emit("connection-state-change", this.adapterRef.connectState);
-        return Promise.reject(`code: ${data.code}, reason: ${data.desc}`)*/
+        this.adapterRef.logger.log('getCloudProxyInfo() 云代理服务相关信息获取失败, 回滚')
       }
     } catch (e: any) {
-      this.adapterRef.logger.log('获取到云代理服务相关信息发生错误:', e.name, e.message, e)
+      this.adapterRef.logger.log('getCloudProxyInfo() 网络请求异常:', e.name, e.message, e)
       this.adapterRef.channelStatus = 'leave'
       this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
       this.adapterRef.connectState.curState = 'DISCONNECTED'
@@ -176,16 +165,9 @@ class Meeting extends EventEmitter {
           reason: e.message
         }
       })
-      let enMessage = `getCloudProxyInfo: proxy error: ${e.message}`,
-        zhMessage = `getCloudProxyInfo: proxy 异常: ${e.message}`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.PROXY_ERROR,
-        message,
-        advice
+        code: ErrorCode.NETWORK_REQUEST_ERROR,
+        message: e.message
       })
     }
   }
@@ -222,7 +204,7 @@ class Meeting extends EventEmitter {
     let url = getChannelInfoUrl
     if (this.adapterRef.instance._params.neRtcServerAddresses.channelServer) {
       url = this.adapterRef.instance._params.neRtcServerAddresses.channelServer
-      this.logger.log('私有化配置的 getChannelInfoUrl: ', url)
+      this.logger.log('jion() 私有化配置的 getChannelInfoUrl: ', url)
     }
     Object.assign(this.adapterRef.channelInfo, {
       uid,
@@ -264,10 +246,10 @@ class Meeting extends EventEmitter {
       this.info.secure = !!token
       if (typeof data === 'string') {
         // 兼容mockjs
-        this.logger.warn(`join 返回值类型为string，应为object。尝试进行强制类型转换。`, data)
+        this.logger.warn(`join() 返回值类型为string，应为object。尝试进行强制类型转换。`, data)
         data = JSONBigParse(data)
       } else {
-        this.logger.log('join 获取到房间信息:', JSONBigStringify(data, null, ' '))
+        this.logger.log('join() 获取到房间信息:', JSONBigStringify(data, null, ' '))
       }
       if (data.code === 200) {
         this.adapterRef.channelStatus = 'join'
@@ -350,9 +332,9 @@ class Meeting extends EventEmitter {
       } else {
         const errorMessage =
           data.desc && data.desc !== ''
-            ? `join: ${data.desc}`
-            : `join: 服务器不允许加入房间, code ${data.code}`
-        this.logger.warn(errorMessage)
+            ? `join() ${data.desc}`
+            : `join() 服务器不允许加入房间, code ${data.code}`
+        this.logger.error(errorMessage)
         this.adapterRef.channelStatus = 'leave'
         this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
         this.adapterRef.connectState.curState = 'DISCONNECTED'
@@ -365,31 +347,21 @@ class Meeting extends EventEmitter {
           record_type: joinChannelRecordConfig.recordType,
           host_speaker: joinChannelRecordConfig.isHostSpeaker,
           result: data.code,
+          permKey: this.adapterRef.channelInfo.permKey,
           serverIp:
-            data.ips && data.ips.turnaddrs && data.ips.turnaddrs.length && data.ips.turnaddrs[0]
+            data.ips && data.ips.turnaddrs && data.ips.turnaddrs.length && data.ips.turnaddrs[0],
+          desc: errorMessage //websdk使用desc字段描述错误内容
         })
-        let enMessage =
-          data.desc && data.desc !== ''
-            ? `joinChannel: ${data.desc}`
-            : `joinChannel: server error, code ${data.code}`
-        let zhMessage =
-          data.desc && data.desc !== ''
-            ? `joinChannel: ${data.desc}`
-            : `joinChannel: 服务器不允许加入房间, code ${data.code}`
-        let enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
-            code: data.code || ErrorCode.MEDIA_SERVER_ERROR,
-            message,
-            advice
+            code: ErrorCode.SERVER_AUTH_ERROR,
+            extraCode: data.code,
+            message: errorMessage
           })
         )
       }
     } catch (e: any) {
-      this.logger.log('joing 获取到房间信息错误:', e.name, e.message)
+      this.logger.log('joing() 获取到房间信息错误:', e.name, e.message)
       this.adapterRef.channelStatus = 'leave'
       this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
       this.adapterRef.connectState.curState = 'DISCONNECTED'
@@ -401,19 +373,13 @@ class Meeting extends EventEmitter {
         v_record: joinChannelRecordConfig.recordVideo,
         record_type: joinChannelRecordConfig.recordType,
         host_speaker: joinChannelRecordConfig.isHostSpeaker,
-        result: `join() 语法错误: ${e.message}`,
+        result: -1,
+        desc: `join() 内部错误: ${e.name}, ${e.message}`,
         serverIp: ''
       })
-      let enMessage = `joinChannel: network error ${e.message}`,
-        zhMessage = `joinChannel: 网络异常 ${e.message}`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.NETWORK_ERROR,
-        message,
-        advice
+        code: e.getCode() || ErrorCode.JOIN_FAILED,
+        message: e.getMessage() || `join() 内部错误: ${e.name}, ${e.message}`
       })
     }
   }
@@ -422,21 +388,8 @@ class Meeting extends EventEmitter {
    * 多人通话：离开房间
    */
   leaveChannel() {
-    this.adapterRef.instance.apiEventReport('setLogout', {
-      reason: this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason || 0
-    })
     if (!this.adapterRef._signalling) {
-      let enMessage = 'leaveChannel: signalling server error',
-        zhMessage = 'leaveChannel: 信令服务器异常',
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.SIGNALLING_SERVER_ERROR,
-        message,
-        advice
-      })
+      return Promise.resolve()
     }
     return this.adapterRef._signalling.doSendLogout().then(() => {
       this.adapterRef.channelStatus = 'leave'
@@ -451,48 +404,20 @@ class Meeting extends EventEmitter {
   //添加推流任务
   async addTasks(options: AddTaskOptions) {
     const { rtmpTasks = [] } = options
-    let reason = null
-    let enMessage, zhMessage, enAdvice, zhAdvice, message, advice
-    if (!this.adapterRef.channelInfo.cid) {
-      reason = 'addTasks: 请在加入房间后进行直播推流操作'
-      enMessage = 'addTasks: invalid operation'
-      zhMessage = 'addTasks: 操作异常'
-      enAdvice = `please join room before addTasks`
-      zhAdvice = `请在加入房间后进行直播推流操作`
-      message = env.IS_ZH ? zhMessage : enMessage
-      advice = env.IS_ZH ? zhAdvice : enAdvice
-    } else if (!rtmpTasks || !Array.isArray(rtmpTasks) || !rtmpTasks.length) {
-      reason = 'addTasks: 参数格式错误，rtmpTasks为空，或者该数组长度为空'
-      enMessage = 'addTasks: invalid operation'
-      zhMessage = 'addTasks: 操作异常'
-      enAdvice = `parameters is invalid`
-      zhAdvice = `参数格式错误, rtmpTasks为空, 或者该数组长度为空`
-      message = env.IS_ZH ? zhMessage : enMessage
-      advice = env.IS_ZH ? zhAdvice : enAdvice
-    }
-    if (reason) {
-      this.logger.error(reason)
-      throw new RtcError({
-        code: ErrorCode.INVALID_OPERATION_ERROR,
-        message,
-        advice
-      })
-    }
     let url = roomsTaskUrl
     if (this.adapterRef.instance._params.neRtcServerAddresses.roomServer) {
-      //url = roomsTaskUrl.replace(/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+\.?/, this.adapterRef.instance._params.neRtcServerAddresses.roomServer)
       url = this.adapterRef.instance._params.neRtcServerAddresses.roomServer
       if (url.substr(-1) !== '/') {
         url += '/'
       }
-      this.logger.log('私有化配置的 roomsTaskUrl: ', url)
+      this.logger.log('addTasks() 私有化配置的 roomsTaskUrl: ', url)
     }
     url = `${url}${this.adapterRef.channelInfo.cid}/tasks`
 
     for (let i = 0; i < rtmpTasks.length; i++) {
       rtmpTasks[i].hostUid = new SimpleBig(this.adapterRef.channelInfo.uid) //.toString()
       rtmpTasks[i].version = 1
-      this.logger.log('rtmpTask: ', JSONBigStringify(rtmpTasks[i]))
+      this.logger.log('addTasks() rtmpTask: ', JSONBigStringify(rtmpTasks[i]))
       const layout = rtmpTasks[i].layout
       layout.users.forEach((user) => {
         if (typeof user.uid === 'string') {
@@ -520,36 +445,23 @@ class Meeting extends EventEmitter {
           }
         })
         if (data.code === 200) {
-          this.logger.log('添加推流任务完成')
+          this.logger.log(`addTasks() 添加第 ${i} 个推流任务完成`)
         } else {
-          this.logger.error('添加推流任务失败: ', data)
-          let enMessage = `addTasks: add task failed: ${data.code}`,
-            zhMessage = `addTasks: 添加推流任务失败: ${data.code}`,
-            enAdvice = 'Please contact CommsEase technical support',
-            zhAdvice = '请联系云信技术支持'
-          let message = env.IS_ZH ? zhMessage : enMessage,
-            advice = env.IS_ZH ? zhAdvice : enAdvice
+          this.logger.error(`addTasks() 添加第 ${i} 个推流任务失败: `, data)
           return Promise.reject(
             new RtcError({
               code: ErrorCode.ADD_TASK_FAILED_ERROR,
-              message,
-              advice
+              extraCode: data.code,
+              message: `addTasks() 添加推流任务失败: ${data.code}`
             })
           )
         }
       } catch (e: any) {
         this.logger.error('addTasks: ', e.name, e.message)
-        let enMessage = `addTasks: add task error: ${e.name} ${e.message}`,
-          zhMessage = `addTasks: 添加推流任务异常: ${e.name} ${e.message}`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
         return Promise.reject(
           new RtcError({
             code: ErrorCode.ADD_TASK_FAILED_ERROR,
-            message,
-            advice
+            message: `addTasks() 内部错误: $e.message}`
           })
         )
       }
@@ -559,65 +471,19 @@ class Meeting extends EventEmitter {
   //删除推流任务
   async deleteTasks(options: { taskIds: string[] }) {
     const { taskIds = [] } = options
-    if (!this.adapterRef.channelInfo.cid) {
-      this.adapterRef.instance.apiFrequencyControl({
-        name: 'deleteTasks',
-        code: -1,
-        param: JSONBigStringify(
-          {
-            error: '请先加入房间',
-            version: 1,
-            taskId: taskIds.length ? taskIds[0] : ''
-          },
-          null,
-          ' '
-        )
-      })
-      this.logger.error('请先加入房间')
-      let enMessage = 'deleteTasks: invalid operation',
-        zhMessage = 'deleteTasks: 操作异常',
-        enAdvice = `please join room first`,
-        zhAdvice = `请先加入房间`
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.INVALID_OPERATION_ERROR,
-          message,
-          advice
-        })
-      )
-    } else if (!taskIds || !Array.isArray(taskIds) || !taskIds.length) {
-      this.logger.error('删除推流任务失败: 参数格式错误，taskIds为空，或者该数组长度为空')
-      let enMessage = 'deleteTasks: invalid parameters',
-        zhMessage = 'deleteTasks: 参数异常',
-        enAdvice = 'Please make sure the parameters correct',
-        zhAdvice = '请确认参数填写正确'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.INVALID_PARAMETER_ERROR,
-          message,
-          advice
-        })
-      )
-    }
-
     let url = roomsTaskUrl
-    this.logger.log('roomsTaskUrl: ', roomsTaskUrl)
     if (this.adapterRef.instance._params.neRtcServerAddresses.roomServer) {
       //url = roomsTaskUrl.replace(/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+\.?/, this.adapterRef.instance._params.neRtcServerAddresses.roomServer)
       url = this.adapterRef.instance._params.neRtcServerAddresses.roomServer
       if (url.substr(-1) !== '/') {
         url += '/'
       }
-      this.logger.log('私有化配置的 roomsTaskUrl: ', url)
+      this.logger.log('deleteTasks() 私有化配置的 roomsTaskUrl: ', url)
     }
 
     url = `${url}${this.adapterRef.channelInfo.cid}/tasks/delete`
     for (let i = 0; i < taskIds.length; i++) {
-      this.logger.log('deleteTasks: ', taskIds[i])
+      this.logger.log('deleteTasks() taskId: ', taskIds[i])
       try {
         const data: any = await this.adapterRef.lbsManager.ajax({
           url,
@@ -633,70 +499,23 @@ class Meeting extends EventEmitter {
         })
         if (data.code === 200) {
           this.logger.log('删除推流任务完成')
-          this.adapterRef.instance.apiFrequencyControl({
-            name: 'deleteTasks',
-            code: 0,
-            param: JSONBigStringify(
-              {
-                taskId: taskIds[i]
-              },
-              null,
-              ' '
-            )
-          })
           return Promise.resolve()
         } else {
           this.logger.log('删除推流任务请求失败:', JSONBigStringify(data))
-          this.adapterRef.instance.apiFrequencyControl({
-            name: 'deleteTasks',
-            code: data.code,
-            param: JSONBigStringify(
-              {
-                taskId: taskIds[i]
-              },
-              null,
-              ' '
-            )
-          })
-          let enMessage = `deleteTasks: delete task failed: ${data.code}`,
-            zhMessage = `deleteTasks: 删除推流任务失败: ${data.code}`,
-            enAdvice = 'Please contact CommsEase technical support',
-            zhAdvice = '请联系云信技术支持'
-          let message = env.IS_ZH ? zhMessage : enMessage,
-            advice = env.IS_ZH ? zhAdvice : enAdvice
           return Promise.reject(
             new RtcError({
               code: ErrorCode.DELETE_TASK_FAILED_ERROR,
-              message,
-              advice
+              extraCode: data.code,
+              message: `deleteTasks() 删除推流任务失败: ${data.code}`
             })
           )
         }
       } catch (e: any) {
-        this.logger.error('deleteTasks发生错误: ', e.name, e.message, e)
-        this.adapterRef.instance.apiFrequencyControl({
-          name: 'deleteTasks',
-          code: -1,
-          param: JSONBigStringify(
-            {
-              error: 'code error',
-              taskId: taskIds[i]
-            },
-            null,
-            ' '
-          )
-        })
-        let enMessage = `deleteTasks: delete task failed: ${e.name}  ${e.message}`,
-          zhMessage = `deleteTasks: 删除推流任务失败:  ${e.name}  ${e.message}`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
+        this.logger.error('deleteTasks发生错误: ', e.name, e.message)
         return Promise.reject(
           new RtcError({
             code: ErrorCode.DELETE_TASK_FAILED_ERROR,
-            message,
-            advice
+            message: `deleteTasks() 内部错误: $e.message}`
           })
         )
       }
@@ -706,67 +525,14 @@ class Meeting extends EventEmitter {
 
   //更新推流任务
   async updateTasks(options: { rtmpTasks: RTMPTask[] }) {
-    const {
-      // appkey,
-      // channelName,
-      // uid,
-      // sessionMode,
-      rtmpTasks = []
-    } = options
-    if (!this.adapterRef.channelInfo.cid) {
-      this.adapterRef.instance.apiFrequencyControl({
-        name: 'updateTasks',
-        code: -1,
-        param: JSONBigStringify(
-          {
-            error: '请先加入房间',
-            version: 1,
-            taskId: rtmpTasks.length ? rtmpTasks[0].taskId : ''
-          },
-          null,
-          ' '
-        )
-      })
-      this.logger.error('请先加入房间')
-      let enMessage = 'updateTasks: invalid operation',
-        zhMessage = 'updateTasks: 操作异常',
-        enAdvice = `please join room first`,
-        zhAdvice = `请先加入房间`
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.INVALID_OPERATION_ERROR,
-          message,
-          advice
-        })
-      )
-    } else if (!rtmpTasks || !Array.isArray(rtmpTasks) || !rtmpTasks.length) {
-      this.logger.error('更新推流任务失败: 参数格式错误，rtmpTasks为空，或者该数组长度为空')
-      let enMessage = 'updateTasks: invalid parameters',
-        zhMessage = 'updateTasks: 参数异常',
-        enAdvice = 'Please make sure the parameters correct',
-        zhAdvice = '请确认参数填写正确'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.INVALID_PARAMETER_ERROR,
-          message,
-          advice
-        })
-      )
-    }
-
+    const { rtmpTasks = [] } = options
     let url = roomsTaskUrl
-    this.logger.log('roomsTaskUrl: ', roomsTaskUrl)
     if (this.adapterRef.instance._params.neRtcServerAddresses.roomServer) {
-      //url = roomsTaskUrl.replace(/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+\.?/, this.adapterRef.instance._params.neRtcServerAddresses.roomServer)
       url = this.adapterRef.instance._params.neRtcServerAddresses.roomServer
       if (url.substr(-1) !== '/') {
         url += '/'
       }
-      this.logger.log('私有化配置的 roomsTaskUrl: ', url)
+      this.logger.log('updateTasks() 私有化配置的 roomsTaskUrl: ', url)
     }
     url = `${url}${this.adapterRef.channelInfo.cid}/task/update`
 
@@ -797,89 +563,24 @@ class Meeting extends EventEmitter {
           }
         })
         if (data.code === 200) {
-          this.logger.log('更新推流任务完成')
-          this.adapterRef.instance.apiFrequencyControl({
-            name: 'updateTasks',
-            code: 0,
-            param: JSONBigStringify(
-              {
-                version: 1,
-                taskId: rtmpTasks[i].taskId,
-                streamUrl: rtmpTasks[i].streamUrl,
-                record: rtmpTasks[i].record,
-                hostUid: rtmpTasks[i].hostUid,
-                layout: rtmpTasks[i].layout,
-                config: rtmpTasks[i].config
-              },
-              null,
-              ' '
-            )
-          })
+          this.logger.log('updateTasks() 更新推流任务完成')
           return Promise.resolve()
         } else {
-          this.logger.log('更新推流任务失败：', JSONBigStringify(data))
-          this.adapterRef.instance.apiFrequencyControl({
-            name: 'updateTasks',
-            code: data.code,
-            param: JSONBigStringify(
-              {
-                version: 1,
-                taskId: rtmpTasks[i].taskId,
-                streamUrl: rtmpTasks[i].streamUrl,
-                record: rtmpTasks[i].record,
-                hostUid: rtmpTasks[i].hostUid,
-                layout: rtmpTasks[i].layout,
-                config: rtmpTasks[i].config
-              },
-              null,
-              ' '
-            )
-          })
-          let enMessage = `updateTasks: update task failed`,
-            zhMessage = `updateTasks: 删除推流任务失败`,
-            enAdvice = 'Please contact CommsEase technical support',
-            zhAdvice = '请联系云信技术支持'
-          let message = env.IS_ZH ? zhMessage : enMessage,
-            advice = env.IS_ZH ? zhAdvice : enAdvice
+          this.logger.log('() 更新推流任务失败：', JSONBigStringify(data))
           return Promise.reject(
             new RtcError({
               code: ErrorCode.UPDATE_TASKS_FAILED_ERROR,
-              message,
-              advice
+              extraCode: data.code,
+              message: `updateTasks() 更新推流任务失败: ${data.code}`
             })
           )
         }
       } catch (e: any) {
-        this.logger.error('updateTasks 发生错误: ', e.name, e.message, e)
-        this.adapterRef.instance.apiFrequencyControl({
-          name: 'updateTasks',
-          code: -1,
-          param: JSONBigStringify(
-            {
-              error: 'code error',
-              version: 1,
-              taskId: rtmpTasks[i].taskId,
-              streamUrl: rtmpTasks[i].streamUrl,
-              record: rtmpTasks[i].record,
-              hostUid: rtmpTasks[i].hostUid,
-              layout: rtmpTasks[i].layout,
-              config: rtmpTasks[i].config
-            },
-            null,
-            ' '
-          )
-        })
-        let enMessage = `updateTasks: update task failed ${e.name} ${e.message}`,
-          zhMessage = `updateTasks: 删除推流任务失败 ${e.name} ${e.message}`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
+        this.logger.error('updateTasks 发生错误: ', e.name, e.message)
         return Promise.reject(
           new RtcError({
             code: ErrorCode.UPDATE_TASKS_FAILED_ERROR,
-            message,
-            advice
+            message: `updateTasks() 内部错误: $e.message}`
           })
         )
       }

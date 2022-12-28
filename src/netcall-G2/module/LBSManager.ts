@@ -576,17 +576,10 @@ export class LBSManager {
             )
             urlSettings[1].fire()
           } else if (this.isAllRequestsFinished(urlSettings)) {
-            let enMessage = 'LBS: request error',
-              zhMessage = 'LBS: 请求错误',
-              enAdvice = 'Please contact CommsEase technical support',
-              zhAdvice = '请联系云信技术支持'
-            let message = env.IS_ZH ? zhMessage : enMessage,
-              advice = env.IS_ZH ? zhAdvice : enAdvice
             return reject(
               new RtcError({
                 code: ErrorCode.LBS_REQUEST_ERROR,
-                message,
-                advice
+                message: 'LBS: 网络请求错误'
               })
             )
           }
@@ -601,17 +594,10 @@ export class LBSManager {
             )
             urlSettings[1].fire()
           } else if (this.isAllRequestsFinished(urlSettings)) {
-            let enMessage = 'LBS: json error',
-              zhMessage = 'LBS: json 解析错误',
-              enAdvice = 'Please contact CommsEase technical support',
-              zhAdvice = '请联系云信技术支持'
-            let message = env.IS_ZH ? zhMessage : enMessage,
-              advice = env.IS_ZH ? zhAdvice : enAdvice
             return reject(
               new RtcError({
                 code: ErrorCode.LBS_JSON_ERROR,
-                message,
-                advice
+                message: 'LBS: 结果json解析错误'
               })
             )
           }

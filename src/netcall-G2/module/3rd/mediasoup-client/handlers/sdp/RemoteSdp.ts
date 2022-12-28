@@ -256,43 +256,18 @@ export class RemoteSdp {
 
   disableMediaSection(mid: string): void {
     const idx = this._midToIndex.get(mid)
-
     if (idx === undefined) {
-      let enMessage = `disableMediaSection: no media section found with mid '${mid}'`,
-        zhMessage = `disableMediaSection: media 中找不到 mid '${mid}'`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.SDP_ERROR,
-        message,
-        advice
-      })
+      return
     }
-
     const mediaSection = this._mediaSections[idx]
-
     mediaSection.disable()
   }
 
   closeMediaSection(mid: string): void {
     const idx = this._midToIndex.get(mid)
-
     if (idx === undefined) {
-      let enMessage = `closeMediaSection: no media section found with mid '${mid}'`,
-        zhMessage = `closeMediaSection: media 中找不到 mid '${mid}'`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.SDP_ERROR,
-        message,
-        advice
-      })
+      return
     }
-
     const mediaSection = this._mediaSections[idx]
 
     // NOTE: Closing the first m section is a pain since it invalidates the
@@ -325,17 +300,7 @@ export class RemoteSdp {
     const idx = this._midToIndex.get(mid)
 
     if (idx === undefined) {
-      let enMessage = `planBStopReceiving: no media section found with mid '${mid}'`,
-        zhMessage = `planBStopReceiving: media 中找不到 mid '${mid}'`,
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.SDP_ERROR,
-        message,
-        advice
-      })
+      return
     }
 
     const mediaSection = this._mediaSections[idx] as OfferMediaSection
@@ -406,17 +371,7 @@ export class RemoteSdp {
       const idx = this._midToIndex.get(reuseMid)
 
       if (idx === undefined) {
-        let enMessage = `_replaceMediaSection: no media section found for reuseMid '${reuseMid}'`,
-          zhMessage = `_replaceMediaSection: media 中找不到 reuseMid '${reuseMid}'`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.SDP_ERROR,
-          message,
-          advice
-        })
+        return
       }
 
       const oldMediaSection = this._mediaSections[idx]
@@ -437,17 +392,7 @@ export class RemoteSdp {
       const idx = this._midToIndex.get(newMediaSection.mid)
 
       if (idx === undefined) {
-        let enMessage = `_replaceMediaSection: no media section found with mid '${newMediaSection.mid}'`,
-          zhMessage = `_replaceMediaSection: media 中找不到 mid '${newMediaSection.mid}'`,
-          enAdvice = 'Please contact CommsEase technical support',
-          zhAdvice = '请联系云信技术支持'
-        let message = env.IS_ZH ? zhMessage : enMessage,
-          advice = env.IS_ZH ? zhAdvice : enAdvice
-        throw new RtcError({
-          code: ErrorCode.SDP_ERROR,
-          message,
-          advice
-        })
+        return
       }
 
       // Replace the index in the vector with the new media section.

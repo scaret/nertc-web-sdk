@@ -121,7 +121,6 @@ class Signalling extends EventEmitter {
         this._reject = reject
       }
 
-      const prevConfig = this.reconnectionControl.current
       const connConfig: SignalingConnectionConfig = this.reconnectionControl.next || {
         timeout: isReconnectMeeting ? getParameters().reconnectionFirstTimeout : 0,
         url: this.adapterRef.channelInfo.wssArr[0],
@@ -221,15 +220,23 @@ class Signalling extends EventEmitter {
     if (!prevConfig || connConfig.times <= getParameters().joinMaxRetry) {
       this.init(true, false)
     } else {
-      this.adapterRef.logger.error(`所有的服务器地址都连接失败, 主动离开房间`)
+      this.adapterRef.logger.error(`join() 所有的服务器地址都连接失败, 主动离开房间`)
       this.adapterRef.instance.apiEventReport('setStreamException', {
         name: 'socketError',
         value: `signalling server connection failed(timeout)`
       })
       this.adapterRef.channelInfo.wssArrIndex = 0
+      this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason =
+        ErrorCode.SIGNAL_CONNECTION_DISCONNECTED
       this.adapterRef.instance.leave()
       this.adapterRef.instance.safeEmit('error', 'SOCKET_ERROR')
-      this._reject && this._reject('timeout')
+      this._reject &&
+        this._reject(
+          new RtcError({
+            code: ErrorCode.NETWORK_ERROR,
+            message: 'join() 所有的服务器地址都连接失败'
+          })
+        )
     }
   }
 
@@ -286,6 +293,8 @@ class Signalling extends EventEmitter {
         value: `signalling server reconnection failed(timeout)`
       })
       this.adapterRef.channelInfo.wssArrIndex = 0
+      this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason =
+        ErrorCode.SIGNAL_CONNECTION_DISCONNECTED
       this.adapterRef.instance.leave()
       this.adapterRef.instance.safeEmit('error', 'SOCKET_ERROR')
     } else {
@@ -320,24 +329,11 @@ class Signalling extends EventEmitter {
   }
 
   _bindEvent() {
-    if (!this._protoo) {
-      let enMessage = '_bindEvent: _protoo is not found',
-        zhMessage = '_bindEvent: _protoo 未找到',
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.SIGNALLING_ERROR,
-        message,
-        advice
-      })
-    }
-    this._protoo.on('open', this.join.bind(this))
-    this._protoo.on('failed', this._handleFailed.bind(this))
-    this._protoo.on('notification', this._handleMessage.bind(this))
-    this._protoo.on('close', this._handleClose.bind(this))
-    this._protoo.on('disconnected', this._handleDisconnected.bind(this, this._protoo))
+    this._protoo?.on('open', this.join.bind(this))
+    this._protoo?.on('failed', this._handleFailed.bind(this))
+    this._protoo?.on('notification', this._handleMessage.bind(this))
+    this._protoo?.on('close', this._handleClose.bind(this))
+    this._protoo?.on('disconnected', this._handleDisconnected.bind(this, this._protoo))
   }
 
   //原来叫_unbindEvent
@@ -349,9 +345,7 @@ class Signalling extends EventEmitter {
         if (this._protoo) {
           this._protoo.close()
         }
-      } catch (e) {
-        // this.logger.error('无法关闭：', e)
-      }
+      } catch (e) {}
       this._protoo = null
     }
   }
@@ -360,7 +354,6 @@ class Signalling extends EventEmitter {
     /*this.logger.log(
       'proto "notification" event [method:%s, data:%o]',
       notification.method, notification.data);*/
-
     switch (notification.method) {
       case 'OnPeerJoin': {
         const { requestId, externData } = notification.data
@@ -556,23 +549,9 @@ class Signalling extends EventEmitter {
           return
         }
 
-        if (!this.adapterRef._mediasoup) {
-          let enMessage = 'OnProducerClose:  media server error',
-            zhMessage = 'OnProducerClose: 媒体服务异常',
-            enAdvice = 'Please contact CommsEase technical support',
-            zhAdvice = '请联系云信技术支持'
-          let message = env.IS_ZH ? zhMessage : enMessage,
-            advice = env.IS_ZH ? zhAdvice : enAdvice
-          throw new RtcError({
-            code: ErrorCode.MEDIA_SERVER_ERROR,
-            message,
-            advice
-          })
-        }
-
-        this.adapterRef._mediasoup.removeUselessConsumeRequest({ producerId, uid })
+        this.adapterRef._mediasoup?.removeUselessConsumeRequest({ producerId, uid })
         if (remoteStream.pubStatus[mediaTypeShort].consumerId) {
-          this.adapterRef._mediasoup.destroyConsumer(
+          this.adapterRef._mediasoup?.destroyConsumer(
             remoteStream.pubStatus[mediaTypeShort].consumerId,
             remoteStream,
             mediaTypeShort
@@ -641,27 +620,15 @@ class Signalling extends EventEmitter {
         this.logger.warn(
           `chence OnTransportClose: code = ${code}, errMsg = ${errMsg}, transportId = ${transportId}`
         )
-        if (!this.adapterRef._mediasoup) {
-          let enMessage = 'OnTransportClose:  media server error',
-            zhMessage = 'OnTransportClose: 媒体服务异常',
-            enAdvice = 'Please contact CommsEase technical support',
-            zhAdvice = '请联系云信技术支持'
-          let message = env.IS_ZH ? zhMessage : enMessage,
-            advice = env.IS_ZH ? zhAdvice : enAdvice
-          throw new RtcError({
-            code: ErrorCode.MEDIA_SERVER_ERROR,
-            message,
-            advice
-          })
-        }
         if (
-          this.adapterRef._mediasoup._sendTransport &&
-          (this.adapterRef._mediasoup._micProducer || this.adapterRef._mediasoup._webcamProducer)
+          this.adapterRef._mediasoup?._sendTransport ||
+          this.adapterRef._mediasoup?._recvTransport
         ) {
           this.logger.warn('服务器媒体进程crash，上行媒体和下行媒体同时重连')
           this.adapterRef.channelStatus = 'connectioning'
           this.adapterRef.instance.apiEventReport('setDisconnect', {
-            reason: 'OnTransportClose'
+            reason: 'OnTransportClose',
+            ext: '' //扩展可选
           })
           this._reconnection()
         } else {
@@ -684,7 +651,8 @@ class Signalling extends EventEmitter {
       //     this.logger.warn('下行媒体同时重连')
       //     this.adapterRef.channelStatus = 'connectioning'
       //     this.adapterRef.instance.apiEventReport('setDisconnect', {
-      //       reason: 'OnConsumerClose'
+      //       reason: 'OnConsumerClose',
+      //       ext: '' //扩展可选
       //     })
       //     this._reconnection()
       //   } else {
@@ -697,39 +665,11 @@ class Signalling extends EventEmitter {
         this.logger.warn(`chence OnSignalRestart code = ${code} errMsg = ${errMsg}`)
         this.logger.warn('服务器信令进程crash，重连')
         this.adapterRef.instance.apiEventReport('setDisconnect', {
-          reason: 'OnSignalRestart'
+          reason: 'OnSignalRestart',
+          ext: '' //扩展可选
         })
-        if (!this._protoo) {
-          let enMessage = 'OnSignalRestart: _protoo is not found',
-            zhMessage = 'OnSignalRestart: _protoo 未找到',
-            enAdvice = 'Please contact CommsEase technical support',
-            zhAdvice = '请联系云信技术支持'
-          let message = env.IS_ZH ? zhMessage : enMessage,
-            advice = env.IS_ZH ? zhAdvice : enAdvice
-          throw new RtcError({
-            code: ErrorCode.SIGNALLING_ERROR,
-            message,
-            advice
-          })
-        }
-        if (this._protoo.connected && this.adapterRef.connectState.curState === 'CONNECTED') {
+        if (this._protoo?.connected && this.adapterRef.connectState.curState === 'CONNECTED') {
           //sdk内部已经在重连中，不主动执行
-          /*this.logger.log('OnSignalRestart即将在3秒后执行重连')
-            const _protoo = this._protoo;
-            setTimeout(()=>{
-              if (_protoo !== this._protoo){
-                this.logger.log(`OnSignalRestart取消重连: 连接已被覆盖 ${_protoo.id}_${_protoo._transport?.wsid}=>${this._protoo?.id}_${this._protoo?._transport?.wsid}`)
-              } else if (this.adapterRef.channelStatus === 'join'){
-                this.logger.log('OnSignalRestart执行重连')
-                this.adapterRef.channelStatus = 'connectioning'
-                this.adapterRef.instance.emit('pairing-websocket-reconnection-start')
-                // derek: 为什么这里调this.join不调this._reconnection?不懂但是不敢改。
-                // 见https://g.hz.netease.com/yunxin/nertc-web-sdk/-/blob/8bb8690d0f2862de34d009f4d7e1012618719088/src/netcall-G2/module/signalling.ts#L398
-                this.join()
-              } else {
-                this.logger.log('OnSignalRestart取消重连。channelStatus：', this.adapterRef.channelStatus)
-              }
-            }, 3 * 1000)*/
         } else {
           this._reconnection()
         }
@@ -744,7 +684,8 @@ class Signalling extends EventEmitter {
         //相同UID另外一个连接登录, 这个连接被迫退出
         this.logger.warn(`相同UID在其他地方登录，您被提出房间`)
         this.adapterRef.instance.safeEmit('uid-duplicate')
-        this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason = 30000
+        this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason =
+          ErrorCode.UID_DUPLICATE
         this.adapterRef.instance.leave()
         break
       }
@@ -845,81 +786,38 @@ class Signalling extends EventEmitter {
           let audioDuration, videoDuration
           if (data.audioRight === 1) {
             this.adapterRef.isAudioBanned = true
-            audioDuration = data.audioDuration
-            let mediaType = 'audio'
-            let state = true
-            let enMessage = 'ChangeRight: audio is banned by server',
-              zhMessage = 'ChangeRight: audio 被服务器禁言'
-            let message = env.IS_ZH ? zhMessage : enMessage
-            const rtcError = new RtcError({
-              code: ErrorCode.BANNED_BY_SERVER,
-              message
-            })
             this.adapterRef.instance.safeEmit('audioVideoBanned', {
-              rtcError,
               uid,
-              mediaType,
-              state,
-              duration: audioDuration
+              mediaType: 'audio',
+              state: true,
+              duration: data.audioDuration
             })
           } else if (data.audioRight === 2) {
             this.adapterRef.isAudioBanned = false
-            audioDuration = data.audioDuration
-            let mediaType = 'audio'
-            let state = false
-            let enMessage = 'ChangeRight: audio is unbanned by server',
-              zhMessage = 'ChangeRight: audio 服务器解开禁言'
-            let message = env.IS_ZH ? zhMessage : enMessage
-            const rtcError = new RtcError({
-              code: ErrorCode.BANNED_BY_SERVER,
-              message
-            })
             this.adapterRef.instance.safeEmit('audioVideoBanned', {
-              rtcError,
               uid,
-              mediaType,
-              state,
-              duration: audioDuration
+              mediaType: 'audio',
+              state: false,
+              duration: data.audioDuration
             })
           }
 
           if (data.videoRight === 1) {
             this.adapterRef.isVideoBanned = true
-            videoDuration = data.videoDuration
-            let mediaType = 'video'
-            let state = true
-            let enMessage = 'ChangeRight: video is banned by server',
-              zhMessage = 'ChangeRight: video 被服务器禁言'
-            let message = env.IS_ZH ? zhMessage : enMessage
-            const rtcError = new RtcError({
-              code: ErrorCode.BANNED_BY_SERVER,
-              message
-            })
             this.adapterRef.instance.safeEmit('audioVideoBanned', {
-              rtcError,
               uid,
-              mediaType,
-              state,
-              duration: videoDuration
+              mediaType: 'video',
+              state: true,
+              duration: data.videoDuration
             })
           } else if (data.videoRight === 2) {
             this.adapterRef.isVideoBanned = false
-            videoDuration = data.videoDuration
-            let mediaType = 'video'
-            let state = false
-            let enMessage = 'ChangeRight: video is unbanned by server',
-              zhMessage = 'ChangeRight: video 服务器解开禁言'
-            let message = env.IS_ZH ? zhMessage : enMessage
-            const rtcError = new RtcError({
-              code: ErrorCode.BANNED_BY_SERVER,
-              message
-            })
+            this.adapterRef.isVideoBanned = true
             this.adapterRef.instance.safeEmit('audioVideoBanned', {
-              rtcError,
               uid,
-              mediaType,
-              state,
-              duration: videoDuration
+              mediaType: 'video',
+              state: false,
+              duration: data.videoDuration
             })
           }
 
@@ -999,13 +897,14 @@ class Signalling extends EventEmitter {
       this._reconnection()
     }
     this.adapterRef.instance.apiEventReport('setDisconnect', {
-      reason: '2' //ws中断
+      reason: 'websocketDisconnect', //ws中断
+      ext: '' //扩展可选
     })
   }
 
   async join() {
     this.adapterRef.state.signalOpenTime = Date.now()
-    let gmEnable
+    let gmEnable //加密标识
     if (!this.adapterRef.encryption.encryptionSecret) {
       gmEnable = false
     } else if (this.adapterRef.encryption.encryptionMode === 'none') {
@@ -1058,35 +957,25 @@ class Signalling extends EventEmitter {
     }
 
     this.logger.log('Signalling: socket连接成功，开始发送Join请求')
-    if (!this._protoo) {
-      let enMessage = 'join: _protoo is not found',
-        zhMessage = 'join: _protoo 未找到',
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
-      throw new RtcError({
-        code: ErrorCode.SIGNALLING_ERROR,
-        message,
-        advice
-      })
-    }
-
     //join之前，清除之前可能存在的request
-    this._protoo.clear()
+    this._protoo?.clear()
 
     try {
       let response = null
       let thisProtoo = this._protoo
       try {
-        response = (await this._protoo.request('Join', requestData)) as SignalJoinRes
+        response = (await this._protoo?.request('Join', requestData)) as SignalJoinRes
         this.adapterRef.state.signalJoinResTime = Date.now()
       } catch (e: any) {
         if (thisProtoo !== this._protoo) {
-          this.logger.warn(`过期的信令通道消息：【${e.name}】`, e.message)
+          this.logger.warn(`Login 过期的信令通道消息：【${e.name}】`, e.message)
           return
         } else {
-          throw e
+          this.logger.warn('Login request error: ', e.message)
+          throw new RtcError({
+            code: ErrorCode.LOGIN_REQUEST_ERROR,
+            message: e.message
+          })
         }
       }
       //this.logger.log('Signalling:Join请求 收到ack -> ', JSON.stringify(response, (k, v)=>{return k === "edgeRtpCapabilities" ? null : v;}));
@@ -1111,32 +1000,23 @@ class Signalling extends EventEmitter {
       // 服务器禁用音视频: 1 禁用   0 和 2 取消禁用
       if (response.externData.audioRight === 1) {
         this.adapterRef.isAudioBanned = true
-        let mediaType = 'audio'
-        let state = true
-        let enMessage = 'Join: audio is banned by server',
-          zhMessage = 'Join: audio 被服务器禁言'
-        let message = env.IS_ZH ? zhMessage : enMessage
-        const rtcError = new RtcError({
-          code: ErrorCode.BANNED_BY_SERVER,
-          message
+        this.adapterRef.instance.safeEmit('audioVideoBanned', {
+          uid,
+          mediaType: 'audio',
+          state: true
         })
-        this.adapterRef.instance.safeEmit('audioVideoBanned', { rtcError, uid, mediaType, state })
       } else {
         this.adapterRef.isAudioBanned = false
       }
 
       if (response.externData.videoRight === 1) {
         this.adapterRef.isVideoBanned = true
-        let mediaType = 'video'
-        let state = true
-        let enMessage = 'Join: video is banned by server',
-          zhMessage = 'Join: video 被服务器禁言'
-        let message = env.IS_ZH ? zhMessage : enMessage
-        const rtcError = new RtcError({
-          code: ErrorCode.BANNED_BY_SERVER,
-          message
+        this.adapterRef.isAudioBanned = true
+        this.adapterRef.instance.safeEmit('audioVideoBanned', {
+          uid,
+          mediaType: 'audio',
+          state: true
         })
-        this.adapterRef.instance.safeEmit('audioVideoBanned', { rtcError, uid, mediaType, state })
       } else {
         this.adapterRef.isVideoBanned = false
       }
@@ -1195,16 +1075,9 @@ class Signalling extends EventEmitter {
 
         this.adapterRef.instance.resetChannel()
         if (!this.adapterRef._mediasoup) {
-          let enMessage = 'signalling_join:  media server error 1',
-            zhMessage = 'signalling_join: 媒体服务异常 1',
-            enAdvice = 'Please contact CommsEase technical support',
-            zhAdvice = '请联系云信技术支持'
-          let message = env.IS_ZH ? zhMessage : enMessage,
-            advice = env.IS_ZH ? zhAdvice : enAdvice
           throw new RtcError({
-            code: ErrorCode.MEDIA_SERVER_ERROR,
-            message,
-            advice
+            code: ErrorCode.UNKNOWN_TYPE_ERROR,
+            message: 'signalling_join: 媒体服务异常 1'
           })
         }
         this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities
@@ -1249,16 +1122,9 @@ class Signalling extends EventEmitter {
           model: this.browserDevice
         })
         if (!this.adapterRef._mediasoup) {
-          let enMessage = 'signalling_join:  media server error 2',
-            zhMessage = 'signalling_join: 媒体服务异常 2',
-            enAdvice = 'Please contact CommsEase technical support',
-            zhAdvice = '请联系云信技术支持'
-          let message = env.IS_ZH ? zhMessage : enMessage,
-            advice = env.IS_ZH ? zhAdvice : enAdvice
           throw new RtcError({
-            code: ErrorCode.MEDIA_SERVER_ERROR,
-            message,
-            advice
+            code: ErrorCode.UNKNOWN_TYPE_ERROR,
+            message: 'signalling_join: 媒体服务异常 2'
           })
         }
         this.adapterRef._mediasoup._edgeRtpCapabilities = response.edgeRtpCapabilities
@@ -1455,8 +1321,9 @@ class Signalling extends EventEmitter {
       }
       this.doSendKeepAliveTask()
     } catch (e: any) {
-      this.logger.error('Signalling: 登录失败, ' + e.name + ': ' + e.message)
-      this._joinFailed(-1, 'LOGIN_ERROR')
+      this.logger.error('Signalling: 登录流程内部错误: ', e.message)
+      //尽可能将try actch 捕捉的异常上报
+      this._joinFailed(-1, e.message || 'LOGIN_ERROR')
     }
   }
 
@@ -1486,15 +1353,18 @@ class Signalling extends EventEmitter {
       server_ip: this.adapterRef.channelInfo._protooUrl,
       signal_time_elapsed: webrtc2Param.startWssTime - webrtc2Param.startJoinTime,
       time_elapsed: currentTime - webrtc2Param.startJoinTime,
-      model: this.browserDevice
+      model: this.browserDevice,
+      desc: errMsg || '' //websdk使用desc字段描述错误内容
     })
 
     //重连时的login失败，执行else的内容
     if (this._reject) {
       this.logger.error('加入房间失败, 反馈通知')
       this._reject(
+        //server返回的错误码由extraCode反馈
         new RtcError({
-          code: reasonCode || ErrorCode.JOIN_FAILED,
+          code: ErrorCode.SERVER_AUTH_ERROR,
+          extraCode: reasonCode,
           message: errMsg || 'join failed'
         })
       )
@@ -1520,6 +1390,8 @@ class Signalling extends EventEmitter {
           this.logger.error('网络重连时，加入房间失败，主动离开。重连失败原因：', errMsg)
       }
       this.adapterRef.instance.safeEmit('error', 'RELOGIN_ERROR')
+      this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason =
+        ErrorCode.LOGIN_FAILED
       this.adapterRef.instance.leave()
     }
   }
@@ -1539,42 +1411,22 @@ class Signalling extends EventEmitter {
     const transportId = `#${this._protoo.id}_${this._protoo._transport?.wsid}`
     try {
       const response = await this._protoo.request('Heartbeat')
-      //this.logger.log('包活信令回包: ', response)
     } catch (e: any) {
       this.logger.error(`信令包保活失败, reanson: ${e.message}`)
-      // if (this.keepAliveTimer) {
-      //   this._handleDisconnected(this._protoo)
-      //   clearInterval(this.keepAliveTimer)
-      //   this.keepAliveTimer = null
-      // }
     }
   }
 
   async createRTSTransport() {
     this.logger.log(`createRTSTransport()`)
     if (!this._protoo) {
-      let enMessage = 'createRTSTransport: _protoo is not found',
-        zhMessage = 'createRTSTransport: _protoo 未找到',
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.SIGNALLING_ERROR,
-        message,
-        advice
+        code: ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: 'createRTSTransport: _protoo 未找到'
       })
     } else if (!this._url) {
-      let enMessage = 'createRTSTransport: _url is not found',
-        zhMessage = 'createRTSTransport: _url 未找到',
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.SIGNALLING_ERROR,
-        message,
-        advice
+        code: ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: 'createRTSTransport: _url 未找到'
       })
     }
 
@@ -1583,10 +1435,6 @@ class Signalling extends EventEmitter {
       this.logger.warn('CreateWsTrasnport response: ', JSON.stringify(response, null, ''))
       const { code, errMsg, transportId, wsPort = '6666' } = response
       if (code == 200) {
-        /*if (this.adapterRef._rtsTransport && wsPort == this.adapterRef._rtsTransport._port) {
-          this.logger.log('CreateWsTrasnport: 已经创建')
-          return
-        } */
         if (this.adapterRef._rtsTransport) {
           this.logger.log('CreateWsTrasnport: 需要更新')
           this.adapterRef._rtsTransport.destroy()
@@ -1611,28 +1459,14 @@ class Signalling extends EventEmitter {
   async rtsRequestKeyFrame(consumerId: string) {
     this.logger.log(`rtsRequestKeyFrame(): `, consumerId)
     if (!this._protoo) {
-      let enMessage = 'rtsRequestKeyFrame: _protoo is not found',
-        zhMessage = 'rtsRequestKeyFrame: _protoo 未找到',
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.SIGNALLING_ERROR,
-        message,
-        advice
+        code: ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: 'rtsRequestKeyFrame: _protoo 未找到'
       })
     } else if (!consumerId) {
-      let enMessage = 'rtsRequestKeyFrame: consumerId is not found',
-        zhMessage = 'rtsRequestKeyFrame: consumerId 未找到',
-        enAdvice = 'Please contact CommsEase technical support',
-        zhAdvice = '请联系云信技术支持'
-      let message = env.IS_ZH ? zhMessage : enMessage,
-        advice = env.IS_ZH ? zhAdvice : enAdvice
       throw new RtcError({
-        code: ErrorCode.SIGNALLING_ERROR,
-        message,
-        advice
+        code: ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: 'rtsRequestKeyFrame: consumerId 未找到'
       })
     }
     try {
@@ -1651,7 +1485,7 @@ class Signalling extends EventEmitter {
   }
 
   async updatePermKey(permKey: string) {
-    this.logger.log('PermKeyUpdate')
+    this.logger.log('updatePermKey newwork isConnect: ', this._protoo?.connected)
     if (!this._protoo || !this._protoo.connected) return
 
     const response = await this._protoo.request('PermKeyUpdate', {
@@ -1659,9 +1493,10 @@ class Signalling extends EventEmitter {
       permKeySecret: permKey
     })
     if (response.code !== 200) {
-      throw new RtcError({
-        code: response.code || ErrorCode.UNKNOWN,
-        message: response.errMsg || 'failed to update permKey'
+      new RtcError({
+        code: ErrorCode.UPDATE_PERMKEY_ERROR,
+        extraCode: response.code,
+        message: 'update permkey 认证错误'
       })
     } else {
       this.adapterRef.permKeyInfo = response.PermKey
@@ -1734,12 +1569,7 @@ class Signalling extends EventEmitter {
   }
 
   async doSendLogout() {
-    this.logger.log('doSendLogout begin')
-    /*if (this.adapterRef._mediasoup) {
-      this.adapterRef._mediasoup._sendTransport && this.adapterRef._mediasoup._sendTransport.close()
-      this.adapterRef._mediasoup._recvTransport && this.adapterRef._mediasoup._recvTransport.close()
-    }
-    */
+    this.logger.log('doSendLogout() begin')
     if (this.keepAliveTimer) {
       clearInterval(this.keepAliveTimer)
       this.keepAliveTimer = null
@@ -1753,7 +1583,7 @@ class Signalling extends EventEmitter {
       }
     }
     this._protoo.notify('Leave', producerData)
-    this.logger.log('doSendLogout success')
+    this.logger.log('doSendLogout() success')
   }
 
   _handleStreamStatusNotify(data: any) {}
@@ -1904,13 +1734,15 @@ class Signalling extends EventEmitter {
 
     if (reason == 1) {
       this.logger.warn('房间被关闭')
-      this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason = 30207
+      this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason =
+        ErrorCode.CHANNEL_CLOSED
       this.adapterRef.instance.leave()
       this.adapterRef.instance.safeEmit('channel-closed', {})
     } else if (reason == 2) {
       this.logger.warn(`${uid}被提出房间`)
       if (uid.toString() == this.adapterRef.channelInfo.uid.toString()) {
-        this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason = 30206
+        this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason =
+          ErrorCode.CLIENT_BANNED
         this.adapterRef.instance.leave()
       }
       this.adapterRef.instance.safeEmit('client-banned', {
@@ -1919,7 +1751,8 @@ class Signalling extends EventEmitter {
     } else if (reason == 5) {
       this.logger.warn(`${uid} permKey 超时被提出房间`)
       if (uid.toString() == this.adapterRef.channelInfo.uid.toString()) {
-        this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason = 30206
+        this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason =
+          ErrorCode.PERMKEY_TIMEOUT
         this.adapterRef.instance.leave()
       }
       this.adapterRef.instance.safeEmit('permkey-timeout', {

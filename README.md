@@ -4,25 +4,24 @@
 
 # 开发规范
 
-- 推荐使用 atom/vsconde 进行开发
-- 借助 Webpack/Babel 工程化、项目管理
+- 推荐使用 webstorm/vsconde 进行开发
+- 借助 Webpack 工程化、项目管理
 - 使用 eslint 校验代码格式
+- 使用 Prettier 检验代码规范
+- [sdk开发规范](http://doc.hz.netease.com/pages/viewpage.action?pageId=312334686)
 
 # 开发流程
-- npm run dev:g2 修改源码（注释生成api）
+- npm run dev:g2 （开发调试）
 - 开启静态资源托管: cd nimwebsdkTester && yarn https-server 运行测试工程，在开发中调整下修改测试工程代码
-- run npm run pack:prod:g2 打包在dist路径中
-- 项目管理[上线流程](http://doc.hz.netease.com/pages/viewpage.action?pageId=140479734)
-- 发布版本后打一个tag 名字跟版本同步（v4.0.0）
+- run npm run pack:prod:g2 （打包命令，在dist路径中生成打包文件）
+- 项目管理[上线流程](http://doc.hz.netease.com/pages/viewpage.action?pageId=339177348)
+- 发布版本后打一个tag 名字跟版本同步（v4.6.0）
 
 # 测试流程
-开发完成SDK后，需要发布到内网的测试环境，让测试人员测试页面。
-测试环境的仓库地址是  [web-nrtc](https://g.hz.netease.com/rtc/web-nrtc) ， 在NDP部署发布后，可以通过webnrtc.netease.im访问 （需要添加HOST）。
-具体使用请看web-nrtc仓库的介绍，可以参考[测试环境部署流程](http://doc.hz.netease.com/pages/viewpage.action?pageId=132893888)
-
-```host
-223.252.198.177 webnrtc.netease.im 
-```
+- 开发完成SDK后，需要发布到内网的测试环境，让测试人员测试页面。
+测试环境的仓库地址是  [web-nrtc](https://g.hz.netease.com/rtc/web-nrtc) ， 在NDP部署发布后，可以通过webnrtc.netease.im访问。
+- 具体使用请看web-nrtc仓库的介绍，可以参考[测试环境部署流程](http://doc.hz.netease.com/pages/viewpage.action?pageId=132893888)
+- 当前是通过[CI流程](http://doc.hz.netease.com/pages/viewpage.action?pageId=312334235)完成测试环境demo的部署工作
 
 # hotfix
 - 从要修复的发布分支拉一个小版本小版本分支比如stab/v4.0.0 --》 stab/v4.0.1
@@ -80,17 +79,16 @@
 
 
 # 版本迭代流程
-- 产品（郑立异 | 李世奇 | 杨狄）发需求wiki文档链接，拉第一次需求会，会上评估需求
+- 产品（王琨 | 杨狄）发需求popo文档链接，拉第一次需求会，会上评估需求
 - 产品拉第二次需求会拍定需求，定版本，各端开发、测试排期（最好会前评估好用时），产品建立故事主任务jira单
-- 开发在主任务jira单下创建子任务，从master分支拉取feature分支进行开发
+- 开发在主任务jira单下创建子任务，拉取feature分支进行开发
 - 测试拟好测试用例同开发评估，勾选冒烟用例
-- 在package.json里更新版本号，IM的外的版本号字段为 `version: x.x.x`, 对内的版本号字段为：`sdkVersion: 52`，[内外版本号对照文档](http://doc.hz.netease.com/pages/viewpage.action?pageId=46016053)
-- 开发冒烟、发提测邮件、执行打包命令提供给测试dist/nimwebsdkTester下的大白页zip
-- 开发从开发手册developer分支拉取分支（IM版本如v-im-x.x.x/音视频版本如nx.x.x）补充开发手册、sdk/demo更新日志
+- 在package.json里更新版本号
+- 开发冒烟、发提测邮件
 - 测试分别使用测试大白页、demo，对接服务端测试环境，开发修复问题，测试完毕；
-- 服务器凌晨上线，上班后，开发将sdk当前版本合并到master分支，将开发手册当前分支合并到developer，自测开发手册（开发手册操作指南：http://doc.hz.netease.com/pages/viewpage.action?pageId=95790824 ）
+- 上线阶段生成更新sdk API文档到[文档仓库]()推动master分支
 - 测试分别使用测试大白页、demo，对接服务端线上环境，测试完毕；
-- 发布平台上线dist/lib下的四端sdk、开发手册、api文档（根据注释生成到dist/api目录需拷贝到开发手册https://g.hz.netease.com/yunxin-doc/yunxin-web-doc/tree/master/doc/即时通讯Web端/NIMSDK-Web目录 ）
-- 上线的发布计划中打钩画押，关注MMC通信发布群
+- [发布流程参考](http://doc.hz.netease.com/pages/viewpage.action?pageId=339177348)
+- 上线的发布计划中打钩画押，关注【通知群】云信发布群
 - 线上版本打tag
  
