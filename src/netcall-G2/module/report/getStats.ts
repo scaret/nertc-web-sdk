@@ -1080,12 +1080,17 @@ class GetStats {
       if (direction === 'send') {
         this.formativeStatsReport?.formatSendData(audioObj, mediaTypeShort)
       }
-      result[`${mediaTypeShort}_ssrc`] = [audioObj]
+      // 采集不到不上报
+      if (typeof audioObj.active === 'number') {
+        result[`${mediaTypeShort}_ssrc`] = [audioObj]
+      }
     } else if (mediaTypeShort === 'video' || mediaTypeShort === 'screen') {
       if (uidAndKindBySsrc?.streamType === 'high' && direction === 'send') {
         this.formativeStatsReport?.formatSendData(videoObj, mediaTypeShort)
       }
-      result[`${mediaTypeShort}_ssrc`] = [videoObj]
+      if (typeof videoObj.active === 'number') {
+        result[`${mediaTypeShort}_ssrc`] = [videoObj]
+      }
     }
     return result
   }
