@@ -4160,10 +4160,6 @@ class LocalStream extends RTCEventEmitter {
               msg: `load ${options.wasmUrl} error.`
             }
           })
-          throw new RtcError({
-            code: ErrorCode.PLUGIN_LOADED_ERROR,
-            message: `插件加载失败：${options.wasmUrl}`
-          })
         })
         plugin.once('error', (message: string) => {
           if (options.key == 'AIDenoise') {
@@ -4179,13 +4175,12 @@ class LocalStream extends RTCEventEmitter {
               msg: `插件 ${options.key} 内部错误：${message}。`
             }
           })
-          throw new RtcError({
-            code: ErrorCode.PLUGIN_LOADED_ERROR,
-            message: `插件 ${options.key} 内部错误：${message}。`
-          })
         })
       } else {
-        throw new Error(`unsupport plugin ${options.key}`)
+        throw new RtcError({
+          code: ErrorCode.PLUGIN_LOADED_ERROR,
+          message: `unsupport plugin ${options.key}`
+        })
       }
     } catch (e: any) {
       this.emit('plugin-load-error', {
@@ -4200,6 +4195,10 @@ class LocalStream extends RTCEventEmitter {
           plugin: options.key,
           msg: e
         }
+      })
+      throw new RtcError({
+        code: ErrorCode.PLUGIN_LOADED_ERROR,
+        message: e.message
       })
     }
   }
