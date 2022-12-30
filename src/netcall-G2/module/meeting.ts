@@ -378,8 +378,8 @@ class Meeting extends EventEmitter {
         serverIp: ''
       })
       throw new RtcError({
-        code: e.getCode() || ErrorCode.JOIN_FAILED,
-        message: e.getMessage() || `join() 内部错误: ${e.name}, ${e.message}`
+        code: (e.getCode && e.getCode()) || ErrorCode.JOIN_FAILED,
+        message: (e.getCode && e.getMessage()) || `join() 内部错误: ${e.name}, ${e.message}`
       })
     }
   }

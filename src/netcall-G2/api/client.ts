@@ -554,8 +554,8 @@ class Client extends Base {
         }
       })
       throw new RtcError({
-        code: e.getCode() || ErrorCode.JOIN_FAILED,
-        message: e.getMessage() || `join() 内部错误: ${e.name}, ${e.message}`
+        code: (e.getCode && e.getCode()) || ErrorCode.JOIN_FAILED,
+        message: (e.getCode && e.getMessage()) || `join() 内部错误: ${e.name}, ${e.message}`
       })
     }
   }
@@ -828,8 +828,8 @@ class Client extends Base {
       message = e.message
       onPublishFinish()
       throw new RtcError({
-        code: e.getCode() || reason,
-        message: e.getMessage() || `publish() 内部错误: ${e.name}, ${e.message}`
+        code: (e.getCode && e.getCode()) || reason,
+        message: (e.getCode && e.getMessage()) || `publish() 内部错误: ${e.name}, ${e.message}`
       })
     }
   }
@@ -918,8 +918,8 @@ class Client extends Base {
       message = e.message
       onUnpublishFinish()
       throw new RtcError({
-        code: e.getCode() || reason,
-        message: e.getMessage() || `publish() 内部错误: ${e.name}, ${e.message}`
+        code: (e.getCode && e.getCode()) || reason,
+        message: (e.getCode && e.getMessage()) || `publish() 内部错误: ${e.name}, ${e.message}`
       })
     }
   }
@@ -1212,8 +1212,8 @@ class Client extends Base {
         )
       })
       throw new RtcError({
-        code: e.getCode() || ErrorCode.UNKNOWN_TYPE_ERROR,
-        message: e.getMessage() || `subscribe() 内部错误: ${e.name}, ${e.message}`
+        code: (e.getCode && e.getCode()) || ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: (e.getCode && e.getMessage()) || `subscribe() 内部错误: ${e.name}, ${e.message}`
       })
     }
   }
@@ -1371,8 +1371,8 @@ class Client extends Base {
         )
       })
       throw new RtcError({
-        code: e.getCode() || ErrorCode.UNKNOWN_TYPE_ERROR,
-        message: e.getMessage() || `unsubscribe() 内部错误: ${e.name}, ${e.message}`
+        code: (e.getCode && e.getCode()) || ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: (e.getCode && e.getMessage()) || `unsubscribe() 内部错误: ${e.name}, ${e.message}`
       })
     }
   }
@@ -1428,8 +1428,8 @@ class Client extends Base {
         )
       })
       throw new RtcError({
-        code: e.getCode() || ErrorCode.UNKNOWN_TYPE_ERROR,
-        message: e.getMessage() || `setRemoteVideoStreamType() 内部错误: ${e.name}, ${e.message}`
+        code: (e.getCode && e.getCode()) || ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: (e.getCode && e.getMessage()) || `setRemoteVideoStreamType() 内部错误: ${e.name}, ${e.message}`
       })
     }
   }
@@ -1486,8 +1486,8 @@ class Client extends Base {
         )
       })
       throw new RtcError({
-        code: e.getCode() || ErrorCode.UNKNOWN_TYPE_ERROR,
-        message: e.getMessage() || `setRemoteStreamType() 内部错误: ${e.name}, ${e.message}`
+        code: (e.getCode && e.getCode()) || ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: (e.getCode && e.getMessage()) || `setRemoteStreamType() 内部错误: ${e.name}, ${e.message}`
       })
     }
   }
