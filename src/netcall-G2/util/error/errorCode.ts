@@ -313,8 +313,8 @@ const ErrorCode = {
   STREAM_CLOSE_AUDIO_ERROR: 10229,
 
   /*
-   * 描述：当前没有打开mic，却调用close({screenAudio:true})关闭mic
-   * 可能原因：当前没有打开mic，却调用close({screenAudio:true})关闭mic
+   * 描述：当前没有打开屏幕共享音频，却调用close({screenAudio:true})关闭mic
+   * 可能原因：当前没有打开屏幕共享音频，却调用close({screenAudio:true})关闭mic
    * 处理建议：业务层规避这种行为，也可以忽略这个报错，因为sdk会主动放弃该次的close()调用
    */
   STREAM_CLOSE_AUDIO_SLAVE_ERROR: 10230,

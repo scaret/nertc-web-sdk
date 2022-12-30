@@ -1364,13 +1364,13 @@ class LocalStream extends RTCEventEmitter {
       options: options
     })
     let type = options.type
-    let reason = null
+    let reason, message
     switch (type) {
       case 'audio':
         this.logger.log('close() 关闭mic设备')
         if (!this.audio) {
-          this.logger.log('close() 没有开启过麦克风')
-          reason = 'NOT_OPEN_MIC_YET'
+          reason = ErrorCode.STREAM_CLOSE_AUDIO_ERROR
+          message = 'close() 没有开启过麦克风'
           break
         }
         this.audio = false
@@ -1389,8 +1389,8 @@ class LocalStream extends RTCEventEmitter {
       case 'screenAudio':
         this.logger.log('close() 关闭屏幕共享音频')
         if (!this.screenAudio) {
-          this.logger.log('close() 没有开启过屏幕共享音频')
-          reason = 'NOT_OPEN_SCREENAUDIO_YET'
+          reason = ErrorCode.STREAM_CLOSE_AUDIO_SLAVE_ERROR
+          message = 'close() 没有开启过屏幕共享音频'
           break
         }
         this.screenAudio = false
@@ -1405,8 +1405,8 @@ class LocalStream extends RTCEventEmitter {
       case 'video':
         this.logger.log('close() 关闭camera设备')
         if (!this.video) {
-          this.logger.log('close() 没有开启过摄像头')
-          reason = 'NOT_OPEN_CAMERA_YET'
+          reason = ErrorCode.STREAM_CLOSE_CAMERA_ERROR
+          message = 'close() 没有开启过摄像头'
           break
         }
         await this.suspendVideoPostProcess()
@@ -1441,8 +1441,8 @@ class LocalStream extends RTCEventEmitter {
       case 'screen':
         this.logger.log('close() 关闭屏幕共享')
         if (!this.screen) {
-          this.logger.log('close() 没有开启过屏幕共享')
-          reason = 'NOT_OPEN_SCREEN_YET'
+          reason = ErrorCode.STREAM_CLOSE_SCREEN_ERROR
+          message = 'close() 没有开启过屏幕共享'
           break
         }
         this.screen = false
@@ -1472,16 +1472,17 @@ class LocalStream extends RTCEventEmitter {
         )
         break
       default:
-        this.logger.log('close() Unknown Type')
-        reason = 'INVALID_ARGUMENTS'
+        reason = ErrorCode.STREAM_CLOSE_ARGUMENT_ERROR
+        message = 'close() Unknown Type'
     }
     if (reason) {
+      this.logger.error(message)
       this.client.apiFrequencyControl({
         name: 'close',
         code: -1,
         param: JSON.stringify(
           {
-            reason,
+            reason: message,
             streamID: this.stringStreamID,
             audio: this.audio,
             video: this.video,
@@ -1493,35 +1494,10 @@ class LocalStream extends RTCEventEmitter {
         )
       })
       onCloseFinished()
-      if (reason === 'NOT_OPEN_MIC_YET') {
-        return Promise.reject(
-          new RtcError({
-            code: ErrorCode.STREAM_CLOSE_AUDIO_ERROR,
-            message: 'close() 麦克风没有开启'
-          })
-        )
-      } else if (reason === 'NOT_OPEN_CAMERA_YET') {
-        return Promise.reject(
-          new RtcError({
-            code: ErrorCode.STREAM_CLOSE_CAMERA_ERROR,
-            message: 'close() 摄像头没有开启'
-          })
-        )
-      } else if (reason === 'NOT_OPEN_SCREEN_YET') {
-        return Promise.reject(
-          new RtcError({
-            code: ErrorCode.STREAM_CLOSE_SCREEN_ERROR,
-            message: 'close() 屏幕共享没有开启'
-          })
-        )
-      } else {
-        return Promise.reject(
-          new RtcError({
-            code: ErrorCode.STREAM_CLOSE_AUDIO_SLAVE_ERROR,
-            message: 'close() Unknown Type'
-          })
-        )
-      }
+      throw new RtcError({
+        code: reason,
+        message
+      })
     } else {
       onCloseFinished()
       this.client.apiFrequencyControl({
