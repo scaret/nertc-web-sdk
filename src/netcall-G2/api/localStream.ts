@@ -1258,23 +1258,10 @@ class LocalStream extends RTCEventEmitter {
         }
       })
 
-      if (
-        e.message &&
-        // 为什么这样写：
-        // Safari和ios的提示是：The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.
-        // Chrome的提示是：Permission Denied. Permission Denied by system
-        e.message.indexOf('ermission') > -1 &&
-        e.message.indexOf('denied') > -1
-      ) {
-        return Promise.reject(
-          new RtcError({
-            code: ErrorCode.NOT_SUPPORT_ERROR,
-            message: `${e.message}`
-          })
-        )
-      } else {
-        return Promise.reject(e)
-      }
+      throw new RtcError({
+        code: ErrorCode.MEDIA_DEVICE_ERROR,
+        message: `${e.name} ${e.message}`
+      })
     }
   }
 
