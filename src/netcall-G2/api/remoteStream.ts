@@ -793,7 +793,8 @@ class RemoteStream extends RTCEventEmitter {
   async unmuteAudio() {
     this.logger.log('启用音频轨道: ', this.stringStreamID)
     try {
-      if (!this._play) {
+      if ( this._play && this._play.audio && this._play.audio.dom) {
+      } else {
         throw new RtcError({
           code: ErrorCode.STREAM_UNMUTE_AUDIO_ERROR,
           message: 'remoteStream.unmuteVideo: 之前没有播放过音频, 不支持unmute'
@@ -885,7 +886,8 @@ class RemoteStream extends RTCEventEmitter {
   async unmuteAudioSlave() {
     this.logger.log('启用音频辅流轨道: ', this.stringStreamID)
     try {
-      if (!this._play) {
+      if ( this._play && this._play.audioSlave && this._play.audioSlave.dom) {
+      } else {
         throw new RtcError({
           code: ErrorCode.STREAM_UNMUTE_AUDIO_SLAVE_ERROR,
           message: 'remoteStream.unmuteVideo: 之前没有播放过音频辅流, 不支持unmute'
@@ -1170,7 +1172,8 @@ class RemoteStream extends RTCEventEmitter {
   async unmuteVideo() {
     this.logger.log(`unmuteVideo() 启用 ${this.stringStreamID} 的视频轨道`)
     try {
-      if (!this._play || !this.videoView) {
+      if (this.videoView && this._play && this._play.video && this._play.video.dom) {
+      } else {
         throw new RtcError({
           code: ErrorCode.STREAM_UNMUTE_VIDEO_ERROR,
           message: 'remoteStream.unmuteVideo: 之前没有播放过视频, 不支持unmute'
@@ -1267,7 +1270,9 @@ class RemoteStream extends RTCEventEmitter {
   async unmuteScreen() {
     this.logger.log(`unmuteScreen() 启用 ${this.stringStreamID} 的视频轨道`)
     try {
-      if (!this._play || !this.screenView) {
+
+      if (this.screenView && this._play && this._play.screen && this._play.screen.dom) {
+      } else {
         throw new RtcError({
           code: ErrorCode.STREAM_UNMUTE_SCREEN_ERROR,
           message: 'remoteStream.unmuteVideo: 之前没有播放过屏幕共享, 不支持unmute'
