@@ -194,7 +194,7 @@ let parameters: IParameters = {
   screenLowStartBitrate: 500,
   screenLowMinBitrate: 0,
   screenFocus: true,
-  allowEmptyMedia: false,
+  allowEmptyMedia: true,
   keepLocalstreamOnLeave: false,
   joinFirstTimeout: 2000,
   joinMaxRetry: 3,

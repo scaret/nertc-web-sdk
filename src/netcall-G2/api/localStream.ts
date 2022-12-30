@@ -1870,13 +1870,11 @@ class LocalStream extends RTCEventEmitter {
   setCaptureVolume(volume: number, audioType?: 'microphone' | 'screenAudio') {
     let errcode, message
     if (!Number.isInteger(volume)) {
-      errcode = ErrorCode.SET_AUDIO_VOLUME_ARGUMENTS_ERROR
+      errcode = ErrorCode.SET_CAPTURE_VOLUME_ARGUMENTS_ERROR
       message = 'setCaptureVolume() volume 应该为 0 - 100 的整数'
-      this.logger.log(message)
-    } else if (volume < 0) {
-      volume = 0
-    } else if (volume > 100) {
-      volume = 100
+    } else if (volume < 0 || volume > 100) {
+      errcode = ErrorCode.STREAM_SET_CAPTURE_VOLUME_ARGUMENT_ERROR
+      message = 'setCaptureVolume() volume 应该为 0 - 100 的整数'
     }
     this.logger.log(`setCaptureVolume() 调节${this.stringStreamID}的音量大小: ${volume}`)
 
@@ -1898,6 +1896,7 @@ class LocalStream extends RTCEventEmitter {
       )
     })
     if (errcode) {
+      this.logger.error(message)
       throw new RtcError({
         code: errcode,
         message
