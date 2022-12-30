@@ -1053,10 +1053,10 @@ class RemoteStream extends RTCEventEmitter {
     }
     this.logger.log(`setAudioVolume() 调节${this.stringStreamID}的音量大小: ${volume}`)
 
-    if (this.audio) {
+    if (this.audio && this._play && this._play.audio && this._play.audio.dom) {
       this._play?.setPlayVolume('audio', volume)
     } else {
-      message = 'setAudioVolume() 没有音频流，请检查是否有发布过音频'
+      message = 'setAudioVolume() 没有音频流，请检查是否有订阅播放过音频'
       errcode = ErrorCode.SET_AUDIO_VOLUME_ERROR
     }
     this.client.apiFrequencyControl({
@@ -1092,10 +1092,10 @@ class RemoteStream extends RTCEventEmitter {
     }
     this.logger.log(`setAudioSlaveVolume() 调节${this.stringStreamID}的音量大小: ${volume}`)
 
-    if (this.audio) {
+    if (this.audio && this._play && this._play.audioSlave && this._play.audioSlave.dom) {
       this._play?.setPlayVolume('audioSlave', volume)
     } else {
-      message = 'setAudioSlaveVolume() 没有音频流，请检查是否有发布过音频'
+      message = 'setAudioSlaveVolume() 没有音频流，请检查是否有订阅播放过音频辅流'
       errcode = ErrorCode.SET_AUDIO_VOLUME_ERROR
     }
     this.client.apiFrequencyControl({

@@ -125,7 +125,7 @@ export class OperationQueue {
       const elem = this.queue.shift()
       if (elem) {
         if ((elem.args.caller as any)?.destroyed) {
-          this.logger.error(`无法执行操作：${elem.args.method}： 对象已被销毁，请重新创建对象`)
+          this.logger.error(`无法执行操作：${elem.args.method}: 对象已被销毁，请重新创建对象`)
           this.fire('functionEnd')
           return
         }
