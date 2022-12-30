@@ -2231,8 +2231,7 @@ class MediaHelper extends EventEmitter {
     if (!this.audio.mixAudioConf.sounds[soundId]) {
       message = 'pauseEffect() soundId找不到对应的音效文件'
       reason = ErrorCode.AUDIO_EFFECT_FILE_LOST_ERROR
-    }
-    if (this.audio.mixAudioConf.sounds[soundId].state === 'PAUSED') {
+    } else if (this.audio.mixAudioConf.sounds[soundId].state === 'PAUSED') {
       this.logger.log('pauseEffect: 已经暂停')
       return
     } else if (this.audio.mixAudioConf.sounds[soundId].state !== 'PLAYED') {
@@ -2281,8 +2280,7 @@ class MediaHelper extends EventEmitter {
     if (!this.audio.mixAudioConf.sounds[soundId]) {
       message = 'resumeEffect() soundId找不到对应的音效文件'
       reason = ErrorCode.AUDIO_EFFECT_FILE_LOST_ERROR
-    }
-    if (this.audio.mixAudioConf.sounds[soundId].state !== 'PAUSED') {
+    } else if (this.audio.mixAudioConf.sounds[soundId].state !== 'PAUSED') {
       message = 'resumeEffect() 当前没有暂停该音效文件'
       reason = ErrorCode.AUDIO_EFFECT_NOT_PAUSE
     }
@@ -2348,6 +2346,12 @@ class MediaHelper extends EventEmitter {
     }
     if (isExistOptions(soundIdCheck).result) {
       checkValidInteger(soundIdCheck)
+    }
+    if (!this.audio.mixAudioConf.sounds[soundId]) {
+      throw new RtcError({
+        code: ErrorCode.AUDIO_EFFECT_FILE_LOST_ERROR,
+        message: 'resumeEffect() soundId找不到对应的音效文件'
+      })
     }
     const volumeCheck = {
       tag: 'Stream.setVolumeOfEffect:volume',
