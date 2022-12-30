@@ -1537,7 +1537,7 @@ class RemoteStream extends RTCEventEmitter {
    * @returns {Promise}
    */
   stopMediaRecording(options: { recordId?: string }) {
-    if (!this._record) {
+    if (!this._record || !this._record.recoder) {
       throw new RtcError({
         code: ErrorCode.RECORDING_NOT_START_ERROR,
         message: 'remoteStream.stopMediaRecording: 录制未开始'
@@ -1557,7 +1557,7 @@ class RemoteStream extends RTCEventEmitter {
    * @returns {Promise}
    */
   playMediaRecording(options: { recordId: string; view: HTMLElement }) {
-    if (!this._record) {
+    if (!this._record || !this._record.recoder) {
       throw new RtcError({
         code: ErrorCode.RECORDING_NOT_START_ERROR,
         message: 'remoteStream.playMediaRecording: 录制未开始'
@@ -1573,7 +1573,7 @@ class RemoteStream extends RTCEventEmitter {
    */
   listMediaRecording() {
     let list = []
-    if (!this._record) {
+    if (!this._record || !this._record.recoder) {
       throw new RtcError({
         code: ErrorCode.RECORDING_NOT_START_ERROR,
         message: 'remoteStream.listMediaRecording: 录制未开始'
@@ -1594,7 +1594,7 @@ class RemoteStream extends RTCEventEmitter {
    * @returns {Promise}
    */
   cleanMediaRecording(options: { recordId: string }) {
-    if (!this._record) {
+    if (!this._record || !this._record.recoder) {
       throw new RtcError({
         code: ErrorCode.RECORDING_NOT_START_ERROR,
         message: 'remoteStream.cleanMediaRecording: 录制未开始'
@@ -1612,7 +1612,7 @@ class RemoteStream extends RTCEventEmitter {
    * @returns {Promise}
    */
   downloadMediaRecording(options: { recordId: string }) {
-    if (!this._record) {
+    if (!this._record || !this._record.recoder) {
       throw new RtcError({
         code: ErrorCode.RECORDING_NOT_START_ERROR,
         message: 'remoteStream.downloadMediaRecording: 录制未开始'

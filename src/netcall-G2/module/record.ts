@@ -50,6 +50,9 @@ class Record extends EventEmitter {
     // 设置传入参数
     this.client = options.client
   }
+  get recoder() {
+    return this._recorder
+  }
   /**
    * [开始录制]
    * @param  {[type]} [stream=null] [媒体流信息]
