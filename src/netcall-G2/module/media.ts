@@ -2286,7 +2286,7 @@ class MediaHelper extends EventEmitter {
     }
     if (reason) {
       throw new RtcError({
-        code: ErrorCode.AUDIO_EFFECT_NO_SUPPORT,
+        code: reason,
         message
       })
     }
