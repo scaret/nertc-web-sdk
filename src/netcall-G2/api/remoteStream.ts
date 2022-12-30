@@ -793,7 +793,7 @@ class RemoteStream extends RTCEventEmitter {
   async unmuteAudio() {
     this.logger.log('启用音频轨道: ', this.stringStreamID)
     try {
-      if ( this._play && this._play.audio && this._play.audio.dom) {
+      if (this._play && this._play.audio && this._play.audio.dom) {
       } else {
         throw new RtcError({
           code: ErrorCode.STREAM_UNMUTE_AUDIO_ERROR,
@@ -886,7 +886,7 @@ class RemoteStream extends RTCEventEmitter {
   async unmuteAudioSlave() {
     this.logger.log('启用音频辅流轨道: ', this.stringStreamID)
     try {
-      if ( this._play && this._play.audioSlave && this._play.audioSlave.dom) {
+      if (this._play && this._play.audioSlave && this._play.audioSlave.dom) {
       } else {
         throw new RtcError({
           code: ErrorCode.STREAM_UNMUTE_AUDIO_SLAVE_ERROR,
@@ -1270,7 +1270,6 @@ class RemoteStream extends RTCEventEmitter {
   async unmuteScreen() {
     this.logger.log(`unmuteScreen() 启用 ${this.stringStreamID} 的视频轨道`)
     try {
-
       if (this.screenView && this._play && this._play.screen && this._play.screen.dom) {
       } else {
         throw new RtcError({
@@ -1382,11 +1381,9 @@ class RemoteStream extends RTCEventEmitter {
    */
   async takeSnapshot(options: SnapshotOptions) {
     let errcode, message
-    if (this.video || this.screen) {
-      if (!this._play) {
-        message = 'takeSnapshot(): 当前视频没有播放'
-        errcode = ErrorCode.STREAM_TAKE_SNAPSHOT_ERROR
-      }
+    const isVideoPlaying = this.video && this._play?.video?.dom
+    const isScreenPlaying = this.screen && this.Play?.screen?.dom
+    if (isVideoPlaying || isScreenPlaying) {
       await this._play.takeSnapshot(options, 'download', this.streamID)
       this.client.apiFrequencyControl({
         name: 'takeSnapshot',
@@ -1398,7 +1395,7 @@ class RemoteStream extends RTCEventEmitter {
         }
       })
     } else {
-      message = 'takeSnapshot(): 没有视频流, 请检查是否开启过视频'
+      message = 'takeSnapshot(): 没有视频流, 请检查视频是否正在播放'
       errcode = ErrorCode.STREAM_TAKE_SNAPSHOT_ERROR
     }
 
@@ -1434,11 +1431,9 @@ class RemoteStream extends RTCEventEmitter {
    */
   takeSnapshotBase64(options: SnapshotBase64Options) {
     let errcode, message
-    if (this.video || this.screen) {
-      if (!this._play) {
-        message = 'takeSnapshotBase64(): 当前视频没有播放'
-        errcode = ErrorCode.STREAM_TAKE_SNAPSHOT_ERROR
-      }
+    const isVideoPlaying = this.video && this._play?.video?.dom
+    const isScreenPlaying = this.screen && this.Play?.screen?.dom
+    if (isVideoPlaying || isScreenPlaying) {
       let base64Url = this._play.takeSnapshot(options, 'base64')
       this.client.apiFrequencyControl({
         name: 'takeSnapshotBase64',
@@ -1451,7 +1446,7 @@ class RemoteStream extends RTCEventEmitter {
       })
       return base64Url
     } else {
-      message = 'takeSnapshotBase64(): 没有视频流, 请检查是否开启过视频'
+      message = 'takeSnapshotBase64(): 没有视频流, 请检查视频是否正在播放'
       errcode = ErrorCode.STREAM_TAKE_SNAPSHOT_ERROR
     }
     if (errcode) {

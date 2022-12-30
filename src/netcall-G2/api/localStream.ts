@@ -2807,11 +2807,9 @@ class LocalStream extends RTCEventEmitter {
    */
   async takeSnapshot(options: SnapshotOptions) {
     let errcode, message
-    if (this.video || this.screen) {
-      if (!this._play) {
-        message = 'takeSnapshot(): 当前视频没有播放'
-        errcode = ErrorCode.STREAM_TAKE_SNAPSHOT_ERROR
-      }
+    const isVideoPlaying = this.video && this._play?.video?.dom
+    const isScreenPlaying = this.screen && this.Play?.screen?.dom
+    if (isVideoPlaying || isScreenPlaying) {
       this.logger.log(`takeSnapshot() options: ${JSON.stringify(options)}`)
       await this._play.takeSnapshot(options, 'download', this.streamID)
       this.client.apiFrequencyControl({
@@ -2824,7 +2822,7 @@ class LocalStream extends RTCEventEmitter {
         }
       })
     } else {
-      message = 'takeSnapshot(): 没有视频流, 请检查是否开启过视频'
+      message = 'takeSnapshot(): 没有视频流, 请检查视频是否正在播放'
       errcode = ErrorCode.STREAM_TAKE_SNAPSHOT_ERROR
     }
 
@@ -2860,11 +2858,9 @@ class LocalStream extends RTCEventEmitter {
    */
   takeSnapshotBase64(options: SnapshotBase64Options) {
     let errcode, message
-    if (this.video || this.screen) {
-      if (!this._play) {
-        message = 'takeSnapshotBase64(): 当前视频没有播放'
-        errcode = ErrorCode.STREAM_TAKE_SNAPSHOT_ERROR
-      }
+    const isVideoPlaying = this.video && this._play?.video?.dom
+    const isScreenPlaying = this.screen && this.Play?.screen?.dom
+    if (isVideoPlaying || isScreenPlaying) {
       let base64Url = this._play.takeSnapshot(options, 'base64')
       this.client.apiFrequencyControl({
         name: 'takeSnapshotBase64',
@@ -2877,7 +2873,7 @@ class LocalStream extends RTCEventEmitter {
       })
       return base64Url
     } else {
-      message = 'takeSnapshotBase64(): 没有视频流, 请检查是否开启过视频'
+      message = 'takeSnapshotBase64(): 没有视频流, 请检查视频是否正在播放'
       errcode = ErrorCode.STREAM_TAKE_SNAPSHOT_ERROR
     }
 
