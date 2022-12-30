@@ -1829,7 +1829,7 @@ class Client extends Base {
       this.logger.warn(message)
     }
     if (this.adapterRef.connectState.curState !== 'DISCONNECTED') {
-      message = 'setChannelProfile: 当前没有加入房间，或者因为网络异常正在重连中'
+      message = 'setChannelProfile() 请在加入房间之前调用'
       reason = ErrorCode.API_CALL_SEQUENCE_BEFORE_ERROR
       this.logger.warn(message)
     } else {
