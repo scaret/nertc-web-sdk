@@ -684,10 +684,12 @@ export class LBSManager {
           urlSettings[1].fire()
         } else if (this.isAllRequestsFinished(urlSettings)) {
           ajaxFinished = true
-          reject(new RtcError({
-            code: ErrorCode.LBS_REQUEST_ERROR,
-            message: 'LBS: 主线路请求发生错误(onerror)'
-          }))
+          return reject(
+            new RtcError({
+              code: ErrorCode.LBS_REQUEST_ERROR,
+              message: 'LBS: 主线路请求发生错误(onerror)'
+            })
+          )
         }
       }
 
@@ -707,10 +709,12 @@ export class LBSManager {
           urlSettings[1].fire()
         } else if (this.isAllRequestsFinished(urlSettings)) {
           ajaxFinished = true
-          reject(new RtcError({
-            code: ErrorCode.LBS_REQUEST_ERROR,
-            message: 'LBS: 主线路请求发生错误(ontimeout)'
-          }))
+          return reject(
+            new RtcError({
+              code: ErrorCode.LBS_REQUEST_ERROR,
+              message: 'LBS: 主线路请求发生错误(ontimeout)'
+            })
+          )
         }
       }
 

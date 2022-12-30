@@ -256,6 +256,13 @@ class LocalStream extends RTCEventEmitter {
     } else if (typeof options.uid === 'string') {
       this.logger.log('createStream: uid是string类型')
       options.client.adapterRef.channelInfo.uidType = 'string'
+      if (!/^\d+(\.\d+)?$/.test(options.uid)) {
+        this.logger.log('join(): uid不是数字字符串格式')
+        throw new RtcError({
+          code: ErrorCode.JOIN_UID_TYPE_ERROR,
+          message: 'createStream: uid不是数字字符串格式'
+        })
+      }
     } else if (typeof options.uid === 'number') {
       this.logger.log('createStream: uid是number类型')
       options.client.adapterRef.channelInfo.uidType = 'number'
