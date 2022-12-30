@@ -1137,7 +1137,10 @@ class RemoteStream extends RTCEventEmitter {
           }, 0)
         }
         this.logger.error('设置输出设备失败', e.name, e.message)
-        throw e
+        throw new RtcError({
+          code: ErrorCode.SET_AUDIO_OUTPUT_ERROR,
+          message: e.message || '系统内部错误'
+        })
       }
       if (callback) {
         setTimeout(callback, 0)
