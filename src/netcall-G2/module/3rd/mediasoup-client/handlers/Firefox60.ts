@@ -977,10 +977,17 @@ export class Firefox60 extends HandlerInterface {
     // }
 
     Logger.debug(prefix, '[Subscribe] receive() | calling pc.setLocalDescription()')
-    this.signalingState = 'have-local-offer'
-    await this._pc.setLocalDescription(offer)
+    try {
+      await this._pc.setLocalDescription(offer)
+    } catch (e) {
+      if (e.name === 'InvalidModificationError') {
+        const offerTemp = await this._pc.createOffer()
+        await this._pc.setLocalDescription(offer)
+      } else {
+        throw e
+      }
+    }
     Logger.debug(prefix, '[Subscribe] receive() | calling pc.setRemoteDescription()')
-    this.signalingState = 'stable'
     await this._pc.setRemoteDescription(answer)
 
     const transceiver = this._pc.getTransceivers().find((t: RTCRtpTransceiver) => t.mid === localId)
