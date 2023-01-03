@@ -256,6 +256,13 @@ class LocalStream extends RTCEventEmitter {
     } else if (typeof options.uid === 'string') {
       this.logger.log('createStream: uid是string类型')
       options.client.adapterRef.channelInfo.uidType = 'string'
+      if (!/^\d+(\.\d+)?$/.test(options.uid)) {
+        this.logger.log('join(): uid不是数字字符串格式')
+        throw new RtcError({
+          code: ErrorCode.JOIN_UID_TYPE_ERROR,
+          message: 'createStream: uid不是数字字符串格式'
+        })
+      }
     } else if (typeof options.uid === 'number') {
       this.logger.log('createStream: uid是number类型')
       options.client.adapterRef.channelInfo.uidType = 'number'
@@ -1258,23 +1265,10 @@ class LocalStream extends RTCEventEmitter {
         }
       })
 
-      if (
-        e.message &&
-        // 为什么这样写：
-        // Safari和ios的提示是：The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.
-        // Chrome的提示是：Permission Denied. Permission Denied by system
-        e.message.indexOf('ermission') > -1 &&
-        e.message.indexOf('denied') > -1
-      ) {
-        return Promise.reject(
-          new RtcError({
-            code: ErrorCode.NOT_SUPPORT_ERROR,
-            message: `${e.message}`
-          })
-        )
-      } else {
-        return Promise.reject(e)
-      }
+      throw new RtcError({
+        code: ErrorCode.MEDIA_DEVICE_ERROR,
+        message: `${e.name} ${e.message}`
+      })
     }
   }
 
@@ -1364,13 +1358,13 @@ class LocalStream extends RTCEventEmitter {
       options: options
     })
     let type = options.type
-    let reason = null
+    let reason, message
     switch (type) {
       case 'audio':
         this.logger.log('close() 关闭mic设备')
         if (!this.audio) {
-          this.logger.log('close() 没有开启过麦克风')
-          reason = 'NOT_OPEN_MIC_YET'
+          reason = ErrorCode.STREAM_CLOSE_AUDIO_ERROR
+          message = 'close() 没有开启过麦克风'
           break
         }
         this.audio = false
@@ -1389,8 +1383,8 @@ class LocalStream extends RTCEventEmitter {
       case 'screenAudio':
         this.logger.log('close() 关闭屏幕共享音频')
         if (!this.screenAudio) {
-          this.logger.log('close() 没有开启过屏幕共享音频')
-          reason = 'NOT_OPEN_SCREENAUDIO_YET'
+          reason = ErrorCode.STREAM_CLOSE_AUDIO_SLAVE_ERROR
+          message = 'close() 没有开启过屏幕共享音频'
           break
         }
         this.screenAudio = false
@@ -1405,8 +1399,8 @@ class LocalStream extends RTCEventEmitter {
       case 'video':
         this.logger.log('close() 关闭camera设备')
         if (!this.video) {
-          this.logger.log('close() 没有开启过摄像头')
-          reason = 'NOT_OPEN_CAMERA_YET'
+          reason = ErrorCode.STREAM_CLOSE_CAMERA_ERROR
+          message = 'close() 没有开启过摄像头'
           break
         }
         await this.suspendVideoPostProcess()
@@ -1441,8 +1435,8 @@ class LocalStream extends RTCEventEmitter {
       case 'screen':
         this.logger.log('close() 关闭屏幕共享')
         if (!this.screen) {
-          this.logger.log('close() 没有开启过屏幕共享')
-          reason = 'NOT_OPEN_SCREEN_YET'
+          reason = ErrorCode.STREAM_CLOSE_SCREEN_ERROR
+          message = 'close() 没有开启过屏幕共享'
           break
         }
         this.screen = false
@@ -1472,16 +1466,17 @@ class LocalStream extends RTCEventEmitter {
         )
         break
       default:
-        this.logger.log('close() Unknown Type')
-        reason = 'INVALID_ARGUMENTS'
+        reason = ErrorCode.STREAM_CLOSE_ARGUMENT_ERROR
+        message = 'close() Unknown Type'
     }
     if (reason) {
+      this.logger.error(message)
       this.client.apiFrequencyControl({
         name: 'close',
         code: -1,
         param: JSON.stringify(
           {
-            reason,
+            reason: message,
             streamID: this.stringStreamID,
             audio: this.audio,
             video: this.video,
@@ -1493,35 +1488,10 @@ class LocalStream extends RTCEventEmitter {
         )
       })
       onCloseFinished()
-      if (reason === 'NOT_OPEN_MIC_YET') {
-        return Promise.reject(
-          new RtcError({
-            code: ErrorCode.STREAM_CLOSE_AUDIO_ERROR,
-            message: 'close() 麦克风没有开启'
-          })
-        )
-      } else if (reason === 'NOT_OPEN_CAMERA_YET') {
-        return Promise.reject(
-          new RtcError({
-            code: ErrorCode.STREAM_CLOSE_CAMERA_ERROR,
-            message: 'close() 摄像头没有开启'
-          })
-        )
-      } else if (reason === 'NOT_OPEN_SCREEN_YET') {
-        return Promise.reject(
-          new RtcError({
-            code: ErrorCode.STREAM_CLOSE_SCREEN_ERROR,
-            message: 'close() 屏幕共享没有开启'
-          })
-        )
-      } else {
-        return Promise.reject(
-          new RtcError({
-            code: ErrorCode.STREAM_CLOSE_AUDIO_SLAVE_ERROR,
-            message: 'close() Unknown Type'
-          })
-        )
-      }
+      throw new RtcError({
+        code: reason,
+        message
+      })
     } else {
       onCloseFinished()
       this.client.apiFrequencyControl({
@@ -1860,13 +1830,9 @@ class LocalStream extends RTCEventEmitter {
    */
   setAudioVolume(volume = 100) {
     let errcode, message
-    if (!Number.isInteger(volume)) {
+    if (!Number.isInteger(volume) || volume < 0 || volume > 100) {
       errcode = ErrorCode.SET_AUDIO_VOLUME_ARGUMENTS_ERROR
       message = 'setAudioVolume() volume 应该为 0 - 100 的整数'
-    } else if (volume < 0) {
-      volume = 0
-    } else if (volume > 100) {
-      volume = 255
     } else {
       volume = volume * 2.55
     }
@@ -1907,13 +1873,11 @@ class LocalStream extends RTCEventEmitter {
   setCaptureVolume(volume: number, audioType?: 'microphone' | 'screenAudio') {
     let errcode, message
     if (!Number.isInteger(volume)) {
-      errcode = ErrorCode.SET_AUDIO_VOLUME_ARGUMENTS_ERROR
+      errcode = ErrorCode.SET_CAPTURE_VOLUME_ARGUMENTS_ERROR
       message = 'setCaptureVolume() volume 应该为 0 - 100 的整数'
-      this.logger.log(message)
-    } else if (volume < 0) {
-      volume = 0
-    } else if (volume > 100) {
-      volume = 100
+    } else if (volume < 0 || volume > 100) {
+      errcode = ErrorCode.STREAM_SET_CAPTURE_VOLUME_ARGUMENT_ERROR
+      message = 'setCaptureVolume() volume 应该为 0 - 100 的整数'
     }
     this.logger.log(`setCaptureVolume() 调节${this.stringStreamID}的音量大小: ${volume}`)
 
@@ -1935,6 +1899,7 @@ class LocalStream extends RTCEventEmitter {
       )
     })
     if (errcode) {
+      this.logger.error(message)
       throw new RtcError({
         code: errcode,
         message
@@ -2849,11 +2814,9 @@ class LocalStream extends RTCEventEmitter {
    */
   async takeSnapshot(options: SnapshotOptions) {
     let errcode, message
-    if (this.video || this.screen) {
-      if (!this._play) {
-        message = 'takeSnapshot(): 当前视频没有播放'
-        errcode = ErrorCode.STREAM_TAKE_SNAPSHOT_ERROR
-      }
+    const isVideoPlaying = this.video && this._play?.video?.dom
+    const isScreenPlaying = this.screen && this.Play?.screen?.dom
+    if (isVideoPlaying || isScreenPlaying) {
       this.logger.log(`takeSnapshot() options: ${JSON.stringify(options)}`)
       await this._play.takeSnapshot(options, 'download', this.streamID)
       this.client.apiFrequencyControl({
@@ -2866,7 +2829,7 @@ class LocalStream extends RTCEventEmitter {
         }
       })
     } else {
-      message = 'takeSnapshot(): 没有视频流, 请检查是否开启过视频'
+      message = 'takeSnapshot(): 没有视频流, 请检查视频是否正在播放'
       errcode = ErrorCode.STREAM_TAKE_SNAPSHOT_ERROR
     }
 
@@ -2902,11 +2865,9 @@ class LocalStream extends RTCEventEmitter {
    */
   takeSnapshotBase64(options: SnapshotBase64Options) {
     let errcode, message
-    if (this.video || this.screen) {
-      if (!this._play) {
-        message = 'takeSnapshotBase64(): 当前视频没有播放'
-        errcode = ErrorCode.STREAM_TAKE_SNAPSHOT_ERROR
-      }
+    const isVideoPlaying = this.video && this._play?.video?.dom
+    const isScreenPlaying = this.screen && this.Play?.screen?.dom
+    if (isVideoPlaying || isScreenPlaying) {
       let base64Url = this._play.takeSnapshot(options, 'base64')
       this.client.apiFrequencyControl({
         name: 'takeSnapshotBase64',
@@ -2919,7 +2880,7 @@ class LocalStream extends RTCEventEmitter {
       })
       return base64Url
     } else {
-      message = 'takeSnapshotBase64(): 没有视频流, 请检查是否开启过视频'
+      message = 'takeSnapshotBase64(): 没有视频流, 请检查视频是否正在播放'
       errcode = ErrorCode.STREAM_TAKE_SNAPSHOT_ERROR
     }
 
@@ -3016,7 +2977,7 @@ class LocalStream extends RTCEventEmitter {
    * @returns {Promise}
    */
   stopMediaRecording(options: { recordId?: string }) {
-    if (!this._record) {
+    if (!this._record || !this._record.recoder) {
       throw new RtcError({
         code: ErrorCode.RECORDING_NOT_START_ERROR,
         message: 'localStream.stopMediaRecording: 录制未开始'
@@ -3036,7 +2997,7 @@ class LocalStream extends RTCEventEmitter {
    * @returns {Promise}
    */
   playMediaRecording(options: { recordId: string; view: HTMLElement }) {
-    if (!this._record) {
+    if (!this._record || !this._record.recoder) {
       throw new RtcError({
         code: ErrorCode.RECORDING_NOT_START_ERROR,
         message: 'localStream.playMediaRecording: 录制未开始'
@@ -3052,7 +3013,7 @@ class LocalStream extends RTCEventEmitter {
    */
   listMediaRecording() {
     let list = []
-    if (!this._record) {
+    if (!this._record || !this._record.recoder) {
       throw new RtcError({
         code: ErrorCode.RECORDING_NOT_START_ERROR,
         message: 'localStream.listMediaRecording: 录制未开始'
@@ -3073,7 +3034,7 @@ class LocalStream extends RTCEventEmitter {
    * @returns {Promise}
    */
   cleanMediaRecording(options: { recordId: string }) {
-    if (!this._record) {
+    if (!this._record || !this._record.recoder) {
       throw new RtcError({
         code: ErrorCode.RECORDING_NOT_START_ERROR,
         message: 'localStream.cleanMediaRecording: 录制未开始'
@@ -3091,7 +3052,7 @@ class LocalStream extends RTCEventEmitter {
    * @returns {Promise}
    */
   downloadMediaRecording(options: { recordId: string }) {
-    if (!this._record) {
+    if (!this._record || !this._record.recoder) {
       throw new RtcError({
         code: ErrorCode.RECORDING_NOT_START_ERROR,
         message: 'localStream.downloadMediaRecording: 录制未开始'
@@ -4206,10 +4167,6 @@ class LocalStream extends RTCEventEmitter {
               msg: `load ${options.wasmUrl} error.`
             }
           })
-          throw new RtcError({
-            code: ErrorCode.PLUGIN_LOADED_ERROR,
-            message: `插件加载失败：${options.wasmUrl}`
-          })
         })
         plugin.once('error', (message: string) => {
           if (options.key == 'AIDenoise') {
@@ -4225,13 +4182,12 @@ class LocalStream extends RTCEventEmitter {
               msg: `插件 ${options.key} 内部错误：${message}。`
             }
           })
-          throw new RtcError({
-            code: ErrorCode.PLUGIN_LOADED_ERROR,
-            message: `插件 ${options.key} 内部错误：${message}。`
-          })
         })
       } else {
-        throw new Error(`unsupport plugin ${options.key}`)
+        throw new RtcError({
+          code: ErrorCode.PLUGIN_LOADED_ERROR,
+          message: `unsupport plugin ${options.key}`
+        })
       }
     } catch (e: any) {
       this.emit('plugin-load-error', {
@@ -4246,6 +4202,10 @@ class LocalStream extends RTCEventEmitter {
           plugin: options.key,
           msg: e
         }
+      })
+      throw new RtcError({
+        code: ErrorCode.PLUGIN_LOADED_ERROR,
+        message: e.message
       })
     }
   }

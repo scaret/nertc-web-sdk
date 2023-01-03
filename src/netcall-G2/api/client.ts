@@ -409,6 +409,13 @@ class Client extends Base {
 
       if (typeof options.uid === 'string') {
         this.logger.log('join(): uid是string类型')
+        if (!/^\d+(\.\d+)?$/.test(options.uid)) {
+          this.logger.log('join(): uid不是数字字符串格式')
+          throw new RtcError({
+            code: ErrorCode.JOIN_UID_TYPE_ERROR,
+            message: 'join() uid不是数字字符串格式'
+          })
+        }
         this.adapterRef.channelInfo.uidType = 'string'
       } else if (typeof options.uid === 'number') {
         this.logger.log('join(): uid是number类型')
@@ -425,7 +432,7 @@ class Client extends Base {
         return Promise.reject(
           new RtcError({
             code: ErrorCode.JOIN_UID_TYPE_ERROR,
-            message: 'createStream: uid参数格式非法'
+            message: 'join() uid参数格式非法'
           })
         )
       }
@@ -554,8 +561,8 @@ class Client extends Base {
         }
       })
       throw new RtcError({
-        code: e.getCode() || ErrorCode.JOIN_FAILED,
-        message: e.getMessage() || `join() 内部错误: ${e.name}, ${e.message}`
+        code: (e.getCode && e.getCode()) || ErrorCode.JOIN_FAILED,
+        message: (e.getCode && e.getMessage()) || `join() 内部错误: ${e.name}, ${e.message}`
       })
     }
   }
@@ -828,8 +835,8 @@ class Client extends Base {
       message = e.message
       onPublishFinish()
       throw new RtcError({
-        code: e.getCode() || reason,
-        message: e.getMessage() || `publish() 内部错误: ${e.name}, ${e.message}`
+        code: (e.getCode && e.getCode()) || reason,
+        message: (e.getCode && e.getMessage()) || `publish() 内部错误: ${e.name}, ${e.message}`
       })
     }
   }
@@ -918,8 +925,8 @@ class Client extends Base {
       message = e.message
       onUnpublishFinish()
       throw new RtcError({
-        code: e.getCode() || reason,
-        message: e.getMessage() || `publish() 内部错误: ${e.name}, ${e.message}`
+        code: (e.getCode && e.getCode()) || reason,
+        message: (e.getCode && e.getMessage()) || `publish() 内部错误: ${e.name}, ${e.message}`
       })
     }
   }
@@ -1212,8 +1219,8 @@ class Client extends Base {
         )
       })
       throw new RtcError({
-        code: e.getCode() || ErrorCode.UNKNOWN_TYPE_ERROR,
-        message: e.getMessage() || `subscribe() 内部错误: ${e.name}, ${e.message}`
+        code: (e.getCode && e.getCode()) || ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: (e.getCode && e.getMessage()) || `subscribe() 内部错误: ${e.name}, ${e.message}`
       })
     }
   }
@@ -1371,8 +1378,8 @@ class Client extends Base {
         )
       })
       throw new RtcError({
-        code: e.getCode() || ErrorCode.UNKNOWN_TYPE_ERROR,
-        message: e.getMessage() || `unsubscribe() 内部错误: ${e.name}, ${e.message}`
+        code: (e.getCode && e.getCode()) || ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: (e.getCode && e.getMessage()) || `unsubscribe() 内部错误: ${e.name}, ${e.message}`
       })
     }
   }
@@ -1428,8 +1435,8 @@ class Client extends Base {
         )
       })
       throw new RtcError({
-        code: e.getCode() || ErrorCode.UNKNOWN_TYPE_ERROR,
-        message: e.getMessage() || `setRemoteVideoStreamType() 内部错误: ${e.name}, ${e.message}`
+        code: (e.getCode && e.getCode()) || ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: (e.getMessage && e.getMessage()) || `内部错误: ${e.message}`
       })
     }
   }
@@ -1486,8 +1493,8 @@ class Client extends Base {
         )
       })
       throw new RtcError({
-        code: e.getCode() || ErrorCode.UNKNOWN_TYPE_ERROR,
-        message: e.getMessage() || `setRemoteStreamType() 内部错误: ${e.name}, ${e.message}`
+        code: (e.getCode && e.getCode()) || ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: (e.getMessage && e.getMessage()) || `setRemoteStreamType() 内部错误: ${e.message}`
       })
     }
   }
@@ -1829,7 +1836,7 @@ class Client extends Base {
       this.logger.warn(message)
     }
     if (this.adapterRef.connectState.curState !== 'DISCONNECTED') {
-      message = 'setChannelProfile: 当前没有加入房间，或者因为网络异常正在重连中'
+      message = 'setChannelProfile() 请在加入房间之前调用'
       reason = ErrorCode.API_CALL_SEQUENCE_BEFORE_ERROR
       this.logger.warn(message)
     } else {
