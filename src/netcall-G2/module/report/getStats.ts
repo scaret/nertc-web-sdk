@@ -662,7 +662,7 @@ class GetStats {
             ? (audioObj.echoReturnLossEnhancement = item.echoReturnLossEnhancement.toString())
             : null
         } else if (item.kind === 'video') {
-          item.frames !== undefined ? (videoObj.framesEncoded = parseInt(item.frames)) : null
+          //item.frames !== undefined ? (videoObj.framesEncoded = parseInt(item.frames)) : null
           videoObj.frameRateInput = item.framesPerSecond
           videoObj.frameWidthInput = item.width
           videoObj.frameHeightInput = item.height
