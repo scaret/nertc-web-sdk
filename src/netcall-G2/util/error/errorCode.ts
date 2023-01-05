@@ -537,6 +537,10 @@ const ErrorCode = {
    * 插件注册错误
    */
   PLUGIN_REGISTER_ERROR: 10408,
+  /*
+   * 插件未注册
+   */
+  PLUGIN_NOT_REGISTER: 10409,
 
   //伴音、音效模块错误码范围：10420 - 10439
   /*
