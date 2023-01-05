@@ -3560,11 +3560,11 @@ class LocalStream extends RTCEventEmitter {
       }
     }
 
+    this.videoPostProcessTags.isBeautyTrack = isStart
     if (this.mediaHelper && this.mediaHelper.video.cameraTrack) {
       if (this.replaceTags.waterMark) {
         this.mediaHelper.disablePreProcessing('video', true)
       }
-      this.videoPostProcessTags.isBeautyTrack = isStart
       this._cameraTrack = this.mediaHelper.video.cameraTrack
 
       let apiCode = 0
@@ -3614,7 +3614,7 @@ class LocalStream extends RTCEventEmitter {
         })
       }
     } else {
-      this.logger.warn('setBeautyEffect:video track not ready.')
+      this.logger.log('setBeautyEffect:video track not ready.')
     }
   }
 
@@ -3651,7 +3651,11 @@ class LocalStream extends RTCEventEmitter {
       return this.logger.error(this.videoPostProcess.glErrorTip)
     }
     if (!this.videoPostProcess.getPlugin('VirtualBackground')) {
-      return this.logger.warn('virtual background plugin is not register.')
+      this.logger.error('virtual background plugin is not register.')
+      throw new RtcError({
+        code: ErrorCode.PLUGIN_NOT_REGISTER,
+        message: 'virtual background plugin is not register'
+      })
     }
     if (this._segmentProcessor) {
       return this.logger.warn('virtual background is already opened.')
@@ -3749,7 +3753,11 @@ class LocalStream extends RTCEventEmitter {
       return this.logger.error(this.videoPostProcess.glErrorTip)
     }
     if (!this.videoPostProcess.getPlugin('AdvancedBeauty')) {
-      return this.logger.warn('advanced beauty plugin is not register.')
+      this.logger.error('advanced beauty plugin is not register.')
+      throw new RtcError({
+        code: ErrorCode.PLUGIN_NOT_REGISTER,
+        message: 'advanced beauty plugin is not register'
+      })
     }
     if (this._advancedBeautyProcessor) {
       return this.logger.warn('advanced beauty is already opened.')
@@ -4058,7 +4066,7 @@ class LocalStream extends RTCEventEmitter {
         throw err
       }
     } else {
-      this.logger.error('transformTrack:video track not ready.')
+      this.logger.log('transformTrack:video track not ready.')
     }
   }
 

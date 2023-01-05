@@ -263,7 +263,7 @@ export function watchTrack(track: MediaStreamTrack | null) {
         return track === historyTrack
       })
       if (t > -1) {
-        logger.warn(`注意：AUDIOTRACK#${globalVideoTracks.length} 与 VIDEOTRACK#${t} 相同`)
+        logger.warn(`注意：VIDEOTRACK#${globalVideoTracks.length} 与 VIDEOTRACK#${t} 相同`)
         globalVideoTracks.push(null)
       } else {
         track.addEventListener('ended', trackWatcher)
