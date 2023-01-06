@@ -20,7 +20,7 @@ export const getFormData = (data: AjaxFormData) =>
         '=' +
         encodeURIComponent(
           /Object/i.test(data[key as keyof AjaxFormData])
-            ? JSON.stringify(data[key as keyof AjaxFormData])
+            ? JSONBigStringify(data[key as keyof AjaxFormData])
             : data[key as keyof AjaxFormData]
         )
     )
