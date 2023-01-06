@@ -336,13 +336,12 @@ class Client extends Base {
       message = 'setLocalMediaPriority() 请在加入房间前调用'
       reason = ErrorCode.API_CALL_SEQUENCE_AFTER_ERROR
     }
-
-    const { priority = 100, preemtiveMode = false } = options
-    if (typeof priority !== 'number' || isNaN(priority)) {
-      message = 'setLocalMediaPriority: priority is not Number'
+    if (options.priority !== 100 && options.priority !== 50) {
+      message = 'setLocalMediaPriority: options.priority应该是100或者50'
       reason = ErrorCode.SET_LOCAL_MEDIA_PRIORITY_ARGUMENT_ERROR
     }
 
+    const { priority = 100, preemtiveMode = false } = options
     this.apiFrequencyControl({
       name: 'setLocalMediaPriority',
       code: reason ? -1 : 0,
