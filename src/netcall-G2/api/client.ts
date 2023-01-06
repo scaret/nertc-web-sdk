@@ -792,7 +792,7 @@ class Client extends Base {
       this.logger.error(message)
       reason = ErrorCode.PUBLISH_ROLE_ERROR
     } else if (this.adapterRef.connectState.curState === 'CONNECTING') {
-      this.logger.error('publish() 当前正在连接, 将在连接成功后发布媒体流')
+      message = 'publish() 当前正在连接, 将在连接成功后发布媒体流'
       this.bindLocalStream(stream)
       reason = ErrorCode.RECONNECTING
     } else if (this.adapterRef.connectState.curState !== 'CONNECTED') {
@@ -879,8 +879,8 @@ class Client extends Base {
     let reason = 0
     let message = ''
     if (this.adapterRef.connectState.curState === 'CONNECTING') {
-      this.logger.error('unpublish() 当前正在连接, 连接成功后将不再发送媒体流')
       this.adapterRef.localStream = null
+      message = 'unpublish() 当前正在连接, 连接成功后将不再发送媒体流'
       reason = ErrorCode.RECONNECTING
     } else if (this.adapterRef.connectState.curState !== 'CONNECTED') {
       message = 'unpublish() 当前不在频道中, 可能是没有加入频道或者是网络波动导致暂时断开连接'
@@ -890,6 +890,7 @@ class Client extends Base {
     if (reason) {
       onUnpublishFinish()
       if (message) {
+        this.logger.error(message)
         return Promise.reject(
           new RtcError({
             code: reason,
