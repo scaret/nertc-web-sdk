@@ -1879,12 +1879,6 @@ class LocalStream extends RTCEventEmitter {
       errcode = ErrorCode.STREAM_SET_CAPTURE_VOLUME_ARGUMENT_ERROR
       message = 'setCaptureVolume() volume 应该为 0 - 100 的整数'
     }
-    this.logger.log(`setCaptureVolume() 调节${this.stringStreamID}的音量大小: ${volume}`)
-
-    if (!this.mediaHelper.audio.audioRoutingEnabled) {
-      this.mediaHelper.enableAudioRouting()
-    }
-    this.mediaHelper.setGain(volume / 100, audioType)
     this.client.apiFrequencyControl({
       name: 'setCaptureVolume',
       code: errcode ? -1 : 0,
@@ -1905,6 +1899,11 @@ class LocalStream extends RTCEventEmitter {
         message
       })
     }
+    this.logger.log(`setCaptureVolume() 调节${this.stringStreamID}的音量大小: ${volume}`)
+    if (!this.mediaHelper.audio.audioRoutingEnabled) {
+      this.mediaHelper.enableAudioRouting()
+    }
+    this.mediaHelper.setGain(volume / 100, audioType)
   }
 
   /**
