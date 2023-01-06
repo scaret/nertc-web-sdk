@@ -438,7 +438,7 @@ class Meeting extends EventEmitter {
             taskId: rtmpTasks[i].taskId,
             streamUrl: rtmpTasks[i].streamUrl,
             record: rtmpTasks[i].record,
-            hostUid: +rtmpTasks[i].hostUid,
+            hostUid: rtmpTasks[i].hostUid,
             layout: layout,
             config: rtmpTasks[i].config,
             extraInfo: rtmpTasks[i].extraInfo || ''
