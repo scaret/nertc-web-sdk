@@ -1093,10 +1093,6 @@ class RemoteStream extends RTCEventEmitter {
     if (!Number.isInteger(volume) || volume < 0 || volume > 100) {
       errcode = ErrorCode.SET_AUDIO_VOLUME_ARGUMENTS_ERROR
       message = 'setAudioVolume() volume 应该为 0 - 100 的整数'
-    } else if (volume < 0) {
-      volume = 0
-    } else if (volume > 100) {
-      volume = 255
     } else {
       volume = volume * 2.55
     }

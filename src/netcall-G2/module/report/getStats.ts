@@ -685,7 +685,9 @@ class GetStats {
           videoObj.pliCount = item.pliCount
           item.framesEncoded !== undefined ? (videoObj.framesEncoded = item.framesEncoded) : null
           item.framesSent !== undefined ? (videoObj.framesSent = item.framesSent) : null
-          item.hugeFramesSent !== undefined ? (videoObj.hugeFramesSent = item.hugeFramesSent) : null
+          item.keyFramesEncoded !== undefined
+            ? (videoObj.hugeFramesSent = item.keyFramesEncoded)
+            : null
           videoObj.packetsSent = item.packetsSent
           videoObj.qpSum = item.qpSum
           videoObj.qualityLimitationReason = getLimitationReason(item.qualityLimitationReason)
