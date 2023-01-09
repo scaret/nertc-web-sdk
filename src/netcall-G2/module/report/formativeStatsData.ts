@@ -542,8 +542,8 @@ class FormativeStatsReport {
       }
     }
 
-    let n = parseInt(next.frameRateDecoded) || 0
-    let i = parseInt(next.framesReceived)
+    let n = parseInt(next.framesReceived) || 0
+    let i = parseInt(next.frameRateDecoded)
 
     if (n <= 0 || i <= 0) {
       return {

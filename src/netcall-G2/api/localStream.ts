@@ -1086,7 +1086,7 @@ class LocalStream extends RTCEventEmitter {
             if (deviceId) {
               this.microphoneId = deviceId
             }
-
+            this.audioSource = audioSource || null
             if (this.client.adapterRef.connectState.curState !== 'CONNECTED') {
               this.logger.log('Stream.open:client不在频道中，无需发布。', constraint)
             } else {
@@ -1206,7 +1206,7 @@ class LocalStream extends RTCEventEmitter {
             this.screenAudio = true
           }
           await this.mediaHelper.getStream(constraint)
-
+          this.videoSource = videoSource || null
           if (
             this.screenAudio &&
             this.audioLevelHelperSlave &&
@@ -1379,6 +1379,7 @@ class LocalStream extends RTCEventEmitter {
         } else {
           this.logger.log('close() 未发布音频，无需停止发布')
         }
+        this.audioSource = null
         break
       case 'screenAudio':
         this.logger.log('close() 关闭屏幕共享音频')
@@ -1431,6 +1432,7 @@ class LocalStream extends RTCEventEmitter {
           this.replaceTags.isMuted = false
           this.virtualBackground.emptyFrame = false
         }
+        this.videoSource = null
         break
       case 'screen':
         this.logger.log('close() 关闭屏幕共享')
@@ -1879,12 +1881,6 @@ class LocalStream extends RTCEventEmitter {
       errcode = ErrorCode.STREAM_SET_CAPTURE_VOLUME_ARGUMENT_ERROR
       message = 'setCaptureVolume() volume 应该为 0 - 100 的整数'
     }
-    this.logger.log(`setCaptureVolume() 调节${this.stringStreamID}的音量大小: ${volume}`)
-
-    if (!this.mediaHelper.audio.audioRoutingEnabled) {
-      this.mediaHelper.enableAudioRouting()
-    }
-    this.mediaHelper.setGain(volume / 100, audioType)
     this.client.apiFrequencyControl({
       name: 'setCaptureVolume',
       code: errcode ? -1 : 0,
@@ -1905,6 +1901,11 @@ class LocalStream extends RTCEventEmitter {
         message
       })
     }
+    this.logger.log(`setCaptureVolume() 调节${this.stringStreamID}的音量大小: ${volume}`)
+    if (!this.mediaHelper.audio.audioRoutingEnabled) {
+      this.mediaHelper.enableAudioRouting()
+    }
+    this.mediaHelper.setGain(volume / 100, audioType)
   }
 
   /**
@@ -2101,7 +2102,7 @@ class LocalStream extends RTCEventEmitter {
         param: JSON.stringify(this.mediaHelper.getTrackSettings())
       })
     } catch (e: any) {
-      this.logger.error('API调用失败：Stream:switchDevice', e.name, e.message, e)
+      this.logger.error('switchDevice() 异常：', e.name, e.message, e)
       this.inSwitchDevice[type] = false
       this.client.apiFrequencyControl({
         name: 'switchDevice',
@@ -2120,7 +2121,7 @@ class LocalStream extends RTCEventEmitter {
       })
       throw new RtcError({
         code: e.code || ErrorCode.UNKNOWN_TYPE_ERROR,
-        message: e.message
+        message: e.message || e.name
       })
     }
   }

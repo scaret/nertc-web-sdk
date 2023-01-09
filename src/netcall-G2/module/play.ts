@@ -381,7 +381,7 @@ class Play extends EventEmitter {
       this.logger.log(`[Play] 播放音频完成，当前播放状态:`, dom.played.length)
       this.stream.client.updateRecordingAudioStream()
       this.stream.client.apiEventReport('setFunction', {
-        name: `set_play_${mediaType}`,
+        name: `set_${mediaType}_play`,
         oper: '1',
         value: JSON.stringify(
           {
@@ -398,7 +398,7 @@ class Play extends EventEmitter {
     } catch (error: any) {
       this.logger.warn(`[Play ${mediaType}] 播放音频出现问题: `, error.name, error.message, error)
       this.stream.client.apiEventReport('setFunction', {
-        name: `set_play_${mediaType}`,
+        name: `set_${mediaType}_play`,
         oper: '1',
         value: JSON.stringify(
           {
@@ -470,7 +470,7 @@ class Play extends EventEmitter {
       )
 
       this.stream.client.apiEventReport('setFunction', {
-        name: `set_play_${mediaType}`,
+        name: `set_${mediaType}_play`,
         oper: '1',
         value: JSON.stringify(
           {
@@ -491,7 +491,7 @@ class Play extends EventEmitter {
     } catch (error: any) {
       this.logger.warn(`[Play ${mediaType}] 播放视频出现问题:`, error.name, error.message, error)
       this.stream.client.apiEventReport('setFunction', {
-        name: `set_play_${mediaType}`,
+        name: `set_${mediaType}_play`,
         oper: '1',
         value: JSON.stringify(
           {
@@ -531,7 +531,7 @@ class Play extends EventEmitter {
       dom.muted = true
       dom.srcObject = null
       this.stream.client.apiEventReport('setFunction', {
-        name: `set_play_${mediaType}`,
+        name: `set_${mediaType}_play`,
         oper: '0',
         value: JSON.stringify(
           {
@@ -564,7 +564,7 @@ class Play extends EventEmitter {
         dom.srcObject = null
         this[mediaType].dom = null
         this.stream.client.apiEventReport('setFunction', {
-          name: `set_play_${mediaType}`,
+          name: `set_${mediaType}_play`,
           oper: '0',
           value: JSON.stringify(
             {
@@ -578,7 +578,7 @@ class Play extends EventEmitter {
       } catch (e: any) {
         this.logger.log('stopPlayVideoStream e: ', e)
         this.stream.client.apiEventReport('setFunction', {
-          name: `set_play_${mediaType}`,
+          name: `set_${mediaType}_play`,
           oper: '0',
           value: JSON.stringify(
             {

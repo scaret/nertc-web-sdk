@@ -2207,6 +2207,17 @@ class MediaHelper extends EventEmitter {
     if (isExistOptions(soundIdCheck).result) {
       checkValidInteger(soundIdCheck)
     }
+    let reason, message
+    if (!this.audio.mixAudioConf.sounds[soundId]) {
+      message = 'pauseEffect() soundId找不到对应的音效文件'
+      reason = ErrorCode.AUDIO_EFFECT_FILE_LOST_ERROR
+    }
+    if (reason) {
+      throw new RtcError({
+        code: reason,
+        message
+      })
+    }
     this.audio.webAudio?.stopAudioEffectMix(this.audio.mixAudioConf.sounds[soundId])
     this.audio.mixAudioConf.sounds[soundId].state = 'STOPED'
     this._audioFilePlaybackCompletedEvent()

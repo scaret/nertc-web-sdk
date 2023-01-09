@@ -354,34 +354,6 @@ const ErrorCode = {
   STREAM_SET_CAPTURE_VOLUME_ARGUMENT_ERROR: 10242,
 
   /*
-   * 描述：调用unmuteAudio()恢复音频出错
-   * 可能原因：之前没有播放过音频, 不支持unmute
-   * 处理建议：请先调用play()播放音频
-   */
-  STREAM_UNMUTE_AUDIO_ERROR: 10243,
-
-  /*
-   * 描述：调用unmuteAudioSlave()恢复音频辅流出错
-   * 可能原因：之前没有播放过音频辅流, 不支持unmute
-   * 处理建议：请先调用play()播放音频辅流
-   */
-  STREAM_UNMUTE_AUDIO_SLAVE_ERROR: 10244,
-
-  /*
-   * 描述：调用unmuteVideo()恢复视频出错
-   * 可能原因：之前没有播放过视频, 不支持unmute
-   * 处理建议：请先调用play()播放视频
-   */
-  STREAM_UNMUTE_VIDEO_ERROR: 10245,
-
-  /*
-   * 描述：调用unmuteScreen()恢复屏幕共享出错
-   * 可能原因：之前没有播放过屏幕共享, 不支持unmute
-   * 处理建议：请先调用play()播放屏幕共享
-   */
-  STREAM_UNMUTE_SCREEN_ERROR: 10246,
-
-  /*
    * 描述：调用takeSnapshot()或者takeSnapshotBase64()截图出错
    * 可能原因：之前没有启动过摄像头，或者启动完成摄像头但是没有播放过视频, 不支持截屏
    * 处理建议：请先开启摄像头，并且play()播放视频
@@ -463,6 +435,90 @@ const ErrorCode = {
    * 处理建议：业务上避免
    */
   SWITCH_DEVICE_NO_SUPPORT_VIDEO: 10259,
+
+  /*
+   * 描述：调用muteAudio()静音出错
+   * 可能原因：之前没有播放过音频或者没有音频流, 不支持mute
+   * 处理建议：请先调用play()播放音频成功之后，才能够静音
+   */
+  STREAM_MUTE_AUDIO_ERROR: 10265,
+
+  /*
+   * 描述：调用unmuteAudio()静音出错
+   * 可能原因：之前没有mute过音频, 不支持unmute
+   * 处理建议：业务上避免
+   */
+  STREAM_NOT_MUTE_AUDIO_YET: 10266,
+
+  /*
+   * 描述：调用unmuteAudio()静音出错
+   * 可能原因：没有音频流, 无法执行unmute操作
+   * 处理建议：请先保证存在音频数据
+   */
+  STREAM_UNMUTE_AUDIO_WITHOUT_STREAM: 10267,
+
+  /*
+   * 描述：调用muteAudioSlave()静音出错
+   * 可能原因：之前没有播放过音频或者没有音频辅流, 不支持mute
+   * 处理建议：请先调用play()播放音频辅流成功之后，才能够静音
+   */
+  STREAM_MUTE_AUDIO_SLAVE_ERROR: 10270,
+
+  /*
+   * 描述：调用unmuteAudioSlave()静音出错
+   * 可能原因：之前没有mute过音频辅流, 不支持unmute
+   * 处理建议：业务上避免
+   */
+  STREAM_NOT_MUTE_AUDIO_SLAVE_YET: 10271,
+
+  /*
+   * 描述：调用unmuteAudioSlave()静音出错
+   * 可能原因：没有音频辅流, 无法执行unmute操作
+   * 处理建议：请先保证存在音频辅流数据
+   */
+  STREAM_UNMUTE_AUDIO_SLAVE_WITHOUT_STREAM: 10272,
+
+  /*
+   * 描述：调用muteVideo()出错
+   * 可能原因：之前没有播放过视频或者没有视频流, 不支持mute
+   * 处理建议：请先调用play()播放视频成功之后，才能够mute
+   */
+  STREAM_MUTE_VIDEO_ERROR: 10275,
+
+  /*
+   * 描述：调用unmuteVideo()出错
+   * 可能原因：之前没有mute过视频, 不支持unmute
+   * 处理建议：业务上避免
+   */
+  STREAM_NOT_MUTE_VIDEO_YET: 10276,
+
+  /*
+   * 描述：调用unmuteVideo()静音出错
+   * 可能原因：没有视频流, 无法执行unmute操作
+   * 处理建议：请先保证存在视频数据
+   */
+  STREAM_UNMUTE_VIDEO_WITHOUT_STREAM: 10277,
+
+  /*
+   * 描述：调用muteScreen()出错
+   * 可能原因：之前没有播放过屏幕共享或者没有屏幕共享流, 不支持mute
+   * 处理建议：请先调用play()播放屏幕共享成功之后，才能够mute
+   */
+  STREAM_MUTE_SCREEN_ERROR: 10280,
+
+  /*
+   * 描述：调用unmuteScreen()出错
+   * 可能原因：之前没有mute过屏幕共享, 不支持unmute
+   * 处理建议：业务上避免
+   */
+  STREAM_NOT_MUTE_SCREEN_YET: 10281,
+
+  /*
+   * 描述：调用unmuteScreen()静音出错
+   * 可能原因：没有屏幕共享流, 无法执行unmute操作
+   * 处理建议：请先保证存在屏幕共享数据
+   */
+  STREAM_UNMUTE_SCREEN_WITHOUT_STREAM: 10282,
 
   // *********************  订阅和发布相关错误码 (ErrorCode 范围：10350 - 10400)
 

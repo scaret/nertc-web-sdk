@@ -228,6 +228,7 @@ class RemoteStream extends RTCEventEmitter {
       code: 0,
       param: {
         streamID: this.stringStreamID,
+        isRemote: true,
         clientUid: this.client.adapterRef.channelInfo.uid || ''
       }
     })
@@ -419,6 +420,7 @@ class RemoteStream extends RTCEventEmitter {
       code: 0,
       param: {
         streamID: this.stringStreamID,
+        isRemote: true,
         conf: {
           ...this.subConf
         }
@@ -444,7 +446,7 @@ class RemoteStream extends RTCEventEmitter {
     this.client.apiFrequencyControl({
       name: 'getAudioStream',
       code: 0,
-      param: JSON.stringify({ streamID: this.getId() }, null, ' ')
+      param: JSON.stringify({ isRemote: true, streamID: this.getId() }, null, ' ')
     })
     return this.mediaHelper.audio.audioStream
   }
@@ -667,6 +669,7 @@ class RemoteStream extends RTCEventEmitter {
         code: -1,
         param: {
           streamID: this.stringStreamID,
+          isRemote: true,
           mediaType,
           ...options
         }
@@ -703,6 +706,7 @@ class RemoteStream extends RTCEventEmitter {
       param: {
         ...options,
         mediaType,
+        isRemote: true,
         streamID: this.stringStreamID
       }
     })
@@ -791,38 +795,51 @@ class RemoteStream extends RTCEventEmitter {
    * @return {Promise}
    */
   async unmuteAudio() {
-    this.logger.log('启用音频轨道: ', this.stringStreamID)
+    let errcode, message
+    if (!this.muteStatus.audio.recv) {
+      errcode = ErrorCode.STREAM_NOT_MUTE_AUDIO_YET
+      message = 'remoteStream.unmuteAudio: 当前没有mute音频, 不支持unmute'
+    }
+    if (this._play.audio.dom && this.mediaHelper.audio.audioStream?.active) {
+    } else {
+      errcode = ErrorCode.STREAM_UNMUTE_AUDIO_WITHOUT_STREAM
+      message = 'remoteStream.unmuteAudio: 没有音频流, 无法执行unmute操作'
+    }
+    this.client.apiFrequencyControl({
+      name: 'unmuteAudio',
+      code: errcode ? -1 : 0,
+      param: JSON.stringify(
+        {
+          streamID: this.stringStreamID,
+          isRemote: true,
+          reason: message || ''
+        },
+        null,
+        ' '
+      )
+    })
+    if (errcode) {
+      this.logger.error(message)
+      throw new RtcError({
+        code: errcode,
+        message
+      })
+    }
     try {
-      if (this._play && this._play.audio && this._play.audio.dom) {
-      } else {
-        throw new RtcError({
-          code: ErrorCode.STREAM_UNMUTE_AUDIO_ERROR,
-          message: 'remoteStream.unmuteVideo: 之前没有播放过音频, 不支持unmute'
-        })
-      }
+      this.logger.log('unmuteAudio() 启用音频轨道: ', this.stringStreamID)
       this.muteStatus.audio.recv = false
       this.mediaHelper.audio.audioStream.getAudioTracks().length &&
         (this.mediaHelper.audio.audioStream.getAudioTracks()[0].enabled = true)
       this._play.playAudioStream('audio', this.mediaHelper.audio.audioStream, false)
-      this.client.apiFrequencyControl({
-        name: 'unmuteAudio',
-        code: 0,
-        param: JSON.stringify(
-          {
-            streamID: this.stringStreamID
-          },
-          null,
-          ' '
-        )
-      })
     } catch (e: any) {
-      this.logger.error('API调用失败：Stream:unmuteAudio', e.name, e.message)
+      this.logger.error('unmuteAudio() 异常: ', e.name, e.message)
       this.client.apiFrequencyControl({
         name: 'unmuteAudio',
         code: -1,
         param: JSON.stringify(
           {
             streamID: this.stringStreamID,
+            isRemote: true,
             reason: e
           },
           null,
@@ -840,11 +857,15 @@ class RemoteStream extends RTCEventEmitter {
    */
   async muteAudio() {
     this.logger.log('禁用音频轨道: ', this.stringStreamID)
-
+    if (this._play?.audio?.dom?.srcObject && this.mediaHelper?.audio?.audioStream?.active) {
+    } else {
+      this.logger.log('muteAudio() 之前没有播放过音频, 不支持unmute: ', this.stringStreamID)
+      throw new RtcError({
+        code: ErrorCode.STREAM_MUTE_AUDIO_ERROR,
+        message: 'remoteStream.muteAudio: 之前没有播放过音频, 不支持muteAudio'
+      })
+    }
     try {
-      if (!this._play) {
-        return
-      }
       this.muteStatus.audio.recv = true
       if (this.mediaHelper.audio.audioStream.getAudioTracks().length) {
         this.mediaHelper.audio.audioStream.getAudioTracks()[0].enabled = false
@@ -863,7 +884,7 @@ class RemoteStream extends RTCEventEmitter {
         )
       })
     } catch (e: any) {
-      this.logger.error('API调用失败：Stream:muteAudio', e.name, e.message, e)
+      this.logger.error('API调用失败: Stream:muteAudio', e.name, e.message, e)
       this.client.apiFrequencyControl({
         name: 'muteAudio',
         code: -1,
@@ -884,15 +905,38 @@ class RemoteStream extends RTCEventEmitter {
    * 启用音频辅流轨道
    */
   async unmuteAudioSlave() {
-    this.logger.log('启用音频辅流轨道: ', this.stringStreamID)
+    let errcode, message
+    if (!this.muteStatus.audioSlave.recv) {
+      errcode = ErrorCode.STREAM_NOT_MUTE_AUDIO_SLAVE_YET
+      message = 'remoteStream.unmuteAudioSlave: 当前没有mute音频辅流, 不支持unmute'
+    }
+    if (this._play.audioSlave.dom && this.mediaHelper.screenAudio.screenAudioStream?.active) {
+    } else {
+      errcode = ErrorCode.STREAM_UNMUTE_AUDIO_SLAVE_WITHOUT_STREAM
+      message = 'remoteStream.unmuteAudioSlave: 没有音频辅流, 无法执行unmute操作'
+    }
+    this.client.apiFrequencyControl({
+      name: 'unmuteAudioSlave',
+      code: errcode ? -1 : 0,
+      param: JSON.stringify(
+        {
+          isRemote: true,
+          streamID: this.stringStreamID,
+          reason: message || ''
+        },
+        null,
+        ' '
+      )
+    })
+    if (errcode) {
+      this.logger.error(message)
+      throw new RtcError({
+        code: errcode,
+        message
+      })
+    }
     try {
-      if (this._play && this._play.audioSlave && this._play.audioSlave.dom) {
-      } else {
-        throw new RtcError({
-          code: ErrorCode.STREAM_UNMUTE_AUDIO_SLAVE_ERROR,
-          message: 'remoteStream.unmuteVideo: 之前没有播放过音频辅流, 不支持unmute'
-        })
-      }
+      this.logger.log('unmuteAudioSlave() 启用音频辅流轨道: ', this.stringStreamID)
       this.muteStatus.audioSlave.recv = false
       this.mediaHelper.screenAudio.screenAudioStream.getAudioTracks().length &&
         (this.mediaHelper.screenAudio.screenAudioStream.getAudioTracks()[0].enabled = true)
@@ -901,26 +945,16 @@ class RemoteStream extends RTCEventEmitter {
         this.mediaHelper.screenAudio.screenAudioStream,
         false
       )
-      this.client.apiFrequencyControl({
-        name: 'unmuteAudioSlave',
-        code: 0,
-        param: JSON.stringify(
-          {
-            streamID: this.stringStreamID
-          },
-          null,
-          ' '
-        )
-      })
     } catch (e: any) {
-      this.logger.error('API调用失败：Stream:unmuteAudioSlave', e.name, e.message, e)
+      this.logger.error('Stream:unmuteAudioSlave 异常: ', e.name, e.message, e)
       this.client.apiFrequencyControl({
         name: 'unmuteAudioSlave',
         code: -1,
         param: JSON.stringify(
           {
+            isRemote: true,
             streamID: this.stringStreamID,
-            reason: e
+            reason: e.message
           },
           null,
           ' '
@@ -936,12 +970,22 @@ class RemoteStream extends RTCEventEmitter {
    * @return {Promise}
    */
   async muteAudioSlave() {
-    this.logger.log('禁用音频辅流轨道: ', this.stringStreamID)
-
+    if (
+      this._play?.audioSlave?.dom?.srcObject &&
+      this.mediaHelper?.screenAudio?.screenAudioStream?.active
+    ) {
+    } else {
+      this.logger.error(
+        'muteAudioSlave() 之前没有播放过音频辅流, 不支持unmute: ',
+        this.stringStreamID
+      )
+      throw new RtcError({
+        code: ErrorCode.STREAM_MUTE_AUDIO_SLAVE_ERROR,
+        message: 'remoteStream.muteAudioSlave: 之前没有播放过音频辅流, 不支持mute'
+      })
+    }
     try {
-      if (!this._play) {
-        return
-      }
+      this.logger.log('muteAudioSlave() 禁用音频辅流轨道: ', this.stringStreamID)
       this.muteStatus.audioSlave.recv = true
       if (this.mediaHelper.screenAudio.screenAudioStream.getAudioTracks().length) {
         this.mediaHelper.screenAudio.screenAudioStream.getAudioTracks()[0].enabled = false
@@ -952,6 +996,7 @@ class RemoteStream extends RTCEventEmitter {
         code: 0,
         param: JSON.stringify(
           {
+            isRemote: true,
             streamID: this.stringStreamID
           },
           null,
@@ -959,13 +1004,14 @@ class RemoteStream extends RTCEventEmitter {
         )
       })
     } catch (e: any) {
-      this.logger.error('API调用失败：Stream:muteAudioSlave', e.name, e.message, e)
+      this.logger.error('Stream:muteAudioSlave 异常: ', e.name, e.message, e)
       this.client.apiFrequencyControl({
         name: 'muteAudioSlave',
         code: -1,
         param: JSON.stringify(
           {
             streamID: this.stringStreamID,
+            isRemote: true,
             reason: e
           },
           null,
@@ -1019,6 +1065,7 @@ class RemoteStream extends RTCEventEmitter {
             code: 0,
             param: {
               mediaType: mediaType,
+              isRemote: true,
               streamID: this.stringStreamID
             }
           })
@@ -1026,7 +1073,7 @@ class RemoteStream extends RTCEventEmitter {
       }
       const result = pipeline.getAudioLevel()
       if (!result) {
-        this.logger.log(`正在加载音频模块`)
+        this.logger.log(`getAudioLevel() 正在加载音频模块`)
         return 0
       } else {
         return result.volume
@@ -1043,20 +1090,14 @@ class RemoteStream extends RTCEventEmitter {
    */
   setAudioVolume(volume = 100) {
     let errcode, message
-    if (!Number.isInteger(volume)) {
+    if (!Number.isInteger(volume) || volume < 0 || volume > 100) {
       errcode = ErrorCode.SET_AUDIO_VOLUME_ARGUMENTS_ERROR
       message = 'setAudioVolume() volume 应该为 0 - 100 的整数'
-    } else if (volume < 0) {
-      volume = 0
-    } else if (volume > 100) {
-      volume = 255
     } else {
       volume = volume * 2.55
     }
-    this.logger.log(`setAudioVolume() 调节${this.stringStreamID}的音量大小: ${volume}`)
 
     if (this.audio && this._play && this._play.audio && this._play.audio.dom) {
-      this._play?.setPlayVolume('audio', volume)
     } else {
       message = 'setAudioVolume() 没有音频流，请检查是否有订阅播放过音频'
       errcode = ErrorCode.SET_AUDIO_VOLUME_ERROR
@@ -1066,7 +1107,7 @@ class RemoteStream extends RTCEventEmitter {
       code: errcode ? -1 : 0,
       param: {
         streamID: this.stringStreamID,
-        isRemote: false,
+        isRemote: true,
         volume,
         reason: message
       }
@@ -1078,6 +1119,8 @@ class RemoteStream extends RTCEventEmitter {
         message
       })
     }
+    this.logger.log(`setAudioVolume() 调节${this.stringStreamID}的音量大小: ${volume}`)
+    this._play?.setPlayVolume('audio', volume)
   }
 
   setAudioSlaveVolume(volume = 100) {
@@ -1092,10 +1135,8 @@ class RemoteStream extends RTCEventEmitter {
     } else {
       volume = volume * 2.55
     }
-    this.logger.log(`setAudioSlaveVolume() 调节${this.stringStreamID}的音量大小: ${volume}`)
 
     if (this.audio && this._play && this._play.audioSlave && this._play.audioSlave.dom) {
-      this._play?.setPlayVolume('audioSlave', volume)
     } else {
       message = 'setAudioSlaveVolume() 没有音频流，请检查是否有订阅播放过音频辅流'
       errcode = ErrorCode.SET_AUDIO_VOLUME_ERROR
@@ -1105,7 +1146,7 @@ class RemoteStream extends RTCEventEmitter {
       code: errcode ? -1 : 0,
       param: {
         streamID: this.stringStreamID,
-        isRemote: false,
+        isRemote: true,
         volume,
         reason: message || ''
       }
@@ -1117,6 +1158,9 @@ class RemoteStream extends RTCEventEmitter {
         message
       })
     }
+
+    this.logger.log(`setAudioSlaveVolume() 调节${this.stringStreamID}的音量大小: ${volume}`)
+    this._play?.setPlayVolume('audioSlave', volume)
   }
 
   /**
@@ -1170,32 +1214,43 @@ class RemoteStream extends RTCEventEmitter {
    * @return {Promise}
    */
   async unmuteVideo() {
-    this.logger.log(`unmuteVideo() 启用 ${this.stringStreamID} 的视频轨道`)
-    try {
-      if (this.videoView && this._play && this._play.video && this._play.video.dom) {
-      } else {
-        throw new RtcError({
-          code: ErrorCode.STREAM_UNMUTE_VIDEO_ERROR,
-          message: 'remoteStream.unmuteVideo: 之前没有播放过视频, 不支持unmute'
-        })
-      }
+    let errcode, message
+    if (!this.muteStatus.video.recv) {
+      errcode = ErrorCode.STREAM_NOT_MUTE_VIDEO_YET
+      message = 'remoteStream.unmuteVideo: 当前没有mute视频, 不支持unmute'
+    }
+    if (this.mediaHelper.video.cameraTrack) {
+    } else {
+      errcode = ErrorCode.STREAM_UNMUTE_VIDEO_WITHOUT_STREAM
+      message = 'remoteStream.unmuteVideo: 没有视频流, 无法执行unmute操作'
+    }
+    this.client.apiFrequencyControl({
+      name: 'unmuteVideo',
+      code: errcode ? -1 : 0,
+      param: JSON.stringify(
+        {
+          isRemote: true,
+          streamID: this.stringStreamID,
+          reason: message || ''
+        },
+        null,
+        ' '
+      )
+    })
+    if (errcode) {
+      this.logger.error(message)
+      throw new RtcError({
+        code: errcode,
+        message
+      })
+    }
 
+    try {
+      this.logger.log(`unmuteVideo() 启用 ${this.stringStreamID} 的视频轨道`)
       this.muteStatus.video.recv = false
       if (this.mediaHelper && this.mediaHelper.video.cameraTrack) {
         this.mediaHelper.video.cameraTrack.enabled = true
       }
-      this.client.apiFrequencyControl({
-        name: 'unmuteVideo',
-        code: 0,
-        param: JSON.stringify(
-          {
-            isRemote: true,
-            streamID: this.stringStreamID
-          },
-          null,
-          ' '
-        )
-      })
     } catch (e: any) {
       this.logger.error('API调用失败：Stream:unmuteVideo', e.name, e.message, e)
       this.client.apiFrequencyControl({
@@ -1221,11 +1276,16 @@ class RemoteStream extends RTCEventEmitter {
    * @return {Promise}
    */
   async muteVideo() {
-    this.logger.log(`muteVideo() 禁用 ${this.stringStreamID} 的视频轨道`)
+    if (this._play?.video?.dom?.srcObject && this.mediaHelper?.video?.cameraTrack) {
+    } else {
+      this.logger.log('muteVideo() 之前没有播放过视频, 不支持unmute: ', this.stringStreamID)
+      throw new RtcError({
+        code: ErrorCode.STREAM_MUTE_VIDEO_ERROR,
+        message: 'remoteStream.muteVideo: 之前没有播放过视频, 不支持mute'
+      })
+    }
     try {
-      if (!this._play) {
-        return
-      }
+      this.logger.log(`muteVideo() 禁用 ${this.stringStreamID} 的视频轨道`)
       this.muteStatus.video.recv = true
       if (this.mediaHelper && this.mediaHelper.video.cameraTrack) {
         this.mediaHelper.video.cameraTrack.enabled = false
@@ -1268,15 +1328,39 @@ class RemoteStream extends RTCEventEmitter {
    */
 
   async unmuteScreen() {
-    this.logger.log(`unmuteScreen() 启用 ${this.stringStreamID} 的视频轨道`)
+    let errcode, message
+    if (!this.muteStatus.screen.recv) {
+      errcode = ErrorCode.STREAM_NOT_MUTE_SCREEN_YET
+      message = 'remoteStream.unmuteScreen: 当前没有mute屏幕共享, 不支持unmute'
+    }
+    if (this.mediaHelper.video.cameraTrack) {
+    } else {
+      errcode = ErrorCode.STREAM_UNMUTE_SCREEN_WITHOUT_STREAM
+      message = 'remoteStream.unmuteScreen: 没有屏幕共享流, 无法执行unmute操作'
+    }
+    this.client.apiFrequencyControl({
+      name: 'unmuteScreen',
+      code: errcode ? -1 : 0,
+      param: JSON.stringify(
+        {
+          isRemote: true,
+          streamID: this.stringStreamID,
+          reason: message || ''
+        },
+        null,
+        ' '
+      )
+    })
+    if (errcode) {
+      this.logger.error(message)
+      throw new RtcError({
+        code: errcode,
+        message
+      })
+    }
+
     try {
-      if (this.screenView && this._play && this._play.screen && this._play.screen.dom) {
-      } else {
-        throw new RtcError({
-          code: ErrorCode.STREAM_UNMUTE_SCREEN_ERROR,
-          message: 'remoteStream.unmuteVideo: 之前没有播放过屏幕共享, 不支持unmute'
-        })
-      }
+      this.logger.log(`unmuteScreen() 启用 ${this.stringStreamID} 的屏幕共享轨道`)
       this.muteStatus.screen.recv = false
       if (this.mediaHelper && this.mediaHelper.screen.screenVideoTrack) {
         this.mediaHelper.screen.screenVideoTrack.enabled = true
@@ -1294,7 +1378,7 @@ class RemoteStream extends RTCEventEmitter {
         )
       })
     } catch (e: any) {
-      this.logger.error('API调用失败：Stream:unmuteScreen', e.name, e.message, e)
+      this.logger.error('unmuteScreen() 异常: ', e.name, e.message, e)
       this.client.apiFrequencyControl({
         name: 'unmuteScreen',
         code: -1,
@@ -1318,11 +1402,16 @@ class RemoteStream extends RTCEventEmitter {
    * @return {Promise}
    */
   async muteScreen() {
-    this.logger.log(`muteScreen() 禁用 ${this.stringStreamID} 的视频轨道`)
+    if (this._play?.screen?.dom?.srcObject && this.mediaHelper?.screen.screenVideoTrack) {
+    } else {
+      this.logger.log('muteScreen() 之前没有播放过屏幕共享, 不支持unmute: ', this.stringStreamID)
+      throw new RtcError({
+        code: ErrorCode.STREAM_MUTE_SCREEN_ERROR,
+        message: 'remoteStream.muteScreen: 之前没有播放过屏幕共享, 不支持mute'
+      })
+    }
     try {
-      if (!this._play) {
-        return
-      }
+      this.logger.log(`muteScreen() 禁用 ${this.stringStreamID} 的屏幕共享轨道`)
       if (this.mediaHelper && this.mediaHelper.screen.screenVideoTrack) {
         this.mediaHelper.screen.screenVideoTrack.enabled = false
       }
@@ -1340,7 +1429,7 @@ class RemoteStream extends RTCEventEmitter {
         )
       })
     } catch (e: any) {
-      this.logger.error('API调用失败：Stream:muteScreen', e, ...arguments)
+      this.logger.error('muteScreen() 异常: ', e, ...arguments)
       this.client.apiFrequencyControl({
         name: 'muteScreen',
         code: -1,
@@ -1407,7 +1496,7 @@ class RemoteStream extends RTCEventEmitter {
         param: JSON.stringify(
           {
             streamID: this.stringStreamID,
-            isRemote: false,
+            isRemote: true,
             ...options,
             reason: message
           },
@@ -1440,7 +1529,7 @@ class RemoteStream extends RTCEventEmitter {
         code: 0,
         param: {
           streamID: this.stringStreamID,
-          isRemote: false,
+          isRemote: true,
           ...options
         }
       })
@@ -1457,7 +1546,7 @@ class RemoteStream extends RTCEventEmitter {
         param: JSON.stringify(
           {
             streamID: this.stringStreamID,
-            isRemote: false,
+            isRemote: true,
             ...options,
             reason: message
           },
@@ -1685,7 +1774,7 @@ class RemoteStream extends RTCEventEmitter {
         name: 'setRemoteCanvasWatermarkConfigs',
         code: 0,
         param: {
-          isRemote: false,
+          isRemote: true,
           streamID: this.stringStreamID,
           mediaType: options.mediaType
         }
