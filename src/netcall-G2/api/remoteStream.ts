@@ -1090,7 +1090,7 @@ class RemoteStream extends RTCEventEmitter {
    */
   setAudioVolume(volume = 100) {
     let errcode, message
-    if (!Number.isInteger(volume)) {
+    if (!Number.isInteger(volume) || volume < 0 || volume > 100) {
       errcode = ErrorCode.SET_AUDIO_VOLUME_ARGUMENTS_ERROR
       message = 'setAudioVolume() volume 应该为 0 - 100 的整数'
     } else if (volume < 0) {

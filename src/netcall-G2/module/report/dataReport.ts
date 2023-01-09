@@ -230,7 +230,7 @@ class DataReport {
    * http://doc.hz.netease.com/pages/viewpage.action?pageId=330162004#id-%E4%BA%8B%E4%BB%B6%E4%B8%8A%E6%8A%A5-4.9%E9%80%BB%E8%BE%91function%E4%B8%8A%E6%8A%A5%EF%BC%88G2%E5%AE%A2%E6%88%B7%E7%AB%AF--function%EF%BC%89
    * 逻辑function上报：set_camera、set_mic、pub_second_audio、set_screen
    * set_video_sub、set_audio_sub、set_udioSlave_sub、set_screen_sub
-   * set_play_auido、set_play_audioSlave、set_play_video、set_play_screen
+   * set_auido_play、set_audioSlave_play、set_video_play、set_screen_play
    */
   setFunction(functionEvent: FunctionEvent) {
     this.addEvent('function', functionEvent)
