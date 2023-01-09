@@ -1129,7 +1129,7 @@ function initVolumeDetect() {
   const instantMeter = document.querySelector('#instant meter')
   const instantValueDisplay = document.querySelector('#instant .value')
   setInterval(() => {
-    if (rtc.client && rtc.localStream) {
+    if (rtc.client && rtc.localStream && document.getElementById('startLocalAudioLevel').checked) {
       var result = rtc.localStream.getAudioLevel()
       result = result - 0
       if (isNaN(result)) {

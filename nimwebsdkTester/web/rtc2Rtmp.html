@@ -402,7 +402,7 @@
       let users = []
       if ($('#user1Uid').val()) {
         users.push({
-          uid: $('#user1Uid').val() - 0,
+          uid: $('#user1Uid').val().length >= 16 ? $('#user1Uid').val() : parseInt($('#user1Uid').val()),
           x: $('#user1X').val() - 0,
           y: $('#user1Y').val() - 0,
           width: $('#user1Width').val() - 0,
@@ -415,7 +415,7 @@
       }
       if ($('#user2Uid').val()) {
         users.push({
-          uid: $('#user2Uid').val() - 0,
+          uid: $('#user2Uid').val().length >= 16 ? $('#user2Uid').val() : parseInt($('#user2Uid').val()),
           x: $('#user2X').val() - 0,
           y: $('#user2Y').val() - 0,
           width: $('#user2Width').val() - 0,
@@ -577,7 +577,7 @@
       let users = []
       if ($('#user1Uid').val()) {
         users.push({
-          uid: $('#user1Uid').val() - 0,
+          uid: $('#user1Uid').val().length >= 16 ? $('#user1Uid').val() : parseInt($('#user1Uid').val()),
           x: $('#user1X').val() - 0,
           y: $('#user1Y').val() - 0,
           width: $('#user1Width').val() - 0,
@@ -590,7 +590,7 @@
       }
       if ($('#user2Uid').val()) {
         users.push({
-          uid: $('#user2Uid').val() - 0,
+          uid: $('#user2Uid').val().length >= 16 ? $('#user2Uid').val() : parseInt($('#user2Uid').val()),
           x: $('#user2X').val() - 0,
           y: $('#user2Y').val() - 0,
           width: $('#user2Width').val() - 0,
