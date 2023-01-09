@@ -3879,7 +3879,11 @@ class LocalStream extends RTCEventEmitter {
       }
     }
     if (!stageAIProcessing.hasPlugin('AIDenoise')) {
-      this.logger.warn('AIDenoise plugin is not register.')
+      this.logger.error('AIDenoise plugin is not register.')
+      throw new RtcError({
+        code: ErrorCode.PLUGIN_NOT_REGISTER,
+        message: 'AIDenoise plugin is not register'
+      })
       return false
     }
     stageAIProcessing.enabled = true
