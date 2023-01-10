@@ -37,7 +37,7 @@ async function getStream(constraint: GUMConstaints, logger: ILogger) {
   logger.log(`getLocalStream constraint: #${gumCount}`, JSON.stringify(constraint))
   try {
     const p = navigator.mediaDevices.getUserMedia(constraint)
-    pringForLongPromise(p, `仍在等待 getUserMedia 返回 #${gumCount}`)
+    printForLongPromise(p, `仍在等待 getUserMedia 返回 #${gumCount}`)
     const stream = await p
     logger.log(`获取到媒体流: #${gumCount}`, stream.id)
     const tracks = stream.getTracks()
@@ -161,7 +161,7 @@ async function getScreenStream(constraint: MediaStreamConstraints, logger: ILogg
   try {
     // @ts-ignore
     const p = navigator.mediaDevices.getDisplayMedia(constraint) as Promise<MediaStream>
-    pringForLongPromise(p, `仍在等待 getDisplayMedia 返回 #${gumCount}`)
+    printForLongPromise(p, `仍在等待 getDisplayMedia 返回 #${gumCount}`)
     mediaStream = await p
   } catch (e: any) {
     if (e?.message?.indexOf('user gesture') > -1 && Device.onUserGestureNeeded) {
@@ -273,7 +273,7 @@ export function watchTrack(track: MediaStreamTrack | null) {
   }
 }
 
-export async function pringForLongPromise(p: Promise<any>, description: string) {
+export async function printForLongPromise(p: Promise<any>, description: string) {
   let cnt = 0
   const start = Date.now()
   let timer: Timer | null = setInterval(() => {
@@ -289,8 +289,7 @@ export async function pringForLongPromise(p: Promise<any>, description: string) 
       clearInterval(timer)
       timer = null
     }
-  })
-  p.catch((e) => {
+  }).catch((e) => {
     if (timer) {
       clearInterval(timer)
       timer = null
