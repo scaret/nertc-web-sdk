@@ -580,7 +580,7 @@ class Client extends Base {
       options: null
     })
     const reason =
-      this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason || 0
+      this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2?.logoutReason || 0
     this.logger.log('leave() 离开频道: ', reason)
     this.adapterRef.instance.apiEventReport('setLogout', { reason })
     this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState

@@ -3885,7 +3885,6 @@ class LocalStream extends RTCEventEmitter {
         code: ErrorCode.PLUGIN_NOT_REGISTER,
         message: 'AIDenoise plugin is not register'
       })
-      return false
     }
     stageAIProcessing.enabled = true
     if (stageAIProcessing.state === 'UNINIT') {
