@@ -9,6 +9,7 @@ import {
 } from '../RtpParameters'
 import { SctpCapabilities, SctpParameters } from '../SctpParameters'
 import { DtlsParameters, FillRemoteRecvSdpOptions, IceCandidate, IceParameters } from '../Transport'
+import { RemoteSdp } from './sdp/RemoteSdp'
 
 export type HandlerFactory = () => HandlerInterface
 
@@ -98,6 +99,8 @@ export abstract class HandlerInterface extends EnhancedEventEmitter {
   abstract _pc: NeRTCPeerConnection
 
   abstract get name(): string
+
+  abstract get remoteSdp(): RemoteSdp | undefined
 
   abstract close(): void
 

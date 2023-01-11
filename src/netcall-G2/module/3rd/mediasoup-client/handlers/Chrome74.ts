@@ -22,10 +22,8 @@ import {
   HandlerSendResult
 } from './HandlerInterface'
 import * as sdpCommonUtils from './sdp/commonUtils'
-import { OfferMediaSection } from './sdp/MediaSection'
 import { RemoteSdp } from './sdp/RemoteSdp'
 import * as sdpUnifiedPlanUtils from './sdp/unifiedPlanUtils'
-import * as env from '../../../../util/rtcUtil/rtcEnvironment'
 
 const prefix = 'Chrome_'
 
@@ -67,6 +65,10 @@ export class Chrome74 extends HandlerInterface {
 
   get name(): string {
     return 'Chrome74'
+  }
+
+  get remoteSdp(): RemoteSdp | undefined {
+    return this._remoteSdp
   }
 
   close(): void {
@@ -769,6 +771,22 @@ export class Chrome74 extends HandlerInterface {
       //移动到receive中执行setLocalDescription，防止与stopReceiving流程产生冲突
       // Logger.debug(prefix, '[Subscribe] prepareLocalSdp() | calling pc.setLocalDescription()')
       // await this._pc.setLocalDescription(offer)
+    } else if (!offer) {
+      offer = await this._pc.createOffer()
+      offer.sdp = offer.sdp.replace(
+        /a=rtcp-fb:111 transport-cc/g,
+        `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`
+      )
+      if (offer.sdp.indexOf('a=fmtp:111')) {
+        offer.sdp = offer.sdp.replace(
+          /a=fmtp:111 ([0-9=;a-zA-Z-]*)/,
+          'a=fmtp:111 minptime=10;stereo=1;sprop-stereo=1;useinbandfec=1'
+        )
+      }
+      //实际测试，peer执行一边addTransceiver()，然后执行两边createOffer()，mid会递增
+      const localSdpObject = sdpTransform.parse(offer.sdp)
+      //@ts-ignore
+      mid = localSdpObject.media[localSdpObject.media.length - 1].mid
     }
     const localSdpObject = sdpTransform.parse(offer.sdp)
     let dtlsParameters = undefined
@@ -776,7 +794,8 @@ export class Chrome74 extends HandlerInterface {
       dtlsParameters = await this._setupTransport({ localDtlsRole: 'server', localSdpObject })
     const rtpCapabilities = sdpCommonUtils.extractRtpCapabilities({ sdpObject: localSdpObject })
     if (mid === -1) {
-      mid = localSdpObject.media.length - 1
+      //@ts-ignore
+      mid = localSdpObject.media[localSdpObject.media.length - 1].mid
       this._mapMidTransceiver.set(`${mid}`, transceiver)
     }
     return { dtlsParameters, rtpCapabilities, offer, mid, iceUfragReg: '' }
