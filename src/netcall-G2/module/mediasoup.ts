@@ -1368,7 +1368,7 @@ class Mediasoup extends EventEmitter {
       `[Subscribe] prepareLocalSdp [kind: ${kind}, mediaTypeShort: ${mediaTypeShort}, uid: ${uid}]`
     )
     if (this._recvTransport.id === this.adapterRef.channelInfo.uid) {
-      this.loggerRecv.log('[Subscribe] transporth还没有协商，需要dtls消息')
+      this.loggerRecv.log('[Subscribe] transporth还没有协商, 需要dtls消息')
       this._recvTransport._handler._transportReady = false
     }
     const prepareRes = await this._recvTransport.prepareLocalSdp(
@@ -1383,8 +1383,8 @@ class Mediasoup extends EventEmitter {
     ) {
       this.checkConsumerList(info)
     }
-    this.loggerRecv.log('[Subscribe] 获取本地sdp，mid =', prepareRes.mid)
-    let { rtpCapabilities, offer, iceUfragReg } = prepareRes
+    this.loggerRecv.log('[Subscribe] 获取本地sdp, mid =', prepareRes.mid)
+    let { rtpCapabilities, offer } = prepareRes
     let mid: number | string | undefined = prepareRes.mid
     const localDtlsParameters = prepareRes.dtlsParameters
 
@@ -1433,7 +1433,6 @@ class Mediasoup extends EventEmitter {
         message: `_createConsumer: _protoo 未找到`
       })
     }
-    const recvPC = this._recvTransport.handler._pc
     const _protoo = this.adapterRef._signalling._protoo
     let consumeRes: any = null
     try {
@@ -1481,22 +1480,17 @@ class Mediasoup extends EventEmitter {
         consumeRes.requestId
       }, errMsg: ${errMsg}`
     )
-    if (turnParameters) {
-      //服务器反馈turn server，sdk更新ice Server
-      let iceServers = []
-      iceServers.push(
-        {
-          urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=udp',
-          credential: turnParameters.password,
-          username: turnParameters.username
-        },
-        {
-          urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=tcp',
-          credential: turnParameters.password,
-          username: turnParameters.username
-        }
-      )
-      await this._recvTransport.updateIceServers({ iceServers })
+    if (!this._recvTransport) {
+      this.loggerRecv.error(`[Subscribe] transport undefined, 直接返回`)
+      return this.checkConsumerList(info)
+    }
+    if (code !== 200) {
+      //此时peer仅仅执行过addTransceiver和createOffer，没有localDescription和remoteDescription
+      if (!this._recvTransport?._handler?.remoteSdp) {
+        this._recvTransport.recoverLocalSdp(uid, '0', kind)
+        this.loggerRecv.log('[Subscribe] consume, 此外没有remoteSdp, 忽略改次失败的consume')
+        return this.checkConsumerList(info)
+      }
     }
 
     // if (code === 200) {
@@ -1535,12 +1529,23 @@ class Mediasoup extends EventEmitter {
     //   this.loggerRecv.log('[Subscribe] 此前的订阅已经失效，重新订阅')
     //   this.adapterRef.instance.doSubscribe(remoteStream)
     // }
-
-    if (!this._recvTransport) {
-      this.loggerRecv.error(`[Subscribe] transport undefined，直接返回`)
-      return this.checkConsumerList(info)
+    if (turnParameters) {
+      //服务器反馈turn server，sdk更新ice Server
+      let iceServers = []
+      iceServers.push(
+        {
+          urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=udp',
+          credential: turnParameters.password,
+          username: turnParameters.username
+        },
+        {
+          urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=tcp',
+          credential: turnParameters.password,
+          username: turnParameters.username
+        }
+      )
+      await this._recvTransport.updateIceServers({ iceServers })
     }
-
     const peerId = consumeRes.uid
     if (
       rtpParameters &&

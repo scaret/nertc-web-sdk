@@ -73,6 +73,10 @@ export class Safari12 extends HandlerInterface {
     return 'Safari12'
   }
 
+  get remoteSdp(): RemoteSdp | undefined {
+    return this._remoteSdp
+  }
+
   close(): void {
     Logger.debug(prefix, 'close()')
 
@@ -743,6 +747,22 @@ export class Safari12 extends HandlerInterface {
         type: this._pc.localDescription.type,
         sdp: this._pc.localDescription.sdp
       }
+    } else if (!this._pc.localDescription) {
+      offer = await this._pc.createOffer()
+      offer.sdp = offer.sdp.replace(
+        /a=rtcp-fb:111 transport-cc/g,
+        `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`
+      )
+      if (offer.sdp.indexOf('a=fmtp:111')) {
+        offer.sdp = offer.sdp.replace(
+          /a=fmtp:111 ([0-9=;a-zA-Z-]*)/,
+          'a=fmtp:111 minptime=10;stereo=1;sprop-stereo=1;useinbandfec=1'
+        )
+      }
+      //实际测试，peer执行一边addTransceiver()，然后执行两边createOffer()，mid会递增
+      const localSdpObject = sdpTransform.parse(offer.sdp)
+      //@ts-ignore
+      mid = localSdpObject.media[localSdpObject.media.length - 1].mid
     }
     const localSdpObject = sdpTransform.parse(offer.sdp)
     let dtlsParameters = undefined
@@ -750,7 +770,8 @@ export class Safari12 extends HandlerInterface {
       dtlsParameters = await this._setupTransport({ localDtlsRole: 'server', localSdpObject })
     const rtpCapabilities = sdpCommonUtils.extractRtpCapabilities({ sdpObject: localSdpObject })
     if (mid === -1) {
-      mid = localSdpObject.media.length - 1
+      //@ts-ignore
+      mid = localSdpObject.media[localSdpObject.media.length - 1].mid
       this._mapMidTransceiver.set(`${mid}`, transceiver)
     }
     return { dtlsParameters, rtpCapabilities, offer, mid, iceUfragReg: '' }
