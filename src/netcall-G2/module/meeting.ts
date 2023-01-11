@@ -118,7 +118,7 @@ class Meeting extends EventEmitter {
       })
       if (data.code === 200) {
         this.adapterRef.channelStatus = 'join'
-        const { wsProxyArray, mediaProxyArray, mediaProxyToken, cname, curTime, uid } = data
+        const { wsProxyArray, mediaProxyArray, mediaProxyToken, cname, curTime } = data
         if (this.adapterRef.instance._params.neRtcServerAddresses.webSocketProxyServer) {
           this.adapterRef.logger.warn(
             'getCloudProxyInfo() webSocketProxyServer: ',
