@@ -328,7 +328,11 @@ class WebAudio extends EventEmitter {
           audioIn.connect(that.gainFilter)
         }
       } else {
-        audioIn.connect(that.gainFilter)
+        if (this.mixAudioConf.state === 'MIX_PLAYING' && this.mixAudioConf.replace) {
+          this.logger.log(`当前正在以Replace模式播放伴音，暂不接入`)
+        } else {
+          audioIn.connect(that.gainFilter)
+        }
       }
     }
 
