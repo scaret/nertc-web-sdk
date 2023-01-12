@@ -80,7 +80,7 @@ export class Firefox60 extends HandlerInterface {
     // Close RTCPeerConnection.
     if (this._pc) {
       try {
-        this._pc.onconnectionstatechange = null
+        this._pc.oniceconnectionstatechange = null
         this._pc.close()
       } catch (error) {}
     }
@@ -185,9 +185,9 @@ export class Firefox60 extends HandlerInterface {
     this._pc.pcid = pcid++
 
     // Handle RTCPeerConnection connection status.
-    //使用onconnectionstatechange接口判断peer的状态，废弃使用 iceconnectionstatechange
-    this._pc.onconnectionstatechange = () => {
-      switch (this._pc.connectionState) {
+    // Firefox不支持使用onconnectionstatechange接口判断peer的状态，仍然使用 oniceconnectionstatechange
+    this._pc.oniceconnectionstatechange = () => {
+      switch (this._pc.iceConnectionState) {
         case 'checking':
           this.emit('@connectionstatechange', 'connecting')
           break
