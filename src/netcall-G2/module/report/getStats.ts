@@ -439,6 +439,13 @@ class GetStats {
               }
             } else if (mediaTypeShort === 'screen') {
               if (streamType === 'high') {
+                videoStats.MuteState =
+                  this!.adapterRef!.localStream?.muteStatus?.video?.send || false
+                videoStats.TotalDuration =
+                  this?.adapterRef?.state.startPubScreenTime !== undefined
+                    ? (Date.now() - this.adapterRef.state.startPubScreenTime) / 1000
+                    : 0
+                videoStats.LayerType = 2
                 this!.adapterRef!.localScreenStats[0] = videoStats
               }
               screen_ssrc.push(tmp)
@@ -559,13 +566,18 @@ class GetStats {
 
             const remoteStream = this?.adapterRef?.remoteStreamMap[tmp.remoteuid]
             let videoDom = remoteStream && remoteStream.Play && remoteStream?.Play?.video.dom
-            if (mediaTypeShort === 'screen') {
-              videoDom = remoteStream && remoteStream.Play && remoteStream?.Play?.screen.dom
-            }
             let muteState =
               (remoteStream &&
                 (remoteStream.muteStatus.video.send || remoteStream.muteStatus.video.recv)) ||
               false
+            if (mediaTypeShort === 'screen') {
+              videoDom = remoteStream && remoteStream.Play && remoteStream?.Play?.screen.dom
+              muteState =
+                (remoteStream &&
+                  (remoteStream.muteStatus.screen.send || remoteStream.muteStatus.screen.recv)) ||
+                false
+            }
+
             //sdk接口getRemoteVideoStats()数据封装
             const videoStats = {
               LayerType: 1,
@@ -592,6 +604,7 @@ class GetStats {
               this!.adapterRef!.remoteVideoStats[tmp.remoteuid] = videoStats
               video_ssrc.push(tmp)
             } else if (mediaTypeShort === 'screen') {
+              videoStats.LayerType = 2
               this!.adapterRef!.remoteScreenStats[tmp.remoteuid] = videoStats
               screen_ssrc.push(tmp)
             }
@@ -685,9 +698,7 @@ class GetStats {
           videoObj.pliCount = item.pliCount
           item.framesEncoded !== undefined ? (videoObj.framesEncoded = item.framesEncoded) : null
           item.framesSent !== undefined ? (videoObj.framesSent = item.framesSent) : null
-          item.keyFramesEncoded !== undefined
-            ? (videoObj.hugeFramesSent = item.keyFramesEncoded)
-            : null
+          item.hugeFramesSent !== undefined ? (videoObj.hugeFramesSent = item.hugeFramesSent) : null
           videoObj.packetsSent = item.packetsSent
           videoObj.qpSum = item.qpSum
           videoObj.qualityLimitationReason = getLimitationReason(item.qualityLimitationReason)
@@ -1211,6 +1222,9 @@ class GetStats {
             : null
           item.totalAudioEnergy !== undefined
             ? (audioObj.totalAudioEnergy = Math.round(item.totalAudioEnergy))
+            : null
+          item.totalSamplesReceived !== undefined
+            ? (audioObj.totalSamplesDuration = Math.round(item.totalSamplesReceived / 48000))
             : null
         } else if (item.kind === 'video') {
           videoObj.bytesReceived = item.bytesReceived + (item.headerBytesReceived || 0)
