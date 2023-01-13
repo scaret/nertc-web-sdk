@@ -261,13 +261,30 @@ declare interface Stream {
    */
   stop(type?: MediaType): void
   /**
+   * 返回音视频流当前是否可以播放。
+   * 该API用于辅助判断当前流的状态，即：是否可以播放，为什么不能播放
+   *
+   * @param type 媒体流类型。
+   * @return
+   *  - result：当前是否可以播放。如为true，则可以调用 [[Stream.play]]
+   *  - reason：如果当前流不能播放，则不能播放的原因是什么。包括：
+   *    - `NOT_PUBLISHED`: 远端没有发布该媒体
+   *    - `NOT_SUBSCRIBED`: 还没有订阅远端流
+   *    - `CONSUME_START`: 正在订阅远端流中
+   *    - `NOT_OPENED`: 本地流没有打开
+   *    - `ENDED`: 本地流已结束（如设备被拔出）
+   *    - `MUTED`: 本地流在黑屏状态，通常是调用了mute()，或者本地多次获取媒体导致当前媒体在异常状态。
+   *    - `PAUSED`: 上一次播放行为在暂停状态，通常是上一次调用play()的行为受到了自动播放策略影响。
+   */
+  canPlay(type: MediaType): { result: boolean; reason: string }
+  /**
    * 返回音视频流当前是否在播放状态。
    * @param type 媒体流类型。
    * @return
    *  - true：该音视频流正在渲染或播放。
    *  - false：该音视频流没有渲染。
    */
-  isPlaying(type: MediaType): Promise<boolean>
+  isPlaying(type: MediaType): boolean
   /**
    * 打开音视频输入设备，如麦克风、摄像头、屏幕共享，并且发布出去。
    *
