@@ -366,10 +366,22 @@ class GetStats {
             }
             if (mediaTypeShort === 'audio') {
               audio_ssrc.push(tmp)
-              this!.adapterRef!.localAudioStats[0] = audioStats
+              //@ts-ignore
+              if(pc.audioSender?.track){
+                this!.adapterRef!.localAudioStats[0] = audioStats
+              } else {
+                //@ts-ignore
+                this.adapterRef.localAudioStats = []
+              }
             } else if (mediaTypeShort === 'audioSlave') {
               audioSlave_ssrc.push(tmp)
-              this!.adapterRef!.localAudioSlaveStats[0] = audioStats
+              //@ts-ignore
+              if(pc.audioSlaveSender?.track){
+                this!.adapterRef!.localAudioSlaveStats[0] = audioStats
+              } else {
+                //@ts-ignore
+                this.adapterRef.localAudioSlaveStats = []
+              }
             }
           } else if (item.mediaType === 'video' /* && streamType === 'high'*/) {
             tmp.bytesSent = parseInt(item.bytesSent)
@@ -434,19 +446,31 @@ class GetStats {
             }
             if (mediaTypeShort === 'video') {
               video_ssrc.push(tmp)
-              if (streamType === 'high') {
-                this!.adapterRef!.localVideoStats[0] = videoStats
+              //@ts-ignore
+              if(pc.videoSender?.track){
+                if (streamType === 'high') {
+                  this!.adapterRef!.localVideoStats[0] = videoStats
+                }
+              } else {
+                //@ts-ignore
+                this.adapterRef.localVideoStats = []
               }
             } else if (mediaTypeShort === 'screen') {
-              if (streamType === 'high') {
-                videoStats.MuteState =
-                  this!.adapterRef!.localStream?.muteStatus?.video?.send || false
-                videoStats.TotalDuration =
-                  this?.adapterRef?.state.startPubScreenTime !== undefined
-                    ? (Date.now() - this.adapterRef.state.startPubScreenTime) / 1000
-                    : 0
-                videoStats.LayerType = 2
-                this!.adapterRef!.localScreenStats[0] = videoStats
+              //@ts-ignore
+              if(pc.screenSender?.track){
+                if (streamType === 'high') {
+                  videoStats.MuteState =
+                    this!.adapterRef!.localStream?.muteStatus?.screen?.send || false
+                  videoStats.TotalDuration =
+                    this?.adapterRef?.state.startPubScreenTime !== undefined
+                      ? (Date.now() - this.adapterRef.state.startPubScreenTime) / 1000
+                      : 0
+                  videoStats.LayerType = 2
+                  this!.adapterRef!.localScreenStats[0] = videoStats
+                }
+              } else {
+                //@ts-ignore
+                this.adapterRef.localScreenStats = []
               }
               screen_ssrc.push(tmp)
             }
