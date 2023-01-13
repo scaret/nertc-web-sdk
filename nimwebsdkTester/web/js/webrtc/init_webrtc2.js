@@ -4001,7 +4001,7 @@ let audioEffectsPlayTimer = null
 let isAudioEffectsTotalTime = 0
 let isAudioEffectsEnd = false
 let isAudioEffectsPuase = false
-for (i = 1; i < 4; i++) {
+;[1,2,3].forEach((i)=>{
   let audioEffectsProgressInfo = document.querySelector(`#audioEffects${i} .value`)
   let audioEffectsProgress = document.querySelector(`#audioEffects${i} progress`)
 
@@ -4165,7 +4165,7 @@ for (i = 1; i < 4; i++) {
         })
     }
   })
-}
+})
 
 $('#setEffectsVolume').click(function () {
   console.info('setEffectsVolume:  ', $(`#volumeAll`).val())
