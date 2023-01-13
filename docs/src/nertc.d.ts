@@ -261,6 +261,35 @@ declare namespace NERTC {
   function getSpeakers(): Promise<DeviceInfo[]>
 
   /**
+   * 获取当前浏览器支持 WebRTC 的基本能力。
+   *
+   * @note
+   *
+   * - 请在创建音视频对象（createClient）之前调用该方法。
+   *
+   * @returns  当前浏览器是否支持 SDK 推流、拉流和屏幕共享。
+   *
+   * 调用该方法会返回一个 Promise 对象，在 .then(data(result){}) 回调中，data 包含以下属性：
+   * - isPullStreamSupport: 当前浏览器是否支持 SDK 进行拉流。返回值包括 true 和 false。
+   * - isPushStreamSupport: 当前浏览器是否支持 SDK 进行推流。返回值包括 true 和 false。
+   * - isScreenShareSupport: 当前浏览器是否支持 SDK 进行屏幕共享。返回值包括 true 和 false。
+   *
+   * ```JavaScript
+   * //接口使用示例
+   *  NERTC.checkBrowserCompatibility().then(data => {
+   *   console.log(`isPullStreamSupport: ${data.isPullStreamSupport}`);
+   *   console.log(`isPushStreamSupport: ${data.isPushStreamSupport}`);
+   *   console.log(`isScreenShareSupport: ${data.isScreenShareSupport}`);
+   *  })
+   * ```
+   */
+  function checkBrowserCompatibility(): Promise<{
+    isPullStreamSupport: boolean
+    isPushStreamSupport: boolean
+    isScreenShareSupport: boolean
+  }>
+
+  /**
    * 检查 NERTC Web SDK 对正在使用的浏览器的适配情况。
    *
    * @note
