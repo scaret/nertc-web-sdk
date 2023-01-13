@@ -334,7 +334,7 @@ class Client extends Base {
       this.adapterRef.channelStatus === 'connectioning'
     ) {
       message = 'setLocalMediaPriority() 请在加入房间前调用'
-      reason = ErrorCode.API_CALL_SEQUENCE_AFTER_ERROR
+      reason = ErrorCode.API_CALL_SEQUENCE_BEFORE_ERROR
     }
     if (options.priority !== 100 && options.priority !== 50) {
       message = 'setLocalMediaPriority: options.priority应该是100或者50'
