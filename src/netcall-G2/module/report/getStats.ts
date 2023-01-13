@@ -367,7 +367,7 @@ class GetStats {
             if (mediaTypeShort === 'audio') {
               audio_ssrc.push(tmp)
               //@ts-ignore
-              if(pc.audioSender?.track){
+              if (pc.audioSender?.track) {
                 this!.adapterRef!.localAudioStats[0] = audioStats
               } else {
                 //@ts-ignore
@@ -376,7 +376,7 @@ class GetStats {
             } else if (mediaTypeShort === 'audioSlave') {
               audioSlave_ssrc.push(tmp)
               //@ts-ignore
-              if(pc.audioSlaveSender?.track){
+              if (pc.audioSlaveSender?.track) {
                 this!.adapterRef!.localAudioSlaveStats[0] = audioStats
               } else {
                 //@ts-ignore
@@ -447,7 +447,7 @@ class GetStats {
             if (mediaTypeShort === 'video') {
               video_ssrc.push(tmp)
               //@ts-ignore
-              if(pc.videoSender?.track){
+              if (pc.videoSender?.track) {
                 if (streamType === 'high') {
                   this!.adapterRef!.localVideoStats[0] = videoStats
                 }
@@ -457,7 +457,7 @@ class GetStats {
               }
             } else if (mediaTypeShort === 'screen') {
               //@ts-ignore
-              if(pc.screenSender?.track){
+              if (pc.screenSender?.track) {
                 if (streamType === 'high') {
                   videoStats.MuteState =
                     this!.adapterRef!.localStream?.muteStatus?.screen?.send || false
