@@ -563,19 +563,19 @@ const ErrorCode = {
    */
   WEBGL_NOT_SUPPORT_ERROR: 10401,
   /*
-   * WebGL LoseContext
+   * 描述：WebGL LoseContext(已废弃)
    */
   WEBGL_LOSE_CONTEXT_ERROR: 10402,
   /*
-   * WEBGL Restored FAIL
+   * 描述：WEBGL Restored FAIL(已废弃)
    */
   WEBGL_RESTORED_FAILD_ERROR: 10403,
   /*
-   * 基础美颜资源加载失败
+   * 描述：基础美颜资源加载失败(已废弃)
    */
   BASIC_BEAUTY_RES_ERROR: 10404,
   /*
-   * 高级美颜资源加载失败
+   * 描述：高级美颜资源加载失败(已废弃)
    */
   ADV_BEAUTY_RES_ERROR: 10405,
 
@@ -586,15 +586,18 @@ const ErrorCode = {
    */
   PLUGIN_LOADED_ERROR: 10406,
   /*
-   * 插件执行错误
+   * 描述：插件执行错误(已废弃)
    */
   PLUGIN_ERROR: 10407,
   /*
-   * 插件注册错误
+   * 描述：插件注册错误(已废弃)
    */
   PLUGIN_REGISTER_ERROR: 10408,
+
   /*
-   * 插件未注册
+   * 描述：插件未注册
+   * 可能原因：虚拟背景/高级美颜/AI降噪插件，在注册前调用了enable
+   * 处理建议：先调用registerPlugin接口进行注册
    */
   PLUGIN_NOT_REGISTER: 10409,
 
