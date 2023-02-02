@@ -816,6 +816,7 @@ declare interface Stream {
     /**
      * 可选，指定音频文件循环播放的次数。
      * @note
+     * - 该参数仅对Chrome有效
      * - 通过 cycle 指定循环播放次数时，需要同时指定 loopback 参数置为 true。如果 loopback 为 false，该参数不生效。
      * - cycle 默认为 0，表示无限循环播放，直至调用 stopAudioMixing 后停止。
      */

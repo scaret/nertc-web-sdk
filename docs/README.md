@@ -33,6 +33,8 @@ table th:nth-of-type(2) {
 | [[NERTC.Logger.disableLogUpload]]  | 关闭日志上传。                |
 | [[NERTC.Device.enableCompatMode]]  | 开启音频采集设备兼容模式。    |
 | [[NERTC.Device.disableCompatMode]] | 关闭音频采集设备兼容模式。    |
+| [[NERTC.checkSystemRequirements]]  | 检查系统是否支持NERTC        |
+| [[NERTC.checkBrowserCompatibility]] | 检查浏览器是否支持NERTC      |
 
 ## <span id="Client 客户端对象">Client 客户端对象</span>
 
@@ -110,7 +112,9 @@ table th:nth-of-type(2) {
 | [[NERTC.createStream]] | 创建音视频流对象。               |
 | [[Stream.destroy]]     | 销毁音视频流对象。               |
 | [[Stream.init]]        | 初始化音视频流对象。             |
-| [[Stream.play]]        | 播放音视频流。                   |
+| [[Stream.play]]        | 播放音视频流。                  |
+| [[Stream.isPlaying]]   | 音视频流是否正在播放。            |
+| [[Stream.canPlay]]     | 音视频流是否可以播放。            |
 | [[Stream.stop]]        | 停止播放音视频流。               |
 | [[Stream.open]]        | 打开音视频流输入设备，如麦克风。 |
 | [[Stream.close]]       | 关闭音视频流输入设备，如麦克风。 |
@@ -234,7 +238,7 @@ table th:nth-of-type(2) {
 | PROXY_SERVER_ERROR          | 41033  | 云代理失败                   | 可以通过 console 日志查看错误原因及处理方式，或联系云信技术支持                     |
 | UNKNOWN                     | 99999  | 一般是未知原因错误           | 请联系云信技术支持                                                                  |
 
-#### 4.6.25 及之后的版本
+#### 4.6.25
 
 | key                           | 错误码 | 描述                     | 原因及处理建议                              |
 | ----------------------------- | :----- | :----------------------- | :------------------------------------------ |
@@ -289,6 +293,11 @@ table th:nth-of-type(2) {
 | NO_STATS_ERROR                | 10470  | 数据上报相关异常         | 可以通过 console 日志查看错误原因及处理方式 |
 | AUTO_PLAY_NOT_ALLOWED         | 41030  | 自动播放受限异常         | 可以通过 console 日志查看错误原因及处理方式 |
 | UNKNOWN                       | 99999  | 未知错误                 | 可以通过 console 日志查看错误原因及处理方式 |
+
+
+#### 4.6.40及之后版本
+
+见 [API 参考 > 错误码](https://doc.yunxin.163.com/jcyOTA0ODM/docs/zU2MDQ4MjU?platform=web)
 
 ### 其他常见报错及处理方式
 
