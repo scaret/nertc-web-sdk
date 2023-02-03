@@ -1,0 +1,453 @@
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>RTC Video Call</title>
+    <style type="text/css">
+      * {
+        font-family: sans-serif;
+      }
+      h1,
+      h4 {
+        text-align: center;
+      }
+      .container {
+        text-align: center;
+        display: flex;
+        flex-direction: row;
+      }
+      #localVideoContent,
+      #remoteVideoContent {
+        width: 320px;
+        height: 240px;
+        border: 1px solid #dfdfdf;
+      }
+      .devices-config {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        padding: 10px;
+      }
+      .line {
+        padding: 10px 10px 0;
+        width: 200px;
+      }
+      select {
+        width: 200px;
+      }
+      h5 {
+        margin-top: 0;
+        margin-bottom: 0;
+      }
+      .channel-config {
+        display: flex;
+        flex-direction: column;
+        /* margin: 10px; */
+      }
+      .channel-cont {
+        margin: 5px 0;
+      }
+      .video-container {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+      }
+      .local,
+      .remote {
+        margin: 10px;
+      }
+      .fullScreen {
+        position: fixed !important;
+        left: 50%;
+        top: 50%;
+        z-index: 111;
+        width: calc(100vw - (100vw - 100%)) !important;
+        height: 100vh !important;
+        transform: translate(-50%, -50%);
+        background: #000;
+      }
+      .left-cont {
+        text-align: left;
+      }
+      .span-cont {
+        display: inline-block;
+        margin: 5px 0;
+        width: 75px;
+      }
+      .header {
+        display: flex;
+        flex-direction: row;
+      }
+      .nertc-p-config {
+        margin: 3px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>RTC Video Call</h1>
+    <div class="header">
+      <div class="sdk-config">
+        <div class="line">
+          <button type="button" id="NERTC">云信</button>
+          <button type="button" id="AGORA">声网</button>
+        </div>
+        <div class="line">
+          <button type="button" id="videoFirstFrame">主流首帧</button>
+          <button type="button" id="screenFirstFrame">辅流首帧</button>
+        </div>
+      </div>
+      <div class="nertc-appkey-config">
+        <div class="line">
+          <p class="nertc-p-config">云信 appkey:</p>
+          <input
+            style="width: 200px"
+            type="text"
+            id="appkey"
+            value="eca23f68c66d4acfceee77c200200359"
+          />
+          <p class="nertc-p-config">云信 AppSecret:</p>
+          <input style="width: 200px" type="text" id="AppSecret" value="c9df0b60c1ba" />
+        </div>
+        <div class="line">
+          <button type="button" id="setAppkey">设置appkey</button>
+          <!-- <button type="button" id='clearLocalStorage'>重置</button> -->
+        </div>
+      </div>
+      <div class="'nertc-gateway-config">
+        <div class="line">
+          <p class="nertc-p-config">网关地址:</p>
+          <input
+            type="text"
+            style="width: 200px"
+            id="getwayAddr"
+            value="webrtcgwcn.netease.im/?ip=59.111.239.249:30105"
+          />
+        </div>
+        <div class="line">
+          <label class="nertc-p-config">是否使用:</label>
+          <input type="checkbox" id="isGetwayAddrConf" />
+        </div>
+      </div>
+      <div class="nertc-codec-config">
+        <div class="line">
+          <label>浏览器支持的解码能力</label>
+          <div id="supported-recv-codec-wrapper"></div>
+        </div>
+        <div class="line">
+          <label>浏览器支持的编码能力</label>
+          <div id="supported-send-codec-wrapper"></div>
+        </div>
+        <div class="line">
+          <label><input id="enableCodecHacking" type="checkbox" />云信调试编解码能力</label>
+        </div>
+      </div>
+      <div class="agora-codec-config">
+        <div class="line">
+          <p>声网调试编解码能力</p>
+        </div>
+        <div class="line">
+          <label><input type="radio" name="agoraCodec" value="h264" checked />H264</label>
+          <label><input type="radio" name="agoraCodec" value="vp8" />VP8</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="devices-config">
+        <div class="audio-devices">
+          <h5 class="line">音频采集配置</h5>
+          <div class="line">
+            <select id="micro">
+              <option value="">选择麦克风：默认</option>
+            </select>
+          </div>
+          <div class="line">
+            <select id="sessionConfigAudioProfile">
+              <option value="">audioProfile：默认（不选）</option>
+              <option value="speech_low_quality">
+                16 kHz 采样率，单声道，编码码率约 24 Kbps，speech_low_quality
+              </option>
+              <option value="speech_standard">
+                32 kHz 采样率，单声道，编码码率约 24 Kbps，speech_standard
+              </option>
+              <option value="music_standard">
+                48 kHz 采样率，单声道，编码码率约 40 Kbps，music_standard
+              </option>
+              <option value="standard_stereo">
+                48 kHz 采样率，双声道，编码码率约 64 Kbps，standard_stereo
+              </option>
+              <option value="high_quality">
+                48 kHz 采样率，单声道， 编码码率约 128 Kbps，high_quality
+              </option>
+              <option value="high_quality_stereo">
+                48 kHz 采样率，双声道，编码码率约 192 Kbps，high_quality_stereo
+              </option>
+            </select>
+          </div>
+          <div class="line">
+            <select id="aec">
+              <option value="" selected>回声消除AEC:默认</option>
+              <option value="true">回声消除AEC:true</option>
+              <option value="false">回声消除AEC:false</option>
+            </select>
+          </div>
+          <div class="line">
+            <select id="ans">
+              <option value="" selected>噪声抑制ANS:默认</option>
+              <option value="true">噪声抑制ANS:true</option>
+              <option value="false">噪声抑制ANS:false</option>
+            </select>
+          </div>
+          <div class="line">
+            <select id="agc">
+              <option value="" selected>增益控制AGC:默认</option>
+              <option value="true">增益控制AGC:true</option>
+              <option value="false">增益控制AGC:false</option>
+            </select>
+          </div>
+        </div>
+        <div class="video-devices">
+          <h5 class="line">视频采集配置</h5>
+          <div class="line">
+            <select id="camera">
+              <option value="">摄像头选择：默认</option>
+            </select>
+          </div>
+          <div class="line">
+            <select id="cameraFacingMode">
+              <option value="">摄像头前后置：默认</option>
+              <option value="user">user</option>
+              <option value="environment">environment</option>
+            </select>
+          </div>
+          <div class="line">
+            <select id="sessionConfigVideoQuality">
+              <option value="">分辨率：默认（默认为640x480）</option>
+              <option value="VIDEO_QUALITY_480p">640x480</option>
+              <option value="VIDEO_QUALITY_180p">320x180</option>
+              <option value="VIDEO_QUALITY_720p">1280x720</option>
+              <option value="VIDEO_QUALITY_1080p">1920x1080</option>
+            </select>
+          </div>
+          <div class="line">
+            <select id="sessionConfigVideoFrameRate">
+              <option value="">帧率：默认（默认为15帧）</option>
+              <option value="CHAT_VIDEO_FRAME_RATE_NORMAL">normal</option>
+              <option value="CHAT_VIDEO_FRAME_RATE_5">5</option>
+              <option value="CHAT_VIDEO_FRAME_RATE_10">10</option>
+              <option value="CHAT_VIDEO_FRAME_RATE_15">15</option>
+              <option value="CHAT_VIDEO_FRAME_RATE_20">20</option>
+              <option value="CHAT_VIDEO_FRAME_RATE_25">25</option>
+              <option value="CHAT_VIDEO_FRAME_RATE_30">30</option>
+            </select>
+          </div>
+
+          <h5 class="line">屏幕共享采集配置</h5>
+          <div class="line">
+            <select id="sessionConfigScreenProfile">
+              <option value="">分辨率：默认（1920x1080）</option>
+              <option value="VIDEO_QUALITY_1080p">1920x1080</option>
+              <option value="VIDEO_QUALITY_480p">640x480</option>
+              <option value="VIDEO_QUALITY_720p">1280x720</option>
+            </select>
+          </div>
+          <div class="line">
+            <select id="sessionConfigScreenFrameRate">
+              <option value="">帧率：默认（5帧）</option>
+              <option value="CHAT_VIDEO_FRAME_RATE_5">5</option>
+              <option value="CHAT_VIDEO_FRAME_RATE_10">10</option>
+              <option value="CHAT_VIDEO_FRAME_RATE_15">15</option>
+              <option value="CHAT_VIDEO_FRAME_RATE_20">20</option>
+              <option value="CHAT_VIDEO_FRAME_RATE_25">25</option>
+              <option value="CHAT_VIDEO_FRAME_RATE_30">30</option>
+            </select>
+          </div>
+        </div>
+        <div class="video-encode-config">
+          <h5 class="line">上行视频编码设置</h5>
+          <div class="line">
+            <div class="left-cont">
+              <select id="encoderMediaType" style="width: 25%">
+                <option value="video">主流</option>
+                <option value="screen">辅流</option>
+              </select>
+              <!-- <select id="encoderStreamType" style="width: 25%">
+                <option value="high">大流</option>
+                <option value="low">小流</option>
+              </select> -->
+            </div>
+            <div class="left-cont">
+              <label>
+                <input type="checkbox" id="enableBitrateMax" />
+                最大编码比特率/kbps
+              </label>
+              <input type="number" id="bitrateMax" value="5000" style="width: 200px" step="1000" />
+              <br />
+              <label>
+                <input type="checkbox" id="enableContentHint" />
+                优先模式
+              </label>
+              <select id="contentHint">
+                <option value="">默认</option>
+                <option value="motion">流畅优先</option>
+                <option value="detail">画质优先</option>
+              </select>
+            </div>
+            <br />
+            <button id="encoderConfigBtn">设置</button>
+          </div>
+        </div>
+        <!-- <div class="sounder-devices">
+                <h5 class="line">扬声器配置</h5>
+                <div class="line">
+                    <select id="sounder"></select>
+                </div>
+                <div class="line">
+                    <button id="setAudioOutput">设置</button>
+                </div>
+            </div> -->
+        <div class="pub-config">
+          <h5 class="line">发布配置</h5>
+          <div class="line">
+            音频
+            <!-- <label><input type="radio" name="enableAudio" value="source">自定义</label> -->
+            <label><input type="radio" name="enableAudio" value="yes" checked />开</label>
+            <label><input type="radio" name="enableAudio" value="" />关</label>
+          </div>
+          <div class="line">
+            视频
+            <!-- <label><input type="radio" name="enableVideo" value="source">自定义</label> -->
+            <label><input type="radio" name="enableVideo" value="yes" checked />开</label>
+            <label><input type="radio" name="enableVideo" value="" />关</label>
+            <!-- <label><input type="checkbox" id="videoLow" checked>大小流</label> -->
+          </div>
+          <div class="line">
+            辅流
+            <!-- <label><input type="radio" name="enableScreen" value="source">自定义</label> -->
+            <label><input type="radio" name="enableScreen" value="yes" />开</label>
+            <label><input type="radio" name="enableScreen" value="" checked />关</label>
+            <!-- <label><input type="checkbox" id="screenLow" checked>大小流</label> -->
+          </div>
+          <div class="line">
+            辅音
+            <!-- <label><input type="radio" name="enableScreenAudio" value="source">自定义</label> -->
+            <label><input type="radio" name="enableScreenAudio" value="yes" />开</label>
+            <label><input type="radio" name="enableScreenAudio" value="" checked />关</label>
+          </div>
+        </div>
+        <div class="channel-config">
+          <h5 class="line">会话操作</h5>
+          <!-- <div class="line left-cont">
+                    <span class="span-cont">appkey: </span><input type="number"  id="appkey" name="appkey" placeholder="appkey/appid" required style="width: 120px">
+                </div> -->
+          <div class="line left-cont">
+            <span class="span-cont">房间名称: </span
+            ><input
+              type="number"
+              id="channelName"
+              name="房间名称"
+              placeholder="房间名称"
+              required
+              style="width: 120px"
+            />
+          </div>
+          <div class="line left-cont">
+            <span class="span-cont">uid: </span
+            ><input
+              type="number"
+              id="uid"
+              name="UID"
+              placeholder="uid"
+              required
+              style="width: 120px"
+            />
+          </div>
+          <button type="button" class="channel-cont" id="startCall">进房</button>
+          <button type="button" class="channel-cont" id="finishCall">离开</button>
+        </div>
+        <div class="switch-config">
+          <h5 class="line">设备相关</h5>
+          <div class="line">
+            音频
+            <!-- <button id="playMicroSource" class="close">自定义</button> -->
+            <button id="playMicro" class="close">打开</button>
+            <button id="playMicroOff" class="close">关闭</button>
+          </div>
+          <div class="line">
+            视频
+            <!-- <button id="playCameraSource" class="close">自定义</button> -->
+            <button id="playCamera" class="close">打开</button>
+            <button id="playCameraOff" class="close">关闭</button>
+          </div>
+          <div class="line">
+            辅流
+            <!-- <button id="playScreenSource" class="close">自定义</button> -->
+            <button id="playScreen" class="close">打开</button>
+            <button id="playScreenOff" class="close">关闭</button>
+          </div>
+          <div class="line">
+            辅音
+            <!-- <button id="playScreenAudioSource" class="close">自定义</button> -->
+            <button id="playScreenAudio" class="close">双开</button>
+            <button id="playScreenAudioOff" class="close">关闭</button>
+          </div>
+        </div>
+        <div class="video-dump">
+          <h5 class="line">Dump配置</h5>
+          <!-- <div class="left-cont"> -->
+          <div class="line">
+            <label><input type="radio" name="enableDump" value="1" checked />localVideo</label>
+          </div>
+          <div class="line">
+            <label><input type="radio" name="enableDump" value="2" />localScreen</label>
+          </div>
+          <div class="line">
+            <label><input type="radio" name="enableDump" value="3" />remoteVideo</label>
+          </div>
+          <div class="line">
+            <label><input type="radio" name="enableDump" value="4" />remoteScreen</label>
+          </div>
+          <button type="button" class="channel-cont" id="startVideoDump">开始 Dump</button>
+          <button type="button" class="channel-cont" id="stopVideoDump">结束 Dump</button>
+          <!-- </div> -->
+        </div>
+      </div>
+    </div>
+
+    <div class="video-container">
+      <div class="local">
+        <h4>Local video</h4>
+        <div id="localVideoContent"></div>
+      </div>
+      <div class="remote">
+        <h4>Remote video</h4>
+        <div id="remoteVideoContent"></div>
+      </div>
+    </div>
+    <!-- <script>
+        var script = document.createElement("script");
+        script.type = "text/javascript";
+        script.src = "nertc.js";
+        document.getElementById("AGORA").onclick = function () {
+            script.src = "agora.js";
+            script.onload = function(){
+            alert("Script loaded!", script);
+        };
+        }
+        script.onload = function(){
+            alert("Script loaded!", script);
+        };
+        document.getElementsByTagName("head")[0].appendChild(script);
+    </script> -->
+
+    <script src="./js/lib/jquery.min.js"></script>
+    <!-- <script src="./js/rtcdiff/NIM_Web_NERTC_v4.6.25.js"></script> -->
+    <!-- NERTC 线上 -->
+    <!-- <script src="./js/rtcdiff/NIM_Web_NERTC_v4.6.251.js"></script> -->
+    <!-- NERTC 测试 -->
+    <script src="./js/rtcdiff/NIM_Web_NERTC_v4.6.251_test.js"></script>
+    <script src="./js/rtcdiff/nertc.js"></script>
+
+    <script src="./js/rtcdiff/AgoraRTC_N-4.15.0.js"></script>
+    <script src="./js/rtcdiff/agora.js"></script>
+  </body>
+</html>
