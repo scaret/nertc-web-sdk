@@ -535,14 +535,14 @@ class FormativeStatsReport {
         totalFreezeTime,
         freezeTime: 0
       }
-    } else if (next && next.frameRateDecoded == 0 && next.framesDecoded) {
+    } else if (next && next.framesDecoded && next.frameRateDecoded == 0) {
       return {
         totalFreezeTime: 2000,
         freezeTime: 6
       }
     }
 
-    let n = parseInt(next.framesReceived) || 0
+    let n = parseInt(next.frameRateReceived) || 0
     let i = parseInt(next.frameRateDecoded)
 
     if (n <= 0 || i <= 0) {
