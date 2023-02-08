@@ -1042,6 +1042,24 @@ class Signalling extends EventEmitter {
       this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
       this.adapterRef.connectState.curState = 'CONNECTED'
 
+      if (getParameters().forceBWE === 'no') {
+        if (response.preferRemb) {
+          this.logger.log('服务端配置bwe：上行使用remb')
+          this.adapterRef.preferRemb = true
+        } else {
+          this.logger.log('服务端配置bwe：上行使用transport-cc')
+          this.adapterRef.preferRemb = false
+        }
+      } else if (getParameters().forceBWE === 'transport-cc') {
+        this.logger.warn(
+          `强行使用transport-cc。忽略服务端配置bwe：preferRemb: ${response.preferRemb}`
+        )
+        this.adapterRef.preferRemb = false
+      } else if (getParameters().forceBWE === 'remb') {
+        this.logger.warn(`强行使用REMB。忽略服务端配置bwe：preferRemb: ${response.preferRemb}`)
+        this.adapterRef.preferRemb = true
+      }
+
       this.adapterRef.audioAsl.enabled = response.supportWebAsl ? 'yes' : 'no'
       this.adapterRef.audioAsl.aslActiveNum = response.aslActiveNum
       if (response.supportWebAsl) {

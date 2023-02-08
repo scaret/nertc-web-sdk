@@ -35,7 +35,12 @@ export type HandlerSendOptions = {
   encodings?: RtpEncodingParameters[]
   codecOptions?: ProducerCodecOptions
   codec?: RtpCodecCapability
-  appData: any
+  appData: {
+    deviceId: string
+    deviceIdLow: string | null
+    mediaType: 'video' | 'audio' | 'screenShare' | 'audioSlave'
+    preferRemb: boolean
+  }
 }
 
 export type HandlerSendResult = {

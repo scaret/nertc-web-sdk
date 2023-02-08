@@ -82,6 +82,7 @@ class Base extends RTCEventEmitter {
       apiEvents: {},
       requestId: {},
       instance: this as unknown as ICLient,
+      preferRemb: false,
       deviceId: ''
     }
 
@@ -155,6 +156,7 @@ class Base extends RTCEventEmitter {
       //@ts-ignore
       instance: this,
       logger: this.logger,
+      preferRemb: false,
       _enableRts: false //rts是否启动的标志位
     }
     this.adapterRef.mediaCapability = new MediaCapability(this.adapterRef)

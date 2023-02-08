@@ -142,6 +142,7 @@ export interface AdapterRef {
     [apiName: string]: number
   }
   deviceId: string
+  preferRemb: boolean
   userPriority: MediaPriorityOptions
   proxyServer: ProxyServerOptions
   encryption: Encryption

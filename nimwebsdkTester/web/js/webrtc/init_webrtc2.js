@@ -2716,6 +2716,7 @@ function publish() {
   rtc.client
     .publish(rtc.localStream)
     .then(() => {
+      $('#bweMethod').text(rtc.client.adapterRef.preferRemb ? 'remb' : 'transport-cc')
       addLog('本地 publish 成功')
       console.warn('本地 publish 成功')
     })

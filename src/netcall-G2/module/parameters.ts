@@ -150,6 +150,7 @@ interface IParameters {
   // 如需启用硬件加速，将 h264ProfileLevel 改为 42001f，并将 h264ProfileLevelSignal 改为 42e01f
   h264ProfileLevel: string
   h264ProfileLevelSignal: string
+  forceBWE: 'no' | 'transport-cc' | 'remb'
   // 修补Safari本地canvas track无法播放的问题
   shimLocalCanvas: 'safari' | 'all' | 'never'
 }
@@ -231,6 +232,7 @@ let parameters: IParameters = {
   deviceChangeInterval: 0,
   h264ProfileLevel: '',
   h264ProfileLevelSignal: '42e01f',
+  forceBWE: 'no',
   shimLocalCanvas: 'safari'
 }
 
