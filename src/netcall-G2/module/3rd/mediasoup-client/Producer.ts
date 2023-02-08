@@ -25,6 +25,7 @@ export type ProducerOptions = {
     deviceId: string
     deviceIdLow: string | null
     mediaType: 'video' | 'audio' | 'screenShare' | 'audioSlave'
+    preferRemb: boolean
   }
 }
 

@@ -33,6 +33,7 @@ import { VideoTrackLow } from './videoTrackLow'
 import { IS_SAFARI, SAFARI_MAJOR_VERSION, SAFARI_VERSION } from '../util/rtcUtil/rtcEnvironment'
 import { JSONBigStringify } from '../util/json-big'
 import { SimpleBig } from '../util/json-big/SimpleBig'
+import { filterTransportCCFromRtpParameters } from '../util/rtcUtil/filterTransportCC'
 
 class Mediasoup extends EventEmitter {
   private adapterRef: AdapterRef
@@ -500,6 +501,10 @@ class Mediasoup extends EventEmitter {
               )
               rtpParametersSend.codecs[0].parameters['profile-level-id'] = '42e01f'
             }
+            if (this.adapterRef.preferRemb) {
+              this.logger.log(`使用REMB作为带宽估计方式`)
+              filterTransportCCFromRtpParameters(rtpParametersSend)
+            }
             let producerData = {
               requestId: `${Math.ceil(Math.random() * 1e9)}`,
               kind: kind,
@@ -842,6 +847,7 @@ class Mediasoup extends EventEmitter {
                 opusDtx: true
               },
               appData: {
+                preferRemb: this.adapterRef.preferRemb,
                 deviceId: audioTrack.id,
                 deviceIdLow: null,
                 mediaType: 'audio'
@@ -878,6 +884,7 @@ class Mediasoup extends EventEmitter {
                 opusDtx: true
               },
               appData: {
+                preferRemb: this.adapterRef.preferRemb,
                 deviceId: audioTrack.id,
                 deviceIdLow: null,
                 mediaType: 'audioSlave'
@@ -930,6 +937,7 @@ class Mediasoup extends EventEmitter {
               videoGoogleStartBitrate: 1000
             },
             appData: {
+              preferRemb: this.adapterRef.preferRemb,
               deviceId: videoTrack.id,
               deviceIdLow: trackLow?.id || null,
               mediaType: 'video'
@@ -1004,6 +1012,7 @@ class Mediasoup extends EventEmitter {
               videoGoogleStartBitrate: 1000
             },
             appData: {
+              preferRemb: this.adapterRef.preferRemb,
               deviceId: screenTrack.id,
               deviceIdLow: trackLow?.id || null,
               mediaType: 'screenShare'

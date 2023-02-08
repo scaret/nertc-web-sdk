@@ -24,6 +24,7 @@ import {
 import * as sdpCommonUtils from './sdp/commonUtils'
 import { RemoteSdp } from './sdp/RemoteSdp'
 import * as sdpUnifiedPlanUtils from './sdp/unifiedPlanUtils'
+import { filterTransportCCFromSdp } from '../../../../util/rtcUtil/filterTransportCC'
 
 const prefix = 'Chrome_'
 
@@ -363,6 +364,9 @@ export class Chrome74 extends HandlerInterface {
 
     let offer = await this._pc.createOffer()
     let localSdpObject = sdpTransform.parse(offer.sdp)
+    if (appData.preferRemb) {
+      filterTransportCCFromSdp(localSdpObject)
+    }
     let dtlsParameters: DtlsParameters | undefined = undefined
     let offerMediaObject, offerMediaObjectLow
     // NERTC把setLocalDescription的过程置后了。这个时候transceiver的mid还没生成，

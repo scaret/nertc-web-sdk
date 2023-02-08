@@ -31,6 +31,7 @@ import { OfferMediaSection } from './sdp/MediaSection'
 import { RemoteSdp } from './sdp/RemoteSdp'
 import * as sdpUnifiedPlanUtils from './sdp/unifiedPlanUtils'
 import * as env from '../../../../util/rtcUtil/rtcEnvironment'
+import { filterTransportCCFromSdp } from '../../../../util/rtcUtil/filterTransportCC'
 
 const prefix = 'Safari_'
 
@@ -340,6 +341,9 @@ export class Safari12 extends HandlerInterface {
     Logger.debug(prefix, 'send() | [transceivers:%d]', this._pc.getTransceivers().length)
     let offer = await this._pc.createOffer()
     let localSdpObject = sdpTransform.parse(offer.sdp)
+    if (appData.preferRemb) {
+      filterTransportCCFromSdp(localSdpObject)
+    }
     let dtlsParameters: DtlsParameters | undefined = undefined
     let offerMediaObject, offerMediaObjectLow
     // NERTC把setLocalDescription的过程置后了。这个时候transceiver的mid还没生成，
