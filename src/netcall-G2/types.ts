@@ -122,8 +122,8 @@ export interface AdapterRef {
   localAudioSlaveStats: {
     [uid in UIDTYPE]: LocalAudioStats
   }
-  localVideoStats: [LocalVideoStats]
-  localScreenStats: [LocalVideoStats]
+  localVideoStats: LocalVideoStats[]
+  localScreenStats: LocalVideoStats[]
   logger: ILogger
   logStorage: LogStorage
   // connectioning其实是reconnecting
@@ -143,6 +143,11 @@ export interface AdapterRef {
   }
   deviceId: string
   preferRemb: boolean
+  /**
+   * 播放音量，取值范围[0, 1]。默认为1
+   * nomalized暗示范围为 0-1
+   */
+  nomalizedPlaybackVolume: number
   userPriority: MediaPriorityOptions
   proxyServer: ProxyServerOptions
   encryption: Encryption
