@@ -4762,6 +4762,12 @@ $('#closeWatermarkPanel').on('click', function () {
   $('#updateWatermarkPanel').hide()
 })
 
+$('#playbackVolume').on('change', ()=>{
+  const playbackVolume = parseInt($('#playbackVolume').val())
+  addLog(`setPlaybackVolume ${playbackVolume}`)
+  rtc.client.setPlaybackVolume(playbackVolume)
+})
+
 $('#doSetLocalMediaPriority').on('click', function () {
   // 媒体优先级
   //const enableMeidaPriority = $('#enableMeidaPriority').prop('checked')

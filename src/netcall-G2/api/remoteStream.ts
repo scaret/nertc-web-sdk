@@ -1093,10 +1093,8 @@ class RemoteStream extends RTCEventEmitter {
     if (!Number.isInteger(volume) || volume < 0 || volume > 100) {
       errcode = ErrorCode.SET_AUDIO_VOLUME_ARGUMENTS_ERROR
       message = 'setAudioVolume() volume 应该为 0 - 100 的整数'
-    } else {
-      volume = volume * 2.55
     }
-
+    const normalizedVolume = volume / 100
     if (this.audio && this._play && this._play.audio && this._play.audio.dom) {
     } else {
       message = 'setAudioVolume() 没有音频流，请检查是否有订阅播放过音频'
@@ -1108,7 +1106,9 @@ class RemoteStream extends RTCEventEmitter {
       param: {
         streamID: this.stringStreamID,
         isRemote: true,
-        volume,
+        // 历史问题：volume上报会*2.55
+        volume: volume * 2.55,
+        normalizedVolume,
         reason: message
       }
     })
@@ -1119,8 +1119,12 @@ class RemoteStream extends RTCEventEmitter {
         message
       })
     }
-    this.logger.log(`setAudioVolume() 调节${this.stringStreamID}的音量大小: ${volume}`)
-    this._play?.setPlayVolume('audio', volume)
+    this.logger.log(
+      `setAudioVolume() 调节${this.stringStreamID}的音量大小: ${
+        volume * 2.55
+      } (normalized: ${normalizedVolume})`
+    )
+    this._play?.setPlayVolume('audio', normalizedVolume)
   }
 
   setAudioSlaveVolume(volume = 100) {
@@ -1131,10 +1135,9 @@ class RemoteStream extends RTCEventEmitter {
     } else if (volume < 0) {
       volume = 0
     } else if (volume > 100) {
-      volume = 255
-    } else {
-      volume = volume * 2.55
+      volume = 100
     }
+    const normalizedVolume = volume / 100
 
     if (this.audio && this._play && this._play.audioSlave && this._play.audioSlave.dom) {
     } else {
@@ -1147,7 +1150,8 @@ class RemoteStream extends RTCEventEmitter {
       param: {
         streamID: this.stringStreamID,
         isRemote: true,
-        volume,
+        volume: volume * 2.55,
+        normalizedVolume,
         reason: message || ''
       }
     })
@@ -1159,8 +1163,12 @@ class RemoteStream extends RTCEventEmitter {
       })
     }
 
-    this.logger.log(`setAudioSlaveVolume() 调节${this.stringStreamID}的音量大小: ${volume}`)
-    this._play?.setPlayVolume('audioSlave', volume)
+    this.logger.log(
+      `setAudioSlaveVolume() 调节${this.stringStreamID}的音量大小: ${
+        volume * 2.55
+      } (normalized: ${normalizedVolume})`
+    )
+    this._play?.setPlayVolume('audioSlave', normalizedVolume)
   }
 
   /**

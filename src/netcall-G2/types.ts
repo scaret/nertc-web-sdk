@@ -207,7 +207,11 @@ export interface RenderMode {
 }
 
 export interface AudioPlaySettings {
-  volume: number | null
+  /**
+   * 取值[0, 1], 默认值为1
+   * 实际的音量应等于 AudioPlaySettings.normalizedVolume * adapterRef.normalizedPlaybackVolume
+   */
+  normalizedVolume: number
   dom: HTMLAudioElement | null
 }
 
