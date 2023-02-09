@@ -361,32 +361,4 @@ export class AudioPipeline {
       singleInput: cnt === 1 ? input : null
     }
   }
-
-  registerPlugin(key: string, pluginObj: any, wasmUrl: string) {
-    if (key === 'AIDenoise') {
-      this.stageAIProcessing.registerAIDenoisePlugin(pluginObj, wasmUrl)
-      this.pluginList.push('AIDenoise')
-    }
-  }
-
-  unregisterPlugin(key: string) {
-    const index = this.pluginList.indexOf(key)
-    if (index !== -1) {
-      this.pluginList.splice(index, 1)
-      this.stageAIProcessing.unregisterAIDenoise()
-    }
-  }
-
-  hasPlugin(key: string) {
-    return this.pluginList.indexOf(key) !== -1
-  }
-
-  async enableAIdenoise(enable = true) {
-    this.logger.log(`Enabling AI Denoise`, enable)
-    this.stageAIProcessing.enabled = enable
-    if (this.stageAIProcessing.state === 'UNINIT') {
-      await this.stageAIProcessing.init()
-    }
-    this.updateConnection()
-  }
 }
