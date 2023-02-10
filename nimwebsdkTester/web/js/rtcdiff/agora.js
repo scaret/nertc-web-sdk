@@ -758,5 +758,20 @@ function startAGORA() {
     localScreenTracks.screenAudioTrack = undefined
   })
 
+  // 声网远端主流全屏
+  $('.agora-remote-video-full-screen').on('click', async () => {
+    let dom = document.querySelector('#remoteVideoContent').children[0]
+    await dom.requestFullscreen()
+  })
+  // 声网远端辅流全屏
+  $('.agora-remote-screen-full-screen').on('click', async () => {
+    let dom = document.querySelector('#remoteVideoContent').children[1]
+    await dom.requestFullscreen()
+  })
+  //声网退出全屏状态
+  $('.agora-exit-full-screen').on('click', async () => {
+    await document.requestFullscreen()
+  })
+
   //
 }

@@ -819,6 +819,18 @@ function startNERTC() {
         console.log('关闭屏幕共享音频 失败: ', err)
       })
   })
-
-  //
+  // 云信远端主流全屏
+  $('.nertc-remote-video-full-screen').on('click', async () => {
+    let dom = document.getElementsByClassName('nertc-video-container-remote')[0]
+    await dom.requestFullscreen()
+  })
+  // 云信远端辅流全屏
+  $('.nertc-remote-screen-full-screen').on('click', async () => {
+    let dom = document.getElementsByClassName('nertc-screen-container-remote')[0]
+    await dom.requestFullscreen()
+  })
+  //云信退出全屏状态
+  $('.nertc-exit-full-screen').on('click', async () => {
+    await document.requestFullscreen()
+  })
 }
