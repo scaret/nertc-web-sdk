@@ -1835,13 +1835,17 @@ class LocalStream extends RTCEventEmitter {
     if (!Number.isInteger(volume) || volume < 0 || volume > 100) {
       errcode = ErrorCode.SET_AUDIO_VOLUME_ARGUMENTS_ERROR
       message = 'setAudioVolume() volume 应该为 0 - 100 的整数'
-    } else {
-      volume = volume * 2.55
     }
-    this.logger.log(`setAudioVolume() 调节${this.stringStreamID}的音量大小: ${volume}`)
+
+    const normalizedVolume = volume / 100
+    this.logger.log(
+      `setAudioVolume() 调节${this.stringStreamID}的音量大小: ${
+        volume * 2.55
+      } (normalized: ${normalizedVolume})`
+    )
 
     if (this.audio) {
-      this._play?.setPlayVolume('audio', volume)
+      this._play?.setPlayVolume('audio', normalizedVolume)
     } else {
       message = 'setAudioVolume() 没有音频流，请检查是否有发布过音频'
       errcode = ErrorCode.SET_AUDIO_VOLUME_ERROR
@@ -1852,7 +1856,9 @@ class LocalStream extends RTCEventEmitter {
       param: {
         streamID: this.stringStreamID,
         isRemote: false,
-        volume,
+        // 历史问题：上报会上报一个0-255的值。新版请多参考normalized值
+        volume: volume * 2.55,
+        normalizedVolume,
         reason: message
       }
     })

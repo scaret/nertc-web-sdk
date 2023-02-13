@@ -137,10 +137,59 @@ class Base extends RTCEventEmitter {
         enabled: 'unknown',
         aslActiveNum: -1
       },
+      uid2SscrList: {},
+      netStatusTimer: null,
+      networkQuality: {},
+      _statsReport: null,
+      _meetings: null,
+      _enableRts: false, //rts是否启动的标志位
+      state: undefined as unknown as any,
+      mediaCapability: undefined as unknown as any,
+      nim: undefined as unknown as any,
+      instance: this as unknown as ICLient,
+      lbsManager: undefined as unknown as any,
       channelInfo: {
         customData: '',
         sessionConfig: {}
       },
+      //webrtc G2 API上报频控
+      apiEvent: {},
+      memberMap: {},
+      apiEvents: {},
+      transportStats: {
+        txRtt: -1,
+        rxRtt: -1,
+        NetworkType: 'unknown',
+        OutgoingAvailableBandwidth: -1
+      },
+      sessionStats: undefined as unknown as any,
+      remoteAudioStats: {},
+      remoteAudioSlaveStats: {},
+      remoteVideoStats: {},
+      remoteScreenStats: {},
+      remoteStreamMap: {},
+      localStream: null,
+      localAudioStats: {},
+      localAudioSlaveStats: {},
+      localVideoStats: [],
+      localScreenStats: [],
+      logger: this.logger,
+      logStorage: undefined as unknown as any,
+      channelStatus: 'init',
+      _signalling: null,
+      _rtsTransport: null,
+      connectState: {
+        prevState: 'DISCONNECTED',
+        curState: 'DISCONNECTED',
+        reconnect: false
+      },
+      _mediasoup: null,
+      mediaHelpers: {},
+      netStatusList: [],
+      requestId: {},
+      deviceId: '',
+      preferRemb: false,
+      nomalizedPlaybackVolume: 1,
       userPriority: {
         priority: 100,
         preemtiveMode: false
@@ -149,15 +198,10 @@ class Base extends RTCEventEmitter {
         enable: false,
         type: 3
       },
-      //webrtc G2 API上报频控
-      apiEvent: {},
-      apiEvents: {},
-      requestId: {},
-      //@ts-ignore
-      instance: this,
-      logger: this.logger,
-      preferRemb: false,
-      _enableRts: false //rts是否启动的标志位
+      encryption: undefined as unknown as any,
+      isAudioBanned: false,
+      isVideoBanned: false,
+      permKeyInfo: undefined
     }
     this.adapterRef.mediaCapability = new MediaCapability(this.adapterRef)
     this.adapterRef.encryption = new Encryption(this.adapterRef)

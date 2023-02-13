@@ -536,6 +536,17 @@ declare interface Client {
   cleanMediaRecording(): void
 
   /**
+   * 设置整个频道的播放音量。
+   *
+   * * 该接口与[[Stream.setAudioVolume]]类似：两者都改变播放音量。setPlaybackVolume对频道内所有流生效，setAudioVolume对某个远端流生效。
+   * * volume 取值范围： [0, 100]
+   * * `active-speaker`以及'volume-indicator'事件回调会受该接口的影响。特别的，当使用setPlaybackVolume将音量设置为0时，`active-speaker`及`volume-indicator`不再有回调。
+   * * [[Stream.getAudioLevel]]不受该接口影响。
+   * * 由于系统限制，iOS设备不支持调节播放音量，包括微信、Safari等。可使用侧边物理按键调节音量。
+   */
+  setPlaybackVolume(volume: number): void
+
+  /**
    * 添加房间推流任务。
    *
    * 成功调用该方法后，当前用户可以收到该直播流的状态通知 `Client.on("rtmp-state")`。

@@ -28,11 +28,11 @@ class Play extends EventEmitter {
   private snapshotIndex = 0
   sinkId: string | null = null
   public audio: AudioPlaySettings = {
-    volume: null,
+    normalizedVolume: 1,
     dom: null
   }
   public audioSlave: AudioPlaySettings = {
-    volume: null,
+    normalizedVolume: 1,
     dom: null
   }
   public video: VideoPlaySettings
@@ -352,6 +352,22 @@ class Play extends EventEmitter {
     }
   }
 
+  updatePlaybackVolume() {
+    MediaTypeListAudio.forEach((mediaType) => {
+      const dom = this[mediaType].dom
+      if (dom) {
+        const normalizedVolume =
+          this.stream.client.adapterRef.nomalizedPlaybackVolume * this[mediaType].normalizedVolume
+        if (Math.abs(dom.volume - normalizedVolume) > 0.01) {
+          this.logger.log(
+            `updatePlaybackVolume ${mediaType} ${dom.volume} => ${normalizedVolume} ( ${this.stream.client.adapterRef.nomalizedPlaybackVolume} * ${this[mediaType].normalizedVolume})`
+          )
+          dom.volume = normalizedVolume
+        }
+      }
+    })
+  }
+
   async playAudioStream(mediaType: 'audio' | 'audioSlave', stream: MediaStream, ismuted?: boolean) {
     const mediaSettings = this[mediaType]
     if (!mediaSettings.dom) {
@@ -364,6 +380,8 @@ class Play extends EventEmitter {
       dom.muted = false
     }
     dom.srcObject = stream
+
+    this.updatePlaybackVolume()
 
     if (this.sinkId) {
       this.logger.log(`[Play ${mediaType}] 音频尝试使用输出设备`, this.sinkId)
@@ -424,12 +442,10 @@ class Play extends EventEmitter {
     }
   }
 
-  setPlayVolume(mediaType: 'audio' | 'audioSlave', volume: number) {
+  setPlayVolume(mediaType: 'audio' | 'audioSlave', normalizedVolume: number) {
     const mediaSetting = this[mediaType]
-    mediaSetting.volume = volume
-    if (mediaSetting.dom) {
-      mediaSetting.dom.volume = volume / 255
-    }
+    mediaSetting.normalizedVolume = normalizedVolume
+    this.updatePlaybackVolume()
   }
 
   async playVideoStream(mediaType: 'video' | 'screen', stream: MediaStream, view: HTMLElement) {

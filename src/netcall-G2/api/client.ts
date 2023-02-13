@@ -1540,6 +1540,49 @@ class Client extends Base {
   }
 
   /**
+   * 设置整个频道的播放音量。
+   * 区别于 Stream.setAudioVolume，该接口对频道内所有流生效
+   */
+  setPlaybackVolume(volume: number) {
+    let errcode, message
+    if (!Number.isInteger(volume) || volume < 0 || volume > 100) {
+      errcode = ErrorCode.SET_AUDIO_VOLUME_ARGUMENTS_ERROR
+      message = 'setPlaybackVolume() volume 应该为 0 - 100 的整数'
+    } else {
+      const normalizedVolume = volume / 100
+      this.logger.log(
+        `setPlaybackVolume: ${this.adapterRef.nomalizedPlaybackVolume} => ${normalizedVolume} normalized`
+      )
+      this.adapterRef.nomalizedPlaybackVolume = normalizedVolume
+    }
+
+    this.apiFrequencyControl({
+      name: 'setPlaybackVolume',
+      code: errcode ? -1 : 0,
+      param: {
+        volume
+      }
+    })
+    if (errcode) {
+      this.logger.error(message)
+      throw new RtcError({
+        code: errcode,
+        message
+      })
+    }
+
+    if (this.adapterRef.localStream) {
+      this.adapterRef.localStream._play.updatePlaybackVolume()
+    }
+    for (let i in this.adapterRef.remoteStreamMap) {
+      const r = this.adapterRef.remoteStreamMap[i]
+      if (r.active) {
+        r._play.updatePlaybackVolume()
+      }
+    }
+  }
+
+  /**
    * 设置用户频道角色
    * @function setClientRole
    * @fires Client#client-role-changed
