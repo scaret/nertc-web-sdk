@@ -648,8 +648,6 @@
             <input type="checkbox" id="subScreen" checked>
 
           </div>
-
-          <h5 class="line">设置指定流</h5>
           <div class="line">
             <select id='subResolutionVideo' style="width: 49%">
               <option value=''>主流大小流</option>
@@ -662,6 +660,14 @@
               <option value='low'>辅流订阅小流</option>
             </select>
           </div>
+          <h5 class="line">设置当前所有流</h5>
+          <div class="line">
+            <button type="button" id="subscribeAll">订阅全部</button>
+            <button type="button" id="unsubscribeAll">取消订阅全部</button>
+          </div>
+        </div>
+        <p class="block-header">指定流订阅配置更改</p>
+        <div class="part">
           <div class="line">
             订阅列表
             <select id="subList">
@@ -670,24 +676,17 @@
           <div class="line">
             <button type="button" id="sub">订阅</button>
             <button type="button" id="unsub">停止订阅</button>
-            <button type="button" id="unsubAudio">停止订阅音频</button>
-            <button type="button" id="unsubAudioSlave">停止订阅音频辅流</button>
-            <button type="button" id="unsubVideo">停止订阅视频</button>
-            <button type="button" id="unsubScreen">停止订阅辅流</button>
-            <button type="button" id="subUpdateResolution">订阅大小流</button>
-            <br />
-            <select id="switchMediaType" style="width:30%">
-              <option value="video" selected>video</option>
-              <option value="screen">screen</option>
-            </select>
-            <button type="button" id="switchHigh">切换大流</button>
-            <button type="button" id="switchLow">切换小流</button>
-          </div>
-
-          <h5 class="line">设置当前所有流</h5>
-          <div class="line">
-            <button type="button" id="subscribeAll">订阅全部</button>
-            <button type="button" id="unsubscribeAll">取消订阅全部</button>
+            <br/>
+            <label>音频<button type="button" id="subSingle-audio">订阅</button></label><button type="button" id="unsubSingle-audio">停止</button>
+            <br/>
+            <label>视频<button type="button" id="subSingle-video">订阅</button></label><button type="button" id="unsubSingle-video">停止</button>
+            <button type="button" id="switchHigh-video">大流</button><button type="button" id="switchLow-video">小流</button>
+            <br/>
+            <label>辅流<button type="button" id="subSingle-screen">订阅</button></label><button type="button" id="unsubSingle-screen">停止</button>
+            <button type="button" id="switchHigh-screen">大流</button><button type="button" id="switchLow-screen">小流</button>
+            <br/>
+            <label>辅音<button type="button" id="subSingle-audioSlave">订阅</button></label><button type="button" id="unsubSingle-audioSlave">停止</button>
+            <br/>
           </div>
         </div>
         <p class="block-header">AI降噪</p>

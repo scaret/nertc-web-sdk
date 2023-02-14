@@ -23,12 +23,20 @@ import {
   MediaTypeList,
   MediaTypeShort,
   RTMPTask,
-  SpatialInitOptions
+  SpatialInitOptions,
+  SubscribeOptions,
+  UnsubscribeOptions
 } from '../types'
 import ErrorCode from '../util/error/errorCode'
 import RtcError from '../util/error/rtcError'
 import { OperationQueue } from '../util/OperationQueue'
-import { checkExists, checkValidBoolean, checkValidInteger, checkValidString } from '../util/param'
+import {
+  checkExists,
+  checkValidBoolean,
+  checkValidInteger,
+  checkValidObject,
+  checkValidString
+} from '../util/param'
 import { Base } from './base'
 import { LocalStream } from './localStream'
 import { RemoteStream } from './remoteStream'
@@ -979,13 +987,21 @@ class Client extends Base {
    * @param {Stream} Stream类型
    * @returns {Promise}
    */
-  async subscribe(stream: RemoteStream) {
+  async subscribe(stream: RemoteStream, subscribeOptions?: SubscribeOptions) {
     if (this.spatialManager) {
       this.logger.warn('subscribe() 已开启空间音频，跳过用户订阅步骤')
     } else {
       checkExists({ tag: 'client.subscribe:stream', value: stream })
-      this.logger.log('subscribe() [订阅远端: ${stream.stringStreamID}]')
-      return this.doSubscribe(stream)
+      if (subscribeOptions) {
+        this.logger.log(
+          `subscribe [订阅远端: ${stream.stringStreamID}] ${JSON.stringify(subscribeOptions)}`
+        )
+        stream.doSetSubscribeConfig(subscribeOptions)
+        return this.doSubscribe(stream)
+      } else {
+        this.logger.log('subscribe() [订阅远端: ${stream.stringStreamID}]')
+        return this.doSubscribe(stream)
+      }
     }
   }
 
@@ -1031,6 +1047,7 @@ class Client extends Base {
             'audio'
           )
           this.adapterRef.instance.removeSsrc(stream.getId(), 'audio')
+          stream.mediaHelper.updateStream('audio', null)
           stream.pubStatus.audio.consumerId = ''
           stream.stop('audio')
           stream.pubStatus.audio.stopconsumerStatus = 'end'
@@ -1075,6 +1092,7 @@ class Client extends Base {
             'audioSlave'
           )
           this.adapterRef.instance.removeSsrc(stream.getId(), 'audioSlave')
+          stream.mediaHelper.updateStream('audioSlave', null)
           stream.pubStatus.audioSlave.consumerId = ''
           stream.stop('audioSlave')
           stream.pubStatus.audioSlave.stopconsumerStatus = 'end'
@@ -1129,6 +1147,7 @@ class Client extends Base {
             'video'
           )
           this.adapterRef.instance.removeSsrc(stream.getId(), 'video')
+          stream.mediaHelper.updateStream('video', null)
           stream.pubStatus.video.consumerId = ''
           stream.stop('video')
           stream.pubStatus.video.stopconsumerStatus = 'end'
@@ -1173,6 +1192,7 @@ class Client extends Base {
             'screen'
           )
           this.adapterRef.instance.removeSsrc(stream.getId(), 'screen')
+          stream.mediaHelper.updateStream('screen', null)
           stream.pubStatus.screen.consumerId = ''
           stream.stop('screen')
           stream.pubStatus.screen.stopconsumerStatus = 'end'
@@ -1232,13 +1252,32 @@ class Client extends Base {
    * @param {Stream} Stream类型
    * @returns {Promise}
    */
-  async unsubscribe(stream: RemoteStream, mediaType?: MediaTypeShort) {
+  async unsubscribe(stream: RemoteStream, unsubscribeOptions: UnsubscribeOptions) {
     checkExists({ tag: 'client.unsubscribe:stream', value: stream })
-    return this.doUnsubscribe(stream, mediaType)
+    if (unsubscribeOptions) {
+      // 带参数的 Unsubscribe 实际上是调整了 subscribeConfig 的 subscribe 行为
+      checkValidObject({ tag: 'client.unsubscribe:unsubscribeOptions', value: unsubscribeOptions })
+      this.logger.log(`unsubscribe ${stream.getId()} ${JSON.stringify(unsubscribeOptions)}`)
+      const subscribeConfig = {
+        audio: stream.subConf.audio,
+        audioSlave: stream.subConf.audio,
+        video: stream.subConf.video,
+        screen: stream.subConf.screen
+      }
+      MediaTypeList.forEach((mediaType) => {
+        if (unsubscribeOptions[mediaType] === true) {
+          subscribeConfig[mediaType] = false
+        }
+      })
+      stream.doSetSubscribeConfig(subscribeConfig)
+      this.doSubscribe(stream)
+    } else {
+      this.logger.log(`unsubscribe() [取消订阅远端: ${stream.getId()}]`)
+      return this.doUnsubscribe(stream)
+    }
   }
 
   async doUnsubscribe(stream: RemoteStream, mediaType?: MediaTypeShort) {
-    this.logger.log(`unsubscribe() [取消订阅远端: ${stream.getId()}]`)
     if (!this.adapterRef._mediasoup) {
       const message = 'unsubscribe() 媒体mediasoup模块缺失'
       this.logger.error(message)

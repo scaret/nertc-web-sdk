@@ -3,6 +3,7 @@ import {
   ValidBooleanOptions,
   ValidFloatOptions,
   ValidIntegerOptions,
+  ValidObjectOptions,
   ValidStringOptions
 } from '../types'
 import ErrorCode from '../util/error/errorCode'
@@ -120,6 +121,35 @@ const checkValidString = (param: ValidStringOptions) => {
   }
 }
 
+const isValidObject = (param: ValidObjectOptions) => {
+  if (typeof param.value !== 'object') {
+    return {
+      result: false,
+      zhMsg: `参数不是对象`,
+      enMsg: `The parameter is not Object`
+    }
+  } else {
+    return {
+      result: true
+    }
+  }
+}
+
+const checkValidObject = (param: ValidObjectOptions) => {
+  const data = isValidObject(param)
+  if (data.result) {
+    return
+  } else {
+    let message = env.IS_ZH
+      ? `checkValidObject: 参数错误: ${param.tag}:${data.zhMsg}`
+      : `checkValidObject: invalid parameter: ${param.tag}:${data.enMsg}`
+    throw new RtcError({
+      code: ErrorCode.INVALID_PARAMETER_ERROR,
+      message
+    })
+  }
+}
+
 const isValidFloat = (param: ValidFloatOptions) => {
   if (!Number.isFinite(param.value)) {
     return {
@@ -197,5 +227,6 @@ export {
   checkValidFloat,
   checkValidInteger,
   checkValidString,
+  checkValidObject,
   isExistOptions
 }

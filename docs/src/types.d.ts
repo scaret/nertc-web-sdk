@@ -715,6 +715,13 @@ export interface SubscribeOptions {
   highOrLow?: 0 | 1
 }
 
+export interface UnsubscribeOptions {
+  audio?: boolean
+  audioSlave?: boolean
+  video?: boolean
+  screen?: boolean
+}
+
 export interface LiveConfig {
   /**
    * 互动直播开关。加入房间时此开关默认开启。
