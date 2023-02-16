@@ -2107,6 +2107,7 @@ class LocalStream extends RTCEventEmitter {
         code: 0,
         param: JSON.stringify(this.mediaHelper.getTrackSettings())
       })
+      this._play.resume()
     } catch (e: any) {
       this.logger.error('switchDevice() 异常：', e.name, e.message, e)
       this.inSwitchDevice[type] = false
