@@ -11,7 +11,9 @@ import {
   MediaPriorityOptions,
   EncryptionMode,
   STREAM_TYPE,
-  ClientMediaRecordingOptions
+  ClientMediaRecordingOptions,
+  SubscribeOptions,
+  UnsubscribeOptions
 } from './types'
 import { Stream } from './stream'
 import { ConnectionState } from './types'
@@ -126,18 +128,61 @@ declare interface Client {
   /**
    * 订阅远端音视频流。
    *
-   * 订阅远端音视频流之后，本地会触发 Client.on("stream-subscribed") 回调。
+   * 通常在 `Client.on("stream-added")`事件回调中处理远端媒体订阅。
+   * 订阅远端音视频流之后，本地会触发 `Client.on("stream-subscribed")` 事件。
+   *
+   * 注意事项：
+   * * 从v4.6.50起，`Client.subscribe`可以直接指定订阅的媒体类型了
    *
    * @param stream 需要订阅的源端音视频流。
+   *
+   * @example
+   * ```javascript
+   * // 在stream-added里
+   *
+   * // 写法1：订阅所有媒体
+   * remoteStream.setSubscribeConfig({
+   *    audio: true,
+   *    video: true,
+   *    screen: true,
+   *    audioSlave: true,
+   *    highOrLow: NERTC.STREAM_TYPE.HIGH
+   * })
+   * rtc.client.subscribe(remoteStream)
+   *
+   * // 写法2： 订阅所有媒体
+   * rtc.client.subscribe(remoteStream, {
+   *    audio: true,
+   *    video: true,
+   *    screen: true,
+   *    audioSlave: true,
+   *    highOrLow: NERTC.STREAM_TYPE.HIGH
+   * })
+   * ```
    */
-  subscribe(stream: Stream): Promise<void>
+  subscribe(stream: Stream, subOptions?: SubscribeOptions): Promise<void>
   /**
    * 取消订阅远端音视频流。
    *
    * 取消订阅后，SDK 将不再接收远端音视频流。
+   *
+   * 注意事项：
+   * * 从4.6.50起，可以取消订阅部分媒体类型
+   *
+   *
    * @param stream 需要取消订阅的源端音视频流。
+   *
+   * @example
+   * ```
+   * // 情况1：当需取消订阅远端所有媒体
+   * rtc.client.unsubscribe(remoteStream)
+   *
+   * // 情况2：当前需取消订阅远端音频，保留远端视频
+   * rtc.client.unsubscribe(remoteStream, {audio: true})
+   * ```
+   *
    */
-  unsubscribe(stream: Stream): Promise<void>
+  unsubscribe(stream: Stream, unsubscribeOptions?: UnsubscribeOptions): Promise<void>
   /**
    * 开启双流模式
    *

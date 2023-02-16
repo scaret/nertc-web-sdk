@@ -84,3 +84,8 @@ export const STREAM_TYPE = {
   HIGH: 0,
   LOW: 1
 }
+
+export const STREAM_TYPE_REV = {
+  0: 'HIGH',
+  1: 'LOW'
+}

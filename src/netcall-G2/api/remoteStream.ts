@@ -1,8 +1,5 @@
-import { STREAM_TYPE } from '../constant/videoQuality'
-import {
-  ReportParamSetExternalAudioRender,
-  ReportParamSubscribeRemoteSubStreamVideo
-} from '../interfaces/ApiReportParam'
+import { STREAM_TYPE, STREAM_TYPE_REV } from '../constant/videoQuality'
+import { ReportParamSubscribeRemoteSubStreamVideo } from '../interfaces/ApiReportParam'
 import { alerter } from '../module/alerter'
 import { AudioLevel } from '../module/audioLevel'
 import { MediaHelper } from '../module/media'
@@ -15,6 +12,8 @@ import {
   ILogger,
   MediaRecordingOptions,
   MediaTypeList,
+  MediaTypeListAudio,
+  MediaTypeListVideo,
   MediaTypeShort,
   NERtcCanvasWatermarkConfig,
   PlatformType,
@@ -32,7 +31,6 @@ import ErrorCode from '../util/error/errorCode'
 import RtcError from '../util/error/rtcError'
 import { isExistOptions } from '../util/param'
 import { RTCEventEmitter } from '../util/rtcUtil/RTCEventEmitter'
-import * as env from '../util/rtcUtil/rtcEnvironment'
 import { getAudioContext, tryResumeAudioContext } from '../module/webAudio'
 
 let remoteStreamCnt = 0
@@ -339,49 +337,30 @@ class RemoteStream extends RTCEventEmitter {
   }
 
   /**
-   * 设置视频订阅的参数。
-   * @method setSubscribeConfig
-   * @memberOf Stream#
-   * @param {Object} options 配置参数
-   * @param {Boolean} [options.audio] 是否订阅音频
-   * @param {Boolean} [options.video] 是否订阅视频
-   * @param {Number} [options.highOrLow] : 0是小流，1是大流
-   * @returns {Null}
+   * doSetSubscribeConfig可能会被 remoteStream.setSubscribeConfig 以及 client.subscribe调用
    */
-  setSubscribeConfig(conf: SubscribeOptions) {
-    this.logger.log(
-      `setSubscribeConfig() 设置 ${this.stringStreamID} 订阅规则：${JSON.stringify(conf)}`
-    )
-    if (typeof conf.highOrLow === 'number') {
-      this.subConf.highOrLow.video = conf.highOrLow
-      this.subConf.highOrLow.screen = conf.highOrLow
-    }
-    if (typeof conf.audio === 'boolean') {
-      this.subConf.audio = conf.audio
-    }
-    if (typeof conf.audioSlave === 'boolean') {
-      this.subConf.audioSlave = conf.audioSlave
-    }
+  doSetSubscribeConfig(conf: SubscribeOptions) {
+    const formerSubConf = Object.assign({}, this.subConf)
+    formerSubConf.highOrLow = Object.assign({}, this.subConf.highOrLow)
 
-    if (typeof conf.video === 'boolean') {
-      this.subConf.video = conf.video
-    } else if (conf.video === 'high') {
-      this.subConf.video = true
-      this.subConf.highOrLow.video = STREAM_TYPE.HIGH
-    } else if (conf.video === 'low') {
-      this.subConf.video = true
-      this.subConf.highOrLow.video = STREAM_TYPE.LOW
+    for (let mediaType of MediaTypeListAudio) {
+      const sub = conf[mediaType]
+      if (typeof sub === 'boolean') {
+        this.subConf[mediaType] = sub
+      }
     }
-    if (typeof conf.screen === 'boolean') {
-      this.subConf.screen = conf.screen
-    } else if (conf.screen === 'high') {
-      this.subConf.screen = true
-      this.subConf.highOrLow.screen = STREAM_TYPE.HIGH
-    } else if (conf.screen === 'low') {
-      this.subConf.screen = true
-      this.subConf.highOrLow.screen = STREAM_TYPE.LOW
+    for (let mediaType of MediaTypeListVideo) {
+      const sub = conf[mediaType]
+      if (conf.highOrLow) {
+        this.subConf.highOrLow[mediaType] = conf.highOrLow
+      }
+      if (sub === 'high' || sub === 'low') {
+        this.subConf[mediaType] = true
+        this.subConf.highOrLow[mediaType] = STREAM_TYPE[sub === 'high' ? 'HIGH' : 'LOW']
+      } else if (typeof sub === 'boolean') {
+        this.subConf[mediaType] = sub
+      }
     }
-
     if (this.pubStatus.audio.audio && this.subConf.audio) {
       this.subConf.audio = true
       this.audio = true
@@ -410,6 +389,44 @@ class RemoteStream extends RTCEventEmitter {
       this.subConf.screen = false
     }
 
+    // 打印setSubscribeConfig前后状态
+    let info = 'doSetSubscribeConfig'
+    let changed = false
+    for (let mediaType of MediaTypeList) {
+      info += ` ${mediaType}:${formerSubConf[mediaType]}`
+      if (formerSubConf[mediaType] !== this.subConf[mediaType]) {
+        info += '=>' + this.subConf[mediaType]
+        changed = true
+      }
+      if (mediaType === 'video' || mediaType === 'screen') {
+        info += ' ' + STREAM_TYPE_REV[formerSubConf.highOrLow[mediaType]]
+        if (formerSubConf.highOrLow[mediaType] !== this.subConf.highOrLow[mediaType]) {
+          info += '=>' + STREAM_TYPE_REV[this.subConf.highOrLow[mediaType]]
+          changed = true
+        }
+      }
+    }
+    if (!changed) {
+      info += `【Unchanged】`
+    }
+    this.logger.log(info)
+  }
+
+  /**
+   * 设置视频订阅的参数。
+   * @method setSubscribeConfig
+   * @memberOf Stream#
+   * @param {Object} options 配置参数
+   * @param {Boolean} [options.audio] 是否订阅音频
+   * @param {Boolean} [options.video] 是否订阅视频
+   * @param {Number} [options.highOrLow] : 0是小流，1是大流
+   * @returns {Null}
+   */
+  setSubscribeConfig(conf: SubscribeOptions) {
+    this.logger.log(
+      `setSubscribeConfig() 设置 ${this.stringStreamID} 订阅规则：${JSON.stringify(conf)}`
+    )
+    this.doSetSubscribeConfig(conf)
     this.logger.log(
       `setSubscribeConfig() 设置 ${this.stringStreamID} 订阅规则结果：${JSON.stringify(
         this.subConf

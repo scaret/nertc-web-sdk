@@ -18,6 +18,7 @@ import { SignalGetChannelInfoResponse } from './interfaces/SignalProtocols'
 import { CanvasWatermarkControl } from './module/watermark/CanvasWatermarkControl'
 import { EncoderWatermarkControl } from './module/watermark/EncoderWatermarkControl'
 import { SimpleBig } from './util/json-big/SimpleBig'
+import { STREAM_TYPE } from '../../docs/src/types'
 
 type UIDTYPE = number | string
 
@@ -169,7 +170,7 @@ export type MediaType = 'audio' | 'video' | 'screenShare' | 'audioSlave'
 export type MediaTypeShort = 'audio' | 'video' | 'screen' | 'audioSlave'
 
 export const MediaTypeListAudio: ['audio', 'audioSlave'] = ['audio', 'audioSlave']
-export const MediaTypeListVideo: ['audio', 'audioSlave'] = ['audio', 'audioSlave']
+export const MediaTypeListVideo: ['video', 'screen'] = ['video', 'screen']
 export const MediaTypeList: ['audio', 'video', 'screen', 'audioSlave'] = [
   'audio',
   'video',
@@ -808,7 +809,7 @@ export interface SubscribeOptions {
   audioSlave: boolean
   video?: boolean | 'high' | 'low'
   screen?: boolean | 'high' | 'low'
-  highOrLow?: number
+  highOrLow?: STREAM_TYPE
 }
 
 export interface SubscribeConfig {
@@ -817,9 +818,16 @@ export interface SubscribeConfig {
   video: boolean
   screen: boolean
   highOrLow: {
-    video: number
-    screen: number
+    video: STREAM_TYPE
+    screen: STREAM_TYPE
   }
+}
+
+export interface UnsubscribeOptions {
+  audio?: boolean
+  audioSlave?: boolean
+  video?: boolean
+  screen?: boolean
 }
 
 export interface VideoProfileOptions {
@@ -1224,6 +1232,11 @@ export interface ValidStringOptions {
   value: any
   min?: number
   max?: number
+}
+
+export interface ValidObjectOptions {
+  tag: string
+  value: any
 }
 
 export interface ValidIntegerOptions {

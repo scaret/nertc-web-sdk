@@ -2136,100 +2136,76 @@ $('#sub').on('click', () => {
   subscribe(remoteStream)
 })
 
-$('#unsubAudio').on('click', () => {
-  if (!rtc.remoteStreams[subList[subList.selectedIndex].value]) {
-    addLog('无法进行此操作')
-    return
-  }
+const mediaTypes = ['audio', 'audioSlave', 'video', 'screen']
 
-  let remoteStream = rtc.remoteStreams[subList[subList.selectedIndex].value]
+mediaTypes.forEach((mediaType)=>{
 
-  remoteStream.setSubscribeConfig({
-    audio: false
+  // 订阅按键
+  $(`#subSingle-${mediaType}`).on('click', ()=>{
+    let remoteStream = rtc.remoteStreams[subList[subList.selectedIndex].value]
+    if (!remoteStream) {
+      addLog('没有流：' + subList[subList.selectedIndex].value)
+      return
+    }
+    const subConf = {}
+    subConf[mediaType] = true
+    rtc.client
+      .subscribe(remoteStream, subConf)
+      .then(() => {
+        console.log('单独订阅:' + mediaType)
+        addLog('单独订阅:' + mediaType)
+      })
+      .catch((err) => {
+        addLog('订阅失败:' + mediaType)
+        console.error('订阅失败: ',mediaType, err)
+      })
   })
 
-  rtc.client
-    .subscribe(remoteStream)
-    .then(() => {
-      console.log('本地 取消订阅音频 成功')
-      addLog('本地 取消订阅音频 成功')
-    })
-    .catch((err) => {
-      addLog('本地 取消订阅音频 失败')
-      console.log('本地 取消订阅音频 失败: ', err)
-    })
-})
-
-$('#unsubAudioSlave').on('click', () => {
-  if (!rtc.remoteStreams[subList[subList.selectedIndex].value]) {
-    addLog('无法进行此操作')
-    return
-  }
-
-  let remoteStream = rtc.remoteStreams[subList[subList.selectedIndex].value]
-
-  // remoteStream.setSubscribeConfig({
-  //   audioSlave: false
-  // })
-
-  rtc.client
-    .unsubscribe(remoteStream, 'audioSlave')
-    .then(() => {
-      console.log('本地 取消订阅音频辅流 成功')
-      addLog('本地 取消订阅音频辅流 成功')
-    })
-    .catch((err) => {
-      addLog('本地 取消订阅音频辅流 失败')
-      console.log('本地 取消订阅音频辅流 失败: ', err)
-    })
-})
-
-$('#unsubVideo').on('click', () => {
-  if (!rtc.remoteStreams[subList[subList.selectedIndex].value]) {
-    addLog('无法进行此操作')
-    return
-  }
-
-  let remoteStream = rtc.remoteStreams[subList[subList.selectedIndex].value]
-
-  // remoteStream.setSubscribeConfig({
-  //   video: false
-  // })
-
-  rtc.client
-    .unsubscribe(remoteStream, 'video')
-    .then(() => {
-      console.log('本地 取消订阅视频 成功')
-      addLog('本地 取消订阅视频 成功')
-    })
-    .catch((err) => {
-      addLog('本地 取消订阅视频 失败')
-      console.log('本地 取消订阅视频 失败: ', err)
-    })
-})
-
-$('#unsubScreen').on('click', () => {
-  if (!rtc.remoteStreams[subList[subList.selectedIndex].value]) {
-    addLog('无法进行此操作')
-    return
-  }
-
-  let remoteStream = rtc.remoteStreams[subList[subList.selectedIndex].value]
-
-  remoteStream.setSubscribeConfig({
-    screen: false
+  // 取消订阅按键
+  $(`#unsubSingle-${mediaType}`).on('click', () => {
+    let remoteStream = rtc.remoteStreams[subList[subList.selectedIndex].value]
+    if (!remoteStream) {
+      addLog('没有流：' + subList[subList.selectedIndex].value)
+      return
+    }
+    const unsubConf = {}
+    unsubConf[mediaType] = true
+    rtc.client
+      .unsubscribe(remoteStream, unsubConf)
+      .then(() => {
+        console.log('取消订阅:' + mediaType)
+        addLog('取消订阅:' + mediaType)
+      })
+      .catch((err) => {
+        addLog('取消订阅失败:' + mediaType)
+        console.error('取消订阅失败: ',mediaType, err)
+      })
   })
 
-  rtc.client
-    .subscribe(remoteStream)
-    .then(() => {
-      console.log('本地 取消订阅辅流 成功')
-      addLog('本地 取消订阅辅流 成功')
-    })
-    .catch((err) => {
-      addLog('本地 取消订阅辅流 失败')
-      console.log('本地 取消订阅辅流 失败: ', err)
-    })
+  // 切换大流按键
+  $(`#switchHigh-${mediaType}`).on('click', () => {
+    let remoteStream = rtc.remoteStreams[subList[subList.selectedIndex].value]
+    if (!remoteStream) {
+      addLog('没有流：' + subList[subList.selectedIndex].value)
+      return
+    }
+    const highorlow = NERTC.STREAM_TYPE.HIGH
+    // 0是大流，1是小流
+    rtc.client.setRemoteStreamType(remoteStream, highorlow, mediaType)
+  })
+
+  // 切换小流按键
+  $(`#switchLow-${mediaType}`).on('click', () => {
+    let remoteStream = rtc.remoteStreams[subList[subList.selectedIndex].value]
+    if (!remoteStream) {
+      addLog('没有流：' + subList[subList.selectedIndex].value)
+      return
+    }
+    const highorlow = NERTC.STREAM_TYPE.LOW
+    // 0是大流，1是小流
+    rtc.client.setRemoteStreamType(remoteStream, highorlow, mediaType)
+  })
+
 })
 
 $('#unsub').on('click', () => {
@@ -2239,51 +2215,6 @@ $('#unsub').on('click', () => {
   }
   let remoteStream = rtc.remoteStreams[subList[subList.selectedIndex].value]
   unsubscribe(remoteStream)
-})
-
-$('#subUpdateResolution').on('click', () => {
-  if (!rtc.remoteStreams[subList[subList.selectedIndex].value]) {
-    addLog('无法进行此操作')
-    return
-  }
-  let remoteStream = rtc.remoteStreams[subList[subList.selectedIndex].value]
-  const highorlow = $('#subResolution').val() - 0
-  // 0是大流，1是小流
-  rtc.client.setRemoteVideoStreamType(remoteStream, highorlow)
-})
-
-$('#switchHigh').on('click', () => {
-  if (!rtc.remoteStreams[subList[subList.selectedIndex].value]) {
-    addLog('无法进行此操作')
-    return
-  }
-  let remoteStream = rtc.remoteStreams[subList[subList.selectedIndex].value]
-
-  const highorlow = NERTC.STREAM_TYPE.HIGH
-  // 0是大流，1是小流
-  const mediaType = $('#switchMediaType').val()
-  if (mediaType === 'video') {
-    rtc.client.setRemoteVideoStreamType(remoteStream, highorlow)
-  } else {
-    rtc.client.setRemoteStreamType(remoteStream, highorlow, mediaType)
-  }
-})
-
-$('#switchLow').on('click', () => {
-  if (!rtc.remoteStreams[subList[subList.selectedIndex].value]) {
-    addLog('无法进行此操作')
-    return
-  }
-  let remoteStream = rtc.remoteStreams[subList[subList.selectedIndex].value]
-
-  const highorlow = NERTC.STREAM_TYPE.LOW
-  // 0是大流，1是小流
-  const mediaType = $('#switchMediaType').val()
-  if (mediaType === 'video') {
-    rtc.client.setRemoteVideoStreamType(remoteStream, highorlow)
-  } else {
-    rtc.client.setRemoteStreamType(remoteStream, highorlow, mediaType)
-  }
 })
 
 $('#subscribeAll').on('click', () => {
