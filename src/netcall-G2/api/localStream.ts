@@ -881,7 +881,13 @@ class LocalStream extends RTCEventEmitter {
    * @returns {Void}
    */
   setLocalRenderMode(options: RenderMode, mediaType?: MediaTypeShort) {
-    if (!options || !Number.isInteger(options.width) || !Number.isInteger(options.width)) {
+    if (
+      !options ||
+      !(options.width - 0) ||
+      !(options.height - 0) ||
+      options.width < 0 ||
+      options.height < 0
+    ) {
       this.logger.warn('setLocalRenderMode() 参数宽高参数错误')
       this.client.apiFrequencyControl({
         name: 'setLocalRenderMode',
@@ -4419,6 +4425,14 @@ class LocalStream extends RTCEventEmitter {
     } catch (error) {}
   }
 
+  getNativeDom(type: 'screen' | 'video') {
+    const enable = this[type]
+    const dom = this._play[type].dom
+    if (!enable || !dom) {
+      this.logger.warn(`No local ${type}`)
+    }
+    return dom
+  }
   /**
    *  销毁实例
    *  @method destroy
