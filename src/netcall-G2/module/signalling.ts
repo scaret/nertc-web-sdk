@@ -1050,7 +1050,10 @@ class Signalling extends EventEmitter {
           this.logger.log('服务端配置bwe：上行使用transport-cc')
           this.adapterRef.preferRemb = false
         }
-      } else if (getParameters().forceBWE === 'transport-cc') {
+      } else if (
+        (this.adapterRef.preferRemb || response.preferRemb) &&
+        getParameters().forceBWE === 'transport-cc'
+      ) {
         this.logger.warn(
           `强行使用transport-cc。忽略服务端配置bwe：preferRemb: ${response.preferRemb}`
         )

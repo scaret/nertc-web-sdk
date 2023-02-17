@@ -356,8 +356,13 @@ class Play extends EventEmitter {
     MediaTypeListAudio.forEach((mediaType) => {
       const dom = this[mediaType].dom
       if (dom) {
-        const normalizedVolume =
-          this.stream.client.adapterRef.nomalizedPlaybackVolume * this[mediaType].normalizedVolume
+        let normalizedVolume
+        if (this.stream.isRemote) {
+          normalizedVolume =
+            this.stream.client.adapterRef.nomalizedPlaybackVolume * this[mediaType].normalizedVolume
+        } else {
+          normalizedVolume = this[mediaType].normalizedVolume
+        }
         if (Math.abs(dom.volume - normalizedVolume) > 0.01) {
           this.logger.log(
             `updatePlaybackVolume ${mediaType} ${dom.volume} => ${normalizedVolume} ( ${this.stream.client.adapterRef.nomalizedPlaybackVolume} * ${this[mediaType].normalizedVolume})`

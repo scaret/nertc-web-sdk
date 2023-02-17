@@ -1610,9 +1610,6 @@ class Client extends Base {
       })
     }
 
-    if (this.adapterRef.localStream) {
-      this.adapterRef.localStream._play.updatePlaybackVolume()
-    }
     for (let i in this.adapterRef.remoteStreamMap) {
       const r = this.adapterRef.remoteStreamMap[i]
       if (r.active) {
