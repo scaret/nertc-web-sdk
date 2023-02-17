@@ -581,7 +581,7 @@ declare interface Client {
   cleanMediaRecording(): void
 
   /**
-   * 设置整个频道的播放音量。
+   * 设置整个频道的远端用户的播放音量。
    *
    * * 该接口与[[Stream.setAudioVolume]]类似：两者都改变播放音量。setPlaybackVolume对频道内所有流生效，setAudioVolume对某个远端流生效。
    * * volume 取值范围： [0, 100]

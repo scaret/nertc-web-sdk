@@ -232,7 +232,7 @@ let parameters: IParameters = {
   deviceChangeInterval: 0,
   h264ProfileLevel: '',
   h264ProfileLevelSignal: '42e01f',
-  forceBWE: 'no',
+  forceBWE: 'transport-cc',
   shimLocalCanvas: 'safari'
 }
 

@@ -4920,9 +4920,8 @@ $('#toggleVConsole').click(() => {
   }
 })
 
-$('#forceHeartbeat').click(() => {
-  rtc.client.adapterRef._statsReport.doHeartbeat()
-  rtc.client.adapterRef._statsReport.formativeStatsReport.send()
+$('#forceHeartbeat').click(async () => {
+  rtc.client.adapterRef._statsReport.sendDataReportHeartbeat()
 })
 
 const assertLocalStream = () => {
