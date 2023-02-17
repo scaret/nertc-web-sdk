@@ -220,6 +220,10 @@ const checkExists = (param: ExistsOptions) => {
   }
 }
 
+const isNumber = (param: any) => {
+  return !isNaN(parseFloat(param)) && typeof param == 'number'
+}
+
 export {
   isValidInteger,
   checkExists,
@@ -228,5 +232,6 @@ export {
   checkValidInteger,
   checkValidString,
   checkValidObject,
-  isExistOptions
+  isExistOptions,
+  isNumber
 }

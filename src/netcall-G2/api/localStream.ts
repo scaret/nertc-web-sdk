@@ -13,6 +13,7 @@ import VirtualBackground from '../module/video-post-processing/virtual-backgroun
 import { loadPlugin } from '../plugin'
 import { VideoPluginType, audioPlugins, videoPlugins } from '../plugin/plugin-list'
 import { BackGroundOptions } from '../plugin/segmentation/src/types'
+import { isNumber } from '../util/param'
 import {
   AudioEffectOptions,
   AudioMixingOptions,
@@ -881,7 +882,13 @@ class LocalStream extends RTCEventEmitter {
    * @returns {Void}
    */
   setLocalRenderMode(options: RenderMode, mediaType?: MediaTypeShort) {
-    if (!options || !Number.isInteger(options.width) || !Number.isInteger(options.width)) {
+    if (
+      !options ||
+      !isNumber(options.width) ||
+      !isNumber(options.height) ||
+      options.width < 0 ||
+      options.height < 0
+    ) {
       this.logger.warn('setLocalRenderMode() 参数宽高参数错误')
       this.client.apiFrequencyControl({
         name: 'setLocalRenderMode',
@@ -4417,6 +4424,16 @@ class LocalStream extends RTCEventEmitter {
     try {
       this.videoPostProcess.filters?.webglLostContext?.restoreContext()
     } catch (error) {}
+  }
+
+  //获取原始dom对象 video主流 screen辅流
+  getNativeDom(type: 'screen' | 'video') {
+    const enable = this[type]
+    const dom = this._play[type].dom
+    if (!enable || !dom) {
+      this.logger.warn(`No local ${type}`)
+    }
+    return dom
   }
 
   /**
