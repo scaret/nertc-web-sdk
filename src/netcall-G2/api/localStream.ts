@@ -13,6 +13,7 @@ import VirtualBackground from '../module/video-post-processing/virtual-backgroun
 import { loadPlugin } from '../plugin'
 import { VideoPluginType, audioPlugins, videoPlugins } from '../plugin/plugin-list'
 import { BackGroundOptions } from '../plugin/segmentation/src/types'
+import { isNumber } from '../util/param'
 import {
   AudioEffectOptions,
   AudioMixingOptions,
@@ -883,8 +884,8 @@ class LocalStream extends RTCEventEmitter {
   setLocalRenderMode(options: RenderMode, mediaType?: MediaTypeShort) {
     if (
       !options ||
-      !(options.width - 0) ||
-      !(options.height - 0) ||
+      !isNumber(options.width) ||
+      !isNumber(options.height) ||
       options.width < 0 ||
       options.height < 0
     ) {
