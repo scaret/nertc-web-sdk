@@ -1839,6 +1839,16 @@ class RemoteStream extends RTCEventEmitter {
     }
   }
 
+  //获取原始dom对象 video主流 screen辅流
+  getNativeDom(type: 'screen' | 'video') {
+    const enable = this[type]
+    const dom = this._play[type]?.dom
+    if (!enable || !dom) {
+      this.logger.warn(`No remote ${type}`)
+    }
+    return dom
+  }
+
   /**
    *  销毁实例
    *  @method destroy
