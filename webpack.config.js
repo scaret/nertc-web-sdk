@@ -54,6 +54,13 @@ const getWasmFileName = (type = '', tagversion = '') => {
 
 let config = require('./webpack.config.base')({})
 
+const date = new Date()
+const dateStr =
+  '' +
+  date.getFullYear() +
+  (date.getMonth() + 1).toString().padStart(2, '0') +
+  date.getDate().toString().padStart(2, '0')
+
 config = merge(config, {
   entry: {},
   output: {
@@ -162,7 +169,7 @@ let configWebrtcG2 = merge(config, {
       fse.emptyDirSync(dir)
     }),
     new webpack.BannerPlugin({
-      banner: `NeRTC ${webrtcG2Version}|BUILD ${git.describe()} ${process.env.NODE_ENV}`
+      banner: `NeRTC ${webrtcG2Version}|BUILD ${git.describe()} ${process.env.NODE_ENV} ${dateStr}`
     }),
     new CopyPlugin([
       {
