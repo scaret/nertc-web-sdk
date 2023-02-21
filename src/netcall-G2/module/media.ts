@@ -2581,7 +2581,7 @@ class MediaHelper extends EventEmitter {
   getAudioEffectsTotalTime(options: AudioEffectOptions) {
     const { soundId, filePath, cycle = 1 } = options
     if (!this.audio.mixAudioConf || JSON.stringify(this.audio.mixAudioConf.sounds) === '{}') {
-      this.logger.log('getAudioEffectsTotalTime: 当前没有音效文件')
+      this.logger.log('getAudioEffectsDuration: 当前没有音效文件')
       return Promise.resolve()
     }
     this._initSoundIfNotExists(soundId, filePath)
@@ -2591,7 +2591,7 @@ class MediaHelper extends EventEmitter {
     }
 
     this.stream.client.apiFrequencyControl({
-      name: 'getAudioMixingTotalTime',
+      name: 'getAudioEffectsDuration',
       code: 0,
       param: JSON.stringify(
         {
@@ -2607,14 +2607,14 @@ class MediaHelper extends EventEmitter {
   getAudioEffectsPlayedTime(options: AudioEffectOptions) {
     const { soundId, filePath, cycle = 1 } = options
     if (!this.audio.mixAudioConf || JSON.stringify(this.audio.mixAudioConf.sounds) === '{}') {
-      this.logger.log('getAudioEffectsTotalTime: 当前没有音效文件')
+      this.logger.log('getAudioEffectsCurrentPosition() 当前没有音效文件')
       return Promise.resolve()
     }
     this._initSoundIfNotExists(soundId, filePath)
 
     let currentTime = Date.now()
     if (this.audio.mixAudioConf.sounds[soundId].state == 'PAUSED') {
-      this.logger.log('当前是暂停状态')
+      this.logger.log('getAudioEffectsCurrentPosition() 当前是暂停状态')
       currentTime = this.audio.mixAudioConf.sounds[soundId].pauseTime
     }
     let playedTime =
@@ -2627,7 +2627,7 @@ class MediaHelper extends EventEmitter {
     //this.logger.log("当前播放进度:", playedTime)
 
     this.stream.client.apiFrequencyControl({
-      name: 'getAudioMixingPlayedTime',
+      name: 'getAudioEffectsCurrentPosition',
       code: 0,
       param: JSON.stringify(
         {
