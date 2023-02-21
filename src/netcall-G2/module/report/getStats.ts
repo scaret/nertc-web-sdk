@@ -297,11 +297,13 @@ class GetStats {
     const bwe: any = []
     Object.values(stats).forEach((item) => {
       // 普通换算
-      if (item.id.includes('Conn-')) {
+      if (item.id.includes('Conn-') && item.googActiveConnection === 'true') {
+        //使用ice选中的CandidatePair
         this.formativeStatsReport?.formatTransportData(item, direction)
       }
-      if (item.id.includes('Cand-')) {
-        this!.adapterRef!.transportStats.NetworkType = item.networkType
+      if (item.id.includes('Cand-') && item.networkType) {
+        //避免远端Candidate的干扰
+        this!.adapterRef!.transportStats.NetworkType = item.networkType || ''
       } else if (item.id === 'bweforvideo' && direction === 'send') {
         item = formatData(item)
         this!.adapterRef!.transportStats.OutgoingAvailableBandwidth =
