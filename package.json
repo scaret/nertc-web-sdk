@@ -40,7 +40,7 @@
     "deploy:g2": "cross-env PLATFORM=g2 node build/deploy.js",
     "pack:head:g2": "npm run clean && PLATFORM=g2 NODE_ENV=test npm run build:sdk:g2 && PLATFORM=g2 NODE_ENV=test npm run build:tester:g2 && npm run build:api && PLATFORM=g2 NODE_ENV=test TARGET_DIR=/var/nertc-builds/by-build node build/deployByHEAD.js",
     "pack:commit:g2": "npm run clean && npm run build:sdk:g2 && npm run build:tester:g2 && npm run build:api && TARGET_DIR=/var/nertc-builds/env/${NODE_ENV}/by-build node build/deployByHEAD.js",
-    "npm:production:deploy": "npm run clean && NODE_ENV=production npm run build:sdk:g2 && zx build/npm/deploy-to-npm-repo.mjs",
+    "npm:production:deploy": "zx build/npm/deploy-to-npm-repo.mjs",
     "npm:test:deploy": "npm run clean && NODE_ENV=test npm run build:sdk:g2 && zx build/npm/deploy-test-to-npm-repo.mjs",
     "tester": "cross-env PLATFORM=all NODE_ENV=test node build/tester.js",
     "proto": "npx pbjs -t json-module -w commonjs -o src/netcall-G2/util/proto/proto.js  src/netcall-G2/util/proto/*.proto && npx pbts -o src/netcall-G2/util/proto/proto.d.ts src/netcall-G2/util/proto/proto.js",
