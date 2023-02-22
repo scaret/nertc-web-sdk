@@ -104,8 +104,9 @@ class FormativeStatsReport {
   formatTransportData(data: any, direction: string) {
     let tmp: any
     if (direction === 'send') {
-      this!.adapterRef!.transportStats.rxRtt = data.googRtt
-      this!.adapterRef!.sessionStats.SendBytes = data.bytesSent
+      this!.adapterRef!.transportStats.rxRtt = data.googRtt - 0
+      this!.adapterRef!.transportStats.txRtt = data.googRtt - 0
+      this!.adapterRef!.sessionStats.SendBytes = data.bytesSent - 0
       //上行transport的feakback可以忽略不计，下行同理
       if (this.statsCatch.upTransportCache) {
         tmp = this.statsCatch.upTransportCache
@@ -117,14 +118,14 @@ class FormativeStatsReport {
         )
       }
     } else {
-      this!.adapterRef!.transportStats.txRtt = data.googRtt
-      this!.adapterRef!.sessionStats.RecvBytes = data.bytesReceived
+      //this!.adapterRef!.transportStats.txRtt = data.googRtt
+      this!.adapterRef!.sessionStats.RecvBytes = data.bytesReceived - 0
       if (this.statsCatch.downTransportCache) {
         tmp = this.statsCatch.downTransportCache
       }
       this.statsCatch.downTransportCache = data
       if (tmp) {
-        this!.adapterRef!.sessionStats.RecvBytes = Math.round(
+        this!.adapterRef!.sessionStats.RecvBitrate = Math.round(
           (8 * (data.bytesReceived - tmp.bytesReceived)) / 1000
         )
       }

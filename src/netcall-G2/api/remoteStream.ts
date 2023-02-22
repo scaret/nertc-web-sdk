@@ -1358,7 +1358,7 @@ class RemoteStream extends RTCEventEmitter {
       errcode = ErrorCode.STREAM_NOT_MUTE_SCREEN_YET
       message = 'remoteStream.unmuteScreen: 当前没有mute屏幕共享, 不支持unmute'
     }
-    if (this.mediaHelper.video.cameraTrack) {
+    if (this.mediaHelper.screen.screenVideoTrack) {
     } else {
       errcode = ErrorCode.STREAM_UNMUTE_SCREEN_WITHOUT_STREAM
       message = 'remoteStream.unmuteScreen: 没有屏幕共享流, 无法执行unmute操作'
