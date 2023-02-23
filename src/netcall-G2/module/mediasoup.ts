@@ -517,7 +517,7 @@ class Mediasoup extends EventEmitter {
                     appData.mediaType === 'screenShare' || appData.mediaType === 'audioSlave',
                   simulcastEnable: simulcastEnable,
                   spatialLayerCount: simulcastEnable ? 2 : 1,
-                  mute: false
+                  mute: stream.muteStatus[mediaTypeShort].send || false
                 }
               },
               appData: {
