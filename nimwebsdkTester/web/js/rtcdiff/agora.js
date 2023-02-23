@@ -506,6 +506,7 @@ function startAGORA() {
       target.style.height = '100%'
       target.style.transform = 'translate(-50%)'
       target.style.left = '50%'
+      target.style.objectFit = 'contain'
     }
   })
 
