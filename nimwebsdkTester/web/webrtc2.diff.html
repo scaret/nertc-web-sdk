@@ -145,8 +145,16 @@
           <p>声网调试编解码能力</p>
         </div>
         <div class="line">
-          <label><input type="radio" name="agoraCodec" value="h264" checked />H264</label>
-          <label><input type="radio" name="agoraCodec" value="vp8" />VP8</label>
+          <label
+            ><input
+              id="agoraCodecH264"
+              type="radio"
+              name="agoraCodec"
+              value="h264"
+              checked
+            />H264</label
+          >
+          <label><input id="agoraCodecVP8" type="radio" name="agoraCodec" value="vp8" />VP8</label>
         </div>
       </div>
       <div class="full-screen-config">
@@ -179,46 +187,46 @@
           </div>
           <div class="line">
             <select id="sessionConfigAudioProfile">
-              <option value="">audioProfile：默认（不选）</option>
-              <option value="speech_low_quality">
+              <option id="audioProfileDefault" value="">audioProfile：默认（不选）</option>
+              <option id="speechLowQuality" value="speech_low_quality">
                 16 kHz 采样率，单声道，编码码率约 24 Kbps，speech_low_quality
               </option>
-              <option value="speech_standard">
+              <option id="speechStandard" value="speech_standard">
                 32 kHz 采样率，单声道，编码码率约 24 Kbps，speech_standard
               </option>
-              <option value="music_standard">
+              <option id="musicStandard" value="music_standard">
                 48 kHz 采样率，单声道，编码码率约 40 Kbps，music_standard
               </option>
-              <option value="standard_stereo">
+              <option id="standardStereo" value="standard_stereo">
                 48 kHz 采样率，双声道，编码码率约 64 Kbps，standard_stereo
               </option>
-              <option value="high_quality">
+              <option id="highQuality" value="high_quality">
                 48 kHz 采样率，单声道， 编码码率约 128 Kbps，high_quality
               </option>
-              <option value="high_quality_stereo">
+              <option id="highQualityStereo" value="high_quality_stereo">
                 48 kHz 采样率，双声道，编码码率约 192 Kbps，high_quality_stereo
               </option>
             </select>
           </div>
           <div class="line">
             <select id="aec">
-              <option value="" selected>回声消除AEC:默认</option>
-              <option value="true">回声消除AEC:true</option>
-              <option value="false">回声消除AEC:false</option>
+              <option id="aecDefault" value="" selected>回声消除AEC:默认</option>
+              <option id="aecTrue" value="true">回声消除AEC:true</option>
+              <option id="aecFalse" value="false">回声消除AEC:false</option>
             </select>
           </div>
           <div class="line">
             <select id="ans">
-              <option value="" selected>噪声抑制ANS:默认</option>
-              <option value="true">噪声抑制ANS:true</option>
-              <option value="false">噪声抑制ANS:false</option>
+              <option id="ansDefault" value="" selected>噪声抑制ANS:默认</option>
+              <option id="ansTrue" value="true">噪声抑制ANS:true</option>
+              <option id="ansFalse" value="false">噪声抑制ANS:false</option>
             </select>
           </div>
           <div class="line">
             <select id="agc">
-              <option value="" selected>增益控制AGC:默认</option>
-              <option value="true">增益控制AGC:true</option>
-              <option value="false">增益控制AGC:false</option>
+              <option id="agcDefault" value="" selected>增益控制AGC:默认</option>
+              <option id="agcTrue" value="true">增益控制AGC:true</option>
+              <option id="agcFalse" value="false">增益控制AGC:false</option>
             </select>
           </div>
         </div>
@@ -231,51 +239,51 @@
           </div>
           <div class="line">
             <select id="cameraFacingMode">
-              <option value="">摄像头前后置：默认</option>
-              <option value="user">user</option>
-              <option value="environment">environment</option>
+              <option id="facingModeDefault" value="">摄像头前后置：默认</option>
+              <option id="facingModeUser" value="user">user</option>
+              <option id="facingModeEnvironment" value="environment">environment</option>
             </select>
           </div>
           <div class="line">
             <select id="sessionConfigVideoQuality">
-              <option value="">分辨率：默认（默认为640x480）</option>
-              <option value="VIDEO_QUALITY_480p">640x480</option>
-              <option value="VIDEO_QUALITY_180p">320x180</option>
-              <option value="VIDEO_QUALITY_720p">1280x720</option>
-              <option value="VIDEO_QUALITY_1080p">1920x1080</option>
+              <option id="videoQualityDefault" value="">分辨率：默认（默认为640x480）</option>
+              <option id="videoQuality480" value="VIDEO_QUALITY_480p">640x480</option>
+              <option id="videoQuality180" value="VIDEO_QUALITY_180p">320x180</option>
+              <option id="videoQuality720" value="VIDEO_QUALITY_720p">1280x720</option>
+              <option id="videoQuality1080" value="VIDEO_QUALITY_1080p">1920x1080</option>
             </select>
           </div>
           <div class="line">
             <select id="sessionConfigVideoFrameRate">
-              <option value="">帧率：默认（默认为15帧）</option>
-              <option value="CHAT_VIDEO_FRAME_RATE_NORMAL">normal</option>
-              <option value="CHAT_VIDEO_FRAME_RATE_5">5</option>
-              <option value="CHAT_VIDEO_FRAME_RATE_10">10</option>
-              <option value="CHAT_VIDEO_FRAME_RATE_15">15</option>
-              <option value="CHAT_VIDEO_FRAME_RATE_20">20</option>
-              <option value="CHAT_VIDEO_FRAME_RATE_25">25</option>
-              <option value="CHAT_VIDEO_FRAME_RATE_30">30</option>
+              <option id="videoFrameRateDefault" value="">帧率：默认（默认为15帧）</option>
+              <option id="videoFrameRateNormal" value="CHAT_VIDEO_FRAME_RATE_NORMAL">normal</option>
+              <option id="videoFrameRate5" value="CHAT_VIDEO_FRAME_RATE_5">5</option>
+              <option id="videoFrameRate10" value="CHAT_VIDEO_FRAME_RATE_10">10</option>
+              <option id="videoFrameRate15" value="CHAT_VIDEO_FRAME_RATE_15">15</option>
+              <option id="videoFrameRate20" value="CHAT_VIDEO_FRAME_RATE_20">20</option>
+              <option id="videoFrameRate25" value="CHAT_VIDEO_FRAME_RATE_25">25</option>
+              <option id="videoFrameRate30" value="CHAT_VIDEO_FRAME_RATE_30">30</option>
             </select>
           </div>
 
           <h5 class="line">屏幕共享采集配置</h5>
           <div class="line">
             <select id="sessionConfigScreenProfile">
-              <option value="">分辨率：默认（1920x1080）</option>
-              <option value="VIDEO_QUALITY_1080p">1920x1080</option>
-              <option value="VIDEO_QUALITY_480p">640x480</option>
-              <option value="VIDEO_QUALITY_720p">1280x720</option>
+              <option id="screenProfileDefault" value="">分辨率：默认（1920x1080）</option>
+              <option id="screenProfile1080" value="VIDEO_QUALITY_1080p">1920x1080</option>
+              <option id="screenProfile480" value="VIDEO_QUALITY_480p">640x480</option>
+              <option id="screenProfile720" value="VIDEO_QUALITY_720p">1280x720</option>
             </select>
           </div>
           <div class="line">
             <select id="sessionConfigScreenFrameRate">
-              <option value="">帧率：默认（5帧）</option>
-              <option value="CHAT_VIDEO_FRAME_RATE_5">5</option>
-              <option value="CHAT_VIDEO_FRAME_RATE_10">10</option>
-              <option value="CHAT_VIDEO_FRAME_RATE_15">15</option>
-              <option value="CHAT_VIDEO_FRAME_RATE_20">20</option>
-              <option value="CHAT_VIDEO_FRAME_RATE_25">25</option>
-              <option value="CHAT_VIDEO_FRAME_RATE_30">30</option>
+              <option id="screenFrameRateDefault" value="">帧率：默认（5帧）</option>
+              <option id="screenFrameRate5" value="CHAT_VIDEO_FRAME_RATE_5">5</option>
+              <option id="screenFrameRate10" value="CHAT_VIDEO_FRAME_RATE_10">10</option>
+              <option id="screenFrameRate15" value="CHAT_VIDEO_FRAME_RATE_15">15</option>
+              <option id="screenFrameRate20" value="CHAT_VIDEO_FRAME_RATE_20">20</option>
+              <option id="screenFrameRate25" value="CHAT_VIDEO_FRAME_RATE_25">25</option>
+              <option id="screenFrameRate30" value="CHAT_VIDEO_FRAME_RATE_30">30</option>
             </select>
           </div>
         </div>
@@ -284,8 +292,8 @@
           <div class="line">
             <div class="left-cont">
               <select id="encoderMediaType" style="width: 25%">
-                <option value="video">主流</option>
-                <option value="screen">辅流</option>
+                <option id="encoderMediaTypeVideo" value="video">主流</option>
+                <option id="encoderMediaTypeScreen" value="screen">辅流</option>
               </select>
               <!-- <select id="encoderStreamType" style="width: 25%">
                 <option value="high">大流</option>
@@ -304,9 +312,9 @@
                 优先模式
               </label>
               <select id="contentHint">
-                <option value="">默认</option>
-                <option value="motion">流畅优先</option>
-                <option value="detail">画质优先</option>
+                <option id="contentHintDefault" value="">默认</option>
+                <option id="contentHintMotion" value="motion">流畅优先</option>
+                <option id="contentHintDetail" value="detail">画质优先</option>
               </select>
             </div>
             <br />
@@ -327,28 +335,49 @@
           <div class="line">
             音频
             <!-- <label><input type="radio" name="enableAudio" value="source">自定义</label> -->
-            <label><input type="radio" name="enableAudio" value="yes" checked />开</label>
-            <label><input type="radio" name="enableAudio" value="" />关</label>
+            <label
+              ><input id="openAudio" type="radio" name="enableAudio" value="yes" checked />开</label
+            >
+            <label><input id="closeAudio" type="radio" name="enableAudio" value="" />关</label>
           </div>
           <div class="line">
             视频
             <!-- <label><input type="radio" name="enableVideo" value="source">自定义</label> -->
-            <label><input type="radio" name="enableVideo" value="yes" checked />开</label>
-            <label><input type="radio" name="enableVideo" value="" />关</label>
+            <label
+              ><input id="openVideo" type="radio" name="enableVideo" value="yes" checked />开</label
+            >
+            <label><input id="closeVideo" type="radio" name="enableVideo" value="" />关</label>
             <!-- <label><input type="checkbox" id="videoLow" checked>大小流</label> -->
           </div>
           <div class="line">
             辅流
             <!-- <label><input type="radio" name="enableScreen" value="source">自定义</label> -->
-            <label><input type="radio" name="enableScreen" value="yes" />开</label>
-            <label><input type="radio" name="enableScreen" value="" checked />关</label>
+            <label><input id="openScreen" type="radio" name="enableScreen" value="yes" />开</label>
+            <label
+              ><input id="closeScreen" type="radio" name="enableScreen" value="" checked />关</label
+            >
             <!-- <label><input type="checkbox" id="screenLow" checked>大小流</label> -->
           </div>
           <div class="line">
             辅音
             <!-- <label><input type="radio" name="enableScreenAudio" value="source">自定义</label> -->
-            <label><input type="radio" name="enableScreenAudio" value="yes" />开</label>
-            <label><input type="radio" name="enableScreenAudio" value="" checked />关</label>
+            <label
+              ><input
+                id="openScreenAudio"
+                type="radio"
+                name="enableScreenAudio"
+                value="yes"
+              />开</label
+            >
+            <label
+              ><input
+                id="closeScreenAudio"
+                type="radio"
+                name="enableScreenAudio"
+                value=""
+                checked
+              />关</label
+            >
           </div>
         </div>
         <div class="channel-config">
@@ -412,16 +441,45 @@
           <h5 class="line">Dump配置</h5>
           <!-- <div class="left-cont"> -->
           <div class="line">
-            <label><input type="radio" name="enableDump" value="1" checked />localVideo</label>
+            <label
+              ><input
+                id="dumpLocalVideo"
+                type="radio"
+                name="enableDump"
+                value="1"
+                checked
+              />localVideo</label
+            >
           </div>
           <div class="line">
-            <label><input type="radio" name="enableDump" value="2" />localScreen</label>
+            <label
+              ><input
+                id="dumpLocalScreen"
+                type="radio"
+                name="enableDump"
+                value="2"
+              />localScreen</label
+            >
           </div>
           <div class="line">
-            <label><input type="radio" name="enableDump" value="3" />remoteVideo</label>
+            <label
+              ><input
+                id="dumpRemoteVideo"
+                type="radio"
+                name="enableDump"
+                value="3"
+              />remoteVideo</label
+            >
           </div>
           <div class="line">
-            <label><input type="radio" name="enableDump" value="4" />remoteScreen</label>
+            <label
+              ><input
+                id="dumpRemoteScreen"
+                type="radio"
+                name="enableDump"
+                value="4"
+              />remoteScreen</label
+            >
           </div>
           <button type="button" class="channel-cont" id="startVideoDump">开始 Dump</button>
           <button type="button" class="channel-cont" id="stopVideoDump">结束 Dump</button>
