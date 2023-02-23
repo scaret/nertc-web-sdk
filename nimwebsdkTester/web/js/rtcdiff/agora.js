@@ -502,8 +502,8 @@ function startAGORA() {
       target.style.left = '0'
     } else {
       target.parentNode.classList.add('fullScreen')
-      target.style.width = 'auto'
-      target.style.height = 'auto'
+      target.style.width = '100%'
+      target.style.height = '100%'
       target.style.transform = 'translate(-50%)'
       target.style.left = '50%'
     }
