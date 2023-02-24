@@ -96,7 +96,7 @@ function startAGORA() {
       // If the remote user publishes a video track.
       if (mediaType === 'video') {
         const remoteVideoTrack = user.videoTrack
-        remoteVideoTrack.play(remoteVideoContent)
+        remoteVideoTrack.play(remoteVideoContent, { fit: 'contain' })
       }
       // If the remote user publishes an audio track.
       if (mediaType === 'audio') {
