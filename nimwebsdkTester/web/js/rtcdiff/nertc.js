@@ -147,10 +147,12 @@ function startNERTC() {
     document.getElementById('videoFirstFrame').style.backgroundColor = '#efefef'
     document.getElementById('screenFirstFrame').style.backgroundColor = '#efefef'
     // stopDump()
+    await rtc.localStream.destroy()
     await rtc.client.leave()
   }
 
   function initClient() {
+    rtc.client && rtc.client.destroy()
     loadEnv()
     rtc.client = NERTC.createClient({ appkey, debug: true })
     initDevices()

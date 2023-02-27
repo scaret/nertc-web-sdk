@@ -238,10 +238,14 @@ function startAGORA() {
 
   async function leave() {
     // Destroy the local audio and video tracks.
-    localTracks.audioTrack && localTracks.audioTrack.close()
-    localTracks.videoTrack && localTracks.videoTrack.close()
-    localScreenTracks.screenAudioTrack && localScreenTracks.screenAudioTrack.close()
-    localScreenTracks.screenVideoTrack && localScreenTracks.screenVideoTrack.close()
+    localTracks.audioTrack && localTracks.audioTrack.stop() && localTracks.audioTrack.close()
+    localTracks.videoTrack && localTracks.videoTrack.stop() && localTracks.videoTrack.close()
+    localScreenTracks.screenAudioTrack &&
+      localScreenTracks.screenAudioTrack.stop() &&
+      localScreenTracks.screenAudioTrack.close()
+    localScreenTracks.screenVideoTrack &&
+      localScreenTracks.screenVideoTrack.stop() &&
+      localScreenTracks.screenVideoTrack.close()
     // Leave the channel.
     if (rtc.client) {
       await rtc.client.leave()
