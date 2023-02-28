@@ -225,6 +225,9 @@ function startAGORA() {
         if ($('#enableContentHint').prop('checked')) {
           options.optimizationMode = $('#contentHint').val()
         }
+        if (document.getElementById('enableBitrateMax').checked) {
+          options.encoderConfig.bitrateMax = parseInt($('#bitrateMax').val())
+        }
         // optimizationMode生效：似乎只有在设置了分辨率时才生效
         console.log(`createCameraVideoTrack ${JSON.stringify(options)}`)
         localTracks.videoTrack = await AgoraRTC.createCameraVideoTrack(options)
