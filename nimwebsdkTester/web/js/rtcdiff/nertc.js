@@ -833,4 +833,21 @@ function startNERTC() {
   $('.nertc-exit-full-screen').on('click', async () => {
     await document.requestFullscreen()
   })
+
+  $('#forceBWE').val(WebRTC2.getParameters().forceBWE)
+
+  $('#setBWE').click(()=>{
+    const val = $('#forceBWE').val()
+    console.warn(`切换带宽估计：${WebRTC2.getParameters().forceBWE} => ${val}`)
+    WebRTC2.getParameters().forceBWE = val
+  })
+
+  $('#h264ProfileLevel').val(WebRTC2.getParameters().h264ProfileLevel)
+
+  $('#setH264ProfileLevel').click(()=>{
+    const val = $('#h264ProfileLevel').val()
+    console.warn(`切换H264 Profile Level：${WebRTC2.getParameters().h264ProfileLevel} => ${val}`)
+    WebRTC2.getParameters().h264ProfileLevel = val
+  })
+
 }

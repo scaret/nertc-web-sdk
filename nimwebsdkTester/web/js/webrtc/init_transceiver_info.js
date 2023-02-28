@@ -35,6 +35,7 @@ const captureTimer = setInterval(async ()=>{
     return
   }
   let audioInfo = "";
+  let codecImplementationSend = $('#codecImplementationSend').text()
   if (rtc.localStream){
     audioInfo += `数量：${rtc.localStream.mediaHelper.getAudioInputTracks().length}`
     if (rtc.localStream.mediaHelper.audio.audioRoutingEnabled) {
@@ -222,6 +223,27 @@ const captureTimer = setInterval(async ()=>{
       htmlSendstats += `<br/><h3>${report.id}</h3>`
       for (let key in report){
         htmlSendstats += `${key}:${report[key]}<br/>`
+
+        ///////// 插入侦测Codec代码
+        // console.error(key, report[key])
+        if (key === 'encoderImplementation' && report[key]) {
+          if (codecImplementationSend !== report[key]) {
+            if (codecImplementationSend && codecImplementationSend !== 'unknown') {
+              addLog(`切换上行编码器 ${codecImplementationSend} => ${report[key]}`)
+            }
+            $('#codecImplementationSend').text(report[key])
+            if (report[key] === 'unknown'){
+              $('#codecImplementationType').text('')
+            } else if (report[key] === 'OpenH264'){
+              $('#codecImplementationType').text('软编')
+            } else if (report[key] === 'ExternalEncoder' || report[key] === 'MediaFoundationVideoEncodeAccelerator'){
+              $('#codecImplementationType').text('硬编')
+            } else{
+              $('#codecImplementationType').html(`<span style="color:red">未知</span>`)
+            }
+          }
+        }
+        /////////
       }
     })
     let sendStatsFilterListHtml = ''
