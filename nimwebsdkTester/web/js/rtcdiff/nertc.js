@@ -432,42 +432,49 @@ function startNERTC() {
 
   // 自定义视频
   function getVideoSource(mediaType) {
-    let defaultStr = '1920x1080x15x1'
-    const optionsStr =
-      prompt(
-        `自定义${mediaType}配置：【宽x高x帧率x类型
-    类型1：时钟;
-    类型2：背景替换;
-    类型3：随机颜色;
-    类型4：屏幕共享;
-    `,
-        defaultStr
-      ) || defaultStr
-    const matches = optionsStr.match(/(\d+)x(\d+)x(\d+)x(\d+)/)
-    if (!matches) {
-      console.warn('自定义视频 ：无法匹配字符串' + optionsStr)
-      return
-    }
+    // let defaultStr = '1920x1080x15x1'
+    // const optionsStr =
+    //   prompt(
+    //     `自定义${mediaType}配置：【宽x高x帧率x类型
+    // 类型1：时钟;
+    // 类型2：背景替换;
+    // 类型3：随机颜色;
+    // 类型4：屏幕共享;
+    // `,
+    //     defaultStr
+    //   ) || defaultStr
+    // const matches = optionsStr.match(/(\d+)x(\d+)x(\d+)x(\d+)/)
+    // if (!matches) {
+    //   console.warn('自定义视频 ：无法匹配字符串' + optionsStr)
+    //   return
+    // }
+    // let videoConstraint = {
+    //   width: matches[1],
+    //   height: matches[2],
+    //   frameRate: matches[3],
+    //   content: `${mediaType} ${optionsStr}`
+    // }
+
+    // if (matches[4] === '1') {
+    //   videoConstraint.type = 'clock'
+    // } else if (matches[4] === '3') {
+    //   videoConstraint.type = 'randomcolor'
+    // } else if (matches[4] === '4') {
+    //   videoConstraint.type = 'display'
+    // } else {
+    //   videoConstraint.type = 'background'
+    //   const bgImg = new Image()
+    //   const pathParts = window.location.pathname.split('/')
+    //   pathParts.pop()
+    //   const src = pathParts.join('/') + '/img/koala.jpg'
+    //   bgImg.src = src
+    //   videoConstraint.bgImg = bgImg
+    // }
     let videoConstraint = {
-      width: matches[1],
-      height: matches[2],
-      frameRate: matches[3],
-      content: `${mediaType} ${optionsStr}`
-    }
-    if (matches[4] === '1') {
-      videoConstraint.type = 'clock'
-    } else if (matches[4] === '3') {
-      videoConstraint.type = 'randomcolor'
-    } else if (matches[4] === '4') {
-      videoConstraint.type = 'display'
-    } else {
-      videoConstraint.type = 'background'
-      const bgImg = new Image()
-      const pathParts = window.location.pathname.split('/')
-      pathParts.pop()
-      const src = pathParts.join('/') + '/img/koala.jpg'
-      bgImg.src = src
-      videoConstraint.bgImg = bgImg
+      width: '1920',
+      height: '1080',
+      frameRate: '15',
+      content: 'video 1920x1080x15x1'
     }
     let videoSource = fakeMediaDevices.getFakeMedia({ video: videoConstraint }).video.track
     return videoSource
