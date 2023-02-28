@@ -334,7 +334,14 @@
           <h5 class="line">发布配置</h5>
           <div class="line">
             音频
-            <!-- <label><input type="radio" name="enableAudio" value="source">自定义</label> -->
+            <label
+              ><input
+                id="openAudioSource"
+                type="radio"
+                name="enableAudio"
+                value="source"
+              />自定义</label
+            >
             <label
               ><input id="openAudio" type="radio" name="enableAudio" value="yes" checked />开</label
             >
@@ -342,7 +349,14 @@
           </div>
           <div class="line">
             视频
-            <!-- <label><input type="radio" name="enableVideo" value="source">自定义</label> -->
+            <label
+              ><input
+                id="openVideoSource"
+                type="radio"
+                name="enableVideo"
+                value="source"
+              />自定义</label
+            >
             <label
               ><input id="openVideo" type="radio" name="enableVideo" value="yes" checked />开</label
             >
@@ -351,7 +365,14 @@
           </div>
           <div class="line">
             辅流
-            <!-- <label><input type="radio" name="enableScreen" value="source">自定义</label> -->
+            <label
+              ><input
+                id="openScreenSource"
+                type="radio"
+                name="enableScreen"
+                value="source"
+              />自定义</label
+            >
             <label><input id="openScreen" type="radio" name="enableScreen" value="yes" />开</label>
             <label
               ><input id="closeScreen" type="radio" name="enableScreen" value="" checked />关</label
@@ -360,7 +381,14 @@
           </div>
           <div class="line">
             辅音
-            <!-- <label><input type="radio" name="enableScreenAudio" value="source">自定义</label> -->
+            <label
+              ><input
+                id="openScreenAudioSource"
+                type="radio"
+                name="enableScreenAudio"
+                value="source"
+              />自定义</label
+            >
             <label
               ><input
                 id="openScreenAudio"
@@ -414,25 +442,25 @@
           <h5 class="line">设备相关</h5>
           <div class="line">
             音频
-            <!-- <button id="playMicroSource" class="close">自定义</button> -->
+            <button id="playMicroSource" class="close">自定义</button>
             <button id="playMicro" class="close">打开</button>
             <button id="playMicroOff" class="close">关闭</button>
           </div>
           <div class="line">
             视频
-            <!-- <button id="playCameraSource" class="close">自定义</button> -->
+            <button id="playCameraSource" class="close">自定义</button>
             <button id="playCamera" class="close">打开</button>
             <button id="playCameraOff" class="close">关闭</button>
           </div>
           <div class="line">
             辅流
-            <!-- <button id="playScreenSource" class="close">自定义</button> -->
+            <button id="playScreenSource" class="close">自定义</button>
             <button id="playScreen" class="close">打开</button>
             <button id="playScreenOff" class="close">关闭</button>
           </div>
           <div class="line">
             辅音
-            <!-- <button id="playScreenAudioSource" class="close">自定义</button> -->
+            <button id="playScreenAudioSource" class="close">自定义</button>
             <button id="playScreenAudio" class="close">双开</button>
             <button id="playScreenAudioOff" class="close">关闭</button>
           </div>
@@ -515,6 +543,7 @@
     </script> -->
 
     <script src="./js/lib/jquery.min.js"></script>
+    <script src="./js/lib/fakeMediaDevices.js"></script>
     <!-- <script src="./js/rtcdiff/NIM_Web_NERTC_v4.6.25.js"></script> -->
     <!-- NERTC 线上 -->
     <!-- <script src="./js/rtcdiff/NIM_Web_NERTC_v4.6.251.js"></script> -->

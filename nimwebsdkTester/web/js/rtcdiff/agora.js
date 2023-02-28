@@ -17,7 +17,11 @@ function startAGORA() {
   let enableDump
   let isScreenJoined = false
   let rtc = {
-    client: null
+    client: null,
+    videoSource: null,
+    audioSource: null,
+    screenVideoSource: null,
+    screenAudioSource: null
   }
   let localTracks = {
     audioTrack: null,
@@ -111,12 +115,58 @@ function startAGORA() {
   async function joinChannel() {
     const enableAudio = $('input[name="enableAudio"]:checked').val()
     const audio = !!enableAudio
+    let audioSource
+    if (enableAudio === 'source') {
+      rtc.audioSource =
+        rtc.audioSource && rtc.audioSource.readyState === 'live'
+          ? rtc.audioSource
+          : getAudioSource('audio')
+      audioSource = rtc.audioSource
+      rtc.audioSource.enabled = true
+    } else {
+      audioSource = null
+    }
+
     const enableVideo = $('input[name="enableVideo"]:checked').val()
     const video = !!enableVideo
+    let videoSource
+    if (enableVideo === 'source') {
+      rtc.videoSource =
+        rtc.videoSource && rtc.videoSource.readyState === 'live'
+          ? rtc.videoSource
+          : getVideoSource('video')
+      rtc.videoSource.enabled = true
+      videoSource = rtc.videoSource
+    } else {
+      videoSource = null
+    }
+
     const enableScreen = $('input[name="enableScreen"]:checked').val()
     const screen = !!enableScreen
+    let screenVideoSource
+    if (enableScreen === 'source') {
+      rtc.screenVideoSource =
+        rtc.screenVideoSource && rtc.screenVideoSource.readyState === 'live'
+          ? rtc.screenVideoSource
+          : getVideoSource('screen')
+      screenVideoSource = rtc.screenVideoSource
+      rtc.screenVideoSource.enabled = true
+    } else {
+      screenVideoSource = null
+    }
+
     const enableScreenAudio = $('input[name="enableScreenAudio"]:checked').val()
     const screenAudio = !!enableScreenAudio
+    let screenAudioSource
+    if (enableScreenAudio === 'source') {
+      rtc.screenAudioSource =
+        rtc.screenAudioSource && rtc.screenAudioSource.readyState === 'live'
+          ? rtc.screenAudioSource
+          : getAudioSource('screenAudio')
+      screenAudioSource = rtc.screenAudioSource
+    } else {
+      screenAudioSource = null
+    }
 
     if (audio || video) {
       await rtc.client.join(appId, channelName, token, uid)
@@ -126,14 +176,23 @@ function startAGORA() {
       isScreenJoined = true
     }
     // Create a local audio track from the audio sampled by a microphone.
+
     if (audio) {
-      localTracks.audioTrack = await AgoraRTC.createMicrophoneAudioTrack({
-        microphoneId,
-        AEC: getAudioProcessingConfig() && getAudioProcessingConfig().AEC,
-        ANS: getAudioProcessingConfig() && getAudioProcessingConfig().ANS,
-        AGC: getAudioProcessingConfig() && getAudioProcessingConfig().AGC,
-        encoderConfig: $('#sessionConfigAudioProfile').val() || 'speech_low_quality'
-      })
+      console.warn('audioSource: ', audioSource)
+      if (!audioSource) {
+        localTracks.audioTrack = await AgoraRTC.createMicrophoneAudioTrack({
+          microphoneId,
+          encoderConfig: $('#sessionConfigAudioProfile').val() || 'speech_low_quality'
+        })
+      } else {
+        localTracks.audioTrack = await AgoraRTC.createCustomAudioTrack({
+          mediaStreamTrack: audioSource,
+          AEC: getAudioProcessingConfig() && getAudioProcessingConfig().AEC,
+          ANS: getAudioProcessingConfig() && getAudioProcessingConfig().ANS,
+          AGC: getAudioProcessingConfig() && getAudioProcessingConfig().AGC,
+          encoderConfig: $('#sessionConfigAudioProfile').val() || 'speech_low_quality'
+        })
+      }
     }
 
     // Create a local video track from the video captured by a camera.
@@ -153,25 +212,33 @@ function startAGORA() {
       sFrameRate = frameRateMap.get($('#sessionConfigScreenFrameRate').val())
     }
     if (video) {
-      const options = {
-        cameraId: $('#camera').val(),
-        encoderConfig: {
-          width,
-          height,
-          frameRate
+      console.warn('videoSource: ', videoSource)
+      if (!videoSource) {
+        const options = {
+          cameraId: $('#camera').val(),
+          encoderConfig: {
+            width,
+            height,
+            frameRate
+          }
         }
+        if ($('#enableContentHint').prop('checked')) {
+          options.optimizationMode = $('#contentHint').val()
+        }
+        // optimizationMode生效：似乎只有在设置了分辨率时才生效
+        console.log(`createCameraVideoTrack ${JSON.stringify(options)}`)
+        localTracks.videoTrack = await AgoraRTC.createCameraVideoTrack(options)
+        console.log(
+          `localTracks.videoTrack._mediaStreamTrack.contentHint`,
+          localTracks.videoTrack._mediaStreamTrack.contentHint
+        )
+      } else {
+        localTracks.videoTrack = await AgoraRTC.createCustomVideoTrack({
+          mediaStreamTrack: videoSource
+        })
       }
-      if ($('#enableContentHint').prop('checked')) {
-        options.optimizationMode = $('#contentHint').val()
-      }
-      // optimizationMode生效：似乎只有在设置了分辨率时才生效
-      console.log(`createCameraVideoTrack ${JSON.stringify(options)}`)
-      localTracks.videoTrack = await AgoraRTC.createCameraVideoTrack(options)
-      console.log(
-        `localTracks.videoTrack._mediaStreamTrack.contentHint`,
-        localTracks.videoTrack._mediaStreamTrack.contentHint
-      )
     }
+
     if (screen) {
       let optimizationMode, maxBitrate
       if ($('#enableContentHint').prop('checked')) {
@@ -311,6 +378,96 @@ function startAGORA() {
         node.appendChild(elem)
       }
     }
+  }
+
+  // 自定义音频
+  function getAudioSource(mediaType) {
+    let defaultStr
+    if (mediaType === 'audio') {
+      defaultStr = '1x1x0'
+    } else if (mediaType === 'screenAudio') {
+      defaultStr = '2x1x0'
+    } else {
+      defaultStr = '3x1x0'
+    }
+    let message = '自定义音频配置 【声音ID(1-3)】x【音量0-1】x【噪音(0-1)】：'
+    message += '\n2_1_1：播报爸爸的爸爸叫爷爷'
+    message += '\nsine：播放左右声道相反的正弦波'
+    const optionsStr = prompt(message, defaultStr) || defaultStr
+    if (optionsStr === 'sine') {
+      const audioConstraint = {
+        type: 'oscstereo'
+      }
+      console.log('自定义音频配置', mediaType, defaultStr, audioConstraint)
+      const fakeAudio = fakeMediaDevices.getFakeMedia({
+        audio: audioConstraint
+      }).audio
+      rtc.fakeAudio = fakeAudio
+      return fakeAudio.track
+    } else {
+      const matches = optionsStr.match(/(.+)x(.+)x(.+)/)
+      const BUILTIN_AB = [null, 'brysj', 'bbdbbjyy', 'mmdmmjwp']
+      const audioConstraint = {
+        mono: {
+          data: BUILTIN_AB[matches[1]],
+          loop: true,
+          gain: parseFloat(matches[2])
+        },
+        channelCount: 1
+      }
+      if (parseFloat(matches[3]) > 0.01) {
+        audioConstraint.mono.noise = { gain: parseFloat(matches[3]) }
+      }
+      console.log('自定义音频配置', mediaType, defaultStr, audioConstraint)
+      const fakeAudio = fakeMediaDevices.getFakeMedia({
+        audio: audioConstraint
+      }).audio
+      rtc.fakeAudio = fakeAudio
+      return fakeAudio.track
+    }
+  }
+
+  // 自定义视频
+  function getVideoSource(mediaType) {
+    let defaultStr = '1920x1080x15x1'
+    const optionsStr =
+      prompt(
+        `自定义${mediaType}配置：【宽x高x帧率x类型
+    类型1：时钟;
+    类型2：背景替换;
+    类型3：随机颜色;
+    类型4：屏幕共享;
+    `,
+        defaultStr
+      ) || defaultStr
+    const matches = optionsStr.match(/(\d+)x(\d+)x(\d+)x(\d+)/)
+    if (!matches) {
+      console.warn('自定义视频 ：无法匹配字符串' + optionsStr)
+      return
+    }
+    let videoConstraint = {
+      width: matches[1],
+      height: matches[2],
+      frameRate: matches[3],
+      content: `${mediaType} ${optionsStr}`
+    }
+    if (matches[4] === '1') {
+      videoConstraint.type = 'clock'
+    } else if (matches[4] === '3') {
+      videoConstraint.type = 'randomcolor'
+    } else if (matches[4] === '4') {
+      videoConstraint.type = 'display'
+    } else {
+      videoConstraint.type = 'background'
+      const bgImg = new Image()
+      const pathParts = window.location.pathname.split('/')
+      pathParts.pop()
+      const src = pathParts.join('/') + '/img/koala.jpg'
+      bgImg.src = src
+      videoConstraint.bgImg = bgImg
+    }
+    let videoSource = fakeMediaDevices.getFakeMedia({ video: videoConstraint }).video.track
+    return videoSource
   }
 
   //切换mic
@@ -619,6 +776,12 @@ function startAGORA() {
     console.error('VideoEncoder error: ', error)
   }
 
+  /**
+   * ----------------------------------------
+   *              设备开关逻辑
+   * ----------------------------------------
+   */
+
   $('#playMicro').on('click', async () => {
     console.warn('打开mic')
     localTracks.audioTrack = await AgoraRTC.createMicrophoneAudioTrack({
@@ -637,6 +800,24 @@ function startAGORA() {
     await rtc.client.unpublish(localTracks.audioTrack)
     await localTracks.audioTrack.close()
     localTracks.audioTrack = undefined
+  })
+  $('#playMicroSource').on('click', async () => {
+    console.warn('打开自定义音频')
+    rtc.audioSource =
+      rtc.audioSource && rtc.audioSource.readyState === 'live'
+        ? rtc.audioSource
+        : getAudioSource('audio')
+    rtc.audioSource.enabled = true
+    localTracks.audioTrack = await AgoraRTC.createCustomAudioTrack({
+      mediaStreamTrack: rtc.audioSource,
+      AEC: getAudioProcessingConfig() && getAudioProcessingConfig().AEC,
+      ANS: getAudioProcessingConfig() && getAudioProcessingConfig().ANS,
+      AGC: getAudioProcessingConfig() && getAudioProcessingConfig().AGC,
+      encoderConfig: $('#sessionConfigAudioProfile').val() || 'speech_low_quality'
+    })
+    if (localTracks.audioTrack) {
+      await rtc.client.publish(localTracks.audioTrack)
+    }
   })
 
   $('#playCamera').on('click', async () => {
@@ -665,13 +846,27 @@ function startAGORA() {
       await rtc.client.publish(localTracks.videoTrack)
     }
   })
-
   $('#playCameraOff').on('click', async () => {
     console.warn('关闭摄像头')
-
     await rtc.client.unpublish(localTracks.videoTrack)
     await localTracks.videoTrack.close()
     localTracks.videoTrack = undefined
+  })
+  $('#playCameraSource').on('click', async () => {
+    console.warn('打开自定义摄像头')
+    rtc.videoSource =
+      rtc.videoSource && rtc.videoSource.readyState === 'live'
+        ? rtc.videoSource
+        : getVideoSource('video')
+    rtc.videoSource.enabled = true
+    localTracks.videoTrack = await AgoraRTC.createCustomVideoTrack({
+      mediaStreamTrack: rtc.videoSource
+    })
+    localTracks.videoTrack && localTracks.videoTrack.play(localVideoContent)
+    // console.error('localTracks1: ', localTracks)
+    if (localTracks.videoTrack) {
+      await rtc.client.publish(localTracks.videoTrack)
+    }
   })
 
   $('#playScreen').on('click', async () => {

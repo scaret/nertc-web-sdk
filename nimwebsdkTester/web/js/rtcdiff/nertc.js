@@ -108,6 +108,15 @@ function startNERTC() {
     rtc.client.on('stream-removed', (evt) => {
       document.getElementById('videoFirstFrame').style.backgroundColor = '#efefef'
       document.getElementById('screenFirstFrame').style.backgroundColor = '#efefef'
+      var remoteStream = evt.stream
+      console.warn('收到别人停止发布的消息: ', remoteStream.streamID, 'mediaType: ', evt.mediaType)
+      console.log(`${remoteStream.streamID}停止发布 ` + evt.mediaType)
+
+      if (!remoteStream.audio && !remoteStream.video && !remoteStream.screen) {
+        delete rtc.remoteStreams[remoteStream.streamID]
+        $(`#subList option[value=${remoteStream.streamID}]`).remove()
+      }
+      remoteStream.stop(evt.mediaType)
     })
 
     try {
@@ -161,12 +170,58 @@ function startNERTC() {
   async function initLocalStream() {
     const enableAudio = $('input[name="enableAudio"]:checked').val()
     const audio = !!enableAudio
+    let audioSource
+    if (enableAudio === 'source') {
+      rtc.audioSource =
+        rtc.audioSource && rtc.audioSource.readyState === 'live'
+          ? rtc.audioSource
+          : getAudioSource('audio')
+      audioSource = rtc.audioSource
+      rtc.audioSource.enabled = true
+    } else {
+      audioSource = null
+    }
+
     const enableVideo = $('input[name="enableVideo"]:checked').val()
     const video = !!enableVideo
+    let videoSource
+    if (enableVideo === 'source') {
+      rtc.videoSource =
+        rtc.videoSource && rtc.videoSource.readyState === 'live'
+          ? rtc.videoSource
+          : getVideoSource('video')
+      rtc.videoSource.enabled = true
+      videoSource = rtc.videoSource
+    } else {
+      videoSource = null
+    }
+
     const enableScreen = $('input[name="enableScreen"]:checked').val()
     const screen = !!enableScreen
+    let screenVideoSource
+    if (enableScreen === 'source') {
+      rtc.screenVideoSource =
+        rtc.screenVideoSource && rtc.screenVideoSource.readyState === 'live'
+          ? rtc.screenVideoSource
+          : getVideoSource('screen')
+      screenVideoSource = rtc.screenVideoSource
+      rtc.screenVideoSource.enabled = true
+    } else {
+      screenVideoSource = null
+    }
+
     const enableScreenAudio = $('input[name="enableScreenAudio"]:checked').val()
     const screenAudio = !!enableScreenAudio
+    let screenAudioSource
+    if (enableScreenAudio === 'source') {
+      rtc.screenAudioSource =
+        rtc.screenAudioSource && rtc.screenAudioSource.readyState === 'live'
+          ? rtc.screenAudioSource
+          : getAudioSource('screenAudio')
+      screenAudioSource = rtc.screenAudioSource
+    } else {
+      screenAudioSource = null
+    }
 
     enableDump = parseInt($('input[name="enableDump"]:checked').val())
 
@@ -178,7 +233,11 @@ function startNERTC() {
       video,
       screen,
       screenAudio,
-      client: rtc.client
+      client: rtc.client,
+      audioSource,
+      videoSource,
+      screenAudioSource,
+      screenVideoSource
     }
     if ($('#camera').val()) {
       createStreamOptions.cameraId = $('#camera').val()
@@ -324,6 +383,96 @@ function startNERTC() {
     }
   }
 
+  // 自定义音频
+  function getAudioSource(mediaType) {
+    let defaultStr
+    if (mediaType === 'audio') {
+      defaultStr = '1x1x0'
+    } else if (mediaType === 'screenAudio') {
+      defaultStr = '2x1x0'
+    } else {
+      defaultStr = '3x1x0'
+    }
+    let message = '自定义音频配置 【声音ID(1-3)】x【音量0-1】x【噪音(0-1)】：'
+    message += '\n2_1_1：播报爸爸的爸爸叫爷爷'
+    message += '\nsine：播放左右声道相反的正弦波'
+    const optionsStr = prompt(message, defaultStr) || defaultStr
+    if (optionsStr === 'sine') {
+      const audioConstraint = {
+        type: 'oscstereo'
+      }
+      console.log('自定义音频配置', mediaType, defaultStr, audioConstraint)
+      const fakeAudio = fakeMediaDevices.getFakeMedia({
+        audio: audioConstraint
+      }).audio
+      rtc.fakeAudio = fakeAudio
+      return fakeAudio.track
+    } else {
+      const matches = optionsStr.match(/(.+)x(.+)x(.+)/)
+      const BUILTIN_AB = [null, 'brysj', 'bbdbbjyy', 'mmdmmjwp']
+      const audioConstraint = {
+        mono: {
+          data: BUILTIN_AB[matches[1]],
+          loop: true,
+          gain: parseFloat(matches[2])
+        },
+        channelCount: 1
+      }
+      if (parseFloat(matches[3]) > 0.01) {
+        audioConstraint.mono.noise = { gain: parseFloat(matches[3]) }
+      }
+      console.log('自定义音频配置', mediaType, defaultStr, audioConstraint)
+      const fakeAudio = fakeMediaDevices.getFakeMedia({
+        audio: audioConstraint
+      }).audio
+      rtc.fakeAudio = fakeAudio
+      return fakeAudio.track
+    }
+  }
+
+  // 自定义视频
+  function getVideoSource(mediaType) {
+    let defaultStr = '1920x1080x15x1'
+    const optionsStr =
+      prompt(
+        `自定义${mediaType}配置：【宽x高x帧率x类型
+    类型1：时钟;
+    类型2：背景替换;
+    类型3：随机颜色;
+    类型4：屏幕共享;
+    `,
+        defaultStr
+      ) || defaultStr
+    const matches = optionsStr.match(/(\d+)x(\d+)x(\d+)x(\d+)/)
+    if (!matches) {
+      console.warn('自定义视频 ：无法匹配字符串' + optionsStr)
+      return
+    }
+    let videoConstraint = {
+      width: matches[1],
+      height: matches[2],
+      frameRate: matches[3],
+      content: `${mediaType} ${optionsStr}`
+    }
+    if (matches[4] === '1') {
+      videoConstraint.type = 'clock'
+    } else if (matches[4] === '3') {
+      videoConstraint.type = 'randomcolor'
+    } else if (matches[4] === '4') {
+      videoConstraint.type = 'display'
+    } else {
+      videoConstraint.type = 'background'
+      const bgImg = new Image()
+      const pathParts = window.location.pathname.split('/')
+      pathParts.pop()
+      const src = pathParts.join('/') + '/img/koala.jpg'
+      bgImg.src = src
+      videoConstraint.bgImg = bgImg
+    }
+    let videoSource = fakeMediaDevices.getFakeMedia({ video: videoConstraint }).video.track
+    return videoSource
+  }
+
   $('#setAppkey').on('click', () => {
     appkey = $('#appkey').val()
     console.log('更新 appkey: ', appkey)
@@ -429,6 +578,12 @@ function startNERTC() {
       target.parentNode.classList.add('fullScreen')
     }
   })
+
+  /**
+   * ----------------------------------------
+   *              videoDump 逻辑
+   * ----------------------------------------
+   */
 
   document.getElementById('startVideoDump').onclick = async function () {
     enableDump = parseInt($('input[name="enableDump"]:checked').val())
@@ -607,6 +762,12 @@ function startNERTC() {
     }
   }
 
+  /**
+   * ----------------------------------------
+   *              设备开关逻辑
+   * ----------------------------------------
+   */
+
   $('#playMicro').on('click', () => {
     console.warn('打开mic')
     if (!rtc.localStream) {
@@ -646,6 +807,34 @@ function startNERTC() {
         console.log('关闭mic 失败: ', err)
       })
   })
+  $('#playMicroSource').on('click', () => {
+    console.warn('打开自定义音频')
+    if (!rtc.localStream) {
+      assertLocalStream()
+      return
+    }
+    if ($('#sessionConfigAudioProfile').val()) {
+      rtc.localStream.setAudioProfile($('#sessionConfigAudioProfile').val())
+    }
+    rtc.audioSource =
+      rtc.audioSource && rtc.audioSource.readyState === 'live'
+        ? rtc.audioSource
+        : getAudioSource('audio')
+    rtc.audioSource.enabled = true
+    let openOptions = {
+      type: 'audio',
+      audioSource: rtc.audioSource
+    }
+    console.log('openOptions', openOptions)
+    rtc.localStream
+      .open(openOptions)
+      .then(() => {
+        console.log('打开自定义音频成功')
+      })
+      .catch((err) => {
+        console.log('打开自定义音频 失败: ', err)
+      })
+  })
 
   $('#playCamera').on('click', () => {
     console.warn('打开摄像头')
@@ -678,7 +867,7 @@ function startNERTC() {
       })
       .then(async () => {
         console.log('打开摄像头 sucess')
-        await rtc.localStream.play(document.getElementById('local-container'))
+        await rtc.localStream.play('localVideoContent')
         rtc.localStream.setLocalRenderMode({
           width: 320,
           height: 240
@@ -704,6 +893,34 @@ function startNERTC() {
       })
       .catch((err) => {
         console.log('关闭摄像头 失败: ', err)
+      })
+  })
+  $('#playCameraSource').on('click', () => {
+    console.warn('打开自定义摄像头')
+    if (!rtc.localStream) {
+      assertLocalStream()
+      return
+    }
+    rtc.videoSource =
+      rtc.videoSource && rtc.videoSource.readyState === 'live'
+        ? rtc.videoSource
+        : getVideoSource('video')
+    rtc.videoSource.enabled = true
+    rtc.localStream
+      .open({
+        type: 'video',
+        videoSource: rtc.videoSource
+      })
+      .then(async () => {
+        console.log('打开摄像头 sucess')
+        await rtc.localStream.play('localVideoContent')
+        rtc.localStream.setLocalRenderMode({
+          width: 320,
+          height: 240
+        })
+      })
+      .catch((err) => {
+        console.log('打开摄像头 失败: ', err)
       })
   })
 
@@ -735,7 +952,7 @@ function startNERTC() {
         type: 'screen'
       })
       .then(async () => {
-        await rtc.localStream.play(document.getElementById('local-container'))
+        await rtc.localStream.play('localVideoContent')
         rtc.localStream.setLocalRenderMode({
           width: 320,
           height: 240
@@ -761,6 +978,36 @@ function startNERTC() {
       })
       .catch((err) => {
         console.log('关闭屏幕共享 失败: ', err)
+      })
+  })
+  $('#playScreenSource').on('click', () => {
+    console.warn('打开自定义辅流')
+    if (!rtc.localStream) {
+      assertLocalStream()
+      return
+    }
+    rtc.screenVideoSource =
+      rtc.screenVideoSource && rtc.screenVideoSource.readyState === 'live'
+        ? rtc.screenVideoSource
+        : getVideoSource('screen')
+    rtc.screenVideoSource.enabled = true
+    let openOptions = {
+      type: 'screen',
+      screenVideoSource: rtc.screenVideoSource
+    }
+    console.log('openOptions', openOptions)
+    rtc.localStream
+      .open(openOptions)
+      .then(async () => {
+        console.log('打开自定义辅流成功')
+        await rtc.localStream.play('localVideoContent')
+        rtc.localStream.setLocalRenderMode({
+          width: 320,
+          height: 240
+        })
+      })
+      .catch((err) => {
+        console.log('打开自定义辅流 失败: ', err)
       })
   })
 
@@ -793,7 +1040,7 @@ function startNERTC() {
         screenAudio: true
       })
       .then(async () => {
-        await rtc.localStream.play(document.getElementById('local-container'))
+        await rtc.localStream.play('localVideoContent')
         rtc.localStream.setLocalRenderMode({
           width: 320,
           height: 240
@@ -821,6 +1068,41 @@ function startNERTC() {
         console.log('关闭屏幕共享音频 失败: ', err)
       })
   })
+  $('#playScreenAudioSource').on('click', () => {
+    console.warn('打开自定义辅流音频')
+    if (!rtc.localStream) {
+      assertLocalStream()
+      return
+    }
+    const audioProfile = $('#sessionConfigAudioProfile').val()
+    if (audioProfile) {
+      rtc.localStream.setAudioProfile(audioProfile)
+    }
+    rtc.screenAudioSource =
+      rtc.screenAudioSource && rtc.screenAudioSource.readyState === 'live'
+        ? rtc.screenAudioSource
+        : getAudioSource('screenAudio')
+    rtc.screenAudioSource.enabled = true
+    let openOptions = {
+      type: 'screenAudio',
+      screenAudioSource: rtc.screenAudioSource
+    }
+    console.log('openOptions', openOptions)
+    rtc.localStream
+      .open(openOptions)
+      .then(async () => {
+        console.log('打开自定义辅流音频成功')
+        await rtc.localStream.play('localVideoContent')
+        rtc.localStream.setLocalRenderMode({
+          width: 320,
+          height: 240
+        })
+      })
+      .catch((err) => {
+        console.log('打开自定义辅流音频 失败: ', err)
+      })
+  })
+
   // 云信远端主流全屏
   $('.nertc-remote-video-full-screen').on('click', async () => {
     let dom = document.getElementsByClassName('nertc-video-container-remote')[0]
