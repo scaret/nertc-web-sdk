@@ -53,11 +53,13 @@ export class StageAIProcessing extends StageBase {
           //AI降噪
           if (this.enableAIDenoise) {
             const plugin = this.pluginModules.AIDenoise
+
             if (plugin) {
               plugin.process(outputData, (data) => {
                 if (data.length) {
                   outputData = data
                 }
+                this.audioWorkletAgent!.outputData(outputData)
               })
             }
           }
@@ -69,10 +71,10 @@ export class StageAIProcessing extends StageBase {
                 if (data.length) {
                   outputData = data
                 }
+                this.audioWorkletAgent!.outputData(outputData)
               })
             }
           }
-          this.audioWorkletAgent!.outputData(outputData)
         }
       })
     }

@@ -162,7 +162,51 @@ const aiDenoisePluginConfig = {
     }
   }
 }
+
 let aidenoise_config = null
+
+//变声
+const audioEffectPluginConfig = {
+  development: {
+    simd: {
+      key: 'AudioEffect',
+      pluginUrl: './js/nim/NIM_Web_AudioEffect.js',
+      wasmUrl:
+        'https://yx-web-nosdn.netease.im/sdk-release/audio_effects.wasm' + `?time=${Math.random()}`
+    },
+    nosimd: {
+      key: 'AudioEffect',
+      pluginUrl: './js/nim/NIM_Web_AIDenoise.js',
+      wasmUrl: './js/nim/wasm/NIM_Web_AIDenoise_nosimd.wasm'
+    }
+  },
+  production: {
+    simd: {
+      key: 'AIDenoise',
+      pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_simd_v${NERTC.VERSION}.wasm`
+    },
+    nosimd: {
+      key: 'AIDenoise',
+      pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_nosimd_v${NERTC.VERSION}.wasm`
+    }
+  },
+  test: {
+    simd: {
+      key: 'AIDenoise',
+      pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}_test.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_simd_v${NERTC.VERSION}_test.wasm`
+    },
+    nosimd: {
+      key: 'AIDenoise',
+      pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}_test.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_nosimd_v${NERTC.VERSION}_test.wasm`
+    }
+  }
+}
+
+let audioEffect_config = null
 
 let privatizationConfig = {}
 /*{
@@ -2029,6 +2073,46 @@ $('#unregisterAIDenoise').on('click', () => {
     rtc.localStream.unregisterPlugin(aidenoise_config.key)
     rtc.enableAIDenoise = false
   }
+})
+
+$('#registerAudioEffect').on('click', async () => {
+  if (rtc.localStream) {
+    $('#aidenoiseStatus').html('loading').show()
+    const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
+    audioEffect_config = audioEffectPluginConfig[NERTC.ENV][type]
+    rtc.localStream.registerPlugin(audioEffect_config)
+  }
+})
+
+$('#enableAudioEffect').on('click', () => {
+  if (rtc.localStream) {
+    rtc.localStream.enableAudioEffect()
+  }
+})
+
+$('#disableAudioEffect').on('click', () => {
+  if (rtc.localStream) {
+    console.warn('关闭ai降噪')
+    rtc.localStream.disableAudioEffect()
+  }
+})
+
+$('#unregisterAudioEffect').on('click', () => {
+  $('#aidenoiseStatus').html('loading').hide()
+  if (aidenoise_config) {
+    rtc.localStream.unregisterPlugin(audioEffect_config.key)
+    rtc.enableAIDenoise = false
+  }
+})
+
+$('#setVoiceChanger').on('change', (e) => {
+  const value = e.target.value - 0
+  rtc.localStream.setAudioEffect(0, value)
+})
+
+$('#setVoiceBeautifier').on('change', (e) => {
+  const value = e.target.value - 0
+  rtc.localStream.setAudioEffect(1, value)
 })
 
 document.getElementById('select').onchange = function () {
@@ -4001,7 +4085,7 @@ let audioEffectsPlayTimer = null
 let isAudioEffectsTotalTime = 0
 let isAudioEffectsEnd = false
 let isAudioEffectsPuase = false
-;[1,2,3].forEach((i)=>{
+;[1, 2, 3].forEach((i) => {
   let audioEffectsProgressInfo = document.querySelector(`#audioEffects${i} .value`)
   let audioEffectsProgress = document.querySelector(`#audioEffects${i} progress`)
 

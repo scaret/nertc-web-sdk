@@ -39,4 +39,10 @@ export default class AIDenoise extends EventEmitter {
   get isEnable() {
     return this.stageAIProcessing.enableAIDenoise
   }
+
+  set isEnable(enable: boolean) {
+    if (this.stageAIProcessing) {
+      this.stageAIProcessing.enableAIDenoise = enable
+    }
+  }
 }
