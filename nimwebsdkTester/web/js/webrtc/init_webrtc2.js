@@ -4764,6 +4764,14 @@ $('#copyEnvInfo').on('click', async function () {
   addLog('环境信息已复制到剪贴板')
 })
 
+
+$('#copySendStats').on('click', async function () {
+  let text = $('#sendGetStats').html().replace(/\<br\>/g, '\n')
+  await navigator.clipboard.writeText(text)
+  console.log(`上行Stats已复制到剪贴板\n${text}`)
+  addLog('上行Stats已复制到剪贴板')
+})
+
 if (NERTC.getSupportedCodec) {
   NERTC.getSupportedCodec().then((data) => {
     $('#systemRequirement').append(
@@ -5033,6 +5041,22 @@ $('#disableCompatMode').click(() => {
 $('#clearCompatList').click(() => {
   localStorage.removeItem(NERTC.Device.compatAudioInputList.localStorageKey)
   addLog('清除兼容设备列表')
+})
+
+$('#forceBWE').val(WebRTC2.getParameters().forceBWE)
+
+$('#setBWE').click(()=>{
+  const val = $('#forceBWE').val()
+  addLog(`切换带宽估计：${WebRTC2.getParameters().forceBWE} => ${val}`)
+  WebRTC2.getParameters().forceBWE = val
+})
+
+$('#h264ProfileLevel').val(WebRTC2.getParameters().h264ProfileLevel)
+
+$('#setH264ProfileLevel').click(()=>{
+  const val = $('#h264ProfileLevel').val()
+  addLog(`切换H264 Profile Level：${WebRTC2.getParameters().h264ProfileLevel} => ${val}`)
+  WebRTC2.getParameters().h264ProfileLevel = val
 })
 
 /**

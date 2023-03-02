@@ -174,6 +174,25 @@
           <button class="agora-exit-full-screen" hidden>退出</button>
         </div>
       </div>
+      <div id="upstreamBWE">
+        <div class="line">
+          <h5>云信带宽估计及编码器设置</h5>
+          <select id="forceBWE" style="width:50%">
+            <option value="no">BWE:跟随服务器</option>
+            <option value="transport-cc">强制transport-cc</option>
+            <option value="remb">强制remb</option>
+            <option value="">（本版本不支持）</option>
+          </select>
+          <button id="setBWE">设置</button>
+          <br/>
+          <select id="h264ProfileLevel" style="width:50%">
+            <option value="">H264 Profile:默认</option>
+            <option value="42001f">42001f(开启硬编)</option>
+            <option value="42e01f">42e01f(开启软编)</option>
+          </select>
+          <button id="setH264ProfileLevel">设置</button>
+        </div>
+      </div>
     </div>
 
     <div class="container">

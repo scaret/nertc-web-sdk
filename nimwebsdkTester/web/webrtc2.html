@@ -923,7 +923,24 @@
 
         <p class="block-header">带宽估计</p>
         <div class="part" id="upstreamBWE">
+          <select id="forceBWE" style="width:50%">
+            <option value="no">BWE:跟随服务器</option>
+            <option value="transport-cc">强制transport-cc</option>
+            <option value="remb">强制remb</option>
+          </select>
+          <button id="setBWE">设置</button>
+          <br/>
           上行带宽估计方法 <span id="bweMethod"></span>
+          <br/>
+          <select id="h264ProfileLevel" style="width:50%">
+            <option value="">H264 Profile:默认</option>
+            <option value="42001f">42001f(开启硬编)</option>
+            <option value="42e01f">42e01f(开启软编)</option>
+          </select>
+          <button id="setH264ProfileLevel">设置</button>
+          <br/>
+          编码器 <span id="codecImplementationSend"></span> <span id="codecImplementationType"></span>
+          <br/>
         </div>
 
         <p class="block-header">上行视频编码设置</p>
@@ -1467,6 +1484,7 @@
             <h2>原始stats列表</h2>
             <div id="sendStatsFilterList">
             </div>
+            <button id="copySendStats">复制</button>
             <ul id="sendGetStats"></ul>
           </div>
         </div>
