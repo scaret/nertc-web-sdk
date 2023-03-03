@@ -15,6 +15,7 @@ class AudioEffect {
   outArrayPtr = null
 
   aeInterface = null
+  EQArrayPtr = null
 
   init(binary) {
     global.Module = {
@@ -46,6 +47,8 @@ class AudioEffect {
       this.outRightPtr = Module._audio_effects_malloc(this.buffer_size * 2)
       this.outArrayPtr = Module._audio_effects_malloc(2)
       Module.HEAP32.set([this.outLeftPtr, this.outRightPtr], this.outArrayPtr >> 2)
+
+      this.EQArrayPtr = Module._audio_effects_malloc(this.buffer_size * 4)
 
       this.initMem = true
     }
@@ -83,7 +86,19 @@ class AudioEffect {
   setEffect(type, value) {
     if (this.aeInterface) {
       console.warn('setEffect', type, value)
-      Module._UpdateEffect(this.aeInterface, type, value)
+      switch (type) {
+        case 0:
+        case 1:
+          Module._UpdateEffect(this.aeInterface, type, value)
+          break
+        case 'Pitch':
+          Module._setLocalPitch(this.aeInterface, value)
+          break
+        case 'EQ':
+          Module.HEAP32.set(new Int32Array(value), this.EQArrayPtr >> 2)
+          Module._SetEQGain(this.aeInterface, this.EQArrayPtr)
+          break
+      }
     }
   }
 

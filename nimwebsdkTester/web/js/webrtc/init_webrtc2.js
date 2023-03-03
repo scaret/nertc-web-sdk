@@ -2115,6 +2115,20 @@ $('#setVoiceBeautifier').on('change', (e) => {
   rtc.localStream.setAudioEffect(1, value)
 })
 
+$('#setLocalPitch').on('change', (e) => {
+  const value = e.target.value - 0
+  rtc.localStream.setAudioEffect('Pitch', value)
+})
+
+$('#setEQGain').on('change', (e) => {
+  const value = e.target.value - 0
+  let array = Array(10).fill(value)
+
+  //array[3] = array[6] = array[9] = value
+
+  rtc.localStream.setAudioEffect('EQ', array)
+})
+
 document.getElementById('select').onchange = function () {
   let file = this.files[0]
   let reader = new FileReader()
