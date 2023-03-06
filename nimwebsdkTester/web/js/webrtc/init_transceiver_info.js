@@ -11,6 +11,10 @@ let sendStatsFilter = {
   },
 }
 
+const encoderImplementation = {
+
+}
+
 let recvStatsFilter = {
   selected: "all",
   filters: {
@@ -35,7 +39,6 @@ const captureTimer = setInterval(async ()=>{
     return
   }
   let audioInfo = "";
-  let codecImplementationSend = $('#codecImplementationSend').text()
   if (rtc.localStream){
     audioInfo += `数量：${rtc.localStream.mediaHelper.getAudioInputTracks().length}`
     if (rtc.localStream.mediaHelper.audio.audioRoutingEnabled) {
@@ -227,10 +230,13 @@ const captureTimer = setInterval(async ()=>{
         ///////// 插入侦测Codec代码
         // console.error(key, report[key])
         if (key === 'encoderImplementation' && report[key]) {
-          if (codecImplementationSend !== report[key]) {
-            if (codecImplementationSend && codecImplementationSend !== 'unknown') {
-              addLog(`切换上行编码器 ${codecImplementationSend} => ${report[key]}`)
+          if (!encoderImplementation[i] && report[key] === 'unknown'){
+            // fallthrough
+          } else if (encoderImplementation[i] !== report[key]) {
+            if (encoderImplementation[i]) {
+              addLog(`切换上行编码器 ${encoderImplementation[i]} => ${report[key]}`)
             }
+            encoderImplementation[i] = report[key]
             $('#codecImplementationSend').text(report[key])
             if (report[key] === 'unknown'){
               $('#codecImplementationType').text('')
