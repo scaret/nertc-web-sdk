@@ -250,6 +250,21 @@ function startAGORA() {
       if (document.getElementById('enableBitrateMax').checked) {
         maxBitrate = parseInt($('#bitrateMax').val())
       }
+
+      let width, height, frameRate
+      if ($('#sessionConfigScreenProfile').val()) {
+        width = resolutionMap.get($('#sessionConfigScreenProfile').val())[1]
+        height = resolutionMap.get($('#sessionConfigScreenProfile').val())[2]
+      } else {
+        width = 1920
+        height = 1080
+      }
+      if ($('#sessionConfigScreenFrameRate').val()) {
+        frameRate = frameRateMap.get($('#sessionConfigScreenFrameRate').val())
+      } else {
+        frameRate = 5
+      }
+
       let withAudio = screenAudio ? 'auto' : 'disable'
       let screenOptions = {
         // config: {
@@ -263,16 +278,6 @@ function startAGORA() {
         // },
         withAudio
       }
-      // screenTrack = await AgoraRTC.createScreenVideoTrack(
-      //   {
-      //     encoderConfig: {
-      //       width: sWidth,
-      //       height: sHeight,
-      //       frameRate: sFrameRate
-      //     }
-      //   },
-      //   withAudio
-      // )
       screenTrack = await AgoraRTC.createScreenVideoTrack(screenOptions)
       console.log(
         `screenTrack._mediaStreamTrack.contentHint`,
