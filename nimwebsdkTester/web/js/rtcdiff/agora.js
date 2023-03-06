@@ -83,8 +83,10 @@ function startAGORA() {
     if (window.localStorage) {
       window.localStorage.setItem(`${localStoragePrefix}channelName`, channelName)
     }
-    uid = parseInt(document.querySelector('#uid').value)
-    suid = uid + 1
+    // uid = parseInt(document.querySelector('#uid').value)
+    // suid = uid + 1
+    uid = document.querySelector('#uid').value
+    suid = document.querySelector('#uid').value.concat('screen')
     // Create an AgoraRTCClient object.
     // rtc.client = AgoraRTC.createClient({mode: "rtc", codec: "vp8"});
 
@@ -99,8 +101,15 @@ function startAGORA() {
 
       // If the remote user publishes a video track.
       if (mediaType === 'video') {
-        const remoteVideoTrack = user.videoTrack
-        remoteVideoTrack.play(remoteVideoContent, { fit: 'contain' })
+        if (user.uid.includes('screen')) {
+          console.error('remote screen')
+          const remoteScreenTrack = user.videoTrack
+          remoteScreenTrack.play(remoteScreenContent, { fit: 'contain' })
+        } else {
+          console.error('remote video')
+          const remoteVideoTrack = user.videoTrack
+          remoteVideoTrack.play(remoteVideoContent, { fit: 'contain' })
+        }
       }
       // If the remote user publishes an audio track.
       if (mediaType === 'audio') {
@@ -293,7 +302,8 @@ function startAGORA() {
     }
 
     localTracks.videoTrack && localTracks.videoTrack.play(localVideoContent)
-    localScreenTracks.screenVideoTrack && localScreenTracks.screenVideoTrack.play(localVideoContent)
+    localScreenTracks.screenVideoTrack &&
+      localScreenTracks.screenVideoTrack.play(localScreenContent)
 
     // Publish the local audio and video tracks to the RTC channel.
     if (localTracks.audioTrack) {
@@ -313,14 +323,27 @@ function startAGORA() {
 
   async function leave() {
     // Destroy the local audio and video tracks.
-    localTracks.audioTrack && localTracks.audioTrack.stop() && localTracks.audioTrack.close()
-    localTracks.videoTrack && localTracks.videoTrack.stop() && localTracks.videoTrack.close()
-    localScreenTracks.screenAudioTrack &&
-      localScreenTracks.screenAudioTrack.stop() &&
-      localScreenTracks.screenAudioTrack.close()
-    localScreenTracks.screenVideoTrack &&
-      localScreenTracks.screenVideoTrack.stop() &&
-      localScreenTracks.screenVideoTrack.close()
+    if (localTracks) {
+      for (trackName in localTracks) {
+        var track = localTracks[trackName]
+        if (track) {
+          track.stop()
+          track.close()
+          localTracks[trackName] = undefined
+        }
+      }
+    }
+    // Destroy the local screenAudio and screenVideo tracks.
+    if (localScreenTracks) {
+      for (trackName in localScreenTracks) {
+        var track = localScreenTracks[trackName]
+        if (track) {
+          track.stop()
+          track.close()
+          localScreenTracks[trackName] = undefined
+        }
+      }
+    }
     // Leave the channel.
     if (rtc.client) {
       await rtc.client.leave()
@@ -328,10 +351,11 @@ function startAGORA() {
     if (rtc.clientScreen) {
       await rtc.clientScreen.leave()
     }
+    //
   }
 
   function initClient() {
-    console.error('initClient')
+    console.warn('initClient')
     loadEnv()
     let codec = $('input[name="agoraCodec"]:checked').val()
     rtc.client = AgoraRTC.createClient({ mode: 'rtc', codec })
@@ -911,7 +935,8 @@ function startAGORA() {
       },
       withAudio
     )
-    localScreenTracks.screenVideoTrack && localScreenTracks.screenVideoTrack.play(localVideoContent)
+    localScreenTracks.screenVideoTrack &&
+      localScreenTracks.screenVideoTrack.play(localScreenContent)
     // console.error('localTracks1: ', localTracks)
     if (!isScreenJoined) {
       await rtc.clientScreen.join(appId, channelName, token, suid)
@@ -961,7 +986,8 @@ function startAGORA() {
     } else {
       localScreenTracks.screenVideoTrack = screenTrack
     }
-    localScreenTracks.screenVideoTrack && localScreenTracks.screenVideoTrack.play(localVideoContent)
+    localScreenTracks.screenVideoTrack &&
+      localScreenTracks.screenVideoTrack.play(localScreenContent)
     // console.error('localTracks1: ', localTracks)
     if (!isScreenJoined) {
       await rtc.clientScreen.join(appId, channelName, token, suid)
@@ -987,7 +1013,7 @@ function startAGORA() {
   })
   // 声网远端辅流全屏
   $('.agora-remote-screen-full-screen').on('click', async () => {
-    let dom = document.querySelector('#remoteVideoContent').children[1]
+    let dom = document.querySelector('#remoteScreenContent').children[0]
     await dom.requestFullscreen()
   })
   //声网退出全屏状态
