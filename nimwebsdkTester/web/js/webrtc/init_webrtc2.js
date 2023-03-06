@@ -2138,10 +2138,9 @@ $('#sub').on('click', () => {
 
 const mediaTypes = ['audio', 'audioSlave', 'video', 'screen']
 
-mediaTypes.forEach((mediaType)=>{
-
+mediaTypes.forEach((mediaType) => {
   // 订阅按键
-  $(`#subSingle-${mediaType}`).on('click', ()=>{
+  $(`#subSingle-${mediaType}`).on('click', () => {
     let remoteStream = rtc.remoteStreams[subList[subList.selectedIndex].value]
     if (!remoteStream) {
       addLog('没有流：' + subList[subList.selectedIndex].value)
@@ -2157,7 +2156,7 @@ mediaTypes.forEach((mediaType)=>{
       })
       .catch((err) => {
         addLog('订阅失败:' + mediaType)
-        console.error('订阅失败: ',mediaType, err)
+        console.error('订阅失败: ', mediaType, err)
       })
   })
 
@@ -2178,7 +2177,7 @@ mediaTypes.forEach((mediaType)=>{
       })
       .catch((err) => {
         addLog('取消订阅失败:' + mediaType)
-        console.error('取消订阅失败: ',mediaType, err)
+        console.error('取消订阅失败: ', mediaType, err)
       })
   })
 
@@ -2205,7 +2204,6 @@ mediaTypes.forEach((mediaType)=>{
     // 0是大流，1是小流
     rtc.client.setRemoteStreamType(remoteStream, highorlow, mediaType)
   })
-
 })
 
 $('#unsub').on('click', () => {
@@ -3933,7 +3931,7 @@ let audioEffectsPlayTimer = null
 let isAudioEffectsTotalTime = 0
 let isAudioEffectsEnd = false
 let isAudioEffectsPuase = false
-;[1,2,3].forEach((i)=>{
+;[1, 2, 3].forEach((i) => {
   let audioEffectsProgressInfo = document.querySelector(`#audioEffects${i} .value`)
   let audioEffectsProgress = document.querySelector(`#audioEffects${i} progress`)
 
@@ -4693,7 +4691,7 @@ $('#closeWatermarkPanel').on('click', function () {
   $('#updateWatermarkPanel').hide()
 })
 
-$('#playbackVolume').on('change', ()=>{
+$('#playbackVolume').on('change', () => {
   const playbackVolume = parseInt($('#playbackVolume').val())
   addLog(`setPlaybackVolume ${playbackVolume}`)
   rtc.client.setPlaybackVolume(playbackVolume)
@@ -4764,9 +4762,10 @@ $('#copyEnvInfo').on('click', async function () {
   addLog('环境信息已复制到剪贴板')
 })
 
-
 $('#copySendStats').on('click', async function () {
-  let text = $('#sendGetStats').html().replace(/\<br\>/g, '\n')
+  let text = $('#sendGetStats')
+    .html()
+    .replace(/\<br\>/g, '\n')
   await navigator.clipboard.writeText(text)
   console.log(`上行Stats已复制到剪贴板\n${text}`)
   addLog('上行Stats已复制到剪贴板')
@@ -5045,7 +5044,7 @@ $('#clearCompatList').click(() => {
 
 $('#forceBWE').val(WebRTC2.getParameters().forceBWE)
 
-$('#setBWE').click(()=>{
+$('#setBWE').click(() => {
   const val = $('#forceBWE').val()
   addLog(`切换带宽估计：${WebRTC2.getParameters().forceBWE} => ${val}`)
   WebRTC2.getParameters().forceBWE = val
@@ -5053,7 +5052,7 @@ $('#setBWE').click(()=>{
 
 $('#h264ProfileLevel').val(WebRTC2.getParameters().h264ProfileLevel)
 
-$('#setH264ProfileLevel').click(()=>{
+$('#setH264ProfileLevel').click(() => {
   const val = $('#h264ProfileLevel').val()
   addLog(`切换H264 Profile Level：${WebRTC2.getParameters().h264ProfileLevel} => ${val}`)
   WebRTC2.getParameters().h264ProfileLevel = val

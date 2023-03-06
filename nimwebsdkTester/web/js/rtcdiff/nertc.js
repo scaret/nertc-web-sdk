@@ -86,7 +86,12 @@ function startNERTC() {
         height: 240
       })
       // 播放远端流
-      await remoteStream.play('remoteVideoContent')
+      if (event.mediaType === ('video' || 'audio')) {
+        await remoteStream.play('remoteVideoContent')
+      } else if (event.mediaType === ('screen' || 'screenAudio')) {
+        await remoteStream.play('remoteScreenContent')
+      }
+      // await remoteStream.play('remoteVideoContent')
       // let videoDom = document.getElementsByClassName('nertc-video-container-remote')[0].children[0];
       // let screenDom = document.getElementById('remoteVideoContent').querySelector('.nertc-screen-container').children[0];
       let videoDomFisrt =
@@ -163,6 +168,7 @@ function startNERTC() {
   function initClient() {
     rtc.client && rtc.client.destroy()
     loadEnv()
+    NERTC.Logger.enableLogUpload()
     rtc.client = NERTC.createClient({ appkey, debug: true })
     initDevices()
     initCodecOptions()
@@ -1007,7 +1013,7 @@ function startNERTC() {
       .open(openOptions)
       .then(async () => {
         console.log('打开自定义辅流成功')
-        await rtc.localStream.play('localVideoContent')
+        await rtc.localStream.play('localScreenContent')
         rtc.localStream.setLocalRenderMode({
           width: 320,
           height: 240
@@ -1047,7 +1053,7 @@ function startNERTC() {
         screenAudio: true
       })
       .then(async () => {
-        await rtc.localStream.play('localVideoContent')
+        await rtc.localStream.play('localScreenContent')
         rtc.localStream.setLocalRenderMode({
           width: 320,
           height: 240
@@ -1099,7 +1105,7 @@ function startNERTC() {
       .open(openOptions)
       .then(async () => {
         console.log('打开自定义辅流音频成功')
-        await rtc.localStream.play('localVideoContent')
+        await rtc.localStream.play('localScreenContent')
         rtc.localStream.setLocalRenderMode({
           width: 320,
           height: 240
@@ -1127,7 +1133,7 @@ function startNERTC() {
 
   $('#forceBWE').val(WebRTC2.getParameters().forceBWE)
 
-  $('#setBWE').click(()=>{
+  $('#setBWE').click(() => {
     const val = $('#forceBWE').val()
     console.warn(`切换带宽估计：${WebRTC2.getParameters().forceBWE} => ${val}`)
     WebRTC2.getParameters().forceBWE = val
@@ -1135,10 +1141,9 @@ function startNERTC() {
 
   $('#h264ProfileLevel').val(WebRTC2.getParameters().h264ProfileLevel)
 
-  $('#setH264ProfileLevel').click(()=>{
+  $('#setH264ProfileLevel').click(() => {
     const val = $('#h264ProfileLevel').val()
     console.warn(`切换H264 Profile Level：${WebRTC2.getParameters().h264ProfileLevel} => ${val}`)
     WebRTC2.getParameters().h264ProfileLevel = val
   })
-
 }
