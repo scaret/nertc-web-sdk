@@ -191,6 +191,27 @@ declare namespace NERTC {
    * @note 自 V4.1.0 版本起，摄像头与屏幕共享的视频流可以同时发送，其中屏幕共享流会以辅流形式发送。
    *
    * @param options 配置参数。
+   *
+   * @example
+   *
+   * ```JavaScript
+   * // 1. 创建 localStream
+   * // 从麦克风和摄像头采集本地音视频流
+   * localStream = NERTC.createStream({
+   *   audio: true,
+   *   video: true,
+   *   uid: 123
+   * });
+   *
+   * // 仅采集屏幕分享流
+   * localStream = NERTC.createStream({
+   *   audio: false,
+   *   screen: true,
+   *   uid: 123
+   * });
+   * // 2. 初始化本地流
+   * await rtc.localStream.init();
+   * ```
    */
   function createStream(options: StreamOptions):
     | Stream
@@ -201,6 +222,8 @@ declare namespace NERTC {
       }
   /**
    * 该方法枚举可用的媒体输入/输出设备，比如麦克风、摄像头、耳机等。
+   *
+   * 该方法不支持 http 协议，请使用 https 协议。
    *
    * 出于安全性考虑，各平台对枚举设备接口有不同的权限控制策略。例如：
    * 1. Safari浏览器只有在当前页面执行一次[getUserMedia](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia)(也就是[[Stream.init]])之后才能够枚举设备。
@@ -241,6 +264,9 @@ declare namespace NERTC {
   /**
    * 获取可用的视频输入设备。
    *
+   * 该方法不支持 http 协议，请使用 https 协议。
+   *
+   * @example
    * ```JavaScript
    * //接口使用示例
    * NERTC.getCameras().then(data => {
@@ -253,10 +279,32 @@ declare namespace NERTC {
   function getCameras(): Promise<DeviceInfo[]>
   /**
    * 获取可用的音频输入设备。
+   *
+   * 该方法不支持 http 协议，请使用 https 协议。
+   *
+   * @example
+   * ```JavaScript
+   * //接口使用示例
+   * NERTC.getMicrophones().then(data => {
+   *   data.forEach(item=>{
+   *     console.log('video label: ', item.label, 'deviceId: ', item.deviceId)
+   *   })
+   * })
    */
   function getMicrophones(): Promise<DeviceInfo[]>
   /**
    * 获取可用的音频输出设备。
+   *
+   * 该方法不支持 http 协议，请使用 https 协议。
+   *
+   * @example
+   * ```JavaScript
+   * //接口使用示例
+   * NERTC.getSpeakers().then(data => {
+   *   data.forEach(item=>{
+   *     console.log('video label: ', item.label, 'deviceId: ', item.deviceId)
+   *   })
+   * })
    */
   function getSpeakers(): Promise<DeviceInfo[]>
 
@@ -339,6 +387,22 @@ declare namespace NERTC {
    * 销毁 Client 对象。
    *
    * @param client 指定要销毁的 Client 实例，不传递则销毁最初使用用 createClient 创建的 Client 实例（一般多实例场景使用）。
+   *
+   * @example
+   * ```JavaScript
+   * // 1. 创建client
+   * client = NERTC.createClient({appkey: "<您的appkey>", debug: true});
+   * // 2. 加入频道
+   * await client.join({
+   *   channelName: 'channel163',
+   *   uid: 123,
+   *   token: '<您的token>', // 如关闭了安全模式，则不需要该参数。
+   * });
+   * // 3. 通话结束后退出房间
+   * await client.leave()
+   * // 4. 若后续再不使用该 client，则可以销毁该 client 实例
+   * NERTC.destroy()
+   * ```
    */
   function destroy(client?: Client): void
 
