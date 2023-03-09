@@ -484,6 +484,15 @@ class GetStats {
           this.formativeStatsReport?.clearFirstRecvData(targetUid)
           tmp.remoteuid = targetUid
           if (item.mediaType === 'audio') {
+            if (item.audioOutputLevel && !pc.getTransceivers) {
+              const remoteStream = this?.adapterRef?.remoteStreamMap[targetUid]
+              const isPlaying = (mediaTypeShort && remoteStream?.isPlaying('audio')) || false
+              this.audioLevel.push({
+                uid: targetUid,
+                level: isPlaying ? +item.audioOutputLevel || 0 : 0,
+                type: mediaTypeShort
+              })
+            }
             tmp.audioOutputLevel = parseInt(item.audioOutputLevel)
             tmp.totalAudioEnergy = parseInt(item.totalAudioEnergy)
             tmp.totalSamplesDuration = parseInt(item.totalSamplesDuration)
