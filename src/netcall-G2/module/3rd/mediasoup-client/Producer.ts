@@ -293,8 +293,9 @@ export class Producer extends EnhancedEventEmitter {
     }
 
     this._paused = true
-
-    if (this._disableTrackOnPause) {
+    if (env.SAFARI_VERSION && parseFloat(env.SAFARI_VERSION) === 15.1) {
+      //safari 15.1版本peer中的video track的enable属性会导致页面刷新(H264编码器的场景下)
+    } else if (this._disableTrackOnPause) {
       if (this._track) {
         this._track.enabled = false
       }
