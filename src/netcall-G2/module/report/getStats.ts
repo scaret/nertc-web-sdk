@@ -360,6 +360,7 @@ class GetStats {
             //sdk接口getLocalAudioStats()数据封装
             const audioStats = {
               CodecType: 'Opus',
+              rtt: tmp.rtt || 0,
               MuteState: this?.adapterRef?.localStream?.muteStatus?.audio?.send || false,
               RecordingLevel: tmp.audioInputLevel || 0,
               SamplingRate: getSamplingRate(this?.adapterRef?.localStream?.audioProfile),
@@ -742,12 +743,12 @@ class GetStats {
         }
       } else if (item.type == 'remote-inbound-rtp') {
         if (item.kind === 'audio') {
-          item.fractionLost !== undefined ? audioObj.fractionLost = item.fractionLost : null
+          item.fractionLost !== undefined ? (audioObj.fractionLost = item.fractionLost) : null
           audioObj.jitterReceived = Math.round(item.jitter * 1000)
           audioObj.packetsLost = item.packetsLost
           audioObj.rtt = Math.round(item.roundTripTime * 1000)
         } else if (item.kind === 'video') {
-          item.fractionLost !== undefined ? videoObj.fractionLost = item.fractionLost : null
+          item.fractionLost !== undefined ? (videoObj.fractionLost = item.fractionLost) : null
           videoObj.jitter = Math.round(item.jitter * 1000)
           videoObj.packetsLost = item.packetsLost
           videoObj.rtt = Math.round(item.roundTripTime * 1000)
