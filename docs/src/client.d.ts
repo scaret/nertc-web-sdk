@@ -528,6 +528,7 @@ declare interface Client {
    *     console.log(`Audio SamplingRate: ${localAudioStats[0].SamplingRate}`);
    *     console.log(`Audio SendBitrate: ${localAudioStats[0].SendBitrate}`);
    *     console.log(`Audio SendLevel: ${localAudioStats[0].SendLevel}`);
+   *     console.log(`Audio SendLevel: ${localAudioStats[0].rtt}`);
    *   }
    * }, 1000)
    * ```
