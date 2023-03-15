@@ -64,6 +64,7 @@ table th:nth-of-type(2) {
 | [[Client.stopProxyServer]]          | 关闭云代理。               |
 | [[Client.enableDualStream]]         | 开启双流发布模式。         |
 | [[Client.disableDualStream]]        | 关闭双流发布模式。         |
+| [[Client.setPlaybackVolume]]        | 设定整个房间的远端播放音量。 |
 
 ### <span id="旁路推流管理">旁路推流管理</span>
 
