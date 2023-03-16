@@ -520,7 +520,7 @@ declare interface Stream {
    *
    * @example
    * ```Javascript
-   *  stream.setAudioSlaveVolume(50)
+   *  stream.setAudioVolume(50)
    * ```
    */
   setAudioVolume(volume?: number): string | undefined
