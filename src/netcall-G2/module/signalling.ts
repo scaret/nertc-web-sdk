@@ -14,9 +14,9 @@ import {
   SignallingOptions,
   Timer
 } from '../types'
-import { parseBase64 } from '../util/crypto-ts/base64'
 import ErrorCode from '../util/error/errorCode'
 import RtcError from '../util/error/rtcError'
+import { parseBase64 } from '../util/crypto-ts/base64'
 import { emptyStreamWith } from '../util/gum'
 import { getBrowserInfo, getOSInfo } from '../util/rtcUtil/rtcPlatform'
 import { Consumer } from './3rd/mediasoup-client/Consumer'
