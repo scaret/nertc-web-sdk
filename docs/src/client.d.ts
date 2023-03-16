@@ -305,7 +305,7 @@ declare interface Client {
    * @example
    * ```Javascript
    * // 在订阅状态下，想将视频的大流切换为小流。
-   * rtc.client.setRemoteStreamType(remoteStream, NERTC.STREAM_TYPE.LOW)
+   * rtc.client.setRemoteVideoStreamType(remoteStream, NERTC.STREAM_TYPE.LOW)
    * ```
    */
   setRemoteVideoStreamType(stream: Stream, highOrLow: STREAM_TYPE): Promise<void>
