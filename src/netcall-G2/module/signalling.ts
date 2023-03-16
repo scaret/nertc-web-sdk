@@ -812,7 +812,6 @@ class Signalling extends EventEmitter {
             })
           } else if (data.videoRight === 2) {
             this.adapterRef.isVideoBanned = false
-            this.adapterRef.isVideoBanned = true
             this.adapterRef.instance.safeEmit('audioVideoBanned', {
               uid,
               mediaType: 'video',
