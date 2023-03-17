@@ -25,7 +25,12 @@ export function playMedia(
       if (timer) {
         clearTimeout(timer)
         timer = null
-        reject(e)
+        if (e?.name === 'AbortError') {
+          // The play() request was interrupted by a new load request. https://goo.gl/LdLk22 DOMException: The play() request was interrupted by a new load request. https://goo.gl/LdLk22
+          resolve()
+        } else {
+          reject(e)
+        }
       }
     })
   })
