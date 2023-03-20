@@ -2,6 +2,7 @@ document.getElementById('AGORA').onclick = function () {
   console.warn('开启 AGORA')
   document.getElementById('AGORA').style.backgroundColor = '#0d66ff'
   document.getElementById('NERTC').style.backgroundColor = '#efefef'
+  document.getElementById('vendorInfo').innerText = 'AgoraRTC ' + AgoraRTC.BUILD
   startAGORA()
 }
 
