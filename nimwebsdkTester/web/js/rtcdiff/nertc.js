@@ -87,9 +87,9 @@ function startNERTC() {
         height: 240
       })
       // 播放远端流
-      if (event.mediaType === ('video' || 'audio')) {
+      if (event.mediaType === 'video' || event.mediaType === 'audio') {
         await remoteStream.play('remoteVideoContent')
-      } else if (event.mediaType === ('screen' || 'screenAudio')) {
+      } else if (event.mediaType === 'screen' || event.mediaType === 'screenAudio') {
         await remoteStream.play('remoteScreenContent')
       }
       // await remoteStream.play('remoteVideoContent')
@@ -1137,7 +1137,7 @@ function startNERTC() {
   $('#setBWE').click(() => {
     const val = $('#forceBWE').val()
     console.warn(`切换带宽估计：${WebRTC2.getParameters().forceBWE} => ${val}`)
-    if (!WebRTC2.getParameters().forceBWE){
+    if (!WebRTC2.getParameters().forceBWE) {
       alert(`本版本不支持切换带宽估计！`)
     }
     WebRTC2.getParameters().forceBWE = val
