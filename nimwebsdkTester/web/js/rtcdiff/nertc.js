@@ -2,6 +2,7 @@ document.getElementById('NERTC').onclick = function () {
   console.warn('开启 NERTC')
   document.getElementById('NERTC').style.backgroundColor = '#0d66ff'
   document.getElementById('AGORA').style.backgroundColor = '#efefef'
+  document.getElementById('vendorInfo').innerText = 'NERTC ' + NERTC.BUILD
   startNERTC()
 }
 
@@ -1136,6 +1137,9 @@ function startNERTC() {
   $('#setBWE').click(() => {
     const val = $('#forceBWE').val()
     console.warn(`切换带宽估计：${WebRTC2.getParameters().forceBWE} => ${val}`)
+    if (!WebRTC2.getParameters().forceBWE){
+      alert(`本版本不支持切换带宽估计！`)
+    }
     WebRTC2.getParameters().forceBWE = val
   })
 
