@@ -912,7 +912,12 @@ class Mediasoup extends EventEmitter {
                 mediaType: 'video'
               })
             }
-            trackLow = stream.mediaHelper.video.low.track
+            if (stream.mediaHelper.video.low.track) {
+              trackLow = stream.mediaHelper.video.low.track
+              this.adapterRef.instance.safeEmit('track-low-init-success', { mediaType: 'video' })
+            } else {
+              this.adapterRef.instance.safeEmit('track-low-init-fail', { mediaType: 'video' })
+            }
           } else {
             // 不发布小流。此处如果发现上次有小流，则取消绑定关系，但不回收。
             if (stream.mediaHelper.video.low) {
@@ -987,7 +992,12 @@ class Mediasoup extends EventEmitter {
                 mediaType: 'screen'
               })
             }
-            trackLow = stream.mediaHelper.screen.low.track
+            if (stream.mediaHelper.screen.low.track) {
+              trackLow = stream.mediaHelper.screen.low.track
+              this.adapterRef.instance.safeEmit('track-low-init-success', { mediaType: 'screen' })
+            } else {
+              this.adapterRef.instance.safeEmit('track-low-init-fail', { mediaType: 'screen' })
+            }
           } else {
             // 不发布小流。此处如果发现上次有小流，则取消小流绑定（但不回收）
             if (stream.mediaHelper.screen.low) {
