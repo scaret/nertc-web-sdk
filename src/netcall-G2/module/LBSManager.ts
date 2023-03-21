@@ -554,11 +554,19 @@ export class LBSManager {
     let ajaxFinished = false
 
     return new Promise((resolve, reject) => {
+      let xhrSendTs = 0
+      let xhrSpendMs = 0
       const handleXHRLoad = (
         xhr: XMLHttpRequest,
         requestInfo: RequestInfo,
         urlSetting: URLSetting
       ) => {
+        xhrSpendMs = Date.now() - xhrSendTs
+        if (option.url.indexOf('getChannelInfos.action') > -1) {
+          // 为了确保统计准确，时间统计必须放在前面
+          this.client.adapterRef.state.getChannelInfoRtt = xhrSpendMs
+        }
+
         // console.error("handleXHRLoad", xhr.status, urlSetting.item.tag, xhr.responseType, xhr.response, xhr)
         if (xhr.status >= 400) {
           // 服务端api即使拒绝一个请求，status也是200的。
@@ -745,6 +753,7 @@ export class LBSManager {
         xhr.onload = handleXHRLoad.bind(xhr, xhr, requestInfo, urlSetting)
         xhr.onerror = handleXHRError.bind(xhr, xhr, requestInfo, urlSetting)
         xhr.ontimeout = handleXHRTimeout.bind(xhr, xhr, requestInfo, urlSetting)
+        xhrSendTs = Date.now()
         if (contentType.indexOf('x-www-form-urlencoded') >= 0) {
           if (option.data) {
             xhr.send(getFormData(option.data))

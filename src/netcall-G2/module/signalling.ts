@@ -122,7 +122,7 @@ class Signalling extends EventEmitter {
       }
 
       const connConfig: SignalingConnectionConfig = this.reconnectionControl.next || {
-        timeout: isReconnectMeeting ? getParameters().reconnectionFirstTimeout : 0,
+        timeout: isReconnectMeeting ? getParameters().reconnectionFirstTimeout : getParameters().joinFirstTimeout,
         url: this.adapterRef.channelInfo.wssArr[0],
         serverIndex: 0,
         times: isReconnectMeeting ? 1 : 0,
@@ -182,7 +182,6 @@ class Signalling extends EventEmitter {
         nextConnConfig.timeout =
           getParameters().reconnectionFirstTimeout + (nextConnConfig.times - 1) * 2000
       }
-      nextConnConfig.timeout = nextConnConfig.times * 2000
       nextConnConfig.isJoinRetry = isReconnect
       nextConnConfig.isReconnection = isReconnectMeeting
       nextConnConfig.url = this.adapterRef.channelInfo.wssArr[nextConnConfig.serverIndex]
@@ -904,6 +903,8 @@ class Signalling extends EventEmitter {
 
   async join() {
     this.adapterRef.state.signalOpenTime = Date.now()
+    this.adapterRef.state.signalWebsocketOpenRtt =
+      this.adapterRef.state.signalOpenTime - this.adapterRef.state.signalEstablishTime
     let gmEnable //加密标识
     if (!this.adapterRef.encryption.encryptionSecret) {
       gmEnable = false
@@ -964,8 +965,10 @@ class Signalling extends EventEmitter {
       let response = null
       let thisProtoo = this._protoo
       try {
+        const start = Date.now()
         response = (await this._protoo?.request('Join', requestData)) as SignalJoinRes
         this.adapterRef.state.signalJoinResTime = Date.now()
+        this.adapterRef.state.signalJoinMsgRtt = this.adapterRef.state.signalJoinResTime - start
       } catch (e: any) {
         if (thisProtoo !== this._protoo) {
           this.logger.warn(`Login 过期的信令通道消息：【${e.name}】`, e.message)
