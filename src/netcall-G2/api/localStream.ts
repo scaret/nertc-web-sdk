@@ -586,6 +586,7 @@ class LocalStream extends RTCEventEmitter {
         apiEventDataInit.screenProfile = this.mediaHelper.screen.captureConfig.high
         apiEventDataInit.screenEncoder = this.mediaHelper.screen.encoderConfig.high
       }
+      this.initVideoPostProcess()
 
       this.client.apiFrequencyControl({
         name: 'init',
@@ -688,6 +689,10 @@ class LocalStream extends RTCEventEmitter {
       }
     }
     onInitFinished()
+  }
+
+  initVideoPostProcess() {
+    this.videoPostProcess.init()
   }
 
   /**
