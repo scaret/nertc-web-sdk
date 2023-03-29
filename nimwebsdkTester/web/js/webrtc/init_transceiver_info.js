@@ -478,6 +478,22 @@ const captureTimer = setInterval(async ()=>{
         $(`#${pointName}Ms`).html('')
       }
     })
+
+    ;['getChannelInfoRtt', 'signalWebsocketOpenRtt', 'signalJoinMsgRtt'].forEach((rttName)=>{
+      if (pointsMs[rttName] !== rtc.client.adapterRef.state[rttName]) {
+        pointsMs[rttName] = rtc.client.adapterRef.state[rttName]
+        $(`#${rttName}`).html(pointsMs[rttName])
+      }
+    })
+    const joinMsWithoutRtt = pointsMs.signalJoinSuccess -
+      pointsMs.getChannelInfoRtt -
+      pointsMs.signalWebsocketOpenRtt -
+      pointsMs.signalJoinMsgRtt -
+      pointsMs.startSession // token的时间
+    if (joinMsWithoutRtt > 0 && pointsMs['joinMsWithoutRtt'] !== joinMsWithoutRtt){
+      pointsMs['joinMsWithoutRtt'] = joinMsWithoutRtt
+      $(`#joinMsWithoutRtt`).html(joinMsWithoutRtt)
+    }
   }
 
 }, 1000)

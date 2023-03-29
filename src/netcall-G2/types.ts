@@ -65,6 +65,18 @@ export interface AdapterRef {
     signalOpenTime: number
     signalJoinResTime: number
     signalJoinSuccessTime: number
+    /**
+     * getChannelInfo请求产生的网络RTT
+     */
+    getChannelInfoRtt: number
+    /**
+     * 信令Websocket从发起到Open状态产生的网络RTT
+     */
+    signalWebsocketOpenRtt: number
+    /**
+     * Join消息产生的RTT
+     */
+    signalJoinMsgRtt: number
     signalAudioAddedTime: number
     signalAudioSubscribedTime: number
     signalVideoAddedTime: number
