@@ -20,8 +20,7 @@ export function playMedia(
         timer = null
         resolve()
       }
-    })
-    p1.catch((e) => {
+    }).catch((e) => {
       if (timer) {
         clearTimeout(timer)
         timer = null
