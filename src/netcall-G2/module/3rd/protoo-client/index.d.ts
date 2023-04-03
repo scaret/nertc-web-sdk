@@ -49,6 +49,7 @@ export class WebSocketTransport {
 }
 
 export class Peer {
+  signalling: any
   constructor(transport: WebSocketTransport)
 
   id: number
