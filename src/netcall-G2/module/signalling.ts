@@ -40,6 +40,7 @@ class Signalling extends EventEmitter {
   public browserDevice: String
   private logger: ILogger
   private _reconnectionTimeout: number = 30 * 1000
+  private joinTimestamps: number[] = []
   public reconnectionControl: {
     current: SignalingConnectionConfig | null
     next: SignalingConnectionConfig | null
@@ -323,16 +324,18 @@ class Signalling extends EventEmitter {
         maxRetryTime: 2000
       }
     })
-    this._protoo = new protooClient.Peer(protooTransport)
+    const _protoo = new protooClient.Peer(protooTransport)
+    this._protoo = _protoo
+    _protoo.signalling = this
     this.adapterRef.state.signalEstablishTime = Date.now()
     this._bindEvent()
   }
 
   _bindEvent() {
-    this._protoo?.on('open', this.join.bind(this))
     this._protoo?.on('failed', this._handleFailed.bind(this))
-    this._protoo?.on('notification', this._handleMessage.bind(this))
     this._protoo?.on('close', this._handleClose.bind(this))
+    this._protoo?.on('open', this.join.bind(this, this._protoo))
+    this._protoo?.on('notification', this._handleMessage.bind(this, this._protoo))
     this._protoo?.on('disconnected', this._handleDisconnected.bind(this, this._protoo))
   }
 
@@ -350,10 +353,13 @@ class Signalling extends EventEmitter {
     }
   }
 
-  async _handleMessage(notification: ProtooNotification) {
+  async _handleMessage(_protoo: Peer, notification: ProtooNotification) {
     /*this.logger.log(
       'proto "notification" event [method:%s, data:%o]',
       notification.method, notification.data);*/
+    if (_protoo && this._isProtooDetached(_protoo)) {
+      return
+    }
     switch (notification.method) {
       case 'OnPeerJoin': {
         const { requestId, externData } = notification.data
@@ -873,6 +879,23 @@ class Signalling extends EventEmitter {
 
   _handleClose() {}
 
+  _isProtooDetached(_protoo: Peer) {
+    if (!this._protoo) {
+      this.logger.warn(`Protoo is destroyed: ${_protoo.id}`)
+      return true
+    } else if (this._protoo !== _protoo) {
+      this.logger.warn(`Protoo is detached: ${_protoo.id} => ${this._protoo.id}`)
+      return true
+    } else if (this !== this.adapterRef._signalling) {
+      this.logger.warn(
+        `Protoo.signaling is detached: ${this._protoo.id} => ${this.adapterRef._signalling?._protoo?.id}`
+      )
+      return true
+    } else {
+      return false
+    }
+  }
+
   _handleDisconnected(_protoo: Peer) {
     this.logger.log('Signalling:_handleDisconnected')
     if (
@@ -902,7 +925,20 @@ class Signalling extends EventEmitter {
     })
   }
 
-  async join() {
+  async join(_protoo: Peer) {
+    if (_protoo && this._isProtooDetached(_protoo)) {
+      return
+    }
+
+    this.joinTimestamps.push(Date.now())
+    if (this.joinTimestamps.length > 4) {
+      this.joinTimestamps.shift()
+    }
+    if (this.joinTimestamps.length >= 4 && this.joinTimestamps[3] - this.joinTimestamps[0] < 1000) {
+      this.logger.error(`signaling.join: 在1秒以内连续发生了4次Join事件，异常退出。`)
+      return
+    }
+
     this.adapterRef.state.signalOpenTime = Date.now()
     let gmEnable //加密标识
     if (!this.adapterRef.encryption.encryptionSecret) {
@@ -977,6 +1013,9 @@ class Signalling extends EventEmitter {
             message: e.message
           })
         }
+      }
+      if (this._isProtooDetached(_protoo)) {
+        return
       }
       //this.logger.log('Signalling:Join请求 收到ack -> ', JSON.stringify(response, (k, v)=>{return k === "edgeRtpCapabilities" ? null : v;}));
       this.logger.log('Signalling:Join请求收到response')
