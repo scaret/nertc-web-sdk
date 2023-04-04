@@ -12,6 +12,7 @@ import {
   PlayOptions,
   RenderMode,
   SnapshotOptions,
+  Timer,
   VideoPlaySettings
 } from '../types'
 import ErrorCode from '../util/error/errorCode'
@@ -21,8 +22,8 @@ import { getDomInfo } from '../util/rtcUtil/utils'
 import { getParameters } from './parameters'
 import { createCanvasWatermarkControl } from './watermark/CanvasWatermarkControl'
 import { createEncoderWatermarkControl } from './watermark/EncoderWatermarkControl'
-import { playMedia } from '../util/playMedia'
 import { get2DContext } from './browser-api/getCanvasContext'
+import { printForLongPromise } from '../util/gum'
 
 class Play extends EventEmitter {
   private snapshotIndex = 0
@@ -400,7 +401,7 @@ class Play extends EventEmitter {
     }
 
     try {
-      await playMedia(dom, getParameters().playMediaTimeout)
+      await this.playDomElement(dom, getParameters().playMediaTimeout)
       this.logger.log(`[Play] 播放音频完成，当前播放状态:`, dom.played.length)
       this.stream.client.updateRecordingAudioStream()
       this.stream.client.apiEventReport('setFunction', {
@@ -485,7 +486,7 @@ class Play extends EventEmitter {
       ) {
         this.stream.client.adapterRef.state.domVideoAppendTime = Date.now()
       }
-      await playMedia(dom, getParameters().playMediaTimeout)
+      await this.playDomElement(dom, getParameters().playMediaTimeout)
       this.logger.log(
         `[Play] 成功加载主流播放视频源：当前视频实际分辨率${dom.videoWidth}x${dom.videoHeight}，显示宽高${dom.offsetWidth}x${dom.offsetHeight}`
       )
@@ -861,6 +862,63 @@ class Play extends EventEmitter {
     //传入canvas图片
     let dataURL = canvas.toDataURL('image/', 1)
     return dataURL
+  }
+
+  // 播放某个dom节点，由以前的 util/playMedia.ts迁移过来
+  async playDomElement(media: HTMLVideoElement | HTMLAudioElement, timeout: number): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      // timerPassthrough 是指过了这个时间，play就会返回成功
+      let timerPassthrough: Timer | null = setTimeout(() => {
+        if (timerPassthrough) {
+          timerPassthrough = null
+          resolve()
+        }
+      }, timeout)
+
+      // timerNotAllowed 是指过了这个时间，stream上就会抛出NotAllowedError（通常是安卓微信）
+      let timerNotAllowed: Timer | null = setTimeout(() => {
+        if (timerNotAllowed) {
+          timerNotAllowed = null
+          const error = new RtcError({
+            code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
+            url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082',
+            message: `playDomElement: 浏览器自动播放受限，表现为Play既不成功也不失败。可尝试通过resume()恢复。`
+          })
+          this.stream.safeEmit('notAllowedError', error)
+          this.stream.getAdapterRef()?.instance.safeEmit('NotAllowedError', error)
+          this.stream.getAdapterRef()?.instance.safeEmit('notAllowedError', error)
+        }
+      }, getParameters().playMediaTimeoutForAutoplay)
+
+      const p1 = media.play()
+      printForLongPromise(p1, '媒体标签仍在启动播放中')
+      p1.then(() => {
+        if (timerPassthrough) {
+          clearTimeout(timerPassthrough)
+          timerPassthrough = null
+          resolve()
+        }
+        if (timerNotAllowed) {
+          clearTimeout(timerNotAllowed)
+          timerNotAllowed = null
+        }
+      }).catch((e) => {
+        if (timerPassthrough) {
+          clearTimeout(timerPassthrough)
+          timerPassthrough = null
+          if (e?.name === 'AbortError') {
+            // The play() request was interrupted by a new load request. https://goo.gl/LdLk22 DOMException: The play() request was interrupted by a new load request. https://goo.gl/LdLk22
+            resolve()
+          } else {
+            reject(e)
+          }
+        }
+        if (timerNotAllowed) {
+          clearTimeout(timerNotAllowed)
+          timerNotAllowed = null
+        }
+      })
+    })
   }
 
   enableMask() {
