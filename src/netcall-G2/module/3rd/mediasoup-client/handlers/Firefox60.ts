@@ -25,6 +25,8 @@ import * as sdpCommonUtils from './sdp/commonUtils'
 import { RemoteSdp } from './sdp/RemoteSdp'
 import * as sdpUnifiedPlanUtils from './sdp/unifiedPlanUtils'
 import { filterTransportCCFromSdp } from '../../../../util/rtcUtil/filterTransportCC'
+import { addNackSuppportForOpus } from './ortc/edgeUtils'
+
 const prefix = 'Firefox_'
 
 const SCTP_NUM_STREAMS = { OS: 1024, MIS: 1024 }
@@ -103,17 +105,18 @@ export class Firefox60 extends HandlerInterface {
       pc.addTransceiver('video')
 
       const offer = await pc.createOffer()
-      // copied but why???
-      offer.sdp = offer.sdp.replace(
-        /a=rtcp-fb:111 transport-cc/g,
-        `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`
-      )
+      // Remove the dependency of the nack line in sdp on transport-cc
+      if (offer.sdp.indexOf('a=rtcp-fb:111') && offer.sdp.indexOf('a=rtcp-fb:111 nack') === -1) {
+        offer.sdp = offer.sdp.replace(/(a=rtcp-fb:111.*)/, '$1\r\na=rtcp-fb:111 nack')
+      }
       try {
         pc.close()
       } catch (error) {}
 
       const sdpObject = sdpTransform.parse(offer.sdp)
       const nativeRtpCapabilities = sdpCommonUtils.extractRtpCapabilities({ sdpObject })
+      // support NACK for OPUS
+      addNackSuppportForOpus(nativeRtpCapabilities)
 
       return nativeRtpCapabilities
     } catch (error) {
@@ -254,9 +257,9 @@ export class Firefox60 extends HandlerInterface {
               item.uri.indexOf('transport-wide-cc') == -1 && item.uri.indexOf('abs-send-time') == -1
             )
           })
-          media.rtcpFb = media.rtcpFb.map((item) => {
-            item.type = item.type.replace(/transport-cc/g, 'nack')
-            return item
+          media.rtcpFb.push({
+            payload: 111,
+            type: 'nack'
           })
         }
       })
@@ -482,9 +485,9 @@ export class Firefox60 extends HandlerInterface {
             item.uri.indexOf('transport-wide-cc') == -1 && item.uri.indexOf('abs-send-time') == -1
           )
         })
-        media.rtcpFb = media.rtcpFb.map((item) => {
-          item.type = item.type.replace(/transport-cc/g, 'nack')
-          return item
+        media.rtcpFb.push({
+          payload: 111,
+          type: 'nack'
         })
       }
     })
@@ -639,9 +642,9 @@ export class Firefox60 extends HandlerInterface {
             item.uri.indexOf('transport-wide-cc') == -1 && item.uri.indexOf('abs-send-time') == -1
           )
         })
-        media.rtcpFb = media.rtcpFb.map((item) => {
-          item.type = item.type.replace(/transport-cc/g, 'nack')
-          return item
+        media.rtcpFb.push({
+          payload: 111,
+          type: 'nack'
         })
       }
     })
@@ -779,20 +782,20 @@ export class Firefox60 extends HandlerInterface {
           /a=ice-ufrag:([0-9a-zA-Z=+-_\/\\\\]+)/g,
           `a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#recv`
         )
-        offer.sdp = offer.sdp.replace(
-          /a=rtcp-fb:111 transport-cc/g,
-          `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`
-        )
+        // 去除 sdp 中 nack 行对 transport-cc 的依赖
+        if (offer.sdp.indexOf('a=rtcp-fb:111') && offer.sdp.indexOf('a=rtcp-fb:111 nack') === -1) {
+          offer.sdp = offer.sdp.replace(/(a=rtcp-fb:111.*)/, '$1\r\na=rtcp-fb:111 nack')
+        }
       }
       // Logger.debug(prefix, '[Subscribe] prepareLocalSdp() | calling pc.setLocalDescription()')
       // this.signalingState = 'have-local-offer'
       // await this._pc.setLocalDescription(offer)
     } else if (!offer) {
       offer = await this._pc.createOffer()
-      offer.sdp = offer.sdp.replace(
-        /a=rtcp-fb:111 transport-cc/g,
-        `a=rtcp-fb:111 transport-cc\r\na=rtcp-fb:111 nack`
-      )
+      // 去除 sdp 中 nack 行对 transport-cc 的依赖
+      if (offer.sdp.indexOf('a=rtcp-fb:111') && offer.sdp.indexOf('a=rtcp-fb:111 nack') === -1) {
+        offer.sdp = offer.sdp.replace(/(a=rtcp-fb:111.*)/, '$1\r\na=rtcp-fb:111 nack')
+      }
       if (offer.sdp.indexOf('a=fmtp:111')) {
         offer.sdp = offer.sdp.replace(
           /a=fmtp:111 ([0-9=;a-zA-Z-]*)/,
@@ -810,6 +813,8 @@ export class Firefox60 extends HandlerInterface {
     if (!this._transportReady)
       dtlsParameters = await this._setupTransport({ localDtlsRole: 'server', localSdpObject })
     const rtpCapabilities = sdpCommonUtils.extractRtpCapabilities({ sdpObject: localSdpObject })
+    // support NACK for OPUS
+    addNackSuppportForOpus(rtpCapabilities)
     if (mid === -1) {
       //@ts-ignore
       mid = localSdpObject.media[localSdpObject.media.length - 1].mid
