@@ -123,7 +123,9 @@ class Signalling extends EventEmitter {
       }
 
       const connConfig: SignalingConnectionConfig = this.reconnectionControl.next || {
-        timeout: isReconnectMeeting ? getParameters().reconnectionFirstTimeout : getParameters().joinFirstTimeout,
+        timeout: isReconnectMeeting
+          ? getParameters().reconnectionFirstTimeout
+          : getParameters().joinFirstTimeout,
         url: this.adapterRef.channelInfo.wssArr[0],
         serverIndex: 0,
         times: isReconnectMeeting ? 1 : 0,
