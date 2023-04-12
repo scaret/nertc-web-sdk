@@ -392,6 +392,15 @@ declare interface Stream {
      * @since V4.6.0
      */
     screenAudioSource?: MediaStreamTrack
+    /**
+     * 调用 open 接口时，是否进行 publish
+     *
+     * 若为 false，则不进行 publish；若为 true 或者不填，则进行 publish。
+     *
+     *
+     * @since V4.6.60
+     */
+    enableMediaPub?: boolean
   }): Promise<undefined>
   /**
    * 关闭音视频输入设备，如麦克风、摄像头、屏幕共享，并且停止发布。

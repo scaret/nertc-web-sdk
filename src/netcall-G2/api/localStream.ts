@@ -67,6 +67,7 @@ export interface LocalStreamOpenOptions {
   videoSource?: MediaStreamTrack
   screenAudioSource?: MediaStreamTrack
   screenVideoSource?: MediaStreamTrack
+  enableMediaPub?: boolean
 }
 
 export interface LocalStreamCloseOptions {
@@ -1034,8 +1035,12 @@ class LocalStream extends RTCEventEmitter {
       audioSource,
       videoSource,
       screenAudioSource,
-      screenVideoSource
+      screenVideoSource,
+      enableMediaPub
     } = options
+
+    let isPublish = typeof enableMediaPub === 'boolean' && enableMediaPub === false ? false : true
+
     const hookOpenFinished = await this.client.operationQueue.enqueue({
       caller: this,
       method: 'open',
@@ -1096,7 +1101,7 @@ class LocalStream extends RTCEventEmitter {
             this.audioSource = audioSource || null
             if (this.client.adapterRef.connectState.curState !== 'CONNECTED') {
               this.logger.log('Stream.open:client不在频道中，无需发布。', constraint)
-            } else {
+            } else if (isPublish) {
               this.logger.log('Stream.open:开始发布', constraint)
               await this.client.adapterRef._mediasoup?.createProduce(this, 'audio')
             }
@@ -1138,7 +1143,7 @@ class LocalStream extends RTCEventEmitter {
             }
             if (this.client.adapterRef.connectState.curState !== 'CONNECTED') {
               this.logger.log('Stream.open:client不在频道中，无需发布。', constraint)
-            } else {
+            } else if (isPublish) {
               this.logger.log('Stream.open:开始发布', constraint)
               await this.client.adapterRef._mediasoup?.createProduce(this, 'audioSlave')
             }
@@ -1235,7 +1240,7 @@ class LocalStream extends RTCEventEmitter {
 
           if (this.client.adapterRef.connectState.curState !== 'CONNECTED') {
             this.logger.log('Stream.open:client不在频道中, 无需发布。', constraint)
-          } else {
+          } else if (isPublish) {
             this.logger.log('Stream.open:开始发布', constraint)
             await this.client.adapterRef._mediasoup?.createProduce(this, type)
             if (options.screenAudio) {

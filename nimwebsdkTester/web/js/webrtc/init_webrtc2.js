@@ -3165,6 +3165,13 @@ $('#playCameraSource').on('click', () => {
     })
 })
 $('#playCamera').on('click', () => {
+  openCamera()
+})
+$('#playCameraOnly').on('click', () => {
+  openCamera(false)
+})
+
+function openCamera(enableMediaPub) {
   console.warn('打开摄像头')
   if (!rtc.localStream) {
     assertLocalStream()
@@ -3191,7 +3198,8 @@ $('#playCamera').on('click', () => {
     .open({
       type: 'video',
       deviceId: $('#camera').val(),
-      facingMode: $('#cameraFacingMode').val()
+      facingMode: $('#cameraFacingMode').val(),
+      enableMediaPub
     })
     .then(async () => {
       console.log('打开摄像头 sucess')
@@ -3202,7 +3210,7 @@ $('#playCamera').on('click', () => {
       addLog('打开摄像头' + err)
       console.log('打开摄像头 失败: ', err)
     })
-})
+}
 $('#playCameraOff').on('click', () => {
   console.warn('关闭摄像头')
   if (!rtc.localStream) {
@@ -3253,6 +3261,13 @@ $('#playMicroSource').on('click', () => {
     })
 })
 $('#playMicro').on('click', () => {
+  openMicro()
+})
+$('#playMicroOnly').on('click', () => {
+  openMicro(false)
+})
+
+function openMicro(enableMediaPub) {
   console.warn('打开mic')
   if (!rtc.localStream) {
     assertLocalStream()
@@ -3263,7 +3278,8 @@ $('#playMicro').on('click', () => {
   rtc.localStream
     .open({
       type: 'audio',
-      deviceId: $('#micro').val()
+      deviceId: $('#micro').val(),
+      enableMediaPub
     })
     .then(() => {
       console.log('打开mic sucess')
@@ -3272,7 +3288,8 @@ $('#playMicro').on('click', () => {
       addLog('打开mic 失败: ' + err)
       console.log('打开mic 失败: ', err)
     })
-})
+}
+
 $('#playMicroOff').on('click', () => {
   console.warn('关闭mic')
   if (!rtc.localStream) {
@@ -3322,7 +3339,7 @@ $('#playScreenSource').on('click', () => {
       console.log('打开自定义辅流 失败: ', err)
     })
 })
-$('#playScreen').on('click', () => {
+function openScreen(enableMediaPub) {
   console.warn('打开屏幕共享')
   if (!rtc.localStream) {
     assertLocalStream()
@@ -3348,7 +3365,8 @@ $('#playScreen').on('click', () => {
   rtc.localStream
     .open({
       type: 'screen',
-      sourceId: getUrlVars().sourceId
+      sourceId: getUrlVars().sourceId,
+      enableMediaPub
     })
     .then(async () => {
       await rtc.localStream.play(document.getElementById('local-container'))
@@ -3358,6 +3376,12 @@ $('#playScreen').on('click', () => {
       addLog('打开屏幕共享 失败: ' + err)
       console.log('打开屏幕共享 失败: ', err)
     })
+}
+$('#playScreen').on('click', () => {
+  openScreen()
+})
+$('#playScreenOnly').on('click', () => {
+  openScreen(false)
 })
 $('#playScreenOff').on('click', () => {
   console.warn('关闭屏幕共享')
@@ -3412,7 +3436,7 @@ $('#playScreenAudioSource').on('click', () => {
       console.log('打开自定义辅流音频 失败: ', err)
     })
 })
-$('#playScreenAudio').on('click', () => {
+function openScreenAudio(enableMediaPub) {
   console.warn('打开屏幕共享+音频')
   if (!rtc.localStream) {
     assertLocalStream()
@@ -3439,7 +3463,8 @@ $('#playScreenAudio').on('click', () => {
     .open({
       type: 'screen',
       screenAudio: true,
-      sourceId: getUrlVars().sourceId
+      sourceId: getUrlVars().sourceId,
+      enableMediaPub
     })
     .then(async () => {
       await rtc.localStream.play(document.getElementById('local-container'))
@@ -3449,6 +3474,12 @@ $('#playScreenAudio').on('click', () => {
       addLog('打开屏幕共享音频 失败: ' + err)
       console.log('打开屏幕共享音频 失败: ', err)
     })
+}
+$('#playScreenAudio').on('click', () => {
+  openScreenAudio()
+})
+$('#playScreenAudioOnly').on('click', () => {
+  openScreenAudio(false)
 })
 $('#playScreenAudioOff').on('click', () => {
   console.warn('关闭屏幕共享音频')
