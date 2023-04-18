@@ -484,31 +484,14 @@ class Mediasoup extends EventEmitter {
             this.adapterRef.logger.error('找不到 iceUfragRegLocal: ', offer.sdp)
           }
           try {
-            let rtpParametersSend = rtpParameters
-            const codec = rtpParametersSend.codecs[0]
-            if (
-              getParameters().h264ProfileLevel &&
-              getParameters().h264ProfileLevelSignal &&
-              codec.mimeType === 'video/H264' &&
-              codec.parameters &&
-              codec.parameters['profile-level-id'] !== getParameters().h264ProfileLevelSignal
-            ) {
-              rtpParametersSend = JSON.parse(JSON.stringify(rtpParameters))
-              this.logger.warn(
-                `信令消息修改profile-level-id, ${
-                  rtpParametersSend.codecs[0].parameters['profile-level-id']
-                } => ${getParameters().h264ProfileLevelSignal}`
-              )
-              rtpParametersSend.codecs[0].parameters['profile-level-id'] = '42e01f'
-            }
             if (this.adapterRef.preferRemb) {
               this.logger.log(`使用REMB作为带宽估计方式`)
-              filterTransportCCFromRtpParameters(rtpParametersSend)
+              filterTransportCCFromRtpParameters(rtpParameters)
             }
             let producerData = {
               requestId: `${Math.ceil(Math.random() * 1e9)}`,
               kind: kind,
-              rtpParameters: rtpParametersSend,
+              rtpParameters: rtpParameters,
               iceUfrag: iceUfragRegLocal[1],
               externData: {
                 producerInfo: {
@@ -661,6 +644,28 @@ class Mediasoup extends EventEmitter {
                 code: ErrorCode.UNKNOWN_TYPE_ERROR,
                 message: 'createProduce: _protoo 未找到'
               })
+            }
+
+            // 尝试只在信令中修改H264 Profile
+            let rtpParametersSend = producerData.rtpParameters
+            const codec = rtpParametersSend.codecs[0]
+            if (
+              getParameters().h264ProfileLevel &&
+              getParameters().h264ProfileLevelSignal &&
+              codec.mimeType === 'video/H264' &&
+              codec.parameters &&
+              codec.parameters['profile-level-id'] !== getParameters().h264ProfileLevelSignal
+            ) {
+              rtpParametersSend = JSON.parse(JSON.stringify(rtpParametersSend))
+              this.logger.log(
+                `信令消息修改profile-level-id, ${
+                  rtpParametersSend.codecs[0].parameters['profile-level-id']
+                } => ${getParameters().h264ProfileLevelSignal}`
+              )
+              // 这边修改的仅仅是信令消息，改为42e01f
+              rtpParametersSend.codecs[0].parameters['profile-level-id'] =
+                getParameters().h264ProfileLevelSignal
+              producerData.rtpParameters = rtpParametersSend
             }
             let producerRes = await this.adapterRef._signalling._protoo.request(
               'Produce',

@@ -242,7 +242,7 @@ const captureTimer = setInterval(async ()=>{
               $('#codecImplementationType').text('')
             } else if (report[key] === 'OpenH264'){
               $('#codecImplementationType').text('软编')
-            } else if (report[key] === 'ExternalEncoder' || report[key] === 'MediaFoundationVideoEncodeAccelerator'){
+            } else if (report[key] === 'ExternalEncoder' || report[key] === 'VideoToolbox' || report[key] === 'MediaFoundationVideoEncodeAccelerator'){
               $('#codecImplementationType').text('硬编')
             } else{
               $('#codecImplementationType').html(`<span style="color:red">未知</span>`)

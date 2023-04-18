@@ -233,7 +233,8 @@ let parameters: IParameters = {
   //getStats请求间隔设置为1s，数据上报为doHeartbeatInterval * 2
   doHeartbeatInterval: 1000,
   deviceChangeInterval: 0,
-  h264ProfileLevel: '',
+  h264ProfileLevel: '42001f',
+  // 不要动这个参数
   h264ProfileLevelSignal: '42e01f',
   forceBWE: 'no',
   shimLocalCanvas: 'safari'
