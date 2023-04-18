@@ -2,12 +2,12 @@
  getStats适配器,该模块仅仅提供数据，以及封装成统一的格式
  设计方案：https://docs.popo.netease.com/lingxi/172c1c97e0034932a4b4097049d39a70
  */
-import { AdapterRef, MediaTypeShort } from '../../types'
+import { AdapterRef, MediaStatsChangeEvt, MediaTypeShort } from '../../types'
 import { FormativeStatsReport } from './formativeStatsData'
 import * as env from '../../util/rtcUtil/rtcEnvironment'
 
 class GetStats {
-  private adapterRef: AdapterRef | null
+  private adapterRef: AdapterRef
   private times = 0
   private browser: 'chrome' | 'safari' | 'firefox'
   public formativeStatsReport: FormativeStatsReport | null
@@ -295,6 +295,9 @@ class GetStats {
     const video_ssrc: any = []
     const screen_ssrc: any = []
     const bwe: any = []
+
+    const mediaStateChangeEvt: MediaStatsChangeEvt = { data: [] }
+
     Object.values(stats).forEach((item) => {
       // 普通换算
       if (item.id.includes('Conn-') && item.googActiveConnection === 'true') {
@@ -452,10 +455,22 @@ class GetStats {
               //@ts-ignore
               if (pc.videoSender?.track) {
                 if (streamType === 'high') {
+                  const oldVideoStats = this.adapterRef.localVideoStats[0]
                   this!.adapterRef!.localVideoStats[0] = videoStats
+                  mediaStateChangeEvt.data.push({
+                    mediaType: 'video',
+                    streamType: 'high',
+                    old: oldVideoStats,
+                    new: videoStats
+                  })
                 }
               } else {
-                //@ts-ignore
+                mediaStateChangeEvt.data.push({
+                  mediaType: 'video',
+                  streamType: 'high',
+                  old: this.adapterRef.localVideoStats[0] || null,
+                  new: null
+                })
                 this.adapterRef.localVideoStats = []
               }
             } else if (mediaTypeShort === 'screen') {
@@ -469,10 +484,22 @@ class GetStats {
                       ? (Date.now() - this.adapterRef.state.startPubScreenTime) / 1000
                       : 0
                   videoStats.LayerType = 2
+                  const oldScreenStats = this.adapterRef.localScreenStats[0]
                   this!.adapterRef!.localScreenStats[0] = videoStats
+                  mediaStateChangeEvt.data.push({
+                    mediaType: 'screen',
+                    streamType: 'high',
+                    old: oldScreenStats,
+                    new: videoStats
+                  })
                 }
               } else {
-                //@ts-ignore
+                mediaStateChangeEvt.data.push({
+                  mediaType: 'screen',
+                  streamType: 'high',
+                  old: this.adapterRef.localScreenStats[0] || null,
+                  new: null
+                })
                 this.adapterRef.localScreenStats = []
               }
               screen_ssrc.push(tmp)
@@ -639,6 +666,8 @@ class GetStats {
         }
       }
     })
+    this.adapterRef.instance.safeEmit('@media-stats-change', mediaStateChangeEvt)
+
     const result: any = {}
     if (audio_ssrc.length) {
       result.audio_ssrc = audio_ssrc

@@ -19,6 +19,7 @@ import {
   ClientOptions,
   JoinOptions,
   MediaPriorityOptions,
+  MediaStatsChangeEvt,
   MediaSubStatus,
   MediaTypeList,
   MediaTypeShort,
@@ -41,6 +42,7 @@ import { Base } from './base'
 import { LocalStream } from './localStream'
 import { RemoteStream } from './remoteStream'
 import { SpatialManager } from './spatialManager'
+import { getCurrentProfileLevel } from '../util/rtcUtil/codec'
 
 /**
  *  请使用 {@link WEBRTC2.createClient} 通过WEBRTC2.createClient创建 Client对象，client对象指通话中的本地或远程用户，提供云信sdk的核心功能。
@@ -168,6 +170,32 @@ class Client extends Base {
           })
           this.adapterRef.datareportCache = []
         }
+      }
+    })
+    this.on('@media-stats-change', (evt: MediaStatsChangeEvt) => {
+      let codecHasChanged = false
+      let param: any = {}
+      evt.data.forEach((evt) => {
+        if (evt.mediaType === 'video' || evt.mediaType === 'screen') {
+          if (evt.new?.CodecImplementationName) {
+            param[`${evt.mediaType}_${evt.streamType}`] = evt.new.CodecImplementationName
+            if (evt.new.CodecImplementationName !== 'unknown') {
+              if (!evt.old || evt.old.CodecImplementationName !== evt.new.CodecImplementationName) {
+                this.logger.log(
+                  `CodecImplementationName ${evt.streamType} ${evt.mediaType} ${evt.new.CodecImplementationName}`
+                )
+                codecHasChanged = true
+              }
+            }
+          }
+        }
+      })
+      if (codecHasChanged) {
+        this.apiFrequencyControl({
+          name: 'CodecImplementationName',
+          code: 0,
+          param
+        })
       }
     })
   }
@@ -757,6 +785,7 @@ class Client extends Base {
       const param: any = {
         reason,
         message,
+        profileLevel: getCurrentProfileLevel(),
         pubStatus: stream.pubStatus
       }
       if (stream.mediaHelper.video.cameraTrack || stream.mediaHelper.video.videoSource) {

@@ -117,7 +117,7 @@ async function getSupportedCodecs(
 }
 
 function isProfileLevelSupported(profileLevelId: string) {
-  if (typeof RTCRtpSender !== 'undefined') {
+  if (typeof RTCRtpSender !== 'undefined' && typeof RTCRtpSender.getCapabilities === 'function') {
     const capabilities = RTCRtpSender.getCapabilities('video')
     if (capabilities) {
       for (let i in capabilities.codecs) {
@@ -133,8 +133,14 @@ function isProfileLevelSupported(profileLevelId: string) {
   return false
 }
 
+let currentProfileLevel = ''
+export function getCurrentProfileLevel() {
+  return currentProfileLevel
+}
+
 function reduceCodecs(codecs: any[], selectedCodec?: RTCRtpCodecCapability) {
   const filteredCodecs = []
+  let firstVideoProfileLevel = ''
   for (let i = 0; i < codecs.length; i++) {
     if (codecs[i].mimeType && selectedCodec) {
       if (VideoCodecList.indexOf(codecs[i].mimeType.split('/')[1]) > -1) {
@@ -146,23 +152,24 @@ function reduceCodecs(codecs: any[], selectedCodec?: RTCRtpCodecCapability) {
       }
     }
     const codec = codecs[i]
-    if (codec.mimeType === 'video/H264' && getParameters().h264ProfileLevel) {
-      if (
-        codec.parameters['profile-level-id'] &&
-        isProfileLevelSupported(getParameters().h264ProfileLevel)
-      ) {
-        console.warn(
-          `Changing Codec ${codec.parameters['profile-level-id']} => ${
-            getParameters().h264ProfileLevel
-          }`
-        )
-        codec.parameters['profile-level-id'] = getParameters().h264ProfileLevel
-        // codec.preferredPayloadType = 102
-      } else {
-        console.warn(`H264 Profile Level is not supported in current browser`)
+    if (codec.mimeType && codec.mimeType.indexOf('video') === 0) {
+      if (codec.mimeType === 'video/H264' && getParameters().h264ProfileLevel) {
+        if (
+          codec.parameters['profile-level-id'] &&
+          isProfileLevelSupported(getParameters().h264ProfileLevel)
+        ) {
+          codec.parameters['profile-level-id'] = getParameters().h264ProfileLevel
+          // codec.preferredPayloadType = 102
+        }
+      }
+      if (!firstVideoProfileLevel) {
+        firstVideoProfileLevel = `${codec.mimeType}/${codec.parameters['profile-level-id']}`
       }
     }
     filteredCodecs.push(codecs[i])
+  }
+  if (firstVideoProfileLevel) {
+    currentProfileLevel = firstVideoProfileLevel
   }
   return filteredCodecs
 }

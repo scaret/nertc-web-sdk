@@ -197,6 +197,24 @@ export interface NetStatusItem {
   receiveTs: number
 }
 
+interface VideoStatsChange {
+  mediaType: 'video' | 'screen'
+  streamType: 'high' | 'low'
+  old: LocalVideoStats | null
+  new: LocalVideoStats | null
+}
+
+interface AudioStatsChange {
+  mediaType: 'audio' | 'audioSlave'
+  streamType: 'high'
+  old: LocalAudioStats | null
+  new: LocalAudioStats | null
+}
+
+export interface MediaStatsChangeEvt {
+  data: (VideoStatsChange | AudioStatsChange)[]
+}
+
 export interface ILogger {
   debug: (...msg: any) => void
   log: (...msg: any) => void
