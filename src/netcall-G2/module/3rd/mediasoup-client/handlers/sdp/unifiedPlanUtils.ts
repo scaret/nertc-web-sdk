@@ -27,7 +27,9 @@ export function getRtpEncodings({
 
   // First assume RTX is used.
   for (const line of offerMediaObject.ssrcGroups || []) {
-    if (line.semantics !== 'FID') continue
+    if (line.semantics !== 'FID') {
+      continue
+    }
 
     let [ssrc, rtxSsrc] = line.ssrcs.split(/\s+/)
 
@@ -57,7 +59,9 @@ export function getRtpEncodings({
   for (const [ssrc, rtxSsrc] of ssrcToRtxSsrc) {
     const encoding: RtpEncodingParameters = { ssrc }
 
-    if (rtxSsrc) encoding.rtx = { ssrc: rtxSsrc }
+    if (rtxSsrc) {
+      encoding.rtx = { ssrc: rtxSsrc }
+    }
 
     encodings.push(encoding)
   }
@@ -75,7 +79,9 @@ export function addLegacySimulcast({
   offerMediaObject: any
   numStreams: number
 }): void {
-  if (numStreams <= 1) throw new TypeError('numStreams must be greater than 1')
+  if (numStreams <= 1) {
+    throw new TypeError('numStreams must be greater than 1')
+  }
 
   // Get the SSRC.
   const ssrcMsidLine = (offerMediaObject.ssrcs || []).find((line: any) => line.attribute === 'msid')
@@ -93,7 +99,9 @@ export function addLegacySimulcast({
 
     // Get the SSRC for RTX.
   ;(offerMediaObject.ssrcGroups || []).some((line: any) => {
-    if (line.semantics !== 'FID') return false
+    if (line.semantics !== 'FID') {
+      return false
+    }
 
     const ssrcs = line.ssrcs.split(/\s+/)
 
@@ -113,7 +121,9 @@ export function addLegacySimulcast({
   for (let i = 0; i < numStreams; ++i) {
     ssrcs.push(firstSsrc + i)
 
-    if (firstRtxSsrc) rtxSsrcs.push(firstRtxSsrc + i)
+    if (firstRtxSsrc) {
+      rtxSsrcs.push(firstRtxSsrc + i)
+    }
   }
 
   offerMediaObject.ssrcGroups = []

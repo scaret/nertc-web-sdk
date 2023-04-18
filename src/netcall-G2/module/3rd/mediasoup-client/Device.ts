@@ -124,11 +124,13 @@ export class Device {
         'constructor() | Handler option is DEPRECATED, use handlerName or handlerFactory instead'
       )
 
-      if (typeof Handler === 'string') handlerName = Handler as BuiltinHandlerName
-      else
+      if (typeof Handler === 'string') {
+        handlerName = Handler as BuiltinHandlerName
+      } else {
         throw new TypeError(
           'non string Handler option no longer supported, use handlerFactory instead'
         )
+      }
     }
 
     if (handlerName && handlerFactory) {
@@ -143,8 +145,11 @@ export class Device {
       } else {
         handlerName = detectDevice()
 
-        if (handlerName) Logger.debug(prefix, 'constructor() | detected handler: %s', handlerName)
-        else throw new UnsupportedError('device not supported')
+        if (handlerName) {
+          Logger.debug(prefix, 'constructor() | detected handler: %s', handlerName)
+        } else {
+          throw new UnsupportedError('device not supported')
+        }
       }
 
       switch (handlerName) {
@@ -200,7 +205,9 @@ export class Device {
    * @throws {InvalidStateError} if not loaded.
    */
   get rtpCapabilities(): RtpCapabilities {
-    if (!this._loaded) throw new InvalidStateError('not loaded')
+    if (!this._loaded) {
+      throw new InvalidStateError('not loaded')
+    }
 
     return this._recvRtpCapabilities!
   }
@@ -211,7 +218,9 @@ export class Device {
    * @throws {InvalidStateError} if not loaded.
    */
   get sctpCapabilities(): SctpCapabilities {
-    if (!this._loaded) throw new InvalidStateError('not loaded')
+    if (!this._loaded) {
+      throw new InvalidStateError('not loaded')
+    }
 
     return this._sctpCapabilities!
   }
@@ -237,7 +246,9 @@ export class Device {
     let handler: HandlerInterface | undefined
 
     try {
-      if (this._loaded) throw new InvalidStateError('already loaded')
+      if (this._loaded) {
+        throw new InvalidStateError('already loaded')
+      }
 
       // This may throw.
       ortc.validateRtpCapabilities(routerRtpCapabilities)
@@ -285,7 +296,9 @@ export class Device {
 
       handler.close()
     } catch (error) {
-      if (handler) handler.close()
+      if (handler) {
+        handler.close()
+      }
 
       throw error
     }
@@ -298,8 +311,11 @@ export class Device {
    * @throws {TypeError} if wrong arguments.
    */
   canProduce(kind: MediaKind): boolean {
-    if (!this._loaded) throw new InvalidStateError('not loaded')
-    else if (kind !== 'audio' && kind !== 'video') throw new TypeError(`invalid kind "${kind}"`)
+    if (!this._loaded) {
+      throw new InvalidStateError('not loaded')
+    } else if (kind !== 'audio' && kind !== 'video') {
+      throw new TypeError(`invalid kind "${kind}"`)
+    }
 
     return this._canProduceByKind[kind]
   }
@@ -387,9 +403,11 @@ export class Device {
     proprietaryConstraints,
     appData = {}
   }: InternalTransportOptions): Transport {
-    if (!this._loaded) throw new InvalidStateError('not loaded')
-    else if (appData && typeof appData !== 'object')
+    if (!this._loaded) {
+      throw new InvalidStateError('not loaded')
+    } else if (appData && typeof appData !== 'object') {
       throw new TypeError('if given, appData must be an object')
+    }
 
     // Create a new Transport.
     const transport = new Transport({

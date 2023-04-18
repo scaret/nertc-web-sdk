@@ -54,7 +54,9 @@ class WebSocketTransport extends EnhancedEventEmitter {
   }
 
   close() {
-    if (this._closed) return
+    if (this._closed) {
+      return
+    }
 
     logger.debug('close()')
 
@@ -74,7 +76,9 @@ class WebSocketTransport extends EnhancedEventEmitter {
   }
 
   async send(message) {
-    if (this._closed) throw new Error('transport closed')
+    if (this._closed) {
+      throw new Error('transport closed')
+    }
 
     try {
       this._ws.send(JSONBigStringify(message))
@@ -105,7 +109,9 @@ class WebSocketTransport extends EnhancedEventEmitter {
       this.wsid = wsId
 
       this._ws.onopen = () => {
-        if (this._closed) return
+        if (this._closed) {
+          return
+        }
 
         wasConnected = true
 
@@ -114,7 +120,9 @@ class WebSocketTransport extends EnhancedEventEmitter {
       }
 
       this._ws.onclose = (event) => {
-        if (this._closed) return
+        if (this._closed) {
+          return
+        }
 
         logger.warn(
           'WebSocket "close" event [wasClean:%s, code:%s, reason:"%s"]',
@@ -129,9 +137,13 @@ class WebSocketTransport extends EnhancedEventEmitter {
           if (!wasConnected) {
             this.safeEmit('failed', currentAttempt)
 
-            if (this._closed) return
+            if (this._closed) {
+              return
+            }
 
-            if (operation.retry(true)) return
+            if (operation.retry(true)) {
+              return
+            }
           }
           // If it was connected, start from scratch.
           else {
@@ -139,7 +151,9 @@ class WebSocketTransport extends EnhancedEventEmitter {
 
             this.safeEmit('disconnected')
 
-            if (this._closed || this.skipReconnection) return
+            if (this._closed || this.skipReconnection) {
+              return
+            }
 
             this._runWebSocket()
 
@@ -154,17 +168,23 @@ class WebSocketTransport extends EnhancedEventEmitter {
       }
 
       this._ws.onerror = () => {
-        if (this._closed) return
+        if (this._closed) {
+          return
+        }
 
         logger.error('WebSocket "error" event')
       }
 
       this._ws.onmessage = (event) => {
-        if (this._closed) return
+        if (this._closed) {
+          return
+        }
 
         const message = Message.parse(event.data)
 
-        if (!message) return
+        if (!message) {
+          return
+        }
 
         if (this.listenerCount('message') === 0) {
           logger.error('no listeners for WebSocket "message" event, ignoring received message')

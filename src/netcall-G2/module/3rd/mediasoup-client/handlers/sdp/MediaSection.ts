@@ -54,7 +54,9 @@ export abstract class MediaSection {
         candidateObject.priority = candidate.priority
         candidateObject.transport = candidate.protocol
         candidateObject.type = candidate.type
-        if (candidate.tcpType) candidateObject.tcptype = candidate.tcpType
+        if (candidate.tcpType) {
+          candidateObject.tcptype = candidate.tcpType
+        }
 
         this._mediaObject.candidates.push(candidateObject)
       }
@@ -179,7 +181,9 @@ export class AnswerMediaSection extends MediaSection {
             rate: codec.clockRate
           }
 
-          if (codec.channels! > 1) rtp.encoding = codec.channels
+          if (codec.channels! > 1) {
+            rtp.encoding = codec.channels
+          }
 
           this._mediaObject.rtp.push(rtp)
 
@@ -260,12 +264,16 @@ export class AnswerMediaSection extends MediaSection {
           }
 
           for (const key of Object.keys(codecParameters)) {
-            if (fmtp.config) fmtp.config += ';'
+            if (fmtp.config) {
+              fmtp.config += ';'
+            }
 
             fmtp.config += `${key}=${codecParameters[key]}`
           }
 
-          if (fmtp.config) this._mediaObject.fmtp.push(fmtp)
+          if (fmtp.config) {
+            this._mediaObject.fmtp.push(fmtp)
+          }
 
           for (const fb of codec.rtcpFeedback!) {
             this._mediaObject.rtcpFb.push({
@@ -288,7 +296,9 @@ export class AnswerMediaSection extends MediaSection {
             (localExt: RtpHeaderExtensionParameters) => localExt.uri === ext.uri
           )
 
-          if (!found) continue
+          if (!found) {
+            continue
+          }
 
           this._mediaObject.ext.push({
             uri: ext.uri,
@@ -311,7 +321,9 @@ export class AnswerMediaSection extends MediaSection {
           this._mediaObject.rids = []
 
           for (const rid of offerMediaObject.rids || []) {
-            if (rid.direction !== 'send') continue
+            if (rid.direction !== 'send') {
+              continue
+            }
 
             this._mediaObject.rids.push({
               id: rid.id,
@@ -329,7 +341,9 @@ export class AnswerMediaSection extends MediaSection {
           this._mediaObject.rids = []
 
           for (const rid of offerMediaObject.rids || []) {
-            if (rid.direction !== 'send') continue
+            if (rid.direction !== 'send') {
+              continue
+            }
 
             this._mediaObject.rids.push({
               id: rid.id,
@@ -341,8 +355,9 @@ export class AnswerMediaSection extends MediaSection {
         this._mediaObject.rtcpMux = 'rtcp-mux'
         this._mediaObject.rtcpRsize = 'rtcp-rsize'
 
-        if (this._planB && this._mediaObject.type === 'video')
+        if (this._planB && this._mediaObject.type === 'video') {
           this._mediaObject.xGoogleFlag = 'conference'
+        }
 
         break
       }
@@ -420,8 +435,11 @@ export class OfferMediaSection extends MediaSection {
     if (!plainRtpParameters) {
       this._mediaObject.connection = { ip: '127.0.0.1', version: 4 }
 
-      if (!sctpParameters) this._mediaObject.protocol = 'UDP/TLS/RTP/SAVPF'
-      else this._mediaObject.protocol = 'UDP/DTLS/SCTP'
+      if (!sctpParameters) {
+        this._mediaObject.protocol = 'UDP/TLS/RTP/SAVPF'
+      } else {
+        this._mediaObject.protocol = 'UDP/DTLS/SCTP'
+      }
 
       this._mediaObject.port = 7
     } else {
@@ -441,7 +459,9 @@ export class OfferMediaSection extends MediaSection {
         this._mediaObject.rtcpFb = []
         this._mediaObject.fmtp = []
 
-        if (!this._planB) this._mediaObject.msid = `${streamId || '-'} ${trackId}`
+        if (!this._planB) {
+          this._mediaObject.msid = `${streamId || '-'} ${trackId}`
+        }
 
         for (const codec of offerRtpParameters!.codecs) {
           const rtp: any = {
@@ -451,7 +471,9 @@ export class OfferMediaSection extends MediaSection {
             rate: codec.clockRate
           }
 
-          if (codec.channels! > 1) rtp.encoding = codec.channels
+          if (codec.channels! > 1) {
+            rtp.encoding = codec.channels
+          }
 
           this._mediaObject.rtp.push(rtp)
 
@@ -464,12 +486,16 @@ export class OfferMediaSection extends MediaSection {
           // @ts-ignore https://g.hz.netease.com/yunxin/nertc-web-sdk/-/commit/3780ebb10d86e1b7d02aae49c6ee3e1cbf53acf9#d6522015c750a5761a0ed63df42780b64c5033d4_311_310
           const parameters = codec.parameters || codec.localParameters || {}
           for (const key of Object.keys(parameters)) {
-            if (fmtp.config) fmtp.config += ';'
+            if (fmtp.config) {
+              fmtp.config += ';'
+            }
 
             fmtp.config += `${key}=${parameters[key]}`
           }
 
-          if (fmtp.config) this._mediaObject.fmtp.push(fmtp)
+          if (fmtp.config) {
+            this._mediaObject.fmtp.push(fmtp)
+          }
 
           for (const fb of codec.rtcpFeedback!) {
             this._mediaObject.rtcpFb.push({
@@ -657,7 +683,9 @@ function getCodecName(codec: RtpCodecParameters): string {
   const MimeTypeRegex = new RegExp('^(audio|video)/(.+)', 'i')
   const mimeTypeMatch = MimeTypeRegex.exec(codec.mimeType)
 
-  if (!mimeTypeMatch) throw new TypeError('invalid codec.mimeType')
+  if (!mimeTypeMatch) {
+    throw new TypeError('invalid codec.mimeType')
+  }
 
   return mimeTypeMatch[2]
 }

@@ -94,7 +94,9 @@ class Peer extends EnhancedEventEmitter {
    * Close this Peer and its Transport.
    */
   close() {
-    if (this._closed) return
+    if (this._closed) {
+      return
+    }
 
     logger.debug('close()')
 
@@ -149,19 +151,27 @@ class Peer extends EnhancedEventEmitter {
         method: request.method,
         startTs: Date.now(),
         resolve: (data2) => {
-          if (!this._sents.delete(request.id)) return
-          if (this._closed) return
+          if (!this._sents.delete(request.id)) {
+            return
+          }
+          if (this._closed) {
+            return
+          }
           clearTimeout(sent.timer)
           pResolve(data2)
         },
         reject: (error) => {
-          if (!this._sents.delete(request.id)) return
+          if (!this._sents.delete(request.id)) {
+            return
+          }
 
           clearTimeout(sent.timer)
           pReject(error)
         },
         timer: setTimeout(() => {
-          if (!this._sents.delete(request.id)) return
+          if (!this._sents.delete(request.id)) {
+            return
+          }
 
           pReject(new Error('request timeout'))
         }, timeout),
@@ -211,7 +221,9 @@ class Peer extends EnhancedEventEmitter {
       this._closed = true
 
       setTimeout(() => {
-        if (this._closed) return
+        if (this._closed) {
+          return
+        }
 
         this._connected = false
 
@@ -222,7 +234,9 @@ class Peer extends EnhancedEventEmitter {
     }
 
     this._transport.on('open', () => {
-      if (this._closed) return
+      if (this._closed) {
+        return
+      }
 
       logger.debug('emit "open"')
 
@@ -234,7 +248,9 @@ class Peer extends EnhancedEventEmitter {
     })
 
     this._transport.on('disconnected', () => {
-      if (this._closed) return
+      if (this._closed) {
+        return
+      }
 
       logger.debug('emit "disconnected"')
 
@@ -244,7 +260,9 @@ class Peer extends EnhancedEventEmitter {
     })
 
     this._transport.on('failed', (currentAttempt) => {
-      if (this._closed) return
+      if (this._closed) {
+        return
+      }
 
       logger.debug('emit "failed" [currentAttempt:%s]', currentAttempt)
 
@@ -254,7 +272,9 @@ class Peer extends EnhancedEventEmitter {
     })
 
     this._transport.on('close', () => {
-      if (this._closed) return
+      if (this._closed) {
+        return
+      }
 
       this._closed = true
 
@@ -266,9 +286,11 @@ class Peer extends EnhancedEventEmitter {
     })
 
     this._transport.on('message', (message) => {
-      if (message.request) this._handleRequest(message)
-      else if (message.response) this._handleResponse(message)
-      else if (message.notification) {
+      if (message.request) {
+        this._handleRequest(message)
+      } else if (message.response) {
+        this._handleResponse(message)
+      } else if (message.notification) {
         this._handleNotification(message)
       }
     })

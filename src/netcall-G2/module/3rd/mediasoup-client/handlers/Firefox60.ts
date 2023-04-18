@@ -238,7 +238,9 @@ export class Firefox60 extends HandlerInterface {
     // Provide the remote SDP handler with new remote ICE parameters.
     this._remoteSdp!.updateIceParameters(iceParameters)
 
-    if (!this._transportReady) return
+    if (!this._transportReady) {
+      return
+    }
 
     if (this._direction /*=== 'send'*/) {
       const offer = await this._pc.createOffer({ iceRestart: true })
@@ -696,8 +698,11 @@ export class Firefox60 extends HandlerInterface {
 
     //@ts-ignore
     parameters.encodings.forEach((encoding: RTCRtpEncodingParameters, idx: number) => {
-      if (idx >= spatialLayer) encoding.active = true
-      else encoding.active = false
+      if (idx >= spatialLayer) {
+        encoding.active = true
+      } else {
+        encoding.active = false
+      }
     })
 
     await transceiver?.sender.setParameters(parameters)
@@ -915,7 +920,7 @@ export class Firefox60 extends HandlerInterface {
     Logger.debug(prefix, '[Subscribe] receive() | calling pc.setLocalDescription()')
     try {
       await this._pc.setLocalDescription(offer)
-    } catch (e) {
+    } catch (e: any) {
       if (e.name === 'InvalidModificationError') {
         const offerTemp = await this._pc.createOffer()
         await this._pc.setLocalDescription(offer)
@@ -1004,7 +1009,9 @@ export class Firefox60 extends HandlerInterface {
     localDtlsRole: DtlsRole
     localSdpObject?: any
   }): Promise<DtlsParameters> {
-    if (!localSdpObject) localSdpObject = sdpTransform.parse(this._pc.localDescription.sdp)
+    if (!localSdpObject) {
+      localSdpObject = sdpTransform.parse(this._pc.localDescription.sdp)
+    }
 
     // Get our local DTLS parameters.
     const dtlsParameters = sdpCommonUtils.extractDtlsParameters({ sdpObject: localSdpObject })

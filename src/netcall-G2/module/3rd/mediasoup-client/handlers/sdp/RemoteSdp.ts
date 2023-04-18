@@ -130,7 +130,9 @@ export class RemoteSdp {
       for (let idx = 0; idx < this._mediaSections.length; ++idx) {
         const mediaSection = this._mediaSections[idx]
 
-        if (mediaSection.closed) return { idx, reuseMid: mediaSection.mid }
+        if (mediaSection.closed) {
+          return { idx, reuseMid: mediaSection.mid }
+        }
       }
     }
 
@@ -153,7 +155,9 @@ export class RemoteSdp {
     codecOptions?: ProducerCodecOptions[]
     extmapAllowMixed?: boolean
   }): void {
-    if (!offerMediaObjectArr.length) return
+    if (!offerMediaObjectArr.length) {
+      return
+    }
     offerMediaObjectArr.forEach((offerMediaObject, i) => {
       if (!offerMediaObject) {
         return
@@ -212,7 +216,9 @@ export class RemoteSdp {
     const idx = this._midToIndex.get(mid)
     let mediaSection: OfferMediaSection | undefined
 
-    if (idx !== undefined) mediaSection = this._mediaSections[idx] as OfferMediaSection
+    if (idx !== undefined) {
+      mediaSection = this._mediaSections[idx] as OfferMediaSection
+    }
 
     // Unified-Plan or different media kind.
     if (!mediaSection) {
@@ -350,7 +356,9 @@ export class RemoteSdp {
   }
 
   _addMediaSection(newMediaSection: MediaSection): void {
-    if (!this._firstMid) this._firstMid = newMediaSection.mid
+    if (!this._firstMid) {
+      this._firstMid = newMediaSection.mid
+    }
 
     // Add to the vector.
     this._mediaSections.push(newMediaSection)
@@ -404,7 +412,9 @@ export class RemoteSdp {
   }
 
   _regenerateBundleMids(): void {
-    if (!this._dtlsParameters) return
+    if (!this._dtlsParameters) {
+      return
+    }
 
     this._sdpObject.groups[0].mids = this._mediaSections
       .filter((mediaSection: MediaSection) => !mediaSection.closed)

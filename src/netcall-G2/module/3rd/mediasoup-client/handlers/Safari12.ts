@@ -224,7 +224,9 @@ export class Safari12 extends HandlerInterface {
     // Provide the remote SDP handler with new remote ICE parameters.
     this._remoteSdp!.updateIceParameters(iceParameters)
 
-    if (!this._transportReady) return
+    if (!this._transportReady) {
+      return
+    }
 
     if (this._direction /*=== 'send' */) {
       const offer = await this._pc.createOffer({ iceRestart: true })
@@ -373,8 +375,9 @@ export class Safari12 extends HandlerInterface {
     if (trackLow && !offerMediaObjectLow) {
       offerMediaObjectLow = mediaCandidates.pop()
     }
-    if (!this._transportReady)
+    if (!this._transportReady) {
       dtlsParameters = await this._setupTransport({ localDtlsRole: 'server', localSdpObject })
+    }
     // We can now get the transceiver.mid.
     let localId = offerMediaObject?.mid
     if (typeof localId === 'number') {
@@ -657,8 +660,11 @@ export class Safari12 extends HandlerInterface {
     const parameters = transceiver.sender.getParameters()
     //@ts-ignore
     parameters.encodings.forEach((encoding: RTCRtpEncodingParameters, idx: number) => {
-      if (idx <= spatialLayer) encoding.active = true
-      else encoding.active = false
+      if (idx <= spatialLayer) {
+        encoding.active = true
+      } else {
+        encoding.active = false
+      }
     })
     await transceiver.sender.setParameters(parameters)
   }
@@ -956,7 +962,9 @@ export class Safari12 extends HandlerInterface {
     localDtlsRole: DtlsRole
     localSdpObject?: any
   }): Promise<DtlsParameters> {
-    if (!localSdpObject) localSdpObject = sdpTransform.parse(this._pc.localDescription.sdp)
+    if (!localSdpObject) {
+      localSdpObject = sdpTransform.parse(this._pc.localDescription.sdp)
+    }
 
     // Get our local DTLS parameters.
     const dtlsParameters = sdpCommonUtils.extractDtlsParameters({ sdpObject: localSdpObject })

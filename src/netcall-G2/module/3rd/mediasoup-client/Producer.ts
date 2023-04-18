@@ -238,7 +238,9 @@ export class Producer extends EnhancedEventEmitter {
    * Closes the Producer.
    */
   close(): void {
-    if (this._closed) return
+    if (this._closed) {
+      return
+    }
 
     Logger.debug(prefix, 'close()')
 
@@ -257,7 +259,9 @@ export class Producer extends EnhancedEventEmitter {
    * Transport was closed.
    */
   transportClosed(): void {
-    if (this._closed) return
+    if (this._closed) {
+      return
+    }
 
     Logger.debug(prefix, 'transportClosed()')
 
@@ -275,7 +279,9 @@ export class Producer extends EnhancedEventEmitter {
    * Get associated RTCRtpSender stats.
    */
   async getStats(): Promise<RTCStatsReport> {
-    if (this._closed) throw new InvalidStateError('closed')
+    if (this._closed) {
+      throw new InvalidStateError('closed')
+    }
 
     return this.safeEmitAsPromise('@getstats')
   }
@@ -398,8 +404,11 @@ export class Producer extends EnhancedEventEmitter {
     // If this Producer was paused/resumed and the state of the new
     // track does not match, fix it.
     if (this._track && this._disableTrackOnPause) {
-      if (!this._paused) this._track.enabled = true
-      else if (this._paused) this._track.enabled = false
+      if (!this._paused) {
+        this._track.enabled = true
+      } else if (this._paused) {
+        this._track.enabled = false
+      }
     }
 
     // Handle the effective track.
@@ -410,11 +419,17 @@ export class Producer extends EnhancedEventEmitter {
    * Sets the video max spatial layer to be sent.
    */
   async setMaxSpatialLayer(spatialLayer: number): Promise<void> {
-    if (this._closed) throw new InvalidStateError('closed')
-    else if (this._kind !== 'video') throw new UnsupportedError('not a video Producer')
-    else if (typeof spatialLayer !== 'number') throw new TypeError('invalid spatialLayer')
+    if (this._closed) {
+      throw new InvalidStateError('closed')
+    } else if (this._kind !== 'video') {
+      throw new UnsupportedError('not a video Producer')
+    } else if (typeof spatialLayer !== 'number') {
+      throw new TypeError('invalid spatialLayer')
+    }
 
-    if (spatialLayer === this._maxSpatialLayer) return
+    if (spatialLayer === this._maxSpatialLayer) {
+      return
+    }
 
     await this.safeEmitAsPromise('@setmaxspatiallayer', spatialLayer)
 
@@ -425,8 +440,11 @@ export class Producer extends EnhancedEventEmitter {
    * Sets the DSCP value.
    */
   async setRtpEncodingParameters(params: RTCRtpEncodingParameters): Promise<void> {
-    if (this._closed) throw new InvalidStateError('closed')
-    else if (typeof params !== 'object') throw new TypeError('invalid params')
+    if (this._closed) {
+      throw new InvalidStateError('closed')
+    } else if (typeof params !== 'object') {
+      throw new TypeError('invalid params')
+    }
 
     await this.safeEmitAsPromise('@setrtpencodingparameters', params)
   }
@@ -441,13 +459,17 @@ export class Producer extends EnhancedEventEmitter {
   }
 
   private _handleTrack(): void {
-    if (!this._track) return
+    if (!this._track) {
+      return
+    }
 
     this._track.addEventListener('ended', this._onTrackEnded)
   }
 
   private _destroyTrack(): void {
-    if (!this._track) return
+    if (!this._track) {
+      return
+    }
 
     Logger.warn(prefix, 'don not stop sender track')
     return

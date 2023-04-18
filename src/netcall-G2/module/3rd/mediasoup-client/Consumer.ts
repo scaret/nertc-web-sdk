@@ -183,7 +183,9 @@ export class Consumer extends EnhancedEventEmitter {
    * Closes the Consumer.
    */
   close(): void {
-    if (this._closed) return
+    if (this._closed) {
+      return
+    }
 
     Logger.debug(prefix, 'close()')
 
@@ -201,7 +203,9 @@ export class Consumer extends EnhancedEventEmitter {
    * Transport was closed.
    */
   transportClosed(): void {
-    if (this._closed) return
+    if (this._closed) {
+      return
+    }
 
     Logger.debug(prefix, 'transportClosed()')
 
@@ -219,7 +223,9 @@ export class Consumer extends EnhancedEventEmitter {
    * Get associated RTCRtpReceiver stats.
    */
   async getStats(): Promise<RTCStatsReport> {
-    if (this._closed) throw new InvalidStateError('closed')
+    if (this._closed) {
+      throw new InvalidStateError('closed')
+    }
 
     return this.safeEmitAsPromise('@getstats')
   }
