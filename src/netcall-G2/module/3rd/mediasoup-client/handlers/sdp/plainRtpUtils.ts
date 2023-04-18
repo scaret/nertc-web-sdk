@@ -34,6 +34,9 @@ export function getRtpEncodings({
   const ssrcCnameLine = (mediaObject.ssrcs || [])[0]
   const ssrc = ssrcCnameLine ? ssrcCnameLine.id : null
 
-  if (ssrc) return [{ ssrc }]
-  else return []
+  if (ssrc) {
+    return [{ ssrc }]
+  } else {
+    return []
+  }
 }

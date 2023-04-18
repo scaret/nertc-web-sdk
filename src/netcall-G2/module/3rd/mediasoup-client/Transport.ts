@@ -327,7 +327,9 @@ export class Transport extends EnhancedEventEmitter {
    * Close the Transport.
    */
   close(): void {
-    if (this._closed) return
+    if (this._closed) {
+      return
+    }
 
     Logger.debug(prefix, 'close()')
 
@@ -361,7 +363,9 @@ export class Transport extends EnhancedEventEmitter {
    * @returns {RTCStatsReport}
    */
   async getStats(): Promise<RTCStatsReport> {
-    if (this._closed) throw new InvalidStateError('closed')
+    if (this._closed) {
+      throw new InvalidStateError('closed')
+    }
 
     return this._handler.getTransportStats()
   }
@@ -372,8 +376,11 @@ export class Transport extends EnhancedEventEmitter {
   async restartIce({ iceParameters }: { iceParameters: IceParameters }): Promise<void> {
     Logger.debug(prefix, 'restartIce()')
 
-    if (this._closed) throw new InvalidStateError('closed')
-    else if (!iceParameters) throw new TypeError('missing iceParameters')
+    if (this._closed) {
+      throw new InvalidStateError('closed')
+    } else if (!iceParameters) {
+      throw new TypeError('missing iceParameters')
+    }
 
     // Enqueue command.
     return this._awaitQueue.push(
@@ -388,8 +395,11 @@ export class Transport extends EnhancedEventEmitter {
   async updateIceServers({ iceServers }: { iceServers?: RTCIceServer[] } = {}): Promise<void> {
     Logger.debug(prefix, 'updateIceServers()')
 
-    if (this._closed) throw new InvalidStateError('closed')
-    else if (!Array.isArray(iceServers)) throw new TypeError('missing iceServers')
+    if (this._closed) {
+      throw new InvalidStateError('closed')
+    } else if (!Array.isArray(iceServers)) {
+      throw new TypeError('missing iceServers')
+    }
 
     return this._handler.updateIceServers(iceServers)
     // 该接口不使用 Enqueue command，因为服务器的设计模式导致执行到这里的时候，produce或者consumer还在执行，会阻塞
@@ -415,17 +425,22 @@ export class Transport extends EnhancedEventEmitter {
     // Logger.debug(prefix, 'produce() [track:%o]', track);
     Logger.debug(prefix, 'produce()')
 
-    if (!track) throw new TypeError('missing track')
-    else if (this._direction !== 'send') throw new UnsupportedError('not a sending Transport')
-    else if (!this._canProduceByKind[track.kind])
+    if (!track) {
+      throw new TypeError('missing track')
+    } else if (this._direction !== 'send') {
+      throw new UnsupportedError('not a sending Transport')
+    } else if (!this._canProduceByKind[track.kind]) {
       throw new UnsupportedError(`cannot produce ${track.kind}`)
-    else if (track.readyState === 'ended') throw new InvalidStateError('track ended')
+    } else if (track.readyState === 'ended') {
+      throw new InvalidStateError('track ended')
+    }
     // else if (this.listenerCount('connect') === 0 && this._connectionState === 'new')
     //   throw new TypeError('no "connect" listener set into this transport');
-    else if (this.listenerCount('produce') === 0)
+    else if (this.listenerCount('produce') === 0) {
       throw new TypeError('no "produce" listener set into this transport')
-    else if (appData && typeof appData !== 'object')
+    } else if (appData && typeof appData !== 'object') {
       throw new TypeError('if given, appData must be an object')
+    }
 
     // Enqueue command.
     return (
@@ -441,22 +456,33 @@ export class Transport extends EnhancedEventEmitter {
             normalizedEncodings = encodings.map((encoding: any) => {
               const normalizedEncoding: any = { active: true }
 
-              if (encoding.active === false) normalizedEncoding.active = false
-              if (typeof encoding.dtx === 'boolean') normalizedEncoding.dtx = encoding.dtx
-              if (typeof encoding.scalabilityMode === 'string')
+              if (encoding.active === false) {
+                normalizedEncoding.active = false
+              }
+              if (typeof encoding.dtx === 'boolean') {
+                normalizedEncoding.dtx = encoding.dtx
+              }
+              if (typeof encoding.scalabilityMode === 'string') {
                 normalizedEncoding.scalabilityMode = encoding.scalabilityMode
-              if (typeof encoding.scaleResolutionDownBy === 'number')
+              }
+              if (typeof encoding.scaleResolutionDownBy === 'number') {
                 normalizedEncoding.scaleResolutionDownBy = encoding.scaleResolutionDownBy
-              if (typeof encoding.maxBitrate === 'number')
+              }
+              if (typeof encoding.maxBitrate === 'number') {
                 normalizedEncoding.maxBitrate = encoding.maxBitrate
-              if (typeof encoding.maxFramerate === 'number')
+              }
+              if (typeof encoding.maxFramerate === 'number') {
                 normalizedEncoding.maxFramerate = encoding.maxFramerate
-              if (typeof encoding.adaptivePtime === 'boolean')
+              }
+              if (typeof encoding.adaptivePtime === 'boolean') {
                 normalizedEncoding.adaptivePtime = encoding.adaptivePtime
-              if (typeof encoding.priority === 'string')
+              }
+              if (typeof encoding.priority === 'string') {
                 normalizedEncoding.priority = encoding.priority
-              if (typeof encoding.networkPriority === 'string')
+              }
+              if (typeof encoding.networkPriority === 'string') {
                 normalizedEncoding.networkPriority = encoding.networkPriority
+              }
 
               return normalizedEncoding
             })
@@ -721,15 +747,22 @@ export class Transport extends EnhancedEventEmitter {
 
     rtpParameters = utils.clone(rtpParameters, undefined)
 
-    if (this._closed) throw new InvalidStateError('closed')
-    else if (this._direction !== 'recv') throw new UnsupportedError('not a receiving Transport')
-    else if (typeof id !== 'string') throw new TypeError('missing id')
-    else if (typeof producerId !== 'string') throw new TypeError('missing producerId')
-    else if (kind !== 'audio' && kind !== 'video') throw new TypeError(`invalid kind '${kind}'`)
+    if (this._closed) {
+      throw new InvalidStateError('closed')
+    } else if (this._direction !== 'recv') {
+      throw new UnsupportedError('not a receiving Transport')
+    } else if (typeof id !== 'string') {
+      throw new TypeError('missing id')
+    } else if (typeof producerId !== 'string') {
+      throw new TypeError('missing producerId')
+    } else if (kind !== 'audio' && kind !== 'video') {
+      throw new TypeError(`invalid kind '${kind}'`)
+    }
     // else if (this.listenerCount('connect') === 0 && this._connectionState === 'new')
     //   throw new TypeError('no "connect" listener set into this transport');
-    else if (appData && typeof appData !== 'object')
+    else if (appData && typeof appData !== 'object') {
       throw new TypeError('if given, appData must be an object')
+    }
 
     // Enqueue command.
     return this._awaitQueue.push(async () => {
@@ -828,13 +861,17 @@ export class Transport extends EnhancedEventEmitter {
     )
 
     handler.on('@connectionstatechange', (connectionState: ConnectionState) => {
-      if (connectionState === this._connectionState) return
+      if (connectionState === this._connectionState) {
+        return
+      }
 
       Logger.debug(prefix, 'connection state changed to %s', connectionState)
 
       this._connectionState = connectionState
 
-      if (!this._closed) this.safeEmit('connectionstatechange', connectionState)
+      if (!this._closed) {
+        this.safeEmit('connectionstatechange', connectionState)
+      }
     })
   }
 
@@ -842,7 +879,9 @@ export class Transport extends EnhancedEventEmitter {
     producer.on('@close', () => {
       // this._producers.delete(producer.id);
 
-      if (this._closed) return
+      if (this._closed) {
+        return
+      }
 
       Logger.warn(prefix, 'producer 关闭: ', producer.localId)
       // @ts-ignore
@@ -882,7 +921,9 @@ export class Transport extends EnhancedEventEmitter {
     })
 
     producer.on('@getstats', (callback, errback) => {
-      if (this._closed) return errback(new InvalidStateError('closed'))
+      if (this._closed) {
+        return errback(new InvalidStateError('closed'))
+      }
 
       this._handler.getSenderStats(producer.localId).then(callback).catch(errback)
     })
@@ -892,7 +933,9 @@ export class Transport extends EnhancedEventEmitter {
     consumer.on('@close', () => {
       this._consumers.delete(consumer.id)
 
-      if (this._closed) return
+      if (this._closed) {
+        return
+      }
 
       this._awaitQueue
         .push(async () => this._handler.stopReceiving(consumer.localId), 'consumer @close event')
@@ -900,7 +943,9 @@ export class Transport extends EnhancedEventEmitter {
     })
 
     consumer.on('@getstats', (callback, errback) => {
-      if (this._closed) return errback(new InvalidStateError('closed'))
+      if (this._closed) {
+        return errback(new InvalidStateError('closed'))
+      }
 
       this._handler.getReceiverStats(consumer.localId).then(callback).catch(errback)
     })

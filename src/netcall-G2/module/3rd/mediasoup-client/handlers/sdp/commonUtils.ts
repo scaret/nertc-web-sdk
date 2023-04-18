@@ -25,14 +25,18 @@ export function extractRtpCapabilities({ sdpObject }: { sdpObject: any }): RtpCa
 
     switch (kind) {
       case 'audio': {
-        if (gotAudio) continue
+        if (gotAudio) {
+          continue
+        }
 
         gotAudio = true
 
         break
       }
       case 'video': {
-        if (gotVideo) continue
+        if (gotVideo) {
+          continue
+        }
 
         gotVideo = true
 
@@ -63,11 +67,14 @@ export function extractRtpCapabilities({ sdpObject }: { sdpObject: any }): RtpCa
       const parameters = sdpTransform.parseParams(fmtp.config)
       const codec = codecsMap.get(fmtp.payload)
 
-      if (!codec) continue
+      if (!codec) {
+        continue
+      }
 
       // Specials case to convert parameter value to string.
-      if (parameters && parameters.hasOwnProperty('profile-level-id'))
+      if (parameters && parameters.hasOwnProperty('profile-level-id')) {
         parameters['profile-level-id'] = String(parameters['profile-level-id'])
+      }
 
       codec.parameters = parameters
     }
@@ -76,14 +83,18 @@ export function extractRtpCapabilities({ sdpObject }: { sdpObject: any }): RtpCa
     for (const fb of m.rtcpFb || []) {
       const codec = codecsMap.get(fb.payload)
 
-      if (!codec) continue
+      if (!codec) {
+        continue
+      }
 
       const feedback: RtcpFeedback = {
         type: fb.type,
         parameter: fb.subtype
       }
 
-      if (!feedback.parameter) delete feedback.parameter
+      if (!feedback.parameter) {
+        delete feedback.parameter
+      }
 
       codec.rtcpFeedback!.push(feedback)
     }
@@ -91,7 +102,9 @@ export function extractRtpCapabilities({ sdpObject }: { sdpObject: any }): RtpCa
     // Get RTP header extensions.
     for (const ext of m.ext || []) {
       // Ignore encrypted extensions (not yet supported in mediasoup).
-      if (ext['encrypt-uri']) continue
+      if (ext['encrypt-uri']) {
+        continue
+      }
 
       const headerExtension: RtpHeaderExtension = {
         kind: kind,
@@ -156,7 +169,9 @@ export function getCname({ offerMediaObject }: { offerMediaObject: any }): strin
     (line: { attribute: string }) => line.attribute === 'cname'
   )
 
-  if (!ssrcCnameLine) return ''
+  if (!ssrcCnameLine) {
+    return ''
+  }
 
   return ssrcCnameLine.value
 }
@@ -176,13 +191,17 @@ export function applyCodecParameters({
     const mimeType = codec.mimeType.toLowerCase()
 
     // Avoid parsing codec parameters for unhandled codecs.
-    if (mimeType !== 'audio/opus') continue
+    if (mimeType !== 'audio/opus') {
+      continue
+    }
 
     const rtp = (answerMediaObject.rtp || []).find(
       (r: { payload: number }) => r.payload === codec.payloadType
     )
 
-    if (!rtp) continue
+    if (!rtp) {
+      continue
+    }
 
     // Just in case.
     answerMediaObject.fmtp = answerMediaObject.fmtp || []
@@ -202,7 +221,9 @@ export function applyCodecParameters({
       case 'audio/opus': {
         const spropStereo = codec.parameters['sprop-stereo']
 
-        if (spropStereo !== undefined) parameters.stereo = spropStereo ? 1 : 0
+        if (spropStereo !== undefined) {
+          parameters.stereo = spropStereo ? 1 : 0
+        }
 
         break
       }
@@ -212,7 +233,9 @@ export function applyCodecParameters({
     fmtp.config = ''
 
     for (const key of Object.keys(parameters)) {
-      if (fmtp.config) fmtp.config += ';'
+      if (fmtp.config) {
+        fmtp.config += ';'
+      }
 
       fmtp.config += `${key}=${parameters[key]}`
     }
