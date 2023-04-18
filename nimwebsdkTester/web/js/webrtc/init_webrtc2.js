@@ -609,6 +609,35 @@ function initEvents() {
     console.warn('收到自定义消息: ', data)
     addLog(`${data.uid} 发送自定义消息 ${data.customData}`)
   })
+
+  rtc.client.on('@media-stats-change', (evt)=>{
+    evt.data.forEach((stats)=>{
+      const $elem = $(`#codecImplementation_${stats.mediaType}`)
+      const $elemType = $(`#codecImplementationType_${stats.mediaType}`)
+      if (stats.new && stats.new.CodecImplementationName) {
+        if ($elem.text() !== stats.new.CodecImplementationName) {
+          $elem.text(stats.new.CodecImplementationName)
+          if (stats.new.CodecImplementationName === 'unknown'){
+            $elemType.text('')
+          } else if (stats.new.CodecImplementationName === 'OpenH264'){
+            $elemType.text('软编')
+          } else if (stats.new.CodecImplementationName === 'ExternalEncoder' || stats.new.CodecImplementationName === 'VideoToolbox' || stats.new.CodecImplementationName === 'MediaFoundationVideoEncodeAccelerator'){
+            $elemType.text('硬编')
+          } else{
+            $$elemType.html(`<span style="color:red">未知</span>`)
+          }
+        }
+      } else {
+        if ($elem.text() !== ''){
+          $elem.text('')
+        }
+        if ($elemType.text()) {
+          $elemType.text('')
+        }
+      }
+    })
+  })
+
   rtc.client.on('peer-online', (evt) => {
     console.warn(`${evt.uid} 加入房间`)
     addLog(`${evt.uid} 加入房间`)
@@ -3167,11 +3196,8 @@ $('#playCameraSource').on('click', () => {
 $('#playCamera').on('click', () => {
   openCamera()
 })
-$('#playCameraOnly').on('click', () => {
-  openCamera(false)
-})
 
-function openCamera(enableMediaPub) {
+function openCamera() {
   console.warn('打开摄像头')
   if (!rtc.localStream) {
     assertLocalStream()
@@ -3199,7 +3225,7 @@ function openCamera(enableMediaPub) {
       type: 'video',
       deviceId: $('#camera').val(),
       facingMode: $('#cameraFacingMode').val(),
-      enableMediaPub
+      enableMediaPub: $('#enableMediaPub').prop('checked')
     })
     .then(async () => {
       console.log('打开摄像头 sucess')
@@ -3263,11 +3289,8 @@ $('#playMicroSource').on('click', () => {
 $('#playMicro').on('click', () => {
   openMicro()
 })
-$('#playMicroOnly').on('click', () => {
-  openMicro(false)
-})
 
-function openMicro(enableMediaPub) {
+function openMicro() {
   console.warn('打开mic')
   if (!rtc.localStream) {
     assertLocalStream()
@@ -3279,7 +3302,7 @@ function openMicro(enableMediaPub) {
     .open({
       type: 'audio',
       deviceId: $('#micro').val(),
-      enableMediaPub
+      enableMediaPub: $('#enableMediaPub').prop('checked')
     })
     .then(() => {
       console.log('打开mic sucess')
@@ -3339,7 +3362,7 @@ $('#playScreenSource').on('click', () => {
       console.log('打开自定义辅流 失败: ', err)
     })
 })
-function openScreen(enableMediaPub) {
+function openScreen() {
   console.warn('打开屏幕共享')
   if (!rtc.localStream) {
     assertLocalStream()
@@ -3366,7 +3389,7 @@ function openScreen(enableMediaPub) {
     .open({
       type: 'screen',
       sourceId: getUrlVars().sourceId,
-      enableMediaPub
+      enableMediaPub: $('#enableMediaPub').prop('checked')
     })
     .then(async () => {
       await rtc.localStream.play(document.getElementById('local-container'))
@@ -3380,9 +3403,7 @@ function openScreen(enableMediaPub) {
 $('#playScreen').on('click', () => {
   openScreen()
 })
-$('#playScreenOnly').on('click', () => {
-  openScreen(false)
-})
+
 $('#playScreenOff').on('click', () => {
   console.warn('关闭屏幕共享')
   if (!rtc.localStream) {
@@ -3436,7 +3457,7 @@ $('#playScreenAudioSource').on('click', () => {
       console.log('打开自定义辅流音频 失败: ', err)
     })
 })
-function openScreenAudio(enableMediaPub) {
+function openScreenAudio() {
   console.warn('打开屏幕共享+音频')
   if (!rtc.localStream) {
     assertLocalStream()
@@ -3464,7 +3485,7 @@ function openScreenAudio(enableMediaPub) {
       type: 'screen',
       screenAudio: true,
       sourceId: getUrlVars().sourceId,
-      enableMediaPub
+      enableMediaPub: $('#enableMediaPub').prop('checked')
     })
     .then(async () => {
       await rtc.localStream.play(document.getElementById('local-container'))
@@ -3477,9 +3498,6 @@ function openScreenAudio(enableMediaPub) {
 }
 $('#playScreenAudio').on('click', () => {
   openScreenAudio()
-})
-$('#playScreenAudioOnly').on('click', () => {
-  openScreenAudio(false)
 })
 $('#playScreenAudioOff').on('click', () => {
   console.warn('关闭屏幕共享音频')

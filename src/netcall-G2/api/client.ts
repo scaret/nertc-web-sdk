@@ -174,7 +174,7 @@ class Client extends Base {
     })
     this.on('@media-stats-change', (evt: MediaStatsChangeEvt) => {
       let codecHasChanged = false
-      let param: any = {}
+      let param: any = { profile: getCurrentProfileLevel() }
       evt.data.forEach((evt) => {
         if (evt.mediaType === 'video' || evt.mediaType === 'screen') {
           if (evt.new?.CodecImplementationName) {

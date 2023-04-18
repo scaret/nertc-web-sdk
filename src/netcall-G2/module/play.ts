@@ -176,9 +176,11 @@ class Play extends EventEmitter {
 
         if (width !== mediaSettings.size.width || height !== mediaSettings.size.height) {
           this.logger.log(
-            `[Play] 主流视频分辨率发生变化：${mediaSettings.size.width}x${
+            `[Play] 视频分辨率发生变化：${mediaType} ${mediaSettings.size.width}x${
               mediaSettings.size.height
-            } => ${width}x${height}。当前父节点：${getDomInfo(mediaSettings.view)}`
+            } => ${width}x${height}。当前父节点：${getDomInfo(mediaSettings.view)}${
+              mediaSettings.size.width < 4 ? ' 首帧' : ''
+            }`
           )
           if (
             (width > height && mediaSettings.size.width > mediaSettings.size.height) ||
