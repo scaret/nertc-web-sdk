@@ -609,6 +609,35 @@ function initEvents() {
     console.warn('收到自定义消息: ', data)
     addLog(`${data.uid} 发送自定义消息 ${data.customData}`)
   })
+
+  rtc.client.on('@media-stats-change', (evt)=>{
+    evt.data.forEach((stats)=>{
+      const $elem = $(`#codecImplementation_${stats.mediaType}`)
+      const $elemType = $(`#codecImplementationType_${stats.mediaType}`)
+      if (stats.new && stats.new.CodecImplementationName) {
+        if ($elem.text() !== stats.new.CodecImplementationName) {
+          $elem.text(stats.new.CodecImplementationName)
+          if (stats.new.CodecImplementationName === 'unknown'){
+            $elemType.text('')
+          } else if (stats.new.CodecImplementationName === 'OpenH264'){
+            $elemType.text('软编')
+          } else if (stats.new.CodecImplementationName === 'ExternalEncoder' || stats.new.CodecImplementationName === 'VideoToolbox' || stats.new.CodecImplementationName === 'MediaFoundationVideoEncodeAccelerator'){
+            $elemType.text('硬编')
+          } else{
+            $$elemType.html(`<span style="color:red">未知</span>`)
+          }
+        }
+      } else {
+        if ($elem.text() !== ''){
+          $elem.text('')
+        }
+        if ($elemType.text()) {
+          $elemType.text('')
+        }
+      }
+    })
+  })
+
   rtc.client.on('peer-online', (evt) => {
     console.warn(`${evt.uid} 加入房间`)
     addLog(`${evt.uid} 加入房间`)
