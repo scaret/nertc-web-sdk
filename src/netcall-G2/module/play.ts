@@ -179,7 +179,7 @@ class Play extends EventEmitter {
             `[Play] 视频分辨率发生变化：${mediaType} ${mediaSettings.size.width}x${
               mediaSettings.size.height
             } => ${width}x${height}。当前父节点：${getDomInfo(mediaSettings.view)}${
-              mediaSettings.size.width < 4 ? ' 首帧' : ''
+              mediaSettings.size.width < 4 ? ' 首帧渲染' : ''
             }`
           )
           if (
