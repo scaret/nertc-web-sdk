@@ -624,7 +624,7 @@ function initEvents() {
           } else if (stats.new.CodecImplementationName === 'ExternalEncoder' || stats.new.CodecImplementationName === 'VideoToolbox' || stats.new.CodecImplementationName === 'MediaFoundationVideoEncodeAccelerator'){
             $elemType.text('硬编')
           } else{
-            $$elemType.html(`<span style="color:red">未知</span>`)
+            $elemType.html(`<span style="color:red">未知</span>`)
           }
         }
       } else {
