@@ -82,6 +82,9 @@ export default class VideoPostProcess extends EventEmitter {
   constructor(logger: ILogger) {
     super()
     this.logger = logger
+  }
+
+  init() {
     try {
       this.filters = new Filters()
       const canvas = this.filters.canvas
