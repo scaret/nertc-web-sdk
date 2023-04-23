@@ -692,7 +692,7 @@ class LocalStream extends RTCEventEmitter {
   }
 
   initVideoPostProcess() {
-    this.videoPostProcess.init()
+    this.videoPostProcess?.init()
   }
 
   /**
