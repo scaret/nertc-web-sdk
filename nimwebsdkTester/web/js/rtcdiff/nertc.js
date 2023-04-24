@@ -1150,4 +1150,22 @@ function startNERTC() {
     console.warn(`切换H264 Profile Level：${WebRTC2.getParameters().h264ProfileLevel} => ${val}`)
     WebRTC2.getParameters().h264ProfileLevel = val
   })
+
+
+  let encoder = {
+    video: {encoderImplementation: 'unknown', cnt: 0},
+    screen: {encoderImplementation: 'unknown', cnt: 0},
+  }
+
+  rtc.client.on('@media-stats-change', (evt)=>{
+    evt.data.forEach((stats)=>{
+      const $elem = $(`#encoderImplementation_${stats.mediaType}`)
+      if (stats.new && stats.new.CodecImplementationName && stats.new.CodecImplementationName !== encoder[stats.mediaType].encoderImplementation) {
+        console.log(`encoderImplementation Changed ${stats.mediaType} ${encoder[stats.mediaType].encoderImplementation} => ${stats.new.CodecImplementationName}`)
+        encoder[stats.mediaType].encoderImplementation = stats.new.CodecImplementationName
+        encoder[stats.mediaType].cnt++
+        $elem.text(`${stats.new.CodecImplementationName}(${encoder[stats.mediaType].cnt})`)
+      }
+    })
+  })
 }

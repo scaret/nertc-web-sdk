@@ -1022,5 +1022,31 @@ function startAGORA() {
     await document.requestFullscreen()
   })
 
+  let encoder = {
+    video: {encoderImplementation: 'unknown', cnt: 0},
+    screen: {encoderImplementation: 'unknown', cnt: 0},
+  }
+  setInterval(()=>{
+    ['video', 'screen'].forEach((mediaType)=>{
+      report = null
+      if (mediaType === 'video') {
+        report = rtc.client._p2pChannel.connection?.statsFilter.report
+      } else if (mediaType === 'screen') {
+        report = rtc.clientScreen._p2pChannel.connection?.statsFilter.report
+      }
+      if (report) {
+        report.forEach((stats)=>{
+          if (stats.encoderImplementation) {
+            if (stats.encoderImplementation !== encoder[mediaType].encoderImplementation) {
+              console.log(`encoderImplementation Changed ${mediaType} ${encoder[mediaType].encoderImplementation} => ${stats.encoderImplementation}`)
+              encoder[mediaType].encoderImplementation = stats.encoderImplementation
+              encoder[mediaType].cnt++
+              $('#encoderImplementation_' + mediaType).text(`${stats.encoderImplementation}(${encoder[mediaType].cnt})`)
+            }
+          }
+        })
+      }
+    })
+  }, 1000)
   //
 }
