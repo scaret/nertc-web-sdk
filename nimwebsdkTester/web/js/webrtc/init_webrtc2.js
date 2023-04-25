@@ -610,25 +610,29 @@ function initEvents() {
     addLog(`${data.uid} 发送自定义消息 ${data.customData}`)
   })
 
-  rtc.client.on('@media-stats-change', (evt)=>{
-    evt.data.forEach((stats)=>{
+  rtc.client.on('@media-stats-change', (evt) => {
+    evt.data.forEach((stats) => {
       const $elem = $(`#codecImplementation_${stats.mediaType}`)
       const $elemType = $(`#codecImplementationType_${stats.mediaType}`)
       if (stats.new && stats.new.CodecImplementationName) {
         if ($elem.text() !== stats.new.CodecImplementationName) {
           $elem.text(stats.new.CodecImplementationName)
-          if (stats.new.CodecImplementationName === 'unknown'){
+          if (stats.new.CodecImplementationName === 'unknown') {
             $elemType.text('')
-          } else if (stats.new.CodecImplementationName === 'OpenH264'){
+          } else if (stats.new.CodecImplementationName === 'OpenH264') {
             $elemType.text('软编')
-          } else if (stats.new.CodecImplementationName === 'ExternalEncoder' || stats.new.CodecImplementationName === 'VideoToolbox' || stats.new.CodecImplementationName === 'MediaFoundationVideoEncodeAccelerator'){
+          } else if (
+            stats.new.CodecImplementationName === 'ExternalEncoder' ||
+            stats.new.CodecImplementationName === 'VideoToolbox' ||
+            stats.new.CodecImplementationName === 'MediaFoundationVideoEncodeAccelerator'
+          ) {
             $elemType.text('硬编')
-          } else{
+          } else {
             $elemType.html(`<span style="color:red">未知</span>`)
           }
         }
       } else {
-        if ($elem.text() !== ''){
+        if ($elem.text() !== '') {
           $elem.text('')
         }
         if ($elemType.text()) {
@@ -1419,8 +1423,10 @@ function updateRemoteViewInfo() {
   }
 
   let signalStatesArr = Object.values(rtc.client.adapterRef.signalProbeManager.signalStates)
-  signalStatesArr = signalStatesArr.sort((a, b)=>{return a.index - b.index})
-  signalStatesArr.forEach((signalState)=>{
+  signalStatesArr = signalStatesArr.sort((a, b) => {
+    return a.index - b.index
+  })
+  signalStatesArr.forEach((signalState) => {
     const elemId = `signalState-${signalState.index}`
     if (!$(`#${elemId}`).length) {
       let li = `<li id="${elemId}">#${signalState.index} `
@@ -1428,7 +1434,7 @@ function updateRemoteViewInfo() {
       li += `rtt:<span id="${elemId}-rtt"${signalState.ping.rtt}></span>ms`
       li += `<span id="${elemId}-select"></span></li>`
       $('#probeStatus').append(li)
-      document.getElementById(`${elemId}-disable`).onclick = ()=>{
+      document.getElementById(`${elemId}-disable`).onclick = () => {
         rtc.client.adapterRef.signalProbeManager.worker.postMessage({
           cmd: 'debug',
           data: {
@@ -1438,7 +1444,7 @@ function updateRemoteViewInfo() {
           }
         })
       }
-      document.getElementById(`${elemId}-enable`).onclick = ()=>{
+      document.getElementById(`${elemId}-enable`).onclick = () => {
         rtc.client.adapterRef.signalProbeManager.worker.postMessage({
           cmd: 'debug',
           data: {
@@ -1449,12 +1455,17 @@ function updateRemoteViewInfo() {
         })
       }
     }
-    if ($(`#${elemId}`).attr('title') !== signalState.wsUrl){
+    if ($(`#${elemId}`).attr('title') !== signalState.wsUrl) {
       $(`#${elemId}`).attr('title', signalState.wsUrl)
     }
     $(`#${elemId}-rtt`).text(signalState.ping.rtt)
-    if (rtc.client.adapterRef._signalling && rtc.client.adapterRef._signalling._url.indexOf(signalState.wsUrl) > -1){
-      $(`#${elemId}-select`).text(`*${rtc.client.adapterRef.signalProbeManager.serverActiveWaiters.length ? ' PAUSED': ''}`)
+    if (
+      rtc.client.adapterRef._signalling &&
+      rtc.client.adapterRef._signalling._url.indexOf(signalState.wsUrl) > -1
+    ) {
+      $(`#${elemId}-select`).text(
+        `*${rtc.client.adapterRef.signalProbeManager.serverActiveWaiters.length ? ' PAUSED' : ''}`
+      )
     } else {
       $(`#${elemId}-select`).text('')
     }
@@ -3210,6 +3221,9 @@ $('#setAudioOutput').on('click', () => {
  * ----------------------------------------
  */
 $('#playCameraSource').on('click', () => {
+  playCameraSource()
+})
+function playCameraSource() {
   console.warn('打开自定义摄像头')
   if (!rtc.localStream) {
     assertLocalStream()
@@ -3223,7 +3237,8 @@ $('#playCameraSource').on('click', () => {
   rtc.localStream
     .open({
       type: 'video',
-      videoSource: rtc.videoSource
+      videoSource: rtc.videoSource,
+      enableMediaPub: $('#enableMediaPub').prop('checked')
     })
     .then(async () => {
       console.log('打开摄像头 sucess')
@@ -3234,7 +3249,7 @@ $('#playCameraSource').on('click', () => {
       addLog('打开摄像头' + err)
       console.log('打开摄像头 失败: ', err)
     })
-})
+}
 $('#playCamera').on('click', () => {
   openCamera()
 })
@@ -3300,6 +3315,9 @@ $('#playCameraOff').on('click', () => {
 })
 
 $('#playMicroSource').on('click', () => {
+  playMicroSource()
+})
+function playMicroSource() {
   console.warn('打开自定义音频')
   if (!rtc.localStream) {
     assertLocalStream()
@@ -3315,7 +3333,8 @@ $('#playMicroSource').on('click', () => {
   rtc.audioSource.enabled = true
   let openOptions = {
     type: 'audio',
-    audioSource: rtc.audioSource
+    audioSource: rtc.audioSource,
+    enableMediaPub: $('#enableMediaPub').prop('checked')
   }
   console.log('openOptions', openOptions)
   rtc.localStream
@@ -3327,7 +3346,7 @@ $('#playMicroSource').on('click', () => {
       addLog('打开自定义音频 失败: ' + err)
       console.log('打开自定义音频 失败: ', err)
     })
-})
+}
 $('#playMicro').on('click', () => {
   openMicro()
 })
@@ -3377,6 +3396,9 @@ $('#playMicroOff').on('click', () => {
 })
 
 $('#playScreenSource').on('click', () => {
+  playScreenSource()
+})
+function playScreenSource() {
   console.warn('打开自定义辅流')
   if (!rtc.localStream) {
     assertLocalStream()
@@ -3389,7 +3411,8 @@ $('#playScreenSource').on('click', () => {
   rtc.screenVideoSource.enabled = true
   let openOptions = {
     type: 'screen',
-    screenVideoSource: rtc.screenVideoSource
+    screenVideoSource: rtc.screenVideoSource,
+    enableMediaPub: $('#enableMediaPub').prop('checked')
   }
   console.log('openOptions', openOptions)
   rtc.localStream
@@ -3403,7 +3426,7 @@ $('#playScreenSource').on('click', () => {
       addLog('打开自定义辅流 失败: ' + err)
       console.log('打开自定义辅流 失败: ', err)
     })
-})
+}
 function openScreen() {
   console.warn('打开屏幕共享')
   if (!rtc.localStream) {
@@ -3468,6 +3491,9 @@ $('#playScreenOff').on('click', () => {
 /////
 
 $('#playScreenAudioSource').on('click', () => {
+  playScreenAudioSource()
+})
+function playScreenAudioSource() {
   console.warn('打开自定义辅流音频')
   if (!rtc.localStream) {
     assertLocalStream()
@@ -3484,7 +3510,8 @@ $('#playScreenAudioSource').on('click', () => {
   rtc.screenAudioSource.enabled = true
   let openOptions = {
     type: 'screenAudio',
-    screenAudioSource: rtc.screenAudioSource
+    screenAudioSource: rtc.screenAudioSource,
+    enableMediaPub: $('#enableMediaPub').prop('checked')
   }
   console.log('openOptions', openOptions)
   rtc.localStream
@@ -3498,7 +3525,7 @@ $('#playScreenAudioSource').on('click', () => {
       addLog('打开自定义辅流音频 失败: ' + err)
       console.log('打开自定义辅流音频 失败: ', err)
     })
-})
+}
 function openScreenAudio() {
   console.warn('打开屏幕共享+音频')
   if (!rtc.localStream) {
@@ -4999,7 +5026,6 @@ $('#closeSignalProbe').on('click', async () => {
   addLog('===signalProbeEnabled' + NERTC.getParameters().signalProbeEnabled + '=>false')
   NERTC.getParameters().signalProbeEnabled = false
 })
-
 
 $('#openSignalProbe').on('click', async () => {
   addLog('===signalProbeEnabled' + NERTC.getParameters().signalProbeEnabled + '=>true')
