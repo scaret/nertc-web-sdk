@@ -1,4 +1,5 @@
 import rtcTimer from './raw/rtcTimer'
+import signalProbeWorker from './raw/signalProbeWorker'
 import volumeProcessor from './raw/volumeProcessor.js'
 import webWorkerTimer from './raw/webWorkerTimer.js'
 import audioAIProcessor from './raw/audioAIProcessor'
@@ -23,6 +24,11 @@ const moduleMap = {
   audioAIProcessor: {
     blobParts: [audioAIProcessor],
     options: { type: 'text/javascript; charset=utf-8' },
+    url: ''
+  },
+  signalProbeWorker: {
+    blobParts: [signalProbeWorker],
+    options: { type: 'text/js-worker' },
     url: ''
   },
   rtcTimer: {

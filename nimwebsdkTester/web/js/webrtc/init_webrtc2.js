@@ -1417,6 +1417,48 @@ function updateRemoteViewInfo() {
       $('#reconnectionCnt').text(info)
     }
   }
+
+  let signalStatesArr = Object.values(rtc.client.adapterRef.signalProbeManager.signalStates)
+  signalStatesArr = signalStatesArr.sort((a, b)=>{return a.index - b.index})
+  signalStatesArr.forEach((signalState)=>{
+    const elemId = `signalState-${signalState.index}`
+    if (!$(`#${elemId}`).length) {
+      let li = `<li id="${elemId}">#${signalState.index} `
+      li += `[<a id="${elemId}-disable" href="#">禁用</a>][<a id="${elemId}-enable" href="#">启用</a>]`
+      li += `rtt:<span id="${elemId}-rtt"${signalState.ping.rtt}></span>ms`
+      li += `<span id="${elemId}-select"></span></li>`
+      $('#probeStatus').append(li)
+      document.getElementById(`${elemId}-disable`).onclick = ()=>{
+        rtc.client.adapterRef.signalProbeManager.worker.postMessage({
+          cmd: 'debug',
+          data: {
+            type: 'doNotSendPing',
+            index: signalState.index,
+            value: true
+          }
+        })
+      }
+      document.getElementById(`${elemId}-enable`).onclick = ()=>{
+        rtc.client.adapterRef.signalProbeManager.worker.postMessage({
+          cmd: 'debug',
+          data: {
+            type: 'doNotSendPing',
+            index: signalState.index,
+            value: false
+          }
+        })
+      }
+    }
+    if ($(`#${elemId}`).attr('title') !== signalState.wsUrl){
+      $(`#${elemId}`).attr('title', signalState.wsUrl)
+    }
+    $(`#${elemId}-rtt`).text(signalState.ping.rtt)
+    if (rtc.client.adapterRef._signalling && rtc.client.adapterRef._signalling._url.indexOf(signalState.wsUrl) > -1){
+      $(`#${elemId}-select`).text(`*${rtc.client.adapterRef.signalProbeManager.serverActiveWaiters.length ? ' PAUSED': ''}`)
+    } else {
+      $(`#${elemId}-select`).text('')
+    }
+  })
 }
 
 const updateLocalViewInfoTimer = setInterval(updateLocalViewInfo, 500)
@@ -4953,14 +4995,15 @@ $('#removeMostListeners').click(() => {
   DO_NOT_ADD_EVENTS = true
 })
 
-$('#pauseReconnection').on('click', async () => {
-  const info = await rtc.client.pauseReconnection()
-  addLog('===暂停重连' + info && info.reason)
+$('#closeSignalProbe').on('click', async () => {
+  addLog('===signalProbeEnabled' + NERTC.getParameters().signalProbeEnabled + '=>false')
+  NERTC.getParameters().signalProbeEnabled = false
 })
 
-$('#resumeReconnection').on('click', async () => {
-  const info = await rtc.client.resumeReconnection()
-  addLog('===恢复重连' + info && info.reason)
+
+$('#openSignalProbe').on('click', async () => {
+  addLog('===signalProbeEnabled' + NERTC.getParameters().signalProbeEnabled + '=>true')
+  NERTC.getParameters().signalProbeEnabled = true
 })
 
 let urlParams = new URLSearchParams(window.location.search)

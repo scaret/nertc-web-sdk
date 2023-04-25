@@ -67,7 +67,8 @@ class Client extends Base {
   private onJoinFinish: (() => void) | null = null
   public spatialManager: SpatialManager | null = null
   private handlePageUnload: (evt?: any) => void
-  private handleOnOnlineOffline: (evt?: any) => void
+  private handleOnOnline: (evt?: any) => void
+  private handleOnOffline: (evt?: any) => void
   constructor(options: ClientOptions) {
     super(options)
     this.apiFrequencyControl({
@@ -98,38 +99,24 @@ class Client extends Base {
         this.leave()
       }
     }
-    this.handleOnOnlineOffline = (evt?: any) => {
-      // 测试功能：重连依赖 window.ononline 和 window.onoffline 事件，更快发现断开和连上
-      if (evt?.type === 'online') {
-        if (this.adapterRef.connectState.curState === 'CONNECTING') {
-          //正在重连
-          this.logger.warn('侦测到网络恢复，恢复重连过程')
-          this.resumeReconnection()
-        } else {
-          this.logger.warn('侦测到网络恢复')
-        }
-      } else if (evt?.type === 'offline') {
-        if (this.adapterRef.connectState.curState === 'CONNECTED') {
-          //还没发现网络断开 / 正在重连
-          this.logger.warn('侦测到网络断开，主动断开连接')
-          this.pauseReconnection()
-          this.adapterRef._mediasoup?._sendTransport?.close()
-          this.adapterRef._mediasoup?._recvTransport?.close()
-          this.adapterRef.channelStatus = 'connectioning'
-          this.adapterRef._signalling?._reconnection()
-        } else {
-          this.logger.warn('侦测到网络断开')
-        }
+    this.handleOnOnline = (evt?: any) => {
+      const signalMsg: SignalIPCMessage = {
+        cmd: 'onOnline',
+        data: { type: evt.type }
       }
+      this.adapterRef.signalProbeManager.worker?.postMessage(signalMsg)
     }
+    this.handleOnOffline = (evt?: any) => {}
 
     if (getParameters().leaveOnUnload) {
       window.addEventListener('pagehide', this.handlePageUnload)
       window.addEventListener('beforeunload', this.handlePageUnload)
     }
     if (getParameters().trustOnOnline) {
-      window.addEventListener('online', this.handleOnOnlineOffline)
-      window.addEventListener('offline', this.handleOnOnlineOffline)
+      window.addEventListener('online', this.handleOnOnline)
+    }
+    if (getParameters().trustOnOffline) {
+      window.addEventListener('offline', this.handleOnOffline)
     }
 
     //typescript constructor requirement
@@ -2184,43 +2171,6 @@ class Client extends Base {
         }
       })
       throw e
-    }
-  }
-
-  async pauseReconnection() {
-    this.logger.log('pauseReconnection：下一次重连行为会被暂停，直到调用resumeReconnection()方法')
-    const info = await new Promise((resolve) => {
-      if (this.adapterRef._signalling) {
-        this.adapterRef._signalling.reconnectionControl.pausers.push(resolve)
-      }
-    })
-    this.logger.log(`pauseReconnection：重连已被暂停：${JSON.stringify(info)}`)
-    return info
-  }
-
-  async resumeReconnection() {
-    if (this.adapterRef._signalling) {
-      if (this.adapterRef._signalling.reconnectionControl.blocker) {
-        this.logger.log('resumeReconnection：即将恢复重连过程')
-        this.adapterRef._signalling.reconnectionControl.blocker()
-        this.adapterRef._signalling.reconnectionControl.pausers.forEach((resolve) =>
-          resolve({ reason: 'reconnection-resume' })
-        )
-        this.adapterRef._signalling.reconnectionControl.pausers = []
-      } else if (this.adapterRef._signalling.reconnectionControl.pausers.length) {
-        this.logger.log('resumeReconnection：取消之前的 pauseReconnection 操作。')
-        this.adapterRef._signalling.reconnectionControl.pausers.forEach((resolve) =>
-          resolve({ reason: 'cancelled' })
-        )
-        this.adapterRef._signalling.reconnectionControl.pausers = []
-      } else {
-        this.logger.warn('resumeReconnection：未发现pauseReconnection操作')
-      }
-      const info = await new Promise((resolve) => {
-        this.adapterRef._signalling?.reconnectionControl.resumers.push(resolve)
-      })
-      this.logger.log(`resumeReconnection：恢复重连成功${JSON.stringify(info)}`)
-      return info
     }
   }
 

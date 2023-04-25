@@ -93,10 +93,14 @@ interface IParameters {
   reconnectionFirstTimeout: number
   // 重连行为允许的最大尝试次数（每个服务器）
   reconnectionMaxRetry: number
+  // 是否开启信令通道探测功能
+  signalProbeEnabled: boolean
   // 页面卸载时是否自动调用leave
   leaveOnUnload: boolean
-  // 信任 window.ononline 和 window.onoffline回调
+  // 信任 window.ononline 回调
   trustOnOnline: boolean
+  // 信任  window.onoffline 回调
+  trustOnOffline: boolean
   // 部分浏览器加载编解码器需要时间。如果浏览器不支持H264，则等待多少毫秒
   h264Wait: number
   // 编码水印字体
@@ -203,8 +207,10 @@ let parameters: IParameters = {
   joinMaxRetry: 3,
   reconnectionFirstTimeout: 2000,
   reconnectionMaxRetry: 3,
+  signalProbeEnabled: true,
   leaveOnUnload: true,
-  trustOnOnline: false,
+  trustOnOnline: true,
+  trustOnOffline: false,
   h264Wait: 1000,
   encoderWatermarkLimit: 1,
   encoderWatermarkFontFamily: 'Verdana',

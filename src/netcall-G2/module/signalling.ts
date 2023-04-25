@@ -45,16 +45,10 @@ class Signalling extends EventEmitter {
     current: SignalingConnectionConfig | null
     next: SignalingConnectionConfig | null
     copynext: SignalingConnectionConfig | null //这里实时存储备份一下next的重连参数，在ice断开重连时用到
-    blocker: any
-    pausers: ((info: any) => void)[]
-    resumers: ((info: any) => void)[]
   } = {
     current: null,
     next: null,
-    copynext: null,
-    blocker: null,
-    pausers: [],
-    resumers: []
+    copynext: null
   }
   public autoMask: {
     timer: Timer | null
@@ -114,7 +108,8 @@ class Signalling extends EventEmitter {
   init(isReconnect: boolean, isReconnectMeeting: boolean) {
     if (this._reconnectionTimer) return Promise.resolve()
 
-    return new Promise((resolve, reject) => {
+    // eslint-disable-next-line no-async-promise-executor
+    return new Promise(async (resolve, reject) => {
       if (!isReconnect) {
         this._resolve = resolve
       }
@@ -122,7 +117,7 @@ class Signalling extends EventEmitter {
         this._reject = reject
       }
 
-      const connConfig: SignalingConnectionConfig = this.reconnectionControl.next || {
+      let connConfig: SignalingConnectionConfig = this.reconnectionControl.next || {
         timeout: isReconnectMeeting
           ? getParameters().reconnectionFirstTimeout
           : getParameters().joinFirstTimeout,
@@ -130,8 +125,52 @@ class Signalling extends EventEmitter {
         serverIndex: 0,
         times: isReconnectMeeting ? 1 : 0,
         isJoinRetry: isReconnect,
-        isReconnection: isReconnectMeeting
+        isReconnection: isReconnectMeeting,
+        isLastTry: false
       }
+      if (
+        isReconnectMeeting &&
+        this.adapterRef.signalProbeManager.online !== 'unknown' &&
+        this.adapterRef.signalProbeManager.getActiveServerCount().cnt === 0
+      ) {
+        const timeout = 10000
+        this.logger.warn(`目前所有服务端不在线，判断为网络断开。等待服务端起上线或 ${timeout}ms`)
+        const reason = await this.adapterRef.signalProbeManager.waitForServerActive(timeout)
+        this.logger.warn(`恢复重连过程。reason:${reason}`)
+      }
+      for (let i = 0; i < 6; i++) {
+        // 最多跳过六次，或遇到当前服务器的最后一次重试
+        const serverState = this.adapterRef.signalProbeManager.getServerState(connConfig.url)
+        if (!serverState || connConfig.isLastTry) {
+          // 目前的服务器不在探测范围，或当前服务器是最后一次重试
+          break
+        } else if (this.adapterRef.signalProbeManager.getActiveServerCount().cnt > 0) {
+          if (!serverState.active) {
+            // 有可用的服务器、并且当前服务器不可用
+            this.logger.error(
+              `重连跳过：当前服务器不可用：${connConfig.url} ${connConfig.serverIndex + 1}/${
+                this.adapterRef.channelInfo.wssArr.length
+              } ${connConfig.timeout}ms`
+            )
+            connConfig = this._getNextConnConfig(connConfig)
+          } else if (serverState.ping.rtt * 2 > connConfig.timeout) {
+            // 有可用的服务器、并且当前服务器rtt不符合条件
+            // 实际上至少需要4倍的rtt时间（http 1.1 Upgrade 3rtt，Join消息 1rtt），但这里保守起见仅设置2倍rtt
+            this.logger.warn(
+              `重连跳过：当前服务器rtt过长：${connConfig.url} ${connConfig.serverIndex + 1}/${
+                this.adapterRef.channelInfo.wssArr.length
+              } timeout: ${connConfig.timeout}ms, rtt x2: ${serverState.ping.rtt}x2=${
+                serverState.ping.rtt * 2
+              }ms`
+            )
+            connConfig = this._getNextConnConfig(connConfig)
+          } else {
+            // 就用当前服务器
+            break
+          }
+        }
+      }
+
       this.adapterRef.channelInfo.wssArrIndex = connConfig.serverIndex
       if (isReconnect) {
         if (isReconnectMeeting) {
@@ -167,27 +206,7 @@ class Signalling extends EventEmitter {
       this._init(connConfig.url)
 
       //开始安排下一次重连的设置
-      let nextConnConfig = Object.assign({}, connConfig)
-      if (!connConfig.times) {
-        nextConnConfig.times = 1
-        nextConnConfig.serverIndex = 1 //首次重连的场景下，next记录下个websocket服务器地址，不记录第一个
-      } else {
-        nextConnConfig.serverIndex++
-      }
-      if (nextConnConfig.serverIndex >= this.adapterRef.channelInfo.wssArr.length) {
-        nextConnConfig.times++
-        nextConnConfig.serverIndex = 0
-      }
-      if (isReconnect) {
-        nextConnConfig.timeout =
-          getParameters().joinFirstTimeout + (nextConnConfig.times - 1) * 2000
-      } else if (isReconnectMeeting) {
-        nextConnConfig.timeout =
-          getParameters().reconnectionFirstTimeout + (nextConnConfig.times - 1) * 2000
-      }
-      nextConnConfig.isJoinRetry = isReconnect
-      nextConnConfig.isReconnection = isReconnectMeeting
-      nextConnConfig.url = this.adapterRef.channelInfo.wssArr[nextConnConfig.serverIndex]
+      let nextConnConfig = this._getNextConnConfig(connConfig)
       this.reconnectionControl.next = this.reconnectionControl.copynext = nextConnConfig
       if (this._reconnectionTimer) {
         clearTimeout(this._reconnectionTimer)
@@ -207,6 +226,39 @@ class Signalling extends EventEmitter {
         }
       }, nextConnConfig.timeout)
     })
+  }
+
+  _getNextConnConfig(current: SignalingConnectionConfig): SignalingConnectionConfig {
+    let nextConnConfig = Object.assign({}, current)
+    if (!current.times) {
+      nextConnConfig.times = 1
+      nextConnConfig.serverIndex = 1 //首次重连的场景下，next记录下个websocket服务器地址，不记录第一个
+    } else {
+      nextConnConfig.serverIndex++
+    }
+    if (nextConnConfig.serverIndex >= this.adapterRef.channelInfo.wssArr.length) {
+      nextConnConfig.times++
+      nextConnConfig.serverIndex = 0
+    }
+    if (current.isJoinRetry) {
+      nextConnConfig.timeout = getParameters().joinFirstTimeout + (nextConnConfig.times - 1) * 2000
+    } else if (current.isReconnection) {
+      nextConnConfig.timeout =
+        getParameters().reconnectionFirstTimeout + (nextConnConfig.times - 1) * 2000
+    }
+    nextConnConfig.isJoinRetry = current.isJoinRetry
+    nextConnConfig.isReconnection = current.isReconnection
+    if (nextConnConfig.isJoinRetry && nextConnConfig.times >= getParameters().joinMaxRetry) {
+      nextConnConfig.isLastTry = true
+    }
+    if (
+      nextConnConfig.isReconnection &&
+      nextConnConfig.times >= getParameters().reconnectionMaxRetry
+    ) {
+      nextConnConfig.isLastTry = true
+    }
+    nextConnConfig.url = this.adapterRef.channelInfo.wssArr[nextConnConfig.serverIndex]
+    return nextConnConfig
   }
 
   async _connection() {
@@ -263,17 +315,6 @@ class Signalling extends EventEmitter {
         netStatus.downlinkNetworkQuality = 0
       })
       this.adapterRef.instance.safeEmit('network-quality', this.adapterRef.netStatusList)
-    }
-
-    if (this.reconnectionControl.pausers.length) {
-      this.logger.log(`重连过程暂停`)
-      this.reconnectionControl.pausers.forEach((resolve) =>
-        resolve({ reason: 'reconnection-start' })
-      )
-      this.reconnectionControl.pausers = []
-      await new Promise((resolve) => {
-        this.reconnectionControl.blocker = resolve
-      })
     }
 
     for (let uid in this.adapterRef.remoteStreamMap) {
@@ -1003,7 +1044,12 @@ class Signalling extends EventEmitter {
       let thisProtoo = this._protoo
       try {
         const start = Date.now()
-        response = (await this._protoo?.request('Join', requestData)) as SignalJoinRes
+        const joinPromise = this._protoo?.request('Join', requestData)
+        //为了不阻塞Join流程，信令探测服务在Join消息发出后再启动
+        if (!this.adapterRef.signalProbeManager.worker && getParameters().signalProbeEnabled) {
+          this.adapterRef.signalProbeManager.start(this.adapterRef.channelInfo.wssArr)
+        }
+        response = (await joinPromise) as SignalJoinRes
         this.adapterRef.state.signalJoinResTime = Date.now()
         this.adapterRef.state.signalJoinMsgRtt = this.adapterRef.state.signalJoinResTime - start
       } catch (e: any) {
@@ -1376,12 +1422,6 @@ class Signalling extends EventEmitter {
       } else {
         // 重连成功
         this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-success')
-        if (this.reconnectionControl.resumers.length) {
-          this.reconnectionControl.resumers.forEach((resolve) =>
-            resolve({ reason: 'reconnection-success' })
-          )
-          this.reconnectionControl.resumers = []
-        }
       }
       this.doSendKeepAliveTask()
     } catch (e: any) {
