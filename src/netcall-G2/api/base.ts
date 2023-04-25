@@ -35,6 +35,7 @@ import * as env from '../util/rtcUtil/rtcEnvironment'
 import { SignalGetChannelInfoResponse } from '../interfaces/SignalProtocols'
 import { loglevels } from '../util/log/loglevels'
 import { generateUUID, randomString } from '../util/rtcUtil/utils'
+import { SignalProbeManager } from '../module/signalProbeManager/signalProbeManager'
 
 let clientCnt = 0
 
@@ -199,12 +200,14 @@ class Base extends RTCEventEmitter {
         type: 3
       },
       encryption: undefined as unknown as any,
+      signalProbeManager: undefined as unknown as any,
       isAudioBanned: false,
       isVideoBanned: false,
       permKeyInfo: undefined
     }
     this.adapterRef.mediaCapability = new MediaCapability(this.adapterRef)
     this.adapterRef.encryption = new Encryption(this.adapterRef)
+    this.adapterRef.signalProbeManager = new SignalProbeManager(this.adapterRef)
 
     this._resetState() // 内部状态对象
     this.adapterRef.lbsManager = new LBSManager(this as unknown as ICLient)
@@ -281,6 +284,8 @@ class Base extends RTCEventEmitter {
       this.recordManager.record.destroy()
       this.recordManager.record = null
     }
+
+    this.adapterRef.signalProbeManager.stop()
   }
 
   _resetState() {

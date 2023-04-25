@@ -1034,12 +1034,15 @@
             <button type="button" id="disconnectWS">断开WebSocket</button>
           </div>
           <div class="line">
-            <button id="pauseReconnection">暂停下次重连</button>
-            <button id="resumeReconnection">恢复重连</button>
-          </div>
-          <div class="line">
             <input id="reconnectionMaxRetry" value="3" style="width: 33%">
             <button id="setReconnectionMaxRetry">设置重连次数</button>
+          </div>
+          <div class="line">
+            <button id="closeSignalProbe">关闭探测</button>
+            <button id="openSignalProbe">打开探测</button>
+          </div>
+          <div class="line">
+            <ul id="probeStatus"></ul>
           </div>
         </div>
 

@@ -19,10 +19,12 @@ import { CanvasWatermarkControl } from './module/watermark/CanvasWatermarkContro
 import { EncoderWatermarkControl } from './module/watermark/EncoderWatermarkControl'
 import { SimpleBig } from './util/json-big/SimpleBig'
 import { STREAM_TYPE } from '../../docs/src/types'
+import { SignalProbeManager } from './module/signalProbeManager/signalProbeManager'
 
 type UIDTYPE = number | string
 
 export interface AdapterRef {
+  signalProbeManager: SignalProbeManager
   datareportCache: { func: string; datareport: DataReport }[]
   audioAsl: {
     enabled: 'yes' | 'no' | 'unknown'
@@ -1026,6 +1028,7 @@ export interface SignalingConnectionConfig {
   times: number
   isJoinRetry: boolean
   isReconnection: boolean
+  isLastTry: boolean
 }
 
 export interface WatermarkSetting {
