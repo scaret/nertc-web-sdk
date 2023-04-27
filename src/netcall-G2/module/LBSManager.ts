@@ -124,6 +124,9 @@ export class LBSManager {
    * 向LBS发起请求，更新域名配置，并存储在localStorage
    */
   async startUpdate(reason: string): Promise<LBS_RES | undefined> {
+    if (getParameters().disableLBSService) {
+      return
+    }
     if (!this.client._params.appkey) {
       this.logger.error(`无法更新域名配置：缺少appkey`)
       return
@@ -202,6 +205,9 @@ export class LBSManager {
    * 2. 域名配置过期后，请求LBS配置无法返回
    */
   async loadBuiltinConfig(reason: string) {
+    if (getParameters().disableLBSService) {
+      return
+    }
     if (this.lbsState !== 'uninit') {
       this.handleLbsStateWillChange(reason)
     }
@@ -544,7 +550,7 @@ export class LBSManager {
 
   ajax(option: AjaxOptions) {
     if (getParameters().disableLBSService) {
-      this.logger.log(`disableLBSService:`, option.url)
+      // this.logger.log(`disableLBSService:`, option.url)
       return ajax(option)
     }
 

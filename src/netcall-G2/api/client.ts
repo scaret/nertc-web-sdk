@@ -43,6 +43,7 @@ import { LocalStream } from './localStream'
 import { RemoteStream } from './remoteStream'
 import { SpatialManager } from './spatialManager'
 import { getCurrentProfileLevel } from '../util/rtcUtil/codec'
+import { LoadLocalConfigRes } from '../module/LBSManager'
 
 /**
  *  请使用 {@link WEBRTC2.createClient} 通过WEBRTC2.createClient创建 Client对象，client对象指通话中的本地或远程用户，提供云信sdk的核心功能。
@@ -410,6 +411,7 @@ class Client extends Base {
   async join(options: JoinOptions) {
     this.logger.log('join() 加入频道, options: ', JSON.stringify(options, null, ' '))
 
+    let localConfig: LoadLocalConfigRes | null = null
     try {
       if (!options.channelName || options.channelName === '') {
         this.logger.log('join(): 请填写房间名称')
@@ -522,22 +524,24 @@ class Client extends Base {
         }
       }
 
-      // join执行同时发起lbs请求。向getChannelInfo的请求不会被
-      const localConfig = this.adapterRef.lbsManager.loadLocalConfig('onjoin')
-      if (localConfig.config) {
-        // 载入LBS本地配置成功
-        const expireTime = localConfig.config.ts + localConfig.config.config.ttl * 1000 - Date.now()
-        if (expireTime < localConfig.config.config.preloadTimeSec * 1000) {
-          this.logger.log(
-            `join() LBS在 ${Math.floor(expireTime / 1000)} 秒后过期。preloadTimeSec: ${
-              localConfig.config.config.preloadTimeSec
-            }。发起异步刷新请求`
-          )
-          this.adapterRef.lbsManager.startUpdate('renew')
+      if (!getParameters().disableLBSService) {
+        // join执行同时发起lbs请求。向getChannelInfo的请求不会被
+        localConfig = this.adapterRef.lbsManager.loadLocalConfig('onjoin')
+        if (localConfig.config) {
+          // 载入LBS本地配置成功
+          const expireTime = localConfig.config.ts + localConfig.config.config.ttl * 1000 - Date.now()
+          if (expireTime < localConfig.config.config.preloadTimeSec * 1000) {
+            this.logger.log(
+              `join() LBS在 ${Math.floor(expireTime / 1000)} 秒后过期。preloadTimeSec: ${
+                localConfig.config.config.preloadTimeSec
+              }。发起异步刷新请求`
+            )
+            this.adapterRef.lbsManager.startUpdate('renew')
+          }
+        } else {
+          // 载入本地配置失败=>载入内置配置，同时发起远程请求
+          // 挪到Join成功/失败后面去了
         }
-      } else {
-        // 载入本地配置失败=>载入内置配置，同时发起远程请求
-        this.adapterRef.lbsManager.startUpdate(localConfig.reason)
       }
 
       this.setStartSessionTime()
@@ -564,6 +568,9 @@ class Client extends Base {
         this._params.JoinChannelRequestParam4WebRTC2
       )
       this.safeEmit('@pairing-join-success')
+      if (localConfig && !localConfig.config) {
+        this.adapterRef.lbsManager.startUpdate(localConfig.reason)
+      }
       this.apiFrequencyControl({
         name: 'join',
         code: 0,
@@ -574,6 +581,9 @@ class Client extends Base {
       return joinResult
     } catch (e: any) {
       this.safeEmit('@pairing-join-error')
+      if (localConfig && !localConfig.config) {
+        this.adapterRef.lbsManager.startUpdate(localConfig.reason)
+      }
       this.apiFrequencyControl({
         name: 'join',
         code: -1,
