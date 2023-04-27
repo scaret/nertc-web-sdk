@@ -1372,13 +1372,16 @@ export interface GUMAudioConstraints {
 export interface GUMVideoConstraints {
   mandatory?: any
   width?: {
-    ideal: number
+    max?: number
+    ideal?: number
   }
   height?: {
-    ideal: number
+    ideal?: number
+    max?: number
   }
   frameRate?: {
-    ideal: number
+    ideal?: number
+    max?: number
   }
   facingMode?: {
     exact: string
@@ -1389,7 +1392,7 @@ export interface GUMVideoConstraints {
 }
 
 export interface GUMConstaints {
-  audio?: GUMAudioConstraints
+  audio?: GUMAudioConstraints | boolean
   video?: GUMVideoConstraints
 }
 

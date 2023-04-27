@@ -159,6 +159,7 @@ interface IParameters {
   h264ProfileLevel: string
   h264ProfileLevelSignal: string
   forceBWE: 'no' | 'transport-cc' | 'remb'
+  replaceIdealConstraint: 'safari16_screen' | 'all' | 'never'
   // 修补Safari本地canvas track无法播放的问题
   shimLocalCanvas: 'safari' | 'all' | 'never'
 }
@@ -246,6 +247,7 @@ let parameters: IParameters = {
   // 不要动这个参数
   h264ProfileLevelSignal: '42e01f',
   forceBWE: 'no',
+  replaceIdealConstraint: 'safari16_screen',
   shimLocalCanvas: 'safari'
 }
 
