@@ -623,6 +623,9 @@ class Base extends RTCEventEmitter {
 
   //G2 API事件上报频率控制
   apiFrequencyControl(options: APIFrequencyControlOptions) {
+    if (getParameters().disableAllReports) {
+      return
+    }
     const { name, code, param } = options
     if (!name) return
     if (!this.adapterRef.apiEvent[name]) {
@@ -677,6 +680,7 @@ class Base extends RTCEventEmitter {
   //G2 事件上报
   apiEventReport(func: string, value: any) {
     if (!func) return
+    if (getParameters().disableAllReports) return
     let datareport = new DataReport({
       adapterRef: this.adapterRef,
       sdkRef: this.sdkRef

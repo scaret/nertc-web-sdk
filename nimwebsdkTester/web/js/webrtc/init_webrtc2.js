@@ -5107,7 +5107,7 @@ $('#lbsStartUpdate').on('click', async () => {
 
 
 $('#disableLBSService').on('click', async () => {
-  window.location.href= './webrtc2.html?disableLBSService=true&signalProbeEnabled=false'
+  window.location.href= './webrtc2.html?disableLBSService=true&signalProbeEnabled=false&disableAllReports=true'
 })
 
 const lbsTimer = setInterval(() => {

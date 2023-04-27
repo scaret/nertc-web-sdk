@@ -147,6 +147,8 @@ interface IParameters {
   disable2dContext: boolean
   // 是否关闭 WebGL 的 CanvasContext
   disableWebGLContext: boolean
+  // 是否关闭所有上报，包括counter/events/日志
+  disableAllReports: boolean
   // 是否上报pageId和browserId
   reportPageBrowserId: boolean
   // 心跳间隔，也就是getStats间隔。设为很大的数可以用来屏蔽getStats操作
@@ -235,6 +237,7 @@ let parameters: IParameters = {
   disableWebAudio: false,
   disable2dContext: false,
   disableWebGLContext: false,
+  disableAllReports: false,
   reportPageBrowserId: true,
   //getStats请求间隔设置为1s，数据上报为doHeartbeatInterval * 2
   doHeartbeatInterval: 1000,

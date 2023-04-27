@@ -81,12 +81,14 @@ class StatsReport extends EventEmitter {
       this.adapterRef.instance._params.neRtcServerAddresses.statisticsWebSocketServer || wsURL
     }?deviceId=${deviceId}&isTest=${PROD}&sdkVer=${SDK_VERSION}&sdktype=${sdktype}&timestamp=${timestamp}&platform=${platform}&checkSum=${checkSum}`
     let win: any = window
-    this.wsTransport_ = win.wsTransport = new WSTransport({
-      url: url,
-      adapterRef: this.adapterRef
-    })
-    this.wsTransport_.init()
-    this.startHeartbeat()
+    if (!getParameters().disableAllReports) {
+      this.wsTransport_ = win.wsTransport = new WSTransport({
+        url: url,
+        adapterRef: this.adapterRef
+      })
+      this.wsTransport_.init()
+      this.startHeartbeat()
+    }
   }
 
   startHeartbeat() {
