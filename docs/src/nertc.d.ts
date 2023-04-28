@@ -34,6 +34,27 @@ declare namespace NERTC {
      * 关闭设备兼容模式
      */
     function disableCompatMode(): void
+    /**
+     * 该函数是针对浏览器手势触发的事件函数。
+     * 目前Safari桌面端进行屏幕共享时，需要让用户在界面上产生交互，不然该次屏幕共享请求会被拒绝。此处针对浏览器的这一行为做了一次补救：
+     * 当屏幕共享请求第一次被拒绝时，`NERTC.Device.onUserGestureNeeded`这个位置的函数会收到这个提醒，用户只需要在这个回调函数
+     * 中通过手势触发，再次发起屏幕共享请求即可
+     *
+     * @example
+     * ```
+     * NERTC.Device.onUserGestureNeeded = (evt:any)=>{
+     *   // 这里 $shareScreenUI 指代用户自定义的手势触发UI。平时处于隐藏状态
+     *   // 在用户没有实现 onUserGestureNeeded 的情况下，该UI指的是页面顶部黄色的框
+     *   $shareScreenUI.onclick = ()=>{
+     *    NERTC.Device.emit('user-gesture-fired')
+     *    $shareScreenUI.hide()
+     *   }
+     *   $shareScreenUI.show()
+     * }
+     * ```
+     *
+     */
+    function onUserGestureNeeded(evt: any): void
   }
   namespace Logger {
     /**

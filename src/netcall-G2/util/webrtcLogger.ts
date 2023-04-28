@@ -281,7 +281,7 @@ function simpleClone(obj: any, cache: any[] = []) {
 
 function logCache(args: any) {
   let win: any = window
-  if (win.logUpload) {
+  if (win.logUpload && !getParameters().disableAllReports) {
     if (!win.wsTransport) {
       // ws创建前 缓存日志
       let time = Date.now()

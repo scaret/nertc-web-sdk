@@ -17,7 +17,7 @@ const logger: ILogger = new Logger({
 let gumTotal = 0
 
 async function getStream(constraint: GUMConstaints, logger: ILogger) {
-  if (constraint.audio) {
+  if (constraint.audio && typeof constraint.audio === 'object') {
     if (!constraint.audio.deviceId) {
       const defaultDevice = Device.deviceHistory.audioIn.find((deviceInfo) => {
         return deviceInfo.deviceId === 'default'

@@ -5131,6 +5131,11 @@ $('#lbsStartUpdate').on('click', async () => {
   }
 })
 
+
+$('#disableLBSService').on('click', async () => {
+  window.location.href= './webrtc2.html?disableLBSService=true&signalProbeEnabled=false&disableAllReports=true'
+})
+
 const lbsTimer = setInterval(() => {
   let lbsState = rtc.client.adapterRef.lbsManager.lbsState
   document.getElementById('lbsState').innerText = lbsState

@@ -411,26 +411,26 @@ class MediaHelper extends EventEmitter {
       //{track: this.screenAudio.screenAudioTrack || this.screenAudio.screenAudioSource, type: 'screenAudio'},
     ])
   }
-  async getScreenSource(constraint: GetStreamConstraints) {
+  async getScreenSource(constraintInput: GetStreamConstraints) {
+    let screenConstraint: GUMConstaints
     const { width, height, frameRate } = this.screen.captureConfig.high
     try {
-      let screenStream = await GUM.getScreenStream(
-        {
-          video: {
-            width: {
-              ideal: width
-            },
-            height: {
-              ideal: height
-            },
-            frameRate: {
-              ideal: frameRate,
-              max: frameRate
-            }
+      screenConstraint = {
+        video: {
+          width: {
+            ideal: width
+          },
+          height: {
+            ideal: height
+          },
+          frameRate: {
+            ideal: frameRate,
+            max: frameRate
           }
-        },
-        this.logger
-      )
+        }
+      }
+      this.replaceConstraint(screenConstraint, 'screen')
+      let screenStream = await GUM.getScreenStream(screenConstraint, this.logger)
       return screenStream
     } catch (e: any) {
       const mediaType = 'screen'
@@ -470,7 +470,7 @@ class MediaHelper extends EventEmitter {
     }
   }
 
-  async getStream(constraint: GetStreamConstraints) {
+  async getStream(constraintInput: GetStreamConstraints) {
     let {
       audio = false,
       audioDeviceId = '',
@@ -485,7 +485,7 @@ class MediaHelper extends EventEmitter {
       screenAudioSource = null,
       screenVideoSource = null,
       deviceId = ''
-    } = constraint
+    } = constraintInput
     if (audioSource) {
       audio = true
     }
@@ -594,51 +594,52 @@ class MediaHelper extends EventEmitter {
       screen = false
     }
 
+    let audioConstraint: GUMConstaints | null = null
+    let videoConstraint: GUMConstaints | null = null
+    let screenConstraint: GUMConstaints | null = null
     try {
       if (screen) {
         const { width, height, frameRate } = this.screen.captureConfig.high
 
         if (sourceId) {
-          const stream = await GUM.getStream(
-            {
-              video: {
-                mandatory: {
-                  maxWidth: width,
-                  maxHeight: height,
-                  maxFrameRate: frameRate,
-                  minFrameRate: 5,
-                  chromeMediaSource: 'desktop',
-                  chromeMediaSourceId: sourceId
-                }
+          screenConstraint = {
+            video: {
+              mandatory: {
+                maxWidth: width,
+                maxHeight: height,
+                maxFrameRate: frameRate,
+                minFrameRate: 5,
+                chromeMediaSource: 'desktop',
+                chromeMediaSourceId: sourceId
               }
-            },
-            this.logger
-          )
+            }
+          }
+          this.replaceConstraint(screenConstraint, 'screen')
+          const stream = await GUM.getStream(screenConstraint, this.logger)
           const screenTrack = stream.getVideoTracks()[0]
           this.screen.screenVideoTrack = screenTrack
           emptyStreamWith(this.screen.screenVideoStream, screenTrack)
         } else {
-          let gdmStream = await GUM.getScreenStream(
-            {
-              video: {
-                width: {
-                  ideal: width
-                },
-                height: {
-                  ideal: height
-                },
-                frameRate: {
-                  ideal: frameRate,
-                  max: frameRate
-                }
+          screenConstraint = {
+            video: {
+              width: {
+                ideal: width
               },
-              audio:
-                screenAudio && this.getAudioConstraints('audioSlave')
-                  ? this.getAudioConstraints('audioSlave')
-                  : screenAudio
+              height: {
+                ideal: height
+              },
+              frameRate: {
+                ideal: frameRate,
+                max: frameRate
+              }
             },
-            this.logger
-          )
+            audio:
+              screenAudio && this.getAudioConstraints('audioSlave')
+                ? this.getAudioConstraints('audioSlave')
+                : screenAudio
+          }
+          this.replaceConstraint(screenConstraint, 'screen')
+          let gdmStream = await GUM.getScreenStream(screenConstraint, this.logger)
           this.screen.screenVideoTrack = gdmStream.getVideoTracks()[0]
           this.listenToTrackEnded(this.screen.screenVideoTrack)
           emptyStreamWith(this.screen.screenVideoStream, this.screen.screenVideoTrack)
@@ -679,7 +680,7 @@ class MediaHelper extends EventEmitter {
                 value: JSON.stringify(
                   {
                     result: 'success',
-                    constaints: this.getAudioConstraints('audioSlave')
+                    constaints: screenConstraint.audio
                   },
                   null,
                   ' '
@@ -699,36 +700,18 @@ class MediaHelper extends EventEmitter {
           value: JSON.stringify(
             {
               result: 'success',
-              constaints: {
-                video: {
-                  width: {
-                    ideal: width
-                  },
-                  height: {
-                    ideal: height
-                  },
-                  frameRate: {
-                    ideal: frameRate,
-                    max: frameRate
-                  }
-                },
-                audio:
-                  screenAudio && this.getAudioConstraints('audioSlave')
-                    ? this.getAudioConstraints('audioSlave')
-                    : screenAudio
-              }
+              constaints: screenConstraint
             },
             null,
             ' '
           )
         })
         if (audio) {
-          let gumAudioStream = await GUM.getStream(
-            {
-              audio: this.getAudioConstraints('audio')
-            },
-            this.logger
-          )
+          audioConstraint = {
+            audio: this.getAudioConstraints('audio')
+          }
+          this.replaceConstraint(audioConstraint, 'audio')
+          let gumAudioStream = await GUM.getStream(audioConstraint, this.logger)
           this.audio.micTrack = gumAudioStream.getAudioTracks()[0]
           emptyStreamWith(this.audio.micStream, this.audio.micTrack)
           this.listenToTrackEnded(this.audio.micTrack)
@@ -762,7 +745,7 @@ class MediaHelper extends EventEmitter {
             value: JSON.stringify(
               {
                 result: 'success',
-                constaints: this.getAudioConstraints('audio')
+                constaints: audioConstraint.audio
               },
               null,
               ' '
@@ -778,7 +761,7 @@ class MediaHelper extends EventEmitter {
           return
         }
         const { height, width, frameRate } = this.video.captureConfig.high
-        let config: GUMConstaints = {
+        videoConstraint = {
           audio:
             audio && this.getAudioConstraints('audio')
               ? this.getAudioConstraints('audio')
@@ -797,25 +780,26 @@ class MediaHelper extends EventEmitter {
               }
             : undefined
         }
-        if (audioDeviceId && config.audio) {
-          config.audio.deviceId = {
+        if (audioDeviceId && typeof videoConstraint.audio === 'object') {
+          videoConstraint.audio.deviceId = {
             exact: audioDeviceId
           }
         }
 
-        if (config.video) {
+        if (videoConstraint.video) {
           if (facingMode) {
-            config.video.facingMode = {
+            videoConstraint.video.facingMode = {
               exact: facingMode
             }
           } else if (videoDeviceId) {
-            config.video.deviceId = {
+            videoConstraint.video.deviceId = {
               exact: videoDeviceId
             }
           }
         }
 
-        const gumStream = await GUM.getStream(config, this.logger)
+        this.replaceConstraint(videoConstraint, 'video')
+        const gumStream = await GUM.getStream(videoConstraint, this.logger)
         const cameraTrack = gumStream.getVideoTracks()[0]
         const micTrack = gumStream.getAudioTracks()[0]
         if (micTrack) {
@@ -852,14 +836,14 @@ class MediaHelper extends EventEmitter {
             value: JSON.stringify(
               {
                 result: 'success',
-                constaints: config.audio
+                constaints: videoConstraint.audio
               },
               null,
               ' '
             )
           })
-          if (typeof config.audio === 'object') {
-            this.audio.micConstraint = { audio: config.audio }
+          if (typeof videoConstraint.audio === 'object') {
+            this.audio.micConstraint = { audio: videoConstraint.audio }
           }
           this.stream.client.updateRecordingAudioStream()
         }
@@ -887,11 +871,11 @@ class MediaHelper extends EventEmitter {
             oper: '1',
             value: JSON.stringify({
               result: 'success',
-              constaints: config.video
+              constaints: videoConstraint.video
             })
           })
-          if (typeof config.video === 'object') {
-            this.video.cameraConstraint = { video: config.video }
+          if (typeof videoConstraint.video === 'object') {
+            this.video.cameraConstraint = { video: videoConstraint.video }
           }
         }
       }
@@ -968,8 +952,8 @@ class MediaHelper extends EventEmitter {
     if (this.stream.isRemote) {
       return
     }
-
     try {
+      this.replaceConstraint(constraint, 'video')
       const gumStream = await GUM.getStream(constraint, this.logger)
       const audioTrack = gumStream.getAudioTracks()[0]
       const videoTrack = gumStream.getVideoTracks()[0]
@@ -2801,6 +2785,33 @@ class MediaHelper extends EventEmitter {
       load,
       delay,
       spent
+    }
+  }
+
+  replaceConstraint(constraint: GUMConstaints, mediaType: MediaTypeShort) {
+    if (constraint?.video) {
+      if (
+        (getParameters().replaceIdealConstraint === 'safari16_screen' &&
+          env.IS_SAFARI &&
+          env.SAFARI_MAJOR_VERSION &&
+          env.SAFARI_MAJOR_VERSION >= 16 &&
+          mediaType === 'screen') ||
+        getParameters().replaceIdealConstraint === 'all'
+      ) {
+        // Safari:屏幕共享带ideal可能导致系统无响应
+        if (constraint?.video?.width?.ideal) {
+          constraint.video.width.max = constraint.video.width.ideal
+          delete constraint.video.width.ideal
+        }
+        if (constraint?.video?.height?.ideal) {
+          constraint.video.height.max = constraint.video.height.ideal
+          delete constraint.video.height.ideal
+        }
+        if (constraint?.video?.frameRate?.ideal) {
+          constraint.video.frameRate.max = constraint.video.frameRate.ideal
+          delete constraint.video.frameRate.ideal
+        }
+      }
     }
   }
 

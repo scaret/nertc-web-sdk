@@ -214,6 +214,7 @@ class Meeting extends EventEmitter {
     try {
       let data = getChanneInfoResponse
       if (!data) {
+        this.adapterRef.state.getChannelInfoRtt = 0
         data = (await this.adapterRef.lbsManager.ajax({
           url, //'https://webtest.netease.im/nrtcproxy/nrtc/getChannelInfos.action'
           type: 'POST',
@@ -240,6 +241,9 @@ class Meeting extends EventEmitter {
           }
         })) as SignalGetChannelInfoResponse
         this.adapterRef.state.getChannelInfoTime = Date.now()
+        if (!this.adapterRef.state.getChannelInfoRtt) {
+          this.adapterRef.state.getChannelInfoRtt = this.adapterRef.state.getChannelInfoTime - curtime
+        }
       }
       let isUidExisted = uid == '0' || (uid != '0' && !uid) ? false : true
 
