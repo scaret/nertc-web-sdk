@@ -128,6 +128,8 @@ class Signalling extends EventEmitter {
         isReconnection: isReconnectMeeting,
         isLastTry: false
       }
+      connConfig.isJoinRetry = isReconnect
+      connConfig.isReconnection = isReconnectMeeting
       if (
         isReconnectMeeting &&
         this.adapterRef.signalProbeManager.online !== 'unknown' &&
@@ -1505,18 +1507,26 @@ class Signalling extends EventEmitter {
       clearInterval(this.keepAliveTimer)
       this.keepAliveTimer = null
     }
-    this.keepAliveTimer = setInterval(() => {
-      this.doSendKeepAlive()
+    let isSendingKeepAlive = false
+    this.keepAliveTimer = setInterval(async () => {
+      if (!isSendingKeepAlive) {
+        // 上一个保活包没返回的情况下，下一个包没必要发
+        // 因为tcp是顺序发送的，上一个包没到，下一个包不可能到
+        isSendingKeepAlive = true
+        await this.doSendKeepAlive()
+        isSendingKeepAlive = false
+      }
     }, 6 * 1000)
   }
 
   async doSendKeepAlive() {
     if (!this._protoo?.connected) return
     const transportId = `#${this._protoo.id}_${this._protoo._transport?.wsid}`
+    const start = Date.now()
     try {
       const response = await this._protoo.request('Heartbeat')
     } catch (e: any) {
-      this.logger.error(`信令包保活失败, reanson: ${e.message}`)
+      this.logger.error(`信令包保活失败, reason: ${e.message}, ${Date.now() - start}ms`)
     }
   }
 

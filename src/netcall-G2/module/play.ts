@@ -23,7 +23,8 @@ import { getParameters } from './parameters'
 import { createCanvasWatermarkControl } from './watermark/CanvasWatermarkControl'
 import { createEncoderWatermarkControl } from './watermark/EncoderWatermarkControl'
 import { get2DContext } from './browser-api/getCanvasContext'
-import { printForLongPromise } from '../util/gum'
+import { printVideoState } from '../util/gum'
+import { MEDIA_READYSTATE } from '../constant/videoQuality'
 
 class Play extends EventEmitter {
   private snapshotIndex = 0
@@ -881,19 +882,22 @@ class Play extends EventEmitter {
       let timerNotAllowed: Timer | null = setTimeout(() => {
         if (timerNotAllowed) {
           timerNotAllowed = null
-          const error = new RtcError({
-            code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
-            url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082',
-            message: `playDomElement: 浏览器自动播放受限，表现为Play既不成功也不失败。可尝试通过resume()恢复。`
-          })
-          this.stream.safeEmit('notAllowedError', error)
-          this.stream.getAdapterRef()?.instance.safeEmit('NotAllowedError', error)
-          this.stream.getAdapterRef()?.instance.safeEmit('notAllowedError', error)
+          if (media.readyState === MEDIA_READYSTATE.HAVE_ENOUGH_DATA) {
+            // 此时已经拥有足够数据，但video标签仍不在播放状态。这一般是微信浏览器自动播放策略导致的
+            const error = new RtcError({
+              code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,
+              url: 'https://doc.yunxin.163.com/docs/jcyOTA0ODM/jM3NDE0NTI?platformId=50082',
+              message: `playDomElement: 浏览器自动播放受限，表现为Play既不成功也不失败。可尝试通过resume()恢复。`
+            })
+            this.stream.safeEmit('notAllowedError', error)
+            this.stream.getAdapterRef()?.instance.safeEmit('NotAllowedError', error)
+            this.stream.getAdapterRef()?.instance.safeEmit('notAllowedError', error)
+          }
         }
       }, getParameters().playMediaTimeoutForAutoplay)
 
       const p1 = media.play()
-      printForLongPromise(p1, '媒体标签仍在启动播放中')
+      printVideoState(p1, media)
       p1.then(() => {
         if (timerPassthrough) {
           clearTimeout(timerPassthrough)

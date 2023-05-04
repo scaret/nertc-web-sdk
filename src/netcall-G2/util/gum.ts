@@ -7,6 +7,7 @@ import { GUMConstaints, ILogger, NeMediaStreamTrack, Timer } from '../types'
 import { canShimCanvas, shimCanvas } from './rtcUtil/shimCanvas'
 import { syncTrackState } from './syncTrackState'
 import { getDefaultLogger, Logger } from './webrtcLogger'
+import { MEDIA_READYSTATE_REV } from '../constant/videoQuality'
 
 const logger: ILogger = new Logger({
   tagGen: () => {
@@ -284,6 +285,66 @@ export async function printForLongPromise(p: Promise<any>, description: string) 
       timer = null
     }
   }, 6000)
+  p.then(() => {
+    if (timer) {
+      clearInterval(timer)
+      timer = null
+    }
+  }).catch((e) => {
+    if (timer) {
+      clearInterval(timer)
+      timer = null
+    }
+  })
+}
+
+export async function printVideoState(p: Promise<any>, dom: HTMLMediaElement) {
+  let cnt = 0
+  const start = Date.now()
+  const timeout = 6000
+  // 之前的打印太多了，现在只在第6秒、30秒、60秒给三条打印
+  const timeoutSelect = [1, 5, 10]
+  let timer: Timer | null = setInterval(() => {
+    cnt++
+    if (timeoutSelect.indexOf(cnt) === -1) {
+      return
+    }
+    let info =
+      `ReadyState:${MEDIA_READYSTATE_REV[dom.readyState]}(${dom.readyState})` +
+      `Paused: ${dom.paused}.` +
+      `Time: ${Date.now() - start}ms.`
+    const mediaStream = dom.srcObject as MediaStream | null
+    const track = mediaStream?.getTracks()[0]
+    if (track) {
+      info += `Track enabled: ${track.enabled} muted:${track.muted} name:[${track.label}]`
+      if (!track.enabled) {
+        // 播不出来是因为track被主动disable了。
+        getDefaultLogger().warn(`媒体被disable：${info}`)
+        if (timer) {
+          clearInterval(timer)
+          timer = null
+        }
+      } else if (track.muted) {
+        // 播不出来是因为还没有解码第一帧，track因为各种原因处在mute状态
+        getDefaultLogger().warn(`媒体处于mute状态，无数据或者解码失败：${info}`)
+      } else {
+        // 播不出来跟Track状态无关
+        // 但事实上经过测试，如果远端没有数据的话，Safari的Track.muted为false，但是Chrome的Track.muted为true
+        getDefaultLogger().warn(`媒体标签仍在启动播放中：${info}`)
+      }
+    } else {
+      // 没救了
+      getDefaultLogger().warn(`媒体标签srcObject属性处于异常状态：${info}`)
+      if (timer) {
+        clearInterval(timer)
+        timer = null
+      }
+    }
+    if (timer && cnt > timeoutSelect[timeoutSelect.length - 1]) {
+      clearInterval(timer)
+      timer = null
+    }
+  }, timeout)
   p.then(() => {
     if (timer) {
       clearInterval(timer)
