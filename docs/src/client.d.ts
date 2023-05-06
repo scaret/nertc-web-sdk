@@ -844,6 +844,11 @@ declare interface Client {
    * 需要在加入频道前调用`client.enableCustomTransform()`方法。调用后，可收到两个事件：`sender-transform` 和`receiver-transform`，应在这两个方法中实现加密和解密操作。
    * 自定义加密功能依赖 [encodedInsertableStreams](https://chromestatus.com/feature/5499415634640896) 接口。目前仅支持桌面端Chrome 94及以上版本。
    *
+   * H264加密注意事项：
+   * 1. 加密后的rtp分包环节会依赖nalu位置。建议只对关键帧和参考帧进行加密，保留其他帧类型，并且加密时沿naluType向后再保留至少三个字节。
+   * 2. 不同设备编码后的定位符既可能出现`0,0,0,1`，`0,0,1`，也可能两种定位符交替出现。
+   * 3. 加密算法可能会破坏rbsp的语法，容易在内容里引入和rbsp冲突的字段，造成nalu划分失败，表现为低概率性的绿屏。建议先转成sodb，再加密，再转回rbsp。
+   *
    * @example
    * ```JavaScript
    * // 开启自定义加密
