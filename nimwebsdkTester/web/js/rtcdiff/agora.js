@@ -686,6 +686,8 @@ function startAGORA() {
     if (options.contentHint) {
       await configTrack.setOptimizationMode(options.contentHint)
     }
+    console.error(`${configTrack._mediaStreamTrack.contentHint} => ${options.contentHint}`)
+    configTrack._mediaStreamTrack.contentHint = options.contentHint
   })
 
   document.body.addEventListener('click', function (e) {
