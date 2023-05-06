@@ -16,8 +16,8 @@ function findCryptIndexH264(data){
     // pos表示第一个I帧或P帧的nalu type的位置+offset
     pos: -1
   };
-  for (let i = 4; i < data.length; i++){
-    if (data[i - 1] === 0x01 && data[i - 2] === 0x00 && data[i - 3] === 0x00 && data[i - 4] === 0x00){
+  for (let i = 3; i < data.length; i++){
+    if (data[i - 1] === 0x01 && data[i - 2] === 0x00 && data[i - 3] === 0x00){
       // 低四位为1为p帧，低四位为5为i帧。算法待改进
       // https://zhuanlan.zhihu.com/p/281176576
       // https://stackoverflow.com/questions/24884827/possible-locations-for-sequence-picture-parameter-sets-for-h-264-stream/24890903#24890903
@@ -25,7 +25,10 @@ function findCryptIndexH264(data){
       let frameType = naluTypes[frameTypeInt] || "nalu_" + frameTypeInt
       if (result.frames.length){
         //不包含这位
-        result.frames[result.frames.length - 1].posEnd = i - 4
+        result.frames[result.frames.length - 1].posEnd = i - 3
+        if (data[i - 4] === 0x00) {
+          result.frames[result.frames.length - 1].posEnd -= 1
+        }
       }
       result.frames.push({
         pos: i,
