@@ -13,7 +13,7 @@ import VirtualBackground from '../module/video-post-processing/virtual-backgroun
 import { loadPlugin } from '../plugin'
 import { VideoPluginType, audioPlugins, videoPlugins } from '../plugin/plugin-list'
 import { BackGroundOptions } from '../plugin/segmentation/src/types'
-import { isNumber } from '../util/param'
+import { checkValidEnum, isNumber } from '../util/param'
 import {
   AudioEffectOptions,
   AudioMixingOptions,
@@ -49,6 +49,7 @@ import { makePrintable } from '../util/rtcUtil/utils'
 import { getAudioContext } from '../module/webAudio'
 import { StageAIProcessing } from '../module/audio-pipeline/stages/StageAIProcessing/StageAIProcessing'
 import { webassemblySupported } from '../util/wasmDetect'
+import { AudioProfile, AudioProfileTypes } from '../constant/audioProfile'
 
 /**
  *  请使用 {@link NERTC.createStream} 通过NERTC.createStream创建
@@ -149,7 +150,7 @@ class LocalStream extends RTCEventEmitter {
   private _record: Record | null
   public audioLevelHelper: AudioLevel | null = null
   public audioLevelHelperSlave: AudioLevel | null = null
-  public audioProfile: string
+  public audioProfile: AudioProfileTypes
   private _cameraTrack: MediaStreamTrack | null
   private _transformedTrack: MediaStreamTrack | null
   public videoProfile: {
@@ -1827,7 +1828,12 @@ class LocalStream extends RTCEventEmitter {
    * @param {String} profile 要设置的音频的属性：speech_low_quality（表示16 kHz 采样率，单声道，编码码率约 24 Kbps）、speech_standard'（表示32 kHz 采样率，单声道，编码码率约 24 Kbps）、music_standard（表示48 kHz 采样率，单声道，编码码率约 40 Kbps）、standard_stereo（表达48 kHz 采样率，双声道，编码码率约 64 Kbps）、high_quality（表示48 kHz 采样率，单声道， 编码码率约 128 Kbps）、high_quality_stereo（表示48 kHz 采样率，双声道，编码码率约 192 Kbps）
    * @return {Void}
    */
-  setAudioProfile(profile: string) {
+  setAudioProfile(profile: AudioProfileTypes) {
+    checkValidEnum({
+      tag: 'LocalStream.setAudioProfile',
+      value: profile,
+      enums: AudioProfile
+    })
     this.logger.log('setAudioProfile() 设置音频属性: ', profile)
     this.audioProfile = profile
     this.client.apiFrequencyControl({
