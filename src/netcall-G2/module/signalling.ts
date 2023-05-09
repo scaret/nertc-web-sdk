@@ -138,7 +138,12 @@ class Signalling extends EventEmitter {
         const timeout = 10000
         this.logger.warn(`目前所有服务端不在线，判断为网络断开。等待服务端起上线或 ${timeout}ms`)
         const reason = await this.adapterRef.signalProbeManager.waitForServerActive(timeout)
-        this.logger.warn(`恢复重连过程。reason:${reason}`)
+        if (this.adapterRef._signalling !== this) {
+          // 此时已退出房间
+          return
+        } else {
+          this.logger.warn(`恢复重连过程。reason:${reason}`)
+        }
       }
       for (let i = 0; i < 6; i++) {
         // 最多跳过六次，或遇到当前服务器的最后一次重试
@@ -219,6 +224,10 @@ class Signalling extends EventEmitter {
           clearTimeout(this._reconnectionTimer)
         }
         this._reconnectionTimer = null
+        if (this.adapterRef._signalling !== this) {
+          // 此时已退出房间
+          return
+        }
         this._destroyProtoo()
         if (isReconnectMeeting) {
           this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-error')
@@ -1037,9 +1046,14 @@ class Signalling extends EventEmitter {
       }
     }
 
-    this.logger.log('Signalling: socket连接成功，开始发送Join请求')
-    //join之前，清除之前可能存在的request
-    this._protoo?.clear()
+    if (this.adapterRef._signalling === this) {
+      this.logger.log('Signalling: socket连接成功，开始发送Join请求')
+      //join之前，清除之前可能存在的request
+      this._protoo?.clear()
+    } else {
+      // 此时虽然收到了websocket open事件，但用户或者我们可能已经调用了leave，
+      return
+    }
 
     try {
       let response = null
