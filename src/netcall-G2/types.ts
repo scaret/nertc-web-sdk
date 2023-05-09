@@ -1284,6 +1284,12 @@ export interface ValidBooleanOptions {
   value: any
 }
 
+export interface ValidEnumOptions {
+  tag: string
+  value: any
+  enums: any[]
+}
+
 export interface ValidFloatOptions {
   tag: string
   value: any

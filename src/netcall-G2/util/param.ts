@@ -1,6 +1,7 @@
 import {
   ExistsOptions,
   ValidBooleanOptions,
+  ValidEnumOptions,
   ValidFloatOptions,
   ValidIntegerOptions,
   ValidObjectOptions,
@@ -121,6 +122,35 @@ const checkValidString = (param: ValidStringOptions) => {
   }
 }
 
+const isValidEnum = (param: ValidEnumOptions) => {
+  if (param.enums.indexOf(param.value) === -1) {
+    return {
+      result: false,
+      zhMsg: `参数不符合枚举类型：${param.value}。有效的类型包括：${param.enums.join()}`,
+      enMsg: `The param is not enum：${param.value}。Valid enums are：${param.enums.join()}`
+    }
+  } else {
+    return {
+      result: true
+    }
+  }
+}
+
+const checkValidEnum = (param: ValidEnumOptions) => {
+  const data = isValidEnum(param)
+  if (data.result) {
+    return
+  } else {
+    let message = env.IS_ZH
+      ? `checkValidEnum: 参数错误: ${param.tag}:${data.zhMsg}`
+      : `checkValidEnum: invalid parameter: ${param.tag}:${data.enMsg}`
+    throw new RtcError({
+      code: ErrorCode.INVALID_PARAMETER_ERROR,
+      message
+    })
+  }
+}
+
 const isValidObject = (param: ValidObjectOptions) => {
   if (typeof param.value !== 'object') {
     return {
@@ -232,6 +262,7 @@ export {
   checkValidInteger,
   checkValidString,
   checkValidObject,
+  checkValidEnum,
   isExistOptions,
   isNumber
 }
