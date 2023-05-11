@@ -1,5 +1,5 @@
 import { getParameters } from '../../module/parameters'
-import { ILogger } from '../../types'
+import { GUMAudioConstraints, ILogger } from '../../types'
 
 export function patchScreenConstraints(constraints: MediaStreamConstraints, logger: ILogger) {
   if (getParameters().screenFocus !== 'default') {
@@ -27,5 +27,34 @@ export function patchScreenConstraints(constraints: MediaStreamConstraints, logg
   if (getParameters().screenSurfaceSwitching !== 'default') {
     // @ts-ignore
     constraints.surfaceSwitching = getParameters().screenSurfaceSwitching
+  }
+}
+
+export function forceAudioConstraints(constraints: GUMAudioConstraints) {
+  if (getParameters().forceAEC !== 'no') {
+    constraints.echoCancellation = getParameters().forceAEC === 'on'
+    constraints.googEchoCancellation = getParameters().forceAEC === 'on'
+    constraints.googEchoCancellation2 = getParameters().forceAEC === 'on'
+  }
+  if (getParameters().forceANS !== 'no') {
+    constraints.noiseSuppression = getParameters().forceANS === 'on'
+    constraints.googNoiseSuppression = getParameters().forceANS === 'on'
+    constraints.googNoiseSuppression2 = getParameters().forceANS === 'on'
+  }
+  if (getParameters().forceAGC !== 'no') {
+    constraints.autoGainControl = getParameters().forceAGC === 'on'
+    constraints.googAutoGainControl = getParameters().forceAGC === 'on'
+    constraints.googAutoGainControl2 = getParameters().forceAGC === 'on'
+  }
+  if (getParameters().forceChannelCount !== -1) {
+    constraints.channelCount = getParameters().forceChannelCount
+  }
+  if (getParameters().forceSampleRate !== -1) {
+    // @ts-ignore
+    constraints.sampleRate = getParameters().forceSampleRate
+  }
+  if (getParameters().forceLatency !== -1) {
+    // @ts-ignore
+    constraints.latency = getParameters().forceLatency
   }
 }

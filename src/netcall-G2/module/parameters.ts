@@ -163,6 +163,18 @@ interface IParameters {
   h264ProfileLevel: string
   h264ProfileLevelSignal: string
   forceBWE: 'no' | 'transport-cc' | 'remb'
+  // 调试用，采集音频时强制开启/关闭AEC，包括主辅流
+  forceAEC: 'no' | 'on' | 'off'
+  // 调试用，采集音频时强制开启/关闭ANS，包括主辅流
+  forceANS: 'no' | 'on' | 'off'
+  // 调试用，采集音频时强制开启/关闭AGC，包括主辅流
+  forceAGC: 'no' | 'on' | 'off'
+  // 调试用，采集音频时强制开启/关闭采集的单双声道，包括主辅流
+  forceChannelCount: -1 | 1 | 2
+  // 调试用，采集音频时强制开启/关闭采集的延迟，包括主辅流
+  forceLatency: -1 | number
+  // 调试用，采集音频时强制采样率，包括主辅流
+  forceSampleRate: -1 | 44100 | 48000
   replaceIdealConstraint: 'safari16_screen' | 'all' | 'never'
   // 修补Safari本地canvas track无法播放的问题
   shimLocalCanvas: 'safari' | 'all' | 'never'
@@ -253,6 +265,12 @@ let parameters: IParameters = {
   // 不要动这个参数
   h264ProfileLevelSignal: '42e01f',
   forceBWE: 'no',
+  forceAGC: 'no',
+  forceANS: 'no',
+  forceAEC: 'no',
+  forceChannelCount: -1,
+  forceLatency: -1,
+  forceSampleRate: -1,
   replaceIdealConstraint: 'safari16_screen',
   shimLocalCanvas: 'safari'
 }
