@@ -41,6 +41,7 @@ import { getAudioContext, WebAudio } from './webAudio'
 import { VideoTrackLow } from './videoTrackLow'
 import { AudioPipeline } from './audio-pipeline/AudioPipeline'
 import { StageAIProcessing } from './audio-pipeline/stages/StageAIProcessing/StageAIProcessing'
+import { forceAudioConstraints } from '../util/rtcUtil/forceConstraints'
 class MediaHelper extends EventEmitter {
   stream: LocalStream | RemoteStream
   public audio: {
@@ -1178,6 +1179,8 @@ class MediaHelper extends EventEmitter {
         constraint.googAutoGainControl2 = false;*/
         break
     }
+    // 最后通过私有接口强制调整开关，调试用，正常没有改变
+    forceAudioConstraints(constraint)
     return constraint
   }
 

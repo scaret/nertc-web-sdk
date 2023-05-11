@@ -8,6 +8,7 @@ import { canShimCanvas, shimCanvas } from './rtcUtil/shimCanvas'
 import { syncTrackState } from './syncTrackState'
 import { getDefaultLogger, Logger } from './webrtcLogger'
 import { MEDIA_READYSTATE_REV } from '../constant/videoQuality'
+import { patchScreenConstraints } from './rtcUtil/forceConstraints'
 
 const logger: ILogger = new Logger({
   tagGen: () => {
@@ -128,6 +129,7 @@ async function getStream(constraint: GUMConstaints, logger: ILogger) {
 
 async function getScreenStream(constraint: MediaStreamConstraints, logger: ILogger) {
   const gumCount = ++gumTotal
+  patchScreenConstraints(constraint, logger)
   logger.log(`getScreenStream constraint: #${gumCount}`, JSON.stringify(constraint, null, ' '))
   //@ts-ignore
   const getDisplayMedia = navigator.getDisplayMedia || navigator.mediaDevices.getDisplayMedia
@@ -137,22 +139,6 @@ async function getScreenStream(constraint: MediaStreamConstraints, logger: ILogg
     const tracks = stream.getTracks()
     tracks.forEach((track) => {
       watchTrack(track)
-      if (track.kind === 'video') {
-        if (getParameters().screenFocus) {
-          // @ts-ignore
-          if (track.focus) {
-            logger.log('屏幕共享不跳转到被共享页面')
-            try {
-              // @ts-ignore
-              track.focus('no-focus-change')
-            } catch (e) {
-              //fallthrough
-            }
-          } else {
-            logger.log('当前浏览器不支持屏幕共享跳转控制')
-          }
-        }
-      }
     })
     return Promise.resolve(stream)
   }

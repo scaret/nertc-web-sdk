@@ -882,7 +882,10 @@ class Play extends EventEmitter {
       let timerNotAllowed: Timer | null = setTimeout(() => {
         if (timerNotAllowed) {
           timerNotAllowed = null
-          if (media.readyState === MEDIA_READYSTATE.HAVE_ENOUGH_DATA) {
+          if (
+            media.readyState === MEDIA_READYSTATE.HAVE_ENOUGH_DATA ||
+            getParameters().moreNotAllowedError
+          ) {
             // 此时已经拥有足够数据，但video标签仍不在播放状态。这一般是微信浏览器自动播放策略导致的
             const error = new RtcError({
               code: ErrorCode.AUTO_PLAY_NOT_ALLOWED,

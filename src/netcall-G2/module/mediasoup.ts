@@ -519,6 +519,28 @@ class Mediasoup extends EventEmitter {
               }
             }
 
+            if (getParameters().revertSubstreamProduceType) {
+              // 私有接口，乐播实验性需求：交换主辅流，以保证易盾和安全通正常工作
+              switch (producerData.externData.producerInfo.mediaType) {
+                case 'screenShare':
+                  producerData.externData.producerInfo.mediaType = 'video'
+                  producerData.externData.producerInfo.subStream = false
+                  break
+                case 'video':
+                  producerData.externData.producerInfo.mediaType = 'screenShare'
+                  producerData.externData.producerInfo.subStream = true
+                  break
+                case 'audio':
+                  producerData.externData.producerInfo.mediaType = 'subAudio'
+                  producerData.externData.producerInfo.subStream = true
+                  break
+                case 'subAudio':
+                  producerData.externData.producerInfo.mediaType = 'audio'
+                  producerData.externData.producerInfo.subStream = false
+                  break
+              }
+            }
+
             // 1. 使用原有的encoding
             let encoding = this.senderEncodingParameter[mediaTypeShort].high
             let encodingLow = this.senderEncodingParameter[mediaTypeShort].low

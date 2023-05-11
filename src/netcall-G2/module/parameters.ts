@@ -80,7 +80,11 @@ interface IParameters {
   screenLowStartBitrate: number
   screenLowMinBitrate: number
   // 屏幕共享时是否跳转到被共享页面
-  screenFocus: boolean
+  screenFocus: 'default' | 'focus-captured-surface' | 'no-focus-change'
+  // 屏幕共享Tab页时是否允许动态切换为别的共享页
+  screenSurfaceSwitching: 'default' | 'include' | 'exclude'
+  // 屏幕共享选择时默认是什么：标签、应用、屏幕
+  screenDisplaySurface: 'default' | 'browser' | 'window' | 'monitor'
   // 是否允许localStream啥都不开
   allowEmptyMedia: boolean
   // leave时是否销毁localStream
@@ -159,6 +163,22 @@ interface IParameters {
   h264ProfileLevel: string
   h264ProfileLevelSignal: string
   forceBWE: 'no' | 'transport-cc' | 'remb'
+  // 调试用，采集音频时强制开启/关闭AEC，包括主辅流
+  forceAEC: 'no' | 'on' | 'off'
+  // 调试用，采集音频时强制开启/关闭ANS，包括主辅流
+  forceANS: 'no' | 'on' | 'off'
+  // 调试用，采集音频时强制开启/关闭AGC，包括主辅流
+  forceAGC: 'no' | 'on' | 'off'
+  // 调试用，采集音频时强制开启/关闭采集的单双声道，包括主辅流
+  forceChannelCount: -1 | 1 | 2
+  // 调试用，采集音频时强制开启/关闭采集的延迟，包括主辅流
+  forceLatency: -1 | number
+  // 调试用，采集音频时强制采样率，包括主辅流
+  forceSampleRate: -1 | 44100 | 48000
+  // Produce时将主流记为辅流、辅流记为主流
+  revertSubstreamProduceType: boolean
+  // 因为安卓微信的自动播放策略混乱，所以该开关开启后，会在不确定是否是编码失败、下行没数据等其他情况下，也抛出NotAllowedError
+  moreNotAllowedError: boolean
   replaceIdealConstraint: 'safari16_screen' | 'all' | 'never'
   // 修补Safari本地canvas track无法播放的问题
   shimLocalCanvas: 'safari' | 'all' | 'never'
@@ -203,7 +223,9 @@ let parameters: IParameters = {
   screenHighMinBitrate: 0,
   screenLowStartBitrate: 500,
   screenLowMinBitrate: 0,
-  screenFocus: true,
+  screenFocus: 'no-focus-change',
+  screenSurfaceSwitching: 'default',
+  screenDisplaySurface: 'default',
   allowEmptyMedia: true,
   keepLocalstreamOnLeave: false,
   joinFirstTimeout: 2000,
@@ -247,6 +269,14 @@ let parameters: IParameters = {
   // 不要动这个参数
   h264ProfileLevelSignal: '42e01f',
   forceBWE: 'no',
+  forceAGC: 'no',
+  forceANS: 'no',
+  forceAEC: 'no',
+  forceChannelCount: -1,
+  forceLatency: -1,
+  forceSampleRate: -1,
+  revertSubstreamProduceType: false,
+  moreNotAllowedError: false,
   replaceIdealConstraint: 'safari16_screen',
   shimLocalCanvas: 'safari'
 }
