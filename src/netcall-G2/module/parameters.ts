@@ -80,7 +80,11 @@ interface IParameters {
   screenLowStartBitrate: number
   screenLowMinBitrate: number
   // 屏幕共享时是否跳转到被共享页面
-  screenFocus: boolean
+  screenFocus: 'default' | 'focus-captured-surface' | 'no-focus-change'
+  // 屏幕共享Tab页时是否允许动态切换为别的共享页
+  screenSurfaceSwitching: 'default' | 'include' | 'exclude'
+  // 屏幕共享选择时默认是什么：标签、应用、屏幕
+  screenDisplaySurface: 'default' | 'browser' | 'window' | 'monitor'
   // 是否允许localStream啥都不开
   allowEmptyMedia: boolean
   // leave时是否销毁localStream
@@ -203,7 +207,9 @@ let parameters: IParameters = {
   screenHighMinBitrate: 0,
   screenLowStartBitrate: 500,
   screenLowMinBitrate: 0,
-  screenFocus: true,
+  screenFocus: 'no-focus-change',
+  screenSurfaceSwitching: 'default',
+  screenDisplaySurface: 'default',
   allowEmptyMedia: true,
   keepLocalstreamOnLeave: false,
   joinFirstTimeout: 2000,
