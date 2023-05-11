@@ -175,6 +175,8 @@ interface IParameters {
   forceLatency: -1 | number
   // 调试用，采集音频时强制采样率，包括主辅流
   forceSampleRate: -1 | 44100 | 48000
+  // Produce时将主流记为辅流、辅流记为主流
+  revertSubstreamProduceType: boolean
   replaceIdealConstraint: 'safari16_screen' | 'all' | 'never'
   // 修补Safari本地canvas track无法播放的问题
   shimLocalCanvas: 'safari' | 'all' | 'never'
@@ -271,6 +273,7 @@ let parameters: IParameters = {
   forceChannelCount: -1,
   forceLatency: -1,
   forceSampleRate: -1,
+  revertSubstreamProduceType: false,
   replaceIdealConstraint: 'safari16_screen',
   shimLocalCanvas: 'safari'
 }
