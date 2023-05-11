@@ -177,6 +177,8 @@ interface IParameters {
   forceSampleRate: -1 | 44100 | 48000
   // Produce时将主流记为辅流、辅流记为主流
   revertSubstreamProduceType: boolean
+  // 因为安卓微信的自动播放策略混乱，所以该开关开启后，会在不确定是否是编码失败、下行没数据等其他情况下，也抛出NotAllowedError
+  moreNotAllowedError: boolean
   replaceIdealConstraint: 'safari16_screen' | 'all' | 'never'
   // 修补Safari本地canvas track无法播放的问题
   shimLocalCanvas: 'safari' | 'all' | 'never'
@@ -274,6 +276,7 @@ let parameters: IParameters = {
   forceLatency: -1,
   forceSampleRate: -1,
   revertSubstreamProduceType: false,
+  moreNotAllowedError: false,
   replaceIdealConstraint: 'safari16_screen',
   shimLocalCanvas: 'safari'
 }
