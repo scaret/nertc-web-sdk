@@ -265,7 +265,7 @@ let parameters: IParameters = {
   //getStats请求间隔设置为1s，数据上报为doHeartbeatInterval * 2
   doHeartbeatInterval: 1000,
   deviceChangeInterval: 0,
-  h264ProfileLevel: '42001f',
+  h264ProfileLevel: '42e01f',
   // 不要动这个参数
   h264ProfileLevelSignal: '42e01f',
   forceBWE: 'no',

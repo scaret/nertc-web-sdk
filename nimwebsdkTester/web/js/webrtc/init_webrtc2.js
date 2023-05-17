@@ -2481,6 +2481,12 @@ $('#switchScreenShare').on('click', () => {
   rtc.localStream.switchScreenStream({ screenAudio: true })
 })
 
+if (getUrlVars().getwayAddr){
+  document.getElementById('getwayAddr').value = getUrlVars().getwayAddr
+  document.getElementById('isGetwayAddrConf').checked = true
+  console.error('网关地址：', getUrlVars().getwayAddr)
+}
+
 function initLocalStream() {
   let sourceId = ''
   if ($('#enableScreen').prop('checked')) {
