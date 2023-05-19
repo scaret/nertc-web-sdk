@@ -40,6 +40,13 @@ var WEBRTC2_ENV = {
   }
 }
 
+if (window.NERTC) {
+  // SDK已加载
+  $('#joinChannel-btn').removeAttr('disabled')
+} else {
+  addLog('SDK加载错误！')
+}
+
 //背景分割
 const virtualBackgroundPluginConfig = {
   development: {
@@ -187,6 +194,9 @@ var subList = $('#subList').get(0) //订阅列表
 var currentSpeaker = {}
 // 添加日志
 function addLog(info) {
+  if (!debugContentNode) {
+    debugContentNode = $('#debug-content').get(0)
+  }
   var temp = typeof info === 'string' ? info : JSON.stringify(info)
   debugContentNode.innerHTML = `<p>${info}</p>` + debugContentNode.innerHTML
 }
@@ -848,8 +858,12 @@ function initEvents() {
     }
   })
 
+  rtc.client.on('track-low-init-success', (evt) => {
+    $(`#${evt.mediaType}LowInitResult`)[0].innerText += '✅'
+  })
+
   rtc.client.on('track-low-init-fail', (evt) => {
-    addLog('创建小流失败 ' + evt.mediaType)
+    $(`#${evt.mediaType}LowInitResult`)[0].innerText += '❌'
   })
 
   rtc.client.on('deviceAdd', (_data) => {
@@ -1050,6 +1064,10 @@ function initEvents() {
     console.warn(
       `网络状态 connection-state-change: ${_data.prevState} => ${_data.curState}, 是否重连：${_data.reconnect}`
     )
+    if (_data.curState === 'DISCONNECTED') {
+      $(`#videoLowInitResult`).html('')
+      $(`#screenLowInitResult`).html('')
+    }
     const div = document.getElementById('netStatus')
     div.firstElementChild.firstElementChild.lastElementChild.innerText = ` ${_data.curState} ${
       _data.reconnect ? '重连' : ''
