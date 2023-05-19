@@ -40,6 +40,13 @@ var WEBRTC2_ENV = {
   }
 }
 
+if (window.NERTC) {
+  // SDK已加载
+  $('#joinChannel-btn').removeAttr('disabled')
+} else {
+  addLog('SDK加载错误！')
+}
+
 //背景分割
 const virtualBackgroundPluginConfig = {
   development: {
@@ -187,6 +194,9 @@ var subList = $('#subList').get(0) //订阅列表
 var currentSpeaker = {}
 // 添加日志
 function addLog(info) {
+  if (!debugContentNode) {
+    debugContentNode = $('#debug-content').get(0)
+  }
   var temp = typeof info === 'string' ? info : JSON.stringify(info)
   debugContentNode.innerHTML = `<p>${info}</p>` + debugContentNode.innerHTML
 }
