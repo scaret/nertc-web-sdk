@@ -2472,7 +2472,7 @@ $('#switchScreenShare').on('click', () => {
 
 function initLocalStream() {
   let sourceId = ''
-  if ($('#enableScreen').prop('checked')) {
+  if ($('input[name="enableScreen"]:checked').val() === 'yes') {
     sourceId = getUrlVars().sourceId
     if (sourceId) {
       addLog('Electron屏幕共享：' + sourceId)
