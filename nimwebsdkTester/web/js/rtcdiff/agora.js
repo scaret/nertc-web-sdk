@@ -221,6 +221,7 @@ function startAGORA() {
     if ($('#sessionConfigScreenFrameRate').val()) {
       sFrameRate = frameRateMap.get($('#sessionConfigScreenFrameRate').val())
     }
+    let mediaType = $('#encoderMediaType').val()
     if (video) {
       console.warn('videoSource: ', videoSource)
       if (!videoSource) {
@@ -232,12 +233,15 @@ function startAGORA() {
             frameRate
           }
         }
-        if ($('#enableContentHint').prop('checked')) {
-          options.optimizationMode = $('#contentHint').val()
+        if (mediaType === 'video') {
+          if ($('#enableContentHint').prop('checked')) {
+            options.optimizationMode = $('#contentHint').val()
+          }
+          if (document.getElementById('enableBitrateMax').checked) {
+            options.encoderConfig.bitrateMax = parseInt($('#bitrateMax').val())
+          }
         }
-        if (document.getElementById('enableBitrateMax').checked) {
-          options.encoderConfig.bitrateMax = parseInt($('#bitrateMax').val())
-        }
+
         // optimizationMode生效：似乎只有在设置了分辨率时才生效
         console.log(`createCameraVideoTrack ${JSON.stringify(options)}`)
         localTracks.videoTrack = await AgoraRTC.createCameraVideoTrack(options)
@@ -254,11 +258,13 @@ function startAGORA() {
 
     if (screen) {
       let optimizationMode, maxBitrate
-      if ($('#enableContentHint').prop('checked')) {
-        optimizationMode = $('#contentHint').val()
-      }
-      if (document.getElementById('enableBitrateMax').checked) {
-        maxBitrate = parseInt($('#bitrateMax').val())
+      if (mediaType === 'screen') {
+        if ($('#enableContentHint').prop('checked')) {
+          optimizationMode = $('#contentHint').val()
+        }
+        if (document.getElementById('enableBitrateMax').checked) {
+          maxBitrate = parseInt($('#bitrateMax').val())
+        }
       }
 
       let width, height, frameRate
@@ -1025,11 +1031,11 @@ function startAGORA() {
   })
 
   let encoder = {
-    video: {encoderImplementation: 'unknown', cnt: 0},
-    screen: {encoderImplementation: 'unknown', cnt: 0},
+    video: { encoderImplementation: 'unknown', cnt: 0 },
+    screen: { encoderImplementation: 'unknown', cnt: 0 }
   }
-  setInterval(()=>{
-    ['video', 'screen'].forEach((mediaType)=>{
+  setInterval(() => {
+    ;['video', 'screen'].forEach((mediaType) => {
       report = null
       if (mediaType === 'video') {
         report = rtc.client._p2pChannel.connection?.statsFilter.report
@@ -1037,13 +1043,17 @@ function startAGORA() {
         report = rtc.clientScreen._p2pChannel.connection?.statsFilter.report
       }
       if (report) {
-        report.forEach((stats)=>{
+        report.forEach((stats) => {
           if (stats.encoderImplementation) {
             if (stats.encoderImplementation !== encoder[mediaType].encoderImplementation) {
-              console.log(`encoderImplementation Changed ${mediaType} ${encoder[mediaType].encoderImplementation} => ${stats.encoderImplementation}`)
+              console.log(
+                `encoderImplementation Changed ${mediaType} ${encoder[mediaType].encoderImplementation} => ${stats.encoderImplementation}`
+              )
               encoder[mediaType].encoderImplementation = stats.encoderImplementation
               encoder[mediaType].cnt++
-              $('#encoderImplementation_' + mediaType).text(`${stats.encoderImplementation}(${encoder[mediaType].cnt})`)
+              $('#encoderImplementation_' + mediaType).text(
+                `${stats.encoderImplementation}(${encoder[mediaType].cnt})`
+              )
             }
           }
         })

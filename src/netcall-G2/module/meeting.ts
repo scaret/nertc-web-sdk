@@ -242,7 +242,8 @@ class Meeting extends EventEmitter {
         })) as SignalGetChannelInfoResponse
         this.adapterRef.state.getChannelInfoTime = Date.now()
         if (!this.adapterRef.state.getChannelInfoRtt) {
-          this.adapterRef.state.getChannelInfoRtt = this.adapterRef.state.getChannelInfoTime - curtime
+          this.adapterRef.state.getChannelInfoRtt =
+            this.adapterRef.state.getChannelInfoTime - curtime
         }
       }
       let isUidExisted = uid == '0' || (uid != '0' && !uid) ? false : true

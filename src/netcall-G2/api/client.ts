@@ -529,7 +529,8 @@ class Client extends Base {
         localConfig = this.adapterRef.lbsManager.loadLocalConfig('onjoin')
         if (localConfig.config) {
           // 载入LBS本地配置成功
-          const expireTime = localConfig.config.ts + localConfig.config.config.ttl * 1000 - Date.now()
+          const expireTime =
+            localConfig.config.ts + localConfig.config.config.ttl * 1000 - Date.now()
           if (expireTime < localConfig.config.config.preloadTimeSec * 1000) {
             this.logger.log(
               `join() LBS在 ${Math.floor(expireTime / 1000)} 秒后过期。preloadTimeSec: ${
