@@ -1,7 +1,7 @@
 
 /**
  * 简单处理search，
- * @param {String} search 
+ * @param {String} search
  */
 function _parseQuery(search) {
   if (!search) return null;
@@ -13,7 +13,7 @@ function _parseQuery(search) {
   if (arr.length) {
     var ret = {};
     arr.forEach(function (keyAndValue) {
-      ret[keyAndValue[0]] = keyAndValue[1];
+      ret[keyAndValue[0]] = decodeURIComponent(keyAndValue[1]);
     })
     return ret;
   } else {
