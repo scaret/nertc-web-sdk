@@ -593,10 +593,15 @@ class Client extends Base {
           reason: e && e.message
         }
       })
-      throw new RtcError({
-        code: (e.getCode && e.getCode()) || ErrorCode.JOIN_FAILED,
-        message: (e.getCode && e.getMessage()) || `join() 内部错误: ${e.name}, ${e.message}`
-      })
+      if (e.getCode) {
+        // 已经是RTCError，透传
+        throw e as RtcError
+      } else {
+        throw new RtcError({
+          code: ErrorCode.JOIN_FAILED,
+          message: `join() 内部错误: ${e.name}, ${e.message}`
+        })
+      }
     }
   }
 
@@ -868,10 +873,15 @@ class Client extends Base {
       reason = ErrorCode.UNKNOWN_TYPE_ERROR
       message = e.message
       onPublishFinish()
-      throw new RtcError({
-        code: (e.getCode && e.getCode()) || reason,
-        message: (e.getCode && e.getMessage()) || `publish() 内部错误: ${e.name}, ${e.message}`
-      })
+      if (e.getCode) {
+        // 已经是RTCError，透传
+        throw e as RtcError
+      } else {
+        throw new RtcError({
+          code: reason,
+          message: `publish() 内部错误: ${e.name}, ${e.message}`
+        })
+      }
     }
   }
 
@@ -959,10 +969,15 @@ class Client extends Base {
       reason = ErrorCode.UNKNOWN_TYPE_ERROR
       message = e.message
       onUnpublishFinish()
-      throw new RtcError({
-        code: (e.getCode && e.getCode()) || reason,
-        message: (e.getCode && e.getMessage()) || `publish() 内部错误: ${e.name}, ${e.message}`
-      })
+      if (e.getCode) {
+        // 已经是RTCError，透传
+        throw e as RtcError
+      } else {
+        throw new RtcError({
+          code: reason,
+          message: `unpublish() 内部错误: ${e.name}, ${e.message}`
+        })
+      }
     }
   }
 
@@ -1265,10 +1280,15 @@ class Client extends Base {
           ' '
         )
       })
-      throw new RtcError({
-        code: (e.getCode && e.getCode()) || ErrorCode.UNKNOWN_TYPE_ERROR,
-        message: (e.getCode && e.getMessage()) || `subscribe() 内部错误: ${e.name}, ${e.message}`
-      })
+      if (e.getCode) {
+        // 已经是RTCError，透传
+        throw e as RtcError
+      } else {
+        throw new RtcError({
+          code: ErrorCode.UNKNOWN_TYPE_ERROR,
+          message: `subscribe() 内部错误: ${e.name}, ${e.message}`
+        })
+      }
     }
   }
 
@@ -1443,10 +1463,16 @@ class Client extends Base {
           ' '
         )
       })
-      throw new RtcError({
-        code: (e.getCode && e.getCode()) || ErrorCode.UNKNOWN_TYPE_ERROR,
-        message: (e.getCode && e.getMessage()) || `unsubscribe() 内部错误: ${e.name}, ${e.message}`
-      })
+
+      if (e.getCode) {
+        // 已经是RTCError，透传
+        throw e as RtcError
+      } else {
+        throw new RtcError({
+          code: ErrorCode.UNKNOWN_TYPE_ERROR,
+          message: `unsubscribe() 内部错误: ${e.name}, ${e.message}`
+        })
+      }
     }
   }
 
@@ -1500,10 +1526,15 @@ class Client extends Base {
           ' '
         )
       })
-      throw new RtcError({
-        code: (e.getCode && e.getCode()) || ErrorCode.UNKNOWN_TYPE_ERROR,
-        message: (e.getMessage && e.getMessage()) || `内部错误: ${e.message}`
-      })
+      if (e.getCode) {
+        // 已经是RTCError，透传
+        throw e as RtcError
+      } else {
+        throw new RtcError({
+          code: ErrorCode.UNKNOWN_TYPE_ERROR,
+          message: `setRemoteVideoStreamType() 内部错误: ${e.name}, ${e.message}`
+        })
+      }
     }
   }
 
@@ -1558,10 +1589,15 @@ class Client extends Base {
           ' '
         )
       })
-      throw new RtcError({
-        code: (e.getCode && e.getCode()) || ErrorCode.UNKNOWN_TYPE_ERROR,
-        message: (e.getMessage && e.getMessage()) || `setRemoteStreamType() 内部错误: ${e.message}`
-      })
+      if (e.getCode) {
+        // 已经是RTCError，透传
+        throw e as RtcError
+      } else {
+        throw new RtcError({
+          code: ErrorCode.UNKNOWN_TYPE_ERROR,
+          message: `setRemoteStreamType() 内部错误: ${e.message}`
+        })
+      }
     }
   }
 
@@ -1677,7 +1713,9 @@ class Client extends Base {
    */
 
   async setClientRole(role: string) {
-    let userRole, reason, message
+    let userRole,
+      reason = 0,
+      message = ''
     if (role === 'host' || role === 'broadcaster') {
       // broadcaster为云信Native叫法。这里做了兼容，以host为准。
       // http://doc.hz.netease.com/pages/viewpage.action?pageId=267631447
@@ -1707,11 +1745,16 @@ class Client extends Base {
               this.logger.info(`setClientRole() 主播 ${localUser}将设为观众，自动Unpublish中`)
               await this.unpublish(this.adapterRef.localStream)
             }
-            await this.adapterRef._mediasoup?.updateUserRole(userRole)
-            if (this._roleInfo.userRole !== userRole) {
-              this._roleInfo.userRole = userRole
-              this.logger.info(`setClientRole() 本地用户${localUser} 设置角色为 ${role}`)
-              this.safeEmit('client-role-changed', { role: role })
+            const userRoleResult = await this.adapterRef._mediasoup?.updateUserRole(userRole)
+            if (userRoleResult.code !== 200) {
+              reason = userRoleResult.code
+              message = userRoleResult.errMsg
+            } else {
+              if (this._roleInfo.userRole !== userRole) {
+                this._roleInfo.userRole = userRole
+                this.logger.info(`setClientRole() 本地用户${localUser} 设置角色为 ${role}`)
+                this.safeEmit('client-role-changed', { role: role })
+              }
             }
             break
           case 'DISCONNECTED':
@@ -1729,20 +1772,19 @@ class Client extends Base {
       }
     }
     const param: ReportParamSetClientRole = {
-      reason,
+      code: reason,
+      message: message,
       role: userRole
     }
     this.apiFrequencyControl({
       name: 'setClientRole',
       code: reason ? -1 : 0,
-      param: {
-        role,
-        reason
-      }
+      param
     })
     if (reason) {
       throw new RtcError({
-        code: reason,
+        code: ErrorCode.SET_CLIENT_ROLE_ERROR,
+        extraCode: reason,
         message
       })
     }

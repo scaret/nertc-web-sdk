@@ -1640,8 +1640,14 @@ $('#joinChannel-btn').on('click', async () => {
         )
       },
       (error) => {
-        console.error('加入房间失败', error)
-        addLog('加入房间失败: ' + error)
+        let text = '加入房间失败：'
+        if (error.getCode) {
+          text += `Code:${error.code} extraCode:${error.extraCode} Message:${error.message}`
+        } else {
+          text += `${JSON.stringify(error)}`
+        }
+        console.error(text)
+        addLog(text)
       }
     )
 })

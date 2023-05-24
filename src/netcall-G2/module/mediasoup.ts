@@ -2083,7 +2083,7 @@ class Mediasoup extends EventEmitter {
   async updateUserRole(userRole: number) {
     this.loggerSend.log(`updateUserRole() 更新用户角色为${userRole}`)
     try {
-      await this.adapterRef._signalling?._protoo?.request('SendUserData', {
+      const result = await this.adapterRef._signalling?._protoo?.request('SendUserData', {
         externData: {
           type: 'UserRole',
           cid: this.adapterRef.channelInfo.cid,
@@ -2093,6 +2093,7 @@ class Mediasoup extends EventEmitter {
           }
         }
       })
+      return result
     } catch (e: any) {
       this.loggerSend.error('updateUserRole() failed:', e.name, e.message)
       throw e

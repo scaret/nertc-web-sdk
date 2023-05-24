@@ -7,7 +7,9 @@ export interface ReportParamSetChannelProfile extends ReportParamBase {
 }
 
 export interface ReportParamSetClientRole extends ReportParamBase {
-  role?: number
+  code: number
+  message: string
+  role: number
 }
 
 export interface ReportParamSubscribeRemoteSubStreamVideo extends ReportParamBase {
