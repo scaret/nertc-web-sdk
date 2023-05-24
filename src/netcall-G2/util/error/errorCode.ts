@@ -814,7 +814,13 @@ const ErrorCode = {
    * 可能原因：浏览器环境不支持
    * 处理建议：麻烦使用最新版本的chrome浏览器
    */
-  GET_SYSTEM_STATS_NOT_SUPPORT_ERROR: 10480
+  GET_SYSTEM_STATS_NOT_SUPPORT_ERROR: 10480,
+  /*
+   * 描述：切换用户角色不成功（观众->主播）
+   * 可能原因：该频道主播满了 https://docs.popo.netease.com/lingxi/89ecbc9ac1724cb88c3189119462f066
+   * 处理建议：给用户提示/调整频道主播数量限制
+   */
+  SET_CLIENT_ROLE_ERROR: 10490
 }
 
 export default ErrorCode
