@@ -1350,11 +1350,15 @@ class MediaHelper extends EventEmitter {
       type = 'set_camera'
       this.video.cameraTrack?.stop()
       this.video.cameraTrack = null
+      // stopStream时去掉videoSource引用，但不要关闭track
+      this.video.videoSource = null
       emptyStreamWith(this.video.videoStream, null)
     } else if (kind === 'screen') {
       type = 'set_screen'
       this.screen.screenVideoTrack?.stop()
       this.screen.screenVideoTrack = null
+      // stopStream时去掉screenVideoSource引用，但不要关闭track
+      this.screen.screenVideoSource = null
       emptyStreamWith(this.screen.screenVideoStream, null)
     }
     this.stream.client.apiEventReport('setFunction', {
