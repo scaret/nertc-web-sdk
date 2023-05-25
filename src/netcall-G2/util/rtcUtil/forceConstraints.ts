@@ -1,5 +1,7 @@
 import { getParameters } from '../../module/parameters'
 import { GUMAudioConstraints, ILogger } from '../../types'
+import ErrorCode from '../../util/error/errorCode'
+import RtcError from '../../util/error/rtcError'
 
 export function patchScreenConstraints(constraints: MediaStreamConstraints, logger: ILogger) {
   if (getParameters().screenFocus !== 'default') {
@@ -27,6 +29,24 @@ export function patchScreenConstraints(constraints: MediaStreamConstraints, logg
   if (getParameters().screenSurfaceSwitching !== 'default') {
     // @ts-ignore
     constraints.surfaceSwitching = getParameters().screenSurfaceSwitching
+  }
+  if (getParameters().screenPreferCurrentTab) {
+    // @ts-ignore
+    constraints.preferCurrentTab = getParameters().screenPreferCurrentTab
+  }
+  if (getParameters().screenSelfBrowserSurface !== 'default') {
+    // @ts-ignore
+    constraints.selfBrowserSurface = getParameters().screenSelfBrowserSurface
+  }
+  // @ts-ignore
+  if (constraints.preferCurrentTab && constraints.selfBrowserSurface === 'exclude') {
+    logger.log(
+      `屏幕共享参数 preferCurrentTab: true 和 selfBrowserSurface: 'exclude' 互斥，不能同时存在`
+    )
+    throw new RtcError({
+      code: ErrorCode.INVALID_PARAMETER_ERROR,
+      message: `screenShare: preferCurrentTab: true 和 selfBrowserSurface: 'exclude' 互斥，不能同时存在`
+    })
   }
 }
 
