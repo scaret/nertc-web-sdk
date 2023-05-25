@@ -85,6 +85,11 @@ interface IParameters {
   screenSurfaceSwitching: 'default' | 'include' | 'exclude'
   // 屏幕共享选择时默认是什么：标签、应用、屏幕
   screenDisplaySurface: 'default' | 'browser' | 'window' | 'monitor'
+  // 屏幕共享时，浏览器将当前选项卡作为最突出的捕获源
+  // preferCurrentTab: true 和 selfBrowserSurface: 'exclude' 互斥
+  screenPreferCurrentTab: true | false
+  // 屏幕共享是否允许用户选择当前选项卡进行捕获
+  screenSelfBrowserSurface: 'default' | 'include' | 'exclude'
   // 是否允许localStream啥都不开
   allowEmptyMedia: boolean
   // leave时是否销毁localStream
@@ -226,6 +231,8 @@ let parameters: IParameters = {
   screenFocus: 'no-focus-change',
   screenSurfaceSwitching: 'default',
   screenDisplaySurface: 'default',
+  screenPreferCurrentTab: false,
+  screenSelfBrowserSurface: 'default',
   allowEmptyMedia: true,
   keepLocalstreamOnLeave: false,
   joinFirstTimeout: 2000,
