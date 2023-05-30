@@ -2093,6 +2093,9 @@ class Mediasoup extends EventEmitter {
           }
         }
       })
+      if (result !== 200) {
+        this.logger.error(`UpdateUserRole:${result.errMsg}. Code: ${result.code}`)
+      }
       return result
     } catch (e: any) {
       this.loggerSend.error('updateUserRole() failed:', e.name, e.message)

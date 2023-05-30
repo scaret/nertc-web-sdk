@@ -1642,9 +1642,9 @@ $('#joinChannel-btn').on('click', async () => {
       (error) => {
         let text = '加入房间失败：'
         if (error.getCode) {
-          text += `Code:${error.code} extraCode:${error.extraCode} Message:${error.message}`
+          text += error.message + '【Code:' + error.code + ' extraCode: ' + error.extraCode + '】'
         } else {
-          text += `${JSON.stringify(error)}`
+          text += JSON.stringify(error)
         }
         console.error(text)
         addLog(text)
@@ -3901,11 +3901,25 @@ $('#stopProxyServer-btn').click(() => {
  */
 $('#setRoleHost-btn').click(async () => {
   addLog('尝试切换为主播')
-  await rtc.client.setClientRole('host')
+  try {
+    await rtc.client.setClientRole('host')
+    addLog('切换主播成功')
+  } catch(e) {
+    if (e.getCode) {
+      addLog('切换主播失败：' + e.message + '【Code: ' + e.code + ' extraCode:' + e.extraCode + '】')
+    }
+  }
 })
 $('#setRoleAudience-btn').click(async () => {
   addLog('尝试切换为观众')
-  await rtc.client.setClientRole('audience')
+  try {
+    await rtc.client.setClientRole('audience')
+    addLog('切换观众成功')
+  } catch(e) {
+    if (e.getCode) {
+      addLog('切换观众失败：' + e.message + '【Code: ' + e.code + ' extraCode:' + e.extraCode + '】')
+    }
+  }
 })
 
 /**

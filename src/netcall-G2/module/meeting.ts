@@ -335,10 +335,12 @@ class Meeting extends EventEmitter {
         // 会话建立
         return this.adapterRef.instance.startSession()
       } else {
-        const errorMessage =
-          data.desc && data.desc !== ''
-            ? `join() ${data.desc}`
-            : `join() 服务器不允许加入房间, code ${data.code}`
+        let errorMessage = `join() 服务器不允许加入房间, code ${data.code}`
+        if (data.desc) {
+          errorMessage = data.desc
+        } else if (data.code === 4003) {
+          errorMessage = `房间人数超过最大值。`
+        }
         this.logger.error(errorMessage)
         this.adapterRef.channelStatus = 'leave'
         this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
