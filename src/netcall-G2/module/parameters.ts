@@ -167,6 +167,7 @@ interface IParameters {
   // 如需启用硬件加速，将 h264ProfileLevel 改为 42001f，并将 h264ProfileLevelSignal 改为 42e01f
   h264ProfileLevel: string
   h264ProfileLevelSignal: string
+  enableSdpRrtr: 'no' | 'chrome' | 'all'
   forceBWE: 'no' | 'transport-cc' | 'remb'
   // 调试用，采集音频时强制开启/关闭AEC，包括主辅流
   forceAEC: 'no' | 'on' | 'off'
@@ -275,6 +276,7 @@ let parameters: IParameters = {
   h264ProfileLevel: '42e01f',
   // 不要动这个参数
   h264ProfileLevelSignal: '42e01f',
+  enableSdpRrtr: 'chrome',
   forceBWE: 'no',
   forceAGC: 'no',
   forceANS: 'no',
