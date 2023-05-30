@@ -917,6 +917,19 @@ export class Chrome74 extends HandlerInterface {
       )
     }
 
+    if (getParameters().enableSdpRrtr === 'chrome' || getParameters().enableSdpRrtr === 'all') {
+      offer.sdp = offer.sdp.replace(/a=rtcp-fb:(\d+) rrtr ?\r\n/g, '')
+      offer.sdp = offer.sdp.replace(
+        /a=rtcp-fb:(\d+) nack ?\r\n/g,
+        'a=rtcp-fb:$1 rrtr\r\na=rtcp-fb:$1 nack\r\n'
+      )
+      answer.sdp = answer.sdp.replace(/a=rtcp-fb:(\d+) rrtr ?\r\n/g, '')
+      answer.sdp = answer.sdp.replace(
+        /a=rtcp-fb:(\d+) nack ?\r\n/g,
+        'a=rtcp-fb:$1 rrtr\r\na=rtcp-fb:$1 nack\r\n'
+      )
+    }
+
     // if (this._pc.signalingState === 'stable') {
     //   await this._pc.setLocalDescription(offer)
     //   Logger.debug(prefix, '[Subscribe] receive() | calling pc.setLocalDescription()')

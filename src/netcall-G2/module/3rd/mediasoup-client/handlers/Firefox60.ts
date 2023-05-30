@@ -903,6 +903,20 @@ export class Firefox60 extends HandlerInterface {
         'a=fmtp:111 minptime=10;stereo=1;sprop-stereo=1;useinbandfec=1'
       )
     }
+
+    if (getParameters().enableSdpRrtr === 'all') {
+      offer.sdp = offer.sdp.replace(/a=rtcp-fb:(\d+) rrtr ?\r\n/g, '')
+      offer.sdp = offer.sdp.replace(
+        /a=rtcp-fb:(\d+) nack ?\r\n/g,
+        'a=rtcp-fb:$1 rrtr\r\na=rtcp-fb:$1 nack\r\n'
+      )
+      answer.sdp = answer.sdp.replace(/a=rtcp-fb:(\d+) rrtr ?\r\n/g, '')
+      answer.sdp = answer.sdp.replace(
+        /a=rtcp-fb:(\d+) nack ?\r\n/g,
+        'a=rtcp-fb:$1 rrtr\r\na=rtcp-fb:$1 nack\r\n'
+      )
+    }
+
     if (!getParameters().enableUdpCandidate) {
       answer.sdp = answer.sdp.replace(/\r\na=candidate:udpcandidate[^\r]+/g, '')
     }
