@@ -3362,8 +3362,9 @@ function playMicroSource() {
     assertLocalStream()
     return
   }
-  if ($('#sessionConfigAudioProfile').val()) {
-    rtc.localStream.setAudioProfile($('#sessionConfigAudioProfile').val())
+  const audioProfile = $('#sessionConfigAudioProfile').val()
+  if (audioProfile) {
+    rtc.localStream.setAudioProfile(audioProfile)
   }
   rtc.audioSource =
     rtc.audioSource && rtc.audioSource.readyState === 'live'
@@ -3396,8 +3397,10 @@ function openMicro() {
     assertLocalStream()
     return
   }
-
-  rtc.localStream.setAudioProfile($('#sessionConfigAudioProfile').val())
+  const audioProfile = $('#sessionConfigAudioProfile').val()
+  if (audioProfile) {
+    rtc.localStream.setAudioProfile(audioProfile)
+  }
   rtc.localStream
     .open({
       type: 'audio',
