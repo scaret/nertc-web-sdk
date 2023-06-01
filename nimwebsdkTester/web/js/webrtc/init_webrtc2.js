@@ -2505,7 +2505,7 @@ $('#switchScreenShare').on('click', () => {
   rtc.localStream.switchScreenStream({ screenAudio: true })
 })
 
-if (getUrlVars().config="baseline") {
+if (getUrlVars().config === "baseline") {
   const getwayAddr = 'webrtcgwcn.netease.im/?ip=115.236.118.14:6997'
   addLog('baseline专属配置：关闭小流，固定网关:' + getwayAddr)
   document.getElementById('videoLow').checked = false
