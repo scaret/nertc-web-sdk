@@ -4340,7 +4340,7 @@ class LocalStream extends RTCEventEmitter {
     if (!this._play) return
     if (!env.IS_ANY_SAFARI) return
     if (env.SAFARI_VERSION && parseFloat(env.SAFARI_VERSION) > 15.2) return
-    const localVideoDom = this._play.video.dom?.querySelector('video')
+    const localVideoDom = this._play.video.dom
     const videoDom = this._play.video.containerDom
     if (localVideoDom && videoDom) {
       const filters = this.videoPostProcess.filters!

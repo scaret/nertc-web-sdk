@@ -69,7 +69,6 @@ export function shimCanvas(trackInput: MediaStreamTrack) {
       }
     }, 1000 / frameRate)
     document.body.appendChild(videoElem)
-    rtcCanvas.destroy()
     return canvasTrack
   } else {
     throw new Error('Ctx not supported')
