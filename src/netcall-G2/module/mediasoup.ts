@@ -333,9 +333,13 @@ class Mediasoup extends EventEmitter {
   }
 
   async _sendTransportConnectionstatechange(_sendTransport: Transport, connectionState: string) {
-    if (this._sendTransport !== _sendTransport) {
-      this.loggerSend.error(
-        '_sendTransportConnectionstatechange: 出现了_sendTransport绑定不一致的状况。'
+    if (!this._sendTransport || this._sendTransport.closed) {
+      return
+    }
+    if (this._sendTransport.idx !== _sendTransport.idx) {
+      this.loggerSend.warn(
+        `_sendTransportConnectionstatechange：出现了_sendTransport绑定不一致的状况:` +
+          `${_sendTransport.id}/${_sendTransport.idx}=>${this._sendTransport.id}/${this._sendTransport.idx}`
       )
       return
     }
@@ -366,9 +370,13 @@ class Mediasoup extends EventEmitter {
   }
 
   async _recvTransportConnectionstatechange(_recvTransport: Transport, connectionState: string) {
-    if (this._recvTransport !== _recvTransport) {
-      this.loggerRecv.error(
-        '_recvTransportConnectionstatechange：出现了_recvTransport绑定不一致的状况。'
+    if (!this._recvTransport || this._recvTransport.closed) {
+      return
+    }
+    if (this._recvTransport.idx !== _recvTransport.idx) {
+      this.loggerRecv.warn(
+        `_recvTransportConnectionstatechange：出现了_recvTransport绑定不一致的状况:` +
+          `${_recvTransport.id}/${_recvTransport.idx}=>${this._recvTransport.id}/${this._recvTransport.idx}`
       )
       return
     }
