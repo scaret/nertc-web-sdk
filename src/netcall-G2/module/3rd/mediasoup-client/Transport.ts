@@ -163,10 +163,12 @@ export interface FillRemoteRecvSdpOptions {
 }
 
 const prefix = 'Transport'
+let idx = 0
 
 export class Transport extends EnhancedEventEmitter {
   // Id.
   public _id: string
+  public idx = ++idx
   // Closed flag.
   private _closed = false
   // Direction.
