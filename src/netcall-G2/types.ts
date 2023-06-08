@@ -1332,6 +1332,9 @@ export interface PreProcessingHandler {
 }
 
 export interface NeMediaStreamTrack extends MediaStreamTrack {
+  canvas?: HTMLCanvasElement
+  mutedStartAt?: number
+  mutedCnt?: number
   endedAt?: number
 }
 

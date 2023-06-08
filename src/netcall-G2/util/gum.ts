@@ -178,6 +178,21 @@ async function getScreenStream(constraint: MediaStreamConstraints, logger: ILogg
 let lastWatchTs = Date.now()
 const interval = 1000
 let warningCnt = 0
+
+const hasDuplicateDevice = function (track: MediaStreamTrack) {
+  const tracks = [
+    ...getParameters().tracks.video,
+    ...getParameters().tracks.audio
+  ] as (NeMediaStreamTrack | null)[]
+  for (let i = 0; i < tracks.length; i++) {
+    const t = tracks[i]
+    if (t && t.label === track.label && t !== track && t.readyState !== 'ended') {
+      return true
+    }
+  }
+  return false
+}
+
 const trackWatcher = () => {
   const videoTracks = getParameters().tracks.video as (NeMediaStreamTrack | null)[]
   const audioTracks = getParameters().tracks.audio as (NeMediaStreamTrack | null)[]
@@ -193,22 +208,50 @@ const trackWatcher = () => {
     logger.warn(text)
   }
   lastWatchTs = now
-  videoTracks.forEach((track, i) => {
-    if (track && !track.endedAt && track.readyState === 'ended') {
-      logger.log(`VIDEOTRACK#${i} 已停止：【${track.label}】`)
-      track.endedAt = now
-      const evt = new CustomEvent('neTrackEnded')
-      track.dispatchEvent(evt)
+  const handleMediaTrack = (track: NeMediaStreamTrack | null, i: number) => {
+    if (!track) {
+      return
     }
-  })
-  audioTracks.forEach((track, i) => {
-    if (track && !track.endedAt && track.readyState === 'ended') {
-      logger.log(`AUDIOTRACK#${i} 已停止：【${track.label}】`)
-      track.endedAt = now
-      const evt = new CustomEvent('neTrackEnded')
-      track.dispatchEvent(evt)
+    let trackName = ''
+    if (track.canvas) {
+      trackName = `CANVASTRACK#${i}${track.canvas.width}x${track.canvas.height}`
+    } else {
+      trackName = `${track.kind.toUpperCase()}TRACK#${i}【${track.label}】`
     }
-  })
+    if (!track.endedAt) {
+      if (track.readyState === 'ended') {
+        logger.log(`${trackName}: 已停止`)
+        track.endedAt = now
+        const evt = new CustomEvent('neTrackEnded')
+        track.dispatchEvent(evt)
+      } else if (!track.canvas && track.muted && track.enabled) {
+        // track处于无数据状态（通常是采集问题，表现为黑屏）
+        // 剔除canvas，因为小流在不发布时就是黑屏
+        track.mutedStartAt = track.mutedStartAt || now
+        track.mutedCnt = track.mutedCnt || 0
+        track.mutedCnt++
+        if (track.mutedCnt === 11 || track.mutedCnt === 31) {
+          logger.warn(
+            `${trackName}： 处于无数据状态，请检查设备是否正常:${now - track.mutedStartAt}ms`
+          )
+          if (hasDuplicateDevice(track)) {
+            logger.warn(`${trackName} ：该设备打开了多次`)
+          }
+        }
+      } else {
+        if (track.mutedStartAt) {
+          if (track.mutedCnt && track.mutedCnt > 11) {
+            logger.warn(`${trackName}：数据恢复正常 :${now - track.mutedStartAt}ms`)
+          }
+          delete track.mutedStartAt
+          delete track.mutedCnt
+        }
+      }
+    }
+  }
+
+  videoTracks.forEach(handleMediaTrack)
+  audioTracks.forEach(handleMediaTrack)
 }
 
 setInterval(trackWatcher, interval)
