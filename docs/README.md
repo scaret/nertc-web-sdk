@@ -292,7 +292,7 @@ table th:nth-of-type(2) {
 | LBS_REQUEST_ERROR             | 10461  | LBS 请求相关异常         | 可以通过 console 日志查看错误原因及处理方式 |
 | LBS_JSON_ERROR                | 10462  | LBS json 解析异常        | 可以通过 console 日志查看错误原因及处理方式 |
 | NO_STATS_ERROR                | 10470  | 数据上报相关异常         | 可以通过 console 日志查看错误原因及处理方式 |
-| SET_CLIENT_ROLE_ERROR         | 10480  | 用户角色修改异常         | 可以通过 console 日志查看错误原因及处理方式 |
+| SET_CLIENT_ROLE_ERROR         | 10490  | 用户角色修改异常         | 可以通过 console 日志查看错误原因及处理方式 |
 | AUTO_PLAY_NOT_ALLOWED         | 41030  | 自动播放受限异常         | 可以通过 console 日志查看错误原因及处理方式 |
 | UNKNOWN                       | 99999  | 未知错误                 | 可以通过 console 日志查看错误原因及处理方式 |
 
