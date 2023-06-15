@@ -398,7 +398,7 @@ declare interface Stream {
      * 若为 false，则不进行 publish；若为 true 或者不填，则进行 publish。
      *
      *
-     * @since V4.6.60
+     * @since V5.4.0
      */
     enableMediaPub?: boolean
   }): Promise<undefined>
