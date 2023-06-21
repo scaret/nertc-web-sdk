@@ -1,6 +1,6 @@
 //Common Configs
-const SDK_VERSION = '5.4.0' // WEBPACK_STRING_REPLACE_VERSION -don't delete the comment
-const ENGINE_VERSION = '5.4.0.0'
+const SDK_VERSION = '5.5.0' // WEBPACK_STRING_REPLACE_VERSION -don't delete the comment
+const ENGINE_VERSION = '5.5.0.0'
 const BUILD = '' // WEBPACK_STRING_REPLACE_BUILD -don't delete the comment
 
 export interface IConfig {
