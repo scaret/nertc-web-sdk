@@ -188,6 +188,9 @@ interface IParameters {
   replaceIdealConstraint: 'safari16_screen' | 'all' | 'never'
   // 修补Safari本地canvas track无法播放的问题
   shimLocalCanvas: 'safari' | 'all' | 'never'
+  // 允许应用程序向用户代理提示可以接受的播放延迟，详见: https://henbos.github.io/webrtc-timing/
+  audioPlayoutDelayHint: number
+  videoPlayoutDelayHint: number
 }
 
 let parameters: IParameters = {
@@ -287,7 +290,9 @@ let parameters: IParameters = {
   revertSubstreamProduceType: false,
   moreNotAllowedError: false,
   replaceIdealConstraint: 'safari16_screen',
-  shimLocalCanvas: 'safari'
+  shimLocalCanvas: 'safari',
+  audioPlayoutDelayHint: 0,
+  videoPlayoutDelayHint: 0
 }
 
 try {
