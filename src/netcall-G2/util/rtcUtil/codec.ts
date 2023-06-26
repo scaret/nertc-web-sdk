@@ -1,6 +1,8 @@
 import { getParameters } from '../../module/parameters'
 import { AudioCodecType, VideoCodecType } from '../../types'
 import { RTCCanvas } from '../rtcUtil/rtcCanvas'
+import { CHROME_MAJOR_VERSION } from './rtcEnvironment'
+import { getDefaultLogger } from '../webrtcLogger'
 
 // 表示所有网易支持的编码类型
 export const VideoCodecList: VideoCodecType[] = ['H264', 'VP8']
@@ -154,7 +156,12 @@ function reduceCodecs(codecs: any[], selectedCodec?: RTCRtpCodecCapability) {
     const codec = codecs[i]
     if (codec.mimeType && codec.mimeType.indexOf('video') === 0) {
       if (codec.mimeType === 'video/H264' && getParameters().h264ProfileLevel) {
-        if (
+        if (CHROME_MAJOR_VERSION === 95) {
+          // https://bugs.chromium.org/p/chromium/issues/detail?id=1252710
+          getDefaultLogger().warn(
+            `当前浏览器版本无法修改H264 Profile Level：${getParameters().h264ProfileLevel}`
+          )
+        } else if (
           codec.parameters['profile-level-id'] &&
           isProfileLevelSupported(getParameters().h264ProfileLevel)
         ) {
