@@ -381,6 +381,14 @@ export interface StreamExceptionEvent extends DataEvent {
   time: number
 }
 
+export interface ExceptionEvent extends DataEvent {
+  cid: string
+  uid: string
+  name: string
+  value: string
+  time: number
+}
+
 export interface UserCustomEvent extends DataEvent {
   name: string
   customIdentify: string
