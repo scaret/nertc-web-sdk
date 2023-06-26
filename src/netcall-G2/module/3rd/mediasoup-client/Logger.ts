@@ -5,6 +5,7 @@ import { getParameters } from '../../parameters'
 
 const APP_NAME = 'mediasoup-client'
 let win: any = window
+let cachedLogs: any[] = []
 
 export const Logger = {
   debug(option?: any, ...args: any[]) {
@@ -14,7 +15,7 @@ export const Logger = {
     if (getParameters().logLevel <= loglevels.DEBUG) {
       console.debug.apply(console, args)
     }
-    win.logUpload && win.wsTransport && win.wsTransport.sendLog(args)
+    logCache(args)
   },
 
   warn(option?: any, ...args: any[]) {
@@ -24,7 +25,7 @@ export const Logger = {
     if (getParameters().logLevel <= loglevels.WARNING) {
       console.warn.apply(console, args)
     }
-    win.logUpload && win.wsTransport && win.wsTransport.sendLog(args)
+    logCache(args)
   },
 
   error(option?: any, ...args: any[]) {
@@ -34,7 +35,7 @@ export const Logger = {
     if (getParameters().logLevel <= loglevels.ERROR) {
       console.error.apply(console, args)
     }
-    win.logUpload && win.wsTransport && win.wsTransport.sendLog(args)
+    logCache(args)
   },
 
   formatArgs(logLevel: 'DEBUG' | 'WARN' | 'ERROR', args: any[], param?: any) {
@@ -66,5 +67,37 @@ export const Logger = {
       str = '0' + str
     }
     return str
+  }
+}
+
+function logCache(args: any) {
+  let win: any = window
+  if (win.logUpload && !getParameters().disableAllReports) {
+    if (!win.wsTransport) {
+      // ws创建前 缓存日志
+      let time = Date.now()
+      try {
+        // @ts-ignore
+        if (cachedLogs.length) {
+          // @ts-ignore
+          cachedLogs[cachedLogs.length - 1].args[0].replace('[NERTC', '[缓存][NERTC')
+        }
+      } catch (e) {
+        // do noting
+      }
+      cachedLogs.push({
+        time,
+        args
+      })
+      // console.error('cachedLogs: ',cachedLogs)
+    } else {
+      if (cachedLogs.length) {
+        cachedLogs.forEach((item) => {
+          win.wsTransport && win.wsTransport.sendLog(item.args)
+        })
+        cachedLogs = []
+      }
+      win.wsTransport && win.wsTransport.sendLog(args)
+    }
   }
 }
