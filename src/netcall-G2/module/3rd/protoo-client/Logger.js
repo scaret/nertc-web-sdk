@@ -3,6 +3,7 @@ import { updateLogIndex } from '../../../util/webrtcLogger'
 import { getParameters } from '../../parameters'
 const APP_NAME = 'protoo-client'
 
+let cachedLogs = []
 class Logger {
   constructor(prefix) {
     this.prefix = prefix ? `${APP_NAME}:${prefix}` : `${APP_NAME}`
@@ -14,7 +15,7 @@ class Logger {
     if (getParameters().logLevel <= loglevels.DEBUG) {
       console.debug.apply(console, args)
     }
-    window.logUpload && window.wsTransport && window.wsTransport.sendLog(args)
+    this.logCache(args)
   }
 
   warn() {
@@ -23,7 +24,7 @@ class Logger {
     if (getParameters().logLevel <= loglevels.WARNING) {
       console.warn.apply(console, args)
     }
-    window.logUpload && window.wsTransport && window.wsTransport.sendLog(args)
+    this.logCache(args)
   }
 
   error() {
@@ -32,7 +33,7 @@ class Logger {
     if (getParameters().logLevel <= loglevels.ERROR) {
       console.error.apply(console, args)
     }
-    window.logUpload && window.wsTransport && window.wsTransport.sendLog(args)
+    this.logCache(args)
   }
 
   formatArgs(args) {
@@ -62,6 +63,37 @@ class Logger {
       str = '0' + str
     }
     return str
+  }
+
+  logCache = function (args) {
+    if (window.logUpload && !getParameters().disableAllReports) {
+      if (!window.wsTransport) {
+        // ws创建前 缓存日志
+        let time = Date.now()
+        try {
+          // @ts-ignore
+          if (cachedLogs.length) {
+            // @ts-ignore
+            cachedLogs[cachedLogs.length - 1].args[0].replace('[NERTC', '[缓存][NERTC')
+          }
+        } catch (e) {
+          // do noting
+        }
+        cachedLogs.push({
+          time,
+          args
+        })
+        // console.error('cachedLogs: ',cachedLogs)
+      } else {
+        if (cachedLogs.length) {
+          cachedLogs.forEach((item) => {
+            window.wsTransport && window.wsTransport.sendLog(item.args)
+          })
+          cachedLogs = []
+        }
+        window.wsTransport && window.wsTransport.sendLog(args)
+      }
+    }
   }
 }
 
