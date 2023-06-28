@@ -1216,6 +1216,7 @@ class Signalling extends EventEmitter {
         this.adapterRef.mediaCapability.parseRoom(response.externData.roomCapability)
         this.adapterRef.instance.safeEmit('@mediaCapabilityChange')
         await this.adapterRef._mediasoup.init()
+
         if (this.adapterRef.localStream) {
           if (
             this.adapterRef.localStream.audio ||
