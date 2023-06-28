@@ -35,9 +35,6 @@ export class MediaCapability {
       ) {
         tag += `/${this.supportedCodecSend}/${this.supportedCodecRecv}`
       }
-      if (adapterRef.mediaCapability !== this) {
-        tag += ' DETACHED'
-      }
       return tag
     })
     this.supportedCodecRecv = null

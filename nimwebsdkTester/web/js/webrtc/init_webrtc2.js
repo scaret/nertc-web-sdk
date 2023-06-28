@@ -336,6 +336,23 @@ $('#privatizationConfig').on('click', () => {
   }
 })
 
+function Proxify(obj, propertyName = '', depth = 0){
+  if (obj && typeof Proxy === 'function'){
+    if (depth >= 1){
+      for (let key in obj) {
+        if (obj[key] && typeof obj[key] === 'object'){
+          obj[key] = Proxify(obj[key], key,depth - 1)
+        }
+      }
+    }
+    proxied = new Proxy(obj, {})
+    // console.warn('Proxy depth', depth, propertyName, obj)
+    return proxied
+  } else {
+    return obj
+  }
+}
+
 const USER_AGENT = (window.navigator && window.navigator.userAgent) || ''
 const IS_XWEB = /XWEB\/\d+/i.test(USER_AGENT)
 const IS_TBS = /TBS\/\d+/i.test(USER_AGENT)
@@ -535,6 +552,8 @@ function init() {
       report: reportVal === 1 ? true : false
     })
   }
+
+  rtc.client = Proxify(rtc.client, 'rtc.client')
 
   initDevices()
   initEvents()
@@ -2613,6 +2632,7 @@ function initLocalStream() {
     addLog('初始化本地流失败' + e)
     throw e
   }
+  rtc.localStream = Proxify(rtc.localStream)
   const resolution = $('#sessionConfigVideoQuality').val()
   const frameRate = $('#sessionConfigVideoFrameRate').val()
   const videoProfile = {}

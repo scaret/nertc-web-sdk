@@ -59,6 +59,7 @@ class RemoteStream extends RTCEventEmitter {
   private producerId: string | null
   public platformType: PlatformType = PlatformType.unknown
   public readonly isRemote = true
+  __v_skip = getParameters().enableVSkip
   public pubStatus: PubStatus = {
     audio: {
       audio: false,
@@ -154,7 +155,10 @@ class RemoteStream extends RTCEventEmitter {
       } else if (this.pubStatus.screen.producerId) {
         tag += 's'
       }
-      if (options.client.adapterRef.remoteStreamMap[this.streamID] !== this) {
+      if (
+        options.client.adapterRef.remoteStreamMap[this.streamID]?.remoteStreamId !==
+        this.remoteStreamId
+      ) {
         tag += ' DETACHED'
       }
       return tag
@@ -1832,7 +1836,9 @@ class RemoteStream extends RTCEventEmitter {
   }
 
   getAdapterRef() {
-    if (this.client.adapterRef.remoteStreamMap[this.streamID] === this) {
+    if (
+      this.client.adapterRef.remoteStreamMap[this.streamID]?.remoteStreamId === this.remoteStreamId
+    ) {
       return this.client.adapterRef
     } else {
       return null

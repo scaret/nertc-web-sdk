@@ -153,6 +153,7 @@ class LocalStream extends RTCEventEmitter {
   public audioProfile: AudioProfileTypes
   private _cameraTrack: MediaStreamTrack | null
   private _transformedTrack: MediaStreamTrack | null
+  __v_skip = getParameters().enableVSkip
   public videoProfile: {
     frameRate: number
     resolution: number
@@ -245,7 +246,11 @@ class LocalStream extends RTCEventEmitter {
       if (this.state !== 'INITED') {
         tag += ' ' + this.state
       }
-      if (this.state === 'INITED' && this.client && this.client.adapterRef.localStream !== this) {
+      if (
+        this.state === 'INITED' &&
+        this.client &&
+        this.client.adapterRef.localStream?.localStreamId !== this.localStreamId
+      ) {
         tag += ' DETACHED'
       }
       if (this.destroyed) {
@@ -437,7 +442,7 @@ class LocalStream extends RTCEventEmitter {
 
   getAdapterRef() {
     // 仅当localStream在发布时才会返回adapterRef
-    if (this.client.adapterRef.localStream === this) {
+    if (this.client.adapterRef.localStream?.localStreamId === this.localStreamId) {
       return this.client.adapterRef
     } else {
       return null

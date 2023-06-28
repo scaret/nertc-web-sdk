@@ -28,8 +28,11 @@ import * as env from '../util/rtcUtil/rtcEnvironment'
 import { SimpleBig } from '../util/json-big/SimpleBig'
 const protooClient = require('./3rd/protoo-client/')
 
+let signallingCnt = 0
+
 class Signalling extends EventEmitter {
   private adapterRef: AdapterRef
+  signallingId = signallingCnt++
   private _reconnectionTimer: Timer | null = null
   public _protoo: Peer | null = null
   private _url: string | null = null
@@ -62,6 +65,9 @@ class Signalling extends EventEmitter {
     super()
     this.logger = options.logger.getChild(() => {
       let tag = 'signal'
+      if (this.signallingId) {
+        tag += this.signallingId
+      }
       if (!this._protoo) {
         tag += ' PROTOO_UNINIT'
       } else {
@@ -72,7 +78,7 @@ class Signalling extends EventEmitter {
           tag += '!connected'
         }
       }
-      if (options.adapterRef._signalling !== this) {
+      if (options.adapterRef._signalling?.signallingId !== this.signallingId) {
         tag += ' DETACHED'
       }
       return tag
@@ -138,7 +144,7 @@ class Signalling extends EventEmitter {
         const timeout = 10000
         this.logger.warn(`目前所有服务端不在线，判断为网络断开。等待服务端起上线或 ${timeout}ms`)
         const reason = await this.adapterRef.signalProbeManager.waitForServerActive(timeout)
-        if (this.adapterRef._signalling !== this) {
+        if (this.adapterRef._signalling?.signallingId !== this.signallingId) {
           // 此时已退出房间
           return
         } else {
@@ -224,7 +230,7 @@ class Signalling extends EventEmitter {
           clearTimeout(this._reconnectionTimer)
         }
         this._reconnectionTimer = null
-        if (this.adapterRef._signalling !== this) {
+        if (this.adapterRef._signalling?.signallingId !== this.signallingId) {
           // 此时已退出房间
           return
         }
@@ -935,10 +941,10 @@ class Signalling extends EventEmitter {
     if (!this._protoo) {
       this.logger.warn(`Protoo is destroyed: ${_protoo.id}`)
       return true
-    } else if (this._protoo !== _protoo) {
+    } else if (this._protoo.id !== _protoo.id) {
       this.logger.warn(`Protoo is detached: ${_protoo.id} => ${this._protoo.id}`)
       return true
-    } else if (this !== this.adapterRef._signalling) {
+    } else if (this.adapterRef._signalling?.signallingId !== this.signallingId) {
       this.logger.warn(
         `Protoo.signaling is detached: ${this._protoo.id} => ${this.adapterRef._signalling?._protoo?.id}`
       )
@@ -1046,7 +1052,7 @@ class Signalling extends EventEmitter {
       }
     }
 
-    if (this.adapterRef._signalling === this) {
+    if (this.adapterRef._signalling?.signallingId === this.signallingId) {
       this.logger.log('Signalling: socket连接成功，开始发送Join请求')
       //join之前，清除之前可能存在的request
       this._protoo?.clear()

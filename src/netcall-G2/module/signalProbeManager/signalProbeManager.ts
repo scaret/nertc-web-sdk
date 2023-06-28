@@ -112,18 +112,23 @@ export class SignalProbeManager {
     const msg = evt.data as SignalIPCMessage
     switch (msg.cmd) {
       case 'ohayo':
-        const data: SignalIPCInitConfig = {
-          signalStates: this.signalStates,
-          pingInterval: 2000,
-          reconnectionInterval: 10000,
-          maxRtt: getParameters().joinFirstTimeout + 4000,
-          wsTimeout: getParameters().joinFirstTimeout + 8000
+        try {
+          const signalStates = JSON.parse(JSON.stringify(this.signalStates))
+          const data: SignalIPCInitConfig = {
+            signalStates,
+            pingInterval: 2000,
+            reconnectionInterval: 10000,
+            maxRtt: getParameters().joinFirstTimeout + 4000,
+            wsTimeout: getParameters().joinFirstTimeout + 8000
+          }
+          const signalMsg: SignalIPCMessage = {
+            cmd: 'init',
+            data
+          }
+          this.worker.postMessage(signalMsg)
+        } catch (e) {
+          this.logger.warn(`无法启动通道探测：`, e)
         }
-        const signalMsg: SignalIPCMessage = {
-          cmd: 'init',
-          data
-        }
-        this.worker.postMessage(signalMsg)
         break
       case 'sync':
         this.processCmdSync(msg.data)

@@ -56,6 +56,8 @@ interface QueueElem {
 
 type callMeWhenFinished = () => void
 
+let proxyDetected = false
+
 export class OperationQueue {
   cnt = 0
   current: QueueElem | null = null
@@ -99,6 +101,23 @@ export class OperationQueue {
     }, 5000)
   }
   enqueue(args: OperationArgs): Promise<callMeWhenFinished> {
+    if (!proxyDetected) {
+      // 对Client做一次Proxy判定
+      const client = args.caller as unknown as Client
+      if (
+        client.clientId > -1 &&
+        client.clientId == client.adapterRef?.instance?.clientId &&
+        client !== client.adapterRef.instance
+      ) {
+        client.logger.warn(
+          `侦测到该次调用的this不指向原生Client对象。` +
+            `请避免使用Proxy或bind等方式篡改SDK调用主体：Client:${args.method}`
+        )
+        proxyDetected = true
+      }
+      if ((args.caller as unknown as Client).adapterRef.instance) {
+      }
+    }
     return new Promise((resolve, reject) => {
       // await enqueue操作会卡住所有join/leave操作。
       // resolve被调用时代表继续执行下面的操作。

@@ -82,9 +82,12 @@ enum LBS_ERR_CODE {
   FORMAT_ERROR = 70102
 }
 
+let lbsManagerCnt = 0
+
 export class LBSManager {
   private client: Client
   private logger: ILogger
+  private lbsManagerId = lbsManagerCnt++
   private urlBackupMap: { [domain: string]: DomainItem[] } = {}
   private requestCnt = 0
   private localStorageKey = 'LBS_CONFIG'
@@ -105,7 +108,7 @@ export class LBSManager {
     this.client = client
     this.logger = client.logger.getChild(() => {
       let tag = `LBSManager ` + this.lbsState
-      if (this.client.adapterRef.lbsManager !== this) {
+      if (this.client.adapterRef.lbsManager.lbsManagerId !== this.lbsManagerId) {
         tag += 'DETACHED'
       }
       return tag
@@ -113,7 +116,7 @@ export class LBSManager {
     window.addEventListener('online', () => {
       if (
         this.client.adapterRef.connectState.curState !== 'DISCONNECTED' &&
-        this.client.adapterRef.lbsManager === this
+        this.client.adapterRef.lbsManager.lbsManagerId === this.lbsManagerId
       ) {
         this.logger.log(`侦测到网络连接恢复，尝试更新LBS配置`)
         this.startUpdate('online')

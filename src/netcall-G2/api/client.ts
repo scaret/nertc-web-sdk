@@ -71,6 +71,7 @@ class Client extends Base {
   private handleOnOnline: (evt?: any) => void
   private handleOnOffline: (evt?: any) => void
   private handleUnhandledRejection: (evt?: any) => void
+  __v_skip = getParameters().enableVSkip
   constructor(options: ClientOptions) {
     super(options)
     this.apiFrequencyControl({

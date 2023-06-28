@@ -188,10 +188,6 @@ class MediaHelper extends EventEmitter {
           tag += ' ' + this.audio.webAudio?.mixAudioConf.state
         }
       }
-
-      if (this.stream.mediaHelper !== this) {
-        tag += 'DETACHED'
-      }
       return tag
     })
 

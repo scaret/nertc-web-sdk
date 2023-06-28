@@ -761,6 +761,7 @@ export interface Client {
   apiFrequencyControl: (event: any) => void
   emit: (eventName: string, eventData?: any) => void
   safeEmit: (eventName: string, eventData?: any) => void
+  clientId: number
   _roleInfo: {
     userRole: number
     audienceList: { [uid in UIDTYPE]: boolean }

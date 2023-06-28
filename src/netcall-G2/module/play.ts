@@ -61,10 +61,6 @@ class Play extends EventEmitter {
       if (this.audioSlave.dom?.paused) {
         tag += ' audioSlave_paused'
       }
-
-      if (this.stream._play !== this) {
-        tag += ' DETACHED'
-      }
       return tag
     })
 
