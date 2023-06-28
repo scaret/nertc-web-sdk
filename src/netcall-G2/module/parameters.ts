@@ -110,6 +110,8 @@ interface IParameters {
   trustOnOnline: boolean
   // 信任  window.onoffline 回调
   trustOnOffline: boolean
+  // 信任  window.unhandledrejection 回调
+  trustUnhandledrejection: boolean
   // 部分浏览器加载编解码器需要时间。如果浏览器不支持H264，则等待多少毫秒
   h264Wait: number
   // 编码水印字体
@@ -247,6 +249,7 @@ let parameters: IParameters = {
   leaveOnUnload: true,
   trustOnOnline: true,
   trustOnOffline: false,
+  trustUnhandledrejection: false,
   h264Wait: 1000,
   encoderWatermarkLimit: 1,
   encoderWatermarkFontFamily: 'Verdana',

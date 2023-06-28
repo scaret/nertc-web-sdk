@@ -6,6 +6,7 @@ import {
   APIEventItem,
   AudioVideoBannedEvent,
   StreamExceptionEvent,
+  ExceptionEvent,
   CommonEvent,
   DataEvent,
   DeviceAbnormalEvent,
@@ -250,6 +251,10 @@ class DataReport {
 
   setUserCustomEvent(functionEvent: UserCustomEvent) {
     this.addEvent('userCustomEvent', functionEvent)
+  }
+
+  setException(exceptionEvent: ExceptionEvent) {
+    this.addEvent('exception', exceptionEvent)
   }
 
   reset() {

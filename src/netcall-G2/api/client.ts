@@ -70,6 +70,7 @@ class Client extends Base {
   private handlePageUnload: (evt?: any) => void
   private handleOnOnline: (evt?: any) => void
   private handleOnOffline: (evt?: any) => void
+  private handleUnhandledRejection: (evt?: any) => void
   constructor(options: ClientOptions) {
     super(options)
     this.apiFrequencyControl({
@@ -108,6 +109,18 @@ class Client extends Base {
       this.adapterRef.signalProbeManager.worker?.postMessage(signalMsg)
     }
     this.handleOnOffline = (evt?: any) => {}
+    this.handleUnhandledRejection = (evt?: any) => {
+      this.logger.warn(`Exception caught => type: ${evt.type}, reason: ${evt.reason}`)
+      this.apiFrequencyControl({
+        name: 'exception',
+        code: 0,
+        param: {
+          clientUid: '',
+          type: evt.type,
+          reason: evt.reason
+        }
+      })
+    }
 
     if (getParameters().leaveOnUnload) {
       window.addEventListener('pagehide', this.handlePageUnload)
@@ -118,6 +131,10 @@ class Client extends Base {
     }
     if (getParameters().trustOnOffline) {
       window.addEventListener('offline', this.handleOnOffline)
+    }
+
+    if (getParameters().trustUnhandledrejection) {
+      window.addEventListener('unhandledrejection', this.handleUnhandledRejection)
     }
 
     //typescript constructor requirement
