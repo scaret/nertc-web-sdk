@@ -874,6 +874,8 @@ class Mediasoup extends EventEmitter {
           if (this.adapterRef.permKeyInfo?.pubAudioRight === false) {
             this.loggerSend.error('permKey权限控制你没有权利发布audio')
             this.adapterRef.instance.safeEmit('error', 'no-publish-audio-permission')
+          } else if (audioTrack.readyState === 'ended') {
+            this.loggerSend.error(`发布媒体流失败，轨道已关闭，请检查输入设备:audio`, audioTrack)
           } else {
             this.loggerSend.log('发布音频流 audioTrack: ', audioTrack.id, audioTrack.label)
             stream.pubStatus.audio.audio = true
@@ -911,6 +913,11 @@ class Mediasoup extends EventEmitter {
           if (this.adapterRef.permKeyInfo?.pubAudioRight === false) {
             this.loggerSend.error('permKey权限控制你没有权利发布audio slave')
             this.adapterRef.instance.safeEmit('error', 'no-publish-audio-slave-permission')
+          } else if (audioTrack.readyState === 'ended') {
+            this.loggerSend.error(
+              `发布媒体流失败，轨道已关闭，请检查输入设备:audioSlave`,
+              audioTrack
+            )
           } else {
             this.loggerSend.log('发布音频辅流 audioSlaveTrack: ', audioTrack.id, audioTrack.label)
             stream.pubStatus.audioSlave.audio = true
@@ -938,9 +945,12 @@ class Mediasoup extends EventEmitter {
       if (this._webcamProducer) {
         this.loggerSend.log('视频已经publish，跳过')
       } else if (stream.mediaHelper.video.videoStream.getVideoTracks().length) {
+        const videoTrack = stream.mediaHelper.video.videoStream.getVideoTracks()[0]
         if (this.adapterRef.permKeyInfo?.pubVideoRight === false) {
           this.loggerSend.error('permKey权限控制你没有权利发布video')
           this.adapterRef.instance.safeEmit('error', 'no-publish-video-permission')
+        } else if (videoTrack.readyState === 'ended') {
+          this.loggerSend.error(`发布媒体流失败，轨道已关闭，请检查输入设备：video`, videoTrack)
         } else {
           let trackLow: MediaStreamTrack | null = null
           if (this.adapterRef.channelInfo.videoLow) {
@@ -963,7 +973,6 @@ class Mediasoup extends EventEmitter {
             }
             this.senderEncodingParameter.video.low = null
           }
-          const videoTrack = stream.mediaHelper.video.videoStream.getVideoTracks()[0]
           this.loggerSend.log('发布视频 videoTrack: ', videoTrack.id, videoTrack.label)
           stream.pubStatus.video.video = true
           //@ts-ignore
@@ -1018,9 +1027,13 @@ class Mediasoup extends EventEmitter {
       if (this._screenProducer) {
         this.loggerSend.log('屏幕共享已经publish，跳过')
       } else if (stream.mediaHelper.screen.screenVideoStream.getVideoTracks().length) {
+        const screenTrack = stream.mediaHelper.screen.screenVideoStream.getVideoTracks()[0]
+
         if (this.adapterRef.permKeyInfo?.pubVideoRight === false) {
           this.loggerSend.error('permKey权限控制你没有权利发布screen')
           this.adapterRef.instance.safeEmit('error', 'no-publish-screen-permission')
+        } else if (screenTrack.readyState === 'ended') {
+          this.loggerSend.error(`发布媒体流失败，轨道已关闭，请检查输入设备:screen`, screenTrack)
         } else {
           let trackLow: MediaStreamTrack | null = null
           if (this.adapterRef.channelInfo.screenLow) {
@@ -1043,7 +1056,6 @@ class Mediasoup extends EventEmitter {
             }
             this.senderEncodingParameter.screen.low = null
           }
-          const screenTrack = stream.mediaHelper.screen.screenVideoStream.getVideoTracks()[0]
           this.loggerSend.log('发布屏幕共享 screenTrack: ', screenTrack.id, screenTrack.label)
           stream.pubStatus.screen.screen = true
           //@ts-ignore
