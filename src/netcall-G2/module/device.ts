@@ -29,6 +29,7 @@ class DeviceManager extends RTCEventEmitter {
   } = { audioIn: [], video: [], audioOut: [] }
   private logger: ILogger
   private compatAudioInputList = compatAudioInputList
+  __v_skip = getParameters().enableVSkip
   private handleDeviceChange: () => any
   /**
    * onUserGestureNeeded 是一个提供给客户实现的属性。

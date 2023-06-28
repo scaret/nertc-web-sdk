@@ -156,6 +156,18 @@ declare namespace NERTC {
    * * debug为`false`时，浏览器会打印警告及错误日志，即日志级别为`WARNING`。
    * * 默认的日志级别为`INFO`。要关闭所有日志，应调用`NERTC.Logger.setLogLevel(NERTC.Logger.NONE)`。见[[NERTC.Logger.setLogLevel]]
    *
+   * @note 注意
+   * 使用Web前端框架时，应该避免对SDK产生的实例进行观察，或将其转为Proxy。
+   * 以Vue3为例，如将`client`、`localStream`等对象设为data的属性，应将其设置为raw。
+   * ```
+   *    import {markRaw} from 'vue'
+   *
+   *    // rtc.client = NERTC.createClient(...)
+   *    // rtc.localStream = NERTC.createStream(...)
+   *    markRaw(rtc.client)
+   *    markRaw(rtc.localStream)
+   * ```
+   *
    * @example
    * ```html
    * <!DOCTYPE html>

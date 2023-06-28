@@ -2,6 +2,7 @@
 import { Device } from '../module/device'
 import { Client, ILogger, MediaTypeShort, SpatialInitOptions } from '../types'
 import { RemoteStream } from './remoteStream'
+import { getParameters } from '../module/parameters'
 
 export interface PannerManagerOptions {
   client: Client
@@ -30,7 +31,7 @@ export class SpatialManager {
   } = {}
   private logger: ILogger
   private options: SpatialInitOptions
-
+  __v_skip = getParameters().enableVSkip
   constructor(options: PannerManagerOptions) {
     this.context = options.context
     this.client = options.client

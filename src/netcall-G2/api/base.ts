@@ -473,7 +473,7 @@ class Base extends RTCEventEmitter {
     this.logger.log('开始清除音视频会话')
     this._destroyModule()
     const localStreams = getParameters().localStreams.filter((stream) => {
-      return stream.client === (this as unknown as ICLient) && !stream.destroyed
+      return stream.client.clientId === (this as unknown as ICLient).clientId && !stream.destroyed
     })
     if (localStreams.length) {
       if (getParameters().keepLocalstreamOnLeave) {

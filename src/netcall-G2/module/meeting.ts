@@ -58,9 +58,6 @@ class Meeting extends EventEmitter {
       if (options.adapterRef.instance?._params?.neRtcServerAddresses?.channelServer) {
         tag += ' PRIVATE'
       }
-      if (options.adapterRef._meetings !== this) {
-        tag += ' DETACHED'
-      }
       return tag
     })
   }

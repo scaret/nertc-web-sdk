@@ -89,6 +89,9 @@ export function formatSingleArg(arg: any): any {
       elem.getVideoTracks().length
     }]`
     return formatted
+  } else if (window.DOMException && arg instanceof DOMException) {
+    const formatted = `[Error name:${arg.name} code:${arg.code} message:${arg.message}]`
+    return formatted
   } else {
     return arg
   }

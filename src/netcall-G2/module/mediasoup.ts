@@ -35,6 +35,8 @@ import { JSONBigStringify } from '../util/json-big'
 import { SimpleBig } from '../util/json-big/SimpleBig'
 import { filterTransportCCFromRtpParameters } from '../util/rtcUtil/filterTransportCC'
 
+let mediasoupCnt = 0
+
 class Mediasoup extends EventEmitter {
   private adapterRef: AdapterRef
   private _consumers: { [consumerId: string]: any } = {}
@@ -59,6 +61,7 @@ class Mediasoup extends EventEmitter {
   private _recvTransportTimeoutTimer: Timer | null = null
   public _eventQueue: ProduceConsumeInfo[] = []
   public _protoo: Peer | null = null
+  private mediasoupId = mediasoupCnt++
   // senderEncodingParameter。会复用上次的senderEncodingParameter
   public senderEncodingParameter: {
     ssrcList: number[]
@@ -141,7 +144,7 @@ class Mediasoup extends EventEmitter {
       } else {
         tag += ' NOTRANSPORT'
       }
-      if (this.adapterRef._mediasoup !== this) {
+      if (this.adapterRef._mediasoup?.mediasoupId !== this.mediasoupId) {
         tag += ' DETACHED'
       }
       return tag
@@ -161,7 +164,7 @@ class Mediasoup extends EventEmitter {
       } else {
         tag += ' NOTRANSPORT'
       }
-      if (this.adapterRef._mediasoup !== this) {
+      if (this.adapterRef._mediasoup?.mediasoupId !== this.mediasoupId) {
         tag += ' DETACHED'
       }
       return tag
@@ -1492,7 +1495,10 @@ class Mediasoup extends EventEmitter {
     try {
       consumeRes = await this.adapterRef._signalling._protoo.request('Consume', data)
     } catch (e: any) {
-      if (e.message === 'request timeout' && this.adapterRef._signalling._protoo === _protoo) {
+      if (
+        e.message === 'request timeout' &&
+        this.adapterRef._signalling._protoo.id === _protoo.id
+      ) {
         this.logger.error(
           `[Subscribe] Consume消息Timeout, 尝试信令重连: ${e.name}/${e.message}, 当前的连接状态: ${this.adapterRef.connectState.curState}, 原始请求: `,
           JSONBigStringify(data)
