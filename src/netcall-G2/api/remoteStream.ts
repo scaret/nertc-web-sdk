@@ -1814,24 +1814,15 @@ class RemoteStream extends RTCEventEmitter {
   }
 
   getMuteStatus(mediaType: MediaTypeShort) {
-    if (mediaType === 'audio') {
+    if (MediaTypeList.indexOf(mediaType) > -1) {
       return {
-        send: this.muteStatus.audio.send,
-        recv: this.muteStatus.audio.recv,
-        muted: this.muteStatus.audio.send || this.muteStatus.audio.recv
-      }
-    } else if (mediaType === 'video') {
-      return {
-        send: this.muteStatus.video.send,
-        recv: this.muteStatus.video.recv,
-        muted: this.muteStatus.video.send || this.muteStatus.video.recv
+        send: this.muteStatus[mediaType].send,
+        recv: this.muteStatus[mediaType].recv,
+        muted: this.muteStatus[mediaType].send || this.muteStatus[mediaType].recv
       }
     } else {
-      return {
-        send: this.muteStatus.screen.send,
-        recv: this.muteStatus.screen.recv,
-        muted: this.muteStatus.screen.send || this.muteStatus.screen.recv
-      }
+      const e = new Error(`getMuteStatus Invalid Media ${mediaType}`)
+      throw e
     }
   }
 

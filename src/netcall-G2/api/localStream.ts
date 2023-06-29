@@ -59,7 +59,7 @@ import { AudioProfile, AudioProfileTypes } from '../constant/audioProfile'
 let localStreamCnt = 0
 
 export interface LocalStreamOpenOptions {
-  type: MediaTypeShort | 'screenAudio'
+  type: 'audio' | 'video' | 'screen' | 'screenAudio'
   deviceId?: string
   sourceId?: string
   facingMode?: string
@@ -118,7 +118,6 @@ class LocalStream extends RTCEventEmitter {
   public video: boolean
   public screen: boolean
   public screenAudio: boolean
-  public audioSlave: boolean
   public client: Client
   private audioSource: MediaStreamTrack | null
   private videoSource: MediaStreamTrack | null
@@ -297,7 +296,6 @@ class LocalStream extends RTCEventEmitter {
     this.video = options.video || false
     this.screen = options.screen || false
     this.screenAudio = options.screenAudio || false
-    this.audioSlave = this.screenAudio
     this.sourceId = options.sourceId || ''
     this.facingMode = options.facingMode || ''
     this.client = options.client
@@ -468,7 +466,6 @@ class LocalStream extends RTCEventEmitter {
     this.cameraId = ''
     this.screen = false
     this.screenAudio = false
-    this.audioSlave = false
     this.sourceId = ''
     this.facingMode = ''
     this.videoView = null
@@ -671,10 +668,13 @@ class LocalStream extends RTCEventEmitter {
     } catch (e: any) {
       this.logger.log(`init() 打开screen失败: ${e.message}`)
       initErr = e
-      this.screen = true
+      // 屏幕共享音频需要和屏幕共享一起授权，所以必须一起getStream。但init失败也不一定说明screen和screenAudio同时为false
+      // 例如，辅流请求授权屏幕共享，辅流音频是自定义的情况，授权失败也不会影响辅流音频
+      this.screen = this.mediaHelper.screen.screenVideoStream.getVideoTracks().length > 0
+      this.screenAudio = this.mediaHelper.screenAudio.screenAudioStream.getAudioTracks().length > 0
     }
 
-    if (this.audio || this.video || this.screen || this.audioSlave) {
+    if (this.audio || this.video || this.screen || this.screenAudio) {
       this.state = 'INITED'
     } else if (initErr) {
       this.state = 'UNINIT'
@@ -3510,18 +3510,13 @@ class LocalStream extends RTCEventEmitter {
   }
 
   getMuteStatus(mediaType: MediaTypeShort) {
-    if (mediaType === 'audio') {
+    if (MediaTypeList.indexOf(mediaType) > -1) {
       return {
-        muted: this.muteStatus.audio.send
-      }
-    } else if (mediaType === 'video') {
-      return {
-        muted: this.muteStatus.video.send
+        muted: this.muteStatus[mediaType].send
       }
     } else {
-      return {
-        muted: this.muteStatus.screen.send
-      }
+      const e = new Error(`getMuteStatus Invalid Media ${mediaType}`)
+      throw e
     }
   }
 
