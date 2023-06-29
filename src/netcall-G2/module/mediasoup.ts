@@ -293,8 +293,7 @@ class Mediasoup extends EventEmitter {
         this.getIceStatus('send')
       })
     }
-
-    if (!this._recvTransport) {
+    if (!this._recvTransport && this._mediasoupDevice) {
       const _recvTransport = this._mediasoupDevice.createRecvTransport({
         id: this.adapterRef.channelInfo.uid,
         iceParameters: undefined,
