@@ -116,7 +116,8 @@ export class LBSManager {
     window.addEventListener('online', () => {
       if (
         this.client.adapterRef.connectState.curState !== 'DISCONNECTED' &&
-        this.client.adapterRef.lbsManager.lbsManagerId === this.lbsManagerId
+        this.client.adapterRef.lbsManager.lbsManagerId === this.lbsManagerId &&
+        Date.now() - this.lastUpdateStartAt > 3000
       ) {
         this.logger.log(`侦测到网络连接恢复，尝试更新LBS配置`)
         this.startUpdate('online')
@@ -672,12 +673,19 @@ export class LBSManager {
             this.logger.log(`${urlSetting.url} 已忽略返回值：${xhr.status}`)
             return
           } else {
-            ajaxFinished = true
+            cleanupXHR(xhr)
             var data = xhr.response
             // data = JSONBigParse(data)
             resolve(data)
           }
         }
+      }
+
+      const cleanupXHR = (xhr: XMLHttpRequest) => {
+        ajaxFinished = true
+        xhr.onload = null
+        xhr.onerror = null
+        xhr.ontimeout = null
       }
 
       const handleXHRError = (
@@ -700,7 +708,7 @@ export class LBSManager {
           )
           urlSettings[1].fire()
         } else if (this.isAllRequestsFinished(urlSettings)) {
-          ajaxFinished = true
+          cleanupXHR(xhr)
           return reject(
             new RtcError({
               code: ErrorCode.LBS_REQUEST_ERROR,
@@ -725,7 +733,7 @@ export class LBSManager {
           )
           urlSettings[1].fire()
         } else if (this.isAllRequestsFinished(urlSettings)) {
-          ajaxFinished = true
+          cleanupXHR(xhr)
           return reject(
             new RtcError({
               code: ErrorCode.LBS_REQUEST_ERROR,
