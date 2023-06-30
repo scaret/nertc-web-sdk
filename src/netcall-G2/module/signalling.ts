@@ -1224,6 +1224,7 @@ class Signalling extends EventEmitter {
             this.adapterRef.localStream.screen ||
             this.adapterRef.localStream.screenAudio ||
             getParameters().allowEmptyMedia ||
+            //@ts-ignore
             this.adapterRef.localStream.audioSlave
           ) {
             this.logger.log(

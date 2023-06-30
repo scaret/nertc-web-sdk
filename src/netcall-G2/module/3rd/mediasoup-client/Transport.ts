@@ -792,7 +792,7 @@ export class Transport extends EnhancedEventEmitter {
 
       if (rtpReceiver) {
         this.updateReceiverInfo(rtpReceiver, uid, mediaType, localId)
-        // rtpReceiver.playoutDelayHint, 指定接收到的音频或视频数据包的延迟（以毫秒为单位）应该被缓存多长时间
+        // rtpReceiver.playoutDelayHint, 指定接收到的音频或视频数据包的延迟（以秒为单位）应该被缓存多长时间
         // 只对 chromium 内核生效
         if (rtpReceiver.track.kind === 'audio' && getParameters().audioPlayoutDelayHint) {
           //@ts-ignore
