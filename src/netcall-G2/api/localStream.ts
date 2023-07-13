@@ -2121,6 +2121,9 @@ class LocalStream extends RTCEventEmitter {
       if (type === 'video') {
         await this.resumeVideoPostProcess()
       }
+      if (type === 'audio' && this.audioLevelHelper) {
+        this.audioLevelHelper.updateStream(this.mediaHelper.audio.audioStream)
+      }
       this.client.apiFrequencyControl({
         name: 'switchDevice',
         code: 0,
