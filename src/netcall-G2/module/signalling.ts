@@ -1251,8 +1251,9 @@ class Signalling extends EventEmitter {
           permKey: this.adapterRef.channelInfo.permKey,
           result: 0,
           server_ip: this.adapterRef.channelInfo._protooUrl,
-          signal_time_elapsed: webrtc2Param.startWssTime - webrtc2Param.startJoinTime,
-          time_elapsed: currentTime - webrtc2Param.startJoinTime,
+          signalling_rtt: this.adapterRef.state.signalJoinMsgRtt, // joinchannel 耗时
+          signalling_time: webrtc2Param.startWssTime - webrtc2Param.startJoinTime, // getchannleinfo 耗时
+          time_elapsed: currentTime - webrtc2Param.startJoinTime, // 总耗时
           model: this.browserDevice
         })
         if (!this.adapterRef._mediasoup) {
@@ -1479,8 +1480,9 @@ class Signalling extends EventEmitter {
       permKey: this.adapterRef.channelInfo.permKey,
       result: reasonCode,
       server_ip: this.adapterRef.channelInfo._protooUrl,
-      signal_time_elapsed: webrtc2Param.startWssTime - webrtc2Param.startJoinTime,
-      time_elapsed: currentTime - webrtc2Param.startJoinTime,
+      signalling_rtt: this.adapterRef.state.signalJoinMsgRtt, // joinchannel 耗时
+      signalling_time: webrtc2Param.startWssTime - webrtc2Param.startJoinTime, // getchannleinfo 耗时
+      time_elapsed: currentTime - webrtc2Param.startJoinTime, // 总耗时
       model: this.browserDevice,
       desc: errMsg || '' //websdk使用desc字段描述错误内容
     })

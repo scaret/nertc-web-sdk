@@ -141,7 +141,7 @@ class DataReport {
    * 通话开始log事件
    */
   setLogin(loginEvent: LoginEvent) {
-    // {uid, cid, sdk_ver=SDK_VERSION, platform='Web', app_key=this.common.app_key, meeting_mode=1, a_record, v_record, record_type, host_speaker, server_ip, result, time, signal_time_elapsed, time_elapsed}) {
+    // {uid, cid, sdk_ver=SDK_VERSION, platform='Web', app_key=this.common.app_key, meeting_mode=1, a_record, v_record, record_type, host_speaker, server_ip, result, time, signalling_time, signalling_rtt, time_elapsed}) {
     loginEvent.sdk_ver = loginEvent.sdk_ver || SDK_VERSION
     loginEvent.platform = loginEvent.platform || 'Web'
     loginEvent.app_key = loginEvent.app_key || this.common.app_key
