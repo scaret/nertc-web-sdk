@@ -286,7 +286,8 @@ export interface LoginEvent extends DataEvent {
   host_speaker: boolean
   server_ip: string
   result: number
-  signal_time_elapsed: number
+  signalling_time: number
+  signalling_rtt: number
   time_elapsed: number
   model: String
   extra_info: string
