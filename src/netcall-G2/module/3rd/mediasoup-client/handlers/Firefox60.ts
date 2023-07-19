@@ -760,28 +760,38 @@ export class Firefox60 extends HandlerInterface {
   async prepareLocalSdp(kind: 'video' | 'audio', remoteUid: number | string) {
     Logger.debug(prefix, `[Subscribe] prepareLocalSdp() [kind: ${kind}, remoteUid: ${remoteUid}]`)
     let mid = -1
-    for (const key of this._mapMidTransceiver.keys()) {
-      const transceiver: EnhancedTransceiver | undefined = this._mapMidTransceiver.get(key)
-      if (!transceiver) {
-        continue
-      }
-      const mediaType =
-        (transceiver.receiver && transceiver.receiver.track && transceiver.receiver.track.kind) ||
-        kind
-      //Logger.debug(prefix, 'prepareLocalSdp() transceiver M行信息 [mid: %s, mediaType: %s, isUseless: %s]', transceiver.mid || key, mediaType, transceiver.isUseless);
-      if (transceiver.isUseless && mediaType === kind) {
-        //@ts-ignore
-        mid = key - 0
-        transceiver.isUseless = false
-        break
+    if (getParameters().reuseMid) {
+      for (const key of this._mapMidTransceiver.keys()) {
+        const transceiver: EnhancedTransceiver | undefined = this._mapMidTransceiver.get(key)
+        if (!transceiver) {
+          continue
+        }
+        const mediaType =
+          (transceiver.receiver && transceiver.receiver.track && transceiver.receiver.track.kind) ||
+          kind
+        //Logger.debug(prefix, 'prepareLocalSdp() transceiver M行信息 [mid: %s, mediaType: %s, isUseless: %s]', transceiver.mid || key, mediaType, transceiver.isUseless);
+        if (transceiver.isUseless && mediaType === kind) {
+          //@ts-ignore
+          mid = key - 0
+          transceiver.isUseless = false
+          break
+        }
       }
     }
-    let offer = this._pc.localDescription
+    /**
+     *  不要这么写，因为这里的 localDescription是个 RTCSessionDescription 对象，sdp属性为readonly状态：
+     *  let offer = this._pc.localDescription;
+     */
+    let offer: RTCSessionDescriptionInit
     let transceiver = null
     if (mid === -1) {
       Logger.debug(prefix, '[Subscribe] prepareLocalSdp() 添加一个M行')
       transceiver = this._pc.addTransceiver(kind, { direction: 'recvonly' })
       offer = await this._pc.createOffer()
+      if (!offer.sdp) {
+        Logger.error(prefix, `[Subscribe] prepareLocalSdp() offer没有sdp`)
+        throw new Error('INVALID_OFFER')
+      }
       if (offer.sdp.indexOf(`a=ice-ufrag:${this._appData.cid}#${this._appData.uid}#`) < 0) {
         offer.sdp = offer.sdp.replace(
           /a=ice-ufrag:([0-9a-zA-Z=+-_\/\\\\]+)/g,
@@ -795,8 +805,17 @@ export class Firefox60 extends HandlerInterface {
       // Logger.debug(prefix, '[Subscribe] prepareLocalSdp() | calling pc.setLocalDescription()')
       // this.signalingState = 'have-local-offer'
       // await this._pc.setLocalDescription(offer)
-    } else if (!offer) {
+    } else if (this._pc.localDescription) {
+      offer = {
+        type: 'offer',
+        sdp: this._pc.localDescription.sdp
+      }
+    } else {
       offer = await this._pc.createOffer()
+      if (!offer.sdp) {
+        Logger.error(prefix, `[Subscribe] prepareLocalSdp() offer没有sdp`)
+        throw new Error('INVALID_OFFER')
+      }
       // 去除 sdp 中 nack 行对 transport-cc 的依赖
       if (offer.sdp.indexOf('a=rtcp-fb:111') && offer.sdp.indexOf('a=rtcp-fb:111 nack') === -1) {
         offer.sdp = offer.sdp.replace(/(a=rtcp-fb:111.*)/, '$1\r\na=rtcp-fb:111 nack')
@@ -813,6 +832,10 @@ export class Firefox60 extends HandlerInterface {
       mid = localSdpObject.media[localSdpObject.media.length - 1].mid
     }
 
+    if (!offer.sdp) {
+      Logger.error(prefix, `[Subscribe] prepareLocalSdp() offer没有sdp`)
+      throw new Error('INVALID_OFFER')
+    }
     const localSdpObject = sdpTransform.parse(offer.sdp)
     let dtlsParameters = undefined
     if (!this._transportReady)

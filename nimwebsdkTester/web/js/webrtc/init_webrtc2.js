@@ -1619,6 +1619,9 @@ $('#joinChannel-btn').on('click', async () => {
       (obj) => {
         addLog('加入房间成功')
         console.info('加入房间成功')
+        $('#handler').text(
+          `适配器:${NERTC.getHandler()}`
+        )
         if (rtc.localStream && rtc.localStream.inited) {
           // localStream已经初始化了
           if ($('#autoPub').prop('checked')) {
@@ -4927,7 +4930,7 @@ $('#pushMask').on('click', function () {
 $('#sdkVersion').text(NERTC.VERSION)
 $('#sdkBuild').text(NERTC.BUILD)
 $('#systemRequirement').text(
-  `WebRTC:${NERTC.checkSystemRequirements() ? '支持' : '不支持'}； 适配器:${NERTC.getHandler()}`
+  `WebRTC:${NERTC.checkSystemRequirements() ? '支持' : '不支持'}；`
 )
 if (!NERTC.checkSystemRequirements()) {
   alert('浏览器环境缺失部分WebRTC基础功能。（是否没有开启HTTPS？）')

@@ -26,6 +26,7 @@ import { RemoteSdp } from './sdp/RemoteSdp'
 import * as sdpUnifiedPlanUtils from './sdp/unifiedPlanUtils'
 import { filterTransportCCFromSdp } from '../../../../util/rtcUtil/filterTransportCC'
 import { addNackSuppportForOpus } from './ortc/edgeUtils'
+import {getNativeRtpCapabilities} from "./sdp/getNativeRtpCapabilities";
 
 const prefix = 'Chrome_'
 
@@ -86,43 +87,7 @@ export class Chrome74 extends HandlerInterface {
   }
 
   async getNativeRtpCapabilities(): Promise<RtpCapabilities> {
-    Logger.debug(prefix, 'getNativeRtpCapabilities()')
-
-    const pc = new (RTCPeerConnection as any)({
-      iceServers: [],
-      iceTransportPolicy: 'all',
-      bundlePolicy: 'max-bundle',
-      rtcpMuxPolicy: 'require',
-      sdpSemantics: 'unified-plan'
-    })
-
-    try {
-      pc.addTransceiver('audio')
-      pc.addTransceiver('video')
-
-      const offer = await pc.createOffer()
-      // Remove the dependency of the nack line in sdp on transport-cc
-      if (offer.sdp.indexOf('a=rtcp-fb:111') && offer.sdp.indexOf('a=rtcp-fb:111 nack') === -1) {
-        offer.sdp = offer.sdp.replace(/(a=rtcp-fb:111.*)/, '$1\r\na=rtcp-fb:111 nack')
-      }
-      try {
-        pc.close()
-      } catch (error) {}
-
-      const sdpObject = sdpTransform.parse(offer.sdp)
-      const nativeRtpCapabilities = sdpCommonUtils.extractRtpCapabilities({ sdpObject })
-      // support NACK for OPUS
-      addNackSuppportForOpus(nativeRtpCapabilities)
-      // console.warn('nativeRtpCapabilities: ', nativeRtpCapabilities)
-
-      return nativeRtpCapabilities
-    } catch (error) {
-      try {
-        pc.close()
-      } catch (error2) {}
-
-      throw error
-    }
+    return getNativeRtpCapabilities()
   }
 
   async getNativeSctpCapabilities(): Promise<SctpCapabilities> {
@@ -761,28 +726,38 @@ export class Chrome74 extends HandlerInterface {
   async prepareLocalSdp(kind: 'video' | 'audio', remoteUid: number | string) {
     Logger.debug(prefix, `[Subscribe] prepareLocalSdp() [kind: ${kind}, remoteUid: ${remoteUid}]`)
     let mid = -1
-    for (const key of this._mapMidTransceiver.keys()) {
-      const transceiver: EnhancedTransceiver | undefined = this._mapMidTransceiver.get(key)
-      if (!transceiver) {
-        continue
-      }
-      const mediaType =
-        (transceiver.receiver && transceiver.receiver.track && transceiver.receiver.track.kind) ||
-        kind
-      //Logger.debug(prefix, `prepareLocalSdp() transceiver M行信息 [mid: ${transceiver.mid || key}, mediaType: ${mediaType}, isUseless: ${transceiver.isUseless}]`)
-      if (transceiver.isUseless && mediaType === kind) {
-        //@ts-ignore
-        mid = key - 0
-        transceiver.isUseless = false
-        break
+    if (getParameters().reuseMid) {
+      for (const key of this._mapMidTransceiver.keys()) {
+        const transceiver: EnhancedTransceiver | undefined = this._mapMidTransceiver.get(key)
+        if (!transceiver) {
+          continue
+        }
+        const mediaType =
+          (transceiver.receiver && transceiver.receiver.track && transceiver.receiver.track.kind) ||
+          kind
+        //Logger.debug(prefix, `prepareLocalSdp() transceiver M行信息 [mid: ${transceiver.mid || key}, mediaType: ${mediaType}, isUseless: ${transceiver.isUseless}]`)
+        if (transceiver.isUseless && mediaType === kind) {
+          //@ts-ignore
+          mid = key - 0
+          transceiver.isUseless = false
+          break
+        }
       }
     }
-    let offer = this._pc.localDescription
+    /**
+     *  不要这么写，因为这里的 localDescription是个 RTCSessionDescription 对象，sdp属性为readonly状态：
+     *  let offer = this._pc.localDescription;
+     */
+    let offer: RTCSessionDescriptionInit
     let transceiver = null
     if (mid === -1) {
       Logger.debug(prefix, '[Subscribe] prepareLocalSdp() 添加一个M行')
       transceiver = this._pc.addTransceiver(kind, { direction: 'recvonly' })
       offer = await this._pc.createOffer()
+      if (!offer.sdp) {
+        Logger.error(prefix, `[Subscribe] prepareLocalSdp() offer没有sdp`)
+        throw new Error('INVALID_OFFER')
+      }
       // 去除 sdp 中 nack 行对 transport-cc 的依赖
       if (offer.sdp.indexOf('a=rtcp-fb:111') && offer.sdp.indexOf('a=rtcp-fb:111 nack') === -1) {
         offer.sdp = offer.sdp.replace(/(a=rtcp-fb:111.*)/, '$1\r\na=rtcp-fb:111 nack')
@@ -796,8 +771,17 @@ export class Chrome74 extends HandlerInterface {
       //移动到receive中执行setLocalDescription，防止与stopReceiving流程产生冲突
       // Logger.debug(prefix, '[Subscribe] prepareLocalSdp() | calling pc.setLocalDescription()')
       // await this._pc.setLocalDescription(offer)
-    } else if (!offer) {
+    } else if (this._pc.localDescription) {
+      offer = {
+        type: 'offer',
+        sdp: this._pc.localDescription.sdp
+      }
+    } else {
       offer = await this._pc.createOffer()
+      if (!offer.sdp) {
+        Logger.error(prefix, `[Subscribe] prepareLocalSdp() offer没有sdp`)
+        throw new Error('INVALID_OFFER')
+      }
       // 去除 sdp 中 nack 行对 transport-cc 的依赖
       if (offer.sdp.indexOf('a=rtcp-fb:111') && offer.sdp.indexOf('a=rtcp-fb:111 nack') === -1) {
         offer.sdp = offer.sdp.replace(/(a=rtcp-fb:111.*)/, '$1\r\na=rtcp-fb:111 nack')
@@ -814,6 +798,10 @@ export class Chrome74 extends HandlerInterface {
       mid = localSdpObject.media[localSdpObject.media.length - 1].mid
     }
 
+    if (!offer.sdp) {
+      Logger.error(prefix, `[Subscribe] prepareLocalSdp() offer没有sdp`)
+      throw new Error('INVALID_OFFER')
+    }
     const localSdpObject = sdpTransform.parse(offer.sdp)
     let dtlsParameters = undefined
     if (!this._transportReady) {
@@ -901,6 +889,10 @@ export class Chrome74 extends HandlerInterface {
       this._remoteSdp!.disableMediaSection(`${localId}`)
     }
 
+    if (!offer.sdp) {
+      Logger.error(prefix, `[Subscribe] prepareLocalSdp() offer没有sdp`)
+      throw new Error('INVALID_OFFER')
+    }
     // receive() 的 sdp 中已经有 nack 了， 无需再添加
     if (offer.sdp.indexOf('a=fmtp:111')) {
       offer.sdp = offer.sdp.replace(

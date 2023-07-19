@@ -5,6 +5,7 @@
 import { AdapterRef, MediaStatsChangeEvt, MediaTypeShort } from '../../types'
 import { FormativeStatsReport } from './formativeStatsData'
 import * as env from '../../util/rtcUtil/rtcEnvironment'
+import { isIosFromRtpStats } from '../3rd/mediasoup-client/handlers/sdp/getNativeRtpCapabilities'
 
 class GetStats {
   private adapterRef: AdapterRef
@@ -115,29 +116,43 @@ class GetStats {
   */
   async chrome(pc: RTCPeerConnection, direction: string) {
     const nonStandardStats = () => {
-      return new Promise((resolve, reject) => {
-        // 由于Chrome为callback形式的getStats使用了非标准化的接口，故不遵守TypeScript定义
-        // @ts-ignore
-        pc.getStats((res) => {
-          let result: { [key: string]: any } = {}
-          const results = res.result()
+      // eslint-disable-next-line no-async-promise-executor
+      return new Promise(async (resolve, reject) => {
+        try {
+          // 由于Chrome为callback形式的getStats使用了非标准化的接口，故不遵守TypeScript定义
           // @ts-ignore
-          results.forEach(function (res) {
-            const item: any = {}
-            res.names().forEach(function (name: string) {
-              item[name] = res.stat(name)
+          await pc.getStats((res) => {
+            let result: { [key: string]: any } = {}
+            const results = res.result()
+            // @ts-ignore
+            results.forEach(function (res) {
+              const item: any = {}
+              res.names().forEach(function (name: string) {
+                item[name] = res.stat(name)
+              })
+              item.id = res.id
+              item.type = res.type
+              item.timestamp = res.timestamp
+              result[item.id] = item
             })
-            item.id = res.id
-            item.type = res.type
-            item.timestamp = res.timestamp
-            result[item.id] = item
+            // @ts-ignore
+            pc.lastStats = pc.lastStats || {}
+            //针对非标准话的getStats进行格式化处理
+            result = this.formatChromeNonStandardStats(pc, result, direction)
+            resolve(result)
           })
-          // @ts-ignore
-          pc.lastStats = pc.lastStats || {}
-          //针对非标准话的getStats进行格式化处理
-          result = this.formatChromeNonStandardStats(pc, result, direction)
-          resolve(result)
-        })
+        } catch (e) {
+          if (e.name === 'TypeError') {
+            this.adapterRef?.logger.warn(
+              `getStats出现异常：${e.name}。fallback: 切换getStats方式 ${this.browser} => safari`,
+              e.name,
+              e.message
+            )
+            this.browser = 'safari'
+          } else {
+            reject(e)
+          }
+        }
       })
     }
 

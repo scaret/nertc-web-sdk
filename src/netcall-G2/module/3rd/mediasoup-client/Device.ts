@@ -14,6 +14,7 @@ import { CanProduceByKind, Transport, TransportOptions } from './Transport'
 import * as utils from './utils'
 import * as env from '../../../util/rtcUtil/rtcEnvironment'
 import { getBrowserInfo, getOSInfo } from '../../../util/rtcUtil/rtcPlatform'
+import { isIosFromRtpStats } from './handlers/sdp/getNativeRtpCapabilities'
 
 const prefix = 'Device'
 
@@ -68,6 +69,8 @@ export function detectDevice(): BuiltinHandlerName | undefined {
       (env.IS_ANY_SAFARI && env.SAFARI_MAJOR_VERSION && env.SAFARI_MAJOR_VERSION >= 12) ||
       (env.IS_ANY_SAFARI && env.IS_WECHAT)
     ) {
+      return 'Safari12'
+    } else if (isIosFromRtpStats()) {
       return 'Safari12'
     }
     // Unsupported browser.
