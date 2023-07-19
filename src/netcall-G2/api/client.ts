@@ -44,6 +44,7 @@ import { RemoteStream } from './remoteStream'
 import { SpatialManager } from './spatialManager'
 import { getCurrentProfileLevel } from '../util/rtcUtil/codec'
 import { LoadLocalConfigRes } from '../module/LBSManager'
+import { detectRtcCapabilities } from '../module/3rd/mediasoup-client/handlers/sdp/getNativeRtpCapabilities'
 
 /**
  *  请使用 {@link WEBRTC2.createClient} 通过WEBRTC2.createClient创建 Client对象，client对象指通话中的本地或远程用户，提供云信sdk的核心功能。
@@ -511,6 +512,11 @@ class Client extends Base {
       if (options.customData) {
         this.adapterRef.channelInfo.customData = options.customData
       }
+
+      // 将侦测RTC的过程提前,但不通过await阻塞join过程
+      detectRtcCapabilities().catch((e) => {
+        this.logger.warn(`detectRtcCapabilities`, e.name, e.message)
+      })
 
       this._params.JoinChannelRequestParam4WebRTC2 = {
         startJoinTime: Date.now(),

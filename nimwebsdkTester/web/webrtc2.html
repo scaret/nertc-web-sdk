@@ -95,7 +95,7 @@
             版本号: <span id="sdkVersion"></span> 环境: <span id="sdkEnv"></span><br>
             提交号: <span id="sdkBuild"></span><br />
             日志上传是否开启: <span id="logUploadEnabled"></span><br />
-            <span id="systemRequirement"></span>
+            <span id="systemRequirement"></span><span id="handler"></span>
             <input type="button" id="copyEnvInfo" value="复制到剪贴板">
           </div>
           <div class="line">
@@ -1600,6 +1600,7 @@
       <div class="block" style="width:200px">
         <p class="block-header">日志</p>
         <button id="clear-btn">清空</button>
+        <button onclick="javascript:window.location.href=window.location.href">刷新页面</button>
         <div class="part">
           <div id="debug-content" class="bottom-debug-content"></div>
         </div>

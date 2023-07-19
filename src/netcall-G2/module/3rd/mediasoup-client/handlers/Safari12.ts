@@ -723,20 +723,22 @@ export class Safari12 extends HandlerInterface {
   async prepareLocalSdp(kind: 'video' | 'audio', remoteUid: number | string) {
     Logger.debug(prefix, `[Subscribe] prepareLocalSdp() [kind: ${kind}, remoteUid: ${remoteUid}]`)
     let mid = -1
-    for (const key of this._mapMidTransceiver.keys()) {
-      const transceiver = this._mapMidTransceiver.get(key)
-      if (!transceiver) {
-        continue
-      }
-      const mediaType =
-        (transceiver.receiver && transceiver.receiver.track && transceiver.receiver.track.kind) ||
-        kind
-      //Logger.debug(prefix, 'prepareLocalSdp() transceiver M行信息 [mid: %s, mediaType: %s, isUseless: %s]', transceiver.mid || key, mediaType, transceiver.isUseless)
-      if (transceiver.isUseless && mediaType === kind) {
-        //@ts-ignore
-        mid = key - 0
-        transceiver.isUseless = false
-        break
+    if (getParameters().reuseMid) {
+      for (const key of this._mapMidTransceiver.keys()) {
+        const transceiver = this._mapMidTransceiver.get(key)
+        if (!transceiver) {
+          continue
+        }
+        const mediaType =
+          (transceiver.receiver && transceiver.receiver.track && transceiver.receiver.track.kind) ||
+          kind
+        //Logger.debug(prefix, 'prepareLocalSdp() transceiver M行信息 [mid: %s, mediaType: %s, isUseless: %s]', transceiver.mid || key, mediaType, transceiver.isUseless)
+        if (transceiver.isUseless && mediaType === kind) {
+          //@ts-ignore
+          mid = key - 0
+          transceiver.isUseless = false
+          break
+        }
       }
     }
     /**
