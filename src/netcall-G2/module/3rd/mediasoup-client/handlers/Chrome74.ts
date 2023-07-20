@@ -26,7 +26,7 @@ import { RemoteSdp } from './sdp/RemoteSdp'
 import * as sdpUnifiedPlanUtils from './sdp/unifiedPlanUtils'
 import { filterTransportCCFromSdp } from '../../../../util/rtcUtil/filterTransportCC'
 import { addNackSuppportForOpus } from './ortc/edgeUtils'
-import {getNativeRtpCapabilities} from "./sdp/getNativeRtpCapabilities";
+import { getNativeRtpCapabilities } from './sdp/getNativeRtpCapabilities'
 
 const prefix = 'Chrome_'
 
