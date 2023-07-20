@@ -901,7 +901,7 @@ class LocalStream extends RTCEventEmitter {
       options.width < 0 ||
       options.height < 0
     ) {
-      this.logger.warn('setLocalRenderMode() 参数宽高参数错误')
+      this.logger.warn('setLocalRenderMode() 参数宽高错误')
       this.client.apiFrequencyControl({
         name: 'setLocalRenderMode',
         code: -1,
@@ -2985,7 +2985,7 @@ class LocalStream extends RTCEventEmitter {
         }
     }
     if (streams.length === 0) {
-      this.logger.log('没有没发现要录制的媒体流')
+      this.logger.log('未发现要录制的媒体流')
       return
     }
     if (!this._record || !this.streamID || !streams) {

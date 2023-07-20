@@ -747,7 +747,7 @@ class Signalling extends EventEmitter {
       }
       case 'OnPeerClose': {
         //相同UID另外一个连接登录, 这个连接被迫退出
-        this.logger.warn(`相同UID在其他地方登录，您被提出房间`)
+        this.logger.warn(`相同UID在其他地方登录，您被踢出房间`)
         this.adapterRef.instance.safeEmit('uid-duplicate')
         this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason =
           ErrorCode.UID_DUPLICATE
@@ -1877,7 +1877,7 @@ class Signalling extends EventEmitter {
       this.adapterRef.instance.leave()
       this.adapterRef.instance.safeEmit('channel-closed', {})
     } else if (reason == 2) {
-      this.logger.warn(`${uid}被提出房间`)
+      this.logger.warn(`${uid}被踢出房间`)
       if (uid.toString() == this.adapterRef.channelInfo.uid.toString()) {
         this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason =
           ErrorCode.CLIENT_BANNED
@@ -1887,7 +1887,7 @@ class Signalling extends EventEmitter {
         uid
       })
     } else if (reason == 5) {
-      this.logger.warn(`${uid} permKey 超时被提出房间`)
+      this.logger.warn(`${uid} permKey 超时被踢出房间`)
       if (uid.toString() == this.adapterRef.channelInfo.uid.toString()) {
         this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason =
           ErrorCode.PERMKEY_TIMEOUT

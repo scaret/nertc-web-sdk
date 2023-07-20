@@ -1879,7 +1879,7 @@ class MediaHelper extends EventEmitter {
     } else if (this.audio.webAudio.mixAudioConf.state === AuidoMixingState.PAUSED) {
       this.audio.webAudio.mixAudioConf.setPlayStartTime = playTime
       this.logger.log(
-        'setAudioMixingPosition() 当前正在暂停，记录设置的播发位置，在恢复伴音时，跳转到此次设置的播放位置: ',
+        'setAudioMixingPosition() 当前正在暂停，记录设置的播放位置，在恢复伴音时，跳转到此次设置的播放位置: ',
         playTime
       )
       return Promise.resolve()

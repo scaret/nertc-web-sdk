@@ -185,7 +185,7 @@ export const NERTC = {
       client?.adapterRef.logger.warn('The current protocol is HTTP')
       throw new RtcError({
         code: ErrorCode.NOT_SUPPORT_ERROR,
-        message: '请使用https环境或者loclhost环境'
+        message: '请使用https环境或者localhost环境'
       })
     }
     let getUserMedia = navigator.mediaDevices && navigator.mediaDevices.getUserMedia
@@ -206,7 +206,7 @@ export const NERTC = {
     }
 
     if (!options.client && client) {
-      client.adapterRef.logger.warn('createStream: 未传入client参数。使用默认Client。')
+      client.adapterRef.logger.warn('createStream: 未传入client参数。使用默认client。')
     }
     if (client || options.client) {
       const localStream = new LocalStream(

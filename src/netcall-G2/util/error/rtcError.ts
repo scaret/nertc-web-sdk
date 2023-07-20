@@ -17,7 +17,7 @@ class RtcError extends Error {
   private extraCode_: any
   constructor(options: any) {
     let defaultUrl =
-      'https://doc.yunxin.163.com/docs/interface/NERTC_SDK/Latest/Web/api/index.html#errorCode'
+      'https://doc.yunxin.163.com/nertc/api-refer/web/typedoc/Latest/zh/html/index.html#errorcode'
     let url = options.url ? options.url : defaultUrl
     let adviceMsg = options.advice ? ` advice: ${options.advice} ` : ''
     super(
