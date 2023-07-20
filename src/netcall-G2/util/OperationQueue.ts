@@ -115,8 +115,6 @@ export class OperationQueue {
         )
         proxyDetected = true
       }
-      if ((args.caller as unknown as Client).adapterRef.instance) {
-      }
     }
     return new Promise((resolve, reject) => {
       // await enqueue操作会卡住所有join/leave操作。
