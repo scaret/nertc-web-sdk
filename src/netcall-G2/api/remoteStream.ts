@@ -1624,7 +1624,7 @@ class RemoteStream extends RTCEventEmitter {
         break
     }
     if (streams.length === 0) {
-      this.logger.log('没有没发现要录制的媒体流')
+      this.logger.log('未发现要录制的媒体流')
       return
     }
     if (!this._record || !this.streamID || !streams) {

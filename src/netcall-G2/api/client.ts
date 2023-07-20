@@ -1084,7 +1084,7 @@ class Client extends Base {
     try {
       if (stream.subConf.audio) {
         if (this.adapterRef.permKeyInfo?.subAudioRight === false) {
-          this.logger.error('subscribe() permKey权限控制你没有权限订阅audio')
+          this.logger.error('subscribe() permKey权限控制，没有权限订阅audio')
           this.adapterRef.instance.emit('error', 'no-subscribe-audio-permission')
         } else if (stream.pubStatus.audio.audio && !stream.pubStatus.audio.consumerId) {
           //重复调用的问题不再通过consumerStatus来保障，由后续的流程负责
@@ -1128,7 +1128,7 @@ class Client extends Base {
 
       if (stream.subConf.audioSlave) {
         if (this.adapterRef.permKeyInfo?.subAudioRight === false) {
-          this.logger.error('subscribe() permKey权限控制你没有权限订阅audio slave')
+          this.logger.error('subscribe() permKey权限控制，没有权限订阅audio slave')
           this.adapterRef.instance.emit('error', 'no-subscribe-audio-slave-permission')
         } else if (
           stream.pubStatus.audioSlave.audioSlave &&
@@ -1173,7 +1173,7 @@ class Client extends Base {
 
       if (stream.subConf.video) {
         if (this.adapterRef.permKeyInfo?.subVideoRight === false) {
-          this.logger.error('subscribe() permKey权限控制你没有权限订阅video')
+          this.logger.error('subscribe() permKey权限控制，没有权限订阅video')
           this.adapterRef.instance.emit('error', 'no-subscribe-video-permission')
         } else if (stream.pubStatus.video.video && !stream.pubStatus.video.consumerId) {
           this.logger.log(`subscribe() 开始订阅 ${stream.getId()} 视频流`)
@@ -1223,7 +1223,7 @@ class Client extends Base {
       }
       if (stream.subConf.screen) {
         if (this.adapterRef.permKeyInfo?.subVideoRight === false) {
-          this.logger.error('subscribe() permKey权限控制你没有权利订阅screen')
+          this.logger.error('subscribe() permKey权限控制，没有权利订阅screen')
           this.adapterRef.instance.emit('error', 'no-subscribe-screen-permission')
         } else if (stream.pubStatus.screen.screen && !stream.pubStatus.screen.consumerId) {
           this.logger.log(`subscribe() 开始订阅 ${stream.getId()} 辅流`)
@@ -1766,7 +1766,7 @@ class Client extends Base {
               this.isPublished(this.adapterRef.localStream)
             ) {
               // 主播变为观众时会自动Unpublish所有流
-              this.logger.info(`setClientRole() 主播 ${localUser}将设为观众，自动Unpublish中`)
+              this.logger.info(`setClientRole() 主播 ${localUser}将设为观众，自动unPublish中`)
               await this.unpublish(this.adapterRef.localStream)
             }
             const userRoleResult = await this.adapterRef._mediasoup?.updateUserRole(userRole)
@@ -2079,7 +2079,7 @@ class Client extends Base {
       message = 'addTasks() 参数格式错误, rtmpTasks为空, 或者该数组长度为空'
       reason = ErrorCode.ADD_TASK_PARAMETER_ERROR
     } else if (this._roleInfo.userRole === 1) {
-      message = 'addTasks() 观众不允许进行添加推流任务'
+      message = 'addTasks() 观众角色不允许进行添加推流任务'
       reason = ErrorCode.TASKS_ROLE_ERROR
     } else if (!this.adapterRef._meetings) {
       message = 'addTasks() 加入房间后进行添加推流任务'
@@ -2142,7 +2142,7 @@ class Client extends Base {
       message = 'deleteTasks() 参数格式错误, taskIds为空, 或者该数组长度为空'
       reason = ErrorCode.DELETE_TASK_PARAMETER_ERROR
     } else if (this._roleInfo.userRole === 1) {
-      message = 'deleteTasks() 观众不允许删除推流任务'
+      message = 'deleteTasks() 观众角色不允许删除推流任务'
       reason = ErrorCode.TASKS_ROLE_ERROR
     } else if (!this.adapterRef._meetings) {
       message = 'deleteTasks() 加入房间后才能删除推流任务'
@@ -2205,7 +2205,7 @@ class Client extends Base {
       message = 'updateTasks() 参数格式错误, rtmpTasks为空, 或者该数组长度为空'
       reason = ErrorCode.UPDATE_TASK_PARAMETER_ERROR
     } else if (this._roleInfo.userRole === 1) {
-      message = 'updateTasks() 观众不允许进行添加推流任务'
+      message = 'updateTasks() 观众角色不允许进行添加推流任务'
       reason = ErrorCode.TASKS_ROLE_ERROR
     } else if (!this.adapterRef._meetings) {
       message = 'updateTasks() 加入房间后进行添加推流任务'

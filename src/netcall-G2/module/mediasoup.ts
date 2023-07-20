@@ -871,7 +871,7 @@ class Mediasoup extends EventEmitter {
         const audioTrack = stream.mediaHelper.audio.audioStream.getAudioTracks()[0]
         if (audioTrack) {
           if (this.adapterRef.permKeyInfo?.pubAudioRight === false) {
-            this.loggerSend.error('permKey权限控制你没有权利发布audio')
+            this.loggerSend.error('permKey权限控制，没有权利发布audio')
             this.adapterRef.instance.safeEmit('error', 'no-publish-audio-permission')
           } else if (audioTrack.readyState === 'ended') {
             this.loggerSend.error(`发布媒体流失败，轨道已关闭，请检查输入设备:audio`, audioTrack)
@@ -910,7 +910,7 @@ class Mediasoup extends EventEmitter {
         const audioTrack = stream.mediaHelper.screenAudio.screenAudioStream.getAudioTracks()[0]
         if (audioTrack) {
           if (this.adapterRef.permKeyInfo?.pubAudioRight === false) {
-            this.loggerSend.error('permKey权限控制你没有权利发布audio slave')
+            this.loggerSend.error('permKey权限控制，没有权利发布audio slave')
             this.adapterRef.instance.safeEmit('error', 'no-publish-audio-slave-permission')
           } else if (audioTrack.readyState === 'ended') {
             this.loggerSend.error(
@@ -946,7 +946,7 @@ class Mediasoup extends EventEmitter {
       } else if (stream.mediaHelper.video.videoStream.getVideoTracks().length) {
         const videoTrack = stream.mediaHelper.video.videoStream.getVideoTracks()[0]
         if (this.adapterRef.permKeyInfo?.pubVideoRight === false) {
-          this.loggerSend.error('permKey权限控制你没有权利发布video')
+          this.loggerSend.error('permKey权限控制，没有权利发布video')
           this.adapterRef.instance.safeEmit('error', 'no-publish-video-permission')
         } else if (videoTrack.readyState === 'ended') {
           this.loggerSend.error(`发布媒体流失败，轨道已关闭，请检查输入设备：video`, videoTrack)
@@ -1029,7 +1029,7 @@ class Mediasoup extends EventEmitter {
         const screenTrack = stream.mediaHelper.screen.screenVideoStream.getVideoTracks()[0]
 
         if (this.adapterRef.permKeyInfo?.pubVideoRight === false) {
-          this.loggerSend.error('permKey权限控制你没有权利发布screen')
+          this.loggerSend.error('permKey权限控制，没有权利发布screen')
           this.adapterRef.instance.safeEmit('error', 'no-publish-screen-permission')
         } else if (screenTrack.readyState === 'ended') {
           this.loggerSend.error(`发布媒体流失败，轨道已关闭，请检查输入设备:screen`, screenTrack)

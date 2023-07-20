@@ -98,7 +98,7 @@ export class SpatialManager {
     const remote = this.getUserData(uid)
     const remoteStream = this.client.adapterRef.remoteStreamMap[uid]
     if (!remoteStream) {
-      this.logger.log(`updatePosition: 更新未到的stream: ${uid} ( ${position.x}, ${position.y})`)
+      this.logger.log(`updatePosition: 更新位置的stream: ${uid} ( ${position.x}, ${position.y})`)
       remote.position.x = position.x
       remote.position.y = position.y
     } else {
