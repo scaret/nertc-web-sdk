@@ -4394,19 +4394,9 @@ const audioMixingEndHandler = function (event) {
   isEnd = true
 }
 
-progress.onclick = (event) => {
-  console.log('点击了进度条： ', event)
-  console.log('点击了进度条 offsetLeft： ', progress.offsetLeft)
-  console.log('点击了进度条 offsetWidth: ', progress.offsetWidth)
-  clearInterval(playTimer)
-  let clientX = event.clientX
-  if (clientX < progress.offsetLeft) {
-    clientX = progress.offsetLeft
-  } else if (clientX > progress.offsetLeft + progress.offsetWidth) {
-    clientX = progress.offsetLeft + progress.offsetWidth
-  }
-  const playStartTime = ((clientX - progress.offsetLeft) / progress.offsetWidth) * totalTime
+function setAudioMixingPosition(playStartTime) {
   console.info('设置伴音播放的位置: ', playStartTime)
+  $('#mixingValueInput').val(playStartTime)
   progress.value = (playStartTime / totalTime) * 100
   progressInfo.innerText =
     fileName + formatSeconds(playStartTime) + ' / ' + formatSeconds(totalTime)
@@ -4424,6 +4414,26 @@ progress.onclick = (event) => {
       })
   }
 }
+
+progress.onclick = (event) => {
+  console.log('点击了进度条： ', event)
+  console.log('点击了进度条 offsetLeft： ', progress.offsetLeft)
+  console.log('点击了进度条 offsetWidth: ', progress.offsetWidth)
+  clearInterval(playTimer)
+  let clientX = event.clientX
+  if (clientX < progress.offsetLeft) {
+    clientX = progress.offsetLeft
+  } else if (clientX > progress.offsetLeft + progress.offsetWidth) {
+    clientX = progress.offsetLeft + progress.offsetWidth
+  }
+  const playStartTime = ((clientX - progress.offsetLeft) / progress.offsetWidth) * totalTime
+  setAudioMixingPosition(playStartTime)
+}
+
+$('#setMixingPosition').click(()=>{
+  const playStartTime = parseFloat($('#mixingValueInput').val())
+  setAudioMixingPosition(playStartTime)
+})
 
 function playAuido() {
   if (isEnd) {
