@@ -1312,18 +1312,21 @@ class Mediasoup extends EventEmitter {
     }
   }
 
-  removeUselessConsumeRequest(options: { producerId?: string; uid?: number | string }) {
-    const { producerId, uid } = options
-    if (!producerId && !uid) return
+  removeUselessConsumeRequest(uid: number | string, mediaType: MediaType | 'all') {
+    if (!uid) return
     //清除订阅队列中已经无用的订阅任务，直接忽略当前的订阅任务，因为已经在流程中了，无法终止，即使错误了内部会兼容掉（伪造M行）
-    for (let i = 1; i < this._eventQueue.length; i++) {
+    for (let i = this._eventQueue.length - 1; i >= 1; i--) {
       const info: ProduceConsumeInfo = this._eventQueue[i]
-      if (info.id === producerId || info.uid === uid) {
-        this.loggerRecv.log(
-          `removeUselessConsumeRequest：uid ${info.uid}, uid ${info.uid}, kind ${info.kind}, id ${info.id}`
+      if (
+        info.uid.toString() === uid.toString() &&
+        (info.mediaType === mediaType || mediaType === 'all')
+      ) {
+        this.loggerRecv.warn(
+          `removeUselessConsumeRequest：uid ${info.uid}, mediaType ${info.mediaType}, id ${info.id}, i ${i}`
         )
+        info.resolve(null)
         this._eventQueue.splice(i, 1)
-        i++
+        i--
       }
     }
   }
