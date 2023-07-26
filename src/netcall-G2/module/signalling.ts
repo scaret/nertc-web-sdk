@@ -475,7 +475,7 @@ class Signalling extends EventEmitter {
             if (this.adapterRef.channelInfo.uidType === 'string') {
               uid = uid.toString()
             }
-            this.adapterRef._mediasoup?.removeUselessConsumeRequest({ uid })
+            this.adapterRef._mediasoup?.removeUselessConsumeRequest(uid, 'all')
             this.adapterRef.instance.clearMember(uid)
             this.adapterRef.instance.removeSsrc(uid)
             delete this.adapterRef.instance._roleInfo.audienceList[uid]
@@ -536,10 +536,7 @@ class Signalling extends EventEmitter {
           )
           //remoteStream.pubStatus[mediaTypeShort].consumerId = '';
         } else {
-          this.adapterRef._mediasoup?.removeUselessConsumeRequest({
-            producerId: remoteStream.pubStatus[mediaTypeShort].producerId,
-            uid
-          })
+          this.adapterRef._mediasoup?.removeUselessConsumeRequest(uid, mediaType)
         }
 
         remoteStream[mediaTypeShort] = true
@@ -614,7 +611,7 @@ class Signalling extends EventEmitter {
           return
         }
 
-        this.adapterRef._mediasoup?.removeUselessConsumeRequest({ producerId, uid })
+        this.adapterRef._mediasoup?.removeUselessConsumeRequest(uid, mediaType)
         if (remoteStream.pubStatus[mediaTypeShort].consumerId) {
           this.adapterRef._mediasoup?.destroyConsumer(
             remoteStream.pubStatus[mediaTypeShort].consumerId,
