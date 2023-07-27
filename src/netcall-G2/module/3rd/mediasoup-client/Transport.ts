@@ -898,7 +898,7 @@ export class Transport extends EnhancedEventEmitter {
         return
       }
 
-      Logger.warn(prefix, 'producer 关闭: ', producer.localId)
+      Logger.debug(prefix, 'producer 关闭: ', producer.localId)
       // @ts-ignore
       this._awaitQueue
         .push(async () => this._handler.stopSending(producer.localId, producer.appData.mediaType))
