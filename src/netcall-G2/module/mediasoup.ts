@@ -1326,7 +1326,6 @@ class Mediasoup extends EventEmitter {
         )
         info.resolve(null)
         this._eventQueue.splice(i, 1)
-        i--
       }
     }
   }
