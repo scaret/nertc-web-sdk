@@ -781,7 +781,7 @@ class Base extends RTCEventEmitter {
   isPublished(stream: LocalStream) {
     return (
       stream &&
-      this.adapterRef.localStream === stream &&
+      this.adapterRef.localStream?.localStreamId === stream.localStreamId &&
       ((stream.audio && stream.pubStatus.audio.audio) ||
         (stream.video && stream.pubStatus.video.video) ||
         (stream.screen && stream.pubStatus.screen.screen))

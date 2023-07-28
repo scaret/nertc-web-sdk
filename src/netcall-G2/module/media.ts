@@ -1596,7 +1596,10 @@ class MediaHelper extends EventEmitter {
     }
     track.addEventListener('ended', () => {
       this.logger.log('Track ended', track.label, track.id)
-      if (this.stream !== this.stream.client.adapterRef.localStream) {
+      if (
+        this.stream.isRemote ||
+        this.stream.localStreamId !== this.stream.client.adapterRef.localStream?.localStreamId
+      ) {
         return
       }
       if (track === this.audio.micTrack || track === this.audio.audioSource) {
