@@ -34,6 +34,27 @@ declare namespace NERTC {
      * 关闭设备兼容模式
      */
     function disableCompatMode(): void
+    /**
+     * 该函数是针对浏览器手势触发的事件函数。
+     * 目前Safari桌面端进行屏幕共享时，需要让用户在界面上产生交互，不然该次屏幕共享请求会被拒绝。此处针对浏览器的这一行为做了一次补救：
+     * 当屏幕共享请求第一次被拒绝时，`NERTC.Device.onUserGestureNeeded`这个位置的函数会收到这个提醒，用户只需要在这个回调函数
+     * 中通过手势触发，再次发起屏幕共享请求即可
+     *
+     * @example
+     * ```
+     * NERTC.Device.onUserGestureNeeded = (evt:any)=>{
+     *   // 这里 $shareScreenUI 指代用户自定义的手势触发UI。平时处于隐藏状态
+     *   // 在用户没有实现 onUserGestureNeeded 的情况下，该UI指的是页面顶部黄色的框
+     *   $shareScreenUI.onclick = ()=>{
+     *    NERTC.Device.emit('user-gesture-fired')
+     *    $shareScreenUI.hide()
+     *   }
+     *   $shareScreenUI.show()
+     * }
+     * ```
+     *
+     */
+    function onUserGestureNeeded(evt: any): void
   }
   namespace Logger {
     /**
@@ -135,6 +156,18 @@ declare namespace NERTC {
    * * debug为`false`时，浏览器会打印警告及错误日志，即日志级别为`WARNING`。
    * * 默认的日志级别为`INFO`。要关闭所有日志，应调用`NERTC.Logger.setLogLevel(NERTC.Logger.NONE)`。见[[NERTC.Logger.setLogLevel]]
    *
+   * @note 注意
+   * 使用Web前端框架时，应该避免对SDK产生的实例进行观察，或将其转为Proxy。
+   * 以Vue3为例，如将`client`、`localStream`等对象设为data的属性，应将其设置为raw。
+   * ```
+   *    import {markRaw} from 'vue'
+   *
+   *    // rtc.client = NERTC.createClient(...)
+   *    // rtc.localStream = NERTC.createStream(...)
+   *    markRaw(rtc.client)
+   *    markRaw(rtc.localStream)
+   * ```
+   *
    * @example
    * ```html
    * <!DOCTYPE html>
@@ -191,6 +224,27 @@ declare namespace NERTC {
    * @note 自 V4.1.0 版本起，摄像头与屏幕共享的视频流可以同时发送，其中屏幕共享流会以辅流形式发送。
    *
    * @param options 配置参数。
+   *
+   * @example
+   *
+   * ```JavaScript
+   * // 1. 创建 localStream
+   * // 从麦克风和摄像头采集本地音视频流
+   * localStream = NERTC.createStream({
+   *   audio: true,
+   *   video: true,
+   *   uid: 123
+   * });
+   *
+   * // 仅采集屏幕分享流
+   * localStream = NERTC.createStream({
+   *   audio: false,
+   *   screen: true,
+   *   uid: 123
+   * });
+   * // 2. 初始化本地流
+   * await rtc.localStream.init();
+   * ```
    */
   function createStream(options: StreamOptions):
     | Stream
@@ -201,6 +255,8 @@ declare namespace NERTC {
       }
   /**
    * 该方法枚举可用的媒体输入/输出设备，比如麦克风、摄像头、耳机等。
+   *
+   * 该方法不支持 http 协议，请使用 https 协议。
    *
    * 出于安全性考虑，各平台对枚举设备接口有不同的权限控制策略。例如：
    * 1. Safari浏览器只有在当前页面执行一次[getUserMedia](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia)(也就是[[Stream.init]])之后才能够枚举设备。
@@ -241,6 +297,9 @@ declare namespace NERTC {
   /**
    * 获取可用的视频输入设备。
    *
+   * 该方法不支持 http 协议，请使用 https 协议。
+   *
+   * @example
    * ```JavaScript
    * //接口使用示例
    * NERTC.getCameras().then(data => {
@@ -253,12 +312,63 @@ declare namespace NERTC {
   function getCameras(): Promise<DeviceInfo[]>
   /**
    * 获取可用的音频输入设备。
+   *
+   * 该方法不支持 http 协议，请使用 https 协议。
+   *
+   * @example
+   * ```JavaScript
+   * //接口使用示例
+   * NERTC.getMicrophones().then(data => {
+   *   data.forEach(item=>{
+   *     console.log('video label: ', item.label, 'deviceId: ', item.deviceId)
+   *   })
+   * })
    */
   function getMicrophones(): Promise<DeviceInfo[]>
   /**
    * 获取可用的音频输出设备。
+   *
+   * 该方法不支持 http 协议，请使用 https 协议。
+   *
+   * @example
+   * ```JavaScript
+   * //接口使用示例
+   * NERTC.getSpeakers().then(data => {
+   *   data.forEach(item=>{
+   *     console.log('video label: ', item.label, 'deviceId: ', item.deviceId)
+   *   })
+   * })
    */
   function getSpeakers(): Promise<DeviceInfo[]>
+
+  /**
+   * 获取当前浏览器支持 WebRTC 的基本能力。
+   *
+   * @note
+   *
+   * - 请在创建音视频对象（createClient）之前调用该方法。
+   *
+   * @returns  当前浏览器是否支持 SDK 推流、拉流和屏幕共享。
+   *
+   * 调用该方法会返回一个 Promise 对象，在 .then(data(result){}) 回调中，data 包含以下属性：
+   * - isPullStreamSupport: 当前浏览器是否支持 SDK 进行拉流。返回值包括 true 和 false。
+   * - isPushStreamSupport: 当前浏览器是否支持 SDK 进行推流。返回值包括 true 和 false。
+   * - isScreenShareSupport: 当前浏览器是否支持 SDK 进行屏幕共享。返回值包括 true 和 false。
+   *
+   * ```JavaScript
+   * //接口使用示例
+   *  NERTC.checkBrowserCompatibility().then(data => {
+   *   console.log(`isPullStreamSupport: ${data.isPullStreamSupport}`);
+   *   console.log(`isPushStreamSupport: ${data.isPushStreamSupport}`);
+   *   console.log(`isScreenShareSupport: ${data.isScreenShareSupport}`);
+   *  })
+   * ```
+   */
+  function checkBrowserCompatibility(): Promise<{
+    isPullStreamSupport: boolean
+    isPushStreamSupport: boolean
+    isScreenShareSupport: boolean
+  }>
 
   /**
    * 检查 NERTC Web SDK 对正在使用的浏览器的适配情况。
@@ -310,6 +420,22 @@ declare namespace NERTC {
    * 销毁 Client 对象。
    *
    * @param client 指定要销毁的 Client 实例，不传递则销毁最初使用用 createClient 创建的 Client 实例（一般多实例场景使用）。
+   *
+   * @example
+   * ```JavaScript
+   * // 1. 创建client
+   * client = NERTC.createClient({appkey: "<您的appkey>", debug: true});
+   * // 2. 加入频道
+   * await client.join({
+   *   channelName: 'channel163',
+   *   uid: 123,
+   *   token: '<您的token>', // 如关闭了安全模式，则不需要该参数。
+   * });
+   * // 3. 通话结束后退出房间
+   * await client.leave()
+   * // 4. 若后续再不使用该 client，则可以销毁该 client 实例
+   * NERTC.destroy()
+   * ```
    */
   function destroy(client?: Client): void
 

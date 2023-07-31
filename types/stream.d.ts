@@ -28,6 +28,11 @@ import {
 declare interface Stream {
   /**
    *  获取音视频流 ID。
+   *
+   * @example
+   * ```Javascript
+   * let uid = stream.getId()
+   * ```
    */
   getId(): number | string | null
   /**
@@ -92,7 +97,8 @@ declare interface Stream {
    *
    * @note 使用自定义音频渲染功能时，应该在播放远端流时，关闭默认的音频渲染。
    *
-   *```JavaScript
+   * @example
+   * ```JavaScript
    * remoteStream.play({
    *    audio: false,
    *    video: true
@@ -107,16 +113,34 @@ declare interface Stream {
    * 初始化音视频流对象。
    *
    * 该方法用于初始化本地创建的音视频流对象。
+   *
+   * @example
+   * ```JavaScript
+   * await localStream.init();
+   * ```
    */
   init(): Promise<void>
   /**
    * 获取音频轨道。
+   * 默认获取主流音频轨道（麦克风）
+   *
+   * @example
+   * ```JavaScript
+   * let audioTrack = stream.getAudioTrack('audio')
+   * ```
    */
-  getAudioTrack(): MediaStreamTrack | null
+  getAudioTrack(mediaType?: 'audio' | 'audioSlave'): MediaStreamTrack | null
   /**
    * 获取视频轨道。
+   * 默认获取主流视频轨道（摄像头）
+   *
+   *  @example
+   * ```JavaScript
+   * let audioTrack = localStream.getVideoTrack('video')
+   * ```
+   *
    */
-  getVideoTrack(): MediaStreamTrack | null | undefined
+  getVideoTrack(mediaType?: 'video' | 'screen'): MediaStreamTrack | null | undefined
   /**
    * 播放音视频流。
    *
@@ -221,6 +245,15 @@ declare interface Stream {
    * @param options 配置对象。
    * @param mediaType 媒体流类型。即指定设置的是摄像头画面还是屏幕共享画面。
    *
+   * @example
+   * ```javascript
+   *  localStream.setLocalRenderMode({
+   *    width: 200,
+   *    height: 200,
+   *    cut: false
+   *  });
+   * ```
+   *
    */
   setLocalRenderMode(
     options: RenderMode,
@@ -234,6 +267,15 @@ declare interface Stream {
    * 例子见[[Stream.play]]。
    * @param options 配置对象。
    * @param mediaType 媒体流类型。即指定设置的是摄像头画面还是屏幕共享画面。
+   *
+   * @example
+   * ```javascript
+   *  remoteStream.setRemoteRenderMode({
+   *    width: 200,
+   *    height: 200,
+   *    cut: false
+   *  });
+   * ```
    */
   setRemoteRenderMode(options: RenderMode, mediaType?: 'video' | 'screen'): void
   /**
@@ -259,13 +301,40 @@ declare interface Stream {
    */
   stop(type?: MediaType): void
   /**
+   * 返回音视频流当前是否可以播放。
+   * 该API用于辅助判断当前流的状态，即：是否可以播放，为什么不能播放
+   *
+   * @param type 媒体流类型。
+   * @return
+   *  - result：当前是否可以播放。如为true，则可以调用 [[Stream.play]]
+   *  - reason：如果当前流不能播放，则不能播放的原因是什么。包括：
+   *    - `NOT_PUBLISHED`: 远端没有发布该媒体
+   *    - `NOT_SUBSCRIBED`: 还没有订阅远端流
+   *    - `CONSUME_START`: 正在订阅远端流中
+   *    - `NOT_OPENED`: 本地流没有打开
+   *    - `ENDED`: 本地流已结束（如设备被拔出）
+   *    - `MUTED`: 本地流在黑屏状态，通常是调用了mute()，或者本地多次获取媒体导致当前媒体在异常状态。
+   *    - `PAUSED`: 上一次播放行为在暂停状态，通常是上一次调用play()的行为受到了自动播放策略影响。
+   *
+   * @example
+   * ```Javascript
+   * let result = localStream.canPlay('video')
+   * ```
+   */
+  canPlay(type: MediaType): { result: boolean; reason: string }
+  /**
    * 返回音视频流当前是否在播放状态。
    * @param type 媒体流类型。
    * @return
    *  - true：该音视频流正在渲染或播放。
    *  - false：该音视频流没有渲染。
+   *
+   *  @example
+   * ```Javascript
+   *  let result = await rtc.localStream.isPlaying('audio')
+   * ```
    */
-  isPlaying(type: MediaType): Promise<boolean>
+  isPlaying(type: MediaType): boolean
   /**
    * 打开音视频输入设备，如麦克风、摄像头、屏幕共享，并且发布出去。
    *
@@ -323,14 +392,23 @@ declare interface Stream {
      * @since V4.6.0
      */
     screenAudioSource?: MediaStreamTrack
+    /**
+     * 调用 open 接口时，是否进行 publish
+     *
+     * 若为 false，则不进行 publish；若为 true 或者不填，则进行 publish。
+     *
+     *
+     * @since V5.4.0
+     */
+    enableMediaPub?: boolean
   }): Promise<undefined>
   /**
    * 关闭音视频输入设备，如麦克风、摄像头、屏幕共享，并且停止发布。
    *
    * @example
    * ```
-   *    // 例如，关闭屏幕共享
-   *    rtc.localStream.close({ type: "screen"});
+   *  // 例如，关闭屏幕共享
+   *  rtc.localStream.close({ type: "screen"});
    * ```
    * @param {Object} options 配置对象
    */
@@ -342,18 +420,38 @@ declare interface Stream {
   }): Promise<undefined>
   /**
    * 启用音频轨道。
+   *
+   * @example
+   * ```Javascript
+   *  await stream.unmuteAudio()
+   * ```
    */
   unmuteAudio(): Promise<void>
   /**
    * 禁用音频轨道。
+   *
+   * @example
+   * ```Javascript
+   *  await stream.muteAudio()
+   * ```
    */
   muteAudio(): Promise<void>
   /**
    * 启用音频辅流轨道。
+   *
+   * @example
+   * ```Javascript
+   *  await stream.unmuteAudioSlave()
+   * ```
    */
   unmuteAudioSlave(): Promise<void>
   /**
    * 禁用音频辅流轨道。
+   *
+   * @example
+   * ```Javascript
+   *  await stream.muteAudioSlave()
+   * ```
    */
   muteAudioSlave(): Promise<void>
   /**
@@ -362,6 +460,11 @@ declare interface Stream {
    * 该方法用于确认当前音视频流对象（Stream）中是否包含音频资源。
    *
    * @note 该方法仅对本地流有效。
+   *
+   * @example
+   * ```Javascript
+   * let result = localStream.hasAudio()
+   * ```
    *
    * @return
    * - true: 该音视频流对象中包含音频资源。
@@ -375,6 +478,11 @@ declare interface Stream {
    *
    * @note 该方法仅对本地流有效。
    *
+   *  @example
+   * ```Javascript
+   * let result = localStream.hasAudioSlave()
+   * ```
+   *
    * @return
    * - true: 该音视频流对象中包含音频辅流资源。
    * - false: 该音视频流对象中不包含音频辅流资源。
@@ -387,6 +495,12 @@ declare interface Stream {
    * * 该音量的取值范围为 0 - 1
    * * Safari 浏览器的桌面端14.1以下、iOS端14.5以下，不支持获取音量
    * * 从 v4.6.25开始，该接口也支持远端。远端音量可通过 mediaType 指定获取主流音量或辅流音量。本地音量不支持mediaType
+   * * 目前发现 Chrome 104 以上版本获取音量会引发内存泄漏。该问题源于Chrome浏览器RTCPeerConnection与AudioWorkletNode协作时引发，目前无法回避。如有长时间通话需求，应避免使用该方法。
+   *
+   * @example
+   * ```Javascript
+   *  let audioLevel = stream.getAudioLevel()
+   * ```
    */
   getAudioLevel(mediaType?: 'audio' | 'audioSlave'): number
   /**
@@ -399,6 +513,11 @@ declare interface Stream {
    * * standard_stereo（表达48 kHz 采样率，双声道，编码码率约 64 Kbps）
    * * high_quality（表示48 kHz 采样率，单声道， 编码码率约 128 Kbps）
    * * high_quality_stereo（表示48 kHz 采样率，双声道，编码码率约 192 Kbps）
+   *
+   * @example
+   * ```Javascript
+   *  localStream.setAudioProfile('speech_low_quality')
+   * ```
    */
   setAudioProfile(profile: string): void
   /**
@@ -407,6 +526,11 @@ declare interface Stream {
    *
    * @note 注意
    * 由于系统限制，ios上目前不支持设置远端音频音量。
+   *
+   * @example
+   * ```Javascript
+   *  stream.setAudioVolume(50)
+   * ```
    */
   setAudioVolume(volume?: number): string | undefined
   /**
@@ -415,12 +539,23 @@ declare interface Stream {
    *
    * @note 注意
    * 由于系统限制，ios上目前不支持设置远端音频辅流音量。
+   *
+   * @example
+   * ```Javascript
+   *  remoteStream.setAudioSlaveVolume(50)
+   * ```
    */
   setAudioSlaveVolume(volume?: number): string | undefined
   /**
    * 设置麦克风采集的音量。
    * @param volume 要设置的采集音量。范围为 [0-100]。0 表示静音。
    * @param mediaTypeAudio 要设置的采集类型。可分开设置麦克风与屏幕共享音频。如您未使用屏幕共享音频功能，则忽略该参数。
+   *
+   *  @example
+   * ```Javascript
+   * // 设置采集值为 50 的麦克风音量
+   *  localStream.setCaptureVolume(50, 'microphone')
+   * ```
    */
   setCaptureVolume(
     volume: number,
@@ -493,6 +628,11 @@ declare interface Stream {
    * 对本地流启用视频轨道后远端会触发 Client.on("unmute-video") 回调。
    *
    * @note 对于本地创建的流，在 createStream 时将 video 设置为 true 才可使用该方法。
+   *
+   * @example
+   * ```Javascript
+   *  await stream.unmuteVideo()
+   * ```
    */
   unmuteVideo(): Promise<void>
   /**
@@ -502,18 +642,34 @@ declare interface Stream {
    * - 对于远端流，调用该方法仍然会接收视频，但是会停止播放。
    *
    * @note 对于本地创建的流，在 createStream 时将 video 设置为 true 才可使用该方法。
+   *
+   * @example
+   * ```Javascript
+   *  await stream.muteVideo()
+   * ```
+   *
    */
   muteVideo(): Promise<void>
   /**
    * 启用屏幕共享轨道。
    *
    * 如果您调用了 muteScreen，可调用本方法启用屏幕共享轨道。远端会触发 Client.on("ummute-screen") 回调。
+   *
+   * @example
+   * ```Javascript
+   *  await stream.unmuteScreen()
+   * ```
    */
   unmuteScreen(): Promise<void>
   /**
    * 禁用屏幕共享轨道。
    *
    * 调用该方法会停止发送屏幕共享，远端会触发 Client.on("mute-screen") 回调。
+   *
+   * @example
+   * ```Javascript
+   *  await stream.muteScreen()
+   * ```
    */
   muteScreen(): Promise<void>
   /**
@@ -522,6 +678,11 @@ declare interface Stream {
    * 该方法用于确认当前音视频流对象（Stream）中是否包含视频资源。
    *
    * @note 该方法仅对本地流有效。
+   *
+   * @example
+   * ```Javascript
+   * let result = localStream.hasVideo()
+   * ```
    *
    * @return
    * - true: 该音视频流对象中包含视频资源。
@@ -539,6 +700,7 @@ declare interface Stream {
    * 2. 从高分辨率切换到低分辨率时长宽比不完全符合profile设定
    * 3. 在多个页面开启摄像头或者打开大小流的情况下，分辨率切换失败
    * 4. ios16的bug导致的动态切换视频属性仅对本地生效、远端不生效
+   * 5. 由于系统限制，ios 13/14 上无法使用1080p的Profile
    *
    * SDK仅保证在这些情况下的设备可用及码率切换正常。
    *
@@ -580,6 +742,11 @@ declare interface Stream {
    * 该方法用于确认当前音视频流对象（Stream）中是否包含屏幕共享资源。
    *
    * @note 该方法仅对本地流有效。
+   *
+   * @example
+   * ```Javascript
+   * let result = localStream.hasScreen()
+   * ```
    *
    * @return
    * - true: 该音视频流对象中包含屏幕共享资源。
@@ -639,6 +806,15 @@ declare interface Stream {
    * - v4.5.0之前，本地视频流截图，需要在 Client.join 并 Client.publish 发布流成功之后调用。
    * - 远端视频流截图，需要在  Client.subscribe 订阅远端视频流之后调用。
    * - 水印不会被截图。
+   *
+   * @example
+   * ```javascript
+   *  await stream.takeSnapshot({
+   *    uid: 123,
+   *    mediaType: 'video',
+   *    name: 'xxx'
+   *  })
+   * ```
    */
   takeSnapshot(options: {
     /**
@@ -662,6 +838,11 @@ declare interface Stream {
    *
    * @returns 截图画面生成的 Base64。
    *
+   * @example
+   * ```javascript
+   *  await stream.takeSnapshotBase64({ mediaType: 'video' })
+   * ```
+   *
    */
   takeSnapshotBase64(options: {
     /**
@@ -674,6 +855,11 @@ declare interface Stream {
    * 开启单人视频录制。
    *
    * @param mediaRecordingOptions 参数对象。
+   *
+   * @example
+   * ```Javascript
+   *  await stream.startMediaRecording({type: 'audio', reset: true})
+   * ```
    */
   startMediaRecording(mediaRecordingOptions: {
     /**
@@ -689,10 +875,16 @@ declare interface Stream {
   /**
    * 结束视频录制。
    * @param options 参数对象。
+   *
+   * @example
+   * ```Javascript
+   *  await stream.stopMediaRecording({recordId: 'xxxx'})
+   * ```
    */
   stopMediaRecording(options: {
     /**
      * 录制 ID。可以通过 [[Stream.listMediaRecording]] 接口获取。
+     *
      */
     recordId?: string
   }): Promise<any>
@@ -700,6 +892,14 @@ declare interface Stream {
   /**
    * 播放视频录制。
    * @param options 参数对象。
+   *
+   * @example
+   * ```Javascript
+   *   let result = await stream.playMediaRecording({
+   *     view: document.getElementById('xxx'),
+   *     recordId: '12345'
+   *   })
+   * ```
    */
   playMediaRecording(options: {
     /**
@@ -722,6 +922,11 @@ declare interface Stream {
    * - `isRecording` ：是否正在录制。
    * - `startTime` ：录制开始时间。
    * - `endTime` ：录制结束时间。
+   *
+   * @example
+   * ```Javascript
+   *  let records = stream.listMediaRecording()
+   * ```
    */
   listMediaRecording(): {
     id: number
@@ -736,6 +941,11 @@ declare interface Stream {
   /**
    * 清除录制的音视频。
    * @param options 参数对象。
+   *
+   * @example
+   * ```Javascript
+   * await client.cleanMediaRecording()
+   * ```
    */
   cleanMediaRecording(options: {
     /**
@@ -747,6 +957,14 @@ declare interface Stream {
   /**
    * 下载录制的音视频。
    * @param options 参数对象。
+   *
+   * @example
+   * ```Javascript
+   * await stream.downloadMediaRecording({
+   *   recordId: '123456'
+   * })
+   * ```
+   *
    */
   downloadMediaRecording(options: {
     /**
@@ -795,6 +1013,7 @@ declare interface Stream {
     /**
      * 可选，指定音频文件循环播放的次数。
      * @note
+     * - 该参数仅对Chrome有效
      * - 通过 cycle 指定循环播放次数时，需要同时指定 loopback 参数置为 true。如果 loopback 为 false，该参数不生效。
      * - cycle 默认为 0，表示无限循环播放，直至调用 stopAudioMixing 后停止。
      */
@@ -823,18 +1042,39 @@ declare interface Stream {
    * 停止播放音乐文件。
    *
    * 请在房间内调用该方法。
+   *
+   * @example
+   * ```Javascript
+   *  await localStream.stopAudioMixing()
+   * ```
    */
   stopAudioMixing(): Promise<void>
   /**
    * 暂停播放音乐文件。
    *
    * 请在房间内调用该方法。
+   *
+   * @example
+   * ```Javascript
+   * localStream.pauseAudioMixing()
+   *   .then((res) => {
+   *     console.log('暂停伴音成功')
+   *   })
+   *   .catch((err) => {
+   *     console.error('暂停伴音失败', err)
+   *   })
+   * ```
    */
   pauseAudioMixing(): Promise<void> | null | undefined
   /**
    * 恢复播放音乐文件。
    *
    * 请在房间内调用该方法。
+   *
+   * @example
+   * ```Javascript
+   * await localStream.resumeAudioMixing()
+   * ```
    */
   resumeAudioMixing(): Promise<void> | undefined
   /**
@@ -843,12 +1083,30 @@ declare interface Stream {
    * 该方法调节混音里伴奏的播放音量大小。请在房间内调用该方法。
    *
    * @param volume 伴奏发送音量。取值范围为 0~100。默认 100，即原始文件音量。
+   *
+   * @example
+   * ```Javascript
+   * // 设置伴音音量为 50
+   * localStream.adjustAudioMixingVolume(50))
+   *   .then((res) => {
+   *     console.log('设置伴音的音量成功')
+   *   })
+   *   .catch((err) => {
+   *     console.error('设置伴音的音量失败', err)
+   *   })
+   * ```
    */
   adjustAudioMixingVolume(volume: number): Promise<void> | null | undefined
   /**
    * 获取音乐文件时长。
    *
    * 该方法获取伴奏时长，单位为毫秒。请在房间内调用该方法。
+   *
+   * @example
+   * ```Javascript
+   *  await result = localStream.getAudioMixingDuration()
+   *  let totalTime = result.totalTime
+   * ```
    *
    * @returns 方法调用成功返回音乐文件时长，单位为毫秒（ms）。
    *
@@ -859,6 +1117,12 @@ declare interface Stream {
    *
    * 该方法获取当前伴奏播放进度，单位为毫秒。请在房间内调用该方法。
    *
+   * @example
+   * ```Javascript
+   *  await result = localStream.getAudioMixingCurrentPosition()
+   *  let playedTime = result.playedTime
+   * ```
+   *
    * @returns 方法调用成功返回音乐文件播放进度。
    */
   getAudioMixingCurrentPosition(): Promise<void>
@@ -867,25 +1131,36 @@ declare interface Stream {
    *
    * 该方法可以设置音频文件的播放位置，这样你可以根据实际情况播放文件，而非从头到尾播放整个文件。
    * @param playStartTime 音乐文件的播放位置，单位为毫秒。
+   *
+   * @example
+   * ```Javascript
+   * await localStream.setAudioMixingPosition(2000)
+   * ```
    */
   setAudioMixingPosition(playStartTime: number): Promise<unknown>
   /**
-     * 播放指定音效文件。
-     * - 支持的音效文件类型包括 MP3，AAC 等浏览器支持的其他音频格式。仅支持在线 URL。
-     * - playEffect 与 startAudioMixing 方法的区别在于，该方法更适合播放较小的音效文件，且支持同时播放多个音效。
-     * @since V4.3.0
-     * @note
-     *    - 请在 publish 音频之后调用该方法。
-     *    - 您可以多次调用该方法，通过传入不同的音效文件的 soundId 和 filePath，同时播放多个音效文件，实现音效叠加。为获得最佳用户体验，建议同时播放的音效文件不超过 3 个。
-     *
-     * @return 可能返回的错误码：
-         - ""BROWSER_NOT_SUPPORT: 不支持的浏览器类型。
-         - "INVALID_OPERATION"：非法操作，详细原因请查看日志，通常为状态错误。
-         - "No MediaHelper": localStream 没有 init() 初始化，无法使用音效功能。
-         - "Stream.playEffect:soundId"：soundId 参数格式错误。
-         - "Stream.playEffect:filePath"：filePath 参数格式错误。
-         - "Stream.playEffect:cycle"：cycle 参数格式错误。
-     */
+   * 播放指定音效文件。
+   * - 支持的音效文件类型包括 MP3，AAC 等浏览器支持的其他音频格式。仅支持在线 URL。
+   * - playEffect 与 startAudioMixing 方法的区别在于，该方法更适合播放较小的音效文件，且支持同时播放多个音效。
+   * @since V4.3.0
+   * @note
+   *    - 请在 publish 音频之后调用该方法。
+   *    - 您可以多次调用该方法，通过传入不同的音效文件的 soundId 和 filePath，同时播放多个音效文件，实现音效叠加。为获得最佳用户体验，建议同时播放的音效文件不超过 3 个。
+   *
+   * @return 可能返回的错误码：
+   *   - ""BROWSER_NOT_SUPPORT: 不支持的浏览器类型。
+   *   - "INVALID_OPERATION"：非法操作，详细原因请查看日志，通常为状态错误。
+   *   - "No MediaHelper": localStream 没有 init() 初始化，无法使用音效功能。
+   *   - "Stream.playEffect:soundId"：soundId 参数格式错误。
+   *   - "Stream.playEffect:filePath"：filePath 参数格式错误。
+   *   - "Stream.playEffect:cycle"：cycle 参数格式错误。
+   *
+   * @example
+   * ```Javascript
+   *  let option = {cycle:1, filePath:'xxx', soundId:1}
+   *  await localStream.playEffect(options)
+   * ```
+   */
   playEffect(options: {
     /**
      * 必选。指定在线音效文件的 URL地址。
@@ -905,141 +1180,209 @@ declare interface Stream {
     soundId: number
   }): Promise<unknown>
   /**
-     * 停止播放指定音效文件。
-     * @since V4.3.0
-     * @note 请在房间内调用该方法。
-     * @return 可能返回的错误码：
-         - "BROWSER_NOT_SUPPORT": 浏览器不支持
-         - "No MediaHelper": localStream没有init()初始化,无法使用音效功能
-         - "Stream.playEffect:soundId"：soundId参数格式错误
-
-     * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
-     */
+   * 停止播放指定音效文件。
+   * @since V4.3.0
+   * @note 请在房间内调用该方法。
+   * @return 可能返回的错误码：
+   *   - "BROWSER_NOT_SUPPORT": 浏览器不支持
+   *   - "No MediaHelper": localStream没有init()初始化,无法使用音效功能
+   *   - "Stream.playEffect:soundId"：soundId参数格式错误
+   *
+   * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+   *
+   * @example
+   * ```Javascript
+   *  await localStream.stopEffect(123)
+   * ```
+   *
+   */
   stopEffect(soundId: number): Promise<unknown>
   /**
-     * 暂停播放指定音效文件。
-     * @since V4.3.0
-     *
-     * @note 请在房间内调用该方法。
-     *
-     * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
-     * @return {Promise}
-     * 可能返回的错误码：
-         - "BROWSER_NOT_SUPPORT": 浏览器不支持
-         - "SOUND_NOT_EXISTS": soundId指定的音效文件不存在
-         - "INVALID_OPERATION"：非法操作，可以通过console日志查看原因，一般是状态不对
-         - "No MediaHelper": localStream没有init()初始化,无法使用音效功能
-         - "Stream.pauseEffect:soundId"：soundId参数格式错误
-     *
-     */
+   * 暂停播放指定音效文件。
+   * @since V4.3.0
+   *
+   * @note 请在房间内调用该方法。
+   *
+   * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+   * @return {Promise}
+   * 可能返回的错误码：
+   *    - "BROWSER_NOT_SUPPORT": 浏览器不支持
+   *   - "SOUND_NOT_EXISTS": soundId指定的音效文件不存在
+   *   - "INVALID_OPERATION"：非法操作，可以通过console日志查看原因，一般是状态不对
+   *   - "No MediaHelper": localStream没有init()初始化,无法使用音效功能
+   *   - "Stream.pauseEffect:soundId"：soundId参数格式错误
+   *
+   * @example
+   * ```Javascript
+   * localStream.pauseEffect(1)
+   *    .then((res) => {
+   *      console.log('暂停文件播放成功: ', res)
+   *    })
+   *    .catch((err) => {
+   *      console.error('暂停音效文件失败: ', err)
+   *    })
+   * ```
+   *
+   */
   pauseEffect(soundId: number): Promise<unknown>
   /**
-     * 恢复播放指定音效文件。
-     *
-     * @note 请在房间内调用该方法。
-     * @since V4.3.0
-     * @return 可能返回的错误码：
-         - "BROWSER_NOT_SUPPORT": 浏览器不支持
-         - "No MediaHelper": localStream没有init()初始化,无法使用音效功能
-         - "Stream.resumeEffect :soundId": soundId 参数格式错误
-     * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
-     * @return {Promise}
-     */
+   * 恢复播放指定音效文件。
+   *
+   * @note 请在房间内调用该方法。
+   * @since V4.3.0
+   * @return 可能返回的错误码：
+   *   - "BROWSER_NOT_SUPPORT": 浏览器不支持
+   *   - "No MediaHelper": localStream没有init()初始化,无法使用音效功能
+   *   - "Stream.resumeEffect :soundId": soundId 参数格式错误
+   * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+   * @return {Promise}
+   *
+   * @example
+   * ```Javascript
+   *  await localStream.resumeEffect(1)
+   * ```
+   */
   resumeEffect(soundId: number): Promise<unknown>
   /**
-     * 调节指定音效文件的音量。
-     * @note 请在房间内调用该方法。
-     * @since V4.3.0
-     *
-     * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
-     * @param {Number} volume 音效音量。整数，范围为 [0,100]。默认为 100，即原始文件音量。
-     * @return {Promise}
-     * 可能返回的错误码：
-         - "BROWSER_NOT_SUPPORT": 浏览器不支持
-         - "No MediaHelper": localStream没有init()初始化,无法使用音效功能
-         - "Stream.setVolumeOfEffect:soundId": 参数格式错误
-         - "Stream.setVolumeOfEffect:volume": 参数格式错误
-     */
+   * 调节指定音效文件的音量。
+   * @note 请在房间内调用该方法。
+   * @since V4.3.0
+   *
+   * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+   * @param {Number} volume 音效音量。整数，范围为 [0,100]。默认为 100，即原始文件音量。
+   * @return {Promise}
+   * 可能返回的错误码：
+   *  - "BROWSER_NOT_SUPPORT": 浏览器不支持
+   *  - "No MediaHelper": localStream没有init()初始化,无法使用音效功能
+   *  - "Stream.setVolumeOfEffect:soundId": 参数格式错误
+   *  - "Stream.setVolumeOfEffect:volume": 参数格式错误
+   *
+   * @example
+   * ```Javascript
+   *  await localStream.setVolumeOfEffect(1234, 50)
+   * ```
+   */
   setVolumeOfEffect(soundId: number, volume: number): Promise<unknown>
   /**
-     * 预加载指定音效文件。
-     *
-     * 该方法缓存音效文件，以供快速播放。为保证通信畅通，请注意控制预加载音效文件的大小。
-     * @note 请在房间内调用该方法。
-     * @since V4.3.0
-     *
-     * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
-     * @param {String} filePath 必选。指定在线音效文件的绝对路径。支持MP3、AAC 以及浏览器支持的其他音频格式。
-     * @return {Object} 可能返回的错误码：
-         - "BROWSER_NOT_SUPPORT": 浏览器不支持
-         - "No MediaHelper": localStream没有init()初始化,无法使用音效功能
-         - "Stream.preloadEffect:filePath": 参数格式错误
-         - "Stream.preloadEffect:soundId": 参数格式错误
-     */
+   * 预加载指定音效文件。
+   *
+   * 该方法缓存音效文件，以供快速播放。为保证通信畅通，请注意控制预加载音效文件的大小。
+   * @note 请在房间内调用该方法。
+   * @since V4.3.0
+   *
+   * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+   * @param {String} filePath 必选。指定在线音效文件的绝对路径。支持MP3、AAC 以及浏览器支持的其他音频格式。
+   * @return {Object} 可能返回的错误码：
+   *   - "BROWSER_NOT_SUPPORT": 浏览器不支持
+   *   - "No MediaHelper": localStream没有init()初始化,无法使用音效功能
+   *   - "Stream.preloadEffect:filePath": 参数格式错误
+   *   - "Stream.preloadEffect:soundId": 参数格式错误
+   *
+   * @example
+   * ```Javascript
+   *  let option = {soundId:1, filePath:'xxx'}
+   *  await localStream.preloadEffect(options)
+   * ```
+   */
   preloadEffect(soundId: number, filePath: string): Promise<unknown>
   /**
-     * 释放指定音效文件。
-     *
-     * 该方法从内存释放某个预加载的音效文件，以节省内存占用。
-     * @note 请在房间内调用该方法。
-     * @since V4.3.0
-     *
-     * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
-     * @return {Object} 可能返回的错误码：
-         - "BROWSER_NOT_SUPPORT": 浏览器不支持
-         - "SOUND_NOT_EXISTS": soundId指定的音效文件不存在
-         - "INVALID_OPERATION": 非法操作，可以查看console日志得到原因，一般是状态原因，如此时应处于播放、暂停状态，不能使用
-         - "No MediaHelper": localStream没有init()初始化,无法使用音效功能
-         - "Stream.unloadEffect:soundId": 参数格式错误
-     */
+   * 释放指定音效文件。
+   *
+   * 该方法从内存释放某个预加载的音效文件，以节省内存占用。
+   * @note 请在房间内调用该方法。
+   * @since V4.3.0
+   *
+   * @param {Number} soundId 指定音效的 ID。每个音效均有唯一的 ID。正整数，取值范围为 [1,10000]。
+   * @return {Object} 可能返回的错误码：
+   *   - "BROWSER_NOT_SUPPORT": 浏览器不支持
+   *   - "SOUND_NOT_EXISTS": soundId指定的音效文件不存在
+   *   - "INVALID_OPERATION": 非法操作，可以查看console日志得到原因，一般是状态原因，如此时应处于播放、暂停状态，不能使用
+   *   - "No MediaHelper": localStream没有init()初始化,无法使用音效功能
+   *   - "Stream.unloadEffect:soundId": 参数格式错误
+   *
+   * @example
+   * ```Javascript
+   *  await localStream.unloadEffect(123)
+   * ```
+   */
   unloadEffect(soundId: number): Promise<unknown>
   /**
-     * 获取所有音效文件播放音量。
-     * @note 请在房间内调用该方法。
-     * @since V4.3.0
-     * @return 可能返回的错误码：
-         - "No MediaHelper": localStream没有init()初始化,无法使用音效功能
-     * @return Array<{ soundId: number; volume: number }>
-     * 返回一个包含 soundId 和 volume 的数组。每个 soundId 对应一个 volume。
-        + `soundId`: 为音效的 ID，正整数，取值范围为 [1,10000]。
-        + `volume`: 为音量值，整数，范围为 [0,100]。
-     */
+   * 获取所有音效文件播放音量。
+   * @note 请在房间内调用该方法。
+   * @since V4.3.0
+   * @return 可能返回的错误码：
+   * - "No MediaHelper": localStream没有init()初始化,无法使用音效功能
+   * @return Array<{ soundId: number; volume: number }>
+   * 返回一个包含 soundId 和 volume 的数组。每个 soundId 对应一个 volume。
+   * + `soundId`: 为音效的 ID，正整数，取值范围为 [1,10000]。
+   * + `volume`: 为音量值，整数，范围为 [0,100]。
+   *
+   * @example
+   * ```Javascript
+   * let result = localStream.getEffectsVolume()[0]
+   * let soundId = result.soundId
+   * let volume = result.volume
+   * ```
+   *
+   */
   getEffectsVolume(): Array<{ soundId: number; volume: number }>
   /**
-     * 设置所有音效文件播放音量。
-     *
-     * @note 请在房间内调用该方法。
-     * @since V4.3.0
-     * @param {Number} volume 音效音量。整数，范围为 [0,100]。默认 100 为原始文件音量。
-     * @return {void} 可能返回的错误码：
-         - "BROWSER_NOT_SUPPORT": 浏览器不支持
-         - "Stream.setEffectsVolume:volume": volume 参数格式错误
-         - "No MediaHelper": localStream没有init()初始化,无法使用音效功能
-     */
+   * 设置所有音效文件播放音量。
+   *
+   * @note 请在房间内调用该方法。
+   * @since V4.3.0
+   * @param {Number} volume 音效音量。整数，范围为 [0,100]。默认 100 为原始文件音量。
+   * @return {void} 可能返回的错误码：
+   *    - "BROWSER_NOT_SUPPORT": 浏览器不支持
+   *    - "Stream.setEffectsVolume:volume": volume 参数格式错误
+   *    - "No MediaHelper": localStream没有init()初始化,无法使用音效功能
+   *
+   * @example
+   * ```Javascript
+   *  localStream.setEffectsVolume(50)
+   * ```
+   *
+   */
   setEffectsVolume(volume: number): void
   /**
-     * 停止播放所有音效文件。
-     *
-     * @note 请在房间内调用该方法。
-     * @since V4.3.0
-     * @return {Promise} 可能返回的错误码：
-         - "BROWSER_NOT_SUPPORT": 浏览器不支持
-         - "No MediaHelper": localStream没有init()初始化,无法使用音效功能
-         - "Stream.playEffect:soundId"：soundId参数格式错误
-     */
+   * 停止播放所有音效文件。
+   *
+   * @note 请在房间内调用该方法。
+   * @since V4.3.0
+   * @return {Promise} 可能返回的错误码：
+   *  - "BROWSER_NOT_SUPPORT": 浏览器不支持
+   *  - "No MediaHelper": localStream没有init()初始化,无法使用音效功能
+   *  - "Stream.playEffect:soundId"：soundId参数格式错误
+   *
+   * @example
+   * ```Javascript
+   *  await localStream.stopAllEffects()
+   * ```
+   */
   stopAllEffects(): Promise<unknown>
   /**
-     * 暂停播放所有音效文件。
-     * @note 请在房间内调用该方法。
-     * @since V4.3.0
-     * @return 可能返回的错误码：
-         - "BROWSER_NOT_SUPPORT": 浏览器不支持
-         - "SOUND_NOT_EXISTS": soundId指定的音效文件不存在
-         - "INVALID_OPERATION"：非法操作，可以通过console日志查看原因，一般是状态不对
-         - "No MediaHelper": localStream没有init()初始化,无法使用音效功能
-         - "Stream.pauseEffect:soundId"：soundId参数格式错误
-     * @return {Promise}
-     */
+   * 暂停播放所有音效文件。
+   * @note 请在房间内调用该方法。
+   * @since V4.3.0
+   * @return 可能返回的错误码：
+   *    - "BROWSER_NOT_SUPPORT": 浏览器不支持
+   *   - "SOUND_NOT_EXISTS": soundId指定的音效文件不存在
+   *   - "INVALID_OPERATION"：非法操作，可以通过console日志查看原因，一般是状态不对
+   *   - "No MediaHelper": localStream没有init()初始化,无法使用音效功能
+   *   - "Stream.pauseEffect:soundId"：soundId参数格式错误
+   * @return {Promise}
+   *
+   *  @example
+   * ```Javascript
+   *  localStream.pauseAllEffects()
+   *    .then((res) => {
+   *      console.log('pauseAllEffects 成功')
+   *    })
+   *    .catch((err) => {
+   *      console.error('pauseAllEffects 失败: %o', err)
+   *    })
+   * ```
+   */
   pauseAllEffects(): Promise<unknown>
   /**
    * 恢复播放所有音效文件。
@@ -1049,12 +1392,23 @@ declare interface Stream {
    *
    * @since V4.3.0
    * @return {Promise}
+   *
+   * @example
+   * ```Javascript
+   * await localStream.resumeAllEffects()
+   * ```
    */
   resumeAllEffects(): Promise<unknown>
 
   /**
    * 获取指定音效文件时长。
    * 该方法获取音效时长，单位为毫秒。请在房间内调用该方法。
+   *
+   * @example
+   * ```Javascript
+   * let option = {cycle:1, filePath:'xxx', soundId:1}
+   * await duration = localStream.getAudioEffectsDuration(options)
+   * ```
    *
    * @return 方法调用成功返回音效文件时长，单位为毫秒（ms）。
    */
@@ -1080,6 +1434,13 @@ declare interface Stream {
    *
    * 该方法获取当前音效播放进度，单位为毫秒。请在房间内调用该方法。
    *
+   * @example
+   * ```Javascript
+   * let option = {cycle:1, filePath:'xxx', soundId:1}
+   * await result = localStream.getAudioEffectsCurrentPosition(options)
+   * let playedTime = result.playedTime
+   * ```
+   *
    * @returns 方法调用成功返回音效文件播放进度。
    */
   getAudioEffectsCurrentPosition(options: {
@@ -1101,6 +1462,30 @@ declare interface Stream {
   }): Promise<unknown>
 
   /**
+   * 获取当前帧的数据。
+   *
+   * @note 注意
+   *
+   * 1. 对应的媒体只有在播放状态下才能调用该方法
+   * 2. 该方法为阻塞方法，在多个Stream上频繁调用该方法可能导致页面卡顿
+   * 3. 当前如不可截图，则返回null。
+   * 4. 由于底层接口限制，该功能在部分部分低版本浏览上性能较低，偶现截图时间在10秒以上，如Safari 13等。
+   * 5. 打码状态不能截图
+   *
+   * @example
+   * ```
+   * // 假设rtc.localStream开启了屏幕共享，那么在rtc.localStream.play()之后
+   * setInterval(()=>{
+   *   const imageData = rtc.localstream.getCurrentFrameData({mediaType: 'screen'})
+   *   if (imageData){
+   *     console.log(`getCurrentFrameData：${imageData.width}x${imageData.height}`)
+   *    // ctx.putImageData(imageData, 0, 0, 0, 0, imageData.width,  imageData.height)
+   *   }
+   * }, 100)
+   * ```
+   */
+  getCurrentFrameData(options: { mediaType: 'video' | 'screen' }): ImageData | null
+  /**
    * 视频上行参数设置。
    *
    *
@@ -1117,7 +1502,7 @@ declare interface Stream {
    * rtc.localStream.setVideoEncoderConfiguration({
    *   mediaType: "screen",
    *   streamType: "high",
-   *   maxBitrate: 3_000_000,
+   *   maxBitrate: 3000,
    *   contentHint: "motion",
    * })
    * // await rtc.localStream.init()
@@ -1139,6 +1524,24 @@ declare interface Stream {
    * *
    *
    * @param options 画布水印设置。支持设置文字水印、图片水印和时间戳水印，设置为 null 表示清除水印。
+   *
+   * @example
+   * ```Javascript
+   * // 设置图片水印参数
+   *  let options = {
+   *    "mediaType": "screen",
+   *    "imageWatermarks": [
+   *      {
+   *        "imageUrls": [
+   *          "img/logo_yunxin.png"
+   *        ],
+   *        "loop": true
+   *      }
+   *    ]
+   *  }
+   * // 添加水印
+   *  localStream.setCanvasWatermarkConfigs(options)
+   * ```
    */
   setCanvasWatermarkConfigs(options: NERtcCanvasWatermarkConfig): void
   /**
@@ -1205,12 +1608,29 @@ declare interface Stream {
    * 开启/关闭美颜
    * @param {Boolean} option 设置 true 表示开启美颜，设置 false 表示关闭美颜。
    *
+   * @example
+   * ```Javascript
+   *  await localStream.setBeautyEffect(true)
+   * ```
+   *
    */
   setBeautyEffect(option: boolean): Promise<void>
   /**
    * 设置美颜效果
    *
    * @param options 美颜选项。
+   *
+   * @example
+   * ```Javascript
+   * //设置基础美颜参数并传递
+   *  let effects = {
+   *    brightnessLevel: 0.5,
+   *    rednessLevel: 0.4,
+   *    smoothnessLevel: 0.5
+   *  }
+   *  await localStream.setBeautyEffectOptions(effects)
+   * ```
+   *
    */
   setBeautyEffectOptions(options: {
     /**
@@ -1233,12 +1653,27 @@ declare interface Stream {
    *
    * @param {BeautyFilters} options 滤镜选项。
    * @param {Number} intensity 滤镜强度。取值范围 [0,1]
+   *
+   * @example
+   * ```Javascript
+   * // 开启基础美颜功能
+   *  rtc.localStream.setBeautyEffect(true)
+   * // 设置滤镜参数并传递
+   *  rtc.localStream.setFilter('ziran', 1);
+   * // 需要关闭滤镜，将强度设置成 0 即可
+   * ```
    */
   setFilter(options: BeautyFilters, intensity?: number): void
 
   /**
    * 注册(高级美颜/背景替换/AI降噪)插件
    * @param {pluginOptions} options 插件参数说明
+   *
+   * @example
+   * ```Javascript
+   * let options = {key:'VirtualBackground', pluginUrl:'xxx', wasmUrl:'xxx'}
+   *  await localStream.registerPlugin(options)
+   * ```
    *
    */
   registerPlugin(options: pluginOptions): Promise<void>
@@ -1250,6 +1685,11 @@ declare interface Stream {
    * * VirtualBackground (表示注销背景替换插件)
    * * AIDenoise (表示注销AI降噪插件)
    *
+   * @example
+   * ```Javascript
+   *  await localStream.unregisterPlugin('xxx')
+   * ```
+   *
    */
   unregisterPlugin(key: string): Promise<void>
 
@@ -1257,12 +1697,21 @@ declare interface Stream {
    * 开启高级美颜
    * @param faceNumber 取值范围 [1,5]，表示可支持的人脸识别数，最多可以支持 5 张人脸。
    *
+   * @example
+   * ```Javascript
+   * await localStream.enableAdvancedBeauty(2)
+   * ```
    */
   enableAdvancedBeauty(faceNumber: number): Promise<void>
 
   /**
    * 关闭高级美颜
    *
+   *
+   * @example
+   * ```Javascript
+   * await localStream.disableAdvancedBeauty()
+   * ```
    */
   disableAdvancedBeauty(): Promise<void>
 
@@ -1271,23 +1720,60 @@ declare interface Stream {
    *
    * @param {advBeautyEffects} key 高级美颜效果选项。
    * @param {Number} intensity 高级美颜效果强度。取值范围 [0,1]
+   *
+   * @example
+   * ```Javascript
+   * localStream.setAdvBeautyEffect({enlargeEye: 0.25})
+   * ```
+   *
    */
   setAdvBeautyEffect(key: AdvBeautyEffects, intensity?: number): void
 
   /**
    * 预设高级美颜参数
    * @param {AdvBeautyPreset} preset 预设参数
+   *
+   * @example
+   * ```Javascript
+   *  localStream.presetAdvBeautyEffect({
+   *   // 大眼
+   *   enlargeEye: 0.25,
+   *   // 圆眼
+   *   roundedEye: 0.5,
+   *   // 窄脸
+   *   narrowedFace: 0.25,
+   *   // 瘦脸
+   *   shrinkFace: 0.15,
+   *   // v 脸
+   *   vShapedFace: 0.33,
+   *   // 小脸
+   *   minifyFace: 0.15,
+   *   // 亮眼
+   *   brightenEye: 0.75,
+   *   // 美牙
+   *   whitenTeeth: 0.75
+   * })
+   * ```
    */
   presetAdvBeautyEffect(preset: AdvBeautyPreset): void
 
   /**
    * 开启背景分割
    *
+   * @example
+   * ```Javascript
+   * await localStream.enableBodySegment()
+   * ```
    */
   enableBodySegment(): Promise<void>
 
   /**
    * 关闭背景分割
+   *
+   * @example
+   * ```Javascript
+   * await localStream.disableBodySegment()
+   * ```
    *
    */
   disableBodySegment(): Promise<void>
@@ -1296,23 +1782,40 @@ declare interface Stream {
    * 设置背景
    * @param {BackGroundOptions} options 背景设置说明。
    *
+   * @example
+   * ```Javascript
+   * localStream.setBackGround({ type: 'image', source: 'img' })
+   * ```
    */
   setBackGround(options: BackGroundOptions): void
 
   /**
    * 开启AI降噪
    *
+   * @example
+   * ```Javascript
+   * await localStream.enableAIDenoise()
+   * ```
    */
   enableAIDenoise(): Promise<boolean>
 
   /**
    * 关闭AI降噪
    *
+   * @example
+   * ```Javascript
+   * await localStream.disableAIDenoise()
+   * ```
    */
   disableAIDenoise(): Promise<boolean>
 
   /**
    *  销毁音视频流对象。
+   *
+   * @example
+   * ```Javascript
+   * stream.destroy()
+   * ```
    */
   destroy(): void
 

@@ -11,7 +11,9 @@ import {
   MediaPriorityOptions,
   EncryptionMode,
   STREAM_TYPE,
-  ClientMediaRecordingOptions
+  ClientMediaRecordingOptions,
+  SubscribeOptions,
+  UnsubscribeOptions
 } from './types'
 import { Stream } from './stream'
 import { ConnectionState } from './types'
@@ -26,6 +28,11 @@ import { DeviceInfo } from './browser'
 declare interface Client {
   /**
    * 获取当前通话信息。
+   *
+   * @example
+   * ```Javascript
+   * const channelInfo = rtc.client.getChannelInfo()
+   * ```
    */
   getChannelInfo(): {
     /**
@@ -58,26 +65,47 @@ declare interface Client {
    * | **错误码（code）** | 错误原因（reason）                     |
    * | -------------- | -----------------------------------------|
    * | `INVALID_OPERATION` | 非法操作，请在加入房间之前调用该接口。  |
+   *
+   * @example
+   * ```Javascript
+   * // 请在进房前开启云代理服务
+   * client.startProxyServer()
+   * ```
    */
   startProxyServer(): void
 
   /**
    * 关闭云代理服务。
    * @note 请在加入房间（join）前调用此方法。
+   *
+   * @example
+   * ```JavaScript
+   * // 请在进房前关闭云代理服务
+   * client.stopProxyServer()
+   * ```
    */
   stopProxyServer(): void
 
   /**
-     设置本地用户的媒体流优先级。
-
-     如果某个用户的优先级为高，那么该用户媒体流的优先级就会高于其他用户，弱网环境下 SDK 会优先保证其他用户收到的、高优先级用户的媒体流的质量。
-
-     @note
-     - 请在加入房间（join）前调用此方法。
-     - 一个音视频房间中只有一个高优先级的用户。建议房间中只有一位用户调用 setLocalMediaPriority 将本端媒体流设为高优先级，否则需要开启抢占模式，保证本地用户的高优先级设置生效。
-
-     @param options 优先级设置。
-     */
+   * 设置本地用户的媒体流优先级。
+   *
+   * 如果某个用户的优先级为高，那么该用户媒体流的优先级就会高于其他用户，弱网环境下 SDK 会优先保证其他用户收到的、高优先级用户的媒体流的质量。
+   *
+   * @note
+   *
+   * - 请在加入房间（join）前调用此方法。
+   * - 一个音视频房间中只有一个高优先级的用户。建议房间中只有一位用户调用 setLocalMediaPriority 将本端媒体流设为高优先级，否则需要开启抢占模式，保证本地用户的高优先级设置生效。
+   *
+   * @param options 优先级设置。
+   *
+   * @example
+   * ```Javascript
+   * client.setLocalMediaPriority({
+   *    priority: 50,
+   *    preemtiveMode: true
+   *  })
+   * ```
+   */
   setLocalMediaPriority(options: MediaPriorityOptions): void
 
   /**
@@ -88,6 +116,16 @@ declare interface Client {
    * 调用该方法加入房间时，本地会触发 Client.on("connection-state-change") 回调；通信场景下的用户和直播场景下的主播角色加入房间后，远端会触发 Client.on("peer-online") 回调。
    *
    * @param options 房间相关设置。
+   *
+   * @example
+   * ```Javascript
+   * // 加入房间
+   * await client.join({
+   *   channelName: 'channel163',
+   *   uid: 123,
+   *   token: '<您的token>', // 如关闭了安全模式，则不需要该参数。
+   * });
+   * ```
    *
    * @returns
    * 错误码包括：
@@ -103,6 +141,12 @@ declare interface Client {
    * 离开房间。
    *
    * 调用该方法离开房间时，本地会触发 Client.on("connection-state-change") 回调；通信场景下的用户和直播场景下的主播角色离开房间后，远端会触发 Client.on("peer-leave") 回调。
+   *
+   * @example
+   * ```Javascript
+   * // 离开房间
+   * await client.leave()
+   * ```
    */
   leave(): Promise<void>
 
@@ -112,6 +156,19 @@ declare interface Client {
    * 发布音视频流之后，远端会触发 Client.on("stream-added") 回调。
    *
    * @param stream 需要发布的 Stream。
+   *
+   * @example
+   * ```Javascript
+   * // 1. 创建本地音视频流
+   * localStream = NERTC.createStream({
+   *   video: true,
+   *   audio: true,
+   *   uid: 123
+   * });
+   * await localStream.init();
+   * // 2. 发布本地音视频流
+   * await client.publish(localStream)
+   * ```
    */
   publish(stream: Stream): Promise<undefined>
   /**
@@ -121,23 +178,72 @@ declare interface Client {
    *
    * @param stream 需要取消发布的 Stream。
    * @param type   流类型。
+   *
+   * @example
+   * ```javascript
+   * // 停止发布本地音视频流
+   * await client.unpublish(localStream)
+   * ```
    */
   unpublish(stream?: Stream, type?: null): Promise<undefined>
   /**
    * 订阅远端音视频流。
    *
-   * 订阅远端音视频流之后，本地会触发 Client.on("stream-subscribed") 回调。
+   * 通常在 `Client.on("stream-added")`事件回调中处理远端媒体订阅。
+   * 订阅远端音视频流之后，本地会触发 `Client.on("stream-subscribed")` 事件。
+   *
+   * 注意事项：
+   * * 从v4.6.50起，`Client.subscribe`可以直接指定订阅的媒体类型了
    *
    * @param stream 需要订阅的源端音视频流。
+   *
+   * @example
+   * ```javascript
+   * // 在stream-added里
+   *
+   * // 写法1：订阅所有媒体
+   * remoteStream.setSubscribeConfig({
+   *    audio: true,
+   *    video: true,
+   *    screen: true,
+   *    audioSlave: true,
+   *    highOrLow: NERTC.STREAM_TYPE.HIGH
+   * })
+   * rtc.client.subscribe(remoteStream)
+   *
+   * // 写法2： 订阅所有媒体
+   * rtc.client.subscribe(remoteStream, {
+   *    audio: true,
+   *    video: true,
+   *    screen: true,
+   *    audioSlave: true,
+   *    highOrLow: NERTC.STREAM_TYPE.HIGH
+   * })
+   * ```
    */
-  subscribe(stream: Stream): Promise<void>
+  subscribe(stream: Stream, subOptions?: SubscribeOptions): Promise<void>
   /**
    * 取消订阅远端音视频流。
    *
    * 取消订阅后，SDK 将不再接收远端音视频流。
+   *
+   * 注意事项：
+   * * 从4.6.50起，可以取消订阅部分媒体类型
+   *
+   *
    * @param stream 需要取消订阅的源端音视频流。
+   *
+   * @example
+   * ```
+   * // 情况1：当需取消订阅远端所有媒体
+   * rtc.client.unsubscribe(remoteStream)
+   *
+   * // 情况2：当前需取消订阅远端音频，保留远端视频
+   * rtc.client.unsubscribe(remoteStream, {audio: true})
+   * ```
+   *
    */
-  unsubscribe(stream: Stream): Promise<void>
+  unsubscribe(stream: Stream, unsubscribeOptions?: UnsubscribeOptions): Promise<void>
   /**
    * 开启双流模式
    *
@@ -152,6 +258,7 @@ declare interface Client {
    * * SDK会尝试使用接近 180p(240x180) 的低分辨率进行重新采集以提高编解码效率。浏览器会尽量在保证长宽比的情况下使小流的采集接近180p。但由于浏览器和摄像头的限制，小流的分辨率也会出现240p、480p甚至与大流一致的情况，这些都为正常现象。
    * * 部分H5设备开启小流异常时，建议在[[Client.subscribe]]时选择订阅大流，再通过[[Client.setRemoteStreamType]]切换为小流。
    *
+   * @example
    * ```javascript
    * // 加入频道后
    * rtc.localStream = NERTC.createStream({
@@ -177,6 +284,12 @@ declare interface Client {
    *
    * 双流模式默认为关闭状态。如如开启双流模式后需关闭，请在 [[Client.unpublish]] 后、再次 [[Client.publish]] 之前调用该方法。
    *
+   * @example
+   * ```javascript
+   * await client.unpublish(localStream)
+   * // 需要在 unpublish 之后调用
+   * client.disableDualStream()
+   * ```
    */
   disableDualStream(): void
   /**
@@ -188,6 +301,12 @@ declare interface Client {
    * @note 注意事项
    * * 该方法是在处于订阅状态时改变订阅的大小流类型时使用的。如您需要指定订阅那一刻的大小流类型，请参考[[Stream.setSubscribeConfig]]
    * * 如需指定辅流大小流，请使用 [[Client.setRemoteStreamType]]
+   *
+   * @example
+   * ```Javascript
+   * // 在订阅状态下，想将视频的大流切换为小流。
+   * rtc.client.setRemoteVideoStreamType(remoteStream, NERTC.STREAM_TYPE.LOW)
+   * ```
    */
   setRemoteVideoStreamType(stream: Stream, highOrLow: STREAM_TYPE): Promise<void>
 
@@ -203,7 +322,8 @@ declare interface Client {
    * @note 注意事项
    * * 该方法是在处于订阅状态时改变订阅的大小流类型时使用的。如您需要指定订阅那一刻的大小流类型，请参考[[Stream.setSubscribeConfig]]
    *
-   * ```
+   * @example
+   * ```Javascript
    * // 在订阅状态下，想将屏幕共享的大流切换为小流。
    * rtc.client.setRemoteStreamType(remoteStream, NERTC.STREAM_TYPE.LOW, "screen")
    * ```
@@ -224,88 +344,103 @@ declare interface Client {
    * @note 注意事项
    * * 该方法仅支持加入房间后调用
    *
+   * @example
    * ```
    * // 收到sdk反馈的高级token超时时间快要到的通知后，主动去刷新超时时间，或者中途更新本人的权限
    * rtc.client.updatePermKey(newpermKey).catch((err) => {
-       console.error('刷新permKey错误: ', err.code, err.message)
-     })
+   *   console.error('刷新permKey错误: ', err.code, err.message)
+   * })
    * ```
    */
   updatePermKey(newpermKey: string): Promise<void>
 
   /**
-   设置用户角色。默认情况下用户以主播角色加入房间。
-
-   在加入房间前，用户可以调用本接口设置本端模式为观众或主播模式。在加入房间后，用户可以通过本接口切换用户模式。
-
-   用户角色支持设置为主播（`host`）或观众(`audience`)，主播和观众的权限不同：
-   + 主播：可以操作摄像头等音视频设备、发布流、配置互动直播推流任务、上下线对房间内其他用户可见。
-   + 观众：观众只能接收音视频流，不支持操作音视频设备、配置互动直播推流任务、上下线不通知其他用户。
-
-   @note 可以在加入房间之前或者之后设置。
-
-   相关回调：
-
-   如果您在加入房间后调用该方法切换用户角色，调用成功后，会触发以下回调：
-
-   + 主播切换为观众，本地触发 Client.on(`client-role-changed`) 回调，远端触发 Client.on(`peer-leave`) 回调。
-   + 观众切换为主播，本地触发 Client.on(`client-role-changed`) 回调，远端触发 Client.on(`peer-online`) 回调。
-
+   * 设置用户角色。默认情况下用户以主播角色加入房间。
+   *
+   * 在加入房间前，用户可以调用本接口设置本端模式为观众或主播模式。在加入房间后，用户可以通过本接口切换用户模式。
+   *
+   * 用户角色支持设置为主播（`host`）或观众(`audience`)，主播和观众的权限不同：
+   * + 主播：可以操作摄像头等音视频设备、发布流、配置互动直播推流任务、上下线对房间内其他用户可见。
+   * + 观众：观众只能接收音视频流，不支持操作音视频设备、配置互动直播推流任务、上下线不通知其他用户。
+   *
+   * @note 可以在加入房间之前或者之后设置。
+   *
+   * 相关回调：
+   *
+   * 如果您在加入房间后调用该方法切换用户角色，调用成功后，会触发以下回调：
+   *
+   * + 主播切换为观众，本地触发 Client.on(`client-role-changed`) 回调，远端触发 Client.on(`peer-leave`) 回调。
+   * + 观众切换为主播，本地触发 Client.on(`client-role-changed`) 回调，远端触发 Client.on(`peer-online`) 回调。
+   *
    * @param role
-
-   用户角色。可设置为：
-   + `host`：直播模式中的主播，可以发布和接收音视频流。如果用户之前已经发布了音频或视频，切换到主播时会自动恢复发布音频或视频流。
-   + `audience`: 直播模式中的观众，只能接收音视频流。主播模式切换到观众模式后，会自动停止发送音视频流。
-
+   *
+   * 用户角色。可设置为：
+   * + `host`：直播模式中的主播，可以发布和接收音视频流。如果用户之前已经发布了音频或视频，切换到主播时会自动恢复发布音频或视频流。
+   * + `audience`: 直播模式中的观众，只能接收音视频流。主播模式切换到观众模式后，会自动停止发送音视频流。
+   *
+   * 注意：
+   * + 用户从观众切换为主播时可能会因房间主播人数到达上限而失败。如需了解如何增加主播上限，请联系技术支持。
+   *
+   * @example
+   *```javascript
+   * // 设置为主播
+   * await client.setClientRole('host')
+   *```
    */
   setClientRole(role: 'host' | 'audience'): Promise<undefined>
   /**
-     主动获取网络连接状态。
-
-     推荐用于以下场景：
-     + 在 App 异常重启时，可以调用本接口主动获取当前客户端与服务器的连接状态，以做到本地与服务器状态的对齐。
-     + 在实时音视频通话等业务场景中，主动获取房间的网络连接状态，以此完成上层业务逻辑。
-
-     SDK 与服务器的连接状态，共有以下 4 种：
-
-     + `DISCONNECTED`：网络连接断开。该状态表示 SDK 处于：
-            1. 调用 [[Client.join]] 加入房间前的初始化阶段。
-            2. 调用 [[Client.leave]] 离开房间之后。
-
-     + `CONNECTING`：建立网络连接中。该状态表示 SDK 处于：
-         1. 调用 [[Client.join]] 之后正在与指定房间建立连接。
-         2. 通话过程中，连接中断自动重连。
-
-     + `CONNECTED`：已连接。该状态表示用户已经成功加入房间，可以在房间内发布或订阅媒体流。
-
-     + `DISCONNECTING`：正在断开连接。
-         1. 在调用 [[Client.leave]] 的时候为此状态。
-     */
+   * 主动获取网络连接状态。
+   *
+   * @example
+   * ```javascript
+   * let connectionState = rtc.client.getConnectionState()
+   * ```
+   *
+   * 推荐用于以下场景：
+   * + 在 App 异常重启时，可以调用本接口主动获取当前客户端与服务器的连接状态，以做到本地与服务器状态的对齐。
+   * + 在实时音视频通话等业务场景中，主动获取房间的网络连接状态，以此完成上层业务逻辑。
+   *
+   * SDK 与服务器的连接状态，共有以下 4 种：
+   *
+   * + `DISCONNECTED`：网络连接断开。该状态表示 SDK 处于：
+   *     1. 调用 [[Client.join]] 加入房间前的初始化阶段。
+   *     2. 调用 [[Client.leave]] 离开房间之后。
+   *
+   * + `CONNECTING`：建立网络连接中。该状态表示 SDK 处于：
+   *     1. 调用 [[Client.join]] 之后正在与指定房间建立连接。
+   *     2. 通话过程中，连接中断自动重连。
+   *
+   * + `CONNECTED`：已连接。该状态表示用户已经成功加入房间，可以在房间内发布或订阅媒体流。
+   *
+   * + `DISCONNECTING`：正在断开连接。
+   *     1. 在调用 [[Client.leave]] 的时候为此状态。
+   */
   getConnectionState(): ConnectionState
 
   /**
-   设置媒体流加密模式。
-
-   在金融行业等安全性要求较高的场景下，您可以在加入房间前通过此方法设置媒体流加密模式。
-
-   - 该方法和 [[Client.setEncryptionSecret]] 搭配使用，必须在加入房间前先调用 [[Client.setEncryptionMode]] 设置媒体流加密方案，再调用 [[Client.setEncryptionSecret]] 设置密钥。如果未指定密钥，则无法启用媒体流加密。
-   - 用户离开房间后，SDK 会自动关闭加密。如需重新开启加密，需要在用户再次加入房间前调用这两个方法。
-
-   @since V4.4.0
-
-   @note
-   - 请在加入房间前调用该方法，加入房间后无法修改加密模式与密钥。
-   - 安全起见，建议每次启用媒体流加密时都更换新的密钥。
-   - 同一房间内，所有开启媒体流加密的用户必须使用相同的加密模式和密钥，否则使用不同密钥的成员加入房间时会触发 `Client.on("crypt-error")` 回调。
-
-   @param encryptionMode 媒体流加密方案。详细信息请参考 encryptionMode。
-
-   ```JavaScript
-     // 例如，使用 sm4-128-ecb
-     client.setEncryptionMode('sm4-128-ecb');
-     client.setEncryptionSecret('abcdefghijklmnop');
-     // 然后通过client.join()加入房间
-   ```
+   * 设置媒体流加密模式。
+   *
+   * 在金融行业等安全性要求较高的场景下，您可以在加入房间前通过此方法设置媒体流加密模式。
+   *
+   * - 该方法和 [[Client.setEncryptionSecret]] 搭配使用，必须在加入房间前先调用 [[Client.setEncryptionMode]] 设置媒体流加密方案，再调用 [[Client.setEncryptionSecret]] 设置密钥。如果未指定密钥，则无法启用媒体流加密。
+   * - 用户离开房间后，SDK 会自动关闭加密。如需重新开启加密，需要在用户再次加入房间前调用这两个方法。
+   *
+   * @since V4.4.0
+   *
+   * @note
+   * - 请在加入房间前调用该方法，加入房间后无法修改加密模式与密钥。
+   * - 安全起见，建议每次启用媒体流加密时都更换新的密钥。
+   * - 同一房间内，所有开启媒体流加密的用户必须使用相同的加密模式和密钥，否则使用不同密钥的成员加入房间时会触发 `Client.on("crypt-error")` 回调。
+   *
+   * @param encryptionMode 媒体流加密方案。详细信息请参考 encryptionMode。
+   *
+   * @example
+   * ```JavaScript
+   *   // 例如，使用 sm4-128-ecb
+   *   client.setEncryptionMode('sm4-128-ecb');
+   *   client.setEncryptionSecret('abcdefghijklmnop');
+   *   // 然后通过client.join()加入房间
+   * ```
    */
   setEncryptionMode(encryptionMode: EncryptionMode): void
 
@@ -322,21 +457,63 @@ declare interface Client {
    * - 同一房间内，所有开启媒体流加密的用户必须使用相同的加密模式和密钥，否则使用不同密钥的成员加入房间时会触发 `Client.on("crypt-error")` 回调。
    *
    * @param encryptionSecret 媒体流加密密钥。字符串格式，长度为 1~128 字节。推荐设置为英文字符串。
+   *
+   * @example
+   * ```JavaScript
+   * // 例如，使用 sm4-128-ecb
+   * client.setEncryptionMode('sm4-128-ecb');
+   * client.setEncryptionSecret('abcdefghijklmnop');
+   * // 然后通过client.join()加入房间
+   * ```
    */
   setEncryptionSecret(encryptionSecret: string): void
 
   /**
    * 获取系统电量信息。
+   *
+   * @example
+   * ```Javascript
+   * // 系统电量信息
+   * let systemStats = await rtc.client.getSystemStats()
+   * ```
+   *
    */
   getSystemStats(): Promise<any>
   /**
    * 获取与会话的连接状况统计数据。
    *
    * @note 请在加入房间后调用此方法。
+   *
+   * @example
+   * ```Javascript
+   * // 加入房间之后调用
+   * let sessionStats = await rtc.client.getSessionStats()
+   * console.log(`===== sessionStats =====`)
+   * console.log(`Duration: ${sessionStats.Duration}`)
+   * console.log(`RecvBitrate: ${sessionStats.RecvBitrate}`)
+   * console.log(`RecvBytes: ${sessionStats.RecvBytes}`)
+   * console.log(`SendBitrate: ${sessionStats.SendBitrate}`)
+   * console.log(`SendBytes: ${sessionStats.SendBytes}`)
+   * console.log(`UserCount: ${sessionStats.UserCount}`)
+   * ```
    */
   getSessionStats(): Promise<any>
   /**
    * 获取与网关的连接状况统计数据。
+   * @example
+   * ```Javascript
+   * setInterval(async () => {
+   *   const transportStats = await rtc.client.getTransportStats();
+   *   if (transportStats){
+   *     // 云信SDK到云信SDK接入节点的平均往返延时（RTT，Round-Trip Time），单位 ms
+   *     console.log(`Current Transport txRtt: ${transportStats.txRtt}`);
+   *     // 网络类型
+   *     console.log(`Current Network Type: ${transportStats.NetworkType}`);
+   *     // 上行可用带宽估计（Kbps）
+   *     console.log(`Current Transport OutgoingAvailableBandwidth: ${transportStats.OutgoingAvailableBandwidth}`);
+   *   }
+   * }, 1000)
+   * ```
    */
   getTransportStats(): Promise<any>
   /**
@@ -354,6 +531,7 @@ declare interface Client {
    *     console.log(`Audio SamplingRate: ${localAudioStats[0].SamplingRate}`);
    *     console.log(`Audio SendBitrate: ${localAudioStats[0].SendBitrate}`);
    *     console.log(`Audio SendLevel: ${localAudioStats[0].SendLevel}`);
+   *     console.log(`Audio SendLevel: ${localAudioStats[0].rtt}`);
    *   }
    * }, 1000)
    * ```
@@ -441,6 +619,12 @@ declare interface Client {
    *
    * 如果在 join 方法中指定了 uid，此处会返回指定的 ID; 如果未指定 uid，此处将返回云信服务器自动分配的 ID。
    * @since V4.4.0
+   *
+   * @example
+   * ```javascript
+   * let uid = client.getUid()
+   * ```
+   *
    */
   getUid(): number | string | null
   /**
@@ -449,6 +633,11 @@ declare interface Client {
    * 房间场景可设置为通话或直播场景，不同的场景中 QoS 策略不同。
    *
    * @note 该方法必须在加入房间前调用，进入房间后无法再设置房间场景。
+   * @example
+   * ```javascript
+   * // 设置为通信场景
+   * client.setChannelProfile({ mode: 'rtc' })
+   * ```
    */
   setChannelProfile(options: {
     /**
@@ -462,78 +651,98 @@ declare interface Client {
   }): void
 
   /**
-     客户端录制功能。
-
-     允许用户在浏览器上实现本地录制音视频的功能。
-
-     @since V4.6.10
-
-     @note
-     - 需要在加入房间之后调用。
-     - 不允许同时录制多个文件。
-     - 仅在chrome内核的浏览器上支持。
-     - 录制文件的下载地址为浏览器默认下载地址
-     - 录制文件的格式是webm，并非所有的播放器都支持（chrome上是可以直接播放的），如果需要转格式，需要开发者自己完成
-     - 录制模块没有做内存管理，如果录制的时间过长，到导致内存占用越来越大，需要开发者及时释放
-
-     @param options 是录制参数。详细信息请参考 ClientMediaRecordingOptions
-
-     ```JavaScript
-       // client.join()加入房间之后
-       const data = {
-         recorder: 'all',
-         recordConfig: {
-          recordType: 'video',
-          recordName: '录制文件名称',
-          recordVideoQuality: NERTC.RECORD_VIDEO_QUALITY_360p,
-          recordVideoFrame: NERTC.RECORD_VIDEO_FRAME_RATE_15
-        }
-       }
-       client.startMediaRecording(data);
-     ```
-     */
+   * 客户端录制功能。
+   *
+   * 允许用户在浏览器上实现本地录制音视频的功能。
+   *
+   * @since V4.6.10
+   *
+   * @note
+   * - 需要在加入房间之后调用。
+   * - 不允许同时录制多个文件。
+   * - 仅在chrome内核的浏览器上支持。
+   * - 录制文件的下载地址为浏览器默认下载地址
+   * - 录制文件的格式是webm，并非所有的播放器都支持（chrome上是可以直接播放的），如果需要转格式，需要开发者自己完成
+   * - 录制模块没有做内存管理，如果录制的时间过长，到导致内存占用越来越大，需要开发者及时释放
+   *
+   * @param options 是录制参数。详细信息请参考 ClientMediaRecordingOptions
+   *
+   * @example
+   * ```JavaScript
+   *   // client.join()加入房间之后
+   *   const data = {
+   *      recorder: 'all',
+   *      recordConfig: {
+   *      recordType: 'video',
+   *      recordName: '录制文件名称',
+   *      recordVideoQuality: NERTC.RECORD_VIDEO_QUALITY_360p,
+   *      recordVideoFrame: NERTC.RECORD_VIDEO_FRAME_RATE_15
+   *    }
+   *   }
+   *   client.startMediaRecording(data);
+   * ```
+   */
   startMediaRecording(options: ClientMediaRecordingOptions): Promise<undefined>
 
   /**
-     结束视频录制
-     @since V4.6.10
-
-
-     ```JavaScript
-       // client.startMediaRecording() 开启录制之后
-       client.stopMediaRecording();
-     ```
-     */
+   * 结束视频录制
+   * @since V4.6.10
+   *
+   * @example
+   * ```JavaScript
+   *  // client.startMediaRecording() 开启录制之后
+   *  client.stopMediaRecording();
+   * ```
+   */
   stopMediaRecording(): void
 
   /**
-     下载录制的音视频数据，生成录制文件
-     @since V4.6.10
-
-     @note
-     - 客户端录制，数据是保持在内存中，如果没有执行cleanMediaRecording释放，可以多次调用该接口生产录制文件。
-     - 下载地址为浏览器默认地址
-
-     ```JavaScript
-       // client.startMediaRecording() 开启录制之后
-       client.downloadMediaRecording();
-     ```
-     */
+   * 下载录制的音视频数据，生成录制文件
+   * @since V4.6.10
+   *
+   * @note
+   * - 客户端录制，数据是保持在内存中，如果没有执行cleanMediaRecording释放，可以多次调用该接口生产录制文件。
+   * - 下载地址为浏览器默认地址
+   *
+   * @example
+   * ```JavaScript
+   * // client.startMediaRecording() 开启录制之后
+   * client.downloadMediaRecording();
+   * ```
+   */
   downloadMediaRecording(): void
 
   /**
-     清除内存中的录制的音视频数据
-     @since V4.6.10
-
-     @note
-     - 客户端录制，数据是保持在内存中，需要主动调用该接口进行释放内存资源。
-
-     ```JavaScript
-       // client.startMediaRecording() 开启录制之后
-       client.cleanMediaRecording();
-     ```
-     */
+   * 清除内存中的录制的音视频数据
+   *  @since V4.6.10
+   *
+   * @note
+   * - 客户端录制，数据是保持在内存中，需要主动调用该接口进行释放内存资源。
+   *
+   *  @example
+   * ```JavaScript
+   *  // client.startMediaRecording() 开启录制之后
+   *  client.cleanMediaRecording();
+   * ```
+   */
   cleanMediaRecording(): void
+
+  /**
+   * 设置整个频道的远端用户的播放音量。
+   *
+   * * 该接口与[[Stream.setAudioVolume]]类似：两者都改变播放音量。setPlaybackVolume对频道内所有流生效，setAudioVolume对某个远端流生效。
+   * * volume 取值范围： [0, 100]
+   * * `active-speaker`以及'volume-indicator'事件回调会受该接口的影响。特别的，当使用setPlaybackVolume将音量设置为0时，`active-speaker`及`volume-indicator`不再有回调。
+   * * [[Stream.getAudioLevel]]不受该接口影响。
+   * * 由于系统限制，iOS设备不支持调节播放音量，包括微信、Safari等。可使用侧边物理按键调节音量。
+   *
+   * @example
+   * ```Javascript
+   * // 设置整个频道的远端用户的播放音量为 50
+   * client.setPlaybackVolume(50)
+   * ```
+   */
+  setPlaybackVolume(volume: number): void
 
   /**
    * 添加房间推流任务。
@@ -543,6 +752,28 @@ declare interface Client {
    * - 该方法仅适用直播场景。
    * - 请在房间内调用该方法，该方法在通话中有效。
    * - 该方法每次只能增加一路旁路推流地址。如需推送多路流，则需多次调用该方法。同一个音视频房间（即同一个 channelid）可以创建 3 个不同的推流任务。
+   *
+   * @example
+   * ```javascript
+   * // 配置推流任务
+   * let rtmpTasks = [{
+   *   taskId:'12345',
+   *   streamUrl:'rtmp://xxxx',
+   *   record:'true',
+   *   layout:{
+   *     canvas:{width:1280, height:720, color:16777215},
+   *     users:[{adaption:1, uid:123, width:640, height:480, x:640, y:0, zOrder:2, pushAudio:true, pushVideo:true}]
+   *   }
+   * }]
+   * // 推流
+   * client.addTasks({
+   *    rtmpTasks
+   *  }).then((obj) => {
+   *    console.info('添加推流任务成功...')
+   *  }).catch(err => {
+   *    console.error('添加推流任务失败: ', err)
+   *  })
+   * ```
    *
    */
   addTasks(options: {
@@ -556,6 +787,19 @@ declare interface Client {
    *
    * - 该方法仅适用直播场景。
    * - 请在房间内调用该方法，该方法在通话中有效。
+   *
+   *  @example
+   * ```Javascript
+   * // 删除推流任务
+   * let taskIds = ['123456']
+   * client.deleteTasks({
+   *    taskIds
+   *  }).then((obj) => {
+   *    console.info('删除推流任务成功...')
+   *  }).catch(err => {
+   *    console.error('删除推流任务失败: ', err)
+   *  })
+   * ```
    */
   deleteTasks(options: {
     /**
@@ -568,6 +812,28 @@ declare interface Client {
    * - 该方法仅适用直播场景。
    * - 请在房间内调用该方法，该方法在通话中有效。
    * @return {Promise}
+   *
+   * @example
+   * ```Javascript
+   * // 配置推流任务
+   * let rtmpTasks = [{
+   *   taskId:'12345',
+   *   streamUrl:'rtmp://xxxx',
+   *   record:'true',
+   *   layout:{
+   *     canvas:{width:1280, height:720, color:16777215},
+   *     users:[{adaption:1, uid:123, width:640, height:480, x:640, y:0, zOrder:2, pushAudio:true, pushVideo:true}]
+   *   }
+   * }]
+   * // 更新房间推流任务
+   * client.updateTasks({
+   *   rtmpTasks
+   * }).then((obj) => {
+   *   console.info('更新推流任务成功...')
+   * }).catch(err => {
+   *   console.error('更新推流任务失败: ', err)
+   * })
+   * ```
    */
   updateTasks(options: {
     /**
@@ -581,11 +847,54 @@ declare interface Client {
    * 需要在加入频道前调用`client.enableCustomTransform()`方法。调用后，可收到两个事件：`sender-transform` 和`receiver-transform`，应在这两个方法中实现加密和解密操作。
    * 自定义加密功能依赖 [encodedInsertableStreams](https://chromestatus.com/feature/5499415634640896) 接口。目前仅支持桌面端Chrome 94及以上版本。
    *
+   * H264加密注意事项：
+   * 1. 加密后的rtp分包环节会依赖nalu位置。建议只对关键帧和参考帧进行加密，保留其他帧类型，并且加密时沿naluType向后再保留至少三个字节。
+   * 2. 不同设备编码后的定位符既可能出现`0,0,0,1`，`0,0,1`，也可能两种定位符交替出现。
+   * 3. 加密算法可能会破坏rbsp的语法，容易在内容里引入和rbsp冲突的字段，造成nalu划分失败，表现为低概率性的绿屏。建议先转成sodb，再加密，再转回rbsp。
+   *
+   * @example
+   * ```JavaScript
+   * // 开启自定义加密
+   * client.enableCustomTransform()
+   * // 加入频道
+   * await client.join({
+   *   channelName: 'channel163',
+   *   uid: 123,
+   *   token: '<您的token>', // 如关闭了安全模式，则不需要该参数。
+   * });
+   * //监听 sender-transform 事件，操作加密
+   * rtc.client.on('sender-transform', processSenderTransform)
+   * const processSenderTransform = function (evt) {
+   *   // 加密操作
+   * }
+   * //监听 receiver-transform 事件，操作解密
+   * rtc.client.on('receiver-transform', processReceiverTransform)
+   * const processReceiverTransform = function (evt) {
+   *   // 解密操作
+   * }
+   * ```
+   *
    */
   enableCustomTransform(): void
 
   /**
    * 销毁客户端对象。
+   *
+   * @example
+   * ```JavaScript
+   * // 1. 创建client
+   * client = NERTC.createClient({appkey: "<您的appkey>", debug: true});
+   * // 2. 加入频道
+   * await client.join({
+   *   channelName: 'channel163',
+   *   uid: 123,
+   *   token: '<您的token>', // 如关闭了安全模式，则不需要该参数。
+   * });
+   * // 3. 通话结束后退出房间
+   * await client.leave()
+   * // 4. 若后续再不使用该 client，则可以销毁该 client 实例
+   * client.destroy()
+   * ```
    */
   destroy(): void
 

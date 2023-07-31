@@ -17,7 +17,7 @@
 + SDK版本号如出现后缀，通常是声明文件或示例代码的调整，请放心升级
 + 以vue为例，打包时如遇到问题可参考以下解决方案：
   + 不要使用 lint 工具检查SDK：`vue-cli-service build --skip-plugins @vue/cli-plugin-eslint`
-  + 不要使用 babel 工具转码SDK（在babel.config.js中添加属性）：`ignore: ["**/NERTC.js"]`
+  + 不要使用 babel 工具转码SDK（在babel.config.js中添加属性）：`ignore: ["**/NERTC.js"], exclude: /NERTC/'`
 
 ## 其他链接
 
