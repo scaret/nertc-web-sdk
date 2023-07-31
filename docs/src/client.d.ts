@@ -185,7 +185,7 @@ declare interface Client {
    * await client.unpublish(localStream)
    * ```
    */
-  unpublish(stream?: Stream, type?: null): Promise<undefined>
+  unpublish(stream: Stream): Promise<undefined>
   /**
    * 订阅远端音视频流。
    *
