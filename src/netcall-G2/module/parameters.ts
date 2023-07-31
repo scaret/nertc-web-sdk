@@ -192,6 +192,8 @@ interface IParameters {
   shimLocalCanvas: 'safari' | 'all' | 'never'
   // 禁止Vue进行代理
   enableVSkip: boolean
+  // GetStats报错最大条数
+  statsLogMaxCnt: number
   // 允许应用程序向用户代理提示可以接受的播放延迟，详见: https://henbos.github.io/webrtc-timing/
   audioPlayoutDelayHint: number
   videoPlayoutDelayHint: number
@@ -297,6 +299,7 @@ let parameters: IParameters = {
   replaceIdealConstraint: 'safari16_screen',
   shimLocalCanvas: 'safari',
   enableVSkip: true,
+  statsLogMaxCnt: 3,
   audioPlayoutDelayHint: 0,
   videoPlayoutDelayHint: 0
 }
