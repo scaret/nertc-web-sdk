@@ -2,10 +2,18 @@
  getStats适配器,该模块仅仅提供数据，以及封装成统一的格式
  设计方案：https://docs.popo.netease.com/lingxi/172c1c97e0034932a4b4097049d39a70
  */
-import { AdapterRef, MediaStatsChangeEvt, MediaTypeShort } from '../../types'
+import {
+  AdapterRef,
+  ILogger,
+  MediaStatsChangeEvt,
+  MediaTypeShort,
+  StatsDirection,
+  StatsInfo
+} from '../../types'
 import { FormativeStatsReport } from './formativeStatsData'
 import * as env from '../../util/rtcUtil/rtcEnvironment'
 import { isIosFromRtpStats } from '../3rd/mediasoup-client/handlers/sdp/getNativeRtpCapabilities'
+import { getParameters } from '../parameters'
 
 class GetStats {
   private adapterRef: AdapterRef
@@ -14,6 +22,11 @@ class GetStats {
   public formativeStatsReport: FormativeStatsReport | null
   private audioLevel: { uid: number | string; level: number; type: string | undefined }[]
   private tmp = { bytesSent: 0, bytesReceived: 0 }
+  public statsInfo: {
+    send: StatsInfo
+    recv: StatsInfo
+  }
+  private chromeLegecy: 'unknown' | 'supported' | 'unsupported' = 'unknown'
   constructor(options: { adapterRef: AdapterRef }) {
     this.adapterRef = options.adapterRef
     //workaround for TS2564
@@ -24,6 +37,28 @@ class GetStats {
     this.formativeStatsReport = new FormativeStatsReport({
       adapterRef: this.adapterRef
     })
+    this.statsInfo = {
+      send: {
+        firstStartAt: 0,
+        lastStartAt: 0,
+        totalCnt: 0,
+        frequency: 0,
+        errCnt: 0,
+        logger: this.adapterRef.logger.getChild(() => {
+          return `getStats ${this.browser} send ${this.statsInfo.send.errCnt}/${this.statsInfo.send.totalCnt}`
+        })
+      },
+      recv: {
+        firstStartAt: 0,
+        lastStartAt: 0,
+        totalCnt: 0,
+        frequency: 0,
+        errCnt: 0,
+        logger: this.adapterRef.logger.getChild(() => {
+          return `getStats ${this.browser} recv ${this.statsInfo.recv.errCnt}/${this.statsInfo.recv.totalCnt} `
+        })
+      }
+    }
   }
 
   _reset() {
@@ -49,6 +84,19 @@ class GetStats {
     this.formativeStatsReport = null
   }
 
+  markStatsStart(direction: StatsDirection) {
+    const info = this.statsInfo[direction]
+    if (info) {
+      info.lastStartAt = Date.now()
+      if (!info.firstStartAt) {
+        info.firstStartAt = info.lastStartAt
+      }
+      info.totalCnt += 1
+      // 1分钟调用了几次getStats
+      info.frequency = Math.floor((info.totalCnt / (info.lastStartAt - info.firstStartAt)) * 60000)
+    }
+  }
+
   async getAllStats() {
     function compare(property: string) {
       return function (a: any, b: any) {
@@ -64,37 +112,56 @@ class GetStats {
         }
       }
     }
+
+    this.tmp = { bytesSent: 0, bytesReceived: 0 }
+    this.times = (this.times || 0) + 1
+    let localStats: any = null
+    let remoteStats: any = null
     try {
       let localPc = this?.adapterRef?._mediasoup?._sendTransport?._handler?._pc
-      let remotePc = this?.adapterRef?._mediasoup?._recvTransport?._handler?._pc
-
-      if (!localPc && !remotePc) {
+      if (!localPc) {
         return
+      } else {
+        localStats = await this.getLocalStats(localPc)
       }
+    } catch (e) {
+      this.statsInfo.send.errCnt++
+      if (this.statsInfo.send.errCnt <= getParameters().statsLogMaxCnt) {
+        this.statsInfo.send.logger.warn('数据汇集出现异常: ', e.name, e.message)
+      }
+    }
+    try {
       this.audioLevel.length = 0
       this!.adapterRef!.remoteAudioStats = {}
       this!.adapterRef!.remoteAudioSlaveStats = {}
       this!.adapterRef!.remoteVideoStats = {}
       this!.adapterRef!.remoteScreenStats = {}
 
-      this.tmp = { bytesSent: 0, bytesReceived: 0 }
-      this.times = (this.times || 0) + 1
-      let result = {
-        local: localPc ? await this.getLocalStats(localPc) : null,
-        remote: remotePc ? await this.getRemoteStats(remotePc) : null,
-        times: this.times
+      let remotePc = this?.adapterRef?._mediasoup?._recvTransport?._handler?._pc
+      if (!remotePc) {
+        return
       }
+      remoteStats = await this.getRemoteStats(remotePc)
+
       this.audioLevel.sort(compare('level'))
       if (this.audioLevel.length > 0 && this.audioLevel[0].level > 0) {
         // Firefox 获取不到audioLevel, 没有active-speaker探测能力
         this?.adapterRef?.instance.safeEmit('active-speaker', this.audioLevel[0])
         this?.adapterRef?.instance.safeEmit('volume-indicator', this.audioLevel)
       }
-      //this.adapterRef?.logger.log('stats before revised--->', result)
-      return result
+      //this.logger.log('stats before revised--->', result)
     } catch (e: any) {
-      this.adapterRef?.logger.warn('数据汇集出现异常: ', e.message)
+      this.statsInfo.recv.errCnt++
+      if (this.statsInfo.recv.errCnt <= getParameters().statsLogMaxCnt) {
+        this.statsInfo.recv.logger.warn('数据汇集出现异常: ', e.name, e.message)
+      }
     }
+    let result = {
+      local: localStats,
+      remote: remoteStats,
+      times: this.times
+    }
+    return result
   }
 
   async getLocalStats(pc: RTCPeerConnection) {
@@ -114,14 +181,16 @@ class GetStats {
   /*
     chrome浏览器getStats适配器
   */
-  async chrome(pc: RTCPeerConnection, direction: string) {
+  async chrome(pc: RTCPeerConnection, direction: StatsDirection) {
     const nonStandardStats = () => {
       // eslint-disable-next-line no-async-promise-executor
-      return new Promise(async (resolve, reject) => {
+      return new Promise(async (resolve) => {
         try {
+          this.markStatsStart(direction)
           // 由于Chrome为callback形式的getStats使用了非标准化的接口，故不遵守TypeScript定义
           // @ts-ignore
           await pc.getStats((res) => {
+            this.chromeLegecy = 'supported'
             let result: { [key: string]: any } = {}
             const results = res.result()
             // @ts-ignore
@@ -142,15 +211,27 @@ class GetStats {
             resolve(result)
           })
         } catch (e) {
+          this.statsInfo[direction].errCnt++
           if (e.name === 'TypeError') {
-            this.adapterRef?.logger.warn(
+            this.statsInfo[direction].logger.warn(
               `getStats出现异常：${e.name}。fallback: 切换getStats方式 ${this.browser} => safari`,
               e.name,
               e.message
             )
             this.browser = 'safari'
+          } else if (e.name === 'NotSupportedError') {
+            this.statsInfo[direction].logger.warn(
+              `getStats：当前浏览器不再支持非标准getStats ${e.name} ${e.message}`
+            )
+            if (this.chromeLegecy === 'unknown') {
+              this.chromeLegecy = 'unsupported'
+            }
+            resolve(null)
           } else {
-            reject(e)
+            if (this.statsInfo[direction].errCnt <= getParameters().statsLogMaxCnt) {
+              this.statsInfo[direction].logger.warn(`getStats出现异常: ${e.name} ${e.message}`)
+            }
+            resolve(null)
           }
         }
       })
@@ -171,6 +252,7 @@ class GetStats {
         const item = transceivers[i]
         if (item.direction === 'sendonly') {
           if (item.sender && item.sender.track && item.sender.getStats) {
+            this.markStatsStart(direction)
             report = await item.sender.getStats()
             report = this.formatChromeStandardizedStats(report, direction)
             if (report.video_ssrc && result.video_ssrc) {
@@ -204,6 +286,7 @@ class GetStats {
           }
         } else if (item.direction === 'recvonly') {
           if (item.receiver && item.receiver.track && item.receiver.getStats) {
+            this.markStatsStart(direction)
             report = await item.receiver.getStats()
             report = this.formatChromeStandardizedStats(report, direction)
             if (report.audio_ssrc && result.audio_ssrc) {
@@ -227,7 +310,7 @@ class GetStats {
       return result
     }
 
-    const nonStandardResult = await nonStandardStats()
+    const nonStandardResult = this.chromeLegecy === 'unsupported' ? null : await nonStandardStats()
     const standardizedResult = await standardizedStats()
     const assignedResult: { [key: string]: any } = {}
     if (nonStandardResult && standardizedResult) {
@@ -915,7 +998,7 @@ class GetStats {
   /*
    safari浏览器getStats适配器
   */
-  async safari(pc: RTCPeerConnection, direction: string) {
+  async safari(pc: RTCPeerConnection, direction: StatsDirection) {
     if (!pc.getTransceivers) return {}
 
     let result = {
@@ -931,11 +1014,12 @@ class GetStats {
       const item = transceivers[i]
       if (item.direction === 'sendonly') {
         if (item.sender && item.sender.getStats) {
+          this.markStatsStart(direction)
           report = await item.sender.getStats()
           report = this.formatSafariStandardizedStats(
             report,
             direction,
-            item.sender.track?.kind || ''
+            (item.sender.track?.kind as 'audio' | 'video') || ''
           )
           if (report.video_ssrc && result.video_ssrc) {
             //@ts-ignore
@@ -968,11 +1052,12 @@ class GetStats {
         }
       } else if (item.direction === 'recvonly') {
         if (item.receiver && item.receiver.getStats) {
+          this.markStatsStart(direction)
           report = await item.receiver.getStats()
           report = this.formatSafariStandardizedStats(
             report,
             direction,
-            item.receiver.track?.kind || ''
+            (item.receiver.track?.kind as 'audio' | 'video') || ''
           )
           if (report.audio_ssrc && result.audio_ssrc) {
             //@ts-ignore
@@ -995,7 +1080,11 @@ class GetStats {
     return result
   }
 
-  formatSafariStandardizedStats(report: RTCStatsReport, direction: string, mediaType: string) {
+  formatSafariStandardizedStats(
+    report: RTCStatsReport,
+    direction: StatsDirection,
+    mediaType: 'audio' | 'video' | ''
+  ) {
     const audioObj: { [key: string]: any } = {}
     const videoObj: { [key: string]: any } = {}
     let ssrc = 0
@@ -1188,7 +1277,7 @@ class GetStats {
     return result
   }
 
-  async firefox(pc: RTCPeerConnection, direction: string) {
+  async firefox(pc: RTCPeerConnection, direction: StatsDirection) {
     if (!pc.getTransceivers) return {}
 
     let result = {
@@ -1204,12 +1293,14 @@ class GetStats {
       const item = transceivers[i]
       if (item.direction === 'sendonly') {
         if (item.sender && item.sender.getStats) {
+          this.markStatsStart(direction)
           report = await item.sender.getStats()
           report = this.formatFirefoxStandardizedStats(report, direction)
           Object.assign(result, report)
         }
       } else if (item.direction === 'recvonly') {
         if (item.receiver && item.receiver.getStats) {
+          this.markStatsStart(direction)
           report = await item.receiver.getStats()
           report = this.formatFirefoxStandardizedStats(report, direction)
           if (report.audio_ssrc && result.audio_ssrc) {
@@ -1234,7 +1325,7 @@ class GetStats {
   }
 
   //转换标准getStats格式
-  formatFirefoxStandardizedStats(report: RTCStatsReport, direction: string) {
+  formatFirefoxStandardizedStats(report: RTCStatsReport, direction: StatsDirection) {
     const audioObj: { [key: string]: any } = {}
     const videoObj: { [key: string]: any } = {}
     let ssrc = 0

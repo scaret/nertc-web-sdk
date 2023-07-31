@@ -192,6 +192,17 @@ export const MediaTypeList: ['audio', 'video', 'screen', 'audioSlave'] = [
   'audioSlave'
 ]
 
+export type StatsDirection = 'send' | 'recv'
+
+export interface StatsInfo {
+  firstStartAt: number
+  lastStartAt: number
+  totalCnt: number
+  frequency: number
+  errCnt: number
+  logger: ILogger
+}
+
 export interface NetStatusItem {
   uid: number | string
   downlinkNetworkQuality: number
