@@ -222,6 +222,9 @@ class Meeting extends EventEmitter {
           data: {
             uid: new SimpleBig(uid),
             appkey,
+            // https://docs.popo.netease.com/lingxi/9ed5efb9f11a4e3091efbf4837079ad3?header=false#edit
+            // since 5.5.0
+            platformType: 16,
             permKeySecret: permKey,
             channelName,
             secureType: token ? '1' : '2', // 安全认证类型：1:安全、2:非安全
