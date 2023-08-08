@@ -82,6 +82,9 @@
       .nertc-p-config {
         margin: 3px 0;
       }
+      .active {
+        background-color: #0d66ff;
+      }
     </style>
   </head>
   <body>
@@ -91,7 +94,10 @@
         <div class="line">
           <button type="button" id="NERTC">云信</button>
           <button type="button" id="AGORA">声网</button>
+          <button type="button" id="TRTC">腾讯</button>
+          <button type="button" id="ZEGO">即构</button>
         </div>
+        <br />
         <div class="line">
           <button type="button" id="videoFirstFrame">主流首帧</button>
           <button type="button" id="screenFirstFrame">辅流首帧</button>
@@ -104,10 +110,10 @@
             style="width: 200px"
             type="text"
             id="appkey"
-            value="eca23f68c66d4acfceee77c200200359"
+            value="6acf024e190215b685905444b6e57dd7"
           />
           <p class="nertc-p-config">云信 AppSecret:</p>
-          <input style="width: 200px" type="text" id="AppSecret" value="c9df0b60c1ba" />
+          <input style="width: 200px" type="text" id="AppSecret" value="fffeeb78f165" />
         </div>
         <div class="line">
           <button type="button" id="setAppkey">设置appkey</button>
@@ -165,7 +171,7 @@
         <div class="line">
           <p>全屏操作</p>
         </div>
-        <div class="line">
+        <!-- <div class="line">
           云信远端
           <button class="nertc-remote-video-full-screen">主流</button>
           <button class="nertc-remote-screen-full-screen">辅流</button>
@@ -176,6 +182,22 @@
           <button class="agora-remote-video-full-screen">主流</button>
           <button class="agora-remote-screen-full-screen">辅流</button>
           <button class="agora-exit-full-screen" hidden>退出</button>
+        </div> -->
+
+        <select id="sdkSet" style="width: 25%">
+          <option id="setNertc" value="NERTC">云信</option>
+          <option id="setAgora" value="AGORA">声网</option>
+          <option id="setTRTC" value="TRTC">腾讯</option>
+          <option id="setZego" value="ZEGO">即构</option>
+        </select>
+        <select id="endSet" style="width: 25%">
+          <option id="setRemote" value="remote">远端</option>
+          <option id="setLocal" value="local">本地</option>
+        </select>
+        <div>
+          <button id="remoteFullVideo" class="remote-video-full-screen">主流</button>
+          <button id="remoteFullScreen" class="remote-screen-full-screen">辅流</button>
+          <button id="exitFullScreen" class="exit-full-screen" hidden>退出</button>
         </div>
       </div>
       <div id="upstreamBWE">
@@ -559,37 +581,95 @@
         <div id="remoteScreenContent"></div>
       </div>
     </div>
-    <!-- <script>
-        var script = document.createElement("script");
-        script.type = "text/javascript";
-        script.src = "nertc.js";
-        document.getElementById("AGORA").onclick = function () {
-            script.src = "agora.js";
-            script.onload = function(){
-            alert("Script loaded!", script);
-        };
-        }
-        script.onload = function(){
-            alert("Script loaded!", script);
-        };
-        document.getElementsByTagName("head")[0].appendChild(script);
-    </script> -->
 
     <script src="./js/lib/jquery.min.js"></script>
     <script src="./js/lib/fakeMediaDevices.js"></script>
+    <script src="./js/lib/lib-generate-test-usersig.min.js"></script>
+    <script src="./js/lib/GenerateTestUserSig.js"></script>
 
     <!-- 构建脚本需保证以下script标签在第一个 -->
-    <script src="./js/nim/NIM_Web_NERTC.js"></script>
-
-    <!-- <script src="./js/rtcdiff/NIM_Web_NERTC_v4.6.25.js"></script> -->
-    <!-- NERTC 线上 -->
-    <!-- <script src="./js/rtcdiff/NIM_Web_NERTC_v4.6.251.js"></script> -->
-    <!-- NERTC 测试 -->
-    <!-- <script src="./js/rtcdiff/NIM_Web_NERTC_v4.6.251_test.js"></script> -->
     <!-- <script src="./js/nim/NIM_Web_NERTC.js"></script> -->
-    <script src="./js/rtcdiff/nertc.js"></script>
 
-    <script src="./js/rtcdiff/AgoraRTC_N-4.15.0.js"></script>
+    <script src="./js/rtcdiff/nertc.js"></script>
     <script src="./js/rtcdiff/agora.js"></script>
+    <script src="./js/rtcdiff/trtc.js"></script>
+    <!-- <script src="./js/rtcdiff/zego.js"></script> -->
+
+    <script>
+      let NVERSION = '5.4.0'
+      let AVERSION = '4.18.2'
+      let TVERSION = '4.15.12'
+      let ZVERSION = '2.25.6'
+      function loadSDK(sdkName, num) {
+        let sdkScript = document.createElement('script')
+        sdkScript.src = './js/rtcdiff/' + sdkName + '.js'
+        document.body.appendChild(sdkScript)
+        sdkScript.onload = function () {
+          if (num == 1) {
+            startNERTC()
+          } else if (num == 2) {
+            startAGORA()
+          } else if (num == 3) {
+            startTRTC()
+          } else if (num == 4) {
+            startZEGO()
+          }
+        }
+        document.body.appendChild(sdkScript)
+      }
+      let Nbutton = document.getElementById('NERTC')
+      let Abutton = document.getElementById('AGORA')
+      let Tbutton = document.getElementById('TRTC')
+      let Zbutton = document.getElementById('ZEGO')
+
+      let activeBtn = null
+      function setActiveButton(btn) {
+        if (activeBtn !== null) {
+          activeBtn.classList.remove('active')
+        }
+        activeBtn = btn
+        activeBtn.classList.add('active')
+      }
+      Nbutton.onclick = function () {
+        setActiveButton(Nbutton)
+        let sdkName = `NERTC_${NVERSION}`
+        // 如果已经加载过sdk，则不再重复加载
+        if (document.querySelector(`script[src="./js/rtcdiff/${sdkName}.js"]`)) {
+          console.warn('已经加载过: ', sdkName)
+          return
+        }
+        loadSDK(sdkName, 1)
+      }
+      Abutton.onclick = function () {
+        setActiveButton(Abutton)
+        let sdkName = `Agora_${AVERSION}`
+        // 如果已经加载过sdk，则不再重复加载
+        if (document.querySelector(`script[src="./js/rtcdiff/${sdkName}.js"]`)) {
+          console.warn('已经加载过: ', sdkName)
+          return
+        }
+        loadSDK(sdkName, 2)
+      }
+      Tbutton.onclick = function () {
+        setActiveButton(Tbutton)
+        let sdkName = `TRTC_${TVERSION}`
+        // 如果已经加载过sdk，则不再重复加载
+        if (document.querySelector(`script[src="./js/rtcdiff/${sdkName}.js"]`)) {
+          console.warn('已经加载过: ', sdkName)
+          return
+        }
+        loadSDK(sdkName, 3)
+      }
+      Zbutton.onclick = function () {
+        setActiveButton(Zbutton)
+        let sdkName = `Zego_${ZVERSION}`
+        // 如果已经加载过sdk，则不再重复加载
+        if (document.querySelector(`script[src="./js/rtcdiff/${sdkName}.js"]`)) {
+          console.warn('已经加载过: ', sdkName)
+          return
+        }
+        loadSDK(sdkName, 4)
+      }
+    </script>
   </body>
 </html>

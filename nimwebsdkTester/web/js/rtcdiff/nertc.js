@@ -1,12 +1,5 @@
-document.getElementById('NERTC').onclick = function () {
-  console.warn('开启 NERTC')
-  document.getElementById('NERTC').style.backgroundColor = '#0d66ff'
-  document.getElementById('AGORA').style.backgroundColor = '#efefef'
-  document.getElementById('vendorInfo').innerText = 'NERTC ' + NERTC.BUILD
-  startNERTC()
-}
-
 function startNERTC() {
+  console.warn('开启 NERTC')
   // let appkey = '6acf024e190215b685905444b6e57dd7' // 请输入自己的appkey  prod
   let appkey = $('#appkey').val()
   // let appkey = 'eca23f68c66d4acfceee77c200200359' // test
@@ -170,6 +163,7 @@ function startNERTC() {
     rtc.client && rtc.client.destroy()
     loadEnv()
     NERTC.Logger.enableLogUpload()
+    console.warn('appkey: ', appkey)
     rtc.client = NERTC.createClient({ appkey, debug: true })
     initDevices()
     initCodecOptions()
@@ -612,12 +606,16 @@ function startNERTC() {
     let dumpTrack
     if (enableDump === 1) {
       dumpTrack = rtc.localStream.mediaHelper.video.renderStream.getTracks()[0]
+      dumpMediaType = 'localVideo'
     } else if (enableDump === 2) {
       dumpTrack = rtc.localStream.mediaHelper.screen.renderStream.getTracks()[0]
+      dumpMediaType = 'localScreen'
     } else if (enableDump === 3) {
       dumpTrack = Object.values(rtc.remoteStreams)[0].mediaHelper.video.renderStream.getTracks()[0]
+      dumpMediaType = 'remoteVideo'
     } else if (enableDump === 4) {
       dumpTrack = Object.values(rtc.remoteStreams)[0].mediaHelper.screen.renderStream.getTracks()[0]
+      dumpMediaType = 'remoteScreen'
     }
     // let videoTrack = rtc.localStream.mediaHelper.video.renderStream.getTracks()[0];
     let trackSettings = dumpTrack.getSettings()
@@ -1132,6 +1130,40 @@ function startNERTC() {
     await document.requestFullscreen()
   })
 
+  $('#remoteFullVideo').on('click', async () => {
+    if($('#sdkSet').val() === 'NERTC'){
+      if($('#endSet').val() === 'remote'){
+        // 云信远端主流全屏
+        let dom = document.getElementsByClassName('nertc-video-container-remote')[0]
+        await dom.requestFullscreen()
+      }else if($('#endSet').val() === 'local'){
+        // 云信本地主流全屏
+        let dom = document.getElementsByClassName('nertc-video-container-local')[0]
+        await dom.requestFullscreen()
+      }
+    }
+  })
+
+  $('#remoteFullScreen').on('click', async () => {
+    if($('#sdkSet').val() === 'NERTC'){
+      if($('#endSet').val() === 'remote'){
+        // 云信远端辅流全屏
+        let dom = document.getElementsByClassName('nertc-screen-container-remote')[0]
+        await dom.requestFullscreen()
+      }else if($('#endSet').val() === 'local'){
+        // 云信本地辅流全屏
+        let dom = document.getElementsByClassName('nertc-screen-container-local')[0]
+        await dom.requestFullscreen()
+      }
+    }
+  })
+
+  // 云信退出全屏状态
+  $('#exitFullScreen').on('click', async () => {
+    await document.requestFullscreen()
+  })
+
+
   $('#forceBWE').val(WebRTC2.getParameters().forceBWE)
 
   $('#setBWE').click(() => {
@@ -1151,17 +1183,24 @@ function startNERTC() {
     WebRTC2.getParameters().h264ProfileLevel = val
   })
 
-
   let encoder = {
-    video: {encoderImplementation: 'unknown', cnt: 0},
-    screen: {encoderImplementation: 'unknown', cnt: 0},
+    video: { encoderImplementation: 'unknown', cnt: 0 },
+    screen: { encoderImplementation: 'unknown', cnt: 0 }
   }
 
-  rtc.client.on('@media-stats-change', (evt)=>{
-    evt.data.forEach((stats)=>{
+  rtc.client.on('@media-stats-change', (evt) => {
+    evt.data.forEach((stats) => {
       const $elem = $(`#encoderImplementation_${stats.mediaType}`)
-      if (stats.new && stats.new.CodecImplementationName && stats.new.CodecImplementationName !== encoder[stats.mediaType].encoderImplementation) {
-        console.log(`encoderImplementation Changed ${stats.mediaType} ${encoder[stats.mediaType].encoderImplementation} => ${stats.new.CodecImplementationName}`)
+      if (
+        stats.new &&
+        stats.new.CodecImplementationName &&
+        stats.new.CodecImplementationName !== encoder[stats.mediaType].encoderImplementation
+      ) {
+        console.log(
+          `encoderImplementation Changed ${stats.mediaType} ${
+            encoder[stats.mediaType].encoderImplementation
+          } => ${stats.new.CodecImplementationName}`
+        )
         encoder[stats.mediaType].encoderImplementation = stats.new.CodecImplementationName
         encoder[stats.mediaType].cnt++
         $elem.text(`${stats.new.CodecImplementationName}(${encoder[stats.mediaType].cnt})`)

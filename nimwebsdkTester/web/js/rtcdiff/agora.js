@@ -1,12 +1,5 @@
-document.getElementById('AGORA').onclick = function () {
-  console.warn('开启 AGORA')
-  document.getElementById('AGORA').style.backgroundColor = '#0d66ff'
-  document.getElementById('NERTC').style.backgroundColor = '#efefef'
-  document.getElementById('vendorInfo').innerText = 'AgoraRTC ' + AgoraRTC.BUILD
-  startAGORA()
-}
-
 function startAGORA() {
+  console.warn('开启 AGORA')
   let appId = '0c0b4b61adf94de1befd7cdd78a50444'
   let channelName // '您指定的房间号'
   let uid // '您指定的用户ID'
@@ -1015,20 +1008,42 @@ function startAGORA() {
     localScreenTracks.screenAudioTrack = undefined
   })
 
-  // 声网远端主流全屏
-  $('.agora-remote-video-full-screen').on('click', async () => {
-    let dom = document.querySelector('#remoteVideoContent').children[0]
-    await dom.requestFullscreen()
+
+
+
+  $('#remoteFullVideo').on('click', async () => {
+    if($('#sdkSet').val() === 'AGORA'){
+      if($('#endSet').val() === 'remote'){
+        // 声网远端主流全屏
+        let dom = document.querySelector('#remoteVideoContent').children[0]
+        await dom.requestFullscreen()
+      }else if($('#endSet').val() === 'local'){
+        // 声网本地流全屏
+        let dom = document.querySelector('#localVideoContent').children[0]
+        await dom.requestFullscreen()
+      }
+    }
   })
-  // 声网远端辅流全屏
-  $('.agora-remote-screen-full-screen').on('click', async () => {
-    let dom = document.querySelector('#remoteScreenContent').children[0]
-    await dom.requestFullscreen()
+
+  $('#remoteFullScreen').on('click', async () => {
+    if($('#sdkSet').val() === 'AGORA'){
+      if($('#endSet').val() === 'remote'){
+        // 声网远端辅流全屏
+        let dom = document.querySelector('#remoteScreenContent').children[0]
+        await dom.requestFullscreen()
+      }else if($('#endSet').val() === 'local'){
+        // 声网本地辅流全屏
+        let dom = document.querySelector('#localScreenContent').children[0]
+        await dom.requestFullscreen()
+      }
+    }
   })
-  //声网退出全屏状态
-  $('.agora-exit-full-screen').on('click', async () => {
+
+  // 声网退出全屏状态
+  $('#exitFullScreen').on('click', async () => {
     await document.requestFullscreen()
   })
+
 
   let encoder = {
     video: { encoderImplementation: 'unknown', cnt: 0 },
