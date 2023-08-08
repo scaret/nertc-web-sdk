@@ -1900,6 +1900,32 @@ range4.addEventListener('change', () => {
   rtc.localStream.setBeautyEffectOptions(effects)
 })
 
+$('#loadAgora').click(()=>{
+  const filename = 'AgoraRTC_N-4.15.0.js'
+  const script = document.createElement('script')
+  script.src = './js/rtcdiff/' + filename
+  document.body.appendChild(script)
+  addLog('加载' + filename)
+})
+
+$('#loadTrtc').click(()=>{
+  const filename = 'TRTC_4.15.12.js'
+  const script = document.createElement('script')
+  script.src = './js/rtcdiff/' + filename
+  document.body.appendChild(script)
+  addLog('加载' + filename)
+})
+
+
+$('#loadZego').click(()=>{
+  const filename = 'Zego_2.25.6.js'
+  const script = document.createElement('script')
+  script.src = './js/rtcdiff/' + filename
+  document.body.appendChild(script)
+  addLog('加载' + filename)
+})
+
+
 /**
  * ----------------------------------------
  *              插件相关
