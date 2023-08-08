@@ -311,14 +311,14 @@ export class Safari12 extends HandlerInterface {
       mediaStream.addTrack(track)
       transceiver = this._pc.addTransceiver(track, {
         direction: 'sendonly',
-        streams: [mediaStream],
-        sendEncodings: encodings
+        streams: [mediaStream]
+        // sendEncodings: encodings
       })
       if (trackLow) {
         transceiverLow = this._pc.addTransceiver(trackLow, {
           direction: 'sendonly',
-          streams: [this._sendStream],
-          sendEncodings: encodings
+          streams: [this._sendStream]
+          // sendEncodings: encodings
         })
       }
       if (appData.mediaType === 'audio' && !this._pc.audioSender) {
