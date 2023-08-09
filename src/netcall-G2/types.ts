@@ -780,6 +780,7 @@ export interface Client {
   }
   spatialManager: SpatialManager | null
   operationQueue: OperationQueue
+  outOfConnect: boolean
   apiEventReport: (eventName: keyof DataReport, eventData: any) => void
   getPeer: (sendOrRecv: 'send' | 'recv') => any
   leave: () => any
