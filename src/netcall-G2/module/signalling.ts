@@ -953,6 +953,10 @@ class Signalling extends EventEmitter {
 
   _handleDisconnected(_protoo: Peer) {
     this.logger.log('Signalling:_handleDisconnected')
+    if (this.adapterRef.instance.outOfConnect) {
+      // 服务端踢人，无需重连
+      return
+    }
     if (
       this._reconnectionTimer &&
       (this.adapterRef.channelStatus === 'connectioning' ||
@@ -1880,6 +1884,7 @@ class Signalling extends EventEmitter {
           ErrorCode.CLIENT_BANNED
         this.adapterRef.instance.leave()
       }
+      this.adapterRef.instance.outOfConnect = true
       this.adapterRef.instance.safeEmit('client-banned', {
         uid
       })

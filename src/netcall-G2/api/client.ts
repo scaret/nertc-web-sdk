@@ -66,6 +66,7 @@ class Client extends Base {
   public upLoadParam: any
   public destroyed = false
   public operationQueue: OperationQueue
+  public outOfConnect = false
   private onJoinFinish: (() => void) | null = null
   public spatialManager: SpatialManager | null = null
   private handlePageUnload: (evt?: any) => void
