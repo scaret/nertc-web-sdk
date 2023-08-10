@@ -33,6 +33,9 @@
         padding: 10px 10px 0;
         width: 200px;
       }
+      .line-no-padding {
+        width: 200px;
+      }
       select {
         width: 200px;
       }
@@ -93,6 +96,7 @@
       <div class="sdk-config">
         <div class="line">
           <button type="button" id="NERTC">云信</button>
+          <button type="button" id="NERTCNOW">云信(当前开发版本)</button>
           <button type="button" id="AGORA">声网</button>
           <button type="button" id="TRTC">腾讯</button>
           <button type="button" id="ZEGO">即构</button>
@@ -148,25 +152,45 @@
           <label><input id="enableCodecHacking" type="checkbox" />云信调试编解码能力</label>
         </div>
       </div>
-      <div class="agora-codec-config">
-        <div class="line">
-          <p>声网调试编解码能力</p>
-          <p><span id="encoderImplementation_video"></span></p>
-          <p><span id="encoderImplementation_screen"></span></p>
+      <div class="codec-config">
+        <div class="agora-codec-config">
+          <div class="line-no-padding">
+            <span>声网调试编解码能力</span>
+            <p><span id="encoderImplementation_video"></span></p>
+            <p><span id="encoderImplementation_screen"></span></p>
+            <label
+              ><input
+                id="agoraCodecH264"
+                type="radio"
+                name="agoraCodec"
+                value="h264"
+                checked
+              />H264</label
+            >
+            <label
+              ><input id="agoraCodecVP8" type="radio" name="agoraCodec" value="vp8" />VP8</label
+            >
+          </div>
         </div>
-        <div class="line">
-          <label
-            ><input
-              id="agoraCodecH264"
-              type="radio"
-              name="agoraCodec"
-              value="h264"
-              checked
-            />H264</label
-          >
-          <label><input id="agoraCodecVP8" type="radio" name="agoraCodec" value="vp8" />VP8</label>
+        <div class="zego-codec-config">
+          <div class="line-no-padding">
+            <span>即构调试编解码能力</span>
+            <p><span id="encoderImplementation_video"></span></p>
+            <p><span id="encoderImplementation_screen"></span></p>
+            <label
+              ><input
+                id="zegoCodecH264"
+                type="radio"
+                name="zegoCodec"
+                value="h264"
+                checked
+              />H264</label
+            >
+            <label><input id="zegoCodecVP8" type="radio" name="zegoCodec" value="vp8" />VP8</label>
+          </div>
         </div>
       </div>
+
       <div class="full-screen-config">
         <div class="line">
           <p>全屏操作</p>
@@ -588,39 +612,67 @@
     <script src="./js/lib/GenerateTestUserSig.js"></script>
 
     <!-- 构建脚本需保证以下script标签在第一个 -->
-    <!-- <script src="./js/nim/NIM_Web_NERTC.js"></script> -->
-
-    <script src="./js/rtcdiff/nertc.js"></script>
-    <script src="./js/rtcdiff/agora.js"></script>
-    <script src="./js/rtcdiff/trtc.js"></script>
-    <!-- <script src="./js/rtcdiff/zego.js"></script> -->
+    <script>
+      const pathToNertcDev = './js/nim/NIM_Web_NERTC.js'
+    </script>
 
     <script>
       let NVERSION = '5.4.0'
       let AVERSION = '4.18.2'
       let TVERSION = '4.15.12'
       let ZVERSION = '2.25.6'
+      let currentScript = null
       function loadSDK(sdkName, num) {
         let sdkScript = document.createElement('script')
         sdkScript.src = './js/rtcdiff/' + sdkName + '.js'
         document.body.appendChild(sdkScript)
         sdkScript.onload = function () {
-          if (num == 1) {
-            startNERTC()
-          } else if (num == 2) {
-            startAGORA()
-          } else if (num == 3) {
-            startTRTC()
-          } else if (num == 4) {
-            startZEGO()
+          if (num === 1) {
+            loadScript('./js/rtcdiff/nertc.js', function () {
+              console.log('加载nertc成功')
+              startNERTC()
+            })
+          } else if (num === 2) {
+            loadScript('./js/rtcdiff/agora.js', function () {
+              console.log('加载agora成功')
+              startAGORA()
+            })
+          } else if (num === 3) {
+            loadScript('./js/rtcdiff/trtc.js', function () {
+              console.log('加载trtc成功')
+              startTRTC()
+            })
+          } else if (num === 4) {
+            loadScript('./js/rtcdiff/zego.js', function () {
+              console.log('加载zego成功')
+              startZEGO()
+            })
           }
         }
         document.body.appendChild(sdkScript)
       }
+
+      function loadScript(url, callback) {
+        if (currentScript) {
+          document.getElementsByTagName('head')[0].removeChild(currentScript)
+          // 解除上一个脚本的事件绑定
+          $('button').off('click')
+        }
+        // 创建新的 script 元素
+        const script = document.createElement('script')
+        script.src = url
+        script.onload = callback
+        // 将新的 script 元素添加到头部
+        document.getElementsByTagName('head')[0].appendChild(script)
+        // 更新全局变量
+        currentScript = script
+      }
+
       let Nbutton = document.getElementById('NERTC')
       let Abutton = document.getElementById('AGORA')
       let Tbutton = document.getElementById('TRTC')
       let Zbutton = document.getElementById('ZEGO')
+      let NNbutton = document.getElementById('NERTCNOW')
 
       let activeBtn = null
       function setActiveButton(btn) {
@@ -630,12 +682,40 @@
         activeBtn = btn
         activeBtn.classList.add('active')
       }
+      NNbutton.onclick = function () {
+        setActiveButton(NNbutton)
+        let sdkName = `NIM_Web_NERTC`
+        // 如果已经加载过sdk，则不再重复加载
+        if (document.querySelector(`script[src="./js/nim/NIM_Web_NERTC.js"]`)) {
+          console.warn('已经加载过: ', sdkName)
+          loadScript('./js/rtcdiff/nertc.js', function () {
+            console.log('已经加载过 SDK 后，再次加载 nertc 成功')
+            startNERTC()
+          })
+          return
+        }
+        // loadSDK(sdkName, 1)
+        let sdkScript = document.createElement('script')
+        sdkScript.src = pathToNertcDev
+        document.body.appendChild(sdkScript)
+        sdkScript.onload = function () {
+          loadScript('./js/rtcdiff/nertc.js', function () {
+            console.log('加载nertc成功')
+            startNERTC()
+          })
+        }
+        document.body.appendChild(sdkScript)
+      }
       Nbutton.onclick = function () {
         setActiveButton(Nbutton)
         let sdkName = `NERTC_${NVERSION}`
         // 如果已经加载过sdk，则不再重复加载
         if (document.querySelector(`script[src="./js/rtcdiff/${sdkName}.js"]`)) {
           console.warn('已经加载过: ', sdkName)
+          loadScript('./js/rtcdiff/nertc.js', function () {
+            console.log('已经加载过 SDK 后，再次加载 nertc 成功')
+            startNERTC()
+          })
           return
         }
         loadSDK(sdkName, 1)
@@ -646,6 +726,10 @@
         // 如果已经加载过sdk，则不再重复加载
         if (document.querySelector(`script[src="./js/rtcdiff/${sdkName}.js"]`)) {
           console.warn('已经加载过: ', sdkName)
+          loadScript('./js/rtcdiff/agora.js', function () {
+            console.log('已经加载过 SDK 后，再次加载 agora 成功')
+            startAGORA()
+          })
           return
         }
         loadSDK(sdkName, 2)
@@ -656,6 +740,10 @@
         // 如果已经加载过sdk，则不再重复加载
         if (document.querySelector(`script[src="./js/rtcdiff/${sdkName}.js"]`)) {
           console.warn('已经加载过: ', sdkName)
+          loadScript('./js/rtcdiff/trtc.js', function () {
+            console.log('已经加载过 SDK 后，再次加载 trtc 成功')
+            startTRTC()
+          })
           return
         }
         loadSDK(sdkName, 3)
@@ -666,6 +754,10 @@
         // 如果已经加载过sdk，则不再重复加载
         if (document.querySelector(`script[src="./js/rtcdiff/${sdkName}.js"]`)) {
           console.warn('已经加载过: ', sdkName)
+          loadScript('./js/rtcdiff/zego.js', function () {
+            console.log('已经加载过 SDK 后，再次加载 zego 成功')
+            startZEGO()
+          })
           return
         }
         loadSDK(sdkName, 4)

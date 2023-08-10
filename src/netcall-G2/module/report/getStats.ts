@@ -288,9 +288,12 @@ class GetStats {
             }
           }
           if (result.bwe.length === 0 && this.statsInfo.send.cpStats) {
+            //@ts-ignore
             result.bwe.push({
-              // @ts-ignore
-              googAvailableSendBandwidth: this.statsInfo.send.cpStats.availableOutgoingBitrate / 1000
+              //@ts-ignore
+              googAvailableSendBandwidth:
+                //@ts-ignore
+                this.statsInfo.send.cpStats.availableOutgoingBitrate / 1000
             })
           }
         } else if (item.direction === 'recvonly') {
@@ -831,9 +834,7 @@ class GetStats {
           audioObj.audioInputLevel = Math.round(item.audioLevel * 32768)
           audioObj.totalAudioEnergy = Math.round(item.totalAudioEnergy)
           audioObj.totalSamplesDuration = Math.round(item.totalSamplesDuration)
-          item.echoReturnLoss !== undefined
-            ? (audioObj.echoReturnLoss = item.echoReturnLoss)
-            : null
+          item.echoReturnLoss !== undefined ? (audioObj.echoReturnLoss = item.echoReturnLoss) : null
           item.echoReturnLossEnhancement !== undefined
             ? (audioObj.echoReturnLossEnhancement = item.echoReturnLossEnhancement * 100)
             : null
