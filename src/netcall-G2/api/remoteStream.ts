@@ -1062,6 +1062,7 @@ class RemoteStream extends RTCEventEmitter {
       //this.logger.error(`当前环境不支持AudioContext`)
       return 0
     } else {
+      let normalizedAudioLevel = 0
       if (!pipeline.audioLevelNode) {
         const context = getAudioContext()
         if (!context || !context.audioWorklet || !context.audioWorklet.addModule) {
@@ -1079,7 +1080,6 @@ class RemoteStream extends RTCEventEmitter {
           })
           this.client.safeEmit('notAllowedError', error)
           this.safeEmit('notAllowedError', error)
-          return 0
         } else {
           this.client.apiFrequencyControl({
             name: 'getAudioLevel',
@@ -1095,9 +1095,30 @@ class RemoteStream extends RTCEventEmitter {
       const result = pipeline.getAudioLevel()
       if (!result) {
         this.logger.log(`getAudioLevel() 正在加载音频模块`)
-        return 0
+        normalizedAudioLevel = 0
       } else {
-        return result.volume
+        normalizedAudioLevel = result.volume
+      }
+      switch (getParameters().audioLevelFittingAlgorithm) {
+        case 'classic':
+          return normalizedAudioLevel
+        case 'linear':
+          return Math.max(
+            0,
+            Math.min(
+              100,
+              getParameters().audioLevelRatioRemote * Math.round(normalizedAudioLevel * 200)
+            )
+          )
+        case 'log2':
+          return Math.max(
+            0,
+            Math.min(
+              100,
+              getParameters().audioLevelRatioRemote *
+                Math.round(8.5 * Math.log2(normalizedAudioLevel) + 94)
+            )
+          )
       }
     }
   }

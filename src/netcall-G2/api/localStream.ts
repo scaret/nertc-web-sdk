@@ -1787,6 +1787,7 @@ class LocalStream extends RTCEventEmitter {
    * @return {volume}
    */
   getAudioLevel(mediaType: 'audio' | 'audioSlave' = 'audio') {
+    let normalizedAudioLevel = 0
     if (mediaType === 'audio') {
       if (!this.audioLevelHelper && this.mediaHelper.audio.audioStream.getAudioTracks().length) {
         // 为不支持getAudioLevel的环境做出提示
@@ -1801,7 +1802,7 @@ class LocalStream extends RTCEventEmitter {
           logger: this.logger
         })
       }
-      return this.audioLevelHelper?.getAudioLevel() || 0
+      normalizedAudioLevel = this.audioLevelHelper?.getAudioLevel() || normalizedAudioLevel
     } else {
       if (
         !this.audioLevelHelperSlave &&
@@ -1812,7 +1813,15 @@ class LocalStream extends RTCEventEmitter {
           logger: this.logger
         })
       }
-      return this.audioLevelHelperSlave?.getAudioLevel() || 0
+      normalizedAudioLevel = this.audioLevelHelperSlave?.getAudioLevel() || normalizedAudioLevel
+    }
+    switch (getParameters().audioLevelFittingAlgorithm) {
+      case 'classic':
+        return normalizedAudioLevel
+      case 'linear':
+        return Math.max(0, Math.min(100, Math.round(normalizedAudioLevel * 200)))
+      case 'log2':
+        return Math.max(0, Math.min(100, Math.round(8.5 * Math.log2(normalizedAudioLevel) + 94)))
     }
   }
 
