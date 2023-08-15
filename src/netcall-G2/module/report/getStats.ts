@@ -44,6 +44,7 @@ class GetStats {
         totalCnt: 0,
         frequency: 0,
         errCnt: 0,
+        cpStats: null,
         logger: this.adapterRef.logger.getChild(() => {
           return `getStats ${this.browser} send ${this.statsInfo.send.errCnt}/${this.statsInfo.send.totalCnt}`
         })
@@ -54,6 +55,7 @@ class GetStats {
         totalCnt: 0,
         frequency: 0,
         errCnt: 0,
+        cpStats: null,
         logger: this.adapterRef.logger.getChild(() => {
           return `getStats ${this.browser} recv ${this.statsInfo.recv.errCnt}/${this.statsInfo.recv.totalCnt} `
         })
@@ -244,7 +246,8 @@ class GetStats {
         audio_ssrc: [],
         audioSlave_ssrc: [],
         video_ssrc: [], //风险点，要求大流在前，小流在后，需要排序
-        screen_ssrc: [] //风险点，要求大流在前，小流在后，需要排序
+        screen_ssrc: [], //风险点，要求大流在前，小流在后，需要排序
+        bwe: []
       }
       const transceivers = pc.getTransceivers()
       for (let i = 0; i < transceivers.length; i++) {
@@ -283,6 +286,12 @@ class GetStats {
             } else {
               Object.assign(result, report)
             }
+          }
+          if (result.bwe.length === 0 && this.statsInfo.send.cpStats) {
+            result.bwe.push({
+              // @ts-ignore
+              googAvailableSendBandwidth: this.statsInfo.send.cpStats.availableOutgoingBitrate / 1000
+            })
           }
         } else if (item.direction === 'recvonly') {
           if (item.receiver && item.receiver.track && item.receiver.getStats) {
@@ -799,7 +808,7 @@ class GetStats {
   }
 
   //转换chrome标准getStats格式
-  formatChromeStandardizedStats(report: RTCStatsReport, direction: string) {
+  formatChromeStandardizedStats(report: RTCStatsReport, direction: 'send' | 'recv') {
     function getLimitationReason(reason: string) {
       if (reason === 'bandwidth') {
         return 1
@@ -823,10 +832,10 @@ class GetStats {
           audioObj.totalAudioEnergy = Math.round(item.totalAudioEnergy)
           audioObj.totalSamplesDuration = Math.round(item.totalSamplesDuration)
           item.echoReturnLoss !== undefined
-            ? (audioObj.echoReturnLoss = item.echoReturnLoss.toString())
+            ? (audioObj.echoReturnLoss = item.echoReturnLoss)
             : null
           item.echoReturnLossEnhancement !== undefined
-            ? (audioObj.echoReturnLossEnhancement = item.echoReturnLossEnhancement.toString())
+            ? (audioObj.echoReturnLossEnhancement = item.echoReturnLossEnhancement * 100)
             : null
         } else if (item.kind === 'video') {
           //item.frames !== undefined ? (videoObj.framesEncoded = parseInt(item.frames)) : null
@@ -867,6 +876,9 @@ class GetStats {
             : null
           item.frameWidth !== undefined ? (videoObj.frameWidthSent = item.frameWidth) : null
           item.frameHeight !== undefined ? (videoObj.frameHeightSent = item.frameHeight) : null
+          if (item.framesEncoded && item.totalEncodeTime) {
+            videoObj.avgEncodeMs = Math.round((item.totalEncodeTime * 1000) / item.framesEncoded)
+          }
         }
       } else if (item.type == 'remote-inbound-rtp') {
         if (item.kind === 'audio') {
@@ -963,19 +975,36 @@ class GetStats {
               : null
           }
         }
+      } else if (item.type === 'candidate-pair') {
+        this.statsInfo[direction].cpStats = item
       }
     })
     const uidAndKindBySsrc = this?.adapterRef?.instance.getUidAndKindBySsrc(ssrc)
     let mediaTypeShort = uidAndKindBySsrc?.kind
-    if (JSON.stringify(videoObj) !== '{}' && direction === 'send') {
-      videoObj.streamType = uidAndKindBySsrc?.streamType || 'high'
+    if (direction === 'send') {
+      if (mediaTypeShort === 'video' || mediaTypeShort === 'screen') {
+        videoObj.streamType = uidAndKindBySsrc?.streamType || 'high'
+        if (this.chromeLegecy !== 'supported' && videoObj.streamType === 'high') {
+          this.formativeStatsReport?.formatSendData(videoObj, mediaTypeShort)
+        }
+      } else if (mediaTypeShort === 'audio' || mediaTypeShort === 'audioSlave') {
+        if (this.chromeLegecy !== 'supported') {
+          this.formativeStatsReport?.formatSendData(audioObj, mediaTypeShort)
+        }
+      }
     }
     const result: { [key: string]: any } = {}
     if (direction === 'recv') {
-      if (JSON.stringify(videoObj) !== '{}') {
+      if (mediaTypeShort === 'video' || mediaTypeShort === 'screen') {
         videoObj.remoteuid = uidAndKindBySsrc?.uid
-      } else if (JSON.stringify(audioObj) !== '{}') {
+        if (this.chromeLegecy !== 'supported') {
+          this.formativeStatsReport?.formatRecvData(videoObj, mediaTypeShort)
+        }
+      } else if (mediaTypeShort === 'audio' || mediaTypeShort === 'audioSlave') {
         audioObj.remoteuid = uidAndKindBySsrc?.uid
+        if (this.chromeLegecy !== 'supported') {
+          this.formativeStatsReport?.formatRecvData(audioObj, mediaTypeShort)
+        }
         if (audioObj.audioOutputLevel) {
           const remoteStream = this?.adapterRef?.remoteStreamMap[audioObj.remoteuid]
           const isPlaying = (mediaTypeShort && remoteStream?.isPlaying(mediaTypeShort)) || false
