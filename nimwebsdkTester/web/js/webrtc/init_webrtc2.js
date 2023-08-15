@@ -1206,10 +1206,14 @@ function initVolumeDetect() {
         instantMeter.value = instantValueDisplay.innerText = 0.0
         return
       }
-      const newValue = result.toFixed(10)
-      if (instantMeter.value !== newValue) {
-        instantMeter.value = newValue
+      if (instantMeter.value != result / 100) {
+        if (result > 0 && result < 1) {
+          instantMeter.value = result
+        } else {
+          instantMeter.value = result / 100
+        }
       }
+      const newValue = result.toFixed(2)
       if (instantValueDisplay.innerText !== newValue) {
         instantValueDisplay.innerText = newValue
       }

@@ -197,6 +197,10 @@ interface IParameters {
   // 允许应用程序向用户代理提示可以接受的播放延迟，详见: https://henbos.github.io/webrtc-timing/
   audioPlayoutDelayHint: number
   videoPlayoutDelayHint: number
+  // 音量指数算法
+  audioLevelFittingAlgorithm: 'classic' | 'linear' | 'log2'
+  // 远端音量系数
+  audioLevelRatioRemote: number
 }
 
 let parameters: IParameters = {
@@ -300,6 +304,8 @@ let parameters: IParameters = {
   shimLocalCanvas: 'safari',
   enableVSkip: true,
   statsLogMaxCnt: 3,
+  audioLevelFittingAlgorithm: 'log2',
+  audioLevelRatioRemote: 1,
   audioPlayoutDelayHint: 0,
   videoPlayoutDelayHint: 0
 }
