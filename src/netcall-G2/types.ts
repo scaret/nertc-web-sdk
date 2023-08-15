@@ -200,6 +200,7 @@ export interface StatsInfo {
   totalCnt: number
   frequency: number
   errCnt: number
+  cpStats: RTCIceCandidatePairStats | null
   logger: ILogger
 }
 
