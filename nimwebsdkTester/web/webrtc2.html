@@ -490,23 +490,6 @@
             </select>
           </div>
           <div class="line">
-            <select id="aec" style="width:32%">
-              <option value="" selected>回声消除AEC:默认</option>
-              <option value="true">回声消除AEC:true</option>
-              <option value="false">回声消除AEC:false</option>
-            </select>
-            <select id="ans" style="width:32%">
-              <option value="" selected>噪声抑制ANS:默认</option>
-              <option value="true">噪声抑制ANS:true</option>
-              <option value="false">噪声抑制ANS:false</option>
-            </select>
-            <select id="agc" style="width:32%">
-              <option value="" selected>增益控制AGC:默认</option>
-              <option value="true">增益控制AGC:true</option>
-              <option value="false">增益控制AGC:false</option>
-            </select>
-          </div>
-          <div class="line">
             双声道兼容模式（进频道前可选）：
             <button id="enableCompatMode">开启</button>
             <button id="disableCompatMode">关闭</button>
@@ -567,6 +550,29 @@
               <option value='CHAT_VIDEO_FRAME_RATE_25'>25</option>
               <option value='CHAT_VIDEO_FRAME_RATE_30'>30</option>
             </select>
+          </div>
+          <h5 class="line">音频3A采集配置</h5>
+          <div class="line">
+            <select id="mediaType3A" disabled="">
+              <option value="audio" selected>audio</option>
+              <option value="audioSlave">audioSlave</option>
+            </select>
+            <select id="aec" style="width:32%">
+              <option value="" selected>回声消除AEC:默认</option>
+              <option value="true">回声消除AEC:true</option>
+              <option value="false">回声消除AEC:false</option>
+            </select>
+            <select id="agc" style="width:32%">
+              <option value="" selected>增益控制AGC:默认</option>
+              <option value="true">增益控制AGC:true</option>
+              <option value="false">增益控制AGC:false</option>
+            </select>
+            <select id="ans" style="width:32%">
+              <option value="" selected>噪声抑制ANS:默认</option>
+              <option value="true">噪声抑制ANS:true</option>
+              <option value="false">噪声抑制ANS:false</option>
+            </select>
+            <button id="setAudioProcessing" disabled>setAudioProcessing</button>
           </div>
 
           <div class="line">

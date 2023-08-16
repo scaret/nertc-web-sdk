@@ -521,6 +521,41 @@ declare interface Stream {
    * ```
    */
   setAudioProfile(profile: string): void
+
+  /**
+   * 设置音频采集3A开关。
+   * 该接口与createStream时的audioProcessing参数类似，可控制音频采集的3A开关。除此之外，也可以控制辅流（屏幕共享）音频的3A开关。
+   *
+   * @note 注意
+   * 1. 该接口自v5.5.0起生效。
+   * 2. 该接口仅对本地流有效，调用时机为打开对应音频媒体之前。如果在打开音频媒体之后调用，将会在下一次打开音频媒体时生效。
+   * 3. 该接口会覆盖createStream时的audioProcessing设置、也会覆盖setAudioProfile时某些选项对3A开关的修改。
+   *
+   * @example 示例代码
+   * ```
+   * // 本例以屏幕共享音频为例。默认情况下，屏幕共享音频的3A开关是关闭的。本例将打开3A开关。
+   * // 在调用createStream之后、打开屏幕共享之前
+   * rtc.localStream.setAudioProcessing('audioSlave', {
+   *   // 打开回声消除
+   *   AEC: true,
+   *   // 打开自动增益
+   *   AGC: true,
+   *   // 打开噪声抑制
+   *   ANS: true,
+   * })
+   * // 打开屏幕共享音视频
+   * rtc.localStream.open({type: 'screen', screenAudio: true)
+   *
+   * ```
+   */
+  setAudioProcessing(
+    mediaType: 'audio' | 'audioSlave',
+    audioProcessing: {
+      AEC?: boolean
+      ANS?: boolean
+      AGC?: boolean
+    }
+  ): undefined
   /**
    * 设置音频播放的音量。
    * @param volume 要设置的远端音频的播放音量，范围为 [0-100]。0 表示静音。

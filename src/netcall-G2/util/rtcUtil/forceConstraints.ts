@@ -1,5 +1,5 @@
 import { getParameters } from '../../module/parameters'
-import { GUMAudioConstraints, ILogger } from '../../types'
+import { AudioProcessingConstraintKeys, GUMAudioConstraints, ILogger } from '../../types'
 import ErrorCode from '../../util/error/errorCode'
 import RtcError from '../../util/error/rtcError'
 
@@ -49,22 +49,36 @@ export function patchScreenConstraints(constraints: MediaStreamConstraints, logg
     })
   }
 }
+export function set3AConstraint(constraints: any, key: AudioProcessingConstraintKeys, value: any) {
+  if (constraints && typeof value === 'boolean') {
+    switch (key) {
+      case 'AEC':
+        constraints.echoCancellation = value
+        constraints.googEchoCancellation = value
+        constraints.googEchoCancellation2 = value
+        break
+      case 'ANS':
+        constraints.noiseSuppression = value
+        constraints.googNoiseSuppression = value
+        constraints.googNoiseSuppression2 = value
+        break
+      case 'AGC':
+        constraints.autoGainControl = value
+        constraints.googAutoGainControl = value
+        constraints.googAutoGainControl2 = value
+    }
+  }
+}
 
 export function forceAudioConstraints(constraints: GUMAudioConstraints) {
   if (getParameters().forceAEC !== 'no') {
-    constraints.echoCancellation = getParameters().forceAEC === 'on'
-    constraints.googEchoCancellation = getParameters().forceAEC === 'on'
-    constraints.googEchoCancellation2 = getParameters().forceAEC === 'on'
+    set3AConstraint(constraints, 'AEC', getParameters().forceAEC === 'on')
   }
   if (getParameters().forceANS !== 'no') {
-    constraints.noiseSuppression = getParameters().forceANS === 'on'
-    constraints.googNoiseSuppression = getParameters().forceANS === 'on'
-    constraints.googNoiseSuppression2 = getParameters().forceANS === 'on'
+    set3AConstraint(constraints, 'ANS', getParameters().forceANS === 'on')
   }
   if (getParameters().forceAGC !== 'no') {
-    constraints.autoGainControl = getParameters().forceAGC === 'on'
-    constraints.googAutoGainControl = getParameters().forceAGC === 'on'
-    constraints.googAutoGainControl2 = getParameters().forceAGC === 'on'
+    set3AConstraint(constraints, 'AGC', getParameters().forceAGC === 'on')
   }
   if (getParameters().forceChannelCount !== -1) {
     constraints.channelCount = getParameters().forceChannelCount
