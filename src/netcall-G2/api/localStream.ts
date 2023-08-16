@@ -110,7 +110,6 @@ class LocalStream extends RTCEventEmitter {
   public streamID: number | string
   public stringStreamID: string
   public audio: boolean
-  public audioProcessing: AudioProcessingOptions | null
   public microphoneId: string
   public cameraId: string
   public sourceId: string
@@ -216,6 +215,15 @@ class LocalStream extends RTCEventEmitter {
   private encoderWatermarkOptions: NERtcEncoderWatermarkConfig | null = null
   private supportWasm = true
   private supportAIDenoise = true
+  constraintSettings: {
+    [mediaType in MediaTypeShort]: AudioProcessingOptions
+  } = {
+    // 暂时没有用到video/screen
+    audio: {},
+    audioSlave: {},
+    video: {},
+    screen: {}
+  }
 
   constructor(options: LocalStreamOptions) {
     super()
@@ -290,7 +298,9 @@ class LocalStream extends RTCEventEmitter {
     this.streamID = options.uid
     this.stringStreamID = this.streamID.toString()
     this.audio = options.audio
-    this.audioProcessing = options.audioProcessing || null
+    if (options.audioProcessing) {
+      this.constraintSettings.audio = Object.assign({}, options.audioProcessing)
+    }
     this.microphoneId = options.microphoneId || ''
     this.cameraId = options.cameraId || ''
     this.video = options.video || false
@@ -580,7 +590,8 @@ class LocalStream extends RTCEventEmitter {
       }
       if (this.audio || this.screenAudio) {
         apiEventDataInit.audioProfile = this.audioProfile
-        apiEventDataInit.audioProcessing = this.audioProcessing
+        apiEventDataInit.audioProcessing = this.constraintSettings.audio
+        apiEventDataInit.audioSlaveProcessing = this.constraintSettings.audioSlave
       }
       if (this.video) {
         apiEventDataInit.videoProfile = this.mediaHelper.video.captureConfig.high
@@ -1858,6 +1869,41 @@ class LocalStream extends RTCEventEmitter {
         profile
       }
     })
+  }
+
+  setAudioProcessing(mediaType: 'audio' | 'audioSlave', constraintInput: AudioProcessingOptions) {
+    checkValidEnum({
+      tag: 'LocalStream.setAudioProcessing',
+      value: mediaType,
+      enums: MediaTypeList
+    })
+    const prevConstraint = this.constraintSettings[mediaType]
+    const constraint = Object.assign({}, prevConstraint, constraintInput)
+    this.constraintSettings[mediaType] = constraint
+
+    this.logger.log(
+      `setAudioProcessing ${mediaType} ` +
+        `${JSON.stringify(prevConstraint)} => ${JSON.stringify(constraint)}`
+    )
+    if (
+      (mediaType === 'audio' && this.mediaHelper.getAudioInputTracks().length) ||
+      (mediaType === 'audioSlave' &&
+        this.mediaHelper.screenAudio.screenAudioStream.getAudioTracks().length)
+    ) {
+      this.logger.warn(`setAudioProcessing：当前已有开启音频。3A开关设置仅在重启音频后生效`)
+      this.client.apiFrequencyControl({
+        name: 'setAudioProcessing',
+        code: -1,
+        param: JSON.stringify(constraintInput)
+      })
+    } else {
+      this.client.apiFrequencyControl({
+        name: 'setAudioProcessing',
+        code: 0,
+        param: JSON.stringify(constraintInput)
+      })
+    }
+    return this.mediaHelper.getAudioConstraints(mediaType)
   }
 
   /**

@@ -2703,6 +2703,9 @@ function initLocalStream() {
     console.log('setScreenProfile 没有配置')
   }
 
+  $('#setAudioProcessing').removeAttr('disabled')
+  $('#mediaType3A').removeAttr('disabled')
+
   rtc.localStream
     .init()
     .then(async () => {
@@ -3176,6 +3179,13 @@ $('#unmuteScreen').on('click', () => {
   } else {
     assertLocalStream()
   }
+})
+
+$('#setAudioProcessing').on('click', () =>{
+  const mediaType = $('#mediaType3A').val()
+  const audioProcessing = getAudioProcessingConfig()
+  addLog('setAudioProcessing: ' + mediaType + ' '+ JSON.stringify(audioProcessing))
+  rtc.localStream.setAudioProcessing(mediaType, audioProcessing)
 })
 
 // 设置自己的画面

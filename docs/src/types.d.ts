@@ -593,6 +593,8 @@ export interface StreamOptions {
   /**
    * 是否开启/关闭音频处理接口（3A接口)。
    *
+   * 该接口仅处理麦克风。如需处理屏幕共享音频，请参考 [[Stream.setAudioProcessing]]。
+   *
    * @note
    * 音频处理接口取决于浏览器支持情况。
    *

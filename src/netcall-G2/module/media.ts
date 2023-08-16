@@ -7,6 +7,7 @@ import { NERTC_VIDEO_QUALITY_ENUM, VIDEO_FRAME_RATE_ENUM } from '../constant/vid
 import {
   AudioEffectOptions,
   AudioMixingOptions,
+  AudioProcessingConstraintKeys,
   EncodingParameters,
   GetStreamConstraints,
   GUMAudioConstraints,
@@ -41,7 +42,7 @@ import { getAudioContext, WebAudio } from './webAudio'
 import { VideoTrackLow } from './videoTrackLow'
 import { AudioPipeline } from './audio-pipeline/AudioPipeline'
 import { StageAIProcessing } from './audio-pipeline/stages/StageAIProcessing/StageAIProcessing'
-import { forceAudioConstraints } from '../util/rtcUtil/forceConstraints'
+import { forceAudioConstraints, set3AConstraint } from '../util/rtcUtil/forceConstraints'
 class MediaHelper extends EventEmitter {
   stream: LocalStream | RemoteStream
   public audio: {
@@ -1117,49 +1118,35 @@ class MediaHelper extends EventEmitter {
       this.logger.error('Remote Stream dont have audio constraints')
       return
     }
-    //@ts-ignore
-    const audioProcessing = this.stream.audioProcessing
+    const localStream = this.stream as unknown as LocalStream
+    const userConstraintSetting = localStream.constraintSettings[mediaType]
+
+    // Audio Constraint先后受4个影响：
+    // 1. 默认设置
+    // 2. audioProfile
+    // 3. 用户强制设置
+    // 4. 私有接口强制设置
+
     let constraint: GUMAudioConstraints = {
       channelCount: mediaType === 'audio' ? 1 : 2
     }
-    if (audioProcessing) {
-      if (typeof audioProcessing.AEC !== 'undefined') {
-        constraint.echoCancellation = audioProcessing.AEC
-        constraint.googEchoCancellation = audioProcessing.AEC
-        constraint.googEchoCancellation2 = audioProcessing.AEC
-      }
-      if (typeof audioProcessing.ANS !== 'undefined') {
-        constraint.noiseSuppression = audioProcessing.ANS
-        constraint.googNoiseSuppression = audioProcessing.ANS
-        constraint.googNoiseSuppression2 = audioProcessing.ANS
-      }
-      if (typeof audioProcessing.AGC !== 'undefined') {
-        constraint.autoGainControl = audioProcessing.AGC
-        constraint.googAutoGainControl = audioProcessing.AGC
-        constraint.googAutoGainControl2 = audioProcessing.AGC
-      }
-    }
+
+    // 1. 默认设置
     if (mediaType === 'audioSlave') {
       // 屏幕共享默认关闭3A
-      if (typeof constraint.echoCancellation === 'undefined') {
-        constraint.echoCancellation = false
-      }
-      if (typeof constraint.noiseSuppression === 'undefined') {
-        constraint.noiseSuppression = false
-      }
-      if (typeof constraint.autoGainControl === 'undefined') {
-        constraint.autoGainControl = false
-      }
+      set3AConstraint(constraint, 'AEC', false)
+      set3AConstraint(constraint, 'ANS', false)
+      set3AConstraint(constraint, 'AGC', false)
     }
-    //@ts-ignore
-    switch (this.stream.audioProfile) {
+
+    // 2. audioProfile
+    switch (localStream.audioProfile) {
       case 'standard_stereo':
       case 'high_quality_stereo':
-        constraint.googAutoGainControl = false
-        constraint.googAutoGainControl2 = false
+        set3AConstraint(constraint, 'AGC', false)
         //测试发现需要关闭回声消除，编码双声道才生效
-        constraint.echoCancellation = false
-        constraint.googNoiseSuppression = false
+        set3AConstraint(constraint, 'AEC', false)
+        set3AConstraint(constraint, 'ANS', false)
         constraint.channelCount = 2
         //关闭AEC
         /*constraint.echoCancellation = false;
@@ -1175,7 +1162,19 @@ class MediaHelper extends EventEmitter {
         constraint.googAutoGainControl2 = false;*/
         break
     }
-    // 最后通过私有接口强制调整开关，调试用，正常没有改变
+
+    // 3. 用户强制设置
+    for (let key in userConstraintSetting) {
+      if (['AEC', 'ANS', 'AGC'].indexOf(key) > -1) {
+        const key3A = key as AudioProcessingConstraintKeys
+        set3AConstraint(constraint, key3A, userConstraintSetting[key3A])
+      } else {
+        // @ts-ignore
+        constraint[key] = userConstraintSetting[key]
+      }
+    }
+
+    // 4. 通过私有接口强制调整开关，调试用，正常没有改变
     forceAudioConstraints(constraint)
     return constraint
   }

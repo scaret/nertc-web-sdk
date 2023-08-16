@@ -720,6 +720,8 @@ export interface AudioProcessingOptions {
   AGC?: boolean
 }
 
+export type AudioProcessingConstraintKeys = 'ANS' | 'AEC' | 'AGC'
+
 export interface LocalStreamOptions {
   uid: number | string
   audio: boolean
