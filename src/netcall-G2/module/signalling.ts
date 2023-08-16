@@ -1879,12 +1879,12 @@ class Signalling extends EventEmitter {
       this.adapterRef.instance.safeEmit('channel-closed', {})
     } else if (reason == 2) {
       this.logger.warn(`${uid}被踢出房间`)
+      this.adapterRef.instance.outOfConnect = true
       if (uid.toString() == this.adapterRef.channelInfo.uid.toString()) {
         this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason =
           ErrorCode.CLIENT_BANNED
         this.adapterRef.instance.leave()
       }
-      this.adapterRef.instance.outOfConnect = true
       this.adapterRef.instance.safeEmit('client-banned', {
         uid
       })
