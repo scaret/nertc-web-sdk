@@ -11,7 +11,6 @@ import { Mediasoup } from './module/mediasoup'
 import { Meeting } from './module/meeting'
 import { DataReport } from './module/report/dataReport'
 import { StatsReport } from './module/report/statsReport'
-import { RTSTransport } from './module/rtsTransport'
 import { Signalling } from './module/signalling'
 import { OperationQueue } from './util/OperationQueue'
 import { SignalGetChannelInfoResponse } from './interfaces/SignalProtocols'
@@ -42,7 +41,6 @@ export interface AdapterRef {
   networkQuality: {}
   _statsReport: StatsReport | null
   _meetings: Meeting | null
-  _enableRts: Boolean
   state: {
     lastDeviceStatus: {
       // 暂存上次用户打开的设备类型(供重连使用)
@@ -144,7 +142,6 @@ export interface AdapterRef {
   // connectioning其实是reconnecting
   channelStatus: 'init' | 'leave' | 'join' | 'connectioning'
   _signalling: Signalling | null
-  _rtsTransport: RTSTransport | null
   connectState: {
     prevState: ConnectionState
     curState: ConnectionState
@@ -1336,12 +1333,6 @@ export interface StreamPlayOptions {
   video?: boolean
   screen?: boolean
   muted?: boolean
-}
-export interface RTSTransportOptions {
-  url: string
-  port: number
-  transportId: string
-  adapterRef: AdapterRef
 }
 
 export type PreProcessingHandlerName = 'syncState' | 'copy' | 'color' | 'watermark' | 'mirror'

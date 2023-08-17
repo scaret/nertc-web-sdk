@@ -671,24 +671,6 @@ class Client extends Base {
     })
   }
 
-  async leaveRts() {
-    this.logger.log('离开频道')
-    if (
-      this.adapterRef.channelStatus !== 'join' &&
-      this.adapterRef.channelStatus !== 'connectioning'
-    ) {
-      this.logger.log(' 状态: ', this.adapterRef.channelStatus)
-    }
-    this.adapterRef.connectState.prevState = this.adapterRef.connectState.curState
-    this.adapterRef.connectState.curState = 'DISCONNECTING'
-    this.adapterRef.connectState.reconnect = false
-    this.adapterRef.instance.safeEmit('connection-state-change', this.adapterRef.connectState)
-    this.setEndSessionTime()
-    if (this.adapterRef._meetings) {
-      this.adapterRef._meetings.leaveChannel()
-    }
-  }
-
   //国密加密
   setEncryptionMode(encryptionMode: EncryptionMode) {
     checkValidInteger({

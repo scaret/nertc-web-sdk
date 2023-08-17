@@ -143,7 +143,6 @@ class Base extends RTCEventEmitter {
       networkQuality: {},
       _statsReport: null,
       _meetings: null,
-      _enableRts: false, //rts是否启动的标志位
       state: undefined as unknown as any,
       mediaCapability: undefined as unknown as any,
       nim: undefined as unknown as any,
@@ -178,7 +177,6 @@ class Base extends RTCEventEmitter {
       logStorage: undefined as unknown as any,
       channelStatus: 'init',
       _signalling: null,
-      _rtsTransport: null,
       connectState: {
         prevState: 'DISCONNECTED',
         curState: 'DISCONNECTED',
@@ -258,11 +256,6 @@ class Base extends RTCEventEmitter {
     if (this.adapterRef._signalling) {
       this.adapterRef._signalling.destroy()
       this.adapterRef._signalling = null
-    }
-
-    if (this.adapterRef._rtsTransport) {
-      this.adapterRef._rtsTransport.destroy()
-      this.adapterRef._rtsTransport = null
     }
 
     if (this.adapterRef._mediasoup) {
@@ -530,11 +523,7 @@ class Base extends RTCEventEmitter {
       return item.uid !== uid
     })
     this.logger.log(`${uid} 离开房间 通知用户`)
-    if (this.adapterRef._enableRts) {
-      this.adapterRef.instance.emit('rts-peer-leave', { uid })
-    } else {
-      this.adapterRef.instance.safeEmit('peer-leave', { uid })
-    }
+    this.adapterRef.instance.safeEmit('peer-leave', { uid })
   }
 
   // 设置通话开始时间
@@ -609,13 +598,6 @@ class Base extends RTCEventEmitter {
     }
     if (!hasError) {
       this.adapterRef.instance.safeEmit('@pairing-reBuildRecvTransport-success')
-    }
-  }
-  //重新建立下行连接，rts使用，后面计划废弃
-  async rtsRequestKeyFrame(stream: RemoteStream) {
-    this.logger.log('请求关键帧: ', stream.pubStatus.video.consumerId)
-    if (this.adapterRef._signalling) {
-      await this.adapterRef._signalling.rtsRequestKeyFrame(stream.pubStatus.video.consumerId)
     }
   }
 
