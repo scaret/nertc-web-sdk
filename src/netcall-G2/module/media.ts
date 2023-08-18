@@ -1331,11 +1331,17 @@ class MediaHelper extends EventEmitter {
       if (this.canDisableAudioRouting()) {
         this.disableAudioRouting()
       }
+      if (!this.stream.isRemote) {
+        this.stream.audioLevelHelper?.updateStream(this.screenAudio.screenAudioStream)
+      }
     } else if (kind === 'screenAudio') {
       this.screenAudio.screenAudioTrack?.stop()
       this.screenAudio.screenAudioTrack = null
       this.screenAudio.screenAudioSource = null
       emptyStreamWith(this.screenAudio.screenAudioStream, null)
+      if (!this.stream.isRemote) {
+        this.stream.audioLevelHelperSlave?.updateStream(this.screenAudio.screenAudioStream)
+      }
       /*this.updateWebAudio();
       if (this.canDisableAudioRouting()){
         this.disableAudioRouting();

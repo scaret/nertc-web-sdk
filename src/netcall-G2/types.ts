@@ -277,7 +277,7 @@ export interface VideoPlaySettings {
 
 export interface MediaStats {
   TotalFreezeTime: number
-  [key: string]: string | number | boolean
+  [key: string]: string | number | boolean | undefined
 }
 
 export interface DataEvent {
@@ -435,30 +435,30 @@ export interface Player {
 }
 
 export interface LocalAudioStats {
-  CodecType: string
-  MuteState: boolean
-  RecordingLevel: number
-  SamplingRate: number
-  SendBitrate: number
-  SendLevel: number
+  CodecType?: string
+  MuteState?: boolean
+  RecordingLevel?: number
+  SamplingRate?: number
+  SendBitrate?: number
+  SendLevel?: number
 }
 
 export interface LocalVideoStats {
-  LayerType: number
-  CodecName: string
-  CodecImplementationName: string
-  CaptureFrameRate: number
-  CaptureResolutionHeight: number
-  CaptureResolutionWidth: number
-  EncodeDelay: number
-  MuteState: boolean
-  SendBitrate: number
-  SendFrameRate: number
-  SendResolutionHeight: number
-  SendResolutionWidth: number
-  TargetSendBitrate: number
-  TotalDuration: number
-  TotalFreezeTime: number
+  LayerType?: number
+  CodecName?: string
+  CodecImplementationName?: string
+  CaptureFrameRate?: number
+  CaptureResolutionHeight?: number
+  CaptureResolutionWidth?: number
+  EncodeDelay?: number
+  MuteState?: boolean
+  SendBitrate?: number
+  SendFrameRate?: number
+  SendResolutionHeight?: number
+  SendResolutionWidth?: number
+  TargetSendBitrate?: number
+  TotalDuration?: number
+  TotalFreezeTime?: number
 }
 
 export interface SDKRef {}

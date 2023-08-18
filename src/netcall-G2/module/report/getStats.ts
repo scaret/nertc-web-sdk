@@ -14,6 +14,7 @@ import { FormativeStatsReport } from './formativeStatsData'
 import * as env from '../../util/rtcUtil/rtcEnvironment'
 import { isIosFromRtpStats } from '../3rd/mediasoup-client/handlers/sdp/getNativeRtpCapabilities'
 import { getParameters } from '../parameters'
+import { FormativeStatsAudio, FormativeStatsVideo } from './FormativeStatsInterface'
 
 class GetStats {
   private adapterRef: AdapterRef
@@ -129,7 +130,7 @@ class GetStats {
     } catch (e) {
       this.statsInfo.send.errCnt++
       if (this.statsInfo.send.errCnt <= getParameters().statsLogMaxCnt) {
-        this.statsInfo.send.logger.warn('数据汇集出现异常: ', e.name, e.message)
+        this.statsInfo.send.logger.warn('数据汇集出现异常: ', e.name, e.message, e.stack)
       }
     }
     try {
@@ -146,7 +147,11 @@ class GetStats {
       remoteStats = await this.getRemoteStats(remotePc)
 
       this.audioLevel.sort(compare('level'))
-      if (this.audioLevel.length > 0 && this.audioLevel[0].level > 0) {
+      if (
+        this.audioLevel.length > 0 &&
+        this.audioLevel[0].level > getParameters().activeSpeakerMin
+      ) {
+        // 当对方mute时仍然会有audioLevel。对小于 activeSpeakerMin的值不应该触发active-speaker事件
         // Firefox 获取不到audioLevel, 没有active-speaker探测能力
         this?.adapterRef?.instance.safeEmit('active-speaker', this.audioLevel[0])
         this?.adapterRef?.instance.safeEmit('volume-indicator', this.audioLevel)
@@ -155,7 +160,7 @@ class GetStats {
     } catch (e: any) {
       this.statsInfo.recv.errCnt++
       if (this.statsInfo.recv.errCnt <= getParameters().statsLogMaxCnt) {
-        this.statsInfo.recv.logger.warn('数据汇集出现异常: ', e.name, e.message)
+        this.statsInfo.recv.logger.warn('数据汇集出现异常: ', e.name, e.message, e.stack)
       }
     }
     let result = {
@@ -222,7 +227,7 @@ class GetStats {
             )
             this.browser = 'safari'
           } else if (e.name === 'NotSupportedError') {
-            this.statsInfo[direction].logger.warn(
+            this.statsInfo[direction].logger.log(
               `getStats：当前浏览器不再支持非标准getStats ${e.name} ${e.message}`
             )
             if (this.chromeLegecy === 'unknown') {
@@ -288,11 +293,10 @@ class GetStats {
             }
           }
           if (result.bwe.length === 0 && this.statsInfo.send.cpStats) {
-            //@ts-ignore
             result.bwe.push({
-              //@ts-ignore
+              // @ts-ignore
               googAvailableSendBandwidth:
-                //@ts-ignore
+                // @ts-ignore
                 this.statsInfo.send.cpStats.availableOutgoingBitrate / 1000
             })
           }
@@ -386,20 +390,6 @@ class GetStats {
       })
       return data
     }
-    function getSamplingRate(param: string | undefined) {
-      if (!param) return 16
-      let samplingRate: number
-      const SamplingRateMap = new Map([
-        ['speech_low_quality', 16],
-        ['speech_standard', 32],
-        ['music_standard', 48],
-        ['standard_stereo', 48],
-        ['high_quality', 48],
-        ['high_quality_stereo', 48]
-      ])
-      samplingRate = SamplingRateMap.get(param)!
-      return samplingRate
-    }
     const audio_ssrc: any = []
     const audioSlave_ssrc: any = []
     const video_ssrc: any = []
@@ -462,7 +452,7 @@ class GetStats {
             tmp.rtt = parseInt(item.googRtt)
             tmp.jitterReceived = parseInt(item.googJitterReceived)
             item.googEchoCancellationReturnLoss !== undefined
-              ? (tmp.echoReturnLoss = item.googEchoCancellationReturnLoss)
+              ? (tmp.echoReturnLoss = '' + item.googEchoCancellationReturnLoss)
               : null
             item.googEchoCancellationReturnLossEnhancement !== undefined
               ? (tmp.echoReturnLossEnhancement = item.googEchoCancellationReturnLossEnhancement)
@@ -825,8 +815,8 @@ class GetStats {
         return 0
       }
     }
-    const audioObj: { [key: string]: any } = {}
-    const videoObj: { [key: string]: any } = {}
+    const audioObj = new FormativeStatsAudio()
+    const videoObj = new FormativeStatsVideo()
     let ssrc = 0
     report.forEach((item) => {
       if (item.type == 'media-source') {
@@ -836,7 +826,7 @@ class GetStats {
           audioObj.totalSamplesDuration = Math.round(item.totalSamplesDuration)
           item.echoReturnLoss !== undefined ? (audioObj.echoReturnLoss = item.echoReturnLoss) : null
           item.echoReturnLossEnhancement !== undefined
-            ? (audioObj.echoReturnLossEnhancement = item.echoReturnLossEnhancement * 100)
+            ? (audioObj.echoReturnLossEnhancement = '' + item.echoReturnLossEnhancement * 100)
             : null
         } else if (item.kind === 'video') {
           //item.frames !== undefined ? (videoObj.framesEncoded = parseInt(item.frames)) : null
@@ -865,8 +855,9 @@ class GetStats {
           item.hugeFramesSent !== undefined ? (videoObj.hugeFramesSent = item.hugeFramesSent) : null
           videoObj.packetsSent = item.packetsSent
           videoObj.qpSum = item.qpSum
-          videoObj.qualityLimitationReason = getLimitationReason(item.qualityLimitationReason)
+          videoObj.qualityLimitationReason = '' + getLimitationReason(item.qualityLimitationReason)
           videoObj.qualityLimitationResolutionChanges = item.qualityLimitationResolutionChanges
+          videoObj.CodecImplementationName = item.encoderImplementation
           item.targetBitrate !== undefined
             ? (videoObj.targetBitrate = Math.round(item.targetBitrate / 1000))
             : null
@@ -977,37 +968,208 @@ class GetStats {
           }
         }
       } else if (item.type === 'candidate-pair') {
+        if (!audioObj.rtt && item.currentRoundTripTime) {
+          audioObj.rtt = Math.round(item.currentRoundTripTime * 1000)
+        }
+        if (!videoObj.rtt && item.currentRoundTripTime) {
+          videoObj.rtt = Math.round(item.currentRoundTripTime * 1000)
+        }
         this.statsInfo[direction].cpStats = item
+      } else if (item.type === 'codec') {
+        if (item.mimeType) {
+          const [kind, codec] = item.mimeType.split('/')
+          if (kind === 'audio') {
+            if (item.mimeType === 'audio/opus') {
+              audioObj.CodecType = 'Opus'
+            } else {
+              audioObj.CodecType = codec
+            }
+          } else if (kind === 'video') {
+            if (item.mimeType) {
+              videoObj.CodecName = codec
+            }
+          } else {
+            audioObj.CodecType = item.mimeType
+            videoObj.CodecName = item.mimeType
+          }
+        }
       }
     })
     const uidAndKindBySsrc = this?.adapterRef?.instance.getUidAndKindBySsrc(ssrc)
     let mediaTypeShort = uidAndKindBySsrc?.kind
     if (direction === 'send') {
+      const localStream = this.adapterRef.localStream
       if (mediaTypeShort === 'video' || mediaTypeShort === 'screen') {
         videoObj.streamType = uidAndKindBySsrc?.streamType || 'high'
         if (this.chromeLegecy !== 'supported' && videoObj.streamType === 'high') {
           this.formativeStatsReport?.formatSendData(videoObj, mediaTypeShort)
+          videoObj.LayerType = mediaTypeShort === 'video' ? 1 : 2
+          videoObj.CaptureFrameRate = videoObj.frameRateInput
+          videoObj.CaptureResolutionHeight = videoObj.frameHeightInput
+          videoObj.CaptureResolutionWidth = videoObj.frameWidthInput
+          videoObj.EncodeDelay = videoObj.avgEncodeMs
+          if (localStream) {
+            videoObj.MuteState = localStream.getMuteStatus(mediaTypeShort).muted
+          }
+          videoObj.SendBitrate = videoObj.bitsSentPerSecond
+          videoObj.SendFrameRate = videoObj.frameRateSent
+          videoObj.SendResolutionHeight = videoObj.frameHeightSent
+          videoObj.SendResolutionWidth = videoObj.frameWidthSent
+          videoObj.TargetSendBitrate = videoObj.targetBitrate
+          if (mediaTypeShort === 'video' && this.adapterRef.state.startPubVideoTime) {
+            videoObj.TotalDuration = (Date.now() - this.adapterRef.state.startPubVideoTime) / 1000
+          }
+          if (mediaTypeShort === 'screen' && this.adapterRef.state.startPubScreenTime) {
+            videoObj.TotalDuration = (Date.now() - this.adapterRef.state.startPubScreenTime) / 1000
+          }
+          const videoStats = {
+            LayerType: videoObj.LayerType,
+            CodecName: videoObj.CodecName,
+            CodecImplementationName: videoObj.CodecImplementationName,
+            CaptureFrameRate: videoObj.CaptureFrameRate,
+            CaptureResolutionHeight: videoObj.CaptureResolutionHeight,
+            CaptureResolutionWidth: videoObj.CaptureResolutionWidth,
+            EncodeDelay: videoObj.EncodeDelay,
+            MuteState: videoObj.MuteState,
+            SendBitrate: videoObj.SendBitrate,
+            SendFrameRate: videoObj.SendFrameRate,
+            SendResolutionHeight: videoObj.SendResolutionHeight,
+            SendResolutionWidth: videoObj.SendResolutionWidth,
+            TargetSendBitrate: videoObj.TargetSendBitrate,
+            TotalDuration: videoObj.TotalDuration,
+            TotalFreezeTime: videoObj.TotalFreezeTime
+          }
+          const statsArr =
+            mediaTypeShort === 'video'
+              ? this.adapterRef.localVideoStats
+              : this.adapterRef.localScreenStats
+          if (videoObj.streamType === 'high') {
+            statsArr[0] = videoStats
+          } else {
+            statsArr[1] = videoStats
+          }
         }
       } else if (mediaTypeShort === 'audio' || mediaTypeShort === 'audioSlave') {
         if (this.chromeLegecy !== 'supported') {
           this.formativeStatsReport?.formatSendData(audioObj, mediaTypeShort)
+          if (localStream) {
+            audioObj.MuteState = localStream.getMuteStatus(mediaTypeShort).muted
+            if (mediaTypeShort === 'audio' && localStream.audioLevelHelper) {
+              audioObj.RecordingLevel = Math.round(localStream.audioLevelHelper.volume * 32768)
+            } else if (mediaTypeShort === 'audioSlave' && localStream.audioLevelHelperSlave) {
+              audioObj.RecordingLevel = Math.round(localStream.audioLevelHelperSlave.volume * 32768)
+            } else {
+              audioObj.RecordingLevel = audioObj.audioInputLevel
+            }
+            audioObj.SamplingRate = getSamplingRate(localStream.audioProfile)
+            audioObj.SendBitrate = audioObj.bitsSentPerSecond
+            audioObj.SendLevel = audioObj.audioInputLevel
+          }
+          //sdk接口getLocalAudioStats()数据封装
+          const audioStats = {
+            CodecType: audioObj.CodecType,
+            rtt: audioObj.rtt,
+            MuteState: audioObj.MuteState,
+            RecordingLevel: audioObj.RecordingLevel,
+            SamplingRate: audioObj.SamplingRate,
+            SendBitrate: audioObj.SendBitrate,
+            SendLevel: audioObj.SendLevel
+          }
+          if (mediaTypeShort === 'audio') {
+            this.adapterRef.localAudioStats[0] = audioStats
+          } else if (mediaTypeShort === 'audioSlave') {
+            this!.adapterRef.localAudioSlaveStats[0] = audioStats
+          }
         }
       }
     }
     const result: { [key: string]: any } = {}
     if (direction === 'recv') {
+      const remoteStream = uidAndKindBySsrc?.uid
+        ? this.adapterRef.remoteStreamMap[uidAndKindBySsrc?.uid]
+        : null
       if (mediaTypeShort === 'video' || mediaTypeShort === 'screen') {
-        videoObj.remoteuid = uidAndKindBySsrc?.uid
+        videoObj.remoteuid = '' + uidAndKindBySsrc?.uid
+        const videoDom = remoteStream?._play[mediaTypeShort]?.dom
         if (this.chromeLegecy !== 'supported') {
           this.formativeStatsReport?.formatRecvData(videoObj, mediaTypeShort)
+          videoObj.LayerType = mediaTypeShort === 'video' ? 1 : 2
+          if (videoObj.rtt && videoObj.jitterBufferDelay) {
+            videoObj.End2EndDelay = videoObj.rtt + videoObj.jitterBufferDelay
+          }
+          if (remoteStream) {
+            videoObj.MuteState = remoteStream.getMuteStatus(mediaTypeShort).muted
+          }
+          videoObj.PacketLossRate = videoObj.packetsLostRate
+          videoObj.RecvBitrate = videoObj.bitsReceivedPerSecond
+          videoObj.RecvResolutionHeight = videoObj.frameHeightReceived
+          videoObj.RecvResolutionWidth = videoObj.frameWidthReceived
+          videoObj.RenderFrameRate = videoObj.frameRateReceived
+          if (videoDom) {
+            videoObj.RenderResolutionHeight = videoDom.videoHeight
+            videoObj.RenderResolutionWidth = videoDom.videoWidth
+            if (videoDom.played?.length && videoDom.played.end) {
+              videoObj.TotalPlayDuration = videoDom.played.end(0)
+            }
+          }
+          videoObj.TotalFreezeTime = videoObj.totalFreezeTime
+          videoObj.TransportDelay = videoObj.rtt
+          const remoteVideoStats = {
+            LayerType: videoObj.LayerType,
+            CodecName: videoObj.CodecName,
+            End2EndDelay: videoObj.End2EndDelay,
+            MuteState: videoObj.MuteState,
+            PacketLossRate: videoObj.PacketLossRate,
+            RecvBitrate: videoObj.RecvBitrate,
+            RecvResolutionHeight: videoObj.RecvResolutionHeight,
+            RecvResolutionWidth: videoObj.RecvResolutionWidth,
+            RenderFrameRate: videoObj.RenderFrameRate,
+            RenderResolutionHeight: videoObj.RenderResolutionHeight,
+            RenderResolutionWidth: videoObj.RenderResolutionWidth,
+            TotalFreezeTime: videoObj.TotalFreezeTime,
+            TotalPlayDuration: videoObj.TotalPlayDuration,
+            TransportDelay: videoObj.TransportDelay
+          }
+          if (mediaTypeShort === 'video') {
+            this.adapterRef.remoteVideoStats[videoObj.remoteuid] = remoteVideoStats
+          } else {
+            this.adapterRef.remoteScreenStats[videoObj.remoteuid] = remoteVideoStats
+          }
         }
       } else if (mediaTypeShort === 'audio' || mediaTypeShort === 'audioSlave') {
-        audioObj.remoteuid = uidAndKindBySsrc?.uid
+        audioObj.remoteuid = '' + uidAndKindBySsrc?.uid
         if (this.chromeLegecy !== 'supported') {
           this.formativeStatsReport?.formatRecvData(audioObj, mediaTypeShort)
+          if (audioObj.rtt && audioObj.jitterBufferDelay) {
+            audioObj.End2EndDelay = audioObj.rtt + audioObj.jitterBufferDelay
+          }
+          if (remoteStream) {
+            audioObj.MuteState = remoteStream.getMuteStatus(mediaTypeShort).muted
+          }
+          audioObj.PacketLossRate = audioObj.packetsLostRate
+          audioObj.RecvBitrate = audioObj.packetsReceivedPerSecond
+          audioObj.RecvLevel = audioObj.audioOutputLevel
+          audioObj.TotalFreezeTime = audioObj.totalFreezeTime
+          audioObj.TotalPlayDuration = audioObj.totalSamplesDuration
+          audioObj.TransportDelay = audioObj.rtt
+          const remoteAudioStats = {
+            CodecType: audioObj.CodecType,
+            End2EndDelay: audioObj.End2EndDelay,
+            MuteState: audioObj.MuteState,
+            PacketLossRate: audioObj.PacketLossRate,
+            RecvBitrate: audioObj.RecvBitrate,
+            RecvLevel: audioObj.RecvLevel,
+            TotalFreezeTime: audioObj.TotalFreezeTime,
+            TotalPlayDuration: audioObj.TotalPlayDuration,
+            TransportDelay: audioObj.TransportDelay
+          }
+          if (mediaTypeShort === 'audio') {
+            this.adapterRef.remoteAudioStats[audioObj.remoteuid] = remoteAudioStats
+          } else if (mediaTypeShort === 'audioSlave') {
+            this.adapterRef.remoteAudioSlaveStats[audioObj.remoteuid] = remoteAudioStats
+          }
         }
         if (audioObj.audioOutputLevel) {
-          const remoteStream = this?.adapterRef?.remoteStreamMap[audioObj.remoteuid]
           const isPlaying = (mediaTypeShort && remoteStream?.isPlaying(mediaTypeShort)) || false
           this.audioLevel.push({
             uid: audioObj.remoteuid,
@@ -1499,6 +1661,21 @@ class GetStats {
   destroy() {
     this._reset()
   }
+}
+
+function getSamplingRate(param: string | undefined) {
+  if (!param) return 16
+  let samplingRate: number
+  const SamplingRateMap = new Map([
+    ['speech_low_quality', 16],
+    ['speech_standard', 32],
+    ['music_standard', 48],
+    ['standard_stereo', 48],
+    ['high_quality', 48],
+    ['high_quality_stereo', 48]
+  ])
+  samplingRate = SamplingRateMap.get(param)!
+  return samplingRate
 }
 
 export { GetStats }
