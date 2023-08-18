@@ -1873,12 +1873,15 @@ class Signalling extends EventEmitter {
 
     if (reason == 1) {
       this.logger.warn('房间被关闭')
+      // 服务端主动关闭房间，避免重连
+      this.adapterRef.instance.outOfConnect = true
       this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason =
         ErrorCode.CHANNEL_CLOSED
       this.adapterRef.instance.leave()
       this.adapterRef.instance.safeEmit('channel-closed', {})
     } else if (reason == 2) {
       this.logger.warn(`${uid}被踢出房间`)
+      // 服务端主动踢人，避免重连
       this.adapterRef.instance.outOfConnect = true
       if (uid.toString() == this.adapterRef.channelInfo.uid.toString()) {
         this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason =
@@ -1890,6 +1893,8 @@ class Signalling extends EventEmitter {
       })
     } else if (reason == 5) {
       this.logger.warn(`${uid} permKey 超时被踢出房间`)
+      // 服务端主动踢人，避免重连
+      this.adapterRef.instance.outOfConnect = true
       if (uid.toString() == this.adapterRef.channelInfo.uid.toString()) {
         this.adapterRef.instance._params.JoinChannelRequestParam4WebRTC2.logoutReason =
           ErrorCode.PERMKEY_TIMEOUT
