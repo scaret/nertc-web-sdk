@@ -606,10 +606,16 @@ function startZEGO() {
     //     return data.data
     //   })
     //   .catch((err) => console.error(err))
-
+    const AppID = 1807888605
+    const ServerSecret = 'bb20b661d6a800156226122fd02bcd06'
     try {
       const response = await fetch(
-        'https://admin-test.netease.im/public-service/tokenGen/zego/basic?userId=' + userId
+        'https://admin-test.netease.im/public-service/tokenGen/zego/basic?userId=' +
+          userId +
+          '&AppID=' +
+          AppID +
+          '&ServerSecret=' +
+          ServerSecret
       )
       const data = await response.json()
       return data.data
