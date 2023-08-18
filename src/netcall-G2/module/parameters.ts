@@ -197,6 +197,8 @@ interface IParameters {
   // 允许应用程序向用户代理提示可以接受的播放延迟，详见: https://henbos.github.io/webrtc-timing/
   audioPlayoutDelayHint: number
   videoPlayoutDelayHint: number
+  // 最小触发active-speaker的音量。0-65535
+  activeSpeakerMin: number
   // 音量指数算法
   audioLevelFittingAlgorithm: 'classic' | 'linear' | 'log2'
   // 远端音量系数
@@ -306,6 +308,7 @@ let parameters: IParameters = {
   statsLogMaxCnt: 3,
   audioLevelFittingAlgorithm: 'log2',
   audioLevelRatioRemote: 1,
+  activeSpeakerMin: 10,
   audioPlayoutDelayHint: 0,
   videoPlayoutDelayHint: 0
 }

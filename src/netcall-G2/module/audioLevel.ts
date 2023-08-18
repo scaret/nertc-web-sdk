@@ -19,7 +19,7 @@ interface ChannelVolume {
 }
 
 class AudioLevel extends EventEmitter {
-  private volume = 0
+  public volume = 0
   // 没有左右声道就是null
   public left: ChannelVolume | null = null
   public right: ChannelVolume | null = null
@@ -63,7 +63,7 @@ class AudioLevel extends EventEmitter {
     this.logger.log('AudioLevel updateStream')
     if (this.support) {
       // 1. 创建/更新 sourceNode
-      if (!sourceNode) {
+      if (!sourceNode && audioStream.getAudioTracks().length > 0) {
         try {
           sourceNode = this.support.context.createMediaStreamSource(audioStream)
         } catch (e: any) {
@@ -233,11 +233,12 @@ class AudioLevel extends EventEmitter {
       }
 
       // 3.连接 sourceNode 和 audioWorkletNode
-      this.support.sourceNode.connect(this.support.audioWorkletNode)
+      this.support.sourceNode?.connect(this.support.audioWorkletNode)
       const audioLevelDestination = getAudioLevelDestination()
       if (audioLevelDestination) {
         this.support.audioWorkletNode.connect(audioLevelDestination)
       }
+      this.volume = 0
     }
   }
 
