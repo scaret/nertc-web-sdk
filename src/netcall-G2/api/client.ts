@@ -430,7 +430,8 @@ class Client extends Base {
    */
   async join(options: JoinOptions) {
     this.logger.log('join() 加入频道, options: ', JSON.stringify(options, null, ' '))
-
+    // 进房时解开重连限制
+    this.adapterRef.instance.outOfConnect = false
     let localConfig: LoadLocalConfigRes | null = null
     try {
       if (!options.channelName || options.channelName === '') {
