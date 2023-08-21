@@ -38,6 +38,10 @@ const captureTimer = setInterval(async ()=>{
   if (!rtc || !rtc.client){
     return
   }
+  const chromeLegacy = rtc.client.adapterRef._statsReport?.stats?.chromeLegecy
+  if (chromeLegacy && chromeLegacy !== $('#chromeLegacyStatus').text()){
+    $('#chromeLegacyStatus').text(chromeLegacy)
+  }
   let audioInfo = "";
   if (rtc.localStream){
     audioInfo += `数量：${rtc.localStream.mediaHelper.getAudioInputTracks().length}`

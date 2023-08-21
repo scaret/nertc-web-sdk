@@ -27,7 +27,7 @@ class GetStats {
     send: StatsInfo
     recv: StatsInfo
   }
-  private chromeLegecy: 'unknown' | 'supported' | 'unsupported' = 'unknown'
+  private chromeLegecy: 'unknown' | 'supported' | 'unsupported' = getParameters().chromeLegacyDefault
   constructor(options: { adapterRef: AdapterRef }) {
     this.adapterRef = options.adapterRef
     //workaround for TS2564
