@@ -23,7 +23,6 @@ import { Consumer } from './3rd/mediasoup-client/Consumer'
 import { Peer, ProtooNotification } from './3rd/protoo-client'
 import { encryptionModeToInt } from './encryption'
 import { getParameters } from './parameters'
-import { RTSTransport } from './rtsTransport'
 import * as env from '../util/rtcUtil/rtcEnvironment'
 import { SimpleBig } from '../util/json-big/SimpleBig'
 const protooClient = require('./3rd/protoo-client/')
@@ -548,17 +547,10 @@ class Signalling extends EventEmitter {
         //旧的consumer已经失效了
         remoteStream.pubStatus[mediaTypeShort].consumerId = ''
 
-        if (this.adapterRef._enableRts && this.adapterRef._rtsTransport) {
-          this.adapterRef.instance.emit('rts-stream-added', {
-            stream: remoteStream,
-            kind: mediaType
-          })
-        } else {
-          this.adapterRef.instance.safeEmit('stream-added', {
-            stream: remoteStream,
-            mediaType: mediaTypeShort
-          })
-        }
+        this.adapterRef.instance.safeEmit('stream-added', {
+          stream: remoteStream,
+          mediaType: mediaTypeShort
+        })
         if (mute) {
           if (mediaTypeShort === 'audioSlave') {
             this.adapterRef.instance.safeEmit('mute-audio-slave', { uid: remoteStream.getId() })
@@ -640,15 +632,10 @@ class Signalling extends EventEmitter {
           remoteStream.mediaHelper.screen.screenVideoTrack = null
           emptyStreamWith(remoteStream.mediaHelper.screen.screenVideoStream, null)
         }
-
-        if (this.adapterRef._enableRts) {
-          this.adapterRef.instance.emit('rts-stream-removed', { stream: remoteStream })
-        } else {
-          this.adapterRef.instance.safeEmit('stream-removed', {
-            stream: remoteStream,
-            mediaType: mediaTypeShort
-          })
-        }
+        this.adapterRef.instance.safeEmit('stream-removed', {
+          stream: remoteStream,
+          mediaType: mediaTypeShort
+        })
         break
       }
       case 'OnConsumerClose': {
@@ -1270,10 +1257,6 @@ class Signalling extends EventEmitter {
       }
 
       this.adapterRef.instance.safeEmit('connection-state-change', this.adapterRef.connectState)
-      if (this.adapterRef._enableRts) {
-        await this.createRTSTransport()
-        this.adapterRef.instance.emit('connected')
-      }
       this.logger.log(
         `Signalling: 查看房间其他人的发布信息: ${JSON.stringify(response.externData.userList)}`
       )
@@ -1358,15 +1341,7 @@ class Signalling extends EventEmitter {
                   ''
                 )}`
               )
-              if (that.adapterRef._enableRts && that.adapterRef._rtsTransport) {
-                eventsAfterJoinRes.push({
-                  eventName: 'rts-stream-added',
-                  eventData: {
-                    stream: remoteStream,
-                    kind: mediaTypeShort
-                  }
-                })
-              } else if (
+              if (
                 remoteStream.pubStatus.audio.audio ||
                 remoteStream.pubStatus.video.video ||
                 remoteStream.pubStatus.screen.screen ||
@@ -1552,74 +1527,6 @@ class Signalling extends EventEmitter {
       const response = await this._protoo.request('Heartbeat')
     } catch (e: any) {
       this.logger.error(`信令包保活失败, reason: ${e.message}, ${Date.now() - start}ms`)
-    }
-  }
-
-  async createRTSTransport() {
-    this.logger.log(`createRTSTransport()`)
-    if (!this._protoo) {
-      throw new RtcError({
-        code: ErrorCode.UNKNOWN_TYPE_ERROR,
-        message: 'createRTSTransport: _protoo 未找到'
-      })
-    } else if (!this._url) {
-      throw new RtcError({
-        code: ErrorCode.UNKNOWN_TYPE_ERROR,
-        message: 'createRTSTransport: _url 未找到'
-      })
-    }
-
-    try {
-      const response = await this._protoo.request('CreateWsTrasnport')
-      this.logger.warn('CreateWsTrasnport response: ', JSON.stringify(response, null, ''))
-      const { code, errMsg, transportId, wsPort = '6666' } = response
-      if (code == 200) {
-        if (this.adapterRef._rtsTransport) {
-          this.logger.log('CreateWsTrasnport: 需要更新')
-          this.adapterRef._rtsTransport.destroy()
-        }
-        this.logger.log('CreateWsTrasnport: 开始创建')
-        //url = `wss://${url}&cid=${this.adapterRef.channelInfo.cid}&uid=${this.adapterRef.channelInfo.uid}`
-        this.adapterRef._rtsTransport = new RTSTransport({
-          url: this._url.replace(/:\d+/, `:${wsPort}`) + `&transportId=${transportId}`,
-          transportId,
-          port: wsPort,
-          adapterRef: this.adapterRef
-        })
-      } else {
-        this.logger.error(`createWsTrasnport failed, code: ${code}, reason: ${errMsg}`)
-      }
-    } catch (e: any) {
-      this.logger.error('createRTSTransport failed:', e.name, e.message)
-      throw e
-    }
-  }
-
-  async rtsRequestKeyFrame(consumerId: string) {
-    this.logger.log(`rtsRequestKeyFrame(): `, consumerId)
-    if (!this._protoo) {
-      throw new RtcError({
-        code: ErrorCode.UNKNOWN_TYPE_ERROR,
-        message: 'rtsRequestKeyFrame: _protoo 未找到'
-      })
-    } else if (!consumerId) {
-      throw new RtcError({
-        code: ErrorCode.UNKNOWN_TYPE_ERROR,
-        message: 'rtsRequestKeyFrame: consumerId 未找到'
-      })
-    }
-    try {
-      const response = await this._protoo.request('RequestKeyFrame', { consumerId })
-      this.logger.warn('rtsRequestKeyFrame response: ', response)
-      let { code, errMsg } = response
-      if (code == 200) {
-        this.logger.log('RTS 关键帧请求完成')
-      } else {
-        this.logger.error(`RTS 关键帧请求失败, code: ${code}, reason: ${errMsg}`)
-      }
-    } catch (e) {
-      this.logger.error('rtsRequestKeyFrame failed:', e)
-      throw e
     }
   }
 
