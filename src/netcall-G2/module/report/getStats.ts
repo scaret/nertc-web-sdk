@@ -27,7 +27,7 @@ class GetStats {
     send: StatsInfo
     recv: StatsInfo
   }
-  private chromeLegecy: 'unknown' | 'supported' | 'unsupported' = 'unknown'
+  private chromeLegecy: 'unknown' | 'supported' | 'unsupported' = getParameters().chromeLegacyDefault
   constructor(options: { adapterRef: AdapterRef }) {
     this.adapterRef = options.adapterRef
     //workaround for TS2564
@@ -649,13 +649,9 @@ class GetStats {
             tmp.secondaryDecodedRate = parseInt(item.googSecondaryDecodedRate)
             tmp.secondaryDiscardedRate = parseInt(item.googSecondaryDiscardedRate)
             this.formativeStatsReport?.formatRecvData(tmp, mediaTypeShort)
-            const remoteStream = this?.adapterRef?.remoteStreamMap[item.remoteuid]
-            const muteStatus =
-              (remoteStream &&
-                (remoteStream.muteStatus.audioSlave.send ||
-                  remoteStream.muteStatus.audioSlave.recv)) ||
-              false
-
+            const remoteStream = this?.adapterRef?.remoteStreamMap[tmp.remoteuid]
+            const muteStatusObj = remoteStream?.muteStatus[mediaTypeShort as MediaTypeShort]
+            const muteStatus = muteStatusObj ? muteStatusObj.send || muteStatusObj.recv : false
             //sdk接口getRemoteAudioStats()数据封装
             const audioStats = {
               CodecType: 'Opus',
