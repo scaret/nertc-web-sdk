@@ -57,8 +57,8 @@ class Mediasoup extends EventEmitter {
   public _screenProducerCodec: VideoCodecType | null = null
   public _sendTransport: Transport | null = null
   public _recvTransport: Transport | null = null
-  private _sendTransportTimeoutTimer: Timer | null = null
-  private _recvTransportTimeoutTimer: Timer | null = null
+  public _sendTransportTimeoutTimer: Timer | null = null
+  public _recvTransportTimeoutTimer: Timer | null = null
   public _eventQueue: ProduceConsumeInfo[] = []
   public _protoo: Peer | null = null
   private mediasoupId = mediasoupCnt++
