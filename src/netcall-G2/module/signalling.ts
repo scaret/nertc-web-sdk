@@ -324,6 +324,15 @@ class Signalling extends EventEmitter {
     this.adapterRef.instance.safeEmit('@pairing-websocket-reconnection-start')
     this._destroyProtoo()
 
+    if (this.adapterRef._mediasoup?._sendTransportTimeoutTimer) {
+      clearTimeout(this.adapterRef._mediasoup._sendTransportTimeoutTimer)
+      this.adapterRef._mediasoup._sendTransportTimeoutTimer = null
+    }
+    if (this.adapterRef._mediasoup?._recvTransportTimeoutTimer) {
+      clearTimeout(this.adapterRef._mediasoup._recvTransportTimeoutTimer)
+      this.adapterRef._mediasoup._recvTransportTimeoutTimer = null
+    }
+
     if (this.adapterRef.connectState.prevState === 'CONNECTED') {
       // 更新上下行状态为unknown，因为此时服务端无法下发上下行状态
       this.adapterRef.netStatusList.forEach((netStatus) => {
