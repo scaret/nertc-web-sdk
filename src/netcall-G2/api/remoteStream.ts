@@ -1116,7 +1116,7 @@ class RemoteStream extends RTCEventEmitter {
             Math.min(
               100,
               getParameters().audioLevelRatioRemote *
-                Math.round(8.5 * Math.log2(normalizedAudioLevel) + 94)
+                Math.round(8.638 * Math.log2(normalizedAudioLevel) + 97.244)
             )
           )
       }

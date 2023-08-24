@@ -1832,7 +1832,10 @@ class LocalStream extends RTCEventEmitter {
       case 'linear':
         return Math.max(0, Math.min(100, Math.round(normalizedAudioLevel * 200)))
       case 'log2':
-        return Math.max(0, Math.min(100, Math.round(8.5 * Math.log2(normalizedAudioLevel) + 94)))
+        return Math.max(
+          0,
+          Math.min(100, Math.round(8.638 * Math.log2(normalizedAudioLevel) + 97.244))
+        )
     }
   }
 
