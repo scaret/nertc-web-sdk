@@ -51,7 +51,6 @@ class GetStats {
         frequency: 0,
         errCnt: 0,
         cpStats: null,
-        statsMapCurrent: {},
         statsMapHistory: {},
         logger: this.adapterRef.logger.getChild(() => {
           return `getStats ${this.browser} send ${this.statsInfo.send.errCnt}/${this.statsInfo.send.totalCnt}`
@@ -64,7 +63,6 @@ class GetStats {
         frequency: 0,
         errCnt: 0,
         cpStats: null,
-        statsMapCurrent: {},
         statsMapHistory: {},
         logger: this.adapterRef.logger.getChild(() => {
           return `getStats ${this.browser} recv ${this.statsInfo.recv.errCnt}/${this.statsInfo.recv.totalCnt} `
@@ -824,26 +822,29 @@ class GetStats {
     const videoObj = new FormativeStatsVideo()
     let ssrc = 0
     report.forEach((item) => {
-      let itemHistory = this.statsInfo[direction].statsMapHistory[item.id]
-      let itemHistoryCandidate = this.statsInfo[direction].statsMapCurrent[item.id]
-      if (!itemHistoryCandidate || itemHistoryCandidate.timestamp > item.timestamp) {
-        // statsMapCurrent中存放一个历史值，直到超过两秒前，用于计算每秒数据
-        this.statsInfo[direction].statsMapCurrent[item.id] = item
-      } else if (item.timestamp - itemHistoryCandidate.timestamp > 2000) {
-        // statsMapHistory中的值是至少2秒之前的值，使得计算每秒数据时更平滑
-        itemHistory = itemHistoryCandidate
-        this.statsInfo[direction].statsMapHistory[item.id] = itemHistoryCandidate
-        this.statsInfo[direction].statsMapCurrent[item.id] = item
+      const itemHistoryCandidates = this.statsInfo[direction].statsMapHistory[item.id]
+      let itemHistory: any = null
+      if (itemHistoryCandidates) {
+        for (let i = itemHistoryCandidates.length - 1; i >= 0; i--) {
+          if (!itemHistory) {
+            if (
+              item.timestamp - itemHistoryCandidates[i].timestamp >=
+              getParameters().statsHistoryInterval
+            ) {
+              // 找到一个3秒以外的点，计算基于那个点的每秒数据
+              itemHistory = itemHistoryCandidates[i]
+            }
+          } else {
+            itemHistoryCandidates.splice(i, 1)
+          }
+        }
+        // 把现在这个点存入
+        if (itemHistoryCandidates.length < 10 && item.timestamp) {
+          itemHistoryCandidates.push(item)
+        }
+      } else {
+        this.statsInfo[direction].statsMapHistory[item.id] = [item]
       }
-      if (
-        itemHistory &&
-        (!itemHistory.timestamp || item.timestamp - itemHistory.timestamp < 2000)
-      ) {
-        // 最后保护：如果取出的itemHistory仍然不符合2秒前这一要求，那么就不参考该值
-        itemHistory = null
-      }
-      // 接下来的计算与 itemHistoryCandidate 无关了。为防止 itemHistoryCandidate 被误用，将其置为 null
-      itemHistoryCandidate = null
 
       if (item.type == 'media-source') {
         if (item.kind === 'audio') {
