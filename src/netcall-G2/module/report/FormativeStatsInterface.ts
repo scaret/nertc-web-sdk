@@ -72,6 +72,9 @@ export class FormativeStatsAudio {
   TotalFreezeTime?: number
   TotalPlayDuration?: number
   TransportDelay?: number
+
+  // 以下是为了计算最终结果的中间量
+  totalPlayoutDelay?: number
 }
 
 export class FormativeStatsVideo {
@@ -174,4 +177,21 @@ export class FormativeStatsVideo {
   // TotalFreezeTime?: number
   TotalPlayDuration?: number
   TransportDelay?: number
+
+  // 以下是中间变量
+  totalPlayoutDelay?: number
 }
+
+export type PerSecondStatsProperty =
+  | 'framesEncoded'
+  | 'bytesSent'
+  | 'headerBytesSent'
+  | 'packetsSent'
+  | 'packetsLost'
+  | 'qpSum'
+  | 'totalEncodeTime'
+  | 'bytesReceived'
+  | 'packetsReceived'
+  | 'totalDecodeTime'
+  | 'framesDecoded'
+  | 'framesDropped'

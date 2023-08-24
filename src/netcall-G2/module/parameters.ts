@@ -199,6 +199,8 @@ interface IParameters {
   videoPlayoutDelayHint: number
   // Chrome Legacy 默认flag
   chromeLegacyDefault: 'unknown' | 'supported' | 'unsupported'
+  // getStats计算每秒数据时，基于多久之前的点
+  statsHistoryInterval: number
   // 最小触发active-speaker的音量。0-65535
   activeSpeakerMin: number
   // 音量指数算法
@@ -311,6 +313,7 @@ let parameters: IParameters = {
   chromeLegacyDefault: 'unknown',
   audioLevelFittingAlgorithm: 'log2',
   audioLevelRatioRemote: 1,
+  statsHistoryInterval: 3000,
   activeSpeakerMin: 10,
   audioPlayoutDelayHint: 0,
   videoPlayoutDelayHint: 0

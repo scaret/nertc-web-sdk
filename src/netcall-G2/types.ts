@@ -198,6 +198,7 @@ export interface StatsInfo {
   frequency: number
   errCnt: number
   cpStats: RTCIceCandidatePairStats | null
+  statsMapHistory: { [id: string]: any[] }
   logger: ILogger
 }
 
