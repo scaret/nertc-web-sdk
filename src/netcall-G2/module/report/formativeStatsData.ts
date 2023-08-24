@@ -199,28 +199,36 @@ class FormativeStatsReport {
       this.statsCatch.upScreenCache = data
     }
 
-    //计算码率
-    data.bitsSentPerSecond = Math.round((8 * (data.bytesSent - (tmp.bytesSent || 0))) / 1000)
-    //计算每秒发包数
-    data.packetsSentPerSecond = data.packetsSent - (tmp.packetsSent || 0)
-    //计算丢包率
-    if (data.packetsLost !== undefined) {
-      data.packetsLostRate = this.getPacketLossRate(tmp, data, true)
+    if (!data.bitsSentPerSecond) {
+      //计算码率
+      data.bitsSentPerSecond = Math.round((8 * (data.bytesSent - (tmp.bytesSent || 0))) / 1000)
+    }
+    if (!data.packetsSentPerSecond) {
+      //计算每秒发包数
+      data.packetsSentPerSecond = data.packetsSent - (tmp.packetsSent || 0)
+    }
+    if (!data.packetsLostRate) {
+      //计算丢包率
+      if (data.packetsLost !== undefined) {
+        data.packetsLostRate = this.getPacketLossRate(tmp, data, true)
+      }
     }
     if (data.streamType) {
       //计算每秒编码数目
-      if (data.framesEncoded >= tmp.framesEncoded) {
-        data.framesEncodedPerSecond = data.framesEncoded - tmp.framesEncoded
-      } else {
-        data.framesEncodedPerSecond = 0
+      if (!data.framesEncodedPerSecond) {
+        if (data.framesEncoded >= tmp.framesEncoded) {
+          data.framesEncodedPerSecond = data.framesEncoded - tmp.framesEncoded
+        }
       }
 
-      //计算QP编码帧的占比
-      data.qpPercentage = this.getQpPercentage(tmp, data)
-      //计算卡顿率
+      if (!data.qpPercentage) {
+        //计算QP编码帧的占比
+        data.qpPercentage = this.getQpPercentage(tmp, data)
+      }
       if (!data.frameRateSent) {
         data.frameRateSent = data.framesSent - tmp.framesSent
       }
+      //计算卡顿率
       let result = {
         freezeTime: 0,
         totalFreezeTime: 0
@@ -230,8 +238,12 @@ class FormativeStatsReport {
       } else if (mediaType === 'screen') {
         result = this.getLocalScreenFreezeStats(data)
       }
-      data.freezeTime = result.freezeTime
-      data.totalFreezeTime = result.totalFreezeTime
+      if (!data.freezeTime) {
+        data.freezeTime = result.freezeTime
+      }
+      if (!data.totalFreezeTime) {
+        data.totalFreezeTime = result.totalFreezeTime
+      }
     }
   }
 
@@ -327,17 +339,23 @@ class FormativeStatsReport {
       freezeTime: 0,
       totalFreezeTime: 0
     }
-    //计算码率
-    data.bitsReceivedPerSecond = Math.round((8 * (data.bytesReceived - tmp.bytesReceived)) / 1000)
+    if (!data.bitsReceivedPerSecond) {
+      //计算码率
+      data.bitsReceivedPerSecond = Math.round((8 * (data.bytesReceived - tmp.bytesReceived)) / 1000)
+    }
     // if (data.bitsReceivedPerSecond < 0) {
     //   debugger
     // }
     // console.warn(mediaType, ' 码率： ', data.bitsReceivedPerSecond)
-    //计算每秒发包数
-    data.packetsReceivedPerSecond = data.packetsReceived - tmp.packetsReceived
-    //计算丢包率
-    if (data.packetsLost !== undefined) {
-      data.packetsLostRate = this.getPacketLossRate(tmp, data)
+    if (!data.packetsReceivedPerSecond) {
+      //计算每秒发包数
+      data.packetsReceivedPerSecond = data.packetsReceived - tmp.packetsReceived
+    }
+    if (!data.packetsLost) {
+      //计算丢包率
+      if (data.packetsLost !== undefined) {
+        data.packetsLostRate = this.getPacketLossRate(tmp, data)
+      }
     }
 
     if (mediaType === 'video' || mediaType === 'screen') {
@@ -356,8 +374,12 @@ class FormativeStatsReport {
     } else if (data.decodingCTN) {
       result = this.getRemoteAudioFreezeStats(tmp, data, uid)
     }
-    data.freezeTime = result.freezeTime
-    data.totalFreezeTime = result.totalFreezeTime
+    if (!data.freezeTime) {
+      data.freezeTime = result.freezeTime
+    }
+    if (!data.totalFreezeTime) {
+      data.totalFreezeTime = result.totalFreezeTime
+    }
   }
 
   getQpPercentage(prev: any, next: any) {

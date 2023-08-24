@@ -14,7 +14,11 @@ import { FormativeStatsReport } from './formativeStatsData'
 import * as env from '../../util/rtcUtil/rtcEnvironment'
 import { isIosFromRtpStats } from '../3rd/mediasoup-client/handlers/sdp/getNativeRtpCapabilities'
 import { getParameters } from '../parameters'
-import { FormativeStatsAudio, FormativeStatsVideo } from './FormativeStatsInterface'
+import {
+  FormativeStatsAudio,
+  FormativeStatsVideo,
+  PerSecondStatsProperty
+} from './FormativeStatsInterface'
 
 class GetStats {
   private adapterRef: AdapterRef
@@ -27,7 +31,8 @@ class GetStats {
     send: StatsInfo
     recv: StatsInfo
   }
-  private chromeLegecy: 'unknown' | 'supported' | 'unsupported' = getParameters().chromeLegacyDefault
+  private chromeLegecy: 'unknown' | 'supported' | 'unsupported' =
+    getParameters().chromeLegacyDefault
   constructor(options: { adapterRef: AdapterRef }) {
     this.adapterRef = options.adapterRef
     //workaround for TS2564
@@ -46,6 +51,8 @@ class GetStats {
         frequency: 0,
         errCnt: 0,
         cpStats: null,
+        statsMapCurrent: {},
+        statsMapHistory: {},
         logger: this.adapterRef.logger.getChild(() => {
           return `getStats ${this.browser} send ${this.statsInfo.send.errCnt}/${this.statsInfo.send.totalCnt}`
         })
@@ -57,6 +64,8 @@ class GetStats {
         frequency: 0,
         errCnt: 0,
         cpStats: null,
+        statsMapCurrent: {},
+        statsMapHistory: {},
         logger: this.adapterRef.logger.getChild(() => {
           return `getStats ${this.browser} recv ${this.statsInfo.recv.errCnt}/${this.statsInfo.recv.totalCnt} `
         })
@@ -815,30 +824,66 @@ class GetStats {
     const videoObj = new FormativeStatsVideo()
     let ssrc = 0
     report.forEach((item) => {
+      let itemHistory = this.statsInfo[direction].statsMapHistory[item.id]
+      let itemHistoryCandidate = this.statsInfo[direction].statsMapCurrent[item.id]
+      if (!itemHistoryCandidate || itemHistoryCandidate.timestamp > item.timestamp) {
+        // statsMapCurrent中存放一个历史值，直到超过两秒前，用于计算每秒数据
+        this.statsInfo[direction].statsMapCurrent[item.id] = item
+      } else if (item.timestamp - itemHistoryCandidate.timestamp > 2000) {
+        // statsMapHistory中的值是至少2秒之前的值，使得计算每秒数据时更平滑
+        itemHistory = itemHistoryCandidate
+        this.statsInfo[direction].statsMapHistory[item.id] = itemHistoryCandidate
+        this.statsInfo[direction].statsMapCurrent[item.id] = item
+      }
+      if (
+        itemHistory &&
+        (!itemHistory.timestamp || item.timestamp - itemHistory.timestamp < 2000)
+      ) {
+        // 最后保护：如果取出的itemHistory仍然不符合2秒前这一要求，那么就不参考该值
+        itemHistory = null
+      }
+      // 接下来的计算与 itemHistoryCandidate 无关了。为防止 itemHistoryCandidate 被误用，将其置为 null
+      itemHistoryCandidate = null
+
       if (item.type == 'media-source') {
         if (item.kind === 'audio') {
           audioObj.audioInputLevel = Math.round(item.audioLevel * 32768)
           audioObj.totalAudioEnergy = Math.round(item.totalAudioEnergy)
           audioObj.totalSamplesDuration = Math.round(item.totalSamplesDuration)
-          item.echoReturnLoss !== undefined ? (audioObj.echoReturnLoss = item.echoReturnLoss) : null
-          item.echoReturnLossEnhancement !== undefined
-            ? (audioObj.echoReturnLossEnhancement = '' + item.echoReturnLossEnhancement * 100)
-            : null
+          if (item.echoReturnLoss) {
+            audioObj.echoReturnLoss = '' + item.echoReturnLoss
+          }
+          if (item.echoReturnLossEnhancement) {
+            audioObj.echoReturnLossEnhancement = '' + item.echoReturnLossEnhancement * 100
+          }
         } else if (item.kind === 'video') {
           //item.frames !== undefined ? (videoObj.framesEncoded = parseInt(item.frames)) : null
           videoObj.frameRateInput = item.framesPerSecond
           videoObj.frameWidthInput = item.width
           videoObj.frameHeightInput = item.height
         }
+      } else if (item.type === 'media-playout') {
+        if (item.kind === 'audio') {
+          audioObj.totalPlayoutDelay = item.totalPlayoutDelay
+        } else if (item.kind === 'video') {
+          videoObj.totalPlayoutDelay = item.totalPlayoutDelay
+        }
       } else if (item.type == 'outbound-rtp') {
         ssrc = item.ssrc
         if (item.kind === 'audio') {
-          item.targetBitrate !== undefined
-            ? (audioObj.targetBitrate = Math.round(item.targetBitrate / 1000))
-            : null
+          setValidInteger(audioObj, 'targetBitrate', item.targetBitrate / 1000)
           audioObj.bytesSent = item.headerBytesSent + item.bytesSent
           audioObj.packetsSent = item.packetsSent
-          item.nackCount !== undefined ? (audioObj.nackCount = item.nackCount) : null
+          if (itemHistory && direction === 'send') {
+            const bytesSentPerSecond = getValuePerSecond(item, itemHistory, 'bytesSent')
+            const headerBytesSentPerSecond = getValuePerSecond(item, itemHistory, 'headerBytesSent')
+            const bitsSentPerSecond = (bytesSentPerSecond + headerBytesSentPerSecond) * 0.008
+            setValidInteger(audioObj, 'bitsSentPerSecond', bitsSentPerSecond)
+
+            const packetsSentPerSecond = getValuePerSecond(item, itemHistory, 'packetsSent')
+            setValidInteger(audioObj, 'packetsSentPerSecond', packetsSentPerSecond)
+          }
+          setValidInteger(audioObj, 'nackCount', item.nackCount)
           audioObj.active = item.active ? 1 : 0
         } else if (item.kind === 'video') {
           videoObj.active = item.active ? 1 : 0
@@ -846,110 +891,193 @@ class GetStats {
           videoObj.firCount = item.firCount
           videoObj.nackCount = item.nackCount
           videoObj.pliCount = item.pliCount
-          item.framesEncoded !== undefined ? (videoObj.framesEncoded = item.framesEncoded) : null
-          item.framesSent !== undefined ? (videoObj.framesSent = item.framesSent) : null
-          item.hugeFramesSent !== undefined ? (videoObj.hugeFramesSent = item.hugeFramesSent) : null
+          setValidInteger(videoObj, 'framesEncoded', item.framesEncoded)
+          setValidInteger(videoObj, 'framesSent', item.framesSent)
+          setValidInteger(videoObj, 'hugeFramesSent', item.hugeFramesSent)
           videoObj.packetsSent = item.packetsSent
           videoObj.qpSum = item.qpSum
+
+          if (itemHistory && direction === 'send') {
+            const bytesSentPerSecond = getValuePerSecond(item, itemHistory, 'bytesSent')
+            const headerBytesSentPerSecond = getValuePerSecond(item, itemHistory, 'headerBytesSent')
+            const bitsSentPerSecond = (bytesSentPerSecond + headerBytesSentPerSecond) * 0.008
+            setValidInteger(videoObj, 'bitsSentPerSecond', bitsSentPerSecond)
+
+            const packetsSentPerSecond = getValuePerSecond(item, itemHistory, 'packetsSent')
+            setValidInteger(videoObj, 'packetsSentPerSecond', packetsSentPerSecond)
+
+            const framesEncodedPerSecond = getValuePerSecond(item, itemHistory, 'framesEncoded')
+            setValidInteger(videoObj, 'framesEncodedPerSecond', framesEncodedPerSecond)
+
+            const qpSumPerSecond = getValuePerSecond(item, itemHistory, 'qpSum')
+            // 按照formativeStatsData的公式，这个值并不在0-100之间。这里去掉了0-100的限制
+            const qpPercentage = (qpSumPerSecond / framesEncodedPerSecond) * 100
+            setValidInteger(videoObj, 'qpPercentage', qpPercentage)
+
+            const encodeUsagePercent = getValuePerSecond(item, itemHistory, 'totalEncodeTime') * 100
+            setValidInteger(videoObj, 'encodeUsagePercent', encodeUsagePercent)
+          }
           videoObj.qualityLimitationReason = '' + getLimitationReason(item.qualityLimitationReason)
           videoObj.qualityLimitationResolutionChanges = item.qualityLimitationResolutionChanges
           videoObj.CodecImplementationName = item.encoderImplementation
-          item.targetBitrate !== undefined
-            ? (videoObj.targetBitrate = Math.round(item.targetBitrate / 1000))
-            : null
+          setValidInteger(videoObj, 'targetBitrate', item.targetBitrate / 1000)
           //这计算的是总的数据，不是实时数据，当前先依赖pc.getStats()反馈吧，后续不支持了在处理
           //videoObj.avgEncodeMs = Math.round((item.totalEncodeTime * 1000) / item.framesEncoded)
-          item.framesPerSecond !== undefined
-            ? (videoObj.frameRateSent = item.framesPerSecond)
-            : null
+          setValidInteger(videoObj, 'frameRateSent', item.framesPerSecond)
           item.frameWidth !== undefined ? (videoObj.frameWidthSent = item.frameWidth) : null
           item.frameHeight !== undefined ? (videoObj.frameHeightSent = item.frameHeight) : null
-          if (item.framesEncoded && item.totalEncodeTime) {
-            videoObj.avgEncodeMs = Math.round((item.totalEncodeTime * 1000) / item.framesEncoded)
+          if (item.framesEncoded && item.totalEncodeTime && itemHistory) {
+            const avgEncodeMs =
+              (item.totalEncodeTime - itemHistory.totalEncodeTime) /
+              (item.framesEncoded - itemHistory.framesEncoded)
+            setValidInteger(videoObj, 'avgEncodeMs', avgEncodeMs)
           }
         }
       } else if (item.type == 'remote-inbound-rtp') {
+        // remote-inbound-rtp是一些对端报告的数据（RR），很多数据比较奇怪，在此仍尽量上报。
         if (item.kind === 'audio') {
-          item.fractionLost !== undefined ? (audioObj.fractionLost = item.fractionLost) : null
+          setValidInteger(audioObj, 'fractionLost', item.fractionLost * 1000)
           audioObj.jitterReceived = Math.round(item.jitter * 1000)
           audioObj.packetsLost = item.packetsLost
-          audioObj.rtt = Math.round(item.roundTripTime * 1000)
+          if (itemHistory && direction === 'send') {
+            const packetLostPerSecond = getValuePerSecond(item, itemHistory, 'packetsLost')
+            const packetsLostRate =
+              (packetLostPerSecond / (audioObj.packetsSentPerSecond || 50)) * 100
+            // 该值不准确。
+            // 上行的packetsLostPerSecond是基于对端的RR。在完全断网的情况下，收不到RR消息，也就无法计算出实际的丢包率
+            setValidInteger(audioObj, 'packetsLostRate', packetsLostRate)
+          }
+          setValidInteger(audioObj, 'rtt', item.roundTripTime * 1000)
         } else if (item.kind === 'video') {
-          item.fractionLost !== undefined ? (videoObj.fractionLost = item.fractionLost) : null
+          setValidInteger(videoObj, 'fractionLost', item.fractionLost * 1000)
           videoObj.jitter = Math.round(item.jitter * 1000)
           videoObj.packetsLost = item.packetsLost
-          videoObj.rtt = Math.round(item.roundTripTime * 1000)
+          if (itemHistory && direction === 'send') {
+            const packetLostPerSecond = getValuePerSecond(item, itemHistory, 'packetsLost')
+            const packetsLostRate =
+              (packetLostPerSecond / (videoObj.packetsSentPerSecond || 0)) * 100
+            // 该值不准确。报告的packetsLost与实际的PacketsSent并不是一个时间段。
+            // 上行的packetsLostPerSecond是基于对端的RR。在完全断网的情况下，收不到RR消息，也就无法计算出实际的丢包率
+            setValidInteger(videoObj, 'packetsLostRate', packetsLostRate)
+          }
+          setValidInteger(videoObj, 'rtt', item.roundTripTime * 1000)
         }
       } else if (item.type == 'inbound-rtp') {
         ssrc = item.ssrc
         if (item.kind === 'audio') {
-          item.audioLevel !== undefined
-            ? (audioObj.audioOutputLevel = Math.round(item.audioLevel * 32768))
-            : null
-          item.totalAudioEnergy !== undefined
-            ? (audioObj.totalAudioEnergy = Math.round(item.totalAudioEnergy))
-            : null
-          item.totalSamplesReceived !== undefined
-            ? (audioObj.totalSamplesDuration = Math.round(item.totalSamplesReceived / 48000))
-            : null
+          setValidInteger(audioObj, 'audioOutputLevel', item.audioLevel * 32768)
+          setValidInteger(audioObj, 'totalAudioEnergy', item.totalAudioEnergy)
+          setValidInteger(audioObj, 'totalSamplesDuration', item.totalSamplesReceived / 48000)
           audioObj.bytesReceived = item.headerBytesReceived + item.bytesReceived
-          item.concealedSamples !== undefined
-            ? (audioObj.concealedSamples = item.concealedSamples)
-            : null
-          audioObj.estimatedPlayoutTimestamp = item.estimatedPlayoutTimestamp || 0
-          audioObj.jitter = Math.round(item.jitter * 1000)
-          item.jitterBufferDelay !== undefined
-            ? (audioObj.jitterBufferDelay = Math.round(
-                (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
-              ))
-            : null
+          setValidInteger(audioObj, 'concealedSamples', item.concealedSamples)
+          setValidInteger(audioObj, 'estimatedPlayoutTimestamp', item.estimatedPlayoutTimestamp)
+          setValidInteger(audioObj, 'jitter', item.jitter * 1000)
+          // https://developer.chrome.com/blog/getstats-migration/
+          setValidInteger(audioObj, 'jitterBufferDelay', item.jitterBufferDelay * 1000)
+          setValidInteger(
+            audioObj,
+            'jitterBufferMs',
+            (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
+          )
+          setValidInteger(
+            audioObj,
+            'preemptiveExpandRate',
+            (item.insertedSamplesForDeceleration * 100) / item.totalSamplesReceived
+          )
+          setValidInteger(
+            audioObj,
+            'preferredJitterBufferMs',
+            (item.jitterBufferTargetDelay * 1000) / item.jitterBufferEmittedCount
+          )
+          // 这个值官网说明应该不正确。找了个替代值
+          setValidInteger(
+            audioObj,
+            'secondaryDecodedRate',
+            item.fecPacketsReceived - item.fecPacketsDiscarded
+          )
+          setValidInteger(audioObj, 'secondaryDiscardedRate', item.fecPacketsDiscarded)
+          setValidInteger(
+            audioObj,
+            'speechExpandRate',
+            ((item.concealedSamples - item.silentConcealedSamples) * 100) / item.concealedSamples
+          )
           audioObj.lastPacketReceivedTimestamp = item.lastPacketReceivedTimestamp
-          item.nackCount !== undefined ? (audioObj.nackCount = item.nackCount) : null
-          item.silentConcealedSamples !== undefined
-            ? (audioObj.silentConcealedSamples = item.silentConcealedSamples)
-            : null
+          setValidInteger(audioObj, 'nackCount', item.nackCount)
+          setValidInteger(audioObj, 'silentConcealedSamples', item.silentConcealedSamples)
           audioObj.packetsLost = item.packetsLost
           audioObj.packetsReceived = item.packetsReceived
+          if (itemHistory && direction === 'recv') {
+            const bitsReceivedPerSecond =
+              getValuePerSecond(item, itemHistory, 'bytesReceived') * 0.008
+            setValidInteger(audioObj, 'bitsReceivedPerSecond', bitsReceivedPerSecond)
+
+            const packetsReceivedPerSecond = getValuePerSecond(item, itemHistory, 'packetsReceived')
+            setValidInteger(audioObj, 'packetsReceivedPerSecond', packetsReceivedPerSecond)
+            const packetLostPerSecond = getValuePerSecond(item, itemHistory, 'packetsLost')
+            const packetsLostRate = (packetLostPerSecond / (packetsReceivedPerSecond || 50)) * 100
+            setValidInteger(audioObj, 'packetsLostRate', packetsLostRate)
+          }
         } else if (item.kind === 'video') {
           videoObj.bytesReceived = item.bytesReceived + item.headerBytesReceived
-          videoObj.estimatedPlayoutTimestamp = item.estimatedPlayoutTimestamp || 0
-          videoObj.lastPacketReceivedTimestamp = item.lastPacketReceivedTimestamp || 0
+          videoObj.estimatedPlayoutTimestamp = item.estimatedPlayoutTimestamp
+          videoObj.lastPacketReceivedTimestamp = item.lastPacketReceivedTimestamp
           videoObj.firCount = item.firCount
           videoObj.nackCount = item.nackCount
           videoObj.pliCount = item.pliCount
           videoObj.framesDecoded = item.framesDecoded
-          item.framesDropped !== undefined ? (videoObj.framesDropped = item.framesDropped) : null
-          item.framesReceived !== undefined ? (videoObj.framesReceived = item.framesReceived) : null
+          setValidInteger(videoObj, 'framesDropped', item.framesDropped)
+          setValidInteger(videoObj, 'framesReceived', item.framesReceived)
           videoObj.packetsReceived = item.packetsReceived
           videoObj.packetsLost = item.packetsLost
-          item.pauseCount !== undefined ? (videoObj.pauseCount = item.pauseCount) : null
-          item.totalPausesDuration !== undefined
-            ? (videoObj.totalPausesDuration = item.totalPausesDuration)
-            : null
-          item.freezeCount !== undefined ? (videoObj.freezeCount = item.freezeCount) : null
-          item.totalFreezesDuration !== undefined
-            ? (videoObj.totalFreezesDuration = item.totalFreezesDuration)
-            : null
+          setValidInteger(videoObj, 'pauseCount', item.pauseCount)
+          setValidInteger(videoObj, 'totalPausesDuration', item.totalPausesDuration)
+          setValidInteger(videoObj, 'freezeCount', item.freezeCount)
+          setValidInteger(videoObj, 'totalFreezesDuration', item.totalFreezesDuration)
           //videoObj.decodeMs = 0 //可以计算每秒的解码耗时，当前先不处理
-          item.framesPerSecond !== undefined
-            ? (videoObj.frameRateReceived = item.framesPerSecond)
-            : null
-          item.frameWidth !== undefined ? (videoObj.frameWidthReceived = item.frameWidth) : null
-          item.frameHeight !== undefined ? (videoObj.frameHeightReceived = item.frameHeight) : null
-          videoObj.powerEfficientDecoder = item.powerEfficientDecoder ? 1 : 0
+          setValidInteger(videoObj, 'frameRateReceived', item.framesPerSecond)
+          setValidInteger(videoObj, 'frameWidthReceived', item.frameWidth)
+          setValidInteger(videoObj, 'frameHeightReceived', item.frameHeight)
+          const codecImplementation = item.decoderImplementation
+          if (codecImplementation === 'OpenH264') {
+            videoObj.powerEfficientDecoder = 2
+          } else if (codecImplementation) {
+            videoObj.powerEfficientDecoder = 1
+          } else {
+            videoObj.powerEfficientDecoder = 0
+          }
           //videoObj.jitter = Math.round(item.jitter * 1000)
-          item.jitterBufferDelay !== undefined
-            ? (videoObj.jitterBufferDelay = Math.round(
-                (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
-              ))
-            : null
+          setValidInteger(
+            videoObj,
+            'jitterBufferDelay',
+            (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
+          )
+          if (itemHistory && direction === 'recv') {
+            const bitsReceivedPerSecond =
+              getValuePerSecond(item, itemHistory, 'bytesReceived') * 0.008
+            setValidInteger(videoObj, 'bitsReceivedPerSecond', bitsReceivedPerSecond)
+
+            const packetsReceivedPerSecond = getValuePerSecond(item, itemHistory, 'packetsReceived')
+            setValidInteger(videoObj, 'packetsReceivedPerSecond', packetsReceivedPerSecond)
+            const packetLostPerSecond = getValuePerSecond(item, itemHistory, 'packetsLost')
+            const packetsLostRate = (packetLostPerSecond / (packetsReceivedPerSecond || 0)) * 100
+            setValidInteger(videoObj, 'packetsLostRate', packetsLostRate)
+
+            const totalDecodeTimeDelta =
+              getValuePerSecond(item, itemHistory, 'totalDecodeTime') * 1000
+            const framesDecodedDelta = getValuePerSecond(item, itemHistory, 'framesDecoded')
+            setValidInteger(videoObj, 'decodeMs', totalDecodeTimeDelta / framesDecodedDelta)
+
+            const frameRateDecoded = getValuePerSecond(item, itemHistory, 'framesDecoded')
+            setValidInteger(videoObj, 'frameRateDecoded', frameRateDecoded)
+            const frameRateDropped = getValuePerSecond(item, itemHistory, 'framesDropped')
+            setValidInteger(videoObj, 'frameRateOutput', frameRateDecoded - frameRateDropped)
+          }
         }
       } else if (item.type == 'remote-outbound-rtp') {
         if (item.kind === 'audio') {
-          item.jitter !== undefined ? (audioObj.jitter = Math.round(item.jitter * 1000)) : null
-          item.roundTripTime !== undefined
-            ? (audioObj.rtt = Math.round(item.roundTripTime * 1000))
-            : null
+          // 实际上Chrome 117 audio 下行的RR没有这些值，但保留
+          item.jitter && setValidInteger(audioObj, 'jitter', item.jitter * 1000)
+          item.roundTripTime && setValidInteger(audioObj, 'rtt', item.roundTripTime * 1000)
         } else if (item.kind === 'video') {
           // item.jitter ? (videoObj.jitter = Math.round(item.jitter * 1000)) : null
           // item.roundTripTime ? (videoObj.rtt = Math.round(item.roundTripTime * 1000)) : null
@@ -958,18 +1086,12 @@ class GetStats {
         //Chrome85版本及以下，audioLevel存在track的属性中，新版本的chrome，track属性废弃
         if (direction === 'recv') {
           if (item.kind === 'audio') {
-            item.audioLevel !== undefined
-              ? (audioObj.audioOutputLevel = Math.round(item.audioLevel * 32768))
-              : null
+            setValidInteger(audioObj, 'audioOutputLevel', item.audioLevel * 32768)
           }
         }
       } else if (item.type === 'candidate-pair') {
-        if (!audioObj.rtt && item.currentRoundTripTime) {
-          audioObj.rtt = Math.round(item.currentRoundTripTime * 1000)
-        }
-        if (!videoObj.rtt && item.currentRoundTripTime) {
-          videoObj.rtt = Math.round(item.currentRoundTripTime * 1000)
-        }
+        setValidInteger(audioObj, 'rtt', item.currentRoundTripTime * 1000)
+        setValidInteger(videoObj, 'rtt', item.currentRoundTripTime * 1000)
         this.statsInfo[direction].cpStats = item
       } else if (item.type === 'codec') {
         if (item.mimeType) {
@@ -992,7 +1114,24 @@ class GetStats {
       }
     })
     const uidAndKindBySsrc = this?.adapterRef?.instance.getUidAndKindBySsrc(ssrc)
+    if (!ssrc || !uidAndKindBySsrc) {
+      return {}
+    }
     let mediaTypeShort = uidAndKindBySsrc?.kind
+
+    //计算来自多个item的合成数据
+    if (direction === 'recv') {
+      if (mediaTypeShort === 'audio' || mediaTypeShort === 'audioSlave') {
+        if (audioObj.jitterBufferDelay && audioObj.totalPlayoutDelay) {
+          audioObj.currentDelayMs = audioObj.jitterBufferDelay + audioObj.totalPlayoutDelay
+        }
+      } else if (mediaTypeShort === 'video' || mediaTypeShort === 'screen') {
+        if (videoObj.jitterBufferDelay && videoObj.totalPlayoutDelay) {
+          videoObj.currentDelayMs = videoObj.jitterBufferDelay + videoObj.totalPlayoutDelay
+        }
+      }
+    }
+
     if (direction === 'send') {
       const localStream = this.adapterRef.localStream
       if (mediaTypeShort === 'video' || mediaTypeShort === 'screen') {
@@ -1672,6 +1811,31 @@ function getSamplingRate(param: string | undefined) {
   ])
   samplingRate = SamplingRateMap.get(param)!
   return samplingRate
+}
+
+function setValidInteger(
+  obj: any,
+  key: keyof FormativeStatsAudio | keyof FormativeStatsVideo,
+  value: any
+) {
+  if (obj && value >= Number.MIN_SAFE_INTEGER) {
+    obj[key] = Math.round(value)
+  }
+}
+
+function getValuePerSecond(item: any, itemHistory: any, key: PerSecondStatsProperty) {
+  if (
+    item &&
+    itemHistory &&
+    item[key] > Number.MIN_SAFE_INTEGER &&
+    itemHistory[key] > Number.MIN_SAFE_INTEGER &&
+    item.timestamp &&
+    itemHistory.timestamp
+  ) {
+    return ((item[key] - itemHistory[key]) / (item.timestamp - itemHistory.timestamp)) * 1000
+  } else {
+    return NaN
+  }
 }
 
 export { GetStats }
