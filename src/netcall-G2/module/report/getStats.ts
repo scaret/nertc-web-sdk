@@ -359,6 +359,13 @@ class GetStats {
     } else if (standardizedResult) {
       Object.assign(assignedResult, standardizedResult)
     }
+    if (getParameters().showStatsLog) {
+      if (direction === 'send') {
+        this.statsInfo.send.logger.warn(`getStats send`, assignedResult)
+      } else {
+        this.statsInfo.recv.logger.warn(`getStats recv`, assignedResult)
+      }
+    }
     return assignedResult
   }
 
@@ -1031,9 +1038,9 @@ class GetStats {
           videoObj.packetsReceived = item.packetsReceived
           videoObj.packetsLost = item.packetsLost
           setValidInteger(videoObj, 'pauseCount', item.pauseCount)
-          setValidInteger(videoObj, 'totalPausesDuration', item.totalPausesDuration)
+          setValidInteger(videoObj, 'totalPausesDuration', item.totalPausesDuration * 1000)
           setValidInteger(videoObj, 'freezeCount', item.freezeCount)
-          setValidInteger(videoObj, 'totalFreezesDuration', item.totalFreezesDuration)
+          setValidInteger(videoObj, 'totalFreezesDuration', item.totalFreezesDuration * 1000)
           //videoObj.decodeMs = 0 //可以计算每秒的解码耗时，当前先不处理
           setValidInteger(videoObj, 'frameRateReceived', item.framesPerSecond)
           setValidInteger(videoObj, 'frameWidthReceived', item.frameWidth)
