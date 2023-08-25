@@ -197,6 +197,8 @@ interface IParameters {
   // 允许应用程序向用户代理提示可以接受的播放延迟，详见: https://henbos.github.io/webrtc-timing/
   audioPlayoutDelayHint: number
   videoPlayoutDelayHint: number
+  // 是否在日志中显示getStats上报信息
+  showStatsLog: boolean
   // Chrome Legacy 默认flag
   chromeLegacyDefault: 'unknown' | 'supported' | 'unsupported'
   // getStats计算每秒数据时，基于多久之前的点
@@ -310,6 +312,7 @@ let parameters: IParameters = {
   shimLocalCanvas: 'safari',
   enableVSkip: true,
   statsLogMaxCnt: 3,
+  showStatsLog: false,
   chromeLegacyDefault: 'unknown',
   audioLevelFittingAlgorithm: 'log2',
   audioLevelRatioRemote: 1,
