@@ -74,7 +74,7 @@ export class FormativeStatsAudio {
   TransportDelay?: number
 
   // 以下是为了计算最终结果的中间量
-  totalPlayoutDelay?: number
+  playoutDelayMs?: number
 }
 
 export class FormativeStatsVideo {
@@ -179,7 +179,7 @@ export class FormativeStatsVideo {
   TransportDelay?: number
 
   // 以下是中间变量
-  totalPlayoutDelay?: number
+  jitterBufferMs?: number
 }
 
 export type PerSecondStatsProperty =
@@ -195,3 +195,7 @@ export type PerSecondStatsProperty =
   | 'totalDecodeTime'
   | 'framesDecoded'
   | 'framesDropped'
+  | 'jitterBufferDelay'
+  | 'jitterBufferEmittedCount'
+  | 'totalPlayoutDelay'
+  | 'totalSamplesCount'
