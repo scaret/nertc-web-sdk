@@ -936,7 +936,7 @@ class GetStats {
           item.frameHeight !== undefined ? (videoObj.frameHeightSent = item.frameHeight) : null
           if (item.framesEncoded && item.totalEncodeTime && itemHistory) {
             const avgEncodeMs =
-              (item.totalEncodeTime - itemHistory.totalEncodeTime) /
+              ((item.totalEncodeTime - itemHistory.totalEncodeTime) * 1000) /
               (item.framesEncoded - itemHistory.framesEncoded)
             setValidInteger(videoObj, 'avgEncodeMs', avgEncodeMs)
           }
@@ -1022,8 +1022,13 @@ class GetStats {
             const packetsReceivedPerSecond = getValuePerSecond(item, itemHistory, 'packetsReceived')
             setValidInteger(audioObj, 'packetsReceivedPerSecond', packetsReceivedPerSecond)
             const packetLostPerSecond = getValuePerSecond(item, itemHistory, 'packetsLost')
-            const packetsLostRate = (packetLostPerSecond / (packetsReceivedPerSecond || 50)) * 100
-            setValidInteger(audioObj, 'packetsLostRate', packetsLostRate)
+            const packetsLostRate =
+              (packetLostPerSecond / (packetsReceivedPerSecond + packetLostPerSecond || 50)) * 100
+            // 由于packetsLost可能为负数，所以实际上packetsLostRate也可能为负数。为避免歧义，此处消除负数值
+            // https://www.w3.org/TR/webrtc-stats/#dom-rtcreceivedrtpstreamstats-packetslost
+            if (packetsLostRate >= 0) {
+              setValidInteger(audioObj, 'packetsLostRate', packetsLostRate)
+            }
           }
         } else if (item.kind === 'video') {
           videoObj.bytesReceived = item.bytesReceived + item.headerBytesReceived
@@ -1060,6 +1065,7 @@ class GetStats {
             (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
           )
           if (itemHistory && direction === 'recv') {
+            // inbound rtp
             const bitsReceivedPerSecond =
               getValuePerSecond(item, itemHistory, 'bytesReceived') * 0.008
             setValidInteger(videoObj, 'bitsReceivedPerSecond', bitsReceivedPerSecond)
@@ -1067,8 +1073,13 @@ class GetStats {
             const packetsReceivedPerSecond = getValuePerSecond(item, itemHistory, 'packetsReceived')
             setValidInteger(videoObj, 'packetsReceivedPerSecond', packetsReceivedPerSecond)
             const packetLostPerSecond = getValuePerSecond(item, itemHistory, 'packetsLost')
-            const packetsLostRate = (packetLostPerSecond / (packetsReceivedPerSecond || 0)) * 100
-            setValidInteger(videoObj, 'packetsLostRate', packetsLostRate)
+            const packetsLostRate =
+              (packetLostPerSecond / (packetsReceivedPerSecond + packetLostPerSecond)) * 100
+            // 由于packetsLost可能为负数，所以实际上packetsLostRate也可能为负数。为避免歧义，此处消除负数值
+            // https://www.w3.org/TR/webrtc-stats/#dom-rtcreceivedrtpstreamstats-packetslost
+            if (packetsLostRate >= 0) {
+              setValidInteger(videoObj, 'packetsLostRate', packetsLostRate)
+            }
 
             const totalDecodeTimeDelta =
               getValuePerSecond(item, itemHistory, 'totalDecodeTime') * 1000
