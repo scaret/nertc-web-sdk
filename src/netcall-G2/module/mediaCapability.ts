@@ -76,19 +76,25 @@ export class MediaCapability {
         this.logger.warn(`H264解码器加载失败！`)
       }
     }
+    //@ts-ignore
     this.supportedCodecRecv = supportedCodecsRecv.video
+    //@ts-ignore
     this.supportedCodecSend = supportedCodecsSend.video
     if (getParameters().disableH264Send) {
+      //@ts-ignore
       let index = this.supportedCodecSend.indexOf('H264')
       if (index !== -1) {
         this.logger.log(`根据私有化参数设置，忽略H264发送支持`)
+        //@ts-ignore
         this.supportedCodecSend.splice(index, 1)
       }
     }
     if (getParameters().disableVP8Send) {
+      //@ts-ignore
       let index = this.supportedCodecSend.indexOf('VP8')
       if (index !== -1) {
         this.logger.log(`根据私有化参数设置，忽略VP8发送支持`)
+        //@ts-ignore
         this.supportedCodecSend.splice(index, 1)
       }
     }

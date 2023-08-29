@@ -34,6 +34,7 @@ import { IS_SAFARI, SAFARI_MAJOR_VERSION, SAFARI_VERSION } from '../util/rtcUtil
 import { JSONBigStringify } from '../util/json-big'
 import { SimpleBig } from '../util/json-big/SimpleBig'
 import { filterTransportCCFromRtpParameters } from '../util/rtcUtil/filterTransportCC'
+import { ca } from 'date-fns/locale'
 
 let mediasoupCnt = 0
 
@@ -60,6 +61,7 @@ class Mediasoup extends EventEmitter {
   public _sendTransportTimeoutTimer: Timer | null = null
   public _recvTransportTimeoutTimer: Timer | null = null
   public _eventQueue: ProduceConsumeInfo[] = []
+  public _eventQueueData: ProduceConsumeInfo[] = []
   public _protoo: Peer | null = null
   private mediasoupId = mediasoupCnt++
   // senderEncodingParameter。会复用上次的senderEncodingParameter
@@ -547,52 +549,48 @@ class Mediasoup extends EventEmitter {
               }
             }
 
-            // 1. 使用原有的encoding
-            let encoding = this.senderEncodingParameter[mediaTypeShort].high
-            let encodingLow = this.senderEncodingParameter[mediaTypeShort].low
-            let mLineIndex = offer.sdp.indexOf(appData.deviceId)
-            let mLineIndexLow = offer.sdp.indexOf(appData.deviceIdLow)
-            if (!encoding) {
-              if (rtpParameters.encodings) {
-                // 2. 使用rtpParameter中的值
-                encoding = rtpParameters.encodings[0]
-                if (encoding && this.senderEncodingParameter.ssrcList.indexOf(encoding.ssrc) > -1) {
-                  // 已被其他占据，丢弃
-                  encoding = null
-                }
-                if (rtpParameters.encodings[1]) {
-                  encodingLow = rtpParameters.encodings[1]
+            let encoding, encodingLow, mLineIndex, mLineIndexLow
+            // Chrome62 不使用原来的ssrc, 会重建新的ssrc
+            if (
+              env.ANY_CHROME_MAJOR_VERSION &&
+              env.ANY_CHROME_MAJOR_VERSION >= 62 &&
+              env.ANY_CHROME_MAJOR_VERSION < 72
+            ) {
+              encoding = rtpParameters.encodings[0]
+            } else {
+              // 1. 使用原有的encoding
+              encoding = this.senderEncodingParameter[mediaTypeShort].high
+              encodingLow = this.senderEncodingParameter[mediaTypeShort].low
+              mLineIndex = offer.sdp.indexOf(appData.deviceId)
+              mLineIndexLow = offer.sdp.indexOf(appData.deviceIdLow)
+              if (!encoding) {
+                if (rtpParameters.encodings) {
+                  // 2. 使用rtpParameter中的值
+                  encoding = rtpParameters.encodings[0]
                   if (
-                    encodingLow &&
-                    this.senderEncodingParameter.ssrcList.indexOf(encodingLow.ssrc) > -1
+                    encoding &&
+                    this.senderEncodingParameter.ssrcList.indexOf(encoding.ssrc) > -1
                   ) {
                     // 已被其他占据，丢弃
                     encoding = null
                   }
-                }
-              }
-              if (!encoding && appData.deviceId && mLineIndex > -1) {
-                // 3. 在SDP中寻找ssrc-group字段匹配
-                let mLinePiece = offer.sdp.substring(mLineIndex)
-                const match = mLinePiece.match(/a=ssrc-group:FID (\d+) (\d+)/)
-                if (match) {
-                  encoding = {
-                    ssrc: parseInt(match[1]),
-                    rtx: {
-                      ssrc: parseInt(match[2])
+                  if (rtpParameters.encodings[1]) {
+                    encodingLow = rtpParameters.encodings[1]
+                    if (
+                      encodingLow &&
+                      this.senderEncodingParameter.ssrcList.indexOf(encodingLow.ssrc) > -1
+                    ) {
+                      // 已被其他占据，丢弃
+                      encoding = null
                     }
                   }
                 }
-                if (encoding && this.senderEncodingParameter.ssrcList.indexOf(encoding.ssrc) > -1) {
-                  // 已被其他占据，丢弃
-                  encoding = null
-                }
-                // 小流
-                if (!encodingLow && appData.deviceIdLow && mLineIndexLow > -1) {
-                  let mLinePieceLow = offer.sdp.substring(mLineIndexLow)
-                  const match = mLinePieceLow.match(/a=ssrc-group:FID (\d+) (\d+)/)
+                if (!encoding && appData.deviceId && mLineIndex > -1) {
+                  // 3. 在SDP中寻找ssrc-group字段匹配
+                  let mLinePiece = offer.sdp.substring(mLineIndex)
+                  const match = mLinePiece.match(/a=ssrc-group:FID (\d+) (\d+)/)
                   if (match) {
-                    encodingLow = {
+                    encoding = {
                       ssrc: parseInt(match[1]),
                       rtx: {
                         ssrc: parseInt(match[2])
@@ -600,35 +598,56 @@ class Mediasoup extends EventEmitter {
                     }
                   }
                   if (
-                    encodingLow &&
-                    this.senderEncodingParameter.ssrcList.indexOf(encodingLow.ssrc) > -1
+                    encoding &&
+                    this.senderEncodingParameter.ssrcList.indexOf(encoding.ssrc) > -1
                   ) {
                     // 已被其他占据，丢弃
-                    encodingLow = null
+                    encoding = null
+                  }
+                  // 小流
+                  if (!encodingLow && appData.deviceIdLow && mLineIndexLow > -1) {
+                    let mLinePieceLow = offer.sdp.substring(mLineIndexLow)
+                    const match = mLinePieceLow.match(/a=ssrc-group:FID (\d+) (\d+)/)
+                    if (match) {
+                      encodingLow = {
+                        ssrc: parseInt(match[1]),
+                        rtx: {
+                          ssrc: parseInt(match[2])
+                        }
+                      }
+                    }
+                    if (
+                      encodingLow &&
+                      this.senderEncodingParameter.ssrcList.indexOf(encodingLow.ssrc) > -1
+                    ) {
+                      // 已被其他占据，丢弃
+                      encodingLow = null
+                    }
                   }
                 }
-              }
-              if (!encoding) {
-                this.loggerSend.log('使用sdp中第一个ssrc')
-                encoding = {
-                  ssrc: parseInt(offer.sdp.match(/a=ssrc:(\d+)/)[1]), //历史遗留
-                  dtx: false
+                if (!encoding) {
+                  this.loggerSend.log('使用sdp中第一个ssrc')
+                  encoding = {
+                    ssrc: parseInt(offer.sdp.match(/a=ssrc:(\d+)/)[1]), //历史遗留
+                    dtx: false
+                  }
+                }
+                this.senderEncodingParameter[mediaTypeShort].high = encoding
+                this.senderEncodingParameter.ssrcList.push(encoding.ssrc)
+                if (encodingLow) {
+                  this.senderEncodingParameter[mediaTypeShort].low = encodingLow
+                  this.senderEncodingParameter.ssrcList.push(encodingLow.ssrc)
+                } else {
+                  this.senderEncodingParameter[mediaTypeShort].low = null
                 }
               }
-              this.senderEncodingParameter[mediaTypeShort].high = encoding
-              this.senderEncodingParameter.ssrcList.push(encoding.ssrc)
-              if (encodingLow) {
-                this.senderEncodingParameter[mediaTypeShort].low = encodingLow
-                this.senderEncodingParameter.ssrcList.push(encodingLow.ssrc)
-              } else {
-                this.senderEncodingParameter[mediaTypeShort].low = null
+              // 服务端协议：小流在前，大流在后
+              rtpParameters.encodings = [this.senderEncodingParameter[mediaTypeShort].high]
+              if (this.senderEncodingParameter[mediaTypeShort].low) {
+                rtpParameters.encodings.unshift(this.senderEncodingParameter[mediaTypeShort].low)
               }
             }
-            // 服务端协议：小流在前，大流在后
-            rtpParameters.encodings = [this.senderEncodingParameter[mediaTypeShort].high]
-            if (this.senderEncodingParameter[mediaTypeShort].low) {
-              rtpParameters.encodings.unshift(this.senderEncodingParameter[mediaTypeShort].low)
-            }
+
             if (appData.mediaType === 'video' || appData.mediaType === 'screenShare') {
               producerData.mediaProfile = []
               if (encodingLow) {
@@ -846,12 +865,21 @@ class Mediasoup extends EventEmitter {
               audioProfile: this.adapterRef.localStream.audioProfile
             })
             //设置视频的编码码率
-            if (mediaTypeShort === 'video' || mediaTypeShort === 'screen') {
-              this.adapterRef.localStream.applyEncoderConfig(mediaTypeShort, 'high')
-              if (rtpParameters.encodings.length >= 2) {
-                this.adapterRef.localStream.applyEncoderConfig(mediaTypeShort, 'low')
+            if (
+              !(
+                env.ANY_CHROME_MAJOR_VERSION &&
+                env.ANY_CHROME_MAJOR_VERSION >= 62 &&
+                env.ANY_CHROME_MAJOR_VERSION < 72
+              )
+            ) {
+              if (mediaTypeShort === 'video' || mediaTypeShort === 'screen') {
+                this.adapterRef.localStream.applyEncoderConfig(mediaTypeShort, 'high')
+                if (rtpParameters.encodings.length >= 2) {
+                  this.adapterRef.localStream.applyEncoderConfig(mediaTypeShort, 'low')
+                }
               }
             }
+
             callback({ id: producerId })
           } catch (error) {
             errback(error)
@@ -874,23 +902,44 @@ class Mediasoup extends EventEmitter {
           } else {
             this.loggerSend.log('发布音频流 audioTrack: ', audioTrack.id, audioTrack.label)
             stream.pubStatus.audio.audio = true
-            this._micProducer = await this._sendTransport.produce({
-              track: audioTrack,
-              trackLow: null,
-              codecOptions: {
-                opusStereo: true,
-                opusDtx: true
-              },
-              appData: {
-                preferRemb: this.adapterRef.preferRemb,
-                deviceId: audioTrack.id,
-                deviceIdLow: null,
-                mediaType: 'audio'
-              }
-            })
+            try {
+              this._micProducer = await this._sendTransport.produce({
+                track: audioTrack,
+                trackLow: null,
+                codecOptions: {
+                  opusStereo: true,
+                  opusDtx: true
+                },
+                appData: {
+                  preferRemb: this.adapterRef.preferRemb,
+                  deviceId: audioTrack.id,
+                  deviceIdLow: null,
+                  mediaType: 'audio'
+                }
+              })
+            } catch (e) {
+              this.loggerSend.error('produce audio error: ', e)
+            }
+            // this._micProducer = await this._sendTransport.produce({
+            //   track: audioTrack,
+            //   trackLow: null,
+            //   codecOptions: {
+            //     opusStereo: true,
+            //     opusDtx: true
+            //   },
+            //   appData: {
+            //     preferRemb: this.adapterRef.preferRemb,
+            //     deviceId: audioTrack.id,
+            //     deviceIdLow: null,
+            //     mediaType: 'audio'
+            //   }
+            // })
+            //@ts-ignore
             this.watchProducerState(this._micProducer, '_micProducer')
             if (this.adapterRef.encryption.encodedInsertableStreams) {
+              //@ts-ignore
               if (this._micProducer._rtpSender) {
+                //@ts-ignore
                 this.enableSendTransform(this._micProducer._rtpSender, 'audio', 'high')
               }
             }
@@ -1257,7 +1306,9 @@ class Mediasoup extends EventEmitter {
     }
     return new Promise((resolve, reject) => {
       this._eventQueue.push({ uid, kind, id, mediaType, preferredSpatialLayer, resolve, reject })
+
       if (this._eventQueue.length > 1) {
+        this._eventQueueData = Object.assign([], this._eventQueue)
         return
       } else {
         this._createConsumer(this._eventQueue[0])
@@ -1442,6 +1493,7 @@ class Mediasoup extends EventEmitter {
       this.checkConsumerList(info)
     }
     this.loggerRecv.log('[Subscribe] 获取本地sdp, mid =', prepareRes.mid)
+
     let { rtpCapabilities, offer } = prepareRes
     let mid: number | string | undefined = prepareRes.mid
     const localDtlsParameters = prepareRes.dtlsParameters

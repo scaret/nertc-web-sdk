@@ -137,13 +137,13 @@ export const NERTC = {
    * @return {Client} Client对象
    */
   createClient(options: ClientOptions) {
-    if (!checkSystemRequirements()) {
-      console.error('浏览器环境不支持')
-      throw new RtcError({
-        code: ErrorCode.NOT_SUPPORT_ERROR,
-        message: '云信sdk不支持，请使用最新版本的chrome浏览器'
-      })
-    }
+    // if (!checkSystemRequirements()) {
+    //   console.error('浏览器环境不支持')
+    //   throw new RtcError({
+    //     code: ErrorCode.NOT_SUPPORT_ERROR,
+    //     message: '云信sdk不支持，请使用最新版本的chrome浏览器'
+    //   })
+    // }
     checkExists({ tag: 'createClient:ClientOptions', value: options })
     checkExists({ tag: 'createClient:ClientOptions.appkey', value: options.appkey })
     // 需要监视的API，埋点等

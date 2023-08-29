@@ -15,8 +15,11 @@ class SystemChecker {
         !PC.prototype.addTransceiver ||
         !PC.prototype.getTransceivers
       ) {
-        console.warn(`checkSystemRequirements: RTCPeerConnection不符合sdk要求`)
-        return false
+        // 支持 chrome62+ 版本
+        if (!PC.prototype.addStream) {
+          console.warn(`checkSystemRequirements: RTCPeerConnection不符合sdk要求`)
+          return false
+        }
       }
     }
     //getUserMedia对于拉流没有影响，不应该作为限制条件

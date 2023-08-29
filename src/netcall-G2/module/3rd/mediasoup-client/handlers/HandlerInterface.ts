@@ -7,7 +7,7 @@ import {
   RtpEncodingParameters,
   RtpParameters
 } from '../RtpParameters'
-import { SctpCapabilities, SctpParameters } from '../SctpParameters'
+import { SctpCapabilities, SctpParameters, SctpStreamParameters } from '../SctpParameters'
 import { DtlsParameters, FillRemoteRecvSdpOptions, IceCandidate, IceParameters } from '../Transport'
 import { RemoteSdp } from './sdp/RemoteSdp'
 
@@ -53,6 +53,14 @@ export type HandlerSendResult = {
   offer: any
 }
 
+export type Chrome62HandlerSendResult = {
+  localId: string
+  rtpParameters: RtpParameters
+  rtpSender?: RTCRtpSender
+  dtlsParameters?: DtlsParameters
+  offer: any
+}
+
 export type HandlerReceiveOptions = {
   trackId: string
   kind: 'audio' | 'video'
@@ -66,6 +74,19 @@ export type HandlerReceiveOptions = {
   remoteUid: number | string
   extendedRtpCapabilities: any
   appData?: any
+}
+
+export type Chrome62HandlerReceiveOptions = {
+  trackId: string
+  kind: 'audio' | 'video'
+  rtpParameters: RtpParameters
+  /**
+   * Stream id. WebRTC based devices try to synchronize inbound streams with
+   * same streamId. If not given, the consuming device will be told to
+   * synchronize all streams produced by the same endpoint. However libwebrtc
+   * can just synchronize up to one audio stream with one video stream.
+   */
+  streamId?: string
 }
 
 export type HandlerReceiveResult = {
@@ -132,7 +153,7 @@ export abstract class HandlerInterface extends EnhancedEventEmitter {
 
   abstract fillRemoteRecvSdp(options: FillRemoteRecvSdpOptions): any
 
-  abstract prepareLocalSdp(kind: 'video' | 'audio', uid: number | string): any
+  abstract prepareLocalSdp(kind: 'video' | 'audio', uid: number | string, queue?: any): any
 
   abstract recoverTransceiver(
     remoteUid: number | string,
@@ -153,4 +174,18 @@ export abstract class HandlerInterface extends EnhancedEventEmitter {
   abstract stopReceiving(localId: string): Promise<void>
 
   abstract getReceiverStats(localId: string): Promise<RTCStatsReport>
+}
+
+export type HandlerSendDataChannelOptions = SctpStreamParameters
+export type HandlerSendDataChannelResult = {
+  dataChannel: RTCDataChannel
+  sctpStreamParameters: SctpStreamParameters
+}
+export type HandlerReceiveDataChannelOptions = {
+  sctpStreamParameters: SctpStreamParameters
+  label?: string
+  protocol?: string
+}
+export type HandlerReceiveDataChannelResult = {
+  dataChannel: RTCDataChannel
 }
