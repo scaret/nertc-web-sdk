@@ -958,6 +958,7 @@ class GetStats {
             // 上行的packetsLostPerSecond是基于对端的RR。在完全断网的情况下，收不到RR消息，也就无法计算出实际的丢包率
             setValidInteger(audioObj, 'packetsLostRate', packetsLostRate)
           }
+          // 上行音频RTT：首先采信RR回包中的rtt值。如果没有该值，则使用ice值。
           setValidInteger(audioObj, 'rtt', item.roundTripTime * 1000)
         } else if (item.kind === 'video') {
           setValidInteger(videoObj, 'fractionLost', item.fractionLost * 1000)
@@ -971,6 +972,7 @@ class GetStats {
             // 上行的packetsLostPerSecond是基于对端的RR。在完全断网的情况下，收不到RR消息，也就无法计算出实际的丢包率
             setValidInteger(videoObj, 'packetsLostRate', packetsLostRate)
           }
+          // 上行视频RTT：首先采信RR回包中的rtt值。如果没有该值，则使用ice值。
           setValidInteger(videoObj, 'rtt', item.roundTripTime * 1000)
         }
       } else if (item.type == 'inbound-rtp') {
@@ -992,11 +994,6 @@ class GetStats {
           setValidInteger(audioObj, 'jitter', item.jitter * 1000)
           // https://developer.chrome.com/blog/getstats-migration/
           setValidInteger(audioObj, 'jitterBufferDelay', item.jitterBufferDelay * 1000)
-          setValidInteger(
-            audioObj,
-            'jitterBufferMs',
-            (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
-          )
           setValidInteger(
             audioObj,
             'preemptiveExpandRate',
@@ -1045,6 +1042,8 @@ class GetStats {
             // https://www.w3.org/TR/webrtc-stats/#dom-rtcreceivedrtpstreamstats-packetslost
             if (packetsLostRate >= 0) {
               setValidInteger(audioObj, 'packetsLostRate', packetsLostRate)
+            } else {
+              audioObj.packetsLostRate = 0
             }
             const jitterBufferMs =
               (getValuePerSecond(item, itemHistory, 'jitterBufferDelay') * 1000) /
@@ -1136,6 +1135,8 @@ class GetStats {
           item.jitter && setValidInteger(audioObj, 'jitter', item.jitter * 1000)
           item.roundTripTime && setValidInteger(audioObj, 'rtt', item.roundTripTime * 1000)
         } else if (item.kind === 'video') {
+          // 实际上Chrome 117 只有audio的remote-outbound-rtp，没有video的。怀疑之前也没有。
+          /// 以下是上个版本的保留代码，具体看提交记录
           // item.jitter ? (videoObj.jitter = Math.round(item.jitter * 1000)) : null
           // item.roundTripTime ? (videoObj.rtt = Math.round(item.roundTripTime * 1000)) : null
         }
@@ -1147,6 +1148,7 @@ class GetStats {
           }
         }
       } else if (item.type === 'candidate-pair') {
+        // 下行音视频RTT：因为缺少remote-outbound-rtp所以这里用ice的rtt
         setValidInteger(audioObj, 'rtt', item.currentRoundTripTime * 1000)
         setValidInteger(videoObj, 'rtt', item.currentRoundTripTime * 1000)
         this.statsInfo[direction].cpStats = item
@@ -1894,7 +1896,11 @@ function getValuePerSecond(item: any, itemHistory: any, key: PerSecondStatsPrope
     item.timestamp &&
     itemHistory.timestamp
   ) {
-    return ((item[key] - itemHistory[key]) / (item.timestamp - itemHistory.timestamp)) * 1000
+    const val = ((item[key] - itemHistory[key]) / (item.timestamp - itemHistory.timestamp)) * 1000
+    // 目前所有的统计指标都是累计值，不可能出现负数。
+    // 但getStats有时会出现统计归0导致瞬间的统计负数，该负数没有意义（webrtc-internals有同样的问题）
+    // 对这种情况，返回-1
+    return Math.max(val, -1)
   } else {
     return NaN
   }
