@@ -872,9 +872,12 @@ class GetStats {
         }
       } else if (item.type === 'media-playout') {
         if (item.kind === 'audio') {
-          audioObj.totalPlayoutDelay = item.totalPlayoutDelay
-        } else if (item.kind === 'video') {
-          videoObj.totalPlayoutDelay = item.totalPlayoutDelay
+          if (itemHistory) {
+            const playoutDelayMs =
+              (getValuePerSecond(item, itemHistory, 'totalPlayoutDelay') * 1000) /
+              getValuePerSecond(item, itemHistory, 'totalSamplesCount')
+            audioObj.playoutDelayMs = playoutDelayMs
+          }
         }
       } else if (item.type == 'outbound-rtp') {
         ssrc = item.ssrc
@@ -978,7 +981,14 @@ class GetStats {
           setValidInteger(audioObj, 'totalSamplesDuration', item.totalSamplesReceived / 48000)
           audioObj.bytesReceived = item.headerBytesReceived + item.bytesReceived
           setValidInteger(audioObj, 'concealedSamples', item.concealedSamples)
-          setValidInteger(audioObj, 'estimatedPlayoutTimestamp', item.estimatedPlayoutTimestamp)
+          // 虽有 estimatedPlayoutTimestamp，但是单纯收集这个值并没有实际的作用。
+          // 在这里收集"从现在到预计播放需要多久"的相对值
+          // 注意：原始的 estimatedPlayoutTimestamp 是从0开始计数的，与timestamp的差值没有实际意义，但这个值的变化趋势是正确的
+          setValidInteger(
+            audioObj,
+            'estimatedPlayoutTimestamp',
+            item.estimatedPlayoutTimestamp - item.timestamp
+          )
           setValidInteger(audioObj, 'jitter', item.jitter * 1000)
           // https://developer.chrome.com/blog/getstats-migration/
           setValidInteger(audioObj, 'jitterBufferDelay', item.jitterBufferDelay * 1000)
@@ -1009,7 +1019,14 @@ class GetStats {
             'speechExpandRate',
             ((item.concealedSamples - item.silentConcealedSamples) * 100) / item.concealedSamples
           )
-          audioObj.lastPacketReceivedTimestamp = item.lastPacketReceivedTimestamp
+          // 虽有 lastPacketReceivedTimestamp的绝对值，但是单纯收集这个值并没有实际的作用。
+          // 在这里实际收集"上个包距离现在有多久"
+          // 注意：这个相对值因为参考时钟的不同可能是负的，但这个值的变化趋势是正确的
+          setValidInteger(
+            audioObj,
+            'lastPacketReceivedTimestamp',
+            item.timestamp - item.lastPacketReceivedTimestamp
+          )
           setValidInteger(audioObj, 'nackCount', item.nackCount)
           setValidInteger(audioObj, 'silentConcealedSamples', item.silentConcealedSamples)
           audioObj.packetsLost = item.packetsLost
@@ -1029,11 +1046,29 @@ class GetStats {
             if (packetsLostRate >= 0) {
               setValidInteger(audioObj, 'packetsLostRate', packetsLostRate)
             }
+            const jitterBufferMs =
+              (getValuePerSecond(item, itemHistory, 'jitterBufferDelay') * 1000) /
+              getValuePerSecond(item, itemHistory, 'jitterBufferEmittedCount')
+            setValidInteger(audioObj, 'jitterBufferMs', jitterBufferMs)
           }
         } else if (item.kind === 'video') {
           videoObj.bytesReceived = item.bytesReceived + item.headerBytesReceived
-          videoObj.estimatedPlayoutTimestamp = item.estimatedPlayoutTimestamp
-          videoObj.lastPacketReceivedTimestamp = item.lastPacketReceivedTimestamp
+          // 虽有 lastPacketReceivedTimestamp的绝对值，但是单纯收集这个值并没有实际的作用。
+          // 在这里实际收集"上个包距离现在有多久"
+          // 注意：这个相对值因为参考时钟的不同可能是负的，但这个值的变化趋势是正确的
+          setValidInteger(
+            videoObj,
+            'lastPacketReceivedTimestamp',
+            item.timestamp - item.lastPacketReceivedTimestamp
+          )
+          // 虽有 estimatedPlayoutTimestamp，但是单纯收集这个值并没有实际的作用。
+          // 在这里收集"从现在到预计播放需要多久"的相对值
+          // 注意：原始的 estimatedPlayoutTimestamp 是从0开始计数的，与timestamp的差值没有实际意义，但这个值的变化趋势是正确的
+          setValidInteger(
+            videoObj,
+            'estimatedPlayoutTimestamp',
+            item.estimatedPlayoutTimestamp - item.timestamp
+          )
           videoObj.firCount = item.firCount
           videoObj.nackCount = item.nackCount
           videoObj.pliCount = item.pliCount
@@ -1059,11 +1094,9 @@ class GetStats {
             videoObj.powerEfficientDecoder = 0
           }
           //videoObj.jitter = Math.round(item.jitter * 1000)
-          setValidInteger(
-            videoObj,
-            'jitterBufferDelay',
-            (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
-          )
+          // 这里的jitterBufferDelay是个累计值。为避免歧义仍然上报原始值
+          // videoObj未上报 jitterBufferMs
+          setValidInteger(videoObj, 'jitterBufferDelay', item.jitterBufferDelay * 1000)
           if (itemHistory && direction === 'recv') {
             // inbound rtp
             const bitsReceivedPerSecond =
@@ -1090,6 +1123,11 @@ class GetStats {
             setValidInteger(videoObj, 'frameRateDecoded', frameRateDecoded)
             const frameRateDropped = getValuePerSecond(item, itemHistory, 'framesDropped')
             setValidInteger(videoObj, 'frameRateOutput', frameRateDecoded - frameRateDropped)
+            // videoObj未上报 jitterBufferMs
+            const jitterBufferMs =
+              (getValuePerSecond(item, itemHistory, 'jitterBufferDelay') * 1000) /
+              getValuePerSecond(item, itemHistory, 'jitterBufferEmittedCount')
+            setValidInteger(videoObj, 'jitterBufferMs', jitterBufferMs)
           }
         }
       } else if (item.type == 'remote-outbound-rtp') {
@@ -1141,12 +1179,22 @@ class GetStats {
     //计算来自多个item的合成数据
     if (direction === 'recv') {
       if (mediaTypeShort === 'audio' || mediaTypeShort === 'audioSlave') {
-        if (audioObj.jitterBufferDelay && audioObj.totalPlayoutDelay) {
-          audioObj.currentDelayMs = audioObj.jitterBufferDelay + audioObj.totalPlayoutDelay
+        if (audioObj.jitterBufferMs) {
+          setValidInteger(
+            audioObj,
+            'currentDelayMs',
+            audioObj.jitterBufferMs + (audioObj.playoutDelayMs || 0)
+          )
+        }
+        if (audioObj.rtt) {
+          audioObj.End2EndDelay = audioObj.rtt + (audioObj.jitterBufferMs || 0)
         }
       } else if (mediaTypeShort === 'video' || mediaTypeShort === 'screen') {
-        if (videoObj.jitterBufferDelay && videoObj.totalPlayoutDelay) {
-          videoObj.currentDelayMs = videoObj.jitterBufferDelay + videoObj.totalPlayoutDelay
+        if (videoObj.jitterBufferMs) {
+          setValidInteger(videoObj, 'currentDelayMs', videoObj.jitterBufferMs)
+        }
+        if (videoObj.rtt) {
+          videoObj.End2EndDelay = videoObj.rtt + (videoObj.jitterBufferMs || 0)
         }
       }
     }
@@ -1170,6 +1218,7 @@ class GetStats {
           videoObj.SendResolutionHeight = videoObj.frameHeightSent
           videoObj.SendResolutionWidth = videoObj.frameWidthSent
           videoObj.TargetSendBitrate = videoObj.targetBitrate
+          videoObj.TotalFreezeTime = videoObj.totalFreezeTime
           if (mediaTypeShort === 'video' && this.adapterRef.state.startPubVideoTime) {
             videoObj.TotalDuration = (Date.now() - this.adapterRef.state.startPubVideoTime) / 1000
           }
@@ -1248,9 +1297,6 @@ class GetStats {
         if (this.chromeLegecy !== 'supported') {
           this.formativeStatsReport?.formatRecvData(videoObj, mediaTypeShort)
           videoObj.LayerType = mediaTypeShort === 'video' ? 1 : 2
-          if (videoObj.rtt && videoObj.jitterBufferDelay) {
-            videoObj.End2EndDelay = videoObj.rtt + videoObj.jitterBufferDelay
-          }
           if (remoteStream) {
             videoObj.MuteState = remoteStream.getMuteStatus(mediaTypeShort).muted
           }
@@ -1294,9 +1340,6 @@ class GetStats {
         audioObj.remoteuid = '' + uidAndKindBySsrc?.uid
         if (this.chromeLegecy !== 'supported') {
           this.formativeStatsReport?.formatRecvData(audioObj, mediaTypeShort)
-          if (audioObj.rtt && audioObj.jitterBufferDelay) {
-            audioObj.End2EndDelay = audioObj.rtt + audioObj.jitterBufferDelay
-          }
           if (remoteStream) {
             audioObj.MuteState = remoteStream.getMuteStatus(mediaTypeShort).muted
           }
