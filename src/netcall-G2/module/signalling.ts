@@ -1070,7 +1070,9 @@ class Signalling extends EventEmitter {
         }
         response = (await joinPromise) as SignalJoinRes
         this.adapterRef.state.signalJoinResTime = Date.now()
-        this.adapterRef.state.signalJoinMsgRtt = this.adapterRef.state.signalJoinResTime - start
+        //设计文档：https://doc.hz.netease.com/pages/viewpage.action?pageId=323800276
+        this.adapterRef.state.signalJoinMsgRtt =
+          (this.adapterRef.state.signalJoinResTime - start) / 2
       } catch (e: any) {
         if (thisProtoo !== this._protoo) {
           this.logger.warn(`Login 过期的信令通道消息：【${e.name}】`, e.message)

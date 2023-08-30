@@ -199,3 +199,6 @@ export type PerSecondStatsProperty =
   | 'jitterBufferEmittedCount'
   | 'totalPlayoutDelay'
   | 'totalSamplesCount'
+  | 'totalSamplesReceived'
+  | 'removedSamplesForAcceleration'
+  | 'insertedSamplesForDeceleration'
