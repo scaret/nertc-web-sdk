@@ -656,8 +656,10 @@ class GetStats {
             tmp.jitterBufferMs = parseInt(item.googJitterBufferMs)
             tmp.jitter = parseInt(item.googJitterReceived)
             //tmp.rtt = 0 //不支持
+            //本意表示音频减速播放的数值
             tmp.preemptiveExpandRate = parseInt(item.googPreemptiveExpandRate)
-            tmp.speechExpandRate = parseInt(item.googSpeechExpandRate)
+            //本意表示音频加速播放的数值
+            tmp.speechExpandRate = parseInt(item.googAccelerateRate)
             //tmp.concealedSamples = 0 //不支持
             //tmp.silentConcealedSamples = 0 //不支持
             tmp.secondaryDecodedRate = parseInt(item.googSecondaryDecodedRate)
@@ -994,11 +996,19 @@ class GetStats {
           setValidInteger(audioObj, 'jitter', item.jitter * 1000)
           // https://developer.chrome.com/blog/getstats-migration/
           setValidInteger(audioObj, 'jitterBufferDelay', item.jitterBufferDelay * 1000)
-          setValidInteger(
-            audioObj,
-            'preemptiveExpandRate',
-            (item.insertedSamplesForDeceleration * 100) / item.totalSamplesReceived
-          )
+
+          if (itemHistory) {
+            const speechExpandRate =
+              (getValuePerSecond(item, itemHistory, 'removedSamplesForAcceleration') * 1000) /
+              getValuePerSecond(item, itemHistory, 'totalSamplesCount')
+            setValidInteger(audioObj, 'speechExpandRate', speechExpandRate)
+
+            const preemptiveExpandRate =
+              (getValuePerSecond(item, itemHistory, 'insertedSamplesForDeceleration') * 1000) /
+              getValuePerSecond(item, itemHistory, 'totalSamplesCount')
+            setValidInteger(audioObj, 'preemptiveExpandRate', preemptiveExpandRate)
+          }
+
           setValidInteger(
             audioObj,
             'preferredJitterBufferMs',
@@ -1011,11 +1021,7 @@ class GetStats {
             item.fecPacketsReceived - item.fecPacketsDiscarded
           )
           setValidInteger(audioObj, 'secondaryDiscardedRate', item.fecPacketsDiscarded)
-          setValidInteger(
-            audioObj,
-            'speechExpandRate',
-            ((item.concealedSamples - item.silentConcealedSamples) * 100) / item.concealedSamples
-          )
+
           // 虽有 lastPacketReceivedTimestamp的绝对值，但是单纯收集这个值并没有实际的作用。
           // 在这里实际收集"上个包距离现在有多久"
           // 注意：这个相对值因为参考时钟的不同可能是负的，但这个值的变化趋势是正确的

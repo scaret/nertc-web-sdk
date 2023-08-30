@@ -608,7 +608,7 @@ class FormativeStatsReport {
       //@ts-ignore
       freezeTime
     }
-    //console.log('远端屏幕共享卡顿率: ', JSON.stringify(info, null, ' '))
+    //console.log('远端视频卡顿率: ', JSON.stringify(info, null, ' '))
     return info
   }
 
