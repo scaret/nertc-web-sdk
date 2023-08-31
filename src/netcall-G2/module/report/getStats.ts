@@ -923,9 +923,13 @@ class GetStats {
             setValidInteger(videoObj, 'framesEncodedPerSecond', framesEncodedPerSecond)
 
             const qpSumPerSecond = getValuePerSecond(item, itemHistory, 'qpSum')
-            // 按照formativeStatsData的公式，这个值并不在0-100之间。这里去掉了0-100的限制
-            const qpPercentage = (qpSumPerSecond / framesEncodedPerSecond) * 100
-            setValidInteger(videoObj, 'qpPercentage', qpPercentage)
+            // 为什么web端没有qpPercentage：因为js层无法获得编码器可以设置的QP的最大值。
+            // 5.5.0 版本以前的qpPercentage就是QP值乘以100。上报中可以看到该值永远是100
+            // 在这里保留qpPercentage这个变量名，内容是平均QP值。
+            // QP值是浏览器设给编码器、指定图像细节的保留程度。QP值越低，图像细节保留得越多，帧体积越大
+            // 视频动得越厉害，浏览器越倾向于给编码器设大QP值（以维持目标码率）。
+            const averageQP = qpSumPerSecond / framesEncodedPerSecond
+            setValidInteger(videoObj, 'qpPercentage', averageQP)
 
             const encodeUsagePercent = getValuePerSecond(item, itemHistory, 'totalEncodeTime') * 100
             setValidInteger(videoObj, 'encodeUsagePercent', encodeUsagePercent)
@@ -947,9 +951,13 @@ class GetStats {
           }
         }
       } else if (item.type == 'remote-inbound-rtp') {
-        // remote-inbound-rtp是一些对端报告的数据（RR），很多数据比较奇怪，在此仍尽量上报。
+        // remote-inbound-rtp是一些对端报告的数据（RR）
+        // 如果上行使用remb的话，为了减少了带宽估计骤降，服务端返回的fractionLost和packetsLost都会除以10
+        // 为防止服务端调整策略，这里不会特别处理remb的情况
         if (item.kind === 'audio') {
-          setValidInteger(audioObj, 'fractionLost', item.fractionLost * 1000)
+          // fractionLost指丢包分数，约等于丢包率，原数介于0和1之间。
+          // 5.5.0 之前的版本上报后，QS展示的数据会自动取整。所以这里将原数乘以100,以跟Packets Lost Rate做比较
+          setValidInteger(audioObj, 'fractionLost', item.fractionLost * 100)
           audioObj.jitterReceived = Math.round(item.jitter * 1000)
           audioObj.packetsLost = item.packetsLost
           if (itemHistory && direction === 'send') {
@@ -963,7 +971,9 @@ class GetStats {
           // 上行音频RTT：首先采信RR回包中的rtt值。如果没有该值，则使用ice值。
           setValidInteger(audioObj, 'rtt', item.roundTripTime * 1000)
         } else if (item.kind === 'video') {
-          setValidInteger(videoObj, 'fractionLost', item.fractionLost * 1000)
+          // fractionLost指丢包分数，约等于丢包率，原数介于0和1之间。
+          // 5.5.0 之前的版本上报后，QS展示的数据会自动取整。所以这里将原数乘以100,以跟Packets Lost Rate做比较
+          setValidInteger(videoObj, 'fractionLost', item.fractionLost * 100)
           videoObj.jitter = Math.round(item.jitter * 1000)
           videoObj.packetsLost = item.packetsLost
           if (itemHistory && direction === 'send') {
