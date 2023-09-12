@@ -2250,7 +2250,7 @@ $('#enableAudioEffect').on('click', () => {
 
 $('#disableAudioEffect').on('click', () => {
   if (rtc.localStream) {
-    console.warn('关闭ai降噪')
+    console.warn('关闭美声变声')
     rtc.localStream.disableAudioEffect()
   }
 })

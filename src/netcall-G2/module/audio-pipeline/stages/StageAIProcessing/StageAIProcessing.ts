@@ -48,8 +48,8 @@ export class StageAIProcessing extends StageBase {
       this.node = this.audioWorkletAgent.node as unknown as NeAudioNode<AudioWorkletNode>
       await this.audioWorkletAgent.init()
       this.audioWorkletAgent.on('rawinputs', (evt) => {
-        if (this.enabled) {
-          let outputData = evt.inputs[0]
+        let outputData = evt.inputs[0]
+        if (this.enabled && outputData.length) {
           //AI降噪
           if (this.enableAIDenoise) {
             const plugin = this.pluginModules.AIDenoise

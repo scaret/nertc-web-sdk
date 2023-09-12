@@ -4089,30 +4089,21 @@ class LocalStream extends RTCEventEmitter {
     }
     if (this._audioAffectProcessor) {
       this.logger.warn('audio effect is already opened.')
+      //暂时这么写，后续需要优化
+      stageAIProcessing.enabled = true
+      stageAIProcessing.enableAudioEffect = true
+    } else {
+      this._audioAffectProcessor = this.audioEffect
+      stageAIProcessing.enabled = true
 
-      this._audioAffectProcessor.isEnable = true
-      return true
-    }
-    this._audioAffectProcessor = this.audioEffect
-    stageAIProcessing.enabled = true
-
-    this._audioAffectProcessor.init()
-    this._audioAffectProcessor.once('effect-load', async () => {
-      let apiCode = 0
-      try {
-        console.warn('audioeffect-load')
-
-        stageAIProcessing.enableAudioEffect = true
-      } catch (error: any) {}
-      this.client.apiFrequencyControl({
-        name: 'enableAudioEffect',
-        code: apiCode,
-        param: {
-          streamID: this.stringStreamID
-        }
+      this._audioAffectProcessor.init()
+      this._audioAffectProcessor.once('effect-load', async () => {
+        try {
+          console.warn('audioeffect-load')
+          stageAIProcessing.enableAudioEffect = true
+        } catch (error: any) {}
       })
-    })
-
+    }
     if (!this.mediaHelper.audio.audioRoutingEnabled) {
       this.mediaHelper.enableAudioRouting()
       console.warn('enableAudioRouting')
@@ -4138,9 +4129,13 @@ class LocalStream extends RTCEventEmitter {
       this.logger.warn('ai audio effect is already closed.')
       return true
     }
-    stageAIProcessing.enabled = false
+
     if (this.audioEffect) {
       this.audioEffect.isEnable = false
+    }
+    //这里暂时这么处理，后续需要优化
+    if (!stageAIProcessing.enableAIDenoise && !stageAIProcessing.enableAudioEffect) {
+      stageAIProcessing.enabled = false
     }
 
     this.mediaHelper.updateWebAudio()
