@@ -10,6 +10,8 @@ import VideoPostProcess from '../module/video-post-processing'
 import AdvancedBeauty from '../module/video-post-processing/advanced-beauty'
 import BasicBeauty from '../module/video-post-processing/basic-beauty'
 import VirtualBackground from '../module/video-post-processing/virtual-background'
+import AIDenoise from '../module/audio-pipeline/stages/StageAIProcessing/AIDenoise'
+import AudioEffect from '../module/audio-pipeline/stages/StageAIProcessing/AudioEffect'
 import { loadPlugin } from '../plugin'
 import { VideoPluginType, audioPlugins, videoPlugins } from '../plugin/plugin-list'
 import { BackGroundOptions } from '../plugin/segmentation/src/types'
@@ -129,8 +131,13 @@ class LocalStream extends RTCEventEmitter {
   private basicBeauty: BasicBeauty
   private virtualBackground: VirtualBackground
   private advancedBeauty: AdvancedBeauty
+  private aiDenoise: AIDenoise | null = null
+  private audioEffect: AudioEffect | null = null
   private _segmentProcessor: VirtualBackground | null
   private _advancedBeautyProcessor: AdvancedBeauty | null = null
+  private _aiDenoiseProcessor: AIDenoise | null = null
+  private _audioAffectProcessor: AudioEffect | null = null
+
   private lastEffects: any
   private lastFilter: any
   private videoPostProcessTags = {
@@ -224,6 +231,7 @@ class LocalStream extends RTCEventEmitter {
     video: {},
     screen: {}
   }
+  private supportAudioEffect = true
 
   constructor(options: LocalStreamOptions) {
     super()
@@ -3954,10 +3962,6 @@ class LocalStream extends RTCEventEmitter {
     let stageAIProcessing: StageAIProcessing
     if (this.mediaHelper.audio.stageAIProcessing) {
       stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
-      if (stageAIProcessing.enabled && stageAIProcessing.state === 'INITED') {
-        this.logger.warn('ai denoise is already opened.')
-        return true
-      }
     } else {
       // 4.6.25版本无法把完整的AudioPipeline移植到localStream，所以单独将AI降噪模块拿出来
       // 创建AI降噪模块
@@ -3970,19 +3974,45 @@ class LocalStream extends RTCEventEmitter {
         this.mediaHelper.audio.stageAIProcessing = stageAIProcessing
       }
     }
-    if (!stageAIProcessing.hasPlugin('AIDenoise')) {
+    if (!stageAIProcessing.getPlugin('AIDenoise')) {
       this.logger.error('AIDenoise plugin is not register.')
       throw new RtcError({
         code: ErrorCode.PLUGIN_NOT_REGISTER,
         message: 'AIDenoise plugin is not register'
       })
     }
-    stageAIProcessing.enabled = true
-    if (stageAIProcessing.state === 'UNINIT') {
-      await stageAIProcessing.init()
+    if (!this.aiDenoise) {
+      this.aiDenoise = new AIDenoise(stageAIProcessing)
     }
+    if (this._aiDenoiseProcessor) {
+      this.logger.warn('ai denoise is already opened.')
+
+      this._aiDenoiseProcessor.isEnable = true
+      return true
+    }
+    this._aiDenoiseProcessor = this.aiDenoise
+    stageAIProcessing.enabled = true
+
+    this._aiDenoiseProcessor.init()
+    this._aiDenoiseProcessor.once('denoise-load', async () => {
+      let apiCode = 0
+      try {
+        console.warn('denoise-load')
+
+        stageAIProcessing.enableAIDenoise = true
+      } catch (error: any) {}
+      this.client.apiFrequencyControl({
+        name: 'enableAIDenoise',
+        code: apiCode,
+        param: {
+          streamID: this.stringStreamID
+        }
+      })
+    })
+
     if (!this.mediaHelper.audio.audioRoutingEnabled) {
       this.mediaHelper.enableAudioRouting()
+      console.warn('enableAudioRouting')
     }
     this.mediaHelper.updateWebAudio()
     this.client.apiFrequencyControl({
@@ -4007,6 +4037,10 @@ class LocalStream extends RTCEventEmitter {
       return true
     }
     stageAIProcessing.enabled = false
+    if (this.aiDenoise) {
+      this.aiDenoise.isEnable = false
+    }
+
     this.mediaHelper.updateWebAudio()
     if (this.mediaHelper.canDisableAudioRouting()) {
       this.mediaHelper.disableAudioRouting()
@@ -4019,6 +4053,114 @@ class LocalStream extends RTCEventEmitter {
       }
     })
     return false
+  }
+
+  //打开AI变声
+  async enableAudioEffect(): Promise<boolean> {
+    if (!this.supportAudioEffect) {
+      this.logger.warn('Unsupport ai audio effect. Please check your plugin version')
+      return false
+    }
+    this.logger.log('start ai audio effect.')
+    let stageAIProcessing: StageAIProcessing
+    if (this.mediaHelper.audio.stageAIProcessing) {
+      stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
+    } else {
+      // 4.6.25版本无法把完整的AudioPipeline移植到localStream，所以单独将AI降噪模块拿出来
+      // 创建AI降噪模块
+      const context = getAudioContext()
+      if (!context) {
+        this.logger.error(`当前环境不支持AudioContext`)
+        return false
+      } else {
+        stageAIProcessing = new StageAIProcessing(context, this.logger)
+        this.mediaHelper.audio.stageAIProcessing = stageAIProcessing
+      }
+    }
+    if (!stageAIProcessing.getPlugin('AudioEffect')) {
+      this.logger.error('AIDenoise plugin is not register.')
+      throw new RtcError({
+        code: ErrorCode.PLUGIN_NOT_REGISTER,
+        message: 'AIDenoise plugin is not register'
+      })
+    }
+    if (!this.audioEffect) {
+      this.audioEffect = new AudioEffect(stageAIProcessing)
+    }
+    if (this._audioAffectProcessor) {
+      this.logger.warn('ai denoise is already opened.')
+
+      this._audioAffectProcessor.isEnable = true
+      return true
+    }
+    this._audioAffectProcessor = this.audioEffect
+    stageAIProcessing.enabled = true
+
+    this._audioAffectProcessor.init()
+    this._audioAffectProcessor.once('effect-load', async () => {
+      let apiCode = 0
+      try {
+        console.warn('audioeffect-load')
+
+        stageAIProcessing.enableAudioEffect = true
+      } catch (error: any) {}
+      this.client.apiFrequencyControl({
+        name: 'enableAudioEffect',
+        code: apiCode,
+        param: {
+          streamID: this.stringStreamID
+        }
+      })
+    })
+
+    if (!this.mediaHelper.audio.audioRoutingEnabled) {
+      this.mediaHelper.enableAudioRouting()
+      console.warn('enableAudioRouting')
+    }
+    this.mediaHelper.updateWebAudio()
+    this.client.apiFrequencyControl({
+      name: 'enableAudioEffect',
+      code: 0,
+      param: {
+        streamID: this.stringStreamID
+      }
+    })
+    return true
+  }
+
+  async disableAudioEffect(): Promise<boolean> {
+    this.logger.log('close ai denoise.')
+    const stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
+    if (!stageAIProcessing) {
+      this.logger.warn('disableAIDenoise: ai audio effect is not created')
+      return true
+    } else if (!stageAIProcessing.enabled) {
+      this.logger.warn('ai audio effect is already closed.')
+      return true
+    }
+    stageAIProcessing.enabled = false
+    if (this.audioEffect) {
+      this.audioEffect.isEnable = false
+    }
+
+    this.mediaHelper.updateWebAudio()
+    if (this.mediaHelper.canDisableAudioRouting()) {
+      this.mediaHelper.disableAudioRouting()
+    }
+    this.client.apiFrequencyControl({
+      name: 'disableAIDenoise',
+      code: 0,
+      param: {
+        streamID: this.stringStreamID
+      }
+    })
+    return false
+  }
+
+  setAudioEffect(type: number, value: number) {
+    this.logger.log(`set audio effect:${type}`)
+
+    this.audioEffect?.setAudioEffect(type, value)
   }
 
   async replacePluginTrack(options: {
@@ -4197,7 +4339,7 @@ class LocalStream extends RTCEventEmitter {
     //   }
     // }
     const stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
-    if (stageAIProcessing && stageAIProcessing.hasPlugin(options.key)) {
+    if (stageAIProcessing && stageAIProcessing.getPlugin(options.key as any)) {
       this.logger.warn(`plugin ${options.key} already exists.`)
       return false
     }
@@ -4225,24 +4367,24 @@ class LocalStream extends RTCEventEmitter {
             //   pipeline.registerPlugin(options.key, plugin, options.wasmUrl)
             // }
 
-            if (options.key === 'AIDenoise') {
-              let stageAIProcessing
-              if (this.mediaHelper.audio.stageAIProcessing) {
-                stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
+            //if (options.key === 'AIDenoise') {
+            let stageAIProcessing
+            if (this.mediaHelper.audio.stageAIProcessing) {
+              stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
+            } else {
+              // 4.6.25版本无法把完整的AudioPipeline移植到localStream，所以单独将AI降噪模块拿出来
+              // 创建AI降噪模块
+              const context = getAudioContext()
+              if (!context) {
+                this.logger.error(`当前环境不支持AudioContext`)
+                return false
               } else {
-                // 4.6.25版本无法把完整的AudioPipeline移植到localStream，所以单独将AI降噪模块拿出来
-                // 创建AI降噪模块
-                const context = getAudioContext()
-                if (!context) {
-                  this.logger.error(`当前环境不支持AudioContext`)
-                  return false
-                } else {
-                  stageAIProcessing = new StageAIProcessing(context, this.logger)
-                  this.mediaHelper.audio.stageAIProcessing = stageAIProcessing
-                }
+                stageAIProcessing = new StageAIProcessing(context, this.logger)
+                this.mediaHelper.audio.stageAIProcessing = stageAIProcessing
               }
-              stageAIProcessing.registerPlugin(options.key, plugin, options.wasmUrl)
             }
+            stageAIProcessing.registerPlugin(options.key as any, plugin)
+            //}
           } else {
             throw new Error(`unsupport plugin ${options.key}`)
           }
@@ -4274,6 +4416,9 @@ class LocalStream extends RTCEventEmitter {
         plugin.once('error', (message: string) => {
           if (options.key == 'AIDenoise') {
             this.supportAIDenoise = false
+          }
+          if (options.key == 'AudioEffect') {
+            this.supportAudioEffect = false
           }
           this.unregisterPlugin(options.key)
           this.client.apiFrequencyControl({
