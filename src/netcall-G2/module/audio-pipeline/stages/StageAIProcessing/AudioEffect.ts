@@ -18,7 +18,7 @@ export default class AudioEffect extends EventEmitter {
   }
 
   /**
-   * 初始化AI降噪推理模块
+   * 初始化变声美声推理模块
    *
    */
   init() {

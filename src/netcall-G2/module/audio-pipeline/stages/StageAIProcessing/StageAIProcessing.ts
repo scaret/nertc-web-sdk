@@ -86,18 +86,8 @@ export class StageAIProcessing extends StageBase {
     this.state = 'INITED'
   }
 
-  unregisterAIDenoise() {
-    if (this.pluginModules['AIDenoise']) {
-      this.pluginModules['AIDenoise'] = null
-    }
-    this.state = 'UNINIT'
-  }
-
   unregisterPlugin(key: AudioPluginType) {
-    if (this.pluginModules[key] !== null) {
-      this.pluginModules[key]!.destroy()
-      this.pluginModules[key] = null
-    }
+    this.pluginModules[key] = null
     //需要修改
     this.state = 'UNINIT'
   }

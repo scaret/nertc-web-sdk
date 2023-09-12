@@ -3980,34 +3980,30 @@ class LocalStream extends RTCEventEmitter {
         message: 'AIDenoise plugin is not register'
       })
     }
-    if (!this.aiDenoise) {
-      this.aiDenoise = new AIDenoise(stageAIProcessing)
-    }
-    if (this._aiDenoiseProcessor) {
-      this.logger.warn('ai denoise is already opened.')
-
-      this._aiDenoiseProcessor.isEnable = true
-      return true
-    }
-    this._aiDenoiseProcessor = this.aiDenoise
+    //暂时这么写，后续需要优化
     stageAIProcessing.enabled = true
-
-    this._aiDenoiseProcessor.init()
-    this._aiDenoiseProcessor.once('denoise-load', async () => {
-      let apiCode = 0
-      try {
-        console.warn('denoise-load')
-
-        stageAIProcessing.enableAIDenoise = true
-      } catch (error: any) {}
-      this.client.apiFrequencyControl({
-        name: 'enableAIDenoise',
-        code: apiCode,
-        param: {
-          streamID: this.stringStreamID
-        }
+    if (this._aiDenoiseProcessor) {
+      this._aiDenoiseProcessor.isEnable = true
+      this.logger.warn('ai denoise is already opened.')
+      return true
+    } else {
+      this._aiDenoiseProcessor = new AIDenoise(stageAIProcessing)
+      this._aiDenoiseProcessor.init()
+      this._aiDenoiseProcessor.once('denoise-load', async () => {
+        let apiCode = 0
+        try {
+          console.warn('denoise-load')
+          this._aiDenoiseProcessor!.isEnable = true
+        } catch (error: any) {}
+        this.client.apiFrequencyControl({
+          name: 'enableAIDenoise',
+          code: apiCode,
+          param: {
+            streamID: this.stringStreamID
+          }
+        })
       })
-    })
+    }
 
     if (!this.mediaHelper.audio.audioRoutingEnabled) {
       this.mediaHelper.enableAudioRouting()
@@ -4031,18 +4027,23 @@ class LocalStream extends RTCEventEmitter {
     if (!stageAIProcessing) {
       this.logger.warn('disableAIDenoise: ai denoise is not created')
       return true
-    } else if (!stageAIProcessing.enabled) {
+    } else if (!this._aiDenoiseProcessor) {
       this.logger.warn('ai denoise is already closed.')
       return true
     }
-    stageAIProcessing.enabled = false
-    if (this.aiDenoise) {
-      this.aiDenoise.isEnable = false
-    }
 
-    this.mediaHelper.updateWebAudio()
-    if (this.mediaHelper.canDisableAudioRouting()) {
-      this.mediaHelper.disableAudioRouting()
+    if (this._aiDenoiseProcessor) {
+      this._aiDenoiseProcessor.isEnable = false
+      this._aiDenoiseProcessor.destroy()
+      this._aiDenoiseProcessor = null
+    }
+    //这里暂时这么处理，后续需要优化
+    if (!stageAIProcessing.enableAIDenoise && !stageAIProcessing.enableAudioEffect) {
+      stageAIProcessing.enabled = false
+      this.mediaHelper.updateWebAudio()
+      if (this.mediaHelper.canDisableAudioRouting()) {
+        this.mediaHelper.disableAudioRouting()
+      }
     }
     this.client.apiFrequencyControl({
       name: 'disableAIDenoise',
@@ -4121,7 +4122,7 @@ class LocalStream extends RTCEventEmitter {
     if (!stageAIProcessing) {
       this.logger.warn('disableAIDenoise: ai audio effect is not created')
       return true
-    } else if (!stageAIProcessing.enabled) {
+    } else if (!this._audioAffectProcessor) {
       this.logger.warn('ai audio effect is already closed.')
       return true
     }
