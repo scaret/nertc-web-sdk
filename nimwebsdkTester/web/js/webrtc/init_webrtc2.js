@@ -1995,6 +1995,10 @@ function onPluginLoaded(name) {
       $('#aidenoiseStatus').html('loaded').show()
       rtc.enableAIDenoise = true
       break
+    case 'AudioEffect':
+      $('#audioEffectStatus').html('loaded').show()
+      rtc.enableAudioEffect = true
+      break
     default:
       break
   }
@@ -2235,7 +2239,7 @@ $('#unregisterAIDenoise').on('click', () => {
 
 $('#registerAudioEffect').on('click', async () => {
   if (rtc.localStream) {
-    $('#aidenoiseStatus').html('loading').show()
+    $('#audioEffectStatus').html('loading').show()
     const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
     audioEffect_config = audioEffectPluginConfig[NERTC.ENV][type]
     rtc.localStream.registerPlugin(audioEffect_config)
@@ -2256,10 +2260,10 @@ $('#disableAudioEffect').on('click', () => {
 })
 
 $('#unregisterAudioEffect').on('click', () => {
-  $('#aidenoiseStatus').html('loading').hide()
-  if (aidenoise_config) {
+  $('#audioEffectStatus').html('loading').hide()
+  if (audioEffect_config) {
     rtc.localStream.unregisterPlugin(audioEffect_config.key)
-    rtc.enableAIDenoise = false
+    rtc.enableAudioEffect = false
   }
 })
 

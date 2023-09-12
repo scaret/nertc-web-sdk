@@ -93,5 +93,6 @@ export class StageAIProcessing extends StageBase {
 
   unregisterPlugin(key: AudioPluginType) {
     this.pluginModules[key] = null
+    this.state = 'UNINIT'
   }
 }

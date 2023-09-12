@@ -4078,7 +4078,7 @@ class LocalStream extends RTCEventEmitter {
       }
     }
     if (!stageAIProcessing.getPlugin('AudioEffect')) {
-      this.logger.error('AIDenoise plugin is not register.')
+      this.logger.error('AudioEffect plugin is not register.')
       throw new RtcError({
         code: ErrorCode.PLUGIN_NOT_REGISTER,
         message: 'audio effect plugin is not register'
@@ -4456,7 +4456,7 @@ class LocalStream extends RTCEventEmitter {
   async unregisterPlugin(key: string) {
     this.logger.log(`unRegister plugin:${key}`)
     if (audioPlugins.indexOf(key) !== -1) {
-      if (key === 'AIDenoise') {
+      if (key === 'AIDenoise' || key === 'AudioEffect') {
         const stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
         if (stageAIProcessing) {
           stageAIProcessing.enabled = false
@@ -4464,7 +4464,7 @@ class LocalStream extends RTCEventEmitter {
           if (this.mediaHelper.canDisableAudioRouting()) {
             this.mediaHelper.disableAudioRouting()
           }
-          stageAIProcessing.unregisterAIDenoise()
+          stageAIProcessing.unregisterPlugin(key)
           this.mediaHelper.audio.stageAIProcessing = null
         }
       }
