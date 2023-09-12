@@ -21,9 +21,7 @@ class AudioEffect {
     global.Module = {
       wasmBinary: binary,
       onRuntimeInitialized: () => {
-        // this.rnnoise = global.Module._rnnoise_create()
         this.handleInitFinished()
-        console.warn('Module', Module)
         this.aeInterface = Module._CreateNEAudioEffect()
         Module._SetPara(this.aeInterface, 48000, 2, 128)
         Module._UpdateEffect(this.aeInterface, 0, 0)

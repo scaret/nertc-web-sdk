@@ -4096,8 +4096,9 @@ class LocalStream extends RTCEventEmitter {
       this._audioAffectProcessor.once('effect-load', async () => {
         try {
           console.warn('audio effect-load')
-
           this._audioAffectProcessor!.isEnable = true
+          //v5.5.100 暂时使用的接口
+          this.setAudioEffect(0, 4)
         } catch (error: any) {}
       })
     }
@@ -4153,7 +4154,11 @@ class LocalStream extends RTCEventEmitter {
 
   setAudioEffect(type: number, value: number) {
     this.logger.log(`set audio effect:${type} ${value}`)
-    this._audioAffectProcessor?.setAudioEffect(type, value)
+    if (this._audioAffectProcessor) {
+      this._audioAffectProcessor.setAudioEffect(type, value)
+    } else {
+      this.logger.warn('audio effect is not opened.')
+    }
   }
 
   async replacePluginTrack(options: {
