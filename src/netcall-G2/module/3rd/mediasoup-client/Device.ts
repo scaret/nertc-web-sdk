@@ -48,16 +48,20 @@ export function detectDevice(): BuiltinHandlerName | undefined {
       env.IS_CHROME_ONLY &&
       env.CHROME_MAJOR_VERSION &&
       env.CHROME_MAJOR_VERSION >= 62 &&
-      env.CHROME_MAJOR_VERSION < 72
+      env.CHROME_MAJOR_VERSION < 69
     ) {
       return 'Chrome62'
     }
-    if (env.IS_CHROME_ONLY && env.CHROME_MAJOR_VERSION && env.CHROME_MAJOR_VERSION >= 72) {
+    if (env.IS_CHROME_ONLY && env.CHROME_MAJOR_VERSION && env.CHROME_MAJOR_VERSION >= 69) {
       return 'Chrome74'
     }
     // any android H5
     else if (env.IS_ANDROID) {
-      if (env.CHROME_MAJOR_VERSION && env.CHROME_MAJOR_VERSION >= 62) {
+      if (
+        env.ANY_CHROME_MAJOR_VERSION &&
+        env.ANY_CHROME_MAJOR_VERSION >= 62 &&
+        env.ANY_CHROME_MAJOR_VERSION < 69
+      ) {
         return 'Chrome62'
       } else {
         return 'Chrome74'
@@ -69,7 +73,7 @@ export function detectDevice(): BuiltinHandlerName | undefined {
       env.IS_ELECTRON &&
       env.IS_CHROME_ONLY &&
       env.ANY_CHROME_MAJOR_VERSION &&
-      env.ANY_CHROME_MAJOR_VERSION >= 72
+      env.ANY_CHROME_MAJOR_VERSION >= 69
     ) {
       return 'Chrome74'
     }

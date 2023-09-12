@@ -516,12 +516,12 @@ class Client extends Base {
         this.adapterRef.channelInfo.customData = options.customData
       }
 
-      // chrome 62~71 不进行侦察
+      // chrome 62~69 不进行侦察
       if (
         !(
           env.ANY_CHROME_MAJOR_VERSION &&
           env.ANY_CHROME_MAJOR_VERSION >= 62 &&
-          env.ANY_CHROME_MAJOR_VERSION < 72
+          env.ANY_CHROME_MAJOR_VERSION < 69
         )
       ) {
         // 将侦测RTC的过程提前,但不通过await阻塞join过程

@@ -77,7 +77,7 @@ async function getSupportedCodecs(
     if (
       env.ANY_CHROME_MAJOR_VERSION &&
       env.ANY_CHROME_MAJOR_VERSION >= 62 &&
-      env.ANY_CHROME_MAJOR_VERSION < 72
+      env.ANY_CHROME_MAJOR_VERSION < 69
     ) {
       const result = { video: ['VP8', 'H264'], audio: ['OPUS'] }
       return result
@@ -109,7 +109,7 @@ async function getSupportedCodecs(
     if (
       env.ANY_CHROME_MAJOR_VERSION &&
       env.ANY_CHROME_MAJOR_VERSION >= 62 &&
-      env.ANY_CHROME_MAJOR_VERSION < 72
+      env.ANY_CHROME_MAJOR_VERSION < 69
     ) {
       const result = { video: ['VP8', 'H264'], audio: ['OPUS'] }
       return result

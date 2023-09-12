@@ -554,7 +554,7 @@ class Mediasoup extends EventEmitter {
             if (
               env.ANY_CHROME_MAJOR_VERSION &&
               env.ANY_CHROME_MAJOR_VERSION >= 62 &&
-              env.ANY_CHROME_MAJOR_VERSION < 72
+              env.ANY_CHROME_MAJOR_VERSION < 69
             ) {
               encoding = rtpParameters.encodings[0]
             } else {
@@ -869,7 +869,7 @@ class Mediasoup extends EventEmitter {
               !(
                 env.ANY_CHROME_MAJOR_VERSION &&
                 env.ANY_CHROME_MAJOR_VERSION >= 62 &&
-                env.ANY_CHROME_MAJOR_VERSION < 72
+                env.ANY_CHROME_MAJOR_VERSION < 69
               )
             ) {
               if (mediaTypeShort === 'video' || mediaTypeShort === 'screen') {

@@ -153,7 +153,7 @@ export abstract class HandlerInterface extends EnhancedEventEmitter {
 
   abstract fillRemoteRecvSdp(options: FillRemoteRecvSdpOptions): any
 
-  abstract prepareLocalSdp(kind: 'video' | 'audio', uid: number | string, queue?: any): any
+  abstract prepareLocalSdp(kind: 'video' | 'audio', uid: number | string): any
 
   abstract recoverTransceiver(
     remoteUid: number | string,
