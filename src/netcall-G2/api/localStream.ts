@@ -4081,14 +4081,14 @@ class LocalStream extends RTCEventEmitter {
       this.logger.error('AIDenoise plugin is not register.')
       throw new RtcError({
         code: ErrorCode.PLUGIN_NOT_REGISTER,
-        message: 'AIDenoise plugin is not register'
+        message: 'audio effect plugin is not register'
       })
     }
     if (!this.audioEffect) {
       this.audioEffect = new AudioEffect(stageAIProcessing)
     }
     if (this._audioAffectProcessor) {
-      this.logger.warn('ai denoise is already opened.')
+      this.logger.warn('audio effect is already opened.')
 
       this._audioAffectProcessor.isEnable = true
       return true
@@ -4129,7 +4129,7 @@ class LocalStream extends RTCEventEmitter {
   }
 
   async disableAudioEffect(): Promise<boolean> {
-    this.logger.log('close ai denoise.')
+    this.logger.log('close audio effect.')
     const stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
     if (!stageAIProcessing) {
       this.logger.warn('disableAIDenoise: ai audio effect is not created')

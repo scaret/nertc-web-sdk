@@ -70,6 +70,8 @@ export class StageAIProcessing extends StageBase {
               plugin.process(outputData, (data) => {
                 if (data.length) {
                   outputData = data
+                } else {
+                  console.warn('AudioEffect process error')
                 }
                 this.audioWorkletAgent!.outputData(outputData)
               })

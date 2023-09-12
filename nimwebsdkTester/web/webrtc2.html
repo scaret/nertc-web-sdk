@@ -434,6 +434,122 @@
             </label>
           </div>
         </div>
+        <p class="block-header">变声美声</p>
+        <div class="line">
+          <button type="button" id="registerSimdAIDenoise">注册(simd版)</button>
+          <button type="button" id="adjs404">注册(模拟插件404)</button>
+          <button type="button" id="adwasm404">注册(模拟算法库404)</button>
+        </div>
+        <div class="line">
+          <button type="button" id="registerAudioEffect">注册</button>
+          <button type="button" id="enableAudioEffect">打开</button>
+          <button type="button" id="disableAudioEffect">关闭</button>
+          <button type="button" id="unregisterAudioEffect">销毁</button>
+          <label id="aidenoiseStatus" style="display: none;">loading</label>
+        </div>
+        <div class="line">
+          <label for='setVoiceChanger'>变声</label>
+          <select id='setVoiceChanger'>
+            <option value="0">默认（关闭）</option>
+            <option value='1'>机器人</option>
+            <option value='2'>巨人</option>
+            <option value='3'>恐怖</option>
+            <option value='4'>成熟</option>
+            <option value='5'>男变女</option>
+            <option value='6'>女变男</option>
+            <option value='7'>男变萝莉</option>
+            <option value='8'>变萝莉</option>
+          </select>
+        </div>
+        <div class="line">
+          <label for='setVoiceBeautifier'>美声</label>
+          <select id='setVoiceBeautifier'>
+            <option value="0">默认（关闭）</option>
+            <option value='1'>低沉</option>
+            <option value='2'>圆润</option>
+            <option value='3'>清澈</option>
+            <option value='4'>磁性</option>
+            <option value='5'>录音棚</option>
+            <option value='6'>天籁</option>
+            <option value='7'>KTV</option>
+            <option value='8'>悠远</option>
+            <option value='9'>教堂</option>
+            <option value='10'>卧室</option>
+            <option value='11'>Live</option>           
+          </select>
+        </div>
+        <div class="line">
+          <label>
+            自定义音调:
+            <input id="setLocalPitch" type="range" step="0.1" min="0.5" max="2.0" value="1.0">
+            <span id="setLocalPitch_value">1</span>
+          </label>
+        </div>
+        <div class="line">
+          <label>
+            自定义均衡EQ:
+          </label>
+          <br>
+          <label>
+            31:
+            <input id="eq_0" type="range" step="1" min="-15" max="15" value="0">
+            <span id="eq_0_value">0</span>
+          </label>
+          <br>
+          <label>
+            62:
+            <input id="eq_1" type="range" step="1" min="-15" max="15" value="0">
+            <span id="eq_1_value">0</span>
+          </label>
+          <br>
+          <label>
+            125:
+            <input id="eq_2" type="range" step="1" min="-15" max="15" value="0">
+            <span id="eq_2_value">0</span>
+          </label>
+          <br>
+          <label>
+            250:
+            <input id="eq_3" type="range" step="1" min="-15" max="15" value="0">
+            <span id="eq_3_value">0</span>
+          </label>
+          <br>
+          <label>
+            500:
+            <input id="eq_4" type="range" step="1" min="-15" max="15" value="0">
+            <span id="eq_4_value">0</span>
+          </label>
+          <br>
+          <label>
+            1000:
+            <input id="eq_5" type="range" step="1" min="-15" max="15" value="0">
+            <span id="eq_5_value">0</span>
+          </label>
+          <br>
+          <label>
+            2000:
+            <input id="eq_6" type="range" step="1" min="-15" max="15" value="0">
+            <span id="eq_6_value">0</span>
+          </label>
+          <br>
+          <label>
+            4000:
+            <input id="eq_7" type="range" step="1" min="-15" max="15" value="0">
+            <span id="eq_7_value">0</span>
+          </label>
+          <br>
+          <label>
+            8000:
+            <input id="eq_8" type="range" step="1" min="-15" max="15" value="0">
+            <span id="eq_8_value">0</span>
+          </label>
+          <br>
+          <label>
+            16000:
+            <input id="eq_9" type="range" step="1" min="-15" max="15" value="0">
+            <span id="eq_9_value">0</span>
+          </label>
+        </div>
       </div>
       <div class="block">
         <p class="block-header">发布配置相关</p>
@@ -709,71 +825,6 @@
           <button type="button" id="disableAIDenoise">关闭</button>
           <button type="button" id="unregisterAIDenoise">销毁</button>
           <label id="aidenoiseStatus" style="display: none;">loading</label>
-        </div>
-        <p class="block-header">变声美声</p>
-        <div class="line">
-          <button type="button" id="registerSimdAIDenoise">注册(simd版)</button>
-          <button type="button" id="adjs404">注册(模拟插件404)</button>
-          <button type="button" id="adwasm404">注册(模拟算法库404)</button>
-        </div>
-        <div class="line">
-          <button type="button" id="registerAudioEffect">注册</button>
-          <button type="button" id="enableAudioEffect">打开</button>
-          <button type="button" id="disableAudioEffect">关闭</button>
-          <button type="button" id="unregisterAudioEffect">销毁</button>
-          <label id="aidenoiseStatus" style="display: none;">loading</label>
-        </div>
-        <div class="line">
-          <label for='setVoiceChanger'>变声</label>
-          <select id='setVoiceChanger'>
-            <option value="0">默认（关闭）</option>
-            <option value='1'>机器人</option>
-            <option value='2'>巨人</option>
-            <option value='3'>恐怖</option>
-            <option value='4'>成熟</option>
-            <option value='5'>男变女</option>
-            <option value='6'>女变男</option>
-            <option value='7'>男变萝莉</option>
-            <option value='8'>变萝莉</option>
-          </select>
-        </div>
-        <div class="line">
-          <label for='setVoiceBeautifier'>美声</label>
-          <select id='setVoiceBeautifier'>
-            <option value="0">默认（关闭）</option>
-            <option value='1'>低沉</option>
-            <option value='2'>圆润</option>
-            <option value='3'>清澈</option>
-            <option value='4'>磁性</option>
-            <option value='5'>录音棚</option>
-            <option value='6'>天籁</option>
-            <option value='7'>KTV</option>
-            <option value='8'>悠远</option>
-            <option value='9'>教堂</option>
-            <option value='10'>卧室</option>
-            <option value='11'>Live</option>           
-          </select>
-        </div>
-        <div class="line">
-          <label for='setLocalPitch'>自定义音调</label>
-          <select id='setLocalPitch'>
-            <option value="1">默认（关闭）</option>
-            <option value='0.5'>0.5</option>
-            <option value='0.75'>0.75</option>
-            <option value='1.25'>1.25</option>
-            <option value='1.5'>1.5</option>
-            <option value='1.75'>1.75</option>
-            <option value='2'>2</option>
-          </select>
-        </div>
-        <div class="line">
-          <label for='setEQGain'>自定义均衡EQ</label>
-          <select id='setEQGain'>
-            <option value="0">默认（关闭）</option>
-            <option value='-15'>1</option>
-            <option value='5'>2</option>
-            <option value='15'>3</option>     
-          </select>
         </div>
       </div>
       <div class="block">

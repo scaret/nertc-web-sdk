@@ -2273,19 +2273,24 @@ $('#setVoiceBeautifier').on('change', (e) => {
   rtc.localStream.setAudioEffect(1, value)
 })
 
-$('#setLocalPitch').on('change', (e) => {
-  const value = e.target.value - 0
-  rtc.localStream.setAudioEffect('Pitch', value)
+$('#setLocalPitch').on('input', (e) => {
+  $('#setLocalPitch_value').html(e.target.value)
+  if (rtc.localStream) {
+    rtc.localStream.setAudioEffect('Pitch', Number(e.target.value))
+  }
 })
 
-$('#setEQGain').on('change', (e) => {
-  const value = e.target.value - 0
-  let array = Array(10).fill(value)
-
-  //array[3] = array[6] = array[9] = value
-
-  rtc.localStream.setAudioEffect('EQ', array)
-})
+const eqArray = Array(10).fill(0)
+for (let i = 0; i < 10; i++) {
+  $(`#eq_${i}`).on('input', (e) => {
+    $(`#eq_${i}_value`).html(e.target.value)
+    eqArray[i] = Number(e.target.value)
+    if (rtc.localStream) {
+      rtc.localStream.setAudioEffect('EQ', eqArray)
+    }
+    console.log('eqArray', eqArray)
+  })
+}
 
 document.getElementById('select').onchange = function () {
   let file = this.files[0]
