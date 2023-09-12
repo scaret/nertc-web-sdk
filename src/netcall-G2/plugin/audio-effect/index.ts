@@ -96,7 +96,7 @@ class AudioEffect extends EventEmitter {
   }
 
   destroy() {
-    this.logger.log('AIDenoise destroy')
+    this.logger.log('Audio Effect destroy')
     if (this.deoniseWorker && !this._deoniseWorkerDestroying) {
       this._deoniseWorkerDestroying = true
       this.deoniseWorker.postMessage({ type: 'destroy' })

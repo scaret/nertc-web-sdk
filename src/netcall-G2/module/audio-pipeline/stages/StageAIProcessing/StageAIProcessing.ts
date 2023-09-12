@@ -15,10 +15,12 @@ export class StageAIProcessing extends StageBase {
     AIDenoise: {
       load: false
       process: (input: any, callback: (output: any) => void) => void
+      destroy: () => void
     } | null
     AudioEffect: {
       load: false
       process: (input: any, callback: (output: any) => void) => void
+      destroy: () => void
     } | null
   } = { AIDenoise: null, AudioEffect: null }
 
@@ -92,7 +94,11 @@ export class StageAIProcessing extends StageBase {
   }
 
   unregisterPlugin(key: AudioPluginType) {
-    this.pluginModules[key] = null
+    if (this.pluginModules[key] !== null) {
+      this.pluginModules[key]!.destroy()
+      this.pluginModules[key] = null
+    }
+    //需要修改
     this.state = 'UNINIT'
   }
 }
