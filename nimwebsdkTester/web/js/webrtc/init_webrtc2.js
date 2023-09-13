@@ -2248,6 +2248,9 @@ $('#registerAudioEffect').on('click', async () => {
 
 $('#enableAudioEffect').on('click', () => {
   if (rtc.localStream) {
+    rtc.localStream.on('audio-effect-enabled', () => {
+      console.warn('美声变声已开启')
+    })
     rtc.localStream.enableAudioEffect()
   }
 })

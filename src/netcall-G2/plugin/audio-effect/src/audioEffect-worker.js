@@ -30,7 +30,7 @@ class AudioEffect {
         global.postMessage({ type: 'error', message: '' + msg })
       }
     }
-    require('../lib/audio_effects.js')
+    require('../lib/audio_effect.js')
   }
 
   async process(frame) {

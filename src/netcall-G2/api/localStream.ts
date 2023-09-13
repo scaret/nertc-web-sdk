@@ -4097,8 +4097,9 @@ class LocalStream extends RTCEventEmitter {
         try {
           console.warn('audio effect-load')
           this._audioAffectProcessor!.isEnable = true
-          //v5.5.100 暂时使用的接口
+          //v5.5.100 调用一次，默认开启“成熟”音效
           this.setAudioEffect(0, 4)
+          this.emit('audio-effect-enabled')
         } catch (error: any) {}
       })
     }
