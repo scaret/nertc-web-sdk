@@ -2718,10 +2718,15 @@ function initLocalStream() {
           }
         : null
 
-      await rtc.localStream.play(document.getElementById('local-container'), playOptions)
-      console.warn('音视频初始化完成，播放本地视频', playOptions)
-      rtc.localStream.setLocalRenderMode(globalConfig.localViewConfig)
-      updateLocalWatermark()
+      rtc.localStream.play(document.getElementById('local-container'), playOptions).then(()=>{
+        console.warn('音视频初始化完成，播放本地视频', playOptions)
+        rtc.localStream.setLocalRenderMode(globalConfig.localViewConfig)
+        updateLocalWatermark()
+      }).catch((e)=>{
+        console.warn('本地音视频播放失败: ', err)
+        addLog('本地音视频播放失败:' + e.name + ' ' + JSON.stringify(e))
+        //rtc.localStream = null
+      })
       if (!$('#camera').val()) {
         initDevices()
       }
