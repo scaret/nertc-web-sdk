@@ -28,8 +28,6 @@ export class StageAIProcessing extends StageBase {
     super(context)
     this.logger = logger
     this.enabled = false
-
-    this.init()
   }
 
   registerPlugin(key: AudioPluginType, pluginObj: any) {
@@ -89,6 +87,9 @@ export class StageAIProcessing extends StageBase {
   unregisterPlugin(key: AudioPluginType) {
     this.pluginModules[key] = null
     //需要修改
-    this.state = 'UNINIT'
+    if(!this.enableAIDenoise && !this.enableAudioEffect) {
+      this.state = 'UNINIT'
+    }
+
   }
 }

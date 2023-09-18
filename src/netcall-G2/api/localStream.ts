@@ -3982,6 +3982,9 @@ class LocalStream extends RTCEventEmitter {
     }
     //暂时这么写，后续需要优化
     stageAIProcessing.enabled = true
+    if (stageAIProcessing.state === 'UNINIT') {
+      await stageAIProcessing.init()
+    }
     if (this._aiDenoiseProcessor) {
       this._aiDenoiseProcessor.isEnable = true
       this.logger.warn('ai denoise is already opened.')
@@ -4086,6 +4089,9 @@ class LocalStream extends RTCEventEmitter {
     }
     //暂时这么写，后续需要优化
     stageAIProcessing.enabled = true
+    if (stageAIProcessing.state === 'UNINIT') {
+      await stageAIProcessing.init()
+    }
     if (this._audioAffectProcessor) {
       this._audioAffectProcessor.isEnable = true
       this.logger.warn('audio effect is already opened.')
