@@ -259,11 +259,7 @@ function loadEnv() {
     //变成大整数
     domUid = `${domUid}000000000${domUid}`
   }
-  if (
-    !(ANY_CHROME_MAJOR_VERSION && ANY_CHROME_MAJOR_VERSION >= 62 && ANY_CHROME_MAJOR_VERSION < 72)
-  ) {
-    $(`#useStringUid`).attr('checked', 'checked')
-  }
+  $(`#useStringUid`).attr('checked', 'checked')
   $('#uid').val(domUid)
 
   // 读取url中配置的初始参数
@@ -2724,15 +2720,18 @@ function initLocalStream() {
           }
         : null
 
-      rtc.localStream.play(document.getElementById('local-container'), playOptions).then(()=>{
-        console.warn('音视频初始化完成，播放本地视频', playOptions)
-        rtc.localStream.setLocalRenderMode(globalConfig.localViewConfig)
-        updateLocalWatermark()
-      }).catch((e)=>{
-        console.warn('本地音视频播放失败: ', err)
-        addLog('本地音视频播放失败:' + e.name + ' ' + JSON.stringify(e))
-        //rtc.localStream = null
-      })
+      rtc.localStream
+        .play(document.getElementById('local-container'), playOptions)
+        .then(() => {
+          console.warn('音视频初始化完成，播放本地视频', playOptions)
+          rtc.localStream.setLocalRenderMode(globalConfig.localViewConfig)
+          updateLocalWatermark()
+        })
+        .catch((e) => {
+          console.warn('本地音视频播放失败: ', err)
+          addLog('本地音视频播放失败:' + e.name + ' ' + JSON.stringify(e))
+          //rtc.localStream = null
+        })
       if (!$('#camera').val()) {
         initDevices()
       }
@@ -5001,9 +5000,9 @@ $('#pushMask').on('click', function () {
 $('#sdkVersion').text(NERTC.VERSION)
 $('#sdkBuild').text(NERTC.BUILD)
 $('#systemRequirement').text(`WebRTC:${NERTC.checkSystemRequirements() ? '支持' : '不支持'}；`)
-// if (!NERTC.checkSystemRequirements()) {
-//   alert('浏览器环境缺失部分WebRTC基础功能。（是否没有开启HTTPS？）')
-// }
+if (!NERTC.checkSystemRequirements()) {
+  alert('浏览器环境缺失部分WebRTC基础功能。（是否没有开启HTTPS？）')
+}
 
 $('#copyEnvInfo').on('click', async function () {
   let text = $('#envInfo')

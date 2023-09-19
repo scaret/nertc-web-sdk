@@ -490,87 +490,62 @@ export class Transport extends EnhancedEventEmitter {
             })
           }
 
-          // const {
-          //   localId,
-          //   localIdLow,
-          //   rtpParameters,
-          //   rtpSender,
-          //   rtpSenderLow,
-          //   dtlsParameters,
-          //   offer
-          // }
-          let res
+          const {
+            localId,
+            localIdLow,
+            rtpParameters,
+            rtpSender,
+            rtpSenderLow,
+            dtlsParameters,
+            offer
+          } = await this._handler.send({
+            track,
+            trackLow,
+            encodings: normalizedEncodings,
+            codecOptions,
+            appData,
+            codec
+          })
 
-          try {
-            res = await this._handler.send({
-              track,
-              trackLow,
-              encodings: normalizedEncodings,
-              codecOptions,
-              appData,
-              codec
-            })
-          } catch (error) {
-            Logger.error(prefix, 'produce() error: ', error)
-            throw error
-          }
-
-          // const {
-          //   localId,
-          //   localIdLow,
-          //   rtpParameters,
-          //   rtpSender,
-          //   rtpSenderLow,
-          //   dtlsParameters,
-          //   offer
-          // } = await this._handler.send({
-          //   track,
-          //   trackLow,
-          //   encodings: normalizedEncodings,
-          //   codecOptions,
-          //   appData,
-          //   codec
-          // })
-
-          if (res.rtpSender) {
+          if (rtpSender) {
             this.updateSenderInfo(
-              res.rtpSender,
+              rtpSender,
               appData.mediaType === 'screenShare' ? 'screen' : appData.mediaType,
               'high',
-              res.localId
+              localId
             )
           }
-          if (res.rtpSenderLow && res.localIdLow) {
+          if (rtpSenderLow && localIdLow) {
             this.updateSenderInfo(
-              res.rtpSenderLow,
+              rtpSenderLow,
               appData.mediaType === 'screenShare' ? 'screen' : appData.mediaType,
               'low',
-              res.localIdLow
+              localIdLow
             )
           }
           try {
             // This will fill rtpParameters's missing fields with default values.
-            ortc.validateRtpParameters(res.rtpParameters)
+            ortc.validateRtpParameters(rtpParameters)
 
             const { id } = await this.safeEmitAsPromise('produce', {
               kind: track.kind,
-              rtpParameters: res.rtpParameters,
+              rtpParameters,
               track,
               trackLow,
               appData,
-              localDtlsParameters: res.dtlsParameters,
-              offer: res.offer
+              localDtlsParameters: dtlsParameters,
+              offer
             })
 
             const producer = new Producer({
               id,
-              localId: res.localId,
-              localIdLow: res.localIdLow,
-              rtpSender: res.rtpSender,
-              rtpSenderLow: res.rtpSenderLow,
+              localId,
+              localIdLow,
+              rtpSender,
+              rtpSenderLow,
               track,
               trackLow,
-              rtpParameters: res.rtpParameters,
+              rtpParameters,
               stopTracks,
               disableTrackOnPause,
               zeroRtpOnPause,
@@ -585,7 +560,7 @@ export class Transport extends EnhancedEventEmitter {
 
             return producer
           } catch (error) {
-            this._handler.stopSending(res.localId, appData.mediaType).catch(() => {})
+            this._handler.stopSending(localId, appData.mediaType).catch(() => {})
 
             throw error
           }
@@ -648,7 +623,6 @@ export class Transport extends EnhancedEventEmitter {
     try {
       const { dtlsParameters, rtpCapabilities, offer, mid, iceUfragReg } =
         await this._handler.prepareLocalSdp(kind, uid)
-
       if (
         !this._recvRtpCapabilities ||
         !ortc.canSend('audio', this._recvRtpCapabilities) ||

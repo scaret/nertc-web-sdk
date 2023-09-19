@@ -34,7 +34,6 @@ import { IS_SAFARI, SAFARI_MAJOR_VERSION, SAFARI_VERSION } from '../util/rtcUtil
 import { JSONBigStringify } from '../util/json-big'
 import { SimpleBig } from '../util/json-big/SimpleBig'
 import { filterTransportCCFromRtpParameters } from '../util/rtcUtil/filterTransportCC'
-import { ca } from 'date-fns/locale'
 
 let mediasoupCnt = 0
 
