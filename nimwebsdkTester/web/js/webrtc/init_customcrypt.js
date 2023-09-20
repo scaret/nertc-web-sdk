@@ -157,8 +157,8 @@ const getH264LevelInfo = (info) => {
   const level_idc = info.level_idc
   let str = `Level${level_idc / 10}`
   if ( // https://blog.csdn.net/epubcn/article/details/102802108
-    (info.profile_idc === 0x42 || (info.profile_compatibility & 0b1000_0000) !== 0) &&
-    (info.profile_compatibility & 0b0100_0000) !== 0
+    (info.profile_idc === 0x42 || (info.profile_compatibility & 0x80) !== 0) &&
+    (info.profile_compatibility & 0x40) !== 0
   ) {
     // Constrained
     // str += '(Constrained)'
