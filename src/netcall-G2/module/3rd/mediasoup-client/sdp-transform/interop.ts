@@ -1,6 +1,5 @@
-import clonedeep from 'lodash.clonedeep'
-
 import transform from './transform'
+import clonedeep from 'lodash.clonedeep'
 
 const PLAN_B_MIDS = ['audio', 'video', 'data']
 const findSimGroup = (ssrcGroup: any) => ssrcGroup.find((grp: any) => grp.semantics === 'SIM')
