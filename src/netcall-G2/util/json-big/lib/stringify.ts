@@ -287,6 +287,10 @@ function str(key: string | number, holder: Record<string | number, any>): string
         // Otherwise, iterate through all of the keys in the object.
 
         Object.keys(value).forEach((k) => {
+          if (typeof value[k] === 'undefined') {
+            // JSON中value为undefined的属性会被忽略
+            return
+          }
           const v = str(k, value)
           if (v) {
             partial.push(quote(k) + (gap ? ': ' : ':') + v)
