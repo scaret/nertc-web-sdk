@@ -3,6 +3,7 @@ import { AudioCodecType, VideoCodecType } from '../../types'
 import { RTCCanvas } from '../rtcUtil/rtcCanvas'
 import { CHROME_MAJOR_VERSION } from './rtcEnvironment'
 import { getDefaultLogger } from '../webrtcLogger'
+import * as env from '../rtcUtil/rtcEnvironment'
 
 // 表示所有网易支持的编码类型
 export const VideoCodecList: VideoCodecType[] = ['H264', 'VP8']
@@ -20,6 +21,14 @@ function getSupportedCodecFromSDP(sdp: string): {
   }
   if (sdp.match(/ opus/i)) {
     result.audio.push('OPUS')
+  }
+  return result
+}
+
+function getChrome62Codec() {
+  const result: { video: VideoCodecType[]; audio: AudioCodecType[] } = {
+    video: ['H264', 'VP8'],
+    audio: ['OPUS']
   }
   return result
 }
@@ -73,7 +82,14 @@ async function getSupportedCodecs(
   PeerConnection = RTCPeerConnection
 ) {
   if (direction === 'recv') {
-    if (typeof RTCRtpReceiver !== 'undefined' && RTCRtpReceiver.getCapabilities) {
+    if (
+      env.ANY_CHROME_MAJOR_VERSION &&
+      env.ANY_CHROME_MAJOR_VERSION >= 62 &&
+      env.ANY_CHROME_MAJOR_VERSION < 69
+    ) {
+      let result = getChrome62Codec()
+      return result
+    } else if (typeof RTCRtpReceiver !== 'undefined' && RTCRtpReceiver.getCapabilities) {
       const videoCapabilties = RTCRtpReceiver.getCapabilities('video')
       const audioCapabilties = RTCRtpReceiver.getCapabilities('audio')
       const result = getSupportedCodecFromCapability(direction, videoCapabilties, audioCapabilties)
@@ -92,7 +108,14 @@ async function getSupportedCodecs(
       return result
     }
   } else {
-    if (typeof RTCRtpSender !== 'undefined' && RTCRtpSender.getCapabilities) {
+    if (
+      env.ANY_CHROME_MAJOR_VERSION &&
+      env.ANY_CHROME_MAJOR_VERSION >= 62 &&
+      env.ANY_CHROME_MAJOR_VERSION < 69
+    ) {
+      let result = getChrome62Codec()
+      return result
+    } else if (typeof RTCRtpSender !== 'undefined' && RTCRtpSender.getCapabilities) {
       const videoCapabilties = RTCRtpSender.getCapabilities('video')
       const audioCapabilties = RTCRtpSender.getCapabilities('audio')
       const result = getSupportedCodecFromCapability(direction, videoCapabilties, audioCapabilties)

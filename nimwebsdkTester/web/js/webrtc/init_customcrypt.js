@@ -4,6 +4,8 @@ const naluTypes = {
   6: "SEI",
   5: "IFrame",
   1: "PFrame",
+  3: "BFrame",
+  4: "BFrame",
 }
 
 let customEncryptionOffset = 3;
@@ -30,6 +32,13 @@ function findCryptIndexH264(data){
           result.frames[result.frames.length - 1].posEnd -= 1
         }
       }
+      let nri = (data[i] & 0x70) >> 5
+      if (nri >= 4) {
+        console.error(`警告：出现长期参考帧!帧类型 ${frameType} nri ${nri} nalu ${data[i]}`, data)
+      }
+      if (frameType === "BFrame"){
+        console.error(`警告：出现B帧!nri ${nri} nalu ${data[i]}`, data)
+      }
       result.frames.push({
         pos: i,
         frameType
@@ -37,9 +46,146 @@ function findCryptIndexH264(data){
       if (result.pos === -1 && (frameType === "IFrame" || frameType === "PFrame")){
         result.pos = i + customEncryptionOffset
       }
+      // 通过SPS / PPS打印H264信息
+      if (frameType === "SPS") {
+        try{
+          const info = h264SpsParser.parse(data.slice(i))
+          // const info = {
+          //   "sps_id": 0,
+          //   "profile_compatibility": 192,
+          //   "profile_idc": 66,
+          //   "level_idc": 31,
+          //   "chroma_format_idc": 1,
+          //   "bit_depth_luma": 0,
+          //   "bit_depth_chroma": 0,
+          //   "color_plane_flag": 0,
+          //   "qpprime_y_zero_transform_bypass_flag": 0,
+          //   "seq_scaling_matrix_present_flag": 0,
+          //   "seq_scaling_matrix": [],
+          //   "log2_max_frame_num": 15,
+          //   "pic_order_cnt_type": 0,
+          //   "delta_pic_order_always_zero_flag": 0,
+          //   "offset_for_non_ref_pic": 0,
+          //   "offset_for_top_to_bottom_field": 0,
+          //   "offset_for_ref_frame": [],
+          //   "log2_max_pic_order_cnt_lsb": 16,
+          //   "max_num_ref_frames": 1,
+          //   "gaps_in_frame_num_value_allowed_flag": 0,
+          //   "pic_width_in_mbs": 40,
+          //   "pic_height_in_map_units": 30,
+          //   "frame_mbs_only_flag": 1,
+          //   "mb_adaptive_frame_field_flag": 0,
+          //   "direct_8x8_inference_flag": 1,
+          //   "frame_cropping_flag": 0,
+          //   "frame_cropping": {
+          //     "left": 0,
+          //     "right": 0,
+          //     "top": 0,
+          //     "bottom": 0
+          //   },
+          //   "vui_parameters_present_flag": 1,
+          //   "vui_parameters": {
+          //     "aspect_ratio_info_present_flag": 0,
+          //     "aspect_ratio_idc": 0,
+          //     "sar_width": 0,
+          //     "sar_height": 0,
+          //     "overscan_info_present_flag": 0,
+          //     "overscan_appropriate_flag": 0,
+          //     "video_signal_type_present_flag": 0,
+          //     "video_format": 0,
+          //     "video_full_range_flag": 0,
+          //     "colour_description_present_flag": 0,
+          //     "colour_primaries": 0,
+          //     "transfer_characteristics": 0,
+          //     "matrix_coefficients": 0,
+          //     "chroma_loc_info_present_flag": 0,
+          //     "chroma_sample_loc_type_top_field": 0,
+          //     "chroma_sample_loc_type_bottom_field": 0,
+          //     "timing_info_present_flag": 0,
+          //     "num_units_in_tick": 0,
+          //     "time_scale": 0,
+          //     "fixed_frame_rate_flag": 0,
+          //     "nal_hrd_parameters_present_flag": 0,
+          //     "vcl_hrd_parameters_present_flag": 0,
+          //     "hrd_params": {
+          //       "cpb_cnt": 0,
+          //       "bit_rate_scale": 0,
+          //       "cpb_size_scale": 0,
+          //       "bit_rate_value": [],
+          //       "cpb_size_value": [],
+          //       "cbr_flag": [],
+          //       "initial_cpb_removal_delay_length": 0,
+          //       "cpb_removal_delay_length": 0,
+          //       "dpb_output_delay_length": 0,
+          //       "time_offset_length": 0
+          //     },
+          //     "low_delay_hrd_flag": 0,
+          //     "pic_struct_present_flag": 0,
+          //     "bitstream_restriction_flag": 1,
+          //     "motion_vectors_over_pic_boundaries_flag": 1,
+          //     "max_bytes_per_pic_denom": 0,
+          //     "max_bits_per_mb_denom": 0,
+          //     "log2_max_mv_length_horizontal": 16,
+          //     "log2_max_mv_length_vertical": 16,
+          //     "num_reorder_frames": 0,
+          //     "max_dec_frame_buffering": 1
+          //   }
+          // }
+          // console.error(JSON.stringify(info, null, 2))
+          let str =
+            info.profile_idc.toString(16).padStart(2, '0') +
+            info.profile_compatibility.toString(16).padStart(2, '0') +
+            info.level_idc.toString(16).padStart(2, '0') +
+            ` ` + getH264LevelInfo(info) +
+            ` ${info.pic_width_in_mbs * 16}x${info.pic_height_in_map_units * 16}${info.frame_cropping_flag === 1 ? '（裁剪）' : ''} ` +
+            `${info.chroma_format_idc === 1 ? 'i420' : '!!!非i420'}。` +
+            `短期参考帧：${info.max_num_ref_frames}。` +
+            `帧编号连续：${info.gaps_in_frame_num_value_allowed_flag === 1 ? '否' : '是'}。` +
+            '';
+          console.error(`parseSPS: ${str}`, info)
+          // console.error(`parseSPS: ${str}`, JSON.stringify(info, null, 2))
+        }catch(e){
+          console.error(e)
+        }
+      }
     }
   }
   return result;
+}
+
+const getH264LevelInfo = (info) => {
+  const level_idc = info.level_idc
+  let str = `Level${level_idc / 10}`
+  if ( // https://blog.csdn.net/epubcn/article/details/102802108
+    (info.profile_idc === 0x42 || (info.profile_compatibility & 0x80) !== 0) &&
+    (info.profile_compatibility & 0x40) !== 0
+  ) {
+    // Constrained
+    // str += '(Constrained)'
+  } else {
+    // 通常是硬编
+    str += '(NOT Constrained)'
+  }
+  str += ' '
+  // https://blog.mediacoderhq.com/h264-profiles-and-levels/
+  // if (level_idc <= 13) {
+  //   str += `700k`
+  // } else if (level_idc <= 22) {
+  //   str += `4M`
+  // } else if (level_idc <= 30) {
+  //   str += `10M`
+  // } else if (level_idc <= 31) {
+  //   str += `14M`
+  // } else if (level_idc <= 40) {
+  //   str += `20M`
+  // } else if (level_idc <= 42) {
+  //   str += `50M`
+  // } else if (level_idc <= 51) {
+  //   str += `240M`
+  // } else {
+  //   str += `240M+`
+  // }
+  return str
 }
 
 //STARTOF 自定义加密：RC4
@@ -278,10 +424,12 @@ function initTransparent(customTransform){
 }
 
 function encodeFunctionTransparent({mediaType, encodedFrame, controller, streamType}){
+  findCryptIndexH264(new Uint8Array(encodedFrame.data))
   controller.enqueue(encodedFrame);
 }
 
 function decodeFunctionTransparent({mediaType, encodedFrame, controller, uid}){
+  findCryptIndexH264(new Uint8Array(encodedFrame.data))
   controller.enqueue(encodedFrame);
 }
 //ENDOF transparent

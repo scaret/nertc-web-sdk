@@ -926,7 +926,8 @@ class MediaHelper extends EventEmitter {
           )
         })
       }
-      if (e.name === 'NotAllowedError') {
+      // chrome62 版本返回的是 PermissionDeniedError
+      if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
         this.stream.client.safeEmit('accessDenied', mediaType)
       } else if (e.name === 'NotFoundError') {
         this.stream.client.safeEmit('notFound', mediaType)
