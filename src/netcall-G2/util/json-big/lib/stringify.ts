@@ -184,7 +184,7 @@ function quote(string: string) {
     : `"${string}"`
 }
 
-function str(key: string | number, holder: Record<string | number, any>): string | undefined {
+function str(key: string | number, holder: Record<string | number, any>): string {
   // Produce a string from holder[key].
 
   let i // The loop counter.
@@ -305,6 +305,8 @@ function str(key: string | number, holder: Record<string | number, any>): string
           : `{${partial.join(',')}}`
       gap = mind
       return v
+    default:
+      return ''
   }
 }
 
