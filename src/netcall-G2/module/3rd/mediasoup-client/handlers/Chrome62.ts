@@ -324,7 +324,7 @@ export class Chrome62 extends HandlerInterface {
     // const sendingRtpParameters = utils.clone(this._sendingRtpParametersByKind![track.kind], {})
     const sendingRtpParameters = utils.clone(this._sendingRtpParametersByKind![track.kind])
 
-    sendingRtpParameters.codecs = ortc.reduceCodecs(sendingRtpParameters.codecs)
+    sendingRtpParameters.codecs = ortc.reduceCodecs(sendingRtpParameters.codecs, codec)
 
     const sendingRemoteRtpParameters = utils.clone(
       this._sendingRemoteRtpParametersByKind![track.kind]

@@ -25,14 +25,6 @@ function getSupportedCodecFromSDP(sdp: string): {
   return result
 }
 
-function getChrome62Codec() {
-  const result: { video: VideoCodecType[]; audio: AudioCodecType[] } = {
-    video: ['H264', 'VP8'],
-    audio: ['OPUS']
-  }
-  return result
-}
-
 function getSupportedCodecFromCapability(
   direction: 'send' | 'recv',
   videoCapabilities: RTCRtpCapabilities | null,
@@ -87,7 +79,17 @@ async function getSupportedCodecs(
       env.ANY_CHROME_MAJOR_VERSION >= 62 &&
       env.ANY_CHROME_MAJOR_VERSION < 69
     ) {
-      let result = getChrome62Codec()
+      const pc = new PeerConnection({})
+      const offer = await pc.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true
+      })
+      pc.close()
+      if (!offer.sdp) {
+        // throw new Error("offer sdp is empty");
+        return false
+      }
+      const result = getSupportedCodecFromSDP(offer.sdp)
       return result
     } else if (typeof RTCRtpReceiver !== 'undefined' && RTCRtpReceiver.getCapabilities) {
       const videoCapabilties = RTCRtpReceiver.getCapabilities('video')
@@ -108,34 +110,23 @@ async function getSupportedCodecs(
       return result
     }
   } else {
-    if (
-      env.ANY_CHROME_MAJOR_VERSION &&
-      env.ANY_CHROME_MAJOR_VERSION >= 62 &&
-      env.ANY_CHROME_MAJOR_VERSION < 69
-    ) {
-      let result = getChrome62Codec()
-      return result
-    } else if (typeof RTCRtpSender !== 'undefined' && RTCRtpSender.getCapabilities) {
+    if (typeof RTCRtpSender !== 'undefined' && RTCRtpSender.getCapabilities) {
       const videoCapabilties = RTCRtpSender.getCapabilities('video')
       const audioCapabilties = RTCRtpSender.getCapabilities('audio')
       const result = getSupportedCodecFromCapability(direction, videoCapabilties, audioCapabilties)
       return result
     } else {
-      // throw new Error(`direction ${direction} Not supported yet`);
       const pc = new PeerConnection({})
-      let rtcCanvas = new RTCCanvas('canvas')
-      let canvas = rtcCanvas._canvas
-      //@ts-ignore
-      const fakeStream = canvas.captureStream(0)
-      pc.addTrack(fakeStream.getVideoTracks()[0], fakeStream)
-      const offer = await pc.createOffer({})
+      const offer = await pc.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true
+      })
       pc.close()
       if (!offer.sdp) {
         // throw new Error("offer sdp is empty");
         return false
       }
       const result = getSupportedCodecFromSDP(offer.sdp)
-      rtcCanvas.destroy()
       return result
     }
   }
