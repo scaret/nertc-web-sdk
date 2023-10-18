@@ -5085,6 +5085,22 @@ const showStats = async () => {
     str += `</pre>`
   })
   $('#statsPanel').html(str)
+
+  const sessionStats = await rtc.client.getSessionStats()
+  const sessionStatsHTML = JSON.stringify(sessionStats, null, 2)
+    .replace(/ /g, '&nbsp;').replace(/\n/g, '<br/>')
+  $('#sessionStats').html(sessionStatsHTML)
+
+  const transportStats = await rtc.client.getTransportStats()
+  const transportStatsHTML = JSON.stringify(transportStats, null, 2)
+    .replace(/ /g, '&nbsp;').replace(/\n/g, '<br/>')
+  $('#transportStats').html(transportStatsHTML)
+
+  const systemStats = await rtc.client.getSystemStats()
+  const systemStatsHTML = JSON.stringify(systemStats, null, 2)
+    .replace(/ /g, '&nbsp;').replace(/\n/g, '<br/>')
+  $('#systemStats').html(systemStatsHTML)
+  $('#otherStats').show()
 }
 let statsTimer = null
 $('#showStats').on('click', () => {
