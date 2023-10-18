@@ -32,6 +32,8 @@ class FormativeStatsReport {
     downScreenCache: any
     upTransportCache: any
     downTransportCache: any
+    upCandidatePairStatsCache: RTCIceCandidatePairStats
+    downCandidatePairStatsCache: RTCIceCandidatePairStats
   }
 
   constructor(options: FormativeStatsReportOptions) {
@@ -52,7 +54,9 @@ class FormativeStatsReport {
       downVideoCache: {},
       downScreenCache: {},
       upTransportCache: {},
-      downTransportCache: {}
+      downTransportCache: {},
+      upCandidatePairStatsCache: {},
+      downCandidatePairStatsCache: {}
     }
   }
 
@@ -73,7 +77,9 @@ class FormativeStatsReport {
       downVideoCache: {},
       downScreenCache: {},
       upTransportCache: {},
-      downTransportCache: {}
+      downTransportCache: {},
+      upCandidatePairStatsCache: {},
+      downCandidatePairStatsCache: {}
     }
   }
 
@@ -127,6 +133,48 @@ class FormativeStatsReport {
       if (tmp) {
         this!.adapterRef!.sessionStats.RecvBitrate = Math.round(
           (8 * (data.bytesReceived - tmp.bytesReceived)) / 1000
+        )
+      }
+    }
+  }
+
+  formatTransportDataChrome117(data: any, direction: string) {
+    if (direction === 'send') {
+      const tmp = this.statsCatch.upCandidatePairStatsCache
+      if (tmp && tmp.timestamp && data.timestamp - tmp.timestamp < 0.9) {
+        // 如果距离上一次的值小于1秒，则不调用
+        return
+      }
+      // this!.adapterRef!.transportStats.rxRtt = data.googRtt - 0
+      this!.adapterRef!.transportStats.txRtt = data.currentRoundTripTime * 1000
+      if (this!.adapterRef!.transportStats.rxRtt < 1) {
+        this!.adapterRef!.transportStats.rxRtt = this!.adapterRef!.transportStats.txRtt
+      }
+      this!.adapterRef!.sessionStats.SendBytes = data.bytesSent
+      this.adapterRef.transportStats.OutgoingAvailableBandwidth =
+        data.availableOutgoingBitrate / 1000
+      //上行transport的feakback可以忽略不计，下行同理
+      this.statsCatch.upCandidatePairStatsCache = data
+      if (tmp && tmp.timestamp) {
+        this!.adapterRef!.sessionStats.SendBitrate = Math.round(
+          (8 * (data.bytesSent - (tmp.bytesSent || 0))) / 1000
+        )
+      }
+    } else {
+      const tmp = this.statsCatch.downCandidatePairStatsCache
+      if (tmp && tmp.timestamp && data.timestamp - tmp.timestamp < 0.9) {
+        // 如果距离上一次的值小于1秒，则不调用
+        return
+      }
+      this!.adapterRef!.transportStats.rxRtt = data.currentRoundTripTime * 1000
+      if (this!.adapterRef!.transportStats.txRtt < 1) {
+        this!.adapterRef!.transportStats.txRtt = this!.adapterRef!.transportStats.rxRtt
+      }
+      this!.adapterRef!.sessionStats.RecvBytes = data.bytesReceived
+      this.statsCatch.downCandidatePairStatsCache = data
+      if (tmp && tmp.timestamp) {
+        this!.adapterRef!.sessionStats.RecvBitrate = Math.round(
+          (8 * (data.bytesReceived - (tmp.bytesReceived || 0))) / 1000
         )
       }
     }
