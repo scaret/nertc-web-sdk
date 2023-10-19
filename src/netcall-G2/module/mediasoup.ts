@@ -2158,6 +2158,10 @@ class Mediasoup extends EventEmitter {
             iceStatus.relayProtocol = localCandidate.relayProtocol
             iceStatus.ip = localCandidate.ip
             iceStatus.address = localCandidate.address
+
+            if (this.adapterRef._statsReport?.stats?.chromeLegecy === 'unsupported') {
+              this.adapterRef.transportStats.NetworkType = localCandidate.networkType
+            }
           } else {
             iceStatus.info += `|无法找到localCandidate ${candidatePair.localCandidateId}`
           }

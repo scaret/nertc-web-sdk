@@ -31,7 +31,7 @@ class GetStats {
     send: StatsInfo
     recv: StatsInfo
   }
-  private chromeLegecy: 'unknown' | 'supported' | 'unsupported' =
+  public chromeLegecy: 'unknown' | 'supported' | 'unsupported' =
     getParameters().chromeLegacyDefault
   constructor(options: { adapterRef: AdapterRef }) {
     this.adapterRef = options.adapterRef
@@ -1168,6 +1168,7 @@ class GetStats {
         setValidInteger(audioObj, 'rtt', item.currentRoundTripTime * 1000)
         setValidInteger(videoObj, 'rtt', item.currentRoundTripTime * 1000)
         this.statsInfo[direction].cpStats = item
+        this.formativeStatsReport?.formatTransportDataChrome117(item, direction)
       } else if (item.type === 'codec') {
         if (item.mimeType) {
           const [kind, codec] = item.mimeType.split('/')

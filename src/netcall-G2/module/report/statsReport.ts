@@ -24,7 +24,7 @@ class StatsReport extends EventEmitter {
   private adapterRef: AdapterRef
   private appKey: string
   private isReport: boolean
-  private stats: GetStats | null
+  public stats: GetStats | null
   private heartbeat_: any
   private wsTransport_: any
   private reportData: any
