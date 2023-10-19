@@ -273,6 +273,19 @@ export interface VideoPlaySettings {
   }
 }
 
+export interface LBS_BUILD_CONFIG {
+  lbs: [string] | [string, string]
+  nrtc: [string] | [string, string]
+  call: [string] | [string, string]
+  tracking: [string] | [string, string]
+  [tag: string]: [string] | [string, string]
+}
+
+export interface LBS_REGION_CONFIG_TYPES {
+  GLOBAL: LBS_BUILD_CONFIG
+  [region: string]: LBS_BUILD_CONFIG
+}
+
 export interface MediaStats {
   TotalFreezeTime: number
   [key: string]: string | number | boolean | undefined
