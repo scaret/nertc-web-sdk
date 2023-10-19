@@ -64,6 +64,9 @@ interface IParameters {
   // 强制使用的logLevel。-1为不强制
   forceLogLevel: -1 | loglevels
 
+  // 强制使用的区域。'NONE'为不强制
+  forceGeofenceArea: 'NONE' | string
+
   // 强制开启或关闭日志上传。
   forceLogUpload: 'default' | 'on' | 'off'
 
@@ -144,6 +147,8 @@ interface IParameters {
   keepAspectRatio: boolean
   // 是否关闭LBS服务
   disableLBSService: boolean
+  // 是否仅使用LBS的内置配置
+  lbsUseBuiltinOnly: boolean
   // protoo单条消息的timeout时间。
   protooMessageTimeout: number
   //是否复用已经取消订阅的远端媒体流的mid
@@ -235,6 +240,7 @@ let parameters: IParameters = {
   logLevel: loglevels.INFO,
   forceLogLevel: -1,
   forceLogUpload: 'default',
+  forceGeofenceArea: 'NONE',
   forceListenDeviceChange: true,
   codecOptions: {
     audio: {
@@ -283,6 +289,7 @@ let parameters: IParameters = {
   audioAslFlag: true,
   keepAspectRatio: false,
   disableLBSService: false,
+  lbsUseBuiltinOnly: false,
   protooMessageTimeout: 30000,
   reuseMid: true,
   playMediaTimeout: 3000,

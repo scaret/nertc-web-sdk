@@ -560,7 +560,7 @@ class Client extends Base {
         }
       }
 
-      if (!getParameters().disableLBSService) {
+      if (!getParameters().disableLBSService && !getParameters().lbsUseBuiltinOnly) {
         // join执行同时发起lbs请求。向getChannelInfo的请求不会被
         localConfig = this.adapterRef.lbsManager.loadLocalConfig('onjoin')
         if (localConfig.config) {

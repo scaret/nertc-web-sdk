@@ -413,6 +413,20 @@ declare namespace NERTC {
    */
   function getSupportedCodec(): Promise<{ audio: ['OPUS']; video: ['H264', 'VP8'] }>
 
+  /**
+   * 设置访问区域。
+   *
+   * 如果您的业务有海外用户，可以通过该接口设置访问区域，以便 SDK 选择合适的服务器进行接入。
+   *
+   * @example
+   * ```
+   *   // 在创建客户端之前，设置访问区域为海外。
+   *   NERTC.setArea({areaCode: 'OVERSEAS'})
+   *   // const client = NERTC.createClient(...)
+   * ```
+   */
+  function setArea(area: { areaCode: 'GLOBAL' | 'OVERSEAS' }): void
+
   const VERSION: string
   const BUILD: string
 

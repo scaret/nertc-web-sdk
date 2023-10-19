@@ -13,7 +13,7 @@ export interface IConfig {
 }
 
 //Env Specific configs
-import { Config, ENV, LBS_BUILD_CONFIG } from './config.development' // WEBPACK_STRING_REPLACE_ENV -don't delete the comment
+import { Config, ENV, LBS_REGION_CONFIG, TAGS_TO_MAIN_DOMAIN } from './config.development' // WEBPACK_STRING_REPLACE_ENV -don't delete the comment
 
 const checkSumUrl = Config.checkSumUrl
 const createChannelUrl = Config.createChannelUrl
@@ -30,7 +30,8 @@ export {
   ENV,
   getChannelInfoUrl,
   getCloudProxyInfoUrl,
-  LBS_BUILD_CONFIG,
+  LBS_REGION_CONFIG,
+  TAGS_TO_MAIN_DOMAIN,
   lbsUrl,
   roomsTaskUrl,
   SDK_VERSION

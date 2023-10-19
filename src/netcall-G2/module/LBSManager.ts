@@ -2,15 +2,16 @@
 // 用法：通过client.adapterRef.lbsManager.ajax()像之前一样请求就行了
 // requestLBS可以在这里找到上报 http://logsearch.hz.netease.com/vcloud_elk_ssd_online/goto/5d2204e2b0eca5f1c5111f98258b40a4
 
-import { BUILD, LBS_BUILD_CONFIG, lbsUrl, SDK_VERSION } from '../Config'
-import { Client, ILogger, RequestLBSEvent, Timer } from '../types'
+import { BUILD, lbsUrl, SDK_VERSION } from '../Config'
+import { Client, ILogger, LBS_BUILD_CONFIG, RequestLBSEvent, Timer } from '../types'
 import { ajax, AjaxOptions, getFormData } from '../util/ajax'
 import ErrorCode from '../util/error/errorCode'
 import RtcError from '../util/error/rtcError'
 import { generateUUID } from '../util/rtcUtil/utils'
 import { getParameters } from './parameters'
-import * as env from '../util/rtcUtil/rtcEnvironment'
 import { JSONBigParse, JSONBigStringify } from '../util/json-big'
+import { geofenceArea } from './geofenceArea'
+import { TAGS_TO_MAIN_DOMAIN } from '../Config/index'
 
 type URLBackupSourceType = 'builtin' | 'localstorage' | 'lbs' | 'extra'
 
@@ -67,6 +68,7 @@ export interface LBS_CONFIG {
   appKey: string
   sdkVersion: string
   sdkBuild: string
+  areaCode: string
   config: LBS_RES
 }
 
@@ -91,9 +93,7 @@ export class LBSManager {
   private urlBackupMap: { [domain: string]: DomainItem[] } = {}
   private requestCnt = 0
   private localStorageKey = 'LBS_CONFIG'
-  private builtinConfig: {
-    [tag: string]: [string, string]
-  } = LBS_BUILD_CONFIG
+  private builtinConfig: LBS_BUILD_CONFIG = geofenceArea.getBuiltinConfig()
   private updateTimer: Timer | null = null
   private lastUpdateStartAt = 0
   private lastUpdate: {
@@ -128,7 +128,7 @@ export class LBSManager {
    * 向LBS发起请求，更新域名配置，并存储在localStorage
    */
   async startUpdate(reason: string): Promise<LBS_RES | undefined> {
-    if (getParameters().disableLBSService) {
+    if (getParameters().disableLBSService || getParameters().lbsUseBuiltinOnly) {
       return
     }
     if (!this.client._params.appkey) {
@@ -212,13 +212,16 @@ export class LBSManager {
     if (getParameters().disableLBSService) {
       return
     }
+    this.builtinConfig = geofenceArea.getBuiltinConfig()
     if (this.lbsState !== 'uninit') {
       this.handleLbsStateWillChange(reason)
     }
     for (let tag in this.builtinConfig) {
       if (this.builtinConfig[tag].length) {
-        this.addUrlBackup(this.builtinConfig[tag][0], this.builtinConfig[tag], tag, 'builtin')
-        this.tagToMainDomain[tag] = this.builtinConfig[tag][0]
+        // @ts-ignore
+        const domainToReplace = TAGS_TO_MAIN_DOMAIN[tag] || this.builtinConfig[tag][0]
+        this.addUrlBackup(domainToReplace, this.builtinConfig[tag], tag, 'builtin')
+        this.tagToMainDomain[tag] = domainToReplace
       }
     }
     this.lbsState = 'builtin'
@@ -353,6 +356,7 @@ export class LBSManager {
       appKey: this.client._params.appkey,
       sdkVersion: SDK_VERSION,
       sdkBuild: BUILD,
+      areaCode: geofenceArea.areaCode,
       config
     }
     try {
@@ -401,6 +405,11 @@ export class LBSManager {
         `LBS不使用本地配置：appKey不匹配。${data.appKey} ${this.client._params.appkey}。`
       )
       return { reason: 'appkey', config: null }
+    } else if (data.areaCode !== geofenceArea.areaCode) {
+      this.logger.warn(
+        `LBS不使用本地配置：areaCode不匹配。${data.areaCode} ${geofenceArea.areaCode}。`
+      )
+      return { reason: 'areaCode', config: null }
     } else {
       this.lastUpdate = {
         activeFrom: data.ts,
