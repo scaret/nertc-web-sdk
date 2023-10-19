@@ -141,13 +141,15 @@ class FormativeStatsReport {
   formatTransportDataChrome117(data: any, direction: string) {
     if (direction === 'send') {
       const tmp = this.statsCatch.upCandidatePairStatsCache
-      if (tmp && tmp.timestamp && data.timestamp - tmp.timestamp < 0.9) {
+      if (tmp && tmp.timestamp && data.timestamp - tmp.timestamp < 900) {
         // 如果距离上一次的值小于1秒，则不调用
         return
       }
       // this!.adapterRef!.transportStats.rxRtt = data.googRtt - 0
-      this!.adapterRef!.transportStats.txRtt = data.currentRoundTripTime * 1000
-      if (this!.adapterRef!.transportStats.rxRtt < 1) {
+      this!.adapterRef!.transportStats.txRtt = Math.round(data.currentRoundTripTime * 1000)
+      const downCPTimestamp = this.statsCatch.downCandidatePairStatsCache?.timestamp
+      if (!downCPTimestamp || data.timestamp - downCPTimestamp > 2000) {
+        // 如果接收端rtt没有值，就以发送端rtt的值为准
         this!.adapterRef!.transportStats.rxRtt = this!.adapterRef!.transportStats.txRtt
       }
       this!.adapterRef!.sessionStats.SendBytes = data.bytesSent
@@ -162,12 +164,17 @@ class FormativeStatsReport {
       }
     } else {
       const tmp = this.statsCatch.downCandidatePairStatsCache
-      if (tmp && tmp.timestamp && data.timestamp - tmp.timestamp < 0.9) {
+      if (tmp && tmp.timestamp && data.timestamp - tmp.timestamp < 900) {
         // 如果距离上一次的值小于1秒，则不调用
         return
       }
-      this!.adapterRef!.transportStats.rxRtt = data.currentRoundTripTime * 1000
+      this!.adapterRef!.transportStats.rxRtt = Math.round(data.currentRoundTripTime * 1000)
       if (this!.adapterRef!.transportStats.txRtt < 1) {
+        this!.adapterRef!.transportStats.txRtt = this!.adapterRef!.transportStats.rxRtt
+      }
+      const upCPTimestamp = this.statsCatch.upCandidatePairStatsCache?.timestamp
+      if (!upCPTimestamp || data.timestamp - upCPTimestamp > 2000) {
+        // 如果发送端rtt没有值，就以接收端rtt的值为准
         this!.adapterRef!.transportStats.txRtt = this!.adapterRef!.transportStats.rxRtt
       }
       this!.adapterRef!.sessionStats.RecvBytes = data.bytesReceived
