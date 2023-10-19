@@ -190,7 +190,7 @@ export const NERTC = {
     }
     let getUserMedia = navigator.mediaDevices && navigator.mediaDevices.getUserMedia
     if (!getUserMedia) {
-      console.warn(`没有 getUserMedia 方法。请使用最新版本的chrome浏览器`)
+      client?.adapterRef.logger.warn('没有 getUserMedia 方法。请使用最新版本的chrome浏览器')
       throw new RtcError({
         code: ErrorCode.NOT_SUPPORT_ERROR,
         message: '浏览器不支持开启媒体设备，请使用最新版本的chrome浏览器'
