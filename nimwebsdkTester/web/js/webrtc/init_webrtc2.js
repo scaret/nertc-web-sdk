@@ -5482,3 +5482,19 @@ if (query) {
     $('#joinChannel-btn').click()
   }
 }
+
+function updateAreaSelect() {
+  NERTC._geofenceArea.getAvailableAreas().forEach((areaCode)=>{
+    if ($("#areaCode option[value='" + areaCode + "']").length === 0) {
+      $("#areaCode").append("<option value='" + areaCode + "'>" + areaCode + "</option>")
+    }
+  })
+}
+updateAreaSelect()
+
+$('#setArea').on('click', ()=>{
+  const areaCode = $('#areaCode').val()
+  console.log(`setArea`, areaCode)
+  NERTC.setArea({areaCode})
+  updateAreaSelect()
+})

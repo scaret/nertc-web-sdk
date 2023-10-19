@@ -820,7 +820,14 @@ const ErrorCode = {
    * 可能原因：该频道主播满了 https://docs.popo.netease.com/lingxi/89ecbc9ac1724cb88c3189119462f066
    * 处理建议：给用户提示/调整频道主播数量限制
    */
-  SET_CLIENT_ROLE_ERROR: 10490
+  SET_CLIENT_ROLE_ERROR: 10490,
+
+  /*
+   * 描述：用户已在频道中中
+   * 可能原因：调用了需要用户不在频道中才能调用的方法，比如joinChannel()、setClientRole()等
+   * 处理建议：给用户提示/调整频道主播数量限制
+   */
+  CLIENT_ALREADY_IN_CHANNEL_ERROR: 10500
 }
 
 export default ErrorCode
