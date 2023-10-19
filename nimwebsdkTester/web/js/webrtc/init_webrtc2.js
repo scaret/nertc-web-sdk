@@ -176,13 +176,14 @@ let aidenoise_config = null
 const audioEffectPluginConfig = {
   development: {
     simd: {
-      key: 'AudioEffect',
-      pluginUrl: './js/nim/NIM_Web_AudioEffect.js',
+      key: 'AIAudioEffects',
+      pluginUrl: './js/nim/NIM_Web_AIAudioEffects.js',
       wasmUrl:
-        'https://yx-web-nosdn.netease.im/sdk-release/audio_effects.wasm' + `?time=${Math.random()}`
+        'https://yx-web-nosdn.netease.im/sdk-release/audio_effects_and_denoise_20231018.wasm' + `?time=${Math.random()}`
+     // wasmUrl: './js/nim/wasm/NIM_Web_AudioEffect.wasm'
     },
     nosimd: {
-      key: 'AudioEffect',
+      key: 'AudioEffects',
       pluginUrl: './js/nim/NIM_Web_AIDenoise.js',
       wasmUrl: './js/nim/wasm/NIM_Web_AIDenoise_nosimd.wasm'
     }
@@ -1997,7 +1998,7 @@ function onPluginLoaded(name) {
       break
     case 'AudioEffect':
       $('#audioEffectStatus').html('loaded').show()
-      rtc.enableAudioEffect = true
+
       break
     default:
       break
@@ -2207,14 +2208,14 @@ $('#adwasm404').on('click', async () => {
   }
 })
 
-$('#registerAIDenoise').on('click', async () => {
-  if (rtc.localStream) {
-    $('#aidenoiseStatus').html('loading').show()
-    const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
-    aidenoise_config = aiDenoisePluginConfig[NERTC.ENV][type]
-    rtc.localStream.registerPlugin(aidenoise_config)
-  }
-})
+// $('#registerAIDenoise').on('click', async () => {
+//   if (rtc.localStream) {
+//     $('#aidenoiseStatus').html('loading').show()
+//     const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
+//     aidenoise_config = aiDenoisePluginConfig[NERTC.ENV][type]
+//     rtc.localStream.registerPlugin(aidenoise_config)
+//   }
+// })
 
 $('#enableAIDenoise').on('click', () => {
   if (rtc.localStream) {
@@ -2229,15 +2230,15 @@ $('#disableAIDenoise').on('click', () => {
   }
 })
 
-$('#unregisterAIDenoise').on('click', () => {
-  $('#aidenoiseStatus').html('loading').hide()
-  if (aidenoise_config) {
-    rtc.localStream.unregisterPlugin(aidenoise_config.key)
-    rtc.enableAIDenoise = false
-  }
-})
+// $('#unregisterAIDenoise').on('click', () => {
+//   $('#aidenoiseStatus').html('loading').hide()
+//   if (aidenoise_config) {
+//     rtc.localStream.unregisterPlugin(aidenoise_config.key)
+//     rtc.enableAIDenoise = false
+//   }
+// })
 
-$('#registerAudioEffect').on('click', async () => {
+$('#registerAIAudioEffects').on('click', async () => {
   if (rtc.localStream) {
     $('#audioEffectStatus').html('loading').show()
     const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
@@ -2262,11 +2263,11 @@ $('#disableAudioEffect').on('click', () => {
   }
 })
 
-$('#unregisterAudioEffect').on('click', () => {
+$('#unregisterAIAudioEffects').on('click', () => {
   $('#audioEffectStatus').html('loading').hide()
   if (audioEffect_config) {
     rtc.localStream.unregisterPlugin(audioEffect_config.key)
-    rtc.enableAudioEffect = false
+
   }
 })
 
@@ -2298,6 +2299,27 @@ for (let i = 0; i < 10; i++) {
     console.log('eqArray', eqArray)
   })
 }
+
+const reverbObj = {
+  wetGain: 0,
+  dryGain: 1,
+  damping: 1,
+  roomSize: 0.1,
+  decayTime: 0.1,
+  preDelay: 0,
+}
+
+for(let key in reverbObj) {
+  $(`#${key}`).on('input', (e) => {
+    $(`#${key}_value`).html(e.target.value)
+    reverbObj[key] = Number(e.target.value)
+    if (rtc.localStream) {
+      rtc.localStream.setAudioEffect('Reverb', reverbObj)
+    }
+    console.log('reverbObj', reverbObj)
+  })
+}
+
 
 document.getElementById('select').onchange = function () {
   let file = this.files[0]

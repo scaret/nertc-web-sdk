@@ -434,18 +434,22 @@
             </label>
           </div>
         </div>
-        <p class="block-header">变声美声</p>
+        <p class="block-header">AI音频处理</p>
+        <div class="part">
         <div class="line">
           <button type="button" id="registerSimdAIDenoise">注册(simd版)</button>
           <button type="button" id="adjs404">注册(模拟插件404)</button>
           <button type="button" id="adwasm404">注册(模拟算法库404)</button>
         </div>
         <div class="line">
-          <button type="button" id="registerAudioEffect">注册</button>
+          <button type="button" id="registerAIAudioEffects">注册</button>
+          <button type="button" id="unregisterAIAudioEffects">销毁</button>
+          <label id="audioEffectStatus" style="display: none;">loading</label>
+        </div>
+        <h5 class="line">美声变声</h5>
+        <div class="line">
           <button type="button" id="enableAudioEffect">打开</button>
           <button type="button" id="disableAudioEffect">关闭</button>
-          <button type="button" id="unregisterAudioEffect">销毁</button>
-          <label id="audioEffectStatus" style="display: none;">loading</label>
         </div>
         <div class="line">
           <label for='setVoiceChanger'>变声</label>
@@ -550,6 +554,62 @@
             <span id="eq_9_value">0</span>
           </label>
         </div>
+        <div class="line">
+          <label>
+            自定义混响(<a target="_blank" href="https://doc.yunxin.163.com/nertc/docs/zk0MjA3Mzk?platform=android#设置混响">点击查看参数说明</a>):
+          </label>
+          <br>
+          <label>
+            湿信号增益:
+            <input id="wetGain" type="range" step="0.1" min="0" max="1" value="0">
+            <span id="wetGain_value">0</span>
+          </label>
+          <br>
+          <label>
+            干信号增益:
+            <input id="dryGain" type="range" step="0.1" min="0" max="1" value="1">
+            <span id="dryGain_value">1</span>
+          </label>
+          <br>
+          <label>
+            混响阻尼:
+            <input id="damping" type="range" step="0.1" min="0" max="1" value="1">
+            <span id="damping_value">1</span>
+          </label>
+          <br>
+          <label>
+            房间大小:
+            <input id="roomSize" type="range" step="0.1" min="0.1" max="2" value="0.1">
+            <span id="roomSize_value">0.1</span>
+          </label>
+          <br>
+          <label>
+            持续强度:
+            <input id="decayTime" type="range" step="0.1" min="0" max="20" value="0.1">
+            <span id="decayTime_value">0.1</span>
+          </label>
+          <br>
+          <label>
+            延迟长度:
+            <input id="preDelay" type="range" step="0.1" min="0" max="1" value="0">
+            <span id="preDelay_value">0</span>
+          </label>
+          <br>
+        </div>
+        <h5 class="line">AI降噪</h5>
+        <!-- <div class="line">
+          <button type="button" id="registerSimdAIDenoise">注册(simd版)</button>
+          <button type="button" id="adjs404">注册(模拟插件404)</button>
+          <button type="button" id="adwasm404">注册(模拟算法库404)</button>
+        </div> -->
+        <div class="line">
+          <!-- <button type="button" id="registerAIDenoise">注册</button> -->
+          <button type="button" id="enableAIDenoise">打开</button>
+          <button type="button" id="disableAIDenoise">关闭</button>
+          <!-- <button type="button" id="unregisterAIDenoise">销毁</button> -->
+          <!-- <label id="aidenoiseStatus" style="display: none;">loading</label> -->
+        </div>
+      </div>
       </div>
       <div class="block">
         <p class="block-header">发布配置相关</p>
@@ -813,19 +873,7 @@
             <br/>
           </div>
         </div>
-        <p class="block-header">AI降噪</p>
-        <div class="line">
-          <button type="button" id="registerSimdAIDenoise">注册(simd版)</button>
-          <button type="button" id="adjs404">注册(模拟插件404)</button>
-          <button type="button" id="adwasm404">注册(模拟算法库404)</button>
-        </div>
-        <div class="line">
-          <button type="button" id="registerAIDenoise">注册</button>
-          <button type="button" id="enableAIDenoise">打开</button>
-          <button type="button" id="disableAIDenoise">关闭</button>
-          <button type="button" id="unregisterAIDenoise">销毁</button>
-          <label id="aidenoiseStatus" style="display: none;">loading</label>
-        </div>
+
       </div>
       <div class="block">
         <p class="block-header">播放相关</p>

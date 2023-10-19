@@ -1,3 +1,3 @@
-import AudioEffect from '../netcall-G2/plugin/audio-effect'
+import AIAudioEffects from '../netcall-G2/plugin/audio-effects'
 
-module.exports = AudioEffect
+module.exports = AIAudioEffects

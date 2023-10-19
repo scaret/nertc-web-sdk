@@ -2,6 +2,8 @@ import { EventEmitter } from 'eventemitter3'
 
 import { StageAIProcessing } from './StageAIProcessing'
 
+type EffectType = 'AIDenoise' | 'AudioEffect'
+
 /** AI降噪控制类，对外提供调用接口 */
 export default class AudioEffect extends EventEmitter {
   private stageAIProcessing: StageAIProcessing
@@ -13,7 +15,7 @@ export default class AudioEffect extends EventEmitter {
 
   /** 获取AI推理模块实例 */
   private get audioEffectProcess() {
-    const plugin = this.stageAIProcessing.getPlugin('AudioEffect')
+    const plugin = this.stageAIProcessing.getPlugin('AIAudioEffects')
     return plugin as any
   }
 
@@ -22,8 +24,8 @@ export default class AudioEffect extends EventEmitter {
    *
    */
   init() {
-    this.audioEffectProcess.on('effect-load', () => {
-      this.emit('effect-load')
+    this.audioEffectProcess.on('effects-load', () => {
+      this.emit('effects-load')
     })
     this.audioEffectProcess.init()
   }
@@ -40,13 +42,19 @@ export default class AudioEffect extends EventEmitter {
     this.audioEffectProcess.destroy()
   }
 
-  get isEnable() {
-    return this.stageAIProcessing.enableAudioEffect
+  setState(key: EffectType, enable: boolean) {
+    if (key === 'AIDenoise') {
+      this.audioEffectProcess.enableAIDenoise = enable
+    } else if (key === 'AudioEffect') {
+      this.audioEffectProcess.enableAudioEffect = enable
+    }
   }
 
-  set isEnable(enable: boolean) {
-    if (this.stageAIProcessing) {
-      this.stageAIProcessing.enableAudioEffect = enable
+  getState(key: EffectType) {
+    if (key === 'AIDenoise') {
+      return this.stageAIProcessing.enableAIDenoise
+    } else if (key === 'AudioEffect') {
+      return this.stageAIProcessing.enableAudioEffect
     }
   }
 }

@@ -12,17 +12,12 @@ export class StageAIProcessing extends StageBase {
   enableAIDenoise = false
   enableAudioEffect = false
   private pluginModules: {
-    AIDenoise: {
+    AIAudioEffects: {
       load: false
       process: (input: any, callback: (output: any) => void) => void
       destroy: () => void
     } | null
-    AudioEffect: {
-      load: false
-      process: (input: any, callback: (output: any) => void) => void
-      destroy: () => void
-    } | null
-  } = { AIDenoise: null, AudioEffect: null }
+  } = { AIAudioEffects: null }
 
   constructor(context: AudioContext, logger: ILogger) {
     super(context)
@@ -49,34 +44,15 @@ export class StageAIProcessing extends StageBase {
       await this.audioWorkletAgent.init()
       this.audioWorkletAgent.on('rawinputs', (evt) => {
         let outputData = evt.inputs[0]
-        if (this.enabled && outputData.length) {
-          //AI降噪
-          if (this.enableAIDenoise) {
-            const plugin = this.pluginModules.AIDenoise
-
-            if (plugin) {
-              plugin.process(outputData, (data) => {
-                if (data.length) {
-                  outputData = data
-                }
-                this.audioWorkletAgent!.outputData(outputData)
-              })
+        const plugin = this.pluginModules.AIAudioEffects
+        if (this.enabled && outputData.length && plugin) {
+          plugin.process(outputData, (data) => {
+            if (data.length) {
+              outputData = data
             }
-          }
-          //变声
-          if (this.enableAudioEffect) {
-            const plugin = this.pluginModules.AudioEffect
-            if (plugin) {
-              plugin.process(outputData, (data) => {
-                if (data.length) {
-                  outputData = data
-                } else {
-                  console.warn('AudioEffect process error')
-                }
-                this.audioWorkletAgent!.outputData(outputData)
-              })
-            }
-          }
+            // console.warn('outputData', outputData[0], outputData[1])
+            this.audioWorkletAgent!.outputData(outputData)
+          })
         }
       })
     }
@@ -87,9 +63,8 @@ export class StageAIProcessing extends StageBase {
   unregisterPlugin(key: AudioPluginType) {
     this.pluginModules[key] = null
     //需要修改
-    if(!this.enableAIDenoise && !this.enableAudioEffect) {
+    if (!this.enableAIDenoise && !this.enableAudioEffect) {
       this.state = 'UNINIT'
     }
-
   }
 }
