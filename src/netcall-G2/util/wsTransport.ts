@@ -159,9 +159,9 @@ export default class WSTransport {
   }
 
   async sendLog(data: Object) {
-    // 日志上报最多缓存200条日志，超过则丢弃
-    // 有cid后才会上报（不然无法索引）
-    // time属性至少比上一条+1毫秒，这样kibana的日志排序才正确。
+    // 日志上报最多缓存 500 条日志，超过则丢弃
+    // 有 cid 后才会上报（不然无法索引）
+    // time 属性至少比上一条 +1 毫秒，这样 kibana 的日志排序才正确。
     const time = Math.max(this.lastLogTime + 1, Date.now())
     this.lastLogTime = time
     try {
