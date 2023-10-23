@@ -208,6 +208,10 @@ interface IParameters {
   chromeLegacyDefault: 'unknown' | 'supported' | 'unsupported'
   // getStats计算每秒数据时，基于多久之前的点
   statsHistoryInterval: number
+  // 给每条信令消息一个消息延迟
+  signalingMessageDelay: number
+  // 重连等待时间
+  reconnectionWaitTimeout: number
   // 最小触发active-speaker的音量。0-65535
   activeSpeakerMin: number
   // 音量指数算法
@@ -324,6 +328,8 @@ let parameters: IParameters = {
   audioLevelFittingAlgorithm: 'log2',
   audioLevelRatioRemote: 1,
   statsHistoryInterval: 3000,
+  signalingMessageDelay: 0,
+  reconnectionWaitTimeout: 5000,
   activeSpeakerMin: 10,
   audioPlayoutDelayHint: 0,
   videoPlayoutDelayHint: 0

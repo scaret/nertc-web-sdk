@@ -138,9 +138,11 @@ class Signalling extends EventEmitter {
       if (
         isReconnectMeeting &&
         this.adapterRef.signalProbeManager.online !== 'unknown' &&
+        connConfig.times === 1 &&
+        getParameters().reconnectionWaitTimeout > 0 &&
         this.adapterRef.signalProbeManager.getActiveServerCount().cnt === 0
       ) {
-        const timeout = 10000
+        const timeout = getParameters().reconnectionWaitTimeout
         this.logger.warn(`目前所有服务端不在线，判断为网络断开。等待服务端起上线或 ${timeout}ms`)
         const reason = await this.adapterRef.signalProbeManager.waitForServerActive(timeout)
         if (this.adapterRef._signalling?.signallingId !== this.signallingId) {
@@ -232,6 +234,21 @@ class Signalling extends EventEmitter {
         if (this.adapterRef._signalling?.signallingId !== this.signallingId) {
           // 此时已退出房间
           return
+        }
+        if (this._protoo && !this._protoo.closed) {
+          // http://jira.netease.com/browse/NRTCG2-30211
+          const data = {
+            name: 'joinWsTime',
+            code: -1,
+            param: {
+              reason: 'timeout',
+              time: Date.now() - this.adapterRef.state.signalEstablishTime,
+              wsId: this._protoo.id,
+              url: connConfig.url,
+              serverIndex: connConfig.serverIndex
+            }
+          }
+          this.adapterRef.instance.apiFrequencyControl(data)
         }
         this._destroyProtoo()
         if (isReconnectMeeting) {
@@ -926,6 +943,19 @@ class Signalling extends EventEmitter {
 
   _handleFailed() {
     this.logger.log('Signalling:_handleFailed')
+    // http://jira.netease.com/browse/NRTCG2-30211
+    const data = {
+      name: 'joinWsTime',
+      code: -2,
+      param: {
+        reason: 'failed',
+        time: Date.now() - this.adapterRef.state.signalEstablishTime,
+        wsId: this._protoo?.id,
+        url: this.reconnectionControl.current?.url,
+        serverIndex: this.reconnectionControl.current?.serverIndex
+      }
+    }
+    this.adapterRef.instance.apiFrequencyControl(data)
   }
 
   _handleClose() {}
@@ -997,6 +1027,13 @@ class Signalling extends EventEmitter {
     this.adapterRef.state.signalOpenTime = Date.now()
     this.adapterRef.state.signalWebsocketOpenRtt =
       this.adapterRef.state.signalOpenTime - this.adapterRef.state.signalEstablishTime
+
+    // http://jira.netease.com/browse/NRTCG2-30211
+    if (this._reconnectionTimer) {
+      clearTimeout(this._reconnectionTimer)
+      this._reconnectionTimer = null
+    }
+
     let gmEnable //加密标识
     if (!this.adapterRef.encryption.encryptionSecret) {
       gmEnable = false
@@ -1073,6 +1110,20 @@ class Signalling extends EventEmitter {
         //设计文档：https://doc.hz.netease.com/pages/viewpage.action?pageId=323800276
         this.adapterRef.state.signalJoinMsgRtt =
           (this.adapterRef.state.signalJoinResTime - start) / 2
+
+        // http://jira.netease.com/browse/NRTCG2-30211
+        const data = {
+          name: 'joinWsTime',
+          code: 0,
+          param: {
+            wsTime: this.adapterRef.state.signalWebsocketOpenRtt,
+            joinRes: this.adapterRef.state.signalJoinResTime - this.adapterRef.state.signalOpenTime,
+            wsId: this._protoo?.id,
+            url: this.reconnectionControl.current?.url,
+            serverIndex: this.reconnectionControl.current?.serverIndex
+          }
+        }
+        this.adapterRef.instance.apiFrequencyControl(data)
       } catch (e: any) {
         if (thisProtoo !== this._protoo) {
           this.logger.warn(`Login 过期的信令通道消息：【${e.name}】`, e.message)
@@ -1140,11 +1191,6 @@ class Signalling extends EventEmitter {
 
       if (this.adapterRef.isAudioBanned && this.adapterRef.isVideoBanned) {
         this.logger.warn('服务器禁止发送音频流')
-      }
-
-      if (this._reconnectionTimer) {
-        clearTimeout(this._reconnectionTimer)
-        this._reconnectionTimer = null
       }
 
       this.reconnectionControl.next = null
@@ -1438,6 +1484,22 @@ class Signalling extends EventEmitter {
       this.doSendKeepAliveTask()
     } catch (e: any) {
       this.logger.error('Signalling: 登录流程内部错误: ', e.message)
+
+      // http://jira.netease.com/browse/NRTCG2-30211
+      const data = {
+        name: 'joinWsTime',
+        code: -3,
+        param: {
+          reason: e.message,
+          wsTime: this.adapterRef.state.signalWebsocketOpenRtt,
+          joinRes: Date.now() - this.adapterRef.state.signalOpenTime,
+          wsId: this._protoo?.id,
+          url: this.reconnectionControl.current?.url,
+          serverIndex: this.reconnectionControl.current?.serverIndex
+        }
+      }
+      this.adapterRef.instance.apiFrequencyControl(data)
+
       //尽可能将try actch 捕捉的异常上报
       this._joinFailed(-1, e.message || 'LOGIN_ERROR')
     }
