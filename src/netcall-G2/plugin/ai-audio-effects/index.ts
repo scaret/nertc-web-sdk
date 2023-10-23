@@ -4,8 +4,8 @@ import { EventEmitter } from 'eventemitter3'
 import { modelOptions } from './src/types'
 
 class AIAudioEffects extends EventEmitter {
-  private deoniseWorker: any
-  private _deoniseWorkerDestroying = false
+  private audioEffectsWorker: any
+  private _audioEffectsWorkerDestroying = false
   private logger: ILogger
   private wasmBinary: Uint8Array = new Uint8Array()
   private processCallback!: (result: Float32Array) => void
@@ -39,11 +39,11 @@ class AIAudioEffects extends EventEmitter {
   }
 
   init() {
-    this.logger.log('AudioEffects create')
-    this.deoniseWorker = webworkify(require.resolve('./src/AudioEffects-worker.js'))
+    this.logger.log('AIAudioEffects create')
+    this.audioEffectsWorker = webworkify(require.resolve('./src/audioEffects-worker.js'))
     this.addEventListener()
 
-    this.deoniseWorker.postMessage({
+    this.audioEffectsWorker.postMessage({
       type: 'init',
       option: {
         wasmBinary: this.wasmBinary
@@ -56,7 +56,7 @@ class AIAudioEffects extends EventEmitter {
   }
 
   set enableAIDenoise(enable: boolean) {
-    this.deoniseWorker.postMessage({
+    this.audioEffectsWorker.postMessage({
       type: 'setState',
       option: {
         type: 'AIDenoise',
@@ -66,7 +66,7 @@ class AIAudioEffects extends EventEmitter {
   }
 
   set enableAudioEffect(enable: boolean) {
-    this.deoniseWorker.postMessage({
+    this.audioEffectsWorker.postMessage({
       type: 'setState',
       option: {
         type: 'AudioEffect',
@@ -77,12 +77,11 @@ class AIAudioEffects extends EventEmitter {
 
   addEventListener() {
     //@ts-ignore
-    this.deoniseWorker.addEventListener('message', (e) => {
+    this.audioEffectsWorker.addEventListener('message', (e) => {
       let data = e.data
       const type = data.type
       switch (type) {
         case 'created':
-          console.warn('created')
           this.emit('effects-load')
           this.isLoaded = true
           break
@@ -90,11 +89,11 @@ class AIAudioEffects extends EventEmitter {
           this.processCallback(data.audioData)
           break
         case 'destroyed':
-          if (this._deoniseWorkerDestroying) {
+          if (this._audioEffectsWorkerDestroying) {
             this.logger.log('AudioEffectsWorkers destroyed')
-            this._deoniseWorkerDestroying = false
-            this.deoniseWorker.terminate()
-            this.deoniseWorker = null
+            this._audioEffectsWorkerDestroying = false
+            this.audioEffectsWorker.terminate()
+            this.audioEffectsWorker = null
           }
           break
         case 'error':
@@ -108,7 +107,7 @@ class AIAudioEffects extends EventEmitter {
 
   setAudioEffect(type: number, value: number) {
     console.warn('setAudioEffect', type, value)
-    this.deoniseWorker.postMessage({
+    this.audioEffectsWorker.postMessage({
       type: 'effect',
       effect: {
         type,
@@ -119,20 +118,19 @@ class AIAudioEffects extends EventEmitter {
 
   destroy() {
     this.logger.log('Audio Effects destroy')
-    if (this.deoniseWorker && !this._deoniseWorkerDestroying) {
-      this._deoniseWorkerDestroying = true
-      this.deoniseWorker.postMessage({ type: 'destroy' })
+    if (this.audioEffectsWorker && !this._audioEffectsWorkerDestroying) {
+      this._audioEffectsWorkerDestroying = true
+      this.audioEffectsWorker.postMessage({ type: 'destroy' })
     }
   }
 
-  process(noiseData: any[], callback: (result: Float32Array) => void) {
+  process(audioData: any[], callback: (result: Float32Array) => void) {
     this.processCallback = callback
 
-    //console.warn('load', this.load)
-    this.deoniseWorker &&
-      this.deoniseWorker.postMessage({
+    this.audioEffectsWorker &&
+      this.audioEffectsWorker.postMessage({
         type: 'process',
-        frame: noiseData
+        frame: audioData
       })
   }
 }

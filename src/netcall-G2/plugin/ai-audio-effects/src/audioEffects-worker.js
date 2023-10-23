@@ -108,7 +108,7 @@ class AudioEffect {
 }
 
 
-class AudioEffects {
+class AudioProcess {
   isProcessing = false
   buffer = []
   buffer_length = 1
@@ -146,7 +146,7 @@ class AudioEffects {
         global.postMessage({ type: 'error', message: '' + msg })
       }
     }
-    require('../lib/audio_effects_and_denoise.js')
+    require('../lib/ai_audio_effects.js')
   }
 
   malloc() {
@@ -236,8 +236,8 @@ class AudioEffects {
   }
 }
 
-const denoiseWorker = function () {
-  let audioEffects = new AudioEffects()
+const worker = function () {
+  let audioEffects = new AudioProcess()
 
   global.onmessage = function (event) {
     const data = event.data
@@ -284,4 +284,4 @@ const denoiseWorker = function () {
   }
 }
 
-export default denoiseWorker
+export default worker
