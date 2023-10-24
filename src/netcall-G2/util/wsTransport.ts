@@ -6,6 +6,7 @@ import { getReconnectionTimeout } from '../util/rtcUtil/utils'
 import heartbeatStats = require('../util/proto/heartbeatStats')
 import { URLSetting } from '../module/LBSManager'
 import { AdapterRef, ILogger } from '../types'
+import { getParameters } from '../module/parameters'
 
 const PING_PONG_INTERVAL = 10000
 const PING_TIMEOUT = 10000
@@ -47,7 +48,19 @@ export default class WSTransport {
     })
   }
   init() {
-    this.logger.log(`connect to url: ${this.url_}`)
+    if (!getParameters().disableLBSService) {
+      const urlSettings = this.adapterRef.lbsManager.getURLSettings(this.url_)
+      const urlSetting = urlSettings[0]
+
+      if (urlSetting && urlSetting.url !== this.url_) {
+        this.logger.log(`使用线路变更：From【${this.url_} 】to【${urlSetting.url} 】`)
+        this.url_ = urlSetting.url
+      } else {
+        this.logger.log(`使用线路： 【${this.url_}】`)
+      }
+    } else {
+      this.logger.log(`connect to url: ${this.url_}`)
+    }
     this.socket_ = new WebSocket(this.url_)
     this.bindSocket(this.socket_)
   }
