@@ -227,7 +227,6 @@ export class Chrome74 extends HandlerInterface {
       })
       offer.sdp = sdpTransform.write(localSdpObject)
       Logger.debug(prefix, 'restartIce() | calling pc.setLocalDescription()')
-
       await this._pc.setLocalDescription(offer)
 
       const answer = { type: 'answer', sdp: this._remoteSdp!.getSdp() }
@@ -239,7 +238,6 @@ export class Chrome74 extends HandlerInterface {
       const offer = { type: 'offer', sdp: this._remoteSdp!.getSdp() }
 
       Logger.debug(prefix, 'restartIce() | calling pc.setRemoteDescription()')
-
       await this._pc.setRemoteDescription(offer)
 
       const answer = await this._pc.createAnswer()
@@ -428,7 +426,6 @@ export class Chrome74 extends HandlerInterface {
 
     // If VP8 or H264 and there is effective simulcast, add scalabilityMode to
     // each encoding.
-    // console.warn('localSdpObject.media: ', localSdpObject.media)
     if (
       sendingRtpParameters.encodings.length > 1 &&
       (sendingRtpParameters.codecs[0].mimeType.toLowerCase() === 'video/vp8' ||

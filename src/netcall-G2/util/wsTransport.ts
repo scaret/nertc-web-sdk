@@ -6,6 +6,7 @@ import { getReconnectionTimeout } from '../util/rtcUtil/utils'
 import heartbeatStats = require('../util/proto/heartbeatStats')
 import { URLSetting } from '../module/LBSManager'
 import { AdapterRef, ILogger } from '../types'
+import { getParameters } from '../module/parameters'
 
 const PING_PONG_INTERVAL = 10000
 const PING_TIMEOUT = 10000
@@ -47,7 +48,19 @@ export default class WSTransport {
     })
   }
   init() {
-    this.logger.log(`connect to url: ${this.url_}`)
+    if (!getParameters().disableLBSService) {
+      const urlSettings = this.adapterRef.lbsManager.getURLSettings(this.url_)
+      const urlSetting = urlSettings[0]
+
+      if (urlSetting && urlSetting.url !== this.url_) {
+        this.logger.log(`使用线路变更：From【${this.url_} 】to【${urlSetting.url} 】`)
+        this.url_ = urlSetting.url
+      } else {
+        this.logger.log(`使用线路： 【${this.url_}】`)
+      }
+    } else {
+      this.logger.log(`connect to url: ${this.url_}`)
+    }
     this.socket_ = new WebSocket(this.url_)
     this.bindSocket(this.socket_)
   }
@@ -158,10 +171,10 @@ export default class WSTransport {
     }
   }
 
-  sendLog(data: Object) {
-    // 日志上报最多缓存50条日志
-    // 有cid后才会上报（不然无法索引）
-    // time属性至少比上一条+1毫秒，这样kibana的日志排序才正确。
+  async sendLog(data: Object) {
+    // 日志上报最多缓存 500 条日志，超过则丢弃
+    // 有 cid 后才会上报（不然无法索引）
+    // time 属性至少比上一条 +1 毫秒，这样 kibana 的日志排序才正确。
     const time = Math.max(this.lastLogTime + 1, Date.now())
     this.lastLogTime = time
     try {
@@ -177,28 +190,48 @@ export default class WSTransport {
       time,
       data
     })
-    if (this.cachedLogs.length > 50) {
+    if (this.cachedLogs.length > 500) {
       this.cachedLogs.shift()
     }
     if (this.isConnected_ && this.socket_?.readyState === 1 && this.adapterRef.channelInfo?.cid) {
       const cachedLogs = this.cachedLogs
       this.cachedLogs = []
-      for (let cachedlogParam of cachedLogs) {
-        const param = Object.assign(
-          {
-            uid: this.adapterRef.channelInfo.uid,
-            cid: this.adapterRef.channelInfo.cid
-          },
-          cachedlogParam
-        )
-        try {
-          const view = this.textEncoder.encode(JSON.stringify(param))
-          let headerArray = [5, 1, 1, 1, 2, 0, 0, 0]
-          let logData = Uint8Array.from(headerArray.concat(Array.from(view)))
-          this.socket_.send(logData)
-        } catch (e) {
-          // console.error("无法发送日志", paramSend.data);
-        }
+
+      const batchSize = 50
+      const totalBatches = Math.ceil(cachedLogs.length / batchSize)
+      for (let i = 0; i < totalBatches; i++) {
+        const start = i * batchSize
+        const end = start + batchSize
+        const batch = cachedLogs.slice(start, end)
+        // 为避免日志上报拥塞，这里使用同步机制半平滑过度上报数据
+        await this.delay(100)
+        this.sendBatch(batch)
+      }
+    }
+  }
+
+  delay(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms))
+  }
+
+  sendBatch(cachedLogs: any) {
+    // console.error('sendBatch: ', cachedLogs)
+    for (let cachedlogParam of cachedLogs) {
+      const param = Object.assign(
+        {
+          uid: this.adapterRef.channelInfo.uid,
+          cid: this.adapterRef.channelInfo.cid
+        },
+        cachedlogParam
+      )
+      try {
+        const view = this.textEncoder.encode(JSON.stringify(param))
+        let headerArray = [5, 1, 1, 1, 2, 0, 0, 0]
+        let logData = Uint8Array.from(headerArray.concat(Array.from(view)))
+        this.socket_!.send(logData)
+        // console.error('已发送： ', param)
+      } catch (e) {
+        // console.error("无法发送日志", paramSend.data);
       }
     }
   }
@@ -320,7 +353,8 @@ export default class WSTransport {
     this.socket_ = null
   }
 
-  close() {
+  async close() {
+    await this.delay(1000)
     this.logger.log('close websocket')
     this.clearReconnectionTimer()
     this.stopPingPong()

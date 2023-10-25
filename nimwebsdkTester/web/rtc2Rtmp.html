@@ -232,7 +232,7 @@
       </div>
 
       <div class="block">
-        <p class="block-header">其他设置</p>
+        <p class="block-header"><input type="checkbox" id="hasConfig" checked>其他设置</p>
         <div class="part">
           <div class="line">
             <div>
@@ -450,14 +450,16 @@
             adaption: 1
           }]
         },
-        config: {
-          singleVideoNoTrans: $('#singleVideoNoTrans').prop("checked"),
-        },
       }
       if ($('#extraInfo').val()) {
         rtmpTasks.extraInfo = $('#extraInfo').val();
       }
-      if ($("#audioParam").prop("checked")) {
+      if ($('#hasConfig').prop("checked")) {
+        rtmpTasks.config = {
+          singleVideoNoTrans: $('#singleVideoNoTrans').prop("checked"),
+        }
+      }
+      if ($("#audioParam").prop("checked") && $('#hasConfig').prop("checked")) {
         rtmpTasks.config.audioParam = {};
         if ($("#audioBitRate").val()) {
           rtmpTasks.config.audioParam.bitRate = parseInt($("#audioBitRate").val());
@@ -624,15 +626,17 @@
             adaption: 1
           }]
         },
-        config: {
-          singleVideoNoTrans: $('#singleVideoNoTrans').prop("checked"),
-        }
       }]
 
       if ($('#extraInfo').val()) {
         rtmpTasks[0].extraInfo = $('#extraInfo').val();
       }
-      if ($("#audioParam").prop("checked")) {
+      if ($('#hasConfig').prop("checked")) {
+        rtmpTasks.config = {
+          singleVideoNoTrans: $('#singleVideoNoTrans').prop("checked"),
+        }
+      }
+      if ($("#audioParam").prop("checked") && $('#hasConfig').prop("checked")) {
         rtmpTasks[0].config.audioParam = {};
         if ($("#audioBitRate").val()) {
           rtmpTasks[0].config.audioParam.bitRate = parseInt($("#audioBitRate").val());

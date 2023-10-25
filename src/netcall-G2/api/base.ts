@@ -263,11 +263,6 @@ class Base extends RTCEventEmitter {
       this.adapterRef._mediasoup = null
     }
 
-    if (this.adapterRef._statsReport) {
-      this.adapterRef._statsReport.destroy()
-      this.adapterRef._statsReport = null
-    }
-
     if (this.recordManager.formatMedia) {
       this.recordManager.formatMedia.destroy()
       this.recordManager.formatMedia = null
@@ -485,6 +480,11 @@ class Base extends RTCEventEmitter {
     this.adapterRef.memberMap = {}
     this.adapterRef.uid2SscrList = {}
     this._resetState() // 内部状态对象
+    // 数据上报通道销毁
+    if (this.adapterRef._statsReport) {
+      this.adapterRef._statsReport.destroy()
+      this.adapterRef._statsReport = null
+    }
   }
 
   async clearMember(uid: number | string) {

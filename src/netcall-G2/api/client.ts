@@ -45,6 +45,7 @@ import { SpatialManager } from './spatialManager'
 import { getCurrentProfileLevel } from '../util/rtcUtil/codec'
 import { LoadLocalConfigRes } from '../module/LBSManager'
 import { detectRtcCapabilities } from '../module/3rd/mediasoup-client/handlers/sdp/getNativeRtpCapabilities'
+import * as env from '../util/rtcUtil/rtcEnvironment'
 
 /**
  *  请使用 {@link WEBRTC2.createClient} 通过WEBRTC2.createClient创建 Client对象，client对象指通话中的本地或远程用户，提供云信sdk的核心功能。
@@ -515,10 +516,19 @@ class Client extends Base {
         this.adapterRef.channelInfo.customData = options.customData
       }
 
-      // 将侦测RTC的过程提前,但不通过await阻塞join过程
-      detectRtcCapabilities().catch((e) => {
-        this.logger.warn(`detectRtcCapabilities`, e.name, e.message)
-      })
+      // chrome 62~69 不进行侦察
+      if (
+        !(
+          env.ANY_CHROME_MAJOR_VERSION &&
+          env.ANY_CHROME_MAJOR_VERSION >= 62 &&
+          env.ANY_CHROME_MAJOR_VERSION < 69
+        )
+      ) {
+        // 将侦测RTC的过程提前,但不通过await阻塞join过程
+        detectRtcCapabilities().catch((e) => {
+          this.logger.warn(`detectRtcCapabilities`, e.name, e.message)
+        })
+      }
 
       this._params.JoinChannelRequestParam4WebRTC2 = {
         startJoinTime: Date.now(),
@@ -550,7 +560,7 @@ class Client extends Base {
         }
       }
 
-      if (!getParameters().disableLBSService) {
+      if (!getParameters().disableLBSService && !getParameters().lbsUseBuiltinOnly) {
         // join执行同时发起lbs请求。向getChannelInfo的请求不会被
         localConfig = this.adapterRef.lbsManager.loadLocalConfig('onjoin')
         if (localConfig.config) {
@@ -874,7 +884,12 @@ class Client extends Base {
         })
       }
       this.bindLocalStream(stream)
-      await this.adapterRef._mediasoup.createProduce(stream, 'all')
+      try {
+        await this.adapterRef._mediasoup.createProduce(stream, 'all')
+      } catch (e) {
+        this.logger.error('publish() createProduce error: ', e)
+      }
+      // await this.adapterRef._mediasoup.createProduce(stream, 'all')
       onPublishFinish()
     } catch (e: any) {
       this.logger.error('publish() 内部错误: ', e.name, e.message)

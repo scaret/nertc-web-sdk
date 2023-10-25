@@ -306,7 +306,7 @@ function str(key: string | number, holder: Record<string | number, any>): string
       gap = mind
       return v
     default:
-      return 'null'
+      return ''
   }
 }
 

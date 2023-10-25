@@ -67,6 +67,9 @@ interface IParameters {
   // 强制使用的logLevel。-1为不强制
   forceLogLevel: -1 | loglevels
 
+  // 强制使用的区域。'NONE'为不强制
+  forceGeofenceArea: 'NONE' | string
+
   // 强制开启或关闭日志上传。
   forceLogUpload: 'default' | 'on' | 'off'
 
@@ -147,6 +150,8 @@ interface IParameters {
   keepAspectRatio: boolean
   // 是否关闭LBS服务
   disableLBSService: boolean
+  // 是否仅使用LBS的内置配置
+  lbsUseBuiltinOnly: boolean
   // protoo单条消息的timeout时间。
   protooMessageTimeout: number
   //是否复用已经取消订阅的远端媒体流的mid
@@ -206,6 +211,10 @@ interface IParameters {
   chromeLegacyDefault: 'unknown' | 'supported' | 'unsupported'
   // getStats计算每秒数据时，基于多久之前的点
   statsHistoryInterval: number
+  // 给每条信令消息一个消息延迟
+  signalingMessageDelay: number
+  // 重连等待时间
+  reconnectionWaitTimeout: number
   // 最小触发active-speaker的音量。0-65535
   activeSpeakerMin: number
   // 音量指数算法
@@ -239,6 +248,7 @@ let parameters: IParameters = {
   logLevel: loglevels.INFO,
   forceLogLevel: -1,
   forceLogUpload: 'default',
+  forceGeofenceArea: 'NONE',
   forceListenDeviceChange: true,
   codecOptions: {
     audio: {
@@ -287,6 +297,7 @@ let parameters: IParameters = {
   audioAslFlag: true,
   keepAspectRatio: false,
   disableLBSService: false,
+  lbsUseBuiltinOnly: false,
   protooMessageTimeout: 30000,
   reuseMid: true,
   playMediaTimeout: 3000,
@@ -321,6 +332,8 @@ let parameters: IParameters = {
   audioLevelFittingAlgorithm: 'log2',
   audioLevelRatioRemote: 1,
   statsHistoryInterval: 3000,
+  signalingMessageDelay: 0,
+  reconnectionWaitTimeout: 5000,
   activeSpeakerMin: 10,
   audioPlayoutDelayHint: 0,
   videoPlayoutDelayHint: 0

@@ -31,8 +31,7 @@ class GetStats {
     send: StatsInfo
     recv: StatsInfo
   }
-  public chromeLegecy: 'unknown' | 'supported' | 'unsupported' =
-    getParameters().chromeLegacyDefault
+  public chromeLegecy: 'unknown' | 'supported' | 'unsupported' = getParameters().chromeLegacyDefault
   constructor(options: { adapterRef: AdapterRef }) {
     this.adapterRef = options.adapterRef
     //workaround for TS2564
@@ -1552,6 +1551,13 @@ class GetStats {
             : null
           item.frameWidth !== undefined ? (videoObj.frameWidthSent = item.frameWidth) : null
           item.frameHeight !== undefined ? (videoObj.frameHeightSent = item.frameHeight) : null
+
+          // safari 17
+          if (env.IS_ANY_SAFARI && env.SAFARI_MAJOR_VERSION && env.SAFARI_MAJOR_VERSION >= 17) {
+            videoObj.frameWidthInput = item.frameWidth
+            videoObj.frameHeightInput = item.frameHeight
+            item.framesSent !== undefined ? (videoObj.framesSent = item.framesSent) : null
+          }
         }
       } else if (item.type == 'remote-inbound-rtp') {
         if (item.kind === 'audio') {
@@ -1628,6 +1634,17 @@ class GetStats {
                 (item.jitterBufferDelay * 1000) / item.jitterBufferEmittedCount
               ))
             : null
+
+          // safari 17
+          if (env.IS_ANY_SAFARI && env.SAFARI_MAJOR_VERSION && env.SAFARI_MAJOR_VERSION >= 17) {
+            videoObj.frameWidthReceived = item.frameWidth
+            videoObj.frameHeightReceived = item.frameHeight
+            item.framesDecoded !== undefined ? (videoObj.framesDecoded = item.framesDecoded) : null
+            item.framesReceived !== undefined
+              ? (videoObj.framesReceived = item.framesReceived)
+              : null
+            item.framesDropped !== undefined ? (videoObj.framesDropped = item.framesDropped) : null
+          }
         }
       } else if (item.type == 'remote-outbound-rtp') {
         if (item.kind === 'audio') {
@@ -1670,16 +1687,44 @@ class GetStats {
       if (direction === 'send') {
         this.formativeStatsReport?.formatSendData(audioObj, mediaTypeShort)
       }
-      // 采集不到不上报
-      if (typeof audioObj.active === 'number') {
-        result[`${mediaTypeShort}_ssrc`] = [audioObj]
+      // 采集不到不上报 (safari 17 删掉了 track)
+      if (env.IS_ANY_SAFARI && env.SAFARI_MAJOR_VERSION && env.SAFARI_MAJOR_VERSION < 17) {
+        if (typeof audioObj.active === 'number') {
+          result[`${mediaTypeShort}_ssrc`] = [audioObj]
+        }
+      } else {
+        if (direction === 'send') {
+          if (
+            typeof audioObj.bitsSentPerSecond === 'number' &&
+            typeof audioObj.packetsSentPerSecond === 'number'
+          ) {
+            result[`${mediaTypeShort}_ssrc`] = [audioObj]
+          }
+        } else {
+          result[`${mediaTypeShort}_ssrc`] = [audioObj]
+        }
       }
     } else if (mediaTypeShort === 'video' || mediaTypeShort === 'screen') {
       if (uidAndKindBySsrc?.streamType === 'high' && direction === 'send') {
         this.formativeStatsReport?.formatSendData(videoObj, mediaTypeShort)
       }
-      if (typeof videoObj.active === 'number') {
-        result[`${mediaTypeShort}_ssrc`] = [videoObj]
+      if (env.IS_ANY_SAFARI && env.SAFARI_MAJOR_VERSION && env.SAFARI_MAJOR_VERSION < 17) {
+        if (typeof videoObj.active === 'number') {
+          result[`${mediaTypeShort}_ssrc`] = [videoObj]
+        }
+      } else {
+        if (direction === 'send') {
+          if (
+            videoObj.frameWidthInput &&
+            typeof videoObj.frameWidthInput === 'number' &&
+            videoObj.frameHeightInput &&
+            typeof videoObj.frameHeightInput === 'number'
+          ) {
+            result[`${mediaTypeShort}_ssrc`] = [videoObj]
+          }
+        } else {
+          result[`${mediaTypeShort}_ssrc`] = [videoObj]
+        }
       }
     }
     return result
