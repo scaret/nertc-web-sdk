@@ -27,6 +27,9 @@ interface IParameters {
   // debugG2
   debugG2: boolean
 
+  // 是否跳过环境测试，包括http等
+  passEnvCheck: boolean
+
   // 是否开启UI提示
   enableAlerter: 'never' | 'nolistener' | 'always'
 
@@ -221,6 +224,7 @@ let parameters: IParameters = {
   clients: [],
   localStreams: [],
   debugG2: false,
+  passEnvCheck: false,
   enableAlerter: 'never',
   videoLowMaxWidth: 320,
   videoLowMaxHeight: 180,

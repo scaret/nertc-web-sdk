@@ -181,7 +181,7 @@ export const NERTC = {
    */
   createStream(options: LocalStreamOptions) {
     checkExists({ tag: 'createStream:options', value: options })
-    if (isHttpProtocol()) {
+    if (isHttpProtocol() && !getParameters().passEnvCheck) {
       client?.adapterRef.logger.warn('The current protocol is HTTP')
       throw new RtcError({
         code: ErrorCode.NOT_SUPPORT_ERROR,
@@ -189,7 +189,7 @@ export const NERTC = {
       })
     }
     let getUserMedia = navigator.mediaDevices && navigator.mediaDevices.getUserMedia
-    if (!getUserMedia) {
+    if (!getUserMedia && !getParameters().passEnvCheck) {
       console.warn(`没有 getUserMedia 方法。请使用最新版本的chrome浏览器`)
       throw new RtcError({
         code: ErrorCode.NOT_SUPPORT_ERROR,
