@@ -10,6 +10,8 @@ class AIAudioEffects extends EventEmitter {
   private wasmBinary: Uint8Array = new Uint8Array()
   private processCallback!: (result: Float32Array) => void
   private isLoaded = false
+  private _enableAIDenoise = false
+  private _enableAudioEffect = false
 
   constructor(options: modelOptions) {
     super()
@@ -56,6 +58,7 @@ class AIAudioEffects extends EventEmitter {
   }
 
   set enableAIDenoise(enable: boolean) {
+    this._enableAIDenoise = enable
     this.audioEffectsWorker.postMessage({
       type: 'setState',
       option: {
@@ -66,6 +69,7 @@ class AIAudioEffects extends EventEmitter {
   }
 
   set enableAudioEffect(enable: boolean) {
+    this._enableAudioEffect = enable
     this.audioEffectsWorker.postMessage({
       type: 'setState',
       option: {
@@ -73,6 +77,14 @@ class AIAudioEffects extends EventEmitter {
         enable
       }
     })
+  }
+
+  get enableAIDenoise() {
+    return this._enableAIDenoise
+  }
+
+  get enableAudioEffect() {
+    return this._enableAudioEffect
   }
 
   addEventListener() {
@@ -94,6 +106,7 @@ class AIAudioEffects extends EventEmitter {
             this._audioEffectsWorkerDestroying = false
             this.audioEffectsWorker.terminate()
             this.audioEffectsWorker = null
+            this.isLoaded = false
           }
           break
         case 'error':

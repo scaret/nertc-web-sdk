@@ -5,14 +5,14 @@ class AIDenoise {
   rnnoise = null
   inArrayPtr = null
   outArrayPtr = null
-  enabled = true
+  enabled = false
 
   constructor() {
     //创建实例
-    this.rnnoise = Module._rnnoise_create();
+    this.rnnoise = Module._rnnoise_create()
   }
 
-  init( inArrayPtr, outArrayPtr) {
+  init(inArrayPtr, outArrayPtr) {
     this.inArrayPtr = inArrayPtr
     this.outArrayPtr = outArrayPtr
   }
@@ -52,7 +52,6 @@ class AudioEffect {
     this.inArrayPtr = inArrayPtr
     this.outArrayPtr = outArrayPtr
     this.EQArrayPtr = Module._audio_effects_malloc(128 * 4)
-
     this.ReverbPtr = Module._audio_effects_malloc(6 * 4)
   }
 
@@ -175,12 +174,16 @@ class AudioProcess {
 
     Module.HEAP16.set(leftData, this.inLeftPtr >> 1)
     Module.HEAP16.set(rightData, this.inRightPtr >> 1)
+
     if(this.AIDenoise.enable) {
-      this.AIDenoise.process(frame)
+      this.AIDenoise.process()
     }
+
     if(this.AudioEffect.enable) {
-      this.AudioEffect.process(frame)
+       this.AudioEffect.process()
     }
+
+
     result.push(
       Float32Array.from(
         Module.HEAP16.subarray(this.outLeftPtr >> 1, (this.outLeftPtr >> 1) + this.buffer_size),
@@ -237,7 +240,7 @@ class AudioProcess {
 }
 
 const worker = function () {
-  let audioEffects = new AudioProcess()
+  let audioProcess = new AudioProcess()
 
   global.onmessage = function (event) {
     const data = event.data
@@ -245,36 +248,36 @@ const worker = function () {
 
     switch (type) {
       case 'init':
-        audioEffects.init(option.wasmBinary)
+        audioProcess.init(option.wasmBinary)
         break
       case 'process':
-        if(audioEffects.buffer.length == 0) {
-          audioEffects.process(data.frame)
+        if(audioProcess.buffer.length == 0) {
+          audioProcess.process(data.frame)
         } else {
-          audioEffects.buffer.push(data.frame)
-          if(audioEffects.buffer.length > audioEffects.buffer_length) {
-            audioEffects.buffer.shift()
+          audioProcess.buffer.push(data.frame)
+          if(audioProcess.buffer.length > audioProcess.buffer_length) {
+            audioProcess.buffer.shift()
           }
         }
         break
       case 'effect':
         console.warn('effect', data.effect)
         const effect = data.effect
-        audioEffects.AudioEffect.setEffect(effect.type, effect.value)
+        audioProcess.AudioEffect.setEffect(effect.type, effect.value)
         break
       case 'setState':
         console.warn('setState', option)
         if(option.type === 'AIDenoise') {
-          audioEffects.AIDenoise.enable = option.enable
+          audioProcess.AIDenoise.enable = option.enable
         }
         if(option.type === 'AudioEffect') {
-          audioEffects.AudioEffect.enable = option.enable
+          audioProcess.AudioEffect.enable = option.enable
         }
         break
       case 'destroy':
-        if (audioEffects) {
-          audioEffects.destroy()
-          audioEffects = null
+        if (audioProcess) {
+          audioProcess.destroy()
+          audioProcess = null
         }
         global.postMessage({ type: 'destroyed' })
         break

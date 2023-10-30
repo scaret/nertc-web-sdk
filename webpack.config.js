@@ -149,7 +149,8 @@ let configWebrtcG2 = merge(config, {
     VirtualBackground: './src/entry/virtual-background',
     AdvancedBeauty: './src/entry/advanced-beauty',
     AIDenoise: './src/entry/ai-denoise',
-    AIAudioEffects: './src/entry/ai-audio-effects'
+    AIAudioEffects: './src/entry/ai-audio-effects',
+    AIhowling: './src/entry/ai-howling',
   },
   output: {
     devtoolNamespace: 'nertc',

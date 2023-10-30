@@ -9,15 +9,21 @@ export class StageAIProcessing extends StageBase {
   node: NeAudioNode<AudioWorkletNode> | null = null
   logger: ILogger
   audioWorkletAgent: AudioWorkletAgent | null = null
-  enableAIDenoise = false
-  enableAudioEffect = false
+
+  enableAudioEffects = false
+  enableAIhowling = false
   private pluginModules: {
     AIAudioEffects: {
       load: false
       process: (input: any, callback: (output: any) => void) => void
       destroy: () => void
     } | null
-  } = { AIAudioEffects: null }
+    AIhowling: {
+      load: false
+      process: (input: any) => void
+      destroy: () => void
+    } | null
+  } = { AIAudioEffects: null, AIhowling: null }
 
   constructor(context: AudioContext, logger: ILogger) {
     super(context)
@@ -33,6 +39,11 @@ export class StageAIProcessing extends StageBase {
     return this.pluginModules[key]
   }
 
+  hasWorkingPlugin() {
+    console.warn('hasWorkingPlugin', this.enableAudioEffects || this.enableAIhowling)
+    return this.enableAudioEffects || this.enableAIhowling
+  }
+
   async init() {
     this.state = 'INITING'
     if (!this.audioWorkletAgent) {
@@ -44,26 +55,32 @@ export class StageAIProcessing extends StageBase {
       await this.audioWorkletAgent.init()
       this.audioWorkletAgent.on('rawinputs', (evt) => {
         let outputData = evt.inputs[0]
-        const plugin = this.pluginModules.AIAudioEffects
-        if (this.enabled && outputData.length && plugin) {
-          plugin.process(outputData, (data) => {
-            if (data.length) {
-              outputData = data
-            }
-            // console.warn('outputData', outputData[0], outputData[1])
+        if (this.enabled) {
+          const howlingPlugin = this.pluginModules.AIhowling
+          if (howlingPlugin?.load && this.enableAIhowling) {
+            howlingPlugin.process(outputData)
+          }
+          const audioEffectsPlugin = this.pluginModules.AIAudioEffects
+          if (audioEffectsPlugin?.load && this.enableAudioEffects) {
+            audioEffectsPlugin.process(outputData, (data) => {
+              if (data.length) {
+                outputData = data
+              }
+              // console.warn('outputData', outputData[0], outputData[1])
+              this.audioWorkletAgent!.outputData(outputData)
+            })
+          } else if (outputData.length) {
             this.audioWorkletAgent!.outputData(outputData)
-          })
+          }
         }
       })
     }
-
     this.state = 'INITED'
   }
 
   unregisterPlugin(key: AudioPluginType) {
     this.pluginModules[key] = null
-    //需要修改
-    if (!this.enableAIDenoise && !this.enableAudioEffect) {
+    if (!this.hasWorkingPlugin()) {
       this.state = 'UNINIT'
     }
   }

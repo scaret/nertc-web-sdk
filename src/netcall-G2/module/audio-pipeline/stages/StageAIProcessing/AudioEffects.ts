@@ -52,9 +52,9 @@ export default class AudioEffect extends EventEmitter {
 
   getState(key: EffectType) {
     if (key === 'AIDenoise') {
-      return this.stageAIProcessing.enableAIDenoise
+      return this.audioEffectProcess.enableAIDenoise
     } else if (key === 'AudioEffect') {
-      return this.stageAIProcessing.enableAudioEffect
+      return this.audioEffectProcess.enableAudioEffect
     }
   }
 }
