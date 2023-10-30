@@ -21,8 +21,8 @@ export default class AIholwing extends EventEmitter {
    *
    */
   init() {
-    this.howlingProcess.on('effects-load', () => {
-      this.emit('effects-load')
+    this.howlingProcess.on('aihowling-load', () => {
+      this.emit('aihowling-load')
     })
     this.howlingProcess.init()
   }
