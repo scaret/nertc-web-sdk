@@ -265,7 +265,6 @@ const worker = function () {
         }
         break
       case 'effect':
-        console.warn('effect', data.effect)
         const effect = data.effect
         audioProcess.AudioEffect.setEffect(effect.type, effect.value)
         break

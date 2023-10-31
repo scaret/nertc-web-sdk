@@ -435,7 +435,7 @@
           </div>
         </div>
         <p class="block-header">AI音效</p>
-        <div class="part hide">
+        <div class="part">
           <div class="line">
             <button type="button" id="registerSimdAIDenoise">注册(simd版)</button>
             <button type="button" id="adjs404">注册(模拟插件404)</button>
@@ -487,6 +487,9 @@
               自定义音调:
               <input id="setLocalPitch" type="range" step="0.1" min="0.5" max="2.0" value="1.0">
               <span id="setLocalPitch_value">1</span>
+              <br>
+              <span>pitch: </span>
+              <input type="number" id="setLocalPitch_custom"/>
             </label>
           </div>
           <div class="line">
@@ -498,60 +501,90 @@
               31:
               <input id="eq_0" type="range" step="1" min="-15" max="15" value="0">
               <span id="eq_0_value">0</span>
+              <br>
+              <span>自定义：</span>
+              <input type="number" id="eq_0_custom"/>
             </label>
             <br>
             <label>
               62:
               <input id="eq_1" type="range" step="1" min="-15" max="15" value="0">
               <span id="eq_1_value">0</span>
+              <br>
+              <span>自定义：</span>
+              <input type="number" id="eq_1_custom"/>
             </label>
             <br>
             <label>
               125:
               <input id="eq_2" type="range" step="1" min="-15" max="15" value="0">
               <span id="eq_2_value">0</span>
+              <br>
+              <span>自定义：</span>
+              <input type="number" id="eq_2_custom"/>
             </label>
             <br>
             <label>
               250:
               <input id="eq_3" type="range" step="1" min="-15" max="15" value="0">
               <span id="eq_3_value">0</span>
+              <br>
+              <span>自定义：</span>
+              <input type="number" id="eq_3_custom"/>
             </label>
             <br>
             <label>
               500:
               <input id="eq_4" type="range" step="1" min="-15" max="15" value="0">
               <span id="eq_4_value">0</span>
+              <br>
+              <span>自定义：</span>
+              <input type="number" id="eq_4_custom"/>
             </label>
             <br>
             <label>
               1000:
               <input id="eq_5" type="range" step="1" min="-15" max="15" value="0">
               <span id="eq_5_value">0</span>
+              <br>
+              <span>自定义：</span>
+              <input type="number" id="eq_5_custom"/>
             </label>
             <br>
             <label>
               2000:
               <input id="eq_6" type="range" step="1" min="-15" max="15" value="0">
               <span id="eq_6_value">0</span>
+              <br>
+              <span>自定义：</span>
+              <input type="number" id="eq_6_custom"/>
             </label>
             <br>
             <label>
               4000:
               <input id="eq_7" type="range" step="1" min="-15" max="15" value="0">
               <span id="eq_7_value">0</span>
+              <br>
+              <span>自定义：</span>
+              <input type="number" id="eq_7_custom"/>
             </label>
             <br>
             <label>
               8000:
               <input id="eq_8" type="range" step="1" min="-15" max="15" value="0">
               <span id="eq_8_value">0</span>
+              <br>
+              <span>自定义：</span>
+              <input type="number" id="eq_8_custom"/>
             </label>
             <br>
             <label>
               16000:
               <input id="eq_9" type="range" step="1" min="-15" max="15" value="0">
               <span id="eq_9_value">0</span>
+              <br>
+              <span>自定义：</span>
+              <input type="number" id="eq_9_custom"/>
             </label>
           </div>
           <div class="line">
@@ -563,36 +596,49 @@
               湿信号增益:
               <input id="wetGain" type="range" step="0.1" min="0" max="1" value="0">
               <span id="wetGain_value">0</span>
+              <br>
+              <span>自定义：</span>
+              <input type="number" id="wetGain_custom"/>
             </label>
             <br>
             <label>
               干信号增益:
               <input id="dryGain" type="range" step="0.1" min="0" max="1" value="1">
               <span id="dryGain_value">1</span>
+              <span>自定义：</span>
+              <input type="number" id="dryGain_custom"/>
             </label>
             <br>
             <label>
               混响阻尼:
               <input id="damping" type="range" step="0.1" min="0" max="1" value="1">
               <span id="damping_value">1</span>
+              <span>自定义：</span>
+              <input type="number" id="damping_custom"/>
             </label>
             <br>
             <label>
               房间大小:
               <input id="roomSize" type="range" step="0.1" min="0.1" max="2" value="0.1">
               <span id="roomSize_value">0.1</span>
+              <span>自定义：</span>
+              <input type="number" id="roomSize_custom"/>
             </label>
             <br>
             <label>
               持续强度:
               <input id="decayTime" type="range" step="0.1" min="0" max="20" value="0.1">
               <span id="decayTime_value">0.1</span>
+              <span>自定义：</span>
+              <input type="number" id="decayTime_custom"/>
             </label>
             <br>
             <label>
               延迟长度:
               <input id="preDelay" type="range" step="0.1" min="0" max="1" value="0">
               <span id="preDelay_value">0</span>
+              <span>自定义：</span>
+              <input type="number" id="preDelay_custom"/>
             </label>
             <br>
           </div>

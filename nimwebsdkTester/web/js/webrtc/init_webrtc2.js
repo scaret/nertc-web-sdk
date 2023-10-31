@@ -2265,16 +2265,18 @@ $('#setVoiceBeautifier').on('change', (e) => {
   rtc.localStream.setAudioEffect(1, value)
 })
 
-$('#setLocalPitch').on('input', (e) => {
-  $('#setLocalPitch_value').html(e.target.value)
+let pitchValue = 0.5;
+$('#setLocalPitch, #setLocalPitch_custom').on('input', (e) => {
+  pitchValue = Number(e.target.value)
+  $(`#setLocalPitch_value`).html(pitchValue)
   if (rtc.localStream) {
-    rtc.localStream.setAudioEffect('Pitch', Number(e.target.value))
+    rtc.localStream.setAudioEffect('Pitch', pitchValue)
   }
 })
 
 const eqArray = Array(10).fill(0)
 for (let i = 0; i < 10; i++) {
-  $(`#eq_${i}`).on('input', (e) => {
+  $(`#eq_${i}, #eq_${i}_custom`).on('input', (e) => {
     $(`#eq_${i}_value`).html(e.target.value)
     eqArray[i] = Number(e.target.value)
     if (rtc.localStream) {
@@ -2292,9 +2294,8 @@ const reverbObj = {
   decayTime: 0.1,
   preDelay: 0,
 }
-
 for(let key in reverbObj) {
-  $(`#${key}`).on('input', (e) => {
+  $(`#${key}, #${key}_custom`).on('input', (e) => {
     $(`#${key}_value`).html(e.target.value)
     reverbObj[key] = Number(e.target.value)
     if (rtc.localStream) {
