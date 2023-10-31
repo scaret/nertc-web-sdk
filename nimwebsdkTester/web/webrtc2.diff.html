@@ -99,6 +99,7 @@
           <button type="button" id="NERTCNOW">云信(当前开发版本)</button>
           <button type="button" id="AGORA">声网</button>
           <button type="button" id="TRTC">腾讯</button>
+          <button type="button" id="TRTC_NEW">腾讯(新)</button>
           <button type="button" id="ZEGO">即构</button>
         </div>
         <br />
@@ -168,7 +169,13 @@
               />H264</label
             >
             <label
+              ><input id="agoraCodecH265" type="radio" name="agoraCodec" value="h265" />H265</label
+            >
+            <label
               ><input id="agoraCodecVP8" type="radio" name="agoraCodec" value="vp8" />VP8</label
+            >
+            <label
+              ><input id="agoraCodecVP9" type="radio" name="agoraCodec" value="vp9" />VP9</label
             >
           </div>
         </div>
@@ -211,7 +218,8 @@
         <select id="sdkSet" style="width: 25%">
           <option id="setNertc" value="NERTC">云信</option>
           <option id="setAgora" value="AGORA">声网</option>
-          <option id="setTRTC" value="TRTC">腾讯</option>
+          <option id="setTrtc" value="TRTC">腾讯</option>
+          <option id="setTRTCNew" value="TRTC_NEW">腾讯(新)</option>
           <option id="setZego" value="ZEGO">即构</option>
         </select>
         <select id="endSet" style="width: 25%">
@@ -617,10 +625,11 @@
     </script>
 
     <script>
-      let NVERSION = '5.4.0'
-      let AVERSION = '4.18.2'
+      let NVERSION = '5.5.201'
+      let AVERSION = '4.19.2'
       let TVERSION = '4.15.12'
-      let ZVERSION = '2.25.6'
+      let TVERSION_NEW = '5.1.3'
+      let ZVERSION = '3.0.0'
       let currentScript = null
       function loadSDK(sdkName, num) {
         let sdkScript = document.createElement('script')
@@ -647,6 +656,11 @@
               console.log('加载zego成功')
               startZEGO()
             })
+          } else if (num === 5) {
+            loadScript('./js/rtcdiff/trtcnew.js', function () {
+              console.log('加载trtc_new成功')
+              startTRTCNew()
+            })
           }
         }
         document.body.appendChild(sdkScript)
@@ -671,6 +685,7 @@
       let Nbutton = document.getElementById('NERTC')
       let Abutton = document.getElementById('AGORA')
       let Tbutton = document.getElementById('TRTC')
+      let TbuttonNew = document.getElementById('TRTC_NEW')
       let Zbutton = document.getElementById('ZEGO')
       let NNbutton = document.getElementById('NERTCNOW')
 
@@ -748,6 +763,7 @@
         }
         loadSDK(sdkName, 3)
       }
+
       Zbutton.onclick = function () {
         setActiveButton(Zbutton)
         let sdkName = `Zego_${ZVERSION}`
@@ -761,6 +777,20 @@
           return
         }
         loadSDK(sdkName, 4)
+      }
+      TbuttonNew.onclick = function () {
+        setActiveButton(TbuttonNew)
+        let sdkName = `TRTC_NEW_${TVERSION_NEW}`
+        // 如果已经加载过sdk，则不再重复加载
+        if (document.querySelector(`script[src="./js/rtcdiff/${sdkName}.js"]`)) {
+          console.warn('已经加载过: ', sdkName)
+          loadScript('./js/rtcdiff/trtc.js', function () {
+            console.log('已经加载过 SDK 后，再次加载 trtc_new 成功')
+            startTRTC()
+          })
+          return
+        }
+        loadSDK(sdkName, 5)
       }
     </script>
   </body>
