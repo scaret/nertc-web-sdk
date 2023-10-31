@@ -220,8 +220,7 @@ class LocalStream extends RTCEventEmitter {
   private canvasWatermarkOptions: NERtcCanvasWatermarkConfig | null = null
   private encoderWatermarkOptions: NERtcEncoderWatermarkConfig | null = null
   private supportWasm = true
-  private supportAIDenoise = true
-  private supportAudioEffect = true
+  private supportAIAudioEffects = true
   private supportHowling = true
   constraintSettings: {
     [mediaType in MediaTypeShort]: AudioProcessingOptions
@@ -3954,11 +3953,11 @@ class LocalStream extends RTCEventEmitter {
 
   //打开AI降噪
   async enableAIDenoise(): Promise<boolean> {
-    if (!this.supportAIDenoise) {
-      this.logger.warn('Unsupport ai denoise. Please check your plugin version')
+    if (!this.supportAIAudioEffects) {
+      this.logger.warn('Unsupport ai audio effects. Please check your plugin version')
       return false
     }
-    this.logger.log('start ai denoise.')
+    this.logger.log('start denoise.')
     let stageAIProcessing: StageAIProcessing
     if (this.mediaHelper.audio.stageAIProcessing) {
       stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
@@ -4034,10 +4033,10 @@ class LocalStream extends RTCEventEmitter {
     this.logger.log('close ai denoise.')
     const stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
     if (!stageAIProcessing) {
-      this.logger.warn('disableAIDenoise: ai denoise is not created')
+      this.logger.warn('disableAIDenoise: audio process is not created')
       return true
     } else if (!this._audioAffectsProcessor) {
-      this.logger.warn('ai denoise is already closed.')
+      this.logger.warn('denoise is already closed.')
       return true
     }
 
@@ -4082,11 +4081,11 @@ class LocalStream extends RTCEventEmitter {
 
   //打开美声变声
   async enableAudioEffect(): Promise<boolean> {
-    if (!this.supportAudioEffect) {
-      this.logger.warn('Unsupport ai audio effect. Please check your plugin version')
+    if (!this.supportAIAudioEffects) {
+      this.logger.warn('Unsupport ai audio effects. Please check your plugin version')
       return false
     }
-    this.logger.log('start ai audio effect.')
+    this.logger.log('start audio effect.')
     let stageAIProcessing: StageAIProcessing
     if (this.mediaHelper.audio.stageAIProcessing) {
       stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
@@ -4106,7 +4105,7 @@ class LocalStream extends RTCEventEmitter {
       this.logger.error('AudioEffects plugin is not register.')
       throw new RtcError({
         code: ErrorCode.PLUGIN_NOT_REGISTER,
-        message: 'audio effect plugin is not register'
+        message: 'ai audio effect plugin is not register'
       })
     }
     //暂时这么写，后续需要优化
@@ -4151,7 +4150,7 @@ class LocalStream extends RTCEventEmitter {
     this.logger.log('close audio effect.')
     const stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
     if (!stageAIProcessing) {
-      this.logger.warn('disableAIDenoise: ai audio effect is not created')
+      this.logger.warn('disableAudioEffect: audio process is not created')
       return true
     } else if (!this._audioAffectsProcessor) {
       this.logger.warn('ai audio effect is already closed.')
@@ -4183,13 +4182,22 @@ class LocalStream extends RTCEventEmitter {
         streamID: this.stringStreamID
       }
     })
-    return false
+    return true
   }
 
-  setAudioEffect(type: number, value: number) {
+  setAudioEffect(type: number, value: number | Array<number>) {
     this.logger.log(`set audio effect:${type} ${value}`)
     if (this._audioAffectsProcessor) {
       this._audioAffectsProcessor.setAudioEffect(type, value)
+      this.client.apiFrequencyControl({
+        name: 'setAudioEffect',
+        code: 0,
+        param: {
+          streamID: this.stringStreamID,
+          type,
+          value
+        }
+      })
     } else {
       this.logger.warn('audio effect is not opened.')
     }
@@ -4263,7 +4271,7 @@ class LocalStream extends RTCEventEmitter {
     this.logger.log('close ai howling.')
     const stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
     if (!stageAIProcessing) {
-      this.logger.warn('disableAIDenoise: aihowling is not created')
+      this.logger.warn('disableAIhowling: audio process is not created')
       return true
     } else if (!this._aiHowlingProcessor) {
       this.logger.warn('aihowling is already closed.')
@@ -4554,11 +4562,8 @@ class LocalStream extends RTCEventEmitter {
         })
       })
       plugin.once('error', (message: string) => {
-        if (options.key == 'AIDenoise') {
-          this.supportAIDenoise = false
-        }
-        if (options.key == 'AudioEffect') {
-          this.supportAudioEffect = false
+        if (options.key == 'AIAudioEffects') {
+          this.supportAIAudioEffects = false
         }
         if (options.key == 'AIhowling') {
           this.supportHowling = false
@@ -4604,11 +4609,13 @@ class LocalStream extends RTCEventEmitter {
   async unregisterPlugin(key: string) {
     this.logger.log(`unRegister plugin:${key}`)
     if (audioPlugins.indexOf(key) !== -1) {
-      if (key === 'AIDenoise') {
-        this.disableAIDenoise()
-      }
-      if (key === 'AudioEffect') {
-        this.disableAudioEffect()
+      if (key === 'AIAudioEffects') {
+        if (this._audioAffectsProcessor?.getState('AIDenoise')) {
+          this.disableAIDenoise()
+        }
+        if (this._audioAffectsProcessor?.getState('AudioEffect')) {
+          this.disableAudioEffect()
+        }
       }
       const stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
       if (stageAIProcessing) {

@@ -30,7 +30,7 @@ export default class AudioEffect extends EventEmitter {
     this.audioEffectProcess.init()
   }
 
-  setAudioEffect(type: number, value: number) {
+  setAudioEffect(type: number, value: number | Array<number>) {
     this.audioEffectProcess.setAudioEffect(type, value)
   }
 

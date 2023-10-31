@@ -130,86 +130,42 @@ const advancedBeautyPluginConfig = {
 
 let beauty_config = null
 
-//AI降噪
-const aiDenoisePluginConfig = {
-  development: {
-    simd: {
-      key: 'AIDenoise',
-      pluginUrl: './js/nim/NIM_Web_AIDenoise.js',
-      wasmUrl: './js/nim/wasm/NIM_Web_AIDenoise_simd.wasm' + `?time=${Math.random()}`
-    },
-    nosimd: {
-      key: 'AIDenoise',
-      pluginUrl: './js/nim/NIM_Web_AIDenoise.js',
-      wasmUrl: './js/nim/wasm/NIM_Web_AIDenoise_nosimd.wasm'
-    }
-  },
-  production: {
-    simd: {
-      key: 'AIDenoise',
-      pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}.js`,
-      wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_simd_v${NERTC.VERSION}.wasm`
-    },
-    nosimd: {
-      key: 'AIDenoise',
-      pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}.js`,
-      wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_nosimd_v${NERTC.VERSION}.wasm`
-    }
-  },
-  test: {
-    simd: {
-      key: 'AIDenoise',
-      pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}_test.js`,
-      wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_simd_v${NERTC.VERSION}_test.wasm`
-    },
-    nosimd: {
-      key: 'AIDenoise',
-      pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}_test.js`,
-      wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_nosimd_v${NERTC.VERSION}_test.wasm`
-    }
-  }
-}
-
-let aidenoise_config = null
-
-//美声变声
+//AI音效
 const aiAudioEffectsPluginConfig = {
   development: {
     simd: {
       key: 'AIAudioEffects',
       pluginUrl: './js/nim/NIM_Web_AIAudioEffects.js',
-      //wasmUrl:
-     //   'https://yx-web-nosdn.netease.im/sdk-release/audio_effects_and_denoise_20231018_2.wasm' + `?time=${Math.random()}`
-      wasmUrl: './js/nim/wasm/NIM_Web_ai_audio_effects.wasm'
+      wasmUrl: './js/nim/wasm/NIM_Web_AIAudioEffects_simd.wasm'
     },
     nosimd: {
-      key: 'AudioEffects',
-      pluginUrl: './js/nim/NIM_Web_AIDenoise.js',
-      wasmUrl: './js/nim/wasm/NIM_Web_AIDenoise_nosimd.wasm'
+      key: 'AIAudioEffects',
+      pluginUrl: './js/nim/NIM_Web_AIAudioEffects.js',
+      wasmUrl: './js/nim/wasm/NIM_Web_AIAudioEffects_nosimd.wasm'
     }
   },
   production: {
     simd: {
-      key: 'AIDenoise',
-      pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}.js`,
-      wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_simd_v${NERTC.VERSION}.wasm`
+      key: 'AIAudioEffects',
+      pluginUrl: `./js/nim/NIM_Web_AIAudioEffects_v${NERTC.VERSION}.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIAudioEffects_simd_v${NERTC.VERSION}.wasm`
     },
     nosimd: {
-      key: 'AIDenoise',
-      pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}.js`,
-      wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_nosimd_v${NERTC.VERSION}.wasm`
+      key: 'AIAudioEffects',
+      pluginUrl: `./js/nim/NIM_Web_AIAudioEffects_v${NERTC.VERSION}.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIAudioEffects_nosimd_v${NERTC.VERSION}.wasm`
     }
   },
   test: {
     simd: {
-      key: 'AIDenoise',
-      pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}_test.js`,
-      wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_simd_v${NERTC.VERSION}_test.wasm`
+      key: 'AIAudioEffects',
+      pluginUrl: `./js/nim/NIM_Web_AIAudioEffects_v${NERTC.VERSION}_test.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIAudioEffects_simd_v${NERTC.VERSION}_test.wasm`
     },
     nosimd: {
-      key: 'AIDenoise',
-      pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}_test.js`,
-      wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_nosimd_v${NERTC.VERSION}_test.wasm`
+      key: 'AIAudioEffects',
+      pluginUrl: `./js/nim/NIM_Web_AIAudioEffects_v${NERTC.VERSION}_test.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIAudioEffects_nosimd_v${NERTC.VERSION}_test.wasm`
     }
   }
 }
@@ -1824,7 +1780,6 @@ $('#leaveChannel-btn').on('click', async () => {
   window.rtc.client.leave()
   rtc.enableBodySegment = false
   rtc.enableAdvancedBeauty = false
-  rtc.enableAIDenoise = false
   rtc.remoteStreams.length = 0
   subList.length = 0
   clearInterval(playTimer)
@@ -2035,10 +1990,6 @@ function onPluginLoaded(name) {
       $('#advancedBeautyStatus').html('loaded').show()
       rtc.enableAdvancedBeauty = true
       break
-    case 'AIDenoise':
-      $('#aidenoiseStatus').html('loaded').show()
-      rtc.enableAIDenoise = true
-      break
     case 'AIAudioEffects':
       $('#audioEffectStatus').html('loaded').show()
       break
@@ -2224,44 +2175,45 @@ $('#unregisterAdvancedBeauty').on('click', () => {
   }
 })
 
+//AI音效
 //强制注册simd版插件
 $('#registerSimdAIDenoise').on('click', async () => {
   if (rtc.localStream) {
-    $('#aidenoiseStatus').html('loading').show()
+    $('#audioEffectStatus').html('loading').show()
     const type = 'simd'
-    aidenoise_config = aiDenoisePluginConfig[NERTC.ENV][type]
-    rtc.localStream.registerPlugin(aidenoise_config)
+    audioEffects_config = aiAudioEffectsPluginConfig[NERTC.ENV][type]
+    rtc.localStream.registerPlugin(audioEffects_config)
   }
 })
-//模拟AI降噪插件js 404
+//模拟AI音效插件js 404
 $('#adjs404').on('click', async () => {
   if (rtc.localStream) {
-    $('#aidenoiseStatus').html('loading').show()
+    $('#audioEffectStatus').html('loading').show()
     const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
-    segment_config = Object.assign({}, aiDenoisePluginConfig[NERTC.ENV][type])
-    segment_config.pluginUrl = './js/nim/NIM_Web_AIDenoise111.js'
-    rtc.localStream.registerPlugin(segment_config)
+    audioEffects_config = Object.assign({}, aiAudioEffectsPluginConfig[NERTC.ENV][type])
+    audioEffects_config.pluginUrl = './js/nim/NIM_Web_AIDenoise111.js'
+    rtc.localStream.registerPlugin(audioEffects_config)
   }
 })
-//模拟AI降噪插件wasm 404
+//模拟AI音效插件wasm 404
 $('#adwasm404').on('click', async () => {
   if (rtc.localStream) {
     $('#aidenoiseStatus').html('loading').show()
     const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
-    segment_config = Object.assign({}, aiDenoisePluginConfig[NERTC.ENV][type])
-    segment_config.wasmUrl = './js/nim/wasm/NIM_Web_AIDenoise111.wasm' + `?time=${Math.random()}`
-    rtc.localStream.registerPlugin(segment_config)
+    audioEffects_config = Object.assign({}, aiAudioEffectsPluginConfig[NERTC.ENV][type])
+    audioEffects_config.wasmUrl = './js/nim/wasm/NIM_Web_AIDenoise111.wasm' + `?time=${Math.random()}`
+    rtc.localStream.registerPlugin(audioEffects_config)
   }
 })
 
-// $('#registerAIDenoise').on('click', async () => {
-//   if (rtc.localStream) {
-//     $('#aidenoiseStatus').html('loading').show()
-//     const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
-//     aidenoise_config = aiDenoisePluginConfig[NERTC.ENV][type]
-//     rtc.localStream.registerPlugin(aidenoise_config)
-//   }
-// })
+$('#registerAIAudioEffects').on('click', async () => {
+  if (rtc.localStream) {
+    $('#audioEffectStatus').html('loading').show()
+    const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
+    audioEffects_config = aiAudioEffectsPluginConfig[NERTC.ENV][type]
+    rtc.localStream.registerPlugin(audioEffects_config)
+  }
+})
 
 $('#enableAIDenoise').on('click', () => {
   if (rtc.localStream) {
@@ -2276,23 +2228,6 @@ $('#disableAIDenoise').on('click', () => {
   if (rtc.localStream) {
     console.warn('关闭ai降噪')
     rtc.localStream.disableAIDenoise()
-  }
-})
-
-// $('#unregisterAIDenoise').on('click', () => {
-//   $('#aidenoiseStatus').html('loading').hide()
-//   if (aidenoise_config) {
-//     rtc.localStream.unregisterPlugin(aidenoise_config.key)
-//     rtc.enableAIDenoise = false
-//   }
-// })
-
-$('#registerAIAudioEffects').on('click', async () => {
-  if (rtc.localStream) {
-    $('#audioEffectStatus').html('loading').show()
-    const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
-    audioEffects_config = aiAudioEffectsPluginConfig[NERTC.ENV][type]
-    rtc.localStream.registerPlugin(audioEffects_config)
   }
 })
 
@@ -2314,8 +2249,8 @@ $('#disableAudioEffect').on('click', () => {
 
 $('#unregisterAIAudioEffects').on('click', () => {
   $('#audioEffectStatus').html('loading').hide()
-  if (aiAudioEffectsPluginConfig) {
-    rtc.localStream.unregisterPlugin(aiAudioEffectsPluginConfig.key)
+  if (audioEffects_config) {
+    rtc.localStream.unregisterPlugin(audioEffects_config.key)
 
   }
 })
@@ -2401,6 +2336,7 @@ $('#disableAIhowling').on('click', () => {
   if (rtc.localStream) {
     console.warn('关闭啸叫检测')
     rtc.localStream.disableAIhowling()
+    rtc.localStream.off('ai-howling-enabled')
   }
 })
 

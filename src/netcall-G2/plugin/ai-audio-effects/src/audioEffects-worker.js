@@ -168,22 +168,27 @@ class AudioProcess {
       return
     }
 
-    let leftData = Int16Array.from(frame[0], (x) => x * 32767),
-    rightData = Int16Array.from(frame[1], (x) => x * 32767)
+    let leftData = null, rightData = null;
     let result = []
 
+    if(frame.length == 2) {
+      leftData = Int16Array.from(frame[0], (x) => x * 32767)
+      rightData = Int16Array.from(frame[1], (x) => x * 32767)
+    } else if (frame.length == 1) {
+      leftData = Int16Array.from(frame[0], (x) => x * 32767)
+      rightData = Int16Array.from(frame[0], (x) => x * 32767)
+    } else {
+      console.warn('音频源数据异常，长度-', frame.length)
+    }
     Module.HEAP16.set(leftData, this.inLeftPtr >> 1)
     Module.HEAP16.set(rightData, this.inRightPtr >> 1)
 
     if(this.AIDenoise.enable) {
       this.AIDenoise.process()
     }
-
     if(this.AudioEffect.enable) {
        this.AudioEffect.process()
     }
-
-
     result.push(
       Float32Array.from(
         Module.HEAP16.subarray(this.outLeftPtr >> 1, (this.outLeftPtr >> 1) + this.buffer_size),
@@ -197,7 +202,6 @@ class AudioProcess {
       )
     )
     this.handleAudioData(result)
-
     if (this.buffer.length) {
       const buffer = this.buffer.shift()
       this.process(buffer)
