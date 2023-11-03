@@ -1806,8 +1806,7 @@ class Client extends Base {
     })
     if (reason) {
       throw new RtcError({
-        code: ErrorCode.SET_CLIENT_ROLE_ERROR,
-        extraCode: reason,
+        code: reason,
         message
       })
     }

@@ -2117,7 +2117,14 @@ class MediaHelper extends EventEmitter {
       this.enableAudioRouting()
     }
 
-    if (!this.audio.webAudio || !this.audio.webAudio.context) {
+    if (this.getAudioInputTracks().length === 0 || !this.stream.pubStatus.audio.audio) {
+      return Promise.reject(
+        new RtcError({
+          code: ErrorCode.AUDIO_EFFECT_NO_AUDIO,
+          message: 'playEffect() 当前没有开启麦克风，无法使用音效功能'
+        })
+      )
+    } else if (!this.audio.webAudio || !this.audio.webAudio.context) {
       this.logger.log('playEffect() 浏览器不支持')
       return Promise.reject(
         new RtcError({
@@ -2142,13 +2149,6 @@ class MediaHelper extends EventEmitter {
           })
         )
       }
-    } else if (this.getAudioInputTracks().length === 0 || !this.stream.pubStatus.audio.audio) {
-      return Promise.reject(
-        new RtcError({
-          code: ErrorCode.AUDIO_EFFECT_NO_AUDIO,
-          message: 'playEffect() 当前没有开启麦克风，无法使用音效功能'
-        })
-      )
     }
     this.audio.mixAudioConf.sounds[soundId].state = 'STARTING'
 
@@ -2205,7 +2205,7 @@ class MediaHelper extends EventEmitter {
     }
     let reason, message
     if (!this.audio.mixAudioConf.sounds[soundId]) {
-      message = 'pauseEffect() soundId找不到对应的音效文件'
+      message = 'stopEffect() soundId找不到对应的音效文件'
       reason = ErrorCode.AUDIO_EFFECT_FILE_LOST_ERROR
     }
     if (reason) {
