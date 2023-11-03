@@ -5104,20 +5104,32 @@ const showStats = async () => {
   })
   $('#statsPanel').html(str)
 
-  const sessionStats = await rtc.client.getSessionStats()
-  const sessionStatsHTML = JSON.stringify(sessionStats, null, 2)
-    .replace(/ /g, '&nbsp;').replace(/\n/g, '<br/>')
-  $('#sessionStats').html(sessionStatsHTML)
+  try{
+    const sessionStats = await rtc.client.getSessionStats()
+    const sessionStatsHTML = JSON.stringify(sessionStats, null, 2)
+      .replace(/ /g, '&nbsp;').replace(/\n/g, '<br/>')
+    $('#sessionStats').html(sessionStatsHTML)
+  } catch(e) {
+    // console.error(e)
+  }
 
-  const transportStats = await rtc.client.getTransportStats()
-  const transportStatsHTML = JSON.stringify(transportStats, null, 2)
-    .replace(/ /g, '&nbsp;').replace(/\n/g, '<br/>')
-  $('#transportStats').html(transportStatsHTML)
+  try{
+    const transportStats = await rtc.client.getTransportStats()
+    const transportStatsHTML = JSON.stringify(transportStats, null, 2)
+      .replace(/ /g, '&nbsp;').replace(/\n/g, '<br/>')
+    $('#transportStats').html(transportStatsHTML)
+  } catch(e) {
+    // console.error(e)
+  }
 
-  const systemStats = await rtc.client.getSystemStats()
-  const systemStatsHTML = JSON.stringify(systemStats, null, 2)
-    .replace(/ /g, '&nbsp;').replace(/\n/g, '<br/>')
-  $('#systemStats').html(systemStatsHTML)
+  try{
+    const systemStats = await rtc.client.getSystemStats()
+    const systemStatsHTML = JSON.stringify(systemStats, null, 2)
+      .replace(/ /g, '&nbsp;').replace(/\n/g, '<br/>')
+    $('#systemStats').html(systemStatsHTML)
+  } catch (e){
+    // console.error(e)
+  }
   $('#otherStats').show()
 }
 let statsTimer = null
