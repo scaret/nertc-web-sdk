@@ -1351,7 +1351,7 @@ function updateLocalViewInfo() {
 
       if (mediaType === 'video') {
         const track = rtc.localStream.mediaHelper.video.cameraTrack
-        if (track) {
+        if (track && 'getSettings' in MediaStreamTrack.prototype) {
           const settings = track.getSettings()
           if (settings && settings.width && settings.height) {
             infoStr += ` ${settings.width}x${settings.height}`
@@ -1360,7 +1360,7 @@ function updateLocalViewInfo() {
       }
       if (mediaType === 'screen') {
         const track = rtc.localStream.mediaHelper.screen.screenVideoTrack
-        if (track) {
+        if (track && 'getSettings' in MediaStreamTrack.prototype) {
           const settings = track.getSettings()
           if (settings && settings.width && settings.height) {
             infoStr += ` ${settings.width}x${settings.height}`
@@ -1423,7 +1423,7 @@ function updateRemoteViewInfo() {
 
         if (mediaType === 'video') {
           const track = remoteStream.mediaHelper.video.cameraTrack
-          if (track) {
+          if (track && 'getSettings' in MediaStreamTrack.prototype) {
             const settings = track.getSettings()
             if (settings && settings.width && settings.height) {
               infoStr += ` ${settings.width}x${settings.height}`
@@ -1432,7 +1432,7 @@ function updateRemoteViewInfo() {
         }
         if (mediaType === 'screen') {
           const track = remoteStream.mediaHelper.screen.screenVideoTrack
-          if (track) {
+          if (track && 'getSettings' in MediaStreamTrack.prototype) {
             const settings = track.getSettings()
             if (settings && settings.width && settings.height) {
               infoStr += ` ${settings.width}x${settings.height}`
@@ -4557,7 +4557,7 @@ function updateAudioMixingStatus() {
 }
 
 if (
-  !(ANY_CHROME_MAJOR_VERSION && ANY_CHROME_MAJOR_VERSION >= 62 && ANY_CHROME_MAJOR_VERSION < 72)
+  !(ANY_CHROME_MAJOR_VERSION && ANY_CHROME_MAJOR_VERSION >= 58 && ANY_CHROME_MAJOR_VERSION < 72)
 ) {
   setInterval(updateAudioMixingStatus, 1000)
 }
@@ -5104,30 +5104,33 @@ const showStats = async () => {
   })
   $('#statsPanel').html(str)
 
-  try{
+  try {
     const sessionStats = await rtc.client.getSessionStats()
     const sessionStatsHTML = JSON.stringify(sessionStats, null, 2)
-      .replace(/ /g, '&nbsp;').replace(/\n/g, '<br/>')
+      .replace(/ /g, '&nbsp;')
+      .replace(/\n/g, '<br/>')
     $('#sessionStats').html(sessionStatsHTML)
-  } catch(e) {
+  } catch (e) {
     // console.error(e)
   }
 
-  try{
+  try {
     const transportStats = await rtc.client.getTransportStats()
     const transportStatsHTML = JSON.stringify(transportStats, null, 2)
-      .replace(/ /g, '&nbsp;').replace(/\n/g, '<br/>')
+      .replace(/ /g, '&nbsp;')
+      .replace(/\n/g, '<br/>')
     $('#transportStats').html(transportStatsHTML)
-  } catch(e) {
+  } catch (e) {
     // console.error(e)
   }
 
-  try{
+  try {
     const systemStats = await rtc.client.getSystemStats()
     const systemStatsHTML = JSON.stringify(systemStats, null, 2)
-      .replace(/ /g, '&nbsp;').replace(/\n/g, '<br/>')
+      .replace(/ /g, '&nbsp;')
+      .replace(/\n/g, '<br/>')
     $('#systemStats').html(systemStatsHTML)
-  } catch (e){
+  } catch (e) {
     // console.error(e)
   }
   $('#otherStats').show()
@@ -5512,17 +5515,17 @@ if (query) {
 }
 
 function updateAreaSelect() {
-  NERTC._geofenceArea.getAvailableAreas().forEach((areaCode)=>{
+  NERTC._geofenceArea.getAvailableAreas().forEach((areaCode) => {
     if ($("#areaCode option[value='" + areaCode + "']").length === 0) {
-      $("#areaCode").append("<option value='" + areaCode + "'>" + areaCode + "</option>")
+      $('#areaCode').append("<option value='" + areaCode + "'>" + areaCode + '</option>')
     }
   })
 }
 updateAreaSelect()
 
-$('#setArea').on('click', ()=>{
+$('#setArea').on('click', () => {
   const areaCode = $('#areaCode').val()
   console.log(`setArea`, areaCode)
-  NERTC.setArea({areaCode})
+  NERTC.setArea({ areaCode })
   updateAreaSelect()
 })

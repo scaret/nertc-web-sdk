@@ -47,7 +47,7 @@ export function detectDevice(): BuiltinHandlerName | undefined {
     if (
       env.IS_CHROME_ONLY &&
       env.CHROME_MAJOR_VERSION &&
-      env.CHROME_MAJOR_VERSION >= 62 &&
+      env.CHROME_MAJOR_VERSION >= 58 &&
       env.CHROME_MAJOR_VERSION < 69
     ) {
       return 'Chrome62'
@@ -59,7 +59,7 @@ export function detectDevice(): BuiltinHandlerName | undefined {
     else if (env.IS_ANDROID) {
       if (
         env.ANY_CHROME_MAJOR_VERSION &&
-        env.ANY_CHROME_MAJOR_VERSION >= 62 &&
+        env.ANY_CHROME_MAJOR_VERSION >= 58 &&
         env.ANY_CHROME_MAJOR_VERSION < 69
       ) {
         return 'Chrome62'
@@ -78,7 +78,7 @@ export function detectDevice(): BuiltinHandlerName | undefined {
       return 'Chrome74'
     }
     // Firefox.
-    else if (env.IS_FIREFOX && env.FIREFOX_MAJOR_VERSION && env.FIREFOX_MAJOR_VERSION >= 60) {
+    else if (env.IS_FIREFOX && env.FIREFOX_MAJOR_VERSION && env.FIREFOX_MAJOR_VERSION >= 58) {
       return 'Firefox60'
     }
     // Safari with Unified-Plan support enabled.

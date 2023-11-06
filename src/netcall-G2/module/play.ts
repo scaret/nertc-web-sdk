@@ -467,10 +467,14 @@ class Play extends EventEmitter {
     try {
       const videoTrack = stream.getVideoTracks()[0]
       if (videoTrack) {
+        let getSettingsEnabled = 'getSettings' in MediaStreamTrack.prototype
+        let videoSettings = getSettingsEnabled
+          ? videoTrack.getSettings()
+          : videoTrack.getConstraints()
         this.logger.log(
           `[Play] 开始加载 ${mediaType} 播放视频源：视频参数 "${videoTrack.label}",enabled ${
             videoTrack.enabled
-          } , ${JSON.stringify(videoTrack.getSettings())}`
+          } , ${JSON.stringify(videoSettings)}`
         )
       } else {
         this.logger.error(`[Play ${mediaType}] 加载播放视频源失败：没有视频源`)

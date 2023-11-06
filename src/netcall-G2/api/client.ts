@@ -516,11 +516,11 @@ class Client extends Base {
         this.adapterRef.channelInfo.customData = options.customData
       }
 
-      // chrome 62~69 不进行侦察
+      // chrome 58 ~ 69 不进行侦察
       if (
         !(
           env.ANY_CHROME_MAJOR_VERSION &&
-          env.ANY_CHROME_MAJOR_VERSION >= 62 &&
+          env.ANY_CHROME_MAJOR_VERSION >= 58 &&
           env.ANY_CHROME_MAJOR_VERSION < 69
         )
       ) {

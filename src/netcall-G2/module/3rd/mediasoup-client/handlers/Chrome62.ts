@@ -201,7 +201,7 @@ export class Chrome62 extends HandlerInterface {
     )
 
     // Handle RTCPeerConnection connection status.
-    // chrome 62 不支持 onconnectionstatechange
+    // chrome 72 以下版本不支持 onconnectionstatechange
 
     if (this._pc.connectionState) {
       this._pc.addEventListener('connectionstatechange', () => {

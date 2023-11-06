@@ -168,6 +168,7 @@ class MediaHelper extends EventEmitter {
     screenAudioSource: null,
     pipeline: null
   }
+  getSettingsEnabled: boolean
   logger: ILogger
 
   constructor(options: MediaHelperOptions) {
@@ -191,6 +192,8 @@ class MediaHelper extends EventEmitter {
       }
       return tag
     })
+
+    this.getSettingsEnabled = 'getSettings' in MediaStreamTrack.prototype
 
     this.bindRenderStream()
 
@@ -726,16 +729,20 @@ class MediaHelper extends EventEmitter {
           if (compatAudioSource) {
             // 如果是启用了兼容模式的设备，则设备信息来自于 compatAudioSource
             this.audio.deviceInfo.mic.compatAudio = true
-            const micSettings = compatAudioSource.getSettings()
-            this.audio.deviceInfo.mic.label = compatAudioSource.label
-            this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
-            this.audio.deviceInfo.mic.groupId = micSettings.groupId
+            if (this.getSettingsEnabled) {
+              const micSettings = compatAudioSource.getSettings()
+              this.audio.deviceInfo.mic.label = compatAudioSource.label
+              this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
+              this.audio.deviceInfo.mic.groupId = micSettings.groupId
+            }
           } else {
             this.audio.deviceInfo.mic.compatAudio = false
-            const micSettings = this.audio.micTrack.getSettings()
-            this.audio.deviceInfo.mic.label = this.audio.micTrack.label
-            this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
-            this.audio.deviceInfo.mic.groupId = micSettings.groupId
+            if (this.getSettingsEnabled) {
+              const micSettings = this.audio.micTrack.getSettings()
+              this.audio.deviceInfo.mic.label = this.audio.micTrack.label
+              this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
+              this.audio.deviceInfo.mic.groupId = micSettings.groupId
+            }
           }
           this.stream.client.apiEventReport('setFunction', {
             name: 'set_mic',
@@ -817,16 +824,20 @@ class MediaHelper extends EventEmitter {
           if (compatAudioSource) {
             // 如果是启用了兼容模式的设备，则设备信息来自于 compatAudioSource
             this.audio.deviceInfo.mic.compatAudio = true
-            const micSettings = compatAudioSource.getSettings()
-            this.audio.deviceInfo.mic.label = compatAudioSource.label
-            this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
-            this.audio.deviceInfo.mic.groupId = micSettings.groupId
+            if (this.getSettingsEnabled) {
+              const micSettings = compatAudioSource.getSettings()
+              this.audio.deviceInfo.mic.label = compatAudioSource.label
+              this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
+              this.audio.deviceInfo.mic.groupId = micSettings.groupId
+            }
           } else {
             this.audio.deviceInfo.mic.compatAudio = false
-            const micSettings = this.audio.micTrack.getSettings()
-            this.audio.deviceInfo.mic.label = this.audio.micTrack.label
-            this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
-            this.audio.deviceInfo.mic.groupId = micSettings.groupId
+            if (this.getSettingsEnabled) {
+              const micSettings = this.audio.micTrack.getSettings()
+              this.audio.deviceInfo.mic.label = this.audio.micTrack.label
+              this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
+              this.audio.deviceInfo.mic.groupId = micSettings.groupId
+            }
           }
           this.stream.client.apiEventReport('setFunction', {
             name: 'set_mic',
@@ -982,16 +993,20 @@ class MediaHelper extends EventEmitter {
         if (compatAudioSource) {
           // 如果是启用了兼容模式的设备，则设备信息来自于 compatAudioSource
           this.audio.deviceInfo.mic.compatAudio = true
-          const micSettings = compatAudioSource.getSettings()
-          this.audio.deviceInfo.mic.label = compatAudioSource.label
-          this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
-          this.audio.deviceInfo.mic.groupId = micSettings.groupId
+          if (this.getSettingsEnabled) {
+            const micSettings = compatAudioSource.getSettings()
+            this.audio.deviceInfo.mic.label = compatAudioSource.label
+            this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
+            this.audio.deviceInfo.mic.groupId = micSettings.groupId
+          }
         } else {
           this.audio.deviceInfo.mic.compatAudio = false
-          const micSettings = this.audio.micTrack.getSettings()
-          this.audio.deviceInfo.mic.label = this.audio.micTrack.label
-          this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
-          this.audio.deviceInfo.mic.groupId = micSettings.groupId
+          if (this.getSettingsEnabled) {
+            const micSettings = this.audio.micTrack.getSettings()
+            this.audio.deviceInfo.mic.label = this.audio.micTrack.label
+            this.audio.deviceInfo.mic.deviceId = micSettings.deviceId
+            this.audio.deviceInfo.mic.groupId = micSettings.groupId
+          }
         }
         this.stream.client.updateRecordingAudioStream()
         this.stream.client.apiEventReport('setFunction', {
@@ -1188,13 +1203,15 @@ class MediaHelper extends EventEmitter {
         if (track) {
           settings.mic = {
             compat: true,
-            settings: track.getSettings(),
+            settings: this.getSettingsEnabled ? track.getSettings() : track.getConstraints(),
             label: track.label,
             readyState: track.readyState
           }
         } else {
           settings.mic = {
-            settings: this.audio.micTrack.getSettings(),
+            settings: this.getSettingsEnabled
+              ? this.audio.micTrack.getSettings()
+              : this.audio.micTrack.getConstraints(),
             label: this.audio.micTrack.label,
             readyState: this.audio.micTrack.readyState
           }
@@ -1202,7 +1219,9 @@ class MediaHelper extends EventEmitter {
       }
       if (this.audio.audioSource) {
         settings.audioSource = {
-          settings: this.audio.audioSource.getSettings(),
+          settings: this.getSettingsEnabled
+            ? this.audio.audioSource.getSettings()
+            : this.audio.audioSource.getConstraints(),
           label: this.audio.audioSource.label,
           readyState: this.audio.audioSource.readyState
         }
@@ -1210,14 +1229,18 @@ class MediaHelper extends EventEmitter {
 
       if (this.video.cameraTrack) {
         settings.camera = {
-          settings: this.video.cameraTrack.getSettings(),
+          settings: this.getSettingsEnabled
+            ? this.video.cameraTrack.getSettings()
+            : this.video.cameraTrack.getConstraints(),
           label: this.video.cameraTrack.label,
           readyState: this.video.cameraTrack.readyState
         }
       }
       if (this.video.videoSource) {
         settings.videoSource = {
-          settings: this.video.videoSource.getSettings(),
+          settings: this.getSettingsEnabled
+            ? this.video.videoSource.getSettings()
+            : this.video.videoSource.getConstraints(),
           label: this.video.videoSource.label,
           readyState: this.video.videoSource.readyState
         }
@@ -1225,14 +1248,18 @@ class MediaHelper extends EventEmitter {
 
       if (this.screen.screenVideoTrack) {
         settings.screen = {
-          settings: this.screen.screenVideoTrack.getSettings(),
+          settings: this.getSettingsEnabled
+            ? this.screen.screenVideoTrack.getSettings()
+            : this.screen.screenVideoTrack.getConstraints(),
           label: this.screen.screenVideoTrack.label,
           readyState: this.screen.screenVideoTrack.readyState
         }
       }
       if (this.screen.screenVideoSource) {
         settings.screenVideoSource = {
-          settings: this.screen.screenVideoSource.getSettings(),
+          settings: this.getSettingsEnabled
+            ? this.screen.screenVideoSource.getSettings()
+            : this.screen.screenVideoSource.getConstraints(),
           label: this.screen.screenVideoSource.label,
           readyState: this.screen.screenVideoSource.readyState
         }
@@ -1240,14 +1267,18 @@ class MediaHelper extends EventEmitter {
 
       if (this.screenAudio.screenAudioTrack) {
         settings.screenAudio = {
-          settings: this.screenAudio.screenAudioTrack.getSettings(),
+          settings: this.getSettingsEnabled
+            ? this.screenAudio.screenAudioTrack.getSettings()
+            : this.screenAudio.screenAudioTrack.getConstraints(),
           label: this.screenAudio.screenAudioTrack.label,
           readyState: this.screenAudio.screenAudioTrack.readyState
         }
       }
       if (this.screenAudio.screenAudioSource) {
         settings.screenAudioSource = {
-          settings: this.screenAudio.screenAudioSource.getSettings(),
+          settings: this.getSettingsEnabled
+            ? this.screenAudio.screenAudioSource.getSettings()
+            : this.screenAudio.screenAudioSource.getConstraints(),
           label: this.screenAudio.screenAudioSource.label,
           readyState: this.screenAudio.screenAudioSource.readyState
         }
