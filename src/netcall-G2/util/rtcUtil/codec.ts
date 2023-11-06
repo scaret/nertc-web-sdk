@@ -76,7 +76,7 @@ async function getSupportedCodecs(
   if (direction === 'recv') {
     if (
       env.ANY_CHROME_MAJOR_VERSION &&
-      env.ANY_CHROME_MAJOR_VERSION >= 62 &&
+      env.ANY_CHROME_MAJOR_VERSION >= 58 &&
       env.ANY_CHROME_MAJOR_VERSION < 69
     ) {
       const pc = new PeerConnection({})

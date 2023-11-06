@@ -2064,7 +2064,14 @@ class LocalStream extends RTCEventEmitter {
     }
     if (type === 'audio') {
       const micTrack = this.mediaHelper.audio.micTrack
-      if (micTrack?.readyState === 'live' && micTrack?.getSettings().deviceId === deviceId) {
+      let micId
+      if ('getSettings' in MediaStreamTrack.prototype) {
+        micId = micTrack?.getSettings().deviceId
+      } else {
+        //@ts-ignore
+        micId = micTrack?.getConstraints()?.deviceId?.exact
+      }
+      if (micTrack?.readyState === 'live' && micId === deviceId) {
         this.logger.warn(`switchDevice() 切换相同的麦克风设备，不处理`)
         return
       } else if (!this.hasAudio()) {
@@ -2113,7 +2120,14 @@ class LocalStream extends RTCEventEmitter {
         this._transformedTrack.stop()
         this._transformedTrack = null
       }
-      if (cameraTrack?.readyState === 'live' && cameraTrack?.getSettings().deviceId === deviceId) {
+      let camId
+      if ('getSettings' in MediaStreamTrack.prototype) {
+        camId = cameraTrack?.getSettings().deviceId
+      } else {
+        //@ts-ignore
+        camId = cameraTrack?.getConstraints()?.deviceId?.exact
+      }
+      if (cameraTrack?.readyState === 'live' && camId === deviceId) {
         this.logger.log('switchDevice() 切换相同的摄像头设备，不处理')
         this.inSwitchDevice[type] = false
         return
@@ -2504,7 +2518,13 @@ class LocalStream extends RTCEventEmitter {
           keepAspectRatio: getParameters().keepAspectRatio,
           logger: this.logger
         })
-        const settings = cameraTrack.getSettings()
+        let settings
+        // chrome 59+ 以上才支持 getSettings
+        if (cameraTrack && 'getSettings' in MediaStreamTrack.prototype) {
+          settings = cameraTrack.getSettings()
+        } else {
+          settings = cameraTrack.getConstraints()
+        }
         if (settings.width && settings.height) {
           this.mediaHelper.video.cameraConstraint.video.width = settings.width
           this.mediaHelper.video.cameraConstraint.video.height = settings.height
@@ -4512,6 +4532,9 @@ class LocalStream extends RTCEventEmitter {
     }
     return dom
   }
+  delay(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms))
+  }
 
   /**
    *  销毁实例
@@ -4531,6 +4554,10 @@ class LocalStream extends RTCEventEmitter {
     })
     this.logger.log(`uid ${this.stringStreamID} 销毁 Stream 实例`)
     this.stop()
+    if (env.ANY_CHROME_MAJOR_VERSION && env.ANY_CHROME_MAJOR_VERSION < 62) {
+      // chrome 62 以下版本，在函数执行 this.audio.micTrack.stop() 的过程中，会立刻抛出 trackended 事件，该问题系此系列版本内部时序异常导致。
+      await this.delay(100)
+    }
     this._reset()
     this.destroyed = true
     this.lastEffects = null

@@ -10,7 +10,13 @@ interface ApplyResolutionOptions {
 
 export async function applyResolution(options: ApplyResolutionOptions) {
   const { track, targetWidth, targetHeight, keepAspectRatio, logger } = options
-  const settingsBefore = track.getSettings()
+  let settingsBefore: MediaTrackSettings
+  if ('getSettings' in MediaStreamTrack.prototype) {
+    settingsBefore = track.getSettings()
+  } else {
+    //@ts-ignore
+    settingsBefore = track.getConstraints()
+  }
   if (!settingsBefore.width || !settingsBefore.height) {
     logger.log(`applyResolution 摄像头不支持动态修改分辨率 【${track.label}】`)
   } else if (settingsBefore.width !== targetWidth || settingsBefore.height !== targetHeight) {

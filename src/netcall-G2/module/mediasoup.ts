@@ -549,10 +549,10 @@ class Mediasoup extends EventEmitter {
             }
 
             let encoding, encodingLow, mLineIndex, mLineIndexLow
-            // Chrome62 不使用原来的ssrc, 会重建新的ssrc
+            // Chrome58+ 不使用原来的ssrc, 会重建新的ssrc
             if (
               env.ANY_CHROME_MAJOR_VERSION &&
-              env.ANY_CHROME_MAJOR_VERSION >= 62 &&
+              env.ANY_CHROME_MAJOR_VERSION >= 58 &&
               env.ANY_CHROME_MAJOR_VERSION < 69
             ) {
               encoding = rtpParameters.encodings[0]
@@ -867,7 +867,7 @@ class Mediasoup extends EventEmitter {
             if (
               !(
                 env.ANY_CHROME_MAJOR_VERSION &&
-                env.ANY_CHROME_MAJOR_VERSION >= 62 &&
+                env.ANY_CHROME_MAJOR_VERSION >= 58 &&
                 env.ANY_CHROME_MAJOR_VERSION < 69
               )
             ) {
