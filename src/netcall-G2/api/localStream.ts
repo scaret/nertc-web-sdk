@@ -1300,7 +1300,7 @@ class LocalStream extends RTCEventEmitter {
       })
 
       throw new RtcError({
-        code: ErrorCode.MEDIA_DEVICE_ERROR,
+        code: e.code || ErrorCode.MEDIA_DEVICE_ERROR,
         message: `${e.name} ${e.message}`
       })
     }
