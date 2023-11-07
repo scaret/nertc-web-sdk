@@ -1627,11 +1627,20 @@ class MediaHelper extends EventEmitter {
       })
   }
 
+  delay(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms))
+  }
+
   listenToTrackEnded = (track: MediaStreamTrack | null) => {
     if (!track) {
       return
     }
-    track.addEventListener('ended', () => {
+    track.addEventListener('ended', async () => {
+      // chrome 62 以下版本，track.stop()/localStream.close() 后，浏览器时序处理异常导致 ended 事件会立刻触发
+      if (env.ANY_CHROME_MAJOR_VERSION && env.ANY_CHROME_MAJOR_VERSION < 62) {
+        await this.delay(100)
+      }
+
       this.logger.log('Track ended', track.label, track.id)
       if (
         this.stream.isRemote ||
