@@ -136,6 +136,7 @@ class AIAudioEffects extends EventEmitter {
 
   set enableAIDenoise(enable: boolean) {
     this._enableAIDenoise = enable
+    this.logger.log('setState', JSON.stringify({ type: 'AIDenoise', enable }))
     this.audioEffectsWorker.postMessage({
       type: 'setState',
       option: {
@@ -147,6 +148,7 @@ class AIAudioEffects extends EventEmitter {
 
   set enableAudioEffect(enable: boolean) {
     this._enableAudioEffect = enable
+    this.logger.log('setState', JSON.stringify({ type: 'AudioEffect', enable }))
     this.audioEffectsWorker.postMessage({
       type: 'setState',
       option: {
@@ -196,7 +198,6 @@ class AIAudioEffects extends EventEmitter {
   }
 
   setAudioEffect(type: number | string, value: number | Array<number> | ReverbObjType) {
-    console.warn('setAudioEffect', type, value)
     let outLimit = false
     switch (type) {
       case 0:
@@ -261,7 +262,7 @@ class AIAudioEffects extends EventEmitter {
         break
     }
     if (outLimit) {
-      this.logger.error('setAudioEffect outLimit:', type, value)
+      this.logger.error('setAudioEffect fail! outlimit:', type, value)
     } else {
       this.audioEffectsWorker.postMessage({
         type: 'effect',

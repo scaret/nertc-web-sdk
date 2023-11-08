@@ -3980,12 +3980,12 @@ class LocalStream extends RTCEventEmitter {
         message: 'AudioEffects plugin is not register'
       })
     }
-    //暂时这么写，后续需要优化
-    stageAIProcessing.enabled = true
-    stageAIProcessing.enableAudioEffects = true
+
     if (stageAIProcessing.state === 'UNINIT') {
       await stageAIProcessing.init()
     }
+    stageAIProcessing.enabled = true
+    stageAIProcessing.enableAudioEffects = true
     if (this._audioAffectsProcessor) {
       if (this._audioAffectsProcessor.getState('AIDenoise')) {
         this.logger.warn('ai denoise is already opened.')
@@ -3996,26 +3996,14 @@ class LocalStream extends RTCEventEmitter {
     } else {
       this._audioAffectsProcessor = new AudioEffects(stageAIProcessing)
       this._audioAffectsProcessor.init()
-      this._audioAffectsProcessor.once('effcts-load', async () => {
-        let apiCode = 0
-        try {
-          // console.warn('denoise-load')
-          this._audioAffectsProcessor!.setState('AIDenoise', true)
-          this.emit('audio-effects-enabled')
-        } catch (error: any) {}
-        this.client.apiFrequencyControl({
-          name: 'enableAIDenoise',
-          code: apiCode,
-          param: {
-            streamID: this.stringStreamID
-          }
-        })
+      this._audioAffectsProcessor.once('effects-load', async () => {
+        this._audioAffectsProcessor!.setState('AIDenoise', true)
+        this.emit('ai-denoise-enabled')
       })
     }
 
     if (!this.mediaHelper.audio.audioRoutingEnabled) {
       this.mediaHelper.enableAudioRouting()
-      console.warn('enableAudioRouting')
     }
     this.mediaHelper.updateWebAudio()
     this.client.apiFrequencyControl({
@@ -4061,6 +4049,7 @@ class LocalStream extends RTCEventEmitter {
       this._audioAffectsProcessor = null
       stageAIProcessing.enableAudioEffects = false
     }
+
     if (!stageAIProcessing.hasWorkingPlugin()) {
       stageAIProcessing.enabled = false
       this.mediaHelper.updateWebAudio()
@@ -4108,11 +4097,10 @@ class LocalStream extends RTCEventEmitter {
         message: 'ai audio effect plugin is not register'
       })
     }
-    //暂时这么写，后续需要优化
-    stageAIProcessing.enabled = true
-    stageAIProcessing.enableAudioEffects = true
     if (stageAIProcessing.state === 'UNINIT') {
       await stageAIProcessing.init()
+      stageAIProcessing.enabled = true
+      stageAIProcessing.enableAudioEffects = true
     }
     if (this._audioAffectsProcessor) {
       if (this._audioAffectsProcessor.getState('AudioEffect')) {
@@ -4125,11 +4113,8 @@ class LocalStream extends RTCEventEmitter {
       this._audioAffectsProcessor = new AudioEffects(stageAIProcessing)
       this._audioAffectsProcessor.init()
       this._audioAffectsProcessor.once('effects-load', async () => {
-        try {
-          console.warn('audio effects-load')
-          this._audioAffectsProcessor!.setState('AudioEffect', true)
-          this.emit('audio-effects-enabled')
-        } catch (error: any) {}
+        this._audioAffectsProcessor!.setState('AudioEffect', true)
+        this.emit('audio-effect-enabled')
       })
     }
     if (!this.mediaHelper.audio.audioRoutingEnabled) {
@@ -4186,7 +4171,7 @@ class LocalStream extends RTCEventEmitter {
   }
 
   setAudioEffect(type: number, value: number | Array<number>) {
-    this.logger.log(`set audio effect:${type} ${value}`)
+    this.logger.log(`setAudioEffect:${type} `, JSON.stringify(value)
     if (this._audioAffectsProcessor) {
       this._audioAffectsProcessor.setAudioEffect(type, value)
       this.client.apiFrequencyControl({

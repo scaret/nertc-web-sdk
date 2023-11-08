@@ -21,13 +21,11 @@ class Howling {
       noInitialRun: true,
       wasmBinary: binary,
       onRuntimeInitialized: () => {
-        // this.rnnoise = global.Module._rnnoise_create()
         this.howling = Module._CreateAiHowling()
         Module._SetNum(this.howling, 16);
         Module._SetThreshold(this.howling, 0.5);
         Module._SetPostThreshold(this.howling, 1);
         Module._Enable(this.howling, true);
-        console.warn('Module', Module, Module._malloc)
 
         this.handleInitFinished()
       },
@@ -47,25 +45,17 @@ class Howling {
       Module.HEAP32.set([this.inLeftPtr, this.inRightPtr], this.inArrayPtr >> 2)
       this.initMem = true
     }
-
     if(!frame) {
-        console.warn('illegal frame', frame)
-      }
-
-      try {
-        let leftData = Int16Array.from(frame[0], x => x * 32767),
+      console.warn('illegal frame', frame)
+      return;
+    }
+    let leftData = Int16Array.from(frame[0], x => x * 32767),
         rightData = Int16Array.from(frame[0], x => x * 32767)
-        Module.HEAP16.set(leftData, this.inLeftPtr >> 1)
-        Module.HEAP16.set(rightData, this.inRightPtr >> 1)
-      } catch (e) {
-        console.warn('error', e, frame)
-      }
 
-
-
+    Module.HEAP16.set(leftData, this.inLeftPtr >> 1)
+    Module.HEAP16.set(rightData, this.inRightPtr >> 1)
     const hasHowling = Module._Processing_Frame(this.howling, this.inArrayPtr, 2)
     if (hasHowling) {
-
       console.warn('检测到啸叫')
     } else {
       //console.warn('_rnnoise_process_frame 无返回值')

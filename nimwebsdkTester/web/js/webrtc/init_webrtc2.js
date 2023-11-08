@@ -2212,14 +2212,19 @@ $('#registerAIAudioEffects').on('click', async () => {
     const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
     audioEffects_config = aiAudioEffectsPluginConfig[NERTC.ENV][type]
     rtc.localStream.registerPlugin(audioEffects_config)
+
+    rtc.localStream.on('ai-denoise-enabled', () => {
+      console.warn('AI音效已开启')
+    })
+
+    rtc.localStream.on('audio-effect-enabled', () => {
+      console.warn('AI音效已开启')
+    })
   }
 })
 
 $('#enableAIDenoise').on('click', () => {
   if (rtc.localStream) {
-    rtc.localStream.on('audio-effects-enabled', () => {
-      console.warn('AI音效已开启')
-    })
     rtc.localStream.enableAIDenoise()
   }
 })
@@ -2233,9 +2238,6 @@ $('#disableAIDenoise').on('click', () => {
 
 $('#enableAudioEffect').on('click', () => {
   if (rtc.localStream) {
-    rtc.localStream.on('audio-effects-enabled', () => {
-      console.warn('AI音效已开启')
-    })
     rtc.localStream.enableAudioEffect()
   }
 })
@@ -2251,7 +2253,8 @@ $('#unregisterAIAudioEffects').on('click', () => {
   $('#audioEffectStatus').html('loading').hide()
   if (audioEffects_config) {
     rtc.localStream.unregisterPlugin(audioEffects_config.key)
-
+    rtc.localStream.off('ai-denoise-enabled')
+    rtc.localStream.off('audio-effect-enabled')
   }
 })
 
@@ -2312,8 +2315,38 @@ function addLowlingStatus(info) {
  if(info !== 0) {
   console.warn('啸叫状态：', info)
  }
-
 }
+
+//强制注册simd版插件
+$('#registerSimdAIhowling').on('click', async () => {
+  if (rtc.localStream) {
+    $('#AIhowlingStatus').html('loading').show()
+    const type = 'simd'
+    aiHowling_config = aiHowlingPluginConfig[NERTC.ENV][type]
+    rtc.localStream.registerPlugin(aiHowling_config)
+  }
+})
+//模拟啸叫检测插件js 404
+$('#hljs404').on('click', async () => {
+  if (rtc.localStream) {
+    $('#AIhowlingStatus').html('loading').show()
+    const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
+    aiHowling_config = Object.assign({}, aiHowlingPluginConfig[NERTC.ENV][type])
+    aiHowling_config.pluginUrl = './js/nim/NIM_Web_VirtualBackground111.js'
+    rtc.localStream.registerPlugin(aiHowling_config)
+  }
+})
+//模拟啸叫检测插件wasm 404
+$('hlwasm404').on('click', async () => {
+  if (rtc.localStream) {
+    $('#AIhowlingStatus').html('loading').show()
+    const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
+    aiHowling_config = Object.assign({}, aiHowlingPluginConfig[NERTC.ENV][type])
+    aiHowling_config.wasmUrl =
+      './js/nim/wasm/NIM_Web_VirtualBackground_simd111.wasm' + `?time=${Math.random()}`
+    rtc.localStream.registerPlugin(aiHowling_config)
+  }
+})
 
 $('#registerAIhowling').on('click', async () => {
   if (rtc.localStream) {

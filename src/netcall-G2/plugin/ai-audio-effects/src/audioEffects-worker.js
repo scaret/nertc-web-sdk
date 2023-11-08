@@ -62,7 +62,6 @@ class AudioEffect {
 
   setEffect(type, value) {
     if (this.aeInterface) {
-      console.warn('setEffect', type, value)
       switch (type) {
         case 0:
         case 1:
@@ -131,7 +130,6 @@ class AudioProcess {
     global.Module = {
       wasmBinary: binary,
       onRuntimeInitialized: () => {
-        console.warn('onRuntimeInitialized' , Module)
         this.AIDenoise = new AIDenoise()
         this.AudioEffect = new AudioEffect()
         this.malloc();
@@ -209,7 +207,7 @@ class AudioProcess {
   }
 
   destroy() {
-    console.warn('destroy')
+    console.warn('ai audio effetcts worker destroy')
     this.buffer.length = 0
     if (this.initMem) {
       Module._audio_effects_free(this.inLeftPtr)
@@ -269,7 +267,6 @@ const worker = function () {
         audioProcess.AudioEffect.setEffect(effect.type, effect.value)
         break
       case 'setState':
-        console.warn('setState', option)
         if(option.type === 'AIDenoise') {
           audioProcess.AIDenoise.enable = option.enable
         }
