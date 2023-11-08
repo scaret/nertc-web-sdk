@@ -28,6 +28,7 @@ import { RtpCapabilities, RtpParameters } from '../RtpParameters'
 import { SctpCapabilities, SctpStreamParameters } from '../SctpParameters'
 import { filterTransportCCFromSdp } from '../../../../util/rtcUtil/filterTransportCC'
 import { Interop } from '../sdp-transform/interop'
+import * as env from '../../../../util/rtcUtil/rtcEnvironment'
 
 // const Logger = new Logger('Chrome62')
 const prefix = 'Chrome_'
@@ -708,48 +709,14 @@ export class Chrome62 extends HandlerInterface {
       trackId
     })
 
-    // if (!offer.sdp) {
-    //   Logger.error(prefix, `[Subscribe] prepareLocalSdp() offer没有sdp`)
-    //   throw new Error('INVALID_OFFER')
-    // }
-    // // receive() 的 sdp 中已经有 nack 了， 无需再添加
-    // if (offer.sdp.indexOf('a=fmtp:111')) {
-    //   offer.sdp = offer.sdp.replace(
-    //     /a=fmtp:111 ([0-9=;a-zA-Z]*)/,
-    //     'a=fmtp:111 minptime=10;stereo=1;sprop-stereo=1;useinbandfec=1'
-    //   )
-    // }
+    // 兼容 chrome58 unsub/sub 时，signalingState 异常问题
+    if (env.ANY_CHROME_MAJOR_VERSION && env.ANY_CHROME_MAJOR_VERSION < 59) {
+      if (this._remoteSdp.getSdp().indexOf('a=setup:actpass') > -1) {
+        this._remoteSdp!.updateDtlsRole('client')
+      }
+    }
 
     let answer = { type: 'answer', sdp: this._remoteSdp.getSdp() }
-
-    // if (answer.sdp.indexOf('a=fmtp:111')) {
-    //   answer.sdp = answer.sdp.replace(
-    //     /a=fmtp:111 ([0-9=;a-zA-Z]*)/,
-    //     'a=fmtp:111 minptime=10;stereo=1;sprop-stereo=1;useinbandfec=1'
-    //   )
-    // }
-
-    // if (getParameters().enableSdpRrtr === 'chrome' || getParameters().enableSdpRrtr === 'all') {
-    //   offer.sdp = offer.sdp.replace(/a=rtcp-fb:(\d+) rrtr ?\r\n/g, '')
-    //   offer.sdp = offer.sdp.replace(
-    //     /a=rtcp-fb:(\d+) nack ?\r\n/g,
-    //     'a=rtcp-fb:$1 rrtr\r\na=rtcp-fb:$1 nack\r\n'
-    //   )
-    //   answer.sdp = answer.sdp.replace(/a=rtcp-fb:(\d+) rrtr ?\r\n/g, '')
-    //   answer.sdp = answer.sdp.replace(
-    //     /a=rtcp-fb:(\d+) nack ?\r\n/g,
-    //     'a=rtcp-fb:$1 rrtr\r\na=rtcp-fb:$1 nack\r\n'
-    //   )
-    // }
-
-    // if (!getParameters().enableUdpCandidate) {
-    //   answer.sdp = answer.sdp.replace(/\r\na=candidate:udpcandidate[^\r]+/g, '')
-    // }
-    // if (!getParameters().enableTcpCandidate) {
-    //   answer.sdp = answer.sdp.replace(/\r\na=candidate:tcpcandidate[^\r]+/g, '')
-    // }
-
-    // let interop = new Interop()
 
     Logger.debug(prefix, '[Subscribe] receive() | calling pc.setLocalDescription()')
 
@@ -776,6 +743,10 @@ export class Chrome62 extends HandlerInterface {
 
       // Remove from the map.
       this._mapRecvLocalIdInfo.delete(localId)
+      // 兼容 chrome58 unsub/sub 时，signalingState 异常问题
+      if (env.ANY_CHROME_MAJOR_VERSION && env.ANY_CHROME_MAJOR_VERSION < 59) {
+        this._remoteSdp!.updateDtlsRole('auto')
+      }
 
       this._remoteSdp!.planBStopReceiving({ mid: mid!, offerRtpParameters: rtpParameters! })
     }
