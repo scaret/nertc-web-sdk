@@ -4171,7 +4171,7 @@ class LocalStream extends RTCEventEmitter {
   }
 
   setAudioEffect(type: number, value: number | Array<number>) {
-    this.logger.log(`setAudioEffect:${type} `, JSON.stringify(value)
+    this.logger.log(`setAudioEffect:${type} `, JSON.stringify(value))
     if (this._audioAffectsProcessor) {
       this._audioAffectsProcessor.setAudioEffect(type, value)
       this.client.apiFrequencyControl({
