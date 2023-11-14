@@ -70,7 +70,6 @@ class AIholwing extends EventEmitter {
           this.isLoaded = true
           break
         case 'howlingState':
-          //console.warn('data.result', data.result, this.processCallback)
           if (typeof this.processCallback == 'function') {
             this.processCallback(!!data.result)
           }

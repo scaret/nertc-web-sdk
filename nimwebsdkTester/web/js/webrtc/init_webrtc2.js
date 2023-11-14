@@ -2216,7 +2216,7 @@ $('#registerAIAudioEffects').on('click', async () => {
     rtc.localStream.registerPlugin(audioEffects_config)
 
     rtc.localStream.on('ai-denoise-enabled', () => {
-      console.warn('AI音效已开启')
+      console.warn('AI降噪已开启')
     })
 
     rtc.localStream.on('audio-effect-enabled', () => {

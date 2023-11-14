@@ -40,7 +40,7 @@ export class StageAIProcessing extends StageBase {
   }
 
   hasWorkingPlugin() {
-    this.logger.log('hasWorkingPlugin', this.enableAudioEffects || this.enableAIhowling)
+    //this.logger.log('hasWorkingPlugin', this.enableAudioEffects || this.enableAIhowling)
     return this.enableAudioEffects || this.enableAIhowling
   }
 
