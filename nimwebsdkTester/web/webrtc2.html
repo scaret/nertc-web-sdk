@@ -821,6 +821,13 @@
           </div>
         </div>
 
+        <p class="block-header">地理围栏</p>
+        <div class="part">
+          <select id="areaCode" style="width:50%">
+          </select>
+          <button id="setArea">setArea</button>
+        </div>
+
         <p class="block-header">国密加密</p>
         <div class="part hide">
           <div class="line">
@@ -1754,6 +1761,19 @@
           </div>
         </div>
 
+        <p class="block-header">Session/Transport/System Stats</p>
+        <div class="part hide" id="otherStats">
+          <h4>getSessionStats</h4>
+          <div class="line" id="sessionStats">
+          </div>
+          <h4>getTransportStats</h4>
+          <div class="line" id="transportStats">
+          </div>
+          <h4>getSystemStats</h4>
+          <div class="line" id="systemStats">
+          </div>
+        </div>
+
         <p class="block-header" id="eventParingTitle">事件对立</p>
         <div class="part hide">
           <div class="line" id="eventPairingLong">
@@ -1877,6 +1897,7 @@
   <script src="./js/lib/sha1.min.js"></script>
   <script src="./js/lib/vconsole.min.js"></script>
   <script src="./js/lib/SM4.js"></script>
+  <script src="./js/lib/h264SpsParser.js"></script>
 
   <script src="./js/nim/NIM_Web_NERTC.js"></script>
   <script src="./js/webrtc/config.js"></script>

@@ -23,10 +23,11 @@ import ErrorCode from '../netcall-G2/util/error/errorCode'
 import RtcError from '../netcall-G2/util/error/rtcError'
 import log from '../netcall-G2/util/log/logger'
 import { loglevelMap, loglevels } from '../netcall-G2/util/log/loglevels'
-import { checkExists } from '../netcall-G2/util/param'
+import { checkExists, checkValidEnum, checkValidObject } from '../netcall-G2/util/param'
 import { getSupportedCodecs } from '../netcall-G2/util/rtcUtil/codec'
 import { checkBrowserCompatibility, isHttpProtocol } from '../netcall-G2/util/rtcUtil/rtcSupport'
 import * as env from '../netcall-G2/util/rtcUtil/rtcEnvironment'
+import { geofenceArea } from '../netcall-G2/module/geofenceArea'
 
 /**
  * {@link NERTC}
@@ -127,6 +128,45 @@ export const NERTC = {
     }
   },
 
+  setArea(area: { areaCode: string }) {
+    const forceGeofenceArea = getParameters().forceGeofenceArea
+    if (forceGeofenceArea !== 'NONE') {
+      client?.logger.error(`setArea: 本页面的日志级别固定为 ${forceGeofenceArea}`)
+    } else {
+      checkValidObject({ tag: 'NERTC.setArea:area', value: area })
+      checkValidEnum({
+        tag: 'NERTC.setArea:area.areaCode',
+        value: area.areaCode,
+        enums: geofenceArea.getAvailableAreas()
+      })
+
+      let client: Client | null = null
+      for (let i in getParameters().clients) {
+        client = getParameters().clients[i]
+        if (!client.destroyed && client.adapterRef.connectState.curState !== 'DISCONNECTED') {
+          // 已经有在频道中的client。拒绝执行setArea。
+          throw new RtcError({
+            code: ErrorCode.CLIENT_ALREADY_IN_CHANNEL_ERROR,
+            message: '用户已在频道中，不支持调用setArea'
+          })
+        }
+      }
+
+      geofenceArea.setAreaById(area.areaCode)
+      if (client) {
+        client.apiFrequencyControl({
+          name: 'setArea',
+          code: 0,
+          param: {
+            clientUid: client.adapterRef.channelInfo.uid || '',
+            area,
+            config: geofenceArea.getBuiltinConfig()
+          }
+        })
+      }
+    }
+  },
+
   /**
    * 创建客户端，开始通话前调用一次即可
    * @function createClient
@@ -181,7 +221,7 @@ export const NERTC = {
    */
   createStream(options: LocalStreamOptions) {
     checkExists({ tag: 'createStream:options', value: options })
-    if (isHttpProtocol()) {
+    if (isHttpProtocol() && !getParameters().passEnvCheck) {
       client?.adapterRef.logger.warn('The current protocol is HTTP')
       throw new RtcError({
         code: ErrorCode.NOT_SUPPORT_ERROR,
@@ -189,8 +229,8 @@ export const NERTC = {
       })
     }
     let getUserMedia = navigator.mediaDevices && navigator.mediaDevices.getUserMedia
-    if (!getUserMedia) {
-      console.warn(`没有 getUserMedia 方法。请使用最新版本的chrome浏览器`)
+    if (!getUserMedia && !getParameters().passEnvCheck) {
+      client?.adapterRef.logger.warn('没有 getUserMedia 方法。请使用最新版本的chrome浏览器')
       throw new RtcError({
         code: ErrorCode.NOT_SUPPORT_ERROR,
         message: '浏览器不支持开启媒体设备，请使用最新版本的chrome浏览器'
@@ -339,6 +379,8 @@ export const NERTC = {
   getHandler() {
     return detectDevice()
   },
+
+  _geofenceArea: geofenceArea,
 
   getParameters: getParameters,
 

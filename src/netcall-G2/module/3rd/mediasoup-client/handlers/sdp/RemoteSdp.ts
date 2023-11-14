@@ -116,8 +116,7 @@ export class RemoteSdp {
 
   updateDtlsRole(role: DtlsRole): void {
     Logger.debug(prefix, `updateDtlsRole() [role: ${role}]`)
-
-    this._dtlsParameters!.role = role
+    this._dtlsParameters && (this._dtlsParameters.role = role)
 
     for (const mediaSection of this._mediaSections) {
       mediaSection.setDtlsRole(role)
@@ -155,7 +154,7 @@ export class RemoteSdp {
     codecOptions?: ProducerCodecOptions[]
     extmapAllowMixed?: boolean
   }): void {
-    if (!offerMediaObjectArr.length) {
+    if (!offerMediaObjectArr?.length) {
       return
     }
     offerMediaObjectArr.forEach((offerMediaObject, i) => {
@@ -348,10 +347,13 @@ export class RemoteSdp {
   getSdp(): string {
     // Increase SDP version.
     this._sdpObject.origin.sessionVersion++
-    //由于伪造了M行，可能出现M行顺序混乱的问题，这里处理一下
-    this._sdpObject.media.sort(function (a: any, b: any) {
-      return a.mid - b.mid
-    })
+    if (env.ANY_CHROME_MAJOR_VERSION && env.ANY_CHROME_MAJOR_VERSION >= 72) {
+      //由于伪造了M行，可能出现M行顺序混乱的问题，这里处理一下
+      this._sdpObject.media.sort(function (a: any, b: any) {
+        return a.mid - b.mid
+      })
+    }
+
     return sdpTransform.write(this._sdpObject)
   }
 

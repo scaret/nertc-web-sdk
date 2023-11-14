@@ -649,6 +649,13 @@ export class Transport extends EnhancedEventEmitter {
     mid: string | undefined,
     kind: 'video' | 'audio'
   ) {
+    if (
+      env.ANY_CHROME_MAJOR_VERSION &&
+      env.ANY_CHROME_MAJOR_VERSION >= 58 &&
+      env.ANY_CHROME_MAJOR_VERSION < 69
+    ) {
+      return
+    }
     try {
       await this._handler.recoverTransceiver(remoteUid, mid, kind)
       return

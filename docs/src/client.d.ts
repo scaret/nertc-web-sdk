@@ -471,6 +471,11 @@ declare interface Client {
   /**
    * 获取系统电量信息。
    *
+   *
+   * @note 注意事项
+   *
+   * - 仅在chrome内核的浏览器上支持。
+   *
    * @example
    * ```Javascript
    * // 系统电量信息
@@ -482,7 +487,10 @@ declare interface Client {
   /**
    * 获取与会话的连接状况统计数据。
    *
-   * @note 请在加入房间后调用此方法。
+   * @note 注意事项
+   *
+   * - 请在加入房间后调用此方法。
+   * - 仅在chrome内核的浏览器上支持。
    *
    * @example
    * ```Javascript
@@ -500,6 +508,11 @@ declare interface Client {
   getSessionStats(): Promise<any>
   /**
    * 获取与网关的连接状况统计数据。
+   *
+   * @note 注意事项
+   *
+   * - 仅在chrome内核的浏览器上支持。
+   *
    * @example
    * ```Javascript
    * setInterval(async () => {
@@ -518,6 +531,10 @@ declare interface Client {
   getTransportStats(): Promise<any>
   /**
    * 获取本地发布流的音频统计数据。
+   *
+   * @note 注意事项
+   *
+   * - 仅在chrome内核的浏览器上支持。
    *
    * @example
    * ```javascript
@@ -541,6 +558,10 @@ declare interface Client {
    * 获取本地发布流的视频统计数据。
    *
    * @param mediaType 媒体流类型。"video"为视频流，"screen"为屏幕共享流。如不填，则一起返回
+   *
+   * @note 注意事项
+   *
+   * - 仅在chrome内核的浏览器上支持。
    *
    * @example
    * ```javascript
@@ -569,6 +590,10 @@ declare interface Client {
   /**
    * 获取远端订阅流的音频统计数据。
    *
+   * @note 注意事项
+   *
+   * - 仅在chrome内核的浏览器上支持。
+   *
    * @example
    * ```javascript
    * setInterval(async () => {
@@ -592,6 +617,11 @@ declare interface Client {
    * 获取远端订阅流的视频统计数据。
    *
    * @param mediaType 媒体流类型。"video"为视频流，"screen"为屏幕共享流。默认为"video"。
+   *
+   * @note 注意事项
+   *
+   * - 仅在chrome内核的浏览器上支持。
+   *
    * @example
    * ```javascript
    * setInterval(async () => {
@@ -657,7 +687,8 @@ declare interface Client {
    *
    * @since V4.6.10
    *
-   * @note
+   * @note 注意事项
+   *
    * - 需要在加入房间之后调用。
    * - 不允许同时录制多个文件。
    * - 仅在chrome内核的浏览器上支持。

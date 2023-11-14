@@ -3,6 +3,7 @@
 import { EnhancedEventEmitter } from './EnhancedEventEmitter'
 import { InvalidStateError, UnsupportedError } from './errors'
 import { Chrome74 } from './handlers/Chrome74'
+import { Chrome62 } from './handlers/Chrome62'
 import { Firefox60 } from './handlers/Firefox60'
 import { HandlerFactory, HandlerInterface } from './handlers/HandlerInterface'
 import { Safari12 } from './handlers/Safari12'
@@ -18,7 +19,7 @@ import { isIosFromRtpStats } from './handlers/sdp/getNativeRtpCapabilities'
 
 const prefix = 'Device'
 
-export type BuiltinHandlerName = 'Chrome74' | 'Safari12' | 'Firefox60'
+export type BuiltinHandlerName = 'Chrome62' | 'Chrome74' | 'Safari12' | 'Firefox60'
 
 export type DeviceOptions = {
   /**
@@ -43,24 +44,41 @@ interface InternalTransportOptions extends TransportOptions {
 export function detectDevice(): BuiltinHandlerName | undefined {
   if (typeof navigator === 'object' && typeof navigator.userAgent === 'string') {
     // any Chrome(Edge etc.)
-    if (env.IS_CHROME_ONLY && env.CHROME_MAJOR_VERSION && env.CHROME_MAJOR_VERSION >= 72) {
+    if (
+      env.IS_CHROME_ONLY &&
+      env.CHROME_MAJOR_VERSION &&
+      env.CHROME_MAJOR_VERSION >= 58 &&
+      env.CHROME_MAJOR_VERSION < 69
+    ) {
+      return 'Chrome62'
+    }
+    if (env.IS_CHROME_ONLY && env.CHROME_MAJOR_VERSION && env.CHROME_MAJOR_VERSION >= 69) {
       return 'Chrome74'
     }
     // any android H5
     else if (env.IS_ANDROID) {
-      return 'Chrome74'
+      if (
+        env.ANY_CHROME_MAJOR_VERSION &&
+        env.ANY_CHROME_MAJOR_VERSION >= 58 &&
+        env.ANY_CHROME_MAJOR_VERSION < 69
+      ) {
+        return 'Chrome62'
+      } else {
+        return 'Chrome74'
+      }
+      // return 'Chrome74'
     }
     // Electron
     else if (
       env.IS_ELECTRON &&
       env.IS_CHROME_ONLY &&
       env.ANY_CHROME_MAJOR_VERSION &&
-      env.ANY_CHROME_MAJOR_VERSION >= 72
+      env.ANY_CHROME_MAJOR_VERSION >= 69
     ) {
       return 'Chrome74'
     }
     // Firefox.
-    else if (env.IS_FIREFOX && env.FIREFOX_MAJOR_VERSION && env.FIREFOX_MAJOR_VERSION >= 60) {
+    else if (env.IS_FIREFOX && env.FIREFOX_MAJOR_VERSION && env.FIREFOX_MAJOR_VERSION >= 58) {
       return 'Firefox60'
     }
     // Safari with Unified-Plan support enabled.
@@ -156,6 +174,9 @@ export class Device {
       }
 
       switch (handlerName) {
+        case 'Chrome62':
+          this._handlerFactory = Chrome62.createFactory()
+          break
         case 'Chrome74':
           this._handlerFactory = Chrome74.createFactory()
           break

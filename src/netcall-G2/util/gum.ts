@@ -18,6 +18,8 @@ const logger: ILogger = new Logger({
 
 let gumTotal = 0
 
+let getSettingsEnabled = 'getSettings' in MediaStreamTrack.prototype
+
 async function getStream(constraint: GUMConstaints, logger: ILogger) {
   if (constraint.audio && typeof constraint.audio === 'object') {
     if (!constraint.audio.deviceId) {
@@ -56,7 +58,13 @@ async function getStream(constraint: GUMConstaints, logger: ILogger) {
         }
       } else if (track.kind === 'audio') {
         if (compatAudioInputList.enabled) {
-          const settings = track.getSettings ? track.getSettings() : {}
+          let settings
+          if (getSettingsEnabled) {
+            settings = track.getSettings ? track.getSettings() : {}
+          } else {
+            settings = track.getConstraints ? track.getConstraints() : {}
+          }
+
           //@ts-ignore
           if (settings.channelCount && settings.channelCount >= 2) {
             logger.log(`该设备支持兼容模式：${track.label}`, settings)
@@ -263,13 +271,15 @@ export function watchTrack(track: MediaStreamTrack | null) {
     }
     if (track.kind === 'audio') {
       const globalAudioTracks = getParameters().tracks.audio
+      let audioSettings = getSettingsEnabled ? track.getSettings() : track.getConstraints()
       logger.log(
         `获取到的设备类型: AUDIOTRACK#${globalAudioTracks.length}`,
         track.kind,
         track.label,
         track.id,
-        JSON.stringify(track.getSettings())
+        JSON.stringify(audioSettings)
       )
+
       const t = globalAudioTracks.findIndex((historyTrack) => {
         return track === historyTrack
       })
@@ -282,13 +292,15 @@ export function watchTrack(track: MediaStreamTrack | null) {
       }
     } else {
       const globalVideoTracks = getParameters().tracks.video
+      let videoSettings = getSettingsEnabled ? track.getSettings() : track.getConstraints()
       logger.log(
         `获取到的设备类型: VIDEOTRACK#${globalVideoTracks.length}`,
         track.kind,
         track.label,
         track.id,
-        JSON.stringify(track.getSettings())
+        JSON.stringify(videoSettings)
       )
+
       const t = globalVideoTracks.findIndex((historyTrack) => {
         return track === historyTrack
       })

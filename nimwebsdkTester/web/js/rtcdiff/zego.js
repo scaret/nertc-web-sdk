@@ -206,7 +206,7 @@ function startZEGO() {
       }
       // zrtc.localStream = await zrtc.zg.createStream()
       // zrtc.localView = zrtc.zg.createLocalStreamView(zrtc.localStream)
-      // zrtc.localView.play('localVideoContent')
+      // zrtc.localView.play(localVideoContent)
       await zegoPublish()
     } else {
       console.warn('登录房间失败')
@@ -218,19 +218,29 @@ function startZEGO() {
     try {
       // 主流
       if (options.camera && Object.keys(options.camera).length > 0) {
-        zrtc.localStream = await zrtc.zg.createStream({ camera: options.camera })
+        // zrtc.localStream = await zrtc.zg.createStream({ camera: options.camera })
+        zrtc.localStream = await zrtc.zg.createZegoStream({ camera: options.camera })
         console.warn('initLocalStream() options.camera', options.camera)
-        zrtc.localView = zrtc.zg.createLocalStreamView(zrtc.localStream)
-        zrtc.localView.play('localVideoContent')
+        // zrtc.localView = zrtc.zg.createLocalStreamView(zrtc.localStream)
+        // zrtc.localView.play(localVideoContent)
+        // zrtc.localStream.playCaptureVideo(localVideoContent);
+        // zrtc.localStream.playCaptureAudio();
+
+        zrtc.localStream.playVideo(localVideoContent);
+        zrtc.localStream.playAudio();
+
         console.warn('本地流创建成功')
       }
       // 自定义主流
       if (options.custom && Object.keys(options.custom).length > 0) {
-        zrtc.customStream = await zrtc.zg.createStream({ custom: options.custom })
+        // zrtc.customStream = await zrtc.zg.createStream({ custom: options.custom })
+        zrtc.customStream = await zrtc.zg.createZegoStream({ custom: options.custom })
         console.warn('initLocalStream() options.custom', options.custom)
         if (!options.custom.channelCount) {
-          zrtc.customView = zrtc.zg.createLocalStreamView(zrtc.customStream)
-          zrtc.customView.play('localVideoContent')
+          // zrtc.customView = zrtc.zg.createLocalStreamView(zrtc.customStream)
+          // zrtc.customView.play(localVideoContent)
+          zrtc.customStream.playVideo(localVideoContent);
+          zrtc.customStream.playAudio();
           console.warn('本地自定义主流创建成功')
         } else {
           console.warn('本地自定义音频主流创建成功')
@@ -238,10 +248,13 @@ function startZEGO() {
       }
       // 辅流
       if (options.screen && Object.keys(options.screen).length > 0) {
-        zrtc.shareStream = await zrtc.zg.createStream({ screen: options.screen })
+        // zrtc.shareStream = await zrtc.zg.createStream({ screen: options.screen })
+        zrtc.shareStream = await zrtc.zg.createZegoStream({ screen: options.screen })
         console.warn('initLocalStream() options.screen', options.screen)
-        zrtc.localScreenView = zrtc.zg.createLocalStreamView(zrtc.shareStream)
-        zrtc.localScreenView.play('localScreenContent')
+        // zrtc.localScreenView = zrtc.zg.createLocalStreamView(zrtc.shareStream)
+        // zrtc.localScreenView.play(localScreenContent)
+        zrtc.shareStream.playVideo(localScreenContent);
+        zrtc.shareStream.playAudio();
         console.warn('本地共享流创建成功')
       }
     } catch (error) {
@@ -785,7 +798,8 @@ function startZEGO() {
     customSource.addTrack(audioSource)
     let timestamp = new Date().getTime().toString()
     customStreamID = 'customAudio' + timestamp
-    zrtc.customStream = await zrtc.zg.createStream({ custom: { source: customSource } })
+    // zrtc.customStream = await zrtc.zg.createStream({ custom: { source: customSource } })
+    zrtc.customStream = await zrtc.zg.createZegoStream({ custom: { source: customSource } })
     zrtc.zg.startPublishingStream(customStreamID, zrtc.customStream)
     console.warn('开启自定义音频成功')
     customAudio = true
@@ -797,11 +811,14 @@ function startZEGO() {
       console.warn('mutePublishStreamAudio() false 开启音频')
     } else {
       initAudioProfiles()
-      zrtc.localStream = await zrtc.zg.createStream({ camera: options.camera })
+      // zrtc.localStream = await zrtc.zg.createStream({ camera: options.camera })
+      zrtc.localStream = await zrtc.zg.createZegoStream({ camera: options.camera })
       console.warn('playMic options.camera: ', options.camera)
       console.warn('开启音频时，设置 audioProfile: ', options.camera)
-      zrtc.localView = zrtc.zg.createLocalStreamView(zrtc.localStream)
-      zrtc.localView.play('localVideoContent')
+      // zrtc.localView = zrtc.zg.createLocalStreamView(zrtc.localStream)
+      // zrtc.localView.play(localVideoContent)
+      zrtc.localStream.playVideo(localVideoContent)
+      zrtc.localStream.playAudio()
     }
     console.warn('本地音频流创建成功')
   })
@@ -833,10 +850,13 @@ function startZEGO() {
     const customSource = new MediaStream()
     customSource.addTrack(videoSource)
 
-    const stream = await zrtc.zg.createStream({ custom: { source: customSource } })
+    // const stream = await zrtc.zg.createStream({ custom: { source: customSource } })
+    const stream = await zrtc.zg.createZegoStream({ custom: { source: customSource } })
     console.warn('playCamera options.custom: ', options.custom)
-    zrtc.customView = zrtc.zg.createLocalStreamView(stream)
-    zrtc.customView.play('localVideoContent')
+    // zrtc.customView = zrtc.zg.createLocalStreamView(stream)
+    // zrtc.customView.play(localVideoContent)
+    stream.playVideo(localVideoContent)
+    stream.playAudio()
     let timestamp = new Date().getTime().toString()
     customStreamID = 'custom' + timestamp
     console.warn('打开自定义视频 customStreamID: ', customStreamID)
@@ -846,12 +866,16 @@ function startZEGO() {
     console.warn('打开摄像头')
     initVideoProfiles()
 
-    zrtc.localStream = await zrtc.zg.createStream({ camera: options.camera })
+    // zrtc.localStream = await zrtc.zg.createStream({ camera: options.camera })
+    zrtc.localStream = await zrtc.zg.createZegoStream({ camera: options.camera })
     console.warn('playCamera options.camera: ', options.camera)
 
     console.warn('开启视频时，设置 videoProfile: ', options.camera)
-    zrtc.localView = zrtc.zg.createLocalStreamView(zrtc.localStream)
-    zrtc.localView.play('localVideoContent')
+    // zrtc.localView = zrtc.zg.createLocalStreamView(zrtc.localStream)
+    // zrtc.localView.play(localVideoContent)
+    zrtc.localStream.playVideo(localVideoContent)
+    zrtc.localStream.playAudio()
+
     console.warn('playCamera 本地视频流创建成功')
 
     let timestamp = new Date().getTime().toString()
@@ -901,12 +925,16 @@ function startZEGO() {
     console.warn('打开辅流')
     initScreenProfiles()
 
-    zrtc.shareStream = await zrtc.zg.createStream({ screen: options.screen })
+    // zrtc.shareStream = await zrtc.zg.createStream({ screen: options.screen })
+    zrtc.shareStream = await zrtc.zg.createZegoStream({ screen: options.screen })
+    
     console.warn('playScreen options.screen: ', options.screen)
 
     console.warn('开启辅流时，设置 screenProfile: ', options.screen)
-    zrtc.screenView = zrtc.zg.createLocalStreamView(zrtc.shareStream)
-    zrtc.screenView.play('localVideoContent')
+    // zrtc.screenView = zrtc.zg.createLocalStreamView(zrtc.shareStream)
+    // zrtc.screenView.play(localVideoContent)
+    zrtc.shareStream.playVideo(localVideoContent)
+    zrtc.shareStream.playAudio()
     console.warn('playScreen 本地辅流创建成功')
 
     let timestamp = new Date().getTime().toString()
@@ -936,12 +964,16 @@ function startZEGO() {
     initScreenProfiles()
     options.screen.audio = true
 
-    zrtc.shareStream = await zrtc.zg.createStream({ screen: options.screen })
+    // zrtc.shareStream = await zrtc.zg.createStream({ screen: options.screen })
+    zrtc.shareStream = await zrtc.zg.createZegoStream({ screen: options.screen })
+    
     console.warn('playScreenAudio options.screen: ', options.screen)
 
     console.warn('开启辅流音频时，设置 audioProfile: ', options.screen)
-    zrtc.screenView = zrtc.zg.createLocalStreamView(zrtc.shareStream)
-    zrtc.screenView.play('localVideoContent')
+    // zrtc.screenView = zrtc.zg.createLocalStreamView(zrtc.shareStream)
+    // zrtc.screenView.play(localVideoContent)
+    zrtc.shareStream.playVideo(localVideoContent)
+    zrtc.shareStream.playAudio()
     console.warn('playScreenAudio 本地辅流音频创建成功')
 
     let timestamp = new Date().getTime().toString()

@@ -304,7 +304,6 @@ function loadEnv() {
     domUid = `${domUid}000000000${domUid}`
   }
   $(`#useStringUid`).attr('checked', 'checked')
-
   $('#uid').val(domUid)
 
   // 读取url中配置的初始参数
@@ -380,12 +379,12 @@ $('#privatizationConfig').on('click', () => {
   }
 })
 
-function Proxify(obj, propertyName = '', depth = 0){
-  if (obj && typeof Proxy === 'function'){
-    if (depth >= 1){
+function Proxify(obj, propertyName = '', depth = 0) {
+  if (obj && typeof Proxy === 'function') {
+    if (depth >= 1) {
       for (let key in obj) {
-        if (obj[key] && typeof obj[key] === 'object'){
-          obj[key] = Proxify(obj[key], key,depth - 1)
+        if (obj[key] && typeof obj[key] === 'object') {
+          obj[key] = Proxify(obj[key], key, depth - 1)
         }
       }
     }
@@ -401,6 +400,13 @@ const USER_AGENT = (window.navigator && window.navigator.userAgent) || ''
 const IS_XWEB = /XWEB\/\d+/i.test(USER_AGENT)
 const IS_TBS = /TBS\/\d+/i.test(USER_AGENT)
 const IS_FIREFOX = /Firefox/.test(USER_AGENT)
+const ANY_CHROME_MAJOR_VERSION = (function () {
+  const match = USER_AGENT.match(/Chrome\/(\d+)/)
+  if (match && match[1]) {
+    return parseFloat(match[1])
+  }
+  return null
+})()
 let wechatBrowser
 let WBBox = document.getElementById('wechatBrowserBox')
 if (IS_XWEB) {
@@ -1389,7 +1395,7 @@ function updateLocalViewInfo() {
 
       if (mediaType === 'video') {
         const track = rtc.localStream.mediaHelper.video.cameraTrack
-        if (track) {
+        if (track && 'getSettings' in MediaStreamTrack.prototype) {
           const settings = track.getSettings()
           if (settings && settings.width && settings.height) {
             infoStr += ` ${settings.width}x${settings.height}`
@@ -1398,7 +1404,7 @@ function updateLocalViewInfo() {
       }
       if (mediaType === 'screen') {
         const track = rtc.localStream.mediaHelper.screen.screenVideoTrack
-        if (track) {
+        if (track && 'getSettings' in MediaStreamTrack.prototype) {
           const settings = track.getSettings()
           if (settings && settings.width && settings.height) {
             infoStr += ` ${settings.width}x${settings.height}`
@@ -1461,7 +1467,7 @@ function updateRemoteViewInfo() {
 
         if (mediaType === 'video') {
           const track = remoteStream.mediaHelper.video.cameraTrack
-          if (track) {
+          if (track && 'getSettings' in MediaStreamTrack.prototype) {
             const settings = track.getSettings()
             if (settings && settings.width && settings.height) {
               infoStr += ` ${settings.width}x${settings.height}`
@@ -1470,7 +1476,7 @@ function updateRemoteViewInfo() {
         }
         if (mediaType === 'screen') {
           const track = remoteStream.mediaHelper.screen.screenVideoTrack
-          if (track) {
+          if (track && 'getSettings' in MediaStreamTrack.prototype) {
             const settings = track.getSettings()
             if (settings && settings.width && settings.height) {
               infoStr += ` ${settings.width}x${settings.height}`
@@ -1667,9 +1673,7 @@ $('#joinChannel-btn').on('click', async () => {
       (obj) => {
         addLog('加入房间成功')
         console.info('加入房间成功')
-        $('#handler').text(
-          `适配器:${NERTC.getHandler()}`
-        )
+        $('#handler').text(`适配器:${NERTC.getHandler()}`)
         if (rtc.localStream && rtc.localStream.inited) {
           // localStream已经初始化了
           if ($('#autoPub').prop('checked')) {
@@ -1947,7 +1951,7 @@ range4.addEventListener('change', () => {
   rtc.localStream.setBeautyEffectOptions(effects)
 })
 
-$('#loadAgora').click(()=>{
+$('#loadAgora').click(() => {
   const filename = 'AgoraRTC_N-4.15.0.js'
   const script = document.createElement('script')
   script.src = './js/rtcdiff/' + filename
@@ -1955,7 +1959,7 @@ $('#loadAgora').click(()=>{
   addLog('加载' + filename)
 })
 
-$('#loadTrtc').click(()=>{
+$('#loadTrtc').click(() => {
   const filename = 'TRTC_4.15.12.js'
   const script = document.createElement('script')
   script.src = './js/rtcdiff/' + filename
@@ -1963,15 +1967,13 @@ $('#loadTrtc').click(()=>{
   addLog('加载' + filename)
 })
 
-
-$('#loadZego').click(()=>{
+$('#loadZego').click(() => {
   const filename = 'Zego_2.25.6.js'
   const script = document.createElement('script')
   script.src = './js/rtcdiff/' + filename
   document.body.appendChild(script)
   addLog('加载' + filename)
 })
-
 
 /**
  * ----------------------------------------
@@ -2765,7 +2767,7 @@ $('#switchScreenShare').on('click', () => {
   rtc.localStream.switchScreenStream({ screenAudio: true })
 })
 
-if (getUrlVars().config === "baseline") {
+if (getUrlVars().config === 'baseline') {
   const getwayAddr = 'webrtcgwcn.netease.im/?ip=115.236.118.14:6997'
   addLog('baseline专属配置：关闭小流，固定网关:' + getwayAddr)
   document.getElementById('videoLow').checked = false
@@ -2774,7 +2776,7 @@ if (getUrlVars().config === "baseline") {
   document.getElementById('isGetwayAddrConf').checked = true
 }
 
-if (getUrlVars().getwayAddr){
+if (getUrlVars().getwayAddr) {
   document.getElementById('getwayAddr').value = getUrlVars().getwayAddr
   document.getElementById('isGetwayAddrConf').checked = true
   console.error('网关地址：', getUrlVars().getwayAddr)
@@ -2926,10 +2928,18 @@ function initLocalStream() {
           }
         : null
 
-      await rtc.localStream.play(document.getElementById('local-container'), playOptions)
-      console.warn('音视频初始化完成，播放本地视频', playOptions)
-      rtc.localStream.setLocalRenderMode(globalConfig.localViewConfig)
-      updateLocalWatermark()
+      rtc.localStream
+        .play(document.getElementById('local-container'), playOptions)
+        .then(() => {
+          console.warn('音视频初始化完成，播放本地视频', playOptions)
+          rtc.localStream.setLocalRenderMode(globalConfig.localViewConfig)
+          updateLocalWatermark()
+        })
+        .catch((e) => {
+          console.warn('本地音视频播放失败: ', err)
+          addLog('本地音视频播放失败:' + e.name + ' ' + JSON.stringify(e))
+          //rtc.localStream = null
+        })
       if (!$('#camera').val()) {
         initDevices()
       }
@@ -3389,10 +3399,10 @@ $('#unmuteScreen').on('click', () => {
   }
 })
 
-$('#setAudioProcessing').on('click', () =>{
+$('#setAudioProcessing').on('click', () => {
   const mediaType = $('#mediaType3A').val()
   const audioProcessing = getAudioProcessingConfig()
-  addLog('setAudioProcessing: ' + mediaType + ' '+ JSON.stringify(audioProcessing))
+  addLog('setAudioProcessing: ' + mediaType + ' ' + JSON.stringify(audioProcessing))
   rtc.localStream.setAudioProcessing(mediaType, audioProcessing)
 })
 
@@ -4187,9 +4197,11 @@ $('#setRoleHost-btn').click(async () => {
   try {
     await rtc.client.setClientRole('host')
     addLog('切换主播成功')
-  } catch(e) {
+  } catch (e) {
     if (e.getCode) {
-      addLog('切换主播失败：' + e.message + '【Code: ' + e.code + ' extraCode:' + e.extraCode + '】')
+      addLog(
+        '切换主播失败：' + e.message + '【Code: ' + e.code + ' extraCode:' + e.extraCode + '】'
+      )
     }
   }
 })
@@ -4198,9 +4210,11 @@ $('#setRoleAudience-btn').click(async () => {
   try {
     await rtc.client.setClientRole('audience')
     addLog('切换观众成功')
-  } catch(e) {
+  } catch (e) {
     if (e.getCode) {
-      addLog('切换观众失败：' + e.message + '【Code: ' + e.code + ' extraCode:' + e.extraCode + '】')
+      addLog(
+        '切换观众失败：' + e.message + '【Code: ' + e.code + ' extraCode:' + e.extraCode + '】'
+      )
     }
   }
 })
@@ -4678,7 +4692,7 @@ progress.onclick = (event) => {
   setAudioMixingPosition(playStartTime)
 }
 
-$('#setMixingPosition').click(()=>{
+$('#setMixingPosition').click(() => {
   const playStartTime = parseFloat($('#mixingValueInput').val())
   setAudioMixingPosition(playStartTime)
 })
@@ -4701,6 +4715,7 @@ function playAuido() {
     fileName + formatSeconds(res.playedTime) + ' / ' + formatSeconds(totalTime)
 }
 
+// chrome62 不支持 getSenders()
 function showAudioSenderLabel() {
   let label = ''
   if (
@@ -4743,12 +4758,17 @@ function showAudioMixingStatus() {
   }
 }
 
+// chrome62 不支持
 function updateAudioMixingStatus() {
   showAudioSenderLabel()
   showAudioMixingStatus()
 }
 
-setInterval(updateAudioMixingStatus, 1000)
+if (
+  !(ANY_CHROME_MAJOR_VERSION && ANY_CHROME_MAJOR_VERSION >= 58 && ANY_CHROME_MAJOR_VERSION < 72)
+) {
+  setInterval(updateAudioMixingStatus, 1000)
+}
 
 function updateLogUploadStatus() {
   const uploadLogEnabled = window.logUpload
@@ -5187,9 +5207,7 @@ $('#pushMask').on('click', function () {
 
 $('#sdkVersion').text(NERTC.VERSION)
 $('#sdkBuild').text(NERTC.BUILD)
-$('#systemRequirement').text(
-  `WebRTC:${NERTC.checkSystemRequirements() ? '支持' : '不支持'}；`
-)
+$('#systemRequirement').text(`WebRTC:${NERTC.checkSystemRequirements() ? '支持' : '不支持'}；`)
 if (!NERTC.checkSystemRequirements()) {
   alert('浏览器环境缺失部分WebRTC基础功能。（是否没有开启HTTPS？）')
 }
@@ -5293,6 +5311,37 @@ const showStats = async () => {
     str += `</pre>`
   })
   $('#statsPanel').html(str)
+
+  try {
+    const sessionStats = await rtc.client.getSessionStats()
+    const sessionStatsHTML = JSON.stringify(sessionStats, null, 2)
+      .replace(/ /g, '&nbsp;')
+      .replace(/\n/g, '<br/>')
+    $('#sessionStats').html(sessionStatsHTML)
+  } catch (e) {
+    // console.error(e)
+  }
+
+  try {
+    const transportStats = await rtc.client.getTransportStats()
+    const transportStatsHTML = JSON.stringify(transportStats, null, 2)
+      .replace(/ /g, '&nbsp;')
+      .replace(/\n/g, '<br/>')
+    $('#transportStats').html(transportStatsHTML)
+  } catch (e) {
+    // console.error(e)
+  }
+
+  try {
+    const systemStats = await rtc.client.getSystemStats()
+    const systemStatsHTML = JSON.stringify(systemStats, null, 2)
+      .replace(/ /g, '&nbsp;')
+      .replace(/\n/g, '<br/>')
+    $('#systemStats').html(systemStatsHTML)
+  } catch (e) {
+    // console.error(e)
+  }
+  $('#otherStats').show()
 }
 let statsTimer = null
 $('#showStats').on('click', () => {
@@ -5468,9 +5517,9 @@ $('#lbsStartUpdate').on('click', async () => {
   }
 })
 
-
 $('#disableLBSService').on('click', async () => {
-  window.location.href= './webrtc2.html?disableLBSService=true&signalProbeEnabled=false&disableAllReports=true'
+  window.location.href =
+    './webrtc2.html?disableLBSService=true&signalProbeEnabled=false&disableAllReports=true'
 })
 
 const lbsTimer = setInterval(() => {
@@ -5672,3 +5721,19 @@ if (query) {
     $('#joinChannel-btn').click()
   }
 }
+
+function updateAreaSelect() {
+  NERTC._geofenceArea.getAvailableAreas().forEach((areaCode) => {
+    if ($("#areaCode option[value='" + areaCode + "']").length === 0) {
+      $('#areaCode').append("<option value='" + areaCode + "'>" + areaCode + '</option>')
+    }
+  })
+}
+updateAreaSelect()
+
+$('#setArea').on('click', () => {
+  const areaCode = $('#areaCode').val()
+  console.log(`setArea`, areaCode)
+  NERTC.setArea({ areaCode })
+  updateAreaSelect()
+})

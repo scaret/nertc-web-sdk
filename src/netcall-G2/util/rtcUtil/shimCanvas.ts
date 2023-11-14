@@ -22,8 +22,13 @@ export function shimCanvas(trackInput: MediaStreamTrack) {
   let rtcCanvas = new RTCCanvas('canvas')
   const videoElem = document.createElement('video')
   let canvasElem = rtcCanvas._canvas
-
-  let settings = trackInput.getSettings()
+  let settings: MediaTrackSettings
+  if ('getSettings' in MediaStreamTrack.prototype) {
+    settings = trackInput.getSettings()
+  } else {
+    //@ts-ignore
+    settings = trackInput.getConstraints()
+  }
   let frameRate = settings.frameRate || 15
   let ctx = rtcCanvas._ctx
 

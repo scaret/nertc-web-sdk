@@ -3,6 +3,7 @@ const Logger = require('../Logger')
 const EnhancedEventEmitter = require('../EnhancedEventEmitter')
 const Message = require('../Message')
 const { JSONBigStringify } = require('../../../../util/json-big')
+const { getParameters } = require('../../../parameters')
 const WS_SUBPROTOCOL = 'protoo'
 const DEFAULT_RETRY_OPTIONS = {
   retries: 10,
@@ -192,7 +193,15 @@ class WebSocketTransport extends EnhancedEventEmitter {
           return
         }
         // Emit 'message' event.
-        this.safeEmit('message', message)
+        if (getParameters().signalingMessageDelay) {
+          setTimeout(() => {
+            if (!this._closed) {
+              this.safeEmit('message', message)
+            }
+          }, getParameters().signalingMessageDelay)
+        } else {
+          this.safeEmit('message', message)
+        }
       }
     })
   }
