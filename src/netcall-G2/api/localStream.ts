@@ -4027,6 +4027,7 @@ class LocalStream extends RTCEventEmitter {
       this._audioAffectsProcessor = new AudioEffects(stageAIProcessing)
       this._audioAffectsProcessor.init()
       this._audioAffectsProcessor.once('effects-load', async () => {
+        this.logger.log('ai audio effects loaded')
         this._audioAffectsProcessor!.setState('AIDenoise', true)
         this.emit('ai-denoise-enabled')
       })
@@ -4059,18 +4060,6 @@ class LocalStream extends RTCEventEmitter {
     }
 
     this._audioAffectsProcessor.setState('AIDenoise', false)
-
-    //这里暂时这么处理，后续需要优化
-    // if (!stageAIProcessing.enableAIDenoise && !stageAIProcessing.enableAudioEffect) {
-    //   this._audioAffectsProcessor.destroy()
-    //   this._audioAffectsProcessor = null
-    //   stageAIProcessing.enabled = false
-    //   this.mediaHelper.updateWebAudio()
-    //   if (this.mediaHelper.canDisableAudioRouting()) {
-    //     this.mediaHelper.disableAudioRouting()
-    //   }
-    // }
-
     if (
       !this._audioAffectsProcessor.getState('AIDenoise') &&
       !this._audioAffectsProcessor.getState('AudioEffect')
@@ -4109,8 +4098,6 @@ class LocalStream extends RTCEventEmitter {
     if (this.mediaHelper.audio.stageAIProcessing) {
       stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
     } else {
-      // 4.6.25版本无法把完整的AudioPipeline移植到localStream，所以单独将AI降噪模块拿出来
-      // 创建AI降噪模块
       const context = getAudioContext()
       if (!context) {
         this.logger.error(`当前环境不支持AudioContext`)
@@ -4143,6 +4130,7 @@ class LocalStream extends RTCEventEmitter {
       this._audioAffectsProcessor = new AudioEffects(stageAIProcessing)
       this._audioAffectsProcessor.init()
       this._audioAffectsProcessor.once('effects-load', async () => {
+        this.logger.log('ai audio effects loaded')
         this._audioAffectsProcessor!.setState('AudioEffect', true)
         this.emit('audio-effect-enabled')
       })
@@ -4173,7 +4161,6 @@ class LocalStream extends RTCEventEmitter {
     }
 
     this._audioAffectsProcessor.setState('AudioEffect', false)
-    //这里暂时这么处理，后续需要优化
     if (
       !this._audioAffectsProcessor.getState('AIDenoise') &&
       !this._audioAffectsProcessor.getState('AudioEffect')
@@ -4246,7 +4233,6 @@ class LocalStream extends RTCEventEmitter {
         message: 'aihowling plugin is not register'
       })
     }
-    //暂时这么写，后续需要优化
     stageAIProcessing.enabled = true
     stageAIProcessing.enableAIhowling = true
     if (stageAIProcessing.state === 'UNINIT') {
@@ -4295,7 +4281,7 @@ class LocalStream extends RTCEventEmitter {
     }
 
     stageAIProcessing.enableAIhowling = false
-    //这里暂时这么处理，后续需要优化
+
     this._aiHowlingProcessor.destroy()
     this._aiHowlingProcessor = null
 
@@ -4321,6 +4307,13 @@ class LocalStream extends RTCEventEmitter {
     this.logger.log('set onAudioHasHowling callback')
     if (this._aiHowlingProcessor) {
       this._aiHowlingProcessor.setHowlingCallback(callback)
+      this.client.apiFrequencyControl({
+        name: 'onAudioHasHowling',
+        code: 0,
+        param: {
+          streamID: this.stringStreamID
+        }
+      })
     } else {
       this.pluginConfigList.howlingCallback = callback
     }
@@ -4529,8 +4522,6 @@ class LocalStream extends RTCEventEmitter {
           // } else {
           //   pipeline.registerPlugin(options.key, plugin, options.wasmUrl)
           // }
-
-          //if (options.key === 'AIDenoise') {
           let stageAIProcessing
           if (this.mediaHelper.audio.stageAIProcessing) {
             stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
@@ -4547,7 +4538,6 @@ class LocalStream extends RTCEventEmitter {
             }
           }
           stageAIProcessing.registerPlugin(options.key as any, plugin)
-          //}
         } else {
           throw new Error(`unsupport plugin ${options.key}`)
         }
@@ -4632,9 +4622,12 @@ class LocalStream extends RTCEventEmitter {
           this.disableAudioEffect()
         }
       }
+      if (key === 'AIhowling') {
+        this.disableAIhowling()
+      }
       const stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
-      if (stageAIProcessing) {
-        stageAIProcessing.unregisterPlugin(key as AudioPluginType)
+      stageAIProcessing?.unregisterPlugin(key as AudioPluginType)
+      if (!stageAIProcessing?.hasWorkingPlugin()) {
         this.mediaHelper.audio.stageAIProcessing = null
       }
       return

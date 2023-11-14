@@ -173,7 +173,7 @@ class AudioProcess {
 
   async process(frame) {
     if (!this.initMem) {
-      console.warn('process initMem')
+      console.warn('waiting wasm init')
       this.handleAudioData(frame)
       return
     }
@@ -187,7 +187,8 @@ class AudioProcess {
       leftData = Int16Array.from(frame[0], (x) => x * 32767)
       rightData = Int16Array.from(frame[0], (x) => x * 32767)
     } else {
-      console.warn('音频源数据异常，长度-', frame.length)
+      //console.warn('音频源数据异常，长度-', frame.length)
+      return;
     }
     Module.HEAP16.set(leftData, this.inLeftPtr >> 1)
     Module.HEAP16.set(rightData, this.inRightPtr >> 1)

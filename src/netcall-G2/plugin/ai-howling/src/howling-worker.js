@@ -46,16 +46,20 @@ class Howling {
       Module.HEAP32.set([this.inLeftPtr, this.inRightPtr], this.inArrayPtr >> 2)
       this.initMem = true
     }
-    if(!frame) {
-      console.warn('illegal frame', frame)
+
+    let leftData, rightData
+    if(frame.length == 2) {
+      leftData = Int16Array.from(frame[0], (x) => x * 32767)
+      rightData = Int16Array.from(frame[1], (x) => x * 32767)
+    } else if (frame.length == 1) {
+      leftData = Int16Array.from(frame[0], (x) => x * 32767)
+      rightData = Int16Array.from(frame[0], (x) => x * 32767)
+    } else {
+      //console.warn('音频源数据异常，长度-', frame.length)
       return;
     }
-    let leftData = Int16Array.from(frame[0], x => x * 32767),
-        rightData = Int16Array.from(frame[0], x => x * 32767)
-
     Module.HEAP16.set(leftData, this.inLeftPtr >> 1)
     Module.HEAP16.set(rightData, this.inRightPtr >> 1)
-
     Module._Processing_Frame(this.howling, this.inArrayPtr, 2)
     this.isProcessing = false
     if (this.buffer.length) {
