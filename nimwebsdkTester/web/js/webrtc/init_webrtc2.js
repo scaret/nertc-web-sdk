@@ -178,7 +178,7 @@ const aiHowlingPluginConfig = {
     simd: {
       key: 'AIhowling',
       pluginUrl: './js/nim/NIM_Web_AIhowling.js',
-      wasmUrl: './js/nim/wasm/NIM_Web_AIhowling.wasm' + `?time=${Math.random()}`
+      wasmUrl: './js/nim/wasm/NIM_Web_AIhowling_simd.wasm' + `?time=${Math.random()}`
     },
     nosimd: {
       key: 'AIhowling',
@@ -2309,12 +2309,19 @@ for(let key in reverbObj) {
 }
 
 //啸叫检测
-function addLowlingStatus(info) {
+function addHowlingStatus(info) {
   const howlingContent =$('#howling-content').get(0)
- // howlingContent.innerHTML = howlingContent.innerHTML +`<p>啸叫状态： ${info}</p>`
- if(info !== 0) {
-  console.warn('啸叫状态：', info)
- }
+  if(info) {
+    console.warn('啸叫状态：', info)
+    howlingContent.innerHTML = howlingContent.innerHTML +`<p style="color:#ff0000">啸叫状态： ${info}</p>`
+  } else {
+    howlingContent.innerHTML = howlingContent.innerHTML +`<p>啸叫状态： ${info}</p>`
+  }
+}
+
+function clearHowlingStatus() {
+  const howlingContent =$('#howling-content').get(0)
+  howlingContent.innerHTML = ''
 }
 
 //强制注册simd版插件
@@ -2376,16 +2383,18 @@ $('#disableAIhowling').on('click', () => {
 
 $('#unregisterAIhowling').on('click', () => {
   $('#AIhowlingStatus').html('loading').hide()
-  if (audioEffect_config) {
-    rtc.localStream.unregisterPlugin(audioEffect_config.key)
+  if (aiHowling_config) {
+    rtc.localStream.unregisterPlugin(aiHowling_config.key)
   }
 })
 
 $('#onAudioHasHowling').on('click', () => {
   if (rtc.localStream) {
-    rtc.localStream.onAudioHasHowling(addLowlingStatus)
+    rtc.localStream.onAudioHasHowling(addHowlingStatus)
   }
 })
+
+$('#clearHowling').on('click', clearHowlingStatus)
 
 //虚拟背景
 document.getElementById('select').onchange = function () {

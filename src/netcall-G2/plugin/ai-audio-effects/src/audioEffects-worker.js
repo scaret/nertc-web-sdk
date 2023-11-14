@@ -24,6 +24,7 @@ class AIDenoise {
 
   set enable(value) {
     this.enabled = value
+    Module._rnnoise_enable(this.rnnoise, value - 0)
   }
 
   get enable() {
@@ -91,6 +92,9 @@ class AudioEffect {
 
   set enable(value) {
     this.enabled = value
+    if(!value) {
+      Module._UpdateEffect(this.aeInterface, 0, 0)
+    }
   }
 
   get enable() {
@@ -111,13 +115,16 @@ class AudioProcess {
   buffer = []
   buffer_length = 1
   initMem = false
+  buffer_size = 128
   inLeftPtr = null
   outLeftPtr = null
   inRightPtr = null
   outRightPtr = null
-  buffer_size = 128
+  tempLeftPtr = null
+  tempRightPtr = null
   inArrayPtr = null
   outArrayPtr = null
+  tempArrayPtr = null
 
   aeInterface = null
   EQArrayPtr = null
@@ -133,8 +140,8 @@ class AudioProcess {
         this.AIDenoise = new AIDenoise()
         this.AudioEffect = new AudioEffect()
         this.malloc();
-        this.AIDenoise.init(this.inArrayPtr, this.outArrayPtr)
-        this.AudioEffect.init(this.inArrayPtr, this.outArrayPtr)
+        this.AIDenoise.init(this.inArrayPtr, this.tempArrayPtr)
+        this.AudioEffect.init(this.tempArrayPtr, this.outArrayPtr)
         this.initMem = true
 
         this.handleInitFinished()
@@ -156,6 +163,11 @@ class AudioProcess {
      this.outRightPtr = Module._audio_effects_malloc(this.buffer_size * 2)
      this.outArrayPtr = Module._audio_effects_malloc(2)
      Module.HEAP32.set([this.outLeftPtr, this.outRightPtr], this.outArrayPtr >> 2)
+
+     this.tempLeftPtr = Module._audio_effects_malloc(this.buffer_size * 2)
+     this.tempRightPtr = Module._audio_effects_malloc(this.buffer_size * 2)
+     this.tempArrayPtr = Module._audio_effects_malloc(2)
+     Module.HEAP32.set([this.tempLeftPtr, this.tempRightPtr], this.tempArrayPtr >> 2)
   }
 
 
@@ -168,7 +180,6 @@ class AudioProcess {
 
     let leftData = null, rightData = null;
     let result = []
-
     if(frame.length == 2) {
       leftData = Int16Array.from(frame[0], (x) => x * 32767)
       rightData = Int16Array.from(frame[1], (x) => x * 32767)
@@ -180,13 +191,9 @@ class AudioProcess {
     }
     Module.HEAP16.set(leftData, this.inLeftPtr >> 1)
     Module.HEAP16.set(rightData, this.inRightPtr >> 1)
+    this.AIDenoise.process()
+    this.AudioEffect.process()
 
-    if(this.AIDenoise.enable) {
-      this.AIDenoise.process()
-    }
-    if(this.AudioEffect.enable) {
-       this.AudioEffect.process()
-    }
     result.push(
       Float32Array.from(
         Module.HEAP16.subarray(this.outLeftPtr >> 1, (this.outLeftPtr >> 1) + this.buffer_size),

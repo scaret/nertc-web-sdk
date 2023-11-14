@@ -26,7 +26,8 @@ class Howling {
         Module._SetThreshold(this.howling, 0.5);
         Module._SetPostThreshold(this.howling, 1);
         Module._Enable(this.howling, true);
-
+        const callbackPtr =  Module.addFunction(this.handleHasHowling, 'vi')
+        Module._RegisterAiHowlingCallback(this.howling, callbackPtr)
         this.handleInitFinished()
       },
       onAbort: (msg) => {
@@ -54,14 +55,8 @@ class Howling {
 
     Module.HEAP16.set(leftData, this.inLeftPtr >> 1)
     Module.HEAP16.set(rightData, this.inRightPtr >> 1)
-    const hasHowling = Module._Processing_Frame(this.howling, this.inArrayPtr, 2)
-    if (hasHowling) {
-      console.warn('检测到啸叫')
-    } else {
-      //console.warn('_rnnoise_process_frame 无返回值')
-     // console.log('无啸叫')
-    }
-    this.handleHasHowling(hasHowling)
+
+    Module._Processing_Frame(this.howling, this.inArrayPtr, 2)
     this.isProcessing = false
     if (this.buffer.length) {
       const buffer = this.buffer.shift()
@@ -90,7 +85,7 @@ class Howling {
 
   handleHasHowling = (result) => {
     global.postMessage({
-      type: 'hasHowling',
+      type: 'howlingState',
       result
     })
   }

@@ -8,7 +8,7 @@ class AIholwing extends EventEmitter {
   private _howlingWorkerDestroying = false
   private logger: ILogger
   private wasmBinary: Uint8Array = new Uint8Array()
-  private processCallback!: (result: Float32Array) => void
+  private processCallback!: (hasHowling: boolean) => void
   private isLoaded = false
 
   constructor(options: modelOptions) {
@@ -51,9 +51,8 @@ class AIholwing extends EventEmitter {
     })
   }
 
-  setHowlingCallback(callback: (result: Float32Array) => void) {
+  setHowlingCallback(callback: (hasHowling: boolean) => void) {
     this.processCallback = callback
-    console.warn('this.processCallback', this.processCallback)
   }
 
   get load() {
@@ -70,10 +69,10 @@ class AIholwing extends EventEmitter {
           this.emit('aihowling-load')
           this.isLoaded = true
           break
-        case 'hasHowling':
+        case 'howlingState':
           //console.warn('data.result', data.result, this.processCallback)
           if (typeof this.processCallback == 'function') {
-            this.processCallback(data.result)
+            this.processCallback(!!data.result)
           }
           break
         case 'destroyed':

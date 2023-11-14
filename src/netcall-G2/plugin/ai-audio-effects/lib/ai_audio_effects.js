@@ -319,7 +319,7 @@ function createWasm() {
 		wasmExports = exports;
 		wasmMemory = wasmExports["B"];
 		updateMemoryViews();
-		wasmTable = wasmExports["F"];
+		wasmTable = wasmExports["J"];
 		addOnInit(wasmExports["C"]);
 		removeRunDependency("wasm-instantiate");
 		return exports
@@ -3822,17 +3822,17 @@ handleAllocatorInit();
 init_emval();
 var wasmImports = {
 	a: ___assert_fail,
-	k: ___cxa_throw,
-	j: ___syscall_fcntl64,
+	l: ___cxa_throw,
+	k: ___syscall_fcntl64,
 	y: ___syscall_ioctl,
 	z: ___syscall_openat,
 	q: __embind_register_bigint,
 	n: __embind_register_bool,
 	m: __embind_register_emval,
-	g: __embind_register_float,
+	h: __embind_register_float,
 	c: __embind_register_integer,
 	b: __embind_register_memory_view,
-	f: __embind_register_std_string,
+	g: __embind_register_std_string,
 	d: __embind_register_std_wstring,
 	o: __embind_register_void,
 	s: __emscripten_get_now_is_monotonic,
@@ -3842,34 +3842,34 @@ var wasmImports = {
 	t: _emscripten_resize_heap,
 	v: _environ_get,
 	w: _environ_sizes_get,
-	l: _exit,
-	h: _fd_close,
+	f: _exit,
+	i: _fd_close,
 	x: _fd_read,
 	p: _fd_seek,
-	i: _fd_write,
+	j: _fd_write,
 	r: _strftime_l
 };
 var wasmExports = createWasm();
 var ___wasm_call_ctors = () => (___wasm_call_ctors = wasmExports["C"])();
 var _CreateNEAudioEffect = Module["_CreateNEAudioEffect"] = () => (_CreateNEAudioEffect = Module["_CreateNEAudioEffect"] = wasmExports["D"])();
-var _main = Module["_main"] = (a0, a1) => (_main = Module["_main"] = wasmExports["E"])(a0, a1);
-var _DeleteNEAudioEffect = Module["_DeleteNEAudioEffect"] = a0 => (_DeleteNEAudioEffect = Module["_DeleteNEAudioEffect"] = wasmExports["G"])(a0);
-var _Process = Module["_Process"] = (a0, a1, a2, a3, a4) => (_Process = Module["_Process"] = wasmExports["H"])(a0, a1, a2, a3, a4);
-var _SetPara = Module["_SetPara"] = (a0, a1, a2, a3) => (_SetPara = Module["_SetPara"] = wasmExports["I"])(a0, a1, a2, a3);
-var _SetEQGain = Module["_SetEQGain"] = (a0, a1) => (_SetEQGain = Module["_SetEQGain"] = wasmExports["J"])(a0, a1);
-var _UpdateEffect = Module["_UpdateEffect"] = (a0, a1, a2) => (_UpdateEffect = Module["_UpdateEffect"] = wasmExports["K"])(a0, a1, a2);
-var _setLocalPitch = Module["_setLocalPitch"] = (a0, a1) => (_setLocalPitch = Module["_setLocalPitch"] = wasmExports["L"])(a0, a1);
-var _SetLocalVoiceReverbParam = Module["_SetLocalVoiceReverbParam"] = (a0, a1) => (_SetLocalVoiceReverbParam = Module["_SetLocalVoiceReverbParam"] = wasmExports["M"])(a0, a1);
-var _audio_effects_malloc = Module["_audio_effects_malloc"] = a0 => (_audio_effects_malloc = Module["_audio_effects_malloc"] = wasmExports["N"])(a0);
-var _malloc = a0 => (_malloc = wasmExports["O"])(a0);
-var _audio_effects_free = Module["_audio_effects_free"] = a0 => (_audio_effects_free = Module["_audio_effects_free"] = wasmExports["P"])(a0);
-var _free = a0 => (_free = wasmExports["Q"])(a0);
-var _rnnoise_Malloc = Module["_rnnoise_Malloc"] = a0 => (_rnnoise_Malloc = Module["_rnnoise_Malloc"] = wasmExports["R"])(a0);
-var _rnnoise_Free = Module["_rnnoise_Free"] = a0 => (_rnnoise_Free = Module["_rnnoise_Free"] = wasmExports["S"])(a0);
-var _rnnoise_create = Module["_rnnoise_create"] = a0 => (_rnnoise_create = Module["_rnnoise_create"] = wasmExports["T"])(a0);
-var _rnnoise_destroy = Module["_rnnoise_destroy"] = a0 => (_rnnoise_destroy = Module["_rnnoise_destroy"] = wasmExports["U"])(a0);
-var _rnnoise_enable = Module["_rnnoise_enable"] = (a0, a1) => (_rnnoise_enable = Module["_rnnoise_enable"] = wasmExports["V"])(a0, a1);
-var _rnnoise_process_frame = Module["_rnnoise_process_frame"] = (a0, a1, a2, a3) => (_rnnoise_process_frame = Module["_rnnoise_process_frame"] = wasmExports["W"])(a0, a1, a2, a3);
+var _rnnoise_create = Module["_rnnoise_create"] = a0 => (_rnnoise_create = Module["_rnnoise_create"] = wasmExports["E"])(a0);
+var _rnnoise_enable = Module["_rnnoise_enable"] = (a0, a1) => (_rnnoise_enable = Module["_rnnoise_enable"] = wasmExports["F"])(a0, a1);
+var _rnnoise_process_frame = Module["_rnnoise_process_frame"] = (a0, a1, a2, a3) => (_rnnoise_process_frame = Module["_rnnoise_process_frame"] = wasmExports["G"])(a0, a1, a2, a3);
+var _rnnoise_destroy = Module["_rnnoise_destroy"] = a0 => (_rnnoise_destroy = Module["_rnnoise_destroy"] = wasmExports["H"])(a0);
+var _main = Module["_main"] = (a0, a1) => (_main = Module["_main"] = wasmExports["I"])(a0, a1);
+var _DeleteNEAudioEffect = Module["_DeleteNEAudioEffect"] = a0 => (_DeleteNEAudioEffect = Module["_DeleteNEAudioEffect"] = wasmExports["K"])(a0);
+var _Process = Module["_Process"] = (a0, a1, a2, a3, a4) => (_Process = Module["_Process"] = wasmExports["L"])(a0, a1, a2, a3, a4);
+var _SetPara = Module["_SetPara"] = (a0, a1, a2, a3) => (_SetPara = Module["_SetPara"] = wasmExports["M"])(a0, a1, a2, a3);
+var _SetEQGain = Module["_SetEQGain"] = (a0, a1) => (_SetEQGain = Module["_SetEQGain"] = wasmExports["N"])(a0, a1);
+var _UpdateEffect = Module["_UpdateEffect"] = (a0, a1, a2) => (_UpdateEffect = Module["_UpdateEffect"] = wasmExports["O"])(a0, a1, a2);
+var _setLocalPitch = Module["_setLocalPitch"] = (a0, a1) => (_setLocalPitch = Module["_setLocalPitch"] = wasmExports["P"])(a0, a1);
+var _SetLocalVoiceReverbParam = Module["_SetLocalVoiceReverbParam"] = (a0, a1) => (_SetLocalVoiceReverbParam = Module["_SetLocalVoiceReverbParam"] = wasmExports["Q"])(a0, a1);
+var _audio_effects_malloc = Module["_audio_effects_malloc"] = a0 => (_audio_effects_malloc = Module["_audio_effects_malloc"] = wasmExports["R"])(a0);
+var _malloc = a0 => (_malloc = wasmExports["S"])(a0);
+var _audio_effects_free = Module["_audio_effects_free"] = a0 => (_audio_effects_free = Module["_audio_effects_free"] = wasmExports["T"])(a0);
+var _free = a0 => (_free = wasmExports["U"])(a0);
+var _rnnoise_Malloc = Module["_rnnoise_Malloc"] = a0 => (_rnnoise_Malloc = Module["_rnnoise_Malloc"] = wasmExports["V"])(a0);
+var _rnnoise_Free = Module["_rnnoise_Free"] = a0 => (_rnnoise_Free = Module["_rnnoise_Free"] = wasmExports["W"])(a0);
 var ___getTypeName = a0 => (___getTypeName = wasmExports["__getTypeName"])(a0);
 var __embind_initialize_bindings = Module["__embind_initialize_bindings"] = () => (__embind_initialize_bindings = Module["__embind_initialize_bindings"] = wasmExports["X"])();
 var ___errno_location = () => (___errno_location = wasmExports["Y"])();

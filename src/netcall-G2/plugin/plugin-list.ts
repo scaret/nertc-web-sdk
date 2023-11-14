@@ -7,4 +7,8 @@ export const videoPlugins = ['VirtualBackground', 'AdvancedBeauty']
 
 export const audioPlugins = ['AIAudioEffects', 'AIhowling']
 
+export interface PluginConfigList {
+  howlingCallback: ((hasHowling: boolean) => void) | null
+}
+
 export default Pluggins

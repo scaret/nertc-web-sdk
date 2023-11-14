@@ -28,7 +28,6 @@ export default class AIholwing extends EventEmitter {
   }
 
   setHowlingCallback(callback: (flag: boolean) => void) {
-    console.warn('setHowlingCallback', callback)
     this.howlingProcess.setHowlingCallback(callback)
   }
 

@@ -13,7 +13,13 @@ import VirtualBackground from '../module/video-post-processing/virtual-backgroun
 import AudioEffects from '../module/audio-pipeline/stages/StageAIProcessing/AudioEffects'
 import AIholwing from '../module/audio-pipeline/stages/StageAIProcessing/AIhowling'
 import { loadPlugin } from '../plugin'
-import { VideoPluginType, AudioPluginType, audioPlugins, videoPlugins } from '../plugin/plugin-list'
+import {
+  VideoPluginType,
+  AudioPluginType,
+  audioPlugins,
+  videoPlugins,
+  PluginConfigList
+} from '../plugin/plugin-list'
 import { BackGroundOptions } from '../plugin/segmentation/src/types'
 import { checkValidEnum, isNumber } from '../util/param'
 import {
@@ -136,6 +142,10 @@ class LocalStream extends RTCEventEmitter {
   // 音频处理相关实例对象
   private _audioAffectsProcessor: AudioEffects | null = null
   private _aiHowlingProcessor: AIholwing | null = null
+  //用于缓存音视频预处理的预设配置
+  private pluginConfigList: PluginConfigList = {
+    howlingCallback: null
+  }
 
   private lastEffects: any
   private lastFilter: any
@@ -4099,9 +4109,9 @@ class LocalStream extends RTCEventEmitter {
     }
     if (stageAIProcessing.state === 'UNINIT') {
       await stageAIProcessing.init()
-      stageAIProcessing.enabled = true
-      stageAIProcessing.enableAudioEffects = true
     }
+    stageAIProcessing.enabled = true
+    stageAIProcessing.enableAudioEffects = true
     if (this._audioAffectsProcessor) {
       if (this._audioAffectsProcessor.getState('AudioEffect')) {
         this.logger.warn('audio effect is already opened.')
@@ -4229,11 +4239,12 @@ class LocalStream extends RTCEventEmitter {
       this._aiHowlingProcessor = new AIholwing(stageAIProcessing)
       this._aiHowlingProcessor.init()
       this._aiHowlingProcessor.once('aihowling-load', async () => {
-        try {
-          console.warn('aihowling-load')
-
-          this.emit('ai-howling-enabled')
-        } catch (error: any) {}
+        this.logger.log('ai howling loaded')
+        if (this.pluginConfigList.howlingCallback) {
+          this.onAudioHasHowling(this.pluginConfigList.howlingCallback)
+          this.pluginConfigList.howlingCallback = null
+        }
+        this.emit('ai-howling-enabled')
       })
     }
     if (!this.mediaHelper.audio.audioRoutingEnabled) {
@@ -4287,10 +4298,11 @@ class LocalStream extends RTCEventEmitter {
   }
 
   onAudioHasHowling(callback: (hasHowling: boolean) => void) {
+    this.logger.log('set onAudioHasHowling callback')
     if (this._aiHowlingProcessor) {
       this._aiHowlingProcessor.setHowlingCallback(callback)
     } else {
-      this.logger.warn('ai howling is not opened.')
+      this.pluginConfigList.howlingCallback = callback
     }
   }
 
@@ -4484,7 +4496,6 @@ class LocalStream extends RTCEventEmitter {
     } else if (options.pluginObj) {
       plugin = new options.pluginObj(options)
     }
-    console.warn('plugin', plugin)
     if (plugin) {
       plugin.once('plugin-load', () => {
         this.logger.log(`plugin ${options.key} loaded`)
@@ -4518,7 +4529,6 @@ class LocalStream extends RTCEventEmitter {
           stageAIProcessing.registerPlugin(options.key as any, plugin)
           //}
         } else {
-          console.warn('audioPlugins', options.key, audioPlugins)
           throw new Error(`unsupport plugin ${options.key}`)
         }
         this.emit('plugin-load', options.key)
