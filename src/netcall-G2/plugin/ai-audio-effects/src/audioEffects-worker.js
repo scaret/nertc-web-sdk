@@ -150,7 +150,7 @@ class AudioProcess {
         global.postMessage({ type: 'error', message: '' + msg })
       }
     }
-    require('../lib/ai_audio_effects.js')
+    require('../lib/audio_effects_and_denoise.js')
   }
 
   malloc() {

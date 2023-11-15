@@ -136,12 +136,12 @@ const aiAudioEffectsPluginConfig = {
     simd: {
       key: 'AIAudioEffects',
       pluginUrl: './js/nim/NIM_Web_AIAudioEffects.js',
-      wasmUrl: './js/nim/wasm/NIM_Web_AIAudioEffects_simd.wasm' + `?time=${Math.random()}`
+      wasmUrl: './js/nim/wasm/NIM_Web_AIAudioEffects_simd.wasm' + `?time=${Math.random()}`,
     },
     nosimd: {
       key: 'AIAudioEffects',
       pluginUrl: './js/nim/NIM_Web_AIAudioEffects.js',
-      wasmUrl: './js/nim/wasm/NIM_Web_AIAudioEffects_nosimd2.wasm' + `?time=${Math.random()}`
+      wasmUrl: './js/nim/wasm/NIM_Web_AIAudioEffects_nosimd.wasm' + `?time=${Math.random()}`
     }
   },
   production: {
@@ -178,7 +178,7 @@ const aiHowlingPluginConfig = {
     simd: {
       key: 'AIhowling',
       pluginUrl: './js/nim/NIM_Web_AIhowling.js',
-      wasmUrl: './js/nim/wasm/NIM_Web_AIhowling_nosimd.wasm' + `?time=${Math.random()}`
+      wasmUrl: './js/nim/wasm/NIM_Web_AIhowling_simd.wasm' + `?time=${Math.random()}`
     },
     nosimd: {
       key: 'AIhowling',
