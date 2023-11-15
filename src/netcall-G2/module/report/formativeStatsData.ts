@@ -55,7 +55,9 @@ class FormativeStatsReport {
       downScreenCache: {},
       upTransportCache: {},
       downTransportCache: {},
+      //@ts-ignore
       upCandidatePairStatsCache: {},
+      //@ts-ignore
       downCandidatePairStatsCache: {}
     }
   }
@@ -78,7 +80,9 @@ class FormativeStatsReport {
       downScreenCache: {},
       upTransportCache: {},
       downTransportCache: {},
+      //@ts-ignore
       upCandidatePairStatsCache: {},
+      //@ts-ignore
       downCandidatePairStatsCache: {}
     }
   }
