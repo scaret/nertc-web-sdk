@@ -4023,6 +4023,13 @@ class LocalStream extends RTCEventEmitter {
       } else {
         this._audioAffectsProcessor.setState('AIDenoise', true)
         this.emit('ai-denoise-enabled')
+        this.client.apiFrequencyControl({
+          name: 'enableAIDenoise',
+          code: 0,
+          param: {
+            streamID: this.stringStreamID
+          }
+        })
       }
       return true
     } else {
@@ -4032,6 +4039,13 @@ class LocalStream extends RTCEventEmitter {
         this.logger.log('ai audio effects loaded')
         this._audioAffectsProcessor!.setState('AIDenoise', true)
         this.emit('ai-denoise-enabled')
+        this.client.apiFrequencyControl({
+          name: 'enableAIDenoise',
+          code: 0,
+          param: {
+            streamID: this.stringStreamID
+          }
+        })
       })
     }
 
@@ -4039,13 +4053,6 @@ class LocalStream extends RTCEventEmitter {
       this.mediaHelper.enableAudioRouting()
     }
     this.mediaHelper.updateWebAudio()
-    this.client.apiFrequencyControl({
-      name: 'enableAIDenoise',
-      code: 0,
-      param: {
-        streamID: this.stringStreamID
-      }
-    })
     return true
   }
 
@@ -4073,7 +4080,6 @@ class LocalStream extends RTCEventEmitter {
       this._audioAffectsProcessor = null
       stageAIProcessing.enableAudioEffects = false
     }
-
     if (!stageAIProcessing.hasWorkingPlugin()) {
       stageAIProcessing.enabled = false
       this.mediaHelper.updateWebAudio()
@@ -4130,6 +4136,13 @@ class LocalStream extends RTCEventEmitter {
       } else {
         this._audioAffectsProcessor.setState('AudioEffect', true)
         this.emit('audio-effect-enabled')
+        this.client.apiFrequencyControl({
+          name: 'enableAudioEffect',
+          code: 0,
+          param: {
+            streamID: this.stringStreamID
+          }
+        })
       }
       return true
     } else {
@@ -4139,19 +4152,19 @@ class LocalStream extends RTCEventEmitter {
         this.logger.log('ai audio effects loaded')
         this._audioAffectsProcessor!.setState('AudioEffect', true)
         this.emit('audio-effect-enabled')
+        this.client.apiFrequencyControl({
+          name: 'enableAudioEffect',
+          code: 0,
+          param: {
+            streamID: this.stringStreamID
+          }
+        })
       })
     }
     if (!this.mediaHelper.audio.audioRoutingEnabled) {
       this.mediaHelper.enableAudioRouting()
     }
     this.mediaHelper.updateWebAudio()
-    this.client.apiFrequencyControl({
-      name: 'enableAudioEffect',
-      code: 0,
-      param: {
-        streamID: this.stringStreamID
-      }
-    })
     return true
   }
 
@@ -4206,7 +4219,7 @@ class LocalStream extends RTCEventEmitter {
         param: {
           streamID: this.stringStreamID,
           type,
-          value
+          value: JSON.stringify(value)
         }
       })
     } else {
@@ -4645,18 +4658,26 @@ class LocalStream extends RTCEventEmitter {
       if (!stageAIProcessing?.hasWorkingPlugin()) {
         this.mediaHelper.audio.stageAIProcessing = null
       }
-      return
+    } else {
+      this.WebGLSupportError()
+      if (this.videoPostProcess) {
+        if (key === 'VirtualBackground' && this._segmentProcessor) {
+          await this.disableBodySegment()
+        } else if (key === 'AdvancedBeauty' && this._advancedBeautyProcessor) {
+          await this.disableAdvancedBeauty()
+        }
+        this.videoPostProcess.unregisterPlugin(key as VideoPluginType)
+      }
     }
 
-    this.WebGLSupportError()
-    if (this.videoPostProcess) {
-      if (key === 'VirtualBackground' && this._segmentProcessor) {
-        await this.disableBodySegment()
-      } else if (key === 'AdvancedBeauty' && this._advancedBeautyProcessor) {
-        await this.disableAdvancedBeauty()
+    this.client.apiFrequencyControl({
+      name: 'unregisterPlugin',
+      code: 0,
+      param: {
+        streamID: this.stringStreamID,
+        plugin: key
       }
-      this.videoPostProcess.unregisterPlugin(key as VideoPluginType)
-    }
+    })
   }
 
   // 临时挂起视频后处理
