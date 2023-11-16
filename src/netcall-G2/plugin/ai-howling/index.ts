@@ -3,18 +3,18 @@ import { ILogger } from '../../types'
 import { EventEmitter } from 'eventemitter3'
 import { modelOptions } from './src/types'
 
-class AIDenoise extends EventEmitter {
-  private deoniseWorker: any
-  private _deoniseWorkerDestroying = false
+class AIholwing extends EventEmitter {
+  private howlingWorker: any
+  private _howlingWorkerDestroying = false
   private logger: ILogger
   private wasmBinary: Uint8Array = new Uint8Array()
-  private denoiseCallback!: (result: Float32Array) => void
+  private processCallback!: (hasHowling: boolean) => void
   private isLoaded = false
 
   constructor(options: modelOptions) {
     super()
     this.logger = options.adapterRef.logger.getChild(() => {
-      return 'AIDenoise'
+      return 'AIholwing'
     })
 
     this.isLoaded = false
@@ -39,16 +39,20 @@ class AIDenoise extends EventEmitter {
   }
 
   init() {
-    this.logger.log('AIDenoise create')
-    this.deoniseWorker = webworkify(require.resolve('./src/denoise-worker.js'))
+    this.logger.log('AIholwing create')
+    this.howlingWorker = webworkify(require.resolve('./src/howling-worker.js'))
     this.addEventListener()
 
-    this.deoniseWorker.postMessage({
+    this.howlingWorker.postMessage({
       type: 'init',
       option: {
         wasmBinary: this.wasmBinary
       }
     })
+  }
+
+  setHowlingCallback(callback: (hasHowling: boolean) => void) {
+    this.processCallback = callback
   }
 
   get load() {
@@ -57,23 +61,26 @@ class AIDenoise extends EventEmitter {
 
   addEventListener() {
     //@ts-ignore
-    this.deoniseWorker.addEventListener('message', (e) => {
+    this.howlingWorker.addEventListener('message', (e) => {
       let data = e.data
       const type = data.type
       switch (type) {
         case 'created':
-          this.emit('denoise-load')
+          this.emit('aihowling-load')
           this.isLoaded = true
           break
-        case 'audioData':
-          this.denoiseCallback(data.audioData)
+        case 'howlingState':
+          if (typeof this.processCallback == 'function') {
+            this.processCallback(!!data.result)
+          }
           break
         case 'destroyed':
-          if (this._deoniseWorkerDestroying) {
-            this.logger.log('AIDenoiseworker destroyed')
-            this._deoniseWorkerDestroying = false
-            this.deoniseWorker.terminate()
-            this.deoniseWorker = null
+          if (this._howlingWorkerDestroying) {
+            this.logger.log('AIhowlingWorker destroyed')
+            this._howlingWorkerDestroying = false
+            this.howlingWorker.terminate()
+            this.howlingWorker = null
+            this.isLoaded = false
           }
           break
         case 'error':
@@ -86,23 +93,22 @@ class AIDenoise extends EventEmitter {
   }
 
   destroy() {
-    this.logger.log('AIDenoise destroy')
-    if (this.deoniseWorker && !this._deoniseWorkerDestroying) {
-      this._deoniseWorkerDestroying = true
-      this.deoniseWorker.postMessage({ type: 'destroy' })
+    this.logger.log('AI howling destroy')
+    if (this.howlingWorker && !this._howlingWorkerDestroying) {
+      this._howlingWorkerDestroying = true
+      this.howlingWorker.postMessage({ type: 'destroy' })
     }
   }
 
-  process(noiseData: any[], callback: (result: Float32Array) => void) {
-    this.denoiseCallback = callback
-    if (!this.load) {
-      return
-    }
-    this.deoniseWorker.postMessage({
-      type: 'process',
-      frame: noiseData
-    })
+  process(audioData: any[], callback: (result: Float32Array) => void) {
+    //this.processCallback = callback
+
+    this.howlingWorker &&
+      this.howlingWorker.postMessage({
+        type: 'process',
+        frame: audioData
+      })
   }
 }
 
-export default AIDenoise
+export default AIholwing

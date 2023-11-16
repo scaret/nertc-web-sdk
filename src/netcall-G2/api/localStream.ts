@@ -10,8 +10,16 @@ import VideoPostProcess from '../module/video-post-processing'
 import AdvancedBeauty from '../module/video-post-processing/advanced-beauty'
 import BasicBeauty from '../module/video-post-processing/basic-beauty'
 import VirtualBackground from '../module/video-post-processing/virtual-background'
+import AudioEffects from '../module/audio-pipeline/stages/StageAIProcessing/AudioEffects'
+import AIholwing from '../module/audio-pipeline/stages/StageAIProcessing/AIhowling'
 import { loadPlugin } from '../plugin'
-import { VideoPluginType, audioPlugins, videoPlugins } from '../plugin/plugin-list'
+import {
+  VideoPluginType,
+  AudioPluginType,
+  audioPlugins,
+  videoPlugins,
+  PluginConfigList
+} from '../plugin/plugin-list'
 import { BackGroundOptions } from '../plugin/segmentation/src/types'
 import { checkValidEnum, isNumber } from '../util/param'
 import {
@@ -131,6 +139,14 @@ class LocalStream extends RTCEventEmitter {
   private advancedBeauty: AdvancedBeauty
   private _segmentProcessor: VirtualBackground | null
   private _advancedBeautyProcessor: AdvancedBeauty | null = null
+  // 音频处理相关实例对象
+  private _audioAffectsProcessor: AudioEffects | null = null
+  private _aiHowlingProcessor: AIholwing | null = null
+  //用于缓存音视频预处理的预设配置
+  private pluginConfigList: PluginConfigList = {
+    howlingCallback: null
+  }
+
   private lastEffects: any
   private lastFilter: any
   private videoPostProcessTags = {
@@ -214,7 +230,8 @@ class LocalStream extends RTCEventEmitter {
   private canvasWatermarkOptions: NERtcCanvasWatermarkConfig | null = null
   private encoderWatermarkOptions: NERtcEncoderWatermarkConfig | null = null
   private supportWasm = true
-  private supportAIDenoise = true
+  private supportAIAudioEffects = true
+  private supportHowling = true
   constraintSettings: {
     [mediaType in MediaTypeShort]: AudioProcessingOptions
   } = {
@@ -3209,7 +3226,8 @@ class LocalStream extends RTCEventEmitter {
    */
   stopAudioMixing() {
     this.logger.log('stopAudioMixing() 停止伴音')
-    return this.mediaHelper.stopAudioMixing()
+    const stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
+    return this.mediaHelper.stopAudioMixing(!stageAIProcessing?.hasWorkingPlugin())
   }
 
   /**
@@ -3966,18 +3984,14 @@ class LocalStream extends RTCEventEmitter {
 
   //打开AI降噪
   async enableAIDenoise(): Promise<boolean> {
-    if (!this.supportAIDenoise) {
-      this.logger.warn('Unsupport ai denoise. Please check your plugin version')
+    if (!this.supportAIAudioEffects) {
+      this.logger.warn('Unsupport ai audio effects. Please check your plugin version')
       return false
     }
-    this.logger.log('start ai denoise.')
+    this.logger.log('start denoise.')
     let stageAIProcessing: StageAIProcessing
     if (this.mediaHelper.audio.stageAIProcessing) {
       stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
-      if (stageAIProcessing.enabled && stageAIProcessing.state === 'INITED') {
-        this.logger.warn('ai denoise is already opened.')
-        return true
-      }
     } else {
       // 4.6.25版本无法把完整的AudioPipeline移植到localStream，所以单独将AI降噪模块拿出来
       // 创建AI降噪模块
@@ -3990,28 +4004,55 @@ class LocalStream extends RTCEventEmitter {
         this.mediaHelper.audio.stageAIProcessing = stageAIProcessing
       }
     }
-    if (!stageAIProcessing.hasPlugin('AIDenoise')) {
-      this.logger.error('AIDenoise plugin is not register.')
+    if (!stageAIProcessing.getPlugin('AIAudioEffects')) {
+      this.logger.error('AudioEffects plugin is not register.')
       throw new RtcError({
         code: ErrorCode.PLUGIN_NOT_REGISTER,
-        message: 'AIDenoise plugin is not register'
+        message: 'AudioEffects plugin is not register'
       })
     }
-    stageAIProcessing.enabled = true
+
     if (stageAIProcessing.state === 'UNINIT') {
       await stageAIProcessing.init()
     }
+    stageAIProcessing.enabled = true
+    stageAIProcessing.enableAudioEffects = true
+    if (this._audioAffectsProcessor) {
+      if (this._audioAffectsProcessor.getState('AIDenoise')) {
+        this.logger.warn('ai denoise is already opened.')
+      } else {
+        this._audioAffectsProcessor.setState('AIDenoise', true)
+        this.emit('ai-denoise-enabled')
+        this.client.apiFrequencyControl({
+          name: 'enableAIDenoise',
+          code: 0,
+          param: {
+            streamID: this.stringStreamID
+          }
+        })
+      }
+      return true
+    } else {
+      this._audioAffectsProcessor = new AudioEffects(stageAIProcessing)
+      this._audioAffectsProcessor.init()
+      this._audioAffectsProcessor.once('effects-load', async () => {
+        this.logger.log('ai audio effects loaded')
+        this._audioAffectsProcessor!.setState('AIDenoise', true)
+        this.emit('ai-denoise-enabled')
+        this.client.apiFrequencyControl({
+          name: 'enableAIDenoise',
+          code: 0,
+          param: {
+            streamID: this.stringStreamID
+          }
+        })
+      })
+    }
+
     if (!this.mediaHelper.audio.audioRoutingEnabled) {
       this.mediaHelper.enableAudioRouting()
     }
     this.mediaHelper.updateWebAudio()
-    this.client.apiFrequencyControl({
-      name: 'enableAIDenoise',
-      code: 0,
-      param: {
-        streamID: this.stringStreamID
-      }
-    })
     return true
   }
 
@@ -4020,17 +4061,33 @@ class LocalStream extends RTCEventEmitter {
     this.logger.log('close ai denoise.')
     const stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
     if (!stageAIProcessing) {
-      this.logger.warn('disableAIDenoise: ai denoise is not created')
+      this.logger.warn('disableAIDenoise: audio process is not created')
       return true
-    } else if (!stageAIProcessing.enabled) {
-      this.logger.warn('ai denoise is already closed.')
+    } else if (
+      !this._audioAffectsProcessor ||
+      !this._audioAffectsProcessor?.getState('AIDenoise')
+    ) {
+      this.logger.warn('denoise is already closed.')
       return true
     }
-    stageAIProcessing.enabled = false
-    this.mediaHelper.updateWebAudio()
-    if (this.mediaHelper.canDisableAudioRouting()) {
-      this.mediaHelper.disableAudioRouting()
+
+    this._audioAffectsProcessor.setState('AIDenoise', false)
+    if (
+      !this._audioAffectsProcessor.getState('AIDenoise') &&
+      !this._audioAffectsProcessor.getState('AudioEffect')
+    ) {
+      this._audioAffectsProcessor.destroy()
+      this._audioAffectsProcessor = null
+      stageAIProcessing.enableAudioEffects = false
     }
+    if (!stageAIProcessing.hasWorkingPlugin()) {
+      stageAIProcessing.enabled = false
+      this.mediaHelper.updateWebAudio()
+      if (this.mediaHelper.canDisableAudioRouting()) {
+        this.mediaHelper.disableAudioRouting()
+      }
+    }
+
     this.client.apiFrequencyControl({
       name: 'disableAIDenoise',
       code: 0,
@@ -4039,6 +4096,249 @@ class LocalStream extends RTCEventEmitter {
       }
     })
     return false
+  }
+
+  //打开美声变声
+  async enableAudioEffect(): Promise<boolean> {
+    if (!this.supportAIAudioEffects) {
+      this.logger.warn('Unsupport ai audio effects. Please check your plugin version')
+      return false
+    }
+    this.logger.log('start audio effect.')
+    let stageAIProcessing: StageAIProcessing
+    if (this.mediaHelper.audio.stageAIProcessing) {
+      stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
+    } else {
+      const context = getAudioContext()
+      if (!context) {
+        this.logger.error(`当前环境不支持AudioContext`)
+        return false
+      } else {
+        stageAIProcessing = new StageAIProcessing(context, this.logger)
+        this.mediaHelper.audio.stageAIProcessing = stageAIProcessing
+      }
+    }
+    if (!stageAIProcessing.getPlugin('AIAudioEffects')) {
+      this.logger.error('AudioEffects plugin is not register.')
+      throw new RtcError({
+        code: ErrorCode.PLUGIN_NOT_REGISTER,
+        message: 'ai audio effect plugin is not register'
+      })
+    }
+    if (stageAIProcessing.state === 'UNINIT') {
+      await stageAIProcessing.init()
+    }
+    stageAIProcessing.enabled = true
+    stageAIProcessing.enableAudioEffects = true
+    if (this._audioAffectsProcessor) {
+      if (this._audioAffectsProcessor.getState('AudioEffect')) {
+        this.logger.warn('audio effect is already opened.')
+      } else {
+        this._audioAffectsProcessor.setState('AudioEffect', true)
+        this.emit('audio-effect-enabled')
+        this.client.apiFrequencyControl({
+          name: 'enableAudioEffect',
+          code: 0,
+          param: {
+            streamID: this.stringStreamID
+          }
+        })
+      }
+      return true
+    } else {
+      this._audioAffectsProcessor = new AudioEffects(stageAIProcessing)
+      this._audioAffectsProcessor.init()
+      this._audioAffectsProcessor.once('effects-load', async () => {
+        this.logger.log('ai audio effects loaded')
+        this._audioAffectsProcessor!.setState('AudioEffect', true)
+        this.emit('audio-effect-enabled')
+        this.client.apiFrequencyControl({
+          name: 'enableAudioEffect',
+          code: 0,
+          param: {
+            streamID: this.stringStreamID
+          }
+        })
+      })
+    }
+    if (!this.mediaHelper.audio.audioRoutingEnabled) {
+      this.mediaHelper.enableAudioRouting()
+    }
+    this.mediaHelper.updateWebAudio()
+    return true
+  }
+
+  async disableAudioEffect(): Promise<boolean> {
+    this.logger.log('close audio effect.')
+    const stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
+    if (!stageAIProcessing) {
+      this.logger.warn('disableAudioEffect: audio process is not created')
+      return true
+    } else if (
+      !this._audioAffectsProcessor ||
+      !this._audioAffectsProcessor?.getState('AudioEffect')
+    ) {
+      this.logger.warn('ai audio effect is already closed.')
+      return true
+    }
+
+    this._audioAffectsProcessor.setState('AudioEffect', false)
+    if (
+      !this._audioAffectsProcessor.getState('AIDenoise') &&
+      !this._audioAffectsProcessor.getState('AudioEffect')
+    ) {
+      this._audioAffectsProcessor.destroy()
+      this._audioAffectsProcessor = null
+      stageAIProcessing.enableAudioEffects = false
+    }
+    if (!stageAIProcessing.hasWorkingPlugin()) {
+      stageAIProcessing.enabled = false
+      this.mediaHelper.updateWebAudio()
+      if (this.mediaHelper.canDisableAudioRouting()) {
+        this.mediaHelper.disableAudioRouting()
+      }
+    }
+
+    this.client.apiFrequencyControl({
+      name: 'disableAudioEffect',
+      code: 0,
+      param: {
+        streamID: this.stringStreamID
+      }
+    })
+    return true
+  }
+
+  setAudioEffect(type: number, value: number | Array<number>) {
+    this.logger.log(`setAudioEffect:${type} `, JSON.stringify(value))
+    if (this._audioAffectsProcessor && this._audioAffectsProcessor.getState('AudioEffect')) {
+      this._audioAffectsProcessor.setAudioEffect(type, value)
+      this.client.apiFrequencyControl({
+        name: 'setAudioEffect',
+        code: 0,
+        param: {
+          streamID: this.stringStreamID,
+          type,
+          value: JSON.stringify(value)
+        }
+      })
+    } else {
+      this.logger.warn('audio effect is not opened.')
+    }
+  }
+
+  //打开啸叫检测
+  async enableAIhowling(): Promise<boolean> {
+    if (!this.supportHowling) {
+      this.logger.warn('Unsupport ai howling. Please check your plugin version')
+      return false
+    }
+    this.logger.log('start ai howling.')
+    let stageAIProcessing: StageAIProcessing
+    if (this.mediaHelper.audio.stageAIProcessing) {
+      stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
+    } else {
+      // 创建AI降噪模块
+      const context = getAudioContext()
+      if (!context) {
+        this.logger.error(`当前环境不支持AudioContext`)
+        return false
+      } else {
+        stageAIProcessing = new StageAIProcessing(context, this.logger)
+        this.mediaHelper.audio.stageAIProcessing = stageAIProcessing
+      }
+    }
+    if (!stageAIProcessing.getPlugin('AIhowling')) {
+      this.logger.error('AIhowling plugin is not register.')
+      throw new RtcError({
+        code: ErrorCode.PLUGIN_NOT_REGISTER,
+        message: 'aihowling plugin is not register'
+      })
+    }
+    stageAIProcessing.enabled = true
+    stageAIProcessing.enableAIhowling = true
+    if (stageAIProcessing.state === 'UNINIT') {
+      await stageAIProcessing.init()
+    }
+    if (this._aiHowlingProcessor) {
+      this.logger.warn('ai howling is already opened.')
+      return true
+    } else {
+      this._aiHowlingProcessor = new AIholwing(stageAIProcessing)
+      this._aiHowlingProcessor.init()
+      this._aiHowlingProcessor.once('aihowling-load', async () => {
+        this.logger.log('ai howling loaded')
+        if (this.pluginConfigList.howlingCallback) {
+          this.onAudioHasHowling(this.pluginConfigList.howlingCallback)
+          this.pluginConfigList.howlingCallback = null
+        }
+        this.emit('ai-howling-enabled')
+      })
+    }
+    if (!this.mediaHelper.audio.audioRoutingEnabled) {
+      this.mediaHelper.enableAudioRouting()
+    }
+
+    this.mediaHelper.updateWebAudio()
+    this.client.apiFrequencyControl({
+      name: 'enableAIhowling',
+      code: 0,
+      param: {
+        streamID: this.stringStreamID
+      }
+    })
+    return true
+  }
+
+  //关闭啸叫检测
+  async disableAIhowling(): Promise<boolean> {
+    this.logger.log('close ai howling.')
+    const stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
+    if (!stageAIProcessing) {
+      this.logger.warn('disableAIhowling: audio process is not created')
+      return true
+    } else if (!this._aiHowlingProcessor) {
+      this.logger.warn('aihowling is already closed.')
+      return true
+    }
+
+    stageAIProcessing.enableAIhowling = false
+
+    this._aiHowlingProcessor.destroy()
+    this._aiHowlingProcessor = null
+
+    if (!stageAIProcessing.hasWorkingPlugin()) {
+      stageAIProcessing.enabled = false
+      this.mediaHelper.updateWebAudio()
+      if (this.mediaHelper.canDisableAudioRouting()) {
+        this.mediaHelper.disableAudioRouting()
+      }
+    }
+
+    this.client.apiFrequencyControl({
+      name: 'disableAIhowling',
+      code: 0,
+      param: {
+        streamID: this.stringStreamID
+      }
+    })
+    return true
+  }
+
+  onAudioHasHowling(callback: (hasHowling: boolean) => void) {
+    this.logger.log('set onAudioHasHowling callback')
+    if (this._aiHowlingProcessor) {
+      this._aiHowlingProcessor.setHowlingCallback(callback)
+      this.client.apiFrequencyControl({
+        name: 'onAudioHasHowling',
+        code: 0,
+        param: {
+          streamID: this.stringStreamID
+        }
+      })
+    } else {
+      this.pluginConfigList.howlingCallback = callback
+    }
   }
 
   async replacePluginTrack(options: {
@@ -4217,11 +4517,10 @@ class LocalStream extends RTCEventEmitter {
     //   }
     // }
     const stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
-    if (stageAIProcessing && stageAIProcessing.hasPlugin(options.key)) {
+    if (stageAIProcessing && stageAIProcessing.getPlugin(options.key as any)) {
       this.logger.warn(`plugin ${options.key} already exists.`)
       return false
     }
-
     let plugin: any = null
     options.adapterRef = this.client.adapterRef
     try {
@@ -4244,28 +4543,32 @@ class LocalStream extends RTCEventEmitter {
             // } else {
             //   pipeline.registerPlugin(options.key, plugin, options.wasmUrl)
             // }
-
-            if (options.key === 'AIDenoise') {
-              let stageAIProcessing
-              if (this.mediaHelper.audio.stageAIProcessing) {
-                stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
+            let stageAIProcessing
+            if (this.mediaHelper.audio.stageAIProcessing) {
+              stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
+            } else {
+              // 4.6.25版本无法把完整的AudioPipeline移植到localStream，所以单独将AI降噪模块拿出来
+              // 创建AI降噪模块
+              const context = getAudioContext()
+              if (!context) {
+                this.logger.error(`当前环境不支持AudioContext`)
+                return false
               } else {
-                // 4.6.25版本无法把完整的AudioPipeline移植到localStream，所以单独将AI降噪模块拿出来
-                // 创建AI降噪模块
-                const context = getAudioContext()
-                if (!context) {
-                  this.logger.error(`当前环境不支持AudioContext`)
-                  return false
-                } else {
-                  stageAIProcessing = new StageAIProcessing(context, this.logger)
-                  this.mediaHelper.audio.stageAIProcessing = stageAIProcessing
-                }
+                stageAIProcessing = new StageAIProcessing(context, this.logger)
+                this.mediaHelper.audio.stageAIProcessing = stageAIProcessing
               }
-              stageAIProcessing.registerPlugin(options.key, plugin, options.wasmUrl)
             }
+            if (options.key == 'AIAudioEffects') {
+              this.supportAIAudioEffects = true
+            }
+            if (options.key == 'AIhowling') {
+              this.supportHowling = true
+            }
+            stageAIProcessing.registerPlugin(options.key as any, plugin)
           } else {
             throw new Error(`unsupport plugin ${options.key}`)
           }
+
           this.emit('plugin-load', options.key)
           this.client.apiFrequencyControl({
             name: 'registerPlugin',
@@ -4276,7 +4579,7 @@ class LocalStream extends RTCEventEmitter {
             }
           })
         })
-        plugin.once('plugin-load-error', () => {
+        plugin.once('plugin-load-error', (msg: any) => {
           this.emit('plugin-load-error', {
             key: options.key,
             msg: `load ${options.wasmUrl} error.`
@@ -4292,8 +4595,11 @@ class LocalStream extends RTCEventEmitter {
           })
         })
         plugin.once('error', (message: string) => {
-          if (options.key == 'AIDenoise') {
-            this.supportAIDenoise = false
+          if (options.key == 'AIAudioEffects') {
+            this.supportAIAudioEffects = false
+          }
+          if (options.key == 'AIhowling') {
+            this.supportHowling = false
           }
           this.unregisterPlugin(options.key)
           this.client.apiFrequencyControl({
@@ -4336,37 +4642,42 @@ class LocalStream extends RTCEventEmitter {
   async unregisterPlugin(key: string) {
     this.logger.log(`unRegister plugin:${key}`)
     if (audioPlugins.indexOf(key) !== -1) {
-      if (key === 'AIDenoise') {
-        const stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
-        if (stageAIProcessing) {
-          stageAIProcessing.enabled = false
-          this.mediaHelper.updateWebAudio()
-          if (this.mediaHelper.canDisableAudioRouting()) {
-            this.mediaHelper.disableAudioRouting()
-          }
-          stageAIProcessing.unregisterAIDenoise()
-          this.mediaHelper.audio.stageAIProcessing = null
+      if (key === 'AIAudioEffects') {
+        if (this._audioAffectsProcessor?.getState('AIDenoise')) {
+          this.disableAIDenoise()
+        }
+        if (this._audioAffectsProcessor?.getState('AudioEffect')) {
+          this.disableAudioEffect()
         }
       }
-      return
-      // const pipeline = this.mediaHelper.getOrCreateAudioPipeline('audio')
-      // if (pipeline) {
-      //   if (key === 'AIDenoise') {
-      //     await this.disableAIDenoise()
-      //   }
-      //   pipeline.unregisterPlugin(key as VideoPluginType)
-      // }
+      if (key === 'AIhowling') {
+        this.disableAIhowling()
+      }
+      const stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
+      stageAIProcessing?.unregisterPlugin(key as AudioPluginType)
+      if (!stageAIProcessing?.hasWorkingPlugin()) {
+        this.mediaHelper.audio.stageAIProcessing = null
+      }
+    } else {
+      this.WebGLSupportError()
+      if (this.videoPostProcess) {
+        if (key === 'VirtualBackground' && this._segmentProcessor) {
+          await this.disableBodySegment()
+        } else if (key === 'AdvancedBeauty' && this._advancedBeautyProcessor) {
+          await this.disableAdvancedBeauty()
+        }
+        this.videoPostProcess.unregisterPlugin(key as VideoPluginType)
+      }
     }
 
-    this.WebGLSupportError()
-    if (this.videoPostProcess) {
-      if (key === 'VirtualBackground' && this._segmentProcessor) {
-        await this.disableBodySegment()
-      } else if (key === 'AdvancedBeauty' && this._advancedBeautyProcessor) {
-        await this.disableAdvancedBeauty()
+    this.client.apiFrequencyControl({
+      name: 'unregisterPlugin',
+      code: 0,
+      param: {
+        streamID: this.stringStreamID,
+        plugin: key
       }
-      this.videoPostProcess.unregisterPlugin(key as VideoPluginType)
-    }
+    })
   }
 
   // 临时挂起视频后处理

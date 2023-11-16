@@ -130,46 +130,90 @@ const advancedBeautyPluginConfig = {
 
 let beauty_config = null
 
-//AI降噪
-const aiDenoisePluginConfig = {
+//AI音效
+const aiAudioEffectsPluginConfig = {
   development: {
     simd: {
-      key: 'AIDenoise',
-      pluginUrl: './js/nim/NIM_Web_AIDenoise.js',
-      wasmUrl: './js/nim/wasm/NIM_Web_AIDenoise_simd.wasm' + `?time=${Math.random()}`
+      key: 'AIAudioEffects',
+      pluginUrl: './js/nim/NIM_Web_AIAudioEffects.js',
+      wasmUrl: './js/nim/wasm/NIM_Web_AIAudioEffects_simd.wasm' + `?time=${Math.random()}`,
     },
     nosimd: {
-      key: 'AIDenoise',
-      pluginUrl: './js/nim/NIM_Web_AIDenoise.js',
-      wasmUrl: './js/nim/wasm/NIM_Web_AIDenoise_nosimd.wasm'
+      key: 'AIAudioEffects',
+      pluginUrl: './js/nim/NIM_Web_AIAudioEffects.js',
+      wasmUrl: './js/nim/wasm/NIM_Web_AIAudioEffects_nosimd.wasm' + `?time=${Math.random()}`
     }
   },
   production: {
     simd: {
-      key: 'AIDenoise',
-      pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}.js`,
-      wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_simd_v${NERTC.VERSION}.wasm`
+      key: 'AIAudioEffects',
+      pluginUrl: `./js/nim/NIM_Web_AIAudioEffects_v${NERTC.VERSION}.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIAudioEffects_simd_v${NERTC.VERSION}.wasm`
     },
     nosimd: {
-      key: 'AIDenoise',
-      pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}.js`,
-      wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_nosimd_v${NERTC.VERSION}.wasm`
+      key: 'AIAudioEffects',
+      pluginUrl: `./js/nim/NIM_Web_AIAudioEffects_v${NERTC.VERSION}.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIAudioEffects_nosimd_v${NERTC.VERSION}.wasm`
     }
   },
   test: {
     simd: {
-      key: 'AIDenoise',
-      pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}_test.js`,
-      wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_simd_v${NERTC.VERSION}_test.wasm`
+      key: 'AIAudioEffects',
+      pluginUrl: `./js/nim/NIM_Web_AIAudioEffects_v${NERTC.VERSION}_test.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIAudioEffects_simd_v${NERTC.VERSION}_test.wasm`
     },
     nosimd: {
-      key: 'AIDenoise',
-      pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}_test.js`,
-      wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_nosimd_v${NERTC.VERSION}_test.wasm`
+      key: 'AIAudioEffects',
+      pluginUrl: `./js/nim/NIM_Web_AIAudioEffects_v${NERTC.VERSION}_test.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIAudioEffects_nosimd_v${NERTC.VERSION}_test.wasm`
     }
   }
 }
-let aidenoise_config = null
+
+let audioEffects_config = null
+
+//啸叫检测
+const aiHowlingPluginConfig = {
+  development: {
+    simd: {
+      key: 'AIhowling',
+      pluginUrl: './js/nim/NIM_Web_AIhowling.js',
+      wasmUrl: './js/nim/wasm/NIM_Web_AIhowling_simd.wasm' + `?time=${Math.random()}`
+    },
+    nosimd: {
+      key: 'AIhowling',
+      pluginUrl: './js/nim/NIM_Web_AIhowling.js',
+      wasmUrl: './js/nim/wasm/NIM_Web_AIhowling_nosimd.wasm' + `?time=${Math.random()}`
+    }
+  },
+  production: {
+    simd: {
+      key: 'AIhowling',
+      pluginUrl: `./js/nim/NIM_Web_AIhowling_v${NERTC.VERSION}.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIhowling_simd_v${NERTC.VERSION}.wasm`
+    },
+    nosimd: {
+      key: 'AIhowling',
+      pluginUrl: `./js/nim/NIM_Web_AIhowling_v${NERTC.VERSION}.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIhowling_nosimd_v${NERTC.VERSION}.wasm`
+    }
+  },
+  test: {
+    simd: {
+      key: 'AIhowling',
+      pluginUrl: `./js/nim/NIM_Web_AIhowling_v${NERTC.VERSION}_test.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIhowling_simd_v${NERTC.VERSION}_test.wasm`
+    },
+    nosimd: {
+      key: 'AIhowling',
+      pluginUrl: `./js/nim/NIM_Web_AIhowling_v${NERTC.VERSION}_test.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIhowling_nosimd_v${NERTC.VERSION}_test.wasm`
+    }
+  }
+}
+
+let aiHowling_config = null
+
 
 let privatizationConfig = {}
 /*{
@@ -1740,7 +1784,6 @@ $('#leaveChannel-btn').on('click', async () => {
   window.rtc.client.leave()
   rtc.enableBodySegment = false
   rtc.enableAdvancedBeauty = false
-  rtc.enableAIDenoise = false
   rtc.remoteStreams.length = 0
   subList.length = 0
   clearInterval(playTimer)
@@ -1949,9 +1992,12 @@ function onPluginLoaded(name) {
       $('#advancedBeautyStatus').html('loaded').show()
       rtc.enableAdvancedBeauty = true
       break
-    case 'AIDenoise':
-      $('#aidenoiseStatus').html('loaded').show()
-      rtc.enableAIDenoise = true
+    case 'AIAudioEffects':
+      $('#audioEffectStatus').html('loaded').show()
+      break
+    case 'AIhowling':
+      $('#AIhowlingStatus').html('loaded').show()
+     // $('#enableAIhowling').click()
       break
     default:
       break
@@ -2131,42 +2177,51 @@ $('#unregisterAdvancedBeauty').on('click', () => {
   }
 })
 
+//AI音效
 //强制注册simd版插件
 $('#registerSimdAIDenoise').on('click', async () => {
   if (rtc.localStream) {
-    $('#aidenoiseStatus').html('loading').show()
+    $('#audioEffectStatus').html('loading').show()
     const type = 'simd'
-    aidenoise_config = aiDenoisePluginConfig[NERTC.ENV][type]
-    rtc.localStream.registerPlugin(aidenoise_config)
+    audioEffects_config = aiAudioEffectsPluginConfig[NERTC.ENV][type]
+    rtc.localStream.registerPlugin(audioEffects_config)
   }
 })
-//模拟AI降噪插件js 404
+//模拟AI音效插件js 404
 $('#adjs404').on('click', async () => {
   if (rtc.localStream) {
-    $('#aidenoiseStatus').html('loading').show()
+    $('#audioEffectStatus').html('loading').show()
     const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
-    segment_config = Object.assign({}, aiDenoisePluginConfig[NERTC.ENV][type])
-    segment_config.pluginUrl = './js/nim/NIM_Web_AIDenoise111.js'
-    rtc.localStream.registerPlugin(segment_config)
+    audioEffects_config = Object.assign({}, aiAudioEffectsPluginConfig[NERTC.ENV][type])
+    audioEffects_config.pluginUrl = './js/nim/NIM_Web_AIDenoise111.js'
+    rtc.localStream.registerPlugin(audioEffects_config)
   }
 })
-//模拟AI降噪插件wasm 404
+//模拟AI音效插件wasm 404
 $('#adwasm404').on('click', async () => {
   if (rtc.localStream) {
     $('#aidenoiseStatus').html('loading').show()
     const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
-    segment_config = Object.assign({}, aiDenoisePluginConfig[NERTC.ENV][type])
-    segment_config.wasmUrl = './js/nim/wasm/NIM_Web_AIDenoise111.wasm' + `?time=${Math.random()}`
-    rtc.localStream.registerPlugin(segment_config)
+    audioEffects_config = Object.assign({}, aiAudioEffectsPluginConfig[NERTC.ENV][type])
+    audioEffects_config.wasmUrl = './js/nim/wasm/NIM_Web_AIDenoise111.wasm' + `?time=${Math.random()}`
+    rtc.localStream.registerPlugin(audioEffects_config)
   }
 })
 
-$('#registerAIDenoise').on('click', async () => {
+$('#registerAIAudioEffects').on('click', async () => {
   if (rtc.localStream) {
-    $('#aidenoiseStatus').html('loading').show()
+    $('#audioEffectStatus').html('loading').show()
     const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
-    aidenoise_config = aiDenoisePluginConfig[NERTC.ENV][type]
-    rtc.localStream.registerPlugin(aidenoise_config)
+    audioEffects_config = aiAudioEffectsPluginConfig[NERTC.ENV][type]
+    rtc.localStream.registerPlugin(audioEffects_config)
+
+    rtc.localStream.on('ai-denoise-enabled', () => {
+      console.warn('AI降噪已开启')
+    })
+
+    rtc.localStream.on('audio-effect-enabled', () => {
+      console.warn('AI音效已开启')
+    })
   }
 })
 
@@ -2183,14 +2238,167 @@ $('#disableAIDenoise').on('click', () => {
   }
 })
 
-$('#unregisterAIDenoise').on('click', () => {
-  $('#aidenoiseStatus').html('loading').hide()
-  if (aidenoise_config) {
-    rtc.localStream.unregisterPlugin(aidenoise_config.key)
-    rtc.enableAIDenoise = false
+$('#enableAudioEffect').on('click', () => {
+  if (rtc.localStream) {
+    rtc.localStream.enableAudioEffect()
   }
 })
 
+$('#disableAudioEffect').on('click', () => {
+  if (rtc.localStream) {
+    console.warn('关闭美声变声')
+    rtc.localStream.disableAudioEffect()
+  }
+})
+
+$('#unregisterAIAudioEffects').on('click', () => {
+  $('#audioEffectStatus').html('loading').hide()
+  if (audioEffects_config) {
+    rtc.localStream.unregisterPlugin(audioEffects_config.key)
+    rtc.localStream.off('ai-denoise-enabled')
+    rtc.localStream.off('audio-effect-enabled')
+  }
+})
+
+$('#setVoiceChanger').on('change', (e) => {
+  const value = e.target.value - 0
+  rtc.localStream.setAudioEffect(0, value)
+})
+
+$('#setVoiceBeautifier').on('change', (e) => {
+  const value = e.target.value - 0
+  rtc.localStream.setAudioEffect(1, value)
+})
+
+let pitchValue = 0.5;
+$('#setLocalPitch, #setLocalPitch_custom').on('input', (e) => {
+  pitchValue = Number(e.target.value)
+  $(`#setLocalPitch_value`).html(pitchValue)
+  if (rtc.localStream) {
+    rtc.localStream.setAudioEffect('Pitch', pitchValue)
+  }
+})
+
+const eqArray = Array(10).fill(0)
+for (let i = 0; i < 10; i++) {
+  $(`#eq_${i}, #eq_${i}_custom`).on('input', (e) => {
+    $(`#eq_${i}_value`).html(e.target.value)
+    eqArray[i] = Number(e.target.value)
+    if (rtc.localStream) {
+      rtc.localStream.setAudioEffect('EQ', eqArray)
+    }
+    console.log('eqArray', eqArray)
+  })
+}
+
+const reverbObj = {
+  wetGain: 0,
+  dryGain: 1,
+  damping: 1,
+  roomSize: 0.1,
+  decayTime: 0.1,
+  preDelay: 0,
+}
+for(let key in reverbObj) {
+  $(`#${key}, #${key}_custom`).on('input', (e) => {
+    $(`#${key}_value`).html(e.target.value)
+    reverbObj[key] = Number(e.target.value)
+    if (rtc.localStream) {
+      rtc.localStream.setAudioEffect('Reverb', reverbObj)
+    }
+    console.log('reverbObj', reverbObj)
+  })
+}
+
+//啸叫检测
+function addHowlingStatus(info) {
+  const howlingContent =$('#howling-content').get(0)
+  if(info) {
+    console.warn('啸叫状态：', info)
+    howlingContent.innerHTML = howlingContent.innerHTML +`<p style="color:#ff0000">啸叫状态： ${info}</p>`
+  } else {
+    howlingContent.innerHTML = howlingContent.innerHTML +`<p>啸叫状态： ${info}</p>`
+  }
+}
+
+function clearHowlingStatus() {
+  const howlingContent =$('#howling-content').get(0)
+  howlingContent.innerHTML = ''
+}
+
+//强制注册simd版插件
+$('#registerSimdAIhowling').on('click', async () => {
+  if (rtc.localStream) {
+    $('#AIhowlingStatus').html('loading').show()
+    const type = 'simd'
+    aiHowling_config = aiHowlingPluginConfig[NERTC.ENV][type]
+    rtc.localStream.registerPlugin(aiHowling_config)
+  }
+})
+//模拟啸叫检测插件js 404
+$('#hljs404').on('click', async () => {
+  if (rtc.localStream) {
+    $('#AIhowlingStatus').html('loading').show()
+    const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
+    aiHowling_config = Object.assign({}, aiHowlingPluginConfig[NERTC.ENV][type])
+    aiHowling_config.pluginUrl = './js/nim/NIM_Web_VirtualBackground111.js'
+    rtc.localStream.registerPlugin(aiHowling_config)
+  }
+})
+//模拟啸叫检测插件wasm 404
+$('#hlwasm404').on('click', async () => {
+  if (rtc.localStream) {
+    $('#AIhowlingStatus').html('loading').show()
+    const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
+    aiHowling_config = Object.assign({}, aiHowlingPluginConfig[NERTC.ENV][type])
+    aiHowling_config.wasmUrl =
+      './js/nim/wasm/NIM_Web_VirtualBackground_simd111.wasm' + `?time=${Math.random()}`
+    rtc.localStream.registerPlugin(aiHowling_config)
+  }
+})
+
+$('#registerAIhowling').on('click', async () => {
+  if (rtc.localStream) {
+    $('#AIhowlingStatus').html('loading').show()
+    const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
+    aiHowling_config = aiHowlingPluginConfig[NERTC.ENV][type]
+    rtc.localStream.registerPlugin(aiHowling_config)
+  }
+})
+
+$('#enableAIhowling').on('click', () => {
+  if (rtc.localStream) {
+    rtc.localStream.on('ai-howling-enabled', () => {
+      console.warn('啸叫检测已开启')
+    })
+    rtc.localStream.enableAIhowling()
+  }
+})
+
+$('#disableAIhowling').on('click', () => {
+  if (rtc.localStream) {
+    console.warn('关闭啸叫检测')
+    rtc.localStream.disableAIhowling()
+    rtc.localStream.off('ai-howling-enabled')
+  }
+})
+
+$('#unregisterAIhowling').on('click', () => {
+  $('#AIhowlingStatus').html('loading').hide()
+  if (aiHowling_config) {
+    rtc.localStream.unregisterPlugin(aiHowling_config.key)
+  }
+})
+
+$('#onAudioHasHowling').on('click', () => {
+  if (rtc.localStream) {
+    rtc.localStream.onAudioHasHowling(addHowlingStatus)
+  }
+})
+
+$('#clearHowling').on('click', clearHowlingStatus)
+
+//虚拟背景
 document.getElementById('select').onchange = function () {
   let file = this.files[0]
   let reader = new FileReader()
