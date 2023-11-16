@@ -3985,8 +3985,10 @@ class LocalStream extends RTCEventEmitter {
   //打开AI降噪
   async enableAIDenoise(): Promise<boolean> {
     if (!this.supportAIAudioEffects) {
-      this.logger.warn('Unsupport ai audio effects. Please check your plugin version')
-      return false
+      throw new RtcError({
+        code: ErrorCode.PLUGIN_NOT_SUPPORT,
+        message: `Unsupport Plugin, Please check your plugin version`
+      })
     }
     this.logger.log('start denoise.')
     let stageAIProcessing: StageAIProcessing
@@ -4101,8 +4103,10 @@ class LocalStream extends RTCEventEmitter {
   //打开美声变声
   async enableAudioEffect(): Promise<boolean> {
     if (!this.supportAIAudioEffects) {
-      this.logger.warn('Unsupport ai audio effects. Please check your plugin version')
-      return false
+      throw new RtcError({
+        code: ErrorCode.PLUGIN_NOT_SUPPORT,
+        message: `Unsupport Plugin, Please check your plugin version`
+      })
     }
     this.logger.log('start audio effect.')
     let stageAIProcessing: StageAIProcessing
@@ -4230,8 +4234,10 @@ class LocalStream extends RTCEventEmitter {
   //打开啸叫检测
   async enableAIhowling(): Promise<boolean> {
     if (!this.supportHowling) {
-      this.logger.warn('Unsupport ai howling. Please check your plugin version')
-      return false
+      throw new RtcError({
+        code: ErrorCode.PLUGIN_NOT_SUPPORT,
+        message: `Unsupport Plugin, Please check your plugin version`
+      })
     }
     this.logger.log('start ai howling.')
     let stageAIProcessing: StageAIProcessing
