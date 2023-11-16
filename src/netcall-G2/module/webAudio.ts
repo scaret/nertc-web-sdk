@@ -481,16 +481,21 @@ class WebAudio extends EventEmitter {
     this.mixAudioConf.gainFilter?.disconnect(0)
     if (this.mixAudioConf.replace) {
       this.logger.log('伴音停止了，恢复mic')
-      if (this.gainFilter && this.destination) {
-        for (var i = 0; i < this.audioInArr.length; i++) {
-          const audioIn = this.audioInArr[i]
-          audioIn.gainNode.connect(this.gainFilter)
+      const aiEnabled = this.mediaHelper.audio.stageAIProcessing?.enabled
+      if (aiEnabled) {
+        this.connectAiNode()
+      } else {
+        if (this.gainFilter && this.destination) {
+          for (var i = 0; i < this.audioInArr.length; i++) {
+            const audioIn = this.audioInArr[i]
+            audioIn.gainNode.connect(this.gainFilter)
+          }
+          if (this.script && this.analyzeDestination) {
+            this.gainFilter.connect(this.script)
+            this.script.connect(this.analyzeDestination)
+          }
+          this.gainFilter.connect(this.destination)
         }
-        if (this.script && this.analyzeDestination) {
-          this.gainFilter.connect(this.script)
-          this.script.connect(this.analyzeDestination)
-        }
-        this.gainFilter.connect(this.destination)
       }
     }
     this.mixAudioConf = {
@@ -551,6 +556,11 @@ class WebAudio extends EventEmitter {
             this.logger.error(`无法断开音频:【${audioIn.label}】${e.name}`, e.message)
           }
         }
+      }
+      //断开ai音频相关
+      const aiEnabled = this.mediaHelper.audio.stageAIProcessing?.enabled
+      if (aiEnabled) {
+        this.disconnectAiNode()
       }
     }
     this.mixAudioConf.audioSource.onended = (event) => {
@@ -789,6 +799,49 @@ class WebAudio extends EventEmitter {
     sourceNode.disconnect(0)
     gainNode.disconnect(0)
     sourceNode.stop()
+  }
+
+  connectAiNode() {
+    if (!this.context || !this.gainFilter) {
+      return null
+    }
+
+    let aiNode = this.mediaHelper.audio.stageAIProcessing?.node?.audioNode || null
+    if (aiNode) {
+      try {
+        aiNode.connect(this.gainFilter)
+      } catch {}
+    }
+    for (var i = 0; i < this.audioInArr.length; i++) {
+      const audioIn = this.audioInArr[i]
+      if (aiNode) {
+        try {
+          //audioIn.gainNode.disconnect(this.gainFilter)
+          audioIn.connect(aiNode)
+        } catch (e) {}
+      }
+    }
+  }
+
+  disconnectAiNode() {
+    if (!this.context || !this.gainFilter) {
+      return null
+    }
+
+    let aiNode = this.mediaHelper.audio.stageAIProcessing?.node?.audioNode || null
+    if (aiNode) {
+      try {
+        aiNode.disconnect(this.gainFilter)
+      } catch {}
+    }
+    for (var i = 0; i < this.audioInArr.length; i++) {
+      const audioIn = this.audioInArr[i]
+      if (aiNode) {
+        try {
+          audioIn.gainNode.disconnect(aiNode)
+        } catch (e) {}
+      }
+    }
   }
 
   /*off() {
