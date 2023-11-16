@@ -21,20 +21,22 @@ table th:nth-of-type(2) {
 
 ## <span id="NERTC 对象">NERTC 对象</span>
 
-| 方法                               | 功能描述                      |
-| ---------------------------------- | ----------------------------- |
-| [[NERTC.createClient]]             | 创建客户端。                  |
-| [[NERTC.createStream]]             | 创建音视频流对象。            |
-| [[NERTC.getDevices]]               | 获取可用的媒体输入/输出设备。 |
-| [[NERTC.getCameras]]               | 获取可用的视频输入设备。      |
-| [[NERTC.getMicrophones]]           | 获取可用的音频输入设备。      |
-| [[NERTC.getSpeakers]]              | 获取可用的音频输出设备。      |
-| [[NERTC.Logger.enableLogUpload]]   | 开启日志上传。                |
-| [[NERTC.Logger.disableLogUpload]]  | 关闭日志上传。                |
-| [[NERTC.Device.enableCompatMode]]  | 开启音频采集设备兼容模式。    |
-| [[NERTC.Device.disableCompatMode]] | 关闭音频采集设备兼容模式。    |
-| [[NERTC.checkSystemRequirements]]  | 检查系统是否支持NERTC        |
-| [[NERTC.checkBrowserCompatibility]] | 检查浏览器是否支持NERTC      |
+| 方法                                | 功能描述                                    |
+| ----------------------------------- | ------------------------------------------- |
+| [[NERTC.createClient]]              | 创建客户端。                                |
+| [[NERTC.createStream]]              | 创建音视频流对象。                          |
+| [[NERTC.getDevices]]                | 获取可用的媒体输入/输出设备。               |
+| [[NERTC.getCameras]]                | 获取可用的视频输入设备。                    |
+| [[NERTC.getMicrophones]]            | 获取可用的音频输入设备。                    |
+| [[NERTC.getSpeakers]]               | 获取可用的音频输出设备。                    |
+| [[NERTC.getSupportedCodec]]         | 获取 SDK 和当前浏览器同时支持的编解码格式。 |
+| [[NERTC.Logger.enableLogUpload]]    | 开启日志上传。                              |
+| [[NERTC.Logger.disableLogUpload]]   | 关闭日志上传。                              |
+| [[NERTC.Device.enableCompatMode]]   | 开启音频采集设备兼容模式。                  |
+| [[NERTC.Device.disableCompatMode]]  | 关闭音频采集设备兼容模式。                  |
+| [[NERTC.checkSystemRequirements]]   | 检查系统是否支持 NERTC。                    |
+| [[NERTC.checkBrowserCompatibility]] | 检查浏览器是否支持 NERTC。                  |
+| [[NERTC.setArea]]                   | 设置访问区域。                              |
 
 ## <span id="Client 客户端对象">Client 客户端对象</span>
 
@@ -47,23 +49,23 @@ table th:nth-of-type(2) {
 
 ### <span id="房间管理">房间管理</span>
 
-| 方法                                | 功能描述                   |
-| ----------------------------------- | -------------------------- |
-| [[Client.join]]                     | 加入音视频房间。           |
-| [[Client.leave]]                    | 离开音视频房间。           |
-| [[Client.setChannelProfile]]        | 设置房间场景。             |
-| [[Client.setClientRole]]            | 设置用户角色。             |
-| [[Client.publish]]                  | 发布音视频流。             |
-| [[Client.unpublish]]                | 取消发布音视频流。         |
-| [[Client.subscribe]]                | 接收远端音视频流。         |
-| [[Client.unsubscribe]]              | 取消接收远端音视频流。     |
-| [[Client.setRemoteVideoStreamType]] | 动态更新订阅视频的分辨率。 |
-| [[Client.getConnectionState]]       | 主动获取网络连接状态。     |
-| [[Client.getUid]]                   | 获取本地用户 ID。          |
-| [[Client.startProxyServer]]         | 开启云代理。               |
-| [[Client.stopProxyServer]]          | 关闭云代理。               |
-| [[Client.enableDualStream]]         | 开启双流发布模式。         |
-| [[Client.disableDualStream]]        | 关闭双流发布模式。         |
+| 方法                                | 功能描述                     |
+| ----------------------------------- | ---------------------------- |
+| [[Client.join]]                     | 加入音视频房间。             |
+| [[Client.leave]]                    | 离开音视频房间。             |
+| [[Client.setChannelProfile]]        | 设置房间场景。               |
+| [[Client.setClientRole]]            | 设置用户角色。               |
+| [[Client.publish]]                  | 发布音视频流。               |
+| [[Client.unpublish]]                | 取消发布音视频流。           |
+| [[Client.subscribe]]                | 接收远端音视频流。           |
+| [[Client.unsubscribe]]              | 取消接收远端音视频流。       |
+| [[Client.setRemoteVideoStreamType]] | 动态更新订阅视频的分辨率。   |
+| [[Client.getConnectionState]]       | 主动获取网络连接状态。       |
+| [[Client.getUid]]                   | 获取本地用户 ID。            |
+| [[Client.startProxyServer]]         | 开启云代理。                 |
+| [[Client.stopProxyServer]]          | 关闭云代理。                 |
+| [[Client.enableDualStream]]         | 开启双流发布模式。           |
+| [[Client.disableDualStream]]        | 关闭双流发布模式。           |
 | [[Client.setPlaybackVolume]]        | 设定整个房间的远端播放音量。 |
 
 ### <span id="旁路推流管理">旁路推流管理</span>
@@ -113,9 +115,9 @@ table th:nth-of-type(2) {
 | [[NERTC.createStream]] | 创建音视频流对象。               |
 | [[Stream.destroy]]     | 销毁音视频流对象。               |
 | [[Stream.init]]        | 初始化音视频流对象。             |
-| [[Stream.play]]        | 播放音视频流。                  |
-| [[Stream.isPlaying]]   | 音视频流是否正在播放。            |
-| [[Stream.canPlay]]     | 音视频流是否可以播放。            |
+| [[Stream.play]]        | 播放音视频流。                   |
+| [[Stream.isPlaying]]   | 音视频流是否正在播放。           |
+| [[Stream.canPlay]]     | 音视频流是否可以播放。           |
 | [[Stream.stop]]        | 停止播放音视频流。               |
 | [[Stream.open]]        | 打开音视频流输入设备，如麦克风。 |
 | [[Stream.close]]       | 关闭音视频流输入设备，如麦克风。 |
@@ -162,22 +164,22 @@ table th:nth-of-type(2) {
 
 ### <span id="播放音效文件">播放音效文件</span>
 
-| 方法                                      | 功能描述                 |
-| ----------------------------------------- | ------------------------ |
-| [[Stream.playEffect]]                     | 播放指定音效文件         |
-| [[Stream.stopEffect]]                     | 停止播放指定音效文件     |
-| [[Stream.pauseEffect]]                    | 暂停播放指定音效文件     |
-| [[Stream.resumeEffect]]                   | 恢复播放指定音效文件     |
-| [[Stream.setVolumeOfEffect]]              | 调节指定音效文件的音量   |
-| [[Stream.preloadEffect]]                  | 预加载指定音效文件       |
-| [[Stream.unloadEffect]]                   | 释放指定音效文件         |
-| [[Stream.getEffectsVolume]]               | 获取所有音效文件播放音量 |
-| [[Stream.setEffectsVolume]]               | 设置所有音效文件播放音量 |
-| [[Stream.stopAllEffects]]                 | 停止播放所有音效文件     |
-| [[Stream.pauseAllEffects]]                | 暂停播放所有音效文件     |
-| [[Stream.resumeAllEffects]]               | 恢复播放所有音效文件     |
-| [[Stream.getAudioEffectsDuration]]        | 获取音效时长             |
-| [[Stream.getAudioEffectsCurrentPosition]] | 获取音效播放进度         |
+| 方法                                      | 功能描述                   |
+| ----------------------------------------- | -------------------------- |
+| [[Stream.playEffect]]                     | 播放指定音效文件。         |
+| [[Stream.stopEffect]]                     | 停止播放指定音效文件。     |
+| [[Stream.pauseEffect]]                    | 暂停播放指定音效文件。     |
+| [[Stream.resumeEffect]]                   | 恢复播放指定音效文件。     |
+| [[Stream.setVolumeOfEffect]]              | 调节指定音效文件的音量。   |
+| [[Stream.preloadEffect]]                  | 预加载指定音效文件。       |
+| [[Stream.unloadEffect]]                   | 释放指定音效文件。         |
+| [[Stream.getEffectsVolume]]               | 获取所有音效文件播放音量。 |
+| [[Stream.setEffectsVolume]]               | 设置所有音效文件播放音量。 |
+| [[Stream.stopAllEffects]]                 | 停止播放所有音效文件。     |
+| [[Stream.pauseAllEffects]]                | 暂停播放所有音效文件。     |
+| [[Stream.resumeAllEffects]]               | 恢复播放所有音效文件。     |
+| [[Stream.getAudioEffectsDuration]]        | 获取音效时长。             |
+| [[Stream.getAudioEffectsCurrentPosition]] | 获取音效播放进度。         |
 
 ## <span id="录制管理">录制管理</span>
 
@@ -196,7 +198,7 @@ table th:nth-of-type(2) {
 
 ## <span id="errorCode">错误代码</span>
 
-以下为 SDK 可能抛出的错误，请参考下表进行处理
+以下为 SDK 可能抛出的错误，请参考下表进行处理。
 
 ### ErrorCode
 
@@ -296,8 +298,7 @@ table th:nth-of-type(2) {
 | AUTO_PLAY_NOT_ALLOWED         | 41030  | 自动播放受限异常         | 可以通过 console 日志查看错误原因及处理方式 |
 | UNKNOWN                       | 99999  | 未知错误                 | 可以通过 console 日志查看错误原因及处理方式 |
 
-
-#### 4.6.40及之后版本
+#### 4.6.40 及之后版本
 
 见 [API 参考 > 错误码](https://doc.yunxin.163.com/jcyOTA0ODM/docs/zU2MDQ4MjU?platform=web)
 
