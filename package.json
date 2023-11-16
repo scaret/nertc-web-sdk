@@ -4,7 +4,7 @@
   "version": "7.3.0",
   "sdkVersion": 78,
   "protocolVersion": 1,
-  "webrtcG2Version": "5.5.10",
+  "webrtcG2Version": "5.5.11",
   "description": "nertc Web SDK 网易云信|新一代音视频引擎服务",
   "main": "index.js",
   "directories": {
