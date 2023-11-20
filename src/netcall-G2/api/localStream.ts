@@ -1145,6 +1145,13 @@ class LocalStream extends RTCEventEmitter {
               this.logger.log('Stream.open:开始发布', constraint)
               await this.client.adapterRef._mediasoup?.createProduce(this, 'audio')
             }
+
+            if (this.mediaHelper.audio.stageAIProcessing?.enabled) {
+              if (!this.mediaHelper.audio.audioRoutingEnabled) {
+                this.mediaHelper.enableAudioRouting()
+              }
+              this.mediaHelper.updateWebAudio()
+            }
           }
           break
         case 'screenAudio':
