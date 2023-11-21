@@ -94,6 +94,7 @@ class AudioEffect {
     this.enabled = value
     if(!value) {
       Module._UpdateEffect(this.aeInterface, 0, 0)
+      Module._UpdateEffect(this.aeInterface, 1, 0)
     }
   }
 
