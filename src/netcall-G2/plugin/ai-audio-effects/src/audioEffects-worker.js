@@ -171,12 +171,13 @@ class AudioProcess {
   }
 
 
-  async process(frame) {
+  process(frame) {
     if (!this.initMem) {
       console.warn('waiting wasm init')
       this.handleAudioData(frame)
       return
     }
+    this.isProcessing = true
 
     let leftData = null, rightData = null;
     let result = []
@@ -188,6 +189,8 @@ class AudioProcess {
       rightData = Int16Array.from(frame[0], (x) => x * 32767)
     } else {
       //console.warn('音频源数据异常，长度-', frame.length)
+      this.buffer = []
+      this.isProcessing = false
       return;
     }
     Module.HEAP16.set(leftData, this.inLeftPtr >> 1)
@@ -208,6 +211,7 @@ class AudioProcess {
       )
     )
     this.handleAudioData(result)
+    this.isProcessing = false
     if (this.buffer.length) {
       const buffer = this.buffer.shift()
       this.process(buffer)
@@ -261,13 +265,15 @@ const worker = function () {
         audioProcess.init(option.wasmBinary)
         break
       case 'process':
-        if(audioProcess.buffer.length == 0) {
-          audioProcess.process(data.frame)
-        } else {
-          audioProcess.buffer.push(data.frame)
-          if(audioProcess.buffer.length > audioProcess.buffer_length) {
+        if (audioProcess.isProcessing) {
+          if (audioProcess.buffer.length >= audioProcess.buffer_length) {
             audioProcess.buffer.shift()
+            audioProcess.buffer.push(data.frame)
+          } else {
+            audioProcess.buffer.push(data.frame)
           }
+        } else {
+          audioProcess.process(data.frame)
         }
         break
       case 'effect':

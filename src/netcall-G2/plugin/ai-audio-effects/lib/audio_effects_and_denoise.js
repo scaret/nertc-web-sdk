@@ -473,7 +473,7 @@ var PATH = {
 	},
 	normalize: path =>{
 		var isAbsolute = PATH.isAbs(path),
-		trailingSlash = path.substr( - 1) === "/";
+		trailingSlash = path.substr(-1) === "/";
 		path = PATH.normalizeArray(path.split("/").filter(p =>!!p), !isAbsolute).join("/");
 		if (!path && !isAbsolute) {
 			path = "."
@@ -3739,7 +3739,7 @@ var FS = {
 				var ahead = off >= 0;
 				off = Math.abs(off) / 60;
 				off = off / 60 * 100 + off % 60;
-				return (ahead ? "+": "-") + String("0000" + off).slice( - 4)
+				return (ahead ? "+": "-") + String("0000" + off).slice(-4)
 			},
 			"%Z": date =>date.tm_zone,
 			"%%": () =>"%"

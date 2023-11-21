@@ -232,6 +232,7 @@ class LocalStream extends RTCEventEmitter {
   private supportWasm = true
   private supportAIAudioEffects = true
   private supportHowling = true
+  private canEnableAIAudioEffects = true
   constraintSettings: {
     [mediaType in MediaTypeShort]: AudioProcessingOptions
   } = {
@@ -1143,6 +1144,13 @@ class LocalStream extends RTCEventEmitter {
             } else if (isPublish) {
               this.logger.log('Stream.open:开始发布', constraint)
               await this.client.adapterRef._mediasoup?.createProduce(this, 'audio')
+            }
+
+            if (this.mediaHelper.audio.stageAIProcessing?.enabled) {
+              if (!this.mediaHelper.audio.audioRoutingEnabled) {
+                this.mediaHelper.enableAudioRouting()
+              }
+              this.mediaHelper.updateWebAudio()
             }
           }
           break
@@ -3215,6 +3223,17 @@ class LocalStream extends RTCEventEmitter {
    */
   startAudioMixing(options: AudioMixingOptions) {
     this.logger.log('startAudioMixing() 开始伴音')
+    if (options.replace) {
+      this.canEnableAIAudioEffects = false
+    }
+    if (options.auidoMixingEnd) {
+      const that = this
+      const auidoMixingEnd = options.auidoMixingEnd
+      options.auidoMixingEnd = function () {
+        that.canEnableAIAudioEffects = true
+        auidoMixingEnd.apply(this, arguments as unknown as [])
+      }
+    }
     return this.mediaHelper.startAudioMixing(options)
   }
 
@@ -3226,8 +3245,8 @@ class LocalStream extends RTCEventEmitter {
    */
   stopAudioMixing() {
     this.logger.log('stopAudioMixing() 停止伴音')
-    const stageAIProcessing = this.mediaHelper.audio.stageAIProcessing
-    return this.mediaHelper.stopAudioMixing(!stageAIProcessing?.hasWorkingPlugin())
+    this.canEnableAIAudioEffects = true
+    return this.mediaHelper.stopAudioMixing()
   }
 
   /**
@@ -3984,9 +4003,15 @@ class LocalStream extends RTCEventEmitter {
 
   //打开AI降噪
   async enableAIDenoise(): Promise<boolean> {
-    if (!this.supportAIAudioEffects) {
-      this.logger.warn('Unsupport ai audio effects. Please check your plugin version')
+    if (!this.canEnableAIAudioEffects) {
+      this.logger.error('请先关闭伴音功能')
       return false
+    }
+    if (!this.supportAIAudioEffects) {
+      throw new RtcError({
+        code: ErrorCode.PLUGIN_NOT_SUPPORT,
+        message: `Unsupport Plugin, Please check your plugin version`
+      })
     }
     this.logger.log('start denoise.')
     let stageAIProcessing: StageAIProcessing
@@ -4100,9 +4125,15 @@ class LocalStream extends RTCEventEmitter {
 
   //打开美声变声
   async enableAudioEffect(): Promise<boolean> {
-    if (!this.supportAIAudioEffects) {
-      this.logger.warn('Unsupport ai audio effects. Please check your plugin version')
+    if (!this.canEnableAIAudioEffects) {
+      this.logger.error('请先关闭伴音功能')
       return false
+    }
+    if (!this.supportAIAudioEffects) {
+      throw new RtcError({
+        code: ErrorCode.PLUGIN_NOT_SUPPORT,
+        message: `Unsupport Plugin, Please check your plugin version`
+      })
     }
     this.logger.log('start audio effect.')
     let stageAIProcessing: StageAIProcessing
@@ -4229,9 +4260,15 @@ class LocalStream extends RTCEventEmitter {
 
   //打开啸叫检测
   async enableAIhowling(): Promise<boolean> {
-    if (!this.supportHowling) {
-      this.logger.warn('Unsupport ai howling. Please check your plugin version')
+    if (!this.canEnableAIAudioEffects) {
+      this.logger.error('请先关闭伴音功能')
       return false
+    }
+    if (!this.supportHowling) {
+      throw new RtcError({
+        code: ErrorCode.PLUGIN_NOT_SUPPORT,
+        message: `Unsupport Plugin, Please check your plugin version`
+      })
     }
     this.logger.log('start ai howling.')
     let stageAIProcessing: StageAIProcessing

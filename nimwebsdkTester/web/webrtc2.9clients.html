@@ -13,6 +13,10 @@
 <label><input type="checkbox" id="dualStreamScreen">辅流小流</label>
 <label id="segmentStatus" style="display: none;"></label>
 <label id="advancedBeautyStatus" style="display: none;"></label>
+<label id="audioEffectStatus" style="display: none;"></label>
+<label id="AIhowlingStatus" style="display: none;"></label>
+<div id="howling-content" style="height: 200px;overflow: scroll;display: none;">
+</div>
 <div id="views">
 
 </div>
@@ -31,45 +35,85 @@
   window.clients = {}
   const channelName = Math.floor(Math.random() * 9000) + 1000
 
-  //AI降噪
-  const aiDenoisePluginConfig = {
-    development: {
-      simd: {
-        key: 'AIDenoise',
-        pluginUrl: './js/nim/NIM_Web_AIDenoise.js',
-        wasmUrl: './js/nim/wasm/NIM_Web_AIDenoise_simd.wasm' + `?time=${Math.random()}`
-      },
-      nosimd: {
-        key: 'AIDenoise',
-        pluginUrl: './js/nim/NIM_Web_AIDenoise.js',
-        wasmUrl: './js/nim/wasm/NIM_Web_AIDenoise_nosimd.wasm'
-      }
+  //AI音效
+  const aiAudioEffectsPluginConfig = {
+  development: {
+    simd: {
+      key: 'AIAudioEffects',
+      pluginUrl: './js/nim/NIM_Web_AIAudioEffects.js',
+      wasmUrl: './js/nim/wasm/NIM_Web_AIAudioEffects_simd.wasm' + `?time=${Math.random()}`,
     },
-    production: {
-      simd: {
-        key: 'AIDenoise',
-        pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}.js`,
-        wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_simd_v${NERTC.VERSION}.wasm`
-      },
-      nosimd: {
-        key: 'AIDenoise',
-        pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}.js`,
-        wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_nosimd_v${NERTC.VERSION}.wasm`
-      }
+    nosimd: {
+      key: 'AIAudioEffects',
+      pluginUrl: './js/nim/NIM_Web_AIAudioEffects.js',
+      wasmUrl: './js/nim/wasm/NIM_Web_AIAudioEffects_nosimd.wasm' + `?time=${Math.random()}`
+    }
+  },
+  production: {
+    simd: {
+      key: 'AIAudioEffects',
+      pluginUrl: `./js/nim/NIM_Web_AIAudioEffects_v${NERTC.VERSION}.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIAudioEffects_simd_v${NERTC.VERSION}.wasm`
     },
-    test: {
-      simd: {
-        key: 'AIDenoise',
-        pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}_test.js`,
-        wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_simd_v${NERTC.VERSION}_test.wasm`
-      },
-      nosimd: {
-        key: 'AIDenoise',
-        pluginUrl: `./js/nim/NIM_Web_AIDenoise_v${NERTC.VERSION}_test.js`,
-        wasmUrl: `./js/nim/wasm/NIM_Web_AIDenoise_nosimd_v${NERTC.VERSION}_test.wasm`
-      }
+    nosimd: {
+      key: 'AIAudioEffects',
+      pluginUrl: `./js/nim/NIM_Web_AIAudioEffects_v${NERTC.VERSION}.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIAudioEffects_nosimd_v${NERTC.VERSION}.wasm`
+    }
+  },
+  test: {
+    simd: {
+      key: 'AIAudioEffects',
+      pluginUrl: `./js/nim/NIM_Web_AIAudioEffects_v${NERTC.VERSION}_test.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIAudioEffects_simd_v${NERTC.VERSION}_test.wasm`
+    },
+    nosimd: {
+      key: 'AIAudioEffects',
+      pluginUrl: `./js/nim/NIM_Web_AIAudioEffects_v${NERTC.VERSION}_test.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIAudioEffects_nosimd_v${NERTC.VERSION}_test.wasm`
     }
   }
+}
+
+//啸叫检测
+const aiHowlingPluginConfig = {
+  development: {
+    simd: {
+      key: 'AIhowling',
+      pluginUrl: './js/nim/NIM_Web_AIhowling.js',
+      wasmUrl: './js/nim/wasm/NIM_Web_AIhowling_simd.wasm' + `?time=${Math.random()}`
+    },
+    nosimd: {
+      key: 'AIhowling',
+      pluginUrl: './js/nim/NIM_Web_AIhowling.js',
+      wasmUrl: './js/nim/wasm/NIM_Web_AIhowling_nosimd.wasm' + `?time=${Math.random()}`
+    }
+  },
+  production: {
+    simd: {
+      key: 'AIhowling',
+      pluginUrl: `./js/nim/NIM_Web_AIhowling_v${NERTC.VERSION}.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIhowling_simd_v${NERTC.VERSION}.wasm`
+    },
+    nosimd: {
+      key: 'AIhowling',
+      pluginUrl: `./js/nim/NIM_Web_AIhowling_v${NERTC.VERSION}.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIhowling_nosimd_v${NERTC.VERSION}.wasm`
+    }
+  },
+  test: {
+    simd: {
+      key: 'AIhowling',
+      pluginUrl: `./js/nim/NIM_Web_AIhowling_v${NERTC.VERSION}_test.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIhowling_simd_v${NERTC.VERSION}_test.wasm`
+    },
+    nosimd: {
+      key: 'AIhowling',
+      pluginUrl: `./js/nim/NIM_Web_AIhowling_v${NERTC.VERSION}_test.js`,
+      wasmUrl: `./js/nim/wasm/NIM_Web_AIhowling_nosimd_v${NERTC.VERSION}_test.wasm`
+    }
+  }
+}
 
   const main = async ()=>{
     for (let i = 0; i < COUNT; i++){
@@ -259,13 +303,28 @@
       destroyVitrualBackgroundInput.innerText = "销毁"
       $(destroyVitrualBackgroundInput).appendTo(beautyPanel)
 
-      /////////////////////// AI降噪
+      /////////////////////// AI音效
+      $("<span>AI音效:</span>").appendTo(audioProcessingPanel)
+
+      const registerAIAudioEffects = document.createElement("button")
+      registerAIAudioEffects.innerText = "注册"
+      $(registerAIAudioEffects).appendTo(audioProcessingPanel)
+
+      const unregisterAIAudioEffects = document.createElement("button")
+      unregisterAIAudioEffects.innerText = "销毁"
+      $(unregisterAIAudioEffects).appendTo(audioProcessingPanel)
+
+      $("<span>美声变声:</span>").appendTo(audioProcessingPanel)
+
+      const enableAudioEffect = document.createElement("button")
+      enableAudioEffect.innerText = "打开"
+      $(enableAudioEffect).appendTo(audioProcessingPanel)
+
+      const disableAudioEffect = document.createElement("button")
+      disableAudioEffect.innerText = "关闭"
+      $(disableAudioEffect).appendTo(audioProcessingPanel)
 
       $("<span>AI降噪:</span>").appendTo(audioProcessingPanel)
-
-      const registerAIDenoiseInput = document.createElement("button")
-      registerAIDenoiseInput.innerText = "注册"
-      $(registerAIDenoiseInput).appendTo(audioProcessingPanel)
 
       const enableAIDenoiseInput = document.createElement("button")
       enableAIDenoiseInput.innerText = "打开"
@@ -275,10 +334,24 @@
       disableAIDenoiseInput.innerText = "关闭"
       $(disableAIDenoiseInput).appendTo(audioProcessingPanel)
 
-      const unregisterAIDenoiseInput = document.createElement("button")
-      unregisterAIDenoiseInput.innerText = "销毁"
-      $(unregisterAIDenoiseInput).appendTo(audioProcessingPanel)
+      ////////////////////// 啸叫检测
+      $("<span>啸叫检测:</span>").appendTo(audioProcessingPanel)
 
+      const registerAIhowling = document.createElement("button")
+      registerAIhowling.innerText = "注册"
+      $(registerAIhowling).appendTo(audioProcessingPanel)
+
+      const unregisterAIhowling = document.createElement("button")
+      unregisterAIhowling.innerText = "销毁"
+      $(unregisterAIhowling).appendTo(audioProcessingPanel)
+
+      const enableAIhowling = document.createElement("button")
+      enableAIhowling.innerText = "打开"
+      $(enableAIhowling).appendTo(audioProcessingPanel)
+
+      const disableAIhowling = document.createElement("button")
+      disableAIhowling.innerText = "关闭"
+      $(disableAIhowling).appendTo(audioProcessingPanel)
 
       /////////////////////// Stats
 
@@ -416,11 +489,28 @@
         await getLocalStream().setBeautyEffect(true);
       }
 
-      registerAIDenoiseInput.onclick = async () =>{
+      registerAIAudioEffects.onclick = async () =>{
         const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
-        aidenoise_config = aiDenoisePluginConfig[NERTC.ENV][type]
-        await getLocalStream().registerPlugin(aidenoise_config)
-        console.log('AI降噪注册完成')
+        audioEffects_config = aiAudioEffectsPluginConfig[NERTC.ENV][type]
+        $('#audioEffectStatus').html('AI音效loading').show()
+        await getLocalStream().registerPlugin(audioEffects_config)
+
+        getLocalStream().on('plugin-load', onPluginLoaded);
+        getLocalStream().on('audio-effect-enabled', () => {
+          console.warn('AI音效已开启')
+          getLocalStream().setAudioEffect(0, 2)
+        })
+      }
+
+      enableAudioEffect.onclick = async () => {
+        getLocalStream().enableAudioEffect()
+        console.log('打开美声变声')
+      }
+
+      disableAudioEffect.onclick = async () => {
+        getLocalStream().disableAudioEffect()
+        console.log('关闭美声变声')
+        $('#audioEffectStatus').hide()
       }
 
       enableAIDenoiseInput.onclick = async () =>{
@@ -431,10 +521,52 @@
       disableAIDenoiseInput.onclick = async () =>{
         getLocalStream().disableAIDenoise()
         console.log('关闭AI降噪')
+        $('#audioEffectStatus').hide()
       }
 
-      unregisterAIDenoiseInput.onclick = async ()=>{
-        getLocalStream().unregisterPlugin('AIDenoise')
+      unregisterAIAudioEffects.onclick = async ()=>{
+        getLocalStream().unregisterPlugin('AIAudioEffects')
+        getLocalStream().off('audio-effect-enabled')
+        $('#audioEffectStatus').hide()
+      }
+
+      registerAIhowling.onclick = async () =>{
+        const type = (await wasmFeatureDetect.simd()) ? 'simd' : 'nosimd'
+        aiHowling_config = aiHowlingPluginConfig[NERTC.ENV][type]
+        $('#AIhowlingStatus').html('啸叫检测loading').show()
+        await getLocalStream().registerPlugin(aiHowling_config)
+
+        getLocalStream().on('plugin-load', onPluginLoaded);
+      }
+
+      enableAIhowling.onclick = async () => {
+        function addHowlingStatus(info) {
+          console.warn('info')
+          const howlingContent = $('#howling-content').show().get(0)
+          if(info) {
+            console.warn('啸叫状态：', info)
+            howlingContent.innerHTML = howlingContent.innerHTML +`<p style="color:#ff0000">${localStreamInfo.innerText} 啸叫状态： ${info}</p>`
+          } else {
+            howlingContent.innerHTML = howlingContent.innerHTML +`<p>${localStreamInfo.innerText} 啸叫状态： ${info}</p>`
+          }
+        }
+        getLocalStream().onAudioHasHowling(addHowlingStatus)
+        getLocalStream().enableAIhowling()
+
+        console.log('打开啸叫检测')
+      }
+
+      disableAIhowling.onclick = async () => {
+        getLocalStream().disableAIhowling()
+        console.log('关闭啸叫检测')
+        $('#AIhowlingStatus').hide()
+        $('#howling-content').hide()
+      }
+
+      unregisterAIhowling.onclick = async ()=>{
+        getLocalStream().unregisterPlugin('AIhowling')
+        $('#AIhowlingStatus').hide()
+        $('#howling-content').hide()
       }
 
       openLutInput.onclick = () => {
@@ -707,6 +839,10 @@
                 $('#segmentStatus').html(`${localStreamInfo.innerText} 背景分割loaded`).show();
             } else if (name == 'AdvancedBeauty') {
                 $('#advancedBeautyStatus').html(`${localStreamInfo.innerText} 高级美颜loaded`).show();
+            } else if (name == 'AIAudioEffects') {
+                $('#audioEffectStatus').html(`${localStreamInfo.innerText} AI音效loaded`).show()
+            } else if (name == 'AIhowling') {
+              $('#AIhowlingStatus').html(`${localStreamInfo.innerText} 啸叫检测loaded`).show()
             }
         }
 

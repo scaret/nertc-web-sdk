@@ -100,9 +100,7 @@ class AIholwing extends EventEmitter {
     }
   }
 
-  process(audioData: any[], callback: (result: Float32Array) => void) {
-    //this.processCallback = callback
-
+  process(audioData: any[]) {
     this.howlingWorker &&
       this.howlingWorker.postMessage({
         type: 'process',

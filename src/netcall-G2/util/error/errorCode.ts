@@ -600,6 +600,11 @@ const ErrorCode = {
    * 处理建议：先调用registerPlugin接口进行注册
    */
   PLUGIN_NOT_REGISTER: 10409,
+  /*
+   * 描述：不支持该插件
+   * 可能原因：插件版本不适配主版本，不支持simd版本的浏览器使用了simd库，插件js和wasm文件不匹配等
+   */
+  PLUGIN_NOT_SUPPORT: 10410,
 
   //伴音、音效模块错误码范围：10420 - 10439
   /*
