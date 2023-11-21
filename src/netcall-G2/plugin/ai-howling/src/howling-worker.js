@@ -37,7 +37,7 @@ class Howling {
     require('../lib/audio_aihowling.js')
   }
 
-  async process(frame) {
+  process(frame) {
     this.isProcessing = true
     if (!this.initMem) {
       this.inLeftPtr = Module._aihowling_Malloc(this.buffer_size * 2)
@@ -56,6 +56,8 @@ class Howling {
       rightData = Int16Array.from(frame[0], (x) => x * 32767)
     } else {
       //console.warn('音频源数据异常，长度-', frame.length)
+      this.buffer = []
+      this.isProcessing = false
       return;
     }
     Module.HEAP16.set(leftData, this.inLeftPtr >> 1)
@@ -111,12 +113,11 @@ const howlingWorker = function () {
           if (howlingProcess.buffer.length >= howlingProcess.buffer_length) {
             howlingProcess.buffer.shift()
             howlingProcess.buffer.push(data.frame)
-            return
           } else {
             howlingProcess.buffer.push(data.frame)
           }
         } else {
-            howlingProcess.process(data.frame)
+          howlingProcess.process(data.frame)
         }
         break
       case 'destroy':
