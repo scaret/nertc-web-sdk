@@ -1,7 +1,6 @@
 const global = self
 
 class Howling {
-  rnnoise = null
   isProcessing = false
   buffer = []
   buffer_length = 1
@@ -71,7 +70,6 @@ class Howling {
   }
 
   destroy() {
-    this.rnnoise = null
     this.buffer.length = 0
     if (this.inLeftPtr != null) {
       Module._aihowling_Free(this.inLeftPtr)
@@ -81,6 +79,8 @@ class Howling {
       Module._aihowling_Free(this.inArrayPtr)
       this.inArrayPtr = null
     }
+    this.howling = null
+    this.initMem = false
   }
 
   handleInitFinished() {
