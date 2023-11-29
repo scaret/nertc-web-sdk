@@ -4543,6 +4543,23 @@ class LocalStream extends RTCEventEmitter {
         message: `该浏览器不支持WebAssembly，注册 ${options.key} 失败。`
       })
     }
+    //77以下版本的chrome浏览器，不支持啸叫检测
+    if (options.key === 'AIhowling' && env.CHROME_MAJOR_VERSION && env.CHROME_MAJOR_VERSION < 77) {
+      this.client.apiFrequencyControl({
+        name: 'registerPlugin',
+        code: -1,
+        param: {
+          streamID: this.stringStreamID,
+          plugin: options.key,
+          msg: `unsupportChromeVersion: ${env.CHROME_MAJOR_VERSION}`
+        }
+      })
+      throw new RtcError({
+        code: ErrorCode.PLUGIN_NOT_SUPPORT_BROWSER,
+        message: `该浏览器版本不支持插件 ${options.key}，请升级浏览器。`
+      })
+    }
+
     if (this.videoPostProcess.getPlugin(options.key as any)) {
       return this.logger.warn(`plugin ${options.key} already exists.`)
     }
