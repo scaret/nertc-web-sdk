@@ -1,18 +1,7 @@
 import webworkify from 'webworkify-webpack'
 import { ILogger } from '../../types'
 import { EventEmitter } from 'eventemitter3'
-import { modelOptions } from './src/types'
-
-interface ReverbObjType {
-  wetGain: number
-  dryGain: number
-  damping: number
-  roomSize: number
-  decayTime: number
-  preDelay: number
-}
-
-type ReverbType = keyof ReverbObjType
+import { modelOptions, ReverbObjType, ReverbType } from './src/types'
 
 function getDecimalPlaces(number: number) {
   let decimalPlaces = 0
