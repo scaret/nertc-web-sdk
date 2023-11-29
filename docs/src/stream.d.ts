@@ -1702,7 +1702,7 @@ declare interface Stream {
   setFilter(options: BeautyFilters, intensity?: number): void
 
   /**
-   * 注册(高级美颜/背景替换/AI降噪)插件
+   * 注册高级美颜/背景替换/AI音效(原AI降噪)/啸叫检测)插件
    * @param {pluginOptions} options 插件参数说明
    *
    * @example
@@ -1715,11 +1715,12 @@ declare interface Stream {
   registerPlugin(options: pluginOptions): Promise<void>
 
   /**
-   * 注销(高级美颜/背景替换/AI降噪)插件
+   * 注销(高级美颜/背景替换/AI音效(原AI降噪)/啸叫检测)插件
    * @param key 插件标识，可设置为：
    * * AdvancedBeauty (表示注销高级美颜插件)
    * * VirtualBackground (表示注销背景替换插件)
-   * * AIDenoise (表示注销AI降噪插件)
+   * * AIAudioEffects (表示注销AI音效插件)
+   * * AIhowling (表示注销啸叫检测插件)
    *
    * @example
    * ```Javascript
@@ -1846,6 +1847,60 @@ declare interface Stream {
   disableAIDenoise(): Promise<boolean>
 
   /**
+   * 开启美声变声
+   *
+   * @example
+   * ```Javascript
+   * await localStream.enableAudioEffect()
+   * ```
+   */
+  enableAudioEffect(): Promise<boolean>
+
+  /**
+   * 关闭美声变声
+   *
+   * @example
+   * ```Javascript
+   * await localStream.disableAudioEffect()
+   * ```
+   */
+  disableAudioEffect(): Promise<boolean>
+
+  /**
+   * 设置美声变声效果
+   * @param {Number | String} type 美声变声类型。
+   * @param {Number | Array<number> | Object} value type对应的具体效果。
+   *
+   * 具体参数请参考AI音效开发文档。
+   *
+   * @example
+   * ```Javascript
+   * localStream.setAudioEffect(0, 1)
+   * ```
+   */
+  setAudioEffect(type: Number | String, value: Number | Array<number> | Object): void
+
+  /**
+   * 开启啸叫检测
+   *
+   * @example
+   * ```Javascript
+   * await localStream.enableAIhowling()
+   * ```
+   */
+  enableAIhowling(): Promise<boolean>
+
+  /**
+   * 关闭啸叫检测
+   *
+   * @example
+   * ```Javascript
+   * await localStream.disableAIhowling()
+   * ```
+   */
+  disableAIhowling(): Promise<boolean>
+
+  /**
    *  销毁音视频流对象。
    *
    * @example
@@ -1867,16 +1922,18 @@ declare interface Stream {
   ): void
 
   /**
-   * 高级美颜/背景分割/AI降噪插件加载通知。
+   * 高级美颜/背景替换/AI音效(原AI降噪)/啸叫检测插件加载通知。
    *
    */
   on(
     event: 'plugin-load',
-    callback: (type: 'AdvancedBeauty' | 'VirtualBackground' | 'AIDenoise') => void
+    callback: (
+      type: 'AdvancedBeauty' | 'VirtualBackground' | 'AIAudioEffects' | 'AIhowling'
+    ) => void
   ): void
 
   /**
-   * 高级美颜/背景分割/AI降噪插件加载失败通知。
+   * 高级美颜/背景替换/AI音效(原AI降噪)/啸叫检测插件加载失败通知。
    *
    */
   on(event: 'plugin-load-error', callback: (key: any, msg: any) => void): void
@@ -1886,6 +1943,12 @@ declare interface Stream {
    *
    */
   on(event: 'basic-beauty-res-complete', callback: (failUrls: string[]) => void): void
+
+  /**
+   * 美声变声开启成功通知，在开启后再调用 setAudioEffect 才会生效。
+   *
+   */
+  on(event: 'audio-effect-enabled', callback: () => void): void
 
   /**
    * `notAllowedError` 事件表示浏览器自动播放受限

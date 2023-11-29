@@ -1300,7 +1300,7 @@ declare interface Client {
    * * SOCKET_ERROR: 与服务器断开连接，请检查用户网络。
    * * RELOGIN_ERROR: 网络重连登录失败，请联系云信技术支持。
    * * MEDIA_TRANSPORT_DISCONNECT: 媒体通道一直连接失败，请检查用户网络。
-   * * AUDIOLEVEL_NOT_SUPPORTED：该浏览器环境不支持音频前处理模块，不能使用伴音、音效、getAudioLevel()、AI降噪等功能。
+   * * AUDIOLEVEL_NOT_SUPPORTED：该浏览器环境不支持音频前处理模块，不能使用伴音、音效、getAudioLevel()、AI音效(原AI降噪)、啸叫检测等功能。
    * * no-publish-audio-permission：高级权限token限制您发布自己的音频主流（麦克风）
    * * no-publish-audio-slave-permission：高级权限token限制您发布自己的音频辅流（即屏幕共享系统声卡声音）
    * * no-publish-video-permission：高级权限token限制您发布自己的视频主流（摄像头）
