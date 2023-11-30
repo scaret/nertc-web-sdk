@@ -1902,6 +1902,16 @@ declare interface Stream {
   disableAIhowling(): Promise<boolean>
 
   /**
+   * 注册啸叫回调
+   *
+   * @example
+   * ```Javascript
+   * localStream.onAudioHasHowling(callback)
+   * ```
+   */
+  onAudioHasHowling(callback: (hasHowling: boolean) => void): void
+
+  /**
    *  销毁音视频流对象。
    *
    * @example
