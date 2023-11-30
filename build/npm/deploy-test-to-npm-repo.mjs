@@ -20,12 +20,19 @@ const AdvancedBeautySimdWasmDest = path.join(pathNpmRepo, './wasm/NERTC_Web_SDK_
 const AdvancedBeautyNoSimdWasmSrc = path.join(__dirname, `../../dist/lib/${VERSION}/test/wasm/NIM_Web_AdvancedBeauty_nosimd_v${VERSION}_test.wasm`);
 const AdvancedBeautyNoSimdWasmDest = path.join(pathNpmRepo, './wasm/NERTC_Web_SDK_AdvancedBeauty_nosimd.wasm');
 
-const AIDenoiseSrc = path.join(__dirname, `../../dist/lib/${VERSION}/test/NIM_Web_AIDenoise_v${VERSION}_test.js`);
-const AIDenoiseDest = path.join(pathNpmRepo, 'NERTC_Web_SDK_AIDenoise.js')
-const AIDenoiseSimdWasmSrc = path.join(__dirname, `../../dist/lib/${VERSION}/test/wasm/NIM_Web_AIDenoise_simd_v${VERSION}_test.wasm`);
-const AIDenoiseSimdWasmDest = path.join(pathNpmRepo, './wasm/NERTC_Web_SDK_AIDenoise_simd.wasm');
-const AIDenoiseNoSimdWasmSrc = path.join(__dirname, `../../dist/lib/${VERSION}/test/wasm/NIM_Web_AIDenoise_nosimd_v${VERSION}_test.wasm`);
-const AIDenoiseNoSimdWasmDest = path.join(pathNpmRepo, './wasm/NERTC_Web_SDK_AIDenoise_nosimd.wasm');
+const AIAudioEffectsSrc = path.join(__dirname, `../../dist/lib/${VERSION}/test/NIM_Web_AIAudioEffects_v${VERSION}_test.js`);
+const AIAudioEffectsDest = path.join(pathNpmRepo, 'NERTC_Web_SDK_AIAudioEffects.js')
+const AIAudioEffectsSimdWasmSrc = path.join(__dirname, `../../dist/lib/${VERSION}/test/wasm/NIM_Web_AIAudioEffects_simd_v${VERSION}_test.wasm`);
+const AIAudioEffectsSimdWasmDest = path.join(pathNpmRepo, './wasm/NERTC_Web_SDK_AIAudioEffects_simd.wasm');
+const AIAudioEffectsNoSimdWasmSrc = path.join(__dirname, `../../dist/lib/${VERSION}/test/wasm/NIM_Web_AIAudioEffects_nosimd_v${VERSION}_test.wasm`);
+const AIAudioEffectsNoSimdWasmDest = path.join(pathNpmRepo, './wasm/NERTC_Web_SDK_AIAudioEffects_nosimd.wasm');
+
+const AIhowlingSrc = path.join(__dirname, `../../dist/lib/${VERSION}/test/NIM_Web_AIhowling_v${VERSION}_test.js`);
+const AIhowlingDest = path.join(pathNpmRepo, 'NERTC_Web_SDK_AIhowling.js')
+const AIhowlingSimdWasmSrc = path.join(__dirname, `../../dist/lib/${VERSION}/test/wasm/NIM_Web_AIhowling_simd_v${VERSION}_test.wasm`);
+const AIhowlingSimdWasmDest = path.join(pathNpmRepo, './wasm/NERTC_Web_SDK_AIhowling_simd.wasm');
+const AIhowlingNoSimdWasmSrc = path.join(__dirname, `../../dist/lib/${VERSION}/test/wasm/NIM_Web_AIhowling_nosimd_v${VERSION}_test.wasm`);
+const AIhowlingNoSimdWasmDest = path.join(pathNpmRepo, './wasm/NERTC_Web_SDK_AIhowling_nosimd.wasm');
 
 const wasmDir = path.join(pathNpmRepo, 'wasm');
 
@@ -51,15 +58,18 @@ await $`cp -f ${sdkSrc} ${sdkDest}`
 // 拷贝插件
 await $`cp -f ${VirtualBackgroundSrc} ${VirtualBackgroundDest}`
 await $`cp -f ${AdvancedBeautySrc} ${AdvancedBeautyDest}`
-await $`cp -f ${AIDenoiseSrc} ${AIDenoiseDest}`
+await $`cp -f ${AIAudioEffectsSrc} ${AIAudioEffectsDest}`
+await $`cp -f ${AIhowlingSrc} ${AIhowlingDest}`
 await $`rm -rf ${wasmDir}`
 await $`mkdir ${wasmDir}`
 await $`cp -f ${VirtualBackgroundSimdWasmSrc} ${VirtualBackgroundSimdWasmDest}`
 await $`cp -f ${VirtualBackgroundNoSimdWasmSrc} ${VirtualBackgroundNoSimdWasmDest}`
 await $`cp -f ${AdvancedBeautySimdWasmSrc} ${AdvancedBeautySimdWasmDest}`
 await $`cp -f ${AdvancedBeautyNoSimdWasmSrc} ${AdvancedBeautyNoSimdWasmDest}`
-await $`cp -f ${AIDenoiseSimdWasmSrc} ${AIDenoiseSimdWasmDest}`
-await $`cp -f ${AIDenoiseNoSimdWasmSrc} ${AIDenoiseNoSimdWasmDest}`
+await $`cp -f ${AIAudioEffectsSimdWasmSrc} ${AIAudioEffectsSimdWasmDest}`
+await $`cp -f ${AIAudioEffectsNoSimdWasmSrc} ${AIAudioEffectsNoSimdWasmDest}`
+await $`cp -f ${AIhowlingSimdWasmSrc} ${AIhowlingSimdWasmDest}`
+await $`cp -f ${AIhowlingNoSimdWasmSrc} ${AIhowlingNoSimdWasmDest}`
 
 // 3. 拷贝文档
 await $`rm -rf ${path.join(pathNpmRepo, 'types')}`
