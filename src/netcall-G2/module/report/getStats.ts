@@ -20,6 +20,15 @@ import {
   PerSecondStatsProperty
 } from './FormativeStatsInterface'
 
+let audioArray: any[] = [],
+  videoArray: any[] = [],
+  audioSlaveArray: any[] = [],
+  screenArray: any[] = []
+let audioData: any = {},
+  videoData: any = {},
+  screenData: any = {},
+  audioSlaveData: any = {}
+
 class GetStats {
   private adapterRef: AdapterRef
   private times = 0
@@ -32,6 +41,7 @@ class GetStats {
     recv: StatsInfo
   }
   public chromeLegecy: 'unknown' | 'supported' | 'unsupported' = getParameters().chromeLegacyDefault
+  public resultMap: Map<string | number, any> = new Map()
   constructor(options: { adapterRef: AdapterRef }) {
     this.adapterRef = options.adapterRef
     //workaround for TS2564
@@ -146,11 +156,45 @@ class GetStats {
       this!.adapterRef!.remoteVideoStats = {}
       this!.adapterRef!.remoteScreenStats = {}
 
-      let remotePc = this?.adapterRef?._mediasoup?._recvTransport?._handler?._pc
-      if (!remotePc) {
-        return
+      if (env.ANY_CHROME_MAJOR_VERSION && env.ANY_CHROME_MAJOR_VERSION < 69) {
+        this.adapterRef._mediasoup?.consumerMap.forEach(async (consumer: any, key: any) => {
+          let audioStats, videoStats, screenStats, audioSlaveStats
+          let remoteAudioPc = consumer._recvTransportMainAudio?._handler?._pc
+          if (remoteAudioPc) {
+            audioStats = await this.getRemoteStatsPlanB(remoteAudioPc, 'audio')
+          }
+          let remoteVideoPc = consumer._recvTransportMainVideo?._handler?._pc
+          if (remoteVideoPc) {
+            videoStats = await this.getRemoteStatsPlanB(remoteVideoPc, 'video')
+          }
+          let remoteScreenPc = consumer._recvTransportSubScreen?._handler?._pc
+          if (remoteScreenPc) {
+            screenStats = await this.getRemoteStatsPlanB(remoteScreenPc, 'screen')
+          }
+          let remoteAudioSlaveStats = consumer._recvTransportSubAudioSlave?._handler?._pc
+          if (remoteAudioSlaveStats) {
+            audioSlaveStats = await this.getRemoteStatsPlanB(remoteAudioSlaveStats, 'audioSlave')
+          }
+
+          audioData = audioStats
+          videoData = videoStats
+          audioSlaveData = audioSlaveStats
+          screenData = screenStats
+        })
+
+        remoteStats = {
+          audio_ssrc: audioData ? audioData.audio_ssrc : null,
+          video_ssrc: videoData ? videoData.video_ssrc : null,
+          screen_ssrc: screenData ? screenData.screen_ssrc : null,
+          audioSlave_ssrc: audioSlaveData ? audioSlaveData.audioSlave_ssrc : null
+        }
+      } else {
+        let remotePc = this?.adapterRef?._mediasoup?._recvTransport?._handler?._pc
+        if (!remotePc) {
+          return
+        }
+        remoteStats = await this.getRemoteStats(remotePc)
       }
-      remoteStats = await this.getRemoteStats(remotePc)
 
       this.audioLevel.sort(compare('level'))
       if (
@@ -162,6 +206,7 @@ class GetStats {
         this?.adapterRef?.instance.safeEmit('active-speaker', this.audioLevel[0])
         this?.adapterRef?.instance.safeEmit('volume-indicator', this.audioLevel)
       }
+
       //this.logger.log('stats before revised--->', result)
     } catch (e: any) {
       this.statsInfo.recv.errCnt++
@@ -188,7 +233,53 @@ class GetStats {
     if (!pc || /(failed|closed|new)/gi.test(pc.iceConnectionState)) {
       return {}
     }
+
     return await this[this.browser](pc, 'recv')
+  }
+
+  async getRemoteStatsPlanB(pc: RTCPeerConnection, mediaType: MediaTypeShort) {
+    if (!pc || /(failed|closed|new)/gi.test(pc.iceConnectionState)) {
+      return {}
+    }
+    return await this.chrome69(pc, 'recv', mediaType)
+  }
+
+  /*
+    chrome69 以下浏览器 getStats 适配器
+  */
+  async chrome69(pc: RTCPeerConnection, direction: StatsDirection, mediaType: MediaTypeShort) {
+    // console.error('chrome69 pc :', pc)
+    const nonStandardStats = () => {
+      // chrome69 以下浏览器 不支持标准化的 getStats
+      return new Promise((resolve) => {
+        // @ts-ignore
+        pc.getStats((res) => {
+          this.markStatsStart(direction)
+          this.chromeLegecy = 'supported'
+          let result: { [key: string]: any } = {}
+          const results = res.result()
+          // @ts-ignore
+          results.forEach(function (res) {
+            const item: any = {}
+            res.names().forEach(function (name: string) {
+              item[name] = res.stat(name)
+            })
+            item.id = res.id
+            item.type = res.type
+            item.timestamp = res.timestamp
+            result[item.id] = item
+          })
+          // @ts-ignore
+          pc.lastStats = pc.lastStats || {}
+          // console.error(' chrome69 result: ', result)
+          //针对非标准话的getStats进行格式化处理
+          result = this.formatChromeNonStandardStats(pc, result, direction, mediaType)
+          resolve(result)
+        })
+      })
+    }
+    const nonStandardResult = await nonStandardStats()
+    return nonStandardResult
   }
 
   /*
@@ -372,7 +463,8 @@ class GetStats {
   formatChromeNonStandardStats(
     pc: RTCPeerConnection,
     stats: { [key: string]: any },
-    direction: string
+    direction: string,
+    mediaType?: MediaTypeShort
   ) {
     function getLimitationReason(item: any) {
       if (item.googBandwidthLimitedResolution) {
@@ -686,11 +778,40 @@ class GetStats {
                 ? (this!.adapterRef!.remoteAudioStats[tmp.remoteuid] = audioStats)
                 : null
               audio_ssrc.push(tmp)
+              if (
+                env.ANY_CHROME_MAJOR_VERSION &&
+                env.ANY_CHROME_MAJOR_VERSION < 69 &&
+                mediaType === 'audio'
+              ) {
+                let audioRemoteuid: number | string = audio_ssrc[0] && audio_ssrc[0].remoteuid
+                let audioIndex = audioArray.findIndex((item) => item.remoteuid === audioRemoteuid)
+                if (audioIndex === -1) {
+                  audioArray.push(audio_ssrc[0])
+                } else {
+                  audioArray[audioIndex] = audio_ssrc[0]
+                }
+              }
             } else if (mediaTypeShort === 'audioSlave') {
               tmp.remoteuid
                 ? (this!.adapterRef!.remoteAudioSlaveStats[tmp.remoteuid] = audioStats)
                 : null
               audioSlave_ssrc.push(tmp)
+              if (
+                env.ANY_CHROME_MAJOR_VERSION &&
+                env.ANY_CHROME_MAJOR_VERSION < 69 &&
+                mediaType === 'audioSlave'
+              ) {
+                let audioSlaveRemoteuid: number | string =
+                  audioSlave_ssrc[0] && audioSlave_ssrc[0].remoteuid
+                let audioSlaveIndex = audioSlaveArray.findIndex(
+                  (item) => item.remoteuid === audioSlaveRemoteuid
+                )
+                if (audioSlaveIndex === -1) {
+                  audioSlaveArray.push(audioSlave_ssrc[0])
+                } else {
+                  audioSlaveArray[audioSlaveIndex] = audioSlave_ssrc[0]
+                }
+              }
             }
           } else if (item.mediaType === 'video') {
             tmp.bytesReceived = parseInt(item.bytesReceived)
@@ -768,46 +889,86 @@ class GetStats {
             if (mediaTypeShort === 'video') {
               this!.adapterRef!.remoteVideoStats[tmp.remoteuid] = videoStats
               video_ssrc.push(tmp)
+              if (
+                env.ANY_CHROME_MAJOR_VERSION &&
+                env.ANY_CHROME_MAJOR_VERSION < 69 &&
+                mediaType === 'video'
+              ) {
+                let videoRemoteuid: number | string = video_ssrc[0] && video_ssrc[0].remoteuid
+                let videoIndex = videoArray.findIndex((item) => item.remoteuid === videoRemoteuid)
+                if (videoIndex === -1) {
+                  videoArray.push(video_ssrc[0])
+                } else {
+                  videoArray[videoIndex] = video_ssrc[0]
+                }
+              }
             } else if (mediaTypeShort === 'screen') {
               videoStats.LayerType = 2
               this!.adapterRef!.remoteScreenStats[tmp.remoteuid] = videoStats
               screen_ssrc.push(tmp)
+              if (
+                env.ANY_CHROME_MAJOR_VERSION &&
+                env.ANY_CHROME_MAJOR_VERSION < 69 &&
+                mediaType === 'screen'
+              ) {
+                let screenRemoteuid: number | string = screen_ssrc[0] && screen_ssrc[0].remoteuid
+                let screenIndex = screenArray.findIndex(
+                  (item) => item.remoteuid === screenRemoteuid
+                )
+                if (screenIndex === -1) {
+                  screenArray.push(screen_ssrc[0])
+                } else {
+                  screenArray[screenIndex] = screen_ssrc[0]
+                }
+              }
             }
           }
         }
       }
     })
     this.adapterRef.instance.safeEmit('@media-stats-change', mediaStateChangeEvt)
-
     const result: any = {}
-    if (audio_ssrc.length) {
-      result.audio_ssrc = audio_ssrc
-    }
-    if (audioSlave_ssrc.length) {
-      result.audioSlave_ssrc = audioSlave_ssrc
-    }
-    if (video_ssrc.length) {
-      if (video_ssrc.length > 1) {
-        const temp: any = video_ssrc[0] || {}
-        if (temp.streamType === 'low') {
-          ;[video_ssrc[0], video_ssrc[1]] = [video_ssrc[1], video_ssrc[0]]
-        }
+
+    if (env.ANY_CHROME_MAJOR_VERSION && env.ANY_CHROME_MAJOR_VERSION < 69 && direction === 'recv') {
+      if (mediaType === 'audio') {
+        result.audio_ssrc = audioArray
+      } else if (mediaType === 'video') {
+        result.video_ssrc = videoArray
+      } else if (mediaType === 'audioSlave') {
+        result.audioSlave_ssrc = audioSlaveArray
+      } else if (mediaType === 'screen') {
+        result.screen_ssrc = screenArray
       }
-      result.video_ssrc = video_ssrc
-    }
-    if (screen_ssrc.length) {
-      if (screen_ssrc.length > 1) {
-        const temp: any = screen_ssrc[0] || {}
-        if (temp.streamType === 'low') {
-          ;[screen_ssrc[0], screen_ssrc[1]] = [screen_ssrc[1], screen_ssrc[0]]
-        }
+    } else {
+      if (audio_ssrc.length) {
+        result.audio_ssrc = audio_ssrc
       }
-      result.screen_ssrc = screen_ssrc
+      if (audioSlave_ssrc.length) {
+        result.audioSlave_ssrc = audioSlave_ssrc
+      }
+      if (video_ssrc.length) {
+        if (video_ssrc.length > 1) {
+          const temp: any = video_ssrc[0] || {}
+          if (temp.streamType === 'low') {
+            ;[video_ssrc[0], video_ssrc[1]] = [video_ssrc[1], video_ssrc[0]]
+          }
+        }
+        result.video_ssrc = video_ssrc
+      }
+      if (screen_ssrc.length) {
+        if (screen_ssrc.length > 1) {
+          const temp: any = screen_ssrc[0] || {}
+          if (temp.streamType === 'low') {
+            ;[screen_ssrc[0], screen_ssrc[1]] = [screen_ssrc[1], screen_ssrc[0]]
+          }
+        }
+        result.screen_ssrc = screen_ssrc
+      }
+      if (bwe.length) {
+        result.bwe = bwe
+      }
     }
-    if (bwe.length) {
-      result.bwe = bwe
-    }
-    //console.log('非标准格式的数据: ', result)
+
     return result
   }
 

@@ -3,7 +3,7 @@
 import { EnhancedEventEmitter } from './EnhancedEventEmitter'
 import { InvalidStateError, UnsupportedError } from './errors'
 import { Chrome74 } from './handlers/Chrome74'
-import { Chrome62 } from './handlers/Chrome62'
+import { Chrome58 } from './handlers/Chrome58'
 import { Firefox60 } from './handlers/Firefox60'
 import { HandlerFactory, HandlerInterface } from './handlers/HandlerInterface'
 import { Safari12 } from './handlers/Safari12'
@@ -19,7 +19,7 @@ import { isIosFromRtpStats } from './handlers/sdp/getNativeRtpCapabilities'
 
 const prefix = 'Device'
 
-export type BuiltinHandlerName = 'Chrome62' | 'Chrome74' | 'Safari12' | 'Firefox60'
+export type BuiltinHandlerName = 'Chrome58' | 'Chrome74' | 'Safari12' | 'Firefox60'
 
 export type DeviceOptions = {
   /**
@@ -50,7 +50,7 @@ export function detectDevice(): BuiltinHandlerName | undefined {
       env.CHROME_MAJOR_VERSION >= 58 &&
       env.CHROME_MAJOR_VERSION < 69
     ) {
-      return 'Chrome62'
+      return 'Chrome58'
     }
     if (env.IS_CHROME_ONLY && env.CHROME_MAJOR_VERSION && env.CHROME_MAJOR_VERSION >= 69) {
       return 'Chrome74'
@@ -62,7 +62,7 @@ export function detectDevice(): BuiltinHandlerName | undefined {
         env.ANY_CHROME_MAJOR_VERSION >= 58 &&
         env.ANY_CHROME_MAJOR_VERSION < 69
       ) {
-        return 'Chrome62'
+        return 'Chrome58'
       } else {
         return 'Chrome74'
       }
@@ -174,8 +174,8 @@ export class Device {
       }
 
       switch (handlerName) {
-        case 'Chrome62':
-          this._handlerFactory = Chrome62.createFactory()
+        case 'Chrome58':
+          this._handlerFactory = Chrome58.createFactory()
           break
         case 'Chrome74':
           this._handlerFactory = Chrome74.createFactory()

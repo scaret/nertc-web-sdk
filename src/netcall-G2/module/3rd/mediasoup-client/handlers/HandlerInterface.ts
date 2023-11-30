@@ -53,7 +53,7 @@ export type HandlerSendResult = {
   offer: any
 }
 
-export type Chrome62HandlerSendResult = {
+export type Chrome58HandlerSendResult = {
   localId: string
   rtpParameters: RtpParameters
   rtpSender?: RTCRtpSender
@@ -76,7 +76,7 @@ export type HandlerReceiveOptions = {
   appData?: any
 }
 
-export type Chrome62HandlerReceiveOptions = {
+export type Chrome58HandlerReceiveOptions = {
   trackId: string
   kind: 'audio' | 'video'
   rtpParameters: RtpParameters
