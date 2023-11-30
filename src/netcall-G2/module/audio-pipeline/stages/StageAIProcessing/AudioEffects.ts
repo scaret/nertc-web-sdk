@@ -1,6 +1,6 @@
 import { EventEmitter } from 'eventemitter3'
-
 import { StageAIProcessing } from './StageAIProcessing'
+import { ReverbObjType } from '../../../../plugin/ai-audio-effects/src/types'
 
 type EffectType = 'AIDenoise' | 'AudioEffect'
 
@@ -30,7 +30,7 @@ export default class AudioEffect extends EventEmitter {
     this.audioEffectProcess.init()
   }
 
-  setAudioEffect(type: number, value: number | Array<number>) {
+  setAudioEffect(type: number, value: number | Array<number> | ReverbObjType) {
     this.audioEffectProcess.setAudioEffect(type, value)
   }
 

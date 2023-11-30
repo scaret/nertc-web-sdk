@@ -81,7 +81,7 @@ export interface pluginOptions {
   /**
    *  插件标识
    */
-  key: 'AdvancedBeauty' | 'VirtualBackground' | 'AIDenoise'
+  key: 'AdvancedBeauty' | 'VirtualBackground' | 'AIAudioEffects' | 'AIhowling'
   /**
    *  插件 js 地址
    */

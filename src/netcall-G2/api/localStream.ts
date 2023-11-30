@@ -21,6 +21,7 @@ import {
   PluginConfigList
 } from '../plugin/plugin-list'
 import { BackGroundOptions } from '../plugin/segmentation/src/types'
+import { ReverbObjType } from '../plugin/ai-audio-effects/src/types'
 import { checkValidEnum, isNumber } from '../util/param'
 import {
   AudioEffectOptions,
@@ -4240,7 +4241,7 @@ class LocalStream extends RTCEventEmitter {
     return true
   }
 
-  setAudioEffect(type: number, value: number | Array<number>) {
+  setAudioEffect(type: number, value: number | Array<number> | ReverbObjType) {
     this.logger.log(`setAudioEffect:${type} `, JSON.stringify(value))
     if (this._audioAffectsProcessor && this._audioAffectsProcessor.getState('AudioEffect')) {
       this._audioAffectsProcessor.setAudioEffect(type, value)
