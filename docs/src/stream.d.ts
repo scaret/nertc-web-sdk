@@ -14,6 +14,7 @@ import {
   AdvBeautyEffects,
   AdvBeautyPreset,
   BackGroundOptions,
+  ReverbConfig,
   RecordStatus,
   STREAM_TYPE,
   NERtcEncoderWatermarkConfig
@@ -1878,7 +1879,7 @@ declare interface Stream {
    * localStream.setAudioEffect(0, 1)
    * ```
    */
-  setAudioEffect(type: Number | String, value: Number | Array<number> | Object): void
+  setAudioEffect(type: Number | String, value: Number | Array<number> | ReverbConfig): void
 
   /**
    * 开启啸叫检测

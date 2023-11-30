@@ -222,6 +222,37 @@ export interface BackGroundOptions {
    */
   level?: number
 }
+
+/**
+ * 自定义混响参数
+ */
+export interface ReverbConfig {
+  /**
+   * 湿信号增益
+   */
+  wetGain: number
+  /**
+   * 干信号增益
+   */
+  dryGain: number
+  /**
+   * 混响阻尼
+   */
+  damping: number
+  /**
+   * 房间大小
+   */
+  roomSize: number
+  /**
+   * 持续强度
+   */
+  decayTime: number
+  /**
+   * 延迟长度
+   */
+  preDelay: number
+}
+
 /**
  * 视频画布设置。
  */
