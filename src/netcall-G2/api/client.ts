@@ -1919,9 +1919,11 @@ class Client extends Base {
    * @return {Promise}
    */
   getLocalAudioStats() {
-    return new Promise((resolve, reject) => {
-      resolve(this.adapterRef.localAudioStats)
-    })
+    let stats: any = []
+    if (this.adapterRef.localStream?.getSender('audio', 'high')?.track) {
+      stats = stats.concat(this.adapterRef.localAudioStats)
+    }
+    return Promise.resolve(stats)
   }
 
   /**
@@ -1931,9 +1933,11 @@ class Client extends Base {
    * @return {Promise}
    */
   getLocalAudioSlaveStats() {
-    return new Promise((resolve, reject) => {
-      resolve(this.adapterRef.localAudioSlaveStats)
-    })
+    let stats: any = []
+    if (this.adapterRef.localStream?.getSender('audioSlave', 'high')?.track) {
+      stats = stats.concat(this.adapterRef.localAudioSlaveStats)
+    }
+    return Promise.resolve(stats)
   }
 
   /**
@@ -1945,10 +1949,14 @@ class Client extends Base {
   getLocalVideoStats(mediaType?: MediaTypeShort) {
     let data: any = []
     if (!mediaType || mediaType === 'video') {
-      data = data.concat(this.adapterRef.localVideoStats)
+      if (this.adapterRef.localStream?.getSender('video', 'high')?.track) {
+        data = data.concat(this.adapterRef.localVideoStats)
+      }
     }
     if (!mediaType || mediaType === 'screen') {
-      data = data.concat(this.adapterRef.localScreenStats)
+      if (this.adapterRef.localStream?.getSender('screen', 'high')?.track) {
+        data = data.concat(this.adapterRef.localScreenStats)
+      }
     }
     return Promise.resolve(data)
   }
