@@ -1064,7 +1064,7 @@ class Client extends Base {
         stream.doSetSubscribeConfig(subscribeOptions)
         return this.doSubscribe(stream)
       } else {
-        this.logger.log('subscribe() [订阅远端: ${stream.stringStreamID}]')
+        this.logger.log(`subscribe() [订阅远端: ${stream.stringStreamID}]`)
         return this.doSubscribe(stream)
       }
     }
@@ -1080,6 +1080,18 @@ class Client extends Base {
         message
       })
     }
+
+    let streamSubConf = {
+      audio: stream.subConf.audio,
+      audioSlave: stream.subConf.audioSlave,
+      video: stream.subConf.video,
+      screen: stream.subConf.screen
+    }
+
+    let destroyAudio = false,
+      destroyAudioSlave = false,
+      destroyVideo = false,
+      destroyScreen = false
     try {
       if (stream.subConf.audio) {
         if (this.adapterRef.permKeyInfo?.subAudioRight === false) {
@@ -1087,16 +1099,20 @@ class Client extends Base {
           this.adapterRef.instance.emit('error', 'no-subscribe-audio-permission')
         } else if (stream.pubStatus.audio.audio && !stream.pubStatus.audio.consumerId) {
           //重复调用的问题不再通过consumerStatus来保障，由后续的流程负责
-          this.logger.log(`subscribe() 开始订阅 ${stream.getId()} 音频流`)
-          stream.pubStatus.audio.consumerStatus = 'start'
-          await this.adapterRef._mediasoup.createConsumer(
-            uid,
-            'audio',
-            'audio',
-            stream.pubStatus.audio.producerId
-          )
-          stream.pubStatus.audio.consumerStatus = 'end'
-          this.logger.log(`subscribe() 订阅 ${stream.getId()} 音频流完成`)
+          if (env.ANY_CHROME_MAJOR_VERSION && env.ANY_CHROME_MAJOR_VERSION < 69) {
+            this.logger.log(`subscribe() 开始订阅 ${stream.getId()} 音频流`)
+          } else {
+            this.logger.log(`subscribe() 开始订阅 ${stream.getId()} 音频流`)
+            stream.pubStatus.audio.consumerStatus = 'start'
+            await this.adapterRef._mediasoup.createConsumer(
+              uid,
+              'audio',
+              'audio',
+              stream.pubStatus.audio.producerId
+            )
+            stream.pubStatus.audio.consumerStatus = 'end'
+            this.logger.log(`subscribe() 订阅 ${stream.getId()} 音频流完成`)
+          }
         }
       } else {
         //取消订阅音频
@@ -1104,24 +1120,29 @@ class Client extends Base {
           stream.pubStatus.audio.consumerId &&
           stream.pubStatus.audio.stopconsumerStatus !== 'start'
         ) {
-          this.logger.log(`subscribe() 开始取消订阅 ${stream.getId()} 音频流`)
-          stream.pubStatus.audio.stopconsumerStatus = 'start'
-          await this.adapterRef._mediasoup.destroyConsumer(
-            stream.pubStatus.audio.consumerId,
-            stream,
-            'audio'
-          )
-          this.adapterRef.instance.removeSsrc(stream.getId(), 'audio')
-          stream.mediaHelper.updateStream('audio', null)
-          stream.pubStatus.audio.consumerId = ''
-          stream.stop('audio')
-          stream.pubStatus.audio.stopconsumerStatus = 'end'
-          stream.subStatus.audio = false
-          const uid = stream.getId()
-          if (uid) {
-            delete this.adapterRef.remoteAudioStats[uid]
+          if (env.ANY_CHROME_MAJOR_VERSION && env.ANY_CHROME_MAJOR_VERSION < 69) {
+            this.logger.log(`subscribe() 开始取消订阅 ${stream.getId()} 音频流`)
+            destroyAudio = true
+          } else {
+            this.logger.log(`subscribe() 开始取消订阅 ${stream.getId()} 音频流`)
+            stream.pubStatus.audio.stopconsumerStatus = 'start'
+            await this.adapterRef._mediasoup.destroyConsumer(
+              stream.pubStatus.audio.consumerId,
+              stream,
+              'audio'
+            )
+            this.adapterRef.instance.removeSsrc(stream.getId(), 'audio')
+            stream.mediaHelper.updateStream('audio', null)
+            stream.pubStatus.audio.consumerId = ''
+            stream.stop('audio')
+            stream.pubStatus.audio.stopconsumerStatus = 'end'
+            stream.subStatus.audio = false
+            const uid = stream.getId()
+            if (uid) {
+              delete this.adapterRef.remoteAudioStats[uid]
+            }
+            this.logger.log(`subscribe() 取消订阅 ${stream.getId()} 音频流完成`)
           }
-          this.logger.log(`subscribe() 取消订阅 ${stream.getId()} 音频流完成`)
         }
       }
 
@@ -1133,40 +1154,49 @@ class Client extends Base {
           stream.pubStatus.audioSlave.audioSlave &&
           !stream.pubStatus.audioSlave.consumerId
         ) {
-          this.logger.log(`subscribe() 开始订阅 ${stream.getId()} 音频辅流`)
-          stream.pubStatus.audioSlave.consumerStatus = 'start'
-          await this.adapterRef._mediasoup.createConsumer(
-            uid,
-            'audio',
-            'audioSlave',
-            stream.pubStatus.audioSlave.producerId
-          )
-          stream.pubStatus.audioSlave.consumerStatus = 'end'
-          this.logger.log(`subscribe() 订阅 ${stream.getId()} 音频辅流完成`)
+          if (env.ANY_CHROME_MAJOR_VERSION && env.ANY_CHROME_MAJOR_VERSION < 69) {
+            this.logger.log(`subscribe() 开始订阅 ${stream.getId()} 音频辅流`)
+          } else {
+            this.logger.log(`subscribe() 开始订阅 ${stream.getId()} 音频辅流`)
+            stream.pubStatus.audioSlave.consumerStatus = 'start'
+            await this.adapterRef._mediasoup.createConsumer(
+              uid,
+              'audio',
+              'audioSlave',
+              stream.pubStatus.audioSlave.producerId
+            )
+            stream.pubStatus.audioSlave.consumerStatus = 'end'
+            this.logger.log(`subscribe() 订阅 ${stream.getId()} 音频辅流完成`)
+          }
         }
       } else {
         if (
           stream.pubStatus.audioSlave.consumerId &&
           stream.pubStatus.audioSlave.stopconsumerStatus !== 'start'
         ) {
-          this.logger.log(`subscribe() 开始取消订阅 ${stream.getId()} 音频辅流`)
-          stream.pubStatus.audioSlave.stopconsumerStatus = 'start'
-          await this.adapterRef._mediasoup?.destroyConsumer(
-            stream.pubStatus.audioSlave.consumerId,
-            stream,
-            'audioSlave'
-          )
-          this.adapterRef.instance.removeSsrc(stream.getId(), 'audioSlave')
-          stream.mediaHelper.updateStream('audioSlave', null)
-          stream.pubStatus.audioSlave.consumerId = ''
-          stream.stop('audioSlave')
-          stream.pubStatus.audioSlave.stopconsumerStatus = 'end'
-          stream.subStatus.audioSlave = false
-          const uid = stream.getId()
-          if (uid) {
-            delete this.adapterRef.remoteAudioSlaveStats[uid]
+          if (env.ANY_CHROME_MAJOR_VERSION && env.ANY_CHROME_MAJOR_VERSION < 69) {
+            this.logger.log(`subscribe() 开始取消订阅 ${stream.getId()} 音频辅流`)
+            destroyAudioSlave = true
+          } else {
+            this.logger.log(`subscribe() 开始取消订阅 ${stream.getId()} 音频辅流`)
+            stream.pubStatus.audioSlave.stopconsumerStatus = 'start'
+            await this.adapterRef._mediasoup?.destroyConsumer(
+              stream.pubStatus.audioSlave.consumerId,
+              stream,
+              'audioSlave'
+            )
+            this.adapterRef.instance.removeSsrc(stream.getId(), 'audioSlave')
+            stream.mediaHelper.updateStream('audioSlave', null)
+            stream.pubStatus.audioSlave.consumerId = ''
+            stream.stop('audioSlave')
+            stream.pubStatus.audioSlave.stopconsumerStatus = 'end'
+            stream.subStatus.audioSlave = false
+            const uid = stream.getId()
+            if (uid) {
+              delete this.adapterRef.remoteAudioSlaveStats[uid]
+            }
+            this.logger.log('subscribe() 取消订阅 ${stream.getId()} 音频辅流完成')
           }
-          this.logger.log('subscribe() 取消订阅 ${stream.getId()} 音频辅流完成')
         }
       }
 
@@ -1175,23 +1205,27 @@ class Client extends Base {
           this.logger.error('subscribe() permKey权限控制，没有权限订阅video')
           this.adapterRef.instance.emit('error', 'no-subscribe-video-permission')
         } else if (stream.pubStatus.video.video && !stream.pubStatus.video.consumerId) {
-          this.logger.log(`subscribe() 开始订阅 ${stream.getId()} 视频流`)
-          // preferredSpatialLayer是从小到大的，即0是小流，1是大流
-          // API层面与声网和Native对齐，即0是大流，1是小流
-          let preferredSpatialLayer
-          if (stream.subConf.highOrLow.video === STREAM_TYPE.LOW) {
-            preferredSpatialLayer = 0
+          if (env.ANY_CHROME_MAJOR_VERSION && env.ANY_CHROME_MAJOR_VERSION < 69) {
+            this.logger.log(`subscribe() 开始订阅 ${stream.getId()} 视频流`)
           } else {
-            preferredSpatialLayer = 1
+            this.logger.log(`subscribe() 开始订阅 ${stream.getId()} 视频流`)
+            // preferredSpatialLayer是从小到大的，即0是小流，1是大流
+            // API层面与声网和Native对齐，即0是大流，1是小流
+            let preferredSpatialLayer
+            if (stream.subConf.highOrLow.video === STREAM_TYPE.LOW) {
+              preferredSpatialLayer = 0
+            } else {
+              preferredSpatialLayer = 1
+            }
+            await this.adapterRef._mediasoup.createConsumer(
+              uid,
+              'video',
+              'video',
+              stream.pubStatus.video.producerId,
+              preferredSpatialLayer
+            )
+            this.logger.log(`subscribe() 订阅 ${stream.getId()} 视频流完成`)
           }
-          await this.adapterRef._mediasoup.createConsumer(
-            uid,
-            'video',
-            'video',
-            stream.pubStatus.video.producerId,
-            preferredSpatialLayer
-          )
-          this.logger.log(`subscribe() 订阅 ${stream.getId()} 视频流完成`)
         } else {
           this.logger.log(
             'subscribe() stream.pubStatus.video: ',
@@ -1204,20 +1238,25 @@ class Client extends Base {
           stream.pubStatus.video.consumerId &&
           stream.pubStatus.video.stopconsumerStatus !== 'start'
         ) {
-          this.logger.log('`subscribe() 开始取消订阅 ${stream.getId()} 视频流`')
-          stream.pubStatus.video.stopconsumerStatus = 'start'
-          await this.adapterRef._mediasoup?.destroyConsumer(
-            stream.pubStatus.video.consumerId,
-            stream,
-            'video'
-          )
-          this.adapterRef.instance.removeSsrc(stream.getId(), 'video')
-          stream.mediaHelper.updateStream('video', null)
-          stream.pubStatus.video.consumerId = ''
-          stream.stop('video')
-          stream.pubStatus.video.stopconsumerStatus = 'end'
-          stream.subStatus.video = false
-          this.logger.log(`subscribe() 取消订阅 ${stream.getId()} 视频流完成`)
+          if (env.ANY_CHROME_MAJOR_VERSION && env.ANY_CHROME_MAJOR_VERSION < 69) {
+            this.logger.log('`subscribe() 开始取消订阅 ${stream.getId()} 视频流`')
+            destroyVideo = true
+          } else {
+            this.logger.log('`subscribe() 开始取消订阅 ${stream.getId()} 视频流`')
+            stream.pubStatus.video.stopconsumerStatus = 'start'
+            await this.adapterRef._mediasoup?.destroyConsumer(
+              stream.pubStatus.video.consumerId,
+              stream,
+              'video'
+            )
+            this.adapterRef.instance.removeSsrc(stream.getId(), 'video')
+            stream.mediaHelper.updateStream('video', null)
+            stream.pubStatus.video.consumerId = ''
+            stream.stop('video')
+            stream.pubStatus.video.stopconsumerStatus = 'end'
+            stream.subStatus.video = false
+            this.logger.log(`subscribe() 取消订阅 ${stream.getId()} 视频流完成`)
+          }
         }
       }
       if (stream.subConf.screen) {
@@ -1225,23 +1264,27 @@ class Client extends Base {
           this.logger.error('subscribe() permKey权限控制，没有权利订阅screen')
           this.adapterRef.instance.emit('error', 'no-subscribe-screen-permission')
         } else if (stream.pubStatus.screen.screen && !stream.pubStatus.screen.consumerId) {
-          this.logger.log(`subscribe() 开始订阅 ${stream.getId()} 辅流`)
-          // preferredSpatialLayer是从小到大的，即0是小流，1是大流
-          // API层面与声网和Native对齐，即0是大流，1是小流
-          let preferredSpatialLayer
-          if (stream.subConf.highOrLow.screen === STREAM_TYPE.LOW) {
-            preferredSpatialLayer = 0
+          if (env.ANY_CHROME_MAJOR_VERSION && env.ANY_CHROME_MAJOR_VERSION < 69) {
+            this.logger.log(`subscribe() 开始订阅 ${stream.getId()} 辅流`)
           } else {
-            preferredSpatialLayer = 1
+            this.logger.log(`subscribe() 开始订阅 ${stream.getId()} 辅流`)
+            // preferredSpatialLayer是从小到大的，即0是小流，1是大流
+            // API层面与声网和Native对齐，即0是大流，1是小流
+            let preferredSpatialLayer
+            if (stream.subConf.highOrLow.screen === STREAM_TYPE.LOW) {
+              preferredSpatialLayer = 0
+            } else {
+              preferredSpatialLayer = 1
+            }
+            await this.adapterRef._mediasoup.createConsumer(
+              uid,
+              'video',
+              'screenShare',
+              stream.pubStatus.screen.producerId,
+              preferredSpatialLayer
+            )
+            this.logger.log(`subscribe() 订阅 ${stream.getId()} 辅流完成`)
           }
-          await this.adapterRef._mediasoup.createConsumer(
-            uid,
-            'video',
-            'screenShare',
-            stream.pubStatus.screen.producerId,
-            preferredSpatialLayer
-          )
-          this.logger.log(`subscribe() 订阅 ${stream.getId()} 辅流完成`)
         }
       } else {
         // 取消订阅辅流
@@ -1249,25 +1292,40 @@ class Client extends Base {
           stream.pubStatus.screen.consumerId &&
           stream.pubStatus.screen.stopconsumerStatus !== 'start'
         ) {
-          this.logger.log(`subscribe() 开始取消订阅 ${stream.getId()} 辅流`)
-          stream.pubStatus.screen.stopconsumerStatus = 'start'
-          await this.adapterRef._mediasoup.destroyConsumer(
-            stream.pubStatus.screen.consumerId,
-            stream,
-            'screen'
-          )
-          this.adapterRef.instance.removeSsrc(stream.getId(), 'screen')
-          stream.mediaHelper.updateStream('screen', null)
-          stream.pubStatus.screen.consumerId = ''
-          stream.stop('screen')
-          stream.pubStatus.screen.stopconsumerStatus = 'end'
-          stream.subStatus.screen = false
-          const uid = stream.getId()
-          if (uid) {
-            delete this.adapterRef.remoteScreenStats[uid]
+          if (env.ANY_CHROME_MAJOR_VERSION && env.ANY_CHROME_MAJOR_VERSION < 69) {
+            this.logger.log(`subscribe() 开始取消订阅 ${stream.getId()} 辅流`)
+            destroyScreen = true
+          } else {
+            this.logger.log(`subscribe() 开始取消订阅 ${stream.getId()} 辅流`)
+            stream.pubStatus.screen.stopconsumerStatus = 'start'
+            await this.adapterRef._mediasoup.destroyConsumer(
+              stream.pubStatus.screen.consumerId,
+              stream,
+              'screen'
+            )
+            this.adapterRef.instance.removeSsrc(stream.getId(), 'screen')
+            stream.mediaHelper.updateStream('screen', null)
+            stream.pubStatus.screen.consumerId = ''
+            stream.stop('screen')
+            stream.pubStatus.screen.stopconsumerStatus = 'end'
+            stream.subStatus.screen = false
+            const uid = stream.getId()
+            if (uid) {
+              delete this.adapterRef.remoteScreenStats[uid]
+            }
+            this.logger.log(`subscribe() 取消订阅 ${stream.getId()} 辅流完成`)
           }
-          this.logger.log(`subscribe() 取消订阅 ${stream.getId()} 辅流完成`)
         }
+      }
+
+      if (env.ANY_CHROME_MAJOR_VERSION && env.ANY_CHROME_MAJOR_VERSION < 69) {
+        // Plan B 订阅方式
+        await this.adapterRef._mediasoup.createConsumer69(
+          uid,
+          stream,
+          streamSubConf,
+          stream.pubStatus
+        )
       }
       this.apiFrequencyControl({
         name: 'subscribe',

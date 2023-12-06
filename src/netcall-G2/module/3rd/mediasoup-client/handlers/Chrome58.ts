@@ -13,9 +13,9 @@ import {
   HandlerRunOptions,
   HandlerSendOptions,
   // HandlerSendResult,
-  Chrome62HandlerSendResult,
+  Chrome58HandlerSendResult,
   // HandlerReceiveOptions,
-  Chrome62HandlerReceiveOptions,
+  Chrome58HandlerReceiveOptions,
   HandlerReceiveResult,
   HandlerSendDataChannelOptions,
   HandlerSendDataChannelResult,
@@ -30,13 +30,13 @@ import { filterTransportCCFromSdp } from '../../../../util/rtcUtil/filterTranspo
 import { Interop } from '../sdp-transform/interop'
 import * as env from '../../../../util/rtcUtil/rtcEnvironment'
 
-// const Logger = new Logger('Chrome62')
+// const Logger = new Logger('Chrome58')
 const prefix = 'Chrome_'
 
 const SCTP_NUM_STREAMS = { OS: 1024, MIS: 1024 }
 
 //@ts-ignore
-export class Chrome62 extends HandlerInterface {
+export class Chrome58 extends HandlerInterface {
   // Handler direction.
   private _direction?: 'send' | 'recv'
   // Remote SDP handler.
@@ -77,11 +77,11 @@ export class Chrome62 extends HandlerInterface {
    * Creates a factory function.
    */
   // static createFactory(): HandlerFactory {
-  //   return (): Chrome62 => new Chrome62()
+  //   return (): Chrome58 => new Chrome58()
   // }
   static createFactory(): HandlerFactory {
     //@ts-ignore
-    return (): Chrome62 => new Chrome62()
+    return (): Chrome58 => new Chrome58()
   }
 
   constructor() {
@@ -89,7 +89,7 @@ export class Chrome62 extends HandlerInterface {
   }
 
   get name(): string {
-    return 'Chrome62'
+    return 'Chrome58'
   }
 
   // close(): void {
@@ -299,7 +299,7 @@ export class Chrome62 extends HandlerInterface {
     codecOptions,
     codec,
     appData
-  }: HandlerSendOptions): Promise<Chrome62HandlerSendResult> {
+  }: HandlerSendOptions): Promise<Chrome58HandlerSendResult> {
     this.assertSendDirection()
 
     Logger.debug('send() [kind:%s, track.id:%s]', track.kind, track.id)
@@ -649,20 +649,34 @@ export class Chrome62 extends HandlerInterface {
 
     let dtlsParameters = undefined
 
-    if (!this._transportReady) {
-      dtlsParameters = await this._setupTransport({ localDtlsRole: 'server', localSdpObject })
-    }
-    const rtpCapabilities = sdpCommonUtils.extractRtpCapabilities({ sdpObject: localSdpObject })
+    // if (!this._transportReady) {
+    //   dtlsParameters = await this._setupTransport({ localDtlsRole: 'server', localSdpObject })
+    // }
+    // 多 peer 场景下，需要再次设置 dtlsParameters
+    dtlsParameters = await this._setupTransport({ localDtlsRole: 'server', localSdpObject })
+
+    // console.error('dtlsParameters: ', kind, dtlsParameters)
+
+    // 注: rtpCapabilities 必须得同时具备 音频 + 视频 的能力集，否则会在 consume 请求中报 800 错误
+    // const rtpCapabilities = sdpCommonUtils.extractRtpCapabilities({ sdpObject: localSdpObject })
+    // 创建一个 fake offer，用于获取 fake rtpCapabilities
+    let fakeOffer = await this._pc.createOffer({
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: true
+    })
+    let fakeLocalSdpObject = sdpTransform.parse(fakeOffer.sdp)
+    let fakeRtpCapabilities = sdpCommonUtils.extractRtpCapabilities({
+      sdpObject: fakeLocalSdpObject
+    })
     // support NACK for OPUS
     // addNackSuppportForOpus(rtpCapabilities)
-    // console.warn('rtpCapabilities: ', rtpCapabilities)
 
     if (mid === -1) {
       //@ts-ignore
       mid = localSdpObject.media[localSdpObject.media.length - 1].mid
     }
 
-    return { dtlsParameters, rtpCapabilities, offer, mid, iceUfragReg: '' }
+    return { dtlsParameters, rtpCapabilities: fakeRtpCapabilities, offer, mid, iceUfragReg: '' }
   }
 
   async receive({

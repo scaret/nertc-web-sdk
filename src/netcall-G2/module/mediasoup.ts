@@ -36,6 +36,12 @@ import { SimpleBig } from '../util/json-big/SimpleBig'
 import { filterTransportCCFromRtpParameters } from '../util/rtcUtil/filterTransportCC'
 
 let mediasoupCnt = 0
+const recvMediaTransportMap = new Map([
+  ['audio', ['_recvTransportMainAudio', '_recvTransportMainAudioTimeoutTimer']],
+  ['video', ['_recvTransportMainVideo', '_recvTransportMainVideoTimeoutTimer']],
+  ['audioSlave', ['_recvTransportSubAudioSlave', '_recvTransportSubAudioSlaveTimeoutTimer']],
+  ['screen', ['_recvTransportSubScreen', '_recvTransportSubScreenTimeoutTimer']]
+])
 
 class Mediasoup extends EventEmitter {
   private adapterRef: AdapterRef
@@ -63,6 +69,8 @@ class Mediasoup extends EventEmitter {
   public _eventQueueData: ProduceConsumeInfo[] = []
   public _protoo: Peer | null = null
   private mediasoupId = mediasoupCnt++
+  private _usedUidMediaTypes: any = {}
+  public consumerMap: Map<string | number, any> = new Map()
   // senderEncodingParameter。会复用上次的senderEncodingParameter
   public senderEncodingParameter: {
     ssrcList: number[]
@@ -290,29 +298,31 @@ class Mediasoup extends EventEmitter {
         this.getIceStatus('send')
       })
     }
-    if (!this._recvTransport && this._mediasoupDevice) {
-      const _recvTransport = this._mediasoupDevice.createRecvTransport({
-        id: this.adapterRef.channelInfo.uid,
-        iceParameters: undefined,
-        iceCandidates: undefined,
-        dtlsParameters: undefined,
-        sctpParameters: undefined,
-        iceServers,
-        iceTransportPolicy,
-        appData: {
-          cid: this.adapterRef.channelInfo.cid,
-          uid: this.adapterRef.channelInfo.uid,
-          encodedInsertableStreams: this.adapterRef.encryption.encodedInsertableStreams
-        }
-      })
-      this._recvTransport = _recvTransport
-      _recvTransport.on(
-        'connectionstatechange',
-        this._recvTransportConnectionstatechange.bind(this, _recvTransport)
-      )
-      _recvTransport.handler._pc.addEventListener('iceconnectionstatechange', () => {
-        this.getIceStatus('recv')
-      })
+    if (!(env.ANY_CHROME_MAJOR_VERSION && env.ANY_CHROME_MAJOR_VERSION < 69)) {
+      if (!this._recvTransport && this._mediasoupDevice) {
+        const _recvTransport = this._mediasoupDevice.createRecvTransport({
+          id: this.adapterRef.channelInfo.uid,
+          iceParameters: undefined,
+          iceCandidates: undefined,
+          dtlsParameters: undefined,
+          sctpParameters: undefined,
+          iceServers,
+          iceTransportPolicy,
+          appData: {
+            cid: this.adapterRef.channelInfo.cid,
+            uid: this.adapterRef.channelInfo.uid,
+            encodedInsertableStreams: this.adapterRef.encryption.encodedInsertableStreams
+          }
+        })
+        this._recvTransport = _recvTransport
+        _recvTransport.on(
+          'connectionstatechange',
+          this._recvTransportConnectionstatechange.bind(this, _recvTransport)
+        )
+        _recvTransport.handler._pc.addEventListener('iceconnectionstatechange', () => {
+          this.getIceStatus('recv')
+        })
+      }
     }
     const interval = 1000
     let timer = setInterval(() => {
@@ -401,6 +411,39 @@ class Mediasoup extends EventEmitter {
       if (this._recvTransportTimeoutTimer) {
         clearTimeout(this._recvTransportTimeoutTimer)
         this._recvTransportTimeoutTimer = null
+      }
+    }
+  }
+
+  async _recvTransportConnectionstatechange69(
+    _recvTransport: Transport,
+    _recvTransportTimeoutTimer: any,
+    connectionStateEvent: any
+  ) {
+    let connectionState = connectionStateEvent.target.iceConnectionState
+
+    this.loggerRecv.log(
+      `recv69 connection ${_recvTransport._handler._pc.pcid} state changed to ${connectionState}`
+    )
+    this.emit('downstream-state-change', { connectionState })
+    if (connectionState === 'failed') {
+      try {
+        if (_recvTransport) {
+          if (!_recvTransportTimeoutTimer) {
+            _recvTransportTimeoutTimer = setTimeout(() => {
+              this._reconnectTransportConnectTimeout()
+            }, this._timeout)
+          }
+        }
+      } catch (e: any) {
+        this.loggerRecv.error('reconnectRecvTransportConnect() | failed:', e.name, e.message)
+      }
+      //直接执行信令层面的重连
+      this._recvTransportConnectTimeout()
+    } else if (connectionState === 'connected') {
+      if (_recvTransportTimeoutTimer) {
+        clearTimeout(_recvTransportTimeoutTimer)
+        _recvTransportTimeoutTimer = null
       }
     }
   }
@@ -1315,6 +1358,253 @@ class Mediasoup extends EventEmitter {
     })
   }
 
+  async createConsumer69(
+    uid: number | string,
+    stream: RemoteStream,
+    subStatus: any,
+    pubStatus: object
+  ) {
+    // 兼容 chrome69 之前的版本（chrome68 及以下只支持 planB）
+
+    if (this.consumerMap.has(uid)) {
+      if (
+        subStatus.audio == this.consumerMap.get(uid).subStatus.audio &&
+        subStatus.video == this.consumerMap.get(uid).subStatus.video &&
+        subStatus.audioSlave == this.consumerMap.get(uid).subStatus.audioSlave &&
+        subStatus.screen == this.consumerMap.get(uid).subStatus.screen
+      ) {
+        this.logger.info('createConsumer69() uid 已经存在')
+        return
+      } else {
+        // 只需替换subStatus
+        this.consumerMap.get(uid).subStatus = subStatus
+      }
+    } else {
+      this.consumerMap.set(uid, { stream, subStatus, pubStatus })
+    }
+
+    // 遍历this.consumerMap，每个 item 生成两路pc，一路主流音视频，一路辅流音视频
+    let iceServers: RTCIceServer[] = []
+    let iceTransportPolicy: RTCIceTransportPolicy = 'all'
+
+    if (this.adapterRef.channelInfo.relaytoken && this.adapterRef.channelInfo.relayaddrs) {
+      this.adapterRef.channelInfo.relayaddrs.forEach((item: string) => {
+        iceServers.push(
+          {
+            urls: 'turn:' + item + '?transport=udp',
+            credential:
+              this.adapterRef.proxyServer.credential ||
+              this.adapterRef.channelInfo.uid + '/' + this.adapterRef.channelInfo.cid,
+            username: this.adapterRef.channelInfo.relaytoken
+          },
+          {
+            urls: 'turn:' + item + '?transport=tcp',
+            credential:
+              this.adapterRef.proxyServer.credential ||
+              this.adapterRef.channelInfo.uid + '/' + this.adapterRef.channelInfo.cid,
+            username: this.adapterRef.channelInfo.relaytoken
+          }
+        )
+      })
+      //firefox浏览器在relay模式（存在bug）
+      if (!env.IS_FIREFOX) {
+        iceTransportPolicy = 'relay'
+      }
+    }
+
+    if (iceServers.length) {
+      this.logger.log(
+        'iceTransportPolicy ',
+        iceTransportPolicy,
+        ' iceServers ',
+        JSONBigStringify(iceServers)
+      )
+    }
+
+    if (this.consumerMap.size) {
+      this.consumerMap.forEach((item, key) => {
+        if (this._mediasoupDevice) {
+          // 针对每个 mediaType 创建一个 recvTransport
+          if (item.subStatus.audio && !item._recvTransportMainAudio) {
+            item._recvTransportMainAudio = this._mediasoupDevice.createRecvTransport({
+              id: `${key}_main_audio`,
+              iceParameters: undefined,
+              iceCandidates: undefined,
+              dtlsParameters: undefined,
+              sctpParameters: undefined,
+              iceServers,
+              iceTransportPolicy,
+              appData: {
+                cid: this.adapterRef.channelInfo.cid,
+                // uid: this.adapterRef.channelInfo.uid,
+                uid: key.toString(),
+                encodedInsertableStreams: this.adapterRef.encryption.encodedInsertableStreams
+              }
+            })
+            // chrome 72 版本开始支持 connectionstatechange 属性，因此 69 以下版本用 iceconnectionstatechange 属性实现 _recvTransportConnectionstatechange() 重连方法
+            // item._recvTransportMainAudio.handler._pc.addEventListener(
+            //   'iceconnectionstatechange',
+            //   () => {
+            //     this.getIceStatus('recv')
+            //   }
+            // )
+
+            item._recvTransportMainAudioTimeoutTimer = null
+
+            item._recvTransportMainAudio._handler._pc.addEventListener(
+              'iceconnectionstatechange',
+              this._recvTransportConnectionstatechange69.bind(
+                this,
+                item._recvTransportMainAudio,
+                item._recvTransportMainAudioTimeoutTimer
+              )
+            )
+
+            this._createConsumer69(
+              key,
+              'audio',
+              'audio',
+              item.pubStatus.audio.producerId,
+              item._recvTransportMainAudio
+            )
+          }
+
+          if (item.subStatus.video && !item._recvTransportMainVideo) {
+            item._recvTransportMainVideo = this._mediasoupDevice.createRecvTransport({
+              id: `${key}_main_video`,
+              iceParameters: undefined,
+              iceCandidates: undefined,
+              dtlsParameters: undefined,
+              sctpParameters: undefined,
+              iceServers,
+              iceTransportPolicy,
+              appData: {
+                cid: this.adapterRef.channelInfo.cid,
+                // uid: this.adapterRef.channelInfo.uid,
+                uid: key.toString(),
+                encodedInsertableStreams: this.adapterRef.encryption.encodedInsertableStreams
+              }
+            })
+            // item._recvTransportMainVideo.handler._pc.addEventListener(
+            //   'iceconnectionstatechange',
+            //   () => {
+            //     this.getIceStatus('recv')
+            //   }
+            // )
+            item._recvTransportMainVideoTimeoutTimer = null
+
+            item._recvTransportMainVideo._handler._pc.addEventListener(
+              'iceconnectionstatechange',
+              this._recvTransportConnectionstatechange69.bind(
+                this,
+                item._recvTransportMainVideo,
+                item._recvTransportMainVideoTimeoutTimer
+              )
+            )
+
+            this._createConsumer69(
+              key,
+              'video',
+              'video',
+              item.pubStatus.video.producerId,
+              item._recvTransportMainVideo
+            )
+          }
+
+          if (item.subStatus.audioSlave && !item._recvTransportSubAudioSlave) {
+            item._recvTransportSubAudioSlave = this._mediasoupDevice.createRecvTransport({
+              // id: this.adapterRef.channelInfo.uid,
+              id: `${key}_sub_audioSlave`,
+              iceParameters: undefined,
+              iceCandidates: undefined,
+              dtlsParameters: undefined,
+              sctpParameters: undefined,
+              iceServers,
+              iceTransportPolicy,
+              appData: {
+                cid: this.adapterRef.channelInfo.cid,
+                // uid: this.adapterRef.channelInfo.uid,
+                uid: key.toString(),
+                encodedInsertableStreams: this.adapterRef.encryption.encodedInsertableStreams
+              }
+            })
+
+            // item._recvTransportSubAudioSlave.handler._pc.addEventListener(
+            //   'iceconnectionstatechange',
+            //   () => {
+            //     this.getIceStatus('recv')
+            //   }
+            // )
+
+            item._recvTransportSubAudioSlaveTimeoutTimer = null
+
+            item._recvTransportSubAudioSlave._handler._pc.addEventListener(
+              'iceconnectionstatechange',
+              this._recvTransportConnectionstatechange69.bind(
+                this,
+                item._recvTransportSubAudioSlave,
+                item._recvTransportSubAudioSlaveTimeoutTimer
+              )
+            )
+
+            this._createConsumer69(
+              key,
+              'audio',
+              'audioSlave',
+              item.pubStatus.audioSlave.producerId,
+              item._recvTransportSubAudioSlave
+            )
+          }
+
+          if (item.subStatus.screen && !item._recvTransportSubScreen) {
+            item._recvTransportSubScreen = this._mediasoupDevice.createRecvTransport({
+              // id: this.adapterRef.channelInfo.uid,
+              id: `${key}_sub_screen`,
+              iceParameters: undefined,
+              iceCandidates: undefined,
+              dtlsParameters: undefined,
+              sctpParameters: undefined,
+              iceServers,
+              iceTransportPolicy,
+              appData: {
+                cid: this.adapterRef.channelInfo.cid,
+                // uid: this.adapterRef.channelInfo.uid,
+                uid: key.toString(),
+                encodedInsertableStreams: this.adapterRef.encryption.encodedInsertableStreams
+              }
+            })
+
+            // item._recvTransportSubScreen.handler._pc.addEventListener(
+            //   'iceconnectionstatechange',
+            //   () => {
+            //     this.getIceStatus('recv')
+            //   }
+            // )
+
+            item._recvTransportSubScreenTimeoutTimer = null
+
+            item._recvTransportSubScreen._handler._pc.addEventListener(
+              'iceconnectionstatechange',
+              this._recvTransportConnectionstatechange69.bind(
+                this,
+                item._recvTransportSubScreen,
+                item._recvTransportSubScreenTimeoutTimer
+              )
+            )
+
+            this._createConsumer69(
+              key,
+              'video',
+              'screen',
+              item.pubStatus.screen.producerId,
+              item._recvTransportSubScreen
+            )
+          }
+        }
+      })
+    }
+  }
+
   async setConsumerPreferredLayer(
     remoteStream: RemoteStream,
     layer: number,
@@ -1791,6 +2081,279 @@ class Mediasoup extends EventEmitter {
     return this.checkConsumerList(info)
   }
 
+  async _createConsumer69(
+    uid: number | string,
+    kind: 'video' | 'audio',
+    mediaType: MediaTypeShort,
+    id: string,
+    transport69: mediasoupClient.types.Transport
+  ) {
+    // 传入的 info 参数为 每个 recvTransport
+
+    // TODO: 远端用户退房之后，_usedUidMediaTypes 需要清除(内部监听stream-removed，然后清理map)
+    let key = `${uid}_${mediaType}`
+    if (this._usedUidMediaTypes[key]) {
+      this.logger.info(`_createConsumer69 去重: `, key)
+      return
+    }
+    this._usedUidMediaTypes[key] = true
+    const remoteStream = this.adapterRef.remoteStreamMap[uid]
+    let prepareRes = await transport69.prepareLocalSdp(kind, this._edgeRtpCapabilities, uid)
+
+    this.loggerRecv.log('[Subscribe] 获取本地sdp, mid =', prepareRes.mid)
+
+    let { rtpCapabilities, offer } = prepareRes
+    let mid: number | string | undefined = prepareRes.mid
+    const localDtlsParameters = prepareRes.dtlsParameters
+
+    if (typeof mid === 'number' && mid < 0) {
+      mid = undefined
+    } else {
+      mid = `${mid}`
+    }
+    const iceUfragRegRemote = offer.sdp.match(/a=ice-ufrag:([0-9a-zA-Z=#+-_\/\\\\]+)/)
+    if (!iceUfragRegRemote) {
+      throw new RtcError({
+        code: ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: `_createConsumer: iceUfragRegRemote 为空`
+      })
+    }
+    let data: any = {
+      requestId: `${Math.ceil(Math.random() * 1e9)}`,
+      kind,
+      rtpCapabilities,
+      uid: new SimpleBig(uid),
+      producerId: id,
+      preferredSpatialLayer: 0,
+      mid,
+      pause: false,
+      iceUfrag: iceUfragRegRemote[1],
+      // WebASL 1.0协议迷思：实际audioAslFlag对整个Transport生效。只有第一次Consume时的audioAslFlag有效，且覆盖整个Transport。Video也要带。
+      audioAslFlag: this.adapterRef.audioAsl.enabled === 'yes' && getParameters().audioAslFlag,
+      appData: {
+        enableTcpCandidate: true
+      }
+    }
+    if (localDtlsParameters === undefined) {
+      data.transportId = transport69.id
+    } else {
+      data.dtlsParameters = localDtlsParameters
+    }
+    this.loggerRecv.log(
+      `[Subscribe] 发送consume请求, uid: ${uid}, kind: ${kind}, mediaTypeShort: ${mediaType}, producerId: ${data.producerId}, transportId: ${data.transportId}, requestId: ${data.requestId}`
+    )
+    if (!this.adapterRef._signalling || !this.adapterRef._signalling._protoo) {
+      throw new RtcError({
+        code: ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: `_createConsumer: _protoo 未找到`
+      })
+    }
+    const _protoo = this.adapterRef._signalling._protoo
+    let consumeRes: any = null
+    try {
+      consumeRes = await this.adapterRef._signalling._protoo.request('Consume', data)
+    } catch (e: any) {
+      if (
+        e.message === 'request timeout' &&
+        this.adapterRef._signalling._protoo.id === _protoo.id
+      ) {
+        this.logger.error(
+          `[Subscribe] Consume消息Timeout, 尝试信令重连: ${e.name}/${e.message}, 当前的连接状态: ${this.adapterRef.connectState.curState}, 原始请求: `,
+          JSONBigStringify(data)
+        )
+        this.adapterRef.channelStatus = 'connectioning'
+        this.adapterRef.instance.apiEventReport('setDisconnect', {
+          reason: 'consumeRequestTimeout',
+          ext: '' //扩展可选
+        })
+        this.adapterRef._signalling._reconnection()
+      } else {
+        this.logger.error(
+          `[Subscribe] Consume消息错误: ${e.name}/${e.message}, 当前的连接状态：${this.adapterRef.connectState.curState}, 原始请求：`,
+          JSONBigStringify(data)
+        )
+      }
+      throw new RtcError({
+        code: ErrorCode.UNKNOWN_TYPE_ERROR,
+        message: `_createConsumer: Consume 消息错误:${e.message}`
+      })
+    }
+    let {
+      transportId,
+      iceParameters,
+      iceCandidates,
+      dtlsParameters,
+      probeSSrc,
+      rtpParameters,
+      turnParameters,
+      producerId,
+      consumerId,
+      code,
+      errMsg
+    } = consumeRes
+    this.loggerRecv.log(
+      `[Subscribe] consume反馈结果 code: ${code} uid: ${uid}, mid: ${
+        rtpParameters && rtpParameters.mid
+      }, kind: ${kind}, producerId: ${producerId}, consumerId: ${consumerId}, transportId: ${transportId}, requestId: ${
+        consumeRes.requestId
+      }, errMsg: ${errMsg}`
+    )
+
+    if (turnParameters) {
+      //服务器反馈turn server，sdk更新ice Server
+      let iceServers = []
+      iceServers.push(
+        {
+          urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=udp',
+          credential: turnParameters.password,
+          username: turnParameters.username
+        },
+        {
+          urls: 'turn:' + turnParameters.ip + ':' + turnParameters.port + '?transport=tcp',
+          credential: turnParameters.password,
+          username: turnParameters.username
+        }
+      )
+      await transport69.updateIceServers({ iceServers })
+    }
+    const peerId = consumeRes.uid
+
+    if (
+      rtpParameters &&
+      rtpParameters.encodings &&
+      rtpParameters.encodings.length &&
+      rtpParameters.encodings[0].ssrc
+    ) {
+      this.adapterRef.instance.addSsrc(uid, mediaType, rtpParameters.encodings[0].ssrc)
+    }
+    if (transportId !== undefined) {
+      transport69._id = transportId
+    }
+    if (probeSSrc !== undefined) {
+      this._probeSSrc = probeSSrc
+    }
+    if (iceParameters) {
+      this._recvTransportIceParameters = iceParameters
+    }
+
+    if (rtpParameters && rtpParameters.mid != undefined) {
+      rtpParameters.mid = rtpParameters.mid + ''
+    }
+
+    let remoteIceCandidates = iceCandidates
+    if (this.adapterRef.channelInfo.iceProtocol && iceCandidates) {
+      this.logger.warn('Consume iceProtocol: ', this.adapterRef.channelInfo.iceProtocol)
+      remoteIceCandidates = iceCandidates.filter((item: any) => {
+        return item.protocol == this.adapterRef.channelInfo.iceProtocol
+      })
+    }
+
+    let codecOptions = null
+    if (mediaType === 'audio' || mediaType === 'audioSlave') {
+      codecOptions = {
+        opusStereo: 1
+      }
+    }
+
+    const consumer = await transport69.consume({
+      id: consumerId || producerId || id, //服务器400的错误中，response是不反馈consumerId和producerId，这里使用本地保存的id
+      producerId: producerId || id,
+      kind,
+      mediaType: mediaType,
+      uid: uid || peerId,
+      rtpParameters,
+      codecOptions,
+      appData: { peerId, remoteUid: uid, mid }, // Trick.
+      offer,
+      iceParameters,
+      iceCandidates: remoteIceCandidates,
+      dtlsParameters,
+      sctpParameters: undefined,
+      probeSSrc: this._probeSSrc
+    })
+
+    this._consumers[consumer.id] = consumer
+
+    consumer.on('transportclose', () => {
+      this._consumers && delete this._consumers[consumer.id]
+    })
+
+    this.loggerRecv.log('[Subscribe] 订阅consume完成 peerId =', peerId)
+    this.adapterRef.instance.apiEventReport('setFunction', {
+      name: `set_${mediaType}_sub`,
+      oper: '1',
+      value: JSONBigStringify(
+        {
+          remoteUid: uid,
+          result: code,
+          reason: errMsg || '',
+          preferredSpatialLayer: 0,
+          consumerId: consumerId || '',
+          producerId: producerId || id
+        },
+        null,
+        ' '
+      )
+    })
+    if (remoteStream && remoteStream['pubStatus'][mediaType]['producerId']) {
+      remoteStream['subStatus'][mediaType] = true
+      //@ts-ignore
+      remoteStream['pubStatus'][mediaType][mediaType] = true
+      remoteStream['pubStatus'][mediaType]['consumerId'] = consumerId
+      remoteStream['pubStatus'][mediaType]['producerId'] = producerId
+      if (remoteStream.getMuteStatus(mediaType).muted) {
+        this.loggerRecv.log(
+          `[Subscribe] 远端流处于mute状态：uid ${remoteStream.getId()}, ${mediaType}, ${JSONBigStringify(
+            remoteStream.getMuteStatus(mediaType)
+          )}`
+        )
+        const muteStatus = remoteStream.getMuteStatus(mediaType)
+        if (muteStatus.send) {
+          this.loggerRecv.log(
+            `[Subscribe] 远端流把自己mute了：uid ${remoteStream.getId()}, ${mediaType}, ${JSONBigStringify(
+              muteStatus
+            )}`
+          )
+        }
+        if (muteStatus.recv) {
+          this.loggerRecv.log(
+            `[Subscribe] 本端把远端流mute了：uid ${remoteStream.getId()}, ${mediaType}, ${JSONBigStringify(
+              muteStatus
+            )}`
+          )
+          consumer.track.enabled = false
+        }
+      } else {
+        consumer.track.enabled = true
+      }
+      remoteStream.mediaHelper.updateStream(mediaType, consumer.track)
+      this.adapterRef.instance.safeEmit('@pairing-createConsumer-success')
+      if (mediaType === 'audio') {
+        if (
+          this.adapterRef.state.signalAudioSubscribedTime < this.adapterRef.state.signalOpenTime
+        ) {
+          this.adapterRef.state.signalAudioSubscribedTime = Date.now()
+        }
+      } else if (mediaType === 'video') {
+        if (
+          this.adapterRef.state.signalVideoSubscribedTime < this.adapterRef.state.signalOpenTime
+        ) {
+          this.adapterRef.state.signalVideoSubscribedTime = Date.now()
+        }
+      }
+      this.adapterRef.instance.safeEmit('stream-subscribed', {
+        stream: remoteStream,
+        mediaType: mediaType
+      })
+    } else {
+      this.adapterRef.instance.safeEmit('@pairing-createConsumer-error')
+      this.loggerRecv.log(
+        '[Subscribe] 该次consume状态错误: ',
+        JSONBigStringify(remoteStream['pubStatus'], null, '')
+      )
+    }
+  }
+
   async destroyConsumer(
     consumerId: string,
     remoteStream: RemoteStream | null,
@@ -1814,6 +2377,27 @@ class Mediasoup extends EventEmitter {
         )
       }
       delete this._consumers[consumerId]
+      if (env.ANY_CHROME_MAJOR_VERSION && env.ANY_CHROME_MAJOR_VERSION < 69) {
+        // 同步 consumerMap 状态
+        let streamID = remoteStream!.streamID.toString()
+        this.consumerMap!.get(streamID).subStatus[mediaType!] = false
+
+        // @ts-ignore
+        this.consumerMap!.get(streamID)[recvMediaTransportMap.get(mediaType)[0]].close()
+
+        // @ts-ignore
+        this.consumerMap!.get(streamID)[recvMediaTransportMap.get(mediaType)[0]] = null
+        // @ts-ignore
+        let timeoutTimer = this.consumerMap!.get(streamID)[recvMediaTransportMap.get(mediaType)[1]]
+        if (timeoutTimer) {
+          clearTimeout(timeoutTimer)
+        }
+        timeoutTimer = null
+
+        // 同步 _usedUidMediaTypes 状态
+        let key = `${streamID}_${mediaType}`
+        this._usedUidMediaTypes[key] = false
+      }
       try {
         await this.adapterRef._signalling?._protoo?.request('CloseConsumer', {
           requestId: `${Math.ceil(Math.random() * 1e9)}`,
@@ -2260,9 +2844,47 @@ class Mediasoup extends EventEmitter {
     return recvInfos
   }
 
+  clearConsumerMap() {
+    this.consumerMap.forEach((item, key) => {
+      if (item._recvTransportMainAudio) {
+        item._recvTransportMainAudio.close()
+      }
+      if (item._recvTransportMainVideo) {
+        item._recvTransportMainVideo.close()
+      }
+      if (item._recvTransportSubAudioSlave) {
+        item._recvTransportSubAudioSlave.close()
+      }
+      if (item._recvTransportSubScreen) {
+        item._recvTransportSubScreen.close()
+      }
+      if (item._recvTransportMainAudioTimeoutTimer) {
+        clearTimeout(item._recvTransportMainAudioTimeoutTimer)
+        item._recvTransportMainAudioTimeoutTimer = null
+      }
+      if (item._recvTransportMainVideoTimeoutTimer) {
+        clearTimeout(item._recvTransportMainVideoTimeoutTimer)
+      }
+      item._recvTransportMainVideoTimeoutTimer = null
+      if (item._recvTransportSubAudioSlaveTimeoutTimer) {
+        clearTimeout(item._recvTransportSubAudioSlaveTimeoutTimer)
+      }
+      item._recvTransportSubAudioSlaveTimeoutTimer = null
+      if (item._recvTransportSubScreenTimeoutTimer) {
+        clearTimeout(item._recvTransportSubScreenTimeoutTimer)
+      }
+      item._recvTransportSubScreenTimeoutTimer = null
+    })
+    this.consumerMap.clear()
+  }
+
   destroy() {
     this.logger.log('清除 meidasoup')
     this._reset()
+
+    if (env.ANY_CHROME_MAJOR_VERSION && env.ANY_CHROME_MAJOR_VERSION < 69) {
+      this.clearConsumerMap()
+    }
   }
 }
 
