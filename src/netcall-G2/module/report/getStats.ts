@@ -1523,7 +1523,7 @@ class GetStats {
             audioObj.MuteState = remoteStream.getMuteStatus(mediaTypeShort).muted
           }
           audioObj.PacketLossRate = audioObj.packetsLostRate
-          audioObj.RecvBitrate = audioObj.packetsReceivedPerSecond
+          audioObj.RecvBitrate = audioObj.bitsReceivedPerSecond
           audioObj.RecvLevel = audioObj.audioOutputLevel
           audioObj.TotalFreezeTime = audioObj.totalFreezeTime
           audioObj.TotalPlayDuration = audioObj.totalSamplesDuration
