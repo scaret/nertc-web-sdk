@@ -710,7 +710,7 @@ declare interface Client {
    *      recordVideoFrame: NERTC.RECORD_VIDEO_FRAME_RATE_15
    *    }
    *   }
-   *   client.startMediaRecording(data);
+   *   await client.startMediaRecording(data);
    * ```
    */
   startMediaRecording(options: ClientMediaRecordingOptions): Promise<undefined>
@@ -721,11 +721,11 @@ declare interface Client {
    *
    * @example
    * ```JavaScript
-   *  // client.startMediaRecording() 开启录制之后
-   *  client.stopMediaRecording();
+   *  // await client.startMediaRecording() 开启录制之后
+   *  await client.stopMediaRecording();
    * ```
    */
-  stopMediaRecording(): void
+  stopMediaRecording(): Promise<undefined>
 
   /**
    * 下载录制的音视频数据，生成录制文件
@@ -737,11 +737,11 @@ declare interface Client {
    *
    * @example
    * ```JavaScript
-   * // client.startMediaRecording() 开启录制之后
-   * client.downloadMediaRecording();
+   * // await client.startMediaRecording() 开启录制之后
+   * await client.downloadMediaRecording();
    * ```
    */
-  downloadMediaRecording(): void
+  downloadMediaRecording(): Promise<undefined>
 
   /**
    * 清除内存中的录制的音视频数据
@@ -752,11 +752,11 @@ declare interface Client {
    *
    *  @example
    * ```JavaScript
-   *  // client.startMediaRecording() 开启录制之后
-   *  client.cleanMediaRecording();
+   *  // await client.startMediaRecording() 开启录制之后
+   *  await client.cleanMediaRecording();
    * ```
    */
-  cleanMediaRecording(): void
+  cleanMediaRecording(): Promise<undefined>
 
   /**
    * 设置整个频道的远端用户的播放音量。
