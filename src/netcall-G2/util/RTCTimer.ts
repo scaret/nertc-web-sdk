@@ -77,9 +77,17 @@ class RTCTimer {
       }, this.options.minInterval)
     }
     if (options.from.worker && typeof Worker !== undefined) {
-      this.worker = new Worker(getBlobUrl('rtcTimer'))
-      this.worker.onmessage = () => {
-        trigger('worker')
+      try {
+        this.worker = new Worker(getBlobUrl('rtcTimer'))
+        this.worker.onmessage = () => {
+          trigger('worker')
+        }
+      } catch (e) {
+        console.warn(
+          `无法启动RTCTimer/Worker Timer。页面在后台运行时计时可能不准`,
+          e.name,
+          e.message
+        )
       }
     }
   }
