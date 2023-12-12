@@ -5722,6 +5722,24 @@ if (query) {
   }
 }
 
+function disableBlob(){
+  $('head').append(`
+<meta http-equiv="Content-Security-Policy"
+  content="default-src *; script-src 'unsafe-inline' 'unsafe-eval' *; style-src 'unsafe-inline' *; img-src * data:; font-src * data:; media-src *; connect-src *" />
+`)
+  try {
+    const blob = new Blob([])
+    const url = URL.createObjectURL(blob)
+    const worker = new Worker(url)
+    addLog(`禁止Blob失败！`)
+    worker.terminate()
+    URL.revokeObjectURL(url)
+  }catch(e) {
+    addLog(`禁止Blob成功！`)
+  }
+}
+$('#disableBlob').click(disableBlob)
+
 function updateAreaSelect() {
   NERTC._geofenceArea.getAvailableAreas().forEach((areaCode) => {
     if ($("#areaCode option[value='" + areaCode + "']").length === 0) {
