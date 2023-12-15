@@ -51,11 +51,15 @@ export class SignalProbeManager {
     if (this.worker) {
       this.worker.terminate()
     }
-    const workerUrl = getBlobUrl('signalProbeWorker')
-    const worker = new Worker(workerUrl)
-    this.worker = worker
-    worker.onmessage = (evt: any) => {
-      this.processWorkerMessage(evt)
+    try {
+      const workerUrl = getBlobUrl('signalProbeWorker')
+      const worker = new Worker(workerUrl)
+      this.worker = worker
+      worker.onmessage = (evt: any) => {
+        this.processWorkerMessage(evt)
+      }
+    } catch (e) {
+      this.logger.warn('Failed to start SignalProbeManager:', e.name, e.message)
     }
   }
   stop() {

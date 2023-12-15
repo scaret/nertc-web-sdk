@@ -1902,7 +1902,7 @@ declare interface Stream {
   disableAIhowling(): Promise<boolean>
 
   /**
-   * 注册啸叫回调
+   * 注册啸叫回调,hasHowling为true表示检测到啸叫，false表示未检测到啸叫
    *
    * @example
    * ```Javascript

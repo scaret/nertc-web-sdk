@@ -15,7 +15,7 @@ class SystemChecker {
         !PC.prototype.addTransceiver ||
         !PC.prototype.getTransceivers
       ) {
-        // 支持 chrome62+ 版本
+        // 支持58+ 版本
         if (!PC.prototype.addStream) {
           console.warn(`checkSystemRequirements: RTCPeerConnection不符合sdk要求`)
           return false

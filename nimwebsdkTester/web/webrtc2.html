@@ -1815,7 +1815,7 @@
         </div>
 
         <p class="block-header">进房时间统计</p>
-        <div class="part">
+        <div class="part hide">
           <a href="./webrtc2.html?noclick=true" id="audienceLink" target="_blank"><button>观众端入会</button></a>
           <br/>
           buttonClickMs: <span id="buttonClickMs"></span><br/>
@@ -1840,12 +1840,15 @@
           去除网络RTT后的时长：<span id="joinMsWithoutRtt"></span><br/>
         </div>
         <p class="block-header">加载SDK</p>
-        <div class="part">
+        <div class="part hide">
           <button id="loadAgora">加载agora-rtc-sdk</button><br/>
           <button id="loadTrtc">加载trtc-js-sdk</button><br/>
           <button id="loadZego">加载zego</button><br/>
         </div>
-
+        <p class="block-header">内容安全策略</p>
+        <div class="part">
+          <button id="disableBlob">禁止Blob（影响小流、美颜、音量等）</button><br/>
+        </div>
         <p class="block-header">检查视频卡顿</p>
         <div class="part">
           <canvas id="struckCanvas"></canvas>
