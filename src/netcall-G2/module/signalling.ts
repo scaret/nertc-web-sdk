@@ -1059,7 +1059,7 @@ class Signalling extends EventEmitter {
         sessionMode: 'meeting',
         engineVersion: ENGINE_VERSION,
         userRole: this.adapterRef.instance._roleInfo.userRole, // 0:主播，1:观众
-        userType: 3,
+        userType: getParameters().userType,
         platformType: 16,
         rtmp: {
           support: this.adapterRef.channelInfo.sessionConfig.liveEnable
