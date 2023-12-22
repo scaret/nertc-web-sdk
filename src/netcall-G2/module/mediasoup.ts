@@ -1377,9 +1377,14 @@ class Mediasoup extends EventEmitter {
         return
       } else {
         // 只需替换subStatus
+        this.logger.info('createConsumer69() 只需替换pubStatus: ', pubStatus)
+        this.logger.info('createConsumer69() 只需替换stream.pubStatus: ', stream.pubStatus)
+        //consumerMap没有清除单个uid离开，停止pub的情况，这里简单兼容一下，后续的版本会优化
         this.consumerMap.get(uid).subStatus = subStatus
+        this.consumerMap.get(uid).pubStatus = stream.pubStatus
       }
     } else {
+      this.logger.info('createConsumer69() 设置consumerMap: ', pubStatus)
       this.consumerMap.set(uid, { stream, subStatus, pubStatus })
     }
 
@@ -2100,7 +2105,7 @@ class Mediasoup extends EventEmitter {
     const remoteStream = this.adapterRef.remoteStreamMap[uid]
     let prepareRes = await transport69.prepareLocalSdp(kind, this._edgeRtpCapabilities, uid)
 
-    this.loggerRecv.log('[Subscribe] 获取本地sdp, mid =', prepareRes.mid)
+    this.loggerRecv.warn('[Subscribe] 获取本地sdp, mid =', prepareRes.mid, 'id = ', id)
 
     let { rtpCapabilities, offer } = prepareRes
     let mid: number | string | undefined = prepareRes.mid
