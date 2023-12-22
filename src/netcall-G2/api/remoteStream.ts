@@ -683,7 +683,7 @@ class RemoteStream extends RTCEventEmitter {
    * @returns {Void}
    */
   setRemoteRenderMode(options: RenderMode, mediaType?: MediaTypeShort) {
-    if (!options || !Number.isInteger(options.width) || !Number.isInteger(options.width)) {
+    if (!options || !Number.isInteger(options.width) || !Number.isInteger(options.height)) {
       this.logger.warn('setRemoteRenderMode 参数宽高错误')
       this.client.apiFrequencyControl({
         name: 'setRemoteRenderMode',

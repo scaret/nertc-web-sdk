@@ -221,6 +221,8 @@ interface IParameters {
   audioLevelFittingAlgorithm: 'classic' | 'linear' | 'log2'
   // 远端音量系数
   audioLevelRatioRemote: number
+  // login事件上报框架类型
+  userType: number
 }
 
 let parameters: IParameters = {
@@ -336,7 +338,8 @@ let parameters: IParameters = {
   reconnectionWaitTimeout: 5000,
   activeSpeakerMin: 10,
   audioPlayoutDelayHint: 0,
-  videoPlayoutDelayHint: 0
+  videoPlayoutDelayHint: 0,
+  userType: 3
 }
 
 try {
