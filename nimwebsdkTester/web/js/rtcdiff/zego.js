@@ -65,8 +65,8 @@ function startZEGO() {
   }
 
   function init() {
-    let appID = 1807888605
-    let server = 'wss://webliveroom1807888605-api.imzego.com/ws'
+    let appID = ''
+    let server = ''
 
     zrtc.zg = new ZegoExpressEngine(appID, server)
     // installEventHandlers()
@@ -226,8 +226,8 @@ function startZEGO() {
         // zrtc.localStream.playCaptureVideo(localVideoContent);
         // zrtc.localStream.playCaptureAudio();
 
-        zrtc.localStream.playVideo(localVideoContent);
-        zrtc.localStream.playAudio();
+        zrtc.localStream.playVideo(localVideoContent)
+        zrtc.localStream.playAudio()
 
         console.warn('本地流创建成功')
       }
@@ -239,8 +239,8 @@ function startZEGO() {
         if (!options.custom.channelCount) {
           // zrtc.customView = zrtc.zg.createLocalStreamView(zrtc.customStream)
           // zrtc.customView.play(localVideoContent)
-          zrtc.customStream.playVideo(localVideoContent);
-          zrtc.customStream.playAudio();
+          zrtc.customStream.playVideo(localVideoContent)
+          zrtc.customStream.playAudio()
           console.warn('本地自定义主流创建成功')
         } else {
           console.warn('本地自定义音频主流创建成功')
@@ -253,8 +253,8 @@ function startZEGO() {
         console.warn('initLocalStream() options.screen', options.screen)
         // zrtc.localScreenView = zrtc.zg.createLocalStreamView(zrtc.shareStream)
         // zrtc.localScreenView.play(localScreenContent)
-        zrtc.shareStream.playVideo(localScreenContent);
-        zrtc.shareStream.playAudio();
+        zrtc.shareStream.playVideo(localScreenContent)
+        zrtc.shareStream.playAudio()
         console.warn('本地共享流创建成功')
       }
     } catch (error) {
@@ -598,8 +598,8 @@ function startZEGO() {
   }
   async function getToken() {
     console.warn('获取token')
-    // const appID = 1807888605
-    // const serverSecret = 'bb20b661d6a800156226122fd02bcd06' // type: 32 byte length string
+    // const appID = ''
+    // const serverSecret = '' // type: 32 byte length string
     // 请将 userId 修改为用户的 userId
     // const userId = userId // type: string
     // const effectiveTimeInSeconds = 3600 //type: number; unit: s； token 过期时间，单位：秒
@@ -619,8 +619,8 @@ function startZEGO() {
     //     return data.data
     //   })
     //   .catch((err) => console.error(err))
-    const AppID = 1807888605
-    const ServerSecret = 'bb20b661d6a800156226122fd02bcd06'
+    const AppID = ''
+    const ServerSecret = ''
     try {
       const response = await fetch(
         'https://admin-test.netease.im/public-service/tokenGen/zego/basic?userId=' +
@@ -927,7 +927,7 @@ function startZEGO() {
 
     // zrtc.shareStream = await zrtc.zg.createStream({ screen: options.screen })
     zrtc.shareStream = await zrtc.zg.createZegoStream({ screen: options.screen })
-    
+
     console.warn('playScreen options.screen: ', options.screen)
 
     console.warn('开启辅流时，设置 screenProfile: ', options.screen)
@@ -966,7 +966,7 @@ function startZEGO() {
 
     // zrtc.shareStream = await zrtc.zg.createStream({ screen: options.screen })
     zrtc.shareStream = await zrtc.zg.createZegoStream({ screen: options.screen })
-    
+
     console.warn('playScreenAudio options.screen: ', options.screen)
 
     console.warn('开启辅流音频时，设置 audioProfile: ', options.screen)
