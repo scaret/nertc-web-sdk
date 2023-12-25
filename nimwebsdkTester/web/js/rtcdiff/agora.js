@@ -1,6 +1,6 @@
 function startAGORA() {
   console.warn('开启 AGORA')
-  let appId = '0c0b4b61adf94de1befd7cdd78a50444'
+  let appId = ''
   let channelName // '您指定的房间号'
   let uid // '您指定的用户ID'
   let suid
@@ -1008,16 +1008,13 @@ function startAGORA() {
     localScreenTracks.screenAudioTrack = undefined
   })
 
-
-
-
   $('#remoteFullVideo').on('click', async () => {
-    if($('#sdkSet').val() === 'AGORA'){
-      if($('#endSet').val() === 'remote'){
+    if ($('#sdkSet').val() === 'AGORA') {
+      if ($('#endSet').val() === 'remote') {
         // 声网远端主流全屏
         let dom = document.querySelector('#remoteVideoContent').children[0]
         await dom.requestFullscreen()
-      }else if($('#endSet').val() === 'local'){
+      } else if ($('#endSet').val() === 'local') {
         // 声网本地流全屏
         let dom = document.querySelector('#localVideoContent').children[0]
         await dom.requestFullscreen()
@@ -1026,12 +1023,12 @@ function startAGORA() {
   })
 
   $('#remoteFullScreen').on('click', async () => {
-    if($('#sdkSet').val() === 'AGORA'){
-      if($('#endSet').val() === 'remote'){
+    if ($('#sdkSet').val() === 'AGORA') {
+      if ($('#endSet').val() === 'remote') {
         // 声网远端辅流全屏
         let dom = document.querySelector('#remoteScreenContent').children[0]
         await dom.requestFullscreen()
-      }else if($('#endSet').val() === 'local'){
+      } else if ($('#endSet').val() === 'local') {
         // 声网本地辅流全屏
         let dom = document.querySelector('#localScreenContent').children[0]
         await dom.requestFullscreen()
@@ -1043,7 +1040,6 @@ function startAGORA() {
   $('#exitFullScreen').on('click', async () => {
     await document.requestFullscreen()
   })
-
 
   let encoder = {
     video: { encoderImplementation: 'unknown', cnt: 0 },
